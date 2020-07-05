@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { SpotTrade } from "./types";
+import { AuthMethod, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -17,6 +17,21 @@ contract("Exchange", (accounts: string[]) => {
       expectedInWithdrawalMode,
       "not in expected withdrawal mode state"
     );
+  };
+
+  const checkNotifyForcedRequestTooOld = async (accountID: number, token: string, expectedInWithdrawalMode: boolean) => {
+    if (expectedInWithdrawalMode) {
+      await exchange.notifyForcedRequestTooOld(accountID, token);
+      await exchangeTestUtil.assertEventEmitted(
+        exchange,
+        "WithdrawalModeActivated"
+      );
+    } else {
+      await expectThrow(
+        exchange.notifyForcedRequestTooOld(accountID, token),
+        "WITHDRAWAL_NOT_TOO_OLD"
+      );
+    }
   };
 
   const createExchange = async (bSetupTestState: boolean = true) => {
@@ -93,70 +108,49 @@ contract("Exchange", (accounts: string[]) => {
   describe("Withdrawal Mode", function() {
     this.timeout(0);
 
-    it("should go into withdrawal mode when a deposit request isn't processed", async () => {
-      await createExchange(false);
-      // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2
-      );
-      // Do a deposit
-      await exchangeTestUtil.doRandomDeposit();
-      // We shouldn't be in withdrawal mode yet
-      await checkWithdrawalMode(false);
-      // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10
-      );
-      // We shouldn't be in withdrawal mode yet
-      await checkWithdrawalMode(false);
-      // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(20);
-      // We should be in withdrawal mode
-      await checkWithdrawalMode(true);
-    });
-
-    it("should go into withdrawal mode when a withdrawal request isn't processed", async () => {
+    it("should go into withdrawal mode when a forced withdrawal request isn't processed", async () => {
       await createExchange(true);
-      await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks();
+      // Try to notify using a request that doesn't exist
+      await checkNotifyForcedRequestTooOld(2, exchangeTestUtil.getTokenAddress("LRC"), false);
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
-      // We shouldn't be in withdrawal mode yet
-      await checkWithdrawalMode(false);
-      // Commit the deposits
-      await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks();
+      console.log(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2
+        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 100
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
-      // Do an on-chain withdrawal
-      await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
+      // Do a forced withdrawal
+      const withdrawal = await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
+      const token = exchangeTestUtil.getTokenAddressFromID(withdrawal.tokenID);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10
+        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 100
       );
       // We shouldn't be in withdrawal mode yet
+      await checkNotifyForcedRequestTooOld(withdrawal.accountID, token, false);
       await checkWithdrawalMode(false);
       // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(20);
+      await exchangeTestUtil.advanceBlockTimestamp(200);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Enter withdrawal mode
+      await checkNotifyForcedRequestTooOld(withdrawal.accountID, token, true);
       // We should be in withdrawal mode
       await checkWithdrawalMode(true);
     });
 
-    it("should go into withdrawal mode when shutdown without reverting to initial state", async () => {
+    it("should go into withdrawal mode when shutdown when not processing forced withdrawals", async () => {
       await createExchange(false);
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
-      await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks();
+      const token = exchangeTestUtil.getTokenAddressFromID(deposit.tokenID);
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_FORCED * 2
+        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -164,19 +158,22 @@ contract("Exchange", (accounts: string[]) => {
       // Shut down the exchange
       await exchange.shutdown({ from: exchangeTestUtil.exchangeOwner });
 
-      // Calculate the time the exchange can stay in shutdown
-      const numAccounts = (await exchange.getNumAccounts()).toNumber();
-      const timeUntilWithdrawalMode =
-        exchangeTestUtil.MAX_TIME_IN_SHUTDOWN_BASE +
-        exchangeTestUtil.MAX_TIME_IN_SHUTDOWN_DELTA * numAccounts;
       // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(
-        timeUntilWithdrawalMode - 10
-      );
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MIN_TIME_IN_SHUTDOWN + 100);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+
+      // Do a forced withdrawal
+      await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
+
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MIN_TIME_IN_SHUTDOWN - 100);
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(20);
+      await exchangeTestUtil.advanceBlockTimestamp(200);
+      // Enter withdrawal mode
+      await checkNotifyForcedRequestTooOld(deposit.accountID, token, true);
       // We should be in withdrawal mode
       await checkWithdrawalMode(true);
     });
@@ -184,18 +181,16 @@ contract("Exchange", (accounts: string[]) => {
     it("ERC20: withdraw from merkle tree", async () => {
       await createExchange();
 
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const balance = new BN(web3.utils.toWei("7.1", "ether"));
       const token = exchangeTestUtil.getTokenAddress("LRC");
 
-      const deposit = await exchangeTestUtil.deposit(
+      await exchangeTestUtil.deposit(
         owner,
         owner,
         token,
         balance
       );
-      const accountID = deposit.accountID;
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
@@ -212,7 +207,7 @@ contract("Exchange", (accounts: string[]) => {
         balance,
         "ETH",
         new BN(0),
-        2
+        {authMethod: AuthMethod.FORCE}
       );
 
       // Operator doesn't do anything for a long time
@@ -238,7 +233,6 @@ contract("Exchange", (accounts: string[]) => {
     it("ETH: withdraw from merkle tree", async () => {
       await createExchange();
 
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const balance = new BN(web3.utils.toWei("1.7", "ether"));
       const token = exchangeTestUtil.getTokenAddress("ETH");
@@ -326,7 +320,7 @@ contract("Exchange", (accounts: string[]) => {
         protocolFeeA.mul(new BN(2)),
         "ETH",
         new BN(0),
-        2
+        {authMethod: AuthMethod.FORCE}
       );
 
       // Operator doesn't do anything for a long time
@@ -347,10 +341,9 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
-    it("Withdraw from deposit block", async () => {
+    it("Withdraw from deposit", async () => {
       await createExchange();
 
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
 
       const tokenA = "LRC";
@@ -436,64 +429,6 @@ contract("Exchange", (accounts: string[]) => {
           balanceC
         ),
         "WITHDRAWN_ALREADY"
-      );
-    });
-
-    it("Should not be able to do any more block state changes", async () => {
-      await createExchange();
-
-      const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const balance = new BN(web3.utils.toWei("7.1", "ether"));
-      const token = exchangeTestUtil.getTokenAddress("LRC");
-
-      const deposit = await exchangeTestUtil.deposit(
-        owner,
-        owner,
-        token,
-        balance
-      );
-      const accountID = deposit.accountID;
-
-      await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks();
-
-      // Request withdrawal onchain
-      await exchangeTestUtil.requestWithdrawal(
-        owner,
-        token,
-        balance,
-        "ETH",
-        new BN(0),
-        2
-      );
-
-      // Operator doesn't do anything for a long time
-      await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
-      );
-
-      // Try to shutdown the exchange
-      await expectThrow(
-        exchange.shutdown({ from: exchangeTestUtil.exchangeOwner }),
-        "INVALID_MODE"
-      );
-
-      // Try to submit a block
-      const block: OnchainBlock = {
-        blockType: 0,
-        blockSize: 1,
-        blockVersion: 0,
-        data: Constants.emptyBytes,
-        proof: [0, 0, 0, 0, 0, 0, 0, 0],
-        offchainData: Constants.emptyBytes,
-        auxiliaryData: Constants.emptyBytes
-      };
-      // Try to submit a block
-      await expectThrow(
-        exchange.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
-          from: exchangeTestUtil.exchangeOperator
-        }),
-        "INVALID_MODE"
       );
     });
   });

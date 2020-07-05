@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -101,37 +102,23 @@ library ExchangeWithdrawals
 
     // We still alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTree(
-        ExchangeData.State storage S,
-        uint24   accountID,
-        address  owner,
-        address  token,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[36] calldata accountMerkleProof,
-        uint[15] calldata balanceMerkleProof
+        ExchangeData.State       storage S,
+        ExchangeData.MerkleProof calldata merkleProof
         )
         external
     {
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
-        uint16 tokenID = S.getTokenID(token);
+        address owner = merkleProof.accountLeaf.owner;
+        uint24 accountID = merkleProof.accountLeaf.accountID;
+        uint16 tokenID = merkleProof.balanceLeaf.tokenID;
+        uint96 balance = merkleProof.balanceLeaf.balance;
+
         require(S.withdrawnInWithdrawMode[accountID][tokenID] == false, "WITHDRAWN_ALREADY");
 
         ExchangeBalances.verifyAccountBalance(
             uint(S.merkleRoot),
-            accountID,
-            owner,
-            tokenID,
-            pubKeyX,
-            pubKeyY,
-            nonce,
-            balance,
-            tradeHistoryRoot,
-            accountMerkleProof,
-            balanceMerkleProof
+            merkleProof
         );
 
         // Make sure the balance can only be withdrawn once
@@ -144,6 +131,7 @@ library ExchangeWithdrawals
             owner,
             tokenID,
             balance,
+            new bytes(0),
             gasleft(),
             false
         );
@@ -177,6 +165,7 @@ library ExchangeWithdrawals
             owner,
             tokenID,
             amount,
+            new bytes(0),
             gasleft(),
             false
         );
@@ -208,6 +197,7 @@ library ExchangeWithdrawals
                 owner,
                 tokenID,
                 amount,
+                new bytes(0),
                 gasleft(),
                 false
             );
@@ -218,25 +208,24 @@ library ExchangeWithdrawals
         ExchangeData.State storage S,
         address from,
         address to,
-        uint16 tokenID,
-        uint amount,
-        uint gasLimit
+        uint16  tokenID,
+        uint    amount,
+        bytes   memory auxiliaryData,
+        uint    gasLimit
         )
         public
     {
-        bool success = false;
-        if (gasLimit > 0) {
-            // Try to transfer the tokens
-            success = transferTokens(
-                S,
-                from,
-                to,
-                tokenID,
-                amount,
-                gasLimit,
-                true
-            );
-        }
+        // Try to transfer the tokens
+        bool success = transferTokens(
+            S,
+            from,
+            to,
+            tokenID,
+            amount,
+            auxiliaryData,
+            gasLimit,
+            true
+        );
         if (!success) {
             // Allow the amount to be withdrawn using `withdrawFromApprovedWithdrawal`.
             S.amountWithdrawable[to][tokenID] = S.amountWithdrawable[to][tokenID].add(amount);
@@ -256,6 +245,7 @@ library ExchangeWithdrawals
         address to,
         uint16  tokenID,
         uint    amount,
+        bytes   memory auxiliaryData,
         uint    gasLimit,
         bool    allowFailure
         )
@@ -268,14 +258,14 @@ library ExchangeWithdrawals
         address token = S.getTokenAddress(tokenID);
 
         // Transfer the tokens from the deposit contract to the owner
-        if (amount > 0) {
-            try S.depositContract.withdraw{gas: gasLimit}(to, token, amount) {
+        if (gasLimit > 0) {
+            try S.depositContract.withdraw{gas: gasLimit}(to, token, amount, auxiliaryData) {
                 success = true;
-            } catch Error(string memory /*reason*/) {
+            } catch {
                 success = false;
             }
         } else {
-            success = true;
+            success = false;
         }
 
         if (!allowFailure) {

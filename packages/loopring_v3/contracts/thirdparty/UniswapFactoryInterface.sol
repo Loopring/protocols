@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Solidity Interface
 
 pragma solidity ^0.6.10;

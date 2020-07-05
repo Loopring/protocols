@@ -8,7 +8,6 @@ declare -a ALL_CONTRACTS=(Cloneable \
 			  UniswapTokenSeller \
 			  UserStakingPool \
 			  BlockVerifier \
-			  ExchangeConstants \
 			  ExchangeAdmins \
 			  ExchangeBalances \
 			  ExchangeBlocks \

@@ -38,20 +38,6 @@ def orderFromJSON(jOrder, state):
     feeBips = int(jOrder["feeBips"])
     rebateBips = int(jOrder["rebateBips"])
 
-    #transferAmountTrade = int(jOrder["transferAmountTrade"])
-    #reduceOnly = int(jOrder["reduceOnly"])
-    #triggerPrice = int(jOrder["triggerPrice"])
-
-    #transferAmount = int(jOrder["transferAmount"])
-    #transferFee = int(jOrder["transferFee"])
-
-    transferAmountTrade = int(0)
-    reduceOnly = int(0)
-    triggerPrice = int(0)
-
-    transferAmount = int(0)
-    transferFee = int(0)
-
     account = state.getAccount(accountID)
 
     order = Order(account.publicKeyX, account.publicKeyY,
@@ -59,9 +45,7 @@ def orderFromJSON(jOrder, state):
                   tokenS, tokenB,
                   amountS, amountB,
                   allOrNone, validSince, validUntil, buy,
-                  maxFeeBips, feeBips, rebateBips,
-                  transferAmountTrade, reduceOnly, triggerPrice,
-                  transferAmount, transferFee)
+                  maxFeeBips, feeBips, rebateBips)
 
     order.signature = jOrder["signature"]
 
@@ -92,8 +76,6 @@ def transferFromJSON(jTransfer):
         transfer.signature = jTransfer["signature"]
     if "dualSignature" in jTransfer:
         transfer.dualSignature = jTransfer["dualSignature"]
-    if "onchainSignature" in jTransfer:
-        transfer.onchainSignature = str(jTransfer["onchainSignature"])
     return transfer
 
 def withdrawFromJSON(jWithdraw):
@@ -106,12 +88,12 @@ def withdrawFromJSON(jWithdraw):
     withdraw.feeTokenID = int(jWithdraw["feeTokenID"])
     withdraw.fee = str(jWithdraw["fee"])
     withdraw.to = str(jWithdraw["to"])
+    withdraw.dataHash = str(jWithdraw["dataHash"])
+    withdraw.minGas = int(jWithdraw["minGas"])
     withdraw.type = int(jWithdraw["type"])
     withdraw.signature = None
     if "signature" in jWithdraw:
-        withdraw.signature = str(jWithdraw["signature"])
-    if "onchainSignature" in jWithdraw:
-        withdraw.onchainSignature = str(jWithdraw["onchainSignature"])
+        withdraw.signature = jWithdraw["signature"]
     return withdraw
 
 def depositFromJSON(jDeposit):
@@ -134,7 +116,6 @@ def publicKeyUpdateFromJSON(jUpdate):
     update.walletHash = str(jUpdate["walletHash"])
     update.feeTokenID = int(jUpdate["feeTokenID"])
     update.fee = str(jUpdate["fee"])
-    update.onchainSignature = str(jUpdate["onchainSignature"])
     return update
 
 def newAccountFromJSON(jCreate):

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -140,19 +141,15 @@ contract ExchangeV3 is IExchangeV3
     {
         return ExchangeData.Constants(
             uint(ExchangeData.SNARK_SCALAR_FIELD()),
-            uint(ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS()),
             uint(ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS()),
-            uint(ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED()),
             uint(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE()),
-            uint(ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE()),
-            uint(ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA()),
             uint(ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS()),
             uint(ExchangeData.MAX_NUM_TOKENS()),
             uint(ExchangeData.MAX_NUM_ACCOUNTS()),
-            uint(ExchangeData.FEE_BLOCK_FINE_START_TIME()),
-            uint(ExchangeData.FEE_BLOCK_FINE_MAX_DURATION()),
             uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
-            uint(0)
+            uint(ExchangeData.MIN_TIME_IN_SHUTDOWN()),
+            uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE()),
+            uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE())
         );
     }
 
@@ -173,40 +170,6 @@ contract ExchangeV3 is IExchangeV3
         returns (bool)
     {
         return state.isShutdown();
-    }
-
-    // -- Balances --
-    function isAccountBalanceCorrect(
-        uint     merkleRoot,
-        address  owner,
-        uint24   accountID,
-        uint16   tokenID,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[36] calldata accountPath,
-        uint[15] calldata balancePath
-        )
-        external
-        override
-        pure
-        returns (bool)
-    {
-        return ExchangeBalances.isAccountBalanceCorrect(
-            merkleRoot,
-            owner,
-            accountID,
-            tokenID,
-            pubKeyX,
-            pubKeyY,
-            nonce,
-            balance,
-            tradeHistoryRoot,
-            accountPath,
-            balancePath
-        );
     }
 
     // -- Tokens --
@@ -380,7 +343,8 @@ contract ExchangeV3 is IExchangeV3
         address from,
         address to,
         address tokenAddress,
-        uint96  amount
+        uint96  amount,
+        bytes   calldata auxiliaryData
         )
         external
         payable
@@ -388,7 +352,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyAgentFor(from)
     {
-        state.deposit(from, to, tokenAddress, amount);
+        state.deposit(from, to, tokenAddress, amount, auxiliaryData);
     }
 
     // -- Withdrawals --
@@ -420,33 +384,13 @@ contract ExchangeV3 is IExchangeV3
 
     // We still alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTree(
-        uint24   accountID,
-        address  owner,
-        address  token,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[36] calldata accountPath,
-        uint[15] calldata balancePath
+        ExchangeData.MerkleProof calldata merkleProof
         )
         external
         override
         nonReentrant
     {
-        state.withdrawFromMerkleTree(
-            accountID,
-            owner,
-            token,
-            pubKeyX,
-            pubKeyY,
-            nonce,
-            balance,
-            tradeHistoryRoot,
-            accountPath,
-            balancePath
-        );
+        state.withdrawFromMerkleTree(merkleProof);
     }
 
     function withdrawFromDepositRequest(
@@ -492,21 +436,24 @@ contract ExchangeV3 is IExchangeV3
         return state.amountWithdrawable[owner][tokenID];
     }
 
-    function notifyTooLate(
+    function notifyForcedRequestTooOld(
         uint24 accountID,
         address token
         )
         external
-        //override
+        override
     {
         uint16 tokenID = state.getTokenID(token);
         ExchangeData.ForcedWithdrawal storage withdrawal = state.pendingForcedWithdrawals[accountID][tokenID];
+        require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
 
         // Check if the withdrawal has indeed exceeded the time limit
-        require(withdrawal.timestamp + ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() >= now, "WITHDRAWAL_NOT_TOO_OLD");
+        require(now >= withdrawal.timestamp + ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(), "WITHDRAWAL_NOT_TOO_OLD");
 
         // Enter withdrawal mode
         state.withdrawalModeStartTime = now;
+
+        emit WithdrawalModeActivated(state.withdrawalModeStartTime);
     }
 
     // -- Agents --

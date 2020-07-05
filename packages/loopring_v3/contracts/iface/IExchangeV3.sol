@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -148,21 +149,7 @@ abstract contract IExchangeV3 is IExchange
 
     // -- Constants --
     /// @dev Returns a list of constants used by the exchange.
-    /// @return constants The list of constants in the following order:
-    ///         SNARK_SCALAR_FIELD
-    ///         MAX_OPEN_DEPOSIT_REQUESTS
-    ///         MAX_OPEN_WITHDRAWAL_REQUESTS
-    ///         MAX_AGE_REQUEST_UNTIL_FORCED
-    ///         MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE
-    ///         MAX_TIME_IN_SHUTDOWN_BASE
-    ///         MAX_TIME_IN_SHUTDOWN_DELTA
-    ///         TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS
-    ///         MAX_NUM_TOKENS
-    ///         MAX_NUM_ACCOUNTS
-    ///         FEE_BLOCK_FINE_START_TIME
-    ///         FEE_BLOCK_FINE_MAX_DURATION
-    ///         MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED
-    ///         GAS_LIMIT_SEND_TOKENS
+    /// @return constants The list of constants.
     function getConstants()
         external
         virtual
@@ -184,45 +171,6 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual
         view
-        returns (bool);
-
-    // -- Balances --
-    /// @dev Verifies that the given information is stored in the Merkle tree with
-    ///      the specified merkle root.
-    /// @param  merkleRoot The Merkle tree root of all account data
-    /// @param  owner The owner of the account
-    /// @param  accountID The ID of the account the balance is verified for
-    /// @param  tokenID The ID of the token the balance is verified for
-    /// @param  pubKeyX The first part of the public key of the account
-    /// @param  pubKeyY The second part of the public key of the account
-    /// @param  nonce The nonce of the account
-    /// @param  balance The balance of the account for the given token
-    /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
-    /// @param  accountMerkleProof The merkle proof (side node hashes) for the account.
-    ///                      The deepest hash in the tree is the 1st element of the array.
-    ///                      Note: Account tree (quad tree) depth is 12, and each node
-    ///                      has 3 siblings so 12*3 = 36.
-    /// @param  balanceMerkleProof he merkle proof (side node hashes) for the balance of the
-    ///                      token for the account. The deepest hash in the tree is the
-    ///                      1st element of the array.
-    ///                      Note: Balance tree (quad tree) depth is 5, so 5*3 = 15.
-    /// @return True if the given information is stored in the Merkle tree, false otherwise
-    function isAccountBalanceCorrect(
-        uint     merkleRoot,
-        address  owner,
-        uint24   accountID,
-        uint16   tokenID,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[36] calldata accountMerkleProof,
-        uint[15] calldata balanceMerkleProof
-        )
-        external
-        virtual
-        pure
         returns (bool);
 
     // -- Tokens --
@@ -484,26 +432,21 @@ abstract contract IExchangeV3 is IExchange
     ///
     ///      This function is only callable by an agent of 'from'.
     ///
-    ///      The total fee in ETH that the user needs to pay is 'depositFee'.
-    ///      If the user sends too much ETH the surplus is sent back immediately.
-    ///
-    ///      Note that after such an operation, it will take the operator some
-    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
-    ///      and create the deposit to the offchain account.
-    ///
-    ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
-    ///               tokens in total. If that happens, the user may lose token.
-    ///               This token balance upper limit, however, is large enough for most scenarios.
+    ///      A fee to the operator is paid in ETH to process the deposit.
+    ///      The operator is not forced to do the deposit and the user can send
+    ///      any fee amount.
     ///
     /// @param from The address that deposits the funds to the exchange
     /// @param to The account owner's address receiving the funds
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
+    /// @param auxiliaryData Optional extra data used by the deposit contract
     function deposit(
         address from,
         address to,
         address tokenAddress,
-        uint96  amount
+        uint96  amount,
+        bytes   calldata auxiliaryData
         )
         external
         virtual
@@ -519,7 +462,7 @@ abstract contract IExchangeV3 is IExchange
     ///      If the user sends too much ETH the surplus is sent back immediately.
     ///
     ///      Note that after such an operation, it will take the operator some
-    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
+    ///      time (no more than MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
     ///      and create the deposit to the offchain account.
     ///
     /// @param owner The expected owner of the account
@@ -540,7 +483,7 @@ abstract contract IExchangeV3 is IExchange
     ///      Anyone can request a withdrawal of the protocol fees.
     ///
     ///      Note that after such an operation, it will take the operator some
-    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
+    ///      time (no more than MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
     ///      and create the deposit to the offchain account.
     ///
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
@@ -561,29 +504,9 @@ abstract contract IExchangeV3 is IExchange
     ///      onchain will remain the same after the withdrawal. We store if the user
     ///      has withdrawn the balance in State.withdrawnInWithdrawMode.
     ///
-    /// @param  owner The owner of the account to withdraw the funds for.
-    /// @param  token The address of the token to withdraw the tokens for
-    /// @param  pubKeyX The first part of the public key of the account
-    /// @param  pubKeyY The second part of the public key of the account
-    /// @param  nonce The nonce of the account
-    /// @param  balance The balance of the account for the given token
-    /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
-    /// @param  accountMerkleProof The merkle proof (side node hashes) for the account.
-    ///                      The deepest hash in the tree is the 1st element of the array.
-    /// @param  balanceMerkleProof he merkle proof (side node hashes) for the balance of the
-    ///                      token for the account. The deepest hash in the tree is the
-    ///                      1st element of the array.
+    /// @param  merkleProof The Merkle inclusion proof
     function withdrawFromMerkleTree(
-        uint24   accountID,
-        address  owner,
-        address  token,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[36] calldata accountMerkleProof,
-        uint[15] calldata balanceMerkleProof
+        ExchangeData.MerkleProof calldata merkleProof
         )
         external
         virtual;
@@ -637,6 +560,20 @@ abstract contract IExchangeV3 is IExchange
         virtual
         view
         returns (uint);
+
+    /// @dev Notifies the exchange that the operator did not process a forced request.
+    ///      If this is indeed the case, the exchange will enter withdrawal mode.
+    ///
+    ///      Can be called by anyone.
+    ///
+    /// @param  accountID The accountID the forced request was made for
+    /// @param  token The token address of the the forced request
+    function notifyForcedRequestTooOld(
+        uint24 accountID,
+        address token
+        )
+        external
+        virtual;
 
     // -- Agents --
 
@@ -786,10 +723,9 @@ abstract contract IExchangeV3 is IExchange
     ///      the exchange stake with withdrawStake.
     ///
     ///      Note that the exchange can still enter the withdrawal mode after this function
-    ///      has been invoked successfully. To prevent entering the withdrawal mode, exchange
-    ///      operators need to reset the Merkle tree to its initial state by doing withdrawals
-    ///      within MAX_TIME_IN_SHUTDOWN_BASE + (accounts.length * MAX_TIME_IN_SHUTDOWN_DELTA)
-    ///      seconds.
+    ///      has been invoked successfully. To prevent entering the withdrawal mode before the
+    ///      the echange stake can be withdrawn, all withdrawal requests still need to be handled
+    ///      for at least MIN_TIME_IN_SHUTDOWN seconds.
     ///
     ///      Can only be called by the exchange owner.
     ///

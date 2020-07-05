@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { Bitstream, BlockType, Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { Block, Deposit, SpotTrade } from "./types";
+import { AuthMethod, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -538,108 +538,6 @@ contract("Exchange", (accounts: string[]) => {
               );
             }
           }
-        });
-
-        it("On-chain requests should be forced after MAX_AGE_REQUEST_UNTIL_FORCED", async () => {
-          await createExchange();
-          const operatorAccountId = await exchangeTestUtil.getActiveOperator(
-            exchangeId
-          );
-          const operatorAccount =
-            exchangeTestUtil.accounts[exchangeId][operatorAccountId];
-          // Prepare a ring
-          const ring = await setupRandomRing();
-          // Do a deposit
-          const deposit = await exchangeTestUtil.doRandomDeposit(5);
-          // Wait
-          await exchangeTestUtil.advanceBlockTimestamp(
-            exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_FORCED + 1
-          );
-          await exchangeTestUtil.submitTransactions();
-          // Try to submit the rings
-          await expectThrow(
-            exchangeTestUtil.submitPendingBlocks(),
-            "DEPOSIT_BLOCK_FORCED"
-          );
-          // Revert the nonce of the operator
-        });
-
-        it("On-chain requests should be forced after MAX_AGE_REQUEST_UNTIL_FORCED", async () => {
-          await createExchange();
-          await exchangeTestUtil.submitTransactions();
-          await exchangeTestUtil.submitPendingBlocks();
-
-          // Do a deposit
-          const deposit = await exchangeTestUtil.doRandomDeposit(5);
-          // Do a withdrawal
-          await exchangeTestUtil.requestWithdrawal(
-            deposit.owner,
-            "ETH",
-            new BN(123),
-            "ETH",
-            new BN(0),
-            2
-          );
-          // Wait
-          await exchangeTestUtil.advanceBlockTimestamp(
-            exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_FORCED + 1
-          );
-          // Try to submit trades
-          const bs = new Bitstream();
-          //bs.addNumber(0, 1);
-          const merkleRoot = new BN(
-            (await exchangeTestUtil.getMerkleRootOnchain()).slice(2),
-            16
-          );
-          bs.addNumber(exchangeId, 4);
-          bs.addBN(merkleRoot, 32);
-          bs.addBN(merkleRoot.add(new BN(1)), 32);
-          bs.addNumber(0, 4);
-          const tradeBlock: OnchainBlock = {
-            blockType: BlockType.NOOP,
-            blockSize: exchangeTestUtil.blockSizes[0],
-            blockVersion: 0,
-            data: web3.utils.hexToBytes(bs.getData()),
-            proof: [0, 0, 0, 0, 0, 0, 0, 0],
-            offchainData: Constants.emptyBytes,
-            auxiliaryData: Constants.emptyBytes
-          };
-          await exchangeTestUtil.registerCircuit(
-            tradeBlock.blockType,
-            tradeBlock.blockSize,
-            tradeBlock.blockVersion
-          );
-          await expectThrow(
-            exchange.submitBlocks(
-              [tradeBlock],
-              exchangeTestUtil.exchangeOperator,
-              { from: exchangeTestUtil.exchangeOperator }
-            ),
-            "WITHDRAWAL_BLOCK_FORCED"
-          );
-
-          // Commit the withdrawals
-          await exchangeTestUtil.submitTransactions();
-          await exchangeTestUtil.submitPendingBlocks();
-          // Try to commit the rings again
-          await expectThrow(
-            exchange.submitBlocks(
-              [tradeBlock],
-              exchangeTestUtil.exchangeOperator,
-              { from: exchangeTestUtil.exchangeOperator }
-            ),
-            "DEPOSIT_BLOCK_FORCED"
-          );
-          // Commit the deposits
-          await exchangeTestUtil.submitTransactions();
-          // Commit the rings
-          /*await exchangeTestUtil.sendRing(
-            exchangeId,
-            exchangeTestUtil.dummySpotTrade
-          );*/
-          await exchangeTestUtil.submitTransactions();
-          // Submit the blocks
-          await exchangeTestUtil.submitPendingBlocks();
         });
 
         it("should be able to submit blocks of different types", async () => {

@@ -1,6 +1,5 @@
 export class Artifacts {
   public MockContract: any;
-  public ExchangeConstants: any;
   public UniversalRegistry: any;
   public LoopringV3: any;
   public ExchangeV3: any;
@@ -31,7 +30,6 @@ export class Artifacts {
 
   constructor(artifacts: any) {
     this.MockContract = artifacts.require("thirdparty/MockContract.sol");
-    this.ExchangeConstants = artifacts.require("impl/lib/ExchangeConstants");
     this.UniversalRegistry = artifacts.require("impl/UniversalRegistry");
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
     this.ExchangeV3 = artifacts.require("impl/ExchangeV3");

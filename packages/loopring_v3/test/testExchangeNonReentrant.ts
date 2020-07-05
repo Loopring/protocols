@@ -93,6 +93,8 @@ contract("Exchange", (accounts: string[]) => {
             values.push([false]);
           } else if (input.type === "bytes") {
             values.push(web3.utils.hexToBytes("0x"));
+          } else if (input.type === "bytes32") {
+            values.push("0x0");
           } else if (
             input.internalType.startsWith("struct ExchangeData.Block[]")
           ) {
@@ -112,8 +114,8 @@ contract("Exchange", (accounts: string[]) => {
             values.push(new Array(1).fill("0"));
           } else if (input.type.startsWith("uint256[8]")) {
             values.push(new Array(8).fill("0"));
-          } else if (input.type.startsWith("uint256[15]")) {
-            values.push(new Array(15).fill("0"));
+          } else if (input.type.startsWith("uint256[18]")) {
+            values.push(new Array(18).fill("0"));
           } else if (input.type.startsWith("uint256[36]")) {
             values.push(new Array(36).fill("0"));
           } else {
@@ -129,10 +131,9 @@ contract("Exchange", (accounts: string[]) => {
         // TESTToken will check if the revert message is REENTRANCY.
         const ethToSend = depositFee;
         await expectThrow(
-          exchange.updateAccountAndDeposit(
+          exchange.deposit(
             owner,
-            new BN(1),
-            new BN(0),
+            owner,
             testTokenAddress,
             web3.utils.toBN(amount),
             Constants.emptyBytes,
@@ -143,10 +144,9 @@ contract("Exchange", (accounts: string[]) => {
 
         // Disable the test and deposit again
         await TestToken.setTestCase(await TestToken.TEST_NOTHING());
-        exchange.updateAccountAndDeposit(
+        exchange.deposit(
           owner,
-          new BN(1),
-          new BN(0),
+          owner,
           testTokenAddress,
           web3.utils.toBN(amount),
           Constants.emptyBytes,

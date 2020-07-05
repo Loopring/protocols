@@ -1,6 +1,14 @@
 import BN = require("bn.js");
 import { BlockType, Signature } from "loopringV3.js";
 
+export enum AuthMethod {
+  NONE,
+  EDDSA,
+  ECDSA,
+  APPROVE,
+  FORCE
+}
+
 export interface OrderInfo {
   owner?: string;
   tokenS?: string;
@@ -147,10 +155,16 @@ export interface WithdrawalRequest {
 
   to: string;
 
+  dataHash: string;
+  minGas: number;
+
+  gas?: number;
+
   withdrawalFee?: BN;
 
   signature?: Signature;
   onchainSignature?: any;
+  data?: string;
 
   timestamp?: number;
   transactionHash?: string;

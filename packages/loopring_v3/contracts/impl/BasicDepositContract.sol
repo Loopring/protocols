@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -85,7 +86,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
     function deposit(
         address from,
         address token,
-        uint amount
+        uint amount,
+        bytes calldata /*auxiliaryData*/
         )
         external
         override
@@ -120,7 +122,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
     function withdraw(
         address to,
         address token,
-        uint amount
+        uint amount,
+        bytes calldata /*auxiliaryData*/
         )
         external
         override

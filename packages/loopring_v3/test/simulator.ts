@@ -72,8 +72,8 @@ export class Balance {
     index: BN,
     tradeHistory: { [key: number]: TradeHistory }
     ) {
-    this.balance = balance;
-    this.index = index;
+    this.balance = new BN(balance.toString(10));
+    this.index = new BN(index.toString(10));
     this.tradeHistory = tradeHistory;
   }
 
@@ -141,7 +141,7 @@ export class ExchangeState {
   }
 
   public getAccount(accountID: number) {
-    if (accountID === this.accounts.length) {
+    while(accountID >= this.accounts.length) {
       this.accounts.push(new AccountLeaf());
     }
     return this.accounts[accountID];
@@ -170,12 +170,7 @@ export interface SimulatorReport {
 
 export class Simulator {
 
-  public static async loadExchangeState(exchangeID: number, blockIdx?: number) {
-    // Read in the state
-    /*if (blockIdx === undefined) {
-      blockIdx = this.blocks[exchangeID].length - 1;
-    }*/
-    //console.log("blockIdx:" + blockIdx);
+  public static async loadExchangeState(exchangeID: number, blockIdx: number) {
     const accounts: AccountLeaf[] = [];
     if (blockIdx > 0) {
       const stateFile = "states/state_" + exchangeID + "_" + blockIdx + ".json";
@@ -208,7 +203,7 @@ export class Simulator {
             const jTradeHistory = jBalance._tradeHistoryLeafs[tradeHistoryKey];
             tradeHistory[Number(tradeHistoryKey)] = {
               filled: new BN(jTradeHistory.filled, 10),
-              orderID: jTradeHistory.orderID
+              orderID: Number(jTradeHistory.orderID)
             };
           }
           balances[Number(balanceKey)] = new Balance();
@@ -246,7 +241,6 @@ export class Simulator {
       "number of accounts does not match"
     );
     for (let accountID = 0; accountID < stateA.accounts.length; accountID++) {
-      console.log("accountID: " + accountID);
       const accountA = stateA.accounts[accountID];
       const accountB = stateB.accounts[accountID];
       this.compareAccounts(accountA, accountB);
@@ -310,10 +304,10 @@ export class Simulator {
     stateAfter: ExchangeState
   ) {
     logInfo("----------------------------------------------------");
-    let latestState = stateBefore;
+    let previousState = stateBefore;
     //const addressBook = this.getAddressBookBlock(block);
     for (const [index, tx] of block.transactions.entries()) {
-      const state = this.copyExchangeState(latestState);
+      const state = this.copyExchangeState(previousState);
       let report: any;
       if (tx.txType === "Noop") {
         // Nothing to do
@@ -326,7 +320,7 @@ export class Simulator {
         report = this.deposit(state, block, deposit);
 
         logInfo("#" + index + " Deposit");
-        const accountBefore = latestState.getAccount(deposit.accountID);
+        const accountBefore = previousState.getAccount(deposit.accountID);
         const accountAfter = state.getAccount(deposit.accountID);
         this.prettyPrintBalanceChange(
           deposit.accountID,
@@ -339,7 +333,7 @@ export class Simulator {
         report = this.updateAccount(state, block, tx);
 
         logInfo("#" + index + " PublicKeyUpdate");
-        const accountBefore = latestState.getAccount(update.accountID);
+        const accountBefore = previousState.getAccount(update.accountID);
         const accountAfter = state.getAccount(update.accountID);
         if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
           logInfo("publicKeyX: " + accountBefore.publicKeyX + " -> " + accountAfter.publicKeyX);
@@ -360,13 +354,13 @@ export class Simulator {
         const transfer: Transfer = tx;
         report = this.transfer(state, block, transfer);
 
-        const accountFromBefore = latestState.getAccount(transfer.accountFromID);
+        const accountFromBefore = previousState.getAccount(transfer.accountFromID);
         const accountFromAfter = state.getAccount(transfer.accountFromID);
 
-        const accountToBefore = latestState.getAccount(transfer.accountToID);
+        const accountToBefore = previousState.getAccount(transfer.accountToID);
         const accountToAfter = state.getAccount(transfer.accountToID);
 
-        const accountOperatorBefore = latestState.getAccount(block.operatorAccountID);
+        const accountOperatorBefore = previousState.getAccount(block.operatorAccountID);
         const accountOperatorAfter = state.getAccount(block.operatorAccountID);
 
         /*for (const detailedTransfer of report.detailedTransfers) {
@@ -412,7 +406,7 @@ export class Simulator {
         }
         this.logFilledAmountsSpotTrade(
           tx,
-          latestState,
+          previousState,
           report.exchangeStateAfter
         );
       } else if (tx.txType === "Withdraw") {
@@ -420,7 +414,7 @@ export class Simulator {
         report = this.withdraw(state, block, tx);
 
         logInfo("#" + index + " Withdraw");
-        const accountBefore = latestState.getAccount(withdrawal.accountID);
+        const accountBefore = previousState.getAccount(withdrawal.accountID);
         const accountAfter = state.getAccount(withdrawal.accountID);
         this.prettyPrintBalanceChange(
           withdrawal.accountID,
@@ -431,14 +425,14 @@ export class Simulator {
       } else {
         assert(false, "Unknown tx type: " + tx.txType);
       }
-      latestState = report.exchangeStateAfter;
+      previousState = state;
     }
 
     // Update operator nonce
-    latestState.getAccount(block.operatorAccountID).nonce++;
+    previousState.getAccount(block.operatorAccountID).nonce++;
 
     // Verify resulting state
-    this.compareStates(stateAfter, latestState);
+    this.compareStates(stateAfter, previousState);
     logInfo("----------------------------------------------------");
   }
 
@@ -544,10 +538,10 @@ export class Simulator {
       state.accounts[spotTrade.orderB.accountID]
     );
 
-    /*console.log("MaxFillA.S: " + fillA.S.toString(10));
-    console.log("MaxFillA.B: " + fillA.B.toString(10));
-    console.log("MaxFillB.S: " + fillB.S.toString(10));
-    console.log("MaxFillB.B: " + fillB.B.toString(10));*/
+    //console.log("MaxFillA.S: " + fillA.S.toString(10));
+    //console.log("MaxFillA.B: " + fillA.B.toString(10));
+    //console.log("MaxFillB.S: " + fillB.S.toString(10));
+    //console.log("MaxFillB.B: " + fillB.B.toString(10));
 
     let matchResult: MatchResult;
     if (spotTrade.orderA.buy) {
@@ -572,6 +566,9 @@ export class Simulator {
 
     fillA.S = roundToFloatValue(fillA.S, Constants.Float24Encoding);
     fillB.S = roundToFloatValue(fillB.S, Constants.Float24Encoding);
+
+    //console.log("fillA.S: " + fillA.S.toString(10));
+    //console.log("fillB.S: " + fillB.S.toString(10));
 
     // Validate
     this.validateOrder(
@@ -1001,19 +998,12 @@ export class Simulator {
   private static getFilled(order: OrderInfo, accountData: any) {
     const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
     const tradeHistorySlot = order.orderID % numSlots;
-    let tradeHistory =
-      accountData.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
-    if (!tradeHistory) {
-      tradeHistory = {
-        filled: new BN(0),
-        orderID: 0
-      };
-    }
+    const tradeHistory = accountData.getBalanceRaw(order.tokenIdS).getTradeHistory(order.orderID);
     // Trade history trimming
     const tradeHistoryOrderID =
-      tradeHistory.orderID === 0 ? tradeHistorySlot : tradeHistory.orderID;
+      (tradeHistory.orderID === 0) ? tradeHistorySlot : tradeHistory.orderID;
     const filled =
-      tradeHistoryOrderID === order.orderID ? tradeHistory.filled : new BN(0);
+      (tradeHistoryOrderID === order.orderID) ? tradeHistory.filled : new BN(0);
     return filled;
   }
 
@@ -1143,7 +1133,7 @@ export class Simulator {
       for (const orderID of Object.keys(balanceValue.tradeHistory)) {
         const tradeHistoryValue = balanceValue.tradeHistory[Number(orderID)];
         tradeHistory[Number(orderID)] = {
-          filled: tradeHistoryValue.filled,
+          filled: new BN(tradeHistoryValue.filled.toString(10)),
           orderID: tradeHistoryValue.orderID
         };
       }
@@ -1191,10 +1181,7 @@ export class Simulator {
     description: string,
     precision: number
   ) {
-    // console.log("n1: " + n1);
-    // console.log("n2: " + n2);
-    // console.log("precision: " + (10 ** precision));
-    return assert(Math.abs(n1 - n2) < 10 ** precision, description);
+    return assert(Math.abs(n1 - n2) < 10 ** precision, description + ". " + n1 + " but expected " + n2);
   }
 
   public static prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {

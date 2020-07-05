@@ -2,9 +2,6 @@
 // gas usage. We need to deploy most libraries linked from it as stand-alone
 // libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
 
-const ExchangeConstants = artifacts.require(
-  "./impl/libexchange/ExchangeConstants.sol"
-);
 const ExchangeAdmins = artifacts.require(
   "./impl/libexchange/ExchangeAdmins.sol"
 );
@@ -31,11 +28,6 @@ const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
   deployer
-    .then(() => {
-      return Promise.all([
-        deployer.deploy(ExchangeConstants) // only for testing purpose
-      ]);
-    })
     .then(() => {
       return Promise.all([deployer.deploy(ExchangeBalances)]);
     })
@@ -76,7 +68,6 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_exchange_v3_libs:");
-      console.log("ExchangeConstants: ", ExchangeConstants.address);
       console.log("ExchangeBalances: ", ExchangeBalances.address);
       console.log("ExchangeAdmins: ", ExchangeAdmins.address);
       console.log("ExchangeBlocks: ", ExchangeBlocks.address);

@@ -72,7 +72,7 @@ export class OnchainWithdrawalProcessor {
       const account = state.accounts[onchainWithdrawal.accountID];
       account.balances[onchainWithdrawal.tokenID] = account.balances[
         onchainWithdrawal.tokenID
-      ] || { balance: new BN(0), tradeHistory: {} };
+      ] || { balance: new BN(0), index: new BN(0), tradeHistory: {} };
 
       const balance = account.balances[onchainWithdrawal.tokenID].balance;
       const amountToSubtract = shutdown

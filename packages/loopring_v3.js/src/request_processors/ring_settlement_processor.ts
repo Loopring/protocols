@@ -189,10 +189,12 @@ export class RingSettlementProcessor {
     const accountA = state.accounts[trade.accountIdA];
     accountA.balances[trade.tokenA] = accountA.balances[trade.tokenA] || {
       balance: new BN(0),
+      index: new BN(0),
       tradeHistory: {}
     };
     accountA.balances[trade.tokenB] = accountA.balances[trade.tokenB] || {
       balance: new BN(0),
+      index: new BN(0),
       tradeHistory: {}
     };
 
@@ -207,10 +209,12 @@ export class RingSettlementProcessor {
     const accountB = state.accounts[trade.accountIdB];
     accountB.balances[trade.tokenB] = accountB.balances[trade.tokenB] || {
       balance: new BN(0),
+      index: new BN(0),
       tradeHistory: {}
     };
     accountB.balances[trade.tokenA] = accountB.balances[trade.tokenA] || {
       balance: new BN(0),
+      index: new BN(0),
       tradeHistory: {}
     };
 
@@ -267,10 +271,10 @@ export class RingSettlementProcessor {
     const protocolFeeAccount = state.accounts[0];
     protocolFeeAccount.balances[trade.tokenB] = protocolFeeAccount.balances[
       trade.tokenB
-    ] || { balance: new BN(0), tradeHistory: {} };
+    ] || { balance: new BN(0), index: new BN(0), tradeHistory: {} };
     protocolFeeAccount.balances[trade.tokenA] = protocolFeeAccount.balances[
       trade.tokenA
-    ] || { balance: new BN(0), tradeHistory: {} };
+    ] || { balance: new BN(0), index: new BN(0), tradeHistory: {} };
     // - Order A
     protocolFeeAccount.balances[
       trade.tokenB
@@ -288,10 +292,12 @@ export class RingSettlementProcessor {
     const operator = state.accounts[operatorId];
     operator.balances[trade.tokenB] = operator.balances[trade.tokenB] || {
       balance: new BN(0),
+      index: new BN(0),
       tradeHistory: {}
     };
     operator.balances[trade.tokenA] = operator.balances[trade.tokenA] || {
       balance: new BN(0),
+      index: new BN(0),
       tradeHistory: {}
     };
     // - FeeA

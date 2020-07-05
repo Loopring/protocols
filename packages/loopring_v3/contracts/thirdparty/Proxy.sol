@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
 

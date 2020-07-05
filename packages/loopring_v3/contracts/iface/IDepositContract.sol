@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -36,12 +37,14 @@ interface IDepositContract
     /// @param from The address of the account that sends the tokens.
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens to transfer.
+    /// @param auxiliaryData Opaque data that can be used by the contract to handle the deposit
     /// @return actualAmount The amount to deposit to the user's account in the Merkle tree
     /// @return tokenIndex The current index for the token being deposited
     function deposit(
         address from,
         address token,
-        uint amount
+        uint amount,
+        bytes calldata auxiliaryData
         )
         external
         payable
@@ -63,10 +66,12 @@ interface IDepositContract
     /// @param to The address to which 'amount' tokens are transferred.
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens transferred.
+    /// @param auxiliaryData Opaque data that can be used by the contract to handle the withdrawal
     function withdraw(
         address to,
         address token,
-        uint amount
+        uint amount,
+        bytes calldata auxiliaryData
         )
         external;
 

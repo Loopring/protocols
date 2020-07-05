@@ -318,9 +318,7 @@ class Order(object):
                  tokenS, tokenB,
                  amountS, amountB,
                  allOrNone, validSince, validUntil, buy,
-                 maxFeeBips, feeBips, rebateBips,
-                 transferAmountTrade, reduceOnly, triggerPrice,
-                 transferAmount, transferFee):
+                 maxFeeBips, feeBips, rebateBips):
         self.publicKeyX = str(publicKeyX)
         self.publicKeyY = str(publicKeyY)
 
@@ -342,13 +340,6 @@ class Order(object):
 
         self.feeBips = feeBips
         self.rebateBips = rebateBips
-
-        self.transferAmountTrade = transferAmountTrade
-        self.reduceOnly = reduceOnly
-        self.triggerPrice = triggerPrice
-
-        self.transferAmount = transferAmount
-        self.transferFee = transferFee
 
     def checkValid(self, context, order, fillAmountS, fillAmountB):
         valid = True
@@ -723,20 +714,25 @@ class State(object):
             if int(txInput.type) == 2:
                 # Full balance with intrest
                 newIndex = self.getAccount(1).getBalanceLeaf(txInput.tokenID).index
-                balanceLeaf = account.getBalance(txInput.tokenID)
-                txInput.amount =  applyInterest(balanceLeaf.balance, balanceLeaf.index, newIndex)
+                balanceLeaf = account.getBalanceLeaf(txInput.tokenID)
+                txInput.amount = str(applyInterest(balanceLeaf.balance, balanceLeaf.index, newIndex))
             elif int(txInput.type) == 3:
                 txInput.amount = str(0)
+
+
+            # Protocol fee withdrawals are handled a bit differently
+            # as the balance needs to be withdrawn from the already opened protocol pool account
+            isProtocolfeeWithdrawal = int(txInput.accountID) == 0
 
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
 
             newState.signatureA = txInput.signature
 
-            newState.accountA_Address = txInput.accountID
+            newState.accountA_Address = 2 if isProtocolfeeWithdrawal else txInput.accountID
             accountA = self.getAccount(newState.accountA_Address)
 
             newState.balanceA_S_Address = txInput.tokenID
-            newState.balanceA_S_Balance = -int(txInput.amount)
+            newState.balanceA_S_Balance = 0 if isProtocolfeeWithdrawal else -int(txInput.amount)
             newState.balanceA_S_AutoApplyIndex = True
 
             newState.balanceB_S_Address = txInput.feeTokenID
@@ -748,6 +744,9 @@ class State(object):
 
             newState.balanceDeltaA_O = feeValue
             newState.balanceA_O_AutoApplyIndex = True
+
+            newState.balanceDeltaB_P = -int(txInput.amount) if isProtocolfeeWithdrawal else 0
+            newState.balanceB_P_AutoApplyIndex = True
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 

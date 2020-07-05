@@ -7,10 +7,10 @@ export class Constants {
   static readonly BINARY_TREE_DEPTH_ACCOUNTS = 24;
   static readonly BINARY_TREE_DEPTH_TOKENS = 12;
 
-  static readonly TX_DATA_AVAILABILITY_SIZE = 100;
+  static readonly TX_DATA_AVAILABILITY_SIZE = 104;
 
   static readonly NUM_BITS_ACCOUNTID = Constants.BINARY_TREE_DEPTH_ACCOUNTS;
-  static readonly NUM_BITS_ORDERID = 20;
+  static readonly NUM_BITS_ORDERID = 64;
 
   static readonly MAX_NUM_TOKENS = 2 ** 12;
 
@@ -39,6 +39,7 @@ export class Constants {
 
   static readonly DefaultBalance: Balance = {
     balance: new BN(0),
+    index: Constants.INDEX_BASE,
     tradeHistory: {}
   };
 }

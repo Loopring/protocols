@@ -292,6 +292,8 @@ export interface TradeHistory {
 export interface Balance {
   /** How amount of tokens the account owner has for a token. */
   balance: BN;
+  /** The index when the balance was last accessed. */
+  index: BN;
   /** The trade history data. */
   tradeHistory: { [key: number]: TradeHistory };
 
@@ -359,8 +361,12 @@ export interface ProtocolFees {
  * The data needed to withdraw from the Merkle tree on-chain (@see getWithdrawFromMerkleTreeData)
  */
 export interface WithdrawFromMerkleTreeData {
+  /** The ID of the account. */
+  accountID: number;
   /** The owner of the account. */
   owner: string;
+  /** The ID of the token. */
+   tokenID: number;
   /** The token that needs to be withdrawn. */
   token: string;
   /** The public key X of the account. */
@@ -371,6 +377,8 @@ export interface WithdrawFromMerkleTreeData {
   nonce: number;
   /** The current balance the account has for the requested token. */
   balance: BN;
+  /** The current index the account has for the requested token. */
+  index: BN;
   /** The trade history root of the balance leaf. */
   tradeHistoryRoot: string;
   /** The Merkle proof for the account leaf. */

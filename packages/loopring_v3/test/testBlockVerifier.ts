@@ -341,26 +341,34 @@ contract("BlockVerifier", (accounts: string[]) => {
       onchainDataAvailability = exchangeTestUtil.onchainDataAvailability;
 
       // Create some blocks
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 2; i++) {
         const ring = await setupRandomRing();
         await exchangeTestUtil.sendRing(exchangeId, ring);
       }
       commitBlocksSize1.push(
-        ...(await exchangeTestUtil.submitTransactions(exchangeId, 1))
+        ...(await exchangeTestUtil.submitTransactions(2))
       );
+      for (let i = 0; i < 2; i++) {
+        const ring = await setupRandomRing();
+        await exchangeTestUtil.sendRing(exchangeId, ring);
+      }
       settlementBlocksSize1.push(
-        ...(await exchangeTestUtil.submitTransactions(exchangeId, 1))
+        ...(await exchangeTestUtil.submitTransactions(2))
       );
 
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 2; i++) {
         const ring = await setupRandomRing();
         await exchangeTestUtil.sendRing(exchangeId, ring);
       }
       commitBlocksSize2.push(
-        ...(await exchangeTestUtil.submitTransactions(exchangeId, 2))
+        ...(await exchangeTestUtil.submitTransactions(4))
       );
+      for (let i = 0; i < 2; i++) {
+        const ring = await setupRandomRing();
+        await exchangeTestUtil.sendRing(exchangeId, ring);
+      }
       settlementBlocksSize2.push(
-        ...(await exchangeTestUtil.submitTransactions(exchangeId, 2))
+        ...(await exchangeTestUtil.submitTransactions(4))
       );
 
       // Generate the proofs

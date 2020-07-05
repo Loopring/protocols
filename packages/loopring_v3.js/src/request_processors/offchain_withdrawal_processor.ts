@@ -80,10 +80,10 @@ export class OffchainWithdrawalProcessor {
     const account = state.accounts[offchainWithdrawal.accountID];
     account.balances[offchainWithdrawal.tokenID] = account.balances[
       offchainWithdrawal.tokenID
-    ] || { balance: new BN(0), tradeHistory: {} };
+    ] || { balance: new BN(0), index: new BN(0), tradeHistory: {} };
     account.balances[offchainWithdrawal.feeTokenID] = account.balances[
       offchainWithdrawal.feeTokenID
-    ] || { balance: new BN(0), tradeHistory: {} };
+    ] || { balance: new BN(0), index: new BN(0), tradeHistory: {} };
 
     // Update balanceF
     account.balances[offchainWithdrawal.feeTokenID].balance = account.balances[
@@ -100,7 +100,7 @@ export class OffchainWithdrawalProcessor {
     const operator = state.accounts[operatorAccountID];
     operator.balances[offchainWithdrawal.feeTokenID] = operator.balances[
       offchainWithdrawal.feeTokenID
-    ] || { balance: new BN(0), tradeHistory: {} };
+    ] || { balance: new BN(0), index: new BN(0), tradeHistory: {} };
     operator.balances[
       offchainWithdrawal.feeTokenID
     ].balance = operator.balances[offchainWithdrawal.feeTokenID].balance.add(

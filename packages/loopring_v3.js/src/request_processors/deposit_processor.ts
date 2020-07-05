@@ -45,6 +45,7 @@ export class DepositProcessor {
     const account = state.accounts[deposit.accountID];
     account.balances[deposit.tokenID] = account.balances[deposit.tokenID] || {
       balance: new BN(0),
+      index: new BN(0),
       tradeHistory: {}
     };
 

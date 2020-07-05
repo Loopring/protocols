@@ -2,6 +2,7 @@ import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
 import { OnchainBlock, ExchangeTestUtil } from "./testExchangeUtil";
 import { Bitstream } from "loopringV3.js";
+import { AuthMethod } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -56,7 +57,7 @@ contract("Exchange", (accounts: string[]) => {
         await exchangeTestUtil.transfer(ownerA, ownerD, tokenA, amountA, tokenB, amountC);
         await exchangeTestUtil.transfer(ownerB, ownerC, tokenA, amountB, tokenA, amountD);
         await exchangeTestUtil.transfer(ownerA, ownerB, tokenA, amountC, tokenB, amountD, {
-          conditionalTransfer: true
+          authMethod: AuthMethod.APPROVE
         });
         await exchangeTestUtil.transfer(ownerA, ownerB, tokenB, amountD, tokenA, amountA);
         // Submit the transfers
@@ -68,16 +69,16 @@ contract("Exchange", (accounts: string[]) => {
         await createExchange();
         // Do some transfers with the same (from, to, token) values
         await exchangeTestUtil.transfer(ownerA, ownerB, tokenA, amountA, tokenB, amountC, {
-          conditionalTransfer: true
+          authMethod: AuthMethod.APPROVE
         });
         await exchangeTestUtil.transfer(ownerB, ownerA, tokenA, amountA, tokenB, amountC, {
-          conditionalTransfer: true
+          authMethod: AuthMethod.APPROVE
         });
         await exchangeTestUtil.transfer(ownerB, ownerA, tokenA, amountB, tokenB, amountD, {
-          conditionalTransfer: true
+          authMethod: AuthMethod.APPROVE
         });
         await exchangeTestUtil.transfer(ownerA, ownerB, tokenA, amountA, tokenB, amountC, {
-          conditionalTransfer: true
+          authMethod: AuthMethod.APPROVE
         });
         // Submit the transfers
         await exchangeTestUtil.submitTransactions();
@@ -88,11 +89,11 @@ contract("Exchange", (accounts: string[]) => {
         await createExchange();
         // Do some transfers
         await exchangeTestUtil.transfer(ownerA, ownerD, tokenA, amountA, tokenB, amountC, {
-          conditionalTransfer: true
+          authMethod: AuthMethod.APPROVE
         });
         await exchangeTestUtil.transfer(ownerB, ownerC, tokenA, amountB, tokenA, amountD);
         await exchangeTestUtil.transfer(ownerA, ownerB, tokenA, amountC, tokenB, amountD, {
-          conditionalTransfer: true
+          authMethod: AuthMethod.APPROVE
         });
         await exchangeTestUtil.transfer(ownerA, ownerB, tokenB, amountD, tokenA, amountA);
         // Submit the deposits
@@ -323,7 +324,7 @@ contract("Exchange", (accounts: string[]) => {
       // Make sure all transactions are done in a single block in this test,
       // the way we sign transactions in the tests (immediately upon request)
       // would provide a wrong nonce when the operator signs the block.
-      await exchangeTestUtil.submitTransactions(this.exchangeID, 24);
+      await exchangeTestUtil.submitTransactions(24);
 
       // Verify the block
       await exchangeTestUtil.submitPendingBlocks();
@@ -368,7 +369,7 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {conditionalTransfer: true, useOnchainSignature: true});
+      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {authMethod: AuthMethod.ECDSA});
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
@@ -383,7 +384,7 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      const transfer = await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {conditionalTransfer: true, useOnchainSignature: true, signer: ownerD});
+      const transfer = await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {authMethod: AuthMethod.ECDSA, signer: ownerD});
       transfer.onchainSignature =
 
       await exchangeTestUtil.submitTransactions();
@@ -402,7 +403,7 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {conditionalTransfer: true});
+      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {authMethod: AuthMethod.APPROVE});
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
@@ -417,7 +418,7 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {conditionalTransfer: true, signer: ownerD});
+      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {authMethod: AuthMethod.APPROVE, signer: ownerD});
 
       await exchangeTestUtil.submitTransactions();
       await expectThrow(
@@ -435,7 +436,7 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {conditionalTransfer: true, autoApprove: false});
+      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {authMethod: AuthMethod.NONE});
 
       await exchangeTestUtil.submitTransactions();
       await expectThrow(

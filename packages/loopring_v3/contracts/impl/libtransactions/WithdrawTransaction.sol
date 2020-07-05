@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -38,7 +39,7 @@ library WithdrawTransaction
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
-        "Withdrawal(address owner,uint24 accountID,uint32 nonce,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to)"
+        "Withdrawal(address owner,uint24 accountID,uint32 nonce,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes32 dataHash,uint24 minGas)"
     );
 
     struct Withdrawal
@@ -52,6 +53,8 @@ library WithdrawTransaction
         uint16  feeTokenID;
         uint    fee;
         address to;
+        bytes32 dataHash;
+        uint24  minGas;
     }
 
     // Auxiliary data for each withdrawal
@@ -59,6 +62,7 @@ library WithdrawTransaction
     {
         uint gasLimit;
         bytes signature;
+        bytes auxiliaryData;
     }
 
     event OnchainWithdrawalConsumed(
@@ -97,7 +101,9 @@ library WithdrawTransaction
                         withdrawal.amount,
                         withdrawal.feeTokenID,
                         withdrawal.fee,
-                        withdrawal.to
+                        withdrawal.to,
+                        withdrawal.dataHash,
+                        withdrawal.minGas
                     )
                 )
             );
@@ -112,12 +118,14 @@ library WithdrawTransaction
         } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
             require(withdrawal.owner == withdrawal.to, "INVALID_WITHDRAWAL_ADDRESS");
             require(withdrawal.fee == 0, "FEE_NOT_ZERO");
+            require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
 
             ExchangeData.ForcedWithdrawal storage forcedWithdrawal = S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
             if (forcedWithdrawal.timestamp == 0) {
-                // Allow the operator to submit fill withdrawals without authorization of the account owner
-                // when in shutdown mode
-                require(S.isShutdown(), "FULL_WITHDRAWAL_UNAUTHORIZED");
+                // Allow the operator to submit fill withdrawals without authorization
+                // - when in shutdown mode
+                // - to withdraw protocol fees
+                require(withdrawal.accountID == 0 || S.isShutdown(), "FULL_WITHDRAWAL_UNAUTHORIZED");
             } else {
                 // Type == 2: valid onchain withdrawal started by the owner
                 // Type == 3: invalid onchain withdrawal started by someone else
@@ -142,12 +150,20 @@ library WithdrawTransaction
             revert("INVALID_WITHDRAWAL_TYPE");
         }
 
+        require(auxData.gasLimit >= withdrawal.minGas, "INVALID_GAS_AMOUNT");
+        if (withdrawal.dataHash == bytes32(0)) {
+            require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
+        } else {
+            require((uint(keccak256(auxData.auxiliaryData)) >> 3) == uint(withdrawal.dataHash), "INVALID_WITHDRAWAL_AUX_DATA");
+        }
+
         // Try to transfer the tokens with the provided gas limit
         S.distributeWithdrawal(
             withdrawal.owner,
             withdrawal.to,
             withdrawal.tokenID,
             withdrawal.amount,
+            auxData.auxiliaryData,
             auxData.gasLimit
         );
     }
@@ -178,6 +194,10 @@ library WithdrawTransaction
         offset += 2;
         address to = data.bytesToAddress(offset);
         offset += 20;
+        bytes32 dataHash = data.bytesToBytes32(offset);
+        offset += 32;
+        uint24 minGas = data.bytesToUint24(offset);
+        offset += 3;
 
         return Withdrawal({
             withdrawalType: withdrawalType,
@@ -188,7 +208,9 @@ library WithdrawTransaction
             amount: amount,
             feeTokenID: feeTokenID,
             fee: fee,
-            to: to
+            to: to,
+            dataHash: dataHash,
+            minGas: minGas
         });
     }
 }

@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { Constants, Signature } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { OrderInfo, SpotTrade } from "./types";
+import { AuthMethod, OrderInfo, SpotTrade } from "./types";
 
 
 contract("Exchange", (accounts: string[]) => {
@@ -110,7 +110,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Do a transfer
       //await transfer(ownerA, ownerB, token, amount, feeToken, fee);
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {conditionalTransfer: true, useOnchainSignature: true});
+      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {authMethod: AuthMethod.ECDSA});
       //await transfer(ownerA, ownerB, token, amount, feeToken, fee, {useDualAuthoring: true});
 
       const ownerB_ID = await exchangeTestUtil.getAccountID(ownerB);
@@ -120,8 +120,7 @@ contract("Exchange", (accounts: string[]) => {
         token,
         amount,
         feeToken,
-        new BN(0),
-        0
+        new BN(0)
       );
 
       //await exchangeTestUtil.requestNewAccount(ownerB_ID, "ETH", new BN(0), ownerE)
@@ -1078,7 +1077,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await expectThrow(
-        exchangeTestUtil.submitTransactions(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
@@ -1110,7 +1109,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await expectThrow(
-        exchangeTestUtil.submitTransactions(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
@@ -1208,7 +1207,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await expectThrow(
-        exchangeTestUtil.submitTransactions(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
@@ -1238,7 +1237,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await expectThrow(
-        exchangeTestUtil.submitTransactions(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
@@ -1355,7 +1354,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await expectThrow(
-        exchangeTestUtil.submitTransactions(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
@@ -1381,7 +1380,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await expectThrow(
-        exchangeTestUtil.submitTransactions(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
@@ -1411,7 +1410,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await expectThrow(
-        exchangeTestUtil.submitTransactions(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
@@ -1441,7 +1440,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await expectThrow(
-        exchangeTestUtil.submitTransactions(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
@@ -1612,7 +1611,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
       await expectThrow(
-        exchangeTestUtil.submitTransactions(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });

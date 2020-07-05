@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -48,7 +49,8 @@ library ExchangeDeposits
         address from,
         address to,
         address tokenAddress,
-        uint96  amount    // can be zero
+        uint96  amount,                 // can be zero
+        bytes   calldata auxiliaryData
         )
         external
     {
@@ -63,7 +65,8 @@ library ExchangeDeposits
             S,
             from,
             tokenAddress,
-            amount
+            amount,
+            auxiliaryData
         );
 
         // Add the amount to the deposit request and reset the time the operator has to process it
@@ -84,7 +87,8 @@ library ExchangeDeposits
         ExchangeData.State storage S,
         address from,
         address tokenAddress,
-        uint    amount
+        uint    amount,
+        bytes   memory auxiliaryData
         )
         private
         returns (uint amountDeposited, uint tokenIndex, uint fee)
@@ -98,6 +102,6 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        (amountDeposited, tokenIndex) = S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount);
+        (amountDeposited, tokenIndex) = S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount, auxiliaryData);
     }
 }

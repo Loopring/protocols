@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -73,9 +74,14 @@ library DepositTransaction
         }
         // Consume what was deposited
         deposit.amount = uint96(uint(deposit.amount).sub(amount));
+
         // If the deposit was fully consumed, reset it so the storage is freed up
         // and the operator receives a gas refund.
-        if (deposit.amount == 0 && deposit.fee == 0) {
+        if (deposit.amount == 0) {
+            // Give the operator the remaining fee
+            feeETH = feeETH.add(uint(deposit.fee));
+            // Reset the deposit data
+            deposit.fee = 0;
             deposit.timestamp = 0;
         }
 

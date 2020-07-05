@@ -404,12 +404,15 @@ export class ExchangeV3 {
     const balanceMerkleProof = account.balancesMerkleTree.createProof(tokenID);
 
     const withdrawFromMerkleTreeData: WithdrawFromMerkleTreeData = {
+      accountID: account.accountId,
       owner: account.owner,
+      tokenID,
       token: this.tokens[tokenID].address,
       publicKeyX: account.publicKeyX,
       publicKeyY: account.publicKeyY,
       nonce: account.nonce,
       balance: account.balances[tokenID].balance,
+      index: account.balances[tokenID].index,
       tradeHistoryRoot: account.balances[tokenID].tradeHistoryTree.getRoot(),
       accountMerkleProof,
       balanceMerkleProof
