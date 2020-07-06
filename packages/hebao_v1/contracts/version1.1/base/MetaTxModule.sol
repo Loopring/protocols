@@ -44,9 +44,6 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
         BaseModule(_controller)
         MetaTxAware(_trustedForwarder)
     {
-        DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("MetaTxModule", "2.0", address(this))
-        );
     }
 
    function logicalSender()

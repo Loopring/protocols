@@ -40,7 +40,7 @@ contract ForwarderModule is BaseModule
         BaseModule(_controller)
     {
         DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("Loopring Wallet MetaTx", "2.0", address(0))
+            EIP712.Domain("ForwarderModule", "1.1.0", address(this))
         );
     }
 
@@ -57,12 +57,12 @@ contract ForwarderModule is BaseModule
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
-        bytes32 txInnerHash;
+        bytes32 txAwareHash;
         bytes   data;
     }
 
     bytes32 constant public META_TX_TYPEHASH = keccak256(
-        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txInnerHash,bytes data)"
+        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txAwareHash,bytes data)"
     );
 
     function validateMetaTx(
@@ -72,19 +72,23 @@ contract ForwarderModule is BaseModule
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
-        bytes32 txInnerHash,
+        bytes32 txAwareHash,
         bytes   memory data,
         bytes   memory signature
         )
         public
         view
     {
-        require(to != address(this) && Wallet(from).hasModule(to), "INVALID_DESTINATION");
+        require(
+            (to == controller.walletFactory()) ||
+            (to != address(this) && Wallet(from).hasModule(to)),
+            "INVALID_DESTINATION"
+        );
 
-        // If a non-zero txInnerHash is provided, we do not verify signature against
+        // If a non-zero txAwareHash is provided, we do not verify signature against
         // the `data` field. The actual function call in the real transaction will have to
-        // check that txInnerHash is indeed valid.
-        bytes memory data_ = (txInnerHash == 0) ? data : bytes("");
+        // check that txAwareHash is indeed valid.
+        bytes memory data_ = (txAwareHash == 0) ? data : bytes("");
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
             from,
@@ -93,7 +97,7 @@ contract ForwarderModule is BaseModule
             gasToken,
             gasPrice,
             gasLimit,
-            txInnerHash,
+            txAwareHash,
             keccak256(data_)
         );
 
@@ -109,7 +113,7 @@ contract ForwarderModule is BaseModule
         nonReentrant
         returns (
             bool         success,
-            bytes memory returnValue
+            bytes memory ret
         )
     {
         require(
@@ -126,16 +130,17 @@ contract ForwarderModule is BaseModule
             metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
-            metaTx.txInnerHash,
+            metaTx.txAwareHash,
             metaTx.data,
             signature
         );
 
         uint gasLeft = gasleft();
 
-        (success, returnValue) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
-            abi.encodePacked(metaTx.data, metaTx.from, metaTx.txInnerHash)
-            // encode or encodePacked? @Brecht
+        // The trick is to append the really logical message sender and the
+        // transaction-aware hash to the end of the call data.
+        (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
+            abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
         );
 
         if (address(this).balance > 0) {
