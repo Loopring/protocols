@@ -3,8 +3,6 @@
 
 pragma solidity ^0.6.6;
 
-import './UpgradabilityProxy.sol';
-
 
 /**
  * @title OwnedUpgradabilityProxy
@@ -12,15 +10,32 @@ import './UpgradabilityProxy.sol';
  */
 
 /// @dev We changed this implementation not to emit events to reduce gas consumption.
-contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
-  // Storage position of the owner of the contract
-  bytes32 private constant proxyOwnerPosition = keccak256("org.loopring.hebao.proxy.owner");
+contract OwnedUpgradabilityProxy  {
+  bytes32 private constant proxyOwnerPosition     = keccak256("org.loopring.hebao.proxy.owner");
+  bytes32 private constant implementationPosition = keccak256("org.loopring.hebao.proxy.implementation");
 
   /**
   * @dev the constructor sets the original owner of the contract to the sender account.
   */
   constructor() public {
     setUpgradeabilityOwner(msg.sender);
+  }
+
+  fallback() payable external {
+    address _impl = implementation();
+    require(_impl != address(0));
+
+    assembly {
+      let ptr := mload(0x40)
+      calldatacopy(ptr, 0, calldatasize())
+      let result := delegatecall(gas(), _impl, ptr, calldatasize(), 0, 0)
+      let size := returndatasize()
+      returndatacopy(ptr, 0, size)
+
+      switch result
+      case 0 { revert(ptr, size) }
+      default { return(ptr, size) }
+    }
   }
 
   /**
@@ -43,16 +58,6 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
   }
 
   /**
-   * @dev Sets the address of the owner
-   */
-  function setUpgradeabilityOwner(address newProxyOwner) internal {
-    bytes32 position = proxyOwnerPosition;
-    assembly {
-      sstore(position, newProxyOwner)
-    }
-  }
-
-  /**
    * @dev Allows the current owner to transfer control of the contract to a newOwner.
    * @param newOwner The address to transfer ownership to.
    */
@@ -67,5 +72,37 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
    */
   function upgradeTo(address implementation) public onlyProxyOwner {
     setImplementation(implementation);
+  }
+
+  /**
+   * @dev Tells the address of the current implementation
+   * @return impl address of the current implementation
+   */
+  function implementation() public view returns (address impl) {
+    bytes32 position = implementationPosition;
+    assembly {
+      impl := sload(position)
+    }
+  }
+
+  /**
+   * @dev Sets the address of the owner
+   */
+  function setUpgradeabilityOwner(address newProxyOwner) private {
+    bytes32 position = proxyOwnerPosition;
+    assembly {
+      sstore(position, newProxyOwner)
+    }
+  }
+
+  /**
+   * @dev Sets the address of the current implementation
+   * @param newImplementation address representing the new implementation to be set
+   */
+  function setImplementation(address newImplementation) private {
+    bytes32 position = implementationPosition;
+    assembly {
+      sstore(position, newImplementation)
+    }
   }
 }
