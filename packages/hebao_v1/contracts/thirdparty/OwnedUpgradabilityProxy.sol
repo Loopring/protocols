@@ -18,7 +18,7 @@ contract OwnedUpgradabilityProxy  {
   * @dev the constructor sets the original owner of the contract to the sender account.
   */
   constructor() public {
-    setUpgradeabilityOwner(msg.sender);
+    _setUpgradeabilityOwner(msg.sender);
   }
 
   fallback() payable external {
@@ -63,7 +63,7 @@ contract OwnedUpgradabilityProxy  {
    */
   function transferProxyOwnership(address newOwner) public onlyProxyOwner {
     require(newOwner != address(0));
-    setUpgradeabilityOwner(newOwner);
+    _setUpgradeabilityOwner(newOwner);
   }
 
   /**
@@ -71,7 +71,7 @@ contract OwnedUpgradabilityProxy  {
    * @param implementation representing the address of the new implementation to be set.
    */
   function upgradeTo(address implementation) public onlyProxyOwner {
-    setImplementation(implementation);
+    _setImplementation(implementation);
   }
 
   /**
@@ -88,7 +88,7 @@ contract OwnedUpgradabilityProxy  {
   /**
    * @dev Sets the address of the owner
    */
-  function setUpgradeabilityOwner(address newProxyOwner) private {
+  function _setUpgradeabilityOwner(address newProxyOwner) private {
     bytes32 position = proxyOwnerPosition;
     assembly {
       sstore(position, newProxyOwner)
@@ -99,7 +99,7 @@ contract OwnedUpgradabilityProxy  {
    * @dev Sets the address of the current implementation
    * @param newImplementation address representing the new implementation to be set
    */
-  function setImplementation(address newImplementation) private {
+  function _setImplementation(address newImplementation) private {
     bytes32 position = implementationPosition;
     assembly {
       sstore(position, newImplementation)
