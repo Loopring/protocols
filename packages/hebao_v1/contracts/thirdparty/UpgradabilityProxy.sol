@@ -49,8 +49,6 @@ contract UpgradeabilityProxy is Proxy {
    * @param newImplementation representing the address of the new implementation to be set
    */
   function _upgradeTo(address newImplementation) internal {
-    address currentImplementation = implementation();
-    require(currentImplementation != newImplementation);
     setImplementation(newImplementation);
   }
 }
