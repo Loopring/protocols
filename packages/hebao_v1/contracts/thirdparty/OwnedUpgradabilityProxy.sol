@@ -10,9 +10,11 @@ import './UpgradabilityProxy.sol';
  * @title OwnedUpgradabilityProxy
  * @dev This contract combines an upgradeability proxy with basic authorization control functionalities
  */
+
+/// @dev We changed this implementation not to emit events to reduce gas consumption.
 contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
   // Storage position of the owner of the contract
-  bytes32 private constant proxyOwnerPosition = keccak256("org.loopring.proxy.owner");
+  bytes32 private constant proxyOwnerPosition = keccak256("org.loopring.hebao.proxy.owner");
 
   /**
   * @dev the constructor sets the original owner of the contract to the sender account.

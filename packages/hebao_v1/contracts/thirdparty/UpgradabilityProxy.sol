@@ -10,10 +10,12 @@ import './Proxy.sol';
  * @title UpgradeabilityProxy
  * @dev This contract represents a proxy where the implementation address to which it will delegate can be upgraded
  */
+
+/// @dev We changed this implementation not to emit events to reduce gas consumption.
 contract UpgradeabilityProxy is Proxy {
 
   // Storage position of the address of the current implementation
-  bytes32 private constant implementationPosition = keccak256("org.loopring.proxy.implementation");
+  bytes32 private constant implementationPosition = keccak256("org.loopring.hebao.proxy.implementation");
 
   /**
    * @dev Constructor function
