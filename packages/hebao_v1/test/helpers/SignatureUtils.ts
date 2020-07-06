@@ -44,7 +44,7 @@ export function signMetaTx(metaTx: MetaTx) {
   const META_TX_TYPEHASH = ethUtil.keccak(
     "MetaTx(address from,address to,\
 uint256 nonce,address gasToken,uint256 gasPrice,\
-uint256 gasLimit,bytes32 txInnerHash,bytes data)"
+uint256 gasLimit,bytes32 txAwareHash,bytes data)"
   );
 
   const encoded = web3.eth.abi.encodeParameters(
@@ -67,7 +67,7 @@ uint256 gasLimit,bytes32 txInnerHash,bytes data)"
       metaTx.gasToken,
       metaTx.gasPrice,
       metaTx.gasLimit,
-      metaTx.txInnerHash,
+      metaTx.txAwareHash,
       ethUtil.keccak(metaTx.data)
     ]
   );

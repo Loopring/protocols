@@ -2,6 +2,7 @@ import { Context, executeTransaction } from "./TestUtils";
 import { expectThrow } from "../../util/expectThrow";
 import { advanceTimeAndBlockAsync } from "../../util/TimeTravel";
 import { assertEventEmitted } from "../../util/Events";
+import BN = require("bn.js");
 
 export function sortGuardians(guardians: any) {
   return guardians.sort((a: any, b: any) => (a.addr > b.addr ? 1 : -1));
@@ -21,14 +22,22 @@ export async function addGuardian(
 
   const wasGuardian = await ctx.securityStore.isGuardian(wallet, guardian);
 
+  await web3.eth.sendTransaction({
+    from: owner,
+    to: wallet,
+    value: "1" + "0".repeat(18),
+    gasLimit: "100000",
+    gasPrice: "22000000000"
+  });
+
   // Start adding the guardian
   await executeTransaction(
     ctx.guardianModule.contract.methods.addGuardian(wallet, guardian, group),
     ctx,
     useMetaTx,
     wallet,
-    [owner],
-    { from: owner }
+    [],
+    { owner, wallet, gasPrice: new BN(0) }
   );
 
   await assertEventEmitted(

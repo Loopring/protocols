@@ -35,7 +35,7 @@ export interface WalletCreation {
 //       gasToken: metaTx.gasToken,
 //       gasPrice: metaTx.gasPrice,
 //       gasLimit: new BN(metaTx.gasLimit),
-//       txInnerHash: metaTx.txInnerHash,
+//       txAwareHash: metaTx.txAwareHash,
 //       data: metaTx.data
 //     }
 //   };

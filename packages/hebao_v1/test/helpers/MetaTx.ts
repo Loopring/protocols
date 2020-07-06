@@ -10,9 +10,9 @@ export interface MetaTx {
   to: string;
   nonce: number;
   gasToken: string;
-  gasPrice: BN;
+  gasPrice: number;
   gasLimit: number;
-  txInnerHash: string;
+  txAwareHash: string;
   data: string;
 
   chainId: number;
@@ -20,6 +20,8 @@ export interface MetaTx {
 
 export interface TransactionOptions {
   from?: string;
+  owner?: string;
+  wallet?: string;
   gas?: number;
   value?: BN;
   nonce?: number;
@@ -32,7 +34,7 @@ export interface TransactionOptions {
   checkSignatures?: boolean;
 }
 
-function toTypedData(metaTx: MetaTx) {
+function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
   const typedData = {
     types: {
       EIP712Domain: [
@@ -48,16 +50,16 @@ function toTypedData(metaTx: MetaTx) {
         { name: "gasToken", type: "address" },
         { name: "gasPrice", type: "uint256" },
         { name: "gasLimit", type: "uint256" },
-        { name: "txInnerHash", type: "bytes32" },
+        { name: "txAwareHash", type: "bytes32" },
         { name: "data", type: "bytes" }
       ]
     },
     primaryType: "MetaTx",
     domain: {
-      name: "Loopring Wallet MetaTx",
-      version: "2.0",
+      name: "ForwarderModule",
+      version: "1.1.0",
       chainId: new BN(metaTx.chainId),
-      verifyingContract: Constants.zeroAddress
+      verifyingContract: forwardModuleAddr
     },
     message: {
       from: metaTx.from,
@@ -66,15 +68,15 @@ function toTypedData(metaTx: MetaTx) {
       gasToken: metaTx.gasToken,
       gasPrice: metaTx.gasPrice,
       gasLimit: new BN(metaTx.gasLimit),
-      txInnerHash: metaTx.txInnerHash,
+      txAwareHash: metaTx.txAwareHash,
       data: metaTx.data
     }
   };
   return typedData;
 }
 
-export function getHash(metaTx: MetaTx) {
-  const typedData = toTypedData(metaTx);
+export function getHash(metaTx: MetaTx, forwardModuleAddr: string) {
+  const typedData = toTypedData(metaTx, forwardModuleAddr);
   const orderHash = getEIP712Message(typedData);
   return orderHash;
 }
@@ -82,7 +84,7 @@ export function getHash(metaTx: MetaTx) {
 export async function executeMetaTx(
   ctx: Context,
   contract: any,
-  txInnerHash: string,
+  txAwareHash: string,
   data: string,
   options: TransactionOptions
 ) {
@@ -97,22 +99,27 @@ export async function executeMetaTx(
 
   // Create the meta transaction
   const metaTx: MetaTx = {
-    from,
+    from: options.wallet,
     to: contract._address,
     nonce,
     gasToken: await getTokenAddress(ctx, gasToken),
-    gasPrice,
+    gasPrice: gasPrice.toNumber(),
     gasLimit,
-    txInnerHash,
+    txAwareHash,
     data,
     chainId: /*await web3.eth.net.getId()*/ 1
   };
 
   // Sign the meta transaction
-  const hash = getHash(metaTx);
-  const signature = sign(hash, from);
+  const hash: Buffer = getHash(metaTx, ctx.forwarderModule.address);
 
-  return ctx.contracts.forwarderModule.methods
-    .executeMetaTx(metaTx, signature)
-    .send({ from, gas, gasPrice: 0 });
+  const signature = sign(options.owner, hash);
+
+  const tx = await ctx.forwarderModule.executeMetaTx(metaTx, signature, {
+    from,
+    gas,
+    gasPrice: gasPrice.toString()
+  });
+
+  return tx;
 }

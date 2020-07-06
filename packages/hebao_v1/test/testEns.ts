@@ -87,7 +87,7 @@ contract("BaseENSManager", () => {
       );
     });
 
-    it.only("will be able get address by ens subdomain ans vice versa", async () => {
+    it("will be able get address by ens subdomain ans vice versa", async () => {
       // ethers.utils.namehash only support the characters [a-z0-9.-],
       // so only there characters are allowed in our walletName.
       // see https://docs.ethers.io/ethers.js/html/api-utils.html#namehash

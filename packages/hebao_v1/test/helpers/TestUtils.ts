@@ -5,6 +5,7 @@ import { assertEventEmitted } from "../../util/Events";
 import BN = require("bn.js");
 import { Constants } from "./Constants";
 import { sign, SignatureType } from "./Signature";
+import { signCreateWallet } from "./SignatureUtils";
 
 export interface Context {
   contracts: any;
@@ -79,7 +80,7 @@ export async function createContext(context?: Context) {
   // Create a new wallet factory module
   const walletFactory = await context.contracts.WalletFactory.new(
     context.controllerImpl.address,
-    context.contracts.WalletImpl.address,
+    context.walletImpl.address,
     true
   );
   await context.moduleRegistryImpl.registerModule(walletFactory.address);
@@ -98,7 +99,8 @@ export function getAllModuleAddresses(ctx: Context) {
     ctx.whitelistModule.address,
     ctx.quotaTransferModule.address,
     ctx.approvedTransferModule.address,
-    ctx.erc1271Module.address
+    ctx.erc1271Module.address,
+    ctx.forwarderModule.address
   ];
 }
 
@@ -112,11 +114,21 @@ export async function createWallet(
 
   const wallet = await ctx.walletFactory.computeWalletAddress(owner);
   const walletName = "mywalleta" + new Date().getTime();
+  const ensApproval = await getEnsApproval(wallet, walletName, ctx.owners[0]);
+  const txSignature = signCreateWallet(
+    ctx.walletFactory.address,
+    owner,
+    walletName,
+    ensApproval,
+    modules
+  );
+
   await ctx.walletFactory.createWallet(
     owner,
     walletName,
-    Constants.emptyBytes,
+    ensApproval,
     modules,
+    txSignature,
     {
       from: owner
     }
@@ -149,20 +161,20 @@ export async function executeTransaction(
       options
     );
 
-    const event = await assertEventEmitted(contract, "MetaTxExecuted");
-    if (!event.success) {
-      // Check if the return data contains the revert reason.
-      // If it does we can easily re-throw the actual revert reason of the function call done in the meta tx
-      if (event.returnData && event.returnData.startsWith("0x08c379a0")) {
-        const decoded = web3.eth.abi.decodeParameters(
-          ["string"],
-          event.returnData.slice(10)
-        );
-        assert.fail("Meta tx call revert: " + decoded[0]);
-      } else {
-        assert.fail("Meta tx call failed");
-      }
-    }
+    // const event = await assertEventEmitted(contract, "MetaTxExecuted");
+    // if (!event.success) {
+    //   // Check if the return data contains the revert reason.
+    //   // If it does we can easily re-throw the actual revert reason of the function call done in the meta tx
+    //   if (event.returnData && event.returnData.startsWith("0x08c379a0")) {
+    //     const decoded = web3.eth.abi.decodeParameters(
+    //       ["string"],
+    //       event.returnData.slice(10)
+    //     );
+    //     assert.fail("Meta tx call revert: " + decoded[0]);
+    //   } else {
+    //     assert.fail("Meta tx call failed");
+    //   }
+    // }
     return result;
   } else {
     const from = options.from ? options.from : web3.eth.defaultAccount;

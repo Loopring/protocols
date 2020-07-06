@@ -55,20 +55,23 @@ contract("GuardiansModule", (accounts: string[]) => {
     ctx = await createContext(defaultCtx);
   });
 
-  [false, true].forEach(function(metaTx) {
-    it(
+  [/*false,*/ true].forEach(function(metaTx) {
+    it.only(
       description("owner should be able to add and remove guardians"),
       async () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
         const { wallet } = await createWallet(ctx, owner);
 
+        // const walletContract = await ctx.contracts.WalletImpl.at(wallet);
+        // const hasGuardianModule = await walletContract.hasModule(ctx.guardianModule.address);
+
         await addGuardianChecked(owner, wallet, ctx.guardians[0], 0);
         await addGuardianChecked(owner, wallet, ctx.guardians[1], 0);
         await addGuardianChecked(owner, wallet, ctx.guardians[2], 1);
-        await removeGuardianChecked(owner, wallet, ctx.guardians[1]);
-        await removeGuardianChecked(owner, wallet, ctx.guardians[2]);
-        await removeGuardianChecked(owner, wallet, ctx.guardians[0]);
+        // await removeGuardianChecked(owner, wallet, ctx.guardians[1]);
+        // await removeGuardianChecked(owner, wallet, ctx.guardians[2]);
+        // await removeGuardianChecked(owner, wallet, ctx.guardians[0]);
       }
     );
 
