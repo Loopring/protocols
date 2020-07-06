@@ -43,12 +43,4 @@ contract UpgradeabilityProxy is Proxy {
       sstore(position, newImplementation)
     }
   }
-
-  /**
-   * @dev Upgrades the implementation address
-   * @param newImplementation representing the address of the new implementation to be set
-   */
-  function _upgradeTo(address newImplementation) internal {
-    setImplementation(newImplementation);
-  }
 }

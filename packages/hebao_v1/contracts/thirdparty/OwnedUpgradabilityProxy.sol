@@ -66,6 +66,6 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
    * @param implementation representing the address of the new implementation to be set.
    */
   function upgradeTo(address implementation) public onlyProxyOwner {
-    _upgradeTo(implementation);
+    setImplementation(implementation);
   }
 }
