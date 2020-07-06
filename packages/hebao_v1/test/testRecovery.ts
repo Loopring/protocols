@@ -17,10 +17,10 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
 
   it("should be able to recover wallet using a majority of guardians", async () => {
     const owner = ctx.owners[0];
-    const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+    const wallet = await ctx.walletFactory.computeWalletAddress(owner);
 
     await executeTransaction(
-      ctx.walletFactoryModule.contract.methods.createWallet(
+      ctx.walletFactory.contract.methods.createWallet(
         owner,
         "",
         Constants.emptyBytes,

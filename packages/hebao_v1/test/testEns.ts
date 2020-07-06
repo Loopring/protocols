@@ -28,7 +28,7 @@ contract("BaseENSManager", () => {
   describe("BaseENSManager", () => {
     it("should only be able to register ENS by manager", async () => {
       const owner = ctx.miscAddresses[0];
-      const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+      const wallet = await ctx.walletFactory.computeWalletAddress(owner);
       const walletName = "mywalleta" + new Date().getTime();
       const modules: string[] = [ctx.guardianModule.address];
 
@@ -36,7 +36,7 @@ contract("BaseENSManager", () => {
       let signer = ctx.miscAddresses[1];
       let ensApproval = await getEnsApproval(wallet, walletName, signer);
       let txSignature = signCreateWallet(
-        ctx.walletFactoryModule.address,
+        ctx.walletFactory.address,
         owner,
         walletName,
         ensApproval,
@@ -45,7 +45,7 @@ contract("BaseENSManager", () => {
 
       await expectThrow(
         executeTransaction(
-          ctx.walletFactoryModule.contract.methods.createWallet(
+          ctx.walletFactory.contract.methods.createWallet(
             owner,
             walletName,
             ensApproval,
@@ -64,7 +64,7 @@ contract("BaseENSManager", () => {
       signer = ctx.owners[0];
       ensApproval = await getEnsApproval(wallet, walletName, signer);
       txSignature = signCreateWallet(
-        ctx.walletFactoryModule.address,
+        ctx.walletFactory.address,
         owner,
         walletName,
         ensApproval,
@@ -72,7 +72,7 @@ contract("BaseENSManager", () => {
       );
 
       await executeTransaction(
-        ctx.walletFactoryModule.contract.methods.createWallet(
+        ctx.walletFactory.contract.methods.createWallet(
           owner,
           walletName,
           ensApproval,
@@ -92,14 +92,14 @@ contract("BaseENSManager", () => {
       // so only there characters are allowed in our walletName.
       // see https://docs.ethers.io/ethers.js/html/api-utils.html#namehash
       const owner = ctx.miscAddresses[1];
-      const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+      const wallet = await ctx.walletFactory.computeWalletAddress(owner);
       const walletName = "mywalleta" + new Date().getTime();
       const modules: string[] = [ctx.guardianModule.address];
 
       const signer = ctx.owners[0];
       const ensApproval = await getEnsApproval(wallet, walletName, signer);
       const txSignature = signCreateWallet(
-        ctx.walletFactoryModule.address,
+        ctx.walletFactory.address,
         owner,
         walletName,
         ensApproval,
@@ -107,13 +107,11 @@ contract("BaseENSManager", () => {
       );
 
       await executeTransaction(
-        ctx.walletFactoryModule.contract.methods.createWallet(
-          {
-            owner,
-            label: walletName,
-            labelApproval: ensApproval,
-            modules
-          },
+        ctx.walletFactory.contract.methods.createWallet(
+          owner,
+          walletName,
+          ensApproval,
+          modules,
           txSignature
         ),
         ctx,
@@ -123,21 +121,21 @@ contract("BaseENSManager", () => {
         { from: owner, gasPrice: new BN(1) }
       );
 
-      const allEvents = await contract.getPastEvents("allEvents", {
-        fromBlock: web3.eth.blockNumber,
-        toBlock: web3.eth.blockNumber
-      });
-      console.log(`allEvents: ${allEvents}`);
+      // const allEvents = await ctx.walletFactory.contract.getPastEvents("allEvents", {
+      //   fromBlock: web3.eth.blockNumber,
+      //   toBlock: web3.eth.blockNumber
+      // });
+      // console.log(`allEvents: ${allEvents}`);
 
-      // const ensManager = ctx.baseENSManager;
-      // const fullName = walletName + walletDomain;
-      // const nameHash = ethers.utils.namehash(fullName);
+      const ensManager = ctx.baseENSManager;
+      const fullName = walletName + walletDomain;
+      const nameHash = ethers.utils.namehash(fullName);
 
-      // const ensAddr = await ensManager.resolveEns(nameHash);
-      // assert.equal(ensAddr, wallet, "ens address not match");
+      const ensAddr = await ensManager.resolveEns(nameHash);
+      assert.equal(ensAddr, wallet, "ens address not match");
 
-      // const fullNameFromENS = await ensManager.resolveName(wallet);
-      // assert.equal(fullNameFromENS, fullName, "ens name not match");
+      const fullNameFromENS = await ensManager.resolveName(wallet);
+      assert.equal(fullNameFromENS, fullName, "ens name not match");
     });
   });
 });

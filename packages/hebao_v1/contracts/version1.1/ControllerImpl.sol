@@ -36,7 +36,6 @@ contract ControllerImpl is Claimable, Controller
     address             public collectTo;
     uint                public defaultLockPeriod;
     address             public ensManagerAddress;
-    address             public walletFactory;
     PriceOracle         public priceOracle;
     DappAddressStore    public dappAddressStore;
     HashStore           public hashStore;

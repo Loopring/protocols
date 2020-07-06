@@ -68,7 +68,12 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
 
     modifier onlyModuleOrWalletOwner
     {
-        require(modules[msg.sender] || msg.sender == _owner, "UNAUTHORIZED");
+        require(
+            modules[msg.sender] ||
+            msg.sender == _owner ||
+            msg.sender == controller.walletFactory(),
+            "UNAUTHORIZED"
+        );
         _;
     }
 
@@ -92,8 +97,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
 
     function setup(
         address _controller,
-        address initialOwner,
-        address bootstrapModule
+        address initialOwner
         )
         external
         override
@@ -101,13 +105,11 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     {
         require(_owner == address(0), "INITIALIZED_ALREADY");
         require(initialOwner != address(0), "ZERO_ADDRESS");
-        require(bootstrapModule != address(0), "NO_BOOTSTRAP_MODULE");
 
         controller = Controller(_controller);
         _owner = initialOwner;
 
         emit WalletSetup(_owner);
-        addModuleInternal(bootstrapModule);
     }
 
     function addModule(address _module)

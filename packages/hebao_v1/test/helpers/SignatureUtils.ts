@@ -11,7 +11,7 @@ export function signCreateWallet(
   labelApproval: string,
   modules: string[]
 ) {
-  const domainSeprator = eip712.hash("MetaTxModule", "2.0", moduleAddress);
+  const domainSeprator = eip712.hash("WalletFactory", "1.1.0", moduleAddress);
 
   const TYPE_STR =
     "createWallet(address owner,string label,bytes labelApproval,address[] modules)";
@@ -35,7 +35,7 @@ export function signCreateWallet(
   );
 
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-  console.log(`hash: ${hash.toString("hex")}`);
+  // console.log(`hash: ${hash.toString("hex")}`);
 
   return sign(owner, hash);
 }

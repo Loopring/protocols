@@ -13,7 +13,7 @@ import BN = require("bn.js");
 import { Constants } from "./helpers/Constants";
 import { sign } from "./helpers/Signature";
 
-contract("WalletFactoryModule", () => {
+contract("WalletFactory", () => {
   let defaultCtx: Context;
   let ctx: Context;
 
@@ -24,7 +24,7 @@ contract("WalletFactoryModule", () => {
     owner: string,
     walletName: string = ""
   ) => {
-    const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+    const wallet = await ctx.walletFactory.computeWalletAddress(owner);
 
     if (useMetaTx) {
       // Transfer 0.1 ETH to the wallet to pay for the wallet creation
@@ -38,7 +38,7 @@ contract("WalletFactoryModule", () => {
       signature = await getEnsApproval(wallet, walletName, signer);
     }
     const tx = await executeTransaction(
-      ctx.walletFactoryModule.contract.methods.createWallet(
+      ctx.walletFactory.contract.methods.createWallet(
         owner,
         walletName,
         signature,
@@ -61,7 +61,7 @@ contract("WalletFactoryModule", () => {
     console.log("tx gas usage: ", tx.gasUsed);
 
     await assertEventEmitted(
-      ctx.walletFactoryModule,
+      ctx.walletFactory,
       "WalletCreated",
       (event: any) => {
         return event.wallet === wallet && event.owner === owner;
@@ -87,7 +87,7 @@ contract("WalletFactoryModule", () => {
     // Try to create the wallet again
     await expectThrow(
       executeTransaction(
-        ctx.walletFactoryModule.contract.methods.createWallet(
+        ctx.walletFactory.contract.methods.createWallet(
           owner,
           "",
           Constants.emptyBytes,
@@ -139,10 +139,10 @@ contract("WalletFactoryModule", () => {
   describe("anyone", () => {
     it("should not be able to create a wallet for the owner", async () => {
       const owner = ctx.owners[0];
-      const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+      const wallet = await ctx.walletFactory.computeWalletAddress(owner);
       await expectThrow(
         executeTransaction(
-          ctx.walletFactoryModule.contract.methods.createWallet(
+          ctx.walletFactory.contract.methods.createWallet(
             owner,
             "",
             Constants.emptyBytes,

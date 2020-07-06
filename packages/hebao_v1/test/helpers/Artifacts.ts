@@ -13,7 +13,7 @@ export class Artifacts {
 
   public ControllerImpl: any;
   public WalletImpl: any;
-  public WalletFactoryModule: any;
+  public WalletFactory: any;
   public ForwarderModule: any;
   public UpgraderModule: any;
   public WalletRegistryImpl: any;
@@ -50,7 +50,7 @@ export class Artifacts {
 
     this.ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
     this.WalletImpl = artifacts.require("./base/WalletImpl.sol");
-    this.WalletFactoryModule = artifacts.require("WalletFactoryModule");
+    this.WalletFactory = artifacts.require("WalletFactory");
     this.ForwarderModule = artifacts.require("ForwarderModule");
     this.UpgraderModule = artifacts.require("UpgraderModule");
     this.WalletRegistryImpl = artifacts.require(

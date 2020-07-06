@@ -16,7 +16,7 @@ export interface Context {
   useMetaTx: boolean;
 
   controllerImpl: any;
-  walletFactoryModule: any;
+  walletFactory: any;
   forwarderModule: any;
   walletRegistryImpl: any;
   moduleRegistryImpl: any;
@@ -52,7 +52,7 @@ export async function getContext() {
     useMetaTx: true,
 
     controllerImpl: await contracts.ControllerImpl.deployed(),
-    walletFactoryModule: await contracts.WalletFactoryModule.deployed(),
+    walletFactory: await contracts.WalletFactory.deployed(),
     forwarderModule: await contracts.ForwarderModule.deployed(),
     walletRegistryImpl: await contracts.WalletRegistryImpl.deployed(),
     moduleRegistryImpl: await contracts.ModuleRegistryImpl.deployed(),
@@ -77,18 +77,16 @@ export async function getContext() {
 export async function createContext(context?: Context) {
   context = context === undefined ? await getContext() : context;
   // Create a new wallet factory module
-  const walletFactoryModule = await context.contracts.WalletFactoryModule.new(
+  const walletFactory = await context.contracts.WalletFactory.new(
     context.controllerImpl.address,
-    context.forwarderModule.address,
     context.contracts.WalletImpl.address,
     true
   );
-  await context.moduleRegistryImpl.registerModule(walletFactoryModule.address);
-  await context.walletRegistryImpl.setWalletFactory(
-    walletFactoryModule.address
-  );
-  await context.baseENSManager.addManager(walletFactoryModule.address);
-  context.walletFactoryModule = walletFactoryModule;
+  await context.moduleRegistryImpl.registerModule(walletFactory.address);
+  await context.walletRegistryImpl.setWalletFactory(walletFactory.address);
+  await context.baseENSManager.addManager(walletFactory.address);
+  await context.controllerImpl.setWalletFactory(walletFactory.address);
+  context.walletFactory = walletFactory;
 
   return context;
 }
@@ -112,9 +110,9 @@ export async function createWallet(
 ) {
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
 
-  const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+  const wallet = await ctx.walletFactory.computeWalletAddress(owner);
   const walletName = "mywalleta" + new Date().getTime();
-  await ctx.walletFactoryModule.createWallet(
+  await ctx.walletFactory.createWallet(
     owner,
     walletName,
     Constants.emptyBytes,
