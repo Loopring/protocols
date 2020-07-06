@@ -11,14 +11,9 @@ import './Proxy.sol';
  * @dev This contract represents a proxy where the implementation address to which it will delegate can be upgraded
  */
 contract UpgradeabilityProxy is Proxy {
-  /**
-   * @dev This event will be emitted every time the implementation gets upgraded
-   * @param implementation representing the address of the upgraded implementation
-   */
-  event Upgraded(address indexed implementation);
 
   // Storage position of the address of the current implementation
-  bytes32 private constant implementationPosition = keccak256("org.zeppelinos.proxy.implementation");
+  bytes32 private constant implementationPosition = keccak256("org.loopring.proxy.implementation");
 
   /**
    * @dev Constructor function
@@ -55,6 +50,5 @@ contract UpgradeabilityProxy is Proxy {
     address currentImplementation = implementation();
     require(currentImplementation != newImplementation);
     setImplementation(newImplementation);
-    emit Upgraded(newImplementation);
   }
 }
