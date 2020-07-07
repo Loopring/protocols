@@ -161,20 +161,11 @@ export async function executeTransaction(
       options
     );
 
-    // const event = await assertEventEmitted(contract, "MetaTxExecuted");
-    // if (!event.success) {
-    //   // Check if the return data contains the revert reason.
-    //   // If it does we can easily re-throw the actual revert reason of the function call done in the meta tx
-    //   if (event.returnData && event.returnData.startsWith("0x08c379a0")) {
-    //     const decoded = web3.eth.abi.decodeParameters(
-    //       ["string"],
-    //       event.returnData.slice(10)
-    //     );
-    //     assert.fail("Meta tx call revert: " + decoded[0]);
-    //   } else {
-    //     assert.fail("Meta tx call failed");
-    //   }
-    // }
+    const event = await assertEventEmitted(
+      ctx.forwarderModule,
+      "MetaTxExecuted"
+    );
+    assert.equal(event.from, options.wallet, "MetaTx from not match");
     return result;
   } else {
     const from = options.from ? options.from : web3.eth.defaultAccount;

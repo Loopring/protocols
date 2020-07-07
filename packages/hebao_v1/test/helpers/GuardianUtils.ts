@@ -1,7 +1,7 @@
 import { Context, executeTransaction } from "./TestUtils";
 import { expectThrow } from "../../util/expectThrow";
 import { advanceTimeAndBlockAsync } from "../../util/TimeTravel";
-import { assertEventEmitted } from "../../util/Events";
+import { assertEventEmitted, getEventsFromContract } from "../../util/Events";
 import BN = require("bn.js");
 
 export function sortGuardians(guardians: any) {
@@ -30,6 +30,10 @@ export async function addGuardian(
     gasPrice: "22000000000"
   });
 
+  const opt = useMetaTx
+    ? { owner, wallet, gasPrice: new BN(0) }
+    : { from: owner };
+
   // Start adding the guardian
   await executeTransaction(
     ctx.guardianModule.contract.methods.addGuardian(wallet, guardian, group),
@@ -37,7 +41,7 @@ export async function addGuardian(
     useMetaTx,
     wallet,
     [],
-    { owner, wallet, gasPrice: new BN(0) }
+    opt
   );
 
   await assertEventEmitted(
@@ -113,20 +117,37 @@ export async function removeGuardian(
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);
 
+  const opt = useMetaTx
+    ? { owner, wallet, gasPrice: new BN(0) }
+    : { from: owner };
+
   // Start removing the guardian
   await executeTransaction(
     ctx.guardianModule.contract.methods.removeGuardian(wallet, guardian),
     ctx,
     useMetaTx,
     wallet,
-    [owner],
-    { from: owner }
+    [],
+    opt
   );
+
+  const blockNumber = await web3.eth.getBlockNumber();
+
+  // const allEvents = await ctx.guardianModule.getPastEvents(
+  //   "allEvents",
+  //   {
+  //     fromBlock: blockNumber - 3,
+  //     toBlock: blockNumber
+  //   }
+  // );
+  // const util = require("util");
+  // console.log(`allEvents: ${util.inspect(allEvents)}`);
 
   await assertEventEmitted(
     ctx.guardianModule,
     "GuardianRemoved",
     (event: any) => {
+      // console.log(`event: ${event}`);
       return event.wallet == wallet && event.guardian == guardian;
     }
   );
