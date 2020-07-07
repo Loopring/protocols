@@ -10,7 +10,9 @@ import {
   WithdrawalRequest,
   Transfer,
   TxBlock,
-  PublicKeyUpdate
+  AccountUpdate,
+  NewAccount,
+  OwnerChange
 } from "./types";
 
 interface SettlementValues {
@@ -87,6 +89,7 @@ export class Balance {
 }
 
 export class AccountLeaf {
+  owner: string;
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
@@ -94,6 +97,7 @@ export class AccountLeaf {
   balances: { [key: number]: Balance };
 
   constructor() {
+    this.owner = "0",
     this.publicKeyX = "0";
     this.publicKeyY = "0";
     this.nonce = 0;
@@ -102,12 +106,14 @@ export class AccountLeaf {
   }
 
   public init(
+    owner: string,
     publicKeyX: string,
     publicKeyY: string,
     nonce: number,
     walletHash: string,
     balances: { [key: number]: Balance } = {}
     ) {
+    this.owner = owner;
     this.publicKeyX = publicKeyX;
     this.publicKeyY = publicKeyY;
     this.nonce = nonce;
@@ -215,6 +221,7 @@ export class Simulator {
         }
         const account = new AccountLeaf();
         account.init(
+          jAccount.owner,
           jAccount.publicKeyX,
           jAccount.publicKeyY,
           jAccount.nonce,
@@ -247,13 +254,21 @@ export class Simulator {
     }
   }
 
+  public static normalizeOwner(owner: string) {
+    if (owner.startsWith("0x")) {
+      return new BN(owner.slice(2), 16).toString(10);
+    } else {
+      return owner;
+    }
+  }
+
   public static compareAccounts(accountA: any, accountB: any) {
     for (let tokenID = 0; tokenID < Constants.MAX_NUM_TOKENS; tokenID++) {
       let balanceValueA = accountA.balances[tokenID];
       let balanceValueB = accountB.balances[tokenID];
 
-      balanceValueA = balanceValueA || { balance: new BN(0), tradeHistory: {} };
-      balanceValueB = balanceValueB || { balance: new BN(0), tradeHistory: {} };
+      balanceValueA = balanceValueA || { balance: new BN(0), index: Constants.INDEX_BASE, tradeHistory: {} };
+      balanceValueB = balanceValueB || { balance: new BN(0), index: Constants.INDEX_BASE, tradeHistory: {} };
 
       for (const orderID of Object.keys(balanceValueA.tradeHistory).concat(
         Object.keys(balanceValueB.tradeHistory)
@@ -282,9 +297,26 @@ export class Simulator {
       }
       assert(
         balanceValueA.balance.eq(balanceValueB.balance),
-        "balance does not match"
+        "balance does not match: " +
+        "account: " + accountB.accountID + ", " +
+        "token: " + tokenID + ", " +
+        balanceValueA.balance.toString(10) + ", " +
+        balanceValueB.balance.toString(10)
+      );
+      assert(
+        balanceValueA.index.eq(balanceValueB.index),
+        "index does not match" +
+        "account: " + accountB.accountID + ", " +
+        "token: " + tokenID + ", " +
+        balanceValueA.index.toString(10) + ", " +
+        balanceValueB.index.toString(10)
       );
     }
+    assert.equal(
+      Simulator.normalizeOwner(accountA.owner),
+      Simulator.normalizeOwner(accountB.owner),
+      "owner does not match"
+    );
     assert.equal(
       accountA.publicKeyX,
       accountB.publicKeyX,
@@ -294,6 +326,11 @@ export class Simulator {
       accountA.publicKeyY,
       accountB.publicKeyY,
       "pubKeyY does not match"
+    );
+    assert.equal(
+      accountA.walletHash,
+      accountB.walletHash,
+      "walletHash does not match"
     );
     assert.equal(accountA.nonce, accountB.nonce, "nonce does not match");
   }
@@ -328,11 +365,11 @@ export class Simulator {
           accountBefore.getBalanceRaw(deposit.tokenID).balance,
           accountAfter.getBalanceRaw(deposit.tokenID).balance
         );
-      } else if (tx.txType === "PublicKeyUpdate") {
-        const update: PublicKeyUpdate = tx;
+      } else if (tx.txType === "AccountUpdate") {
+        const update: AccountUpdate = tx;
         report = this.updateAccount(state, block, tx);
 
-        logInfo("#" + index + " PublicKeyUpdate");
+        logInfo("#" + index + " AccountUpdate");
         const accountBefore = previousState.getAccount(update.accountID);
         const accountAfter = state.getAccount(update.accountID);
         if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
@@ -422,6 +459,44 @@ export class Simulator {
           accountBefore.getBalanceRaw(withdrawal.tokenID).balance,
           accountAfter.getBalanceRaw(withdrawal.tokenID).balance
         );
+      } else if (tx.txType === "NewAccount") {
+        const create: NewAccount = tx;
+        report = this.newAccount(state, block, tx);
+
+        logInfo("#" + index + " NewAccount");
+        const accountBefore = previousState.getAccount(create.newAccountID);
+        const accountAfter = state.getAccount(create.newAccountID);
+        if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
+          logInfo("publicKeyX: " + accountBefore.publicKeyX + " -> " + accountAfter.publicKeyX);
+        }
+        if (accountBefore.publicKeyY !== accountAfter.publicKeyY) {
+          logInfo("publicKeyY: " + accountBefore.publicKeyY + " -> " + accountAfter.publicKeyY);
+        }
+        if (accountBefore.walletHash !== accountAfter.walletHash) {
+          logInfo("walletHash: " + accountBefore.walletHash + " -> " + accountAfter.walletHash);
+        }
+        this.prettyPrintBalanceChange(
+          create.payerAccountID,
+          create.feeTokenID,
+          accountBefore.getBalanceRaw(create.feeTokenID).balance,
+          accountAfter.getBalanceRaw(create.feeTokenID).balance
+        );
+      } else if (tx.txType === "OwnerChange") {
+        const change: OwnerChange = tx;
+        report = this.changeOwner(state, block, tx);
+
+        logInfo("#" + index + " OwnerChange");
+        const accountBefore = previousState.getAccount(change.accountID);
+        const accountAfter = state.getAccount(change.accountID);
+        if (accountBefore.owner !== accountAfter.owner) {
+          logInfo("owner: " + accountBefore.owner + " -> " + accountAfter.owner);
+        }
+        this.prettyPrintBalanceChange(
+          change.accountID,
+          change.feeTokenID,
+          accountBefore.getBalanceRaw(change.feeTokenID).balance,
+          accountAfter.getBalanceRaw(change.feeTokenID).balance
+        );
       } else {
         assert(false, "Unknown tx type: " + tx.txType);
       }
@@ -439,6 +514,7 @@ export class Simulator {
   public static deposit(state: ExchangeState, block: TxBlock, deposit: Deposit) {
     const accountIndex = state.getAccount(1);
     const account = state.getAccount(deposit.accountID);
+    account.owner = deposit.owner;
 
     const newIndex = deposit.index.gt(accountIndex.getBalanceRaw(deposit.tokenID).index)
       ? deposit.index : accountIndex.getBalanceRaw(deposit.tokenID).index;
@@ -458,7 +534,7 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public static updateAccount(state: ExchangeState, block: TxBlock, update: PublicKeyUpdate) {
+  public static updateAccount(state: ExchangeState, block: TxBlock, update: AccountUpdate) {
     const index = state.getAccount(1);
 
     const account = state.getAccount(update.accountID);
@@ -480,11 +556,57 @@ export class Simulator {
     return simulatorReport;
   }
 
+  public static changeOwner(state: ExchangeState, block: TxBlock, change: OwnerChange) {
+    const index = state.getAccount(1);
+
+    const account = state.getAccount(change.accountID);
+    account.owner = change.newOwner;
+    account.nonce++;
+
+    const balance = account.getBalance(change.feeTokenID, index);
+    balance.balance.isub(change.fee);
+
+    const operator = state.getAccount(block.operatorAccountID);
+    const balanceO = operator.getBalance(change.feeTokenID, index);
+    balanceO.balance.iadd(change.fee);
+
+    const simulatorReport: SimulatorReport = {
+      exchangeStateAfter: state
+    };
+    return simulatorReport;
+  }
+
+  public static newAccount(state: ExchangeState, block: TxBlock, create: NewAccount) {
+    const index = state.getAccount(1);
+
+    const payerAccount = state.getAccount(create.payerAccountID);
+    const newAccount = state.getAccount(create.newAccountID);
+
+    newAccount.owner = create.newOwner;
+    newAccount.publicKeyX = create.newPublicKeyX;
+    newAccount.publicKeyY = create.newPublicKeyY;
+    newAccount.walletHash = create.newWalletHash;
+    payerAccount.nonce++;
+
+    const balance = payerAccount.getBalance(create.feeTokenID, index);
+    balance.balance.isub(create.fee);
+
+    const operator = state.getAccount(block.operatorAccountID);
+    const balanceO = operator.getBalance(create.feeTokenID, index);
+    balanceO.balance.iadd(create.fee);
+
+    const simulatorReport: SimulatorReport = {
+      exchangeStateAfter: state
+    };
+    return simulatorReport;
+  }
+
   public static transfer(state: ExchangeState, block: TxBlock, transfer: Transfer) {
     const index = state.getAccount(1);
 
     const from = state.getAccount(transfer.accountFromID);
     const to = state.getAccount(transfer.accountToID);
+    to.owner = transfer.ownerTo;
 
     from.getBalance(transfer.tokenID, index).balance.isub(transfer.amount);
     to.getBalance(transfer.tokenID, index).balance.iadd(transfer.amount);
@@ -845,7 +967,7 @@ export class Simulator {
       const tradeHistoryA = accountA.getBalanceRaw(tokenA).getTradeHistory(orderIdA);
       tradeHistoryA.filled = orderIdA > tradeHistoryA.orderID ? new BN(0) : tradeHistoryA.filled;
       tradeHistoryA.filled.iadd(buyA ? s.fillBA : s.fillSA);
-      tradeHistoryA.orderID = orderIdA > tradeHistoryA.orderID ? orderIdA : tradeHistoryA.orderID;
+      tradeHistoryA.orderID = orderIdA;
     }
     // Update accountB
     {
@@ -856,7 +978,7 @@ export class Simulator {
       const tradeHistoryB = accountB.getBalanceRaw(tokenB).getTradeHistory(orderIdB);
       tradeHistoryB.filled = orderIdB > tradeHistoryB.orderID ? new BN(0) : tradeHistoryB.filled;
       tradeHistoryB.filled.iadd(buyB ? s.fillBB : s.fillSB);
-      tradeHistoryB.orderID = orderIdB > tradeHistoryB.orderID ? orderIdB : tradeHistoryB.orderID;
+      tradeHistoryB.orderID = orderIdB;
     }
 
     // Update protocol fee
@@ -1146,6 +1268,7 @@ export class Simulator {
     }
     const accountCopy = new AccountLeaf();
     accountCopy.init(
+      account.owner,
       account.publicKeyX,
       account.publicKeyY,
       account.nonce,

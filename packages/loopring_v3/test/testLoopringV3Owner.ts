@@ -10,8 +10,8 @@ const ChainlinkTokenPriceOracle = artifacts.require(
 );
 
 contract("LoopringV3Owner", (accounts: string[]) => {
-  const contracts = new Artifacts(artifacts);
-  const MockContract = contracts.MockContract;
+  let contracts: Artifacts;
+  let MockContract: any;
 
   let exchangeTestUtil: ExchangeTestUtil;
   let loopring: any;
@@ -23,6 +23,8 @@ contract("LoopringV3Owner", (accounts: string[]) => {
   let revertFine = new BN(web3.utils.toWei("1250", "ether"));
 
   before(async () => {
+    contracts = new Artifacts(artifacts);
+    MockContract = contracts.MockContract;
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
     loopring = exchangeTestUtil.loopringV3;

@@ -19,25 +19,27 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
-import "../../lib/BytesUtil.sol";
+import "../../thirdparty/BytesUtil.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/FloatUtil.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
 
-/// @title PublicKeyUpdateTransaction
+/// @title AccountUpdateTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
-library PublicKeyUpdateTransaction
+library AccountUpdateTransaction
 {
     using BytesUtil            for bytes;
+    using FloatUtil            for uint;
     using MathUint             for uint;
     using SignatureUtil        for bytes32;
 
-    bytes32 constant public PUBLICKEYUPDATE_TYPEHASH = keccak256(
-        "PublicKeyUpdate(address owner,uint24 accountID,uint32 nonce,uint256 publicKey,uint16 feeTokenID,uint256 fee)"
+    bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
+        "AccountUpdate(address owner,uint24 accountID,uint32 nonce,uint256 publicKey,uint256 walletHash,uint16 feeTokenID,uint256 fee)"
     );
 
-    event KeyUpdateConsumed(
+    event AccountUpdateConsumed(
         uint24   indexed owner,
         uint             publicKey
     );
@@ -51,20 +53,26 @@ library PublicKeyUpdateTransaction
         returns (uint /*feeETH*/)
     {
         uint offset = 1;
+
+        // Check that this is a conditional update
+        uint updateType = data.toUint8(offset);
+        offset += 1;
+        require(updateType == 1, "INVALID_AUXILIARYDATA_DATA");
+
         // Extract the data from the tx data
-        address owner = data.bytesToAddress(offset);
+        address owner = data.toAddress(offset);
         offset += 20;
-        uint24 accountID = data.bytesToUint24(offset);
+        uint24 accountID = data.toUint24(offset);
         offset += 3;
-        uint32 nonce = data.bytesToUint32(offset);
+        uint32 nonce = data.toUint32(offset);
         offset += 4;
-        uint publicKey = data.bytesToUint(offset);
+        uint publicKey = data.toUint(offset);
         offset += 32;
-        uint walletHash = data.bytesToUint(offset);
+        uint walletHash = data.toUint(offset);
         offset += 32;
-        uint16 feeTokenID = data.bytesToUint16(offset);
+        uint16 feeTokenID = data.toUint16(offset);
         offset += 2;
-        uint fee = uint(data.bytesToUint16(offset)).decodeFloat(16);
+        uint fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
 
         // Calculate the tx hash
@@ -72,11 +80,12 @@ library PublicKeyUpdateTransaction
             S.DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
-                    PUBLICKEYUPDATE_TYPEHASH,
+                    ACCOUNTUPDATE_TYPEHASH,
                     owner,
                     accountID,
                     nonce,
                     publicKey,
+                    walletHash,
                     feeTokenID,
                     fee
                 )
@@ -91,6 +100,6 @@ library PublicKeyUpdateTransaction
             S.approvedTx[owner][txHash] = false;
         }
 
-        emit KeyUpdateConsumed(accountID, publicKey);
+        emit AccountUpdateConsumed(accountID, publicKey);
     }
 }

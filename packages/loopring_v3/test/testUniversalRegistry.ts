@@ -6,9 +6,9 @@ const truffleAssert = require("truffle-assertions");
 const abi = require("ethereumjs-abi");
 
 contract("UniversalRegistry", (accounts: string[]) => {
-  const contracts = new Artifacts(artifacts);
-  const MockContract = contracts.MockContract;
-  const UniversalRegistry = contracts.UniversalRegistry;
+  let contracts: Artifacts;
+  let MockContract: any;
+  let UniversalRegistry: any;
 
   var mockLRC: any;
   var mockProtocol: any;
@@ -27,6 +27,12 @@ contract("UniversalRegistry", (accounts: string[]) => {
   const protocolVersionStr = "1";
   const protocol2VersionStr = "2";
   const implVersionStr = "123";
+
+  before(async () => {
+    contracts = new Artifacts(artifacts);
+    MockContract = contracts.MockContract;
+    UniversalRegistry = contracts.UniversalRegistry;
+  });
 
   describe("UniversalRegistry related test", () => {
     before(async () => {

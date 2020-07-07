@@ -43,7 +43,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("Trade", function() {
     this.timeout(0);
 
-    it("Multiple txs", async () => {
+    it.only("Multiple txs", async () => {
       const ringA: SpotTrade = {
         orderA: {
           tokenS: "ETH",
@@ -110,8 +110,8 @@ contract("Exchange", (accounts: string[]) => {
 
       // Do a transfer
       //await transfer(ownerA, ownerB, token, amount, feeToken, fee);
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {authMethod: AuthMethod.ECDSA});
-      //await transfer(ownerA, ownerB, token, amount, feeToken, fee, {useDualAuthoring: true});
+      //await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {authMethod: AuthMethod.ECDSA});
+      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {useDualAuthoring: true});
 
       const ownerB_ID = await exchangeTestUtil.getAccountID(ownerB);
 
@@ -123,9 +123,12 @@ contract("Exchange", (accounts: string[]) => {
         new BN(0)
       );
 
-      //await exchangeTestUtil.requestNewAccount(ownerB_ID, "ETH", new BN(0), ownerE)
+      const newKeyPair = exchangeTestUtil.getKeyPairEDDSA();
+      await exchangeTestUtil.requestAccountUpdate(ownerB, newKeyPair, "1", "ETH", new BN(0));
 
-      //await exchangeTestUtil.requestOwnerChange(ownerE, ownerF, "ETH", new BN(0));
+      await exchangeTestUtil.requestNewAccount(ownerB_ID, "ETH", new BN(0), ownerE);
+
+      await exchangeTestUtil.requestOwnerChange(ownerE, ownerF, "ETH", new BN(0));
 
       await exchangeTestUtil.submitTransactions();
 

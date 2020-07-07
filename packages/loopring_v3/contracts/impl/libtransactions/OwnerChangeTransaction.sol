@@ -19,8 +19,9 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
-import "../../lib/BytesUtil.sol";
+import "../../thirdparty/BytesUtil.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/FloatUtil.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
@@ -30,6 +31,7 @@ import "../../lib/SignatureUtil.sol";
 library OwnerChangeTransaction
 {
     using BytesUtil            for bytes;
+    using FloatUtil            for uint;
     using MathUint             for uint;
     using SignatureUtil        for bytes32;
 
@@ -145,15 +147,15 @@ library OwnerChangeTransaction
             // parameter 3: newOwner
             // parameter 4: walletDataHash
             uint offset = 4;
-            require(auxData.walletCalldata.bytesToUint24(29 + offset) == ownerChange.accountID, "INVALID_WALLET_CALLDATA");
+            require(auxData.walletCalldata.toUint24(29 + offset) == ownerChange.accountID, "INVALID_WALLET_CALLDATA");
             offset += 32;
-            require(auxData.walletCalldata.bytesToUint32(28 + offset) == ownerChange.nonce, "INVALID_WALLET_CALLDATA");
+            require(auxData.walletCalldata.toUint32(28 + offset) == ownerChange.nonce, "INVALID_WALLET_CALLDATA");
             offset += 32;
-            require(auxData.walletCalldata.bytesToAddress(12 + offset) == ownerChange.owner, "INVALID_WALLET_CALLDATA");
+            require(auxData.walletCalldata.toAddress(12 + offset) == ownerChange.owner, "INVALID_WALLET_CALLDATA");
             offset += 32;
-            require(auxData.walletCalldata.bytesToAddress(12 + offset) == ownerChange.newOwner, "INVALID_WALLET_CALLDATA");
+            require(auxData.walletCalldata.toAddress(12 + offset) == ownerChange.newOwner, "INVALID_WALLET_CALLDATA");
             offset += 32;
-            require(auxData.walletCalldata.bytesToBytes32(offset) == auxData.walletDataHash, "INVALID_WALLET_CALLDATA");
+            require(auxData.walletCalldata.toBytes32(offset) == auxData.walletDataHash, "INVALID_WALLET_CALLDATA");
             offset += 32;
             (bool success, bytes memory result) = auxData.walletAddress.staticcall(auxData.walletCalldata);
             bool validated = success && result.length == 32 && result.toBytes4(0) == MAGICVALUE;
@@ -173,19 +175,19 @@ library OwnerChangeTransaction
         uint offset = 1;
 
         // Extract the transfer data
-        address owner = data.bytesToAddress(offset);
+        address owner = data.toAddress(offset);
         offset += 20;
-        uint24 accountID = data.bytesToUint24(offset);
+        uint24 accountID = data.toUint24(offset);
         offset += 3;
-        uint32 nonce = data.bytesToUint32(offset);
+        uint32 nonce = data.toUint32(offset);
         offset += 4;
-        uint16 feeTokenID = data.bytesToUint16(offset);
+        uint16 feeTokenID = data.toUint16(offset);
         offset += 2;
-        uint fee = uint(data.bytesToUint16(offset)).decodeFloat(16);
+        uint fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        address newOwner = data.bytesToAddress(offset);
+        address newOwner = data.toAddress(offset);
         offset += 20;
-        bytes32 walletHash = data.bytesToBytes32(offset);
+        bytes32 walletHash = data.toBytes32(offset);
         offset += 32;
 
         return OwnerChange({

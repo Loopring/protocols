@@ -781,7 +781,7 @@ class State(object):
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 
-        elif txInput.txType == "PublicKeyUpdate":
+        elif txInput.txType == "AccountUpdate":
 
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
 
@@ -800,7 +800,10 @@ class State(object):
             newState.balanceDeltaB_O = feeValue
             newState.balanceB_O_AutoApplyIndex = True
 
-            context.numConditionalTransactions = context.numConditionalTransactions + 1
+            newState.signatureA = txInput.signature
+
+            if txInput.type != 0:
+                context.numConditionalTransactions = context.numConditionalTransactions + 1
 
         elif txInput.txType == "NewAccount":
 

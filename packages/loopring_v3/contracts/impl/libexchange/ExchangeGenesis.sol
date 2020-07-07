@@ -40,14 +40,14 @@ library ExchangeGenesis
         address _loopringAddress,
         address payable _operator,
         bool    _onchainDataAvailability,
-        bytes32 _genesisBlockHash
+        bytes32 _genesisMerkleRoot
         )
         external
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
-        require(_genesisBlockHash != 0, "ZERO_GENESIS_BLOCK_HASH");
+        require(_genesisMerkleRoot != 0, "ZERO_GENESIS_MERKLE_ROOT");
         require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
@@ -55,7 +55,7 @@ library ExchangeGenesis
         S.loopring = ILoopringV3(_loopringAddress);
         S.operator = _operator;
         S.onchainDataAvailability = _onchainDataAvailability;
-        S.genesisMerkleRoot = _genesisBlockHash;
+        S.genesisMerkleRoot = _genesisMerkleRoot;
 
         ILoopringV3 loopring = ILoopringV3(_loopringAddress);
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());

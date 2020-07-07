@@ -19,8 +19,9 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
-import "../../lib/BytesUtil.sol";
+import "../../thirdparty/BytesUtil.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/FloatUtil.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
@@ -33,6 +34,7 @@ import "../libexchange/ExchangeWithdrawals.sol";
 library WithdrawTransaction
 {
     using BytesUtil            for bytes;
+    using FloatUtil            for uint;
     using MathUint             for uint;
     using SignatureUtil        for bytes32;
     using ExchangeMode         for ExchangeData.State;
@@ -177,26 +179,26 @@ library WithdrawTransaction
     {
         uint offset = 1;
 
-        uint withdrawalType = data.bytesToUint8(offset);
+        uint withdrawalType = data.toUint8(offset);
         offset += 1;
-        address owner = data.bytesToAddress(offset);
+        address owner = data.toAddress(offset);
         offset += 20;
-        uint24 accountID = data.bytesToUint24(offset);
+        uint24 accountID = data.toUint24(offset);
         offset += 3;
-        uint32 nonce = data.bytesToUint32(offset);
+        uint32 nonce = data.toUint32(offset);
         offset += 4;
-        uint16 tokenID = data.bytesToUint16(offset) >> 4;
-        uint16 feeTokenID = uint16(data.bytesToUint16(offset + 1) & 0xFFF);
+        uint16 tokenID = data.toUint16(offset) >> 4;
+        uint16 feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
         offset += 3;
-        uint amount = data.bytesToUint96(offset);
+        uint amount = data.toUint96(offset);
         offset += 12;
-        uint fee = uint(data.bytesToUint16(offset)).decodeFloat(16);
+        uint fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        address to = data.bytesToAddress(offset);
+        address to = data.toAddress(offset);
         offset += 20;
-        bytes32 dataHash = data.bytesToBytes32(offset);
+        bytes32 dataHash = data.toBytes32(offset);
         offset += 32;
-        uint24 minGas = data.bytesToUint24(offset);
+        uint24 minGas = data.toUint24(offset);
         offset += 3;
 
         return Withdrawal({

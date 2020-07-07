@@ -1,7 +1,5 @@
-import { Bitstream } from "loopringV3.js";
-import { calculateCalldataCost, compressLZ, decompressLZ } from "./compression";
-
-const LzDecompressor = artifacts.require("LzDecompressor");
+import { calculateCalldataCost, compressLZ, decompressLZ, Bitstream } from "loopringV3.js";
+import { Artifacts } from "../util/Artifacts";
 
 contract("Compression", (accounts: string[]) => {
   let lzDecompressor: any;
@@ -43,7 +41,8 @@ contract("Compression", (accounts: string[]) => {
   };
 
   before(async () => {
-    lzDecompressor = await LzDecompressor.new();
+    const contracts = new Artifacts(artifacts);
+    lzDecompressor = await contracts.LzDecompressorContract.new();
   });
 
   describe("LZ compression", () => {

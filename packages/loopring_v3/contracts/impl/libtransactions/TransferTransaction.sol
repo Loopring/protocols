@@ -19,8 +19,9 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
-import "../../lib/BytesUtil.sol";
+import "../../thirdparty/BytesUtil.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/FloatUtil.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
@@ -30,6 +31,7 @@ import "../../lib/SignatureUtil.sol";
 library TransferTransaction
 {
     using BytesUtil            for bytes;
+    using FloatUtil            for uint;
     using MathUint             for uint;
     using SignatureUtil        for bytes32;
 
@@ -55,28 +57,28 @@ library TransferTransaction
         uint offset = 1;
 
         // Check that this is a conditional transfer
-        uint transferType = data.bytesToUint8(offset);
+        uint transferType = data.toUint8(offset);
         offset += 1;
         require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
 
         // Extract the transfer data
-        //uint24 fromAccountID = data.bytesToUint24(offset);
+        //uint24 fromAccountID = data.toUint24(offset);
         offset += 3;
-        //uint24 toAccountID = data.bytesToUint24(offset);
+        //uint24 toAccountID = data.toUint24(offset);
         offset += 3;
-        uint16 tokenID = data.bytesToUint16(offset) >> 4;
-        uint16 feeTokenID = uint16(data.bytesToUint16(offset + 1) & 0xFFF);
+        uint16 tokenID = data.toUint16(offset) >> 4;
+        uint16 feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
         offset += 3;
-        uint amount = uint(data.bytesToUint24(offset)).decodeFloat(24);
+        uint amount = uint(data.toUint24(offset)).decodeFloat(24);
         offset += 3;
-        uint fee = uint(data.bytesToUint16(offset)).decodeFloat(16);
+        uint fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        uint32 nonce = data.bytesToUint32(offset);
+        uint32 nonce = data.toUint32(offset);
         offset += 4;
 
-        address from = data.bytesToAddress(offset);
+        address from = data.toAddress(offset);
         offset += 20;
-        address to = data.bytesToAddress(offset);
+        address to = data.toAddress(offset);
         offset += 20;
 
         // Calculate the tx hash

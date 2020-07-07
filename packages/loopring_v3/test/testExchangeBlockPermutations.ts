@@ -112,7 +112,7 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Ring Settlement", async () => {
-      const bDataAvailabilities = [true, false];
+      const bDataAvailabilities = [true];
       for (const bDataAvailability of bDataAvailabilities) {
         await createExchange(bDataAvailability);
         const blockSizes = exchangeTestUtil.blockSizes;
@@ -132,7 +132,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Deposit", async () => {
-      await createExchange(false);
+      await createExchange(true);
       const blockSizes = exchangeTestUtil.blockSizes;
       for (const blockSize of blockSizes) {
         for (let i = 0; i < blockSize; i++) {
@@ -144,7 +144,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Onchain withdrawal", async () => {
-      await createExchange(false);
+      await createExchange(true);
 
       // Do some deposits
       const numDeposits = 8;
@@ -167,7 +167,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Offchain withdrawal", async () => {
-      const bDataAvailabilities = [true, false];
+      const bDataAvailabilities = [true];
       for (const bDataAvailability of bDataAvailabilities) {
         await createExchange(bDataAvailability);
 
@@ -193,7 +193,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Internal transfer", async () => {
-      const bDataAvailabilities = [true, false];
+      const bDataAvailabilities = [true];
       for (const bDataAvailability of bDataAvailabilities) {
         await createExchange(bDataAvailability);
 

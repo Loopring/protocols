@@ -127,7 +127,7 @@ contract("Exchange", (accounts: string[]) => {
       const token = exchangeTestUtil.getTokenAddress("LRC");
 
       await expectThrow(
-        exchange.deposit(ownerA, ownerA, token, new BN(0), {
+        exchange.deposit(ownerA, ownerA, token, new BN(0), "0x", {
           from: agent,
           value: depositFee
         }),
@@ -135,7 +135,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.withdraw(ownerA, token, new BN(1), {
+        exchange.forceWithdraw(ownerA, token, 0, {
           from: agent,
           value: withdrawalFee
         }),
@@ -148,7 +148,14 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), {
+        exchange.approveTransaction(ownerA, Buffer.from("FF"), {
+          from: agent
+        }),
+        "UNAUTHORIZED"
+      );
+
+      await expectThrow(
+        exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), token, new BN(0), new BN(1), {
           from: agent
         }),
         "UNAUTHORIZED"
@@ -166,19 +173,23 @@ contract("Exchange", (accounts: string[]) => {
 
       // Now call the functions successfully
 
-      await exchange.deposit(ownerA, ownerA, token, new BN(0), {
+      await exchange.deposit(ownerA, ownerA, token, new BN(0), "0x", {
         from: agent,
         value: depositFee
       });
 
-      await exchange.withdraw(ownerA, token, new BN(1), {
+      await exchange.forceWithdraw(ownerA, token, 0, {
         from: agent,
         value: withdrawalFee
       });
 
       await exchange.authorizeAgents(ownerA, [agent], [true], { from: agent });
 
-      await exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), {
+      await exchange.approveTransaction(ownerA, Buffer.from("FF"), {
+        from: agent
+      });
+
+      await exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), token, new BN(0), new BN(1), {
         from: agent
       });
 

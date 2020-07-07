@@ -106,7 +106,7 @@ def depositFromJSON(jDeposit):
     return deposit
 
 
-def publicKeyUpdateFromJSON(jUpdate):
+def accountUpdateFromJSON(jUpdate):
     update = GeneralObject()
     update.owner = str(jUpdate["owner"])
     update.accountID = int(jUpdate["accountID"])
@@ -116,6 +116,10 @@ def publicKeyUpdateFromJSON(jUpdate):
     update.walletHash = str(jUpdate["walletHash"])
     update.feeTokenID = int(jUpdate["feeTokenID"])
     update.fee = str(jUpdate["fee"])
+    update.type = int(jUpdate["type"])
+    update.signature = None
+    if "signature" in jUpdate:
+        update.signature = jUpdate["signature"]
     return update
 
 def newAccountFromJSON(jCreate):
@@ -179,8 +183,8 @@ def createBlock(state, data):
             transaction = withdrawFromJSON(transactionInfo)
         if txType == "Deposit":
             transaction = depositFromJSON(transactionInfo)
-        if txType == "PublicKeyUpdate":
-            transaction = publicKeyUpdateFromJSON(transactionInfo)
+        if txType == "AccountUpdate":
+            transaction = accountUpdateFromJSON(transactionInfo)
         if txType == "NewAccount":
             transaction = newAccountFromJSON(transactionInfo)
         if txType == "OwnerChange":
@@ -200,8 +204,8 @@ def createBlock(state, data):
             txWitness.withdraw = tx.input
         if txType == "Deposit":
             txWitness.deposit = tx.input
-        if txType == "PublicKeyUpdate":
-            txWitness.publicKeyUpdate = tx.input
+        if txType == "AccountUpdate":
+            txWitness.accountUpdate = tx.input
         if txType == "NewAccount":
             txWitness.newAccount = tx.input
         if txType == "OwnerChange":

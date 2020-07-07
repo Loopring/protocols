@@ -90,8 +90,12 @@ export interface Deposit {
   transactionHash?: string;
 }
 
-export interface PublicKeyUpdate {
-  txType?: "PublicKeyUpdate";
+export interface AccountUpdate {
+  txType?: "AccountUpdate";
+  exchangeID: number;
+
+  type: number;
+
   owner: string;
   accountID: number;
   nonce: number;
@@ -101,11 +105,13 @@ export interface PublicKeyUpdate {
   feeTokenID: number;
   fee: BN;
 
+  signature?: Signature;
   onchainSignature?: any;
 }
 
 export class Transfer {
   txType?: "Transfer";
+  exchangeID: number;
 
   type: number;
 
@@ -141,6 +147,7 @@ export class Transfer {
 
 export interface WithdrawalRequest {
   txType?: "Withdraw";
+  exchangeID: number;
 
   type: number;
 
@@ -172,6 +179,8 @@ export interface WithdrawalRequest {
 
 export interface NewAccount {
   txType?: "NewAccount";
+  exchangeID: number;
+
   payerAccountID: number;
   feeTokenID: number;
   fee: BN;
@@ -188,6 +197,7 @@ export interface NewAccount {
 
 export interface OwnerChange {
   txType?: "OwnerChange";
+
   owner: string;
   accountID: number;
   feeTokenID: number;
@@ -235,8 +245,7 @@ export interface Block {
   publicDataHash: string;
   publicInput: string;
   proof?: string[];
-  blockFeeRewarded?: BN;
-  blockFeeFined?: BN;
+  blockFee?: BN;
   timestamp: number;
   transactionHash: string;
   internalBlock: TxBlock;

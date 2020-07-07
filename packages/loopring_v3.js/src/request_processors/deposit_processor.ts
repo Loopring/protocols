@@ -1,62 +1,58 @@
 import BN from "bn.js";
 import { Bitstream } from "../bitstream";
 import { Constants } from "../constants";
-import { Account, Block, Deposit, ExchangeState } from "../types";
+import { applyInterest, Account, BlockContext, ExchangeState } from "../types";
+
+interface Deposit {
+  owner?: string;
+  accountID?: number;
+  tokenID?: number;
+  amount?: BN;
+  index?: BN;
+}
 
 /**
  * Processes deposit requests.
  */
 export class DepositProcessor {
-  public static processBlock(state: ExchangeState, block: Block) {
-    const offset = 4 + 32 + 32 + 32 + 32;
-    const data = new Bitstream(block.data);
-    const startIdx = data.extractUint32(offset);
-    const length = data.extractUint32(offset + 4);
+  public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
+    const deposit = this.extractData(txData);
 
-    const deposits: Deposit[] = [];
-    for (let i = startIdx; i < startIdx + length; i++) {
-      const deposit = state.deposits[i];
+    const accountIndex = state.getAccount(1);
+    const account = state.getAccount(deposit.accountID);
+    account.owner = deposit.owner;
 
-      this.processDeposit(state, deposit);
+    const newIndex = deposit.index.gt(accountIndex.getBalanceRaw(deposit.tokenID).index)
+      ? deposit.index : accountIndex.getBalanceRaw(deposit.tokenID).index;
 
-      deposit.blockIdx = block.blockIdx;
-      deposit.requestIdx = state.processedRequests.length + i - startIdx;
-      deposits.push(deposit);
-    }
-    return deposits;
+    const balance = account.getBalanceRaw(deposit.tokenID);
+    const newBalance = applyInterest(balance.balance, balance.index, newIndex);
+    const newDepositAmount = applyInterest(deposit.amount, deposit.index, newIndex);
+
+    balance.balance = newBalance.add(newDepositAmount);
+    balance.index = newIndex;
+
+    accountIndex.getBalanceRaw(deposit.tokenID).index = newIndex;
+
+    return deposit;
   }
 
-  public static processDeposit(state: ExchangeState, deposit: Deposit) {
-    assert(deposit.accountID <= state.accounts.length, "accountID invalid");
-    // New account
-    if (deposit.accountID === state.accounts.length) {
-      const newAccount: Account = {
-        exchangeId: state.exchangeId,
-        accountId: deposit.accountID,
-        owner: state.accountIdToOwner[deposit.accountID],
+  public static extractData(data: Bitstream) {
+    const deposit: Deposit = {};
+    let offset = 1;
 
-        publicKeyX: "0",
-        publicKeyY: "0",
-        nonce: 0,
-        balances: {}
-      };
-      state.accounts.push(newAccount);
-    }
-    const account = state.accounts[deposit.accountID];
-    account.balances[deposit.tokenID] = account.balances[deposit.tokenID] || {
-      balance: new BN(0),
-      index: new BN(0),
-      tradeHistory: {}
-    };
+    // Read in the deposit data
+    deposit.owner = data.extractAddress(offset);
+    offset += 20;
+    deposit.accountID = data.extractUint24(offset);
+    offset += 3;
+    deposit.tokenID = data.extractUint16(offset);
+    offset += 2;
+    deposit.amount = data.extractUint96(offset);
+    offset += 12;
+    deposit.index = data.extractUint96(offset);
+    offset += 12;
 
-    // Update state
-    account.balances[deposit.tokenID].balance = account.balances[
-      deposit.tokenID
-    ].balance.add(deposit.amount);
-    if (account.balances[deposit.tokenID].balance.gt(Constants.MAX_AMOUNT)) {
-      account.balances[deposit.tokenID].balance = Constants.MAX_AMOUNT;
-    }
-    account.publicKeyX = deposit.publicKeyX;
-    account.publicKeyY = deposit.publicKeyY;
+    return deposit;
   }
 }

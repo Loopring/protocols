@@ -316,6 +316,17 @@ library BytesUtil {
         return tempUint;
     }
 
+    function toUint24(bytes memory _bytes, uint _start) internal  pure returns (uint24) {
+        require(_bytes.length >= (_start + 3));
+        uint24 tempUint;
+
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x3), _start))
+        }
+
+        return tempUint;
+    }
+
     function toUint32(bytes memory _bytes, uint _start) internal  pure returns (uint32) {
         require(_bytes.length >= (_start + 4));
         uint32 tempUint;
@@ -506,5 +517,22 @@ library BytesUtil {
         }
 
         return success;
+    }
+
+    function fastSHA256(
+        bytes memory data
+        )
+        internal
+        view
+        returns (bytes32)
+    {
+        bytes32[] memory result = new bytes32[](1);
+        bool success;
+        assembly {
+             let ptr := add(data, 32)
+             success := staticcall(sub(gas(), 2000), 2, ptr, mload(data), add(result, 32), 32)
+        }
+        require(success, "SHA256_FAILED");
+        return result[0];
     }
 }

@@ -20,7 +20,7 @@ pragma solidity ^0.6.10;
 import "../iface/IDelayedTransaction.sol";
 
 import "../lib/AddressUtil.sol";
-import "../lib/BytesUtil.sol";
+import "../thirdparty/BytesUtil.sol";
 import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
 
@@ -85,7 +85,7 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
         Transaction memory transaction = getTransaction(transactionId);
 
         // Make sure the delay is respected
-        bytes4 functionSelector = transaction.data.bytesToBytes4(0);
+        bytes4 functionSelector = transaction.data.toBytes4(0);
         uint delay = getFunctionDelay(transaction.to, functionSelector);
         require(now >= transaction.timestamp.add(delay), "TOO_EARLY");
         require(now <= transaction.timestamp.add(delay).add(timeToLive), "TOO_LATE");
@@ -188,7 +188,7 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
             data
         );
 
-        bytes4 functionSelector = transaction.data.bytesToBytes4(0);
+        bytes4 functionSelector = transaction.data.toBytes4(0);
         uint delay = getFunctionDelay(transaction.to, functionSelector);
         if (delay == 0) {
             (bool success, bytes memory returnData) = exectuteTransaction(transaction);

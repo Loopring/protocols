@@ -1,4 +1,5 @@
 import BN from "bn.js";
+import { Constants } from "./constants";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
 
 /**
@@ -10,8 +11,8 @@ export enum BlockType {
   DEPOSIT,
   NEW_ACCOUNT,
   WITHDRAWAL,
-  PUBLIC_KEY_UPDATE,
-  INTERNAL_TRANSFER,
+  ACCOUNT_UPDATE,
+  TRANSFER,
   OWNER_CHANGE
 }
 
@@ -51,9 +52,7 @@ export interface Block {
   origin: string;
 
   /** The block fee received for this block (in ETH). */
-  blockFeeRewarded: BN;
-  /** The block fee fined for this block (in ETH). */
-  blockFeeFined: BN;
+  blockFee: BN;
 
   /** The Merkle root of the Merkle tree after doing all requests in the block. */
   merkleRoot: string;
@@ -66,18 +65,6 @@ export interface Block {
 
   /** The total number of requests that were processed up to, and including, this block. */
   totalNumRequestsProcessed: number;
-  /** The total number of deposits that were processed up to, and including, this block. */
-  totalNumDepositsProccesed: number;
-  /** The total number of on-chain withdrawal requests that were processed up to, and including, this block. */
-  totalNumOnchainWithdrawalsProcessed: number;
-  /** The total number of trades that were processed up to, and including, this block. */
-  totalNumTradesProccesed: number;
-  /** The total number of off-chain withdrawals that were processed up to, and including, this block. */
-  totalNumOffchainWithdrawalsProcessed: number;
-  /** The total number of order canellations that were processed up to, and including, this block. */
-  totalNumOrderCancellationsProcessed: number;
-  /** The total number of internal transfers that were processed up to, and including, this block. */
-  totalNumOrderInternalTransfersProcessed: number;
 
   /** The Ethereum transaction in which this block was committed. */
   transactionHash: string;
@@ -108,21 +95,19 @@ export interface Deposit {
   /** If the request was processed: The request index of this deposit in the processed requests list. */
   requestIdx?: number;
 
-  /** The deposit index (in the queue on-chain). */
-  depositIdx: number;
   /** The time this deposit was done on-chain. */
   timestamp: number;
 
   /** The account this deposit is for. */
-  accountID: number;
+  owner: string;
   /** The token that was deposited. */
-  tokenID: number;
+  token: number;
   /** The amount that was deposited. */
   amount: BN;
-  /** The (new) public key X of the account. */
-  publicKeyX: string;
-  /** The (new) public key Y of the account. */
-  publicKeyY: string;
+  /** The index at the time of deposit. */
+  index: BN;
+  /** The fee paid for the deposit. */
+  fee: BN;
 
   /** The Ethereum transaction in which this deposit was done. */
   transactionHash: string;
@@ -160,7 +145,7 @@ export interface OnchainWithdrawal {
 /**
  * Trading data for a ring-settlement.
  */
-export interface Trade {
+export interface SpotTrade {
   /** The exchange the trade was made on. */
   exchangeId: number;
   /** The block this trade was pocessed in. */
@@ -308,36 +293,19 @@ export interface Account {
   exchangeId: number;
   /** The account ID of the account. */
   accountId: number;
+
   /** The owner of the account. */
   owner: string;
-
   /** The EdDSA public key X of the account (used for signing off-chain messages). */
   publicKeyX: string;
   /** The EdDSA public key Y of the account (used for signing off-chain messages). */
   publicKeyY: string;
   /** The nonce value of the account. */
   nonce: number;
-  /** The balance data. */
-  balances: { [key: number]: Balance };
+  /** The wallet hash. */
+  walletHash: string;
 
   balancesMerkleTree?: SparseMerkleTree;
-}
-
-/**
- * Fees charted by the exchange for on-chain requests.
- */
-export interface ExchangeFees {
-  /** The exchange with these fees. */
-  exchangeId: number;
-
-  /** The fee charged (in ETH) for creating an account. */
-  accountCreationFeeETH: BN;
-  /** The fee charged (in ETH) for updating an account. */
-  accountUpdateFeeETH: BN;
-  /** The fee charged (in ETH) for depositing. */
-  depositFeeETH: BN;
-  /** The fee charged (in ETH) for an on-chain withdrawal request. */
-  withdrawalFeeETH: BN;
 }
 
 /**
@@ -360,27 +328,35 @@ export interface ProtocolFees {
 /**
  * The data needed to withdraw from the Merkle tree on-chain (@see getWithdrawFromMerkleTreeData)
  */
-export interface WithdrawFromMerkleTreeData {
+export interface OnchainAccountLeaf {
   /** The ID of the account. */
   accountID: number;
   /** The owner of the account. */
   owner: string;
-  /** The ID of the token. */
-   tokenID: number;
-  /** The token that needs to be withdrawn. */
-  token: string;
   /** The public key X of the account. */
-  publicKeyX: string;
+  pubKeyX: string;
   /** The public key Y of the account. */
-  publicKeyY: string;
+  pubKeyY: string;
   /** The current nonce value of the account. */
   nonce: number;
+  /** The wallet hash of the account. */
+  walletHash: string;
+}
+export interface OnchainBalanceLeaf {
+  /** The ID of the token. */
+  tokenID: number;
   /** The current balance the account has for the requested token. */
-  balance: BN;
+  balance: string;
   /** The current index the account has for the requested token. */
-  index: BN;
+  index: string;
   /** The trade history root of the balance leaf. */
   tradeHistoryRoot: string;
+}
+export interface WithdrawFromMerkleTreeData {
+  /** The account leaf. */
+  accountLeaf: OnchainAccountLeaf;
+  /** The balance leaf. */
+  balanceLeaf: OnchainBalanceLeaf;
   /** The Merkle proof for the account leaf. */
   accountMerkleProof: string[];
   /** The Merkle proof for the balance leaf. */
@@ -410,9 +386,141 @@ export interface Signature {
 
 /// Private
 
-export interface ExchangeState {
+export function applyInterest(balance: BN, oldIndex: BN, newIndex: BN) {
+  assert(newIndex.gte(oldIndex), "Invalid balance state");
+  const indexDiff = newIndex.sub(oldIndex);
+  const balanceDiff = balance.mul(indexDiff).div(Constants.INDEX_BASE);
+  const newBalance = balance.add(balanceDiff)
+  return newBalance
+}
+
+export class TradeHistoryLeaf implements TradeHistory {
+  filled: BN;
+  orderID: number;
+
+  constructor() {
+    this.filled = new BN(0);
+    this.orderID = 0;
+  }
+}
+
+export class BalanceLeaf implements Balance {
+  balance: BN;
+  index: BN;
+  tradeHistory: { [key: number]: TradeHistoryLeaf };
+
+  tradeHistoryTree?: SparseMerkleTree;
+
+  constructor() {
+    this.balance = new BN(0);
+    this.index = Constants.INDEX_BASE;
+    this.tradeHistory = {};
+  }
+
+  public init(
+    balance: BN,
+    index: BN,
+    tradeHistory: { [key: number]: TradeHistoryLeaf }
+    ) {
+    this.balance = new BN(balance.toString(10));
+    this.index = new BN(index.toString(10));
+    this.tradeHistory = tradeHistory;
+  }
+
+  public getTradeHistory(orderID: number) {
+    const address = orderID % 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
+    if (this.tradeHistory[address] === undefined) {
+      this.tradeHistory[address] = new TradeHistoryLeaf();
+    }
+    return this.tradeHistory[address];
+  }
+}
+
+export class AccountLeaf implements Account {
   exchangeId: number;
-  accounts: Account[];
+  accountId: number;
+
+  owner: string;
+  publicKeyX: string;
+  publicKeyY: string;
+  nonce: number;
+  walletHash: string;
+  balances: { [key: number]: BalanceLeaf };
+
+  balancesMerkleTree?: SparseMerkleTree;
+
+  constructor(accountId: number) {
+    this.exchangeId = 0;
+    this.accountId = accountId;
+    this.owner = Constants.zeroAddress,
+    this.publicKeyX = "0";
+    this.publicKeyY = "0";
+    this.nonce = 0;
+    this.walletHash = "0";
+    this.balances = {};
+  }
+
+  public init(
+    owner: string,
+    publicKeyX: string,
+    publicKeyY: string,
+    nonce: number,
+    walletHash: string,
+    balances: { [key: number]: BalanceLeaf } = {}
+    ) {
+    this.exchangeId = 0;
+    this.accountId = 0;
+    this.owner = owner;
+    this.publicKeyX = publicKeyX;
+    this.publicKeyY = publicKeyY;
+    this.nonce = nonce;
+    this.walletHash = walletHash;
+    this.balances = balances;
+  }
+
+  public getBalanceRaw(tokenID: number) {
+    if (this.balances[tokenID] === undefined) {
+      this.balances[tokenID] = new BalanceLeaf();
+    }
+    return this.balances[tokenID];
+  }
+
+  public getBalance(tokenID: number, index: AccountLeaf) {
+    if (this.balances[tokenID] === undefined) {
+      this.balances[tokenID] = new BalanceLeaf();
+    }
+    const newIndex = index.getBalanceRaw(tokenID).index;
+    this.balances[tokenID].balance = applyInterest(this.balances[tokenID].balance, this.balances[tokenID].index, newIndex);
+    this.balances[tokenID].index = newIndex;
+    return this.balances[tokenID];
+  }
+}
+
+export class ExchangeState {
+  exchangeId: number;
+  accounts: AccountLeaf[];
+
+  constructor(exchangeId: number, accounts: AccountLeaf[] = []) {
+    this.exchangeId = exchangeId;
+    this.onchainDataAvailability = true;
+
+    this.accounts = accounts;
+
+    this.accountIdToOwner = {};
+    this.ownerToAccountId = {};
+
+    this.deposits = [];
+    this.onchainWithdrawals = [];
+
+    this.processedRequests = [];
+  }
+
+  public getAccount(accountID: number) {
+    while(accountID >= this.accounts.length) {
+      this.accounts.push(new AccountLeaf(this.accounts.length));
+    }
+    return this.accounts[accountID];
+  }
 
   accountIdToOwner: { [key: number]: string };
   ownerToAccountId: { [key: string]: number };
@@ -423,4 +531,10 @@ export interface ExchangeState {
   processedRequests: any[];
 
   onchainDataAvailability: boolean;
+}
+
+export interface BlockContext {
+  protocolFeeTakerBips: number;
+  protocolFeeMakerBips: number;
+  operatorAccountID: number;
 }

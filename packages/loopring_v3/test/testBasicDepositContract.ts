@@ -4,7 +4,7 @@ import { Constants } from "loopringV3.js";
 import BN = require("bn.js");
 
 contract("BasicDepositContract", (accounts: string[]) => {
-  const contracts = new Artifacts(artifacts);
+  let contracts: Artifacts;
 
   const exchange1 = accounts[0];
   const exchange2 = accounts[1];
@@ -18,6 +18,10 @@ contract("BasicDepositContract", (accounts: string[]) => {
   let loopringContract: any;
 
   let token: any;
+
+  before(async () => {
+    contracts = new Artifacts(artifacts);
+  });
 
   beforeEach(async () => {
     depositContract = await contracts.BasicDepositContract.new();

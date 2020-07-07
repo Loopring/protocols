@@ -19,7 +19,7 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
-import "../../lib/BytesUtil.sol";
+import "../../thirdparty/BytesUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
@@ -31,7 +31,7 @@ import "./ExchangeMode.sol";
 import "./ExchangeWithdrawals.sol";
 
 import "../libtransactions/TransferTransaction.sol";
-import "../libtransactions/PublicKeyUpdateTransaction.sol";
+import "../libtransactions/AccountUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
 import "../libtransactions/WithdrawTransaction.sol";
 import "../libtransactions/OwnerChangeTransaction.sol";
@@ -249,7 +249,7 @@ library ExchangeBlocks
     {
         uint offset = 4 + 32 + 32 + 4 + 1 + 1;
         // The length of the auxiliary data needs to match the number of conditional transfers
-        uint numConditionalTransactions = data.bytesToUint32(offset);
+        uint numConditionalTransactions = data.toUint32(offset);
         offset += 4;
 
         emit LogUint(numConditionalTransactions);
@@ -259,7 +259,7 @@ library ExchangeBlocks
             ExchangeData.AuxiliaryData[] memory txAuxiliaryData = abi.decode(auxiliaryData, (ExchangeData.AuxiliaryData[]));
             require(txAuxiliaryData.length == numConditionalTransactions, "INVALID_AUXILIARYDATA_LENGTH");
 
-            // uint24 operatorAccountID = data.bytesToUint24(offset);
+            // uint24 operatorAccountID = data.toUint24(offset);
             offset += 3;
 
             // Run over all conditional transfers
@@ -273,7 +273,7 @@ library ExchangeBlocks
                 // Get the transfer data
                 bytes memory txData = data.slice(transferOffset, ExchangeData.TX_DATA_AVAILABILITY_SIZE());
 
-                ExchangeData.TransactionType txType = ExchangeData.TransactionType(txData.bytesToUint8(0));
+                ExchangeData.TransactionType txType = ExchangeData.TransactionType(txData.toUint8(0));
                 //emit LogUint(uint(txType));
                 //emit LogBytes(txData);
                 //emit LogBytes(txAuxiliaryData[i].data);
@@ -297,7 +297,7 @@ library ExchangeBlocks
                         txAuxiliaryData[i].data
                     );
                 }  else if (txType == ExchangeData.TransactionType.PUBLICKEY_UPDATE) {
-                    txFeeETH = PublicKeyUpdateTransaction.process(
+                    txFeeETH = AccountUpdateTransaction.process(
                         S,
                         txData,
                         txAuxiliaryData[i].data

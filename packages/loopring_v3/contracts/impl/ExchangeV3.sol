@@ -40,7 +40,7 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    bytes32 constant public genesisBlockHash = 0x1dacdc3f6863d9db1d903e7285ebf74b61f02d585ccb52ecaeaf97dbb773becf;
+    bytes32 constant public genesisMerkleRoot = 0x1dacdc3f6863d9db1d903e7285ebf74b61f02d585ccb52ecaeaf97dbb773becf;
 
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
@@ -107,7 +107,7 @@ contract ExchangeV3 is IExchangeV3
             _loopringAddress,
             _operator,
             _onchainDataAvailability,
-            genesisBlockHash
+            genesisMerkleRoot
         );
     }
 

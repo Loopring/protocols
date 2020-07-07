@@ -19,6 +19,7 @@ export class Artifacts {
   public LzDecompressor: any;
   public TransferContract: any;
   public PoseidonContract: any;
+  public LzDecompressorContract: any;
   public UserStakingPool: any;
   public ProtocolFeeVault: any;
   public UniswapTokenSeller: any;
@@ -50,6 +51,7 @@ export class Artifacts {
     this.LzDecompressor = artifacts.require("test/LzDecompressor");
     this.TransferContract = artifacts.require("test/TransferContract");
     this.PoseidonContract = artifacts.require("test/PoseidonContract");
+    this.LzDecompressorContract = artifacts.require("test/LzDecompressorContract");
     this.UserStakingPool = artifacts.require("impl/UserStakingPool");
     this.ProtocolFeeVault = artifacts.require("impl/ProtocolFeeVault");
     this.DelayedOwnerContract = artifacts.require("test/DelayedOwnerContract");

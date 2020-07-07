@@ -19,7 +19,7 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../thirdparty/ERC1271.sol";
-import "./BytesUtil.sol";
+import "../thirdparty/BytesUtil.sol";
 
 import "./AddressUtil.sol";
 import "./MathUint.sol";
@@ -73,7 +73,7 @@ library SignatureUtil
         returns (bool)
     {
         uint signatureTypeOffset = signature.length.sub(1);
-        SignatureType signatureType = SignatureType(signature.bytesToUint8(signatureTypeOffset));
+        SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
 
         bytes memory stripped = signature.slice(0, signatureTypeOffset);
 

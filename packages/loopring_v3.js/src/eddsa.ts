@@ -52,20 +52,35 @@ export class EdDSA {
   }
 
   public static unpack(publicKey: string) {
-    const packed = Buffer.from(publicKey, "hex");
-    const reversed = Buffer.alloc(32);
-    for (let i = 0; i < 32; i++) {
-      reversed[31 - i] = packed[i];
+    if (publicKey.startsWith("0x")) {
+      publicKey = publicKey.slice(2);
     }
-    const unpacked = babyJub.unpackPoint(reversed);
-    if (unpacked == null) {
-      return null;
+    while (publicKey.length < 64) {
+      publicKey = "0" + publicKey;
     }
-    const pubKey = {
-      publicKeyX: unpacked[0].toString(10),
-      publicKeyY: unpacked[1].toString(10),
-    };
-    return pubKey;
+    // Special case for 0
+    if (publicKey === "00".repeat(32)) {
+      const pubKey = {
+        publicKeyX: "0",
+        publicKeyY: "0",
+      };
+      return pubKey;
+    } else {
+      let packed = Buffer.from(publicKey, "hex");
+      const reversed = Buffer.alloc(32);
+      for (let i = 0; i < 32; i++) {
+        reversed[31 - i] = packed[i];
+      }
+      const unpacked = babyJub.unpackPoint(reversed);
+      if (unpacked == null) {
+        return null;
+      }
+      const pubKey = {
+        publicKeyX: unpacked[0].toString(10),
+        publicKeyY: unpacked[1].toString(10),
+      };
+      return pubKey;
+    }
   }
 
   public static sign(strKey: string, msg: string) {

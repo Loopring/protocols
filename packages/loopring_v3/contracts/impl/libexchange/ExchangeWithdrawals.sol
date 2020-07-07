@@ -21,7 +21,7 @@ pragma experimental ABIEncoderV2;
 import "../../iface/ExchangeData.sol";
 
 import "../../lib/AddressUtil.sol";
-import "../../lib/BytesUtil.sol";
+import "../../thirdparty/BytesUtil.sol";
 
 import "./ExchangeBalances.sol";
 import "./ExchangeMode.sol";
@@ -147,10 +147,10 @@ library ExchangeWithdrawals
     {
         uint16 tokenID = S.getTokenID(token);
         ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID][index];
+        require(deposit.timestamp != 0, "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
-        // Only allow withdrawing from deposit when the time limit
-        // to process it has been exceeded.
-        require(deposit.timestamp + ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE() >= now, "DEPOSIT_NOT_WITHDRAWABLE_YET");
+        // Check if the deposit has indeed exceeded the time limit
+        require(now >= deposit.timestamp + ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE(), "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
         uint amount = deposit.amount;
         uint fee = deposit.fee;

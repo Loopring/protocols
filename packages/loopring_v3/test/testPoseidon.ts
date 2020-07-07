@@ -5,7 +5,6 @@ import { Constants, Poseidon } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 
 contract("Poseidon", (accounts: string[]) => {
-  const contracts = new Artifacts(artifacts);
   let poseidonContract: any;
 
   const getRand = () => {
@@ -14,6 +13,7 @@ contract("Poseidon", (accounts: string[]) => {
   };
 
   before(async () => {
+    const contracts = new Artifacts(artifacts);
     poseidonContract = await contracts.PoseidonContract.new();
   });
 

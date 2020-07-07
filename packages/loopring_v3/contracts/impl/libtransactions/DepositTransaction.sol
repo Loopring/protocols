@@ -19,7 +19,7 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
-import "../../lib/BytesUtil.sol";
+import "../../thirdparty/BytesUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
@@ -51,15 +51,15 @@ library DepositTransaction
         uint offset = 1;
 
         // Read in the deposit data
-        address owner = data.bytesToAddress(offset);
+        address owner = data.toAddress(offset);
         offset += 20;
-        uint24 accountID = data.bytesToUint24(offset);
+        uint24 accountID = data.toUint24(offset);
         offset += 3;
-        uint16 tokenID = data.bytesToUint16(offset);
+        uint16 tokenID = data.toUint16(offset);
         offset += 2;
-        uint96 amount = data.bytesToUint96(offset);
+        uint96 amount = data.toUint96(offset);
         offset += 12;
-        uint96 index = data.bytesToUint96(offset);
+        uint96 index = data.toUint96(offset);
         offset += 12;
 
         ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID][index];

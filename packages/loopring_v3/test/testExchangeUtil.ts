@@ -5,18 +5,20 @@ import path = require("path");
 import http = require("http");
 import { performance } from "perf_hooks";
 import { SHA256 } from "sha2";
-import util = require("util");
-import { calculateCalldataCost, compressLZ, decompressLZ } from "./compression";
 import { Artifacts } from "../util/Artifacts";
 import {
   SignatureType,
   sign,
   verifySignature
 } from "../util/Signature";
-import { compress, CompressionType } from "./compression";
 import {
   Bitstream,
   BlockType,
+  calculateCalldataCost,
+  compress,
+  compressLZ,
+  decompressLZ,
+  CompressionType,
   Constants,
   EdDSA,
   Explorer,
@@ -40,7 +42,7 @@ import {
   Noop,
   OrderInfo,
   TxBlock,
-  PublicKeyUpdate,
+  AccountUpdate,
   SpotTrade,
   WithdrawalRequest,
   NewAccount,
@@ -49,10 +51,9 @@ import {
   OwnerChange,
   PermissionData
 } from "./types";
-import { OffchainWithdrawal } from "loopringV3.js";
 
 
-type TxType = Noop | SpotTrade | Transfer | WithdrawalRequest | Deposit | PublicKeyUpdate | NewAccount | OwnerChange;
+type TxType = Noop | SpotTrade | Transfer | WithdrawalRequest | Deposit | AccountUpdate | NewAccount | OwnerChange;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -106,6 +107,10 @@ export interface WithdrawOptions {
   signer?: string;
 }
 
+export interface AccountUpdateOptions {
+  authMethod?: AuthMethod;
+}
+
 export interface OnchainBlock {
   blockType: number;
   blockSize: number;
@@ -116,36 +121,13 @@ export interface OnchainBlock {
   offchainData?: any;
 }
 
-export interface OnchainAccountLeaf {
-  accountID: number;
-  owner: string;
-  pubKeyX: string;
-  pubKeyY: string;
-  nonce: BN;
-  walletHash?: BN;
-}
-
-export interface OnchainBalanceLeaf {
-  tokenID: number;
-  balance: BN;
-  index: BN;
-  tradeHistoryRoot: BN;
-}
-
-export interface OnchainMerkleProof {
-  accountLeaf: OnchainAccountLeaf;
-  balanceLeaf: OnchainBalanceLeaf;
-  accountMerkleProof: string[];
-  balanceMerkleProof: string[];
-}
-
 export interface AuxiliaryData {
   txIndex: number;
   txAuxiliaryData?: any;
 }
 
-export namespace PublicKeyUpdateUtils {
-  export function toTypedData(update: PublicKeyUpdate, verifyingContract: string) {
+export namespace AccountUpdateUtils {
+  export function toTypedData(update: AccountUpdate, verifyingContract: string) {
     const typedData = {
       types: {
         EIP712Domain: [
@@ -154,16 +136,17 @@ export namespace PublicKeyUpdateUtils {
           { name: "chainId", type: "uint256" },
           { name: "verifyingContract", type: "address" }
         ],
-        PublicKeyUpdate: [
+        AccountUpdate: [
           { name: "owner", type: "address" },
           { name: "accountID", type: "uint24" },
           { name: "nonce", type: "uint32" },
           { name: "publicKey", type: "uint256" },
+          { name: "walletHash", type: "uint256" },
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" }
         ]
       },
-      primaryType: "PublicKeyUpdate",
+      primaryType: "AccountUpdate",
       domain: {
         name: "Loopring Protocol",
         version: "3.6.0",
@@ -175,6 +158,7 @@ export namespace PublicKeyUpdateUtils {
         accountID: update.accountID,
         nonce: update.nonce,
         publicKey: new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
+        walletHash: new BN(update.walletHash),
         feeTokenID: update.feeTokenID,
         fee: update.fee
       }
@@ -182,9 +166,37 @@ export namespace PublicKeyUpdateUtils {
     return typedData;
   }
 
-  export function getHash(update: PublicKeyUpdate, verifyingContract: string) {
+  export function getHash(update: AccountUpdate, verifyingContract: string) {
     const typedData = this.toTypedData(update, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
+  }
+
+  export function sign(keyPair: any, update: AccountUpdate) {
+    // Calculate hash
+    const hasher = Poseidon.createHash(9, 6, 53);
+    const inputs = [
+      update.exchangeID,
+      update.accountID,
+      update.feeTokenID,
+      update.fee,
+      update.publicKeyX,
+      update.publicKeyY,
+      update.walletHash,
+      update.nonce,
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    const signature = EdDSA.sign(keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, signature, [
+      keyPair.publicKeyX,
+      keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+
+    return signature;
   }
 }
 
@@ -238,6 +250,34 @@ export namespace WithdrawalUtils {
     const typedData = this.toTypedData(withdrawal, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
   }
+
+  export function sign(keyPair: any, withdrawal: WithdrawalRequest) {
+    // Calculate hash
+    const hasher = Poseidon.createHash(11, 6, 53);
+    const inputs = [
+      withdrawal.exchangeID,
+      withdrawal.accountID,
+      withdrawal.tokenID,
+      withdrawal.amount,
+      withdrawal.feeTokenID,
+      withdrawal.fee,
+      withdrawal.to,
+      withdrawal.dataHash,
+      withdrawal.minGas,
+      withdrawal.nonce,
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    withdrawal.signature = EdDSA.sign(keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, withdrawal.signature, [
+      keyPair.publicKeyX,
+      keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+  }
 }
 
 export namespace TransferUtils {
@@ -287,6 +327,38 @@ export namespace TransferUtils {
   export function getHash(transfer: Transfer, verifyingContract: string) {
     const typedData = this.toTypedData(transfer, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
+  }
+
+  export function sign(keyPair: any, transfer: Transfer, payer: boolean) {
+    // Calculate hash
+    const hasher = Poseidon.createHash(13, 6, 53);
+    const inputs = [
+      transfer.exchangeID,
+      transfer.accountFromID,
+      payer ? transfer.payerAccountToID : transfer.accountToID,
+      transfer.tokenID,
+      transfer.amount,
+      transfer.feeTokenID,
+      transfer.fee,
+      transfer.validUntil,
+      payer ? transfer.payerOwnerTo : transfer.ownerTo,
+      transfer.dualAuthorX,
+      transfer.dualAuthorY,
+      transfer.nonce
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    const signature = EdDSA.sign(keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, signature, [
+      keyPair.publicKeyX,
+      keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+
+    return signature;
   }
 }
 
@@ -357,31 +429,12 @@ export namespace WalletUtils {
     return typedData;
   }
 
-
   export function getWalletHash(wallet: Wallet, verifyingContract: string) {
-    /*const utils = sigUtil.TypedDataUtils;
-    const privateKey = SHA256(Buffer.from("FF"), "hex");
-    const message = "0x" + utils.sign(typedData).toString("hex");
-    const sig = sigUtil.signTypedData_v4(privateKey, { data: typedData });
-    console.log(message);
-    console.log(sig);*/
-    //const typedData = this.toTypedData(wallet, verifyingContract);
-    //const hash = "0x" + sigUtil.TypedDataUtils.sign(typedData).toString("hex");
-    //return hash;
     const typedData = this.toTypedDataStatelessWallet(wallet, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
   }
 
   export function getHash(wallet: Wallet, walletAddress: string, verifyingContract: string) {
-    /*const utils = sigUtil.TypedDataUtils;
-    const privateKey = SHA256(Buffer.from("FF"), "hex");
-    const message = "0x" + utils.sign(typedData).toString("hex");
-    const sig = sigUtil.signTypedData_v4(privateKey, { data: typedData });
-    console.log(message);
-    console.log(sig);*/
-    //const typedData = this.toTypedData(wallet, verifyingContract);
-    //const hash = "0x" + sigUtil.TypedDataUtils.sign(typedData).toString("hex");
-    //return hash;
     const walletDataHash = "0x" + this.getWalletHash(wallet, walletAddress).toString("hex");
     const typedData = this.toTypedDataWallet(walletAddress, walletDataHash, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
@@ -435,6 +488,38 @@ export namespace OwnerChangeUtils {
   export function getHash(ownerChange: OwnerChange, verifyingContract: string) {
     const typedData = this.toTypedData(ownerChange, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
+  }
+}
+
+export namespace NewAccountUtils {
+  export function sign(keyPair: any, create: NewAccount) {
+    // Calculate hash
+    const hasher = Poseidon.createHash(11, 6, 53);
+    const inputs = [
+      create.exchangeID,
+      create.payerAccountID,
+      create.feeTokenID,
+      create.fee,
+      create.nonce,
+      create.newAccountID,
+      create.newOwner,
+      create.newPublicKeyX,
+      create.newPublicKeyY,
+      create.newWalletHash
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    const signature = EdDSA.sign(keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, signature, [
+      keyPair.publicKeyX,
+      keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+
+    return signature;
   }
 }
 
@@ -749,9 +834,11 @@ export class ExchangeTestUtil {
     }
 
     // Setup the transfer tx
-    const accountFromID = this.findAccount(from).accountID;
+    const accountFrom = this.findAccount(from);
+    const accountFromID = accountFrom.accountID;
     const transfer: Transfer = {
       txType: "Transfer",
+      exchangeID: this.exchangeId,
       accountFromID,
       accountToID,
       tokenID,
@@ -773,9 +860,9 @@ export class ExchangeTestUtil {
 
     // Authorize the tx
     if (authMethod === AuthMethod.EDDSA) {
-      this.signTransfer(transfer, true);
+      transfer.signature = TransferUtils.sign(accountFrom, transfer, true);
       if (useDualAuthoring) {
-        this.signTransfer(transfer, false);
+        transfer.dualSignature = TransferUtils.sign(dualAuthorkeyPair, transfer, false);
       }
     } else if (authMethod === AuthMethod.ECDSA) {
       const hash = TransferUtils.getHash(transfer, this.exchange.address);
@@ -881,14 +968,10 @@ export class ExchangeTestUtil {
     if (order.signature !== undefined) {
       return;
     }
-
-    const hasher = Poseidon.createHash(13, 6, 53);
     const account = this.accounts[this.exchangeId][order.accountID];
 
-    //console.log(order);
-
     // Calculate hash
-    const startHash = performance.now();
+    const hasher = Poseidon.createHash(13, 6, 53);
     const inputs = [
       this.exchangeId,
       order.orderID,
@@ -904,24 +987,16 @@ export class ExchangeTestUtil {
       order.buy ? 1 : 0
     ];
     order.hash = hasher(inputs).toString(10);
-    const endHash = performance.now();
-    // console.log("Hash order time: " + (endHash - startHash));
 
     // Create signature
-    const startSign = performance.now();
     order.signature = EdDSA.sign(account.secretKey, order.hash);
-    const endSign = performance.now();
-    // console.log("Sign order time: " + (endSign - startSign));
 
     // Verify signature
-    const startVerify = performance.now();
     const success = EdDSA.verify(order.hash, order.signature, [
       account.publicKeyX,
       account.publicKeyY
     ]);
     assert(success, "Failed to verify signature");
-    const endVerify = performance.now();
-    // console.log("Verify order signature time: " + (endVerify - startVerify));
   }
 
   public signRingBlock(block: any, publicDataInput: any) {
@@ -943,103 +1018,6 @@ export class ExchangeTestUtil {
 
     // Verify signature
     const success = EdDSA.verify(hash, block.signature, [
-      account.publicKeyX,
-      account.publicKeyY
-    ]);
-    assert(success, "Failed to verify signature");
-  }
-
-  public signWithdrawal(withdrawal: WithdrawalRequest) {
-    // Calculate hash
-    const hasher = Poseidon.createHash(11, 6, 53);
-    const inputs = [
-      this.exchangeId,
-      withdrawal.accountID,
-      withdrawal.tokenID,
-      withdrawal.amount,
-      withdrawal.feeTokenID,
-      withdrawal.fee,
-      withdrawal.to,
-      withdrawal.dataHash,
-      withdrawal.minGas,
-      withdrawal.nonce,
-    ];
-    const hash = hasher(inputs).toString(10);
-
-    // Create signature
-    const account = this.accounts[this.exchangeId][withdrawal.accountID];
-    withdrawal.signature = EdDSA.sign(account.secretKey, hash);
-
-    // Verify signature
-    const success = EdDSA.verify(hash, withdrawal.signature, [
-      account.publicKeyX,
-      account.publicKeyY
-    ]);
-    assert(success, "Failed to verify signature");
-  }
-
-  public signTransfer(transfer: Transfer, payer: boolean = true) {
-    // Calculate hash
-    const hasher = Poseidon.createHash(13, 6, 53);
-    const inputs = [
-      this.exchangeId,
-      transfer.accountFromID,
-      payer ? transfer.payerAccountToID : transfer.accountToID,
-      transfer.tokenID,
-      transfer.amount,
-      transfer.feeTokenID,
-      transfer.fee,
-      transfer.validUntil,
-      payer ? transfer.payerOwnerTo : transfer.ownerTo,
-      transfer.dualAuthorX,
-      transfer.dualAuthorY,
-      transfer.nonce
-    ];
-    const hash = hasher(inputs).toString(10);
-
-    // Create signature
-    if (payer) {
-      const account = this.accounts[this.exchangeId][transfer.accountFromID];
-      transfer.signature = EdDSA.sign(account.secretKey, hash);
-      // Verify signature
-      const success = EdDSA.verify(hash, transfer.signature, [
-        account.publicKeyX,
-        account.publicKeyY
-      ]);
-      assert(success, "Failed to verify signature");
-    } else {
-      transfer.dualSignature = EdDSA.sign(transfer.dualSecretKey, hash);
-      // Verify signature
-      const success = EdDSA.verify(hash, transfer.dualSignature, [
-        transfer.dualAuthorX,
-        transfer.dualAuthorY
-      ]);
-      assert(success, "Failed to verify dual signature");
-    }
-  }
-
-  public signNewAccount(create: NewAccount) {
-    // Calculate hash
-    const hasher = Poseidon.createHash(10, 6, 53);
-    const inputs = [
-      this.exchangeId,
-      create.payerAccountID,
-      create.feeTokenID,
-      create.fee,
-      create.nonce,
-      create.newAccountID,
-      create.newOwner,
-      create.newPublicKeyX,
-      create.newPublicKeyY
-    ];
-    const hash = hasher(inputs).toString(10);
-
-    // Create signature
-    const account = this.accounts[this.exchangeId][create.payerAccountID];
-    create.signature = EdDSA.sign(account.secretKey, hash);
-
-    // Verify signature
-    const success = EdDSA.verify(hash, create.signature, [
       account.publicKeyX,
       account.publicKeyY
     ]);
@@ -1166,40 +1144,20 @@ export class ExchangeTestUtil {
     const caller = accountContract ? this.testContext.orderOwners[0] : from;
 
     let accountID = await this.getAccountID(to);
-    let publicKeyUpdate: PublicKeyUpdate = undefined;
+    let newAccountCreated = false;
     if (accountID === undefined) {
-      let keyPair = this.getKeyPairEDDSA();
-      if (!autoSetKeys) {
-        keyPair = {
-          publicKeyX: "0",
-          publicKeyY: "0",
-          secretKey: "0",
-        }
-      }
       const account: Account = {
         accountID: this.accounts[this.exchangeId].length,
         owner: to,
-        publicKeyX: keyPair.publicKeyX,
-        publicKeyY: keyPair.publicKeyY,
-        secretKey: keyPair.secretKey,
+        publicKeyX: "0",
+        publicKeyY: "0",
+        secretKey: "0",
         nonce: 0
       };
       this.accounts[this.exchangeId].push(account);
       accountID = account.accountID;
 
-      if (autoSetKeys) {
-        publicKeyUpdate = {
-          txType: "PublicKeyUpdate",
-          owner: to,
-          accountID: account.accountID,
-          nonce: this.accounts[this.exchangeId][account.accountID].nonce++,
-          publicKeyX: keyPair.publicKeyX,
-          publicKeyY: keyPair.publicKeyY,
-          walletHash: "0",
-          feeTokenID: tokenID,
-          fee: new BN(0)
-        };
-      }
+      newAccountCreated = true;
     }
 
     let ethToSend = fee;
@@ -1262,13 +1220,9 @@ export class ExchangeTestUtil {
     };
     this.pendingTransactions[this.exchangeId].push(deposit);
 
-    if (publicKeyUpdate !== undefined) {
-      // Sign the public key update
-      const hash = PublicKeyUpdateUtils.getHash(publicKeyUpdate, this.exchange.address);
-      publicKeyUpdate.onchainSignature = await sign(to, hash, SignatureType.EIP_712);
-      await verifySignature(to, hash, publicKeyUpdate.onchainSignature);
-
-      this.pendingTransactions[this.exchangeId].push(publicKeyUpdate);
+    if (newAccountCreated && autoSetKeys) {
+      let keyPair = this.getKeyPairEDDSA();
+      await this.requestAccountUpdate(to, keyPair, "0", token, new BN(0), {authMethod: AuthMethod.ECDSA});
     }
 
     return deposit;
@@ -1323,15 +1277,19 @@ export class ExchangeTestUtil {
         accountID = 0;
         await this.exchange.withdrawProtocolFees(token, {value: withdrawalFee});
       }
+      //withdrawalRequest.timestamp = ethBlock.timestamp;
+      //withdrawalRequest.transactionHash = tx.receipt.transactionHash;
     }
 
+    const account = this.accounts[this.exchangeId][accountID];
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
     const withdrawalRequest: WithdrawalRequest = {
       txType: "Withdraw",
+      exchangeID: this.exchangeId,
       type,
       owner,
       accountID,
-      nonce: this.accounts[this.exchangeId][accountID].nonce,
+      nonce: account.nonce,
       tokenID,
       amount,
       feeTokenID,
@@ -1344,7 +1302,7 @@ export class ExchangeTestUtil {
     };
 
     if (authMethod === AuthMethod.EDDSA) {
-      this.signWithdrawal(withdrawalRequest);
+      WithdrawalUtils.sign(account, withdrawalRequest);
     } else if (authMethod === AuthMethod.ECDSA) {
       const hash = WithdrawalUtils.getHash(withdrawalRequest, this.exchange.address);
       withdrawalRequest.onchainSignature = await sign(owner, hash, SignatureType.EIP_712);
@@ -1361,69 +1319,6 @@ export class ExchangeTestUtil {
     this.pendingTransactions[this.exchangeId].push(withdrawalRequest);
     return withdrawalRequest;
   }
-
-  /*public async requestWithdrawalOnchain(
-    exchangeID: number,
-    accountID: number,
-    token: string,
-    amount: BN,
-    owner: string
-  ) {
-    if (!token.startsWith("0x")) {
-      token = this.testContext.tokenSymbolAddrMap.get(token);
-    }
-    const tokenID = this.tokenAddressToIDMap.get(token);
-
-    /*let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
-    if (this.autoCommit && numAvailableSlots === 0) {
-      await this.commitOnchainWithdrawalRequests(exchangeID);
-      numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
-      assert(numAvailableSlots > 0, "numAvailableSlots > 0");
-    }*/
-   /* const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
-
-    const feeSurplus = new BN(456);
-    const ethToSend = withdrawalFee.add(feeSurplus);
-
-    const caller = accountID === 0 ? this.exchangeOwner : owner;
-
-    const callerEthBalanceBefore = await this.getOnchainBalance(
-      caller,
-      Constants.zeroAddress
-    );
-
-    // Check if the correct fee amount was paid
-    const callerEthBalanceAfter = await this.getOnchainBalance(
-      caller,
-      Constants.zeroAddress
-    );
-    assert(
-      callerEthBalanceAfter.eq(
-        callerEthBalanceBefore.sub(ethToSend).add(feeSurplus)
-      ),
-      "fee paid by the withdrawer needs to match exactly with the fee needed"
-    );
-
-    const event = await this.assertEventEmitted(
-      this.exchange,
-      "WithdrawalRequested"
-    );
-
-    const withdrawalRequest = await this.addWithdrawalRequest(
-      this.pendingTransactions[exchangeID],
-      accountID,
-      tokenID,
-      amount,
-      0,
-      new BN(0),
-      1,
-      withdrawalFee
-    );
-    withdrawalRequest.timestamp = ethBlock.timestamp;
-    withdrawalRequest.transactionHash = tx.receipt.transactionHash;
-    //this.onchainWithdrawals[this.exchangeId].push(withdrawalRequest);
-    return withdrawalRequest;
-  }*/
 
   public async requestNewAccount(
     payerAccountID: number,
@@ -1445,8 +1340,8 @@ export class ExchangeTestUtil {
       inheritableSince: 0
     };
     const walletHash = WalletUtils.getHash(wallet, this.statelessWallet.address, this.exchange.address);
-    console.log(walletHash);
-    console.log(this.hashToFieldElement("0x" + walletHash.toString("hex")));
+
+    const payerAccount = this.accounts[this.exchangeId][payerAccountID];
 
     const keypair = this.getKeyPairEDDSA();
     const account: Account = {
@@ -1462,27 +1357,88 @@ export class ExchangeTestUtil {
 
     const newAccount: NewAccount = {
       txType: "NewAccount",
+      exchangeID: this.exchangeId,
       payerAccountID,
       feeTokenID,
       fee,
-      nonce: this.accounts[this.exchangeId][payerAccountID].nonce++,
+      nonce: payerAccount.nonce++,
       newOwner,
       newAccountID: account.accountID,
       newPublicKeyX: account.publicKeyX,
       newPublicKeyY: account.publicKeyY,
       newWalletHash: this.hashToFieldElement("0x" + walletHash.toString("hex"))
     };
-    this.signNewAccount(newAccount);
+    newAccount.signature = NewAccountUtils.sign(payerAccount, newAccount);
 
     this.pendingTransactions[this.exchangeId].push(newAccount);
     return newAccount;
+  }
+
+  public async requestAccountUpdate(
+    owner: string,
+    keyPair: any,
+    walletHash: string,
+    feeToken: string,
+    fee: BN,
+    options: AccountUpdateOptions = {}
+  ) {
+    // Fill in defaults
+    const authMethod = options.authMethod !== undefined  ? options.authMethod : AuthMethod.EDDSA;
+
+    // Type
+    let type = 0;
+    if (authMethod !== AuthMethod.EDDSA) {
+      type = 1
+    };
+
+    if (!feeToken.startsWith("0x")) {
+      feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
+    }
+    const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
+
+    const account = this.findAccount(owner);
+
+    const accountUpdate: AccountUpdate = {
+      txType: "AccountUpdate",
+      exchangeID: this.exchangeId,
+      type,
+      owner,
+      accountID: account.accountID,
+      nonce: account.nonce++,
+      publicKeyX: keyPair.publicKeyX,
+      publicKeyY: keyPair.publicKeyY,
+      walletHash,
+      feeTokenID,
+      fee
+    };
+
+    // Sign the public key update
+    if (authMethod === AuthMethod.EDDSA) {
+      accountUpdate.signature = AccountUpdateUtils.sign(account, accountUpdate);
+    } else if (authMethod === AuthMethod.ECDSA) {
+      const hash = AccountUpdateUtils.getHash(accountUpdate, this.exchange.address);
+      accountUpdate.onchainSignature = await sign(owner, hash, SignatureType.EIP_712);
+      await verifySignature(owner, hash, accountUpdate.onchainSignature);
+    } else if (authMethod === AuthMethod.APPROVE) {
+      const hash = AccountUpdateUtils.getHash(accountUpdate, this.exchange.address);
+      await this.exchange.approveTransaction(owner, hash, {from: owner});
+    }
+
+    this.pendingTransactions[this.exchangeId].push(accountUpdate);
+
+    // Update local account state
+    account.publicKeyX = keyPair.publicKeyX;
+    account.publicKeyY = keyPair.publicKeyY;
+    account.secretKey = keyPair.secretKey;
+
+    return accountUpdate;
   }
 
   public async requestOwnerChange(
     owner: string,
     newOwner: string,
     feeToken: string,
-    fee: BN,
+    fee: BN
   ) {
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
@@ -1671,8 +1627,7 @@ export class ExchangeTestUtil {
       compressedData,
       publicDataHash,
       publicInput,
-      blockFeeRewarded: new BN(0),
-      blockFeeFined: new BN(0),
+      blockFee: new BN(0),
       timestamp: 0,
       transactionHash: "0",
       internalBlock: txBlock
@@ -1915,6 +1870,8 @@ export class ExchangeTestUtil {
       this.exchangeOperator
     ).encodeABI();
     const compressed = compressLZ(txData);
+    //console.log(txData);
+    //console.log(compressed);
 
     let tx: any = undefined;
     tx = await operatorContract.submitBlocksCompressed(
@@ -2130,12 +2087,14 @@ export class ExchangeTestUtil {
           //console.log("Deposit");
           numConditionalTransactions++;
           auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
-        } else if (transaction.txType === "PublicKeyUpdate") {
-          //console.log("PublicKeyUpdate");
-          numConditionalTransactions++;
-          auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature)]);
+        } else if (transaction.txType === "AccountUpdate") {
+          if (transaction.type > 0) {
+            //console.log("AccountUpdate");
+            numConditionalTransactions++;
+            auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature)]);
+          }
         } else if (transaction.txType === "OwnerChange") {
-          //console.log("PublicKeyUpdate");
+          //console.log("OwnerChange");
           numConditionalTransactions++;
           const encodedOwnerChangeData = web3.eth.abi.encodeParameter(
             'tuple(bytes,bytes,address,bytes32,bytes)',
@@ -2213,16 +2172,8 @@ export class ExchangeTestUtil {
             da.addNumber(BlockType.SPOT_TRADE, 1);
 
             const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
-            da.addNumber(
-              spotTrade.overwriteTradeHistorySlotA * numSlots +
-                (orderA.orderID % numSlots),
-              2
-            );
-            da.addNumber(
-              spotTrade.overwriteTradeHistorySlotB * numSlots +
-                (orderB.orderID % numSlots),
-              2
-            );
+            da.addNumber(spotTrade.overwriteTradeHistorySlotA * numSlots + (orderA.orderID % numSlots), 2);
+            da.addNumber(spotTrade.overwriteTradeHistorySlotB * numSlots + (orderB.orderID % numSlots), 2);
             da.addNumber(orderA.accountID, 3);
             da.addNumber(orderB.accountID, 3);
             da.addNumber(orderA.tokenS * 2 ** 12 + orderB.tokenS, 3);
@@ -2231,27 +2182,18 @@ export class ExchangeTestUtil {
 
             let buyMask = orderA.buy ? 0b10000000 : 0;
             let rebateMask = orderA.rebateBips > 0 ? 0b01000000 : 0;
-            da.addNumber(
-              buyMask + rebateMask + orderA.feeBips + orderA.rebateBips,
-              1
-            );
+            da.addNumber(buyMask + rebateMask + orderA.feeBips + orderA.rebateBips, 1);
 
             buyMask = orderB.buy ? 0b10000000 : 0;
             rebateMask = orderB.rebateBips > 0 ? 0b01000000 : 0;
-            da.addNumber(
-              buyMask + rebateMask + orderB.feeBips + orderB.rebateBips,
-              1
-            );
+            da.addNumber(buyMask + rebateMask + orderB.feeBips + orderB.rebateBips, 1);
           } else if(tx.transfer) {
             const transfer = tx.transfer;
-            da.addNumber(BlockType.INTERNAL_TRANSFER, 1);
+            da.addNumber(BlockType.TRANSFER, 1);
             da.addNumber(transfer.type, 1);
             da.addNumber(transfer.accountFromID, 3);
             da.addNumber(transfer.accountToID, 3);
-            da.addNumber(
-              transfer.tokenID * 2 ** 12 + transfer.feeTokenID,
-              3
-            );
+            da.addNumber(transfer.tokenID * 2 ** 12 + transfer.feeTokenID, 3);
             da.addNumber(toFloat(new BN(transfer.amount), Constants.Float24Encoding), 3);
             da.addNumber(toFloat(new BN(transfer.fee), Constants.Float16Encoding), 2);
             da.addNumber(transfer.nonce, 4);
@@ -2264,10 +2206,7 @@ export class ExchangeTestUtil {
             da.addBN(new BN(withdraw.owner), 20);
             da.addNumber(withdraw.accountID, 3);
             da.addNumber(withdraw.nonce, 4);
-            da.addNumber(
-              withdraw.tokenID * 2 ** 12 + withdraw.feeTokenID,
-              3
-            );
+            da.addNumber(withdraw.tokenID * 2 ** 12 + withdraw.feeTokenID, 3);
             da.addBN(new BN(withdraw.amount), 12);
             da.addNumber(toFloat(new BN(withdraw.fee), Constants.Float16Encoding), 2);
             da.addBN(new BN(withdraw.to), 20);
@@ -2281,9 +2220,10 @@ export class ExchangeTestUtil {
             da.addNumber(deposit.tokenID, 2);
             da.addBN(new BN(deposit.amount), 12);
             da.addBN(new BN(deposit.index), 12);
-          } else if (tx.publicKeyUpdate) {
-            const update = tx.publicKeyUpdate;
-            da.addNumber(BlockType.PUBLIC_KEY_UPDATE, 1);
+          } else if (tx.accountUpdate) {
+            const update = tx.accountUpdate;
+            da.addNumber(BlockType.ACCOUNT_UPDATE, 1);
+            da.addNumber(update.type, 1);
             da.addBN(new BN(update.owner), 20);
             da.addNumber(update.accountID, 3);
             da.addNumber(update.nonce, 4);
@@ -2578,7 +2518,7 @@ export class ExchangeTestUtil {
 
     const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();
     this.GENESIS_MERKLE_ROOT = new BN(
-      (await this.exchange.genesisBlockHash()).slice(2),
+      (await this.exchange.genesisMerkleRoot()).slice(2),
       16
     );
 
@@ -2598,8 +2538,7 @@ export class ExchangeTestUtil {
       compressedData: "0x",
       publicDataHash: "0",
       publicInput: "0",
-      blockFeeRewarded: new BN(0),
-      blockFeeFined: new BN(0),
+      blockFee: new BN(0),
       timestamp: exchangeCreationTimestamp,
       internalBlock: undefined,
       transactionHash: Constants.zeroAddress
@@ -2632,7 +2571,7 @@ export class ExchangeTestUtil {
   }
 
   public async syncExplorer() {
-    //await this.explorer.sync(await web3.eth.getBlockNumber());
+    await this.explorer.sync(await web3.eth.getBlockNumber());
   }
 
   public getTokenAddress(token: string) {
@@ -2650,8 +2589,7 @@ export class ExchangeTestUtil {
     return tokenID;
   }
 
-  public async createMerkleTreeInclusionProof(owner: string, token: string) {
-    const accountID = await this.getAccountID(owner);
+  public async createMerkleTreeInclusionProof(accountID: number, token: string) {
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
     await this.syncExplorer();
@@ -2663,36 +2601,15 @@ export class ExchangeTestUtil {
   public async withdrawFromMerkleTreeWithProof(
     data: WithdrawFromMerkleTreeData
   ) {
-    const accountLeaf: OnchainAccountLeaf = {
-      accountID: data.accountID,
-      owner: data.owner,
-      pubKeyX: data.publicKeyX,
-      pubKeyY: data.publicKeyY,
-      nonce: web3.utils.toBN(data.nonce),
-      walletHash: web3.utils.toBN(data.tradeHistoryRoot)
-    };
-    const balanceLeaf: OnchainBalanceLeaf = {
-      tokenID: data.tokenID,
-      balance: data.balance,
-      index: data.index,
-      tradeHistoryRoot: web3.utils.toBN(data.tradeHistoryRoot)
-    };
-    const merkleProof: OnchainMerkleProof = {
-      accountLeaf,
-      balanceLeaf,
-      accountMerkleProof: data.accountMerkleProof,
-      balanceMerkleProof: data.balanceMerkleProof
-    };
-
-    const tx = await this.exchange.withdrawFromMerkleTree(merkleProof);
+    const tx = await this.exchange.withdrawFromMerkleTree(data);
     logInfo(
       "\x1b[46m%s\x1b[0m",
       "[WithdrawFromMerkleTree] Gas used: " + tx.receipt.gasUsed
     );
   }
 
-  public async withdrawFromMerkleTree(owner: string, token: string) {
-    const proof = await this.createMerkleTreeInclusionProof(owner, token);
+  public async withdrawFromMerkleTree(accountID: number, token: string) {
+    const proof = await this.createMerkleTreeInclusionProof(accountID, token);
     await this.withdrawFromMerkleTreeWithProof(proof);
   }
 
@@ -2886,21 +2803,15 @@ export class ExchangeTestUtil {
   }
 
   public async checkExplorerState() {
-    return;
-
     // Get the current state
-    /*const numBlocksOnchain = this.blocks[this.exchangeId].length;
-    const state = await this.loadExchangeState(
+    const numBlocksOnchain = this.blocks[this.exchangeId].length;
+    const state = await Simulator.loadExchangeState(
       this.exchangeId,
       numBlocksOnchain - 1
     );
 
     await this.syncExplorer();
     const exchange = this.explorer.getExchangeById(this.exchangeId);
-    if (!exchange.hasOnchainDataAvailability()) {
-      // We can't compare the state
-      return;
-    }
 
     // Compare accounts
     assert.equal(
@@ -2911,7 +2822,7 @@ export class ExchangeTestUtil {
     for (let accountID = 0; accountID < state.accounts.length; accountID++) {
       const accountA = state.accounts[accountID];
       const accountB = exchange.getAccount(accountID);
-      this.compareAccounts(accountA, accountB);
+      Simulator.compareAccounts(accountA, accountB);
     }
 
     // Compare blocks
@@ -2957,12 +2868,8 @@ export class ExchangeTestUtil {
       );
       assert.equal(explorerBlock.origin, testBlock.origin, "unexpected origin");
       assert(
-        explorerBlock.blockFeeRewarded.eq(testBlock.blockFeeRewarded),
+        explorerBlock.blockFee.eq(testBlock.blockFee),
         "unexpected blockFeeRewarded"
-      );
-      assert(
-        explorerBlock.blockFeeFined.eq(testBlock.blockFeeFined),
-        "unexpected blockFeeFined"
       );
       assert.equal(
         explorerBlock.timestamp,
@@ -2977,7 +2884,7 @@ export class ExchangeTestUtil {
     }
 
     // Compare deposits
-    assert.equal(
+    /*assert.equal(
       exchange.getNumDeposits(),
       this.deposits[this.exchangeId].length,
       "number of deposits does not match"
