@@ -54,19 +54,13 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         bytes           data
     );
 
-    modifier onlyOwner
-    {
-        require(msg.sender == _owner, "NOT_A_OWNER");
-        _;
-    }
-
-    modifier onlyModule
+    modifier onlyFromModule
     {
         require(modules[msg.sender], "MODULE_UNAUTHORIZED");
         _;
     }
 
-    modifier onlyModuleOrWalletOwner
+    modifier onlyFromModuleOrOwner
     {
         require(
             modules[msg.sender] ||
@@ -86,7 +80,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         external
         override
         nonReentrant
-        onlyModule
+        onlyFromModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
         require(newOwner != address(this), "PROHIBITED");
@@ -116,7 +110,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         external
         override
         nonReentrant
-        onlyModuleOrWalletOwner
+        onlyFromModuleOrOwner
     {
         addModuleInternal(_module);
     }
@@ -125,7 +119,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         external
         override
         nonReentrant
-        onlyModule
+        onlyFromModule
     {
         // Allow deactivate to fail to make sure the module can be removed
         require(modules[_module], "MODULE_NOT_EXISTS");
@@ -146,7 +140,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function bindMethod(bytes4 _method, address _module)
         external
         override
-        onlyModule
+        onlyFromModule
     {
         require(_method != bytes4(0), "BAD_METHOD");
         if (_module != address(0)) {
@@ -175,7 +169,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         )
         external
         override
-        onlyModule
+        onlyFromModule
         returns (bytes memory returnData)
     {
         require(
