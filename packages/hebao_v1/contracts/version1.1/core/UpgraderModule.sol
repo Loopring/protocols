@@ -18,6 +18,9 @@ contract UpgraderModule is BaseModule {
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
+    event ImplementationUpgraded(address impl);
+    event ModuleChanged(address model, bool addOrRemove /*true == add*/);
+
     constructor(
         ControllerImpl   _controller,
         address          _implementation,
@@ -37,13 +40,17 @@ contract UpgraderModule is BaseModule {
         override
     {
         address payable wallet = msg.sender;
-        if (implementation != address(0) &&
-            implementation != OwnedUpgradabilityProxy(wallet).implementation()) {
-            bytes memory txData = abi.encodeWithSelector(
-                OwnedUpgradabilityProxy(0).upgradeTo.selector,
-                implementation
-            );
-            transactCall(wallet, wallet, 0, txData);
+        if (implementation != address(0)) {
+            address oldImpl = OwnedUpgradabilityProxy(wallet).implementation();
+
+            if (implementation != oldImpl) {
+                bytes memory txData = abi.encodeWithSelector(
+                    OwnedUpgradabilityProxy(0).upgradeTo.selector,
+                    implementation
+                );
+                transactCall(wallet, wallet, 0, txData);
+                emit ImplementationUpgraded(implementation);
+            }
         }
 
         Wallet w = Wallet(wallet);
