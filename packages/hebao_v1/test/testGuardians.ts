@@ -11,7 +11,7 @@ import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 import { assertEventEmitted } from "../util/Events";
 import BN = require("bn.js");
 
-contract("GuardiansModule", (accounts: string[]) => {
+contract("GuardiansModule-Guardian", (accounts: string[]) => {
   let defaultCtx: Context;
   let ctx: Context;
 
