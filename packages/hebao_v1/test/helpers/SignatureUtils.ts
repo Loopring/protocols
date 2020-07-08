@@ -4,6 +4,13 @@ import { MetaTx } from "./MetaTx";
 import { Constants } from "./Constants";
 import * as eip712 from "./eip712";
 
+export interface SignedRequest {
+  signers: string[];
+  signatures: string[];
+  validUntil: number;
+  wallet: string;
+}
+
 export function signCreateWallet(
   moduleAddress: string,
   owner: string,
@@ -38,6 +45,38 @@ export function signCreateWallet(
   // console.log(`hash: ${hash.toString("hex")}`);
 
   return sign(owner, hash);
+}
+
+export function signAddToWhitelistImmediately(
+  request: SignedRequest,
+  addr: string,
+  moduleAddr: string
+) {
+  const domainSeprator = eip712.hash("WhitelistModule", "1.1.0", moduleAddr);
+  const ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH = ethUtil.keccak(
+    Buffer.from(
+      "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
+    )
+  );
+  const encodedRequest = web3.eth.abi.encodeParameters(
+    ["bytes32", "address", "uint256", "address"],
+    [
+      ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH,
+      request.wallet,
+      request.validUntil,
+      addr
+    ]
+  );
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+  // console.log(`hash: ${hash}`);
+  // console.log(`request.signers: ${request.signers}`);
+
+  for (const signer of request.signers) {
+    if (signer) {
+      const sig = sign(signer, hash);
+      request.signatures.push(sig);
+    }
+  }
 }
 
 export function signMetaTx(metaTx: MetaTx) {

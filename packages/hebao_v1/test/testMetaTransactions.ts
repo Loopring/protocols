@@ -13,8 +13,12 @@ import { expectThrow } from "../util/expectThrow";
 import BN = require("bn.js");
 import { SignatureType } from "./helpers/Signature";
 import { addGuardian } from "./helpers/GuardianUtils";
+import {
+  SignedRequest,
+  signAddToWhitelistImmediately
+} from "./helpers/SignatureUtils";
 
-contract("MetaTxmodule", () => {
+contract("ForwarderModule", () => {
   let defaultCtx: Context;
   let ctx: Context;
 
@@ -38,11 +42,11 @@ contract("MetaTxmodule", () => {
     const owner = ctx.owners[0];
     const { wallet } = await createWallet(ctx, owner);
     const tests = [
-      { type: SignatureType.ILLEGAL, error: "INVALID_SIGNATURES" },
-      { type: SignatureType.INVALID, error: "INVALID_SIGNATURES" },
-      { type: SignatureType.EIP_712, error: "INVALID_SIGNATURES" },
-      { type: SignatureType.ETH_SIGN, error: "INVALID_SIGNATURES" },
-      { type: SignatureType.WALLET, error: "INVALID_SIGNATURES" }
+      { type: SignatureType.ILLEGAL, error: "INVALID_SIGNATURE" },
+      { type: SignatureType.INVALID, error: "INVALID_SIGNATURE" },
+      { type: SignatureType.EIP_712, error: "INVALID_SIGNATURE" },
+      { type: SignatureType.ETH_SIGN, error: "INVALID_SIGNATURE" }
+      // { type: SignatureType.WALLET, error: "INVALID_SIGNATURES" }
     ];
     for (let i = 0; i < tests.length; i++) {
       await expectThrow(
@@ -54,9 +58,11 @@ contract("MetaTxmodule", () => {
           ctx,
           true,
           wallet,
-          [owner],
+          [],
           {
-            from: owner,
+            owner: ctx.miscAddresses[0],
+            wallet,
+            from: ctx.miscAddresses[0],
             signatureTypes: [tests[i].type],
             checkSignatures: false
           }
@@ -73,16 +79,26 @@ contract("MetaTxmodule", () => {
     const signatureTypes = new Array(signers.length).fill(
       SignatureType.EIP_712
     );
+
+    const addr = ctx.guardians[10];
+    const request: SignedRequest = {
+      signers,
+      signatures: [],
+      validUntil: Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30,
+      wallet
+    };
+    signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+
     await executeTransaction(
       ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-        wallet,
-        ctx.miscAddresses[0]
+        request,
+        addr
       ),
       ctx,
       true,
       wallet,
       signers,
-      { from: owner, signatureTypes }
+      { from: owner, owner, wallet, signatureTypes }
     );
   });
 
@@ -93,109 +109,96 @@ contract("MetaTxmodule", () => {
     const signatureTypes = new Array(signers.length).fill(
       SignatureType.ETH_SIGN
     );
+
+    const addr = ctx.guardians[10];
+    const request: SignedRequest = {
+      signers,
+      signatures: [],
+      validUntil: Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30,
+      wallet
+    };
+    signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+
     await executeTransaction(
       ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-        wallet,
+        request,
         ctx.miscAddresses[0]
       ),
       ctx,
       true,
       wallet,
       signers,
-      { from: owner, signatureTypes }
+      { from: owner, owner, wallet, signatureTypes }
     );
   });
 
-  it("should be able to sign with WALLET", async () => {
-    const ownerA = ctx.owners[0];
-    const ownerB = ctx.owners[1];
-    const { wallet: walletA } = await createWallet(ctx, ownerA);
-    const { wallet: walletB } = await createWallet(ctx, ownerB);
+  // it("should be able to sign with WALLET", async () => {
+  //   const ownerA = ctx.owners[0];
+  //   const ownerB = ctx.owners[1];
+  //   const { wallet: walletA } = await createWallet(ctx, ownerA);
+  //   const { wallet: walletB } = await createWallet(ctx, ownerB);
 
-    // Add walletB as a guardian to walletA
-    await addGuardian(ctx, ownerA, walletA, walletB, 0);
+  //   // Add walletB as a guardian to walletA
+  //   await addGuardian(ctx, ownerA, walletA, walletB, 0);
 
-    const signers = sortAddresses([ownerA, walletB]);
-    let signatureTypes = [SignatureType.EIP_712, SignatureType.WALLET];
-    if (signers[0] !== ownerA) {
-      signatureTypes = signatureTypes.reverse();
-    }
-    await executeTransaction(
-      ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-        walletA,
-        ctx.miscAddresses[0]
-      ),
-      ctx,
-      true,
-      walletA,
-      signers,
-      { from: ownerA, signatureTypes }
-    );
-  });
+  //   const signers = sortAddresses([ownerA, walletB]);
+  //   let signatureTypes = [SignatureType.EIP_712, SignatureType.WALLET];
+  //   if (signers[0] !== ownerA) {
+  //     signatureTypes = signatureTypes.reverse();
+  //   }
+  //   await executeTransaction(
+  //     ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+  //       walletA,
+  //       ctx.miscAddresses[0]
+  //     ),
+  //     ctx,
+  //     true,
+  //     walletA,
+  //     signers,
+  //     { from: ownerA, signatureTypes }
+  //   );
+  // });
 
   it("should not be able execute the same meta tx twice (nonce)", async () => {
     const owner = ctx.owners[0];
     const { wallet, guardians } = await createWallet(ctx, owner, 3);
     const signers = [owner, ...guardians].sort();
-    // The current nonce
-    const nonce = (await ctx.whitelistModule.lastNonce(wallet)).toNumber() + 1;
-    await executeTransaction(
-      ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-        wallet,
-        ctx.miscAddresses[0]
-      ),
-      ctx,
-      true,
-      wallet,
-      signers,
-      { from: owner, nonce }
-    );
-    await expectThrow(
-      executeTransaction(
-        ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-          wallet,
-          ctx.miscAddresses[0]
-        ),
-        ctx,
-        true,
-        wallet,
-        signers,
-        { from: owner, nonce }
-      ),
-      "NONCE_TOO_SMALL"
-    );
-  });
 
-  it("should not be able execute the same meta tx twice (hash)", async () => {
-    const owner = ctx.owners[0];
-    const { wallet, guardians } = await createWallet(ctx, owner, 3);
-    const signers = [owner, ...guardians].sort();
-    // Disable the nonce so the hash is used
-    const nonce = 0;
+    const addr = ctx.guardians[10];
+    const request: SignedRequest = {
+      signers,
+      signatures: [],
+      validUntil: Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30,
+      wallet
+    };
+    signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+
+    // The current nonce
+    const nonce = new Date().getTime();
     await executeTransaction(
       ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-        wallet,
+        request,
         ctx.miscAddresses[0]
       ),
       ctx,
       true,
       wallet,
       signers,
-      { from: owner, nonce }
+      { from: owner, owner, wallet, nonce }
     );
     await expectThrow(
       executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-          wallet,
+          request,
           ctx.miscAddresses[0]
         ),
         ctx,
         true,
         wallet,
         signers,
-        { from: owner, nonce }
+        { from: owner, owner, wallet, nonce }
       ),
-      "INVALID_HASH"
+      "INVALID_NONCE"
     );
   });
 
@@ -203,41 +206,51 @@ contract("MetaTxmodule", () => {
     const owner = ctx.owners[0];
     const { wallet, guardians } = await createWallet(ctx, owner, 3);
     const signers = [owner, ...guardians].sort();
+
+    const addr = ctx.guardians[10];
+    const request: SignedRequest = {
+      signers,
+      signatures: [],
+      validUntil: Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30,
+      wallet
+    };
+    signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+
     await expectThrow(
       executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-          wallet,
+          request,
           ctx.miscAddresses[0]
         ),
         ctx,
         true,
         wallet,
         signers,
-        { from: owner, gas: 1000000, gasLimit: 1000001 }
+        { owner, wallet, from: owner, gas: 1000000, gasLimit: 1000001 }
       ),
       "INSUFFICIENT_GAS"
     );
   });
 
-  it("failing call should still produce a valid meta tx", async () => {
-    const owner = ctx.owners[0];
-    const { wallet, guardians } = await createWallet(ctx, owner, 3);
-    const signers = [owner, ...guardians].sort();
-    await expectThrow(
-      executeTransaction(
-        ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-          wallet,
-          ctx.miscAddresses[0]
-        ),
-        ctx,
-        true,
-        wallet,
-        signers,
-        { from: owner, gas: 1000000, gasLimit: 1000 }
-      ),
-      "Meta tx call failed"
-    );
-  });
+  // it.only("failing call should still produce a valid meta tx", async () => {
+  //   const owner = ctx.owners[0];
+  //   const { wallet, guardians } = await createWallet(ctx, owner, 3);
+  //   const signers = [owner, ...guardians].sort();
+  //   await expectThrow(
+  //     executeTransaction(
+  //       ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+  //         wallet,
+  //         ctx.miscAddresses[0]
+  //       ),
+  //       ctx,
+  //       true,
+  //       wallet,
+  //       signers,
+  //       { from: owner, gas: 1000000, gasLimit: 1000 }
+  //     ),
+  //     "Meta tx call failed"
+  //   );
+  // });
 
   ["ETH", "LRC"].forEach(function(gasToken) {
     it(

@@ -95,7 +95,7 @@ export async function executeMetaTx(
   const gasToken = options.gasToken ? options.gasToken : "ETH";
   const gasPrice = options.gasPrice ? options.gasPrice : new BN(0);
   const gasLimit = options.gasLimit ? options.gasLimit : 4000000;
-  const nonce = new Date().getTime();
+  const nonce = options.nonce ? options.nonce : new Date().getTime();
 
   // Create the meta transaction
   const metaTx: MetaTx = {

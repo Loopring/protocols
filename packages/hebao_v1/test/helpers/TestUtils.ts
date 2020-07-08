@@ -161,6 +161,13 @@ export async function executeTransaction(
       options
     );
 
+    const util = require("util");
+    const allEvents = await contract.getPastEvents("allEvents", {
+      fromBlock: await web3.eth.getBlockNumber(),
+      toBlock: await web3.eth.getBlockNumber()
+    });
+    console.log(`allEvents: ${util.inspect(allEvents)}`);
+
     const event = await assertEventEmitted(
       ctx.forwarderModule,
       "MetaTxExecuted"

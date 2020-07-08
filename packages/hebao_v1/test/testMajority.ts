@@ -8,6 +8,10 @@ import {
 } from "./helpers/TestUtils";
 import { addGuardian } from "./helpers/GuardianUtils";
 import { expectThrow } from "../util/expectThrow";
+import {
+  SignedRequest,
+  signAddToWhitelistImmediately
+} from "./helpers/SignatureUtils";
 
 const tests = [
   {
@@ -174,16 +178,27 @@ contract("GuardianUtils", (accounts: string[]) => {
     // Add to the whitelist
     const addr = ctx.guardians[10];
     const signers = [owner, ...guardians, ctx.miscAddresses[0]].sort();
+
+    const request: SignedRequest = {
+      signers,
+      signatures: [],
+      validUntil: Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30,
+      wallet
+    };
+
+    signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+
     await expectThrow(
       executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-          wallet,
+          request,
           addr
         ),
         ctx,
-        true,
+        false,
         wallet,
-        signers
+        [],
+        { from: owner }
       ),
       "SIGNER_NOT_GUARDIAN"
     );
@@ -202,16 +217,26 @@ contract("GuardianUtils", (accounts: string[]) => {
         }
       }
       signers = sortAddresses(signers);
+      const request: SignedRequest = {
+        signers,
+        signatures: [],
+        validUntil: Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30,
+        wallet
+      };
+
+      const addr = ctx.miscAddresses[0];
+      signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
 
       const transaction = executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-          wallet,
+          request,
           ctx.miscAddresses[0]
         ),
         ctx,
-        true,
+        false,
         wallet,
-        signers
+        [],
+        { from: owner }
       );
       if (test.success) {
         await transaction;

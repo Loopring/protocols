@@ -38,6 +38,7 @@ export function sign(
     }
     case SignatureType.EIP_712: {
       const privateKey = getPrivateKey(signer);
+      // console.log(`singer: ${signer}, privateKey: ${privateKey}`);
       signature = appendType(signEIP712(message, privateKey), type);
       break;
     }
