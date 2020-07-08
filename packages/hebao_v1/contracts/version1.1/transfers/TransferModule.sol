@@ -128,7 +128,6 @@ contract TransferModule is BaseTransferModule
         onlyFromWallet(wallet)
         returns (bytes memory returnData)
     {
-
         if (value > 0 && !isTargetWhitelisted(wallet, to)) {
             updateQuota(wallet, address(0), value);
         }
@@ -192,8 +191,7 @@ contract TransferModule is BaseTransferModule
         available = controller.quotaStore().availableQuota(wallet);
     }
 
-
-        function transferToken(
+    function transferToken(
         SignedRequest.Request calldata request,
         address        token,
         address        to,
