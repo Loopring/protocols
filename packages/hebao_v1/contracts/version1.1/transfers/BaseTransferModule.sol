@@ -118,7 +118,6 @@ abstract contract BaseTransferModule is SecurityModule
         emit ContractCalled(wallet, to, value, txData);
     }
 
-
     function isTargetWhitelisted(address wallet, address to)
         internal
         returns (bool res)
