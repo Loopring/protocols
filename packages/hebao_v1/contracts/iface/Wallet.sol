@@ -43,8 +43,7 @@ interface Wallet
     ///
     /// @param _controller The Controller instance.
     /// @param _owner The owner of this wallet, must not be address(0).
-    /// @param _boostrapModule The bootstrap module.
-    function setup(address _controller, address _owner, address _boostrapModule) external;
+    function setup(address _controller, address _owner) external;
 
     /// @dev Adds a new module. The `init` method of the module
     ///      will be called with `address(this)` as the parameter.

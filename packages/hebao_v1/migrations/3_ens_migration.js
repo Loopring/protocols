@@ -38,13 +38,35 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        return Promise.all([
-          BaseENSResolver.deployed().then(ensResolver => {
-            return Promise.all([
-              ensResolver.addManager(BaseENSManager.address)
-            ]);
-          })
-        ]);
+        ENSRegistryImpl.deployed().then(ensRegistry => {
+          return Promise.all([
+            ensRegistry.setSubnodeOwner(
+              "0x0",
+              web3.utils.keccak256(root),
+              accounts[0]
+            ),
+            ensRegistry.setSubnodeOwner(
+              ethers.utils.namehash(root),
+              web3.utils.keccak256(subName),
+              BaseENSManager.address
+            ),
+            ensRegistry.setSubnodeOwner(
+              "0x0",
+              web3.utils.keccak256("reverse"),
+              accounts[0]
+            ),
+            ensRegistry.setSubnodeOwner(
+              ethers.utils.namehash("reverse"),
+              web3.utils.keccak256("addr"),
+              ENSReverseRegistrarImpl.address
+            )
+          ]);
+        });
+      })
+      .then(() => {
+        BaseENSResolver.deployed().then(ensResolver => {
+          return Promise.all([ensResolver.addManager(BaseENSManager.address)]);
+        });
       });
   }
 };

@@ -118,7 +118,7 @@ module.exports = function(deployer, network, accounts) {
           "You will have to do ensManager.addManager(WalletFactory.address) manually"
         );
       } else {
-        console.log("add manager for BaseENSManager:", WalletFactory.address);
+        // console.log("add manager for BaseENSManager:", WalletFactory.address);
         return Promise.all([
           BaseENSManager.deployed().then(ensManager => {
             return Promise.all([
