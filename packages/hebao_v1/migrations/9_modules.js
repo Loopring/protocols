@@ -13,9 +13,7 @@ const WalletFactory = artifacts.require("WalletFactory");
 const GuardianModule = artifacts.require("GuardianModule");
 const InheritanceModule = artifacts.require("InheritanceModule");
 const WhitelistModule = artifacts.require("WhitelistModule");
-const ApprovedTransferModule = artifacts.require("ApprovedTransferModule");
-const DappTransferModule = artifacts.require("DappTransferModule");
-const QuotaTransferModule = artifacts.require("QuotaTransferModule");
+const TransferModule = artifacts.require("TransferModule");
 
 module.exports = function(deployer, network, accounts) {
   const guardianPendingPeriod =
@@ -35,9 +33,7 @@ module.exports = function(deployer, network, accounts) {
         GuardianModule,
         InheritanceModule,
         WhitelistModule,
-        ApprovedTransferModule,
-        DappTransferModule,
-        QuotaTransferModule
+        TransferModule
       ];
       return Promise.all([deployer.link(SignedRequest, dest)]);
     })
@@ -68,17 +64,7 @@ module.exports = function(deployer, network, accounts) {
           whitelistDelayPeriod
         ),
         deployer.deploy(
-          ApprovedTransferModule,
-          ControllerImpl.address,
-          ForwarderModule.address
-        ),
-        deployer.deploy(
-          DappTransferModule,
-          ControllerImpl.address,
-          ForwarderModule.address
-        ),
-        deployer.deploy(
-          QuotaTransferModule,
+          TransferModule,
           ControllerImpl.address,
           ForwarderModule.address,
           quotaDelayPeriod
@@ -94,9 +80,7 @@ module.exports = function(deployer, network, accounts) {
             moduleRegistry.registerModule(GuardianModule.address),
             moduleRegistry.registerModule(InheritanceModule.address),
             moduleRegistry.registerModule(WhitelistModule.address),
-            moduleRegistry.registerModule(ApprovedTransferModule.address),
-            moduleRegistry.registerModule(DappTransferModule.address),
-            moduleRegistry.registerModule(QuotaTransferModule.address)
+            moduleRegistry.registerModule(TransferModule.address)
           ]);
         })
       ]);

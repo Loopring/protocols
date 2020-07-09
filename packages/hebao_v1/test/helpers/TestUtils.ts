@@ -26,9 +26,7 @@ export interface Context {
   guardianModule: any;
   inheritanceModule: any;
   whitelistModule: any;
-  quotaTransferModule: any;
-  approvedTransferModule: any;
-  dappTransferModule: any;
+  transferModule: any;
   erc1271Module: any;
 
   walletImpl: any;
@@ -62,9 +60,7 @@ export async function getContext() {
     guardianModule: await contracts.GuardianModule.deployed(),
     inheritanceModule: await contracts.InheritanceModule.deployed(),
     whitelistModule: await contracts.WhitelistModule.deployed(),
-    quotaTransferModule: await contracts.QuotaTransferModule.deployed(),
-    approvedTransferModule: await contracts.ApprovedTransferModule.deployed(),
-    dappTransferModule: await contracts.DappTransferModule.deployed(),
+    transferModule: await contracts.TransferModule.deployed(),
     erc1271Module: await contracts.ERC1271Module.deployed(),
 
     walletImpl: await contracts.WalletImpl.deployed(),
@@ -97,8 +93,7 @@ export function getAllModuleAddresses(ctx: Context) {
     ctx.guardianModule.address,
     ctx.inheritanceModule.address,
     ctx.whitelistModule.address,
-    ctx.quotaTransferModule.address,
-    ctx.approvedTransferModule.address,
+    ctx.transferModule.address,
     ctx.erc1271Module.address,
     ctx.forwarderModule.address
   ];
@@ -161,11 +156,11 @@ export async function executeTransaction(
       options
     );
 
-    const util = require("util");
-    const allEvents = await contract.getPastEvents("allEvents", {
-      fromBlock: await web3.eth.getBlockNumber(),
-      toBlock: await web3.eth.getBlockNumber()
-    });
+    // const util = require("util");
+    // const allEvents = await contract.getPastEvents("allEvents", {
+    //   fromBlock: await web3.eth.getBlockNumber(),
+    //   toBlock: await web3.eth.getBlockNumber()
+    // });
     // console.log(`allEvents: ${util.inspect(allEvents)}`);
 
     const event = await assertEventEmitted(

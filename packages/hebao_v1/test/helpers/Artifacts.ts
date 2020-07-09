@@ -24,9 +24,7 @@ export class Artifacts {
   public GuardianModule: any;
   public InheritanceModule: any;
   public WhitelistModule: any;
-  public QuotaTransferModule: any;
-  public ApprovedTransferModule: any;
-  public DappTransferModule: any;
+  public TransferModule: any;
   public ERC1271Module: any;
 
   public SecurityStore: any;
@@ -65,9 +63,7 @@ export class Artifacts {
     this.GuardianModule = artifacts.require("GuardianModule");
     this.InheritanceModule = artifacts.require("InheritanceModule");
     this.WhitelistModule = artifacts.require("WhitelistModule");
-    this.QuotaTransferModule = artifacts.require("QuotaTransferModule");
-    this.ApprovedTransferModule = artifacts.require("ApprovedTransferModule");
-    this.DappTransferModule = artifacts.require("DappTransferModule");
+    this.TransferModule = artifacts.require("TransferModule");
     this.ERC1271Module = artifacts.require("ERC1271Module");
 
     this.SecurityStore = artifacts.require("SecurityStore");

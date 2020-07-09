@@ -35,10 +35,9 @@ contract("WalletFactory", () => {
     const modules = [
       ctx.guardianModule.address,
       ctx.whitelistModule.address,
-      ctx.quotaTransferModule.address,
-      ctx.approvedTransferModule.address,
-      ctx.dappTransferModule.address,
-      ctx.erc1271Module.address
+      ctx.transferModule.address,
+      ctx.erc1271Module.address,
+      ctx.forwarderModule.address
     ];
 
     const signer = ctx.owners[0];

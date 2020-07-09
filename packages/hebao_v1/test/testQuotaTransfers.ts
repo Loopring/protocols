@@ -77,7 +77,7 @@ contract("TransferModule", (accounts: string[]) => {
     // Transfer the tokens
     if (approved) {
       await executeTransaction(
-        ctx.approvedTransferModule.contract.methods.transferToken(
+        ctx.transferModule.contract.methods.transferToken(
           wallet,
           token,
           to,
@@ -92,7 +92,7 @@ contract("TransferModule", (accounts: string[]) => {
       );
     } else {
       await executeTransaction(
-        ctx.quotaTransferModule.contract.methods.transferToken(
+        ctx.transferModule.contract.methods.transferToken(
           wallet,
           token,
           to,
@@ -108,7 +108,7 @@ contract("TransferModule", (accounts: string[]) => {
     }
 
     await assertEventEmitted(
-      approved ? ctx.approvedTransferModule : ctx.quotaTransferModule,
+      approved ? ctx.transferModule : ctx.transferModule,
       "Transfered",
       (event: any) => {
         return (
@@ -184,7 +184,7 @@ contract("TransferModule", (accounts: string[]) => {
     // Call the contract
     if (approved) {
       await executeTransaction(
-        ctx.approvedTransferModule.contract.methods.callContract(
+        ctx.transferModule.contract.methods.callContract(
           wallet,
           to,
           value.toString(10),
@@ -198,7 +198,7 @@ contract("TransferModule", (accounts: string[]) => {
       );
     } else {
       await executeTransaction(
-        ctx.quotaTransferModule.contract.methods.callContract(
+        ctx.transferModule.contract.methods.callContract(
           wallet,
           to,
           value.toString(10),
@@ -213,7 +213,7 @@ contract("TransferModule", (accounts: string[]) => {
     }
 
     await assertEventEmitted(
-      approved ? ctx.approvedTransferModule : ctx.quotaTransferModule,
+      approved ? ctx.transferModule : ctx.transferModule,
       "ContractCalled",
       (event: any) => {
         return (
@@ -297,7 +297,7 @@ contract("TransferModule", (accounts: string[]) => {
     // Approve the tokens
     if (approved) {
       await executeTransaction(
-        ctx.approvedTransferModule.contract.methods.approveToken(
+        ctx.transferModule.contract.methods.approveToken(
           wallet,
           token,
           to,
@@ -311,7 +311,7 @@ contract("TransferModule", (accounts: string[]) => {
       );
     } else {
       await executeTransaction(
-        ctx.quotaTransferModule.contract.methods.approveToken(
+        ctx.transferModule.contract.methods.approveToken(
           wallet,
           token,
           to,
@@ -325,7 +325,7 @@ contract("TransferModule", (accounts: string[]) => {
       );
     }
     await assertEventEmitted(
-      approved ? ctx.approvedTransferModule : ctx.quotaTransferModule,
+      approved ? ctx.transferModule : ctx.transferModule,
       "Approved",
       (event: any) => {
         return (
@@ -399,7 +399,7 @@ contract("TransferModule", (accounts: string[]) => {
     // Approve the tokens and call the contract
     if (approved) {
       await executeTransaction(
-        ctx.approvedTransferModule.contract.methods.approveThenCallContract(
+        ctx.transferModule.contract.methods.approveThenCallContract(
           wallet,
           token,
           to,
@@ -415,7 +415,7 @@ contract("TransferModule", (accounts: string[]) => {
       );
     } else {
       await executeTransaction(
-        ctx.quotaTransferModule.contract.methods.approveThenCallContract(
+        ctx.transferModule.contract.methods.approveThenCallContract(
           wallet,
           token,
           to,
@@ -431,7 +431,7 @@ contract("TransferModule", (accounts: string[]) => {
       );
     }
     await assertEventEmitted(
-      approved ? ctx.approvedTransferModule : ctx.quotaTransferModule,
+      approved ? ctx.transferModule : ctx.transferModule,
       "Approved",
       (event: any) => {
         return (
@@ -443,7 +443,7 @@ contract("TransferModule", (accounts: string[]) => {
       }
     );
     await assertEventEmitted(
-      approved ? ctx.approvedTransferModule : ctx.quotaTransferModule,
+      approved ? ctx.transferModule : ctx.transferModule,
       "ContractCalled",
       (event: any) => {
         return (
