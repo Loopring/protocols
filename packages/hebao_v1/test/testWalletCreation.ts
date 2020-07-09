@@ -62,10 +62,15 @@ contract("WalletFactory", () => {
       useMetaTx,
       wallet,
       [],
-      { owner, wallet, from: owner, gasPrice: new BN(1) }
+      {
+        owner,
+        wallet: owner,
+        from: owner,
+        gasPrice: useMetaTx ? new BN(0) : new BN(1)
+      }
     );
 
-    console.log("tx gas usage: ", tx.gasUsed);
+    console.log("tx gas usage: ", tx.gasUsed || tx.receipt.gasUsed);
 
     // await assertEventEmitted(
     //   ctx.walletFactory,
@@ -138,32 +143,9 @@ contract("WalletFactory", () => {
         useMetaTx = metaTx;
         await createWalletChecked(
           ctx.owners[0],
-          "MyWallet" + (useMetaTx ? "A" : "B")
+          "mywallet" + (useMetaTx ? "a" : "b")
         );
       }
     );
   });
-
-  // describe("anyone", () => {
-  //   it("should not be able to create a wallet for the owner", async () => {
-  //     const owner = ctx.owners[0];
-  //     const wallet = await ctx.walletFactory.computeWalletAddress(owner);
-  //     await expectThrow(
-  //       executeTransaction(
-  //         ctx.walletFactory.contract.methods.createWallet(
-  //           owner,
-  //           "",
-  //           Constants.emptyBytes,
-  //           []
-  //         ),
-  //         ctx,
-  //         false,
-  //         wallet,
-  //         [owner],
-  //         { from: ctx.owners[1] }
-  //       ),
-  //       "NOT_FROM_METATX_OR_OWNER"
-  //     );
-  //   });
-  // });
 });
