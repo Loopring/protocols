@@ -166,7 +166,7 @@ export async function executeTransaction(
       fromBlock: await web3.eth.getBlockNumber(),
       toBlock: await web3.eth.getBlockNumber()
     });
-    console.log(`allEvents: ${util.inspect(allEvents)}`);
+    // console.log(`allEvents: ${util.inspect(allEvents)}`);
 
     const event = await assertEventEmitted(
       ctx.forwarderModule,
