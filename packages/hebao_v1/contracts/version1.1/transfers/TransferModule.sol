@@ -17,99 +17,300 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../security/SecurityModule.sol";
+import "./BaseTransferModule.sol";
 
 
 /// @title TransferModule
-abstract contract TransferModule is SecurityModule
+contract TransferModule is BaseTransferModule
 {
-    event Transfered(
-        address indexed wallet,
-        address indexed token,
-        address indexed to,
-        uint            amount,
-        bytes           logdata
+    bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = keccak256(
+        "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
     );
-    event Approved(
-        address indexed wallet,
-        address indexed token,
-        address         spender,
-        uint            amount
+
+    bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
+        "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
-    event ContractCalled(
-        address indexed wallet,
-        address indexed to,
-        uint            value,
-        bytes           data
+
+    bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
+        "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     );
+
+    bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
+        "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+    );
+
+    bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
+        "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+    );
+
+    uint public delayPeriod;
 
     constructor(
         ControllerImpl _controller,
-        address        _trustedForwarder
+        address        _trustedForwarder,
+        uint           _delayPeriod
         )
         public
-        SecurityModule(_controller, _trustedForwarder)
+        BaseTransferModule(_controller, _trustedForwarder)
     {
+        require(_delayPeriod > 0, "INVALID_DELAY");
+
+        DOMAIN_SEPERATOR = EIP712.hash(
+            EIP712.Domain("TransferModule", "1.1.0", address(this))
+        );
+        delayPeriod = _delayPeriod;
     }
 
-    function transferInternal(
+    function changeDailyQuota(
         address wallet,
-        address token,
-        address to,
-        uint    amount,
-        bytes   memory logdata
+        uint    newQuota
         )
-        internal
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromWallet(wallet)
     {
-        transactTokenTransfer(wallet, token, to, amount);
-        emit Transfered(wallet, token, to, amount, logdata);
+        controller.quotaStore().changeQuota(wallet, newQuota, now.add(delayPeriod));
     }
 
-    function approveInternal(
-        address wallet,
-        address token,
-        address spender,
-        uint    amount
+    function changeDailyQuotaImmediately(
+        SignedRequest.Request calldata request,
+        uint newQuota
         )
-        internal
-        returns (uint additionalAllowance)
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(request.wallet)
     {
-        // Current allowance
-        uint allowance = ERC20(token).allowance(wallet, spender);
+        controller.verifyRequest(
+            DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                newQuota
+            )
+        );
 
-        if (amount != allowance) {
-            // First reset the approved amount if needed
-            if (allowance > 0) {
-                transactTokenApprove(wallet, token, spender, 0);
-            }
+        controller.quotaStore().changeQuota(request.wallet, newQuota, now);
+    }
 
-            // Now approve the requested amount
-            transactTokenApprove(wallet, token, spender, amount);
+    function transferToken(
+        address        wallet,
+        address        token,
+        address        to,
+        uint           amount,
+        bytes calldata logdata
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromWallet(wallet)
+    {
+        if (amount > 0 && !isTargetWhitelisted(wallet, to)) {
+            updateQuota(wallet, token, amount);
         }
 
-        // If we increased the allowance, calculate by how much
-        if (amount > allowance) {
-            additionalAllowance = amount.sub(allowance);
-        }
-        emit Approved(wallet, token, spender, amount);
+        transferInternal(wallet, token, to, amount, logdata);
     }
 
-    function callContractInternal(
-        address wallet,
-        address to,
-        uint    value,
-        bytes   memory txData
+    function callContract(
+        address            wallet,
+        address            to,
+        uint               value,
+        bytes     calldata data
         )
-        internal
-        virtual
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromWallet(wallet)
         returns (bytes memory returnData)
     {
-        // Calls from the wallet to itself are deemed special
-        // (e.g. this is used for updating the wallet implementation)
-        // We also disallow calls to module functions directly
-        // (e.g. this is used for some special wallet <-> module interaction)
-        require(wallet != to && !Wallet(wallet).hasModule(to), "CALL_DISALLOWED");
-        returnData = transactCall(wallet, to, value, txData);
-        emit ContractCalled(wallet, to, value, txData);
+        if (value > 0 && !isTargetWhitelisted(wallet, to)) {
+            updateQuota(wallet, address(0), value);
+        }
+
+        return callContractInternal(wallet, to, value, data);
+    }
+
+    function approveToken(
+        address            wallet,
+        address            token,
+        address            to,
+        uint               amount
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromWallet(wallet)
+    {
+        uint additionalAllowance = approveInternal(wallet, token, to, amount);
+
+        if (additionalAllowance > 0 && !isTargetWhitelisted(wallet, to)) {
+            updateQuota(wallet, token, additionalAllowance);
+        }
+    }
+
+    function approveThenCallContract(
+        address            wallet,
+        address            token,
+        address            to,
+        uint               amount,
+        uint               value,
+        bytes     calldata data
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromWallet(wallet)
+        returns (bytes memory returnData)
+    {
+        uint additionalAllowance = approveInternal(wallet, token, to, amount);
+
+        if ((additionalAllowance > 0 || value > 0) && !isTargetWhitelisted(wallet, to)) {
+            updateQuota(wallet, token, additionalAllowance);
+            updateQuota(wallet, address(0), value);
+        }
+
+        return callContractInternal(wallet, to, value, data);
+    }
+
+    function getDailyQuota(address wallet)
+        public
+        view
+        returns (
+            uint total,
+            uint spent,
+            uint available
+        )
+    {
+        total = controller.quotaStore().currentQuota(wallet);
+        spent = controller.quotaStore().spentQuota(wallet);
+        available = controller.quotaStore().availableQuota(wallet);
+    }
+
+    function transferToken(
+        SignedRequest.Request calldata request,
+        address        token,
+        address        to,
+        uint           amount,
+        bytes calldata logdata
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(request.wallet)
+    {
+        controller.verifyRequest(
+            DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                TRANSFER_TOKEN_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                token,
+                to,
+                amount,
+                keccak256(logdata)
+            )
+        );
+
+        transferInternal(request.wallet, token, to, amount, logdata);
+    }
+
+    function approveToken(
+        SignedRequest.Request calldata request,
+        address token,
+        address to,
+        uint    amount
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(request.wallet)
+    {
+        controller.verifyRequest(
+            DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                APPROVE_TOKEN_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                token,
+                to,
+                amount
+            )
+        );
+
+        approveInternal(request.wallet, token, to, amount);
+    }
+
+    function callContract(
+        SignedRequest.Request calldata request,
+        address        to,
+        uint           value,
+        bytes calldata data
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(request.wallet)
+        returns (bytes memory returnData)
+    {
+        controller.verifyRequest(
+            DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                CALL_CONTRACT_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                to,
+                value,
+                keccak256(data)
+            )
+        );
+
+        return callContractInternal(request.wallet, to, value, data);
+    }
+
+    function approveThenCallContract(
+        SignedRequest.Request calldata request,
+        address        token,
+        address        to,
+        uint           amount,
+        uint           value,
+        bytes calldata data
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(request.wallet)
+        returns (bytes memory returnData)
+    {
+        bytes memory encoded = abi.encode(
+            APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
+            request.wallet,
+            request.validUntil,
+            token,
+            to,
+            amount,
+            value,
+            keccak256(data)
+        );
+
+        controller.verifyRequest(
+            DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            encoded
+        );
+
+        approveInternal(request.wallet, token, to, amount);
+        return callContractInternal(request.wallet, to, value, data);
     }
 }
