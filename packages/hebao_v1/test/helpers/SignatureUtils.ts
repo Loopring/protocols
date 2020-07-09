@@ -79,6 +79,29 @@ export function signAddToWhitelistImmediately(
   }
 }
 
+export function signRecover(
+  request: SignedRequest,
+  newOwner: string,
+  moduleAddr: string
+) {
+  const domainSeprator = eip712.hash("GuardianModule", "1.1.0", moduleAddr);
+  const RECOVER_TYPEHASH = ethUtil.keccak(
+    Buffer.from("recover(address wallet,uint256 validUntil,address newOwner)")
+  );
+  const encodedRequest = web3.eth.abi.encodeParameters(
+    ["bytes32", "address", "uint256", "address"],
+    [RECOVER_TYPEHASH, request.wallet, request.validUntil, newOwner]
+  );
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+
+  for (const signer of request.signers) {
+    if (signer) {
+      const sig = sign(signer, hash);
+      request.signatures.push(sig);
+    }
+  }
+}
+
 export function signMetaTx(metaTx: MetaTx) {
   const META_TX_TYPEHASH = ethUtil.keccak(
     "MetaTx(address from,address to,\
