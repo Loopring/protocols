@@ -159,7 +159,6 @@ contract GuardianModule is SecurityModule
 
         Wallet w = Wallet(request.wallet);
         address oldOwner = w.owner();
-        require(newOwner != oldOwner, "SAME_ADDRESS");
         require(newOwner != address(0), "ZERO_ADDRESS");
 
         controller.verifyRequest(
