@@ -3,6 +3,7 @@ import { sign, SignatureType } from "./Signature";
 import { MetaTx } from "./MetaTx";
 import { Constants } from "./Constants";
 import * as eip712 from "./eip712";
+import BN = require("bn.js");
 
 export interface SignedRequest {
   signers: string[];
@@ -95,10 +96,35 @@ export function signRecover(
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
 
   for (const signer of request.signers) {
-    if (signer) {
-      const sig = sign(signer, hash);
-      request.signatures.push(sig);
-    }
+    const sig = sign(signer, hash);
+    request.signatures.push(sig);
+  }
+}
+
+export function signChangeDailyQuotaImmediately(
+  request: SignedRequest,
+  newQuota: BN,
+  moduleAddr: string
+) {
+  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = ethUtil.keccak(
+    Buffer.from(
+      "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
+    )
+  );
+  const encodedRequest = web3.eth.abi.encodeParameters(
+    ["bytes32", "address", "uint256", "uint256"],
+    [
+      CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH,
+      request.wallet,
+      request.validUntil,
+      newQuota.toString(10)
+    ]
+  );
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+  for (const signer of request.signers) {
+    const sig = sign(signer, hash);
+    request.signatures.push(sig);
   }
 }
 
