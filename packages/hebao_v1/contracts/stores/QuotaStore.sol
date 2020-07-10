@@ -58,6 +58,10 @@ contract QuotaStore is DataStore, Claimable
         external
         onlyOwner
     {
+        require(
+            newDefaultQuota >= 1 ether && newDefaultQuota <= 100 ether,
+            "INVALID_DEFAULT_QUOTA"
+        );
         defaultQuota = newDefaultQuota;
     }
 
