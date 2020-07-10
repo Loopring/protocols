@@ -46,7 +46,6 @@ contract("LoopringV3Owner", (accounts: string[]) => {
   ) => {
     const startMinExchangeStakeDALrc = await loopring.minExchangeStakeWithDataAvailability();
     const startMinExchangeStakeWDALrc = await loopring.minExchangeStakeWithoutDataAvailability();
-    const startRevertFineLrc = await loopring.revertFineLRC();
 
     const transformPrice = (value: BN) => {
       return priceFactor > 1
@@ -59,7 +58,6 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     const expectedMinExchangeStakeWDALrc = transformPrice(
       startMinExchangeStakeWDALrc
     );
-    const expectedRevertFineLrc = transformPrice(startRevertFineLrc);
 
     // Set the conversion so the expected LRC amounts are returned by the oracle
     const setConversion = async (mockContract: any, usd: BN, lrc: BN) => {
@@ -78,7 +76,6 @@ contract("LoopringV3Owner", (accounts: string[]) => {
       minExchangeStakeWDA,
       expectedMinExchangeStakeWDALrc
     );
-    await setConversion(mockChainlink, revertFine, expectedRevertFineLrc);
 
     // Update the LRC amounts
     await loopringV3Owner.updateValuesInLRC();
@@ -95,10 +92,6 @@ contract("LoopringV3Owner", (accounts: string[]) => {
         await loopring.minExchangeStakeWithoutDataAvailability()
       ),
       "unexpected currentMinExchangeStakeWDALrc"
-    );
-    assert(
-      expectedRevertFineLrc.eq(await loopring.revertFineLRC()),
-      "unexpected currentRevertFineLrc"
     );
 
     // Check the LRCValuesUpdated event
@@ -118,10 +111,6 @@ contract("LoopringV3Owner", (accounts: string[]) => {
       ),
       "unexpected currentMinExchangeStakeWDALrc"
     );
-    assert(
-      updateEvent.revertFineLRC.eq(expectedRevertFineLrc),
-      "unexpected currentRevertFineLrc"
-    );
   };
 
   it("should work as expected as the owner", async () => {
@@ -130,8 +119,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
       loopring.address,
       mockProvider.address,
       minExchangeStakeDA,
-      minExchangeStakeWDA,
-      revertFine
+      minExchangeStakeWDA
     );
 
     // Set the owner to the newly created LoopringV3Owner
@@ -157,8 +145,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
       loopring.address,
       mockProvider.address,
       minExchangeStakeDA,
-      minExchangeStakeWDA,
-      revertFine
+      minExchangeStakeWDA
     );
 
     // Now transfer the ownership to the new contract (this operation is delayed)

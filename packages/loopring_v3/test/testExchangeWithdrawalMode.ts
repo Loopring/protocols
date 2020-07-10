@@ -168,6 +168,9 @@ contract("Exchange", (accounts: string[]) => {
       await checkNotifyForcedRequestTooOld(deposit.accountID, token, true);
       // We should be in withdrawal mode
       await checkWithdrawalMode(true);
+
+      // Burn the stake
+      await exchange.burnExchangeStake();
     });
 
     it("ERC20: withdraw from merkle tree", async () => {

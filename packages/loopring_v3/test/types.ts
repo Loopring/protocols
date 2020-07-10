@@ -6,7 +6,8 @@ export enum AuthMethod {
   EDDSA,
   ECDSA,
   APPROVE,
-  FORCE
+  FORCE,
+  WALLET
 }
 
 export interface OrderInfo {
@@ -115,8 +116,8 @@ export class Transfer {
 
   type: number;
 
-  accountFromID: number;
-  accountToID: number;
+  fromAccountID: number;
+  toAccountID: number;
 
   tokenID: number;
   amount: BN;
@@ -124,16 +125,18 @@ export class Transfer {
   feeTokenID: number;
   fee: BN;
 
-  ownerFrom: string;
-  ownerTo: string;
+  from: string;
+  to: string;
+
+  data: string;
 
   validUntil: number;
 
   dualAuthorX: string;
   dualAuthorY: string;
-  payerAccountToID: number;
-  payerOwnerTo: string;
-  payeeAccountToID: number;
+  payerToAccountID: number;
+  payerTo: string;
+  payeeToAccountID: number;
 
   nonce: number;
 

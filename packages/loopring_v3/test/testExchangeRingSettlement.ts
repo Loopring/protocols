@@ -113,8 +113,6 @@ contract("Exchange", (accounts: string[]) => {
       //await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {authMethod: AuthMethod.ECDSA});
       await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {useDualAuthoring: true});
 
-      const ownerB_ID = await exchangeTestUtil.getAccountID(ownerB);
-
       await exchangeTestUtil.requestWithdrawal(
         ownerB,
         token,
@@ -123,12 +121,11 @@ contract("Exchange", (accounts: string[]) => {
         new BN(0)
       );
 
-      const newKeyPair = exchangeTestUtil.getKeyPairEDDSA();
-      await exchangeTestUtil.requestAccountUpdate(ownerB, newKeyPair, "1", "ETH", new BN(0));
+      await exchangeTestUtil.requestAccountUpdate(ownerB, "ETH", new BN(0), exchangeTestUtil.getKeyPairEDDSA());
 
-      await exchangeTestUtil.requestNewAccount(ownerB_ID, "ETH", new BN(0), ownerE);
+      await exchangeTestUtil.requestNewAccount(ownerB, "ETH", new BN(0), ownerE, exchangeTestUtil.getKeyPairEDDSA());
 
-      await exchangeTestUtil.requestOwnerChange(ownerE, ownerF, "ETH", new BN(0));
+      await exchangeTestUtil.requestOwnerChange(ownerE, "ETH", new BN(0), ownerF);
 
       await exchangeTestUtil.submitTransactions();
 

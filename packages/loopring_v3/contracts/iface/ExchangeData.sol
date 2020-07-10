@@ -37,7 +37,7 @@ library ExchangeData
         DEPOSIT,
         NEW_ACCOUNT,
         WITHDRAWAL,
-        PUBLICKEY_UPDATE,
+        ACCOUNT_UPDATE,
         TRANSFER,
         OWNER_CHANGE
     }
@@ -228,5 +228,8 @@ library ExchangeData
 
         // Time when the exchange has entered withdrawal mode
         uint withdrawalModeStartTime;
+
+        // Last time the protocol fee was withdrawn for a specific token
+        mapping (address => uint) protocolFeeLastWithdrawnTime;
     }
 }

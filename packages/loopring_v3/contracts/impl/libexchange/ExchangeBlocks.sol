@@ -20,9 +20,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/SignatureUtil.sol";
 
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/ExchangeData.sol";
@@ -111,39 +109,35 @@ library ExchangeBlocks
         )
         private
     {
-        bytes memory data = _block.data;
+        uint offset = 0;
 
         // Extract the exchange ID from the data
-        uint32 exchangeIdInData = 0;
-        assembly {
-            exchangeIdInData := and(mload(add(data, 4)), 0xFFFFFFFF)
-        }
+        uint32 exchangeIdInData = _block.data.toUint32(offset);
+        offset += 4;
         require(exchangeIdInData == S.id, "INVALID_EXCHANGE_ID");
 
         // Get the old and new Merkle roots
-        bytes32 merkleRootBefore;
-        bytes32 merkleRootAfter;
-        assembly {
-            merkleRootBefore := mload(add(data, 36))
-            merkleRootAfter := mload(add(data, 68))
-        }
+        bytes32 merkleRootBefore = _block.data.toBytes32(offset);
+        offset += 32;
+        bytes32 merkleRootAfter = _block.data.toBytes32(offset);
+        offset += 32;
         require(merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
         require(uint256(merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
-        // Validate inputs
-        uint32 inputTimestamp;
-        uint8 protocolTakerFeeBips;
-        uint8 protocolMakerFeeBips;
-        assembly {
-            inputTimestamp := and(mload(add(data, 72)), 0xFFFFFFFF)
-            protocolTakerFeeBips := and(mload(add(data, 73)), 0xFF)
-            protocolMakerFeeBips := and(mload(add(data, 74)), 0xFF)
-        }
+        // Validate timestamp
+        uint32 inputTimestamp = _block.data.toUint32(offset);
+        offset += 4;
         require(
             inputTimestamp > now - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
             inputTimestamp < now + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
             "INVALID_TIMESTAMP"
         );
+
+        // Validate protocol fee values
+        uint8 protocolTakerFeeBips = _block.data.toUint8(offset);
+        offset += 1;
+        uint8 protocolMakerFeeBips = _block.data.toUint8(offset);
+        offset += 1;
         require(
             validateAndUpdateProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips),
             "INVALID_PROTOCOL_FEES"
@@ -167,15 +161,13 @@ library ExchangeBlocks
         S.blocks.push(ExchangeData.BlockInfo(publicDataHash));
     }
 
-    event LogBatchSize(uint size);
-
     function verifyBlocks(
         ExchangeData.State storage S,
         ExchangeData.Block[] memory blocks,
         bytes32[] memory publicDataHashes
         )
         private
-        //view
+        view
     {
         uint numBlocksVerified = 0;
         bool[] memory blockVerified = new bool[](blocks.length);
@@ -230,14 +222,9 @@ library ExchangeBlocks
                 "INVALID_PROOF"
             );
 
-            emit LogBatchSize(batchLength);
-
             numBlocksVerified += batchLength;
         }
     }
-
-    event LogBytes(bytes data);
-    event LogUint(uint data);
 
     function processConditionalTransactions(
         ExchangeData.State storage S,
@@ -252,32 +239,28 @@ library ExchangeBlocks
         uint numConditionalTransactions = data.toUint32(offset);
         offset += 4;
 
-        emit LogUint(numConditionalTransactions);
         if (numConditionalTransactions > 0) {
             require(S.onchainDataAvailability, "CONDITIONAL_TRANSACTIONS_REQUIRE_OCDA");
 
             ExchangeData.AuxiliaryData[] memory txAuxiliaryData = abi.decode(auxiliaryData, (ExchangeData.AuxiliaryData[]));
-            require(txAuxiliaryData.length == numConditionalTransactions, "INVALID_AUXILIARYDATA_LENGTH");
+            require(txAuxiliaryData.length == numConditionalTransactions, "AUXILIARYDATA_INVALID_LENGTH");
 
             // uint24 operatorAccountID = data.toUint24(offset);
             offset += 3;
 
-            // Run over all conditional transfers
-            uint previousTransferOffset = 0;
-            uint txFeeETH = 0;
+            // Run over all conditional transactions
+            uint previousTransactionOffset = 0;
             for (uint i = 0; i < txAuxiliaryData.length; i++) {
                 // Each conditional transaction needs to be processed from left to right
-                uint transferOffset = offset + txAuxiliaryData[i].txIndex * ExchangeData.TX_DATA_AVAILABILITY_SIZE();
-                require(transferOffset > previousTransferOffset, "AUXILIARYDATA_INVALID_ORDER");
+                uint transactionOffset = offset + txAuxiliaryData[i].txIndex * ExchangeData.TX_DATA_AVAILABILITY_SIZE();
+                require(transactionOffset > previousTransactionOffset, "AUXILIARYDATA_INVALID_ORDER");
 
-                // Get the transfer data
-                bytes memory txData = data.slice(transferOffset, ExchangeData.TX_DATA_AVAILABILITY_SIZE());
+                // Get the transaction data
+                bytes memory txData = data.slice(transactionOffset, ExchangeData.TX_DATA_AVAILABILITY_SIZE());
 
+                // Process the transaction
+                uint txFeeETH = 0;
                 ExchangeData.TransactionType txType = ExchangeData.TransactionType(txData.toUint8(0));
-                //emit LogUint(uint(txType));
-                //emit LogBytes(txData);
-                //emit LogBytes(txAuxiliaryData[i].data);
-
                 if (txType == ExchangeData.TransactionType.TRANSFER) {
                     txFeeETH = TransferTransaction.process(
                         S,
@@ -296,7 +279,7 @@ library ExchangeBlocks
                         txData,
                         txAuxiliaryData[i].data
                     );
-                }  else if (txType == ExchangeData.TransactionType.PUBLICKEY_UPDATE) {
+                } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
                     txFeeETH = AccountUpdateTransaction.process(
                         S,
                         txData,
@@ -313,7 +296,7 @@ library ExchangeBlocks
                 }
 
                 blockFeeETH = blockFeeETH.add(txFeeETH);
-                previousTransferOffset = transferOffset;
+                previousTransactionOffset = transactionOffset;
             }
         }
     }

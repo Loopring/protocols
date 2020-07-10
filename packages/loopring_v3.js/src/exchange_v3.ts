@@ -323,6 +323,10 @@ export class ExchangeV3 {
     const accountMerkleProof = this.merkleTree.createProof(accountID);
     const balanceMerkleProof = account.balancesMerkleTree.createProof(tokenID);
 
+    const hasher = poseidon.createHash(5, 6, 52);
+    const tradeHistoryTree = new SparseMerkleTree(Constants.BINARY_TREE_DEPTH_TRADING_HISTORY/2);
+    tradeHistoryTree.newTree(hasher([0, 0]).toString(10));
+
     const accountLeaf: OnchainAccountLeaf = {
       accountID: account.accountId,
       owner: account.owner,
@@ -333,9 +337,11 @@ export class ExchangeV3 {
     };
     const balanceLeaf: OnchainBalanceLeaf = {
       tokenID,
-      balance: account.balances[tokenID].balance.toString(10),
-      index: account.balances[tokenID].index.toString(10),
-      tradeHistoryRoot: account.balances[tokenID].tradeHistoryTree.getRoot()
+      balance: account.getBalanceRaw(tokenID).balance.toString(10),
+      index: account.getBalanceRaw(tokenID).index.toString(10),
+      tradeHistoryRoot: account.getBalanceRaw(tokenID).tradeHistoryTree !== undefined ?
+        account.getBalanceRaw(tokenID).tradeHistoryTree.getRoot() :
+        tradeHistoryTree.getRoot()
     };
     const withdrawFromMerkleTreeData: WithdrawFromMerkleTreeData = {
       accountLeaf,

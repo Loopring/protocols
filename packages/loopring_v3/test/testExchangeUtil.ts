@@ -78,9 +78,9 @@ function replacer(name: any, val: any) {
   } else if (
     name === "owner" ||
     name === "newOwner" ||
-    name === "ownerFrom" ||
-    name === "ownerTo" ||
-    name === "payerOwnerTo" ||
+    name === "from" ||
+    name === "to" ||
+    name === "payerTo" ||
     name === "to"
   ) {
     return new BN(val.slice(2), 16).toString(10);
@@ -92,6 +92,7 @@ function replacer(name: any, val: any) {
 export interface TransferOptions {
   authMethod?: AuthMethod;
   useDualAuthoring?: boolean;
+  secretKnown?: boolean;
   amountToDeposit?: BN;
   feeToDeposit?: BN;
   transferToNew?: boolean;
@@ -109,6 +110,11 @@ export interface WithdrawOptions {
 
 export interface AccountUpdateOptions {
   authMethod?: AuthMethod;
+}
+
+export interface OwnerChangeOptions {
+  authMethod?: AuthMethod;
+  walletCalldata?: string;
 }
 
 export interface OnchainBlock {
@@ -297,8 +303,7 @@ export namespace TransferUtils {
           { name: "amount", type: "uint256" },
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" },
-          //{ name: "fromAccountID", type: "uint24" },
-          //{ name: "toAccountID", type: "uint24" },
+          { name: "data", type: "uint256" },
           { name: "nonce", type: "uint32" }
         ]
       },
@@ -310,14 +315,13 @@ export namespace TransferUtils {
         verifyingContract
       },
       message: {
-        from: transfer.ownerFrom,
-        to: transfer.ownerTo,
+        from: transfer.from,
+        to: transfer.to,
         tokenID: transfer.tokenID,
         amount: transfer.amount,
         feeTokenID: transfer.feeTokenID,
         fee: transfer.fee,
-        //fromAccountID: transfer.accountFromID,
-        //toAccountID: transfer.accountToID,
+        data: transfer.data,
         nonce: transfer.nonce
       }
     };
@@ -331,19 +335,20 @@ export namespace TransferUtils {
 
   export function sign(keyPair: any, transfer: Transfer, payer: boolean) {
     // Calculate hash
-    const hasher = Poseidon.createHash(13, 6, 53);
+    const hasher = Poseidon.createHash(14, 6, 53);
     const inputs = [
       transfer.exchangeID,
-      transfer.accountFromID,
-      payer ? transfer.payerAccountToID : transfer.accountToID,
+      transfer.fromAccountID,
+      payer ? transfer.payerToAccountID : transfer.toAccountID,
       transfer.tokenID,
       transfer.amount,
       transfer.feeTokenID,
       transfer.fee,
       transfer.validUntil,
-      payer ? transfer.payerOwnerTo : transfer.ownerTo,
+      payer ? transfer.payerTo : transfer.to,
       transfer.dualAuthorX,
       transfer.dualAuthorY,
+      transfer.data,
       transfer.nonce
     ];
     const hash = hasher(inputs).toString(10);
@@ -574,6 +579,8 @@ export class ExchangeTestUtil {
   public tokenAddressToIDMap = new Map<string, number>();
   public tokenIDToAddressMap = new Map<number, string>();
 
+  public index = new Map<string, BN>();
+
   public contracts = new Artifacts(artifacts);
 
   public pendingBlocks: Block[][] = [];
@@ -656,23 +663,7 @@ export class ExchangeTestUtil {
         secretKey: "0",
         nonce: 0
       };
-      const dummyAccountA: Account = {
-        accountID: 2,
-        owner: Constants.zeroAddress,
-        publicKeyX: "0",
-        publicKeyY: "0",
-        secretKey: "0",
-        nonce: 0
-      };
-      const dummyAccountB: Account = {
-        accountID: 3,
-        owner: Constants.zeroAddress,
-        publicKeyX: "0",
-        publicKeyY: "0",
-        secretKey: "0",
-        nonce: 0
-      };
-      this.accounts.push([protocolFeeAccount, indexAccount, dummyAccountA, dummyAccountB]);
+      this.accounts.push([protocolFeeAccount, indexAccount]);
     }
 
     await this.createExchange(
@@ -772,6 +763,9 @@ export class ExchangeTestUtil {
     fee: BN,
     options: TransferOptions = {}
   ) {
+    amount = roundToFloatValue(amount, Constants.Float24Encoding);
+    fee = roundToFloatValue(fee, Constants.Float16Encoding);
+
     // Fill in defaults
     const amountToDeposit = options.amountToDeposit
       ? options.amountToDeposit
@@ -782,6 +776,7 @@ export class ExchangeTestUtil {
         options.useDualAuthoring !== undefined
           ? options.useDualAuthoring
           : false;
+    const secretKnown = options.secretKnown !== undefined ? options.secretKnown : true;
     const transferToNew =
       options.transferToNew !== undefined ? options.transferToNew : false;
     const signer =
@@ -792,11 +787,11 @@ export class ExchangeTestUtil {
     await this.deposit(from, from, feeToken, feeToDeposit);
 
     // To
-    let accountToID = this.getAccountID(to);
+    let toAccountID = this.getAccountID(to);
     if (!transferToNew) {
-      if (accountToID === undefined) {
+      if (toAccountID === undefined) {
         await this.deposit(to, to, token, new BN(0));
-        accountToID = this.findAccount(to).accountID;
+        toAccountID = this.findAccount(to).accountID;
       }
     } else {
       const account: Account = {
@@ -809,7 +804,7 @@ export class ExchangeTestUtil {
         nonce: 0
       };
       this.accounts[this.exchangeId].push(account);
-      accountToID = account.accountID;
+      toAccountID = account.accountID;
     }
 
     // Tokens
@@ -835,26 +830,27 @@ export class ExchangeTestUtil {
 
     // Setup the transfer tx
     const accountFrom = this.findAccount(from);
-    const accountFromID = accountFrom.accountID;
+    const fromAccountID = accountFrom.accountID;
     const transfer: Transfer = {
       txType: "Transfer",
       exchangeID: this.exchangeId,
-      accountFromID,
-      accountToID,
+      fromAccountID,
+      toAccountID,
       tokenID,
       amount,
       feeTokenID,
       fee,
-      ownerFrom: from,
-      ownerTo: to,
+      from,
+      to,
+      data: this.getRandomMemo(),
       type: authMethod === AuthMethod.EDDSA ? 0 : 1,
       validUntil: 0xFFFFFFFF,
       dualAuthorX,
       dualAuthorY,
-      payerAccountToID: useDualAuthoring ? 0 : accountToID,
-      payerOwnerTo: useDualAuthoring ? Constants.zeroAddress : to,
-      payeeAccountToID: accountToID,
-      nonce: this.accounts[this.exchangeId][accountFromID].nonce++,
+      payerToAccountID: useDualAuthoring ? 0 : toAccountID,
+      payerTo: useDualAuthoring ? Constants.zeroAddress : to,
+      payeeToAccountID: toAccountID,
+      nonce: this.accounts[this.exchangeId][fromAccountID].nonce++,
       dualSecretKey
     };
 
@@ -862,7 +858,8 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.EDDSA) {
       transfer.signature = TransferUtils.sign(accountFrom, transfer, true);
       if (useDualAuthoring) {
-        transfer.dualSignature = TransferUtils.sign(dualAuthorkeyPair, transfer, false);
+        const dualKeyPair = secretKnown ? dualAuthorkeyPair : this.getKeyPairEDDSA();
+        transfer.dualSignature = TransferUtils.sign(dualKeyPair, transfer, false);
       }
     } else if (authMethod === AuthMethod.ECDSA) {
       const hash = TransferUtils.getHash(transfer, this.exchange.address);
@@ -1100,6 +1097,14 @@ export class ExchangeTestUtil {
     return EdDSA.getKeyPair();
   }
 
+  public getZeroKeyPairEDDSA() {
+    return {
+      publicKeyX: "0",
+      publicKeyY: "0",
+      secretKey: "0"
+    }
+  }
+
   public flattenList = (l: any[]) => {
     return [].concat.apply([], l);
   };
@@ -1204,6 +1209,7 @@ export class ExchangeTestUtil {
       "DepositRequested"
     );
     const index = event.index;
+    this.index.set(token, index);
     // console.log("index: " + index.toString(10));
 
     const deposit: Deposit = {
@@ -1222,7 +1228,7 @@ export class ExchangeTestUtil {
 
     if (newAccountCreated && autoSetKeys) {
       let keyPair = this.getKeyPairEDDSA();
-      await this.requestAccountUpdate(to, keyPair, "0", token, new BN(0), {authMethod: AuthMethod.ECDSA});
+      await this.requestAccountUpdate(to, token, new BN(0), keyPair, undefined, {authMethod: AuthMethod.ECDSA});
     }
 
     return deposit;
@@ -1321,35 +1327,34 @@ export class ExchangeTestUtil {
   }
 
   public async requestNewAccount(
-    payerAccountID: number,
+    payer: string,
     feeToken: string,
     fee: BN,
-    newOwner: string
+    newOwner: string,
+    keyPair: any,
+    wallet?: Wallet
   ) {
+    fee = roundToFloatValue(fee, Constants.Float16Encoding);
+
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
 
-    const guardians: Guardian[] = [{addr: newOwner, group: 1}];
-    guardians.push({addr: newOwner, group: 0});
-    const wallet: Wallet = {
-      accountID: this.accounts[this.exchangeId].length,
-      guardians,
-      inheritor: newOwner,
-      inheritableSince: 0
-    };
-    const walletHash = WalletUtils.getHash(wallet, this.statelessWallet.address, this.exchange.address);
+    let walletHash = "0";
+    if (wallet !== undefined) {
+      const hash = WalletUtils.getHash(wallet, this.statelessWallet.address, this.exchange.address);
+      walletHash = this.hashToFieldElement("0x" + hash.toString("hex"));
+    }
 
-    const payerAccount = this.accounts[this.exchangeId][payerAccountID];
+    const payerAccount = this.findAccount(payer);
 
-    const keypair = this.getKeyPairEDDSA();
     const account: Account = {
       accountID: this.accounts[this.exchangeId].length,
       owner: newOwner,
-      publicKeyX: keypair.publicKeyX,
-      publicKeyY: keypair.publicKeyY,
-      secretKey: keypair.secretKey,
+      publicKeyX: keyPair.publicKeyX,
+      publicKeyY: keyPair.publicKeyY,
+      secretKey: keyPair.secretKey,
       wallet,
       nonce: 0
     };
@@ -1358,7 +1363,7 @@ export class ExchangeTestUtil {
     const newAccount: NewAccount = {
       txType: "NewAccount",
       exchangeID: this.exchangeId,
-      payerAccountID,
+      payerAccountID: payerAccount.accountID,
       feeTokenID,
       fee,
       nonce: payerAccount.nonce++,
@@ -1366,7 +1371,7 @@ export class ExchangeTestUtil {
       newAccountID: account.accountID,
       newPublicKeyX: account.publicKeyX,
       newPublicKeyY: account.publicKeyY,
-      newWalletHash: this.hashToFieldElement("0x" + walletHash.toString("hex"))
+      newWalletHash: walletHash
     };
     newAccount.signature = NewAccountUtils.sign(payerAccount, newAccount);
 
@@ -1376,12 +1381,14 @@ export class ExchangeTestUtil {
 
   public async requestAccountUpdate(
     owner: string,
-    keyPair: any,
-    walletHash: string,
     feeToken: string,
     fee: BN,
+    keyPair: any,
+    wallet?: Wallet,
     options: AccountUpdateOptions = {}
   ) {
+    fee = roundToFloatValue(fee, Constants.Float16Encoding);
+
     // Fill in defaults
     const authMethod = options.authMethod !== undefined  ? options.authMethod : AuthMethod.EDDSA;
 
@@ -1395,6 +1402,12 @@ export class ExchangeTestUtil {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
+
+    let walletHash = "0";
+    if (wallet !== undefined) {
+      const hash = WalletUtils.getHash(wallet, this.statelessWallet.address, this.exchange.address);
+      walletHash = this.hashToFieldElement("0x" + hash.toString("hex"));
+    }
 
     const account = this.findAccount(owner);
 
@@ -1436,10 +1449,17 @@ export class ExchangeTestUtil {
 
   public async requestOwnerChange(
     owner: string,
-    newOwner: string,
     feeToken: string,
-    fee: BN
+    fee: BN,
+    newOwner: string,
+    options: OwnerChangeOptions = {}
   ) {
+    fee = roundToFloatValue(fee, Constants.Float16Encoding);
+
+    // Fill in defaults
+    const authMethod = options.authMethod !== undefined  ? options.authMethod : AuthMethod.ECDSA;
+    const walletCalldata = options.walletCalldata !== undefined  ? options.walletCalldata : "0x";
+
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
@@ -1447,36 +1467,14 @@ export class ExchangeTestUtil {
 
     const account = this.findAccount(owner);
 
-    const walletHash = WalletUtils.getHash(account.wallet, this.statelessWallet.address, this.exchange.address);
-    const walletDataHash = WalletUtils.getWalletHash(account.wallet, this.statelessWallet.address);
-
-    const permissionData: PermissionData = {signers: [], signatures: []};
-
-    const testResult = await this.statelessWallet.recover(
-      account.accountID,
-      account.nonce,
-      owner,
-      newOwner,
-      "0x" + walletDataHash.toString("hex"),
-      account.wallet,
-      permissionData
-    );
-    console.log(testResult);
-
-    console.log("Stateless wallet: " + this.statelessWallet.address);
-    console.log("walletHash: " + walletHash.toString("hex"));
-    console.log("walletDataHash: " + walletDataHash.toString("hex"));
-
-    const walletCalldata = this.statelessWallet.contract.methods.recover(
-      account.accountID,
-      account.nonce,
-      owner,
-      newOwner,
-      "0x" + walletDataHash.toString("hex"),
-      account.wallet,
-      permissionData
-    ).encodeABI();
-    console.log(walletCalldata);
+    let walletHash = "0";
+    let walletDataHash = "0x0";
+    if (account.wallet !== undefined) {
+      const hash = WalletUtils.getHash(account.wallet, this.statelessWallet.address, this.exchange.address);
+      const dataHash = WalletUtils.getWalletHash(account.wallet, this.statelessWallet.address);
+      walletHash = this.hashToFieldElement("0x" + hash.toString("hex"));
+      walletDataHash = "0x" + dataHash.toString("hex");
+    }
 
     const ownerChange: OwnerChange = {
       txType: "OwnerChange",
@@ -1484,17 +1482,29 @@ export class ExchangeTestUtil {
       accountID: account.accountID,
       feeTokenID,
       fee,
-      walletHash: this.hashToFieldElement("0x" + walletHash.toString("hex")),
+      walletHash,
       nonce: account.nonce++,
       newOwner,
-      walletAddress: this.statelessWallet.address,
-      walletDataHash: "0x" + walletDataHash.toString("hex"),
+      walletAddress: authMethod === AuthMethod.WALLET ? this.statelessWallet.address : Constants.zeroAddress,
+      walletDataHash,
       walletCalldata
     };
 
+    // New owner always has to sign
     const hash = OwnerChangeUtils.getHash(ownerChange, this.exchange.address);
     ownerChange.onchainSignatureNewOwner = await sign(newOwner, hash, SignatureType.EIP_712);
     await verifySignature(newOwner, hash, ownerChange.onchainSignatureNewOwner);
+
+    // Sign the public key update
+    if (authMethod === AuthMethod.ECDSA) {
+      ownerChange.onchainSignatureOldOwner = await sign(owner, hash, SignatureType.EIP_712);
+      await verifySignature(owner, hash, ownerChange.onchainSignatureOldOwner);
+    } else if (authMethod === AuthMethod.WALLET) {
+      // Nothing more to do
+    }
+
+    // Change the owner on the internal state
+    account.owner = newOwner;
 
     this.pendingTransactions[this.exchangeId].push(ownerChange);
     return ownerChange;
@@ -1825,34 +1835,10 @@ export class ExchangeTestUtil {
 
     // Callback that allows modifying the blocks
     if (callback !== undefined) {
-      callback(onchainBlocks);
+      callback(onchainBlocks, blocks);
     }
 
     const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
-
-    // Simulate the Conditional transfers on the approvals
-    const approvalsSnapshot = new ApprovalsSnapshot(this);
-    /*for (const block of blocks) {
-      if (block.blockType === BlockType.INTERNAL_TRANSFER) {
-        const transferBlock: Block = block.internalBlock;
-        for (const transfer of transferBlock.transfers) {
-          if (transfer.type === 1) {
-            approvalsSnapshot.transfer(
-              transfer.accountFromID,
-              transfer.accountToID,
-              transfer.tokenID,
-              transfer.amount
-            );
-            approvalsSnapshot.transfer(
-              transfer.accountFromID,
-              transferBlock.operatorAccountID,
-              transfer.feeTokenID,
-              transfer.fee
-            );
-          }
-        }
-      }
-    }*/
 
     // Deposits
     /*const numAvailableDepositSlotsBefore = await this.exchange.getNumAvailableDepositSlots();
@@ -1940,10 +1926,6 @@ export class ExchangeTestUtil {
         block.blockFeeFined = event.amountFined;
       }
     }*/
-
-    // Check the Conditional transfers
-    await approvalsSnapshot.verifyApprovals();
-    await approvalsSnapshot.verifyEvents();
 
     // Check the new Merkle root
     const merkleRoot = await this.exchange.getMerkleRoot();
@@ -2071,12 +2053,10 @@ export class ExchangeTestUtil {
       for (const [i, transaction] of transactions.entries()) {
         if (transaction.txType === "Transfer") {
           if (transaction.type > 0) {
-            //console.log("Conditional transfer");
             numConditionalTransactions++;
             auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature ? transaction.onchainSignature : "0x")]);
           }
         } else if (transaction.txType === "Withdraw") {
-          //console.log("withdraw");
           numConditionalTransactions++;
           const encodedWithdrawalData = web3.eth.abi.encodeParameter(
             'tuple(uint256,bytes,bytes)',
@@ -2084,17 +2064,14 @@ export class ExchangeTestUtil {
           );
           auxiliaryData.push([i, web3.utils.hexToBytes(encodedWithdrawalData)]);
         } else if (transaction.txType === "Deposit") {
-          //console.log("Deposit");
           numConditionalTransactions++;
           auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
         } else if (transaction.txType === "AccountUpdate") {
           if (transaction.type > 0) {
-            //console.log("AccountUpdate");
             numConditionalTransactions++;
             auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature)]);
           }
         } else if (transaction.txType === "OwnerChange") {
-          //console.log("OwnerChange");
           numConditionalTransactions++;
           const encodedOwnerChangeData = web3.eth.abi.encodeParameter(
             'tuple(bytes,bytes,address,bytes32,bytes)',
@@ -2191,14 +2168,15 @@ export class ExchangeTestUtil {
             const transfer = tx.transfer;
             da.addNumber(BlockType.TRANSFER, 1);
             da.addNumber(transfer.type, 1);
-            da.addNumber(transfer.accountFromID, 3);
-            da.addNumber(transfer.accountToID, 3);
+            da.addNumber(transfer.fromAccountID, 3);
+            da.addNumber(transfer.toAccountID, 3);
             da.addNumber(transfer.tokenID * 2 ** 12 + transfer.feeTokenID, 3);
             da.addNumber(toFloat(new BN(transfer.amount), Constants.Float24Encoding), 3);
             da.addNumber(toFloat(new BN(transfer.fee), Constants.Float16Encoding), 2);
-            da.addNumber(transfer.nonce, 4);
-            da.addBN(new BN(transfer.ownerFrom), 20);
-            da.addBN(new BN(transfer.ownerTo), 20);
+            da.addBN(new BN((transfer.type > 0 || transfer.toNewAccount) ? transfer.to : "0"), 20);
+            da.addNumber(transfer.type > 0 ? transfer.nonce: 0, 4);
+            da.addBN(new BN(transfer.type > 0 ? transfer.from : "0"), 20);
+            da.addBN(new BN(transfer.data), 32);
           } else if (tx.withdraw) {
             const withdraw = tx.withdraw;
             da.addNumber(BlockType.WITHDRAWAL, 1);
@@ -2988,6 +2966,15 @@ export class ExchangeTestUtil {
 
   public getRandomInt(max: number) {
     return Math.floor(Math.random() * max);
+  }
+
+  public getRandomMemo() {
+    const toggle = this.getRandomInt(1000);
+    if (toggle < 500) {
+      return "0";
+    } else {
+      return new BN(SHA256(Buffer.from("" + this.getRandomInt(1000)), "hex").toString("hex"), 16).shrn(3).toString(10);
+    }
   }
 
   public getRandomAmount() {

@@ -1,7 +1,6 @@
 import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
-import { OnchainBlock, ExchangeTestUtil } from "./testExchangeUtil";
-import { Bitstream } from "loopringV3.js";
+import { ExchangeTestUtil } from "./testExchangeUtil";
 import { AuthMethod } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
@@ -83,84 +82,6 @@ contract("Exchange", (accounts: string[]) => {
         // Submit the transfers
         await exchangeTestUtil.submitTransactions();
         await exchangeTestUtil.submitPendingBlocks();
-      });
-
-      it("Invalid auxiliary data", async () => {
-        await createExchange();
-        // Do some transfers
-        await exchangeTestUtil.transfer(ownerA, ownerD, tokenA, amountA, tokenB, amountC, {
-          authMethod: AuthMethod.APPROVE
-        });
-        await exchangeTestUtil.transfer(ownerB, ownerC, tokenA, amountB, tokenA, amountD);
-        await exchangeTestUtil.transfer(ownerA, ownerB, tokenA, amountC, tokenB, amountD, {
-          authMethod: AuthMethod.APPROVE
-        });
-        await exchangeTestUtil.transfer(ownerA, ownerB, tokenB, amountD, tokenA, amountA);
-        // Submit the deposits
-        await exchangeTestUtil.submitTransactions();
-        await exchangeTestUtil.submitPendingBlocks();
-        // Commmit the transfers
-        await exchangeTestUtil.submitTransactions();
-
-        // Submit the transfers: invalid length
-        await expectThrow(
-          exchangeTestUtil.submitPendingBlocks(
-            (blocks: OnchainBlock[]) => {
-              assert(blocks.length === 1, "unexpected number of blocks");
-              const auxiliaryData = new Bitstream();
-              auxiliaryData.addNumber(0, 4);
-              blocks[0].auxiliaryData = web3.utils.hexToBytes(
-                auxiliaryData.getData()
-              );
-            }
-          ),
-          "INVALID_AUXILIARYDATA_LENGTH"
-        );
-
-        // Submit the transfers: duplicated index
-        await expectThrow(
-          exchangeTestUtil.submitPendingBlocks(
-            (blocks: OnchainBlock[]) => {
-              assert(blocks.length === 1, "unexpected number of blocks");
-              const auxiliaryData = new Bitstream();
-              auxiliaryData.addNumber(2, 4);
-              auxiliaryData.addNumber(2, 4);
-              blocks[0].auxiliaryData = web3.utils.hexToBytes(
-                auxiliaryData.getData()
-              );
-            }
-          ),
-          "INVALID_AUXILIARYDATA_DATA"
-        );
-
-        // Submit the transfers: index points to a normal transfer
-        await expectThrow(
-          exchangeTestUtil.submitPendingBlocks(
-            (blocks: OnchainBlock[]) => {
-              assert(blocks.length === 1, "unexpected number of blocks");
-              const auxiliaryData = new Bitstream();
-              auxiliaryData.addNumber(0, 4);
-              auxiliaryData.addNumber(1, 4);
-              blocks[0].auxiliaryData = web3.utils.hexToBytes(
-                auxiliaryData.getData()
-              );
-            }
-          ),
-          "INVALID_AUXILIARYDATA_DATA"
-        );
-
-        // Submit the transfers: everything alright
-        await exchangeTestUtil.submitPendingBlocks(
-          (blocks: OnchainBlock[]) => {
-            assert(blocks.length === 1, "unexpected number of blocks");
-            const auxiliaryData = new Bitstream();
-            auxiliaryData.addNumber(0, 4);
-            auxiliaryData.addNumber(2, 4);
-            blocks[0].auxiliaryData = web3.utils.hexToBytes(
-              auxiliaryData.getData()
-            );
-          }
-        );
       });
     });
 
@@ -345,7 +266,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitPendingBlocks();
     });
 
-    it("should be able to transfer to an unknown recipient", async () => {
+    it("should be able to transfer to an unknown recipient (dual authoring)", async () => {
       await createExchange();
 
       const token = "ETH";
@@ -358,6 +279,24 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
+    });
+
+    it("should not be able to transfer to an unknown recipient without knowledge of secret (dual authoring)", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("1", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+
+      // Do some transfers transfer
+      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {useDualAuthoring: true, secretKnown: false});
+
+      // Commit the transfers
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("should be able to authorize a transfer using an onchain signature", async () => {
@@ -409,7 +348,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitPendingBlocks();
     });
 
-    it("should not be able to authorize a transfer using an approved transfer onchain", async () => {
+    it("should not be able to authorize a transfer from a different account using an approved transfer onchain", async () => {
       await createExchange();
 
       const token = "ETH";
@@ -507,5 +446,5 @@ contract("Exchange", (accounts: string[]) => {
         "invalid block"
       );
     });
-  }); // end of describe()
-}); // end of contract()
+  });
+});

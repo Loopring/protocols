@@ -279,6 +279,9 @@ library ExchangeWithdrawals
                 token,
                 uint96(amount)
             );
+            if (from == address(0)) {
+                S.protocolFeeLastWithdrawnTime[token] = now;
+            }
         } else {
             emit WithdrawalFailed(
                 from,

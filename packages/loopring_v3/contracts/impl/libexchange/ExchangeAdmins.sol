@@ -72,7 +72,7 @@ library ExchangeAdmins
         require(!S.isInWithdrawalMode(), "CANNOT_BE_IN_WITHDRAWAL_MODE");
 
         // Need to remain in shutdown for some time
-        require(now >= S.shutdownStartTime + ExchangeData.MIN_TIME_IN_SHUTDOWN(), "NOT_LONG_ENOUGH_IN_SHUTDOWN");
+        require(now >= S.shutdownStartTime + ExchangeData.MIN_TIME_IN_SHUTDOWN(), "TOO_EARLY");
 
         // Withdraw the complete stake
         uint amount = S.loopring.getExchangeStake(S.id);

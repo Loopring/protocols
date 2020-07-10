@@ -95,9 +95,7 @@ contract("Exchange", (accounts: string[]) => {
             values.push(web3.utils.hexToBytes("0x"));
           } else if (input.type === "bytes32") {
             values.push("0x0");
-          } else if (
-            input.internalType.startsWith("struct ExchangeData.Block[]")
-          ) {
+          } else if (input.internalType.startsWith("struct ExchangeData.Block[]")) {
             const block: OnchainBlock = {
               blockType: 0,
               blockSize: 1,
@@ -108,6 +106,9 @@ contract("Exchange", (accounts: string[]) => {
               auxiliaryData: Constants.emptyBytes
             };
             values.push([block]);
+          } else if (input.internalType.startsWith("struct ExchangeData.MerkleProof")) {
+            const proof = await exchangeTestUtil.createMerkleTreeInclusionProof(0, "ETH");
+            values.push(proof);
           } else if (input.type.startsWith("uint256[][]")) {
             values.push([new Array(1).fill("0")]);
           } else if (input.type.startsWith("uint256[]")) {

@@ -3,6 +3,7 @@ import { BlockType, Constants, roundToFloatValue } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
 import { AuthMethod, Deposit, SpotTrade } from "./types";
+import { applyInterest } from "./simulator";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -174,14 +175,10 @@ contract("Exchange", (accounts: string[]) => {
           if (to === Constants.zeroAddress) {
             to = await loopring.protocolFeeVault();
           }
-          let amountWithdrawn = roundToFloatValue(
-            deposit.amount,
-            Constants.Float24Encoding
-          );
           assert.equal(events[c].from, deposit.owner, "from should match");
           assert.equal(events[c].to, to, "to should match");
           assert.equal(events[c].token, deposit.token, "token should match");
-          assert(events[c].amount.eq(amountWithdrawn), "amount should match");
+          assert(events[c].amount.eq(deposit.amount), "amount should match");
           c++;
         }
       }
@@ -202,14 +199,10 @@ contract("Exchange", (accounts: string[]) => {
           if (to === Constants.zeroAddress) {
             to = await loopring.protocolFeeVault();
           }
-          let amountWithdrawn = roundToFloatValue(
-            deposit.amount,
-            Constants.Float24Encoding
-          );
           assert.equal(events[c].from, deposit.owner, "from should match");
           assert.equal(events[c].to, to, "to should match");
           assert.equal(events[c].token, deposit.token, "token should match");
-          assert(events[c].amount.eq(amountWithdrawn), "amount should match");
+          assert(events[c].amount.eq(deposit.amount), "amount should match");
           c++;
         }
       }
@@ -235,13 +228,8 @@ contract("Exchange", (accounts: string[]) => {
   const withdrawOnceChecked = async (
     owner: string,
     token: string,
-    uExpectedAmount: BN
+    expectedAmount: BN
   ) => {
-    const expectedAmount = roundToFloatValue(
-      uExpectedAmount,
-      Constants.Float24Encoding
-    );
-
     const snapshot = new BalanceSnapshot(exchangeTestUtil);
     await snapshot.transfer(
       depositContract.address,
@@ -856,13 +844,28 @@ contract("Exchange", (accounts: string[]) => {
     it("Block fee", async () => {
       await createExchange();
 
+      const owners = exchangeTestUtil.testContext.orderOwners;
+
       const tokens = ["LRC", "ETH", "LRC", "ETH"];
       const deposits: Deposit[] = [];
       const numWithdrawals = 4;
 
+      // Do some initial deposits so the deposit contract has some extra funds
+      await exchangeTestUtil.deposit(
+        owners[numWithdrawals],
+        owners[numWithdrawals],
+        "ETH",
+        new BN(web3.utils.toWei("10"))
+      );
+      await exchangeTestUtil.deposit(
+        owners[numWithdrawals],
+        owners[numWithdrawals],
+        "LRC",
+        new BN(web3.utils.toWei("10"))
+      );
+
       // Do deposits
       for (let i = 0; i < numWithdrawals; i++) {
-        const owners = exchangeTestUtil.testContext.orderOwners;
         let owner = owners[i];
         let amount = exchangeTestUtil.getRandomSmallAmount();
         const deposit = await exchangeTestUtil.deposit(
@@ -874,21 +877,26 @@ contract("Exchange", (accounts: string[]) => {
         deposits.push(deposit);
       }
 
+      const expectedResults: Deposit[] = [];
       for (const [i, deposit] of deposits.entries()) {
         await exchangeTestUtil.randomizeWithdrawalFee();
         await exchangeTestUtil.requestWithdrawal(
           deposit.owner,
           deposit.token,
           deposit.amount,
-          "LRC",
+          deposit.token,
           new BN(0),
           {authMethod: AuthMethod.FORCE}
         );
+        const expectedResult = { ...deposit };
+        const latestIndex = exchangeTestUtil.index.get(deposit.token);
+        expectedResult.amount = applyInterest(deposit.amount, deposit.index, latestIndex);
+        expectedResults.push(expectedResult);
       }
 
       // Submit withdrawals
-      await exchangeTestUtil.submitTransactions(16);
-      await submitWithdrawalBlockChecked(deposits);
+      await exchangeTestUtil.submitTransactions(24);
+      await submitWithdrawalBlockChecked(expectedResults);
     });
 
     describe("exchange owner", () => {

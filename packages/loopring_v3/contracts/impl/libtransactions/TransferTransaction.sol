@@ -36,7 +36,7 @@ library TransferTransaction
     using SignatureUtil        for bytes32;
 
     bytes32 constant public TRANSFER_TYPEHASH = keccak256(
-        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint32 nonce)"
+        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint256 data,uint32 nonce)"
     );
 
     event ConditionalTransferConsumed(
@@ -73,13 +73,14 @@ library TransferTransaction
         offset += 3;
         uint fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        uint32 nonce = data.toUint32(offset);
-        offset += 4;
-
-        address from = data.toAddress(offset);
-        offset += 20;
         address to = data.toAddress(offset);
         offset += 20;
+        uint32 nonce = data.toUint32(offset);
+        offset += 4;
+        address from = data.toAddress(offset);
+        offset += 20;
+        uint customData = data.toUint(offset);
+        offset += 32;
 
         // Calculate the tx hash
         bytes32 txHash = hash(
@@ -90,10 +91,9 @@ library TransferTransaction
             amount,
             feeTokenID,
             fee,
+            customData,
             nonce
         );
-
-        emit ConditionalTransferConsumed(from, to, tokenID, amount);
 
         // Verify the signature if one is provided, otherwise fall back to an approved tx
         if (auxiliaryData.length > 0) {
@@ -102,6 +102,8 @@ library TransferTransaction
             require(S.approvedTx[from][txHash], "TX_NOT_APPROVED");
             S.approvedTx[from][txHash] = false;
         }
+
+        emit ConditionalTransferConsumed(from, to, tokenID, amount);
     }
 
     function hash(
@@ -112,6 +114,7 @@ library TransferTransaction
         uint    amount,
         uint16  feeTokenID,
         uint    fee,
+        uint    data,
         uint32  nonce
         )
         internal
@@ -129,6 +132,7 @@ library TransferTransaction
                     amount,
                     feeTokenID,
                     fee,
+                    data,
                     nonce
                 )
             )

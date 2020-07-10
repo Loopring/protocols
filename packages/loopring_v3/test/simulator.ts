@@ -39,7 +39,7 @@ interface MatchResult {
   matchable: boolean;
 }
 
-function applyInterest(balance: BN, oldIndex: BN, newIndex: BN) {
+export function applyInterest(balance: BN, oldIndex: BN, newIndex: BN) {
   assert(newIndex.gte(oldIndex), "Invalid balance state");
   const indexDiff = newIndex.sub(oldIndex);
   const balanceDiff = balance.mul(indexDiff).div(Constants.INDEX_BASE);
@@ -65,7 +65,7 @@ export class Balance {
 
   constructor() {
     this.balance = new BN(0);
-    this.index = new BN(0);
+    this.index = Constants.INDEX_BASE;
     this.tradeHistory = {};
   }
 
@@ -391,11 +391,11 @@ export class Simulator {
         const transfer: Transfer = tx;
         report = this.transfer(state, block, transfer);
 
-        const accountFromBefore = previousState.getAccount(transfer.accountFromID);
-        const accountFromAfter = state.getAccount(transfer.accountFromID);
+        const accountFromBefore = previousState.getAccount(transfer.fromAccountID);
+        const accountFromAfter = state.getAccount(transfer.fromAccountID);
 
-        const accountToBefore = previousState.getAccount(transfer.accountToID);
-        const accountToAfter = state.getAccount(transfer.accountToID);
+        const accountToBefore = previousState.getAccount(transfer.toAccountID);
+        const accountToAfter = state.getAccount(transfer.toAccountID);
 
         const accountOperatorBefore = previousState.getAccount(block.operatorAccountID);
         const accountOperatorAfter = state.getAccount(block.operatorAccountID);
@@ -408,20 +408,20 @@ export class Simulator {
         logInfo("+ State changes:");
         logInfo("- From:");
         this.prettyPrintBalanceChange(
-          transfer.accountFromID,
+          transfer.fromAccountID,
           transfer.tokenID,
           accountFromBefore.getBalanceRaw(transfer.tokenID).balance,
           accountFromAfter.getBalanceRaw(transfer.tokenID).balance
         );
         this.prettyPrintBalanceChange(
-          transfer.accountFromID,
+          transfer.fromAccountID,
           transfer.feeTokenID,
           accountFromBefore.getBalanceRaw(transfer.feeTokenID).balance,
           accountFromAfter.getBalanceRaw(transfer.feeTokenID).balance
         );
         logInfo("- To:");
         this.prettyPrintBalanceChange(
-          transfer.accountToID,
+          transfer.toAccountID,
           transfer.tokenID,
           accountToBefore.getBalanceRaw(transfer.tokenID).balance,
           accountToAfter.getBalanceRaw(transfer.tokenID).balance
@@ -604,9 +604,9 @@ export class Simulator {
   public static transfer(state: ExchangeState, block: TxBlock, transfer: Transfer) {
     const index = state.getAccount(1);
 
-    const from = state.getAccount(transfer.accountFromID);
-    const to = state.getAccount(transfer.accountToID);
-    to.owner = transfer.ownerTo;
+    const from = state.getAccount(transfer.fromAccountID);
+    const to = state.getAccount(transfer.toAccountID);
+    to.owner = transfer.to;
 
     from.getBalance(transfer.tokenID, index).balance.isub(transfer.amount);
     to.getBalance(transfer.tokenID, index).balance.iadd(transfer.amount);
@@ -636,6 +636,14 @@ export class Simulator {
     }
     account.getBalance(withdrawal.tokenID, index).balance.isub(amount);
     account.getBalance(withdrawal.feeTokenID, index).balance.isub(withdrawal.fee);
+
+    // Special cases when withdrawing from the protocol fee pool.
+    // These account balances will have interest accrued.
+    if (withdrawal.accountID === 0) {
+      state.getAccount(2).getBalance(withdrawal.tokenID, index);
+    } else {
+      state.getAccount(0).getBalance(withdrawal.tokenID, index);
+    }
 
     const operator = state.getAccount(block.operatorAccountID);
     operator.getBalance(withdrawal.feeTokenID, index).balance.iadd(withdrawal.fee);

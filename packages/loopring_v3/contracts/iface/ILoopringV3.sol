@@ -90,7 +90,7 @@ abstract contract ILoopringV3 is ILoopring
         view
         returns (string memory)
     {
-        return "3.5";
+        return "3.6";
     }
 
     /// @dev Updates the global exchange settings.

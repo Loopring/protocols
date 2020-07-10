@@ -494,6 +494,17 @@ abstract contract IExchangeV3 is IExchange
         virtual
         payable;
 
+    /// @dev Gets the time the protocol fee for a token was last withdrawn.
+    /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    /// @return The time the protocol fee was last withdrawn.
+    function getProtocolFeeLastWithdrawnTime(
+        address tokenAddress
+        )
+        external
+        virtual
+        view
+        returns (uint);
+
     /// @dev Allows anyone to withdraw funds for a specified user using the balances stored
     ///      in the Merkle tree. The funds will be sent to the owner of the acount.
     ///

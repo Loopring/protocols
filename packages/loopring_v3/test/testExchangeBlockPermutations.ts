@@ -64,7 +64,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.requestWithdrawal(
       deposit.owner,
       deposit.token,
-      exchangeTestUtil.getRandomAmount(),
+      deposit.amount,
       "LRC",
       new BN(0)
     );
@@ -111,7 +111,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("Permutations", function() {
     this.timeout(0);
 
-    it("Ring Settlement", async () => {
+    it("Spot trade", async () => {
       const bDataAvailabilities = [true];
       for (const bDataAvailability of bDataAvailabilities) {
         await createExchange(bDataAvailability);
@@ -143,48 +143,20 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("Onchain withdrawal", async () => {
-      await createExchange(true);
-
-      // Do some deposits
-      const numDeposits = 8;
-      const deposits: Deposit[] = [];
-      for (let i = 0; i < numDeposits; i++) {
-        deposits.push(await doRandomDeposit());
-      }
-      await exchangeTestUtil.submitTransactions();
-
-      const blockSizes = exchangeTestUtil.blockSizes;
-      for (const blockSize of blockSizes) {
-        for (let i = 0; i < blockSize; i++) {
-          const randomDeposit =
-            deposits[exchangeTestUtil.getRandomInt(numDeposits)];
-          await doRandomOnchainWithdrawal(randomDeposit);
-        }
-        await exchangeTestUtil.submitTransactions();
-      }
-      await verify();
-    });
-
-    it("Offchain withdrawal", async () => {
+    it("Withdrawal", async () => {
       const bDataAvailabilities = [true];
       for (const bDataAvailability of bDataAvailabilities) {
         await createExchange(bDataAvailability);
 
-        // Do some deposits
-        const numDeposits = 8;
-        const deposits: Deposit[] = [];
-        for (let i = 0; i < numDeposits; i++) {
-          deposits.push(await doRandomDeposit());
-        }
-        await exchangeTestUtil.submitTransactions();
-
         const blockSizes = exchangeTestUtil.blockSizes;
         for (const blockSize of blockSizes) {
+          // Do some deposit
+          const deposits: Deposit[] = [];
           for (let i = 0; i < blockSize; i++) {
-            const randomDeposit =
-              deposits[exchangeTestUtil.getRandomInt(numDeposits)];
-            await doRandomOffchainWithdrawal(randomDeposit);
+            deposits.push(await doRandomDeposit());
+          }
+          for (let i = 0; i < blockSize; i++) {
+            await doRandomOffchainWithdrawal(deposits[i]);
           }
           await exchangeTestUtil.submitTransactions();
         }
@@ -192,7 +164,7 @@ contract("Exchange", (accounts: string[]) => {
       }
     });
 
-    it("Internal transfer", async () => {
+    it("Transfer", async () => {
       const bDataAvailabilities = [true];
       for (const bDataAvailability of bDataAvailabilities) {
         await createExchange(bDataAvailability);

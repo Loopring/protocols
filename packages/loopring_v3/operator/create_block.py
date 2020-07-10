@@ -15,7 +15,10 @@ class Block(object):
 
     def toJSON(self):
         self.blockSize = len(self.transactions)
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        data = json.dumps(self, default=lambda o: o.__dict__, sort_keys=False, indent=4)
+        # Work around the reserved keyword "from" in python
+        data = data.replace('"from_"','"from"')
+        return data
 
 class GeneralObject(object):
     pass
@@ -53,22 +56,23 @@ def orderFromJSON(jOrder, state):
 
 def transferFromJSON(jTransfer):
     transfer = GeneralObject()
-    transfer.accountFromID = int(jTransfer["accountFromID"])
-    transfer.accountToID = int(jTransfer["accountToID"])
+    transfer.fromAccountID = int(jTransfer["fromAccountID"])
+    transfer.toAccountID = int(jTransfer["toAccountID"])
     transfer.tokenID = int(jTransfer["tokenID"])
     transfer.amount = str(jTransfer["amount"])
     transfer.feeTokenID = int(jTransfer["feeTokenID"])
     transfer.fee = str(jTransfer["fee"])
     transfer.type = int(jTransfer["type"])
     transfer.nonce = int(jTransfer["nonce"])
-    transfer.ownerFrom = str(jTransfer["ownerFrom"])
-    transfer.ownerTo = str(jTransfer["ownerTo"])
+    transfer.from_ = str(jTransfer["from"])
+    transfer.to = str(jTransfer["to"])
     transfer.validUntil = int(jTransfer["validUntil"])
     transfer.dualAuthorX = str(jTransfer["dualAuthorX"])
     transfer.dualAuthorY = str(jTransfer["dualAuthorY"])
-    transfer.payerAccountToID = int(jTransfer["payerAccountToID"])
-    transfer.payerOwnerTo = str(jTransfer["payerOwnerTo"])
-    transfer.payeeAccountToID = int(jTransfer["payeeAccountToID"])
+    transfer.data = str(jTransfer["data"])
+    transfer.payerToAccountID = int(jTransfer["payerToAccountID"])
+    transfer.payerTo = str(jTransfer["payerTo"])
+    transfer.payeeToAccountID = int(jTransfer["payeeToAccountID"])
     transfer.signature = None
     transfer.dualSignature = None
     transfer.onchainSignature = None
@@ -213,7 +217,7 @@ def createBlock(state, data):
         txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
         block.transactions.append(txWitness)
 
-    # Protocol fee payment
+    # Protocol fees
     rootBefore = state._accountsTree._root
     proof = state._accountsTree.createProof(0)
     state.updateAccountTree(0)
@@ -229,17 +233,11 @@ def createBlock(state, data):
     rootAfter = state._accountsTree._root
     block.accountUpdate_I = AccountUpdateData(1, proof, rootBefore, rootAfter, accountBefore_I, accountAfter)
 
-    # Operator payments
+    # Operator
     account = state.getAccount(context.operatorAccountID)
     rootBefore = state._accountsTree._root
     accountBefore = copyAccountInfo(state.getAccount(context.operatorAccountID))
     proof = state._accountsTree.createProof(context.operatorAccountID)
-    #for tx in block.transactions:
-    #    print("tx.witness.balanceA_O_AutoApplyIndex: " + str(tx.witness.balanceA_O_AutoApplyIndex))
-    #    print("tx.witness.balanceB_O_AutoApplyIndex: " + str(tx.witness.balanceB_O_AutoApplyIndex))
-    #    tx.witness.balanceUpdateB_O = account.updateBalance(tx.witness.balanceO_B_Address, tx.witness.balanceDeltaB_O, None, tx.witness.balanceB_O_AutoApplyIndex)
-    #    tx.witness.balanceUpdateA_O = account.updateBalance(tx.witness.balanceO_A_Address, tx.witness.balanceDeltaA_O, None, tx.witness.balanceA_O_AutoApplyIndex)
-
     account.nonce += 1
     state.updateAccountTree(context.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(context.operatorAccountID))
@@ -260,16 +258,11 @@ def main(exchangeID, blockIdx, blockType, inputFilename, outputFilename):
     with open(inputFilename) as f:
         data = json.load(f)
 
-    #blockType = data["blockType"]
-
     block = createBlock(state, data)
 
     f = open(outputFilename,"w+")
     f.write(block.toJSON())
     f.close()
-
-    # Validate the block
-    # subprocess.check_call(["build/circuit/dex_circuit", "-validate", outputFilename])
 
     pathlib.Path("./states").mkdir(parents=True, exist_ok=True)
     state_filename = "./states/state_" + str(exchangeID) + "_" + str(blockIdx) + ".json"

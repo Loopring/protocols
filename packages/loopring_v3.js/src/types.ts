@@ -246,9 +246,9 @@ export interface InternalTransfer {
   requestIdx: number;
 
   /** The 'from' account for this internal transfer. */
-  accountFromID: number;
+  fromAccountID: number;
   /** The 'to' account for this internal transfer. */
-  accountToID: number;
+  toAccountID: number;
   /** The token that is being transferred. */
   tokenID: number;
   /** The amount that was actually withdrawn. */
@@ -513,6 +513,9 @@ export class ExchangeState {
     this.onchainWithdrawals = [];
 
     this.processedRequests = [];
+
+    // Create the protocol and index accounts
+    this.getAccount(1);
   }
 
   public getAccount(accountID: number) {

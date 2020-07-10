@@ -272,6 +272,17 @@ contract ExchangeV3 is IExchangeV3
         state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
     }
 
+    function getProtocolFeeLastWithdrawnTime(
+        address tokenAddress
+        )
+        external
+        override
+        view
+        returns (uint)
+    {
+        return state.protocolFeeLastWithdrawnTime[tokenAddress];
+    }
+
     function burnExchangeStake()
         external
         override
@@ -442,6 +453,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         override
+        nonReentrant
     {
         uint16 tokenID = state.getTokenID(token);
         ExchangeData.ForcedWithdrawal storage withdrawal = state.pendingForcedWithdrawals[accountID][tokenID];
@@ -523,6 +535,7 @@ contract ExchangeV3 is IExchangeV3
             amount,
             feeTokenID,
             fee,
+            0,
             nonce
         );
         state.approvedTx[from][transactionHash] = true;

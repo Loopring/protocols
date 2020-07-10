@@ -14,6 +14,7 @@ interface Transfer {
   nonce?: number;
   from?: string;
   to?: string;
+  data?: string;
 }
 
 /**
@@ -27,7 +28,9 @@ export class TransferProcessor {
 
     const from = state.getAccount(transfer.accountFromID);
     const to = state.getAccount(transfer.accountToID);
-    to.owner = transfer.to;
+    if (transfer.to !== Constants.zeroAddress) {
+      to.owner = transfer.to;
+    }
 
     from.getBalance(transfer.tokenID, index).balance.isub(transfer.amount);
     to.getBalance(transfer.tokenID, index).balance.iadd(transfer.amount);
@@ -60,12 +63,14 @@ export class TransferProcessor {
     offset += 3;
     transfer.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
     offset += 2;
+    transfer.to = data.extractAddress(offset);
+    offset += 20;
     transfer.nonce = data.extractUint32(offset);
     offset += 4;
     transfer.from = data.extractAddress(offset);
     offset += 20;
-    transfer.to = data.extractAddress(offset);
-    offset += 20;
+    transfer.data = data.extractData(offset, 32);
+    offset += 32;
 
     transfer.tokenID = tokenIDs >> 12;
     transfer.feeTokenID = tokenIDs & 0b1111111111;

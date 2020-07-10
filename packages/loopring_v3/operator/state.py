@@ -680,7 +680,7 @@ class State(object):
             newState.signatureA = txInput.signature
             newState.signatureB = txInput.dualSignature
 
-            newState.accountA_Address = txInput.accountFromID
+            newState.accountA_Address = txInput.fromAccountID
             accountA = self.getAccount(newState.accountA_Address)
 
             newState.balanceA_S_Address = txInput.tokenID
@@ -691,9 +691,9 @@ class State(object):
             newState.balanceA_B_Balance = -feeValue
             newState.balanceA_B_AutoApplyIndex = True
 
-            newState.accountB_Address = txInput.accountToID
+            newState.accountB_Address = txInput.toAccountID
             accountB = self.getAccount(newState.accountB_Address)
-            newState.accountB_Owner = txInput.ownerTo
+            newState.accountB_Owner = txInput.to
 
             newState.balanceA_S_Address = txInput.tokenID
             newState.balanceB_B_Balance = transferAmount
@@ -706,6 +706,9 @@ class State(object):
 
             newState.balanceDeltaA_O = feeValue
             newState.balanceA_O_AutoApplyIndex = True
+
+            # For tests (used to set the DA data)
+            txInput.toNewAccount = True if accountB.owner == str(0) else False
 
         elif txInput.txType == "Withdraw":
 
@@ -844,39 +847,23 @@ class State(object):
             newState.balanceDeltaB_O = feeValue
             newState.balanceB_O_AutoApplyIndex = True
 
+            context.numConditionalTransactions = context.numConditionalTransactions + 1
 
 
-        # Set default values if none provided
+        # Tokens default values
         newState.balanceA_S_Address = setValue(newState.balanceA_S_Address, 0)
         newState.balanceB_S_Address = setValue(newState.balanceB_S_Address, 0)
 
-        # Index
-        #print("newState.indexA_I: " + newState.indexA_I)
-        #print("newState.indexB_I: " + newState.indexB_I)
+        # Set new index values
         balanceUpdateB_I = self.getAccount(1).updateBalance(newState.balanceA_S_Address, 0, newState.indexB_I, None)
         balanceUpdateA_I = self.getAccount(1).updateBalance(newState.balanceB_S_Address, 0, newState.indexA_I, None)
-        #print("self.getAccount(1).getBalanceLeaf(0).index: " + self.getAccount(1).getBalanceLeaf(0).index)
-        ###
 
+        # Index default values
         accountIndex = self.getAccount(1)
-        #print("accountIndex.getBalanceLeaf(0).index: " + accountIndex.getBalanceLeaf(0).index)
-        #print("accountIndex.getBalanceLeaf(newState.balanceA_B_Address).index: " + accountIndex.getBalanceLeaf(newState.balanceA_B_Address).index)
-        #print("accountIndex.getBalanceLeaf(newState.balanceB_B_Address).index: " + accountIndex.getBalanceLeaf(newState.balanceB_B_Address).index)
-        #print("accountIndex.getBalanceLeaf(0).index: " + accountIndex.getBalanceLeaf(0).index)
-        #print("accountIndex.getBalanceLeaf(0).index: " + accountIndex.getBalanceLeaf(0).index)
-        #newState.indexB_I = setValue(newState.indexB_I, accountIndex.getBalanceLeaf(newState.balanceA_S_Address).index)
-        #if newState.balanceA_S_Address == newState.balanceB_S_Address:
-        #    newState.indexA_I = newState.indexB_I
-        #else:
-        #    newState.indexA_I = setValue(newState.indexA_I, accountIndex.getBalanceLeaf(newState.balanceB_S_Address).index)
         newState.indexB_I = accountIndex.getBalanceLeaf(newState.balanceA_S_Address).index
         newState.indexA_I = accountIndex.getBalanceLeaf(newState.balanceB_S_Address).index
 
-
-        #print("newState.indexB_I: " + newState.indexB_I)
-        #print("newState.indexA_I: " + newState.indexA_I)
-
-        # A
+        # A default values
         newState.accountA_Address = setValue(newState.accountA_Address, 2)
         accountA = self.getAccount(newState.accountA_Address)
         newState.accountA_Owner = setValue(newState.accountA_Owner, accountA.owner)
@@ -884,7 +871,6 @@ class State(object):
         newState.accountA_PublicKeyY = setValue(newState.accountA_PublicKeyY, accountA.publicKeyY)
         newState.accountA_Nonce = setValue(newState.accountA_Nonce, 0)
         newState.accountA_WalletHash = setValue(newState.accountA_WalletHash, accountA.walletHash)
-
 
         balanceLeafA_S = accountA.getBalanceLeaf(newState.balanceA_S_Address)
         newState.balanceA_S_Balance = setValue(newState.balanceA_S_Balance, 0)
@@ -900,35 +886,13 @@ class State(object):
         newState.tradeHistoryA_Filled = setValue(newState.tradeHistoryA_Filled, tradeHistoryA.filled)
         newState.tradeHistoryA_OrderId = setValue(newState.tradeHistoryA_OrderId, tradeHistoryA.orderID)
 
-        # B
-        newState.accountB_Address = setValue(newState.accountB_Address, 3)
-        accountB = self.getAccount(newState.accountB_Address)
-        newState.accountB_Owner = setValue(newState.accountB_Owner, accountB.owner)
-        newState.accountB_PublicKeyX = setValue(newState.accountB_PublicKeyX, accountB.publicKeyX)
-        newState.accountB_PublicKeyY = setValue(newState.accountB_PublicKeyY, accountB.publicKeyY)
-        newState.accountB_Nonce = setValue(newState.accountB_Nonce, 0)
-        newState.accountB_WalletHash = setValue(newState.accountB_WalletHash, accountB.walletHash)
-
-
-        balanceLeafB_S = accountB.getBalanceLeaf(newState.balanceB_S_Address)
-        newState.balanceB_S_Balance = setValue(newState.balanceB_S_Balance, 0)
-        newState.balanceB_S_AutoApplyIndex = newState.indexA_I if newState.balanceB_S_AutoApplyIndex else None
-
-        newState.balanceB_B_Balance = setValue(newState.balanceB_B_Balance, 0)
-        newState.balanceB_B_AutoApplyIndex = newState.indexB_I if newState.balanceB_B_AutoApplyIndex else None
-
-        newState.tradeHistoryB_Address = setValue(newState.tradeHistoryB_Address, 0)
-        tradeHistoryB = balanceLeafB_S.getTradeHistory(newState.tradeHistoryB_Address)
-        newState.tradeHistoryB_Filled = setValue(newState.tradeHistoryB_Filled, tradeHistoryB.filled)
-        newState.tradeHistoryB_OrderId = setValue(newState.tradeHistoryB_OrderId, tradeHistoryB.orderID)
-
-        # Operator
+        # Operator default values
         newState.balanceDeltaA_O = setValue(newState.balanceDeltaA_O, 0)
         newState.balanceDeltaB_O = setValue(newState.balanceDeltaB_O, 0)
         newState.balanceA_O_AutoApplyIndex = newState.indexA_I if newState.balanceA_O_AutoApplyIndex else None
         newState.balanceB_O_AutoApplyIndex = newState.indexB_I if newState.balanceB_O_AutoApplyIndex else None
 
-        # Protocol fees
+        # Protocol fees default values
         newState.balanceDeltaA_P = setValue(newState.balanceDeltaA_P, 0)
         newState.balanceDeltaB_P = setValue(newState.balanceDeltaB_P, 0)
         newState.balanceA_P_AutoApplyIndex = newState.indexA_I if newState.balanceA_P_AutoApplyIndex else None
@@ -938,7 +902,7 @@ class State(object):
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
 
-        # Update balances A
+        # Update A
         accountA = self.getAccount(newState.accountA_Address)
 
         rootBefore = self._accountsTree._root
@@ -972,7 +936,28 @@ class State(object):
         accountUpdate_A = AccountUpdateData(newState.accountA_Address, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
-        # Update balances B
+        # B default values
+        newState.accountB_Address = setValue(newState.accountB_Address, 2)
+        accountB = self.getAccount(newState.accountB_Address)
+        newState.accountB_Owner = setValue(newState.accountB_Owner, accountB.owner)
+        newState.accountB_PublicKeyX = setValue(newState.accountB_PublicKeyX, accountB.publicKeyX)
+        newState.accountB_PublicKeyY = setValue(newState.accountB_PublicKeyY, accountB.publicKeyY)
+        newState.accountB_Nonce = setValue(newState.accountB_Nonce, 0)
+        newState.accountB_WalletHash = setValue(newState.accountB_WalletHash, accountB.walletHash)
+
+        balanceLeafB_S = accountB.getBalanceLeaf(newState.balanceB_S_Address)
+        newState.balanceB_S_Balance = setValue(newState.balanceB_S_Balance, 0)
+        newState.balanceB_S_AutoApplyIndex = newState.indexA_I if newState.balanceB_S_AutoApplyIndex else None
+
+        newState.balanceB_B_Balance = setValue(newState.balanceB_B_Balance, 0)
+        newState.balanceB_B_AutoApplyIndex = newState.indexB_I if newState.balanceB_B_AutoApplyIndex else None
+
+        newState.tradeHistoryB_Address = setValue(newState.tradeHistoryB_Address, 0)
+        tradeHistoryB = balanceLeafB_S.getTradeHistory(newState.tradeHistoryB_Address)
+        newState.tradeHistoryB_Filled = setValue(newState.tradeHistoryB_Filled, tradeHistoryB.filled)
+        newState.tradeHistoryB_OrderId = setValue(newState.tradeHistoryB_OrderId, tradeHistoryB.orderID)
+
+        # Update B
         accountB = self.getAccount(newState.accountB_Address)
 
         rootBefore = self._accountsTree._root
