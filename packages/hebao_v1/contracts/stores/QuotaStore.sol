@@ -14,11 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 import "../base/DataStore.sol";
-import "../lib/MathUint.sol";
 import "../lib/Claimable.sol";
+import "../lib/MathUint.sol";
 
 
 /// @title QuotaStore
@@ -29,6 +29,8 @@ contract QuotaStore is DataStore, Claimable
     using MathUint for uint;
 
     uint public defaultQuota;
+
+    event DefaultQuotaChanged(uint defaultQuota);
 
     struct Quota
     {
@@ -54,15 +56,18 @@ contract QuotaStore is DataStore, Claimable
         defaultQuota = _defaultQuota;
     }
 
-    function changeDefaultQuota(uint newDefaultQuota)
+    function changeDefaultQuota(uint _defaultQuota)
         external
         onlyOwner
     {
         require(
-            newDefaultQuota >= 1 ether && newDefaultQuota <= 100 ether,
+            _defaultQuota != defaultQuota &&
+            _defaultQuota >= 1 ether &&
+            _defaultQuota <= 100 ether,
             "INVALID_DEFAULT_QUOTA"
         );
-        defaultQuota = newDefaultQuota;
+        defaultQuota = _defaultQuota;
+        emit DefaultQuotaChanged(_defaultQuota);
     }
 
     function changeQuota(
