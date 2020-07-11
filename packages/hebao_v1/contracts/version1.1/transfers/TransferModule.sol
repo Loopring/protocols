@@ -28,7 +28,7 @@ contract TransferModule is BaseTransferModule
     );
 
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
-        "approvedTransferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+        "transferTokenApproved(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
 
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
@@ -40,7 +40,7 @@ contract TransferModule is BaseTransferModule
     );
 
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
-        "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+        "approveThenCallContractApproved(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
     uint public delayPeriod;
@@ -191,7 +191,7 @@ contract TransferModule is BaseTransferModule
         available = controller.quotaStore().availableQuota(wallet);
     }
 
-    function approvedTransferToken(
+    function transferTokenApproved(
         SignedRequest.Request calldata request,
         address        token,
         address        to,
@@ -278,7 +278,7 @@ contract TransferModule is BaseTransferModule
         return callContractInternal(request.wallet, to, value, data);
     }
 
-    function approveThenCallContract(
+    function approveThenCallContractApproved(
         SignedRequest.Request calldata request,
         address        token,
         address        to,

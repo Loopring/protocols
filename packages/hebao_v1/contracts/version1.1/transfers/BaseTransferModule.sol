@@ -120,6 +120,7 @@ abstract contract BaseTransferModule is SecurityModule
 
     function isTargetWhitelisted(address wallet, address to)
         internal
+        view
         returns (bool res)
     {
         (res,) = controller.whitelistStore().isWhitelisted(wallet, to);
