@@ -41,6 +41,11 @@ contract QuotaStore is DataStore, Claimable
 
     mapping (address => Quota) public quotas;
 
+    event DefaultQuotaChanged(
+        uint prevValue,
+        uint currentValue
+    );
+
     event QuotaScheduled(
         address indexed wallet,
         uint            pendingQuota,
@@ -54,15 +59,18 @@ contract QuotaStore is DataStore, Claimable
         defaultQuota = _defaultQuota;
     }
 
-    function changeDefaultQuota(uint newDefaultQuota)
+    function changeDefaultQuota(uint _defaultQuota)
         external
         onlyOwner
     {
         require(
-            newDefaultQuota >= 1 ether && newDefaultQuota <= 100 ether,
+            _defaultQuota != defaultQuota &&
+            _defaultQuota >= 1 ether &&
+            _defaultQuota <= 100 ether,
             "INVALID_DEFAULT_QUOTA"
         );
-        defaultQuota = newDefaultQuota;
+        emit DefaultQuotaChanged(defaultQuota, _defaultQuota);
+        defaultQuota = _defaultQuota;
     }
 
     function changeQuota(
