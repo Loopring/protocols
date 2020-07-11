@@ -3,6 +3,7 @@ import {
   getContext,
   createContext,
   createWallet,
+  createWallet2,
   executeTransaction,
   getBlockTime,
   toAmount
@@ -128,7 +129,7 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
   [false, true].forEach(function(metaTx) {
     useMetaTx = metaTx;
 
-    it.only(
+    it(
       description("owner should be able to change the daily quota"),
       async () => {
         const owner = ctx.owners[0];
@@ -155,16 +156,17 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
       const numSignersRequired = Math.floor(1 + guardians.length / 2 + 1);
       for (let i = 0; i < numSignersRequired; i++) {
         const signers = [owner, ...guardians.slice(0, i)].sort();
+
         const request: SignedRequest = {
           signers,
           signatures: [],
-          validUntil: Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30,
+          validUntil: Math.floor(new Date().getTime()),
           wallet
         };
         signChangeDailyQuotaImmediately(
           request,
           newQuota,
-          ctx.whitelistModule.address
+          ctx.transferModule.address
         );
 
         const transaction = executeTransaction(
@@ -176,41 +178,21 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
           true,
           wallet,
           [],
-          { owner, wallet, from: owner }
+          { owner, wallet }
         );
+
         if (signers.length >= numSignersRequired) {
           const tx = await transaction;
-          console.log("tx:", tx);
           const blockTime = await getBlockTime(tx.blockNumber);
+
           // The quota needs to be changed immediately
-          // if (!useMetaTx) {
-          //   await assertEventEmitted(
-          //     ctx.quotaStore,
-          //     "QuotaScheduled",
-          //     (event: any) => {
-          //       return (
-          //         event.wallet == wallet &&
-          //           event.pendingQuota.eq(newQuota) &&
-          //           event.pendingUntil == blockTime
-          //       );
-          //     }
-          //   );
-          // }
-
-          // const currQuota = await ctx.quotaStore.currentQuota(wallet);
-          // console.log(`currQuota: ${currQuota}`);
-
-          // TODO: fix this test.(07-10)
           assert(
             (await ctx.quotaStore.currentQuota(wallet)).eq(newQuota),
             "quota incorrect"
           );
+        } else {
+          // event can not emited when the call in ForwarderModule failed.
         }
-        // else {
-        //   if (!useMetaTx) {
-        //     await expectThrow(transaction, "PERMISSION_DENIED");
-        //   }
-        // }
       }
     }
   );

@@ -73,13 +73,13 @@ export async function getContext() {
 
 export async function createContext(context?: Context) {
   context = context === undefined ? await getContext() : context;
-  // Create a new wallet factory module
+  // Create a new wallet factory
   const walletFactory = await context.contracts.WalletFactory.new(
     context.controllerImpl.address,
     context.walletImpl.address,
     true
   );
-  await context.moduleRegistryImpl.registerModule(walletFactory.address);
+
   await context.walletRegistryImpl.setWalletFactory(walletFactory.address);
   await context.baseENSManager.addManager(walletFactory.address);
   await context.controllerImpl.setWalletFactory(walletFactory.address);
@@ -137,6 +137,43 @@ export async function createWallet(
   return { wallet, guardians };
 }
 
+export async function createWallet2(
+  ctx: Context,
+  owner: string,
+  guardianAddrs: string[] = [],
+  modules?: string[]
+) {
+  modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
+
+  const wallet = await ctx.walletFactory.computeWalletAddress(owner);
+  const walletName = "mywalleta" + new Date().getTime();
+  const ensApproval = await getEnsApproval(wallet, walletName, ctx.owners[0]);
+  const txSignature = signCreateWallet(
+    ctx.walletFactory.address,
+    owner,
+    walletName,
+    ensApproval,
+    modules
+  );
+
+  await ctx.walletFactory.createWallet(
+    owner,
+    walletName,
+    ensApproval,
+    modules,
+    txSignature,
+    {
+      from: owner
+    }
+  );
+  // Add the guardians
+  const group = 0;
+  for (const guardian of guardianAddrs) {
+    await addGuardian(ctx, owner, wallet, guardian, group, false);
+  }
+  return { wallet, guardians: guardianAddrs };
+}
+
 export async function executeTransaction(
   txData: any,
   ctx: Context,
@@ -155,13 +192,6 @@ export async function executeTransaction(
       data,
       options
     );
-
-    // const util = require("util");
-    // const allEvents = await contract.getPastEvents("allEvents", {
-    //   fromBlock: await web3.eth.getBlockNumber(),
-    //   toBlock: await web3.eth.getBlockNumber()
-    // });
-    // console.log(`allEvents: ${util.inspect(allEvents)}`);
 
     const event = await assertEventEmitted(
       ctx.forwarderModule,

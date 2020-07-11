@@ -4,6 +4,7 @@ import {
   getContext,
   executeTransaction,
   createWallet,
+  createWallet2,
   getBlockTime
 } from "./helpers/TestUtils";
 import { assertEventEmitted } from "../util/Events";
@@ -19,6 +20,11 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
   let defaultLockPeriod: number;
 
   let useMetaTx: boolean = false;
+  let wallet: any;
+  let guardians: any;
+  let guardianWallet1: any;
+  let guardianWallet2: any;
+  let fakeGuardianWallet: any;
 
   const isLocked = async (wallet: string) => {
     return ctx.guardianModule.isLocked(wallet);
@@ -32,11 +38,10 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
   ) => {
     from = from === undefined ? guardian : from;
     const opt = useMetaTx
-      ? { owner: guardian, wallet: guardianWallet.wallet }
+      ? { owner: guardian, wallet: guardianWallet, from }
       : { from };
 
-    console.log(`wallet: ${wallet}`);
-
+    const blockNumberBefore = await web3.eth.getBlockNumber();
     // Lock the wallet
     const tx = await executeTransaction(
       ctx.guardianModule.contract.methods.lock(wallet),
@@ -46,24 +51,13 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       [],
       opt
     );
-    if (!useMetaTx) {
-      await assertEventEmitted(
-        ctx.guardianModule,
-        "WalletLock",
-        (event: any) => {
-          return event.wallet == wallet;
-        }
-      );
-    }
+
+    await assertEventEmitted(ctx.guardianModule, "WalletLock", (event: any) => {
+      return event.wallet == wallet;
+    });
 
     const getWalletLock = await ctx.guardianModule.getLock(wallet);
     const blockTime = await getBlockTime(tx.blockNumber);
-
-    console.log(`getWalletLock: ${util.inspect(getWalletLock)}`);
-    console.log(`blockTime: ${blockTime}`);
-
-    // const locked = await isLocked(wallet)
-    // console.log(`locked: ${locked}`);
 
     assert(await isLocked(wallet), "wallet needs to be locked");
     // Check the lock data
@@ -78,13 +72,12 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
   const unlockChecked = async (
     wallet: string,
     guardian: string,
-    guardianModule: any = ctx.guardianModule,
     from?: string,
-    guardianWallet?: any
+    guardianWallet?: any,
+    guardianModule: any = ctx.guardianModule
   ) => {
-    from = from === undefined ? guardian : from;
     const opt = useMetaTx
-      ? { owner: guardian, wallet: guardianWallet.wallet }
+      ? { owner: guardian, wallet: guardianWallet, from }
       : { from };
 
     const wasLocked = await isLocked(wallet);
@@ -97,7 +90,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       [],
       opt
     );
-    if (wasLocked) {
+    if (wasLocked && useMetaTx) {
       await assertEventEmitted(guardianModule, "WalletLock", (event: any) => {
         return event.wallet == wallet && event.lock == 0;
       });
@@ -112,47 +105,63 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
   before(async () => {
     // Create another lock module for testing
     defaultCtx = await getContext();
+    ctx = await createContext(defaultCtx);
     guardianModule2 = await defaultCtx.contracts.GuardianModule.new(
       defaultCtx.controllerImpl.address,
       defaultCtx.forwarderModule.address,
       3600 * 24
     );
     await defaultCtx.moduleRegistryImpl.registerModule(guardianModule2.address);
+
+    fakeGuardianWallet = (await createWallet(ctx, ctx.miscAddresses[0])).wallet;
   });
 
   beforeEach(async () => {
+    const owner = ctx.owners[0];
     ctx = await createContext(defaultCtx);
+
+    if (useMetaTx) {
+      guardians = ctx.guardians.slice(0, 2);
+      guardianWallet1 = (await createWallet(ctx, guardians[0])).wallet;
+      guardianWallet2 = (await createWallet(ctx, guardians[1])).wallet;
+      const _wallet = await createWallet2(ctx, owner, [
+        guardianWallet1,
+        guardianWallet2
+      ]);
+      // console.log('_wallet:', _wallet);
+      wallet = _wallet.wallet;
+    } else {
+      const _wallet = await createWallet(ctx, owner, 2);
+      wallet = _wallet.wallet;
+      guardians = _wallet.guardians;
+    }
+
     defaultLockPeriod = (
       await ctx.controllerImpl.defaultLockPeriod()
     ).toNumber();
   });
 
-  // TODO: lock not work with MetaTx.
-  [false /*, true*/].forEach(function(metaTx) {
+  [false, true].forEach(function(metaTx) {
     useMetaTx = metaTx;
     it(
       description("guardians should be able to lock/unlock the wallet"),
       async () => {
-        useMetaTx = metaTx;
         const owner = ctx.owners[0];
-        const { wallet, guardians } = await createWallet(ctx, owner, 2);
-        const guardianWallet1 = await createWallet(ctx, guardians[0]);
-        const guardianWallet2 = await createWallet(ctx, guardians[1]);
 
         if (!useMetaTx) {
           // Try to lock/unlock from an address that is not a guardian while pretending
           // to be a guardian
           await expectThrow(
-            lockChecked(wallet, guardians[1], ctx.miscAddresses[0]),
-            useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_FROM_GUARDIAN"
+            lockChecked(
+              wallet,
+              ctx.miscAddresses[0],
+              ctx.miscAddresses[0],
+              fakeGuardianWallet
+            ),
+            useMetaTx ? "NOT_FROM_GUARDIAN" : "NOT_FROM_GUARDIAN"
           );
           await expectThrow(
-            unlockChecked(
-              wallet,
-              guardians[1],
-              ctx.guardianModule,
-              ctx.miscAddresses[0]
-            ),
+            unlockChecked(wallet, guardians[1]),
             useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_FROM_GUARDIAN"
           );
 
@@ -162,21 +171,22 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
             useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_FROM_GUARDIAN"
           );
           await expectThrow(
-            unlockChecked(wallet, owner, ctx.guardianModule, owner),
+            unlockChecked(wallet, owner),
             useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_FROM_GUARDIAN"
           );
         }
 
-        // Lock the wallet
+        // // Lock the wallet
         await lockChecked(wallet, guardians[0], undefined, guardianWallet1);
+
         // Try to lock the wallet again
         if (!useMetaTx) {
           await expectThrow(lockChecked(wallet, guardians[1]), "LOCKED");
         }
         // Unlock the wallet (using a different guardian)
-        await unlockChecked(wallet, guardians[1]);
+        await unlockChecked(wallet, guardians[1], undefined, guardianWallet2);
         // Try to unlock the wallet again (should not throw)
-        await unlockChecked(wallet, guardians[0]);
+        await unlockChecked(wallet, guardians[0], undefined, guardianWallet1);
       }
     );
 
@@ -185,12 +195,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
         "wallet lock should automatically expire after `defaultLockPeriod`"
       ),
       async () => {
-        useMetaTx = metaTx;
         const owner = ctx.owners[0];
-        const { wallet, guardians } = await createWallet(ctx, owner, 2);
-        const guardianWallet1 = await createWallet(ctx, guardians[0]);
-        const guardianWallet2 = await createWallet(ctx, guardians[1]);
-
         // Lock the wallet
         await lockChecked(wallet, guardians[0], undefined, guardianWallet1);
         // Skip forward `defaultLockPeriod` / 2 seconds
@@ -211,19 +216,19 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
         "should not be able to unlock a lock set by a different module"
       ),
       async () => {
-        useMetaTx = metaTx;
-        const owner = ctx.owners[0];
-        const { wallet, guardians } = await createWallet(ctx, owner, 2);
-        const guardianWallet1 = await createWallet(ctx, guardians[0]);
-        const guardianWallet2 = await createWallet(ctx, guardians[1]);
-
         // Lock the wallet
         await lockChecked(wallet, guardians[0], undefined, guardianWallet1);
 
         if (!useMetaTx) {
           // Try to unlock a lock set by a different module
           await expectThrow(
-            unlockChecked(wallet, guardians[1], guardianModule2),
+            unlockChecked(
+              wallet,
+              guardians[1],
+              undefined,
+              undefined,
+              guardianModule2
+            ),
             "UNABLE_TO_UNLOCK"
           );
         }

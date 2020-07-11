@@ -22,7 +22,7 @@ contract("signatureUtil", () => {
   });
 
   describe("recoverECDSASigner", () => {
-    it("should be able to recover the signer from an eddsa signature (ETH_SIGN)", async () => {
+    it("should be able to recover the signer from an ecdsa signature (ETH_SIGN)", async () => {
       const src = "walletname.123";
       const signer = ctx.owners[0];
       const hashStr = web3.utils.sha3(src);
@@ -34,6 +34,9 @@ contract("signatureUtil", () => {
         signer,
         signatureStr
       );
+
+      assert(verifyRes, "verifySignature failed");
+
       const recoveredAddress = await signatureUtilWrapper.recoverECDSASigner(
         hashStr,
         signatureStr
@@ -45,7 +48,7 @@ contract("signatureUtil", () => {
       );
     });
 
-    it("should be able to recover the signer from an eddsa signature (EIP_712)", async () => {
+    it("should be able to recover the signer from an ecdsa signature (EIP_712)", async () => {
       const src = "walletname.123";
       const signer = ctx.owners[0];
       const hashStr = web3.utils.sha3(src);
@@ -57,6 +60,9 @@ contract("signatureUtil", () => {
         signer,
         signatureStr
       );
+
+      assert(verifyRes, "verifySignature failed");
+
       const recoveredAddress = await signatureUtilWrapper.recoverECDSASigner(
         hashStr,
         signatureStr

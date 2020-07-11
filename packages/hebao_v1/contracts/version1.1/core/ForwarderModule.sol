@@ -105,6 +105,8 @@ contract ForwarderModule is BaseModule
         require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
     }
 
+
+    event LogUnit(uint i);
     function executeMetaTx(
         MetaTx calldata metaTx,
         bytes  calldata signature
@@ -142,6 +144,8 @@ contract ForwarderModule is BaseModule
         (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
             abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
         );
+
+        emit LogUnit(now);
 
         if (address(this).balance > 0) {
             payable(controller.collectTo()).transfer(address(this).balance);

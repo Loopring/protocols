@@ -70,6 +70,8 @@ contract("WalletFactory", () => {
       }
     );
 
+    console.log("tx", tx);
+
     console.log("tx gas usage: ", tx.gasUsed || tx.receipt.gasUsed);
 
     // await assertEventEmitted(
@@ -128,7 +130,7 @@ contract("WalletFactory", () => {
     ctx = await createContext(defaultCtx);
   });
 
-  [false, true].forEach(function(metaTx) {
+  [/*false,*/ true].forEach(function(metaTx) {
     // it(
     //   description("user should be able to create a wallet without ENS", metaTx),
     //   async () => {
