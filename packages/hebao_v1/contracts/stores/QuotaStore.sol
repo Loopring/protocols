@@ -18,12 +18,13 @@ pragma solidity ^0.6.6;
 
 import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
+import "../lib/Claimable.sol";
 
 
 /// @title QuotaStore
 /// @dev This store maintains daily spending quota for each wallet.
 ///      A rolling daily limit is used.
-contract QuotaStore is DataStore
+contract QuotaStore is DataStore, Claimable
 {
     using MathUint for uint;
 
@@ -51,6 +52,17 @@ contract QuotaStore is DataStore
         DataStore()
     {
         defaultQuota = _defaultQuota;
+    }
+
+    function changeDefaultQuota(uint newDefaultQuota)
+        external
+        onlyOwner
+    {
+        require(
+            newDefaultQuota >= 1 ether && newDefaultQuota <= 100 ether,
+            "INVALID_DEFAULT_QUOTA"
+        );
+        defaultQuota = newDefaultQuota;
     }
 
     function changeQuota(

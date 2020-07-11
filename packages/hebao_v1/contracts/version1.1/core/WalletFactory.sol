@@ -64,13 +64,14 @@ contract WalletFactory is ReentrancyGuard
         public
     {
         DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("WalletFactoryModule", "1.1.0", address(this))
+            EIP712.Domain("WalletFactory", "1.1.0", address(this))
         );
         controller = _controller;
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
     }
 
+    event logBytes32(bytes32 hash);
     function computeWalletAddress(
         address owner
         )
@@ -90,7 +91,6 @@ contract WalletFactory is ReentrancyGuard
     /// @param _labelApproval The signature for ENS subdomain approval.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
-    /// @return _wallet The newly created wallet's address.
     function createWallet(
         address            _owner,
         string    calldata _label,
@@ -116,7 +116,7 @@ contract WalletFactory is ReentrancyGuard
         bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
         require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
 
-        _wallet = createWalletInternal(walletImplementation, _owner, address(this));
+        _wallet = createWalletInternal(walletImplementation, _owner);
 
         Wallet w = Wallet(_wallet);
         for(uint i = 0; i < _modules.length; i++) {
@@ -134,14 +134,11 @@ contract WalletFactory is ReentrancyGuard
                 require(allowEmptyENS, "INVALID_ENS_LABEL");
             }
         }
-
-        w.removeModule(address(this));
     }
 
     function createWalletInternal(
         address    _implementation,
-        address    _owner,
-        address    _bootstrapModule
+        address    _owner
         )
         internal
         returns (address payable _wallet)
@@ -152,7 +149,7 @@ contract WalletFactory is ReentrancyGuard
         OwnedUpgradabilityProxy(_wallet).upgradeTo(_implementation);
         OwnedUpgradabilityProxy(_wallet).transferProxyOwnership(_wallet);
 
-        Wallet(_wallet).setup(address(controller), _owner, _bootstrapModule);
+        Wallet(_wallet).setup(address(controller), _owner);
 
         controller.walletRegistry().registerWallet(_wallet);
 

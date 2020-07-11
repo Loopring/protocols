@@ -27,4 +27,5 @@ abstract contract Controller
 {
     ModuleRegistry public moduleRegistry;
     WalletRegistry public walletRegistry;
+    address        public walletFactory;
 }
