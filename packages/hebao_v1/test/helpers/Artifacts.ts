@@ -43,6 +43,7 @@ export class Artifacts {
     this.WETHToken = artifacts.require("test/tokens/WETH");
     this.INDAToken = artifacts.require("test/tokens/INDA");
     this.INDBToken = artifacts.require("test/tokens/INDB");
+    this.PriceCacheStore = artifacts.require("test/PriceCacheStore");
 
     this.OwnedUpgradabilityProxy = artifacts.require("OwnedUpgradabilityProxy");
 

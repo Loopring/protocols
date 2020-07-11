@@ -142,7 +142,7 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
     );
   });
 
-  it.only(
+  it(
     description(
       "should be able to change the daily quota immediately with majority"
     ),
@@ -184,6 +184,7 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
         if (signers.length >= numSignersRequired) {
           const tx = await transaction;
           const blockTime = await getBlockTime(tx.blockNumber);
+          // console.log('tx', tx);
 
           // The quota needs to be changed immediately
           assert(

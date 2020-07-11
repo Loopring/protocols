@@ -21,7 +21,7 @@ import BN = require("bn.js");
 
 const TestTargetContract = artifacts.require("TestTargetContract");
 
-contract("TransferModule", (accounts: string[]) => {
+contract("TransferModule - approvedTransfer", (accounts: string[]) => {
   let defaultCtx: Context;
   let ctx: Context;
 
@@ -34,13 +34,13 @@ contract("TransferModule", (accounts: string[]) => {
 
   const setOraclePrice = async (token: string, amount: BN, assetValue: BN) => {
     // Return 0 as the default
-    await priceOracleMock.givenAnyReturnUint(new BN(0));
+    // await priceOracleMock.givenAnyReturnUint(new BN(0));
     // Set the specified price
-    // token = await getTokenAddress(ctx, token);
-    // const data = ctx.priceCacheStore.contract.methods
-    //   .tokenValue(token, amount.toString(10))
-    //   .encodeABI();
-    // await priceOracleMock.givenCalldataReturnUint(data, assetValue);
+    token = await getTokenAddress(ctx, token);
+    const data = ctx.priceCacheStore.contract.methods
+      .tokenValue(token, amount.toString(10))
+      .encodeABI();
+    await priceOracleMock.givenCalldataReturnUint(data, assetValue);
   };
 
   const description = (descr: string, metaTx: boolean = useMetaTx) => {
@@ -74,6 +74,8 @@ contract("TransferModule", (accounts: string[]) => {
     const oldBalanceWallet = await getBalance(ctx, token, wallet);
     const oldBalanceTo = await getBalance(ctx, token, to);
 
+    const opt = useMetaTx ? { wallet, owner } : { from: owner };
+
     // Transfer the tokens
     if (approved) {
       await executeTransaction(
@@ -87,8 +89,8 @@ contract("TransferModule", (accounts: string[]) => {
         ctx,
         useMetaTx,
         wallet,
-        options.signers,
-        { from: owner }
+        [],
+        opt
       );
     } else {
       await executeTransaction(
@@ -102,8 +104,8 @@ contract("TransferModule", (accounts: string[]) => {
         ctx,
         useMetaTx,
         wallet,
-        [owner],
-        { from: owner }
+        [],
+        opt
       );
     }
 
@@ -126,6 +128,7 @@ contract("TransferModule", (accounts: string[]) => {
     // Check quota
     const newAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
     const newSpentQuota = await ctx.quotaStore.spentQuota(wallet);
+
     const quotaDelta = isWhitelisted || approved ? new BN(0) : assetValue;
     assert(
       oldAvailableQuota.eq(newAvailableQuota.add(quotaDelta)),
@@ -181,6 +184,8 @@ contract("TransferModule", (accounts: string[]) => {
     // Cache test data
     const testValueBefore = (await targetContract.value()).toNumber();
 
+    const opt = useMetaTx ? { wallet, owner } : { from: owner };
+
     // Call the contract
     if (approved) {
       await executeTransaction(
@@ -193,8 +198,8 @@ contract("TransferModule", (accounts: string[]) => {
         ctx,
         useMetaTx,
         wallet,
-        options.signers,
-        { from: owner }
+        [],
+        opt
       );
     } else {
       await executeTransaction(
@@ -207,8 +212,8 @@ contract("TransferModule", (accounts: string[]) => {
         ctx,
         useMetaTx,
         wallet,
-        [owner],
-        { from: owner }
+        [],
+        opt
       );
     }
 
@@ -486,7 +491,7 @@ contract("TransferModule", (accounts: string[]) => {
     targetContract = await TestTargetContract.new();
   });
 
-  [false, true].forEach(function(metaTx) {
+  [/*false,*/ true].forEach(function(metaTx) {
     describe(description("TransferToken", metaTx), () => {
       it(
         description(
@@ -501,19 +506,21 @@ contract("TransferModule", (accounts: string[]) => {
 
           const quota = await ctx.quotaStore.currentQuota(wallet);
 
-          // Try to transfer more than the quota
-          await expectThrow(
-            transferTokenChecked(
-              owner,
-              wallet,
-              "ETH",
-              to,
-              toAmount("0.7"),
-              "0x",
-              { assetValue: quota.add(new BN(1)) }
-            ),
-            "QUOTA_EXCEEDED"
-          );
+          if (!useMetaTx) {
+            // Try to transfer more than the quota
+            await expectThrow(
+              transferTokenChecked(
+                owner,
+                wallet,
+                "ETH",
+                to,
+                toAmount("0.7"),
+                "0x",
+                { assetValue: quota.add(new BN(1)) }
+              ),
+              "QUOTA_EXCEEDED"
+            );
+          }
 
           // Transfer the complete quota
           await transferTokenChecked(
@@ -526,19 +533,21 @@ contract("TransferModule", (accounts: string[]) => {
             { assetValue: quota }
           );
 
-          // Try to transfer an additional small amount
-          await expectThrow(
-            transferTokenChecked(
-              owner,
-              wallet,
-              "LRC",
-              to,
-              toAmount("100"),
-              "0x00a1d441",
-              { assetValue: quota.div(new BN(100)) }
-            ),
-            "QUOTA_EXCEEDED"
-          );
+          if (!useMetaTx) {
+            // Try to transfer an additional small amount
+            await expectThrow(
+              transferTokenChecked(
+                owner,
+                wallet,
+                "LRC",
+                to,
+                toAmount("100"),
+                "0x00a1d441",
+                { assetValue: quota.div(new BN(100)) }
+              ),
+              "QUOTA_EXCEEDED"
+            );
+          }
 
           // Skip forward `quotaPeriod` to revert used quota back to 0
           await advanceTimeAndBlockAsync(quotaPeriod);
@@ -573,19 +582,21 @@ contract("TransferModule", (accounts: string[]) => {
             { assetValue: transferValue }
           );
 
-          // Try to transfer an additional amount
-          await expectThrow(
-            transferTokenChecked(
-              owner,
-              wallet,
-              "ETH",
-              to,
-              toAmount("0.7"),
-              "0x",
-              { assetValue: transferValue }
-            ),
-            "QUOTA_EXCEEDED"
-          );
+          if (!useMetaTx) {
+            // Try to transfer an additional amount
+            await expectThrow(
+              transferTokenChecked(
+                owner,
+                wallet,
+                "ETH",
+                to,
+                toAmount("0.7"),
+                "0x",
+                { assetValue: transferValue }
+              ),
+              "QUOTA_EXCEEDED"
+            );
+          }
 
           // Skip forward `quotaPeriod/2`
           await advanceTimeAndBlockAsync(quotaPeriod / 2);
@@ -657,7 +668,7 @@ contract("TransferModule", (accounts: string[]) => {
     });
 
     describe(description("CallContract", metaTx), () => {
-      it(
+      it.only(
         description(
           "owner should be able to call a contract (with value) using daily quota",
           metaTx
@@ -671,13 +682,22 @@ contract("TransferModule", (accounts: string[]) => {
           const quota = await ctx.quotaStore.currentQuota(wallet);
           let nonce = 0;
 
-          // Try to transfer more than the quota
-          await expectThrow(
-            callContractChecked(owner, wallet, to, toAmount("0.07"), ++nonce, {
-              assetValue: quota.add(new BN(1))
-            }),
-            "QUOTA_EXCEEDED"
-          );
+          if (!useMetaTx) {
+            // Try to transfer more than the quota
+            await expectThrow(
+              callContractChecked(
+                owner,
+                wallet,
+                to,
+                toAmount("0.07"),
+                ++nonce,
+                {
+                  assetValue: quota.add(new BN(1))
+                }
+              ),
+              "QUOTA_EXCEEDED"
+            );
+          }
 
           // Transfer the complete quota
           await callContractChecked(
@@ -689,13 +709,15 @@ contract("TransferModule", (accounts: string[]) => {
             { assetValue: quota }
           );
 
-          // Try to transfer an additional small amount
-          await expectThrow(
-            callContractChecked(owner, wallet, to, toAmount("1"), ++nonce, {
-              assetValue: quota.div(new BN(100))
-            }),
-            "QUOTA_EXCEEDED"
-          );
+          if (!useMetaTx) {
+            // Try to transfer an additional small amount
+            await expectThrow(
+              callContractChecked(owner, wallet, to, toAmount("1"), ++nonce, {
+                assetValue: quota.div(new BN(100))
+              }),
+              "QUOTA_EXCEEDED"
+            );
+          }
 
           // Skip forward `quotaPeriod` to revert used quota back to 0
           await advanceTimeAndBlockAsync(quotaPeriod);
@@ -722,13 +744,15 @@ contract("TransferModule", (accounts: string[]) => {
             { assetValue: transferValue }
           );
 
-          // Try to transfer an additional amount
-          await expectThrow(
-            callContractChecked(owner, wallet, to, toAmount("0.2"), ++nonce, {
-              assetValue: transferValue
-            }),
-            "QUOTA_EXCEEDED"
-          );
+          if (!useMetaTx) {
+            // Try to transfer an additional amount
+            await expectThrow(
+              callContractChecked(owner, wallet, to, toAmount("0.2"), ++nonce, {
+                assetValue: transferValue
+              }),
+              "QUOTA_EXCEEDED"
+            );
+          }
 
           // Skip forward `quotaPeriod/2`
           await advanceTimeAndBlockAsync(quotaPeriod / 2);

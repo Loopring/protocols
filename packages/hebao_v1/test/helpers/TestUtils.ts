@@ -34,6 +34,7 @@ export interface Context {
   securityStore: any;
   whitelistStore: any;
   quotaStore: any;
+  priceCacheStore: any;
 }
 
 export async function getContext() {
@@ -66,7 +67,11 @@ export async function getContext() {
     walletImpl: await contracts.WalletImpl.deployed(),
     securityStore: await contracts.SecurityStore.deployed(),
     whitelistStore: await contracts.WhitelistStore.deployed(),
-    quotaStore: await contracts.QuotaStore.deployed()
+    quotaStore: await contracts.QuotaStore.deployed(),
+    priceCacheStore: await contracts.PriceCacheStore.new(
+      Constants.zeroAddress,
+      3600 * 240
+    )
   };
   return context;
 }

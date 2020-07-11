@@ -28,7 +28,7 @@ contract TransferModule is BaseTransferModule
     );
 
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
-        "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+        "approvedTransferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
 
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
@@ -191,7 +191,7 @@ contract TransferModule is BaseTransferModule
         available = controller.quotaStore().availableQuota(wallet);
     }
 
-    function transferToken(
+    function approvedTransferToken(
         SignedRequest.Request calldata request,
         address        token,
         address        to,
