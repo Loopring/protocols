@@ -1,4 +1,4 @@
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../thirdparty/OwnedUpgradabilityProxy.sol";
