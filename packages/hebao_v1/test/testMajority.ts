@@ -182,7 +182,7 @@ contract("GuardianUtils", (accounts: string[]) => {
     const request: SignedRequest = {
       signers,
       signatures: [],
-      validUntil: Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30,
+      validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
       wallet
     };
 
@@ -220,7 +220,7 @@ contract("GuardianUtils", (accounts: string[]) => {
       const request: SignedRequest = {
         signers,
         signatures: [],
-        validUntil: Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30,
+        validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
         wallet
       };
 

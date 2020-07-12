@@ -128,44 +128,191 @@ export function signChangeDailyQuotaImmediately(
   }
 }
 
-export function signMetaTx(metaTx: MetaTx) {
-  const META_TX_TYPEHASH = ethUtil.keccak(
-    "MetaTx(address from,address to,\
-uint256 nonce,address gasToken,uint256 gasPrice,\
-uint256 gasLimit,bytes32 txAwareHash,bytes data)"
+export function signTransferTokenApproved(
+  request: SignedRequest,
+  token: string,
+  to: string,
+  amount: BN,
+  logdata: string,
+  moduleAddr: string
+) {
+  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const TRANSFER_TOKEN_TYPEHASH = ethUtil.keccak(
+    Buffer.from(
+      "transferTokenApproved(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+    )
   );
-
-  const encoded = web3.eth.abi.encodeParameters(
+  const encodedRequest = web3.eth.abi.encodeParameters(
     [
       "bytes32",
       "address",
-      "address",
       "uint256",
       "address",
+      "address",
       "uint256",
-      "uint256",
-      "bytes32",
       "bytes32"
     ],
     [
-      META_TX_TYPEHASH,
-      metaTx.from,
-      metaTx.to,
-      metaTx.nonce,
-      metaTx.gasToken,
-      metaTx.gasPrice,
-      metaTx.gasLimit,
-      metaTx.txAwareHash,
-      ethUtil.keccak(metaTx.data)
+      TRANSFER_TOKEN_TYPEHASH,
+      request.wallet,
+      request.validUntil,
+      token,
+      to,
+      amount.toString(10),
+      ethUtil.keccak(Buffer.from(logdata.slice(2), "hex"))
     ]
   );
-
-  const domainSeprator = eip712.hash(
-    "Loopring Wallet MetaTx",
-    "2.0",
-    Constants.zeroAddress
-  );
-
-  const hash = eip712.hashPacked(domainSeprator, encoded);
-  return sign(metaTx.from, hash);
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+  for (const signer of request.signers) {
+    const sig = sign(signer, hash);
+    request.signatures.push(sig);
+  }
 }
+
+export function signApproveTokenApproved(
+  request: SignedRequest,
+  token: string,
+  to: string,
+  amount: BN,
+  moduleAddr: string
+) {
+  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const APPROVE_TOKEN_TYPEHASH = ethUtil.keccak(
+    Buffer.from(
+      "approveTokenApproved(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
+    )
+  );
+  const encodedRequest = web3.eth.abi.encodeParameters(
+    ["bytes32", "address", "uint256", "address", "address", "uint256"],
+    [
+      APPROVE_TOKEN_TYPEHASH,
+      request.wallet,
+      request.validUntil,
+      token,
+      to,
+      amount.toString(10)
+    ]
+  );
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+  for (const signer of request.signers) {
+    const sig = sign(signer, hash);
+    request.signatures.push(sig);
+  }
+}
+
+export function signCallContractApproved(
+  request: SignedRequest,
+  to: string,
+  value: BN,
+  data: string,
+  moduleAddr: string
+) {
+  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
+    Buffer.from(
+      "callContractApproved(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+    )
+  );
+  const encodedRequest = web3.eth.abi.encodeParameters(
+    ["bytes32", "address", "uint256", "address", "uint256", "bytes32"],
+    [
+      CALL_CONTRACT_TYPEHASH,
+      request.wallet,
+      request.validUntil,
+      to,
+      value.toString(10),
+      ethUtil.keccak(Buffer.from(data.slice(2), "hex"))
+    ]
+  );
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+  for (const signer of request.signers) {
+    const sig = sign(signer, hash);
+    request.signatures.push(sig);
+  }
+}
+
+export function signApproveThenCallContractApproved(
+  request: SignedRequest,
+  token: string,
+  to: string,
+  amount: BN,
+  value: BN,
+  data: string,
+  moduleAddr: string
+) {
+  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const APPROVE_THEN_CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
+    Buffer.from(
+      "approveThenCallContractApproved(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+    )
+  );
+  const encodedRequest = web3.eth.abi.encodeParameters(
+    [
+      "bytes32",
+      "address",
+      "uint256",
+      "address",
+      "address",
+      "uint256",
+      "uint256",
+      "bytes32"
+    ],
+    [
+      APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
+      request.wallet,
+      request.validUntil,
+      token,
+      to,
+      amount.toString(10),
+      value.toString(10),
+      ethUtil.keccak(Buffer.from(data.slice(2), "hex"))
+    ]
+  );
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+  for (const signer of request.signers) {
+    const sig = sign(signer, hash);
+    request.signatures.push(sig);
+  }
+}
+
+// export function signMetaTx(metaTx: MetaTx) {
+//   const META_TX_TYPEHASH = ethUtil.keccak(
+//     "MetaTx(address from,address to,\
+// uint256 nonce,address gasToken,uint256 gasPrice,\
+// uint256 gasLimit,bytes32 txAwareHash,bytes data)"
+//   );
+
+//   const encoded = web3.eth.abi.encodeParameters(
+//     [
+//       "bytes32",
+//       "address",
+//       "address",
+//       "uint256",
+//       "address",
+//       "uint256",
+//       "uint256",
+//       "bytes32",
+//       "bytes32"
+//     ],
+//     [
+//       META_TX_TYPEHASH,
+//       metaTx.from,
+//       metaTx.to,
+//       metaTx.nonce,
+//       metaTx.gasToken,
+//       metaTx.gasPrice,
+//       metaTx.gasLimit,
+//       metaTx.txAwareHash,
+//       ethUtil.keccak(metaTx.data)
+//     ]
+//   );
+
+//   const domainSeprator = eip712.hash(
+//     "Loopring Wallet MetaTx",
+//     "2.0",
+//     Constants.zeroAddress
+//   );
+
+//   const hash = eip712.hashPacked(domainSeprator, encoded);
+//   return sign(metaTx.from, hash);
+// }

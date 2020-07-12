@@ -18,6 +18,13 @@ import {
   getAllowance
 } from "./helpers/TokenUtils";
 import BN = require("bn.js");
+import {
+  SignedRequest,
+  signTransferTokenApproved,
+  signCallContractApproved,
+  signApproveTokenApproved,
+  signApproveThenCallContractApproved
+} from "./helpers/SignatureUtils";
 
 const TestTargetContract = artifacts.require("TestTargetContract");
 
@@ -61,7 +68,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
   ) => {
     let assetValue = options.assetValue ? options.assetValue : new BN(0);
     let isWhitelisted = options.isWhitelisted ? options.isWhitelisted : false;
-    let approved = options.signers ? true : false;
+    let approved = options.approved;
     token = await getTokenAddress(ctx, token);
 
     // Set the value of the transfer on the price oracle
@@ -80,37 +87,37 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     const opt = useMetaTx ? { wallet, owner } : { from: owner };
 
     // Transfer the tokens
-    if (approved) {
-      await executeTransaction(
-        ctx.transferModule.contract.methods.transferToken(
-          wallet,
-          token,
-          to,
-          amount.toString(10),
-          logdata
-        ),
-        ctx,
-        useMetaTx,
+    // if (approved) {
+    //   await executeTransaction(
+    //     ctx.transferModule.contract.methods.transferToken(
+    //       wallet,
+    //       token,
+    //       to,
+    //       amount.toString(10),
+    //       logdata
+    //     ),
+    //     ctx,
+    //     useMetaTx,
+    //     wallet,
+    //     [],
+    //     opt
+    //   );
+    // } else {
+    await executeTransaction(
+      ctx.transferModule.contract.methods.transferToken(
         wallet,
-        [],
-        opt
-      );
-    } else {
-      await executeTransaction(
-        ctx.transferModule.contract.methods.transferToken(
-          wallet,
-          token,
-          to,
-          amount.toString(10),
-          logdata
-        ),
-        ctx,
-        useMetaTx,
-        wallet,
-        [],
-        opt
-      );
-    }
+        token,
+        to,
+        amount.toString(10),
+        logdata
+      ),
+      ctx,
+      useMetaTx,
+      wallet,
+      [],
+      opt
+    );
+    //  }
 
     await assertEventEmitted(
       approved ? ctx.transferModule : ctx.transferModule,
@@ -155,6 +162,82 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     );
   };
 
+  const transferTokenApprovedChecked = async (
+    owner: string,
+    wallet: string,
+    token: string,
+    to: string,
+    amount: BN,
+    logdata: string,
+    options: any = {}
+  ) => {
+    let assetValue = options.assetValue ? options.assetValue : new BN(0);
+    let isWhitelisted = options.isWhitelisted ? options.isWhitelisted : false;
+    token = await getTokenAddress(ctx, token);
+
+    // Make sure the wallet has enough funds
+    await addBalance(ctx, wallet, token, amount);
+
+    // Cache balance data
+    const oldBalanceWallet = await getBalance(ctx, token, wallet);
+    const oldBalanceTo = await getBalance(ctx, token, to);
+
+    const request: SignedRequest = {
+      signers: options.signers,
+      signatures: [],
+      validUntil: Math.floor(new Date().getTime()),
+      wallet
+    };
+
+    signTransferTokenApproved(
+      request,
+      token,
+      to,
+      amount,
+      logdata,
+      ctx.transferModule.address
+    );
+
+    // Transfer the tokens
+    await executeTransaction(
+      ctx.transferModule.contract.methods.transferTokenApproved(
+        request,
+        token,
+        to,
+        amount.toString(10),
+        logdata
+      ),
+      ctx,
+      useMetaTx,
+      wallet,
+      [],
+      { wallet, owner }
+    );
+
+    await assertEventEmitted(ctx.transferModule, "Transfered", (event: any) => {
+      return (
+        event.wallet === wallet &&
+        event.token === token &&
+        event.to === to &&
+        event.amount.eq(amount) &&
+        (logdata === "0x" ? event.logdata === null : event.logdata === logdata)
+      );
+    });
+
+    // Check balances
+    const newBalanceWallet = await getBalance(ctx, token, wallet);
+    const newBalanceTo = await getBalance(ctx, token, to);
+    const balalanceDelta = amount;
+    assert(
+      oldBalanceWallet.eq(newBalanceWallet.add(balalanceDelta)),
+      "incorrect wallet balance"
+    );
+    assert(
+      newBalanceTo.eq(oldBalanceTo.add(balalanceDelta)),
+      "incorrect to balance"
+    );
+  };
+
   const callContractChecked = async (
     owner: string,
     wallet: string,
@@ -173,7 +256,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       .encodeABI();
 
     // Set the value of the transfer on the price oracle
-    await setOraclePrice0(token, value, assetValue);
+    await setOraclePrice0(token, value, new BN(0));
 
     // Make sure the wallet has enough funds
     await addBalance(ctx, wallet, token, value);
@@ -245,6 +328,97 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     //   newSpentQuota.eq(oldSpentQuota.add(quotaDelta)),
     //   "incorrect available quota"
     // );
+
+    // Check balances
+    const newBalanceWallet = await getBalance(ctx, token, wallet);
+    const newBalanceTo = await getBalance(ctx, token, to);
+    const balalanceDelta = value;
+    assert(
+      oldBalanceWallet.eq(newBalanceWallet.add(balalanceDelta)),
+      "incorrect wallet balance"
+    );
+    assert(
+      newBalanceTo.eq(oldBalanceTo.add(balalanceDelta)),
+      "incorrect to balance"
+    );
+    // Check test value
+    const testValueAfter = (await targetContract.value()).toNumber();
+    const expectedTestValueAfter = nonce;
+    assert.equal(
+      testValueAfter,
+      expectedTestValueAfter,
+      "unexpected test value"
+    );
+  };
+
+  const callContractApprovedChecked = async (
+    owner: string,
+    wallet: string,
+    to: string,
+    value: BN,
+    nonce: number,
+    options: any = {}
+  ) => {
+    const token = await getTokenAddress(ctx, "ETH");
+    const data = targetContract.contract.methods
+      .functionPayable(nonce)
+      .encodeABI();
+
+    await setOraclePrice0(token, new BN(0), new BN(0));
+
+    // Make sure the wallet has enough funds
+    await addBalance(ctx, wallet, token, value);
+
+    // // Cache quota data
+    // const oldAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
+    // const oldSpentQuota = await ctx.quotaStore.spentQuota(wallet);
+    // Cache balance data
+    const oldBalanceWallet = await getBalance(ctx, token, wallet);
+    const oldBalanceTo = await getBalance(ctx, token, to);
+    // Cache test data
+    const testValueBefore = (await targetContract.value()).toNumber();
+
+    const request: SignedRequest = {
+      signers: options.signers,
+      signatures: [],
+      validUntil: Math.floor(new Date().getTime()),
+      wallet
+    };
+
+    signCallContractApproved(
+      request,
+      to,
+      value,
+      data,
+      ctx.transferModule.address
+    );
+
+    await executeTransaction(
+      ctx.transferModule.contract.methods.callContractApproved(
+        request,
+        to,
+        value.toString(10),
+        data
+      ),
+      ctx,
+      useMetaTx,
+      wallet,
+      [],
+      { wallet, owner }
+    );
+
+    await assertEventEmitted(
+      ctx.transferModule,
+      "ContractCalled",
+      (event: any) => {
+        return (
+          event.wallet === wallet &&
+          event.to === to &&
+          event.value.eq(value) &&
+          event.data === data
+        );
+      }
+    );
 
     // Check balances
     const newBalanceWallet = await getBalance(ctx, token, wallet);
@@ -365,6 +539,65 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     assert(newAllowanceTo.eq(amount), "incorrect allowance");
   };
 
+  const approveTokenApprovedChecked = async (
+    owner: string,
+    wallet: string,
+    token: string,
+    to: string,
+    amount: BN,
+    options: any = {}
+  ) => {
+    let isWhitelisted = options.isWhitelisted ? options.isWhitelisted : false;
+    token = await getTokenAddress(ctx, token);
+
+    await setOraclePrice0(token, new BN(0), new BN(0));
+    // Cache balance data
+    const oldAllowanceTo = await getAllowance(ctx, token, wallet, to);
+
+    const request: SignedRequest = {
+      signers: options.signers,
+      signatures: [],
+      validUntil: Math.floor(new Date().getTime()),
+      wallet
+    };
+
+    signApproveTokenApproved(
+      request,
+      token,
+      to,
+      amount,
+      ctx.transferModule.address
+    );
+
+    // Approve the tokens
+    await executeTransaction(
+      ctx.transferModule.contract.methods.approveTokenApproved(
+        request,
+        token,
+        to,
+        amount.toString(10)
+      ),
+      ctx,
+      useMetaTx,
+      wallet,
+      [],
+      { wallet, owner }
+    );
+
+    await assertEventEmitted(ctx.transferModule, "Approved", (event: any) => {
+      return (
+        event.wallet === wallet &&
+        event.token === token &&
+        event.spender === to &&
+        event.amount.eq(amount)
+      );
+    });
+
+    // Check Allowance
+    const newAllowanceTo = await getAllowance(ctx, token, wallet, to);
+    assert(newAllowanceTo.eq(amount), "incorrect allowance");
+  };
+
   const approveThenCallContractChecked = async (
     owner: string,
     wallet: string,
@@ -479,6 +712,87 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     //   newSpentQuota.eq(oldSpentQuota.add(quotaDelta)),
     //   "incorrect available quota"
     // );
+    // Check Allowance
+    const newAllowanceTo = await getAllowance(ctx, token, wallet, to);
+    assert(newAllowanceTo.eq(amount), "incorrect allowance");
+    // Check test value
+    const testValueAfter = (await targetContract.value()).toNumber();
+    assert.equal(testValueAfter, nonce, "unexpected test value");
+  };
+
+  const approveThenCallContractApprovedChecked = async (
+    owner: string,
+    wallet: string,
+    token: string,
+    to: string,
+    amount: BN,
+    value: BN,
+    nonce: number,
+    options: any = {}
+  ) => {
+    token = await getTokenAddress(ctx, token);
+    const data = targetContract.contract.methods
+      .functionPayable(nonce)
+      .encodeABI();
+
+    await setOraclePrice0(token, value, new BN(0));
+    // Cache balance data
+    const oldAllowanceTo = await getAllowance(ctx, token, wallet, to);
+
+    const request: SignedRequest = {
+      signers: options.signers,
+      signatures: [],
+      validUntil: Math.floor(new Date().getTime()),
+      wallet
+    };
+
+    signApproveThenCallContractApproved(
+      request,
+      token,
+      to,
+      amount,
+      value,
+      data,
+      ctx.transferModule.address
+    );
+
+    // Approve the tokens and call the contract
+    await executeTransaction(
+      ctx.transferModule.contract.methods.approveThenCallContractApproved(
+        request,
+        token,
+        to,
+        amount.toString(10),
+        value.toString(10),
+        data
+      ),
+      ctx,
+      useMetaTx,
+      wallet,
+      [],
+      { wallet, owner }
+    );
+    await assertEventEmitted(ctx.transferModule, "Approved", (event: any) => {
+      return (
+        event.wallet === wallet &&
+        event.token === token &&
+        event.spender === to &&
+        event.amount.eq(amount)
+      );
+    });
+    await assertEventEmitted(
+      ctx.transferModule,
+      "ContractCalled",
+      (event: any) => {
+        return (
+          event.wallet === wallet &&
+          event.to === to &&
+          event.value.eq(new BN(0)) &&
+          event.data === data
+        );
+      }
+    );
+
     // Check Allowance
     const newAllowanceTo = await getAllowance(ctx, token, wallet, to);
     assert(newAllowanceTo.eq(amount), "incorrect allowance");
@@ -1188,23 +1502,17 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
       // Transfer
       const numSignersRequired = Math.floor((1 + guardians.length) / 2) + 1;
-      for (let i = 0; i < numSignersRequired; i++) {
-        const signers = [owner, ...guardians.slice(0, i)].sort();
-        const transaction = transferTokenChecked(
-          owner,
-          wallet,
-          "ETH",
-          to,
-          toAmount("0.7"),
-          "0x1234",
-          { assetValue: transferValue, signers }
-        );
-        if (signers.length >= numSignersRequired) {
-          const tx = await transaction;
-        } else {
-          await expectThrow(transaction, "NOT_ENOUGH_SIGNERS");
-        }
-      }
+
+      const signers = [owner, ...guardians.slice(0, numSignersRequired)].sort();
+      await transferTokenApprovedChecked(
+        owner,
+        wallet,
+        "ETH",
+        to,
+        toAmount("0.7"),
+        "0x1234",
+        { assetValue: transferValue, signers }
+      );
     });
 
     it("owner should be able to approve without limits with majority", async () => {
@@ -1218,22 +1526,15 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
       // Should be able to apprve more than the quota
       const numSignersRequired = Math.floor((1 + guardians.length) / 2) + 1;
-      for (let i = 0; i < numSignersRequired; i++) {
-        const signers = [owner, ...guardians.slice(0, i)].sort();
-        const transaction = approveTokenChecked(
-          owner,
-          wallet,
-          "WETH",
-          to,
-          toAmount("0.7"),
-          { assetValue: transferValue, signers }
-        );
-        if (signers.length >= numSignersRequired) {
-          const tx = await transaction;
-        } else {
-          await expectThrow(transaction, "NOT_ENOUGH_SIGNERS");
-        }
-      }
+      const signers = [owner, ...guardians.slice(0, numSignersRequired)].sort();
+      await approveTokenApprovedChecked(
+        owner,
+        wallet,
+        "WETH",
+        to,
+        toAmount("0.7"),
+        { assetValue: transferValue, signers }
+      );
     });
 
     it("owner should be able to call a contract (with value) without limits with majority", async () => {
@@ -1248,22 +1549,16 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
       // Should be able to transfer more than the quota
       const numSignersRequired = Math.floor((1 + guardians.length) / 2) + 1;
-      for (let i = 0; i < numSignersRequired; i++) {
-        const signers = [owner, ...guardians.slice(0, i)].sort();
-        const transaction = callContractChecked(
-          owner,
-          wallet,
-          to,
-          toAmount("0.35"),
-          ++nonce,
-          { assetValue: transferValue, signers }
-        );
-        if (signers.length >= numSignersRequired) {
-          const tx = await transaction;
-        } else {
-          await expectThrow(transaction, "NOT_ENOUGH_SIGNERS");
-        }
-      }
+
+      const signers = [owner, ...guardians.slice(0, numSignersRequired)].sort();
+      await callContractApprovedChecked(
+        owner,
+        wallet,
+        to,
+        toAmount("0.35"),
+        ++nonce,
+        { assetValue: transferValue, signers }
+      );
     });
 
     it("owner should be able to approve with limits and call a function with majority", async () => {
@@ -1278,37 +1573,30 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
       // Should be able to approve more than the quota
       const numSignersRequired = Math.floor((1 + guardians.length) / 2) + 1;
-      for (let i = 0; i < numSignersRequired; i++) {
-        const signers = [owner, ...guardians.slice(0, i)].sort();
-        const transaction = approveThenCallContractChecked(
-          owner,
-          wallet,
-          "REP",
-          to,
-          toAmount("0.35"),
-          toAmount("0"),
-          ++nonce,
-          { assetValue: transferValue, signers }
-        );
-        if (signers.length >= numSignersRequired) {
-          const tx = await transaction;
-        } else {
-          await expectThrow(transaction, "NOT_ENOUGH_SIGNERS");
-        }
-      }
-    });
-
-    it("owner should not be able to call the wallet itself", async () => {
-      useMetaTx = true;
-      const owner = ctx.owners[0];
-      const { wallet, guardians } = await createWallet(ctx, owner, 2);
-      const signers = [owner, ...guardians].sort();
-
-      // Do a call to a token contract
-      await expectThrow(
-        callContractChecked(owner, wallet, wallet, new BN(0), 1, { signers }),
-        "CALL_DISALLOWED"
+      const signers = [owner, ...guardians.slice(0, numSignersRequired)].sort();
+      await approveThenCallContractApprovedChecked(
+        owner,
+        wallet,
+        "REP",
+        to,
+        toAmount("0.35"),
+        toAmount("0"),
+        ++nonce,
+        { assetValue: transferValue, signers }
       );
     });
+
+    // it("owner should not be able to call the wallet itself", async () => {
+    //   useMetaTx = true;
+    //   const owner = ctx.owners[0];
+    //   const { wallet, guardians } = await createWallet(ctx, owner, 2);
+    //   const signers = [owner, ...guardians].sort();
+
+    //   // Do a call to a token contract
+    //   await expectThrow(
+    //     callContractApprovedChecked(owner, wallet, wallet, new BN(0), 1, { signers }),
+    //     "CALL_DISALLOWED"
+    //   );
+    // });
   });
 });

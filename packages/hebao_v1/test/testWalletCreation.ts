@@ -70,17 +70,14 @@ contract("WalletFactory", () => {
       }
     );
 
-    console.log("tx", tx);
+    await assertEventEmitted(
+      ctx.walletFactory,
+      "WalletCreated",
+      (event: any) => {
+        return event.wallet === wallet && event.owner === owner;
+      }
+    );
 
-    console.log("tx gas usage: ", tx.gasUsed || tx.receipt.gasUsed);
-
-    // await assertEventEmitted(
-    //   ctx.walletFactory,
-    //   "WalletCreated",
-    //   (event: any) => {
-    //     return event.wallet === wallet && event.owner === owner;
-    //   }
-    // );
     // if (walletName !== "") {
     //   await assertEventEmitted(
     //     ctx.baseENSManager,

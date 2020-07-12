@@ -132,7 +132,6 @@ abstract contract SecurityModule is MetaTxModule
         internal
     {
         (uint _lock, address _lockedBy) = controller.securityStore().getLock(wallet);
-        require(_lock > now, "ALREADY_UNLOCKED");
         require(forceUnlock || _lockedBy == address(this), "UNABLE_TO_UNLOCK");
         controller.securityStore().setLock(wallet, 0);
         emit WalletLock(wallet, 0);
