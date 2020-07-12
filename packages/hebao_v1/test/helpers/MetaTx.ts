@@ -112,7 +112,6 @@ export async function executeMetaTx(
 
   // Sign the meta transaction
   const hash: Buffer = getHash(metaTx, ctx.forwarderModule.address);
-
   const signature = sign(options.owner, hash);
 
   const tx = await ctx.forwarderModule.executeMetaTx(metaTx, signature, {
