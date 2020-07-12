@@ -15,8 +15,7 @@ endif()
 
 add_definitions(-DCURVE_${CURVE})
 
-# Set this to the folder containing the protocol3-circuits repo
-set(circuit_src_folder "../../../../protocol3-circuits/")
+set(circuit_src_folder "./")
 
 add_executable(dex_circuit "${circuit_src_folder}/main.cpp")
 target_link_libraries(dex_circuit ethsnarks_jubjub)
