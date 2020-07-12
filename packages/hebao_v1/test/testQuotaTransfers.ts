@@ -256,7 +256,9 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       .encodeABI();
 
     // Set the value of the transfer on the price oracle
-    await setOraclePrice0(token, value, new BN(0));
+    await setOraclePrice(token, value, assetValue);
+
+    await setOraclePrice0(to, new BN(0), new BN(0));
 
     // Make sure the wallet has enough funds
     await addBalance(ctx, wallet, token, value);

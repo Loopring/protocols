@@ -28,8 +28,7 @@ contract("UpgraderModule", () => {
     owner: string,
     wallet: string,
     modulesToAdd: string[],
-    modulesToRemove: string[],
-    initialModule: any
+    modulesToRemove: string[]
   ) => {
     const walletContract = await ctx.contracts.WalletImpl.at(wallet);
 
@@ -40,6 +39,7 @@ contract("UpgraderModule", () => {
 
     // Create an upgrader module
     const upgraderModule = await ctx.contracts.UpgraderModule.new(
+      ctx.controllerImpl.address,
       Constants.zeroAddress,
       modulesToAdd,
       modulesToRemove
@@ -48,12 +48,12 @@ contract("UpgraderModule", () => {
 
     // Do the upgrade
     await executeTransaction(
-      initialModule.contract.methods.addModule(wallet, upgraderModule.address),
+      walletContract.contract.methods.addModule(upgraderModule.address),
       ctx,
       useMetaTx,
       wallet,
-      [owner],
-      { from: owner, gasPrice: new BN(1) }
+      [],
+      useMetaTx ? { wallet, owner } : { from: owner, gasPrice: new BN(1) }
     );
     for (const moduleToAdd of modulesToAdd) {
       // Check if the module have been added
@@ -81,7 +81,7 @@ contract("UpgraderModule", () => {
   });
 
   [false, true].forEach(function(metaTx) {
-    it.only(
+    it(
       description(
         "owner should be able to upgrade the wallet implementation",
         metaTx
@@ -150,16 +150,11 @@ contract("UpgraderModule", () => {
       async () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
-        const { wallet } = await createWallet(ctx, owner, 0);
+        const { wallet } = await createWallet(ctx, owner, 0, [
+          ctx.erc1271Module.address,
+          ctx.forwarderModule.address
+        ]);
         const walletContract = await ctx.contracts.WalletImpl.at(wallet);
-
-        // Try to use the module before adding it to the wallet
-        await expectThrow(
-          ctx.guardianModule.addModule(wallet, ctx.whitelistModule.address, {
-            from: owner
-          }),
-          "UNAUTHORIZED"
-        );
 
         // Add the module
         await walletContract.addModule(ctx.guardianModule.address, {
@@ -186,64 +181,9 @@ contract("UpgraderModule", () => {
         );
 
         // Make sure the module is now authorized
-        await ctx.guardianModule.addModule(
-          wallet,
-          ctx.whitelistModule.address,
-          {
-            from: owner
-          }
-        );
-      }
-    );
-
-    it(
-      description(
-        "owner should be able to add modules using another module",
-        metaTx
-      ),
-      async () => {
-        useMetaTx = metaTx;
-        const owner = ctx.owners[0];
-        const initialModule = ctx.whitelistModule;
-        const { wallet } = await createWallet(ctx, owner, 0, [
-          initialModule.address
-        ]);
-        const walletContract = await ctx.contracts.WalletImpl.at(wallet);
-
-        // Add the module
-        await executeTransaction(
-          initialModule.contract.methods.addModule(
-            wallet,
-            ctx.guardianModule.address
-          ),
-          ctx,
-          useMetaTx,
-          wallet,
-          [owner],
-          { from: owner }
-        );
-        // Check for the `ModuleAdded` event on the wallet
-        await assertEventEmitted(
-          walletContract,
-          "ModuleAdded",
-          (event: any) => {
-            return event.module === ctx.guardianModule.address;
-          }
-        );
-        // Check if the module has been added
-        assert(
-          await walletContract.hasModule(ctx.guardianModule.address),
-          "module not added"
-        );
-
-        // Make sure the module is now authorized
-        await ctx.guardianModule.addModule(
-          wallet,
-          ctx.inheritanceModule.address,
-          {
-            from: owner
-          }
-        );
+        await ctx.guardianModule.addGuardian(wallet, ctx.miscAddresses[0], 0, {
+          from: owner
+        });
       }
     );
 
@@ -255,49 +195,42 @@ contract("UpgraderModule", () => {
       async () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
-        const initialModule = ctx.whitelistModule;
-        const modules = getAllModuleAddresses(ctx).filter(
-          addr => addr !== initialModule.address
-        );
         const { wallet } = await createWallet(ctx, owner, 0, [
-          initialModule.address
+          ctx.erc1271Module.address,
+          ctx.forwarderModule.address
         ]);
 
-        await addAndRemoveModulesChecked(
-          owner,
-          wallet,
-          [modules[0]],
-          [],
-          initialModule
+        const modules = getAllModuleAddresses(ctx).filter(
+          addr =>
+            addr !== ctx.erc1271Module.address &&
+            addr !== ctx.forwarderModule.address
         );
+
+        await addAndRemoveModulesChecked(owner, wallet, [modules[0]], []);
         await addAndRemoveModulesChecked(
           owner,
           wallet,
           [modules[1], modules[2]],
-          [],
-          initialModule
+          []
         );
         // Add a module that was already added, remove a module that has not yet been added
         await addAndRemoveModulesChecked(
           owner,
           wallet,
           [modules[2]],
-          [modules[3]],
-          initialModule
+          [modules[3]]
         );
         await addAndRemoveModulesChecked(
           owner,
           wallet,
           [modules[3]],
-          [modules[0], modules[2]],
-          initialModule
+          [modules[0], modules[2]]
         );
         await addAndRemoveModulesChecked(
           owner,
           wallet,
           [],
-          [modules[1], modules[3]],
-          initialModule
+          [modules[1], modules[3]]
         );
       }
     );

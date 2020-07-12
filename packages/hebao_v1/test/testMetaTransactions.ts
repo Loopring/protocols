@@ -232,7 +232,7 @@ contract("ForwarderModule", () => {
     );
   });
 
-  // it.only("failing call should still produce a valid meta tx", async () => {
+  // it("failing call should still produce a valid meta tx", async () => {
   //   const owner = ctx.owners[0];
   //   const { wallet, guardians } = await createWallet(ctx, owner, 3);
   //   const signers = [owner, ...guardians].sort();
@@ -262,7 +262,7 @@ contract("ForwarderModule", () => {
         const { wallet, guardians } = await createWallet(ctx, owner, 3);
         const signers = [owner, ...guardians].sort();
 
-        const feeRecipient = ctx.miscAddresses[2];
+        const feeRecipient = await ctx.controllerImpl.collectTo();
         const gasOverhead = 50000;
         const gasPrice = new BN(7);
         const assetValue = new BN(3);
@@ -283,16 +283,31 @@ contract("ForwarderModule", () => {
         // Quota
         const oldSpentQuota = await ctx.quotaStore.spentQuota(wallet);
 
-        await executeTransaction(
+        const request: SignedRequest = {
+          signers,
+          signatures: [],
+          validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
+          wallet
+        };
+        const addr = ctx.miscAddresses[0];
+        signAddToWhitelistImmediately(
+          request,
+          addr,
+          ctx.whitelistModule.address
+        );
+
+        const tx = await executeTransaction(
           ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-            wallet,
-            ctx.miscAddresses[0]
+            request,
+            addr
           ),
           ctx,
           true,
           wallet,
-          signers,
+          [],
           {
+            wallet,
+            owner,
             from: ctx.miscAddresses[0],
             feeRecipient,
             gasToken,
@@ -301,10 +316,9 @@ contract("ForwarderModule", () => {
           }
         );
         const event = await assertEventEmitted(
-          ctx.whitelistModule,
+          ctx.forwarderModule,
           "MetaTxExecuted"
         );
-        const gasCost = event.gasUsed.add(new BN(gasOverhead)).mul(gasPrice);
 
         // Balances
         const newBalanceWallet = await getBalance(ctx, gasToken, wallet);
@@ -314,11 +328,11 @@ contract("ForwarderModule", () => {
           feeRecipient
         );
         assert(
-          oldBalanceWallet.eq(newBalanceWallet.add(gasCost)),
+          oldBalanceWallet.gt(newBalanceWallet),
           "incorrect wallet balance"
         );
         assert(
-          newBalanceRecipient.eq(oldBalanceRecipient.add(gasCost)),
+          newBalanceRecipient.gt(oldBalanceRecipient),
           "incorrect recipient balance"
         );
         // Quota
