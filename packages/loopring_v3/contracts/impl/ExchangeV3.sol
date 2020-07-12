@@ -141,11 +141,10 @@ contract ExchangeV3 is IExchangeV3
     {
         return ExchangeData.Constants(
             uint(ExchangeData.SNARK_SCALAR_FIELD()),
-            uint(ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS()),
-            uint(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE()),
+            uint(ExchangeData.MAX_OPEN_FORCED_REQUESTS()),
+            uint(ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE()),
             uint(ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS()),
             uint(ExchangeData.MAX_NUM_TOKENS()),
-            uint(ExchangeData.MAX_NUM_ACCOUNTS()),
             uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
             uint(ExchangeData.MIN_TIME_IN_SHUTDOWN()),
             uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE()),
@@ -460,7 +459,7 @@ contract ExchangeV3 is IExchangeV3
         require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
 
         // Check if the withdrawal has indeed exceeded the time limit
-        require(now >= withdrawal.timestamp + ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(), "WITHDRAWAL_NOT_TOO_OLD");
+        require(now >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE(), "WITHDRAWAL_NOT_TOO_OLD");
 
         // Enter withdrawal mode
         state.withdrawalModeStartTime = now;

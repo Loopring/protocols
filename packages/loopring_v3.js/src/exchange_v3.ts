@@ -684,8 +684,9 @@ export class ExchangeV3 {
     // Make sure the blocks are in the right order
     const blockIdx = parseInt(event.returnValues.blockIdx);
     if (blockIdx < this.blocks.length) {
-      // Block was already processed
+      // Block was already processed, but we still need to get the block fee
       //console.log("skip: " + blockIdx);
+      this.blocks[blockIdx].blockFee = new BN(event.returnValues.blockFee);
       return;
     }
     assert.equal(blockIdx, this.blocks.length, "Unexpected blockIdx");
@@ -694,14 +695,6 @@ export class ExchangeV3 {
     // Get the timestamp from the block
     const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
     const timestamp = Number(ethereumBlock.timestamp);
-
-    /*let merkleRoot = "0";
-    let blockType = 0;
-    let blockSize = 0;
-    let blockVersion = 0;
-    let onchainData = "0x";
-    let offchainData = "0x";
-    let data = "";*/
 
     // Get the block data from the transaction data
     //const submitBlocksFunctionSignature = "0x65f573a8";
@@ -750,12 +743,12 @@ export class ExchangeV3 {
 
         // Get the new Merkle root
         const bs = new Bitstream(data);
-        if (bs.length() < 4 + 32 + 32) {
+        if (bs.length() < 20 + 32 + 32) {
           // console.log("Invalid block data: " + data);
           return;
         }
 
-        const merkleRoot = bs.extractUint(4 + 32).toString(10);
+        const merkleRoot = bs.extractUint(20 + 32).toString(10);
         // console.log("merkleRoot: " + merkleRoot);
 
         // Get the previous block
@@ -775,7 +768,7 @@ export class ExchangeV3 {
           operator: this.operator,
           origin: transaction.from,
 
-          blockFee: new BN(0),
+          blockFee: new BN(event.returnValues.blockFee),
 
           merkleRoot,
 
@@ -906,7 +899,7 @@ export class ExchangeV3 {
     let offset = 0;
 
     // General data
-    offset += 4 + 32 + 32 + 4;
+    offset += 20 + 32 + 32 + 4;
     const protocolFeeTakerBips = data.extractUint8(offset);
     offset += 1;
     const protocolFeeMakerBips = data.extractUint8(offset);

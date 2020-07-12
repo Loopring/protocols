@@ -112,9 +112,9 @@ library ExchangeBlocks
         uint offset = 0;
 
         // Extract the exchange ID from the data
-        uint32 exchangeIdInData = _block.data.toUint32(offset);
-        offset += 4;
-        require(exchangeIdInData == S.id, "INVALID_EXCHANGE_ID");
+        address exchange = _block.data.toAddress(offset);
+        offset += 20;
+        require(exchange == address(this), "INVALID_EXCHANGE");
 
         // Get the old and new Merkle roots
         bytes32 merkleRootBefore = _block.data.toBytes32(offset);
@@ -146,6 +146,7 @@ library ExchangeBlocks
         // Process conditional transactions
         uint blockFeeETH = processConditionalTransactions(
             S,
+            offset,
             _block.data,
             _block.auxiliaryData
         );
@@ -228,13 +229,13 @@ library ExchangeBlocks
 
     function processConditionalTransactions(
         ExchangeData.State storage S,
+        uint          offset,
         bytes  memory data,
         bytes  memory auxiliaryData
         )
         private
         returns (uint blockFeeETH)
     {
-        uint offset = 4 + 32 + 32 + 4 + 1 + 1;
         // The length of the auxiliary data needs to match the number of conditional transfers
         uint numConditionalTransactions = data.toUint32(offset);
         offset += 4;

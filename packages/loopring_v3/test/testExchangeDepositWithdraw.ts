@@ -564,7 +564,7 @@ contract("Exchange", (accounts: string[]) => {
       exchangeTestUtil.autoCommit = false;
 
       // Do all withdrawals allowed
-      const maxWithdrawals = exchangeTestUtil.MAX_OPEN_WITHDRAWAL_REQUESTS;
+      const maxWithdrawals = exchangeTestUtil.MAX_OPEN_FORCED_REQUESTS;
       for (let i = 0; i < maxWithdrawals; i++) {
         await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
       }

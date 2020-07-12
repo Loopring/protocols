@@ -65,7 +65,7 @@ library DepositTransaction
         ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID][index];
         // Make sure the deposit was actually done (this also verifies the index is correct)
         require(deposit.timestamp > 0, "DEPOSIT_DOESNT_EXIST");
-        // Earn a fee relative to the amount actually made available on layer 2
+        // Earn a fee relative to the amount actually made available on layer 2.
         // This is done to ensure the user can do multiple deposits after each other
         // without invalidating work done by the operator for previous deposit amounts.
         if (amount > 0 && deposit.amount > 0) {

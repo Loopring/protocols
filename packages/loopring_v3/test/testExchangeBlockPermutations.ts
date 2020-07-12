@@ -191,5 +191,95 @@ contract("Exchange", (accounts: string[]) => {
         await verify();
       }
     });
+
+    it("Multiple txs", async () => {
+      const ringA: SpotTrade = {
+        orderA: {
+          tokenS: "ETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("3", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          owner: exchangeTestUtil.testContext.orderOwners[0]
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "ETH",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("2", "ether")),
+          owner: exchangeTestUtil.testContext.orderOwners[1]
+        },
+        expected: {
+          orderA: {
+            filledFraction: 1.0,
+            spread: new BN(web3.utils.toWei("1", "ether"))
+          },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      const ringB: SpotTrade = {
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("110", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          owner: exchangeTestUtil.testContext.orderOwners[2]
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          owner: exchangeTestUtil.testContext.orderOwners[3]
+        },
+        expected: {
+          orderA: {
+            filledFraction: 1.0,
+            spread: new BN(web3.utils.toWei("10", "ether"))
+          },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+
+      await exchangeTestUtil.setupRing(ringA);
+      await exchangeTestUtil.setupRing(ringB);
+      await exchangeTestUtil.sendRing(exchangeId, ringA);
+      await exchangeTestUtil.sendRing(exchangeId, ringB);
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("2.9", "ether"));
+      const fee = new BN(web3.utils.toWei("12.3", "ether"));
+
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
+      const ownerC = exchangeTestUtil.testContext.orderOwners[2];
+      const ownerD = exchangeTestUtil.testContext.orderOwners[3];
+      const ownerE = exchangeTestUtil.testContext.orderOwners[4];
+      const ownerF = exchangeTestUtil.testContext.orderOwners[5];
+
+      // Do a transfer
+      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee);
+
+      // Do a withdrawal
+      await exchangeTestUtil.requestWithdrawal(
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        new BN(0)
+      );
+
+      await exchangeTestUtil.requestAccountUpdate(ownerB, "ETH", new BN(0), exchangeTestUtil.getKeyPairEDDSA());
+
+      await exchangeTestUtil.requestNewAccount(ownerB, "ETH", new BN(0), ownerE, exchangeTestUtil.getKeyPairEDDSA());
+
+      await exchangeTestUtil.requestOwnerChange(ownerE, "ETH", new BN(0), ownerF);
+
+      await exchangeTestUtil.submitTransactions();
+
+      await verify();
+
+      assert(false);
+    });
   });
 });

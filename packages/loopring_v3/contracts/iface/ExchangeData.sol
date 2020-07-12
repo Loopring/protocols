@@ -110,11 +110,10 @@ library ExchangeData
     struct Constants
     {
         uint SNARK_SCALAR_FIELD;
-        uint MAX_OPEN_WITHDRAWAL_REQUESTS;
-        uint MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE;
+        uint MAX_OPEN_FORCED_REQUESTS;
+        uint MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE;
         uint TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS;
         uint MAX_NUM_TOKENS;
-        uint MAX_NUM_ACCOUNTS;
         uint MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED;
         uint MIN_TIME_IN_SHUTDOWN;
         uint TX_DATA_AVAILABILITY_SIZE;
@@ -125,11 +124,10 @@ library ExchangeData
         // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
         return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     }
-    function MAX_OPEN_WITHDRAWAL_REQUESTS() internal pure returns (uint16) { return 1024; }
-    function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 15 days; }
+    function MAX_OPEN_FORCED_REQUESTS() internal pure returns (uint16) { return 1024; }
+    function MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 15 days; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 7 days; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
-    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 24 - 1; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
     function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 104; }

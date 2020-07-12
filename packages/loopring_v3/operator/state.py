@@ -299,7 +299,7 @@ class AccountUpdateData(object):
 
 class WithdrawProof(object):
     def __init__(self,
-                 exchangeID, accountID, tokenID,
+                 accountID, tokenID,
                  account, balance,
                  root,
                  accountProof, balanceProof):
@@ -314,7 +314,7 @@ class WithdrawProof(object):
 class Order(object):
     def __init__(self,
                  publicKeyX, publicKeyY,
-                 exchangeID, orderID, accountID,
+                 orderID, accountID,
                  tokenS, tokenB,
                  amountS, amountB,
                  allOrNone, validSince, validUntil, buy,
@@ -322,7 +322,6 @@ class Order(object):
         self.publicKeyX = str(publicKeyX)
         self.publicKeyY = str(publicKeyY)
 
-        self.exchangeID = int(exchangeID)
         self.orderID = str(orderID)
         self.accountID = int(accountID)
 

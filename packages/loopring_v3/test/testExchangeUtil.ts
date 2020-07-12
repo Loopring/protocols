@@ -81,7 +81,8 @@ function replacer(name: any, val: any) {
     name === "from" ||
     name === "to" ||
     name === "payerTo" ||
-    name === "to"
+    name === "to" ||
+    name === "exchange"
   ) {
     return new BN(val.slice(2), 16).toString(10);
   }else {
@@ -181,7 +182,7 @@ export namespace AccountUpdateUtils {
     // Calculate hash
     const hasher = Poseidon.createHash(9, 6, 53);
     const inputs = [
-      update.exchangeID,
+      update.exchange,
       update.accountID,
       update.feeTokenID,
       update.fee,
@@ -261,7 +262,7 @@ export namespace WithdrawalUtils {
     // Calculate hash
     const hasher = Poseidon.createHash(11, 6, 53);
     const inputs = [
-      withdrawal.exchangeID,
+      withdrawal.exchange,
       withdrawal.accountID,
       withdrawal.tokenID,
       withdrawal.amount,
@@ -337,7 +338,7 @@ export namespace TransferUtils {
     // Calculate hash
     const hasher = Poseidon.createHash(14, 6, 53);
     const inputs = [
-      transfer.exchangeID,
+      transfer.exchange,
       transfer.fromAccountID,
       payer ? transfer.payerToAccountID : transfer.toAccountID,
       transfer.tokenID,
@@ -501,7 +502,7 @@ export namespace NewAccountUtils {
     // Calculate hash
     const hasher = Poseidon.createHash(11, 6, 53);
     const inputs = [
-      create.exchangeID,
+      create.exchange,
       create.payerAccountID,
       create.feeTokenID,
       create.fee,
@@ -566,11 +567,10 @@ export class ExchangeTestUtil {
 
   public GENESIS_MERKLE_ROOT: BN;
   public SNARK_SCALAR_FIELD: BN;
-  public MAX_OPEN_WITHDRAWAL_REQUESTS: number;
-  public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
+  public MAX_OPEN_FORCED_REQUESTS: number;
+  public MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE: number;
   public TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS: number;
   public MAX_NUM_TOKENS: number;
-  public MAX_NUM_ACCOUNTS: number;
   public MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED: number;
   public MIN_TIME_IN_SHUTDOWN: number;
   public TX_DATA_AVAILABILITY_SIZE: number;
@@ -674,11 +674,10 @@ export class ExchangeTestUtil {
 
     const constants = await this.exchange.getConstants();
     this.SNARK_SCALAR_FIELD = new BN(constants.SNARK_SCALAR_FIELD);
-    this.MAX_OPEN_WITHDRAWAL_REQUESTS = new BN(constants.MAX_OPEN_WITHDRAWAL_REQUESTS).toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = new BN(constants.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE).toNumber();
+    this.MAX_OPEN_FORCED_REQUESTS = new BN(constants.MAX_OPEN_FORCED_REQUESTS).toNumber();
+    this.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE = new BN(constants.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE).toNumber();
     this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = new BN(constants.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS).toNumber();
     this.MAX_NUM_TOKENS = new BN(constants.MAX_NUM_TOKENS).toNumber();
-    this.MAX_NUM_ACCOUNTS = new BN(constants.MAX_NUM_ACCOUNTS).toNumber();
     this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = new BN(constants.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED).toNumber();
     this.MIN_TIME_IN_SHUTDOWN = new BN(constants.MIN_TIME_IN_SHUTDOWN).toNumber();
     this.TX_DATA_AVAILABILITY_SIZE = new BN(constants.TX_DATA_AVAILABILITY_SIZE).toNumber();
@@ -833,7 +832,7 @@ export class ExchangeTestUtil {
     const fromAccountID = accountFrom.accountID;
     const transfer: Transfer = {
       txType: "Transfer",
-      exchangeID: this.exchangeId,
+      exchange: this.exchange.address,
       fromAccountID,
       toAccountID,
       tokenID,
@@ -1278,7 +1277,10 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.FORCE) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
+        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         await this.exchange.forceWithdraw(owner, token, accountID, {from: signer, value: withdrawalFee});
+        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+        assert.equal(numAvailableSlotsAfter, numAvailableSlotsBefore - 1, "available slots should have decreased by 1");
       } else {
         accountID = 0;
         await this.exchange.withdrawProtocolFees(token, {value: withdrawalFee});
@@ -1291,7 +1293,7 @@ export class ExchangeTestUtil {
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
     const withdrawalRequest: WithdrawalRequest = {
       txType: "Withdraw",
-      exchangeID: this.exchangeId,
+      exchange: this.exchange.address,
       type,
       owner,
       accountID,
@@ -1362,7 +1364,7 @@ export class ExchangeTestUtil {
 
     const newAccount: NewAccount = {
       txType: "NewAccount",
-      exchangeID: this.exchangeId,
+      exchange: this.exchange.address,
       payerAccountID: payerAccount.accountID,
       feeTokenID,
       fee,
@@ -1413,7 +1415,7 @@ export class ExchangeTestUtil {
 
     const accountUpdate: AccountUpdate = {
       txType: "AccountUpdate",
-      exchangeID: this.exchangeId,
+      exchange: this.exchange.address,
       type,
       owner,
       accountID: account.accountID,
@@ -1840,12 +1842,8 @@ export class ExchangeTestUtil {
 
     const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
 
-    // Deposits
-    /*const numAvailableDepositSlotsBefore = await this.exchange.getNumAvailableDepositSlots();
-    const numDepositRequestsProcessedBefore = await this.exchange.getNumDepositRequestsProcessed();
-    // Onchain withdrawals
-    const numAvailableWithdrawalSlotsBefore = await this.exchange.getNumAvailableWithdrawalSlots();
-    const numWithdrawalRequestsProcessedBefore = await this.exchange.getNumWithdrawalRequestsProcessed();*/
+    // Forced requests
+    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
 
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
@@ -1901,31 +1899,9 @@ export class ExchangeTestUtil {
         const block = this.blocks[this.exchangeId][event.blockIdx.toNumber()];
         block.transactionHash = tx.receipt.transactionHash;
         block.timestamp = ethBlock.timestamp;
+        block.blockFee = new BN(event.blockFee);
       }
     }
-
-    // Check the BlockFeeWithdrawn event(s)
-    /*{
-      let numExpected = 0;
-      for (const block of blocks) {
-        numExpected += block.blockType === BlockType.DEPOSIT ? 1 : 0;
-        numExpected +=
-          block.blockType === BlockType.ONCHAIN_WITHDRAWAL &&
-          block.shutdown !== true
-            ? 1
-            : 0;
-      }
-      const events = await this.assertEventsEmitted(
-        this.exchange,
-        "BlockFeeWithdrawn",
-        numExpected
-      );
-      for (const event of events) {
-        const block = this.blocks[this.exchangeId][event.blockIdx.toNumber()];
-        block.blockFeeRewarded = event.amountRewarded;
-        block.blockFeeFined = event.amountFined;
-      }
-    }*/
 
     // Check the new Merkle root
     const merkleRoot = await this.exchange.getMerkleRoot();
@@ -1934,57 +1910,18 @@ export class ExchangeTestUtil {
       blocks[blocks.length - 1].merkleRoot,
       "unexpected Merkle root"
     );
-/*
-    // Deposits
-    {
-      let numRequestsProcessed = 0;
-      for (const block of blocks) {
-        if (block.blockType == BlockType.DEPOSIT) {
-          const depositBlock: DepositBlock = block.internalBlock;
-          numRequestsProcessed += depositBlock.count;
-        }
-      }
-      const numAvailableSlotsAfter = await this.exchange.getNumAvailableDepositSlots();
-      const numDepositRequestsProcessedAfter = await this.exchange.getNumDepositRequestsProcessed();
-      assert(
-        numAvailableSlotsAfter.eq(
-          numAvailableDepositSlotsBefore.add(new BN(numRequestsProcessed))
-        ),
-        "num available deposit slots should be increased by the number of deposit requests processed"
-      );
-      assert(
-        numDepositRequestsProcessedAfter.eq(
-          numDepositRequestsProcessedBefore.add(new BN(numRequestsProcessed))
-        ),
-        "total num deposits processed should be increased by the number of deposit requests processed"
-      );
-    }
 
-    // Onhain withdrawals
-    {
-      let numRequestsProcessed = 0;
-      for (const block of blocks) {
-        if (block.blockType == BlockType.ONCHAIN_WITHDRAWAL) {
-          const withdrawBlock: WithdrawBlock = block.internalBlock;
-          numRequestsProcessed += withdrawBlock.count;
+    // Forced requests
+    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+    let numForcedRequestsProcessed = 0;
+    for (const block of blocks) {
+      for (const tx of block.internalBlock.transactions) {
+        if (tx.txType === "Withdraw" && tx.type > 1) {
+          numForcedRequestsProcessed++;
         }
       }
-      const numAvailableSlotsAfter = await this.exchange.getNumAvailableWithdrawalSlots();
-      const numWithdrawalRequestsProcessedAfter = await this.exchange.getNumWithdrawalRequestsProcessed();
-      assert(
-        numAvailableSlotsAfter.eq(
-          numAvailableWithdrawalSlotsBefore.add(new BN(numRequestsProcessed))
-        ),
-        "num available withdrawal slots should be increased by the number of withdrawal requests processed"
-      );
-      assert(
-        numWithdrawalRequestsProcessedAfter.eq(
-          numWithdrawalRequestsProcessedBefore.add(new BN(numRequestsProcessed))
-        ),
-        "total num withdrawals processed should be increased by the number of withdrawal requests processed"
-      );
     }
-  */
+    assert.equal(numAvailableSlotsAfter - numForcedRequestsProcessed, numAvailableSlotsBefore, "unexpected num available slots");
 
     // Check the current state against the explorer state
     await this.checkExplorerState();
@@ -2106,7 +2043,7 @@ export class ExchangeTestUtil {
         timestamp,
         protocolTakerFeeBips,
         protocolMakerFeeBips,
-        exchangeID,
+        exchange: this.exchange.address,
         operatorAccountID: operator
       };
 
@@ -2126,7 +2063,7 @@ export class ExchangeTestUtil {
 
       // Pack the data that needs to be committed onchain
       const bs = new Bitstream();
-      bs.addNumber(exchangeID, 4);
+      bs.addBN(new BN(block.exchange), 20);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
       bs.addNumber(txBlock.timestamp, 4);
@@ -2295,7 +2232,7 @@ export class ExchangeTestUtil {
       const symbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       // console.log(symbol + ": " + tokenAddress);
 
-      if (symbol !== "ETH" && symbol !== "WETH" && symbol !== "LRC") {
+      if (symbol !== "ETH" && symbol !== "LRC") {
         // Make sure the exchange owner can pay the registration fee
         const registrationCost = await this.exchange.getLRCFeeForRegisteringOneMoreToken();
         await this.setBalanceAndApprove(
@@ -2847,7 +2784,7 @@ export class ExchangeTestUtil {
       assert.equal(explorerBlock.origin, testBlock.origin, "unexpected origin");
       assert(
         explorerBlock.blockFee.eq(testBlock.blockFee),
-        "unexpected blockFeeRewarded"
+        "unexpected blockFee"
       );
       assert.equal(
         explorerBlock.timestamp,
@@ -3387,107 +3324,5 @@ export class BalanceSnapshot {
         );
       }
     }
-  }
-}
-
-const zeroPad = (num: number, places: number) =>
-  String(num).padStart(places, "0");
-
-export class ApprovalsSnapshot {
-  private exchangeTestUtil: ExchangeTestUtil;
-  private exchange: any;
-  private exchangeId: number;
-  private approvals: Map<string, BN>;
-  private transfers: any = [];
-
-  constructor(util: ExchangeTestUtil) {
-    this.exchangeTestUtil = util;
-    this.exchange = this.exchangeTestUtil.exchange;
-    this.exchangeId = this.exchangeTestUtil.exchangeId;
-    this.approvals = new Map<string, BN>();
-  }
-
-  public async watchApproval(from: number, to: number, token: number) {
-    const approved = await this.getApprovedTransferAmount(from, to, token);
-    if (!this.approvals.has(this.getKey(from, to, token))) {
-      this.approvals.set(this.getKey(from, to, token), approved);
-    }
-  }
-
-  public async transfer(from: number, to: number, token: number, amount: BN) {
-    if (!this.approvals.has(this.getKey(from, to, token))) {
-      await this.watchApproval(from, to, token);
-    }
-    const approved = this.approvals.get(this.getKey(from, to, token));
-    this.approvals.set(this.getKey(from, to, token), approved.sub(amount));
-    if (amount.gt(new BN(0))) {
-      this.transfers.push({ from, to, token, amount });
-    }
-  }
-
-  public async verifyApprovals() {
-    for (const [key, approved] of this.approvals.entries()) {
-      const [from, to, token] = this.fromKey(key);
-      const currentlyApproved = await this.getApprovedTransferAmount(
-        from,
-        to,
-        token
-      );
-      assert(
-        currentlyApproved.eq(approved),
-        "conditional transfer approval unexpected"
-      );
-    }
-  }
-
-  public async verifyEvents() {
-    return;
-    const events = await this.exchangeTestUtil.assertEventsEmitted(
-      this.exchange,
-      "ConditionalTransferConsumed",
-      this.transfers.length
-    );
-    //for (const transfer of this.transfers) {
-    //  console.log("T- " + transfer.from + " -> " + transfer.to + " " + transfer.amount.toString(10) + " " + transfer.token);
-    //}
-    //for (const event of events) {
-    //  console.log("E- " + event.from.toNumber() + " -> " + event.to.toNumber() + " " + event.amount.toString(10) + " " + event.token.toNumber());
-    //}
-    for (const [i, event] of events.entries()) {
-      const transfer = this.transfers[i];
-      assert.equal(event.from, transfer.from, "unexpected from");
-      assert.equal(event.to, transfer.to, "unexpected to");
-      assert.equal(event.token, transfer.token, "unexpected token");
-      assert(event.amount.eq(transfer.amount), "unexpected amount");
-    }
-  }
-
-  private async getApprovedTransferAmount(
-    from: number,
-    to: number,
-    token: number
-  ) {
-    const fromAddress = this.exchangeTestUtil.accounts[this.exchangeId][from]
-      .owner;
-    const toAddress = this.exchangeTestUtil.accounts[this.exchangeId][to].owner;
-    const tokenAddress = this.exchangeTestUtil.getTokenAddressFromID(token);
-    return await this.exchange.getApprovedTransferAmount(
-      fromAddress,
-      toAddress,
-      tokenAddress
-    );
-  }
-
-  private getKey(from: number, to: number, token: number) {
-    return zeroPad(from, 10) + zeroPad(to, 10) + zeroPad(token, 5);
-  }
-
-  private fromKey(key: string) {
-    //console.log("key: " + key);
-    return [
-      parseInt(key.slice(0, 10)),
-      parseInt(key.slice(10, 20)),
-      parseInt(key.slice(20, 25))
-    ];
   }
 }

@@ -59,7 +59,7 @@ library ExchangeMode
         view
         returns (uint)
     {
-        return ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS() - S.numPendingForcedTransactions;
+        return ExchangeData.MAX_OPEN_FORCED_REQUESTS() - S.numPendingForcedTransactions;
     }
 
     function areUserRequestsEnabled(

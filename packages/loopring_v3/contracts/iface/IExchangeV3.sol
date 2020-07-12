@@ -332,85 +332,8 @@ abstract contract IExchangeV3 is IExchange
     ///      - blockSize: The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
     ///      - blockVersion: The circuit version to use for verifying the block
-    ///      - data: The data for this block -
-    ///        For all block types:
-    ///            - Exchange ID: 4 bytes
-    ///            - Old merkle root: 32 bytes
-    ///            - New merkle root: 32 bytes
-    ///        For RING_SETTLEMENT blocks add the following data:
-    ///            - timestamp used in the block: 4 bytes
-    ///            - protocolTakerFeeBips: 1 bytes
-    ///            - protocolMakerFeeBips: 1 bytes
-    ///        For DEPOSIT blocks add the following data:
-    ///            - Starting hash: 32 bytes
-    ///            - Ending hash: 32 bytes
-    ///            - Start index (in deposit chain): 4 bytes
-    ///            - Number of deposits processed: 4 bytes
-    ///        For ONCHAIN_WITHDRAWAL blocks add the following data:
-    ///            - Starting hash: 32 bytes
-    ///            - Ending hash: 32 bytes
-    ///            - Start index (in withdrawal chain): 4 bytes
-    ///            - Number of withdrawals processed: 4 bytes
-    ///            - For every withdrawal:
-    ///                - Token ID: 2 bytes
-    ///                - Account ID: 3 bytes
-    ///                - Amount: 3 bytes
-    ///        For OFFCHAIN_WITHDRAWAL blocks add the following data:
-    ///            - For every withdrawal:
-    ///                - Token ID: 2 bytes
-    ///                - Account ID: 3 bytes
-    ///                - Amount: 3 bytes
-    ///        For INTERNAL_TRANSFER blocks add the following data:
-    ///            - Number of conditional transfers: 4 bytes
-    ///
-    ///        The 'onchain data availability' data (if enabled) is added
-    ///        at the end. This allows anyone to recreate the Merkle tree
-    ///        just by using data published on the Ethereum blockchain.
-    ///
-    ///        For RING_SETTLEMENT blocks add the following data:
-    ///            - Operator account ID: 3 bytes
-    ///            - For every ring
-    ///                - For both Orders:
-    ///                    - accountID: 3 bytes
-    ///                    - TokenS: 1,5 bytes
-    ///                    - FillS: 3 bytes
-    ///                    - OrderData: isBuyOrder (1 bit) | isRebate (1 bit) |
-    ///                                 feeOrRebateBips (6 bits)
-    ///                    - TradeHistoryData: 0 (1 bit) | overwrite (1 bit) |
-    ///                                        tradeHistoryAddress (14 bits)
-    ///        For DEPOSIT blocks add the following data:
-    ///            - None
-    ///        For ONCHAIN_WITHDRAWAL blocks add the following data:
-    ///            - None
-    ///        For OFFCHAIN_WITHDRAWALAL blocks add the following data:
-    ///            - Operator account ID: 3 bytes
-    ///            - For every withdrawal:
-    ///                - Fee token ID: 2 bytes
-    ///                - Fee amount: 2 bytes
-    ///        For INTERNAL_TRANSFER blocks add the following data:
-    ///            - Operator account ID: 3 bytes
-    ///            - For every transfer:
-    ///                - Type: 1 byte (0: signature available, 1: conditional transfer)
-    ///                - From account ID: 3 bytes
-    ///                - To account ID: 3 bytes
-    ///                - Token ID: 1,5 byte
-    ///                - Fee token ID: 1,5 byte
-    ///                - Amount: 3 bytes
-    ///                - Fee: 2 bytes
-    ///
-    ///        The RING_SETTLEMENT data availability data is further transformed
-    ///        to make it more compressible:
-    ///        - To group more similar data together we don't store all data
-    ///          for a ring next to each other but group them together for all rings.
-    ///          For ALL rings, sequentially:
-    ///             - orderA.tradeHistoryData + orderB.tradeHistoryData
-    ///             - orderA.accountID + orderB.accountID
-    ///             - orderA.tokenS + orderB.tokenS
-    ///             - orderA.fillS + orderB.fillS
-    ///             - orderA.orderData
-    ///             - orderB.orderData
-    ///
-    ///     - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
+    ///      - data: The data for this block
+    ///      - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
     /// @param feeRecipient The address that will receive the onchain block rewards
     function submitBlocks(
@@ -420,6 +343,8 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual;
 
+    /// @dev Gets the number of available forced request slots.
+    /// @return The number of available slots.
     function getNumAvailableForcedSlots()
         external
         virtual
@@ -462,7 +387,7 @@ abstract contract IExchangeV3 is IExchange
     ///      If the user sends too much ETH the surplus is sent back immediately.
     ///
     ///      Note that after such an operation, it will take the operator some
-    ///      time (no more than MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
+    ///      time (no more than MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
     ///      and create the deposit to the offchain account.
     ///
     /// @param owner The expected owner of the account
@@ -483,7 +408,7 @@ abstract contract IExchangeV3 is IExchange
     ///      Anyone can request a withdrawal of the protocol fees.
     ///
     ///      Note that after such an operation, it will take the operator some
-    ///      time (no more than MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
+    ///      time (no more than MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
     ///      and create the deposit to the offchain account.
     ///
     /// @param tokenAddress The address of the token, use `0x0` for Ether.

@@ -106,10 +106,10 @@ contract("Exchange", (accounts: string[]) => {
       await checkNotifyForcedRequestTooOld(2, exchangeTestUtil.getTokenAddress("LRC"), false);
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
-      console.log(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE);
+      console.log(exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 100
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE + 100
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -118,7 +118,7 @@ contract("Exchange", (accounts: string[]) => {
       const token = exchangeTestUtil.getTokenAddressFromID(withdrawal.tokenID);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 100
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE - 100
       );
       // We shouldn't be in withdrawal mode yet
       await checkNotifyForcedRequestTooOld(withdrawal.accountID, token, false);
@@ -142,7 +142,7 @@ contract("Exchange", (accounts: string[]) => {
       await checkWithdrawalMode(false);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE - 10
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -207,7 +207,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE + 1
       );
 
       // Enter withdrawal mode
@@ -270,7 +270,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE + 1
       );
 
       // Enter withdrawal mode
@@ -336,7 +336,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE + 1
       );
 
       // Enter withdrawal mode
@@ -416,13 +416,30 @@ contract("Exchange", (accounts: string[]) => {
 
       // We should be in withdrawal mode and able to withdraw from the pending deposits
 
-      await withdrawFromDepositRequestChecked(
-        depositB.owner,
-        depositB.token,
-        depositB.index,
-        depositB.amount.add(depositC.amount),
-        depositB.fee.add(depositC.fee)
-      );
+      if (depositB.index.eq(depositC.index)) {
+        await withdrawFromDepositRequestChecked(
+          depositB.owner,
+          depositB.token,
+          depositB.index,
+          depositB.amount.add(depositC.amount),
+          depositB.fee.add(depositC.fee)
+        );
+      } else {
+        await withdrawFromDepositRequestChecked(
+          depositB.owner,
+          depositB.token,
+          depositB.index,
+          depositB.amount,
+          depositB.fee
+        );
+        await withdrawFromDepositRequestChecked(
+          depositC.owner,
+          depositC.token,
+          depositC.index,
+          depositC.amount,
+          depositC.fee
+        );
+      }
       await withdrawFromDepositRequestChecked(
         depositD.owner,
         depositD.token,

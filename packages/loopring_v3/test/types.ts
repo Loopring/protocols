@@ -17,7 +17,7 @@ export interface OrderInfo {
   amountS: BN;
   amountB: BN;
 
-  exchangeID?: number;
+  exchange?: string;
   accountID?: number;
   orderID?: number;
 
@@ -93,7 +93,7 @@ export interface Deposit {
 
 export interface AccountUpdate {
   txType?: "AccountUpdate";
-  exchangeID: number;
+  exchange: string;
 
   type: number;
 
@@ -112,7 +112,7 @@ export interface AccountUpdate {
 
 export class Transfer {
   txType?: "Transfer";
-  exchangeID: number;
+  exchange: string;
 
   type: number;
 
@@ -150,7 +150,7 @@ export class Transfer {
 
 export interface WithdrawalRequest {
   txType?: "Withdraw";
-  exchangeID: number;
+  exchange: string;
 
   type: number;
 
@@ -182,7 +182,7 @@ export interface WithdrawalRequest {
 
 export interface NewAccount {
   txType?: "NewAccount";
-  exchangeID: number;
+  exchange: string;
 
   payerAccountID: number;
   feeTokenID: number;
@@ -225,7 +225,7 @@ export interface TxBlock {
 
   onchainDataAvailability?: boolean;
   timestamp?: number;
-  exchangeID?: number;
+  exchange?: string;
   operatorAccountID?: number;
 
   signature?: Signature;

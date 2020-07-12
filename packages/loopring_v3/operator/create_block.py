@@ -25,7 +25,7 @@ class GeneralObject(object):
 
 
 def orderFromJSON(jOrder, state):
-    exchangeID = int(jOrder["exchangeID"])
+    exchange = str(jOrder["exchange"])
     orderID = int(jOrder["orderID"])
     accountID = int(jOrder["accountID"])
     tokenS = int(jOrder["tokenIdS"])
@@ -44,7 +44,7 @@ def orderFromJSON(jOrder, state):
     account = state.getAccount(accountID)
 
     order = Order(account.publicKeyX, account.publicKeyY,
-                  exchangeID, orderID, accountID,
+                  exchange, orderID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,
                   allOrNone, validSince, validUntil, buy,
@@ -162,7 +162,7 @@ def ringFromJSON(jRing, state):
 def createBlock(state, data):
     block = Block()
     block.onchainDataAvailability = data["onchainDataAvailability"]
-    block.exchangeID = state.exchangeID
+    block.exchange = str(data["exchange"])
     block.merkleRootBefore = str(state.getRoot())
     block.timestamp = int(data["timestamp"])
     block.protocolTakerFeeBips = int(data["protocolTakerFeeBips"])

@@ -24,12 +24,12 @@ if("${PERFORMANCE}")
   set_target_properties(dex_circuit PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
-#file(GLOB test_filenames
-#    "${circuit_src_folder}/test/*.cpp"
-#)
+file(GLOB test_filenames
+    "${circuit_src_folder}/test/*.cpp"
+)
 
-#add_executable(dex_circuit_tests ${test_filenames})
-#target_link_libraries(dex_circuit_tests ethsnarks_jubjub)
+add_executable(dex_circuit_tests ${test_filenames})
+target_link_libraries(dex_circuit_tests ethsnarks_jubjub)
 
 if("${GPU_PROVE}")
   add_definitions(-DGPU_PROVE=1)
