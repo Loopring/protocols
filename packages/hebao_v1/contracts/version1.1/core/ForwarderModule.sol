@@ -81,6 +81,7 @@ contract ForwarderModule is BaseModule
     {
         require(
             (to == controller.walletFactory()) ||
+            (to == from) ||
             (to != address(this) && Wallet(from).hasModule(to)),
             "INVALID_DESTINATION"
         );

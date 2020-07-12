@@ -109,7 +109,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function addModule(address _module)
         external
         override
-        nonReentrant
         onlyFromModuleOrOwner
     {
         addModuleInternal(_module);
@@ -118,7 +117,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function removeModule(address _module)
         external
         override
-        nonReentrant
         onlyFromModule
     {
         // Allow deactivate to fail to make sure the module can be removed

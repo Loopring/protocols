@@ -31,7 +31,7 @@ contract("UpgraderModule", () => {
     modulesToRemove: string[],
     initialModule: any
   ) => {
-    const walletContract = await ctx.contracts.BaseWallet.at(wallet);
+    const walletContract = await ctx.contracts.WalletImpl.at(wallet);
 
     if (useMetaTx) {
       // Transfer 0.1 ETH to the wallet to pay for the wallet creation
@@ -81,7 +81,7 @@ contract("UpgraderModule", () => {
   });
 
   [false, true].forEach(function(metaTx) {
-    it(
+    it.only(
       description(
         "owner should be able to upgrade the wallet implementation",
         metaTx
@@ -89,19 +89,22 @@ contract("UpgraderModule", () => {
       async () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
-        const activeModule = ctx.guardianModule;
         const { wallet } = await createWallet(ctx, owner, 0, [
-          activeModule.address
+          ctx.guardianModule.address,
+          ctx.erc1271Module.address,
+          ctx.forwarderModule.address
         ]);
         const walletContract = await ctx.contracts.OwnedUpgradabilityProxy.at(
           wallet
         );
+        const walletImpl = await ctx.contracts.WalletImpl.at(wallet);
 
         // Create a new wallet implementation contract
-        const newBaseWallet = await ctx.contracts.BaseWallet.new();
+        const newBaseWallet = await ctx.contracts.WalletImpl.new();
 
         // Create an upgrader module
         const upgraderModule = await ctx.contracts.UpgraderModule.new(
+          ctx.controllerImpl.address,
           newBaseWallet.address,
           [],
           []
@@ -117,20 +120,13 @@ contract("UpgraderModule", () => {
 
         // Do the upgrade
         await executeTransaction(
-          activeModule.contract.methods.addModule(
-            wallet,
-            upgraderModule.address
-          ),
+          walletImpl.contract.methods.addModule(upgraderModule.address),
           ctx,
           useMetaTx,
           wallet,
-          [owner],
-          { from: owner }
+          [],
+          useMetaTx ? { wallet, owner } : { from: owner }
         );
-        // Check for the `Upgraded` event on the wallet proxy contract
-        await assertEventEmitted(walletContract, "Upgraded", (event: any) => {
-          return event.implementation === newBaseWallet.address;
-        });
 
         // Check the new wallet implementation
         assert.equal(
@@ -140,13 +136,9 @@ contract("UpgraderModule", () => {
         );
 
         // Make sure the wallet is still fully functional
-        await ctx.guardianModule.addModule(
-          wallet,
-          ctx.whitelistModule.address,
-          {
-            from: owner
-          }
-        );
+        await walletImpl.addModule(ctx.whitelistModule.address, {
+          from: owner
+        });
       }
     );
 
@@ -158,8 +150,8 @@ contract("UpgraderModule", () => {
       async () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
-        const { wallet } = await createWallet(ctx, owner, 0, []);
-        const walletContract = await ctx.contracts.BaseWallet.at(wallet);
+        const { wallet } = await createWallet(ctx, owner, 0);
+        const walletContract = await ctx.contracts.WalletImpl.at(wallet);
 
         // Try to use the module before adding it to the wallet
         await expectThrow(
@@ -216,7 +208,7 @@ contract("UpgraderModule", () => {
         const { wallet } = await createWallet(ctx, owner, 0, [
           initialModule.address
         ]);
-        const walletContract = await ctx.contracts.BaseWallet.at(wallet);
+        const walletContract = await ctx.contracts.WalletImpl.at(wallet);
 
         // Add the module
         await executeTransaction(
