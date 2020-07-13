@@ -386,11 +386,26 @@ export interface Signature {
 
 /// Private
 
+export function power10(x1: BN) {
+  const c0 = new BN("10000000000000000000");
+  const c1 = new BN("23025850929940459520");
+  const c2 = new BN("26509490552391999488");
+  const c3 = new BN("20346785922934771712");
+
+  const x2 = x1.mul(x1).div(Constants.INDEX_BASE);
+  const x3 = x2.mul(x1).div(Constants.INDEX_BASE);
+
+  const t1 = x1.mul(c1);
+  const t2 = x2.mul(c2);
+  const t3 = x3.mul(c3);
+  return c0.add(t1.add(t2).add(t3).div(Constants.INDEX_BASE));
+}
+
 export function applyInterest(balance: BN, oldIndex: BN, newIndex: BN) {
   assert(newIndex.gte(oldIndex), "Invalid balance state");
   const indexDiff = newIndex.sub(oldIndex);
-  const balanceDiff = balance.mul(indexDiff).div(Constants.INDEX_BASE);
-  const newBalance = balance.add(balanceDiff)
+  const multiplier = power10(indexDiff);
+  const newBalance = balance.mul(multiplier).div(Constants.INDEX_BASE.mul(new BN(10)));
   return newBalance
 }
 

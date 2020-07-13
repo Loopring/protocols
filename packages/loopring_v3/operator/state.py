@@ -2,6 +2,7 @@ import sys
 import json
 import copy
 from collections import namedtuple
+from math import *
 
 from sparse_merkle_tree import SparseMerkleTree
 from float import *
@@ -49,11 +50,23 @@ def getDefaultAccount():
     return Account(0, Point(0, 0))
 
 
+def power10(x1):
+    c0 = floor(10 * INDEX_BASE)
+    c1 = floor(10*log(10) * INDEX_BASE)
+    c2 = floor(10*log(10)*log(10)/2 * INDEX_BASE)
+    c3 = floor(10*log(10)*log(10)*log(10)/6 * INDEX_BASE)
+
+    x2 = (x1*x1) // INDEX_BASE
+    x3 = (x2*x1) // INDEX_BASE
+
+    return c0 + (x1*c1 + x2*c2 + x3*c3) // INDEX_BASE
+
+
 def applyInterest(balance, oldIndex, newIndex):
     assert(int(newIndex) >= int(oldIndex))
     indexDiff = int(newIndex) - int(oldIndex)
-    balanceDiff = (int(balance) * indexDiff) // INDEX_BASE
-    newBalance = int(balance) + balanceDiff
+    multiplier = power10(indexDiff)
+    newBalance = (int(balance) * multiplier) // (INDEX_BASE * 10)
     return newBalance
 
 class Fill(object):

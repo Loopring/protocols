@@ -145,7 +145,7 @@ public:
         ifrequire_payer_toAccountID_eq_payee_toAccountID(pb, isNonZero_payer_to.result(), payer_toAccountID.packed, toAccountID.packed, FMT(prefix, ".ifrequire_payer_toAccountID_eq_payee_toAccountID")),
         isNonZero_payee_toAccountID(pb, payee_toAccountID.packed, FMT(prefix, ".isNonZero_payee_toAccountID")),
         ifrequire_payee_toAccountID_eq_toAccountID(pb, isNonZero_payee_toAccountID.result(), payee_toAccountID.packed, toAccountID.packed, FMT(prefix, ".ifrequire_payee_toAccountID_eq_toAccountID")),
-        ifrequire_NotZero_to(pb, isTransferTx.result(), to.packed, state.constants.zero, FMT(prefix, ".ifrequire_NotZero_to")),
+        ifrequire_NotZero_to(pb, isTransferTx.result(), to.packed, state.constants._0, FMT(prefix, ".ifrequire_NotZero_to")),
         requireValidUntil(pb, state.timestamp, validUntil.packed, NUM_BITS_TIMESTAMP, FMT(prefix, ".requireValidUntil")),
 
         // Fill in standard dual author key if none is given
@@ -202,9 +202,9 @@ public:
 
         // DA optimization
         da_NeedsToAddress(pb, {toAccountValid.isNewAccount(), isConditional.result()}, FMT(prefix, ".da_NeedsToAddress")),
-        da_To(pb, da_NeedsToAddress.result(), to.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants.zero), FMT(prefix, ".da_To")),
-        da_From(pb, isConditional.result(), from.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants.zero), FMT(prefix, ".da_From")),
-        da_Nonce(pb, isConditional.result(), nonce.bits, VariableArrayT(NUM_BITS_NONCE, state.constants.zero), FMT(prefix, ".da_Nonce")),
+        da_To(pb, da_NeedsToAddress.result(), to.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_To")),
+        da_From(pb, isConditional.result(), from.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_From")),
+        da_Nonce(pb, isConditional.result(), nonce.bits, VariableArrayT(NUM_BITS_NONCE, state.constants._0), FMT(prefix, ".da_Nonce")),
 
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
@@ -218,7 +218,7 @@ public:
         transferPayment(pb, balanceS_A, balanceB_B, fAmount.value(), FMT(prefix, ".transferPayment")),
 
         // Increase the nonce of From by 1
-        nonce_From_after(pb, state.accountA.account.nonce, state.constants.one, NUM_BITS_NONCE, FMT(prefix, ".nonce_From_after")),
+        nonce_From_after(pb, state.accountA.account.nonce, state.constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonce_From_after")),
         // Increase the number of conditional transactions (if conditional)
         numConditionalTransactionsAfter(pb, state.numConditionalTransactions, isConditional.result(), FMT(prefix, ".numConditionalTransactionsAfter"))
     {
@@ -417,7 +417,7 @@ public:
             da_To.result(),
             da_Nonce.result(),
             da_From.result(),
-            VariableArrayT(256 - NUM_BITS_FIELD_CAPACITY, state.constants.zero), data.bits
+            VariableArrayT(256 - NUM_BITS_FIELD_CAPACITY, state.constants._0), data.bits
         });
     }
 };

@@ -101,9 +101,9 @@ public:
         type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
 
         // Special case protocol fee withdrawal
-        isProtocolFeeWithdrawal(pb, accountID.packed, state.constants.zero, FMT(prefix, ".isProtocolFeeWithdrawal")),
-        ownerValue(pb, isProtocolFeeWithdrawal.result(), state.constants.zero, state.accountA.account.owner, FMT(prefix, ".ownerValue")),
-        nonceValue(pb, isProtocolFeeWithdrawal.result(), state.constants.zero, state.accountA.account.nonce, FMT(prefix, ".nonceValue")),
+        isProtocolFeeWithdrawal(pb, accountID.packed, state.constants._0, FMT(prefix, ".isProtocolFeeWithdrawal")),
+        ownerValue(pb, isProtocolFeeWithdrawal.result(), state.constants._0, state.accountA.account.owner, FMT(prefix, ".ownerValue")),
+        nonceValue(pb, isProtocolFeeWithdrawal.result(), state.constants._0, state.accountA.account.nonce, FMT(prefix, ".nonceValue")),
         owner(pb, ownerValue.result(), NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
         nonce(pb, nonceValue.result(), NUM_BITS_NONCE, FMT(prefix, ".nonce")),
 
@@ -131,10 +131,10 @@ public:
 
         // Check how much should be withdrawn
         fullBalance(pb, isProtocolFeeWithdrawal.result(), balanceB_P.balance(), balanceS_A.balance(), FMT(prefix, ".fullBalance")),
-        amountIsZero(pb, amount.packed, state.constants.zero, FMT(prefix, ".amountIsZero")),
+        amountIsZero(pb, amount.packed, state.constants._0, FMT(prefix, ".amountIsZero")),
         amountIsFullBalance(pb, amount.packed, fullBalance.result(), FMT(prefix, ".amountIsFullBalance")),
-        validFullWithdrawalType(pb, type.packed, state.constants.two, FMT(prefix, ".validFullWithdrawalType")),
-        invalidFullWithdrawalType(pb, type.packed, state.constants.three, FMT(prefix, ".invalidFullWithdrawalType")),
+        validFullWithdrawalType(pb, type.packed, state.constants._2, FMT(prefix, ".validFullWithdrawalType")),
+        invalidFullWithdrawalType(pb, type.packed, state.constants._3, FMT(prefix, ".invalidFullWithdrawalType")),
         checkValidFullWithdrawal(pb, validFullWithdrawalType.result(), amountIsFullBalance.result(), FMT(prefix, ".checkValidFullWithdrawal")),
         checkInvalidFullWithdrawal(pb, invalidFullWithdrawalType.result(), amountIsZero.result(), FMT(prefix, ".checkInvalidFullWithdrawal")),
 
@@ -148,11 +148,11 @@ public:
         feePayment(pb, balanceB_A, balanceA_O, fFee.value(), FMT(prefix, ".feePayment")),
 
         // Calculate the new balance
-        amountA(pb, isProtocolFeeWithdrawal.result(), state.constants.zero, amount.packed, FMT(prefix, ".amountA")),
-        amountP(pb, isProtocolFeeWithdrawal.result(), amount.packed, state.constants.zero, FMT(prefix, ".amountP")),
+        amountA(pb, isProtocolFeeWithdrawal.result(), state.constants._0, amount.packed, FMT(prefix, ".amountA")),
+        amountP(pb, isProtocolFeeWithdrawal.result(), amount.packed, state.constants._0, FMT(prefix, ".amountP")),
         balanceA_after(pb, balanceS_A.balance(), amountA.result(), NUM_BITS_AMOUNT, FMT(prefix, ".balanceA_after")),
         balanceP_after(pb, balanceB_P.balance(), amountP.result(), NUM_BITS_AMOUNT, FMT(prefix, ".balanceP_after")),
-        merkleTreeAccountA(pb, isProtocolFeeWithdrawal.result(), flatten({VariableArrayT(1, state.constants.zero), VariableArrayT(1, state.constants.one), VariableArrayT(NUM_BITS_ACCOUNT - 2, state.constants.zero)}), accountID.bits, FMT(prefix, ".merkleTreeAccountA")),
+        merkleTreeAccountA(pb, isProtocolFeeWithdrawal.result(), flatten({VariableArrayT(1, state.constants._0), VariableArrayT(1, state.constants._1), VariableArrayT(NUM_BITS_ACCOUNT - 2, state.constants._0)}), accountID.bits, FMT(prefix, ".merkleTreeAccountA")),
 
         // Increase the nonce by 1 (unless it's a forced withdrawal)
         isForcedWithdrawal(pb, {validFullWithdrawalType.result(), invalidFullWithdrawalType.result()}, FMT(prefix, ".isForcedWithdrawal")),
@@ -160,7 +160,7 @@ public:
         nonce_after(pb, state.accountA.account.nonce, isNotForcedWithdrawal.result(), NUM_BITS_NONCE, FMT(prefix, ".nonce_after")),
 
         // Increase the number of conditional transactions
-        numConditionalTransactionsAfter(pb, state.numConditionalTransactions, state.constants.one, FMT(prefix, ".numConditionalTransactionsAfter"))
+        numConditionalTransactionsAfter(pb, state.numConditionalTransactions, state.constants._1, FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         setArrayOutput(accountA_Address, merkleTreeAccountA.result());
         setOutput(accountA_Nonce, nonce_after.result());
@@ -181,7 +181,7 @@ public:
         setOutput(hash_A, hash.result());
 
         setOutput(signatureRequired_A, needsSignature.result());
-        setOutput(signatureRequired_B, state.constants.zero);
+        setOutput(signatureRequired_B, state.constants._0);
 
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }

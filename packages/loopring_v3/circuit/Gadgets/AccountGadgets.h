@@ -255,14 +255,14 @@ public:
     }
 };
 
-// Calculcates the state of a user's open position
+// Applies any outstanding interest to the user's balance
 class ApplyInterestGadget : public GadgetT
 {
 public:
 
     SubGadget indexDiff;
-    MulDivGadget balanceDiff;
-    AddGadget newBalance;
+    PowerGadget multiplier;
+    MulDivGadget newBalance;
 
     ApplyInterestGadget(
         ProtoboardT& pb,
@@ -275,8 +275,8 @@ public:
         GadgetT(pb, prefix),
 
         indexDiff(pb, newIndex, oldIndex, NUM_BITS_AMOUNT, FMT(prefix, ".indexDiff")),
-        balanceDiff(pb, constants, balance, indexDiff.result(), constants.indexBase, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, FMT(prefix, ".balanceDiff")),
-        newBalance(pb, balance, balanceDiff.result(), NUM_BITS_AMOUNT, FMT(prefix, ".newBalance"))
+        multiplier(pb, constants, indexDiff.result(), FMT(prefix, ".multiplier")),
+        newBalance(pb, constants, balance, multiplier.result(), constants.pow10_c0, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, FMT(prefix, ".newBalance"))
     {
     }
 
@@ -294,14 +294,14 @@ public:
     void generate_r1cs_witness()
     {
         indexDiff.generate_r1cs_witness();
-        balanceDiff.generate_r1cs_witness();
+        multiplier.generate_r1cs_witness();
         newBalance.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
         indexDiff.generate_r1cs_constraints();
-        balanceDiff.generate_r1cs_constraints();
+        multiplier.generate_r1cs_constraints();
         newBalance.generate_r1cs_constraints();
     }
 

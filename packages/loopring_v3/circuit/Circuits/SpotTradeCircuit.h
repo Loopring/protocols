@@ -239,8 +239,8 @@ public:
     const VariableArrayT getPublicData() const
     {
         return flattenReverse({
-            VariableArrayT(1, state.constants.zero), VariableArrayT(1, tradeHistory_A.getOverwrite()), subArray(orderA.orderID.bits, 0, NUM_BITS_TRADING_HISTORY),
-            VariableArrayT(1, state.constants.zero), VariableArrayT(1, tradeHistory_B.getOverwrite()), subArray(orderB.orderID.bits, 0, NUM_BITS_TRADING_HISTORY),
+            VariableArrayT(1, state.constants._0), VariableArrayT(1, tradeHistory_A.getOverwrite()), subArray(orderA.orderID.bits, 0, NUM_BITS_TRADING_HISTORY),
+            VariableArrayT(1, state.constants._0), VariableArrayT(1, tradeHistory_B.getOverwrite()), subArray(orderB.orderID.bits, 0, NUM_BITS_TRADING_HISTORY),
 
             orderA.accountID.bits,
             orderB.accountID.bits,

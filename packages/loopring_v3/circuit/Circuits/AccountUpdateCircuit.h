@@ -101,7 +101,7 @@ public:
         feePayment(pb, balanceS_A, balanceB_O, fFee.value(), FMT(prefix, ".feePayment")),
 
         // Increase the nonce
-        nonce_after(pb, state.accountA.account.nonce, state.constants.one, NUM_BITS_NONCE, FMT(prefix, ".nonce_after")),
+        nonce_after(pb, state.accountA.account.nonce, state.constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonce_after")),
         // Increase the number of conditional transactions (if conditional)
         numConditionalTransactionsAfter(pb, state.numConditionalTransactions, isConditional.result(), FMT(prefix, ".numConditionalTransactionsAfter"))
     {
@@ -120,7 +120,7 @@ public:
 
         setOutput(hash_A, hash.result());
         setOutput(signatureRequired_A, needsSignature.result());
-        setOutput(signatureRequired_B, state.constants.zero);
+        setOutput(signatureRequired_B, state.constants._0);
 
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
@@ -208,7 +208,7 @@ public:
             nonce.bits,
             compressPublicKey.result(),
             walletHash.bits,
-            VariableArrayT(4, state.constants.zero), feeTokenID.bits,
+            VariableArrayT(4, state.constants._0), feeTokenID.bits,
             fFee.bits(),
         });
     }

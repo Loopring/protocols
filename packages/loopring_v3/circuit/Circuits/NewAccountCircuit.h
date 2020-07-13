@@ -86,7 +86,7 @@ public:
         // Validate
         isNewAccountTx(pb, state.type, state.constants.txTypeNewAccount, FMT(prefix, ".isNewAccountTx")),
         requireNewOwnerNotZero(pb, newOwner.packed, FMT(prefix, ".requireNewOwnerNotZero")),
-        requireAccountLeafEmpty(pb, isNewAccountTx.result(), state.accountB.account.owner, state.constants.zero, FMT(prefix, ".requireAccountLeafEmpty")),
+        requireAccountLeafEmpty(pb, isNewAccountTx.result(), state.accountB.account.owner, state.constants._0, FMT(prefix, ".requireAccountLeafEmpty")),
 
         // Compress the public key
         compressPublicKey(pb, state.params, state.constants, newPublicKeyX, newPublicKeyY, FMT(this->annotation_prefix, ".compressPublicKey")),
@@ -101,7 +101,7 @@ public:
         feePayment(pb, balanceS_A, balanceB_O, fFee.value(), FMT(prefix, ".feePayment")),
 
         // Increase the nonce
-        nonce_after(pb, state.accountA.account.nonce, state.constants.one, NUM_BITS_NONCE, FMT(prefix, ".nonce_after"))
+        nonce_after(pb, state.accountA.account.nonce, state.constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonce_after"))
     {
         setArrayOutput(accountA_Address, payerAccountID.bits);
         setOutput(accountA_Nonce, nonce_after.result());
@@ -120,8 +120,8 @@ public:
         setOutput(balanceO_B_Index, balanceB_O.index());
 
         setOutput(hash_A, hash.result());
-        setOutput(signatureRequired_A, state.constants.one);
-        setOutput(signatureRequired_B, state.constants.zero);
+        setOutput(signatureRequired_A, state.constants._1);
+        setOutput(signatureRequired_B, state.constants._0);
     }
 
     void generate_r1cs_witness(const NewAccount& create)
@@ -200,7 +200,7 @@ public:
     {
         return flattenReverse({
             payerAccountID.bits,
-            VariableArrayT(4, state.constants.zero), feeTokenID.bits,
+            VariableArrayT(4, state.constants._0), feeTokenID.bits,
             fFee.bits(),
             newAccountID.bits,
             newOwner.bits,

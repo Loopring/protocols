@@ -119,8 +119,8 @@ public:
         constants(_constants),
 
         // Special case to allow the public key to be 0
-        isZeroX(pb, publicKeyX, constants.zero, FMT(prefix, ".isZeroX")),
-        isZeroY(pb, publicKeyY, constants.zero, FMT(prefix, ".isZeroY")),
+        isZeroX(pb, publicKeyX, constants._0, FMT(prefix, ".isZeroX")),
+        isZeroY(pb, publicKeyY, constants._0, FMT(prefix, ".isZeroY")),
         isZero(pb, {isZeroX.result(), isZeroY.result()}, FMT(prefix, ".isZero")),
         valueX(pb, isZero.result(), constants.dummyPublicKeyX, publicKeyX, FMT(prefix, ".valueX")),
         valueY(pb, isZero.result(), constants.dummyPublicKeyY, publicKeyY, FMT(prefix, ".valueY")),
@@ -129,7 +129,7 @@ public:
         requireValidPublicKey(pb, params, valueX.result(), valueY.result(), FMT(prefix, ".requireValidPublicKey")),
 
         // Point compression
-        negPublicKeyX(pb, constants.zero, publicKeyX, FMT(prefix, ".negPublicKeyX")),
+        negPublicKeyX(pb, constants._0, publicKeyX, FMT(prefix, ".negPublicKeyX")),
         isNegativeX(pb, negPublicKeyX.result(), publicKeyX, FMT(prefix, ".isNegativeX")),
         publicKeyYBits(pb, publicKeyY, FMT(prefix, ".publicKeyYBits"))
     {
@@ -174,7 +174,7 @@ public:
 
     VariableArrayT result() const
     {
-        return reverse(flattenReverse({VariableArrayT(1, isNegativeX.lt()), VariableArrayT(1, constants.zero), publicKeyYBits.result()}));
+        return reverse(flattenReverse({VariableArrayT(1, isNegativeX.lt()), VariableArrayT(1, constants._0), publicKeyYBits.result()}));
     }
 };
 

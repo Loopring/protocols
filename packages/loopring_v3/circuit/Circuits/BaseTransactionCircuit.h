@@ -248,18 +248,18 @@ public:
         GadgetT(pb, prefix),
         state(_state)
     {
-        aOutputs[tradeHistoryA_Address] = VariableArrayT(NUM_BITS_TRADING_HISTORY, state.constants.zero);
+        aOutputs[tradeHistoryA_Address] = VariableArrayT(NUM_BITS_TRADING_HISTORY, state.constants._0);
         uOutputs[tradeHistoryA_Filled] = state.accountA.tradeHistory.filled;
         uOutputs[tradeHistoryA_OrderId] = state.accountA.tradeHistory.orderID;
 
-        aOutputs[balanceA_S_Address] = VariableArrayT(NUM_BITS_TOKEN, state.constants.zero);
+        aOutputs[balanceA_S_Address] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
         uOutputs[balanceA_S_Balance] = state.accountA.balanceS.balance;
         uOutputs[balanceA_S_Index] = state.accountA.balanceS.index;
 
         uOutputs[balanceA_B_Balance] = state.accountA.balanceB.balance;
         uOutputs[balanceA_B_Index] = state.accountA.balanceB.index;
 
-        aOutputs[accountA_Address] = flatten({VariableArrayT(1, state.constants.zero), VariableArrayT(1, state.constants.one), VariableArrayT(NUM_BITS_ACCOUNT - 2, state.constants.zero)});
+        aOutputs[accountA_Address] = flatten({VariableArrayT(1, state.constants._0), VariableArrayT(1, state.constants._1), VariableArrayT(NUM_BITS_ACCOUNT - 2, state.constants._0)});
         uOutputs[accountA_Owner] = state.accountA.account.owner;
         uOutputs[accountA_PublicKeyX] = state.accountA.account.publicKey.x;
         uOutputs[accountA_PublicKeyY] = state.accountA.account.publicKey.y;
@@ -267,11 +267,11 @@ public:
         uOutputs[accountA_WalletHash] = state.accountA.account.walletHash;
 
 
-        aOutputs[tradeHistoryB_Address] = VariableArrayT(NUM_BITS_TRADING_HISTORY, state.constants.zero);
+        aOutputs[tradeHistoryB_Address] = VariableArrayT(NUM_BITS_TRADING_HISTORY, state.constants._0);
         uOutputs[tradeHistoryB_Filled] = state.accountB.tradeHistory.filled;
         uOutputs[tradeHistoryB_OrderId] = state.accountB.tradeHistory.orderID;
 
-        aOutputs[balanceB_S_Address] = VariableArrayT(NUM_BITS_TOKEN, state.constants.zero);
+        aOutputs[balanceB_S_Address] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
         uOutputs[balanceB_S_Balance] = state.accountB.balanceS.balance;
         uOutputs[balanceB_S_Index] = state.accountB.balanceS.index;
 
@@ -279,7 +279,7 @@ public:
         uOutputs[balanceB_B_Index] = state.accountB.balanceB.index;
 
 
-        aOutputs[accountB_Address] = flatten({VariableArrayT(1, state.constants.zero), VariableArrayT(1, state.constants.one), VariableArrayT(NUM_BITS_ACCOUNT - 2, state.constants.zero)});
+        aOutputs[accountB_Address] = flatten({VariableArrayT(1, state.constants._0), VariableArrayT(1, state.constants._1), VariableArrayT(NUM_BITS_ACCOUNT - 2, state.constants._0)});
         uOutputs[accountB_Owner] = state.accountB.account.owner;
         uOutputs[accountB_PublicKeyX] = state.accountB.account.publicKey.x;
         uOutputs[accountB_PublicKeyY] = state.accountB.account.publicKey.y;
@@ -303,15 +303,15 @@ public:
         uOutputs[index_B] = state.index.balanceB.index;
 
 
-        uOutputs[hash_A] = state.constants.zero;
+        uOutputs[hash_A] = state.constants._0;
         uOutputs[publicKeyX_A] = state.accountA.account.publicKey.x;
         uOutputs[publicKeyY_A] = state.accountA.account.publicKey.y;
-        uOutputs[signatureRequired_A] = state.constants.one;
+        uOutputs[signatureRequired_A] = state.constants._1;
 
-        uOutputs[hash_B] = state.constants.zero;
+        uOutputs[hash_B] = state.constants._0;
         uOutputs[publicKeyX_B] = state.accountB.account.publicKey.x;
         uOutputs[publicKeyY_B] = state.accountB.account.publicKey.y;
-        uOutputs[signatureRequired_B] = state.constants.one;
+        uOutputs[signatureRequired_B] = state.constants._1;
 
 
         uOutputs[misc_NumConditionalTransactions] = state.numConditionalTransactions;

@@ -64,7 +64,7 @@ public:
         balance_after(pb, balanceS_A.balance(), depositedAmount.balance(), NUM_BITS_AMOUNT, FMT(prefix, ".balance_after")),
 
         // Increase the number of conditional transactions
-        numConditionalTransactionsAfter(pb, state.numConditionalTransactions, state.constants.one, FMT(prefix, ".numConditionalTransactionsAfter"))
+        numConditionalTransactionsAfter(pb, state.numConditionalTransactions, state.constants._1, FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         setArrayOutput(accountA_Address, accountID.bits);
         setOutput(accountA_Owner, owner.packed);
@@ -74,8 +74,8 @@ public:
 
         setOutput(index_B, newIndex.result());
 
-        setOutput(signatureRequired_A, state.constants.zero);
-        setOutput(signatureRequired_B, state.constants.zero);
+        setOutput(signatureRequired_A, state.constants._0);
+        setOutput(signatureRequired_B, state.constants._0);
 
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
@@ -133,7 +133,7 @@ public:
         return flattenReverse({
             owner.bits,
             accountID.bits,
-            VariableArrayT(4, state.constants.zero), tokenID.bits,
+            VariableArrayT(4, state.constants._0), tokenID.bits,
             amount.bits,
             index.bits
         });

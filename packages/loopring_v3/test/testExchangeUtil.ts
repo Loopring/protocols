@@ -1758,7 +1758,7 @@ export class ExchangeTestUtil {
 
       const proofFilename =
         "./blocks/block_" +
-        blockData.exchangeID +
+        this.exchangeId +
         "_" +
         block.blockIdx +
         "_proof.json";

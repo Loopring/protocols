@@ -87,7 +87,7 @@ public:
                 // Pad with zeros if needed
                 for (unsigned int j = da.size(); j < (TX_DATA_AVAILABILITY_SIZE - 1) * 8; j++)
                 {
-                    da.emplace_back(state.constants.zero);
+                    da.emplace_back(state.constants._0);
                 }
                 variables.push_back(da);
                 //std::cout << "da size: " << variables.back().size() << std::endl;
@@ -230,8 +230,8 @@ public:
         // General validation
         accountA(pb, tx.getArrayOutput(accountA_Address), FMT(prefix, ".packAccountA")),
         accountB(pb, tx.getArrayOutput(accountB_Address), FMT(prefix, ".packAccountA")),
-        one_lt_accountA(pb, state.constants.one, accountA.packed, NUM_BITS_ACCOUNT, FMT(prefix, ".one_lt_accountA")),
-        one_lt_accountB(pb, state.constants.one, accountB.packed, NUM_BITS_ACCOUNT, FMT(prefix, ".one_lt_accountB")),
+        one_lt_accountA(pb, state.constants._1, accountA.packed, NUM_BITS_ACCOUNT, FMT(prefix, ".one_lt_accountA")),
+        one_lt_accountB(pb, state.constants._1, accountB.packed, NUM_BITS_ACCOUNT, FMT(prefix, ".one_lt_accountB")),
 
         // Check signatures
         signatureVerifierA(pb, params, state.constants, jubjub::VariablePointT(tx.getOutput(publicKeyX_A), tx.getOutput(publicKeyY_A)), tx.getOutput(hash_A), tx.getOutput(signatureRequired_A), FMT(prefix, ".signatureVerifierA")),
@@ -517,14 +517,14 @@ public:
         operatorAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".operatorAccountID")),
 
         // Increment the nonce of the Operator
-        nonce_after(pb, accountBefore_O.nonce, constants.one, NUM_BITS_NONCE, FMT(prefix, ".nonce_after")),
+        nonce_after(pb, accountBefore_O.nonce, constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonce_after")),
 
         // Signature
         hash(pb, var_array({
             publicData.publicInput,
             accountBefore_O.nonce
         }), FMT(this->annotation_prefix, ".hash")),
-        signatureVerifier(pb, params, constants, accountBefore_O.publicKey, hash.result(), constants.one, FMT(prefix, ".signatureVerifier"))
+        signatureVerifier(pb, params, constants, accountBefore_O.publicKey, hash.result(), constants._1, FMT(prefix, ".signatureVerifier"))
     {
 
     }
@@ -568,7 +568,7 @@ public:
                 operatorAccountID.bits,
                 txProtocolBalancesRoot,
                 txIndexBalancesRoot,
-                (j == 0) ? constants.zero : transactions.back().tx.getOutput(misc_NumConditionalTransactions),
+                (j == 0) ? constants._0 : transactions.back().tx.getOutput(misc_NumConditionalTransactions),
                 std::string("tx_") + std::to_string(j)
             );
             transactions.back().generate_r1cs_constraints();
@@ -582,7 +582,7 @@ public:
         updateAccount_P->generate_r1cs_constraints();
 
         // Update Index
-        updateAccount_I.reset(new UpdateAccountGadget(pb, updateAccount_P->result(), flatten({VariableArrayT(1, constants.one), VariableArrayT(NUM_BITS_ACCOUNT - 1, constants.zero)}),
+        updateAccount_I.reset(new UpdateAccountGadget(pb, updateAccount_P->result(), flatten({VariableArrayT(1, constants._1), VariableArrayT(NUM_BITS_ACCOUNT - 1, constants._0)}),
                       {accountBefore_I.owner, accountBefore_I.publicKey.x, accountBefore_I.publicKey.y, accountBefore_I.nonce, accountBefore_I.walletHash, accountBefore_I.balancesRoot},
                       {accountBefore_I.owner, accountBefore_I.publicKey.x, accountBefore_I.publicKey.y, accountBefore_I.nonce, accountBefore_I.walletHash, transactions.back().getNewIndexBalancesRoot()},
                       FMT(annotation_prefix, ".updateAccount_I")));

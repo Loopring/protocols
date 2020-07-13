@@ -290,8 +290,8 @@ public:
         return {type.bits,
                 accountID_From.bits,
                 accountID_To.bits,
-                VariableArrayT(2, constants.zero), tokenID.bits,
-                VariableArrayT(2, constants.zero), feeTokenID.bits,
+                VariableArrayT(2, constants._0), tokenID.bits,
+                VariableArrayT(2, constants._0), feeTokenID.bits,
                 fAmount.bits(),
                 fFee.bits()};
     }
@@ -390,7 +390,7 @@ public:
                 transAccountsRoot,
                 transOperatorBalancesRoot,
                 exchangeID.packed,
-                (j == 0) ? constants.zero : transfers.back().getNewNumConditionalTransfers(),
+                (j == 0) ? constants._0 : transfers.back().getNewNumConditionalTransfers(),
                 std::string("transfer_") + std::to_string(j));
             transfers.back().generate_r1cs_constraints();
         }

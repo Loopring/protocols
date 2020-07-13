@@ -65,7 +65,7 @@ public:
         isZeroFillAmountB(pb, isNonZeroFillAmountB.result(), FMT(prefix, "isZeroFillAmountB")),
         fillsZero(pb, {isZeroFillAmountS.result(), isZeroFillAmountB.result()}, FMT(prefix, "fillsZero")),
         fillsValid(pb, {fillsNonZero.result(), fillsZero.result()}, FMT(prefix, "fillsValid")),
-        requireFillsValid(pb, fillsValid.result(), constants.one, FMT(prefix, "requireFillsValid"))
+        requireFillsValid(pb, fillsValid.result(), constants._1, FMT(prefix, "requireFillsValid"))
     {
 
     }
@@ -408,7 +408,7 @@ public:
         checkValidA(pb, constants, timestamp, orderA, fillS_A, fillS_B, FMT(prefix, ".checkValidA")),
         checkValidB(pb, constants, timestamp, orderB, fillS_B, fillS_A, FMT(prefix, ".checkValidB")),
         valid(pb, {checkValidA.isValid(), checkValidB.isValid()}, FMT(prefix, ".valid")),
-        requireValid(pb, valid.result(), constants.one, FMT(prefix, ".requireValid"))
+        requireValid(pb, valid.result(), constants._1, FMT(prefix, ".requireValid"))
     {
 
     }

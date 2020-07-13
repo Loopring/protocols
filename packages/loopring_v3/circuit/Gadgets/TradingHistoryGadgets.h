@@ -161,9 +161,9 @@ public:
         orderID_eq_tradeHistoryOrderID(pb, orderID.packed, tradeHistoryOrderID.result(), FMT(prefix, ".nextTradeHistoryOrderID")),
         orderID_eq_nextTradeHistoryOrderID(pb, orderID.packed, nextTradeHistoryOrderID.result(), FMT(prefix, ".orderID_eq_nextTradeHistoryOrderID")),
         isValidOrderID(pb, {orderID_eq_tradeHistoryOrderID.result(), orderID_eq_nextTradeHistoryOrderID.result()}, FMT(prefix, ".isValidOrderID")),
-        requireValidOrderID(pb, isValidOrderID.result(), constants.one, FMT(prefix, ".requireValidOrderID")),
+        requireValidOrderID(pb, isValidOrderID.result(), constants._1, FMT(prefix, ".requireValidOrderID")),
 
-        filled(pb, orderID_eq_tradeHistoryOrderID.result(), tradeHistory.filled, constants.zero, FMT(prefix, ".filled"))
+        filled(pb, orderID_eq_tradeHistoryOrderID.result(), tradeHistory.filled, constants._0, FMT(prefix, ".filled"))
     {
 
     }

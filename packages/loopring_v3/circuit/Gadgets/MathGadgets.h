@@ -27,14 +27,17 @@ static void requireEqual(ProtoboardT& pb, const VariableT& A, const VariableT& B
 class Constants : public GadgetT
 {
 public:
-    const VariableT zero;
-    const VariableT one;
-    const VariableT two;
-    const VariableT three;
-    const VariableT four;
-    const VariableT five;
-    const VariableT six;
-    const VariableT seven;
+    const VariableT _0;
+    const VariableT _1;
+    const VariableT _2;
+    const VariableT _3;
+    const VariableT _4;
+    const VariableT _5;
+    const VariableT _6;
+    const VariableT _7;
+    const VariableT _8;
+    const VariableT _9;
+    const VariableT _10;
 
     const VariableT _1000;
     const VariableT _1001;
@@ -48,6 +51,12 @@ public:
     const VariableT dummyPublicKeyY;
     const VariableT txTypeTransfer;
     const VariableT txTypeNewAccount;
+
+    const VariableT pow10_c0;
+    const VariableT pow10_c1;
+    const VariableT pow10_c2;
+    const VariableT pow10_c3;
+
     const VariableArrayT zeroAccount;
 
     std::vector<VariableT> values;
@@ -58,14 +67,17 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        zero(make_variable(pb, FieldT::zero(), FMT(prefix, ".zero"))),
-        one(make_variable(pb, FieldT::one(), FMT(prefix, ".one"))),
-        two(make_variable(pb, ethsnarks::FieldT(2), FMT(prefix, ".two"))),
-        three(make_variable(pb, ethsnarks::FieldT(3), FMT(prefix, ".three"))),
-        four(make_variable(pb, ethsnarks::FieldT(4), FMT(prefix, ".four"))),
-        five(make_variable(pb, ethsnarks::FieldT(5), FMT(prefix, ".five"))),
-        six(make_variable(pb, ethsnarks::FieldT(6), FMT(prefix, ".six"))),
-        seven(make_variable(pb, ethsnarks::FieldT(7), FMT(prefix, ".seven"))),
+        _0(make_variable(pb, FieldT::zero(), FMT(prefix, ".zero"))),
+        _1(make_variable(pb, FieldT::one(), FMT(prefix, ".one"))),
+        _2(make_variable(pb, ethsnarks::FieldT(2), FMT(prefix, ".two"))),
+        _3(make_variable(pb, ethsnarks::FieldT(3), FMT(prefix, ".three"))),
+        _4(make_variable(pb, ethsnarks::FieldT(4), FMT(prefix, ".four"))),
+        _5(make_variable(pb, ethsnarks::FieldT(5), FMT(prefix, ".five"))),
+        _6(make_variable(pb, ethsnarks::FieldT(6), FMT(prefix, ".six"))),
+        _7(make_variable(pb, ethsnarks::FieldT(7), FMT(prefix, ".seven"))),
+        _8(make_variable(pb, ethsnarks::FieldT(8), FMT(prefix, ".eight"))),
+        _9(make_variable(pb, ethsnarks::FieldT(9), FMT(prefix, ".nine"))),
+        _10(make_variable(pb, ethsnarks::FieldT(10), FMT(prefix, ".ten"))),
         _1000(make_variable(pb, ethsnarks::FieldT(1000), FMT(prefix, "._1000"))),
         _1001(make_variable(pb, ethsnarks::FieldT(1001), FMT(prefix, "._1001"))),
         _10000(make_variable(pb, ethsnarks::FieldT(10000), FMT(prefix, "._10000"))),
@@ -78,19 +90,28 @@ public:
         dummyPublicKeyY(make_variable(pb, ethsnarks::FieldT("6933274320914065805670637410453081675154127044926882796951068647148079547843"), FMT(prefix, ".dummyPublicKeyY"))),
         txTypeTransfer(make_variable(pb, ethsnarks::FieldT(int(TransactionType::Transfer)), FMT(prefix, ".txTypeTransfer"))),
         txTypeNewAccount(make_variable(pb, ethsnarks::FieldT(int(TransactionType::NewAccount)), FMT(prefix, ".txTypeNewAccount"))),
-        zeroAccount(NUM_BITS_ACCOUNT, zero)
+
+        pow10_c0(make_variable(pb, ethsnarks::FieldT(POW10_C0), FMT(prefix, ".pow10_c0"))),
+        pow10_c1(make_variable(pb, ethsnarks::FieldT(POW10_C1), FMT(prefix, ".pow10_c1"))),
+        pow10_c2(make_variable(pb, ethsnarks::FieldT(POW10_C2), FMT(prefix, ".pow10_c2"))),
+        pow10_c3(make_variable(pb, ethsnarks::FieldT(POW10_C3), FMT(prefix, ".pow10_c3"))),
+
+        zeroAccount(NUM_BITS_ACCOUNT, _0)
     {
         assert(NUM_BITS_MAX_VALUE == FieldT::size_in_bits());
         assert(NUM_BITS_FIELD_CAPACITY == FieldT::capacity());
 
-        values.push_back(zero);
-        values.push_back(one);
-        values.push_back(two);
-        values.push_back(three);
-        values.push_back(four);
-        values.push_back(five);
-        values.push_back(six);
-        values.push_back(seven);
+        values.push_back(_0);
+        values.push_back(_1);
+        values.push_back(_2);
+        values.push_back(_3);
+        values.push_back(_4);
+        values.push_back(_5);
+        values.push_back(_6);
+        values.push_back(_7);
+        values.push_back(_8);
+        values.push_back(_9);
+        values.push_back(_10);
     }
 
     void generate_r1cs_witness()
@@ -100,14 +121,17 @@ public:
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(zero, FieldT::one(), FieldT::zero()), ".zero");
-        pb.add_r1cs_constraint(ConstraintT(one, FieldT::one(), FieldT::one()), ".one");
-        pb.add_r1cs_constraint(ConstraintT(two, FieldT::one(), FieldT(2)), ".two");
-        pb.add_r1cs_constraint(ConstraintT(three, FieldT::one(), FieldT(3)), ".three");
-        pb.add_r1cs_constraint(ConstraintT(four, FieldT::one(), FieldT(4)), ".four");
-        pb.add_r1cs_constraint(ConstraintT(five, FieldT::one(), FieldT(5)), ".five");
-        pb.add_r1cs_constraint(ConstraintT(six, FieldT::one(), FieldT(6)), ".six");
-        pb.add_r1cs_constraint(ConstraintT(seven, FieldT::one(), FieldT(7)), ".seven");
+        pb.add_r1cs_constraint(ConstraintT(_0, FieldT::one(), FieldT::zero()), ".zero");
+        pb.add_r1cs_constraint(ConstraintT(_1, FieldT::one(), FieldT::one()), ".one");
+        pb.add_r1cs_constraint(ConstraintT(_2, FieldT::one(), FieldT(2)), ".two");
+        pb.add_r1cs_constraint(ConstraintT(_3, FieldT::one(), FieldT(3)), ".three");
+        pb.add_r1cs_constraint(ConstraintT(_4, FieldT::one(), FieldT(4)), ".four");
+        pb.add_r1cs_constraint(ConstraintT(_5, FieldT::one(), FieldT(5)), ".five");
+        pb.add_r1cs_constraint(ConstraintT(_6, FieldT::one(), FieldT(6)), ".six");
+        pb.add_r1cs_constraint(ConstraintT(_7, FieldT::one(), FieldT(7)), ".seven");
+        pb.add_r1cs_constraint(ConstraintT(_8, FieldT::one(), FieldT(8)), ".eight");
+        pb.add_r1cs_constraint(ConstraintT(_9, FieldT::one(), FieldT(9)), ".nine");
+        pb.add_r1cs_constraint(ConstraintT(_10, FieldT::one(), FieldT(10)), ".ten");
 
         pb.add_r1cs_constraint(ConstraintT(_1000, FieldT::one(), ethsnarks::FieldT(1000)), "._1000");
         pb.add_r1cs_constraint(ConstraintT(_1001, FieldT::one(), ethsnarks::FieldT(1001)), "._1001");
@@ -121,6 +145,11 @@ public:
         pb.add_r1cs_constraint(ConstraintT(dummyPublicKeyY, FieldT::one(), ethsnarks::FieldT("6933274320914065805670637410453081675154127044926882796951068647148079547843")), ".dummyPublicKeyY");
         pb.add_r1cs_constraint(ConstraintT(txTypeTransfer, FieldT::one(), ethsnarks::FieldT(int(TransactionType::Transfer))), ".txTypeTransfer");
         pb.add_r1cs_constraint(ConstraintT(txTypeNewAccount, FieldT::one(), ethsnarks::FieldT(int(TransactionType::NewAccount))), ".txTypeNewAccount");
+
+        pb.add_r1cs_constraint(ConstraintT(pow10_c0, FieldT::one(), ethsnarks::FieldT(POW10_C0)), ".pow10_c0");
+        pb.add_r1cs_constraint(ConstraintT(pow10_c1, FieldT::one(), ethsnarks::FieldT(POW10_C1)), ".pow10_c1");
+        pb.add_r1cs_constraint(ConstraintT(pow10_c2, FieldT::one(), ethsnarks::FieldT(POW10_C2)), ".pow10_c2");
+        pb.add_r1cs_constraint(ConstraintT(pow10_c3, FieldT::one(), ethsnarks::FieldT(POW10_C3)), ".pow10_c3");
     }
 };
 
@@ -1553,7 +1582,7 @@ public:
         for (unsigned int i = 0; i < floatEncoding.numBitsExponent; i++)
         {
             baseMultipliers.emplace_back(make_variable(pb, FMT(prefix, ".baseMultipliers")));
-            multipliers.emplace_back(TernaryGadget(pb, f[floatEncoding.numBitsMantissa + i], baseMultipliers[i], constants.one, FMT(prefix, ".multipliers")));
+            multipliers.emplace_back(TernaryGadget(pb, f[floatEncoding.numBitsMantissa + i], baseMultipliers[i], constants._1, FMT(prefix, ".multipliers")));
         }
     }
 
@@ -1656,7 +1685,7 @@ struct SelectorGadget : public GadgetT
         for (unsigned int i = 0; i < maxBits; i++)
         {
             bits.emplace_back(pb, type, constants.values[i], FMT(annotation_prefix, ".bits"));
-            sum.emplace_back(pb, (i == 0) ? constants.zero : sum.back().result(), bits.back().result(), FMT(annotation_prefix, ".sum"));
+            sum.emplace_back(pb, (i == 0) ? constants._0 : sum.back().result(), bits.back().result(), FMT(annotation_prefix, ".sum"));
             res.emplace_back(bits.back().result());
         }
     }
@@ -1678,7 +1707,7 @@ struct SelectorGadget : public GadgetT
             sum[i].generate_r1cs_constraints();
         }
         // Sum needs to equal 1
-        requireEqual(pb, sum.back().result(), constants.one, FMT(annotation_prefix, ".selector_sum_one"));
+        requireEqual(pb, sum.back().result(), constants._1, FMT(annotation_prefix, ".selector_sum_one"));
     }
 
     const VariableArrayT& result() const
@@ -1792,9 +1821,9 @@ public:
         GadgetT(pb, prefix),
 
         newOwner_equal_oldOwner(pb, newOwner, oldOwner, FMT(prefix, ".newOwner_equal_oldOwner")),
-        no_oldOwner(pb, oldOwner, constants.zero, FMT(prefix, ".no_oldOwner")),
+        no_oldOwner(pb, oldOwner, constants._0, FMT(prefix, ".no_oldOwner")),
         equal_owner_or_no_owner(pb, {newOwner_equal_oldOwner.result(), no_oldOwner.result()}, FMT(prefix, ".equal_owner_or_no_owner")),
-        equal_owner_or_no_owner_eq_true(pb, equal_owner_or_no_owner.result(), constants.one, FMT(prefix, ".equal_owner_or_no_owner_eq_true"))
+        equal_owner_or_no_owner_eq_true(pb, equal_owner_or_no_owner.result(), constants._1, FMT(prefix, ".equal_owner_or_no_owner_eq_true"))
     {
 
     }
@@ -1818,6 +1847,83 @@ public:
     const VariableT& isNewAccount() const
     {
         return no_oldOwner.result();
+    }
+};
+
+// Calculates 10**(1+x) for a value [0, delta] with delta close to 0 for the highest accuracy.
+// Assumes the result cannot overflow because the sum of all balances stored inside the merkle tree can never exceed 2**96
+// (and this is checked onchain).
+class PowerGadget : public GadgetT
+{
+public:
+
+    MulDivGadget x2;
+    MulDivGadget x3;
+
+    UnsafeMulGadget t1;
+    UnsafeMulGadget t2;
+    UnsafeMulGadget t3;
+
+    UnsafeAddGadget t1_add_t2;
+    UnsafeAddGadget t12_add_t3;
+    MulDivGadget res_part;
+    UnsafeAddGadget res;
+
+    PowerGadget(
+        ProtoboardT& pb,
+        const Constants& constants,
+        const VariableT& x1,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        x2(pb, constants, x1, x1, constants.indexBase, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 60, FMT(prefix, ".x2")),
+        x3(pb, constants, x2.result(), x1, constants.indexBase, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 60, FMT(prefix, ".x3")),
+
+        t1(pb, x1, constants.pow10_c1, FMT(prefix, ".t1")),
+        t2(pb, x2.result(), constants.pow10_c2, FMT(prefix, ".t2")),
+        t3(pb, x3.result(), constants.pow10_c3, FMT(prefix, ".t3")),
+
+        t1_add_t2(pb, t1.result(), t2.result(), FMT(prefix, ".t1_add_t2")),
+        t12_add_t3(pb, t1_add_t2.result(), t3.result(), FMT(prefix, ".t12_add_t3")),
+        res_part(pb, constants, t12_add_t3.result(), constants._1, constants.indexBase, NUM_BITS_AMOUNT*2, 1, 60, FMT(prefix, ".res_part")),
+        res(pb, constants.pow10_c0, res_part.result(), FMT(prefix, ".res"))
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+        x2.generate_r1cs_witness();
+        x3.generate_r1cs_witness();
+
+        t1.generate_r1cs_witness();
+        t2.generate_r1cs_witness();
+        t3.generate_r1cs_witness();
+
+        t1_add_t2.generate_r1cs_witness();
+        t12_add_t3.generate_r1cs_witness();
+        res_part.generate_r1cs_witness();
+        res.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        x2.generate_r1cs_constraints();
+        x3.generate_r1cs_constraints();
+
+        t1.generate_r1cs_constraints();
+        t2.generate_r1cs_constraints();
+        t3.generate_r1cs_constraints();
+
+        t1_add_t2.generate_r1cs_constraints();
+        t12_add_t3.generate_r1cs_constraints();
+        res_part.generate_r1cs_constraints();
+        res.generate_r1cs_constraints();
+    }
+
+    const VariableT& result() const
+    {
+        return res.result();
     }
 };
 

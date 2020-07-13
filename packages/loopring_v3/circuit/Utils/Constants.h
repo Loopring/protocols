@@ -32,6 +32,12 @@ namespace Loopring
     static const char* MAX_AMOUNT = "79228162514264337593543950335"; // 2^96 - 1
     static const char* INDEX_BASE = "1000000000000000000"; // 10^18
 
+    // Constants for pow10 taylor series
+    static const char* POW10_C0 = "10000000000000000000"; // floor(10*INDEX_BASE)
+    static const char* POW10_C1 = "23025850929940459520"; // floor(10*log(10) * INDEX_BASE)
+    static const char* POW10_C2 = "26509490552391999488"; // floor(10*log(10)*log(10)/2 * INDEX_BASE)
+    static const char* POW10_C3 = "20346785922934771712"; // floor(10*log(10)*log(10)*log(10)/6 * INDEX_BASE)
+
     struct FloatEncoding
     {
         unsigned int numBitsExponent;

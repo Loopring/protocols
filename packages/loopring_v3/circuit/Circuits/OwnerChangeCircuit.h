@@ -66,9 +66,9 @@ public:
         feePayment(pb, balanceS_A, balanceB_O, fFee.value(), FMT(prefix, ".feePayment")),
 
         // Increase the nonce
-        nonce_after(pb, state.accountA.account.nonce, state.constants.one, NUM_BITS_NONCE, FMT(prefix, ".nonce_after")),
+        nonce_after(pb, state.accountA.account.nonce, state.constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonce_after")),
         // Increase the number of conditional transactions
-        numConditionalTransactionsAfter(pb, state.numConditionalTransactions, state.constants.one, FMT(prefix, ".numConditionalTransactionsAfter"))
+        numConditionalTransactionsAfter(pb, state.numConditionalTransactions, state.constants._1, FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         setArrayOutput(accountA_Address, accountID.bits);
         setOutput(accountA_Owner, newOwner.packed);
@@ -81,8 +81,8 @@ public:
         setOutput(balanceO_B_Balance, balanceB_O.balance());
         setOutput(balanceO_B_Index, balanceB_O.index());
 
-        setOutput(signatureRequired_A, state.constants.zero);
-        setOutput(signatureRequired_B, state.constants.zero);
+        setOutput(signatureRequired_A, state.constants._0);
+        setOutput(signatureRequired_B, state.constants._0);
 
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
@@ -145,7 +145,7 @@ public:
             owner.bits,
             accountID.bits,
             nonce.bits,
-            VariableArrayT(4, state.constants.zero), feeTokenID.bits,
+            VariableArrayT(4, state.constants._0), feeTokenID.bits,
             fFee.bits(),
             newOwner.bits,
             walletHash.bits
