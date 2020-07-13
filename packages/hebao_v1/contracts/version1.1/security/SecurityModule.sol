@@ -37,8 +37,7 @@ abstract contract SecurityModule is MetaTxModule
         require(!isWalletLocked(wallet), "LOCKED");
         
         address payable _logicalSender = logicalSender();
-        // We DO accept the wallet owner as the sender on behalf of the wallet,
-        // but when this modifier is used, please also make sure the wallet is unlocked.
+        // We DO accept the wallet owner as the sender on behalf of the wallet
         require(
             _logicalSender == wallet || _logicalSender == Wallet(wallet).owner(),
              "NOT_FROM_WALLET_OR_OWNER"
