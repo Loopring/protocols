@@ -31,7 +31,7 @@ contract ControllerImpl is Claimable, Controller
     WhitelistStore      public whitelistStore;
 
 
-    event ValueChanged(string  indexed name, uint value);
+    event ValueChanged  (string  indexed name, uint value);
     event AddressChanged(string  indexed name, address addr);
 
     constructor(
