@@ -20,6 +20,7 @@ contract ControllerImpl is Claimable, Controller
 {
     address             public collectTo;
     uint                public defaultLockPeriod;
+    uint                public minActiveGuardians;
     address             public ensManagerAddress;
     PriceOracle         public priceOracle;
     DappAddressStore    public dappAddressStore;
@@ -32,7 +33,7 @@ contract ControllerImpl is Claimable, Controller
 
     event ValueChanged(
         string  indexed name,
-        address indexed addr
+        bytes32         value
     );
 
     constructor(
@@ -40,6 +41,7 @@ contract ControllerImpl is Claimable, Controller
         WalletRegistry    _walletRegistry,
         uint              _defaultLockPeriod,
         address           _collectTo,
+        uint              _minActiveGuardians,
         address           _ensManagerAddress,
         PriceOracle       _priceOracle,
         DappAddressStore  _dappAddressStore,
@@ -59,6 +61,12 @@ contract ControllerImpl is Claimable, Controller
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;
 
+        require(
+            _minActiveGuardians == 1 || _minActiveGuardians == 2,
+            "INVALID_MIN_GUARDIAN"
+        );
+        minActiveGuardians = _minActiveGuardians;
+
         ensManagerAddress = _ensManagerAddress;
         priceOracle = _priceOracle;
         dappAddressStore = _dappAddressStore;
@@ -75,7 +83,7 @@ contract ControllerImpl is Claimable, Controller
     {
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;
-        emit ValueChanged("CollectTo", collectTo);
+        emit ValueChanged("CollectTo", bytes32(_collectTo));
     }
 
     function setPriceOracle(PriceOracle _priceOracle)
@@ -83,7 +91,7 @@ contract ControllerImpl is Claimable, Controller
         onlyOwner
     {
         priceOracle = _priceOracle;
-        emit ValueChanged("PriceOracle", address(priceOracle));
+        emit ValueChanged("PriceOracle", bytes32(address(_priceOracle)));
     }
 
     function setWalletFactory(address _walletFactory)
@@ -92,6 +100,18 @@ contract ControllerImpl is Claimable, Controller
     {
         require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
-        emit ValueChanged("WalletFactory", walletFactory);
+        emit ValueChanged("WalletFactory", bytes32(_walletFactory));
+    }
+
+    function setMinActiveGuardian(uint _minActiveGuardians)
+        external
+        onlyOwner
+    {
+        require(
+            _minActiveGuardians == 1 || _minActiveGuardians == 2,
+            "INVALID_MIN_GUARDIAN"
+        );
+        minActiveGuardians = _minActiveGuardians;
+        emit ValueChanged("MinActiveGuardian", bytes32(_minActiveGuardians));
     }
 }

@@ -16,9 +16,6 @@ abstract contract SecurityModule is MetaTxModule
 {
     using SignedRequest for ControllerImpl;
 
-    // The minimal number of guardians for recovery and locking.
-    uint constant public MIN_ACTIVE_GUARDIANS = 2;
-
     event WalletLock(
         address indexed wallet,
         uint            lock
@@ -80,7 +77,7 @@ abstract contract SecurityModule is MetaTxModule
     modifier onlyHaveEnoughGuardians(address wallet)
     {
         require(
-            controller.securityStore().numGuardians(wallet) >= MIN_ACTIVE_GUARDIANS,
+            controller.securityStore().numGuardians(wallet) >= controller.minActiveGuardians(),
             "NO_ENOUGH_ACTIVE_GUARDIANS"
         );
         _;
