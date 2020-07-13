@@ -14,11 +14,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
-
-import "../lib/AddressSet.sol";
+pragma solidity ^0.6.10;
 
 import "../base/DataStore.sol";
+import "../lib/AddressSet.sol";
 
 
 /// @title WhitelistStore

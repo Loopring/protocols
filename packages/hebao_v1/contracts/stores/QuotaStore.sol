@@ -14,17 +14,17 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
-
-import "../lib/MathUint.sol";
+pragma solidity ^0.6.10;
 
 import "../base/DataStore.sol";
+import "../lib/MathUint.sol";
+import "../lib/Claimable.sol";
 
 
 /// @title QuotaStore
 /// @dev This store maintains daily spending quota for each wallet.
 ///      A rolling daily limit is used.
-contract QuotaStore is DataStore
+contract QuotaStore is DataStore, Claimable
 {
     using MathUint for uint;
 
@@ -41,6 +41,11 @@ contract QuotaStore is DataStore
 
     mapping (address => Quota) public quotas;
 
+    event DefaultQuotaChanged(
+        uint prevValue,
+        uint currentValue
+    );
+
     event QuotaScheduled(
         address indexed wallet,
         uint            pendingQuota,
@@ -51,6 +56,20 @@ contract QuotaStore is DataStore
         public
         DataStore()
     {
+        defaultQuota = _defaultQuota;
+    }
+
+    function changeDefaultQuota(uint _defaultQuota)
+        external
+        onlyOwner
+    {
+        require(
+            _defaultQuota != defaultQuota &&
+            _defaultQuota >= 1 ether &&
+            _defaultQuota <= 100 ether,
+            "INVALID_DEFAULT_QUOTA"
+        );
+        emit DefaultQuotaChanged(defaultQuota, _defaultQuota);
         defaultQuota = _defaultQuota;
     }
 

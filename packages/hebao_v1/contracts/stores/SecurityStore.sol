@@ -14,11 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
-import "../iface/Data.sol";
+import "../stores/Data.sol";
 
 
 /// @title SecurityStore

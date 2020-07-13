@@ -14,16 +14,15 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 
 /// @title PriceOracle
-abstract contract PriceOracle
+interface PriceOracle
 {
     // @dev Return's the token's value in ETH
     function tokenValue(address token, uint amount)
-        public
+        external
         view
-        virtual
         returns (uint value);
 }

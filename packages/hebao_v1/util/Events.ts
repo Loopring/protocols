@@ -1,4 +1,5 @@
 export async function getEventsFromContract(contract: any, blockIdx: number) {
+  // console.log(`blockIdx: ${blockIdx}`);
   return contract.getPastEvents("allEvents", {
     fromBlock: blockIdx,
     toBlock: blockIdx
@@ -14,11 +15,14 @@ export async function assertEventsEmitted(
   numExpected: number,
   filter?: any
 ) {
-  const allEvents: any = await getEventsFromContract(
-    contract,
-    web3.eth.blockNumber
-  );
+  const blockNumber = await web3.eth.getBlockNumber();
+
+  const allEvents: any = await getEventsFromContract(contract, blockNumber);
   const events = allEvents.filter((event: any) => event.event === eventName);
+
+  // const util = require("util");
+  // console.log(`events: ${util.inspect(events)}`);
+
   const items = events.map((eventObj: any) => {
     const args = eventObj.args ? eventObj.args : eventObj.returnValues;
     if (filter !== undefined) {

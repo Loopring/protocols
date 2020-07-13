@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 import "../iface/Wallet.sol";
 
@@ -27,9 +27,9 @@ import "../iface/Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract DataStore
+abstract contract DataStore
 {
-  modifier onlyWalletModule(address wallet)
+    modifier onlyWalletModule(address wallet)
     {
         require(Wallet(wallet).hasModule(msg.sender), "UNAUTHORIZED");
         _;

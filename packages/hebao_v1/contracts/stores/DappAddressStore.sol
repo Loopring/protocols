@@ -14,11 +14,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
-
-import "../lib/OwnerManagable.sol";
+pragma solidity ^0.6.10;
 
 import "../base/DataStore.sol";
+import "../lib/OwnerManagable.sol";
 
 
 /// @title DappAddressStore

@@ -1,7 +1,7 @@
 // Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ArgentENSManager.sol
 // with few modifications.
 
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 import "../strings.sol";
 import "./ENS.sol";
 import "./ENSConsumer.sol";

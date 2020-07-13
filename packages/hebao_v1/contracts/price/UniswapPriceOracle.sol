@@ -14,12 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
-
-import "../thirdparty/uniswap/UniswapExchangeInterface.sol";
-import "../thirdparty/uniswap/UniswapFactoryInterface.sol";
+pragma solidity ^0.6.10;
 
 import "../iface/PriceOracle.sol";
+import "../thirdparty/uniswap/UniswapExchangeInterface.sol";
+import "../thirdparty/uniswap/UniswapFactoryInterface.sol";
 
 
 /// @title UniswapPriceOracle
@@ -35,7 +34,7 @@ contract UniswapPriceOracle is PriceOracle
     }
 
     function tokenValue(address token, uint amount)
-        public
+        external
         view
         override
         returns (uint)

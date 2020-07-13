@@ -14,11 +14,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
-
-import "../lib/Claimable.sol";
+pragma solidity ^0.6.10;
 
 import "../iface/WalletRegistry.sol";
+import "../lib/Claimable.sol";
 
 
 /// @title WalletRegistryImpl
@@ -40,8 +39,6 @@ contract WalletRegistryImpl is Claimable, WalletRegistry
         require(msg.sender == factory, "FACTORY_UNAUTHORIZED");
         _;
     }
-
-    constructor() public Claimable() {}
 
     function setWalletFactory(address _factory)
         external

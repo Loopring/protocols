@@ -1,10 +1,11 @@
-import { executeMetaTransaction, TransactionOptions } from "./MetaTransaction";
+import { executeMetaTx, TransactionOptions } from "./MetaTx";
 import { Artifacts } from "./Artifacts";
 import { addGuardian } from "./GuardianUtils";
 import { assertEventEmitted } from "../../util/Events";
 import BN = require("bn.js");
 import { Constants } from "./Constants";
 import { sign, SignatureType } from "./Signature";
+import { signCreateWallet } from "./SignatureUtils";
 
 export interface Context {
   contracts: any;
@@ -16,20 +17,19 @@ export interface Context {
   useMetaTx: boolean;
 
   controllerImpl: any;
-  walletFactoryModule: any;
+  walletFactory: any;
+  forwarderModule: any;
   walletRegistryImpl: any;
   moduleRegistryImpl: any;
-  walletENSManager: any;
+  baseENSManager: any;
 
   guardianModule: any;
   inheritanceModule: any;
   whitelistModule: any;
-  quotaTransfers: any;
-  approvedTransfers: any;
-  dappTransfers: any;
+  transferModule: any;
   erc1271Module: any;
 
-  baseWallet: any;
+  walletImpl: any;
 
   securityStore: any;
   whitelistStore: any;
@@ -52,41 +52,43 @@ export async function getContext() {
     useMetaTx: true,
 
     controllerImpl: await contracts.ControllerImpl.deployed(),
-    walletFactoryModule: await contracts.WalletFactoryModule.deployed(),
+    walletFactory: await contracts.WalletFactory.deployed(),
+    forwarderModule: await contracts.ForwarderModule.deployed(),
     walletRegistryImpl: await contracts.WalletRegistryImpl.deployed(),
     moduleRegistryImpl: await contracts.ModuleRegistryImpl.deployed(),
-    walletENSManager: await contracts.WalletENSManager.deployed(),
+    baseENSManager: await contracts.BaseENSManager.deployed(),
 
     guardianModule: await contracts.GuardianModule.deployed(),
     inheritanceModule: await contracts.InheritanceModule.deployed(),
     whitelistModule: await contracts.WhitelistModule.deployed(),
-    quotaTransfers: await contracts.QuotaTransfers.deployed(),
-    approvedTransfers: await contracts.ApprovedTransfers.deployed(),
-    dappTransfers: await contracts.DappTransfers.deployed(),
+    transferModule: await contracts.TransferModule.deployed(),
     erc1271Module: await contracts.ERC1271Module.deployed(),
 
-    baseWallet: await contracts.BaseWallet.deployed(),
+    walletImpl: await contracts.WalletImpl.deployed(),
     securityStore: await contracts.SecurityStore.deployed(),
     whitelistStore: await contracts.WhitelistStore.deployed(),
     quotaStore: await contracts.QuotaStore.deployed(),
-    priceCacheStore: await contracts.PriceCacheStore.deployed()
+    priceCacheStore: await contracts.PriceCacheStore.new(
+      Constants.zeroAddress,
+      3600 * 240
+    )
   };
   return context;
 }
 
 export async function createContext(context?: Context) {
   context = context === undefined ? await getContext() : context;
-  // Create a new wallet factory module
-  const walletFactoryModule = await context.contracts.WalletFactoryModule.new(
+  // Create a new wallet factory
+  const walletFactory = await context.contracts.WalletFactory.new(
     context.controllerImpl.address,
-    context.contracts.BaseWallet.address
+    context.walletImpl.address,
+    true
   );
-  await context.moduleRegistryImpl.registerModule(walletFactoryModule.address);
-  await context.walletRegistryImpl.setWalletFactory(
-    walletFactoryModule.address
-  );
-  await context.walletENSManager.addManager(walletFactoryModule.address);
-  context.walletFactoryModule = walletFactoryModule;
+
+  await context.walletRegistryImpl.setWalletFactory(walletFactory.address);
+  await context.baseENSManager.addManager(walletFactory.address);
+  await context.controllerImpl.setWalletFactory(walletFactory.address);
+  context.walletFactory = walletFactory;
 
   return context;
 }
@@ -96,9 +98,9 @@ export function getAllModuleAddresses(ctx: Context) {
     ctx.guardianModule.address,
     ctx.inheritanceModule.address,
     ctx.whitelistModule.address,
-    ctx.quotaTransfers.address,
-    ctx.approvedTransfers.address,
-    ctx.erc1271Module.address
+    ctx.transferModule.address,
+    ctx.erc1271Module.address,
+    ctx.forwarderModule.address
   ];
 }
 
@@ -110,12 +112,23 @@ export async function createWallet(
 ) {
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
 
-  const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
-  await ctx.walletFactoryModule.createWallet(
+  const wallet = await ctx.walletFactory.computeWalletAddress(owner);
+  const walletName = "mywalleta" + new Date().getTime();
+  const ensApproval = await getEnsApproval(wallet, walletName, ctx.owners[0]);
+  const txSignature = signCreateWallet(
+    ctx.walletFactory.address,
     owner,
-    "",
-    Constants.emptyBytes,
+    walletName,
+    ensApproval,
+    modules
+  );
+
+  await ctx.walletFactory.createWallet(
+    owner,
+    walletName,
+    ensApproval,
     modules,
+    txSignature,
     {
       from: owner
     }
@@ -129,6 +142,43 @@ export async function createWallet(
   return { wallet, guardians };
 }
 
+export async function createWallet2(
+  ctx: Context,
+  owner: string,
+  guardianAddrs: string[] = [],
+  modules?: string[]
+) {
+  modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
+
+  const wallet = await ctx.walletFactory.computeWalletAddress(owner);
+  const walletName = "mywalleta" + new Date().getTime();
+  const ensApproval = await getEnsApproval(wallet, walletName, ctx.owners[0]);
+  const txSignature = signCreateWallet(
+    ctx.walletFactory.address,
+    owner,
+    walletName,
+    ensApproval,
+    modules
+  );
+
+  await ctx.walletFactory.createWallet(
+    owner,
+    walletName,
+    ensApproval,
+    modules,
+    txSignature,
+    {
+      from: owner
+    }
+  );
+  // Add the guardians
+  const group = 0;
+  for (const guardian of guardianAddrs) {
+    await addGuardian(ctx, owner, wallet, guardian, group, false);
+  }
+  return { wallet, guardians: guardianAddrs };
+}
+
 export async function executeTransaction(
   txData: any,
   ctx: Context,
@@ -140,29 +190,19 @@ export async function executeTransaction(
   const contract = txData._parent;
   const data = txData.encodeABI();
   if (useMetaTx) {
-    const result = await executeMetaTransaction(
+    const result = await executeMetaTx(
       ctx,
       contract,
+      "0x" + "00".repeat(32),
       data,
-      wallet,
-      signers,
       options
     );
 
-    const event = await assertEventEmitted(contract, "MetaTxExecuted");
-    if (!event.success) {
-      // Check if the return data contains the revert reason.
-      // If it does we can easily re-throw the actual revert reason of the function call done in the meta tx
-      if (event.returnData && event.returnData.startsWith("0x08c379a0")) {
-        const decoded = web3.eth.abi.decodeParameters(
-          ["string"],
-          event.returnData.slice(10)
-        );
-        assert.fail("Meta tx call revert: " + decoded[0]);
-      } else {
-        assert.fail("Meta tx call failed");
-      }
-    }
+    const event = await assertEventEmitted(
+      ctx.forwarderModule,
+      "MetaTxExecuted"
+    );
+    assert.equal(event.from, options.wallet, "MetaTx from not match");
     return result;
   } else {
     const from = options.from ? options.from : web3.eth.defaultAccount;
@@ -207,12 +247,7 @@ export async function getEnsApproval(
   const messageHash = web3.utils.sha3(messageBuf);
   const hashBuf = Buffer.from(messageHash.slice(2), "hex");
 
-  let signature = await sign(
-    undefined,
-    signer,
-    hashBuf,
-    SignatureType.ETH_SIGN
-  );
+  let signature = sign(signer, hashBuf, SignatureType.ETH_SIGN);
   signature = signature.slice(0, -2);
   return signature;
 }

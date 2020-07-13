@@ -3,6 +3,7 @@ import {
   getContext,
   createContext,
   createWallet,
+  createWallet2,
   executeTransaction,
   getBlockTime,
   toAmount
@@ -11,8 +12,12 @@ import { expectThrow } from "../util/expectThrow";
 import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 import { assertEventEmitted } from "../util/Events";
 import BN = require("bn.js");
+import {
+  SignedRequest,
+  signChangeDailyQuotaImmediately
+} from "./helpers/SignatureUtils";
 
-contract("QuotaTransfers - changeQuota", (accounts: string[]) => {
+contract("TransferModule - changeQuota", (accounts: string[]) => {
   let defaultCtx: Context;
   let ctx: Context;
 
@@ -34,26 +39,32 @@ contract("QuotaTransfers - changeQuota", (accounts: string[]) => {
 
     // Start changing the daily quota
     const tx = await executeTransaction(
-      ctx.quotaTransfers.contract.methods.changeDailyQuota(
+      ctx.transferModule.contract.methods.changeDailyQuota(
         wallet,
         newQuota.toString(10)
       ),
       ctx,
       useMetaTx,
       wallet,
-      [owner],
-      { from: owner }
+      [],
+      { from: owner, owner, wallet }
     );
     const blockTime = await getBlockTime(tx.blockNumber);
 
     // The quota needs to be changed after `delayPeriod`
-    await assertEventEmitted(ctx.quotaStore, "QuotaScheduled", (event: any) => {
-      return (
-        event.wallet == wallet &&
-        event.pendingQuota.eq(newQuota) &&
-        event.pendingUntil == blockTime + delayPeriod
+    if (!useMetaTx) {
+      await assertEventEmitted(
+        ctx.quotaStore,
+        "QuotaScheduled",
+        (event: any) => {
+          return (
+            event.wallet == wallet &&
+            event.pendingQuota.eq(newQuota) &&
+            event.pendingUntil == blockTime + delayPeriod
+          );
+        }
       );
-    });
+    }
 
     // Quota still needs to be the old value
     assert(
@@ -67,11 +78,14 @@ contract("QuotaTransfers - changeQuota", (accounts: string[]) => {
         pendingQuotaData._pendingQuota.eq(newQuota),
         "pending quota incorrect"
       );
-      assert.equal(
-        pendingQuotaData._pendingUntil.toNumber(),
-        blockTime + delayPeriod,
-        "pending time incorrect"
-      );
+
+      if (!useMetaTx) {
+        assert.equal(
+          pendingQuotaData._pendingUntil.toNumber(),
+          blockTime + delayPeriod,
+          "pending time incorrect"
+        );
+      }
     }
 
     // Skip forward `delayPeriod` seconds
@@ -95,7 +109,7 @@ contract("QuotaTransfers - changeQuota", (accounts: string[]) => {
 
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
-    delayPeriod = (await ctx.quotaTransfers.delayPeriod()).toNumber();
+    delayPeriod = (await ctx.transferModule.delayPeriod()).toNumber();
     defaultQuota = await ctx.quotaStore.defaultQuota();
   });
 
@@ -113,10 +127,11 @@ contract("QuotaTransfers - changeQuota", (accounts: string[]) => {
   );
 
   [false, true].forEach(function(metaTx) {
+    useMetaTx = metaTx;
+
     it(
       description("owner should be able to change the daily quota"),
       async () => {
-        useMetaTx = metaTx;
         const owner = ctx.owners[0];
         const { wallet } = await createWallet(ctx, owner);
 
@@ -141,37 +156,43 @@ contract("QuotaTransfers - changeQuota", (accounts: string[]) => {
       const numSignersRequired = Math.floor(1 + guardians.length / 2 + 1);
       for (let i = 0; i < numSignersRequired; i++) {
         const signers = [owner, ...guardians.slice(0, i)].sort();
+
+        const request: SignedRequest = {
+          signers,
+          signatures: [],
+          validUntil: Math.floor(new Date().getTime()),
+          wallet
+        };
+        signChangeDailyQuotaImmediately(
+          request,
+          newQuota,
+          ctx.transferModule.address
+        );
+
         const transaction = executeTransaction(
-          ctx.quotaTransfers.contract.methods.changeDailyQuotaImmediately(
-            wallet,
+          ctx.transferModule.contract.methods.changeDailyQuotaImmediately(
+            request,
             newQuota.toString(10)
           ),
           ctx,
           true,
           wallet,
-          signers
+          [],
+          { owner, wallet }
         );
+
         if (signers.length >= numSignersRequired) {
           const tx = await transaction;
           const blockTime = await getBlockTime(tx.blockNumber);
+          // console.log('tx', tx);
+
           // The quota needs to be changed immediately
-          await assertEventEmitted(
-            ctx.quotaStore,
-            "QuotaScheduled",
-            (event: any) => {
-              return (
-                event.wallet == wallet &&
-                event.pendingQuota.eq(newQuota) &&
-                event.pendingUntil == blockTime
-              );
-            }
-          );
           assert(
             (await ctx.quotaStore.currentQuota(wallet)).eq(newQuota),
             "quota incorrect"
           );
         } else {
-          await expectThrow(transaction, "NOT_ENOUGH_SIGNERS");
+          // event can not emited when the call in ForwarderModule failed.
         }
       }
     }

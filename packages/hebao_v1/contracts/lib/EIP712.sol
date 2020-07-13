@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 library EIP712
@@ -51,19 +51,15 @@ library EIP712
     }
 
     function hashPacked(
-        bytes32 domainHash,
-        bytes32 dataHash
+        bytes32 domainSeperator,
+        bytes   memory encodedData
         )
         internal
         pure
         returns (bytes32)
     {
         return keccak256(
-            abi.encodePacked(
-                EIP191_HEADER,
-                domainHash,
-                dataHash
-            )
+            abi.encodePacked(EIP191_HEADER, domainSeperator, keccak256(encodedData))
         );
     }
 }

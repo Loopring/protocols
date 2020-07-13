@@ -14,11 +14,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
-
-import "../lib/ERC20.sol";
+pragma solidity ^0.6.10;
 
 import "../iface/PriceOracle.sol";
+import "../lib/ERC20.sol";
 
 
 abstract contract KyberNetworkProxy {
@@ -50,7 +49,7 @@ contract KyberNetworkPriceOracle is PriceOracle
     }
 
     function tokenValue(address token, uint amount)
-        public
+        external
         view
         override
         returns (uint value)

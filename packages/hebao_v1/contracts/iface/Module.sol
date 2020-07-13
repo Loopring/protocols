@@ -14,10 +14,9 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 import "../lib/Ownable.sol";
-
 import "./Wallet.sol";
 
 

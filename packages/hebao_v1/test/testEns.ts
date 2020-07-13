@@ -12,8 +12,10 @@ import { getEventsFromContract, assertEventEmitted } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
 import { Constants } from "./helpers/Constants";
 import { sign, SignatureType } from "./helpers/Signature";
+import { signCreateWallet } from "./helpers/SignatureUtils";
+import util = require("util");
 
-contract("WalletENSManager", () => {
+contract("BaseENSManager", () => {
   let defaultCtx: Context;
   let ctx: Context;
   const walletDomain = ".loopring.eth";
@@ -23,22 +25,32 @@ contract("WalletENSManager", () => {
     ctx = await createContext(defaultCtx);
   });
 
-  describe("WalletENSManager", () => {
+  describe("BaseENSManager", () => {
     it("should only be able to register ENS by manager", async () => {
       const owner = ctx.miscAddresses[0];
-      const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+      const wallet = await ctx.walletFactory.computeWalletAddress(owner);
       const walletName = "mywalleta" + new Date().getTime();
+      const modules: string[] = [ctx.guardianModule.address];
 
       // sign with non-manager address:
       let signer = ctx.miscAddresses[1];
-      let signature = await getEnsApproval(wallet, walletName, signer);
+      let ensApproval = await getEnsApproval(wallet, walletName, signer);
+      let txSignature = signCreateWallet(
+        ctx.walletFactory.address,
+        owner,
+        walletName,
+        ensApproval,
+        modules
+      );
+
       await expectThrow(
         executeTransaction(
-          ctx.walletFactoryModule.contract.methods.createWallet(
+          ctx.walletFactory.contract.methods.createWallet(
             owner,
             walletName,
-            signature,
-            []
+            ensApproval,
+            modules,
+            txSignature
           ),
           ctx,
           false,
@@ -50,21 +62,29 @@ contract("WalletENSManager", () => {
       );
 
       signer = ctx.owners[0];
-      signature = await getEnsApproval(wallet, walletName, signer);
+      ensApproval = await getEnsApproval(wallet, walletName, signer);
+      txSignature = signCreateWallet(
+        ctx.walletFactory.address,
+        owner,
+        walletName,
+        ensApproval,
+        modules
+      );
+
       await executeTransaction(
-        ctx.walletFactoryModule.contract.methods.createWallet(
+        ctx.walletFactory.contract.methods.createWallet(
           owner,
           walletName,
-          signature,
-          []
+          ensApproval,
+          modules,
+          txSignature
         ),
         ctx,
         false,
         wallet,
         [owner],
-        { from: owner, gasPrice: new BN(1) }
+        { from: owner, gasPrice: new BN(0), gasLimit: 6700000 }
       );
-
     });
 
     it("will be able get address by ens subdomain ans vice versa", async () => {
@@ -72,18 +92,27 @@ contract("WalletENSManager", () => {
       // so only there characters are allowed in our walletName.
       // see https://docs.ethers.io/ethers.js/html/api-utils.html#namehash
       const owner = ctx.miscAddresses[1];
-      const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+      const wallet = await ctx.walletFactory.computeWalletAddress(owner);
       const walletName = "mywalleta" + new Date().getTime();
+      const modules: string[] = [ctx.guardianModule.address];
 
       const signer = ctx.owners[0];
-      const signature = await getEnsApproval(wallet, walletName, signer);
+      const ensApproval = await getEnsApproval(wallet, walletName, signer);
+      const txSignature = signCreateWallet(
+        ctx.walletFactory.address,
+        owner,
+        walletName,
+        ensApproval,
+        modules
+      );
 
       await executeTransaction(
-        ctx.walletFactoryModule.contract.methods.createWallet(
+        ctx.walletFactory.contract.methods.createWallet(
           owner,
           walletName,
-          signature,
-          []
+          ensApproval,
+          modules,
+          txSignature
         ),
         ctx,
         false,
@@ -92,7 +121,13 @@ contract("WalletENSManager", () => {
         { from: owner, gasPrice: new BN(1) }
       );
 
-      const ensManager = ctx.walletENSManager;
+      // const allEvents = await ctx.walletFactory.contract.getPastEvents("allEvents", {
+      //   fromBlock: web3.eth.blockNumber,
+      //   toBlock: web3.eth.blockNumber
+      // });
+      // console.log(`allEvents: ${allEvents}`);
+
+      const ensManager = ctx.baseENSManager;
       const fullName = walletName + walletDomain;
       const nameHash = ethers.utils.namehash(fullName);
 

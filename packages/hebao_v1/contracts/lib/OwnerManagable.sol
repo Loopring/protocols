@@ -14,10 +14,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
-import "./Claimable.sol";
 import "./AddressSet.sol";
+import "./Claimable.sol";
 
 
 contract OwnerManagable is Claimable, AddressSet

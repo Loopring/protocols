@@ -1,3 +1,4 @@
-node_modules
+node_modules/
 contracts/Migrations.sol
-contracts/thirdparty
+contracts/thirdparty/
+legacy/
