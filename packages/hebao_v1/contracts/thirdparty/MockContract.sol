@@ -3,6 +3,7 @@
 
 pragma solidity ^0.6.10;
 
+/* solium-disable */
 interface MockInterface {
     /**
      * @dev After calling this method, the mock will return `response` when it is called
