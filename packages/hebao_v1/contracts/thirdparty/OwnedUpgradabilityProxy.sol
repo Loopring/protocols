@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
 
@@ -21,7 +22,15 @@ contract OwnedUpgradabilityProxy  {
     _setUpgradeabilityOwner(msg.sender);
   }
 
+  receive() payable external {
+    _fallback();
+  }
+
   fallback() payable external {
+    _fallback();
+  }
+
+  function _fallback() private {
     address _impl = implementation();
     require(_impl != address(0));
 

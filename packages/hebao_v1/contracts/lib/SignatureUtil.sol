@@ -30,8 +30,9 @@ library SignatureUtil
 
     bytes4 constant private ERC1271_MAGICVALUE = 0x20c13b0b;
 
-    bytes4 constant private ERC1271_FUNCTION_SELECTOR =
-        bytes4(keccak256(bytes("isValidSignature(bytes,bytes)")));
+    bytes4 constant private ERC1271_FUNCTION_SELECTOR = bytes4(
+        keccak256(bytes("isValidSignature(bytes,bytes)"))
+    );
 
     function verifySignatures(
         bytes32   signHash,

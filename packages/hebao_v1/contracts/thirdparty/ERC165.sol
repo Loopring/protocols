@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 // Copied from https://github.com/ethereum/EIPs/blob/master/EIPS/eip-165.md.
 
 pragma solidity ^0.6.10;

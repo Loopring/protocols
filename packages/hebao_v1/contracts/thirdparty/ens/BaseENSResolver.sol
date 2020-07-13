@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 // Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ArgentENSResolver.sol
 // with few modifications.
 

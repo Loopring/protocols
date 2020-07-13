@@ -30,12 +30,14 @@ contract SignatureUtilWrapper
         bytes calldata signature
         )
         external
-        view
+        pure
         returns (address)
     {
         uint signatureTypeOffset = signature.length.sub(1);
-        SignatureUtil.SignatureType signatureType =
-            SignatureUtil.SignatureType(signature.toUint8(signatureTypeOffset));
+        SignatureUtil.SignatureType signatureType = SignatureUtil.SignatureType(
+            signature.toUint8(signatureTypeOffset)
+        );
+
         bytes memory stripped = signature.slice(0, signatureTypeOffset);
 
         if (signatureType == SignatureUtil.SignatureType.EIP_712) {

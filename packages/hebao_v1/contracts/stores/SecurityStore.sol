@@ -204,11 +204,11 @@ contract SecurityStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-         Wallet storage w = wallets[wallet];
-         for (uint i = 0; i < w.guardians.length; i++) {
+        Wallet storage w = wallets[wallet];
+        for (uint i = 0; i < w.guardians.length; i++) {
             delete w.guardianIdx[w.guardians[i].addr];
-         }
-         delete w.guardians;
+        }
+        delete w.guardians;
     }
 
     function cancelGuardianRemoval(
@@ -227,7 +227,7 @@ contract SecurityStore is DataStore
         require(
             isGuardianPendingRemoval(w.guardians[idx - 1]),
             "NOT_PENDING_REMOVAL"
-         );
+        );
 
         w.guardians[idx - 1].validUntil = 0;
     }

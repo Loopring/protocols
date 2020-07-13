@@ -72,6 +72,7 @@ contract InheritanceModule is SecurityModule
 
         securityStore.setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(who);
+        // solium-disable-next-line
         unlockWallet(wallet, true /*force*/);
 
         emit Inherited(wallet, who, now, removedAsGuardian);

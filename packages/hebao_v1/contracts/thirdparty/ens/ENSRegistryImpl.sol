@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.10;
 
 import "./ENS.sol";
@@ -16,6 +17,7 @@ contract ENSRegistryImpl is ENSRegistry {
 
     // Permits modifications only by the owner of the specified node.
     modifier only_owner(bytes32 node) {
+        // solium-disable-next-line
         require(records[node].owner == msg.sender);
         _;
     }
