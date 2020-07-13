@@ -31,10 +31,8 @@ contract ControllerImpl is Claimable, Controller
     WhitelistStore      public whitelistStore;
 
 
-    event ValueChanged(
-        string  indexed name,
-        bytes32         value
-    );
+    event ValueChanged(string  indexed name, uint value);
+    event AddressChanged(string  indexed name, address addr);
 
     constructor(
         ModuleRegistry    _moduleRegistry,
@@ -81,26 +79,33 @@ contract ControllerImpl is Claimable, Controller
         external
         onlyOwner
     {
-        require(_collectTo != address(0), "ZERO_ADDRESS");
+        require(
+            _collectTo != address(0) && _collectTo != collectTo,
+            "INVALID_COLLECT_TO_ADDRESS"
+        );
         collectTo = _collectTo;
-        emit ValueChanged("CollectTo", bytes32(_collectTo));
+        emit AddressChanged("CollectTo", _collectTo);
     }
 
     function setPriceOracle(PriceOracle _priceOracle)
         external
         onlyOwner
     {
+        require(_priceOracle != priceOracle, "INVALID_PRICE_ORACLE");
         priceOracle = _priceOracle;
-        emit ValueChanged("PriceOracle", bytes32(address(_priceOracle)));
+        emit AddressChanged("PriceOracle", address(_priceOracle));
     }
 
     function setWalletFactory(address _walletFactory)
         external
         onlyOwner
     {
-        require(_walletFactory != address(0), "ZERO_ADDRESS");
+        require(
+            _walletFactory != address(0) && _walletFactory != walletFactory,
+            "INVALID_WALLET_FACTORY"
+        );
         walletFactory = _walletFactory;
-        emit ValueChanged("WalletFactory", bytes32(_walletFactory));
+        emit AddressChanged("WalletFactory", _walletFactory);
     }
 
     function setMinActiveGuardian(uint _minActiveGuardians)
@@ -108,10 +113,11 @@ contract ControllerImpl is Claimable, Controller
         onlyOwner
     {
         require(
-            _minActiveGuardians == 1 || _minActiveGuardians == 2,
-            "INVALID_MIN_GUARDIAN"
+            (_minActiveGuardians == 1 || _minActiveGuardians == 2) &&
+            _minActiveGuardians != minActiveGuardians,
+            "INVALID_MIN_ACTIVE_GUARDIANS"
         );
         minActiveGuardians = _minActiveGuardians;
-        emit ValueChanged("MinActiveGuardian", bytes32(_minActiveGuardians));
+        emit ValueChanged("MinActiveGuardian", _minActiveGuardians);
     }
 }
