@@ -141,7 +141,7 @@ contract ForwarderModule is BaseModule
             metaTx.from,
             metaTx.nonce,
             success,
-            gasAmount
+            gasUsed
         );
 
         if (metaTx.gasPrice > 0) {
