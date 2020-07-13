@@ -50,7 +50,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         require(
             msg.sender == address(this) ||
             msg.sender == controller.walletFactory() ||
-            modules[msg.sender]
+            modules[msg.sender],
             "UNAUTHORIZED"
         );
         _;
