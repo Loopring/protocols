@@ -31,7 +31,7 @@ abstract contract SecurityModule is MetaTxModule
         public
         MetaTxModule(_controller, _trustedForwarder) {}
 
-    modifier onlyFromWalletWhenUnlocked(address wallet)
+    modifier onlyFromWalletOrOwnerWhenUnlocked(address wallet)
         override
     {
         require(!isWalletLocked(wallet), "LOCKED");
