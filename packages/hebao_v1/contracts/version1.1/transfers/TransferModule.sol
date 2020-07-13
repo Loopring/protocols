@@ -52,8 +52,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromWalletWhenUnlocked(wallet)
     {
         controller.quotaStore().changeQuota(wallet, newQuota, now.add(delayPeriod));
     }
@@ -91,8 +90,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromWalletWhenUnlocked(wallet)
     {
         if (amount > 0 && !isTargetWhitelisted(wallet, to)) {
             updateQuota(wallet, token, amount);
@@ -109,8 +107,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromWalletWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
         if (value > 0 && !isTargetWhitelisted(wallet, to)) {
@@ -128,8 +125,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromWalletWhenUnlocked(wallet)
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
@@ -148,8 +144,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromWalletWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
