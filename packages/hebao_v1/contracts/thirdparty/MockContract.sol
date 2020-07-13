@@ -79,6 +79,7 @@ interface MockInterface {
 /**
  * Implementation of the MockInterface.
  */
+/* solium-disable */
 contract MockContract is MockInterface {
     enum MockType { Return, Revert, OutOfGas }
 
