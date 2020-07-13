@@ -53,8 +53,8 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        notWalletOwner(wallet, guardian)
         onlyFromWallet(wallet)
+        notWalletOwner(wallet, guardian)
     {
         require(guardian != address(0), "ZERO_ADDRESS");
         require(group < GuardianUtils.MAX_NUM_GROUPS, "INVALID_GROUP");
@@ -89,8 +89,8 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyWalletGuardian(wallet, guardian)
         onlyFromWallet(wallet)
+        onlyWalletGuardian(wallet, guardian)
     {
         controller.securityStore().removeGuardian(wallet, guardian, now + pendingPeriod);
         emit GuardianRemoved(wallet, guardian, now + pendingPeriod);
