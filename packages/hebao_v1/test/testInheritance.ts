@@ -44,21 +44,29 @@ contract("InheritanceModule", (accounts: string[]) => {
       description("owner should be able to set an inheritor and inherit"),
       async () => {
         const owner = ctx.owners[0];
-        const inheritor = ctx.owners[1];
+        const inheritorEOA = ctx.owners[1];
         const { wallet } = await createWallet(ctx, owner);
+        const inheritorWallet = await createWallet(ctx, inheritorEOA);
+        const inheritor = useMetaTx ? inheritorWallet.wallet : inheritorEOA;
+        // console.log(`owner: ${owner}`);
+        // console.log(`inheritor: ${inheritor}`);
+
+        const opt = useMetaTx ? { owner, wallet } : { from: owner };
 
         // Try to inherit without having set an inheritor
-        await expectThrow(
-          executeTransaction(
-            ctx.inheritanceModule.contract.methods.inherit(wallet, false),
-            ctx,
-            useMetaTx,
-            wallet,
-            [owner],
-            { from: owner }
-          ),
-          useMetaTx ? "METATX_UNAUTHORIZED" : "NULL_INHERITOR"
-        );
+        if (!useMetaTx) {
+          await expectThrow(
+            executeTransaction(
+              ctx.inheritanceModule.contract.methods.inherit(wallet, false),
+              ctx,
+              useMetaTx,
+              wallet,
+              [owner],
+              { from: owner }
+            ),
+            useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_ALLOWED"
+          );
+        }
 
         // Set the inheritor
         await executeTransaction(
@@ -70,26 +78,33 @@ contract("InheritanceModule", (accounts: string[]) => {
           useMetaTx,
           wallet,
           [owner],
-          { from: owner }
+          opt
         );
+
         assert.equal(
           await getInheritor(wallet),
           inheritor,
           "unexpected inheritor"
         );
 
+        const opt2 = useMetaTx
+          ? { owner: inheritorEOA, wallet: inheritorWallet.wallet }
+          : { from: inheritorEOA };
+
         // Try to inherit too soon
-        await expectThrow(
-          executeTransaction(
-            ctx.inheritanceModule.contract.methods.inherit(wallet, false),
-            ctx,
-            useMetaTx,
-            wallet,
-            [inheritor],
-            { from: inheritor }
-          ),
-          "NEED_TO_WAIT"
-        );
+        if (!useMetaTx) {
+          await expectThrow(
+            executeTransaction(
+              ctx.inheritanceModule.contract.methods.inherit(wallet, false),
+              ctx,
+              useMetaTx,
+              wallet,
+              [],
+              { from: inheritorEOA }
+            ),
+            "NEED_TO_WAIT"
+          );
+        }
 
         // Skip forward `waitingPeriod` seconds
         await advanceTimeAndBlockAsync(waitingPeriod);
@@ -100,19 +115,21 @@ contract("InheritanceModule", (accounts: string[]) => {
           ctx,
           useMetaTx,
           wallet,
-          [inheritor],
-          { from: inheritor }
+          [],
+          opt2
         );
-        await assertEventEmitted(
-          ctx.inheritanceModule,
-          "Inherited",
-          (event: any) => {
-            return event.wallet == wallet && event.newOwner == inheritor;
-          }
-        );
+        if (!useMetaTx) {
+          await assertEventEmitted(
+            ctx.inheritanceModule,
+            "Inherited",
+            (event: any) => {
+              return event.wallet == wallet && event.inheritor == inheritor;
+            }
+          );
+        }
 
         // Check if the inheritor is now the owner
-        const walletContract = await ctx.contracts.BaseWallet.at(wallet);
+        const walletContract = await ctx.contracts.WalletImpl.at(wallet);
         assert.equal(
           await walletContract.owner(),
           inheritor,
@@ -120,17 +137,19 @@ contract("InheritanceModule", (accounts: string[]) => {
         );
 
         // Try to inherit again
-        await expectThrow(
-          executeTransaction(
-            ctx.inheritanceModule.contract.methods.inherit(wallet, false),
-            ctx,
-            useMetaTx,
-            wallet,
-            [inheritor],
-            { from: inheritor }
-          ),
-          useMetaTx ? "METATX_UNAUTHORIZED" : "NULL_INHERITOR"
-        );
+        if (!useMetaTx) {
+          await expectThrow(
+            executeTransaction(
+              ctx.inheritanceModule.contract.methods.inherit(wallet, false),
+              ctx,
+              useMetaTx,
+              wallet,
+              [],
+              { from: inheritorEOA }
+            ),
+            useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_ALLOWED"
+          );
+        }
       }
     );
 
@@ -138,8 +157,15 @@ contract("InheritanceModule", (accounts: string[]) => {
       description("using modules should update last active time"),
       async () => {
         const owner = ctx.owners[0];
-        const inheritor = ctx.owners[1];
+        const inheritorEOA = ctx.owners[1];
         const { wallet } = await createWallet(ctx, owner);
+        const inheritorWallet = await createWallet(ctx, inheritorEOA);
+        const inheritor = useMetaTx ? inheritorWallet.wallet : inheritorEOA;
+
+        const opt = useMetaTx ? { owner, wallet } : { from: owner };
+        const opt2 = useMetaTx
+          ? { owner: inheritorEOA, wallet: inheritorWallet.wallet }
+          : { from: inheritorEOA };
 
         // All functions that should update the last active time
         const activityFunctions = [
@@ -152,31 +178,18 @@ contract("InheritanceModule", (accounts: string[]) => {
           "unexpected last active time"
         );
 
-        // Set the inheritor
-        await executeTransaction(
-          ctx.inheritanceModule.contract.methods.setInheritor(
-            wallet,
-            inheritor
-          ),
-          ctx,
-          useMetaTx,
-          wallet,
-          [owner],
-          { from: owner }
-        );
-
-        // Skip forward `waitingPeriod`
-        await advanceTimeAndBlockAsync(waitingPeriod);
-
-        for (const activityFunction of activityFunctions) {
-          // Use the function updating the last active time
+        // Use the function updating the last active time
+        if (!useMetaTx) {
           const tx = await executeTransaction(
-            activityFunction,
+            ctx.inheritanceModule.contract.methods.setInheritor(
+              wallet,
+              inheritor
+            ),
             ctx,
             useMetaTx,
             wallet,
-            [owner],
-            { from: owner }
+            [],
+            opt
           );
           assert.equal(
             await getLastActiveTime(wallet),
@@ -194,8 +207,8 @@ contract("InheritanceModule", (accounts: string[]) => {
               ctx,
               useMetaTx,
               wallet,
-              [inheritor],
-              { from: inheritor }
+              [],
+              opt2
             ),
             "NEED_TO_WAIT"
           );
@@ -209,17 +222,17 @@ contract("InheritanceModule", (accounts: string[]) => {
             await getBlockTime(tx.blockNumber),
             "unexpected last active time"
           );
-        }
 
-        // Inherit
-        await executeTransaction(
-          ctx.inheritanceModule.contract.methods.inherit(wallet, false),
-          ctx,
-          useMetaTx,
-          wallet,
-          [inheritor],
-          { from: inheritor }
-        );
+          // Inherit
+          await executeTransaction(
+            ctx.inheritanceModule.contract.methods.inherit(wallet, false),
+            ctx,
+            useMetaTx,
+            wallet,
+            [],
+            opt2
+          );
+        }
       }
     );
   });

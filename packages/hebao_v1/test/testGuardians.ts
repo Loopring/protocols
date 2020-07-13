@@ -9,8 +9,9 @@ import { addGuardian, removeGuardian } from "./helpers/GuardianUtils";
 import { expectThrow } from "../util/expectThrow";
 import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 import { assertEventEmitted } from "../util/Events";
+import BN = require("bn.js");
 
-contract("GuardiansModule", (accounts: string[]) => {
+contract("GuardiansModule-Guardian", (accounts: string[]) => {
   let defaultCtx: Context;
   let ctx: Context;
 
@@ -86,10 +87,12 @@ contract("GuardiansModule", (accounts: string[]) => {
         }
 
         // Try to add another one
-        await expectThrow(
-          addGuardianChecked(owner, wallet, accounts[20 + i], 0),
-          "TOO_MANY_GUARDIANS"
-        );
+        if (!useMetaTx) {
+          await expectThrow(
+            addGuardianChecked(owner, wallet, accounts[20 + i], 0),
+            "TOO_MANY_GUARDIANS"
+          );
+        }
       }
     );
 
@@ -105,37 +108,42 @@ contract("GuardiansModule", (accounts: string[]) => {
         await addGuardianChecked(owner, wallet, ctx.guardians[0], group);
         await addGuardianChecked(owner, wallet, ctx.guardians[1], group);
 
+        const opt = useMetaTx
+          ? { owner, wallet, gasPrice: new BN(0) }
+          : { from: owner };
         // Try to cancel the first guardian
-        await expectThrow(
-          executeTransaction(
-            ctx.guardianModule.contract.methods.cancelGuardianAddition(
+        if (!useMetaTx) {
+          await expectThrow(
+            executeTransaction(
+              ctx.guardianModule.contract.methods.cancelGuardianAddition(
+                wallet,
+                ctx.guardians[0]
+              ),
+              ctx,
+              useMetaTx,
               wallet,
-              ctx.guardians[0]
+              [owner],
+              opt
             ),
-            ctx,
-            useMetaTx,
-            wallet,
-            [owner],
-            { from: owner }
-          ),
-          "NOT_PENDING_ADDITION"
-        );
+            "NOT_PENDING_ADDITION"
+          );
 
-        // Try to cancel the second guardian
-        await expectThrow(
-          executeTransaction(
-            ctx.guardianModule.contract.methods.cancelGuardianAddition(
+          // Try to cancel the second guardian
+          await expectThrow(
+            executeTransaction(
+              ctx.guardianModule.contract.methods.cancelGuardianAddition(
+                wallet,
+                ctx.guardians[1]
+              ),
+              ctx,
+              useMetaTx,
               wallet,
-              ctx.guardians[1]
+              [owner],
+              opt
             ),
-            ctx,
-            useMetaTx,
-            wallet,
-            [owner],
-            { from: owner }
-          ),
-          "NOT_PENDING_ADDITION"
-        );
+            "NOT_PENDING_ADDITION"
+          );
+        }
 
         // Add the third guardian which is added after a delay
         await executeTransaction(
@@ -148,7 +156,7 @@ contract("GuardiansModule", (accounts: string[]) => {
           useMetaTx,
           wallet,
           [owner],
-          { from: owner }
+          opt
         );
 
         // Now cancel
@@ -161,8 +169,9 @@ contract("GuardiansModule", (accounts: string[]) => {
           useMetaTx,
           wallet,
           [owner],
-          { from: owner }
+          opt
         );
+
         await assertEventEmitted(
           ctx.guardianModule,
           "GuardianAdditionCancelled",
@@ -171,21 +180,23 @@ contract("GuardiansModule", (accounts: string[]) => {
           }
         );
 
-        // Try to cancel again
-        await expectThrow(
-          executeTransaction(
-            ctx.guardianModule.contract.methods.cancelGuardianAddition(
+        if (!useMetaTx) {
+          // Try to cancel again
+          await expectThrow(
+            executeTransaction(
+              ctx.guardianModule.contract.methods.cancelGuardianAddition(
+                wallet,
+                ctx.guardians[2]
+              ),
+              ctx,
+              useMetaTx,
               wallet,
-              ctx.guardians[2]
+              [owner],
+              opt
             ),
-            ctx,
-            useMetaTx,
-            wallet,
-            [owner],
-            { from: owner }
-          ),
-          "GUARDIAN_NOT_EXISTS"
-        );
+            "GUARDIAN_NOT_EXISTS"
+          );
+        }
 
         // Skip forward `pendingPeriod` seconds
         await advanceTimeAndBlockAsync(pendingPeriod);
@@ -210,6 +221,10 @@ contract("GuardiansModule", (accounts: string[]) => {
         await addGuardianChecked(owner, wallet, ctx.guardians[0], group);
         await addGuardianChecked(owner, wallet, ctx.guardians[1], group);
 
+        const opt = useMetaTx
+          ? { owner, wallet, gasPrice: new BN(0) }
+          : { from: owner };
+
         // Remove the first guardian
         await executeTransaction(
           ctx.guardianModule.contract.methods.removeGuardian(
@@ -220,7 +235,7 @@ contract("GuardiansModule", (accounts: string[]) => {
           useMetaTx,
           wallet,
           [owner],
-          { from: owner }
+          opt
         );
 
         // Now cancel
@@ -233,7 +248,7 @@ contract("GuardiansModule", (accounts: string[]) => {
           useMetaTx,
           wallet,
           [owner],
-          { from: owner }
+          opt
         );
         await assertEventEmitted(
           ctx.guardianModule,
@@ -244,20 +259,22 @@ contract("GuardiansModule", (accounts: string[]) => {
         );
 
         // Try to cancel again
-        await expectThrow(
-          executeTransaction(
-            ctx.guardianModule.contract.methods.cancelGuardianRemoval(
+        if (!useMetaTx) {
+          await expectThrow(
+            executeTransaction(
+              ctx.guardianModule.contract.methods.cancelGuardianRemoval(
+                wallet,
+                ctx.guardians[0]
+              ),
+              ctx,
+              useMetaTx,
               wallet,
-              ctx.guardians[0]
+              [owner],
+              opt
             ),
-            ctx,
-            useMetaTx,
-            wallet,
-            [owner],
-            { from: owner }
-          ),
-          "NOT_PENDING_REMOVAL"
-        );
+            "NOT_PENDING_REMOVAL"
+          );
+        }
 
         // Skip forward `pendingPeriod` seconds
         await advanceTimeAndBlockAsync(pendingPeriod);

@@ -15,6 +15,10 @@ import {
 import { expectThrow } from "../util/expectThrow";
 import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 import { assertEventEmitted } from "../util/Events";
+import {
+  SignedRequest,
+  signAddToWhitelistImmediately
+} from "./helpers/SignatureUtils";
 
 contract("WhitelistModule", (accounts: string[]) => {
   let defaultCtx: Context;
@@ -81,31 +85,41 @@ contract("WhitelistModule", (accounts: string[]) => {
       // Add to the whitelist
       const addr = ctx.guardians[10];
       const signers = [owner, ...guardians.slice(0, 2)].sort();
+      const request: SignedRequest = {
+        signers,
+        signatures: [],
+        validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
+        wallet
+      };
+      signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+
       const tx = await executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-          wallet,
+          request,
           addr
         ),
         ctx,
         true,
         wallet,
-        signers,
-        { from: owner }
+        [],
+        { from: owner, owner, wallet }
       );
       const blockTime = await getBlockTime(tx.blockNumber);
 
-      // The first guardian can be added immediately
-      await assertEventEmitted(
-        ctx.whitelistStore,
-        "Whitelisted",
-        (event: any) => {
-          return (
-            event.wallet == wallet &&
-            event.addr == addr &&
-            event.whitelisted == true
-          );
-        }
-      );
+      // if(!useMetaTx) {
+      //   // The first guardian can be added immediately
+      //   await assertEventEmitted(
+      //     ctx.whitelistStore,
+      //     "Whitelisted",
+      //     (event: any) => {
+      //       return (
+      //         event.wallet == wallet &&
+      //           event.addr == addr &&
+      //           event.whitelisted == true
+      //       );
+      //     }
+      //   );
+      // }
 
       // Should be effective immediately
       assert(

@@ -1,27 +1,11 @@
-/*
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.6.10;
 
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
-
-import "../lib/ERC20.sol";
-import "../lib/ReentrancyGuard.sol";
-
-import "../iface/Controller.sol";
 import "../iface/Module.sol";
 import "../iface/Wallet.sol";
+import "../lib/ERC20.sol";
+import "../lib/ReentrancyGuard.sol";
+import "./Controller.sol";
 
 
 /// @title BaseWallet
@@ -31,7 +15,7 @@ import "../iface/Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseWallet is ReentrancyGuard, Wallet
+abstract contract BaseWallet is ReentrancyGuard, Wallet
 {
     address internal _owner;
 
@@ -55,23 +39,19 @@ contract BaseWallet is ReentrancyGuard, Wallet
         bytes           data
     );
 
-    modifier onlyOwner
-    {
-        require(msg.sender == _owner, "NOT_A_OWNER");
-        _;
-    }
-
-    modifier onlyModule
+    modifier onlyFromModule
     {
         require(modules[msg.sender], "MODULE_UNAUTHORIZED");
         _;
     }
 
-    modifier onlyOwnerOrModule
+    modifier onlyFromModuleOrOwner
     {
         require(
-            msg.sender == _owner || modules[msg.sender],
-            "MODULE_UNAUTHORIZED"
+            modules[msg.sender] ||
+            msg.sender == _owner ||
+            msg.sender == controller.walletFactory(),
+            "UNAUTHORIZED"
         );
         _;
     }
@@ -84,7 +64,8 @@ contract BaseWallet is ReentrancyGuard, Wallet
     function setOwner(address newOwner)
         external
         override
-        onlyModule
+        nonReentrant
+        onlyFromModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
         require(newOwner != address(this), "PROHIBITED");
@@ -95,8 +76,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
 
     function setup(
         address _controller,
-        address initialOwner,
-        address bootstrapModule
+        address initialOwner
         )
         external
         override
@@ -104,20 +84,17 @@ contract BaseWallet is ReentrancyGuard, Wallet
     {
         require(_owner == address(0), "INITIALIZED_ALREADY");
         require(initialOwner != address(0), "ZERO_ADDRESS");
-        require(bootstrapModule != address(0), "NO_BOOTSTRAP_MODULE");
 
         controller = Controller(_controller);
         _owner = initialOwner;
 
         emit WalletSetup(_owner);
-        addModuleInternal(bootstrapModule);
     }
 
     function addModule(address _module)
         external
         override
-        // allowReentrant (bindMethod)
-        onlyOwnerOrModule
+        onlyFromModuleOrOwner
     {
         addModuleInternal(_module);
     }
@@ -125,8 +102,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
     function removeModule(address _module)
         external
         override
-        // allowReentrant (bindMethod)
-        onlyModule
+        onlyFromModule
     {
         // Allow deactivate to fail to make sure the module can be removed
         require(modules[_module], "MODULE_NOT_EXISTS");
@@ -147,8 +123,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
     function bindMethod(bytes4 _method, address _module)
         external
         override
-        nonReentrant
-        onlyModule
+        onlyFromModule
     {
         require(_method != bytes4(0), "BAD_METHOD");
         if (_module != address(0)) {
@@ -177,7 +152,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
         )
         external
         override
-        onlyModule
+        onlyFromModule
         returns (bytes memory returnData)
     {
         require(
@@ -208,8 +183,8 @@ contract BaseWallet is ReentrancyGuard, Wallet
         );
 
         modules[_module] = true;
-        Module(_module).activate();
         emit ModuleAdded(_module);
+        Module(_module).activate();
     }
 
     receive() external payable { }

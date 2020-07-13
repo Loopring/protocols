@@ -1,27 +1,8 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
-
-import "../lib/MathUint.sol";
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.6.10;
 
 import "../iface/PriceOracle.sol";
-
-import "./KyberNetworkPriceOracle.sol";
-import "./UniswapPriceOracle.sol";
+import "../lib/MathUint.sol";
 
 
 /// @title AggregationalPriceOracle
@@ -38,7 +19,7 @@ contract AggregationalPriceOracle is PriceOracle
     }
 
     function tokenValue(address token, uint amount)
-        public
+        external
         view
         override
         returns (uint)

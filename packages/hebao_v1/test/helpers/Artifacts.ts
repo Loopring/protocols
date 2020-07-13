@@ -12,26 +12,26 @@ export class Artifacts {
   public OwnedUpgradabilityProxy: any;
 
   public ControllerImpl: any;
-  public BaseWallet: any;
-  public WalletFactoryModule: any;
+  public WalletImpl: any;
+  public WalletFactory: any;
+  public ForwarderModule: any;
   public UpgraderModule: any;
   public WalletRegistryImpl: any;
   public ModuleRegistryImpl: any;
-  public WalletENSManager: any;
+  public BaseENSManager: any;
   public ENSRegistryImpl: any;
 
   public GuardianModule: any;
   public InheritanceModule: any;
   public WhitelistModule: any;
-  public QuotaTransfers: any;
-  public ApprovedTransfers: any;
-  public DappTransfers: any;
+  public TransferModule: any;
   public ERC1271Module: any;
 
   public SecurityStore: any;
   public WhitelistStore: any;
   public QuotaStore: any;
   public PriceCacheStore: any;
+  public NonceStore: any;
 
   constructor(artifacts: any) {
     this.MockContract = artifacts.require("thirdparty/MockContract.sol");
@@ -43,12 +43,14 @@ export class Artifacts {
     this.WETHToken = artifacts.require("test/tokens/WETH");
     this.INDAToken = artifacts.require("test/tokens/INDA");
     this.INDBToken = artifacts.require("test/tokens/INDB");
+    this.PriceCacheStore = artifacts.require("test/PriceCacheStore");
 
     this.OwnedUpgradabilityProxy = artifacts.require("OwnedUpgradabilityProxy");
 
     this.ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
-    this.BaseWallet = artifacts.require("./base/BaseWallet.sol");
-    this.WalletFactoryModule = artifacts.require("WalletFactoryModule");
+    this.WalletImpl = artifacts.require("./base/WalletImpl.sol");
+    this.WalletFactory = artifacts.require("WalletFactory");
+    this.ForwarderModule = artifacts.require("ForwarderModule");
     this.UpgraderModule = artifacts.require("UpgraderModule");
     this.WalletRegistryImpl = artifacts.require(
       "./base/WalletRegistryImpl.sol"
@@ -56,20 +58,18 @@ export class Artifacts {
     this.ModuleRegistryImpl = artifacts.require(
       "./base/ModuleRegistryImpl.sol"
     );
-    this.WalletENSManager = artifacts.require("WalletENSManager.sol");
+    this.BaseENSManager = artifacts.require("BaseENSManager.sol");
     this.ENSRegistryImpl = artifacts.require("ENSRegistryImpl.sol");
 
     this.GuardianModule = artifacts.require("GuardianModule");
     this.InheritanceModule = artifacts.require("InheritanceModule");
     this.WhitelistModule = artifacts.require("WhitelistModule");
-    this.QuotaTransfers = artifacts.require("QuotaTransfers");
-    this.ApprovedTransfers = artifacts.require("ApprovedTransfers");
-    this.DappTransfers = artifacts.require("DappTransfers");
+    this.TransferModule = artifacts.require("TransferModule");
     this.ERC1271Module = artifacts.require("ERC1271Module");
 
     this.SecurityStore = artifacts.require("SecurityStore");
     this.WhitelistStore = artifacts.require("WhitelistStore");
     this.QuotaStore = artifacts.require("QuotaStore");
-    this.PriceCacheStore = artifacts.require("PriceCacheStore");
+    this.NonceStore = artifacts.require("NonceStore");
   }
 }

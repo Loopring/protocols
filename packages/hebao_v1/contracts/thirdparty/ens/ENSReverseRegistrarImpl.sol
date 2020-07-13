@@ -1,4 +1,5 @@
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.6.10;
 
 import "./ENS.sol";
 
@@ -91,7 +92,7 @@ contract ENSReverseRegistrarImpl is ENSReverseRegistrar {
      * @return ret The SHA3 hash of the lower-case hexadecimal encoding of the
      *         input address.
      */
-    function sha3HexAddress(address addr) private view returns (bytes32 ret) {
+    function sha3HexAddress(address addr) private pure returns (bytes32 ret) {
         assembly {
             let lookup := 0x3031323334353637383961626364656600000000000000000000000000000000
             let i := 40

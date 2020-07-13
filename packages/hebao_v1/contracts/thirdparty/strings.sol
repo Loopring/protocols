@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 /*
  * @title String & slice utility library for Solidity contracts.
  * @author Nick Johnson <arachnid@notdot.net>
@@ -34,7 +35,7 @@
  *      corresponding to the left and right parts of the string.
  */
 
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 /* solium-disable */
 library strings {

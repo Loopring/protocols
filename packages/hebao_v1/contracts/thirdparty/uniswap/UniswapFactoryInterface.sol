@@ -1,6 +1,7 @@
+// SPDX-License-Identifier: UNLICENSED
 // Solidity Interface
 
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 abstract contract UniswapFactoryInterface {
     // Public Variables

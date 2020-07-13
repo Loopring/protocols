@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: UNLICENSED
 // Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ArgentENSResolver.sol
 // with few modifications.
 
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 import "../../lib/OwnerManagable.sol";
 import "./ENS.sol";
 

@@ -25,7 +25,8 @@ export function sortWhitelist(addresses: any) {
 
 export function assertEqual(
   whitelistBefore: WhitelistEntry[],
-  whitelistAfter: WhitelistEntry[]
+  whitelistAfter: WhitelistEntry[],
+  useMetaTx: boolean
 ) {
   whitelistBefore = sortWhitelist(whitelistBefore);
   whitelistAfter = sortWhitelist(whitelistAfter);
@@ -40,11 +41,13 @@ export function assertEqual(
       whitelistAfter[i].addr,
       "address unexpected"
     );
-    assert.equal(
-      whitelistBefore[i].effectiveTime,
-      whitelistAfter[i].effectiveTime,
-      "effectiveTime unexpected"
-    );
+    if (!useMetaTx) {
+      assert.equal(
+        whitelistBefore[i].effectiveTime,
+        whitelistAfter[i].effectiveTime,
+        "effectiveTime unexpected"
+      );
+    }
   }
 }
 
@@ -86,27 +89,38 @@ export async function addToWhitelist(
     useMetaTx,
     wallet,
     [owner],
-    { from: owner }
+    { from: owner, owner, wallet }
   );
   const blockTime = await getBlockTime(tx.blockNumber);
 
   // Check for the Whitelisted event
-  await assertEventEmitted(ctx.whitelistStore, "Whitelisted", (event: any) => {
-    return (
-      event.wallet == wallet && event.addr == addr && event.whitelisted == true
+  if (!useMetaTx) {
+    await assertEventEmitted(
+      ctx.whitelistStore,
+      "Whitelisted",
+      (event: any) => {
+        return (
+          event.wallet == wallet &&
+          event.addr == addr &&
+          event.whitelisted == true
+        );
+      }
     );
-  });
+  }
 
   // Should not yet been whitelisted
   assert(
     !(await isWhitelisted(ctx, wallet, addr)),
     "should not be whitelisted yet"
   );
-  assert.equal(
-    await getEffectiveTime(ctx, wallet, addr),
-    blockTime + delayPeriod,
-    "should not be whitelisted yet"
-  );
+
+  if (!useMetaTx) {
+    assert.equal(
+      (await getEffectiveTime(ctx, wallet, addr)).toNumber(),
+      blockTime + delayPeriod,
+      "should not be whitelisted yet"
+    );
+  }
 
   // Skip forward `pendingPeriod` seconds
   await advanceTimeAndBlockAsync(delayPeriod);
@@ -125,7 +139,7 @@ export async function addToWhitelist(
     whitelistSize,
     "whitelist count unexpected"
   );
-  assertEqual(whitelistBefore, whitelistAfter);
+  assertEqual(whitelistBefore, whitelistAfter, useMetaTx);
 }
 
 export async function removeFromWhitelist(
@@ -146,13 +160,22 @@ export async function removeFromWhitelist(
     useMetaTx,
     wallet,
     [owner],
-    { from: owner }
+    { from: owner, wallet, owner }
   );
-  await assertEventEmitted(ctx.whitelistStore, "Whitelisted", (event: any) => {
-    return (
-      event.wallet == wallet && event.addr == addr && event.whitelisted == false
+
+  if (!useMetaTx) {
+    await assertEventEmitted(
+      ctx.whitelistStore,
+      "Whitelisted",
+      (event: any) => {
+        return (
+          event.wallet == wallet &&
+          event.addr == addr &&
+          event.whitelisted == false
+        );
+      }
     );
-  });
+  }
 
   // Should be effective immediately
   assert(
@@ -171,5 +194,5 @@ export async function removeFromWhitelist(
     whitelistSize,
     "whitelist count unexpected"
   );
-  assertEqual(whitelistBefore, whitelistAfter);
+  assertEqual(whitelistBefore, whitelistAfter, useMetaTx);
 }

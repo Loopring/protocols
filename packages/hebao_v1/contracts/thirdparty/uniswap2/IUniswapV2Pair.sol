@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: UNLICENSED
 // https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/interfaces/IUniswapV2Pair.sol
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 interface IUniswapV2Pair {
     event Approval(address indexed owner, address indexed spender, uint value);
