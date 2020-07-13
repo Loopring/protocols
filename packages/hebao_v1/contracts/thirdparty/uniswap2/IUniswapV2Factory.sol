@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 // https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/interfaces/IUniswapV2Factory.sol
 pragma solidity ^0.6.10;
 

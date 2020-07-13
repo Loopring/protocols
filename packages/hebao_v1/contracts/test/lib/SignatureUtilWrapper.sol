@@ -30,7 +30,7 @@ contract SignatureUtilWrapper
         bytes calldata signature
         )
         external
-        view
+        pure
         returns (address)
     {
         uint signatureTypeOffset = signature.length.sub(1);

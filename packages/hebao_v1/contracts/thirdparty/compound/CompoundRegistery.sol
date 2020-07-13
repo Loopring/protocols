@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 // From Argent code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/defi/utils/CompoundRegistry.sol
 // with minor modificaiton.
 pragma solidity ^0.6.10;
