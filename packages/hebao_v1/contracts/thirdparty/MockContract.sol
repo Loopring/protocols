@@ -3,7 +3,6 @@
 
 pragma solidity ^0.6.10;
 
-/* solium-disable */
 interface MockInterface {
     /**
      * @dev After calling this method, the mock will return `response` when it is called
@@ -79,7 +78,6 @@ interface MockInterface {
 /**
  * Implementation of the MockInterface.
  */
-/* solium-disable */
 contract MockContract is MockInterface {
     enum MockType { Return, Revert, OutOfGas }
 
@@ -329,8 +327,15 @@ contract MockContract is MockInterface {
         calldataInvocations[keccak256(abi.encodePacked(resetCount, originalMsgData))] += 1;
     }
 
-    // solium-disable-next-line
+    receive() payable external {
+        _fallback();
+    }
+
     fallback() payable external {
+        _fallback();
+    }
+
+    function _fallback() internal {
         bytes4 methodId;
         assembly {
             methodId := calldataload(0)
