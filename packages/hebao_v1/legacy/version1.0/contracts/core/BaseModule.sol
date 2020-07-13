@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 import "../../lib/ERC20.sol";
 import "../../lib/ReentrancyGuard.sol";
