@@ -62,7 +62,7 @@ contract GuardianModule is SecurityModule
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         uint effectiveTime = now;
-        if (numGuardians >= MIN_ACTIVE_GUARDIANS) {
+        if (numGuardians >= controller.minActiveGuardians()) {
             effectiveTime = now + pendingPeriod;
         }
         controller.securityStore().addGuardian(wallet, guardian, group, effectiveTime);
