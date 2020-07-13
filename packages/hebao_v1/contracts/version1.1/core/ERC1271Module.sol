@@ -55,7 +55,7 @@ contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4 magicValue)
     {
         (uint _lock,) = controller.securityStore().getLock(msg.sender);
-        if(_lock > now) { // wallet locked
+        if (_lock > now) { // wallet locked
             return 0;
         }
 
@@ -75,7 +75,7 @@ contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4 magicValue)
     {
         (uint _lock,) = controller.securityStore().getLock(msg.sender);
-        if(_lock > now) { // wallet locked
+        if (_lock > now) { // wallet locked
             return 0;
         }
 
