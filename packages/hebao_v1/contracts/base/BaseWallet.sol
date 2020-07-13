@@ -56,7 +56,11 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
-    function owner() override external view returns (address)
+    function owner()
+        override
+        external
+        view
+        returns (address)
     {
         return _owner;
     }
@@ -187,7 +191,11 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         Module(_module).activate();
     }
 
-    receive() external payable { }
+    receive()
+        external
+        payable
+    {
+    }
 
     /// @dev This default function can receive Ether or perform queries to modules
     ///      using bound methods.
