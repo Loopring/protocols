@@ -6,5 +6,5 @@ import "../base/BaseWallet.sol";
 
 /// @title WalletImpl
 contract WalletImpl is BaseWallet {
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.0.0";
 }

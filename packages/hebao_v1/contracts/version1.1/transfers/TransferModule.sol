@@ -1,19 +1,4 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
@@ -28,19 +13,19 @@ contract TransferModule is BaseTransferModule
     );
 
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
-        "transferTokenApproved(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+        "transferTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
 
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
-        "approveTokenApproved(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
+        "approveTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     );
 
     bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
-        "callContractApproved(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+        "callContractWithApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     );
 
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
-        "approveThenCallContractApproved(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+        "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
     uint public delayPeriod;
@@ -191,7 +176,7 @@ contract TransferModule is BaseTransferModule
         available = controller.quotaStore().availableQuota(wallet);
     }
 
-    function transferTokenApproved(
+    function transferTokenWithApproval(
         SignedRequest.Request calldata request,
         address        token,
         address        to,
@@ -221,7 +206,7 @@ contract TransferModule is BaseTransferModule
         transferInternal(request.wallet, token, to, amount, logdata);
     }
 
-    function approveTokenApproved(
+    function approveTokenWithApproval(
         SignedRequest.Request calldata request,
         address token,
         address to,
@@ -249,7 +234,7 @@ contract TransferModule is BaseTransferModule
         approveInternal(request.wallet, token, to, amount);
     }
 
-    function callContractApproved(
+    function callContractWithApproval(
         SignedRequest.Request calldata request,
         address        to,
         uint           value,
@@ -278,7 +263,7 @@ contract TransferModule is BaseTransferModule
         return callContractInternal(request.wallet, to, value, data);
     }
 
-    function approveThenCallContractApproved(
+    function approveThenCallContractWithApproval(
         SignedRequest.Request calldata request,
         address        token,
         address        to,

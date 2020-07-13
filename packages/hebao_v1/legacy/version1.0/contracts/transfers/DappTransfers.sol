@@ -1,20 +1,5 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
@@ -22,12 +7,19 @@ import "../../lib/ERC20.sol";
 import "./TransferModule.sol";
 
 
-/// @title ApprovedTransfers
-contract ApprovedTransfers is TransferModule
+/// @title DappTransfers
+contract DappTransfers is TransferModule
 {
+
     constructor(ControllerImpl _controller)
         public
         TransferModule(_controller) {}
+
+    modifier onlyWhitelistedDapp(address addr)
+    {
+        require(controller.dappAddressStore().isDapp(addr), "DISALLOWED");
+        _;
+    }
 
     function transferToken(
         address            wallet,
@@ -38,8 +30,9 @@ contract ApprovedTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTx
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         transferInternal(wallet, token, to, amount, logdata);
     }
@@ -52,8 +45,9 @@ contract ApprovedTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTx
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         approveInternal(wallet, token, to, amount);
     }
@@ -66,8 +60,9 @@ contract ApprovedTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTx
+        onlyFromMetaTxOrWalletOwner(wallet)
         returns (bytes memory returnData)
     {
         return callContractInternal(wallet, to, value, data);
@@ -83,8 +78,9 @@ contract ApprovedTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTx
+        onlyFromMetaTxOrWalletOwner(wallet)
         returns (bytes memory returnData)
     {
         approveInternal(wallet, token, to, amount);
@@ -109,11 +105,6 @@ contract ApprovedTransfers is TransferModule
             method == this.approveThenCallContract.selector,
             "INVALID_METHOD"
         );
-        return GuardianUtils.requireMajority(
-            controller.securityStore(),
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        );
+        return isOnlySigner(Wallet(wallet).owner(), signers);
     }
 }
