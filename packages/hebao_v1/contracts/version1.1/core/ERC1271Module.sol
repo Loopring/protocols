@@ -14,11 +14,13 @@ import "../base/BaseModule.sol";
 /// @dev This module enables our smart wallets to message signers.
 contract ERC1271Module is ERC1271, BaseModule
 {
-    bytes4 constant private ERC1271_FUNCTION1_SELECTOR =
-        bytes4(keccak256(bytes("isValidSignature(bytes,bytes)")));
+    bytes4 constant private ERC1271_FUNCTION1_SELECTOR = bytes4(
+        keccak256(bytes("isValidSignature(bytes,bytes)"))
+    );
 
-    bytes4 constant private ERC1271_FUNCTION2_SELECTOR =
-        bytes4(keccak256(bytes("isValidSignature(bytes32,bytes)")));
+    bytes4 constant private ERC1271_FUNCTION2_SELECTOR = bytes4(
+        keccak256(bytes("isValidSignature(bytes32,bytes)"))
+    );
 
     using SignatureUtil for bytes;
     using SignatureUtil for bytes32;
@@ -26,7 +28,9 @@ contract ERC1271Module is ERC1271, BaseModule
 
     constructor(ControllerImpl _controller)
         public
-        BaseModule(_controller) {}
+        BaseModule(_controller)
+    {
+    }
 
     function bindableMethods()
         public

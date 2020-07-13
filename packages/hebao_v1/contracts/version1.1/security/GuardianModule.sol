@@ -163,10 +163,11 @@ contract GuardianModule is SecurityModule
         bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(request.wallet, newOwner);
 
         if (removedAsGuardian) {
-           securityStore.removeGuardian(request.wallet, newOwner, now);
+            securityStore.removeGuardian(request.wallet, newOwner, now);
         }
 
         w.setOwner(newOwner);
+        // solium-disable-next-line
         unlockWallet(request.wallet, true /*force*/);
 
         emit Recovered(request.wallet, oldOwner, newOwner, removedAsGuardian);
