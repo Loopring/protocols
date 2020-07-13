@@ -15,8 +15,7 @@ contract ForwarderModule is BaseModule
 {
     using SignatureUtil for bytes32;
 
-    // TODO(kongliang):figure out this GAS_OVERHEAD value.
-    uint    public constant GAS_OVERHEAD = 200000;
+    uint    public constant GAS_OVERHEAD = 100000;
     bytes32 public DOMAIN_SEPARATOR;
 
     constructor(ControllerImpl _controller)
@@ -31,7 +30,9 @@ contract ForwarderModule is BaseModule
     event MetaTxExecuted(
         address indexed relayer,
         address indexed from,
-        uint            nonce
+        uint            nonce,
+        bool            success,
+        uint            gasUsed
     );
 
     struct MetaTx {
@@ -132,10 +133,16 @@ contract ForwarderModule is BaseModule
             payable(controller.collectTo()).transfer(address(this).balance);
         }
 
-        emit MetaTxExecuted(msg.sender, metaTx.from, metaTx.nonce);
-
         uint gasUsed = gasLeft - gasleft();
         uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
+
+        emit MetaTxExecuted(
+            msg.sender,
+            metaTx.from,
+            metaTx.nonce,
+            success,
+            gasUsed
+        );
 
         if (metaTx.gasPrice > 0) {
             reimburseGasFee(
