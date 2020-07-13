@@ -2,6 +2,7 @@
 #include "TestUtils.h"
 
 #include "../Gadgets/MathGadgets.h"
+#include "../Gadgets/SignatureGadgets.h"
 
 TEST_CASE("SignatureVerifier", "[SignatureVerifier]")
 {
@@ -10,7 +11,7 @@ TEST_CASE("SignatureVerifier", "[SignatureVerifier]")
     {
         for (unsigned int i = 0; i < (checkValid ? 2 : 1); i++)
         {
-            bool requireValid = (i == 0);
+            bool _requireValid = (i == 0);
 
             protoboard<FieldT> pb;
 
@@ -20,12 +21,13 @@ TEST_CASE("SignatureVerifier", "[SignatureVerifier]")
             pb.val(publicKey.x) = _pubKeyX;
             pb.val(publicKey.y) = _pubKeyY;
             pb_variable<FieldT> message = make_variable(pb, _msg, "message");
+            pb_variable<FieldT> requireValid = make_variable(pb, _requireValid ? 1 : 0, "requireValid");
 
-            SignatureVerifier signatureVerifier(pb, params, constants, publicKey, message, "signatureVerifier", requireValid);
+            SignatureVerifier signatureVerifier(pb, params, constants, publicKey, message, requireValid, "signatureVerifier");
             signatureVerifier.generate_r1cs_constraints();
             signatureVerifier.generate_r1cs_witness(signature);
 
-            REQUIRE(pb.is_satisfied() == (requireValid ? expectedSatisfied : true));
+            REQUIRE(pb.is_satisfied() == (_requireValid ? expectedSatisfied : true));
             REQUIRE((pb.val(signatureVerifier.result()) == (expectedSatisfied ? FieldT::one() : FieldT::zero())));
         }
     };

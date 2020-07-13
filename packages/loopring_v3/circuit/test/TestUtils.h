@@ -117,10 +117,10 @@ static bool compareBits(const libff::bit_vector& A, const libff::bit_vector& B)
     return true;
 }
 
-static RingSettlementBlock getRingSettlementBlock()
+static Block getBlock()
 {
     // Read the JSON file
-    string filename = string(TEST_DATA_PATH) + "settlement_block.json";
+    string filename = string(TEST_DATA_PATH) + "block.json";
     ifstream file(filename);
     if (!file.is_open())
     {
@@ -131,8 +131,15 @@ static RingSettlementBlock getRingSettlementBlock()
     file >> input;
     file.close();
 
-    RingSettlementBlock block = input.get<RingSettlementBlock>();
+    Block block = input.get<Block>();
     return block;
+}
+
+static UniversalTransaction getSpotTrade(const Block& block)
+{
+    REQUIRE(block.transactions.size() > 0);
+    const UniversalTransaction& tx = block.transactions[2];
+    return tx;
 }
 
 

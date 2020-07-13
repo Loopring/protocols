@@ -20,6 +20,12 @@ struct TradeHistoryState
     VariableT orderID;
 };
 
+static void printTradeHistory(const ProtoboardT& pb, const TradeHistoryState& state)
+{
+    std::cout << "- filled: " << pb.val(state.filled) << std::endl;
+    std::cout << "- orderID: " << pb.val(state.orderID) << std::endl;
+}
+
 class TradeHistoryGadget : public GadgetT
 {
 public:
@@ -51,6 +57,9 @@ public:
     HashTradingHistoryLeaf leafBefore;
     HashTradingHistoryLeaf leafAfter;
 
+    TradeHistoryState valuesBefore;
+    TradeHistoryState valuesAfter;
+
     const VariableArrayT proof;
     MerklePathCheckT proofVerifierBefore;
     MerklePathT rootCalculatorAfter;
@@ -65,6 +74,9 @@ public:
     ) :
         GadgetT(pb, prefix),
 
+        valuesBefore(before),
+        valuesAfter(after),
+
         leafBefore(pb, var_array({before.filled, before.orderID}), FMT(prefix, ".leafBefore")),
         leafAfter(pb, var_array({after.filled, after.orderID}), FMT(prefix, ".leafAfter")),
 
@@ -75,14 +87,24 @@ public:
 
     }
 
-    void generate_r1cs_witness(const Proof& _proof)
+    void generate_r1cs_witness(const TradeHistoryUpdate& update)
     {
         leafBefore.generate_r1cs_witness();
         leafAfter.generate_r1cs_witness();
 
-        proof.fill_with_field_elements(pb, _proof.data);
+        proof.fill_with_field_elements(pb, update.proof.data);
         proofVerifierBefore.generate_r1cs_witness();
         rootCalculatorAfter.generate_r1cs_witness();
+
+        ASSERT(pb.val(proofVerifierBefore.m_expected_root) == update.rootBefore,  annotation_prefix);
+        if (pb.val(rootCalculatorAfter.result()) != update.rootAfter)
+        {
+            std::cout << "Before:" << std::endl;
+            printTradeHistory(pb, valuesBefore);
+            std::cout << "After:" << std::endl;
+            printTradeHistory(pb, valuesAfter);
+            ASSERT(pb.val(rootCalculatorAfter.result()) == update.rootAfter, annotation_prefix);
+        }
     }
 
     void generate_r1cs_constraints()

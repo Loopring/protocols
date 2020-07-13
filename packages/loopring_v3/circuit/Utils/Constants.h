@@ -5,7 +5,9 @@ namespace Loopring
 {
     static const unsigned int TREE_DEPTH_TRADING_HISTORY = 7;
     static const unsigned int TREE_DEPTH_ACCOUNTS = 12;
-    static const unsigned int TREE_DEPTH_TOKENS = 5;
+    static const unsigned int TREE_DEPTH_TOKENS = 6;
+
+    static const unsigned int TX_DATA_AVAILABILITY_SIZE = 104;
 
     static const unsigned int NUM_BITS_MAX_VALUE = 254;
     static const unsigned int NUM_BITS_FIELD_CAPACITY = 253;
@@ -17,14 +19,18 @@ namespace Loopring
     static const unsigned int NUM_BITS_TIMESTAMP = 32;
     static const unsigned int NUM_BITS_NONCE = 32;
     static const unsigned int NUM_BITS_BIPS = 6;
-    static const unsigned int NUM_BITS_EXCHANGE_ID = 32;
     static const unsigned int NUM_BITS_PROTOCOL_FEE_BIPS = 8;
     static const unsigned int NUM_BITS_TYPE = 8;
     static const unsigned int MAX_CONCURRENT_ORDERIDS = 16384; // 2**NUM_BITS_TRADING_HISTORY
-
+    static const unsigned int NUM_MARKETS_PER_BLOCK = 16;
+    static const unsigned int NUM_BITS_TX_TYPE = 8;
+    static const unsigned int NUM_BITS_ADDRESS = 160;
+    static const unsigned int NUM_BITS_HASH = 256;
+    static const unsigned int NUM_BITS_GAS = 24;
 
     static const char* EMPTY_TRADE_HISTORY = "6592749167578234498153410564243369229486412054742481069049239297514590357090";
     static const char* MAX_AMOUNT = "79228162514264337593543950335"; // 2^96 - 1
+    static const char* INDEX_BASE = "1000000000000000000"; // 10^18
 
     struct FloatEncoding
     {

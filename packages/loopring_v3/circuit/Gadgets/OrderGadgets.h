@@ -18,13 +18,6 @@ namespace Loopring
 class OrderGadget : public GadgetT
 {
 public:
-
-    // State
-    TradeHistoryGadget tradeHistoryBefore;
-    BalanceGadget balanceSBefore;
-    BalanceGadget balanceBBefore;
-    AccountGadget accountBefore;
-
     // Inputs
     DualVariableGadget orderID;
     DualVariableGadget accountID;
@@ -53,27 +46,16 @@ public:
     UnsafeAddGadget fee_plus_rebate;
     libsnark::dual_variable_gadget<FieldT> feeOrRebateBips;
 
-    // Trade history
-    TradeHistoryTrimmingGadget tradeHistory;
-
     // Signature
     Poseidon_gadget_T<13, 1, 6, 53, 12, 1> hash;
-    SignatureVerifier signatureVerifier;
 
     OrderGadget(
         ProtoboardT& pb,
-        const jubjub::Params& params,
         const Constants& constants,
-        const VariableT& blockExchangeID,
+        const VariableT& blockExchange,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
-
-        // State
-        tradeHistoryBefore(pb, FMT(prefix, ".tradeHistoryBefore")),
-        balanceSBefore(pb, FMT(prefix, ".balanceSBefore")),
-        balanceBBefore(pb, FMT(prefix, ".balanceBBefore")),
-        accountBefore(pb, FMT(prefix, ".accountBefore")),
 
         // Inputs
         orderID(pb, NUM_BITS_ORDERID, FMT(prefix, ".orderID")),
@@ -103,12 +85,9 @@ public:
         feeOrRebateBips(pb, fee_plus_rebate.result(), NUM_BITS_BIPS, FMT(prefix, ".feeOrRebateBips")),
         bRebateNonZero(pb, rebateBips.packed, FMT(prefix, ".bRebateNonZero")),
 
-        // Trade history
-        tradeHistory(pb, constants, tradeHistoryBefore, orderID, FMT(prefix, ".tradeHistory")),
-
         // Signature
         hash(pb, var_array({
-            blockExchangeID,
+            blockExchange,
             orderID.packed,
             accountID.packed,
             tokenS.packed,
@@ -120,22 +99,13 @@ public:
             validUntil.packed,
             maxFeeBips.packed,
             buy.packed
-        }), FMT(this->annotation_prefix, ".hash")),
-        signatureVerifier(pb, params, constants, accountBefore.publicKey, hash.result(), FMT(prefix, ".signatureVerifier"))
+        }), FMT(this->annotation_prefix, ".hash"))
     {
 
     }
 
-    void generate_r1cs_witness(const Order& order, const Account& account,
-                               const BalanceLeaf& balanceLeafS, const BalanceLeaf& balanceLeafB,
-                               const TradeHistoryLeaf& tradeHistoryLeaf)
+    void generate_r1cs_witness(const Order& order)
     {
-        // State
-        tradeHistoryBefore.generate_r1cs_witness(tradeHistoryLeaf);
-        balanceSBefore.generate_r1cs_witness(balanceLeafS);
-        balanceBBefore.generate_r1cs_witness(balanceLeafB);
-        accountBefore.generate_r1cs_witness(account);
-
         // Inputs
         orderID.generate_r1cs_witness(pb, order.orderID);
         accountID.generate_r1cs_witness(pb, order.accountID);
@@ -164,12 +134,8 @@ public:
         feeOrRebateBips.generate_r1cs_witness_from_packed();
         bRebateNonZero.generate_r1cs_witness();
 
-        // Trade history
-        tradeHistory.generate_r1cs_witness();
-
         // Signature
         hash.generate_r1cs_witness();
-        signatureVerifier.generate_r1cs_witness(order.signature);
     }
 
     void generate_r1cs_constraints(bool doSignatureCheck = true)
@@ -202,15 +168,8 @@ public:
         feeOrRebateBips.generate_r1cs_constraints(true);
         bRebateNonZero.generate_r1cs_constraints();
 
-        // Trade history
-        tradeHistory.generate_r1cs_constraints();
-
         // Signature
         hash.generate_r1cs_constraints();
-        if (doSignatureCheck)
-        {
-            signatureVerifier.generate_r1cs_constraints();
-        }
     }
 
     const VariableT& hasRebate() const

@@ -7,9 +7,11 @@
 AccountState createAccountState(ProtoboardT& pb, const Account& state)
 {
     AccountState accountState;
+    accountState.owner = make_variable(pb, state.owner, ".owner");
     accountState.publicKeyX = make_variable(pb, state.publicKey.x, ".publicKeyX");
     accountState.publicKeyY = make_variable(pb, state.publicKey.y, ".publicKeyY");
     accountState.nonce = make_variable(pb, state.nonce, ".nonce");
+    accountState.walletHash = make_variable(pb, state.walletHash, ".walletHash");
     accountState.balancesRoot = make_variable(pb, state.balancesRoot, ".balancesRoot");
     return accountState;
 }
@@ -18,6 +20,7 @@ BalanceState createBalanceState(ProtoboardT& pb, const BalanceLeaf& state)
 {
     BalanceState balanceState;
     balanceState.balance = make_variable(pb, state.balance, ".balance");
+    balanceState.index = make_variable(pb, state.index, ".index");
     balanceState.tradingHistory = make_variable(pb, state.tradingHistoryRoot, ".tradingHistory");
     return balanceState;
 }
@@ -32,10 +35,9 @@ TradeHistoryState createTradeHistoryState(ProtoboardT& pb, const TradeHistoryLea
 
 TEST_CASE("UpdateAccount", "[UpdateAccountGadget]")
 {
-    RingSettlementBlock block = getRingSettlementBlock();
-    REQUIRE(block.ringSettlements.size() > 0);
-    const RingSettlement& ringSettlement = block.ringSettlements[0];
-    const AccountUpdate& accountUpdate = ringSettlement.accountUpdate_B;
+    Block block = getBlock();
+    const UniversalTransaction& tx = getSpotTrade(block);
+    const AccountUpdate& accountUpdate = tx.witness.accountUpdate_B;
 
     auto updateAccountChecked = [](const AccountUpdate& accountUpdate, bool expectedSatisfied, bool expectedRootAfterCorrect = true)
     {
@@ -50,7 +52,7 @@ TEST_CASE("UpdateAccount", "[UpdateAccountGadget]")
 
         UpdateAccountGadget updateAccount(pb, rootBefore, address, stateBefore, stateAfter, "updateAccount");
         updateAccount.generate_r1cs_constraints();
-        updateAccount.generate_r1cs_witness(accountUpdate.proof);
+        updateAccount.generate_r1cs_witness(accountUpdate);
 
         REQUIRE(pb.is_satisfied() == expectedSatisfied);
         if (expectedSatisfied)
@@ -96,10 +98,9 @@ TEST_CASE("UpdateAccount", "[UpdateAccountGadget]")
 
 TEST_CASE("UpdateBalance", "[UpdateBalanceGadget]")
 {
-    RingSettlementBlock block = getRingSettlementBlock();
-    REQUIRE(block.ringSettlements.size() > 0);
-    const RingSettlement& ringSettlement = block.ringSettlements[0];
-    const BalanceUpdate& balanceUpdate = ringSettlement.balanceUpdateB_B;
+    Block block = getBlock();
+    const UniversalTransaction& tx = getSpotTrade(block);
+    const BalanceUpdate& balanceUpdate = tx.witness.balanceUpdateB_B;
 
     auto updateBalanceChecked = [](const BalanceUpdate& balanceUpdate, bool expectedSatisfied, bool expectedRootAfterCorrect = true)
     {
@@ -114,7 +115,7 @@ TEST_CASE("UpdateBalance", "[UpdateBalanceGadget]")
 
         UpdateBalanceGadget updateBalance(pb, rootBefore, address, stateBefore, stateAfter, "updateBalance");
         updateBalance.generate_r1cs_constraints();
-        updateBalance.generate_r1cs_witness(balanceUpdate.proof);
+        updateBalance.generate_r1cs_witness(balanceUpdate);
 
         REQUIRE(pb.is_satisfied() == expectedSatisfied);
         if (expectedSatisfied)
@@ -160,10 +161,9 @@ TEST_CASE("UpdateBalance", "[UpdateBalanceGadget]")
 
 TEST_CASE("UpdateTradeHistory", "[UpdateTradeHistoryGadget]")
 {
-    RingSettlementBlock block = getRingSettlementBlock();
-    REQUIRE(block.ringSettlements.size() > 0);
-    const RingSettlement& ringSettlement = block.ringSettlements[0];
-    const TradeHistoryUpdate& tradeHistoryUpdate = ringSettlement.tradeHistoryUpdate_A;
+    Block block = getBlock();
+    const UniversalTransaction& tx = getSpotTrade(block);
+    const TradeHistoryUpdate& tradeHistoryUpdate = tx.witness.tradeHistoryUpdate_A;
 
     auto updateTradeHistoryChecked = [](const TradeHistoryUpdate& tradeHistoryUpdate, bool expectedSatisfied, bool expectedRootAfterCorrect = true)
     {
@@ -178,7 +178,7 @@ TEST_CASE("UpdateTradeHistory", "[UpdateTradeHistoryGadget]")
 
         UpdateTradeHistoryGadget updateTradeHistory(pb, rootBefore, subArray(address, 0, NUM_BITS_TRADING_HISTORY), stateBefore, stateAfter, "updateTradeHistory");
         updateTradeHistory.generate_r1cs_constraints();
-        updateTradeHistory.generate_r1cs_witness(tradeHistoryUpdate.proof);
+        updateTradeHistory.generate_r1cs_witness(tradeHistoryUpdate);
 
         REQUIRE(pb.is_satisfied() == expectedSatisfied);
         if (expectedSatisfied)

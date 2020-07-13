@@ -275,6 +275,7 @@ public:
         ProtoboardT& pb,
         const Constants& constants,
         const OrderGadget& order,
+        const VariableT& filled,
         const VariableT& fillS,
         const VariableT& fillB,
         const std::string& prefix
@@ -283,7 +284,7 @@ public:
 
         fillAmount(pb, order.buy.packed, fillB, fillS, FMT(prefix, ".fillAmount")),
         fillLimit(pb, order.buy.packed, order.amountB.packed, order.amountS.packed, FMT(prefix, ".fillLimit")),
-        filledAfter(pb, order.tradeHistory.getFilled(), fillAmount.result(), NUM_BITS_AMOUNT, FMT(prefix, ".filledAfter")),
+        filledAfter(pb, filled, fillAmount.result(), NUM_BITS_AMOUNT, FMT(prefix, ".filledAfter")),
         filledAfter_leq_fillLimit(pb, filledAfter.result(), fillLimit.result(), NUM_BITS_AMOUNT, FMT(prefix, ".filledAfter_leq_fillLimit"))
     {
 
@@ -315,8 +316,6 @@ public:
 class RequireOrderFillsGadget : public GadgetT
 {
 public:
-    // Check balance limit
-    RequireLeqGadget fillS_leq_balanceS;
     // Check rate
     RequireFillRateGadget requireFillRate;
     // Check fill limit
@@ -326,32 +325,29 @@ public:
         ProtoboardT& pb,
         const Constants& constants,
         const OrderGadget& order,
+        const VariableT& filled,
         const VariableT& fillS,
         const VariableT& fillB,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
-        // Check balance
-        fillS_leq_balanceS(pb, fillS, order.balanceSBefore.balance, NUM_BITS_AMOUNT, FMT(prefix, ".fillS_leq_balanceS")),
         // Check rate
         requireFillRate(pb, constants, order.amountS.packed, order.amountB.packed, fillS, fillB, NUM_BITS_AMOUNT, FMT(prefix, ".requireFillRate")),
         // Check fill limit
-        requireFillLimit(pb, constants, order, fillS, fillB,  FMT(prefix, ".requireFillLimit"))
+        requireFillLimit(pb, constants, order, filled, fillS, fillB,  FMT(prefix, ".requireFillLimit"))
     {
 
     }
 
     void generate_r1cs_witness()
     {
-        fillS_leq_balanceS.generate_r1cs_witness();
         requireFillRate.generate_r1cs_witness();
         requireFillLimit.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
-        fillS_leq_balanceS.generate_r1cs_constraints();
         requireFillRate.generate_r1cs_constraints();
         requireFillLimit.generate_r1cs_constraints();
     }
@@ -390,6 +386,8 @@ public:
         const VariableT& timestamp,
         const OrderGadget& orderA,
         const OrderGadget& orderB,
+        const VariableT& filledA,
+        const VariableT& filledB,
         const VariableT& _fillS_A,
         const VariableT& _fillS_B,
         const std::string& prefix
@@ -399,8 +397,8 @@ public:
         fillS_B(_fillS_B),
 
         // Check if the fills are valid for the orders
-        requireOrderFillsA(pb, constants, orderA, fillS_A, fillS_B, FMT(prefix, ".requireOrderFillsA")),
-        requireOrderFillsB(pb, constants, orderB, fillS_B, fillS_A, FMT(prefix, ".requireOrderFillsB")),
+        requireOrderFillsA(pb, constants, orderA, filledA, fillS_A, fillS_B, FMT(prefix, ".requireOrderFillsA")),
+        requireOrderFillsB(pb, constants, orderB, filledB, fillS_B, fillS_A, FMT(prefix, ".requireOrderFillsB")),
 
         // Check if tokenS/tokenB match
         orderA_tokenS_eq_orderB_tokenB(pb, orderA.tokenS.packed, orderB.tokenB.packed, FMT(prefix, ".orderA_tokenS_eq_orderB_tokenB")),
@@ -459,7 +457,6 @@ public:
         return requireOrderFillsB.getFilledAfter();
     }
 };
-
 
 }
 

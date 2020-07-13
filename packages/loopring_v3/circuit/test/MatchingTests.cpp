@@ -219,15 +219,14 @@ TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]")
 {
     unsigned int numIterations = 1024;
 
-    RingSettlementBlock block = getRingSettlementBlock();
-    REQUIRE(block.ringSettlements.size() > 0);
-    const RingSettlement& ringSettlement = block.ringSettlements[0];
+    Block block = getBlock();
+    const UniversalTransaction& tx = getSpotTrade(block);
 
-    const Order& order = ringSettlement.ring.orderA;
-    const Account& account = ringSettlement.accountUpdate_A.before;
-    const BalanceLeaf& balanceLeafS = ringSettlement.balanceUpdateS_A.before;
-    const BalanceLeaf& balanceLeafB = ringSettlement.balanceUpdateB_A.before;
-    const TradeHistoryLeaf& tradeHistoryLeaf = ringSettlement.tradeHistoryUpdate_A.before;
+    const Order& order = tx.spotTrade.orderA;
+    const Account& account = tx.witness.accountUpdate_A.before;
+    const BalanceLeaf& balanceLeafS = tx.witness.balanceUpdateS_A.before;
+    const BalanceLeaf& balanceLeafB = tx.witness.balanceUpdateB_A.before;
+    const TradeHistoryLeaf& tradeHistoryLeaf = tx.witness.tradeHistoryUpdate_A.before;
     const OrderState _orderState = {order, account, balanceLeafS, balanceLeafB, tradeHistoryLeaf};
 
     unsigned int numTradeHistoryLeafs = pow(2, NUM_BITS_TRADING_HISTORY);
@@ -259,14 +258,19 @@ TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]")
 
         Constants constants(pb, "constants");
 
-        VariableT exchangeID = make_variable(pb, 0, "exchangeID");
+        VariableT exchange = make_variable(pb, 0, "exchange");
         VariableT timestamp = make_variable(pb, 0, "timestamp");
 
-        jubjub::Params params;
-        OrderGadget order(pb, params, constants, exchangeID, ".order");
-        order.generate_r1cs_witness(orderState.order, orderState.account, orderState.balanceLeafS, orderState.balanceLeafB, orderState.tradeHistoryLeaf);
+        OrderGadget order(pb, constants, exchange, ".order");
+        order.generate_r1cs_witness(orderState.order);
 
-        RequireFillLimitGadget requireFillLimit(pb, constants, order, fillAmountS, fillAmountB, "requireFillRateGadget");
+        TradeHistoryGadget tradeHistoryData(pb, ".tradeHistory");
+        tradeHistoryData.generate_r1cs_witness(orderState.tradeHistoryLeaf);
+
+        TradeHistoryTrimmingGadget tradeHistory(pb, constants, tradeHistoryData, order.orderID, ".tradeHistoryTrimmingGadget");
+        tradeHistory.generate_r1cs_witness();
+
+        RequireFillLimitGadget requireFillLimit(pb, constants, order, tradeHistory.getFilled(), fillAmountS, fillAmountB, "requireFillRateGadget");
         requireFillLimit.generate_r1cs_constraints();
         requireFillLimit.generate_r1cs_witness();
 
@@ -276,12 +280,12 @@ TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]")
         if (_buy)
         {
             limit = _amountB;
-            filledAfter = pb.val(order.tradeHistory.getFilled()) + _fillAmountB;
+            filledAfter = pb.val(tradeHistory.getFilled()) + _fillAmountB;
         }
         else
         {
             limit = _amountS;
-            filledAfter = pb.val(order.tradeHistory.getFilled()) + _fillAmountS;
+            filledAfter = pb.val(tradeHistory.getFilled()) + _fillAmountS;
         }
         bool expectedAutomaticValid = lte(filledAfter, limit);
 
@@ -623,33 +627,45 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
         Manual,
         Automatic
     };
-    auto orderMatchingChecked = [](const FieldT& _exchangeID, const FieldT& _timestamp,
+    auto orderMatchingChecked = [](const FieldT& _exchange, const FieldT& _timestamp,
                                    const OrderState& orderStateA, const OrderState& orderStateB,
                                    ExpectedSatisfied expectedSatisfied, ExpectedValid expectedValid = ExpectedValid::Valid,
                                    ExpectedFill expectedFill = ExpectedFill::Automatic, FieldT _expectedFillS_A = 0, FieldT _expectedFillS_B = 0)
     {
         protoboard<FieldT> pb;
 
-        VariableT exchangeID = make_variable(pb, _exchangeID, "exchangeID");
+        VariableT exchange = make_variable(pb, _exchange, "exchange");
         VariableT timestamp = make_variable(pb, _timestamp, "timestamp");
 
         jubjub::Params params;
         Constants constants(pb, "constants");
 
-        OrderGadget orderA(pb, params, constants, exchangeID, ".orderA");
-        orderA.generate_r1cs_witness(orderStateA.order, orderStateA.account, orderStateA.balanceLeafS, orderStateA.balanceLeafB, orderStateA.tradeHistoryLeaf);
+        OrderGadget orderA(pb, constants, exchange, ".orderA");
+        orderA.generate_r1cs_witness(orderStateA.order);
 
-        OrderGadget orderB(pb, params, constants, exchangeID, ".orderB");
-        orderB.generate_r1cs_witness(orderStateB.order, orderStateB.account, orderStateB.balanceLeafS, orderStateB.balanceLeafB, orderStateB.tradeHistoryLeaf);
+        TradeHistoryGadget tradeHistoryDataA(pb, ".tradeHistoryA");
+        tradeHistoryDataA.generate_r1cs_witness(orderStateA.tradeHistoryLeaf);
+
+        TradeHistoryTrimmingGadget tradeHistoryA(pb, constants, tradeHistoryDataA, orderA.orderID, ".tradeHistoryTrimmingGadgetA");
+        tradeHistoryA.generate_r1cs_witness();
+
+        OrderGadget orderB(pb, constants, exchange, ".orderB");
+        orderB.generate_r1cs_witness(orderStateB.order);
+
+        TradeHistoryGadget tradeHistoryDataB(pb, ".tradeHistoryB");
+        tradeHistoryDataB.generate_r1cs_witness(orderStateB.tradeHistoryLeaf);
+
+        TradeHistoryTrimmingGadget tradeHistoryB(pb, constants, tradeHistoryDataB, orderB.orderID, ".tradeHistoryTrimmingGadgetB");
+        tradeHistoryB.generate_r1cs_witness();
 
         unsigned int fFillS_A = toFloat(orderStateA.order.amountS, Float24Encoding);
         unsigned int fFillS_B = toFloat(orderStateB.order.amountS, Float24Encoding);
 
         bool expectedSatisfiedValue = true;
         FieldT limitA = orderStateA.order.buy == FieldT::one() ? orderStateA.order.amountB : orderStateA.order.amountS;
-        expectedSatisfiedValue = lte(pb.val(orderA.tradeHistory.getFilled()), limitA);
+        expectedSatisfiedValue = lte(pb.val(tradeHistoryA.getFilled()), limitA);
         FieldT limitB = orderStateB.order.buy == FieldT::one() ? orderStateB.order.amountB : orderStateB.order.amountS;
-        expectedSatisfiedValue = expectedSatisfiedValue && lte(pb.val(orderB.tradeHistory.getFilled()), limitB);
+        expectedSatisfiedValue = expectedSatisfiedValue && lte(pb.val(tradeHistoryB.getFilled()), limitB);
 
         if (expectedSatisfied != ExpectedSatisfied::Automatic)
         {
@@ -671,7 +687,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
         VariableT expectedFillS_A = make_variable(pb, roundToFloatValue(_expectedFillS_A, Float24Encoding), "expectedFillS_A");
         VariableT expectedFillS_B = make_variable(pb, roundToFloatValue(_expectedFillS_B, Float24Encoding), "expectedFillS_B");
 
-        OrderMatchingGadget orderMatching(pb, constants, timestamp, orderA, orderB, expectedFillS_A, expectedFillS_B, "orderMatching");
+        OrderMatchingGadget orderMatching(pb, constants, timestamp, orderA, orderB, tradeHistoryA.getFilled(), tradeHistoryB.getFilled(), expectedFillS_A, expectedFillS_B, "orderMatching");
         orderMatching.generate_r1cs_constraints();
         orderMatching.generate_r1cs_witness();
 
@@ -685,28 +701,27 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
         }
     };
 
-    RingSettlementBlock block = getRingSettlementBlock();
-    REQUIRE(block.ringSettlements.size() > 0);
-    const RingSettlement& ringSettlement = block.ringSettlements[0];
+    Block block = getBlock();
+    const UniversalTransaction& tx = getSpotTrade(block);
 
-    const FieldT& exchangeID = block.exchangeID;
+    const FieldT& exchange = block.exchange;
     const FieldT& timestamp = block.timestamp;
 
-    const Order& A_order = ringSettlement.ring.orderA;
-    const Account& A_account = ringSettlement.accountUpdate_A.before;
-    const BalanceLeaf& A_balanceLeafS = ringSettlement.balanceUpdateS_A.before;
-    const BalanceLeaf& A_balanceLeafB = ringSettlement.balanceUpdateB_A.before;
-    const TradeHistoryLeaf& A_tradeHistoryLeaf = ringSettlement.tradeHistoryUpdate_A.before;
+    const Order& A_order = tx.spotTrade.orderA;
+    const Account& A_account = tx.witness.accountUpdate_A.before;
+    const BalanceLeaf& A_balanceLeafS = tx.witness.balanceUpdateS_A.before;
+    const BalanceLeaf& A_balanceLeafB = tx.witness.balanceUpdateB_A.before;
+    const TradeHistoryLeaf& A_tradeHistoryLeaf = tx.witness.tradeHistoryUpdate_A.before;
     const OrderState orderStateA = {A_order, A_account, A_balanceLeafS, A_balanceLeafB, A_tradeHistoryLeaf};
-    const FieldT expectFillS_A(fromFloat(ringSettlement.ring.fillS_A.as_ulong(), Float24Encoding).to_string().c_str());
+    const FieldT expectFillS_A(fromFloat(tx.spotTrade.fillS_A.as_ulong(), Float24Encoding).to_string().c_str());
 
-    const Order& B_order = ringSettlement.ring.orderB;
-    const Account& B_account = ringSettlement.accountUpdate_B.before;
-    const BalanceLeaf& B_balanceLeafS = ringSettlement.balanceUpdateS_B.before;
-    const BalanceLeaf& B_balanceLeafB = ringSettlement.balanceUpdateB_B.before;
-    const TradeHistoryLeaf& B_tradeHistoryLeaf = ringSettlement.tradeHistoryUpdate_B.before;
+    const Order& B_order = tx.spotTrade.orderB;
+    const Account& B_account = tx.witness.accountUpdate_B.before;
+    const BalanceLeaf& B_balanceLeafS = tx.witness.balanceUpdateS_B.before;
+    const BalanceLeaf& B_balanceLeafB = tx.witness.balanceUpdateB_B.before;
+    const TradeHistoryLeaf& B_tradeHistoryLeaf = tx.witness.tradeHistoryUpdate_B.before;
     const OrderState orderStateB = {B_order, B_account, B_balanceLeafS, B_balanceLeafB, B_tradeHistoryLeaf};
-    const FieldT expectFillS_B(fromFloat(ringSettlement.ring.fillS_B.as_ulong(), Float24Encoding).to_string().c_str());
+    const FieldT expectFillS_B(fromFloat(tx.spotTrade.fillS_B.as_ulong(), Float24Encoding).to_string().c_str());
 
     unsigned int numTradeHistoryLeafs = pow(2, NUM_BITS_TRADING_HISTORY);
     const FieldT A_orderID = rand() % numTradeHistoryLeafs;
@@ -718,7 +733,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
     SECTION("Valid order match")
     {
         orderMatchingChecked(
-            exchangeID, timestamp,
+            exchange, timestamp,
             orderStateA, orderStateB,
             ExpectedSatisfied::Satisfied, ExpectedValid::Automatic,
             ExpectedFill::Manual, expectFillS_A, expectFillS_B
@@ -730,7 +745,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
         OrderState orderStateA_mod = orderStateA;
         orderStateA_mod.order.tokenS += 1;
         orderMatchingChecked(
-            exchangeID, timestamp,
+            exchange, timestamp,
             orderStateA_mod, orderStateB,
             ExpectedSatisfied::NotSatisfied
         );
@@ -741,7 +756,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
         OrderState orderStateB_mod = orderStateB;
         orderStateB_mod.order.tokenS += 1;
          orderMatchingChecked(
-            exchangeID, timestamp,
+            exchange, timestamp,
             orderStateA, orderStateB_mod,
             ExpectedSatisfied::NotSatisfied
         );
@@ -751,7 +766,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
     {
         FieldT timestamp_mod = A_order.validSince - 1;
         orderMatchingChecked(
-            exchangeID, timestamp_mod,
+            exchange, timestamp_mod,
             orderStateA, orderStateB,
             ExpectedSatisfied::Satisfied, ExpectedValid::Invalid,
             ExpectedFill::Manual, expectFillS_A, expectFillS_B
@@ -762,7 +777,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
     {
         FieldT timestamp_mod = B_order.validUntil + 1;
         orderMatchingChecked(
-            exchangeID, timestamp_mod,
+            exchange, timestamp_mod,
             orderStateA, orderStateB,
             ExpectedSatisfied::Satisfied, ExpectedValid::Invalid,
             ExpectedFill::Manual, expectFillS_A, expectFillS_B
@@ -790,7 +805,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
                 0, B_orderID
             );
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, ExpectedValid::Valid,
                 ExpectedFill::Manual, maxAmountFill, maxAmountFill
@@ -819,7 +834,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
                 0, B_orderID
             );
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, ExpectedValid::Valid,
                 ExpectedFill::Manual, 1, 1
@@ -848,7 +863,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
                 0, B_orderID
             );
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, ExpectedValid::Valid,
                 ExpectedFill::Manual, 1, 1
@@ -877,7 +892,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
                 0, B_orderID
             );
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, ExpectedValid::Valid,
                 ExpectedFill::Manual, 1, 1
@@ -906,7 +921,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
                 0, B_orderID
             );
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, ExpectedValid::Valid,
                 ExpectedFill::Manual, buyA ? 1 : maxAmount, buyA ? 1 : maxAmount
@@ -935,7 +950,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
                 0, B_orderID
             );
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, ExpectedValid::Invalid,
                 ExpectedFill::Manual, buyA ? maxAmountFill : 1, maxAmountFill
@@ -974,7 +989,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
                     0, B_orderID
                 );
                 orderMatchingChecked(
-                    exchangeID, timestamp,
+                    exchange, timestamp,
                     orderStateA_mod, orderStateB_mod,
                     ExpectedSatisfied::Satisfied, ExpectedValid::Automatic,
                     ExpectedFill::Automatic
@@ -1003,7 +1018,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
                 0, B_orderID
             );
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, ExpectedValid::Invalid,
                 ExpectedFill::Manual, 0, 0
@@ -1032,7 +1047,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
                 maxAmount, B_orderID
             );
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, ExpectedValid::Valid,
                 ExpectedFill::Manual, maxAmount, maxAmount
@@ -1061,9 +1076,9 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
             );
 
             ExpectedValid expectedValid = (i >= 50) ? ExpectedValid::Valid : ExpectedValid::Invalid;
-            FieldT expectedFill = (i >= 100) ? 100 : 100;
+            FieldT expectedFill = (2*i >= 100) ? 100 : 2*i;
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, expectedValid,
                 ExpectedFill::Manual, expectedFill, expectedFill
@@ -1092,9 +1107,9 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
             );
 
             ExpectedValid expectedValid = (i >= 200) ? ExpectedValid::Valid : ExpectedValid::Invalid;
-            FieldT expectedFill = (i >= 200) ? 200 : 200;
+            FieldT expectedFill = (i >= 200) ? 200 : i;
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, expectedValid,
                 ExpectedFill::Manual, expectedFill, expectedFill
@@ -1124,7 +1139,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
             ExpectedValid expectedValid = (i <= 200) ? ExpectedValid::Valid : ExpectedValid::Invalid;
             FieldT expectedFill = (i < 200) ? 200 - i : 0;
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, expectedValid,
                 ExpectedFill::Manual, expectedFill, expectedFill
@@ -1154,7 +1169,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
             ExpectedValid expectedValid = (i <= 200) ? ExpectedValid::Valid : ExpectedValid::Invalid;
             FieldT expectedFill = (i < 200) ? 200 - i : 0;
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Satisfied, expectedValid,
                 ExpectedFill::Manual, expectedFill, expectedFill
@@ -1164,7 +1179,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
 
     SECTION("Random")
     {
-        for (unsigned int i = 0; i < 64; i++)
+        for (unsigned int i = 0; i < 128; i++)
         {
             OrderState orderStateA_mod = setOrderState(
                 orderStateA,
@@ -1181,7 +1196,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
                 getRandomFieldElement(NUM_BITS_AMOUNT), B_orderID
             );
             orderMatchingChecked(
-                exchangeID, timestamp,
+                exchange, timestamp,
                 orderStateA_mod, orderStateB_mod,
                 ExpectedSatisfied::Automatic, ExpectedValid::Automatic,
                 ExpectedFill::Automatic
@@ -1208,7 +1223,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
         FieldT expectedFillS_A("2883170000000000000000");
         FieldT expectedFillS_B("42719000000000000000000");
         orderMatchingChecked(
-            exchangeID, timestamp,
+            exchange, timestamp,
             orderStateA_mod, orderStateB_mod,
             ExpectedSatisfied::Satisfied, ExpectedValid::Valid,
             ExpectedFill::Manual, expectedFillS_A, expectedFillS_B

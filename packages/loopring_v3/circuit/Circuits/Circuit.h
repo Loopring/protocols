@@ -16,7 +16,7 @@ public:
     virtual ~Circuit() {};
     virtual void generateConstraints(bool onchainDataAvailability, unsigned int blockSize) = 0;
     virtual bool generateWitness(const json& input) = 0;
-    virtual BlockType getBlockType() = 0;
+    virtual unsigned int getBlockType() = 0;
     virtual unsigned int getBlockSize() = 0;
     virtual void printInfo() = 0;
 
