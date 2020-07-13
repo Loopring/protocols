@@ -1,4 +1,5 @@
 node_modules/
 contracts/Migrations.sol
 contracts/thirdparty/
+contracts/test/
 legacy/
