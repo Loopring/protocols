@@ -48,7 +48,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     modifier onlyFromWalletOrFactoryOrModule
     {
         require(
-            msg.sender == address(this) ||
+            msg.sender == address(this) || // must be a meta-transaction
             msg.sender == controller.walletFactory() ||
             modules[msg.sender],
             "UNAUTHORIZED"
