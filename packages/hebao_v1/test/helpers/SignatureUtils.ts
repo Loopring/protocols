@@ -139,7 +139,7 @@ export function signTransferTokenApproved(
   const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
   const TRANSFER_TOKEN_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "transferTokenWithGuardianApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+      "transferTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
@@ -179,7 +179,7 @@ export function signApproveTokenApproved(
   const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
   const APPROVE_TOKEN_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "approveTokenWithGuardianApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
+      "approveTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
@@ -210,7 +210,7 @@ export function signCallContractApproved(
   const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
   const CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "callContractWithGuardianApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+      "callContractWithApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
@@ -243,7 +243,7 @@ export function signApproveThenCallContractApproved(
   const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
   const APPROVE_THEN_CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "approveThenCallContractWithGuardianApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+      "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(

@@ -28,19 +28,19 @@ contract TransferModule is BaseTransferModule
     );
 
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
-        "transferTokenWithGuardianApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+        "transferTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
 
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
-        "approveTokenWithGuardianApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
+        "approveTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     );
 
     bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
-        "callContractWithGuardianApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+        "callContractWithApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     );
 
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
-        "approveThenCallContractWithGuardianApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+        "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
     uint public delayPeriod;
@@ -191,7 +191,7 @@ contract TransferModule is BaseTransferModule
         available = controller.quotaStore().availableQuota(wallet);
     }
 
-    function transferTokenWithGuardianApproval(
+    function transferTokenWithApproval(
         SignedRequest.Request calldata request,
         address        token,
         address        to,
@@ -221,7 +221,7 @@ contract TransferModule is BaseTransferModule
         transferInternal(request.wallet, token, to, amount, logdata);
     }
 
-    function approveTokenWithGuardianApproval(
+    function approveTokenWithApproval(
         SignedRequest.Request calldata request,
         address token,
         address to,
@@ -249,7 +249,7 @@ contract TransferModule is BaseTransferModule
         approveInternal(request.wallet, token, to, amount);
     }
 
-    function callContractWithGuardianApproval(
+    function callContractWithApproval(
         SignedRequest.Request calldata request,
         address        to,
         uint           value,
@@ -278,7 +278,7 @@ contract TransferModule is BaseTransferModule
         return callContractInternal(request.wallet, to, value, data);
     }
 
-    function approveThenCallContractWithGuardianApproval(
+    function approveThenCallContractWithApproval(
         SignedRequest.Request calldata request,
         address        token,
         address        to,

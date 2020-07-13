@@ -162,7 +162,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     );
   };
 
-  const transferTokenWithGuardianApprovalChecked = async (
+  const transferTokenWithApprovalChecked = async (
     owner: string,
     wallet: string,
     token: string,
@@ -200,7 +200,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
     // Transfer the tokens
     await executeTransaction(
-      ctx.transferModule.contract.methods.transferTokenWithGuardianApproval(
+      ctx.transferModule.contract.methods.transferTokenWithApproval(
         request,
         token,
         to,
@@ -353,7 +353,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     );
   };
 
-  const callContractWithGuardianApprovalChecked = async (
+  const callContractWithApprovalChecked = async (
     owner: string,
     wallet: string,
     to: string,
@@ -396,7 +396,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     );
 
     await executeTransaction(
-      ctx.transferModule.contract.methods.callContractWithGuardianApproval(
+      ctx.transferModule.contract.methods.callContractWithApproval(
         request,
         to,
         value.toString(10),
@@ -541,7 +541,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     assert(newAllowanceTo.eq(amount), "incorrect allowance");
   };
 
-  const approveTokenWithGuardianApprovalChecked = async (
+  const approveTokenWithApprovalChecked = async (
     owner: string,
     wallet: string,
     token: string,
@@ -573,7 +573,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
     // Approve the tokens
     await executeTransaction(
-      ctx.transferModule.contract.methods.approveTokenWithGuardianApproval(
+      ctx.transferModule.contract.methods.approveTokenWithApproval(
         request,
         token,
         to,
@@ -722,7 +722,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     assert.equal(testValueAfter, nonce, "unexpected test value");
   };
 
-  const approveThenCallContractWithGuardianApprovalChecked = async (
+  const approveThenCallContractWithApprovalChecked = async (
     owner: string,
     wallet: string,
     token: string,
@@ -760,7 +760,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
     // Approve the tokens and call the contract
     await executeTransaction(
-      ctx.transferModule.contract.methods.approveThenCallContractWithGuardianApproval(
+      ctx.transferModule.contract.methods.approveThenCallContractWithApproval(
         request,
         token,
         to,
@@ -1506,7 +1506,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       const numSignersRequired = Math.floor((1 + guardians.length) / 2) + 1;
 
       const signers = [owner, ...guardians.slice(0, numSignersRequired)].sort();
-      await transferTokenWithGuardianApprovalChecked(
+      await transferTokenWithApprovalChecked(
         owner,
         wallet,
         "ETH",
@@ -1529,7 +1529,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       // Should be able to apprve more than the quota
       const numSignersRequired = Math.floor((1 + guardians.length) / 2) + 1;
       const signers = [owner, ...guardians.slice(0, numSignersRequired)].sort();
-      await approveTokenWithGuardianApprovalChecked(
+      await approveTokenWithApprovalChecked(
         owner,
         wallet,
         "WETH",
@@ -1553,7 +1553,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       const numSignersRequired = Math.floor((1 + guardians.length) / 2) + 1;
 
       const signers = [owner, ...guardians.slice(0, numSignersRequired)].sort();
-      await callContractWithGuardianApprovalChecked(
+      await callContractWithApprovalChecked(
         owner,
         wallet,
         to,
@@ -1576,7 +1576,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       // Should be able to approve more than the quota
       const numSignersRequired = Math.floor((1 + guardians.length) / 2) + 1;
       const signers = [owner, ...guardians.slice(0, numSignersRequired)].sort();
-      await approveThenCallContractWithGuardianApprovalChecked(
+      await approveThenCallContractWithApprovalChecked(
         owner,
         wallet,
         "REP",
@@ -1596,7 +1596,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
     //   // Do a call to a token contract
     //   await expectThrow(
-    //     callContractWithGuardianApprovalChecked(owner, wallet, wallet, new BN(0), 1, { signers }),
+    //     callContractWithApprovalChecked(owner, wallet, wallet, new BN(0), 1, { signers }),
     //     "CALL_DISALLOWED"
     //   );
     // });
