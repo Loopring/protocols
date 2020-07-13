@@ -55,7 +55,9 @@ contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4 magicValue)
     {
         (uint _lock,) = controller.securityStore().getLock(msg.sender);
-        require(_lock <= now, "WALLET_LOCKED");
+        if(_lock > now) { // wallet locked
+            return 0;
+        }
 
         if (_data.verifySignature(Wallet(msg.sender).owner(), _signature)) {
             return MAGICVALUE;
@@ -73,7 +75,9 @@ contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4 magicValue)
     {
         (uint _lock,) = controller.securityStore().getLock(msg.sender);
-        require(_lock <= now, "WALLET_LOCKED");
+        if(_lock > now) { // wallet locked
+            return 0;
+        }
 
         if (_hash.verifySignature(Wallet(msg.sender).owner(), _signature)) {
             return MAGICVALUE;
