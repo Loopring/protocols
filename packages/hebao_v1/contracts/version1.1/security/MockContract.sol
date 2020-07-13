@@ -327,6 +327,7 @@ contract MockContract is MockInterface {
         calldataInvocations[keccak256(abi.encodePacked(resetCount, originalMsgData))] += 1;
     }
 
+    // solium-disable-next-line
     fallback() payable external {
         bytes4 methodId;
         assembly {
