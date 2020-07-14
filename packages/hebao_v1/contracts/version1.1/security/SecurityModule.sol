@@ -31,15 +31,17 @@ abstract contract SecurityModule is MetaTxModule
         public
         MetaTxModule(_controller, _trustedForwarder) {}
 
-    modifier onlyFromWallet(address wallet)
+    modifier onlyFromWalletOrOwner(address wallet)
         override
     {
+        require(!isWalletLocked(wallet), "LOCKED");
+
         address payable _logicalSender = logicalSender();
-        // Note:
-        // 1) We do NOT accept the wallet owner as the sender on behalf of the wallet
-        // 2) if the wallet's singature verification succeeds, it means
-        // the wallet must be unlocked.
-        require(_logicalSender == wallet, "NOT_FROM_WALLET");
+        // We DO accept the wallet owner as the sender on behalf of the wallet
+        require(
+            _logicalSender == wallet || _logicalSender == Wallet(wallet).owner(),
+             "NOT_FROM_WALLET_OR_OWNER"
+        );
         controller.securityStore().touchLastActive(wallet);
         _;
     }
