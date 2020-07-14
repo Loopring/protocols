@@ -31,11 +31,11 @@ abstract contract SecurityModule is MetaTxModule
         public
         MetaTxModule(_controller, _trustedForwarder) {}
 
-    modifier onlyFromWalletOrOwnerWhenUnlocked(address wallet)
+    modifier onlyFromWalletOrOwner(address wallet)
         override
     {
         require(!isWalletLocked(wallet), "LOCKED");
-        
+
         address payable _logicalSender = logicalSender();
         // We DO accept the wallet owner as the sender on behalf of the wallet
         require(
