@@ -32,7 +32,7 @@ abstract contract SecurityModule is MetaTxModule
         public
         MetaTxModule(_controller, _trustedForwarder) {}
 
-    modifier onlyFromWalletOrOwner(address wallet)
+    modifier onlyFromWalletOrOwnerWhenUnlocked(address wallet)
         override
     {
         address payable _logicalSender = logicalSender();
