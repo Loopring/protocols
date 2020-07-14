@@ -34,7 +34,6 @@ module.exports = function(deployer, network, accounts) {
               WalletRegistryImpl.address,
               lockPeriod,
               collecTo,
-              2, // minActiveGuardians
               ensManagerAddr,
               priceOracle.address,
               DappAddressStore.address,

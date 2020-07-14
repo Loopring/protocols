@@ -20,7 +20,6 @@ contract ControllerImpl is Claimable, Controller
 {
     address             public collectTo;
     uint                public defaultLockPeriod;
-    uint                public minActiveGuardians;
     address             public ensManagerAddress;
     PriceOracle         public priceOracle;
     DappAddressStore    public dappAddressStore;
@@ -31,15 +30,16 @@ contract ControllerImpl is Claimable, Controller
     WhitelistStore      public whitelistStore;
 
 
-    event ValueChanged  (string  indexed name, uint value);
-    event AddressChanged(string  indexed name, address addr);
+    event ValueChanged(
+        string  indexed name,
+        address indexed addr
+    );
 
     constructor(
         ModuleRegistry    _moduleRegistry,
         WalletRegistry    _walletRegistry,
         uint              _defaultLockPeriod,
         address           _collectTo,
-        uint              _minActiveGuardians,
         address           _ensManagerAddress,
         PriceOracle       _priceOracle,
         DappAddressStore  _dappAddressStore,
@@ -59,12 +59,6 @@ contract ControllerImpl is Claimable, Controller
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;
 
-        require(
-            _minActiveGuardians == 1 || _minActiveGuardians == 2,
-            "INVALID_MIN_GUARDIAN"
-        );
-        minActiveGuardians = _minActiveGuardians;
-
         ensManagerAddress = _ensManagerAddress;
         priceOracle = _priceOracle;
         dappAddressStore = _dappAddressStore;
@@ -79,45 +73,25 @@ contract ControllerImpl is Claimable, Controller
         external
         onlyOwner
     {
-        require(
-            _collectTo != address(0) && _collectTo != collectTo,
-            "INVALID_COLLECT_TO_ADDRESS"
-        );
+        require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;
-        emit AddressChanged("CollectTo", _collectTo);
+        emit ValueChanged("CollectTo", collectTo);
     }
 
     function setPriceOracle(PriceOracle _priceOracle)
         external
         onlyOwner
     {
-        require(_priceOracle != priceOracle, "INVALID_PRICE_ORACLE");
         priceOracle = _priceOracle;
-        emit AddressChanged("PriceOracle", address(_priceOracle));
+        emit ValueChanged("PriceOracle", address(priceOracle));
     }
 
     function setWalletFactory(address _walletFactory)
         external
         onlyOwner
     {
-        require(
-            _walletFactory != address(0) && _walletFactory != walletFactory,
-            "INVALID_WALLET_FACTORY"
-        );
+        require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
-        emit AddressChanged("WalletFactory", _walletFactory);
-    }
-
-    function setMinActiveGuardian(uint _minActiveGuardians)
-        external
-        onlyOwner
-    {
-        require(
-            (_minActiveGuardians == 1 || _minActiveGuardians == 2) &&
-            _minActiveGuardians != minActiveGuardians,
-            "INVALID_MIN_ACTIVE_GUARDIANS"
-        );
-        minActiveGuardians = _minActiveGuardians;
-        emit ValueChanged("MinActiveGuardian", _minActiveGuardians);
+        emit ValueChanged("WalletFactory", walletFactory);
     }
 }
