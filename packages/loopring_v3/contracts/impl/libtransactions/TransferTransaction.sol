@@ -39,15 +39,16 @@ library TransferTransaction
         "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint256 data,uint32 nonce)"
     );
 
-    event ConditionalTransferConsumed(
+    /*event ConditionalTransferConsumed(
         address indexed from,
         address indexed to,
         uint16          token,
         uint            amount
-    );
+    );*/
 
     function process(
         ExchangeData.State storage S,
+        ExchangeData.BlockContext memory ctx,
         bytes memory data,
         bytes memory auxiliaryData
         )
@@ -57,9 +58,11 @@ library TransferTransaction
         uint offset = 1;
 
         // Check that this is a conditional transfer
+        {
         uint transferType = data.toUint8(offset);
         offset += 1;
         require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
+        }
 
         // Extract the transfer data
         //uint24 fromAccountID = data.toUint24(offset);
@@ -84,7 +87,7 @@ library TransferTransaction
 
         // Calculate the tx hash
         bytes32 txHash = hash(
-            S.DOMAIN_SEPARATOR,
+            ctx.DOMAIN_SEPARATOR,
             from,
             to,
             tokenID,
@@ -103,7 +106,7 @@ library TransferTransaction
             S.approvedTx[from][txHash] = false;
         }
 
-        emit ConditionalTransferConsumed(from, to, tokenID, amount);
+        //emit ConditionalTransferConsumed(from, to, tokenID, amount);
     }
 
     function hash(

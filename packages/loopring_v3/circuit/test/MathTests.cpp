@@ -1449,11 +1449,26 @@ TEST_CASE("Range limit", "[dual_variable_gadget]")
     }}
 }
 
+FieldT power10(const FieldT& _x1)
+{
+    BigInt BASE(INDEX_BASE);
+    BigInt c0("10000000000000000000");
+    BigInt c1("23025850929940459520");
+    BigInt c2("26509490552391999488");
+    BigInt c3("20346785922934771712");
+
+    BigInt x1 = toBigInt(_x1);
+    BigInt x2 = (x1 * x1) / BASE;
+    BigInt x3 = (x2 * x1) / BASE;
+
+    return toFieldElement(c0 + (x1*c1 + x2*c2 + x3*c3)/BASE);
+}
+
 FieldT applyInterest(const FieldT& balance, const FieldT& oldIndex, const FieldT& newIndex)
 {
     FieldT indexDiff = newIndex - oldIndex;
-    FieldT balanceDiff = toFieldElement(toBigInt(balance) * toBigInt(indexDiff) / toBigInt(FieldT(INDEX_BASE)));
-    FieldT newBalance = balance + balanceDiff;
+    FieldT multiplier = power10(indexDiff);
+    FieldT newBalance = toFieldElement(toBigInt(balance) * toBigInt(power10(indexDiff)) / (BigInt(INDEX_BASE) * 10));
     return newBalance;
 }
 
@@ -1499,11 +1514,6 @@ TEST_CASE("Apply Interest", "[ApplyInterestGadget]")
     SECTION("max")
     {
         applyInterestChecked(max, indexBase, indexBase);
-    }
-
-    SECTION("max with extra interest")
-    {
-        applyInterestChecked(max, indexBase, indexBase + 1);
     }
 
     SECTION("random value")
@@ -1585,6 +1595,173 @@ TEST_CASE("LtField", "[LtFieldGadget]")
         for (unsigned int j = 0; j < numIterations; j++)
         {
             LtFieldChecked(getRandomFieldElementAsBigInt(n), getRandomFieldElementAsBigInt(n));
+        }
+    }
+}
+
+
+TEST_CASE("Selector", "[SelectorGadget]")
+{
+    unsigned int numIterations = 128;
+    unsigned int n = 8;
+
+    auto selectorChecked = [](const FieldT& _type, unsigned int maxBits)
+    {
+        protoboard<FieldT> pb;
+        Constants constants(pb, "constants");
+
+        pb_variable<FieldT> type = make_variable(pb, _type, ".type");
+
+        SelectorGadget selectorGadget(pb, constants, type, maxBits, "selectorGadget");
+        selectorGadget.generate_r1cs_constraints();
+        selectorGadget.generate_r1cs_witness();
+
+        std::vector<FieldT> expectedBits;
+        bool valid = false;
+        for (unsigned int i = 0; i < maxBits; i++)
+        {
+            expectedBits.push_back((FieldT(i) == _type) ? FieldT::one() : FieldT::zero());
+            valid = valid || (FieldT(i) == _type);
+        }
+        REQUIRE(pb.is_satisfied() == valid);
+        if (valid)
+        {
+            for (unsigned int i = 0; i < maxBits; i++)
+            {
+                REQUIRE((pb.val(selectorGadget.result()[i]) == expectedBits[i]));
+            }
+        }
+
+        // Flip a bit
+        unsigned int randomBit = rand() % maxBits;
+        pb.val(selectorGadget.result()[randomBit]) = FieldT::one() - pb.val(selectorGadget.result()[randomBit]);
+        REQUIRE(pb.is_satisfied() == false);
+    };
+
+    SECTION("No bits selected")
+    {
+        selectorChecked(FieldT(6), 5);
+    }
+
+    SECTION("Random")
+    {
+        for (unsigned int i = 1; i < n; i++)
+        {
+            for (unsigned int j = 0; j < numIterations; j++)
+            {
+                selectorChecked(FieldT(rand() % i), i);
+            }
+        }
+    }
+}
+
+TEST_CASE("Select", "[SelectGadget]")
+{
+    unsigned int numIterations = 128;
+    unsigned int n = 8;
+
+    auto selectChecked = [](unsigned int _index, std::vector<FieldT>& _values)
+    {
+        protoboard<FieldT> pb;
+        Constants constants(pb, "constants");
+
+        VariableT index = make_variable(pb, FieldT(_index), ".index");
+        std::vector<VariableT> values;
+        for (unsigned int i = 0; i < _values.size(); i++)
+        {
+            values.push_back(make_variable(pb, _values[i], ".values"));
+        }
+
+        SelectorGadget selectorGadget(pb, constants, index, values.size(), "selectorGadget");
+        selectorGadget.generate_r1cs_constraints();
+        selectorGadget.generate_r1cs_witness();
+
+        SelectGadget selectGadget(pb, selectorGadget.result(), values, "selectGadget");
+        selectGadget.generate_r1cs_constraints();
+        selectGadget.generate_r1cs_witness();
+
+        FieldT expectedValue = _values[_index];
+        REQUIRE(pb.is_satisfied());
+        REQUIRE((pb.val(selectGadget.result()) == expectedValue));
+
+        // Change the selected value
+        unsigned int randomIndex = (_index + 1 + rand() % (_values.size() - 1)) % _values.size();
+        pb.val(selectGadget.result()) = _values[randomIndex];
+        REQUIRE(pb.is_satisfied() == false);
+    };
+
+    SECTION("Random")
+    {
+        for (unsigned int i = 1; i < n; i++)
+        {
+            for (unsigned int j = 0; j < numIterations; j++)
+            {
+                std::vector<FieldT> values;
+                for (unsigned int k = 0; k < n; k++)
+                {
+                    values.push_back(getRandomFieldElement());
+                }
+                selectChecked(rand() % i, values);
+            }
+        }
+    }
+}
+
+TEST_CASE("ArraySelect", "[ArraySelectGadget]")
+{
+    unsigned int numIterations = 4;
+    unsigned int n = 8;
+    unsigned int maxLength = 1024;
+
+    auto selectArrayChecked = [](unsigned int _index, unsigned int numValues, unsigned int varLength)
+    {
+        protoboard<FieldT> pb;
+        Constants constants(pb, "constants");
+
+        VariableT index = make_variable(pb, FieldT(_index), ".index");
+
+        std::vector<VariableArrayT> values;
+        for (unsigned int i = 0; i < numValues; i++)
+        {
+            VariableArrayT value = make_var_array(pb, varLength, ".value");
+            for (unsigned int i = 0; i < varLength; i++)
+            {
+                pb.val(value[i]) = rand() % 2;
+            }
+            values.push_back(value);
+        }
+
+        SelectorGadget selectorGadget(pb, constants, index, values.size(), "selectorGadget");
+        selectorGadget.generate_r1cs_constraints();
+        selectorGadget.generate_r1cs_witness();
+
+        ArraySelectGadget arraySelectGadget(pb, selectorGadget.result(), values, "arraySelectGadget");
+        arraySelectGadget.generate_r1cs_constraints();
+        arraySelectGadget.generate_r1cs_witness();
+
+        REQUIRE(pb.is_satisfied());
+        for (unsigned int i = 0; i < varLength; i++)
+        {
+            REQUIRE((pb.val(arraySelectGadget.result()[i]) == pb.val(values[_index][i])));
+        }
+
+        // Flip a bit
+        unsigned int randomBit = rand() % varLength;
+        pb.val(arraySelectGadget.result()[randomBit]) = FieldT::one() - pb.val(arraySelectGadget.result()[randomBit]);
+        REQUIRE(pb.is_satisfied() == false);
+    };
+
+    SECTION("Random")
+    {
+        for (unsigned int i = 1; i < n; i++)
+        {
+            for (unsigned int l = 1; l < maxLength; l++)
+            {
+                for (unsigned int j = 0; j < numIterations; j++)
+                {
+                    selectArrayChecked(rand() % i, i, maxLength);
+                }
+            }
         }
     }
 }

@@ -114,3 +114,48 @@ TEST_CASE("SignatureVerifier", "[SignatureVerifier]")
         signatureVerifierChecked(pubKeyX, pubKeyY, msg, Loopring::Signature(EdwardsPoint(pubKeyX, pubKeyY), 0), false, true);
     }
 }
+
+
+TEST_CASE("CompressPublicKey", "[CompressPublicKey]")
+{
+    auto compressPublicKeyChecked = [](const FieldT& _pubKeyX, const FieldT& _pubKeyY, bool checkValid = false)
+    {
+        protoboard<FieldT> pb;
+        Constants constants(pb, "constants");
+
+        jubjub::Params params;
+        jubjub::VariablePointT publicKey(pb, "publicKey");
+        pb.val(publicKey.x) = _pubKeyX;
+        pb.val(publicKey.y) = _pubKeyY;
+
+        CompressPublicKey compressPublicKey(pb, params, constants, publicKey.x, publicKey.y, "compressPublicKey");
+        compressPublicKey.generate_r1cs_constraints();
+        compressPublicKey.generate_r1cs_witness();
+
+        REQUIRE(pb.is_satisfied() == checkValid);
+    };
+
+    // Valid publicKey 1
+    FieldT pubKeyX_1 = FieldT("21607074953141243618425427250695537464636088817373528162920186615872448542319");
+    FieldT pubKeyY_1 = FieldT("3328786100751313619819855397819808730287075038642729822829479432223775713775");
+    // Valid publicKey 2
+    FieldT pubKeyX_2 = FieldT("19818098172422229289422284899436629503222263750727977198150374245991932884258");
+    FieldT pubKeyY_2 = FieldT("5951877988471485350710444403782724110196846988892201970720985561004735218817");
+
+    SECTION("Valid key")
+    {
+        compressPublicKeyChecked(pubKeyX_1, pubKeyY_1, true);
+        compressPublicKeyChecked(pubKeyX_2, pubKeyY_2, true);
+    }
+
+    SECTION("(0,0) should be valid")
+    {
+        compressPublicKeyChecked(FieldT::zero(), FieldT::zero(), true);
+    }
+
+    SECTION("Invalid key")
+    {
+        compressPublicKeyChecked(pubKeyX_1, pubKeyY_2, false);
+        compressPublicKeyChecked(pubKeyX_2, pubKeyY_1, false);
+    }
+}

@@ -243,6 +243,11 @@ library ExchangeBlocks
         if (numConditionalTransactions > 0) {
             require(S.onchainDataAvailability, "CONDITIONAL_TRANSACTIONS_REQUIRE_OCDA");
 
+            // Cache the domain seperator to save on SLOADs each time it is accessed.
+            ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
+                DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR
+            });
+
             ExchangeData.AuxiliaryData[] memory txAuxiliaryData = abi.decode(auxiliaryData, (ExchangeData.AuxiliaryData[]));
             require(txAuxiliaryData.length == numConditionalTransactions, "AUXILIARYDATA_INVALID_LENGTH");
 
@@ -265,30 +270,35 @@ library ExchangeBlocks
                 if (txType == ExchangeData.TransactionType.TRANSFER) {
                     txFeeETH = TransferTransaction.process(
                         S,
+                        ctx,
                         txData,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
                     txFeeETH = WithdrawTransaction.process(
                         S,
+                        ctx,
                         txData,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.DEPOSIT) {
                     txFeeETH = DepositTransaction.process(
                         S,
+                        ctx,
                         txData,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
                     txFeeETH = AccountUpdateTransaction.process(
                         S,
+                        ctx,
                         txData,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.OWNER_CHANGE) {
                     txFeeETH = OwnerChangeTransaction.process(
                         S,
+                        ctx,
                         txData,
                         txAuxiliaryData[i].data
                     );

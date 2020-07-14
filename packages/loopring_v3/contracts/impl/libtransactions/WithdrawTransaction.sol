@@ -75,6 +75,7 @@ library WithdrawTransaction
 
     function process(
         ExchangeData.State storage S,
+        ExchangeData.BlockContext memory ctx,
         bytes memory data,
         bytes memory auxiliaryData
         )
@@ -92,7 +93,7 @@ library WithdrawTransaction
 
             // Calculate the tx hash
             bytes32 txHash = EIP712.hashPacked(
-                S.DOMAIN_SEPARATOR,
+                ctx.DOMAIN_SEPARATOR,
                 keccak256(
                     abi.encode(
                         WITHDRAWAL_TYPEHASH,

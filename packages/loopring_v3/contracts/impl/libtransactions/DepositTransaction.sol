@@ -42,6 +42,7 @@ library DepositTransaction
 
     function process(
         ExchangeData.State storage S,
+        ExchangeData.BlockContext memory /*ctx*/,
         bytes memory data,
         bytes memory /*auxiliaryData*/
         )

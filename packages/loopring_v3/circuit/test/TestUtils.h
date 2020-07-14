@@ -11,7 +11,7 @@ using namespace libsnark;
 using namespace ethsnarks;
 using namespace Loopring;
 
-static const char* TEST_DATA_PATH = "../../../protocol3-circuits/test/data/";
+static const char* TEST_DATA_PATH = "./circuit/test/data/";
 static BigInt SNARK_SCALAR_FIELD = BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617");
 
 

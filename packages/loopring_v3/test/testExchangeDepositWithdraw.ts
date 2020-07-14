@@ -763,8 +763,23 @@ contract("Exchange", (accounts: string[]) => {
         index: Constants.INDEX_BASE
       };
 
+      const tokenA = exchangeTestUtil.getTokenAddress(ring.orderA.tokenB);
+      const tokenB = exchangeTestUtil.getTokenAddress(ring.orderB.tokenB);
+
+      // Get the time the protocol fees were withdrawn before
+      const timestampBeforeA = await exchange.getProtocolFeeLastWithdrawnTime(tokenA);
+      const timestampBeforeB = await exchange.getProtocolFeeLastWithdrawnTime(tokenB);
+
       // Submit the block
       await submitWithdrawalBlockChecked([depositA, depositB]);
+
+      // Get the time the protocol fees were withdrawn after
+      const timestampAfterA = await exchange.getProtocolFeeLastWithdrawnTime(tokenA);
+      const timestampAfterB = await exchange.getProtocolFeeLastWithdrawnTime(tokenB);
+
+      // Check that they were updated
+      assert(timestampAfterA.gt(timestampBeforeA), "protocol fees withdrawal time unexpected");
+      assert(timestampAfterB.gt(timestampBeforeB), "protocol fees withdrawal time unexpected");
     });
 
     it("Deposits should not total more than MAX_AMOUNT", async () => {

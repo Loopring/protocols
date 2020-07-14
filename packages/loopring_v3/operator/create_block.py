@@ -25,7 +25,6 @@ class GeneralObject(object):
 
 
 def orderFromJSON(jOrder, state):
-    exchange = str(jOrder["exchange"])
     orderID = int(jOrder["orderID"])
     accountID = int(jOrder["accountID"])
     tokenS = int(jOrder["tokenIdS"])
@@ -44,7 +43,7 @@ def orderFromJSON(jOrder, state):
     account = state.getAccount(accountID)
 
     order = Order(account.publicKeyX, account.publicKeyY,
-                  exchange, orderID, accountID,
+                  orderID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,
                   allOrNone, validSince, validUntil, buy,

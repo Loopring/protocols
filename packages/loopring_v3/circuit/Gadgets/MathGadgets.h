@@ -1682,6 +1682,7 @@ struct SelectorGadget : public GadgetT
         GadgetT(pb, prefix),
         constants(_constants)
     {
+        assert(maxBits < constants.values.size());
         for (unsigned int i = 0; i < maxBits; i++)
         {
             bits.emplace_back(pb, type, constants.values[i], FMT(annotation_prefix, ".bits"));

@@ -39,13 +39,14 @@ library AccountUpdateTransaction
         "AccountUpdate(address owner,uint24 accountID,uint32 nonce,uint256 publicKey,uint256 walletHash,uint16 feeTokenID,uint256 fee)"
     );
 
-    event AccountUpdateConsumed(
+    /*event AccountUpdateConsumed(
         uint24   indexed owner,
         uint             publicKey
-    );
+    );*/
 
     function process(
         ExchangeData.State storage S,
+        ExchangeData.BlockContext memory ctx,
         bytes memory data,
         bytes memory auxiliaryData
         )
@@ -77,7 +78,7 @@ library AccountUpdateTransaction
 
         // Calculate the tx hash
         bytes32 txHash = EIP712.hashPacked(
-            S.DOMAIN_SEPARATOR,
+            ctx.DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
                     ACCOUNTUPDATE_TYPEHASH,
@@ -100,6 +101,6 @@ library AccountUpdateTransaction
             S.approvedTx[owner][txHash] = false;
         }
 
-        emit AccountUpdateConsumed(accountID, publicKey);
+        //emit AccountUpdateConsumed(accountID, publicKey);
     }
 }

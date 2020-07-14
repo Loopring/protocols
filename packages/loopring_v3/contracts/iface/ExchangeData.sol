@@ -160,6 +160,11 @@ library ExchangeData
         uint[18]                 balanceMerkleProof;
     }
 
+    struct BlockContext
+    {
+        bytes32 DOMAIN_SEPARATOR;
+    }
+
     // Represents the entire exchange state except the owner of the exchange.
     struct State
     {

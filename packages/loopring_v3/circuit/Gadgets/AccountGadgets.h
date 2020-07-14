@@ -276,7 +276,7 @@ public:
 
         indexDiff(pb, newIndex, oldIndex, NUM_BITS_AMOUNT, FMT(prefix, ".indexDiff")),
         multiplier(pb, constants, indexDiff.result(), FMT(prefix, ".multiplier")),
-        newBalance(pb, constants, balance, multiplier.result(), constants.pow10_c0, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, FMT(prefix, ".newBalance"))
+        newBalance(pb, constants, balance, multiplier.result(), constants.pow10_c0, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 64/*log2(index*10)*/, FMT(prefix, ".newBalance"))
     {
     }
 

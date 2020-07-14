@@ -923,8 +923,8 @@ export class ExchangeTestUtil {
       order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 3600;
     }
 
-    order.exchangeID =
-      order.exchangeID !== undefined ? order.exchangeID : this.exchangeId;
+    order.exchange =
+      order.exchange !== undefined ? order.exchange : this.exchange.address;
 
     order.buy = order.buy !== undefined ? order.buy : true;
 
@@ -936,8 +936,6 @@ export class ExchangeTestUtil {
     order.rebateBips = order.rebateBips !== undefined ? order.rebateBips : 0;
 
     order.orderID = order.orderID !== undefined ? order.orderID : index;
-
-    order.exchangeID = order.exchangeID !== undefined ? order.exchangeID : 0;
 
     order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
     order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
@@ -969,7 +967,7 @@ export class ExchangeTestUtil {
     // Calculate hash
     const hasher = Poseidon.createHash(13, 6, 53);
     const inputs = [
-      this.exchangeId,
+      order.exchange,
       order.orderID,
       order.accountID,
       order.tokenIdS,

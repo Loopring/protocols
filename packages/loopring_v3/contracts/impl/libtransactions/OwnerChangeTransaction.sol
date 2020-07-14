@@ -46,10 +46,10 @@ library OwnerChangeTransaction
         "Wallet(address walletAddress,bytes32 walletDataHash)"
     );
 
-    event ChangeOwnerConsumed(
+    /*event ChangeOwnerConsumed(
         address  indexed owner,
         address          newOwner
-    );
+    );*/
 
     struct OwnerChange
     {
@@ -75,6 +75,7 @@ library OwnerChangeTransaction
 
     function process(
         ExchangeData.State storage S,
+        ExchangeData.BlockContext memory ctx,
         bytes memory data,
         bytes memory auxiliaryData
         )
@@ -87,7 +88,7 @@ library OwnerChangeTransaction
 
         // Calculate the tx hash
         bytes32 txHash = EIP712.hashPacked(
-            S.DOMAIN_SEPARATOR,
+            ctx.DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
                     OWNERCHANGE_TYPEHASH,
@@ -162,7 +163,7 @@ library OwnerChangeTransaction
             require(validated, "WALLET_CALL_FAILED");
         }
 
-        emit ChangeOwnerConsumed(ownerChange.owner, ownerChange.newOwner);
+        //emit ChangeOwnerConsumed(ownerChange.owner, ownerChange.newOwner);
     }
 
     function readOwnerChange(
