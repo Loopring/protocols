@@ -39,7 +39,7 @@ abstract contract SecurityModule is MetaTxModule
         require(
             _logicalSender == wallet ||
             (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
-             "NOT_FROM_WALLET_OR_OWNER"
+             "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
         controller.securityStore().touchLastActive(wallet);
         _;
