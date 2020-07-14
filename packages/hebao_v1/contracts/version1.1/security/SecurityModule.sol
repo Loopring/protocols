@@ -34,12 +34,10 @@ abstract contract SecurityModule is MetaTxModule
     modifier onlyFromWalletOrOwner(address wallet)
         override
     {
-        require(!isWalletLocked(wallet), "LOCKED");
-
         address payable _logicalSender = logicalSender();
-        // We DO accept the wallet owner as the sender on behalf of the wallet
         require(
-            _logicalSender == wallet || _logicalSender == Wallet(wallet).owner(),
+            _logicalSender == wallet || // wallet must be unlocked in this case
+            (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
              "NOT_FROM_WALLET_OR_OWNER"
         );
         controller.securityStore().touchLastActive(wallet);
