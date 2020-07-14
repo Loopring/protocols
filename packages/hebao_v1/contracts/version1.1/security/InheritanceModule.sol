@@ -84,7 +84,7 @@ contract InheritanceModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromWalletOrOwner(wallet)
+        onlyFromWallet(wallet)
     {
         (address existingInheritor,) = controller.securityStore().inheritor(wallet);
         require(existingInheritor != who, "SAME_INHERITOR");
