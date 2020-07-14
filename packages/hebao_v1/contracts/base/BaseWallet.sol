@@ -45,12 +45,10 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
-    modifier onlyFromWalletOrFactoryOrModule
+    modifier onlyFromFactoryOrModule
     {
         require(
-            msg.sender == address(this) || // must be a meta-transaction
-            msg.sender == controller.walletFactory() ||
-            modules[msg.sender],
+            msg.sender == controller.walletFactory() || modules[msg.sender],
             "UNAUTHORIZED"
         );
         _;
@@ -98,7 +96,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function addModule(address _module)
         external
         override
-        onlyFromWalletOrFactoryOrModule
+        onlyFromFactoryOrModule
     {
         addModuleInternal(_module);
     }
