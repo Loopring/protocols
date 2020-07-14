@@ -240,20 +240,20 @@ contract TransferModule is BaseTransferModule
         onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
-        /* controller.verifyRequest( */
-        /*     DOMAIN_SEPERATOR, */
-        /*     txAwareHash(), */
-        /*     GuardianUtils.SigRequirement.OwnerRequired, */
-        /*     request, */
-        /*     abi.encode( */
-        /*         CALL_CONTRACT_TYPEHASH, */
-        /*         request.wallet, */
-        /*         request.validUntil, */
-        /*         to, */
-        /*         value, */
-        /*         keccak256(data) */
-        /*     ) */
-        /* ); */
+        controller.verifyRequest(
+            DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                CALL_CONTRACT_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                to,
+                value,
+                keccak256(data)
+            )
+        );
 
         return callContractInternal(request.wallet, to, value, data);
     }
