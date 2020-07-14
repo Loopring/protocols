@@ -51,55 +51,70 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
     );
     const blockTime = await getBlockTime(tx.blockNumber);
 
-    // The quota needs to be changed after `delayPeriod`
-    if (!useMetaTx) {
-      await assertEventEmitted(
-        ctx.quotaStore,
-        "QuotaScheduled",
-        (event: any) => {
-          return (
-            event.wallet == wallet &&
-            event.pendingQuota.eq(newQuota) &&
-            event.pendingUntil == blockTime + delayPeriod
+    const currQuota = await ctx.quotaStore.currentQuota(wallet);
+
+    if (newQuota.gt(currQuota)) {
+      // The quota needs to be changed after `delayPeriod`
+      if (!useMetaTx) {
+        await assertEventEmitted(
+          ctx.quotaStore,
+          "QuotaScheduled",
+          (event: any) => {
+            return (
+              event.wallet == wallet &&
+              event.pendingQuota.eq(newQuota) &&
+              event.pendingUntil == blockTime + delayPeriod
+            );
+          }
+        );
+      }
+
+      // Quota still needs to be the old value
+      assert(
+        (await ctx.quotaStore.currentQuota(wallet)).eq(oldQuota),
+        "quota incorrect"
+      );
+
+      // Pending quota data needs to be correct
+      {
+        const pendingQuotaData = await ctx.quotaStore.pendingQuota(wallet);
+        assert(
+          pendingQuotaData._pendingQuota.eq(newQuota),
+          "pending quota incorrect"
+        );
+
+        if (!useMetaTx) {
+          assert.equal(
+            pendingQuotaData._pendingUntil.toNumber(),
+            blockTime + delayPeriod,
+            "pending time incorrect"
           );
         }
-      );
-    }
+      }
 
-    // Quota still needs to be the old value
-    assert(
-      (await ctx.quotaStore.currentQuota(wallet)).eq(oldQuota),
-      "quota incorrect"
-    );
-    // Pending quota data needs to be correct
-    {
-      const pendingQuotaData = await ctx.quotaStore.pendingQuota(wallet);
+      // Skip forward `delayPeriod` seconds
+      await advanceTimeAndBlockAsync(delayPeriod);
+
+      // Quota needs to be the new value
       assert(
-        pendingQuotaData._pendingQuota.eq(newQuota),
-        "pending quota incorrect"
+        (await ctx.quotaStore.currentQuota(wallet)).eq(newQuota),
+        "quota incorrect"
       );
-
-      if (!useMetaTx) {
+      // Pending quota data needs to be correct
+      {
+        const pendingQuotaData = await ctx.quotaStore.pendingQuota(wallet);
         assert.equal(
-          pendingQuotaData._pendingUntil.toNumber(),
-          blockTime + delayPeriod,
+          pendingQuotaData._pendingUntil,
+          0,
           "pending time incorrect"
         );
       }
-    }
-
-    // Skip forward `delayPeriod` seconds
-    await advanceTimeAndBlockAsync(delayPeriod);
-
-    // Quota needs to be the new value
-    assert(
-      (await ctx.quotaStore.currentQuota(wallet)).eq(newQuota),
-      "quota incorrect"
-    );
-    // Pending quota data needs to be correct
-    {
-      const pendingQuotaData = await ctx.quotaStore.pendingQuota(wallet);
-      assert.equal(pendingQuotaData._pendingUntil, 0, "pending time incorrect");
+    } else {
+      // Quota will be the newQuota immediately.
+      assert(
+        (await ctx.quotaStore.currentQuota(wallet)).eq(newQuota),
+        "quota incorrect"
+      );
     }
   };
 
