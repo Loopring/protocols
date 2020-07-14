@@ -54,7 +54,15 @@ contract TransferModule is BaseTransferModule
         nonReentrant
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller.quotaStore().changeQuota(wallet, newQuota, now.add(delayPeriod));
+        QuotaStore qs = controller.quotaStore();
+        uint _newQuota = newQuota == 0 ? qs.defaultQuota(): newQuota;
+        uint _currentQuota = qs.currentQuota(wallet);
+
+        if (_currentQuota >= _newQuota) {
+            qs.changeQuota(wallet, _newQuota, now);
+        } else {
+            qs.changeQuota(wallet, _newQuota, now.add(delayPeriod));
+        }
     }
 
     function changeDailyQuotaImmediately(
