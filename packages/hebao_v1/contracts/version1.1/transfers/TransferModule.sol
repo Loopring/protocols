@@ -118,10 +118,10 @@ contract TransferModule is BaseTransferModule
     }
 
     function approveToken(
-        address            wallet,
-        address            token,
-        address            to,
-        uint               amount
+        address wallet,
+        address token,
+        address to,
+        uint    amount
         )
         external
         nonReentrant
@@ -135,12 +135,12 @@ contract TransferModule is BaseTransferModule
     }
 
     function approveThenCallContract(
-        address            wallet,
-        address            token,
-        address            to,
-        uint               amount,
-        uint               value,
-        bytes     calldata data
+        address        wallet,
+        address        token,
+        address        to,
+        uint           amount,
+        uint           value,
+        bytes calldata data
         )
         external
         nonReentrant
