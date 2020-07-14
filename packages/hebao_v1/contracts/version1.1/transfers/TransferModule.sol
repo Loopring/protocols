@@ -52,8 +52,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         controller.quotaStore().changeQuota(wallet, newQuota, now.add(delayPeriod));
     }
@@ -91,8 +90,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         if (amount > 0 && !isTargetWhitelisted(wallet, to)) {
             updateQuota(wallet, token, amount);
@@ -109,8 +107,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
         if (value > 0 && !isTargetWhitelisted(wallet, to)) {
@@ -121,15 +118,14 @@ contract TransferModule is BaseTransferModule
     }
 
     function approveToken(
-        address            wallet,
-        address            token,
-        address            to,
-        uint               amount
+        address wallet,
+        address token,
+        address to,
+        uint    amount
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
@@ -139,17 +135,16 @@ contract TransferModule is BaseTransferModule
     }
 
     function approveThenCallContract(
-        address            wallet,
-        address            token,
-        address            to,
-        uint               amount,
-        uint               value,
-        bytes     calldata data
+        address        wallet,
+        address        token,
+        address        to,
+        uint           amount,
+        uint           value,
+        bytes calldata data
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
@@ -245,20 +240,20 @@ contract TransferModule is BaseTransferModule
         onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
-        /* controller.verifyRequest( */
-        /*     DOMAIN_SEPERATOR, */
-        /*     txAwareHash(), */
-        /*     GuardianUtils.SigRequirement.OwnerRequired, */
-        /*     request, */
-        /*     abi.encode( */
-        /*         CALL_CONTRACT_TYPEHASH, */
-        /*         request.wallet, */
-        /*         request.validUntil, */
-        /*         to, */
-        /*         value, */
-        /*         keccak256(data) */
-        /*     ) */
-        /* ); */
+        controller.verifyRequest(
+            DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                CALL_CONTRACT_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                to,
+                value,
+                keccak256(data)
+            )
+        );
 
         return callContractInternal(request.wallet, to, value, data);
     }

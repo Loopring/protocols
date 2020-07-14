@@ -80,7 +80,7 @@ contract("UpgraderModule", () => {
     ctx = await createContext(defaultCtx);
   });
 
-  [false, true].forEach(function(metaTx) {
+  [/*false,*/ true].forEach(function(metaTx) {
     it(
       description(
         "owner should be able to upgrade the wallet implementation",
@@ -135,57 +135,77 @@ contract("UpgraderModule", () => {
           "wallet implementation incorrect"
         );
 
-        // Make sure the wallet is still fully functional
-        await walletImpl.addModule(ctx.whitelistModule.address, {
-          from: owner
-        });
-      }
-    );
-
-    it(
-      description(
-        "owner should be able to add modules directly on the wallet",
-        metaTx
-      ),
-      async () => {
-        useMetaTx = metaTx;
-        const owner = ctx.owners[0];
-        const { wallet } = await createWallet(ctx, owner, 0, [
-          ctx.erc1271Module.address,
-          ctx.forwarderModule.address
-        ]);
-        const walletContract = await ctx.contracts.WalletImpl.at(wallet);
-
-        // Add the module
-        await walletContract.addModule(ctx.guardianModule.address, {
-          from: owner
-        });
-        // Check for the `ModuleAdded` event on the wallet
-        await assertEventEmitted(
-          walletContract,
-          "ModuleAdded",
-          (event: any) => {
-            return event.module === ctx.guardianModule.address;
-          }
-        );
-        // Check if the module has been added
         assert(
-          await walletContract.hasModule(ctx.guardianModule.address),
-          "module not added"
+          await walletImpl.hasModule(ctx.forwarderModule.address),
+          "wallet should still has forwarder module"
         );
 
-        // Try to add the same module again
-        await expectThrow(
-          walletContract.addModule(ctx.guardianModule.address, { from: owner }),
-          "MODULE_EXISTS"
+        assert(
+          await walletImpl.hasModule(ctx.erc1271Module.address),
+          "wallet should still has erc1271 module"
         );
 
-        // Make sure the module is now authorized
-        await ctx.guardianModule.addGuardian(wallet, ctx.miscAddresses[0], 0, {
-          from: owner
-        });
+        assert(
+          await walletImpl.hasModule(ctx.guardianModule.address),
+          "wallet should still has guardian module"
+        );
+
+        // Make sure the wallet is still fully functional
+        await executeTransaction(
+          walletImpl.contract.methods.addModule(ctx.whitelistModule.address),
+          ctx,
+          useMetaTx,
+          wallet,
+          [],
+          useMetaTx ? { wallet, owner } : { from: owner }
+        );
       }
     );
+
+    // it(
+    //   description(
+    //     "owner should be able to add modules directly on the wallet",
+    //     metaTx
+    //   ),
+    //   async () => {
+    //     useMetaTx = metaTx;
+    //     const owner = ctx.owners[0];
+    //     const { wallet } = await createWallet(ctx, owner, 0, [
+    //       ctx.erc1271Module.address,
+    //       ctx.forwarderModule.address
+    //     ]);
+    //     const walletContract = await ctx.contracts.WalletImpl.at(wallet);
+
+    //     // Add the module
+    //     await walletContract.addModule(ctx.guardianModule.address, {
+    //       from: owner
+    //     });
+    //     // Check for the `ModuleAdded` event on the wallet
+    //     await assertEventEmitted(
+    //       walletContract,
+    //       "ModuleAdded",
+    //       (event: any) => {
+    //         return event.module === ctx.guardianModule.address;
+    //       }
+    //     );
+    //     // Check if the module has been added
+    //     assert(
+    //       await walletContract.hasModule(ctx.guardianModule.address),
+    //       "module not added"
+    //     );
+
+    //     // Try to add the same module again
+    //     await expectThrow(
+    //       walletContract.addModule(ctx.guardianModule.address, { from: owner }),
+    //       "MODULE_EXISTS"
+    //     );
+
+    //     // Make sure the module is now authorized
+    //     await ctx.guardianModule.addGuardian(wallet, ctx.miscAddresses[0], 0, {
+    //       from: owner
+    //     });
+    //   }
+    // );
 
     it(
       description(

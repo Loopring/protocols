@@ -6,6 +6,7 @@ import "../base/MetaTxModule.sol";
 import "./GuardianUtils.sol";
 import "./SignedRequest.sol";
 
+
 /// @title SecurityStore
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -31,14 +32,15 @@ abstract contract SecurityModule is MetaTxModule
         public
         MetaTxModule(_controller, _trustedForwarder) {}
 
-    modifier onlyFromWallet(address wallet)
+    modifier onlyFromWalletOrOwnerWhenUnlocked(address wallet)
         override
     {
         address payable _logicalSender = logicalSender();
-        // We DO accept the wallet owner as the sender on behalf of the wallet!!!
+        // If the wallet's signature verfication passes, the wallet must be unlocked.
         require(
-            _logicalSender == wallet || _logicalSender == Wallet(wallet).owner(),
-             "NOT_FROM_WALLET_OR_OWNER"
+            _logicalSender == wallet ||
+            (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
+             "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
         controller.securityStore().touchLastActive(wallet);
         _;
