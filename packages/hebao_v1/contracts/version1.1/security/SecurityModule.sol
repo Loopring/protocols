@@ -35,8 +35,9 @@ abstract contract SecurityModule is MetaTxModule
         override
     {
         address payable _logicalSender = logicalSender();
+        // If the wallet's signature verfication passes, the wallet must be unlocked.
         require(
-            _logicalSender == wallet || // wallet must be unlocked in this case
+            _logicalSender == wallet ||
             (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
              "NOT_FROM_WALLET_OR_OWNER"
         );
