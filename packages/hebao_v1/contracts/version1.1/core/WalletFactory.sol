@@ -1,183 +1,105 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.6.10;
-pragma experimental ABIEncoderV2;
 
-import "../../iface/Module.sol";
-import "../../iface/Wallet.sol";
-import "../../lib/OwnerManagable.sol";
-import "../../lib/ReentrancyGuard.sol";
-import "../../lib/AddressUtil.sol";
-import "../../lib/EIP712.sol";
-import "../../thirdparty/Create2.sol";
-import "../../thirdparty/ens/BaseENSManager.sol";
-import "../../thirdparty/ens/ENS.sol";
-import "../../thirdparty/OwnedUpgradabilityProxy.sol";
-import "../ControllerImpl.sol";
+import "../base/Controller.sol";
+import "../iface/PriceOracle.sol";
+import "../lib/Claimable.sol";
+import "../stores/DappAddressStore.sol";
+import "../stores/HashStore.sol";
+import "../stores/NonceStore.sol";
+import "../stores/QuotaStore.sol";
+import "../stores/SecurityStore.sol";
+import "../stores/WhitelistStore.sol";
 
 
-/// @title WalletFactory
-/// @dev A factory contract to create a new wallet by deploying a proxy
-///      in front of a real wallet.
+/// @title ControllerImpl
+/// @dev Basic implementation of a Controller.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
-contract WalletFactory is ReentrancyGuard
+contract ControllerImpl is Claimable, Controller
 {
-    using AddressUtil for address;
-    using SignatureUtil for bytes32;
+    address             public collectTo;
+    uint                public defaultLockPeriod;
+    address             public ensManagerAddress;
+    PriceOracle         public priceOracle;
+    DappAddressStore    public dappAddressStore;
+    HashStore           public hashStore;
+    NonceStore          public nonceStore;
+    QuotaStore          public quotaStore;
+    SecurityStore       public securityStore;
+    WhitelistStore      public whitelistStore;
 
-    event WalletCreated(
-        address indexed wallet,
-        address indexed owner
-    );
+    // Make sure this value if false in production env.
+    bool                public allowChangingWalletFactory;
 
-    address        public walletImplementation;
-    bool           public allowEmptyENS;
-    ControllerImpl public controller;
-
-    bytes32 public DOMAIN_SEPERATOR;
-    bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,string label,bytes labelApproval,address[] modules)"
+    event AddressChanged(
+        string  indexed name,
+        address indexed addr
     );
 
     constructor(
-        ControllerImpl _controller,
-        address        _walletImplementation,
-        bool           _allowEmptyENS
+        ModuleRegistry    _moduleRegistry,
+        WalletRegistry    _walletRegistry,
+        uint              _defaultLockPeriod,
+        address           _collectTo,
+        address           _ensManagerAddress,
+        PriceOracle       _priceOracle,
+        DappAddressStore  _dappAddressStore,
+        HashStore         _hashStore,
+        NonceStore        _nonceStore,
+        QuotaStore        _quotaStore,
+        SecurityStore     _securityStore,
+        WhitelistStore    _whitelistStore,
+        bool              _allowChangingWalletFactory
         )
         public
     {
-        DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("WalletFactory", "1.1.0", address(this))
-        );
-        controller = _controller;
-        walletImplementation = _walletImplementation;
-        allowEmptyENS = _allowEmptyENS;
+        moduleRegistry = _moduleRegistry;
+        walletRegistry = _walletRegistry;
+
+        defaultLockPeriod = _defaultLockPeriod;
+
+        require(_collectTo != address(0), "ZERO_ADDRESS");
+        collectTo = _collectTo;
+
+        ensManagerAddress = _ensManagerAddress;
+        priceOracle = _priceOracle;
+        dappAddressStore = _dappAddressStore;
+        hashStore = _hashStore;
+        nonceStore = _nonceStore;
+        quotaStore = _quotaStore;
+        securityStore = _securityStore;
+        whitelistStore = _whitelistStore;
+        allowChangingWalletFactory = _allowChangingWalletFactory;
     }
 
-    event logBytes32(bytes32 hash);
-    function computeWalletAddress(
-        address owner
-        )
-        public
-        view
-        returns (address)
-    {
-        return Create2.computeAddress(
-            getSalt(owner),
-            getWalletCode()
-        );
-    }
-
-    /// @dev Create a new wallet by deploying a proxy.
-    /// @param _owner The wallet's owner.
-    /// @param _label The ENS subdomain to register, use "" to skip.
-    /// @param _labelApproval The signature for ENS subdomain approval.
-    /// @param _modules The wallet's modules.
-    /// @param _signature The wallet owner's signature.
-    function createWallet(
-        address            _owner,
-        string    calldata _label,
-        bytes     calldata _labelApproval,
-        address[] calldata _modules,
-        bytes     calldata _signature
-        )
+    function setCollectTo(address _collectTo)
         external
-        payable
-        returns (address _wallet)
+        onlyOwner
     {
-        require(_modules.length > 0, "EMPTY_MODULES");
+        require(_collectTo != address(0), "ZERO_ADDRESS");
+        collectTo = _collectTo;
+        emit AddressChanged("CollectTo", collectTo);
+    }
 
-        bytes memory encodedRequest = abi.encode(
-            CREATE_WALLET_TYPEHASH,
-            _owner,
-            keccak256(bytes(_label)),
-            keccak256(_labelApproval),
-            keccak256(abi.encode(_modules))
+    function setPriceOracle(PriceOracle _priceOracle)
+        external
+        onlyOwner
+    {
+        priceOracle = _priceOracle;
+        emit AddressChanged("PriceOracle", address(priceOracle));
+    }
+
+    function initWalletFactory(address _walletFactory)
+        external
+        onlyOwner
+    {
+        require(
+            allowChangingWalletFactory || walletFactory == address(0),
+            "INITIALIZED_ALREADY"
         );
-
-        bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
-        require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
-
-        _wallet = createWalletInternal(walletImplementation, _owner);
-
-        Wallet w = Wallet(_wallet);
-        for(uint i = 0; i < _modules.length; i++) {
-            w.addModule(_modules[i]);
-        }
-        address ensManager = controller.ensManagerAddress();
-
-        if (ensManager != address(0)) {
-            if (bytes(_label).length > 0) {
-                BaseENSManager(ensManager).register(
-                    _wallet,
-                    _label,
-                    _labelApproval
-                );
-
-                registerReverseENS(w, BaseENSManager(ensManager));
-            } else {
-                require(allowEmptyENS, "INVALID_ENS_LABEL");
-            }
-        }
-    }
-
-    function registerReverseENS(
-        Wallet         wallet,
-        BaseENSManager ensManager
-        )
-        internal
-    {
-        bytes memory data = abi.encodeWithSelector(
-            ENSReverseRegistrar(0).claimWithResolver.selector,
-            address(0), // the owner of the reverse record
-            ensManager.ensResolver()
-        );
-        wallet.transact(
-            uint8(1),
-            address(ensManager.getENSReverseRegistrar()),
-            0, // value
-            data
-        );
-    }
-
-    function createWalletInternal(
-        address    _implementation,
-        address    _owner
-        )
-        internal
-        returns (address payable _wallet)
-    {
-        // Deploy the wallet
-        _wallet = Create2.deploy(getSalt(_owner), getWalletCode());
-
-        OwnedUpgradabilityProxy(_wallet).upgradeTo(_implementation);
-        OwnedUpgradabilityProxy(_wallet).transferProxyOwnership(_wallet);
-
-        Wallet(_wallet).setup(address(controller), _owner);
-
-        controller.walletRegistry().registerWallet(_wallet);
-
-        emit WalletCreated(_wallet, _owner);
-    }
-
-    function getSalt(
-        address owner
-        )
-        internal
-        pure
-        returns (bytes32 salt)
-    {
-        return keccak256(abi.encodePacked("WALLET_CREATION", owner));
-    }
-
-    function getWalletCode()
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return type(OwnedUpgradabilityProxy).creationCode;
+        require(_walletFactory != address(0), "ZERO_ADDRESS");
+        walletFactory = _walletFactory;
+        emit AddressChanged("WalletFactory", walletFactory);
     }
 }
