@@ -86,10 +86,11 @@ contract ControllerImpl is Claimable, Controller
         emit ValueChanged("PriceOracle", address(priceOracle));
     }
 
-    function setWalletFactory(address _walletFactory)
+    function initWalletFactory(address _walletFactory)
         external
         onlyOwner
     {
+        require(walletFactory == address(0), "ALREADY_SET");
         require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
         emit ValueChanged("WalletFactory", walletFactory);

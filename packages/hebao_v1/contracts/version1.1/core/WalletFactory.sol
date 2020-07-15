@@ -10,6 +10,7 @@ import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../thirdparty/Create2.sol";
 import "../../thirdparty/ens/BaseENSManager.sol";
+import "../../thirdparty/ens/ENS.sol";
 import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 import "../ControllerImpl.sol";
 
@@ -85,7 +86,6 @@ contract WalletFactory is ReentrancyGuard
         )
         external
         payable
-        nonReentrant
         returns (address _wallet)
     {
         require(_modules.length > 0, "EMPTY_MODULES");
@@ -107,13 +107,26 @@ contract WalletFactory is ReentrancyGuard
         for(uint i = 0; i < _modules.length; i++) {
             w.addModule(_modules[i]);
         }
+        address ensManager = controller.ensManagerAddress();
 
-        if (controller.ensManagerAddress() != address(0)) {
+        if (ensManager != address(0)) {
             if (bytes(_label).length > 0) {
-                BaseENSManager(controller.ensManagerAddress()).register(
+                BaseENSManager(ensManager).register(
                     _wallet,
                     _label,
                     _labelApproval
+                );
+
+                bytes memory claimResolverData = abi.encodeWithSelector(
+                    ENSReverseRegistrar(0).claimWithResolver.selector,
+                    address(0),
+                    BaseENSManager(ensManager).ensResolver()
+                );
+                Wallet(w).transact(
+                    uint8(1),
+                    address(BaseENSManager(ensManager).getENSReverseRegistrar()),
+                    0,
+                    claimResolverData
                 );
             } else {
                 require(allowEmptyENS, "INVALID_ENS_LABEL");
