@@ -29,7 +29,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         internal
         view
         virtual
-        returns(address payable)
+        returns (address payable)
     {
         return msg.sender;
     }

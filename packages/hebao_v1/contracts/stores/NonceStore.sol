@@ -24,7 +24,7 @@ contract NonceStore is DataStore
     function isNonceValid(address wallet, uint nonce)
         public
         view
-        returns(bool)
+        returns (bool)
     {
         return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
     }
