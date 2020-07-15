@@ -29,8 +29,8 @@ contract ControllerImpl is Claimable, Controller
     SecurityStore       public securityStore;
     WhitelistStore      public whitelistStore;
 
-    // Make sure this value if False in production env.
-    bool                public testMode;
+    // Make sure this value if false in production env.
+    bool                public allowChangingWalletFactory;
 
     event ValueChanged(
         string  indexed name,
@@ -50,7 +50,7 @@ contract ControllerImpl is Claimable, Controller
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore,
-        bool              _testMode
+        bool              _allowChangingWalletFactory
         )
         public
     {
@@ -70,7 +70,7 @@ contract ControllerImpl is Claimable, Controller
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
-        testMode = _testMode;
+        allowChangingWalletFactory = _allowChangingWalletFactory;
     }
 
     function setCollectTo(address _collectTo)
@@ -94,9 +94,10 @@ contract ControllerImpl is Claimable, Controller
         external
         onlyOwner
     {
-        if (!testMode) {
-            require(walletFactory == address(0), "ALREADY_SET");
-        }
+        require(
+            allowChangingWalletFactory || walletFactory == address(0),
+            "INITIALIZED_ALREADY"
+        );
         require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
         emit ValueChanged("WalletFactory", walletFactory);
