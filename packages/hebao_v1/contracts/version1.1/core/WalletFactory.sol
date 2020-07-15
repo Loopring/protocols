@@ -107,6 +107,8 @@ contract WalletFactory is ReentrancyGuard
         for(uint i = 0; i < _modules.length; i++) {
             w.addModule(_modules[i]);
         }
+
+        // register ENS
         address ensManager = controller.ensManagerAddress();
 
         if (ensManager != address(0)) {
@@ -138,7 +140,7 @@ contract WalletFactory is ReentrancyGuard
             address(0), // the owner of the reverse record
             ensManager.ensResolver()
         );
-        
+
         Wallet(wallet).transact(
             uint8(1),
             address(ensManager.getENSReverseRegistrar()),
