@@ -34,7 +34,7 @@ contract ControllerImpl is Claimable, Controller
 
     event AddressChanged(
         string  indexed name,
-        address indexed addr
+        address         addr
     );
 
     constructor(
