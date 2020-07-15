@@ -234,8 +234,6 @@ library SignatureUtil
         pure
         returns (bytes32)
     {
-        return (data.length == 32) ?
-            BytesUtil.toBytes32(data, 0) :
-            keccak256(data);
+        return (data.length == 32) ? BytesUtil.toBytes32(data, 0) : keccak256(data);
     }
 }
