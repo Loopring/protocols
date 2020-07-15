@@ -159,7 +159,7 @@ library SignatureUtil
         SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
 
         bytes memory stripped = signature.slice(0, signatureTypeOffset);
-        bytes32 hash = (data.length == 32) ? BytesUtil.toBytes32(data, 0) : keccak256(data);
+        bytes32 hash = getDataHash(data);
 
         if (signatureType == SignatureType.EIP_712) {
             return recoverECDSASigner(hash, stripped) == signer;
@@ -180,13 +180,10 @@ library SignatureUtil
         )
         private
         view
-        returns(bool succeed)
+        returns (bool)
     {
-        succeed = verifyERC1271WithBytes(data, signer, signature);
-        if (!succeed) {
-            bytes32 hash = (data.length == 32) ? BytesUtil.toBytes32(data, 0) : keccak256(data);
-            succeed = verifyERC1271WithBytes32(hash, signer, signature);
-        }
+        return verifyERC1271WithBytes(data, signer, signature) ||
+            verifyERC1271WithBytes32(getDataHash(data), signer, signature);
     }
 
     function verifyERC1271WithBytes(
@@ -196,7 +193,7 @@ library SignatureUtil
         )
         private
         view
-        returns(bool)
+        returns (bool)
     {
         bytes memory callData = abi.encodeWithSelector(
             ERC1271_FUNCTION_WITH_BYTES_SELECTOR,
@@ -218,7 +215,7 @@ library SignatureUtil
         )
         private
         view
-        returns(bool)
+        returns (bool)
     {
         bytes memory callData = abi.encodeWithSelector(
             ERC1271_FUNCTION_WITH_BYTES32_SELECTOR,
@@ -231,5 +228,15 @@ library SignatureUtil
             result.length == 32 &&
             result.toBytes4(0) == ERC1271_MAGICVALUE
         );
+    }
+
+    function getDataHash(bytes memory data)
+        private
+        pure
+        returns (bytes32)
+    {
+        return (data.length == 32) ?
+            BytesUtil.toBytes32(data, 0) :
+            keccak256(data);
     }
 }
