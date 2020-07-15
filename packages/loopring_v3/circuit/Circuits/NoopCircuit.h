@@ -24,6 +24,7 @@ public:
     ) :
         BaseTransactionCircuit(pb, state, prefix)
     {
+        // No signatures needed
         setOutput(signatureRequired_A, state.constants._0);
         setOutput(signatureRequired_B, state.constants._0);
     }

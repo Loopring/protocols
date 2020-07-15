@@ -222,35 +222,41 @@ public:
         // Increase the number of conditional transactions (if conditional)
         numConditionalTransactionsAfter(pb, state.numConditionalTransactions, isConditional.result(), FMT(prefix, ".numConditionalTransactionsAfter"))
     {
+        // Update the From account
         setArrayOutput(accountA_Address, fromAccountID.bits);
         setOutput(accountA_Nonce, nonce_From_after.result());
 
+        // Set the 2 tokens used
         setArrayOutput(balanceA_S_Address, tokenID.bits);
+        setArrayOutput(balanceB_S_Address, feeTokenID.bits);
+
+        // Update the From balances (transfer + fee payment)
         setOutput(balanceA_S_Balance, balanceS_A.balance());
         setOutput(balanceA_S_Index, balanceS_A.index());
-        setArrayOutput(balanceB_S_Address, feeTokenID.bits);
         setOutput(balanceA_B_Balance, balanceB_A.balance());
         setOutput(balanceA_B_Index, balanceB_A.index());
 
+        // Update the To account
         setArrayOutput(accountB_Address, toAccountID.bits);
         setOutput(accountB_Owner, to.packed);
 
-        setArrayOutput(balanceA_S_Address, tokenID.bits);
+        // Update the To balance (transfer)
         setOutput(balanceB_B_Balance, balanceB_B.balance());
         setOutput(balanceB_B_Index, balanceB_B.index());
 
+        // Update the operator balance for the fee payment
         setOutput(balanceO_A_Balance, balanceA_O.balance());
         setOutput(balanceO_A_Index, balanceA_O.index());
 
+        // Verify 2 signatures (one of the payer, one of the dual author)
         setOutput(hash_A, hashPayer.result());
-
         setOutput(hash_B, hashDual.result());
         setOutput(publicKeyX_B, resolvedDualAuthorX.result());
         setOutput(publicKeyY_B, resolvedDualAuthorY.result());
-
         setOutput(signatureRequired_A, needsSignature.result());
         setOutput(signatureRequired_B, needsSignature.result());
 
+        // Increase the number of conditional transactions (if conditional)
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
 

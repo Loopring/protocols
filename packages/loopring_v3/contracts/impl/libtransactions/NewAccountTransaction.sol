@@ -72,7 +72,6 @@ library NewAccountTransaction
         uint newWalletHash = data.toUint(offset);
         offset += 32;
 
-
         // Calculate the tx hash
         bytes32 txHash = EIP712.hashPacked(
             ctx.DOMAIN_SEPARATOR,

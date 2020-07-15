@@ -554,7 +554,7 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (bool);
 
-    /// @dev Approves an offchain transfer.
+    /// @dev Approves an offchain transfer. Helper function around `approveTransaction`.
     ///      Important! This is just an approval, the operator has full control
     ///      whether the transfer will actally be done!
     ///
@@ -566,7 +566,8 @@ abstract contract IExchangeV3 is IExchange
     /// @param amount The amount of tokens to be transferred.
     /// @param feeToken The address of the token used for the fee ('0x0' for ETH).
     /// @param fee The fee for the transfer.
-    /// @param fee The nonce.
+    /// @param data Custom data for the transfer.
+    /// @param nonce The nonce.
     function approveOffchainTransfer(
         address from,
         address to,
@@ -574,6 +575,7 @@ abstract contract IExchangeV3 is IExchange
         uint96  amount,
         address feeToken,
         uint96  fee,
+        uint    data,
         uint32  nonce
         )
         external
@@ -613,7 +615,7 @@ abstract contract IExchangeV3 is IExchange
 
     /// @dev Checks if a rollup tx is approved using the tx's hash.
     ///
-    /// @param owner The owner of the account
+    /// @param owner The owner of the account that needs to authorize the tx
     /// @param txHash The hash of the transaction
     /// @return True if the tx is approved, else false
     function isTransactionApproved(

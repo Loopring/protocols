@@ -72,9 +72,23 @@ contract("Exchange", (accounts: string[]) => {
       // Create a new account with a keypair and wallet
       await ctx.requestNewAccount(ownerA, token, fee, ownerD, ctx.getKeyPairEDDSA(), wallet);
 
+      // Create a new account with an onchain approval
+      await ctx.requestNewAccount(ownerA, token, fee, ownerD, ctx.getKeyPairEDDSA(), wallet, {authMethod: AuthMethod.APPROVE});
+
       // Submit
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
+
+
+      // Try to create a new account without approval
+      await ctx.requestNewAccount(ownerA, token, fee, ownerD, ctx.getKeyPairEDDSA(), undefined, {authMethod: AuthMethod.NONE});
+
+      // Submit
+      await ctx.submitTransactions();
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "TX_NOT_APPROVED"
+      );
     });
 
     it("Should be able to update an account", async () => {
@@ -128,6 +142,17 @@ contract("Exchange", (accounts: string[]) => {
       // Submit
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
+
+
+      // Try to update the account without approval
+      await ctx.requestAccountUpdate(ownerB, token, fee, newKeyPair, wallet, {authMethod: AuthMethod.NONE});
+
+      // Submit
+      await ctx.submitTransactions();
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "TX_NOT_APPROVED"
+      );
     });
 
     it("Should be able to change the account owner", async () => {
@@ -185,6 +210,17 @@ contract("Exchange", (accounts: string[]) => {
       // Submit
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
+
+
+      // Try to change owner without approval
+      await ctx.requestOwnerChange(newOwner, token, fee, ownerA, {authMethod: AuthMethod.NONE});
+
+      // Submit
+      await ctx.submitTransactions();
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "TX_NOT_APPROVED"
+      );
     });
   });
 });

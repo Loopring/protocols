@@ -160,6 +160,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
             fastWithdrawal.amount,
             fastWithdrawal.feeToken,
             fastWithdrawal.fee,
+            0,
             fastWithdrawal.nonce
         );
     }

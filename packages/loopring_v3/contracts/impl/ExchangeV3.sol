@@ -517,6 +517,7 @@ contract ExchangeV3 is IExchangeV3
         uint96  amount,
         address feeToken,
         uint96  fee,
+        uint    data,
         uint32  nonce
         )
         external
@@ -534,11 +535,11 @@ contract ExchangeV3 is IExchangeV3
             amount,
             feeTokenID,
             fee,
-            0,
+            data,
             nonce
         );
         state.approvedTx[from][transactionHash] = true;
-        emit TransactionApproved(owner, transactionHash);
+        emit TransactionApproved(from, transactionHash);
     }
 
     function onchainTransferFrom(

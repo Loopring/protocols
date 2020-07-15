@@ -17,7 +17,7 @@ interface AccountUpdate {
 }
 
 /**
- * Processes deposit requests.
+ * Processes account update requests.
  */
 export class AccountUpdateProcessor {
   public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {

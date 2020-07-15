@@ -123,7 +123,7 @@ contract("Exchange", (accounts: string[]) => {
           }
           for (const ring of rings) {
             await exchangeTestUtil.setupRing(ring);
-            await exchangeTestUtil.sendRing(exchangeId, ring);
+            await exchangeTestUtil.sendRing(ring);
           }
           await exchangeTestUtil.submitTransactions();
         }
@@ -192,7 +192,7 @@ contract("Exchange", (accounts: string[]) => {
       }
     });
 
-    it("Multiple txs", async () => {
+    it("All transaction types in a single block", async () => {
       const ringA: SpotTrade = {
         orderA: {
           tokenS: "ETH",
@@ -242,8 +242,8 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA);
       await exchangeTestUtil.setupRing(ringB);
-      await exchangeTestUtil.sendRing(exchangeId, ringA);
-      await exchangeTestUtil.sendRing(exchangeId, ringB);
+      await exchangeTestUtil.sendRing(ringA);
+      await exchangeTestUtil.sendRing(ringB);
 
       const token = "ETH";
       const feeToken = "LRC";
@@ -275,11 +275,8 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.requestOwnerChange(ownerE, "ETH", new BN(0), ownerF);
 
-      await exchangeTestUtil.submitTransactions();
-
+      await exchangeTestUtil.submitTransactions(24);
       await verify();
-
-      assert(false);
     });
   });
 });

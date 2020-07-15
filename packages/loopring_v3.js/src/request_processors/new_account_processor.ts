@@ -17,7 +17,7 @@ interface NewAccount {
 }
 
 /**
- * Processes deposit requests.
+ * Processes new account requests.
  */
 export class NewAccountProcessor {
   public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {

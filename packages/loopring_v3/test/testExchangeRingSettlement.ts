@@ -64,7 +64,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -95,7 +95,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -126,7 +126,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -173,7 +173,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await exchangeTestUtil.setupRing(ringA, false, true);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(ringA);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -268,8 +268,8 @@ contract("Exchange", (accounts: string[]) => {
         ringB.orderB.amountB
       );
 
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.sendRing(ringA);
+      await exchangeTestUtil.sendRing(ringB);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -337,7 +337,7 @@ contract("Exchange", (accounts: string[]) => {
         ringA.orderB.amountB
       );
 
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(ringA);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -432,8 +432,8 @@ contract("Exchange", (accounts: string[]) => {
         ringB.orderB.amountB
       );
 
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.sendRing(ringA);
+      await exchangeTestUtil.sendRing(ringB);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -527,8 +527,8 @@ contract("Exchange", (accounts: string[]) => {
         ringB.orderB.amountB
       );
 
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.sendRing(ringA);
+      await exchangeTestUtil.sendRing(ringB);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -616,8 +616,8 @@ contract("Exchange", (accounts: string[]) => {
         ringA.orderB.amountB
       );
 
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.sendRing(ringA);
+      await exchangeTestUtil.sendRing(ringB);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -672,7 +672,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -713,7 +713,7 @@ contract("Exchange", (accounts: string[]) => {
         ring.orderB.amountB
       );
 
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -763,7 +763,7 @@ contract("Exchange", (accounts: string[]) => {
         ring.orderB.amountB
       );
 
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -795,7 +795,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
@@ -825,7 +825,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -855,7 +855,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -885,7 +885,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -917,7 +917,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -950,7 +950,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -983,7 +983,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
@@ -1015,7 +1015,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
@@ -1054,7 +1054,7 @@ contract("Exchange", (accounts: string[]) => {
       ring.orderB.signature = undefined;
       exchangeTestUtil.signOrder(ring.orderB);
 
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -1082,7 +1082,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -1113,7 +1113,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
@@ -1143,7 +1143,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
@@ -1168,7 +1168,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       exchangeTestUtil.setActiveOperator(ring.orderB.accountID);
 
@@ -1209,7 +1209,7 @@ contract("Exchange", (accounts: string[]) => {
       ring.orderB.signature = undefined;
       exchangeTestUtil.signOrder(ring.orderB);
 
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       exchangeTestUtil.setActiveOperator(ring.orderA.accountID);
 
@@ -1235,7 +1235,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
@@ -1260,7 +1260,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
@@ -1286,7 +1286,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
@@ -1316,7 +1316,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
@@ -1346,7 +1346,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
@@ -1404,8 +1404,8 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA);
       await exchangeTestUtil.setupRing(ringB);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.sendRing(ringA);
+      await exchangeTestUtil.sendRing(ringB);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -1459,8 +1459,8 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, false, true);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.sendRing(ringA);
+      await exchangeTestUtil.sendRing(ringB);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -1513,12 +1513,12 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(ringA);
       await exchangeTestUtil.submitTransactions();
       await verify();
 
       await exchangeTestUtil.setupRing(ringB);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.sendRing(ringB);
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
         "invalid block"
@@ -1649,11 +1649,11 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ringC);
       await exchangeTestUtil.setupRing(ringD);
       await exchangeTestUtil.setupRing(ringE);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
-      await exchangeTestUtil.sendRing(exchangeID, ringC);
-      await exchangeTestUtil.sendRing(exchangeID, ringD);
-      await exchangeTestUtil.sendRing(exchangeID, ringE);
+      await exchangeTestUtil.sendRing(ringA);
+      await exchangeTestUtil.sendRing(ringB);
+      await exchangeTestUtil.sendRing(ringC);
+      await exchangeTestUtil.sendRing(ringD);
+      await exchangeTestUtil.sendRing(ringE);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -1707,12 +1707,12 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(ringA);
       await exchangeTestUtil.submitTransactions();
       await verify();
 
       await exchangeTestUtil.setupRing(ringB);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.sendRing(ringB);
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
         "invalid block"
@@ -1765,12 +1765,12 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(ringA);
       await exchangeTestUtil.submitTransactions();
       await verify();
 
       await exchangeTestUtil.setupRing(ringB);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.sendRing(ringB);
       await expectThrow(
         exchangeTestUtil.submitTransactions(),
         "invalid block"

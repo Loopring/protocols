@@ -343,14 +343,14 @@ contract("BlockVerifier", (accounts: string[]) => {
       // Create some blocks
       for (let i = 0; i < 2; i++) {
         const ring = await setupRandomRing();
-        await exchangeTestUtil.sendRing(exchangeId, ring);
+        await exchangeTestUtil.sendRing(ring);
       }
       commitBlocksSize1.push(
         ...(await exchangeTestUtil.submitTransactions(2))
       );
       for (let i = 0; i < 2; i++) {
         const ring = await setupRandomRing();
-        await exchangeTestUtil.sendRing(exchangeId, ring);
+        await exchangeTestUtil.sendRing(ring);
       }
       settlementBlocksSize1.push(
         ...(await exchangeTestUtil.submitTransactions(2))
@@ -358,14 +358,14 @@ contract("BlockVerifier", (accounts: string[]) => {
 
       for (let i = 0; i < 2; i++) {
         const ring = await setupRandomRing();
-        await exchangeTestUtil.sendRing(exchangeId, ring);
+        await exchangeTestUtil.sendRing(ring);
       }
       commitBlocksSize2.push(
         ...(await exchangeTestUtil.submitTransactions(4))
       );
       for (let i = 0; i < 2; i++) {
         const ring = await setupRandomRing();
-        await exchangeTestUtil.sendRing(exchangeId, ring);
+        await exchangeTestUtil.sendRing(ring);
       }
       settlementBlocksSize2.push(
         ...(await exchangeTestUtil.submitTransactions(4))

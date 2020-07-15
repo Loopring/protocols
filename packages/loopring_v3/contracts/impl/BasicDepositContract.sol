@@ -110,10 +110,12 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
             }
         }
 
+        uint exchangeBalanceBefore = exchangeBalance[token];
         // Keep track how many tokens are deposited in the exchange
-        exchangeBalance[token] = exchangeBalance[token].add(amount);
+        uint exchangeBalanceAfter = exchangeBalanceBefore.add(amount);
         // Make sure the total max amount per token in the exchange is capped
-        require(exchangeBalance[token] <= MAX_TOTAL_TOKEN_BALANCE, "MAX_AMOUNT_REACHED");
+        require(exchangeBalanceAfter <= MAX_TOTAL_TOKEN_BALANCE, "MAX_AMOUNT_REACHED");
+        exchangeBalance[token] = exchangeBalanceAfter;
 
         actualAmount = amount;
         tokenIndex = INDEX_BASE;

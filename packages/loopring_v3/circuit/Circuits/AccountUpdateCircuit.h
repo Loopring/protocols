@@ -105,23 +105,27 @@ public:
         // Increase the number of conditional transactions (if conditional)
         numConditionalTransactionsAfter(pb, state.numConditionalTransactions, isConditional.result(), FMT(prefix, ".numConditionalTransactionsAfter"))
     {
+        // Update the account data
         setArrayOutput(accountA_Address, accountID.bits);
         setOutput(accountA_PublicKeyX, publicKeyX);
         setOutput(accountA_PublicKeyY, publicKeyY);
         setOutput(accountA_WalletHash, walletHash.packed);
         setOutput(accountA_Nonce, nonce_after.result());
 
+        // Update the account balance for the fee payment
         setArrayOutput(balanceA_S_Address, feeTokenID.bits);
         setOutput(balanceA_S_Balance, balanceS_A.balance());
         setOutput(balanceA_S_Index, balanceS_A.index());
-
+        // Update the operator balance for the fee payment
         setOutput(balanceO_B_Balance, balanceB_O.balance());
         setOutput(balanceO_B_Index, balanceB_O.index());
 
+        // We need a single signature of the account that's being updated if not conditional
         setOutput(hash_A, hash.result());
         setOutput(signatureRequired_A, needsSignature.result());
         setOutput(signatureRequired_B, state.constants._0);
 
+        // Increase the number of conditional transactions (if conditional)
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
 

@@ -110,7 +110,7 @@ library ExchangeTokens
         ExchangeData.State storage S,
         address tokenAddress
         )
-        public
+        internal  // inline call
         view
         returns (uint16 tokenID)
     {

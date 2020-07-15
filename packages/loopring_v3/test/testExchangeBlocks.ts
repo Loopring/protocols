@@ -48,7 +48,7 @@ contract("Exchange", (accounts: string[]) => {
     };
     await exchangeTestUtil.setupRing(ring);
     if (send) {
-      await exchangeTestUtil.sendRing(exchangeId, ring);
+      await exchangeTestUtil.sendRing(ring);
     }
     return ring;
   };

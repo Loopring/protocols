@@ -114,7 +114,7 @@ library OwnerChangeTransaction
         }
 
         if (auxData.walletAddress == address(0)) {
-            // We also allow the owner of the account to change when authorized by the current owner.
+            // We allow the owner of the account to change when authorized by the current owner.
             // Verify the signature if one is provided, otherwise fall back to an approved tx
             if (auxData.signatureOldOwner.length > 0) {
                 require(txHash.verifySignature(ownerChange.owner, auxData.signatureOldOwner), "INVALID_SIGNATURE");
@@ -123,7 +123,7 @@ library OwnerChangeTransaction
                 S.approvedTx[ownerChange.owner][txHash] = false;
             }
         } else {
-            require(auxData.walletAddress != address(S.depositContract), "INVALID_WALLET_ADDRESS");
+            // If the account has a wallet, use it to recover the account
             require(ownerChange.walletHash != 0, "ACCOUNT_HAS_NO_WALLET");
 
             // Calculate the wallet hash

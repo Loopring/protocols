@@ -107,26 +107,31 @@ public:
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter(pb, state.numConditionalTransactions, state.constants._1, FMT(prefix, ".numConditionalTransactionsAfter"))
     {
+        // Update the nonce of the payer
         setArrayOutput(accountA_Address, payerAccountID.bits);
         setOutput(accountA_Nonce, nonce_after.result());
 
+        // Update the account of the newly created account
         setArrayOutput(accountB_Address, newAccountID.bits);
         setOutput(accountB_Owner, newOwner.packed);
         setOutput(accountB_PublicKeyX, newPublicKeyX);
         setOutput(accountB_PublicKeyY, newPublicKeyY);
         setOutput(accountB_WalletHash, walletHash.packed);
 
+        // Update the account balance of the payer for the fee payment
         setArrayOutput(balanceA_S_Address, feeTokenID.bits);
         setOutput(balanceA_S_Balance, balanceS_A.balance());
         setOutput(balanceA_S_Index, balanceS_A.index());
-
+        // Update the operator balance for the fee payment
         setOutput(balanceO_B_Balance, balanceB_O.balance());
         setOutput(balanceO_B_Index, balanceB_O.index());
 
+        // We need a single signature of the payer
         setOutput(hash_A, hash.result());
         setOutput(signatureRequired_A, state.constants._1);
         setOutput(signatureRequired_B, state.constants._0);
 
+        // Increase the number of conditional transactions
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
 

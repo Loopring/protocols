@@ -66,17 +66,21 @@ public:
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter(pb, state.numConditionalTransactions, state.constants._1, FMT(prefix, ".numConditionalTransactionsAfter"))
     {
+        // Update the account balance and index
         setArrayOutput(accountA_Address, accountID.bits);
         setOutput(accountA_Owner, owner.packed);
         setArrayOutput(balanceA_S_Address, tokenID.bits);
         setOutput(balanceA_S_Balance, balance_after.result());
         setOutput(balanceA_S_Index, newIndex.result());
 
+        // Update the index in the index account
         setOutput(index_B, newIndex.result());
 
+        // No singatures needed
         setOutput(signatureRequired_A, state.constants._0);
         setOutput(signatureRequired_B, state.constants._0);
 
+        // Increase the number of conditional transactions
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
 

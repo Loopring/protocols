@@ -47,9 +47,7 @@ import {
   WithdrawalRequest,
   NewAccount,
   Wallet,
-  Guardian,
-  OwnerChange,
-  PermissionData
+  OwnerChange
 } from "./types";
 
 
@@ -107,6 +105,10 @@ export interface WithdrawOptions {
   gas?: number;
   data?: string;
   signer?: string;
+}
+
+export interface NewAccountOptions {
+  authMethod?: AuthMethod;
 }
 
 export interface AccountUpdateOptions {
@@ -903,9 +905,33 @@ export class ExchangeTestUtil {
       transfer.onchainSignature = await sign(signer, hash, SignatureType.EIP_712);
       await verifySignature(signer, hash, transfer.onchainSignature);
     } else if (authMethod === AuthMethod.APPROVE) {
-      //await this.approveOffchainTransfer(from, to, token, amount);
       const txHash = TransferUtils.getHash(transfer, this.exchange.address);
-      await this.exchange.approveTransaction(signer, txHash, {from: signer});
+
+      // Randomly approve using approveOffchainTransfer/approveTransaction
+      const toggle = this.getRandomBool();
+      if (toggle) {
+        await this.exchange.approveOffchainTransfer(
+          signer,
+          transfer.to,
+          token,
+          transfer.amount,
+          feeToken,
+          transfer.fee,
+          transfer.data,
+          transfer.nonce,
+          {from: signer}
+        );
+      } else {
+        await this.exchange.approveTransaction(signer, txHash, {from: signer});
+      }
+      // Verify the transaction has been approved
+      // Check the event
+      const event = await this.assertEventEmitted(this.exchange, "TransactionApproved");
+      assert.equal(event.owner, signer, "unexpected tx owner");
+      assert.equal(event.transactionHash, "0x" + txHash.toString("hex"), "unexpected tx hasg");
+      // Check the exchange state
+      const isApproved = await this.exchange.isTransactionApproved(signer, txHash);
+      assert(isApproved, "tx not approved");
     }
 
     this.pendingTransactions[this.exchangeId].push(transfer);
@@ -1370,9 +1396,13 @@ export class ExchangeTestUtil {
     fee: BN,
     newOwner: string,
     keyPair: any,
-    wallet?: Wallet
+    wallet?: Wallet,
+    options: NewAccountOptions = {}
   ) {
     fee = roundToFloatValue(fee, Constants.Float16Encoding);
+
+    // Fill in defaults
+    const authMethod = options.authMethod !== undefined  ? options.authMethod : AuthMethod.ECDSA;
 
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
@@ -1413,9 +1443,15 @@ export class ExchangeTestUtil {
     };
     newAccount.signature = NewAccountUtils.sign(payerAccount, newAccount);
 
-    const hash = NewAccountUtils.getHash(newAccount, this.exchange.address);
-    newAccount.onchainSignature = await sign(newOwner, hash, SignatureType.EIP_712);
-    await verifySignature(newOwner, hash, newAccount.onchainSignature);
+    // Let the new owner sign the new account data
+    if (authMethod === AuthMethod.ECDSA) {
+      const hash = NewAccountUtils.getHash(newAccount, this.exchange.address);
+      newAccount.onchainSignature = await sign(newOwner, hash, SignatureType.EIP_712);
+      await verifySignature(newOwner, hash, newAccount.onchainSignature);
+    } else if (authMethod === AuthMethod.APPROVE) {
+      const hash = NewAccountUtils.getHash(newAccount, this.exchange.address);
+      await this.exchange.approveTransaction(newOwner, hash, {from: newOwner});
+    }
 
     this.pendingTransactions[this.exchangeId].push(newAccount);
     return newAccount;
@@ -1552,9 +1588,9 @@ export class ExchangeTestUtil {
     return ownerChange;
   }
 
-  public sendRing(exchangeID: number, ring: SpotTrade) {
+  public sendRing(ring: SpotTrade) {
     ring.txType = "SpotTrade";
-    this.pendingTransactions[exchangeID].push(ring);
+    this.pendingTransactions[this.exchangeId].push(ring);
   }
 
   public ensureDirectoryExists(filePath: string) {
@@ -2045,11 +2081,11 @@ export class ExchangeTestUtil {
           auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
         } else if (transaction.txType === "NewAccount") {
           numConditionalTransactions++;
-          auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature)]);
+          auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature ? transaction.onchainSignature : "0x")]);
         } else if (transaction.txType === "AccountUpdate") {
           if (transaction.type > 0) {
             numConditionalTransactions++;
-            auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature)]);
+            auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature ? transaction.onchainSignature : "0x")]);
           }
         } else if (transaction.txType === "OwnerChange") {
           numConditionalTransactions++;
@@ -2296,63 +2332,6 @@ export class ExchangeTestUtil {
       this.tokenIDToAddressMap.set(tokenID, tokenAddress);
     }
     // console.log(this.tokenIDMap);
-  }
-
-  public async approveOffchainTransfer(
-    from: string,
-    to: string,
-    token: string,
-    amount: BN
-  ) {
-    if (!token.startsWith("0x")) {
-      token = this.testContext.tokenSymbolAddrMap.get(token);
-    }
-
-    // Get approved amount before
-    const approvedBefore = await this.exchange.getApprovedTransferAmount(
-      from,
-      to,
-      token
-    );
-
-    await this.exchange.approveOffchainTransfer(from, to, token, amount, {
-      from
-    });
-
-    // Check approved amount after
-    const approvedAfter = await this.exchange.getApprovedTransferAmount(
-      from,
-      to,
-      token
-    );
-    assert(
-      approvedAfter.eq(approvedBefore.add(amount)),
-      "approved amount unexpected"
-    );
-
-    // Check the event
-    const fromID = await this.getAccountID(from);
-    const toID = await this.getAccountID(to);
-    const tokenID = await this.getTokenID(token);
-    const event = await this.assertEventEmitted(
-      this.exchange,
-      "ConditionalTransferApproved"
-    );
-    assert.equal(
-      event.from,
-      fromID,
-      "ConditionalTransferApproved: unexpected from"
-    );
-    assert.equal(event.to, toID, "ConditionalTransferApproved: unexpected to");
-    assert.equal(
-      event.token,
-      tokenID,
-      "ConditionalTransferApproved: unexpected token"
-    );
-    assert(
-      event.amount.eq(amount),
-      "ConditionalTransferApproved: unexpected amount"
-    );
   }
 
   public async getTokenID(token: string) {
@@ -2948,9 +2927,13 @@ export class ExchangeTestUtil {
     return Math.floor(Math.random() * max);
   }
 
+  public getRandomBool() {
+    return this.getRandomInt(1000) >= 500;
+  }
+
   public getRandomMemo() {
-    const toggle = this.getRandomInt(1000);
-    if (toggle < 500) {
+    const toggle = this.getRandomBool();
+    if (toggle) {
       return "0";
     } else {
       return new BN(SHA256(Buffer.from("" + this.getRandomInt(1000)), "hex").toString("hex"), 16).shrn(3).toString(10);

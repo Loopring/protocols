@@ -50,9 +50,9 @@ library ExchangeDeposits
         address to,
         address tokenAddress,
         uint96  amount,                 // can be zero
-        bytes   calldata auxiliaryData
+        bytes   memory auxiliaryData
         )
-        external
+        internal  // inline call
     {
         require(to != address(0), "ZERO_ADDRESS");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");

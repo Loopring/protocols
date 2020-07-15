@@ -67,9 +67,9 @@ library WithdrawTransaction
         bytes auxiliaryData;
     }
 
-    event OnchainWithdrawalConsumed(
-        uint24  indexed owner,
-        uint16          token,
+    event ForcedWithdrawalConsumed(
+        uint24  indexed accountID,
+        uint16          tokenID,
         uint            amount
     );
 
@@ -119,6 +119,8 @@ library WithdrawTransaction
                 S.approvedTx[withdrawal.owner][txHash] = false;
             }
         } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
+            // Forced withdrawals cannot make use of certain features because the
+            // necessary data is not authorized by the account owner.
             require(withdrawal.owner == withdrawal.to, "INVALID_WITHDRAWAL_ADDRESS");
             require(withdrawal.fee == 0, "FEE_NOT_ZERO");
             require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
@@ -147,13 +149,15 @@ library WithdrawTransaction
                 // Open up a slot
                 S.numPendingForcedTransactions--;
 
-                emit OnchainWithdrawalConsumed(withdrawal.accountID, withdrawal.tokenID, withdrawal.amount);
+                emit ForcedWithdrawalConsumed(withdrawal.accountID, withdrawal.tokenID, withdrawal.amount);
             }
         } else {
             revert("INVALID_WITHDRAWAL_TYPE");
         }
 
+        // Validate gas provided
         require(auxData.gasLimit >= withdrawal.minGas, "INVALID_GAS_AMOUNT");
+        // Validate the auxixliary withdrawal data
         if (withdrawal.dataHash == bytes32(0)) {
             require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
         } else {

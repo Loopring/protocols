@@ -109,6 +109,7 @@ public:
         protocolFeeA_from_balanceAO_to_balanceAP(pb, balanceA_O, balanceA_P, feeCalculatorA.getProtocolFee(), FMT(prefix, ".protocolFeeA_from_balanceAO_to_balanceAP")),
         protocolFeeB_from_balanceBO_to_balanceBP(pb, balanceB_O, balanceB_P, feeCalculatorB.getProtocolFee(), FMT(prefix, ".protocolFeeB_from_balanceBO_to_balanceBP"))
     {
+        // Update account A
         setArrayOutput(tradeHistoryA_Address, subArray(orderA.orderID.bits, 0, NUM_BITS_TRADING_HISTORY));
         setOutput(tradeHistoryA_Filled, orderMatching.getFilledAfter_A());
         setOutput(tradeHistoryA_OrderId, orderA.orderID.packed);
@@ -120,6 +121,7 @@ public:
         setOutput(balanceA_B_Index, balanceB_A.index());
         setArrayOutput(accountA_Address, orderA.accountID.bits);
 
+        // Update account B
         setArrayOutput(tradeHistoryB_Address, subArray(orderB.orderID.bits, 0, NUM_BITS_TRADING_HISTORY));
         setOutput(tradeHistoryB_Filled, orderMatching.getFilledAfter_B());
         setOutput(tradeHistoryB_OrderId, orderB.orderID.packed);
@@ -130,16 +132,19 @@ public:
         setOutput(balanceB_B_Index, balanceB_B.index());
         setArrayOutput(accountB_Address, orderB.accountID.bits);
 
+        // Update balances of the protocol fee pool
         setOutput(balanceP_A_Balance, balanceA_P.balance());
         setOutput(balanceP_A_Index, balanceA_P.index());
         setOutput(balanceP_B_Balance, balanceB_P.balance());
         setOutput(balanceP_B_Index, balanceB_P.index());
 
+        // Update the balance of the operator
         setOutput(balanceO_A_Balance, balanceA_O.balance());
         setOutput(balanceO_A_Index, balanceA_O.index());
         setOutput(balanceO_B_Balance, balanceB_O.balance());
         setOutput(balanceO_B_Index, balanceB_O.index());
 
+        // A signature is required for each order
         setOutput(hash_A, orderA.hash.result());
         setOutput(hash_B, orderB.hash.result());
     }

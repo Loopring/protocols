@@ -303,7 +303,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();

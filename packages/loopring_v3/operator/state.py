@@ -788,10 +788,6 @@ class State(object):
             newState.balanceA_S_Balance = (updatedBalance + depositedAmount) - int(balanceLeaf.balance)
             newState.balanceA_S_Index = str(newIndex)
 
-            #newState.balanceA_B_Address = txInput.tokenID
-            #newState.balanceA_B_Index = str(newIndex)
-
-            #newState.indexA_I = str(newIndex)
             newState.indexB_I = str(newIndex)
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
@@ -978,9 +974,6 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(newState.accountB_Address))
         proof = self._accountsTree.createProof(newState.accountB_Address)
 
-        #print("newState.balanceA_S_Address: " + str(newState.balanceA_S_Address))
-        #print("newState.balanceB_S_Address: " + str(newState.balanceB_S_Address))
-
         (balanceUpdateS_B, tradeHistoryUpdate_B) = accountB.updateBalanceAndTradeHistory(
             newState.balanceB_S_Address,
             newState.tradeHistoryB_OrderId,
@@ -1038,10 +1031,6 @@ class State(object):
         balanceUpdateA_P = self.getAccount(0).updateBalance(newState.balanceB_S_Address, newState.balanceDeltaA_P, None, newState.balanceA_P_AutoApplyIndex)
         balanceUpdateB_P = self.getAccount(0).updateBalance(newState.balanceA_S_Address, newState.balanceDeltaB_P, None, newState.balanceB_P_AutoApplyIndex)
         ###
-
-
-        #print("newState.balanceA_O_AutoApplyIndex: " + str(newState.balanceA_O_AutoApplyIndex))
-        #print("newState.balanceB_O_AutoApplyIndex: " + str(newState.balanceB_O_AutoApplyIndex))
 
         witness = Witness(newState.signatureA, newState.signatureB,
                           accountsMerkleRoot,
