@@ -29,9 +29,6 @@ contract ControllerImpl is Claimable, Controller
     SecurityStore       public securityStore;
     WhitelistStore      public whitelistStore;
 
-    // Make sure this value if false in production env.
-    bool                public allowChangingWalletFactory;
-
     event AddressChanged(
         string  indexed name,
         address         addr
@@ -49,8 +46,7 @@ contract ControllerImpl is Claimable, Controller
         NonceStore        _nonceStore,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
-        WhitelistStore    _whitelistStore,
-        bool              _allowChangingWalletFactory
+        WhitelistStore    _whitelistStore
         )
         public
     {
@@ -70,7 +66,6 @@ contract ControllerImpl is Claimable, Controller
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
-        allowChangingWalletFactory = _allowChangingWalletFactory;
     }
 
     function setCollectTo(address _collectTo)
@@ -94,10 +89,11 @@ contract ControllerImpl is Claimable, Controller
         external
         onlyOwner
     {
-        require(
-            allowChangingWalletFactory || walletFactory == address(0),
-            "INITIALIZED_ALREADY"
-        );
+        if (walletFactory != address(0)) {
+            uint _chainid;
+            assembly { _chainid := chainid() }
+            require(_chainid != 1, "PROHIBITED_ON_MAINNET");
+        }
         require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
         emit AddressChanged("WalletFactory", walletFactory);

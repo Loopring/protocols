@@ -41,8 +41,7 @@ module.exports = function(deployer, network, accounts) {
               NonceStore.address,
               QuotaStore.address,
               SecurityStore.address,
-              WhitelistStore.address,
-              true
+              WhitelistStore.address
             )
           ]);
         })
