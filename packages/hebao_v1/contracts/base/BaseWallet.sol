@@ -45,6 +45,8 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
+    /// @dev We need to make sure the Factory address cannot be changed without wallet owner's
+    ///      explicit authorization.
     modifier onlyFromFactoryOrModule
     {
         require(
