@@ -2,7 +2,6 @@
 pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
-import "../lib/ERC1271.sol";
 import "../thirdparty/BytesUtil.sol";
 import "./AddressUtil.sol";
 import "./MathUint.sol";
@@ -27,6 +26,8 @@ library SignatureUtil
         ETH_SIGN,
         WALLET   // deprecated
     }
+    
+    bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
 
     bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES_SELECTOR = bytes4(
         keccak256(bytes("isValidSignature(bytes,bytes)"))
@@ -35,8 +36,6 @@ library SignatureUtil
     bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES32_SELECTOR = bytes4(
         keccak256(bytes("isValidSignature(bytes32,bytes)"))
     );
-
-    bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
     
     function verifySignatures(
         bytes32   signHash,
