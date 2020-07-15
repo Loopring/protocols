@@ -32,9 +32,9 @@ contract ControllerImpl is Claimable, Controller
     // Make sure this value if false in production env.
     bool                public allowChangingWalletFactory;
 
-    event ValueChanged(
+    event AddressChanged(
         string  indexed name,
-        address indexed addr
+        address         addr
     );
 
     constructor(
@@ -79,7 +79,7 @@ contract ControllerImpl is Claimable, Controller
     {
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;
-        emit ValueChanged("CollectTo", collectTo);
+        emit AddressChanged("CollectTo", collectTo);
     }
 
     function setPriceOracle(PriceOracle _priceOracle)
@@ -87,7 +87,7 @@ contract ControllerImpl is Claimable, Controller
         onlyOwner
     {
         priceOracle = _priceOracle;
-        emit ValueChanged("PriceOracle", address(priceOracle));
+        emit AddressChanged("PriceOracle", address(priceOracle));
     }
 
     function initWalletFactory(address _walletFactory)
@@ -100,6 +100,6 @@ contract ControllerImpl is Claimable, Controller
         );
         require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
-        emit ValueChanged("WalletFactory", walletFactory);
+        emit AddressChanged("WalletFactory", walletFactory);
     }
 }
