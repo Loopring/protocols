@@ -2,6 +2,8 @@
 pragma solidity ^0.6.10;
 
 abstract contract ERC1271 {
+    // bytes4(keccak256("isValidSignature(bytes,bytes)")
+    bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
 
     bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES_SELECTOR = bytes4(
         keccak256(bytes("isValidSignature(bytes,bytes)"))
@@ -10,9 +12,6 @@ abstract contract ERC1271 {
     bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES32_SELECTOR = bytes4(
         keccak256(bytes("isValidSignature(bytes32,bytes)"))
     );
-
-    // bytes4(keccak256("isValidSignature(bytes,bytes)")
-    bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
 
     /**
      * @dev Should return whether the signature provided is valid for the provided data
