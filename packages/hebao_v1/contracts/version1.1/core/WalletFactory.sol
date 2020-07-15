@@ -124,7 +124,10 @@ contract WalletFactory is ReentrancyGuard
         }
     }
 
-    function registerReverseENS(Wallet wallet, BaseENSManager ensManager)
+    function registerReverseENS(
+        Wallet         wallet,
+        BaseENSManager ensManager
+        )
         internal
     {
         bytes memory data = abi.encodeWithSelector(
