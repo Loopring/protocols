@@ -33,6 +33,7 @@ import "../libtransactions/AccountUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
 import "../libtransactions/WithdrawTransaction.sol";
 import "../libtransactions/OwnerChangeTransaction.sol";
+import "../libtransactions/NewAccountTransaction.sol";
 
 
 /// @title ExchangeBlocks.
@@ -283,6 +284,13 @@ library ExchangeBlocks
                     );
                 } else if (txType == ExchangeData.TransactionType.DEPOSIT) {
                     txFeeETH = DepositTransaction.process(
+                        S,
+                        ctx,
+                        txData,
+                        txAuxiliaryData[i].data
+                    );
+                } else if (txType == ExchangeData.TransactionType.NEW_ACCOUNT) {
+                    txFeeETH = NewAccountTransaction.process(
                         S,
                         ctx,
                         txData,

@@ -95,8 +95,7 @@ contract("Exchange", (accounts: string[]) => {
             new Array(18).fill(1)
           );
           const bs = new Bitstream();
-          //bs.addNumber(0, 1);
-          bs.addNumber(exchangeId + 1, 4);
+          bs.addAddress(exchangeTestUtil.blockVerifier.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           const block: OnchainBlock = {
@@ -112,7 +111,7 @@ contract("Exchange", (accounts: string[]) => {
             operator.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
               from: exchangeTestUtil.exchangeOperator
             }),
-            "INVALID_EXCHANGE_ID"
+            "INVALID_EXCHANGE"
           );
         });
 
@@ -127,8 +126,7 @@ contract("Exchange", (accounts: string[]) => {
             new Array(18).fill(1)
           );
           const bs = new Bitstream();
-          //bs.addNumber(0, 1);
-          bs.addNumber(exchangeId, 4);
+          bs.addAddress(exchange.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)), 32);
           const block: OnchainBlock = {
@@ -164,8 +162,7 @@ contract("Exchange", (accounts: string[]) => {
           timestamp -=
             exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
           const bs = new Bitstream();
-          //bs.addNumber(0, 1);
-          bs.addNumber(exchangeId, 4);
+          bs.addAddress(exchange.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.SNARK_SCALAR_FIELD, 32);
           bs.addNumber(timestamp, 4);
@@ -204,8 +201,7 @@ contract("Exchange", (accounts: string[]) => {
             timestamp -=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
             const bs = new Bitstream();
-            //bs.addNumber(0, 1);
-            bs.addNumber(exchangeId, 4);
+            bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
@@ -235,8 +231,7 @@ contract("Exchange", (accounts: string[]) => {
             timestamp +=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
             const bs = new Bitstream();
-            //bs.addNumber(0, 1);
-            bs.addNumber(exchangeId, 4);
+            bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
@@ -280,8 +275,7 @@ contract("Exchange", (accounts: string[]) => {
           // Invalid taker protocol fee
           {
             const bs = new Bitstream();
-            //bs.addNumber(0, 1);
-            bs.addNumber(exchangeId, 4);
+            bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
@@ -308,8 +302,7 @@ contract("Exchange", (accounts: string[]) => {
           // Invalid maker protocol fee
           {
             const bs = new Bitstream();
-            //bs.addNumber(0, 1);
-            bs.addNumber(exchangeId, 4);
+            bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);

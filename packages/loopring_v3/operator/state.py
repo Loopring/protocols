@@ -843,6 +843,8 @@ class State(object):
 
             newState.signatureA = txInput.signature
 
+            context.numConditionalTransactions = context.numConditionalTransactions + 1
+
         elif txInput.txType == "OwnerChange":
 
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)

@@ -196,6 +196,7 @@ export interface NewAccount {
   newWalletHash: string;
 
   signature?: any;
+  onchainSignature?: any;
 }
 
 export interface OwnerChange {

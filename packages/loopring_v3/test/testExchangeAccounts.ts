@@ -70,7 +70,7 @@ contract("Exchange", (accounts: string[]) => {
       await ctx.requestNewAccount(ownerA, token, fee, ownerC, ctx.getZeroKeyPairEDDSA(), undefined);
 
       // Create a new account with a keypair and wallet
-      await ctx.requestNewAccount(ownerA, token, fee, ownerD, ctx.getZeroKeyPairEDDSA(), wallet);
+      await ctx.requestNewAccount(ownerA, token, fee, ownerD, ctx.getKeyPairEDDSA(), wallet);
 
       // Submit
       await ctx.submitTransactions();

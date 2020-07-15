@@ -50,6 +50,8 @@ public:
 
     // Increase the nonce
     AddGadget nonce_after;
+    // Increase the number of conditional transactions
+    UnsafeAddGadget numConditionalTransactionsAfter;
 
     NewAccountCircuit(
         ProtoboardT& pb,
@@ -101,7 +103,9 @@ public:
         feePayment(pb, balanceS_A, balanceB_O, fFee.value(), FMT(prefix, ".feePayment")),
 
         // Increase the nonce
-        nonce_after(pb, state.accountA.account.nonce, state.constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonce_after"))
+        nonce_after(pb, state.accountA.account.nonce, state.constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonce_after")),
+        // Increase the number of conditional transactions
+        numConditionalTransactionsAfter(pb, state.numConditionalTransactions, state.constants._1, FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         setArrayOutput(accountA_Address, payerAccountID.bits);
         setOutput(accountA_Nonce, nonce_after.result());
@@ -122,6 +126,8 @@ public:
         setOutput(hash_A, hash.result());
         setOutput(signatureRequired_A, state.constants._1);
         setOutput(signatureRequired_B, state.constants._0);
+
+        setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
 
     void generate_r1cs_witness(const NewAccount& create)
@@ -159,6 +165,8 @@ public:
 
         // Increase the nonce
         nonce_after.generate_r1cs_witness();
+        // Increase the number of conditional transactions
+        numConditionalTransactionsAfter.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
@@ -194,6 +202,8 @@ public:
 
         // Increase the nonce
         nonce_after.generate_r1cs_constraints();
+        // Increase the number of conditional transactions
+        numConditionalTransactionsAfter.generate_r1cs_constraints();
     }
 
     const VariableArrayT getPublicData() const

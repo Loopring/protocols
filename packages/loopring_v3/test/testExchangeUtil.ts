@@ -498,6 +498,44 @@ export namespace OwnerChangeUtils {
 }
 
 export namespace NewAccountUtils {
+  export function toTypedData(update: NewAccount, verifyingContract: string) {
+    const typedData = {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" }
+        ],
+        NewAccount: [
+          { name: "accountID", type: "uint24" },
+          { name: "owner", type: "address" },
+          { name: "publicKey", type: "uint256" },
+          { name: "walletHash", type: "uint256" }
+        ]
+      },
+      primaryType: "NewAccount",
+      domain: {
+        name: "Loopring Protocol",
+        version: "3.6.0",
+        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
+        verifyingContract
+      },
+      message: {
+        accountID: update.newAccountID,
+        owner: update.newOwner,
+        publicKey: new BN(EdDSA.pack(update.newPublicKeyX, update.newPublicKeyY), 16),
+        walletHash: new BN(update.newWalletHash)
+      }
+    };
+    return typedData;
+  }
+
+  export function getHash(create: NewAccount, verifyingContract: string) {
+    const typedData = this.toTypedData(create, verifyingContract);
+    return sigUtil.TypedDataUtils.sign(typedData);
+  }
+
   export function sign(keyPair: any, create: NewAccount) {
     // Calculate hash
     const hasher = Poseidon.createHash(11, 6, 53);
@@ -1375,6 +1413,10 @@ export class ExchangeTestUtil {
     };
     newAccount.signature = NewAccountUtils.sign(payerAccount, newAccount);
 
+    const hash = NewAccountUtils.getHash(newAccount, this.exchange.address);
+    newAccount.onchainSignature = await sign(newOwner, hash, SignatureType.EIP_712);
+    await verifySignature(newOwner, hash, newAccount.onchainSignature);
+
     this.pendingTransactions[this.exchangeId].push(newAccount);
     return newAccount;
   }
@@ -2001,6 +2043,9 @@ export class ExchangeTestUtil {
         } else if (transaction.txType === "Deposit") {
           numConditionalTransactions++;
           auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+        } else if (transaction.txType === "NewAccount") {
+          numConditionalTransactions++;
+          auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature)]);
         } else if (transaction.txType === "AccountUpdate") {
           if (transaction.type > 0) {
             numConditionalTransactions++;
