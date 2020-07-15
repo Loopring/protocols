@@ -111,31 +111,35 @@ contract WalletFactory is ReentrancyGuard
 
         if (ensManager != address(0)) {
             if (bytes(_label).length > 0) {
-                BaseENSManager(ensManager).register(
+                registerENS(
                     _wallet,
+                    BaseENSManager(ensManager),
                     _label,
                     _labelApproval
                 );
-
-                registerReverseENS(w, BaseENSManager(ensManager));
             } else {
                 require(allowEmptyENS, "INVALID_ENS_LABEL");
             }
         }
     }
 
-    function registerReverseENS(
-        Wallet         wallet,
-        BaseENSManager ensManager
+    function registerENS(
+        address        wallet,
+        BaseENSManager ensManager,
+        string memory  label,
+        bytes  memory  labelApproval
         )
         internal
     {
+        ensManager.register(wallet, label, labelApproval);
+
         bytes memory data = abi.encodeWithSelector(
             ENSReverseRegistrar(0).claimWithResolver.selector,
             address(0), // the owner of the reverse record
             ensManager.ensResolver()
         );
-        wallet.transact(
+        
+        Wallet(wallet).transact(
             uint8(1),
             address(ensManager.getENSReverseRegistrar()),
             0, // value
