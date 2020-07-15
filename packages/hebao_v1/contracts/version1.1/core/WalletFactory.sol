@@ -57,7 +57,6 @@ contract WalletFactory is ReentrancyGuard
         allowEmptyENS = _allowEmptyENS;
     }
 
-    event logBytes32(bytes32 hash);
     function computeWalletAddress(
         address owner
         )
