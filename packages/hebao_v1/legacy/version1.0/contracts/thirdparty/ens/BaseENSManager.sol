@@ -126,6 +126,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         parts[1] = rootName.toSlice();
         string memory name = ".".toSlice().join(parts);
         bytes32 reverseNode = getENSReverseRegistrar().node(_owner);
+        getENSRegistry().setResolver(reverseNode, ensResolver);
         ENSResolver(ensResolver).setName(reverseNode, name);
 
         emit Registered(_owner, name);
