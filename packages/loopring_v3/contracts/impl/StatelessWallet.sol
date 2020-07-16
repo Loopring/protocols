@@ -26,7 +26,7 @@ import "../lib/SignatureUtil.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract StatelessWallet
 {
-    using SignatureUtil        for bytes32;
+    using SignatureUtil for bytes32;
 
     // bytes4(keccak256("transferOwnership(bytes,bytes)")
     bytes4 constant internal ERC1271_MAGICVALUE = 0xd1f21f4f;
