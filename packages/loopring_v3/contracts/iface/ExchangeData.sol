@@ -230,7 +230,7 @@ library ExchangeData
         ProtocolFeeData protocolFeeData;
 
         // Time when the exchange was shutdown
-        uint shutdownStartTime;
+        uint shutdownModeStartTime;
 
         // Time when the exchange has entered withdrawal mode
         uint withdrawalModeStartTime;

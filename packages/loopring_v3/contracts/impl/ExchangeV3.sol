@@ -621,8 +621,8 @@ contract ExchangeV3 is IExchangeV3
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
         require(!state.isShutdown(), "ALREADY_SHUTDOWN");
-        state.shutdownStartTime = now;
-        emit Shutdown(state.shutdownStartTime);
+        state.shutdownModeStartTime = now;
+        emit Shutdown(state.shutdownModeStartTime);
         return true;
     }
 

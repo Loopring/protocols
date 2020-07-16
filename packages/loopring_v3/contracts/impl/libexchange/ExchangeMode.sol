@@ -49,7 +49,7 @@ library ExchangeMode
         view
         returns (bool)
     {
-        return S.shutdownStartTime > 0;
+        return S.shutdownModeStartTime > 0;
     }
 
     function getNumAvailableForcedSlots(
