@@ -43,8 +43,8 @@ interface IDepositContract
     function deposit(
         address from,
         address token,
-        uint amount,
-        bytes calldata auxiliaryData
+        uint    amount,
+        bytes   calldata auxiliaryData
         )
         external
         payable
@@ -70,8 +70,8 @@ interface IDepositContract
     function withdraw(
         address to,
         address token,
-        uint amount,
-        bytes calldata auxiliaryData
+        uint    amount,
+        bytes   calldata auxiliaryData
         )
         external;
 
