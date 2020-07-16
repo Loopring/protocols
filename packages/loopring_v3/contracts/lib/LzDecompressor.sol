@@ -37,9 +37,8 @@ library LzDecompressor
         )
         internal
         pure
-        returns (bytes memory)
+        returns (bytes memory uncompressed)
     {
-        bytes memory uncompressed;
         assembly {
             uncompressed := mload(0x40)
             let ptr := add(uncompressed, 32)
@@ -117,6 +116,5 @@ library LzDecompressor
             // Update free memory pointer
             mstore(0x40, add(ptr, 0x20))
         }
-        return uncompressed;
     }
 }
