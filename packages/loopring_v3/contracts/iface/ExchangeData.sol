@@ -35,27 +35,27 @@ library ExchangeData
         NOOP,
         SPOT_TRADE,
         DEPOSIT,
-        NEW_ACCOUNT,
         WITHDRAWAL,
-        ACCOUNT_UPDATE,
         TRANSFER,
-        OWNER_CHANGE
+        ACCOUNT_NEW,
+        ACCOUNT_UPDATE,
+        ACCOUNT_TRANSFER
     }
 
     // -- Structs --
     struct Token
     {
-        address            token;
-        bool               depositDisabled;
+        address token;
+        bool    depositDisabled;
     }
 
     struct ProtocolFeeData
     {
         uint32 timestamp;
-        uint8 takerFeeBips;
-        uint8 makerFeeBips;
-        uint8 previousTakerFeeBips;
-        uint8 previousMakerFeeBips;
+        uint8  takerFeeBips;
+        uint8  makerFeeBips;
+        uint8  previousTakerFeeBips;
+        uint8  previousMakerFeeBips;
     }
 
     // General auxiliary data for each conditional transaction
