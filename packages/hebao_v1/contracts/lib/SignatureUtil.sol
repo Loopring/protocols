@@ -151,7 +151,7 @@ library SignatureUtil
         bytes   memory signature
         )
         private
-        view
+        pure
         returns (bool)
     {
         uint signatureTypeOffset = signature.length.sub(1);
