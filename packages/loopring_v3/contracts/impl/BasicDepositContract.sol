@@ -129,6 +129,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         )
         external
         override
+        payable
         onlyExchange
     {
         // Keep track how many tokens are deposited in the exchange
@@ -146,6 +147,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         )
         external
         override
+        payable
         nonReentrant
         onlyExchange
     {

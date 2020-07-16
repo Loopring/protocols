@@ -71,6 +71,7 @@ library ExchangeWithdrawals
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
+        require(accountID != 1 && accountID < ExchangeData.MAX_NUM_ACCOUNTS(), "INVALID_ACCOUNTID");
 
         uint16 tokenID = S.getTokenID(token);
 

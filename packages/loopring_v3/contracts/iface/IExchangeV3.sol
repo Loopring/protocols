@@ -452,6 +452,8 @@ abstract contract IExchangeV3 is IExchange
     ///      immediately by the operator when the block is submitted.
     ///      The user will however need to call this manually if the transfer failed.
     ///
+    ///      Tokens and owners must have the same size.
+    ///
     /// @param  owners The addresses of the account the withdrawal was done for.
     /// @param  tokens The token addresses
     function withdrawFromApprovedWithdrawals(
