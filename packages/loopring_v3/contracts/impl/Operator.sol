@@ -21,19 +21,20 @@ pragma experimental ABIEncoderV2;
 import "../iface/IExchangeV3.sol";
 
 import "../lib/LzDecompressor.sol";
+import "../lib/ReentrancyGuard.sol";
 
 
-contract Operator is Claimable
+contract Operator is Claimable, ReentrancyGuard
 {
     IExchangeV3 public exchange;
 
     bool public open;
 
-    modifier onlyOperator()
+    event StatusChanged(bool open);
+
+    modifier onlyWhenOpenOrFromOperator()
     {
-        if (!open) {
-            require(msg.sender == owner, "UNAUTHORIZED");
-        }
+        require(open || msg.sender == owner, "UNAUTHORIZED");
         _;
     }
 
@@ -50,31 +51,33 @@ contract Operator is Claimable
         address payable feeRecipient
         )
         external
-        onlyOperator
+        nonReentrant
+        onlyWhenOpenOrFromOperator
     {
-        exchange.submitBlocks(
-            blocks,
-            feeRecipient
-        );
+        exchange.submitBlocks(blocks, feeRecipient);
     }
 
     function submitBlocksCompressed(
         bytes calldata data
         )
         external
-        onlyOperator
+        nonReentrant
+        onlyWhenOpenOrFromOperator
     {
         bytes memory decompressed = LzDecompressor.decompress(data);
+        // TODO(brecht): check function selector is submitBlocks
         (bool success, bytes memory returnData) = address(exchange).call(decompressed);
         if (!success) {
             assembly { revert(add(returnData, 32), mload(returnData)) }
         }
     }
 
-    function setOpen(bool newOpen)
+    function setOpen(bool _open)
         external
+        nonReentrant
         onlyOwner
     {
-        open = newOpen;
+        open = _open;
+        emit StatusChanged(_open);
     }
 }
