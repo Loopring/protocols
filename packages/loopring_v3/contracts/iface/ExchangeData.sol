@@ -61,7 +61,7 @@ library ExchangeData
     // General auxiliary data for each conditional transaction
     struct AuxiliaryData
     {
-        uint txIndex;
+        uint  txIndex;
         bytes data;
     }
 
@@ -69,20 +69,22 @@ library ExchangeData
     // per-exchange (virtual) blockchain.
     struct Block
     {
-        uint8                  blockType;
-        uint16                 blockSize;
-        uint8                  blockVersion;
-        bytes                  data;
-        uint256[8]             proof;
-        bool                   storeDataHashOnchain;
+        uint8      blockType;
+        uint16     blockSize;
+        uint8      blockVersion;
+        bytes      data;
+        uint256[8] proof;
+
+        // Whether we should store the sha256 hash of the `data` on-chain.
+        bool  storeDataHashOnchain;
 
         // Block specific data that is only used to help process the block on-chain.
         // It is not used as input for the circuits and it is not necessary for data-availability.
-        bytes                  auxiliaryData;
+        bytes auxiliaryData;
 
         // Arbitrary data, mainly for off-chain data-availability, i.e.,
         // the multihash of the IPFS file that contains the block data.
-        bytes                  offchainData;
+        bytes offchainData;
     }
 
     struct BlockInfo
