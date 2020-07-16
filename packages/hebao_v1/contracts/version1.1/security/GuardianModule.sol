@@ -55,6 +55,7 @@ contract GuardianModule is SecurityModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         notWalletOwner(wallet, guardian)
     {
+        require(guardian != wallet, "INVALID_ADDRESS");
         require(guardian != address(0), "ZERO_ADDRESS");
         require(group < GuardianUtils.MAX_NUM_GROUPS, "INVALID_GROUP");
         uint numGuardians = controller.securityStore().numGuardiansWithPending(wallet);

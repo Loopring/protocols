@@ -87,7 +87,7 @@ export async function createContext(context?: Context) {
 
   await context.walletRegistryImpl.setWalletFactory(walletFactory.address);
   await context.baseENSManager.addManager(walletFactory.address);
-  await context.controllerImpl.setWalletFactory(walletFactory.address);
+  await context.controllerImpl.initWalletFactory(walletFactory.address);
   context.walletFactory = walletFactory;
 
   return context;
