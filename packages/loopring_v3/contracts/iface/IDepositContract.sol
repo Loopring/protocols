@@ -73,7 +73,8 @@ interface IDepositContract
         uint    amount,
         bytes   calldata auxiliaryData
         )
-        external;
+        external
+        payable;
 
     /// @dev Transfers tokens (ETH not supported) for a user using the allowance set
     ///      for the exchange. This way the approval can be used for all functionality (and
@@ -97,7 +98,8 @@ interface IDepositContract
         address token,
         uint    amount
         )
-        external;
+        external
+        payable;
 
     /// @dev Checks if the given address is used for depositing ETH or not.
     ///      Is used while depositing to send the correct ETH amount to the deposit contract.

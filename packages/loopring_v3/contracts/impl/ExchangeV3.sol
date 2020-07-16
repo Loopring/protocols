@@ -144,6 +144,7 @@ contract ExchangeV3 is IExchangeV3
             uint(ExchangeData.MAX_OPEN_FORCED_REQUESTS()),
             uint(ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE()),
             uint(ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS()),
+            uint(ExchangeData.MAX_NUM_ACCOUNTS()),
             uint(ExchangeData.MAX_NUM_TOKENS()),
             uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
             uint(ExchangeData.MIN_TIME_IN_SHUTDOWN()),
@@ -213,28 +214,6 @@ contract ExchangeV3 is IExchangeV3
         returns (address)
     {
         return state.getTokenAddress(tokenID);
-    }
-
-    function disableTokenDeposit(
-        address tokenAddress
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.disableTokenDeposit(tokenAddress);
-    }
-
-    function enableTokenDeposit(
-        address tokenAddress
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.enableTokenDeposit(tokenAddress);
     }
 
     // -- Stakes --
@@ -507,7 +486,7 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (bool)
     {
-        return owner == agent || state.agent[owner][agent] || state.whitelistedAgent[agent];
+        return owner == agent || state.whitelistedAgent[agent] || state.agent[owner][agent];
     }
 
     function approveOffchainTransfer(
