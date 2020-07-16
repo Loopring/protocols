@@ -50,16 +50,3 @@ library FloatUtil
         require(value < (2 ** 96), "FLOAT_VALUE_TOO_LARGE");
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
