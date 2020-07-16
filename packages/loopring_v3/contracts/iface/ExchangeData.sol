@@ -46,7 +46,6 @@ library ExchangeData
     struct Token
     {
         address            token;
-        bool               depositDisabled;
     }
 
     struct ProtocolFeeData

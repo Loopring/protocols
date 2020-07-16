@@ -222,30 +222,6 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (address tokenAddress);
 
-    /// @dev Disables users to submit onchain deposit requests for a token.
-    ///      This function is only callable by the exchange owner.
-    ///
-    ///      Can only be called by the exchange owner.
-    ///
-    /// @param  tokenAddress The token's address
-    function disableTokenDeposit(
-        address tokenAddress
-        )
-        external
-        virtual;
-
-    /// @dev Enable users to submit onchain deposit requests for a token.
-    ///      This function is only callable by the exchange owner.
-    ///
-    ///      Can only be called by the exchange owner.
-    ///
-    /// @param  tokenAddress The token's address
-    function enableTokenDeposit(
-        address tokenAddress
-        )
-        external
-        virtual;
-
     // -- Stakes --
     /// @dev Gets the amount of LRC the owner has staked onchain for this exchange.
     ///      The stake will be burned if the exchange does not fulfill its duty by

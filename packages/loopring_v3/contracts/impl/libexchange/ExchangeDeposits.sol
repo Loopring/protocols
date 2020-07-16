@@ -58,7 +58,6 @@ library ExchangeDeposits
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
 
         uint16 tokenID = S.getTokenID(tokenAddress);
-        require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
         // Transfer the tokens to this contract
         (uint amountDeposited, uint tokenIndex, uint fee) = transferDeposit(

@@ -215,28 +215,6 @@ contract ExchangeV3 is IExchangeV3
         return state.getTokenAddress(tokenID);
     }
 
-    function disableTokenDeposit(
-        address tokenAddress
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.disableTokenDeposit(tokenAddress);
-    }
-
-    function enableTokenDeposit(
-        address tokenAddress
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.enableTokenDeposit(tokenAddress);
-    }
-
     // -- Stakes --
     function getExchangeStake()
         external
