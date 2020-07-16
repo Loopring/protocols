@@ -36,7 +36,7 @@ library OwnerChangeTransaction
     using SignatureUtil        for bytes32;
 
     // bytes4(keccak256("transferOwnership(bytes,bytes)")
-    bytes4 constant internal MAGICVALUE = 0xd1f21f4f;
+    bytes4 constant internal ERC1271_MAGICVALUE = 0xd1f21f4f;
 
     bytes32 constant public OWNERCHANGE_TYPEHASH = keccak256(
         "OwnerChange(address owner,uint24 accountID,uint16 feeTokenID,uint256 fee,address newOwner,uint32 nonce,address walletAddress,bytes32 walletDataHash,bytes walletCalldata)"
@@ -159,7 +159,7 @@ library OwnerChangeTransaction
             require(auxData.walletCalldata.toBytes32(offset) == auxData.walletDataHash, "INVALID_WALLET_CALLDATA");
             offset += 32;
             (bool success, bytes memory result) = auxData.walletAddress.staticcall(auxData.walletCalldata);
-            bool validated = success && result.length == 32 && result.toBytes4(0) == MAGICVALUE;
+            bool validated = success && result.length == 32 && result.toBytes4(0) == ERC1271_MAGICVALUE;
             require(validated, "WALLET_CALL_FAILED");
         }
 
