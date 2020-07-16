@@ -33,10 +33,10 @@ library ExchangeData
     enum TransactionType
     {
         NOOP,
-        SPOT_TRADE,
         DEPOSIT,
         WITHDRAWAL,
         TRANSFER,
+        SPOT_TRADE,
         ACCOUNT_NEW,
         ACCOUNT_UPDATE,
         ACCOUNT_TRANSFER
@@ -45,7 +45,7 @@ library ExchangeData
     // -- Structs --
     struct Token
     {
-        address            token;
+        address token;
     }
 
     struct ProtocolFeeData

@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import { Bitstream, BlockType, Constants } from "loopringV3.js";
+import { Bitstream, Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
 import { AuthMethod, Block, SpotTrade } from "./types";
@@ -152,7 +152,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.NOOP,
+            0,
             true,
             2,
             blockVersion,
@@ -169,7 +169,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.SNARK_SCALAR_FIELD, 32);
           bs.addNumber(timestamp, 4);
           const block: OnchainBlock = {
-            blockType: BlockType.NOOP,
+            blockType: 0,
             blockSize: 2,
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
@@ -190,7 +190,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.NOOP,
+            0,
             true,
             2,
             blockVersion,
@@ -209,7 +209,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             const block: OnchainBlock = {
-              blockType: BlockType.NOOP,
+              blockType: 0,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -240,7 +240,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             const block: OnchainBlock = {
-              blockType: BlockType.NOOP,
+              blockType: 0,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -264,7 +264,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.NOOP,
+            0,
             true,
             2,
             blockVersion,
@@ -287,7 +287,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
             bs.addNumber(protocolFees.makerFeeBips, 1);
             const block: OnchainBlock = {
-              blockType: BlockType.NOOP,
+              blockType: 0,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -315,7 +315,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(protocolFees.takerFeeBips, 1);
             bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
             const block: OnchainBlock = {
-              blockType: BlockType.NOOP,
+              blockType: 0,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),

@@ -131,12 +131,12 @@ static auto dummySignature = R"({
 enum class TransactionType
 {
     Noop = 0,
-    SpotTrade,
     Deposit,
-    NewAccount,
     Withdrawal,
-    AccountUpdate,
     Transfer,
+    SpotTrade,
+    NewAccount,
+    AccountUpdate,
     OwnerChange,
 
     COUNT

@@ -5,15 +5,15 @@ import { SparseMerkleTree } from "./sparse_merkle_tree";
 /**
  * The type of requests handled in a block.
  */
-export enum BlockType {
+export enum TransactionType {
   NOOP = 0,
-  SPOT_TRADE,
   DEPOSIT,
-  NEW_ACCOUNT,
   WITHDRAWAL,
-  ACCOUNT_UPDATE,
   TRANSFER,
-  OWNER_CHANGE
+  SPOT_TRADE,
+  ACCOUNT_NEW,
+  ACCOUNT_UPDATE,
+  ACCOUNT_TRANSFER
 }
 
 /**
@@ -36,7 +36,7 @@ export interface Block {
   blockIdx: number;
 
   /** The type of requests handled in the block. */
-  blockType: BlockType;
+  blockType: number;
   /** The block size (in number of requests). */
   blockSize: number;
   /** The block version. */

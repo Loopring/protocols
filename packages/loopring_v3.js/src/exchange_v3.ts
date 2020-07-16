@@ -9,7 +9,7 @@ import { ProtocolV3 } from "./protocol_v3";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
 import {
   BlockContext,
-  BlockType,
+  TransactionType,
   ForgeMode,
   Block,
   Deposit,
@@ -126,7 +126,7 @@ export class ExchangeV3 {
       exchangeId,
       blockIdx: 0,
 
-      blockType: BlockType.NOOP,
+      blockType: 0,
       blockSize: 0,
       blockVersion: 0,
       data: "0x",
@@ -921,21 +921,21 @@ export class ExchangeV3 {
       const txType = txData.extractUint8(0);
 
       let request: any;
-      if (txType === BlockType.NOOP) {
+      if (txType === TransactionType.NOOP) {
         // Do nothing
-      } else if (txType === BlockType.DEPOSIT) {
+      } else if (txType === TransactionType.DEPOSIT) {
         request = DepositProcessor.process(this.state, ctx, txData);
-      } else if (txType === BlockType.ACCOUNT_UPDATE) {
-        request = AccountUpdateProcessor.process(this.state, ctx, txData);
-      } else if (txType === BlockType.SPOT_TRADE) {
+      } else if (txType === TransactionType.SPOT_TRADE) {
         request = SpotTradeProcessor.process(this.state, ctx, txData);
-      } else if (txType === BlockType.TRANSFER) {
+      } else if (txType === TransactionType.TRANSFER) {
         request = TransferProcessor.process(this.state, ctx, txData);
-      } else if (txType === BlockType.WITHDRAWAL) {
+      } else if (txType === TransactionType.WITHDRAWAL) {
         request = WithdrawalProcessor.process(this.state, ctx, txData);
-      } else if (txType === BlockType.NEW_ACCOUNT) {
+      } else if (txType === TransactionType.ACCOUNT_NEW) {
         request = NewAccountProcessor.process(this.state, ctx, txData);
-      } else if (txType === BlockType.OWNER_CHANGE) {
+      } else if (txType === TransactionType.ACCOUNT_UPDATE) {
+        request = AccountUpdateProcessor.process(this.state, ctx, txData);
+      } else if (txType === TransactionType.ACCOUNT_TRANSFER) {
         request = OwnerChangeProcessor.process(this.state, ctx, txData);
       } else {
         assert(false, "unknown transaction type: " + txType);

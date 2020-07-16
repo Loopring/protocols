@@ -9,7 +9,6 @@ import { Artifacts } from "../util/Artifacts";
 import { SignatureType, sign, verifySignature } from "../util/Signature";
 import {
   Bitstream,
-  BlockType,
   calculateCalldataCost,
   compress,
   compressLZ,
@@ -20,6 +19,7 @@ import {
   Explorer,
   roundToFloatValue,
   toFloat,
+  TransactionType,
   Poseidon,
   WithdrawFromMerkleTreeData
 } from "loopringV3.js";
@@ -1818,7 +1818,7 @@ export class ExchangeTestUtil {
 
   public async commitBlock(
     operatorId: number,
-    blockType: BlockType,
+    blockType: number,
     blockSize: number,
     data: string,
     filename: string,
@@ -1881,7 +1881,7 @@ export class ExchangeTestUtil {
   }
 
   public async registerCircuit(
-    blockType: BlockType,
+    blockType: number,
     blockSize: number,
     blockVersion: number
   ) {
@@ -2381,7 +2381,7 @@ export class ExchangeTestUtil {
             const orderA = spotTrade.orderA;
             const orderB = spotTrade.orderB;
 
-            da.addNumber(BlockType.SPOT_TRADE, 1);
+            da.addNumber(TransactionType.SPOT_TRADE, 1);
 
             const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
             da.addNumber(
@@ -2415,7 +2415,7 @@ export class ExchangeTestUtil {
             );
           } else if (tx.transfer) {
             const transfer = tx.transfer;
-            da.addNumber(BlockType.TRANSFER, 1);
+            da.addNumber(TransactionType.TRANSFER, 1);
             da.addNumber(transfer.type, 1);
             da.addNumber(transfer.fromAccountID, 3);
             da.addNumber(transfer.toAccountID, 3);
@@ -2439,7 +2439,7 @@ export class ExchangeTestUtil {
             da.addBN(new BN(transfer.data), 32);
           } else if (tx.withdraw) {
             const withdraw = tx.withdraw;
-            da.addNumber(BlockType.WITHDRAWAL, 1);
+            da.addNumber(TransactionType.WITHDRAWAL, 1);
             da.addNumber(withdraw.type, 1);
             da.addBN(new BN(withdraw.owner), 20);
             da.addNumber(withdraw.accountID, 3);
@@ -2455,7 +2455,7 @@ export class ExchangeTestUtil {
             da.addNumber(withdraw.minGas, 3);
           } else if (tx.deposit) {
             const deposit = tx.deposit;
-            da.addNumber(BlockType.DEPOSIT, 1);
+            da.addNumber(TransactionType.DEPOSIT, 1);
             da.addBN(new BN(deposit.owner), 20);
             da.addNumber(deposit.accountID, 3);
             da.addNumber(deposit.tokenID, 2);
@@ -2463,7 +2463,7 @@ export class ExchangeTestUtil {
             da.addBN(new BN(deposit.index), 12);
           } else if (tx.accountUpdate) {
             const update = tx.accountUpdate;
-            da.addNumber(BlockType.ACCOUNT_UPDATE, 1);
+            da.addNumber(TransactionType.ACCOUNT_UPDATE, 1);
             da.addNumber(update.type, 1);
             da.addBN(new BN(update.owner), 20);
             da.addNumber(update.accountID, 3);
@@ -2480,7 +2480,7 @@ export class ExchangeTestUtil {
             );
           } else if (tx.newAccount) {
             const create = tx.newAccount;
-            da.addNumber(BlockType.ACCOUNT_NEW, 1);
+            da.addNumber(TransactionType.ACCOUNT_NEW, 1);
             da.addNumber(create.payerAccountID, 3);
             da.addNumber(create.feeTokenID, 2);
             da.addNumber(
@@ -2499,7 +2499,7 @@ export class ExchangeTestUtil {
             da.addBN(new BN(create.newWalletHash), 32);
           } else if (tx.ownerChange) {
             const change = tx.ownerChange;
-            da.addNumber(BlockType.ACCOUNT_TRANSFER, 1);
+            da.addNumber(TransactionType.ACCOUNT_TRANSFER, 1);
             da.addBN(new BN(change.owner), 20);
             da.addNumber(change.accountID, 3);
             da.addNumber(change.nonce, 4);
@@ -2557,7 +2557,7 @@ export class ExchangeTestUtil {
       // Commit the block
       const blockInfo = await this.commitBlock(
         operator,
-        BlockType.NOOP,
+        0,
         blockSize,
         bs.getData(),
         blockFilename,
@@ -2732,7 +2732,7 @@ export class ExchangeTestUtil {
     const genesisBlock: Block = {
       blockIdx: 0,
       filename: null,
-      blockType: BlockType.NOOP,
+      blockType: 0,
       blockSize: 0,
       blockVersion: 0,
       operator: Constants.zeroAddress,

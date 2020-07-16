@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import { BlockType, Signature } from "loopringV3.js";
+import { Signature } from "loopringV3.js";
 
 export enum AuthMethod {
   NONE,
@@ -235,7 +235,7 @@ export interface TxBlock {
 export interface Block {
   blockIdx: number;
   filename: string;
-  blockType: BlockType;
+  blockType: number;
   blockSize: number;
   blockVersion: number;
   operator: string;

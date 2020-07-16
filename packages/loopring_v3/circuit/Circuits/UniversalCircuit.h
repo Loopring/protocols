@@ -224,7 +224,7 @@ public:
         accountUpdate(pb, state, FMT(prefix, ".accountUpdate")),
         transfer(pb, state, FMT(prefix, ".transfer")),
         ownerChange(pb, state, FMT(prefix, ".ownerChange")),
-        tx(pb, state, selector.result(), {&noop, &spotTrade, &deposit, &newAccount, &withdraw, &accountUpdate, &transfer, &ownerChange}, FMT(prefix, ".tx")),
+        tx(pb, state, selector.result(), {&noop, &deposit, &withdraw, &transfer, &spotTrade, &newAccount, &accountUpdate, &ownerChange}, FMT(prefix, ".tx")),
 
         // General validation
         accountA(pb, tx.getArrayOutput(accountA_Address), FMT(prefix, ".packAccountA")),
