@@ -101,7 +101,6 @@ public:
     // Amount as float
     FloatGadget fAmount;
     RequireAccuracyGadget requireAccuracyAmount;
-
     // Fee payment from From to the operator
     TransferGadget feePayment;
     // Transfer from From to To
@@ -347,11 +346,15 @@ public:
         amount.generate_r1cs_constraints(true);
         feeTokenID.generate_r1cs_constraints(true);
         fee.generate_r1cs_constraints(true);
+        validUntil.generate_r1cs_constraints(true);
         type.generate_r1cs_constraints(true);
         from.generate_r1cs_constraints(true);
         to.generate_r1cs_constraints(true);
         nonce.generate_r1cs_constraints(true);
         data.generate_r1cs_constraints(true);
+        payer_toAccountID.generate_r1cs_constraints(true);
+        payer_to.generate_r1cs_constraints(true);
+        payee_toAccountID.generate_r1cs_constraints(true);
 
         // Check if the inputs are valid
         isTransferTx.generate_r1cs_constraints();

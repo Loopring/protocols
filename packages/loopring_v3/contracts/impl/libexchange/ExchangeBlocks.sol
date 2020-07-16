@@ -160,7 +160,11 @@ library ExchangeBlocks
 
         // Update the onchain state
         S.merkleRoot = merkleRootAfter;
-        S.blocks.push(ExchangeData.BlockInfo(publicDataHash));
+        S.blocks.push(
+            ExchangeData.BlockInfo(
+                _block.storeDataHashOnchain ? publicDataHash : bytes32(0)
+            )
+        );
     }
 
     function verifyBlocks(

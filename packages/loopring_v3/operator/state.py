@@ -1028,8 +1028,8 @@ class State(object):
         ###
 
         # Protocol fee payment
-        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.balanceB_S_Address, newState.balanceDeltaA_P, None, newState.balanceA_P_AutoApplyIndex)
         balanceUpdateB_P = self.getAccount(0).updateBalance(newState.balanceA_S_Address, newState.balanceDeltaB_P, None, newState.balanceB_P_AutoApplyIndex)
+        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.balanceB_S_Address, newState.balanceDeltaA_P, None, newState.balanceA_P_AutoApplyIndex)
         ###
 
         witness = Witness(newState.signatureA, newState.signatureB,

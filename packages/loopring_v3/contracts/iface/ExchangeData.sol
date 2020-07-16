@@ -74,6 +74,7 @@ library ExchangeData
         uint8                  blockVersion;
         bytes                  data;
         uint256[8]             proof;
+        bool                   storeDataHashOnchain;
 
         // Block specific data that is only used to help process the block on-chain.
         // It is not used as input for the circuits and it is not necessary for data-availability.

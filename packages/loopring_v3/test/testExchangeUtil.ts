@@ -126,6 +126,7 @@ export interface OnchainBlock {
   blockVersion: number;
   data: any;
   proof: any;
+  storeDataHashOnchain: boolean;
   auxiliaryData?: any;
   offchainData?: any;
 }
@@ -1905,6 +1906,7 @@ export class ExchangeTestUtil {
         blockVersion: block.blockVersion,
         data: web3.utils.hexToBytes(block.data),
         proof: block.proof,
+        storeDataHashOnchain: this.getRandomBool(),
         offchainData: web3.utils.hexToBytes(block.offchainData),
         auxiliaryData: web3.utils.hexToBytes(block.auxiliaryData)
       };
@@ -1986,6 +1988,17 @@ export class ExchangeTestUtil {
       blocks[blocks.length - 1].merkleRoot,
       "unexpected Merkle root"
     );
+
+    // Check the Block info stored onchain
+    for (const [i, block] of blocks.entries()) {
+      const blockInfo = await this.exchange.getBlockInfo(block.blockIdx);
+      const expectedHash = onchainBlocks[i].storeDataHashOnchain ? block.publicDataHash : "0x" + "00".repeat(32);
+      assert.equal(
+        blockInfo.blockDataHash,
+        expectedHash,
+        "unexpected public data hash"
+      );
+    }
 
     // Forced requests
     const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();

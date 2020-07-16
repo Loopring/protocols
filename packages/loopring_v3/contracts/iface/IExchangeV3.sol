@@ -332,6 +332,7 @@ abstract contract IExchangeV3 is IExchange
     ///      - blockSize: The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
     ///      - blockVersion: The circuit version to use for verifying the block
+    ///      - storeDataHashOnchain: If the block data hash needs to be stored onchain
     ///      - data: The data for this block
     ///      - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.

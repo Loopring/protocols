@@ -105,7 +105,6 @@ public:
         for (unsigned int i = 0; i < aSelects.size(); i++)
         {
             aSelects[i].generate_r1cs_witness();
-            // printBits("[ZKS]aSelects: 0x", aSelects[i].result().get_bits(pb));
         }
         for (unsigned int i = 0; i < publicDataSelects.size(); i++)
         {
@@ -185,8 +184,8 @@ public:
     UpdateAccountGadget updateAccount_O;
 
     // Update Protocol pool
-    UpdateBalanceGadget updateBalanceA_P;
     UpdateBalanceGadget updateBalanceB_P;
+    UpdateBalanceGadget updateBalanceA_P;
 
     // Update Index
     UpdateBalanceGadget updateBalanceB_I;
@@ -288,14 +287,14 @@ public:
                         FMT(prefix, ".updateAccount_O")),
 
         // Update Protocol pool
-        updateBalanceA_P(pb, protocolBalancesRoot, tx.getArrayOutput(balanceB_S_Address),
-                         {state.pool.balanceA.balance, state.pool.balanceA.index, constants.emptyTradeHistory},
-                         {tx.getOutput(balanceP_A_Balance), tx.getOutput(balanceP_A_Index), constants.emptyTradeHistory},
-                         FMT(prefix, ".updateBalanceA_P")),
-        updateBalanceB_P(pb, updateBalanceA_P.result(), tx.getArrayOutput(balanceA_S_Address),
+        updateBalanceB_P(pb, protocolBalancesRoot, tx.getArrayOutput(balanceA_S_Address),
                          {state.pool.balanceB.balance, state.pool.balanceB.index, constants.emptyTradeHistory},
                          {tx.getOutput(balanceP_B_Balance), tx.getOutput(balanceP_B_Index), constants.emptyTradeHistory},
                          FMT(prefix, ".updateBalanceB_P")),
+        updateBalanceA_P(pb, updateBalanceB_P.result(), tx.getArrayOutput(balanceB_S_Address),
+                         {state.pool.balanceA.balance, state.pool.balanceA.index, constants.emptyTradeHistory},
+                         {tx.getOutput(balanceP_A_Balance), tx.getOutput(balanceP_A_Index), constants.emptyTradeHistory},
+                         FMT(prefix, ".updateBalanceA_P")),
 
         // Update Index
         updateBalanceB_I(pb, indexBalancesRoot, tx.getArrayOutput(balanceA_S_Address),
@@ -370,8 +369,8 @@ public:
         updateAccount_O.generate_r1cs_witness(uTx.witness.accountUpdate_O);
 
         // Update Protocol pool
-        updateBalanceA_P.generate_r1cs_witness(uTx.witness.balanceUpdateA_P);
         updateBalanceB_P.generate_r1cs_witness(uTx.witness.balanceUpdateB_P);
+        updateBalanceA_P.generate_r1cs_witness(uTx.witness.balanceUpdateA_P);
 
         // Update Index
         updateBalanceB_I.generate_r1cs_witness(uTx.witness.balanceUpdateB_I);
@@ -422,8 +421,8 @@ public:
         updateAccount_O.generate_r1cs_constraints();
 
         // Update Protocol fee pool
-        updateBalanceA_P.generate_r1cs_constraints();
         updateBalanceB_P.generate_r1cs_constraints();
+        updateBalanceA_P.generate_r1cs_constraints();
 
         // Update Index
         updateBalanceB_I.generate_r1cs_constraints();
@@ -442,7 +441,7 @@ public:
 
     const VariableT& getNewProtocolBalancesRoot() const
     {
-        return updateBalanceB_P.result();
+        return updateBalanceA_P.result();
     }
 
     const VariableT& getNewIndexBalancesRoot() const
@@ -503,8 +502,8 @@ public:
         constants(pb, FMT(prefix, ".constants")),
 
         // State
-        accountBefore_I(pb, FMT(prefix, ".accountBefore_I")),
         accountBefore_P(pb, FMT(prefix, ".accountBefore_P")),
+        accountBefore_I(pb, FMT(prefix, ".accountBefore_I")),
         accountBefore_O(pb, FMT(prefix, ".accountBefore_O")),
 
         // Inputs

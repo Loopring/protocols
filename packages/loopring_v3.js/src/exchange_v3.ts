@@ -721,6 +721,7 @@ export class ExchangeV3 {
               blockVersion: "uint8",
               data: "bytes",
               proof: "uint256[8]",
+              storeDataHashOnchain: "bool",
               auxiliaryData: "bytes",
               offchainData: "bytes"
             }
