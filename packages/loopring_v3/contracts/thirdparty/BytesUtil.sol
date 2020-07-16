@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: UNLICENSED
 //Mainly taken from https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol
 pragma solidity ^0.6.10;
+
 
 library BytesUtil {
     function concat(

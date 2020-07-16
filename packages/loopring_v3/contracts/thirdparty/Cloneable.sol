@@ -1,7 +1,6 @@
 
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://gist.github.com/holiman/069de8d056a531575d2b786df3345665
-
 pragma solidity ^0.6.10;
 
 

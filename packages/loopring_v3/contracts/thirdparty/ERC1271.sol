@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: UNLICENSED
 // Copied from https://eips.ethereum.org/EIPS/eip-1271.
-
 pragma solidity ^0.6.10;
+
 
 abstract contract ERC1271 {
 

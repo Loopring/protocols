@@ -1,5 +1,6 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.10;
+
 
 interface AggregatorInterface {
   function latestAnswer() external view returns (int256);

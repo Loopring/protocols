@@ -1,7 +1,6 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://github.com/HarryR/ethsnarks/blob/master/contracts/Verifier.sol
 // this code is taken from https://github.com/JacobEberhardt/ZoKrates
-
 pragma solidity ^0.6.10;
 
 
