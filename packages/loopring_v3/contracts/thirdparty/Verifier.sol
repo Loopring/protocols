@@ -3,7 +3,6 @@
 // this code is taken from https://github.com/JacobEberhardt/ZoKrates
 pragma solidity ^0.6.10;
 
-
 library Verifier
 {
     function ScalarField ()

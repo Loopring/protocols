@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Project Ltd (Loopring Foundation).
 pragma solidity ^0.6.10;
 
-
 /// @title Utility Functions for addresses
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>

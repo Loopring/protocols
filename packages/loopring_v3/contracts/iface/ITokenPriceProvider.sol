@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Project Ltd (Loopring Foundation).
 pragma solidity ^0.6.10;
 
-
 /// @title ITokenPriceProvider
 /// @author Brecht Devos  - <brecht@loopring.org>
 interface ITokenPriceProvider

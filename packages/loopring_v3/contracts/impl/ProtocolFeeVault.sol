@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Project Ltd (Loopring Foundation).
 pragma solidity ^0.6.10;
 
-
 import "../lib/AddressUtil.sol";
 import "../lib/BurnableERC20.sol";
 import "../lib/Claimable.sol";

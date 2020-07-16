@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Project Ltd (Loopring Foundation).
 pragma solidity ^0.6.10;
 
-
 /// @title LzDecompressor
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Decompresses data compressed with a LZ77/Snappy like compressor optimized for EVM

@@ -4,7 +4,6 @@
 // Thanks Harry from ETHSNARKS for base code
 pragma solidity ^0.6.10;
 
-
 library BatchVerifier {
     function GroupOrder ()
         public pure returns (uint256)

@@ -17,7 +17,6 @@
 */
 pragma solidity ^0.6.10;
 
-
 import "./ERC20.sol";
 import "./MathUint.sol";
 

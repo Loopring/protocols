@@ -2,7 +2,6 @@
 // Solidity Interface
 pragma solidity ^0.6.10;
 
-
 abstract contract UniswapExchangeInterface {
     // Address of ERC20 token sold on this exchange
     function tokenAddress() external view virtual returns (address token);
