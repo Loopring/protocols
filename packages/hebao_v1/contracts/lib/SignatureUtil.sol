@@ -3,7 +3,6 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../thirdparty/BytesUtil.sol";
-import "../thirdparty/ERC1271.sol";
 import "./AddressUtil.sol";
 import "./MathUint.sol";
 
@@ -27,13 +26,17 @@ library SignatureUtil
         ETH_SIGN,
         WALLET   // deprecated
     }
+    
+    bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
 
-    bytes4 constant private ERC1271_MAGICVALUE = 0x20c13b0b;
-
-    bytes4 constant private ERC1271_FUNCTION_SELECTOR = bytes4(
+    bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES_SELECTOR = bytes4(
         keccak256(bytes("isValidSignature(bytes,bytes)"))
     );
 
+    bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES32_SELECTOR = bytes4(
+        keccak256(bytes("isValidSignature(bytes32,bytes)"))
+    );
+    
     function verifySignatures(
         bytes32   signHash,
         address[] memory signers,
@@ -88,48 +91,9 @@ library SignatureUtil
         view
         returns (bool)
     {
-        if (signer.isContract()) {
-            return verifyERC1271Signature(data, signer, signature);
-        }
-
-        uint signatureTypeOffset = signature.length.sub(1);
-        SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
-
-        bytes memory stripped = signature.slice(0, signatureTypeOffset);
-        bytes32 hash = (data.length == 32) ? BytesUtil.toBytes32(data, 0): keccak256(data);
-
-        if (signatureType == SignatureType.EIP_712) {
-            return recoverECDSASigner(hash, stripped) == signer;
-        } else if (signatureType == SignatureType.ETH_SIGN) {
-            hash = keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
-            );
-            return recoverECDSASigner(hash, stripped) == signer;
-        } else {
-            return false;
-        }
-    }
-
-    function verifyERC1271Signature(
-        bytes   memory data,
-        address signer,
-        bytes   memory signature
-        )
-        private
-        view
-        returns(bool)
-    {
-        bytes memory callData = abi.encodeWithSelector(
-            ERC1271_FUNCTION_SELECTOR,
-            data,
-            signature
-        );
-        (bool success, bytes memory result) = signer.staticcall(callData);
-        return (
-            success &&
-            result.length == 32 &&
-            result.toBytes4(0) == ERC1271_MAGICVALUE
-        );
+        return signer.isContract() ?
+            verifyERC1271Signature(data, signer, signature) :
+            verifyEOASignature(data, signer, signature);
     }
 
     function recoverECDSASigner(
@@ -179,5 +143,97 @@ library SignatureUtil
             keccak256(data);
 
         return recoverECDSASigner(hash, signature);
+    }
+
+    function verifyEOASignature(
+        bytes   memory data,
+        address signer,
+        bytes   memory signature
+        )
+        private
+        view
+        returns (bool)
+    {
+        uint signatureTypeOffset = signature.length.sub(1);
+        SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
+
+        bytes memory stripped = signature.slice(0, signatureTypeOffset);
+        bytes32 hash = getDataHash(data);
+
+        if (signatureType == SignatureType.EIP_712) {
+            return recoverECDSASigner(hash, stripped) == signer;
+        } else if (signatureType == SignatureType.ETH_SIGN) {
+            hash = keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
+            );
+            return recoverECDSASigner(hash, stripped) == signer;
+        } else {
+            return false;
+        }
+    }
+
+    function verifyERC1271Signature(
+        bytes   memory data,
+        address signer,
+        bytes   memory signature
+        )
+        private
+        view
+        returns (bool)
+    {
+        return verifyERC1271WithBytes(data, signer, signature) ||
+            verifyERC1271WithBytes32(getDataHash(data), signer, signature);
+    }
+
+    function verifyERC1271WithBytes(
+        bytes   memory data,
+        address signer,
+        bytes   memory signature
+        )
+        private
+        view
+        returns (bool)
+    {
+        bytes memory callData = abi.encodeWithSelector(
+            ERC1271_FUNCTION_WITH_BYTES_SELECTOR,
+            data,
+            signature
+        );
+        (bool success, bytes memory result) = signer.staticcall(callData);
+        return (
+            success &&
+            result.length == 32 &&
+            result.toBytes4(0) == ERC1271_MAGICVALUE
+        );
+    }
+
+    function verifyERC1271WithBytes32(
+        bytes32 hash,
+        address signer,
+        bytes   memory signature
+        )
+        private
+        view
+        returns (bool)
+    {
+        bytes memory callData = abi.encodeWithSelector(
+            ERC1271_FUNCTION_WITH_BYTES32_SELECTOR,
+            hash,
+            signature
+        );
+        (bool success, bytes memory result) = signer.staticcall(callData);
+        return (
+            success &&
+            result.length == 32 &&
+            result.toBytes4(0) == ERC1271_MAGICVALUE
+        );
+    }
+
+    function getDataHash(bytes memory data)
+        private
+        pure
+        returns (bytes32)
+    {
+        return (data.length == 32) ? BytesUtil.toBytes32(data, 0) : keccak256(data);
     }
 }

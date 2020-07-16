@@ -4,9 +4,9 @@ pragma experimental ABIEncoderV2;
 
 import "../../iface/Wallet.sol";
 import "../../lib/AddressUtil.sol";
+import "../../lib/ERC1271.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../../thirdparty/ERC1271.sol";
 import "../base/BaseModule.sol";
 
 
@@ -14,14 +14,6 @@ import "../base/BaseModule.sol";
 /// @dev This module enables our smart wallets to message signers.
 contract ERC1271Module is ERC1271, BaseModule
 {
-    bytes4 constant private ERC1271_FUNCTION1_SELECTOR = bytes4(
-        keccak256(bytes("isValidSignature(bytes,bytes)"))
-    );
-
-    bytes4 constant private ERC1271_FUNCTION2_SELECTOR = bytes4(
-        keccak256(bytes("isValidSignature(bytes32,bytes)"))
-    );
-
     using SignatureUtil for bytes;
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
@@ -39,12 +31,17 @@ contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](2);
-        methods[0] = ERC1271_FUNCTION1_SELECTOR;
-        methods[1] = ERC1271_FUNCTION2_SELECTOR;
+        methods[0] = ERC1271_FUNCTION_WITH_BYTES_SELECTOR;
+        methods[1] = ERC1271_FUNCTION_WITH_BYTES32_SELECTOR;
     }
 
     // Will use msg.sender to detect the wallet, so this function should be called through
     // the bounded method on the wallet itself, not directly on this module.
+    //
+    // Note that we allow chained wallet ownership:
+    // Wallet1 owned by Wallet2, Wallet2 owned by Wallet3, ..., WaleltN owned by an EOA.
+    // The verificaiton of Wallet1's signature will succeed if the final EOA's signature is
+    // valid.
     function isValidSignature(
         bytes memory _data,
         bytes memory _signature
@@ -52,35 +49,16 @@ contract ERC1271Module is ERC1271, BaseModule
         public
         view
         override
-        returns (bytes4 magicValue)
+        returns (bytes4)
     {
-        (uint _lock,) = controller.securityStore().getLock(msg.sender);
+        address wallet = msg.sender;
+        (uint _lock,) = controller.securityStore().getLock(wallet);
         if (_lock > now) { // wallet locked
             return 0;
         }
 
-        if (_data.verifySignature(Wallet(msg.sender).owner(), _signature)) {
-            return MAGICVALUE;
-        } else {
-            return 0;
-        }
-    }
-
-    function isValidSignature(
-        bytes32      _hash,
-        bytes memory _signature
-        )
-        public
-        view
-        returns (bytes4 magicValue)
-    {
-        (uint _lock,) = controller.securityStore().getLock(msg.sender);
-        if (_lock > now) { // wallet locked
-            return 0;
-        }
-
-        if (_hash.verifySignature(Wallet(msg.sender).owner(), _signature)) {
-            return MAGICVALUE;
+        if (_data.verifySignature(Wallet(wallet).owner(), _signature)) {
+            return ERC1271_MAGICVALUE;
         } else {
             return 0;
         }
