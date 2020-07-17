@@ -101,6 +101,7 @@
     "eslint-utils": "^1.4.2",
     "estraverse": "^4.2.0",
     "esutils": "^2.0.2",
+    "eth-json-rpc-filters": "^4.1.1",
     "ethereumjs-abi": "^0.6.8",
     "ethereumjs-util": "^6.2.0",
     "ethers": "^4.0.42",

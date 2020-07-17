@@ -37,7 +37,7 @@ library SignedRequest {
 
         bytes32 txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
 
-        controller.hashStore().verifyAndUpdate(txHash);
+        controller.hashStore().verifyAndUpdate(request.wallet, txHash);
 
         // If txAwareHash from the mata-transaction is non-zero,
         // we must verify it matches the hash signed by the respective signers.
