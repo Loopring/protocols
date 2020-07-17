@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.6.10;
 
+import "../lib/ERC1271.sol";
 import "../lib/OwnerManagable.sol";
 import "../lib/SignatureUtil.sol";
 import "../thirdparty/BytesUtil.sol";
-import "../thirdparty/ERC1271.sol";
 
 
 /// @title OfficialGuardian
@@ -23,6 +23,6 @@ contract OfficialGuardian is OwnerManagable, ERC1271
         returns (bytes4)
     {
         address signer = _data.recoverECDSASigner(_signature);
-        return isManager(signer) ?  MAGICVALUE : bytes4(0);
+        return isManager(signer) ?  ERC1271_MAGICVALUE : bytes4(0);
     }
 }

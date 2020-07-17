@@ -15,7 +15,7 @@ import "../../lib/SignatureUtil.sol";
 interface IENSManager {
     function changeRootnodeOwner(address _newOwner) external;
 
-    function isAvailable(bytes32 _subnode) external view returns(bool);
+    function isAvailable(bytes32 _subnode) external view returns (bool);
 
     function resolveName(address _owner) external view returns (string memory);
 

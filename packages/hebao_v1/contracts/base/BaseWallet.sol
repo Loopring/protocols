@@ -45,6 +45,8 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
+    /// @dev We need to make sure the Factory address cannot be changed without wallet owner's
+    ///      explicit authorization.
     modifier onlyFromFactoryOrModule
     {
         require(
@@ -154,7 +156,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         )
         external
         override
-        onlyFromModule
+        onlyFromFactoryOrModule
         returns (bytes memory returnData)
     {
         require(
@@ -183,7 +185,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
             controller.moduleRegistry().isModuleRegistered(_module),
             "INVALID_MODULE"
         );
-
         modules[_module] = true;
         emit ModuleAdded(_module);
         Module(_module).activate();

@@ -36,7 +36,7 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
         view
         virtual
         override
-        returns(address payable)
+        returns (address payable)
     {
         return msgSender();
     }

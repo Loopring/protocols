@@ -10,6 +10,7 @@ import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../thirdparty/Create2.sol";
 import "../../thirdparty/ens/BaseENSManager.sol";
+import "../../thirdparty/ens/ENS.sol";
 import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 import "../ControllerImpl.sol";
 
@@ -56,7 +57,6 @@ contract WalletFactory is ReentrancyGuard
         allowEmptyENS = _allowEmptyENS;
     }
 
-    event logBytes32(bytes32 hash);
     function computeWalletAddress(
         address owner
         )
@@ -85,7 +85,6 @@ contract WalletFactory is ReentrancyGuard
         )
         external
         payable
-        nonReentrant
         returns (address _wallet)
     {
         require(_modules.length > 0, "EMPTY_MODULES");
@@ -108,10 +107,14 @@ contract WalletFactory is ReentrancyGuard
             w.addModule(_modules[i]);
         }
 
-        if (controller.ensManagerAddress() != address(0)) {
+        // register ENS
+        address ensManager = controller.ensManagerAddress();
+
+        if (ensManager != address(0)) {
             if (bytes(_label).length > 0) {
-                BaseENSManager(controller.ensManagerAddress()).register(
+                registerENS(
                     _wallet,
+                    BaseENSManager(ensManager),
                     _label,
                     _labelApproval
                 );
@@ -119,6 +122,30 @@ contract WalletFactory is ReentrancyGuard
                 require(allowEmptyENS, "INVALID_ENS_LABEL");
             }
         }
+    }
+
+    function registerENS(
+        address        wallet,
+        BaseENSManager ensManager,
+        string memory  label,
+        bytes  memory  labelApproval
+        )
+        internal
+    {
+        ensManager.register(wallet, label, labelApproval);
+
+        bytes memory data = abi.encodeWithSelector(
+            ENSReverseRegistrar(0).claimWithResolver.selector,
+            address(0), // the owner of the reverse record
+            ensManager.ensResolver()
+        );
+
+        Wallet(wallet).transact(
+            uint8(1),
+            address(ensManager.getENSReverseRegistrar()),
+            0, // value
+            data
+        );
     }
 
     function createWalletInternal(
