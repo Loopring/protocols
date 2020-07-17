@@ -4,8 +4,9 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
-import "../../thirdparty/BytesUtil.sol";
 import "../../lib/MathUint.sol";
+
+import "../../thirdparty/BytesUtil.sol";
 
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/ExchangeData.sol";
@@ -77,7 +78,7 @@ library ExchangeBlocks
             );
         }
 
-        // Verify the blocks
+        // Verify the blocks - blocks are verified in a batch to save gas.
         verifyBlocks(
             S,
             blocks,
