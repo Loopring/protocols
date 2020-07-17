@@ -16,8 +16,8 @@
 #include "./AccountUpdateCircuit.h"
 #include "./WithdrawCircuit.h"
 #include "./NoopCircuit.h"
-#include "./NewAccountCircuit.h"
-#include "./OwnerChangeCircuit.h"
+#include "./AccountNewCircuit.h"
+#include "./AccountTransferCircuit.h"
 
 #include "ethsnarks.hpp"
 #include "utils.hpp"
@@ -149,11 +149,11 @@ public:
     NoopCircuit noop;
     SpotTradeCircuit spotTrade;
     DepositCircuit deposit;
-    NewAccountCircuit accountNew;
+    AccountNewCircuit accountNew;
     WithdrawCircuit withdraw;
     AccountUpdateCircuit accountUpdate;
     TransferCircuit transfer;
-    OwnerChangeCircuit accountTransfer;
+    AccountTransferCircuit accountTransfer;
     SelectTransactionGadget tx;
 
     // General validation

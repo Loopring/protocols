@@ -13,7 +13,7 @@ using namespace ethsnarks;
 namespace Loopring
 {
 
-class NewAccountCircuit : public BaseTransactionCircuit
+class AccountNewCircuit : public BaseTransactionCircuit
 {
 public:
 
@@ -22,7 +22,7 @@ public:
     DualVariableGadget feeTokenID;
     DualVariableGadget fee;
     DualVariableGadget nonce;
-    DualVariableGadget accountNewID;
+    DualVariableGadget newAccountID;
     DualVariableGadget newOwner;
     VariableT newPublicKeyX;
     VariableT newPublicKeyY;
@@ -53,7 +53,7 @@ public:
     // Increase the number of conditional transactions
     UnsafeAddGadget numConditionalTransactionsAfter;
 
-    NewAccountCircuit(
+    AccountNewCircuit(
         ProtoboardT& pb,
         const TransactionState& state,
         const std::string& prefix
@@ -65,7 +65,7 @@ public:
         feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
         fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
         nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
-        accountNewID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountNewID")),
+        newAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".newAccountID")),
         newOwner(pb, NUM_BITS_ADDRESS, FMT(prefix, ".newOwner")),
         newPublicKeyX(make_variable(pb, FMT(prefix, ".newPublicKeyX"))),
         newPublicKeyY(make_variable(pb, FMT(prefix, ".newPublicKeyY"))),
@@ -78,7 +78,7 @@ public:
             feeTokenID.packed,
             fee.packed,
             nonce.packed,
-            accountNewID.packed,
+            newAccountID.packed,
             newOwner.packed,
             newPublicKeyX,
             newPublicKeyY,
@@ -112,7 +112,7 @@ public:
         setOutput(accountA_Nonce, nonce_after.result());
 
         // Update the account of the newly created account
-        setArrayOutput(accountB_Address, accountNewID.bits);
+        setArrayOutput(accountB_Address, newAccountID.bits);
         setOutput(accountB_Owner, newOwner.packed);
         setOutput(accountB_PublicKeyX, newPublicKeyX);
         setOutput(accountB_PublicKeyY, newPublicKeyY);
@@ -142,7 +142,7 @@ public:
         feeTokenID.generate_r1cs_witness(pb, create.feeTokenID);
         fee.generate_r1cs_witness(pb, create.fee);
         nonce.generate_r1cs_witness();
-        accountNewID.generate_r1cs_witness(pb, create.accountNewID);
+        newAccountID.generate_r1cs_witness(pb, create.newAccountID);
         newOwner.generate_r1cs_witness(pb, create.newOwner);
         pb.val(newPublicKeyX) = create.newPublicKeyX;
         pb.val(newPublicKeyY) = create.newPublicKeyY;
@@ -181,7 +181,7 @@ public:
         feeTokenID.generate_r1cs_constraints();
         fee.generate_r1cs_constraints();
         nonce.generate_r1cs_constraints();
-        accountNewID.generate_r1cs_constraints();
+        newAccountID.generate_r1cs_constraints();
         newOwner.generate_r1cs_constraints();
         walletHash.generate_r1cs_constraints();
 
@@ -217,7 +217,7 @@ public:
             payerAccountID.bits,
             VariableArrayT(4, state.constants._0), feeTokenID.bits,
             fFee.bits(),
-            accountNewID.bits,
+            newAccountID.bits,
             newOwner.bits,
             compressPublicKey.result(),
             walletHash.bits
