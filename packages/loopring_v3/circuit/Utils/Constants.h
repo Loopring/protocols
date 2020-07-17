@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 #ifndef _CONSTANTS_H_
 #define _CONSTANTS_H_
 

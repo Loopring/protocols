@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 #ifndef _ACCOUNTGADGETS_H_
 #define _ACCOUNTGADGETS_H_
 

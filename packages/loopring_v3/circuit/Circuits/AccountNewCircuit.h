@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 #ifndef _NEWACCOUNTCIRCUIT_H_
 #define _NEWACCOUNTCIRCUIT_H_
 
@@ -13,7 +15,7 @@ using namespace ethsnarks;
 namespace Loopring
 {
 
-class NewAccountCircuit : public BaseTransactionCircuit
+class AccountNewCircuit : public BaseTransactionCircuit
 {
 public:
 
@@ -53,7 +55,7 @@ public:
     // Increase the number of conditional transactions
     UnsafeAddGadget numConditionalTransactionsAfter;
 
-    NewAccountCircuit(
+    AccountNewCircuit(
         ProtoboardT& pb,
         const TransactionState& state,
         const std::string& prefix

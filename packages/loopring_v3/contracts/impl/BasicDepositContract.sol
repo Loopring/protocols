@@ -71,8 +71,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
     function deposit(
         address from,
         address token,
-        uint amount,
-        bytes calldata /*auxiliaryData*/
+        uint    amount,
+        bytes   calldata /*auxiliaryData*/
         )
         external
         override
@@ -109,8 +109,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
     function withdraw(
         address to,
         address token,
-        uint amount,
-        bytes calldata /*auxiliaryData*/
+        uint    amount,
+        bytes   calldata /*auxiliaryData*/
         )
         external
         override

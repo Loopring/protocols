@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 #ifndef _DATA_H_
 #define _DATA_H_
 
@@ -131,13 +133,13 @@ static auto dummySignature = R"({
 enum class TransactionType
 {
     Noop = 0,
-    SpotTrade,
     Deposit,
-    NewAccount,
     Withdrawal,
-    AccountUpdate,
     Transfer,
-    OwnerChange,
+    SpotTrade,
+    AccountNew,
+    AccountUpdate,
+    AccountTransfer,
 
     COUNT
 };
@@ -579,11 +581,11 @@ public:
     ethsnarks::FieldT type;
     SpotTrade spotTrade;
     Transfer transfer;
-    NewAccount newAccount;
+    NewAccount accountNew;
     Withdrawal withdraw;
     Deposit deposit;
     AccountUpdateTx accountUpdate;
-    OwnerChange ownerChange;
+    OwnerChange accountTransfer;
 };
 
 static void from_json(const json& j, UniversalTransaction& transaction)
@@ -596,8 +598,8 @@ static void from_json(const json& j, UniversalTransaction& transaction)
     transaction.withdraw = dummyWithdraw.get<Loopring::Withdrawal>();
     transaction.deposit = dummyDeposit.get<Loopring::Deposit>();
     transaction.accountUpdate = dummyAccountUpdate.get<Loopring::AccountUpdateTx>();
-    transaction.newAccount = dummyNewAccount.get<Loopring::NewAccount>();
-    transaction.ownerChange = dummyOwnerChange.get<Loopring::OwnerChange>();
+    transaction.accountNew = dummyNewAccount.get<Loopring::NewAccount>();
+    transaction.accountTransfer = dummyOwnerChange.get<Loopring::OwnerChange>();
 
     // Patch some of the dummy tx's so they are valid against the current state
     // Deposit
@@ -636,15 +638,15 @@ static void from_json(const json& j, UniversalTransaction& transaction)
         transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountUpdate));
         transaction.accountUpdate = j.at("accountUpdate").get<Loopring::AccountUpdateTx>();
     }
-    else if (j.contains("newAccount"))
+    else if (j.contains("accountNew"))
     {
-        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::NewAccount));
-        transaction.newAccount = j.at("newAccount").get<Loopring::NewAccount>();
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountNew));
+        transaction.accountNew = j.at("accountNew").get<Loopring::NewAccount>();
     }
-    else if (j.contains("ownerChange"))
+    else if (j.contains("accountTransfer"))
     {
-        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::OwnerChange));
-        transaction.ownerChange = j.at("ownerChange").get<Loopring::OwnerChange>();
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountTransfer));
+        transaction.accountTransfer = j.at("accountTransfer").get<Loopring::OwnerChange>();
     }
 }
 

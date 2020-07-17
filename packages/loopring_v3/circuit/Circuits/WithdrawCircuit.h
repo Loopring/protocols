@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 #ifndef _OFFCHAINWITHDRAWALCIRCUIT_H_
 #define _OFFCHAINWITHDRAWALCIRCUIT_H_
 
