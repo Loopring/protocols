@@ -1,9 +1,7 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
-
 pragma solidity ^0.6.10;
-
 
 /**
  * @title Proxy
