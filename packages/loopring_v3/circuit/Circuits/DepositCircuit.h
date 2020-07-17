@@ -1,4 +1,5 @@
-#ifndef _DEPOSITCIRCUIT_H_
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.#ifndef _DEPOSITCIRCUIT_H_
 #define _DEPOSITCIRCUIT_H_
 
 #include "Circuit.h"

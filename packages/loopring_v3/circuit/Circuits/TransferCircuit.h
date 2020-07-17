@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 #ifndef _INTERNAL_TRANSFER_CIRCUIT_H_
 #define _INTERNAL_TRANSFER_CIRCUIT_H_
 
