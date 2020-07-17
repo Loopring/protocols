@@ -139,11 +139,7 @@ library SignatureUtil
         pure
         returns (address)
     {
-        bytes32 hash = (data.length == 32) ?
-            BytesUtil.toBytes32(data, 0) :
-            keccak256(data);
-
-        return recoverECDSASigner(hash, signature);
+        return recoverECDSASigner(getDataHash(data), signature);
     }
 
     function verifyEOASignature(
