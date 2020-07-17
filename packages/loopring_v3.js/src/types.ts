@@ -3,13 +3,6 @@ import { Constants } from "./constants";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
 
 /**
- * The type of blocks.
- */
-export enum BlockType {
-  UNIVERSAL = 0
-}
-
-/**
  * The type of requests handled in a block.
  */
 export enum TransactionType {
@@ -43,7 +36,7 @@ export interface Block {
   blockIdx: number;
 
   /** The type of requests handled in the block. */
-  blockType: BlockType;
+  blockType: number;
   /** The block size (in number of requests). */
   blockSize: number;
   /** The block version. */

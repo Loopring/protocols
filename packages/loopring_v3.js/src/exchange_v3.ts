@@ -9,7 +9,6 @@ import { ProtocolV3 } from "./protocol_v3";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
 import {
   BlockContext,
-  BlockType,
   TransactionType,
   ForgeMode,
   Block,
@@ -126,7 +125,7 @@ export class ExchangeV3 {
       exchangeId,
       blockIdx: 0,
 
-      blockType: BlockType.UNIVERSAL,
+      blockType: 0,
       blockSize: 0,
       blockVersion: 0,
       data: "0x",
