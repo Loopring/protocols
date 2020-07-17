@@ -9,7 +9,7 @@ interface NewAccount {
   payerAccountID?: number;
   feeTokenID?: number;
   fee?: BN;
-  accountNewID?: number;
+  newAccountID?: number;
   newOwner?: string;
   newPublicKeyX?: string;
   newPublicKeyY?: string;
@@ -30,7 +30,7 @@ export class NewAccountProcessor {
     const index = state.getAccount(1);
 
     const payerAccount = state.getAccount(create.payerAccountID);
-    const accountNew = state.getAccount(create.accountNewID);
+    const accountNew = state.getAccount(create.newAccountID);
 
     accountNew.owner = create.newOwner;
     accountNew.publicKeyX = create.newPublicKeyX;
@@ -61,7 +61,7 @@ export class NewAccountProcessor {
       Constants.Float16Encoding
     );
     offset += 2;
-    create.accountNewID = data.extractUint24(offset);
+    create.newAccountID = data.extractUint24(offset);
     offset += 3;
     create.newOwner = data.extractAddress(offset);
     offset += 20;
