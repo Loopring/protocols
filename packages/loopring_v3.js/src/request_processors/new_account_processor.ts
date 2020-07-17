@@ -30,12 +30,12 @@ export class NewAccountProcessor {
     const index = state.getAccount(1);
 
     const payerAccount = state.getAccount(create.payerAccountID);
-    const accountNew = state.getAccount(create.newAccountID);
+    const newAccount = state.getAccount(create.newAccountID);
 
-    accountNew.owner = create.newOwner;
-    accountNew.publicKeyX = create.newPublicKeyX;
-    accountNew.publicKeyY = create.newPublicKeyY;
-    accountNew.walletHash = create.newWalletHash;
+    newAccount.owner = create.newOwner;
+    newAccount.publicKeyX = create.newPublicKeyX;
+    newAccount.publicKeyY = create.newPublicKeyY;
+    newAccount.walletHash = create.newWalletHash;
     payerAccount.nonce++;
 
     const balance = payerAccount.getBalance(create.feeTokenID, index);
