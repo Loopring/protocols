@@ -161,17 +161,15 @@ library ExchangeData
         uint    exchangeCreationTimestamp;
         address payable operator; // The only address that can submit new blocks.
         bool    rollupEnabled;
+        uint32  maxAgeDepositUntilWithdrawable;
         bytes32 genesisMerkleRoot;
-
         bytes32 DOMAIN_SEPARATOR;
 
         ILoopringV3      loopring;
         IBlockVerifier   blockVerifier;
         IDepositContract depositContract;
 
-        uint32  maxAgeDepositUntilWithdrawable;
-        uint    numDowntimeMinutes;
-        uint    downtimeStart;
+        
 
         // List of all tokens
         Token[] tokens;

@@ -85,14 +85,13 @@ contract ExchangeV3 is IExchangeV3
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
 
-        state.DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)));
-
         state.initializeGenesisBlock(
             _id,
             _loopringAddress,
             _operator,
             _rollupEnabled,
-            genesisMerkleRoot
+            genesisMerkleRoot,
+            EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );
     }
 
