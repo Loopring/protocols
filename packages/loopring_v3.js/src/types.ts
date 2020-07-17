@@ -3,7 +3,14 @@ import { Constants } from "./constants";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
 
 /**
- * The type of block.
+ * The block type.
+ */
+export enum BlockType {
+  UNIVERSAL = 0
+}
+
+/**
+ * The transaction type.
  */
 export enum TransactionType {
   NOOP = 0,

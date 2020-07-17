@@ -290,7 +290,7 @@ export class Explorer {
       event.returnValues.exchangeAddress,
       parseInt(event.returnValues.exchangeId),
       event.returnValues.owner,
-      JSON.parse(event.returnValues.onchainDataAvailability),
+      JSON.parse(event.returnValues.rollupEnabled),
       parseInt(event.returnValues.forgeMode),
       protocol,
       event.returnValues.implementation
