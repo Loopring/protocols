@@ -22,11 +22,10 @@ library ExchangeBalances
         external
         pure
     {
-        bool isCorrect = isAccountBalanceCorrect(
-            merkleRoot,
-            merkleProof
+        require(
+            isAccountBalanceCorrect(merkleRoot, merkleProof),
+            "INVALID_MERKLE_TREE_DATA"
         );
-        require(isCorrect, "INVALID_MERKLE_TREE_DATA");
     }
 
     function isAccountBalanceCorrect(
@@ -35,7 +34,7 @@ library ExchangeBalances
         )
         public
         pure
-        returns (bool isCorrect)
+        returns (bool)
     {
         // Verify data
         uint calculatedRoot = getBalancesRoot(
@@ -55,7 +54,7 @@ library ExchangeBalances
             calculatedRoot,
             merkleProof.accountMerkleProof
         );
-        isCorrect = (calculatedRoot == merkleRoot);
+        return (calculatedRoot == merkleRoot);
     }
 
     function getBalancesRoot(
@@ -157,20 +156,6 @@ library ExchangeBalances
         return accountItem;
     }
 
-    function hashImpl(
-        uint t0,
-        uint t1,
-        uint t2,
-        uint t3
-        )
-        private
-        pure
-        returns (uint)
-    {
-        Poseidon.HashInputs5 memory inputs = Poseidon.HashInputs5(t0, t1, t2, t3, 0);
-        return Poseidon.hash_t5f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
-    }
-
     function hashAccountLeaf(
         uint t0,
         uint t1,
@@ -185,5 +170,19 @@ library ExchangeBalances
     {
         Poseidon.HashInputs7 memory inputs = Poseidon.HashInputs7(t0, t1, t2, t3, t4, t5, 0);
         return Poseidon.hash_t7f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
+    }
+
+    function hashImpl(
+        uint t0,
+        uint t1,
+        uint t2,
+        uint t3
+        )
+        private
+        pure
+        returns (uint)
+    {
+        Poseidon.HashInputs5 memory inputs = Poseidon.HashInputs5(t0, t1, t2, t3, 0);
+        return Poseidon.hash_t5f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
     }
 }
