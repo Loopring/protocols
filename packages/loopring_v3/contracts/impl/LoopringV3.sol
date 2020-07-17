@@ -59,7 +59,7 @@ contract LoopringV3 is ILoopringV3
         uint    exchangeId,
         address owner,
         address payable operator,
-        bool    isRollup
+        bool    rollupEnabled
         )
         external
         override
@@ -80,7 +80,7 @@ contract LoopringV3 is ILoopringV3
             owner,
             exchangeId,
             operator,
-            isRollup
+            rollupEnabled
         );
 
         exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);
@@ -90,7 +90,7 @@ contract LoopringV3 is ILoopringV3
             exchangeAddress,
             owner,
             operator,
-            isRollup
+            rollupEnabled
         );
     }
 
@@ -147,7 +147,7 @@ contract LoopringV3 is ILoopringV3
 
     function canExchangeSubmitBlocks(
         uint exchangeId,
-        bool isRollup
+        bool rollupEnabled
         )
         external
         override
@@ -155,7 +155,7 @@ contract LoopringV3 is ILoopringV3
         returns (bool)
     {
         uint amountStaked = getExchangeStake(exchangeId);
-        if (isRollup) {
+        if (rollupEnabled) {
             return amountStaked >= minExchangeStakeWithDataAvailability;
         } else {
             return amountStaked >= minExchangeStakeWithoutDataAvailability;
@@ -299,7 +299,7 @@ contract LoopringV3 is ILoopringV3
 
     function getProtocolFeeValues(
         uint exchangeId,
-        bool isRollup
+        bool rollupEnabled
         )
         external
         override
@@ -314,9 +314,9 @@ contract LoopringV3 is ILoopringV3
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
         uint stake = 0;
-        if (isRollup && exchange.exchangeStake > minExchangeStakeWithDataAvailability) {
+        if (rollupEnabled && exchange.exchangeStake > minExchangeStakeWithDataAvailability) {
             stake = exchange.exchangeStake - minExchangeStakeWithDataAvailability;
-        } else if (!isRollup && exchange.exchangeStake > minExchangeStakeWithoutDataAvailability) {
+        } else if (!rollupEnabled && exchange.exchangeStake > minExchangeStakeWithoutDataAvailability) {
             stake = exchange.exchangeStake - minExchangeStakeWithoutDataAvailability;
         }
 
