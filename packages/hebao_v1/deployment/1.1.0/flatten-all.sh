@@ -39,6 +39,8 @@ declare -a all_contracts=(
     "contracts/test/tokens/USDT.sol"
 )
 
+mkdir -p $DEST
+
 for contract in "${all_contracts[@]}"
 do
     file_name=`basename $contract .sol`
