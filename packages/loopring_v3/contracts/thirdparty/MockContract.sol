@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: UNLICENSED
 /// Borrowed from https://github.com/gnosis/mock-contract
-
 pragma solidity ^0.6.10;
 
 interface MockInterface {
