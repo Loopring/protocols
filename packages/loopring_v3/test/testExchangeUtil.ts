@@ -9,6 +9,7 @@ import { Artifacts } from "../util/Artifacts";
 import { SignatureType, sign, verifySignature } from "../util/Signature";
 import {
   Bitstream,
+  BlockType,
   calculateCalldataCost,
   compress,
   compressLZ,
@@ -1771,7 +1772,7 @@ export class ExchangeTestUtil {
 
   public async createBlock(
     exchangeID: number,
-    blockType: number,
+    blockType: BlockType,
     data: string,
     validate: boolean = true
   ) {
@@ -1832,7 +1833,7 @@ export class ExchangeTestUtil {
 
   public async commitBlock(
     operatorId: number,
-    blockType: number,
+    blockType: BlockType,
     blockSize: number,
     data: string,
     filename: string,
@@ -1895,7 +1896,7 @@ export class ExchangeTestUtil {
   }
 
   public async registerCircuit(
-    blockType: number,
+    blockType: BlockType,
     blockSize: number,
     blockVersion: number
   ) {

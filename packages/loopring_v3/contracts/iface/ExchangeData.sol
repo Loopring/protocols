@@ -15,6 +15,11 @@ import "./ILoopringV3.sol";
 library ExchangeData
 {
     // -- Enums --
+    enum BlockType
+    {
+        UNIVERSAL
+    }
+
     enum TransactionType
     {
         NOOP,

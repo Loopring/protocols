@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import { Bitstream, Constants } from "loopringV3.js";
+import { Bitstream, BlockType, Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
 import { AuthMethod, Block, SpotTrade } from "./types";
@@ -99,7 +99,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           const block: OnchainBlock = {
-            blockType: 0,
+            blockType: BlockType.UNIVERSAL,
             blockSize: 2,
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
@@ -131,7 +131,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)), 32);
           const block: OnchainBlock = {
-            blockType: 0,
+            blockType: BlockType.UNIVERSAL,
             blockSize: 2,
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
@@ -158,9 +158,9 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion,
             new Array(18).fill(1)
           );
-          let timestamp = (
-            await web3.eth.getBlock(await web3.eth.getBlockNumber())
-          ).timestamp;
+          let timestamp = (await web3.eth.getBlock(
+            await web3.eth.getBlockNumber()
+          )).timestamp;
           timestamp -=
             exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
           const bs = new Bitstream();
@@ -169,7 +169,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.SNARK_SCALAR_FIELD, 32);
           bs.addNumber(timestamp, 4);
           const block: OnchainBlock = {
-            blockType: 0,
+            blockType: BlockType.UNIVERSAL,
             blockSize: 2,
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
@@ -198,9 +198,9 @@ contract("Exchange", (accounts: string[]) => {
           );
           // Timestamp too early
           {
-            let timestamp = (
-              await web3.eth.getBlock(await web3.eth.getBlockNumber())
-            ).timestamp;
+            let timestamp = (await web3.eth.getBlock(
+              await web3.eth.getBlockNumber()
+            )).timestamp;
             timestamp -=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
             const bs = new Bitstream();
@@ -209,7 +209,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             const block: OnchainBlock = {
-              blockType: 0,
+              blockType: BlockType.UNIVERSAL,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -229,9 +229,9 @@ contract("Exchange", (accounts: string[]) => {
           }
           // Timestamp too late
           {
-            let timestamp = (
-              await web3.eth.getBlock(await web3.eth.getBlockNumber())
-            ).timestamp;
+            let timestamp = (await web3.eth.getBlock(
+              await web3.eth.getBlockNumber()
+            )).timestamp;
             timestamp +=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
             const bs = new Bitstream();
@@ -240,7 +240,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             const block: OnchainBlock = {
-              blockType: 0,
+              blockType: BlockType.UNIVERSAL,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -274,9 +274,9 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.exchangeId,
             exchangeTestUtil.onchainDataAvailability
           );
-          const timestamp = (
-            await web3.eth.getBlock(await web3.eth.getBlockNumber())
-          ).timestamp;
+          const timestamp = (await web3.eth.getBlock(
+            await web3.eth.getBlockNumber()
+          )).timestamp;
           // Invalid taker protocol fee
           {
             const bs = new Bitstream();
@@ -287,7 +287,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
             bs.addNumber(protocolFees.makerFeeBips, 1);
             const block: OnchainBlock = {
-              blockType: 0,
+              blockType: BlockType.UNIVERSAL,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -315,7 +315,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(protocolFees.takerFeeBips, 1);
             bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
             const block: OnchainBlock = {
-              blockType: 0,
+              blockType: BlockType.UNIVERSAL,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -338,14 +338,44 @@ contract("Exchange", (accounts: string[]) => {
         it("Invalid auxiliary data", async () => {
           await createExchange();
           // Do some transfers
-          await exchangeTestUtil.transfer(ownerA, ownerD, tokenA, amountA, tokenB, amountC, {
-            authMethod: AuthMethod.APPROVE
-          });
-          await exchangeTestUtil.transfer(ownerB, ownerC, tokenA, amountB, tokenA, amountD);
-          await exchangeTestUtil.transfer(ownerA, ownerB, tokenA, amountC, tokenB, amountD, {
-            authMethod: AuthMethod.APPROVE
-          });
-          await exchangeTestUtil.transfer(ownerA, ownerB, tokenB, amountD, tokenA, amountA);
+          await exchangeTestUtil.transfer(
+            ownerA,
+            ownerD,
+            tokenA,
+            amountA,
+            tokenB,
+            amountC,
+            {
+              authMethod: AuthMethod.APPROVE
+            }
+          );
+          await exchangeTestUtil.transfer(
+            ownerB,
+            ownerC,
+            tokenA,
+            amountB,
+            tokenA,
+            amountD
+          );
+          await exchangeTestUtil.transfer(
+            ownerA,
+            ownerB,
+            tokenA,
+            amountC,
+            tokenB,
+            amountD,
+            {
+              authMethod: AuthMethod.APPROVE
+            }
+          );
+          await exchangeTestUtil.transfer(
+            ownerA,
+            ownerB,
+            tokenB,
+            amountD,
+            tokenA,
+            amountA
+          );
           // Commmit the transfers
           await exchangeTestUtil.submitTransactions(24);
 
@@ -355,16 +385,28 @@ contract("Exchange", (accounts: string[]) => {
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
                 let auxiliaryData: any[] = [];
-                for (const [i, tx] of blocks[0].internalBlock.transactions.entries()) {
-                  if (tx.txType === "Deposit" || (tx.txType === "Transfer" && tx.type > 0)) {
+                for (const [
+                  i,
+                  tx
+                ] of blocks[0].internalBlock.transactions.entries()) {
+                  if (
+                    tx.txType === "Deposit" ||
+                    (tx.txType === "Transfer" && tx.type > 0)
+                  ) {
                     auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
                   } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
-                    auxiliaryData.push([i, web3.utils.hexToBytes(tx.onchainSignature)]);
+                    auxiliaryData.push([
+                      i,
+                      web3.utils.hexToBytes(tx.onchainSignature)
+                    ]);
                   }
                 }
                 auxiliaryData = auxiliaryData.reverse();
                 onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter('tuple(uint256,bytes)[]', auxiliaryData)
+                  web3.eth.abi.encodeParameter(
+                    "tuple(uint256,bytes)[]",
+                    auxiliaryData
+                  )
                 );
               }
             ),
@@ -377,16 +419,28 @@ contract("Exchange", (accounts: string[]) => {
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
                 let auxiliaryData: any[] = [];
-                for (const [i, tx] of blocks[0].internalBlock.transactions.entries()) {
-                  if (tx.txType === "Deposit" || (tx.txType === "Transfer" && tx.type > 0)) {
+                for (const [
+                  i,
+                  tx
+                ] of blocks[0].internalBlock.transactions.entries()) {
+                  if (
+                    tx.txType === "Deposit" ||
+                    (tx.txType === "Transfer" && tx.type > 0)
+                  ) {
                     auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
                   } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
-                    auxiliaryData.push([i, web3.utils.hexToBytes(tx.onchainSignature)]);
+                    auxiliaryData.push([
+                      i,
+                      web3.utils.hexToBytes(tx.onchainSignature)
+                    ]);
                   }
                 }
                 auxiliaryData[1][0] = auxiliaryData[0][0];
                 onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter('tuple(uint256,bytes)[]', auxiliaryData)
+                  web3.eth.abi.encodeParameter(
+                    "tuple(uint256,bytes)[]",
+                    auxiliaryData
+                  )
                 );
               }
             ),
@@ -399,16 +453,28 @@ contract("Exchange", (accounts: string[]) => {
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
                 const auxiliaryData: any[] = [];
-                for (const [i, tx] of blocks[0].internalBlock.transactions.entries()) {
-                  if (tx.txType === "Deposit" || (tx.txType === "Transfer" && tx.type > 0)) {
+                for (const [
+                  i,
+                  tx
+                ] of blocks[0].internalBlock.transactions.entries()) {
+                  if (
+                    tx.txType === "Deposit" ||
+                    (tx.txType === "Transfer" && tx.type > 0)
+                  ) {
                     auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
                   } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
-                    auxiliaryData.push([i, web3.utils.hexToBytes(tx.onchainSignature)]);
+                    auxiliaryData.push([
+                      i,
+                      web3.utils.hexToBytes(tx.onchainSignature)
+                    ]);
                   }
                 }
                 auxiliaryData.push([99, web3.utils.hexToBytes("0x")]);
                 onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter('tuple(uint256,bytes)[]', auxiliaryData)
+                  web3.eth.abi.encodeParameter(
+                    "tuple(uint256,bytes)[]",
+                    auxiliaryData
+                  )
                 );
               }
             ),
@@ -419,16 +485,28 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.submitPendingBlocks(
             (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
               assert(blocks.length === 1, "unexpected number of blocks");
-                const auxiliaryData: any[] = [];
-                for (const [i, tx] of blocks[0].internalBlock.transactions.entries()) {
-                  if (tx.txType === "Deposit" || (tx.txType === "Transfer" && tx.type > 0)) {
-                    auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
-                  } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
-                    auxiliaryData.push([i, web3.utils.hexToBytes(tx.onchainSignature)]);
-                  }
+              const auxiliaryData: any[] = [];
+              for (const [
+                i,
+                tx
+              ] of blocks[0].internalBlock.transactions.entries()) {
+                if (
+                  tx.txType === "Deposit" ||
+                  (tx.txType === "Transfer" && tx.type > 0)
+                ) {
+                  auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+                } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
+                  auxiliaryData.push([
+                    i,
+                    web3.utils.hexToBytes(tx.onchainSignature)
+                  ]);
+                }
 
                 onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter('tuple(uint256,bytes)[]', auxiliaryData)
+                  web3.eth.abi.encodeParameter(
+                    "tuple(uint256,bytes)[]",
+                    auxiliaryData
+                  )
                 );
               }
             }
@@ -453,23 +531,21 @@ contract("Exchange", (accounts: string[]) => {
           await commitSomeWork();
           // Try so submit blocks with invalid proofs
           await expectThrow(
-            exchangeTestUtil.submitPendingBlocks(
-              (blocks: OnchainBlock[]) => {
-                // Change a random proof
-                const blockToModify = exchangeTestUtil.getRandomInt(
-                  blocks.length
-                );
-                const proofIdxToModify = exchangeTestUtil.getRandomInt(8);
-                blocks[blockToModify].proof[proofIdxToModify] =
-                  "0x" +
-                  new BN(
-                    blocks[blockToModify].proof[proofIdxToModify].slice(2),
-                    16
-                  )
-                    .add(new BN(1))
-                    .toString(16);
-              }
-            ),
+            exchangeTestUtil.submitPendingBlocks((blocks: OnchainBlock[]) => {
+              // Change a random proof
+              const blockToModify = exchangeTestUtil.getRandomInt(
+                blocks.length
+              );
+              const proofIdxToModify = exchangeTestUtil.getRandomInt(8);
+              blocks[blockToModify].proof[proofIdxToModify] =
+                "0x" +
+                new BN(
+                  blocks[blockToModify].proof[proofIdxToModify].slice(2),
+                  16
+                )
+                  .add(new BN(1))
+                  .toString(16);
+            }),
             "INVALID_PROOF"
           );
         });
@@ -482,18 +558,16 @@ contract("Exchange", (accounts: string[]) => {
           await commitSomeWork();
           // Try so submit blocks with invalid proofs
           await expectThrow(
-            exchangeTestUtil.submitPendingBlocks(
-              (blocks: OnchainBlock[]) => {
-                // Change the data of a random block
-                const blockToModify = exchangeTestUtil.getRandomInt(
-                  blocks.length
-                );
-                blocks[blockToModify].data = [
-                  ...blocks[blockToModify].data,
-                  ...web3.utils.hexToBytes(web3.utils.randomHex(1))
-                ];
-              }
-            ),
+            exchangeTestUtil.submitPendingBlocks((blocks: OnchainBlock[]) => {
+              // Change the data of a random block
+              const blockToModify = exchangeTestUtil.getRandomInt(
+                blocks.length
+              );
+              blocks[blockToModify].data = [
+                ...blocks[blockToModify].data,
+                ...web3.utils.hexToBytes(web3.utils.randomHex(1))
+              ];
+            }),
             "INVALID_PROOF"
           );
         });
@@ -504,7 +578,7 @@ contract("Exchange", (accounts: string[]) => {
       it("shouldn't be able to submit blocks", async () => {
         await createExchange();
         const block: OnchainBlock = {
-          blockType: 0,
+          blockType: BlockType.UNIVERSAL,
           blockSize: 1,
           blockVersion: 0,
           data: Constants.emptyBytes,
