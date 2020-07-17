@@ -2736,6 +2736,8 @@ export class ExchangeTestUtil {
       this.exchange.address,
       { from: this.exchangeOperator }
     );
+
+    await operatorContract.addManager(this.exchangeOperator, { from: this.exchangeOperator });
     await this.setOperatorContract(operatorContract);
 
     const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();

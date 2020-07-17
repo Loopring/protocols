@@ -18,8 +18,8 @@
 #include "./AccountUpdateCircuit.h"
 #include "./WithdrawCircuit.h"
 #include "./NoopCircuit.h"
-#include "./NewAccountCircuit.h"
-#include "./OwnerChangeCircuit.h"
+#include "./AccountNewCircuit.h"
+#include "./AccountTransferCircuit.h"
 
 #include "ethsnarks.hpp"
 #include "utils.hpp"
@@ -151,11 +151,11 @@ public:
     NoopCircuit noop;
     SpotTradeCircuit spotTrade;
     DepositCircuit deposit;
-    NewAccountCircuit newAccount;
+    AccountNewCircuit newAccount;
     WithdrawCircuit withdraw;
     AccountUpdateCircuit accountUpdate;
     TransferCircuit transfer;
-    OwnerChangeCircuit ownerChange;
+    AccountTransferCircuit ownerChange;
     SelectTransactionGadget tx;
 
     // General validation
@@ -226,7 +226,7 @@ public:
         accountUpdate(pb, state, FMT(prefix, ".accountUpdate")),
         transfer(pb, state, FMT(prefix, ".transfer")),
         ownerChange(pb, state, FMT(prefix, ".ownerChange")),
-        tx(pb, state, selector.result(), {&noop, &spotTrade, &deposit, &newAccount, &withdraw, &accountUpdate, &transfer, &ownerChange}, FMT(prefix, ".tx")),
+        tx(pb, state, selector.result(), {&noop, &deposit, &withdraw, &transfer, &spotTrade, &newAccount, &accountUpdate, &ownerChange}, FMT(prefix, ".tx")),
 
         // General validation
         accountA(pb, tx.getArrayOutput(accountA_Address), FMT(prefix, ".packAccountA")),
@@ -336,11 +336,11 @@ public:
         noop.generate_r1cs_witness();
         spotTrade.generate_r1cs_witness(uTx.spotTrade);
         deposit.generate_r1cs_witness(uTx.deposit);
-        newAccount.generate_r1cs_witness(uTx.newAccount);
+        newAccount.generate_r1cs_witness(uTx.accountNew);
         withdraw.generate_r1cs_witness(uTx.withdraw);
         accountUpdate.generate_r1cs_witness(uTx.accountUpdate);
         transfer.generate_r1cs_witness(uTx.transfer);
-        ownerChange.generate_r1cs_witness(uTx.ownerChange);
+        ownerChange.generate_r1cs_witness(uTx.accountTransfer);
         tx.generate_r1cs_witness();
 
         // General validation

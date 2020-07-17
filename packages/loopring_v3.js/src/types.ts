@@ -3,7 +3,7 @@ import { Constants } from "./constants";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
 
 /**
- * The type of requests handled in a block.
+ * The type of block.
  */
 export enum TransactionType {
   NOOP = 0,
