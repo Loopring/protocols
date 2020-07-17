@@ -71,32 +71,33 @@ library ExchangeBalances
         uint balanceItem = hashImpl(balance, index, tradeHistoryRoot, 0);
         uint _id = tokenID;
         for (uint depth = 0; depth < 6; depth++) {
+            uint base = depth << 1 + depth;
             if (_id & 3 == 0) {
                 balanceItem = hashImpl(
                     balanceItem,
-                    balanceMerkleProof[depth * 3],
-                    balanceMerkleProof[depth * 3 + 1],
-                    balanceMerkleProof[depth * 3 + 2]
+                    balanceMerkleProof[base],
+                    balanceMerkleProof[base + 1],
+                    balanceMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 1) {
                 balanceItem = hashImpl(
-                    balanceMerkleProof[depth * 3],
+                    balanceMerkleProof[base],
                     balanceItem,
-                    balanceMerkleProof[depth * 3 + 1],
-                    balanceMerkleProof[depth * 3 + 2]
+                    balanceMerkleProof[base + 1],
+                    balanceMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 2) {
                 balanceItem = hashImpl(
-                    balanceMerkleProof[depth * 3],
-                    balanceMerkleProof[depth * 3 + 1],
+                    balanceMerkleProof[base],
+                    balanceMerkleProof[base + 1],
                     balanceItem,
-                    balanceMerkleProof[depth * 3 + 2]
+                    balanceMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 3) {
                 balanceItem = hashImpl(
-                    balanceMerkleProof[depth * 3],
-                    balanceMerkleProof[depth * 3 + 1],
-                    balanceMerkleProof[depth * 3 + 2],
+                    balanceMerkleProof[base],
+                    balanceMerkleProof[base + 1],
+                    balanceMerkleProof[base + 2],
                     balanceItem
                 );
             }
@@ -122,32 +123,33 @@ library ExchangeBalances
         uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, walletHash, balancesRoot);
         uint _id = accountID;
         for (uint depth = 0; depth < 12; depth++) {
+            uint base = depth << 1 + depth;
             if (_id & 3 == 0) {
                 accountItem = hashImpl(
                     accountItem,
-                    accountMerkleProof[depth * 3],
-                    accountMerkleProof[depth * 3 + 1],
-                    accountMerkleProof[depth * 3 + 2]
+                    accountMerkleProof[base],
+                    accountMerkleProof[base + 1],
+                    accountMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 1) {
                 accountItem = hashImpl(
-                    accountMerkleProof[depth * 3],
+                    accountMerkleProof[base],
                     accountItem,
-                    accountMerkleProof[depth * 3 + 1],
-                    accountMerkleProof[depth * 3 + 2]
+                    accountMerkleProof[base + 1],
+                    accountMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 2) {
                 accountItem = hashImpl(
-                    accountMerkleProof[depth * 3],
-                    accountMerkleProof[depth * 3 + 1],
+                    accountMerkleProof[base],
+                    accountMerkleProof[base + 1],
                     accountItem,
-                    accountMerkleProof[depth * 3 + 2]
+                    accountMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 3) {
                 accountItem = hashImpl(
-                    accountMerkleProof[depth * 3],
-                    accountMerkleProof[depth * 3 + 1],
-                    accountMerkleProof[depth * 3 + 2],
+                    accountMerkleProof[base],
+                    accountMerkleProof[base + 1],
+                    accountMerkleProof[base + 2],
                     accountItem
                 );
             }
