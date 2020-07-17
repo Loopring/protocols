@@ -105,14 +105,14 @@ abstract contract IExchangeV3 is IExchange
     /// @param  operator The operator address of the exchange who will be responsible for
     ///         submitting blocks and proofs.
     /// @param  loopringAddress The corresponding ILoopring contract address.
-    /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
+    /// @param  isRollup True to run in 100% zkRollup mode, false to run in Validium mode.
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
     function initialize(
         address loopringAddress,
         address owner,
         uint    exchangeId,
         address payable operator,
-        bool    onchainDataAvailability
+        bool    isRollup
         )
         external
         virtual;

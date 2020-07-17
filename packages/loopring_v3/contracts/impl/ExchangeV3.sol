@@ -75,7 +75,7 @@ contract ExchangeV3 is IExchangeV3
         address _owner,
         uint    _id,
         address payable _operator,
-        bool    _onchainDataAvailability
+        bool    _isRollup
         )
         external
         override
@@ -91,7 +91,7 @@ contract ExchangeV3 is IExchangeV3
             _id,
             _loopringAddress,
             _operator,
-            _onchainDataAvailability,
+            _isRollup,
             genesisMerkleRoot
         );
     }

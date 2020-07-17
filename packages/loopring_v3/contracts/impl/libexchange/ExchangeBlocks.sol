@@ -60,7 +60,7 @@ library ExchangeBlocks
 
         // Check if this exchange has a minimal amount of LRC staked
         require(
-            S.loopring.canExchangeSubmitBlocks(S.id, S.onchainDataAvailability),
+            S.loopring.canExchangeSubmitBlocks(S.id, S.isRollup),
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 
@@ -205,7 +205,7 @@ library ExchangeBlocks
             require(
                 S.blockVerifier.verifyProofs(
                     uint8(firstBlock.blockType),
-                    S.onchainDataAvailability,
+                    S.isRollup,
                     firstBlock.blockSize,
                     firstBlock.blockVersion,
                     publicInputs,
@@ -232,7 +232,7 @@ library ExchangeBlocks
         offset += 4;
 
         if (numConditionalTransactions > 0) {
-            require(S.onchainDataAvailability, "CONDITIONAL_TRANSACTIONS_REQUIRE_OCDA");
+            require(S.isRollup, "CONDITIONAL_TRANSACTIONS_AVAILABLE_ONLY_IN_ROLLUP_MODE");
 
             // Cache the domain seperator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
@@ -326,7 +326,7 @@ library ExchangeBlocks
             // Get the latest protocol fees for this exchange
             (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues(
                 S.id,
-                S.onchainDataAvailability
+                S.isRollup
             );
             data.timestamp = uint32(now);
 

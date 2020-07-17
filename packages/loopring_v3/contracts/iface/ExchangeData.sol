@@ -160,7 +160,7 @@ library ExchangeData
         uint    id;
         uint    exchangeCreationTimestamp;
         address payable operator; // The only address that can submit new blocks.
-        bool    onchainDataAvailability;
+        bool    isRollup;
         bytes32 genesisMerkleRoot;
 
         bytes32 DOMAIN_SEPARATOR;

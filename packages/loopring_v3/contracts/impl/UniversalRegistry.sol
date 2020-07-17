@@ -130,7 +130,7 @@ contract UniversalRegistry is IUniversalRegistry {
 
     function forgeExchange(
         ForgeMode forgeMode,
-        bool      onchainDataAvailability,
+        bool      isRollup,
         address   protocol,
         address   implementation
         )
@@ -170,7 +170,7 @@ contract UniversalRegistry is IUniversalRegistry {
             exchangeId,
             msg.sender,  // owner
             msg.sender,  // operator
-            onchainDataAvailability
+            isRollup
         );
 
         emit ExchangeForged(
@@ -179,7 +179,7 @@ contract UniversalRegistry is IUniversalRegistry {
             exchangeAddress,
             msg.sender,
             forgeMode,
-            onchainDataAvailability,
+            isRollup,
             exchangeId,
             exchangeCreationCostLRC
         );

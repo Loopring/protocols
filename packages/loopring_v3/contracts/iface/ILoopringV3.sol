@@ -118,12 +118,12 @@ abstract contract ILoopringV3 is ILoopring
     ///      data-availability need to stake at least
     ///      minExchangeStakeWithoutDataAvailability.
     /// @param exchangeId The id of the exchange
-    /// @param onchainDataAvailability True if the exchange has on-chain
+    /// @param isRollup True if the exchange has on-chain
     ///        data-availability, else false
     /// @return True if the exchange has staked enough, else false
     function canExchangeSubmitBlocks(
         uint exchangeId,
-        bool onchainDataAvailability
+        bool isRollup
         )
         external
         virtual
@@ -208,13 +208,13 @@ abstract contract ILoopringV3 is ILoopring
 
     /// @dev Gets the protocol fee values for an exchange.
     /// @param exchangeId The id of the exchange
-    /// @param onchainDataAvailability True if the exchange has on-chain
+    /// @param isRollup True if the exchange has on-chain
     ///        data-availability, else false
     /// @return takerFeeBips The protocol taker fee
     /// @return makerFeeBips The protocol maker fee
     function getProtocolFeeValues(
         uint exchangeId,
-        bool onchainDataAvailability
+        bool isRollup
         )
         external
         virtual

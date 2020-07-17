@@ -24,7 +24,7 @@ library ExchangeGenesis
         uint    _id,
         address _loopringAddress,
         address payable _operator,
-        bool    _onchainDataAvailability,
+        bool    _isRollup,
         bytes32 _genesisMerkleRoot
         )
         external
@@ -39,7 +39,7 @@ library ExchangeGenesis
         S.exchangeCreationTimestamp = now;
         S.loopring = ILoopringV3(_loopringAddress);
         S.operator = _operator;
-        S.onchainDataAvailability = _onchainDataAvailability;
+        S.isRollup = _isRollup;
         S.genesisMerkleRoot = _genesisMerkleRoot;
 
         ILoopringV3 loopring = ILoopringV3(_loopringAddress);
