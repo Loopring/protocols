@@ -22,4 +22,5 @@ __pycache__
 genkeys/
 EDDSA_KeyPair.json
 *.deployed
-
+*.abi
+*.bin
