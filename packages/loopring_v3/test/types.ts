@@ -189,7 +189,7 @@ export interface NewAccount {
   fee: BN;
   nonce: number;
 
-  newAccountID: number;
+  accountNewID: number;
   newOwner: string;
   newPublicKeyX: string;
   newPublicKeyY: string;

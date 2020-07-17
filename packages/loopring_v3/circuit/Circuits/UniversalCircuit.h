@@ -149,11 +149,11 @@ public:
     NoopCircuit noop;
     SpotTradeCircuit spotTrade;
     DepositCircuit deposit;
-    NewAccountCircuit newAccount;
+    NewAccountCircuit accountNew;
     WithdrawCircuit withdraw;
     AccountUpdateCircuit accountUpdate;
     TransferCircuit transfer;
-    OwnerChangeCircuit ownerChange;
+    OwnerChangeCircuit accountTransfer;
     SelectTransactionGadget tx;
 
     // General validation
@@ -219,12 +219,12 @@ public:
         noop(pb, state, FMT(prefix, ".noop")),
         spotTrade(pb, state, FMT(prefix, ".spotTrade")),
         deposit(pb, state, FMT(prefix, ".deposit")),
-        newAccount(pb, state, FMT(prefix, ".newAccount")),
+        accountNew(pb, state, FMT(prefix, ".accountNew")),
         withdraw(pb, state, FMT(prefix, ".withdraw")),
         accountUpdate(pb, state, FMT(prefix, ".accountUpdate")),
         transfer(pb, state, FMT(prefix, ".transfer")),
-        ownerChange(pb, state, FMT(prefix, ".ownerChange")),
-        tx(pb, state, selector.result(), {&noop, &deposit, &withdraw, &transfer, &spotTrade, &newAccount, &accountUpdate, &ownerChange}, FMT(prefix, ".tx")),
+        accountTransfer(pb, state, FMT(prefix, ".accountTransfer")),
+        tx(pb, state, selector.result(), {&noop, &deposit, &withdraw, &transfer, &spotTrade, &accountNew, &accountUpdate, &accountTransfer}, FMT(prefix, ".tx")),
 
         // General validation
         accountA(pb, tx.getArrayOutput(accountA_Address), FMT(prefix, ".packAccountA")),
@@ -334,11 +334,11 @@ public:
         noop.generate_r1cs_witness();
         spotTrade.generate_r1cs_witness(uTx.spotTrade);
         deposit.generate_r1cs_witness(uTx.deposit);
-        newAccount.generate_r1cs_witness(uTx.newAccount);
+        accountNew.generate_r1cs_witness(uTx.accountNew);
         withdraw.generate_r1cs_witness(uTx.withdraw);
         accountUpdate.generate_r1cs_witness(uTx.accountUpdate);
         transfer.generate_r1cs_witness(uTx.transfer);
-        ownerChange.generate_r1cs_witness(uTx.ownerChange);
+        accountTransfer.generate_r1cs_witness(uTx.accountTransfer);
         tx.generate_r1cs_witness();
 
         // General validation
@@ -386,11 +386,11 @@ public:
         noop.generate_r1cs_constraints();
         spotTrade.generate_r1cs_constraints();
         deposit.generate_r1cs_constraints();
-        newAccount.generate_r1cs_constraints();
+        accountNew.generate_r1cs_constraints();
         withdraw.generate_r1cs_constraints();
         accountUpdate.generate_r1cs_constraints();
         transfer.generate_r1cs_constraints();
-        ownerChange.generate_r1cs_constraints();
+        accountTransfer.generate_r1cs_constraints();
         tx.generate_r1cs_constraints();
 
         // General validation

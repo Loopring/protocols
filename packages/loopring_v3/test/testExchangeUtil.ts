@@ -483,7 +483,7 @@ export namespace WalletUtils {
 
 export namespace OwnerChangeUtils {
   export function toTypedData(
-    ownerChange: OwnerChange,
+    accountTransfer: OwnerChange,
     verifyingContract: string
   ) {
     const typedData = {
@@ -514,22 +514,25 @@ export namespace OwnerChangeUtils {
         verifyingContract
       },
       message: {
-        owner: ownerChange.owner,
-        accountID: ownerChange.accountID,
-        feeTokenID: ownerChange.feeTokenID,
-        fee: ownerChange.fee,
-        newOwner: ownerChange.newOwner,
-        nonce: ownerChange.nonce,
-        walletAddress: ownerChange.walletAddress,
-        walletDataHash: ownerChange.walletDataHash,
-        walletCalldata: ownerChange.walletCalldata
+        owner: accountTransfer.owner,
+        accountID: accountTransfer.accountID,
+        feeTokenID: accountTransfer.feeTokenID,
+        fee: accountTransfer.fee,
+        newOwner: accountTransfer.newOwner,
+        nonce: accountTransfer.nonce,
+        walletAddress: accountTransfer.walletAddress,
+        walletDataHash: accountTransfer.walletDataHash,
+        walletCalldata: accountTransfer.walletCalldata
       }
     };
     return typedData;
   }
 
-  export function getHash(ownerChange: OwnerChange, verifyingContract: string) {
-    const typedData = this.toTypedData(ownerChange, verifyingContract);
+  export function getHash(
+    accountTransfer: OwnerChange,
+    verifyingContract: string
+  ) {
+    const typedData = this.toTypedData(accountTransfer, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
   }
 }
@@ -559,7 +562,7 @@ export namespace NewAccountUtils {
         verifyingContract
       },
       message: {
-        accountID: update.newAccountID,
+        accountID: update.accountNewID,
         owner: update.newOwner,
         publicKey: new BN(
           EdDSA.pack(update.newPublicKeyX, update.newPublicKeyY),
@@ -585,7 +588,7 @@ export namespace NewAccountUtils {
       create.feeTokenID,
       create.fee,
       create.nonce,
-      create.newAccountID,
+      create.accountNewID,
       create.newOwner,
       create.newPublicKeyX,
       create.newPublicKeyY,
@@ -1291,7 +1294,7 @@ export class ExchangeTestUtil {
     const caller = accountContract ? this.testContext.orderOwners[0] : from;
 
     let accountID = await this.getAccountID(to);
-    let newAccountCreated = false;
+    let accountNewCreated = false;
     if (accountID === undefined) {
       const account: Account = {
         accountID: this.accounts[this.exchangeId].length,
@@ -1304,7 +1307,7 @@ export class ExchangeTestUtil {
       this.accounts[this.exchangeId].push(account);
       accountID = account.accountID;
 
-      newAccountCreated = true;
+      accountNewCreated = true;
     }
 
     let ethToSend = fee;
@@ -1366,7 +1369,7 @@ export class ExchangeTestUtil {
     };
     this.pendingTransactions[this.exchangeId].push(deposit);
 
-    if (newAccountCreated && autoSetKeys) {
+    if (accountNewCreated && autoSetKeys) {
       let keyPair = this.getKeyPairEDDSA();
       await this.requestAccountUpdate(
         to,
@@ -1540,7 +1543,7 @@ export class ExchangeTestUtil {
     };
     this.accounts[this.exchangeId].push(account);
 
-    const newAccount: NewAccount = {
+    const accountNew: NewAccount = {
       txType: "NewAccount",
       exchange: this.exchange.address,
       payerAccountID: payerAccount.accountID,
@@ -1548,31 +1551,31 @@ export class ExchangeTestUtil {
       fee,
       nonce: payerAccount.nonce++,
       newOwner,
-      newAccountID: account.accountID,
+      accountNewID: account.accountID,
       newPublicKeyX: account.publicKeyX,
       newPublicKeyY: account.publicKeyY,
       newWalletHash: walletHash
     };
-    newAccount.signature = NewAccountUtils.sign(payerAccount, newAccount);
+    accountNew.signature = NewAccountUtils.sign(payerAccount, accountNew);
 
     // Let the new owner sign the new account data
     if (authMethod === AuthMethod.ECDSA) {
-      const hash = NewAccountUtils.getHash(newAccount, this.exchange.address);
-      newAccount.onchainSignature = await sign(
+      const hash = NewAccountUtils.getHash(accountNew, this.exchange.address);
+      accountNew.onchainSignature = await sign(
         newOwner,
         hash,
         SignatureType.EIP_712
       );
-      await verifySignature(newOwner, hash, newAccount.onchainSignature);
+      await verifySignature(newOwner, hash, accountNew.onchainSignature);
     } else if (authMethod === AuthMethod.APPROVE) {
-      const hash = NewAccountUtils.getHash(newAccount, this.exchange.address);
+      const hash = NewAccountUtils.getHash(accountNew, this.exchange.address);
       await this.exchange.approveTransaction(newOwner, hash, {
         from: newOwner
       });
     }
 
-    this.pendingTransactions[this.exchangeId].push(newAccount);
-    return newAccount;
+    this.pendingTransactions[this.exchangeId].push(accountNew);
+    return accountNew;
   }
 
   public async requestAccountUpdate(
@@ -1696,7 +1699,7 @@ export class ExchangeTestUtil {
       walletDataHash = "0x" + dataHash.toString("hex");
     }
 
-    const ownerChange: OwnerChange = {
+    const accountTransfer: OwnerChange = {
       txType: "OwnerChange",
       owner,
       accountID: account.accountID,
@@ -1714,22 +1717,33 @@ export class ExchangeTestUtil {
     };
 
     // New owner always has to sign
-    const hash = OwnerChangeUtils.getHash(ownerChange, this.exchange.address);
-    ownerChange.onchainSignatureNewOwner = await sign(
+    const hash = OwnerChangeUtils.getHash(
+      accountTransfer,
+      this.exchange.address
+    );
+    accountTransfer.onchainSignatureNewOwner = await sign(
       newOwner,
       hash,
       SignatureType.EIP_712
     );
-    await verifySignature(newOwner, hash, ownerChange.onchainSignatureNewOwner);
+    await verifySignature(
+      newOwner,
+      hash,
+      accountTransfer.onchainSignatureNewOwner
+    );
 
     // Sign the public key update
     if (authMethod === AuthMethod.ECDSA) {
-      ownerChange.onchainSignatureOldOwner = await sign(
+      accountTransfer.onchainSignatureOldOwner = await sign(
         owner,
         hash,
         SignatureType.EIP_712
       );
-      await verifySignature(owner, hash, ownerChange.onchainSignatureOldOwner);
+      await verifySignature(
+        owner,
+        hash,
+        accountTransfer.onchainSignatureOldOwner
+      );
     } else if (authMethod === AuthMethod.WALLET) {
       // Nothing more to do
     }
@@ -1737,8 +1751,8 @@ export class ExchangeTestUtil {
     // Change the owner on the internal state
     account.owner = newOwner;
 
-    this.pendingTransactions[this.exchangeId].push(ownerChange);
-    return ownerChange;
+    this.pendingTransactions[this.exchangeId].push(accountTransfer);
+    return accountTransfer;
   }
 
   public sendRing(ring: SpotTrade) {
@@ -2478,8 +2492,8 @@ export class ExchangeTestUtil {
               toFloat(new BN(update.fee), Constants.Float16Encoding),
               2
             );
-          } else if (tx.newAccount) {
-            const create = tx.newAccount;
+          } else if (tx.accountNew) {
+            const create = tx.accountNew;
             da.addNumber(TransactionType.ACCOUNT_NEW, 1);
             da.addNumber(create.payerAccountID, 3);
             da.addNumber(create.feeTokenID, 2);
@@ -2487,7 +2501,7 @@ export class ExchangeTestUtil {
               toFloat(new BN(create.fee), Constants.Float16Encoding),
               2
             );
-            da.addNumber(create.newAccountID, 3);
+            da.addNumber(create.accountNewID, 3);
             da.addBN(new BN(create.newOwner), 20);
             da.addBN(
               new BN(
@@ -2497,8 +2511,8 @@ export class ExchangeTestUtil {
               32
             );
             da.addBN(new BN(create.newWalletHash), 32);
-          } else if (tx.ownerChange) {
-            const change = tx.ownerChange;
+          } else if (tx.accountTransfer) {
+            const change = tx.accountTransfer;
             da.addNumber(TransactionType.ACCOUNT_TRANSFER, 1);
             da.addBN(new BN(change.owner), 20);
             da.addNumber(change.accountID, 3);
