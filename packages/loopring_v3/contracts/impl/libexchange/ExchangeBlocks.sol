@@ -4,8 +4,9 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
-import "../../thirdparty/BytesUtil.sol";
 import "../../lib/MathUint.sol";
+
+import "../../thirdparty/BytesUtil.sol";
 
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/ExchangeData.sol";
@@ -59,7 +60,7 @@ library ExchangeBlocks
 
         // Check if this exchange has a minimal amount of LRC staked
         require(
-            S.loopring.canExchangeSubmitBlocks(S.id, S.onchainDataAvailability),
+            S.loopring.canExchangeSubmitBlocks(S.id, S.rollupEnabled),
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 
@@ -77,7 +78,7 @@ library ExchangeBlocks
             );
         }
 
-        // Verify the blocks
+        // Verify the blocks - blocks are verified in a batch to save gas.
         verifyBlocks(
             S,
             blocks,
@@ -204,7 +205,7 @@ library ExchangeBlocks
             require(
                 S.blockVerifier.verifyProofs(
                     uint8(firstBlock.blockType),
-                    S.onchainDataAvailability,
+                    S.rollupEnabled,
                     firstBlock.blockSize,
                     firstBlock.blockVersion,
                     publicInputs,
@@ -231,7 +232,7 @@ library ExchangeBlocks
         offset += 4;
 
         if (numConditionalTransactions > 0) {
-            require(S.onchainDataAvailability, "CONDITIONAL_TRANSACTIONS_REQUIRE_OCDA");
+            require(S.rollupEnabled, "CONDITIONAL_TRANSACTIONS_AVAILABLE_ONLY_IN_ROLLUP_MODE");
 
             // Cache the domain seperator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
@@ -325,7 +326,7 @@ library ExchangeBlocks
             // Get the latest protocol fees for this exchange
             (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues(
                 S.id,
-                S.onchainDataAvailability
+                S.rollupEnabled
             );
             data.timestamp = uint32(now);
 

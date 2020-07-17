@@ -24,8 +24,9 @@ library ExchangeGenesis
         uint    _id,
         address _loopringAddress,
         address payable _operator,
-        bool    _onchainDataAvailability,
-        bytes32 _genesisMerkleRoot
+        bool    _rollupEnabled,
+        bytes32 _genesisMerkleRoot,
+        bytes32 _domainSeperator
         )
         external
     {
@@ -37,12 +38,14 @@ library ExchangeGenesis
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;
-        S.loopring = ILoopringV3(_loopringAddress);
         S.operator = _operator;
-        S.onchainDataAvailability = _onchainDataAvailability;
+        S.rollupEnabled = _rollupEnabled;
+        S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
         S.genesisMerkleRoot = _genesisMerkleRoot;
+        S.DOMAIN_SEPARATOR = _domainSeperator;
 
         ILoopringV3 loopring = ILoopringV3(_loopringAddress);
+        S.loopring = loopring;
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
 
         S.merkleRoot = S.genesisMerkleRoot;

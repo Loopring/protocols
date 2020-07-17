@@ -35,7 +35,7 @@ library ExchangeData
 
     struct ProtocolFeeData
     {
-        uint32 timestamp;
+        uint32 timestamp; // only valid before 2105 (85 years to go)
         uint8  takerFeeBips;
         uint8  makerFeeBips;
         uint8  previousTakerFeeBips;
@@ -80,7 +80,7 @@ library ExchangeData
     struct Deposit
     {
         uint96 amount;
-        uint32 timestamp;
+        uint32 timestamp; // only valid before 2105 (85 years to go)
         uint64 fee;
     }
 
@@ -105,7 +105,7 @@ library ExchangeData
         uint MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED;
         uint MIN_TIME_IN_SHUTDOWN;
         uint TX_DATA_AVAILABILITY_SIZE;
-        uint MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE;
+        uint MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND;
     }
 
     function SNARK_SCALAR_FIELD() internal pure returns (uint) {
@@ -120,7 +120,7 @@ library ExchangeData
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
     function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 104; }
-    function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE() internal pure returns (uint32) { return 1 days; }
+    function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 14 days; }
 
 
     struct AccountLeaf
@@ -160,18 +160,16 @@ library ExchangeData
         uint    id;
         uint    exchangeCreationTimestamp;
         address payable operator; // The only address that can submit new blocks.
-        bool    onchainDataAvailability;
+        bool    rollupEnabled;
+        uint32  maxAgeDepositUntilWithdrawable;
         bytes32 genesisMerkleRoot;
-
         bytes32 DOMAIN_SEPARATOR;
 
         ILoopringV3      loopring;
         IBlockVerifier   blockVerifier;
         IDepositContract depositContract;
 
-        uint    totalTimeInMaintenanceSeconds;
-        uint    numDowntimeMinutes;
-        uint    downtimeStart;
+        
 
         // List of all tokens
         Token[] tokens;

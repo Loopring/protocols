@@ -105,14 +105,14 @@ abstract contract IExchangeV3 is IExchange
     /// @param  operator The operator address of the exchange who will be responsible for
     ///         submitting blocks and proofs.
     /// @param  loopringAddress The corresponding ILoopring contract address.
-    /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
+    /// @param  rollupEnabled True to run in 100% zkRollup mode, false to run in Validium mode.
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
     function initialize(
         address loopringAddress,
         address owner,
         uint    exchangeId,
         address payable operator,
-        bool    onchainDataAvailability
+        bool    rollupEnabled
         )
         external
         virtual;
@@ -610,6 +610,24 @@ abstract contract IExchangeV3 is IExchange
         virtual
         view
         returns (address payable);
+
+    /// @dev Sets the max time deposits have to wait before becoming withdrawable.
+    /// @param newValue The new value.
+    /// @return  The old value.
+    function setMaxAgeDepositUntilWithdrawable(
+        uint32 newValue
+        )
+        external
+        virtual
+        returns (uint32);
+
+    /// @dev Returns the max time deposits have to wait before becoming withdrawable.
+    /// @return The value.
+    function getMaxAgeDepositUntilWithdrawable()
+        external
+        virtual
+        view
+        returns (uint32);
 
     /// @dev Gets the time the exchange was created.
     /// @return timestamp The time the exchange was created.

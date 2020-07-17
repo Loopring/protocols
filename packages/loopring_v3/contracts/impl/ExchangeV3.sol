@@ -75,7 +75,7 @@ contract ExchangeV3 is IExchangeV3
         address _owner,
         uint    _id,
         address payable _operator,
-        bool    _onchainDataAvailability
+        bool    _rollupEnabled
         )
         external
         override
@@ -85,14 +85,13 @@ contract ExchangeV3 is IExchangeV3
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
 
-        state.DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)));
-
         state.initializeGenesisBlock(
             _id,
             _loopringAddress,
             _operator,
-            _onchainDataAvailability,
-            genesisMerkleRoot
+            _rollupEnabled,
+            genesisMerkleRoot,
+            EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );
     }
 
@@ -134,7 +133,7 @@ contract ExchangeV3 is IExchangeV3
             uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
             uint(ExchangeData.MIN_TIME_IN_SHUTDOWN()),
             uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE()),
-            uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE())
+            uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND())
         );
     }
 
@@ -565,6 +564,26 @@ contract ExchangeV3 is IExchangeV3
         returns (address payable)
     {
         return state.operator;
+    }
+
+    function setMaxAgeDepositUntilWithdrawable(
+        uint32 newValue
+        )
+        external
+        override
+        onlyOwner
+        returns (uint32)
+    {
+        return state.setMaxAgeDepositUntilWithdrawable(newValue);
+    }
+
+    function getMaxAgeDepositUntilWithdrawable()
+        external
+        override
+        view
+        returns (uint32)
+    {
+        return state.maxAgeDepositUntilWithdrawable;
     }
 
     function getExchangeCreationTimestamp()

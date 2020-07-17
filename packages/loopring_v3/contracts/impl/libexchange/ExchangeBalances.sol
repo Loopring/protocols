@@ -22,11 +22,10 @@ library ExchangeBalances
         external
         pure
     {
-        bool isCorrect = isAccountBalanceCorrect(
-            merkleRoot,
-            merkleProof
+        require(
+            isAccountBalanceCorrect(merkleRoot, merkleProof),
+            "INVALID_MERKLE_TREE_DATA"
         );
-        require(isCorrect, "INVALID_MERKLE_TREE_DATA");
     }
 
     function isAccountBalanceCorrect(
@@ -35,7 +34,7 @@ library ExchangeBalances
         )
         public
         pure
-        returns (bool isCorrect)
+        returns (bool)
     {
         // Verify data
         uint calculatedRoot = getBalancesRoot(
@@ -55,7 +54,7 @@ library ExchangeBalances
             calculatedRoot,
             merkleProof.accountMerkleProof
         );
-        isCorrect = (calculatedRoot == merkleRoot);
+        return (calculatedRoot == merkleRoot);
     }
 
     function getBalancesRoot(
@@ -72,32 +71,33 @@ library ExchangeBalances
         uint balanceItem = hashImpl(balance, index, tradeHistoryRoot, 0);
         uint _id = tokenID;
         for (uint depth = 0; depth < 6; depth++) {
+            uint base = depth * 3;
             if (_id & 3 == 0) {
                 balanceItem = hashImpl(
                     balanceItem,
-                    balanceMerkleProof[depth * 3],
-                    balanceMerkleProof[depth * 3 + 1],
-                    balanceMerkleProof[depth * 3 + 2]
+                    balanceMerkleProof[base],
+                    balanceMerkleProof[base + 1],
+                    balanceMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 1) {
                 balanceItem = hashImpl(
-                    balanceMerkleProof[depth * 3],
+                    balanceMerkleProof[base],
                     balanceItem,
-                    balanceMerkleProof[depth * 3 + 1],
-                    balanceMerkleProof[depth * 3 + 2]
+                    balanceMerkleProof[base + 1],
+                    balanceMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 2) {
                 balanceItem = hashImpl(
-                    balanceMerkleProof[depth * 3],
-                    balanceMerkleProof[depth * 3 + 1],
+                    balanceMerkleProof[base],
+                    balanceMerkleProof[base + 1],
                     balanceItem,
-                    balanceMerkleProof[depth * 3 + 2]
+                    balanceMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 3) {
                 balanceItem = hashImpl(
-                    balanceMerkleProof[depth * 3],
-                    balanceMerkleProof[depth * 3 + 1],
-                    balanceMerkleProof[depth * 3 + 2],
+                    balanceMerkleProof[base],
+                    balanceMerkleProof[base + 1],
+                    balanceMerkleProof[base + 2],
                     balanceItem
                 );
             }
@@ -123,52 +123,39 @@ library ExchangeBalances
         uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, walletHash, balancesRoot);
         uint _id = accountID;
         for (uint depth = 0; depth < 12; depth++) {
+            uint base = depth * 3;
             if (_id & 3 == 0) {
                 accountItem = hashImpl(
                     accountItem,
-                    accountMerkleProof[depth * 3],
-                    accountMerkleProof[depth * 3 + 1],
-                    accountMerkleProof[depth * 3 + 2]
+                    accountMerkleProof[base],
+                    accountMerkleProof[base + 1],
+                    accountMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 1) {
                 accountItem = hashImpl(
-                    accountMerkleProof[depth * 3],
+                    accountMerkleProof[base],
                     accountItem,
-                    accountMerkleProof[depth * 3 + 1],
-                    accountMerkleProof[depth * 3 + 2]
+                    accountMerkleProof[base + 1],
+                    accountMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 2) {
                 accountItem = hashImpl(
-                    accountMerkleProof[depth * 3],
-                    accountMerkleProof[depth * 3 + 1],
+                    accountMerkleProof[base],
+                    accountMerkleProof[base + 1],
                     accountItem,
-                    accountMerkleProof[depth * 3 + 2]
+                    accountMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 3) {
                 accountItem = hashImpl(
-                    accountMerkleProof[depth * 3],
-                    accountMerkleProof[depth * 3 + 1],
-                    accountMerkleProof[depth * 3 + 2],
+                    accountMerkleProof[base],
+                    accountMerkleProof[base + 1],
+                    accountMerkleProof[base + 2],
                     accountItem
                 );
             }
             _id = _id >> 2;
         }
         return accountItem;
-    }
-
-    function hashImpl(
-        uint t0,
-        uint t1,
-        uint t2,
-        uint t3
-        )
-        private
-        pure
-        returns (uint)
-    {
-        Poseidon.HashInputs5 memory inputs = Poseidon.HashInputs5(t0, t1, t2, t3, 0);
-        return Poseidon.hash_t5f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
     }
 
     function hashAccountLeaf(
@@ -185,5 +172,19 @@ library ExchangeBalances
     {
         Poseidon.HashInputs7 memory inputs = Poseidon.HashInputs7(t0, t1, t2, t3, t4, t5, 0);
         return Poseidon.hash_t7f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
+    }
+
+    function hashImpl(
+        uint t0,
+        uint t1,
+        uint t2,
+        uint t3
+        )
+        private
+        pure
+        returns (uint)
+    {
+        Poseidon.HashInputs5 memory inputs = Poseidon.HashInputs5(t0, t1, t2, t3, 0);
+        return Poseidon.hash_t5f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
     }
 }

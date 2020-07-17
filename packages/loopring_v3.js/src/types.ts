@@ -5,13 +5,6 @@ import { SparseMerkleTree } from "./sparse_merkle_tree";
 /**
  * The type of block.
  */
-export enum BlockType {
-  UNIVERSAL = 0
-}
-
-/**
- * The type of requests handled in a block.
- */
 export enum TransactionType {
   NOOP = 0,
   DEPOSIT,

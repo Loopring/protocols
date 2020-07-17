@@ -26,6 +26,12 @@ library ExchangeAdmins
         address         newOperator
     );
 
+    event MaxAgeDepositUntilWithdrawableChanged(
+        uint    indexed exchangeId,
+        uint32          oldValue,
+        uint32          newValue
+    );
+
     function setOperator(
         ExchangeData.State storage S,
         address payable _operator
@@ -42,6 +48,29 @@ library ExchangeAdmins
             S.id,
             oldOperator,
             _operator
+        );
+    }
+
+    function setMaxAgeDepositUntilWithdrawable(
+        ExchangeData.State storage S,
+        uint32 newValue
+        )
+        external
+        returns (uint32 oldValue)
+    {
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        require(
+            newValue > 0 &&
+            newValue <= ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND(),
+            "INVALID_VALUE"
+        );
+        oldValue = S.maxAgeDepositUntilWithdrawable;
+        S.maxAgeDepositUntilWithdrawable = newValue;
+
+        emit MaxAgeDepositUntilWithdrawableChanged(
+            S.id,
+            oldValue,
+            newValue
         );
     }
 
