@@ -35,7 +35,7 @@ library ExchangeData
 
     struct ProtocolFeeData
     {
-        uint32 timestamp;
+        uint32 timestamp; // only valid before 2105 (85 years to go)
         uint8  takerFeeBips;
         uint8  makerFeeBips;
         uint8  previousTakerFeeBips;
@@ -80,7 +80,7 @@ library ExchangeData
     struct Deposit
     {
         uint96 amount;
-        uint32 timestamp;
+        uint32 timestamp; // only valid before 2105 (85 years to go)
         uint64 fee;
     }
 
