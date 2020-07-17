@@ -32,7 +32,7 @@ abstract contract IBlockVerifier is Claimable
     ///      Every block permutation needs its own circuit and thus its own set of
     ///      verification keys. Only a limited number of block sizes per block
     ///      type are supported.
-    /// @param blockType The type of the block See @BlockType
+    /// @param blockType The type of the block
     /// @param onchainDataAvailability True if the block expects onchain
     ///        data availability data as public input, false otherwise
     /// @param blockSize The number of requests handled in the block
@@ -51,7 +51,7 @@ abstract contract IBlockVerifier is Claimable
     /// @dev Disables the use of the specified circuit.
     ///      This will stop NEW blocks from using the given circuit, blocks that were already committed
     ///      can still be verified.
-    /// @param blockType The type of the block See @BlockType
+    /// @param blockType The type of the block
     /// @param onchainDataAvailability True if the block expects onchain
     ///        data availability data as public input, false otherwise
     /// @param blockSize The number of requests handled in the block
@@ -68,7 +68,7 @@ abstract contract IBlockVerifier is Claimable
     /// @dev Verifies blocks with the given public data and proofs.
     ///      Verifying a block makes sure all requests handled in the block
     ///      are correctly handled by the operator.
-    /// @param blockType The type of block See @BlockType
+    /// @param blockType The type of block
     /// @param onchainDataAvailability True if the block expects onchain
     ///        data availability data as public input, false otherwise
     /// @param blockSize The number of requests handled in the block
@@ -90,7 +90,7 @@ abstract contract IBlockVerifier is Claimable
         returns (bool);
 
     /// @dev Checks if a circuit with the specified parameters is registered.
-    /// @param blockType The type of the block See @BlockType
+    /// @param blockType The type of the block
     /// @param onchainDataAvailability True if the block expects onchain
     ///        data availability data as public input, false otherwise
     /// @param blockSize The number of requests handled in the block
@@ -108,7 +108,7 @@ abstract contract IBlockVerifier is Claimable
         returns (bool);
 
     /// @dev Checks if a circuit can still be used to commit new blocks.
-    /// @param blockType The type of the block See @BlockType
+    /// @param blockType The type of the block
     /// @param onchainDataAvailability True if the block expects onchain
     ///        data availability data as public input, false otherwise
     /// @param blockSize The number of requests handled in the block

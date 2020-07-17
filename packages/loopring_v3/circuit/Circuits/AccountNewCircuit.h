@@ -13,7 +13,7 @@ using namespace ethsnarks;
 namespace Loopring
 {
 
-class NewAccountCircuit : public BaseTransactionCircuit
+class AccountNewCircuit : public BaseTransactionCircuit
 {
 public:
 
@@ -53,7 +53,7 @@ public:
     // Increase the number of conditional transactions
     UnsafeAddGadget numConditionalTransactionsAfter;
 
-    NewAccountCircuit(
+    AccountNewCircuit(
         ProtoboardT& pb,
         const TransactionState& state,
         const std::string& prefix

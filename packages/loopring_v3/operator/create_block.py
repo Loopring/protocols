@@ -125,7 +125,7 @@ def accountUpdateFromJSON(jUpdate):
         update.signature = jUpdate["signature"]
     return update
 
-def newAccountFromJSON(jCreate):
+def accountNewFromJSON(jCreate):
     create = GeneralObject()
     create.payerAccountID = int(jCreate["payerAccountID"])
     create.feeTokenID = int(jCreate["feeTokenID"])
@@ -139,7 +139,7 @@ def newAccountFromJSON(jCreate):
     create.signature = jCreate["signature"]
     return create
 
-def ownerChangeFromJSON(jChange):
+def accountTransferFromJSON(jChange):
     change = GeneralObject()
     change.owner = str(jChange["owner"])
     change.accountID = int(jChange["accountID"])
@@ -189,9 +189,9 @@ def createBlock(state, data):
         if txType == "AccountUpdate":
             transaction = accountUpdateFromJSON(transactionInfo)
         if txType == "NewAccount":
-            transaction = newAccountFromJSON(transactionInfo)
+            transaction = accountNewFromJSON(transactionInfo)
         if txType == "OwnerChange":
-            transaction = ownerChangeFromJSON(transactionInfo)
+            transaction = accountTransferFromJSON(transactionInfo)
 
         transaction.txType = txType
         tx = state.executeTransaction(context, transaction)
@@ -210,9 +210,9 @@ def createBlock(state, data):
         if txType == "AccountUpdate":
             txWitness.accountUpdate = tx.input
         if txType == "NewAccount":
-            txWitness.newAccount = tx.input
+            txWitness.accountNew = tx.input
         if txType == "OwnerChange":
-            txWitness.ownerChange = tx.input
+            txWitness.accountTransfer = tx.input
         txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
         block.transactions.append(txWitness)
 

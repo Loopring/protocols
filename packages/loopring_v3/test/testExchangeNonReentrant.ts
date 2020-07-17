@@ -1,6 +1,6 @@
 import BN = require("bn.js");
 import fs = require("fs");
-import { Constants } from "loopringV3.js";
+import { Constants, BlockType } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
 
@@ -95,9 +95,11 @@ contract("Exchange", (accounts: string[]) => {
             values.push(web3.utils.hexToBytes("0x"));
           } else if (input.type === "bytes32") {
             values.push("0x0");
-          } else if (input.internalType.startsWith("struct ExchangeData.Block[]")) {
+          } else if (
+            input.internalType.startsWith("struct ExchangeData.Block[]")
+          ) {
             const block: OnchainBlock = {
-              blockType: 0,
+              blockType: BlockType.UNIVERSAL,
               blockSize: 1,
               blockVersion: 0,
               data: Constants.emptyBytes,
@@ -107,8 +109,13 @@ contract("Exchange", (accounts: string[]) => {
               auxiliaryData: Constants.emptyBytes
             };
             values.push([block]);
-          } else if (input.internalType.startsWith("struct ExchangeData.MerkleProof")) {
-            const proof = await exchangeTestUtil.createMerkleTreeInclusionProof(0, "ETH");
+          } else if (
+            input.internalType.startsWith("struct ExchangeData.MerkleProof")
+          ) {
+            const proof = await exchangeTestUtil.createMerkleTreeInclusionProof(
+              0,
+              "ETH"
+            );
             values.push(proof);
           } else if (input.type.startsWith("uint256[][]")) {
             values.push([new Array(1).fill("0")]);

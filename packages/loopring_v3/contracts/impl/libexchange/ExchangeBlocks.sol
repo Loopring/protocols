@@ -278,7 +278,7 @@ library ExchangeBlocks
                         txData,
                         txAuxiliaryData[i].data
                     );
-                } else if (txType == ExchangeData.TransactionType.NEW_ACCOUNT) {
+                } else if (txType == ExchangeData.TransactionType.ACCOUNT_NEW) {
                     txFeeETH = NewAccountTransaction.process(
                         S,
                         ctx,
@@ -292,7 +292,7 @@ library ExchangeBlocks
                         txData,
                         txAuxiliaryData[i].data
                     );
-                } else if (txType == ExchangeData.TransactionType.OWNER_CHANGE) {
+                } else if (txType == ExchangeData.TransactionType.ACCOUNT_TRANSFER) {
                     txFeeETH = OwnerChangeTransaction.process(
                         S,
                         ctx,

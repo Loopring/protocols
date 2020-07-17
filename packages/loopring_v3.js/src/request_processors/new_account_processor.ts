@@ -20,7 +20,11 @@ interface NewAccount {
  * Processes new account requests.
  */
 export class NewAccountProcessor {
-  public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
+  public static process(
+    state: ExchangeState,
+    block: BlockContext,
+    txData: Bitstream
+  ) {
     const create = this.extractData(txData);
 
     const index = state.getAccount(1);
@@ -52,7 +56,10 @@ export class NewAccountProcessor {
     offset += 3;
     create.feeTokenID = data.extractUint16(offset);
     offset += 2;
-    create.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
+    create.fee = fromFloat(
+      data.extractUint16(offset),
+      Constants.Float16Encoding
+    );
     offset += 2;
     create.newAccountID = data.extractUint24(offset);
     offset += 3;

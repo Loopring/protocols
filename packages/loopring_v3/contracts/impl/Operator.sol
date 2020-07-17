@@ -6,19 +6,24 @@ pragma experimental ABIEncoderV2;
 import "../iface/IExchangeV3.sol";
 
 import "../lib/LzDecompressor.sol";
+import "../lib/OwnerManagable.sol";
+import "../lib/ReentrancyGuard.sol";
+
+import "../thirdparty/BytesUtil.sol";
 
 
-contract Operator is Claimable
+contract Operator is OwnerManagable, ReentrancyGuard
 {
+    using BytesUtil for bytes;
+
     IExchangeV3 public exchange;
+    bool        public open;
 
-    bool public open;
+    event StatusChanged(bool open);
 
-    modifier onlyOperator()
+    modifier onlyWhenOpenOrFromManager()
     {
-        if (!open) {
-            require(msg.sender == owner, "UNAUTHORIZED");
-        }
+        require(open || isManager(msg.sender), "UNAUTHORIZED");
         _;
     }
 
@@ -26,6 +31,7 @@ contract Operator is Claimable
         address _exchangeAddress
         )
         public
+        OwnerManagable()
     {
         exchange = IExchangeV3(_exchangeAddress);
     }
@@ -35,31 +41,34 @@ contract Operator is Claimable
         address payable feeRecipient
         )
         external
-        onlyOperator
+        nonReentrant
+        onlyWhenOpenOrFromManager
     {
-        exchange.submitBlocks(
-            blocks,
-            feeRecipient
-        );
+        exchange.submitBlocks(blocks, feeRecipient);
     }
 
     function submitBlocksCompressed(
         bytes calldata data
         )
         external
-        onlyOperator
+        nonReentrant
+        onlyWhenOpenOrFromManager
     {
         bytes memory decompressed = LzDecompressor.decompress(data);
+        require(decompressed.toBytes4(0) == exchange.submitBlocks.selector, "INVALID_METHOD");
+
         (bool success, bytes memory returnData) = address(exchange).call(decompressed);
         if (!success) {
             assembly { revert(add(returnData, 32), mload(returnData)) }
         }
     }
 
-    function setOpen(bool newOpen)
+    function setOpen(bool _open)
         external
+        nonReentrant
         onlyOwner
     {
-        open = newOpen;
+        open = _open;
+        emit StatusChanged(_open);
     }
 }

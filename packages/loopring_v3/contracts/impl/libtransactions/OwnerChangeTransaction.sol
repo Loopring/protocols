@@ -67,7 +67,7 @@ library OwnerChangeTransaction
         internal
         returns (uint /*feeETH*/)
     {
-        OwnerChange memory ownerChange = readOwnerChange(data);
+        OwnerChange memory accountTransfer = readOwnerChange(data);
 
         OwnerChangeAuxiliaryData memory auxData = abi.decode(auxiliaryData, (OwnerChangeAuxiliaryData));
 
@@ -77,12 +77,12 @@ library OwnerChangeTransaction
             keccak256(
                 abi.encode(
                     OWNERCHANGE_TYPEHASH,
-                    ownerChange.owner,
-                    ownerChange.accountID,
-                    ownerChange.feeTokenID,
-                    ownerChange.fee,
-                    ownerChange.newOwner,
-                    ownerChange.nonce,
+                    accountTransfer.owner,
+                    accountTransfer.accountID,
+                    accountTransfer.feeTokenID,
+                    accountTransfer.fee,
+                    accountTransfer.newOwner,
+                    accountTransfer.nonce,
                     auxData.walletAddress,
                     auxData.walletDataHash,
                     keccak256(auxData.walletCalldata)
@@ -92,24 +92,24 @@ library OwnerChangeTransaction
 
         // Verify the signature if one is provided, otherwise fall back to an approved tx
         if (auxData.signatureNewOwner.length > 0) {
-            require(txHash.verifySignature(ownerChange.newOwner, auxData.signatureNewOwner), "INVALID_SIGNATURE");
+            require(txHash.verifySignature(accountTransfer.newOwner, auxData.signatureNewOwner), "INVALID_SIGNATURE");
         } else {
-            require(S.approvedTx[ownerChange.newOwner][txHash], "TX_NOT_APPROVED");
-            S.approvedTx[ownerChange.newOwner][txHash] = false;
+            require(S.approvedTx[accountTransfer.newOwner][txHash], "TX_NOT_APPROVED");
+            S.approvedTx[accountTransfer.newOwner][txHash] = false;
         }
 
         if (auxData.walletAddress == address(0)) {
             // We allow the owner of the account to change when authorized by the current owner.
             // Verify the signature if one is provided, otherwise fall back to an approved tx
             if (auxData.signatureOldOwner.length > 0) {
-                require(txHash.verifySignature(ownerChange.owner, auxData.signatureOldOwner), "INVALID_SIGNATURE");
+                require(txHash.verifySignature(accountTransfer.owner, auxData.signatureOldOwner), "INVALID_SIGNATURE");
             } else {
-                require(S.approvedTx[ownerChange.owner][txHash], "TX_NOT_APPROVED");
-                S.approvedTx[ownerChange.owner][txHash] = false;
+                require(S.approvedTx[accountTransfer.owner][txHash], "TX_NOT_APPROVED");
+                S.approvedTx[accountTransfer.owner][txHash] = false;
             }
         } else {
             // If the account has a wallet, use it to recover the account
-            require(ownerChange.walletHash != 0, "ACCOUNT_HAS_NO_WALLET");
+            require(accountTransfer.walletHash != 0, "ACCOUNT_HAS_NO_WALLET");
 
             // Calculate the wallet hash
             bytes32 walletHash = EIP712.hashPacked(
@@ -123,7 +123,7 @@ library OwnerChangeTransaction
                 )
             );
             // Hashes are stored using only 253 bits so the value fits inside a SNARK field element.
-            require((uint(walletHash) >> 3) == uint(ownerChange.walletHash), "INVALID_WALLET_HASH");
+            require((uint(walletHash) >> 3) == uint(accountTransfer.walletHash), "INVALID_WALLET_HASH");
 
             // Check that the calldata contains the correct inputs for data coming from layer 2.
             // This data is also padded with zeros to 32 bytes (at the MSB) inside the calldata.
@@ -133,13 +133,13 @@ library OwnerChangeTransaction
             // parameter 3: newOwner
             // parameter 4: walletDataHash
             uint offset = 4;
-            require(auxData.walletCalldata.toUint24(29 + offset) == ownerChange.accountID, "INVALID_WALLET_CALLDATA");
+            require(auxData.walletCalldata.toUint24(29 + offset) == accountTransfer.accountID, "INVALID_WALLET_CALLDATA");
             offset += 32;
-            require(auxData.walletCalldata.toUint32(28 + offset) == ownerChange.nonce, "INVALID_WALLET_CALLDATA");
+            require(auxData.walletCalldata.toUint32(28 + offset) == accountTransfer.nonce, "INVALID_WALLET_CALLDATA");
             offset += 32;
-            require(auxData.walletCalldata.toAddress(12 + offset) == ownerChange.owner, "INVALID_WALLET_CALLDATA");
+            require(auxData.walletCalldata.toAddress(12 + offset) == accountTransfer.owner, "INVALID_WALLET_CALLDATA");
             offset += 32;
-            require(auxData.walletCalldata.toAddress(12 + offset) == ownerChange.newOwner, "INVALID_WALLET_CALLDATA");
+            require(auxData.walletCalldata.toAddress(12 + offset) == accountTransfer.newOwner, "INVALID_WALLET_CALLDATA");
             offset += 32;
             require(auxData.walletCalldata.toBytes32(offset) == auxData.walletDataHash, "INVALID_WALLET_CALLDATA");
             offset += 32;
@@ -148,7 +148,7 @@ library OwnerChangeTransaction
             require(validated, "WALLET_CALL_FAILED");
         }
 
-        //emit ChangeOwnerConsumed(ownerChange.owner, ownerChange.newOwner);
+        //emit ChangeOwnerConsumed(accountTransfer.owner, accountTransfer.newOwner);
     }
 
     function readOwnerChange(

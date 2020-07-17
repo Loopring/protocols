@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import { BlockType, Constants, roundToFloatValue } from "loopringV3.js";
+import { Constants, roundToFloatValue } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
 import { AuthMethod, Deposit, SpotTrade } from "./types";
@@ -56,44 +56,6 @@ contract("Exchange", (accounts: string[]) => {
     assert.equal(event.token, exchangeTestUtil.getTokenAddress(token), "token unexpected");
     assert(event.amount.eq(amount), "amount unexpected");
     assert(event.fee.eq(fee), "amount unexpected");
-  };
-
-  const submitDepositBlockChecked = async (
-    deposits: Deposit[],
-    blockFee?: BN
-  ) => {
-    assert.equal(
-      exchangeTestUtil.pendingBlocks[exchangeID].length,
-      1,
-      "unexpected number of pending blocks"
-    );
-    const block = exchangeTestUtil.pendingBlocks[exchangeID][0];
-    assert(block.blockType === BlockType.DEPOSIT, "unexptected blocktype");
-
-    // Block fee
-    const feeRecipient = exchangeTestUtil.exchangeOperator;
-    blockFee = new BN(0);
-    for (const deposit of deposits) {
-      blockFee.iadd(deposit.fee);
-    }
-
-    // Simulate all transfers
-    const snapshot = new BalanceSnapshot(exchangeTestUtil);
-    // Simulate block fee payment
-    await snapshot.transfer(
-      exchange.address,
-      feeRecipient,
-      "ETH",
-      blockFee,
-      "exchange",
-      "feeRecipient"
-    );
-
-    // Submit the block
-    await exchangeTestUtil.submitPendingBlocks();
-
-    // Verify balances
-    await snapshot.verifyBalances(new BN(0));
   };
 
   const submitWithdrawalBlockChecked = async (

@@ -40,26 +40,33 @@ interface MatchResult {
 }
 
 export function power10(x1: BN) {
-    const c0 = new BN("10000000000000000000");
-    const c1 = new BN("23025850929940459520");
-    const c2 = new BN("26509490552391999488");
-    const c3 = new BN("20346785922934771712");
+  const c0 = new BN("10000000000000000000");
+  const c1 = new BN("23025850929940459520");
+  const c2 = new BN("26509490552391999488");
+  const c3 = new BN("20346785922934771712");
 
-    const x2 = x1.mul(x1).div(Constants.INDEX_BASE);
-    const x3 = x2.mul(x1).div(Constants.INDEX_BASE);
+  const x2 = x1.mul(x1).div(Constants.INDEX_BASE);
+  const x3 = x2.mul(x1).div(Constants.INDEX_BASE);
 
-    const t1 = x1.mul(c1);
-    const t2 = x2.mul(c2);
-    const t3 = x3.mul(c3);
-    return c0.add(t1.add(t2).add(t3).div(Constants.INDEX_BASE));
+  const t1 = x1.mul(c1);
+  const t2 = x2.mul(c2);
+  const t3 = x3.mul(c3);
+  return c0.add(
+    t1
+      .add(t2)
+      .add(t3)
+      .div(Constants.INDEX_BASE)
+  );
 }
 
 export function applyInterest(balance: BN, oldIndex: BN, newIndex: BN) {
   assert(newIndex.gte(oldIndex), "Invalid balance state");
   const indexDiff = newIndex.sub(oldIndex);
   const multiplier = power10(indexDiff);
-  const newBalance = balance.mul(multiplier).div(Constants.INDEX_BASE.mul(new BN(10)));
-  return newBalance
+  const newBalance = balance
+    .mul(multiplier)
+    .div(Constants.INDEX_BASE.mul(new BN(10)));
+  return newBalance;
 }
 
 export class TradeHistory {
@@ -87,7 +94,7 @@ export class Balance {
     balance: BN,
     index: BN,
     tradeHistory: { [key: number]: TradeHistory }
-    ) {
+  ) {
     this.balance = new BN(balance.toString(10));
     this.index = new BN(index.toString(10));
     this.tradeHistory = tradeHistory;
@@ -111,8 +118,7 @@ export class AccountLeaf {
   balances: { [key: number]: Balance };
 
   constructor() {
-    this.owner = "0",
-    this.publicKeyX = "0";
+    (this.owner = "0"), (this.publicKeyX = "0");
     this.publicKeyY = "0";
     this.nonce = 0;
     this.walletHash = "0";
@@ -126,7 +132,7 @@ export class AccountLeaf {
     nonce: number,
     walletHash: string,
     balances: { [key: number]: Balance } = {}
-    ) {
+  ) {
     this.owner = owner;
     this.publicKeyX = publicKeyX;
     this.publicKeyY = publicKeyY;
@@ -147,7 +153,11 @@ export class AccountLeaf {
       this.balances[tokenID] = new Balance();
     }
     const newIndex = index.getBalanceRaw(tokenID).index;
-    this.balances[tokenID].balance = applyInterest(this.balances[tokenID].balance, this.balances[tokenID].index, newIndex);
+    this.balances[tokenID].balance = applyInterest(
+      this.balances[tokenID].balance,
+      this.balances[tokenID].index,
+      newIndex
+    );
     this.balances[tokenID].index = newIndex;
     return this.balances[tokenID];
   }
@@ -161,7 +171,7 @@ export class ExchangeState {
   }
 
   public getAccount(accountID: number) {
-    while(accountID >= this.accounts.length) {
+    while (accountID >= this.accounts.length) {
       this.accounts.push(new AccountLeaf());
     }
     return this.accounts[accountID];
@@ -189,7 +199,6 @@ export interface SimulatorReport {
 }
 
 export class Simulator {
-
   public static async loadExchangeState(exchangeID: number, blockIdx: number) {
     const accounts: AccountLeaf[] = [];
     if (blockIdx > 0) {
@@ -281,8 +290,16 @@ export class Simulator {
       let balanceValueA = accountA.balances[tokenID];
       let balanceValueB = accountB.balances[tokenID];
 
-      balanceValueA = balanceValueA || { balance: new BN(0), index: Constants.INDEX_BASE, tradeHistory: {} };
-      balanceValueB = balanceValueB || { balance: new BN(0), index: Constants.INDEX_BASE, tradeHistory: {} };
+      balanceValueA = balanceValueA || {
+        balance: new BN(0),
+        index: Constants.INDEX_BASE,
+        tradeHistory: {}
+      };
+      balanceValueB = balanceValueB || {
+        balance: new BN(0),
+        index: Constants.INDEX_BASE,
+        tradeHistory: {}
+      };
 
       for (const orderID of Object.keys(balanceValueA.tradeHistory).concat(
         Object.keys(balanceValueB.tradeHistory)
@@ -312,18 +329,28 @@ export class Simulator {
       assert(
         balanceValueA.balance.eq(balanceValueB.balance),
         "balance does not match: " +
-        "account: " + accountB.accountID + ", " +
-        "token: " + tokenID + ", " +
-        balanceValueA.balance.toString(10) + ", " +
-        balanceValueB.balance.toString(10)
+          "account: " +
+          accountB.accountID +
+          ", " +
+          "token: " +
+          tokenID +
+          ", " +
+          balanceValueA.balance.toString(10) +
+          ", " +
+          balanceValueB.balance.toString(10)
       );
       assert(
         balanceValueA.index.eq(balanceValueB.index),
         "index does not match" +
-        "account: " + accountB.accountID + ", " +
-        "token: " + tokenID + ", " +
-        balanceValueA.index.toString(10) + ", " +
-        balanceValueB.index.toString(10)
+          "account: " +
+          accountB.accountID +
+          ", " +
+          "token: " +
+          tokenID +
+          ", " +
+          balanceValueA.index.toString(10) +
+          ", " +
+          balanceValueB.index.toString(10)
       );
     }
     assert.equal(
@@ -387,13 +414,28 @@ export class Simulator {
         const accountBefore = previousState.getAccount(update.accountID);
         const accountAfter = state.getAccount(update.accountID);
         if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
-          logInfo("publicKeyX: " + accountBefore.publicKeyX + " -> " + accountAfter.publicKeyX);
+          logInfo(
+            "publicKeyX: " +
+              accountBefore.publicKeyX +
+              " -> " +
+              accountAfter.publicKeyX
+          );
         }
         if (accountBefore.publicKeyY !== accountAfter.publicKeyY) {
-          logInfo("publicKeyY: " + accountBefore.publicKeyY + " -> " + accountAfter.publicKeyY);
+          logInfo(
+            "publicKeyY: " +
+              accountBefore.publicKeyY +
+              " -> " +
+              accountAfter.publicKeyY
+          );
         }
         if (accountBefore.walletHash !== accountAfter.walletHash) {
-          logInfo("walletHash: " + accountBefore.walletHash + " -> " + accountAfter.walletHash);
+          logInfo(
+            "walletHash: " +
+              accountBefore.walletHash +
+              " -> " +
+              accountAfter.walletHash
+          );
         }
         this.prettyPrintBalanceChange(
           update.accountID,
@@ -405,13 +447,17 @@ export class Simulator {
         const transfer: Transfer = tx;
         report = this.transfer(state, block, transfer);
 
-        const accountFromBefore = previousState.getAccount(transfer.fromAccountID);
+        const accountFromBefore = previousState.getAccount(
+          transfer.fromAccountID
+        );
         const accountFromAfter = state.getAccount(transfer.fromAccountID);
 
         const accountToBefore = previousState.getAccount(transfer.toAccountID);
         const accountToAfter = state.getAccount(transfer.toAccountID);
 
-        const accountOperatorBefore = previousState.getAccount(block.operatorAccountID);
+        const accountOperatorBefore = previousState.getAccount(
+          block.operatorAccountID
+        );
         const accountOperatorAfter = state.getAccount(block.operatorAccountID);
 
         /*for (const detailedTransfer of report.detailedTransfers) {
@@ -475,19 +521,34 @@ export class Simulator {
         );
       } else if (tx.txType === "NewAccount") {
         const create: NewAccount = tx;
-        report = this.newAccount(state, block, tx);
+        report = this.accountNew(state, block, tx);
 
         logInfo("#" + index + " NewAccount");
         const accountBefore = previousState.getAccount(create.newAccountID);
         const accountAfter = state.getAccount(create.newAccountID);
         if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
-          logInfo("publicKeyX: " + accountBefore.publicKeyX + " -> " + accountAfter.publicKeyX);
+          logInfo(
+            "publicKeyX: " +
+              accountBefore.publicKeyX +
+              " -> " +
+              accountAfter.publicKeyX
+          );
         }
         if (accountBefore.publicKeyY !== accountAfter.publicKeyY) {
-          logInfo("publicKeyY: " + accountBefore.publicKeyY + " -> " + accountAfter.publicKeyY);
+          logInfo(
+            "publicKeyY: " +
+              accountBefore.publicKeyY +
+              " -> " +
+              accountAfter.publicKeyY
+          );
         }
         if (accountBefore.walletHash !== accountAfter.walletHash) {
-          logInfo("walletHash: " + accountBefore.walletHash + " -> " + accountAfter.walletHash);
+          logInfo(
+            "walletHash: " +
+              accountBefore.walletHash +
+              " -> " +
+              accountAfter.walletHash
+          );
         }
         this.prettyPrintBalanceChange(
           create.payerAccountID,
@@ -503,7 +564,9 @@ export class Simulator {
         const accountBefore = previousState.getAccount(change.accountID);
         const accountAfter = state.getAccount(change.accountID);
         if (accountBefore.owner !== accountAfter.owner) {
-          logInfo("owner: " + accountBefore.owner + " -> " + accountAfter.owner);
+          logInfo(
+            "owner: " + accountBefore.owner + " -> " + accountAfter.owner
+          );
         }
         this.prettyPrintBalanceChange(
           change.accountID,
@@ -525,17 +588,28 @@ export class Simulator {
     logInfo("----------------------------------------------------");
   }
 
-  public static deposit(state: ExchangeState, block: TxBlock, deposit: Deposit) {
+  public static deposit(
+    state: ExchangeState,
+    block: TxBlock,
+    deposit: Deposit
+  ) {
     const accountIndex = state.getAccount(1);
     const account = state.getAccount(deposit.accountID);
     account.owner = deposit.owner;
 
-    const newIndex = deposit.index.gt(accountIndex.getBalanceRaw(deposit.tokenID).index)
-      ? deposit.index : accountIndex.getBalanceRaw(deposit.tokenID).index;
+    const newIndex = deposit.index.gt(
+      accountIndex.getBalanceRaw(deposit.tokenID).index
+    )
+      ? deposit.index
+      : accountIndex.getBalanceRaw(deposit.tokenID).index;
 
     const balance = account.getBalanceRaw(deposit.tokenID);
     const newBalance = applyInterest(balance.balance, balance.index, newIndex);
-    const newDepositAmount = applyInterest(deposit.amount, deposit.index, newIndex);
+    const newDepositAmount = applyInterest(
+      deposit.amount,
+      deposit.index,
+      newIndex
+    );
 
     balance.balance = newBalance.add(newDepositAmount);
     balance.index = newIndex;
@@ -548,7 +622,11 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public static updateAccount(state: ExchangeState, block: TxBlock, update: AccountUpdate) {
+  public static updateAccount(
+    state: ExchangeState,
+    block: TxBlock,
+    update: AccountUpdate
+  ) {
     const index = state.getAccount(1);
 
     const account = state.getAccount(update.accountID);
@@ -570,7 +648,11 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public static changeOwner(state: ExchangeState, block: TxBlock, change: OwnerChange) {
+  public static changeOwner(
+    state: ExchangeState,
+    block: TxBlock,
+    change: OwnerChange
+  ) {
     const index = state.getAccount(1);
 
     const account = state.getAccount(change.accountID);
@@ -590,16 +672,20 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public static newAccount(state: ExchangeState, block: TxBlock, create: NewAccount) {
+  public static accountNew(
+    state: ExchangeState,
+    block: TxBlock,
+    create: NewAccount
+  ) {
     const index = state.getAccount(1);
 
     const payerAccount = state.getAccount(create.payerAccountID);
-    const newAccount = state.getAccount(create.newAccountID);
+    const accountNew = state.getAccount(create.newAccountID);
 
-    newAccount.owner = create.newOwner;
-    newAccount.publicKeyX = create.newPublicKeyX;
-    newAccount.publicKeyY = create.newPublicKeyY;
-    newAccount.walletHash = create.newWalletHash;
+    accountNew.owner = create.newOwner;
+    accountNew.publicKeyX = create.newPublicKeyX;
+    accountNew.publicKeyY = create.newPublicKeyY;
+    accountNew.walletHash = create.newWalletHash;
     payerAccount.nonce++;
 
     const balance = payerAccount.getBalance(create.feeTokenID, index);
@@ -615,7 +701,11 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public static transfer(state: ExchangeState, block: TxBlock, transfer: Transfer) {
+  public static transfer(
+    state: ExchangeState,
+    block: TxBlock,
+    transfer: Transfer
+  ) {
     const index = state.getAccount(1);
 
     const from = state.getAccount(transfer.fromAccountID);
@@ -638,7 +728,11 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public static withdraw(state: ExchangeState, block: TxBlock, withdrawal: WithdrawalRequest) {
+  public static withdraw(
+    state: ExchangeState,
+    block: TxBlock,
+    withdrawal: WithdrawalRequest
+  ) {
     const index = state.getAccount(1);
 
     const account = state.getAccount(withdrawal.accountID);
@@ -649,7 +743,9 @@ export class Simulator {
       amount = new BN(0);
     }
     account.getBalance(withdrawal.tokenID, index).balance.isub(amount);
-    account.getBalance(withdrawal.feeTokenID, index).balance.isub(withdrawal.fee);
+    account
+      .getBalance(withdrawal.feeTokenID, index)
+      .balance.isub(withdrawal.fee);
 
     // Special cases when withdrawing from the protocol fee pool.
     // These account balances will have interest accrued.
@@ -660,7 +756,9 @@ export class Simulator {
     }
 
     const operator = state.getAccount(block.operatorAccountID);
-    operator.getBalance(withdrawal.feeTokenID, index).balance.iadd(withdrawal.fee);
+    operator
+      .getBalance(withdrawal.feeTokenID, index)
+      .balance.iadd(withdrawal.fee);
 
     if (withdrawal.type === 0 || withdrawal.type === 1) {
       account.nonce++;
@@ -672,7 +770,11 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public static spotTrade(state: ExchangeState, block: TxBlock, spotTrade: SpotTrade) {
+  public static spotTrade(
+    state: ExchangeState,
+    block: TxBlock,
+    spotTrade: SpotTrade
+  ) {
     const fillA = this.getMaxFillAmounts(
       spotTrade.orderA,
       state.accounts[spotTrade.orderA.accountID]
@@ -689,17 +791,31 @@ export class Simulator {
 
     let matchResult: MatchResult;
     if (spotTrade.orderA.buy) {
-      matchResult = this.match(spotTrade.orderA, fillA, spotTrade.orderB, fillB);
+      matchResult = this.match(
+        spotTrade.orderA,
+        fillA,
+        spotTrade.orderB,
+        fillB
+      );
       fillA.S = fillB.B;
     } else {
-      matchResult = this.match(spotTrade.orderB, fillB, spotTrade.orderA, fillA);
+      matchResult = this.match(
+        spotTrade.orderB,
+        fillB,
+        spotTrade.orderA,
+        fillA
+      );
       fillA.B = fillB.S;
     }
     logDebug("spread:     " + matchResult.spread.toString(10));
 
     let valid = matchResult.matchable;
-    valid = valid && this.checkValid(spotTrade.orderA, fillA.S, fillA.B, block.timestamp);
-    valid = valid && this.checkValid(spotTrade.orderB, fillB.S, fillB.B, block.timestamp);
+    valid =
+      valid &&
+      this.checkValid(spotTrade.orderA, fillA.S, fillA.B, block.timestamp);
+    valid =
+      valid &&
+      this.checkValid(spotTrade.orderB, fillB.S, fillB.B, block.timestamp);
 
     if (!valid) {
       fillA.S = new BN(0);
@@ -984,10 +1100,17 @@ export class Simulator {
     {
       const accountA = state.getAccount(accountIdA);
       accountA.getBalance(tokenA, index).balance.isub(s.fillSA);
-      accountA.getBalance(tokenB, index).balance.iadd(s.fillBA).isub(s.feeA).iadd(s.rebateA);
+      accountA
+        .getBalance(tokenB, index)
+        .balance.iadd(s.fillBA)
+        .isub(s.feeA)
+        .iadd(s.rebateA);
 
-      const tradeHistoryA = accountA.getBalanceRaw(tokenA).getTradeHistory(orderIdA);
-      tradeHistoryA.filled = orderIdA > tradeHistoryA.orderID ? new BN(0) : tradeHistoryA.filled;
+      const tradeHistoryA = accountA
+        .getBalanceRaw(tokenA)
+        .getTradeHistory(orderIdA);
+      tradeHistoryA.filled =
+        orderIdA > tradeHistoryA.orderID ? new BN(0) : tradeHistoryA.filled;
       tradeHistoryA.filled.iadd(buyA ? s.fillBA : s.fillSA);
       tradeHistoryA.orderID = orderIdA;
     }
@@ -995,10 +1118,17 @@ export class Simulator {
     {
       const accountB = state.getAccount(accountIdB);
       accountB.getBalance(tokenB, index).balance.isub(s.fillSB);
-      accountB.getBalance(tokenA, index).balance.iadd(s.fillBB).isub(s.feeB).iadd(s.rebateB);
+      accountB
+        .getBalance(tokenA, index)
+        .balance.iadd(s.fillBB)
+        .isub(s.feeB)
+        .iadd(s.rebateB);
 
-      const tradeHistoryB = accountB.getBalanceRaw(tokenB).getTradeHistory(orderIdB);
-      tradeHistoryB.filled = orderIdB > tradeHistoryB.orderID ? new BN(0) : tradeHistoryB.filled;
+      const tradeHistoryB = accountB
+        .getBalanceRaw(tokenB)
+        .getTradeHistory(orderIdB);
+      tradeHistoryB.filled =
+        orderIdB > tradeHistoryB.orderID ? new BN(0) : tradeHistoryB.filled;
       tradeHistoryB.filled.iadd(buyB ? s.fillBB : s.fillSB);
       tradeHistoryB.orderID = orderIdB;
     }
@@ -1010,8 +1140,16 @@ export class Simulator {
 
     // Update operator
     const operator = state.getAccount(operatorId);
-    operator.getBalance(tokenA, index).balance.iadd(s.feeB).isub(s.protocolFeeB).isub(s.rebateB);
-    operator.getBalance(tokenB, index).balance.iadd(s.feeA).isub(s.protocolFeeA).isub(s.rebateA);
+    operator
+      .getBalance(tokenA, index)
+      .balance.iadd(s.feeB)
+      .isub(s.protocolFeeB)
+      .isub(s.rebateB);
+    operator
+      .getBalance(tokenB, index)
+      .balance.iadd(s.feeA)
+      .isub(s.protocolFeeA)
+      .isub(s.rebateA);
 
     return s;
   }
@@ -1142,12 +1280,14 @@ export class Simulator {
   private static getFilled(order: OrderInfo, accountData: any) {
     const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
     const tradeHistorySlot = order.orderID % numSlots;
-    const tradeHistory = accountData.getBalanceRaw(order.tokenIdS).getTradeHistory(order.orderID);
+    const tradeHistory = accountData
+      .getBalanceRaw(order.tokenIdS)
+      .getTradeHistory(order.orderID);
     // Trade history trimming
     const tradeHistoryOrderID =
-      (tradeHistory.orderID === 0) ? tradeHistorySlot : tradeHistory.orderID;
+      tradeHistory.orderID === 0 ? tradeHistorySlot : tradeHistory.orderID;
     const filled =
-      (tradeHistoryOrderID === order.orderID) ? tradeHistory.filled : new BN(0);
+      tradeHistoryOrderID === order.orderID ? tradeHistory.filled : new BN(0);
     return filled;
   }
 
@@ -1326,10 +1466,17 @@ export class Simulator {
     description: string,
     precision: number
   ) {
-    return assert(Math.abs(n1 - n2) < 10 ** precision, description + ". " + n1 + " but expected " + n2);
+    return assert(
+      Math.abs(n1 - n2) < 10 ** precision,
+      description + ". " + n1 + " but expected " + n2
+    );
   }
 
-  public static prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {
+  public static prettyPrintBalance(
+    accountID: number,
+    tokenID: number,
+    balance: BN
+  ) {
     const prettyBalance = this.getPrettyAmount(tokenID, balance);
     logInfo(accountID + ": " + prettyBalance);
   }
@@ -1418,8 +1565,12 @@ export class Simulator {
     accountAfter: AccountLeaf,
     order: OrderInfo
   ) {
-    const before =  accountBefore.getBalanceRaw(order.tokenIdS).getTradeHistory(order.orderID);
-    const after = accountAfter.getBalanceRaw(order.tokenIdS).getTradeHistory(order.orderID);
+    const before = accountBefore
+      .getBalanceRaw(order.tokenIdS)
+      .getTradeHistory(order.orderID);
+    const after = accountAfter
+      .getBalanceRaw(order.tokenIdS)
+      .getTradeHistory(order.orderID);
     const filledBeforePercentage = before.filled
       .mul(new BN(100))
       .div(order.buy ? order.amountB : order.amountS);

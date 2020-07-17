@@ -5,15 +5,15 @@ import { SparseMerkleTree } from "./sparse_merkle_tree";
 /**
  * The type of requests handled in a block.
  */
-export enum BlockType {
+export enum TransactionType {
   NOOP = 0,
-  SPOT_TRADE,
   DEPOSIT,
-  NEW_ACCOUNT,
   WITHDRAWAL,
-  ACCOUNT_UPDATE,
   TRANSFER,
-  OWNER_CHANGE
+  SPOT_TRADE,
+  ACCOUNT_NEW,
+  ACCOUNT_UPDATE,
+  ACCOUNT_TRANSFER
 }
 
 /**
@@ -36,7 +36,7 @@ export interface Block {
   blockIdx: number;
 
   /** The type of requests handled in the block. */
-  blockType: BlockType;
+  blockType: number;
   /** The block size (in number of requests). */
   blockSize: number;
   /** The block version. */
@@ -398,15 +398,22 @@ export function power10(x1: BN) {
   const t1 = x1.mul(c1);
   const t2 = x2.mul(c2);
   const t3 = x3.mul(c3);
-  return c0.add(t1.add(t2).add(t3).div(Constants.INDEX_BASE));
+  return c0.add(
+    t1
+      .add(t2)
+      .add(t3)
+      .div(Constants.INDEX_BASE)
+  );
 }
 
 export function applyInterest(balance: BN, oldIndex: BN, newIndex: BN) {
   assert(newIndex.gte(oldIndex), "Invalid balance state");
   const indexDiff = newIndex.sub(oldIndex);
   const multiplier = power10(indexDiff);
-  const newBalance = balance.mul(multiplier).div(Constants.INDEX_BASE.mul(new BN(10)));
-  return newBalance
+  const newBalance = balance
+    .mul(multiplier)
+    .div(Constants.INDEX_BASE.mul(new BN(10)));
+  return newBalance;
 }
 
 export class TradeHistoryLeaf implements TradeHistory {
@@ -436,7 +443,7 @@ export class BalanceLeaf implements Balance {
     balance: BN,
     index: BN,
     tradeHistory: { [key: number]: TradeHistoryLeaf }
-    ) {
+  ) {
     this.balance = new BN(balance.toString(10));
     this.index = new BN(index.toString(10));
     this.tradeHistory = tradeHistory;
@@ -467,7 +474,7 @@ export class AccountLeaf implements Account {
   constructor(accountId: number) {
     this.exchangeId = 0;
     this.accountId = accountId;
-    this.owner = Constants.zeroAddress,
+    this.owner = Constants.zeroAddress;
     this.publicKeyX = "0";
     this.publicKeyY = "0";
     this.nonce = 0;
@@ -482,7 +489,7 @@ export class AccountLeaf implements Account {
     nonce: number,
     walletHash: string,
     balances: { [key: number]: BalanceLeaf } = {}
-    ) {
+  ) {
     this.exchangeId = 0;
     this.accountId = 0;
     this.owner = owner;
@@ -505,7 +512,11 @@ export class AccountLeaf implements Account {
       this.balances[tokenID] = new BalanceLeaf();
     }
     const newIndex = index.getBalanceRaw(tokenID).index;
-    this.balances[tokenID].balance = applyInterest(this.balances[tokenID].balance, this.balances[tokenID].index, newIndex);
+    this.balances[tokenID].balance = applyInterest(
+      this.balances[tokenID].balance,
+      this.balances[tokenID].index,
+      newIndex
+    );
     this.balances[tokenID].index = newIndex;
     return this.balances[tokenID];
   }
@@ -534,7 +545,7 @@ export class ExchangeState {
   }
 
   public getAccount(accountID: number) {
-    while(accountID >= this.accounts.length) {
+    while (accountID >= this.accounts.length) {
       this.accounts.push(new AccountLeaf(this.accounts.length));
     }
     return this.accounts[accountID];
