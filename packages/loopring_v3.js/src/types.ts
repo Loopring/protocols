@@ -474,7 +474,8 @@ export class AccountLeaf implements Account {
   constructor(accountId: number) {
     this.exchangeId = 0;
     this.accountId = accountId;
-    (this.owner = Constants.zeroAddress), (this.publicKeyX = "0");
+    this.owner = Constants.zeroAddress;
+    this.publicKeyX = "0";
     this.publicKeyY = "0";
     this.nonce = 0;
     this.walletHash = "0";
