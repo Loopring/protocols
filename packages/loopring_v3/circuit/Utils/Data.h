@@ -100,7 +100,7 @@ static auto dummyNewAccount = R"({
     "feeTokenID": 0,
     "fee": "0",
     "nonce": 0,
-    "accountNewID": 2,
+    "newAccountID": 2,
     "newOwner": "1",
     "newPublicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
     "newPublicKeyY": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
@@ -423,7 +423,7 @@ public:
     ethsnarks::FieldT payerAccountID;
     ethsnarks::FieldT feeTokenID;
     ethsnarks::FieldT fee;
-    ethsnarks::FieldT accountNewID;
+    ethsnarks::FieldT newAccountID;
     ethsnarks::FieldT newOwner;
     ethsnarks::FieldT newPublicKeyX;
     ethsnarks::FieldT newPublicKeyY;
@@ -435,7 +435,7 @@ static void from_json(const json& j, NewAccount& create)
     create.payerAccountID = ethsnarks::FieldT(j.at("payerAccountID"));
     create.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
     create.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
-    create.accountNewID = ethsnarks::FieldT(j.at("accountNewID"));
+    create.newAccountID = ethsnarks::FieldT(j.at("newAccountID"));
     create.newOwner = ethsnarks::FieldT(j["newOwner"].get<std::string>().c_str());
     create.newPublicKeyX = ethsnarks::FieldT(j["newPublicKeyX"].get<std::string>().c_str());
     create.newPublicKeyY = ethsnarks::FieldT(j["newPublicKeyY"].get<std::string>().c_str());

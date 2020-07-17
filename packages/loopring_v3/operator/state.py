@@ -823,7 +823,7 @@ class State(object):
             newState.accountA_Address = txInput.payerAccountID
             accountA = self.getAccount(newState.accountA_Address)
 
-            newState.accountB_Address = txInput.accountNewID
+            newState.accountB_Address = txInput.newAccountID
             newState.accountB_Owner = txInput.newOwner
             newState.accountB_PublicKeyX = txInput.newPublicKeyX
             newState.accountB_PublicKeyY = txInput.newPublicKeyY

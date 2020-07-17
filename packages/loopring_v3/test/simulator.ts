@@ -524,8 +524,8 @@ export class Simulator {
         report = this.accountNew(state, block, tx);
 
         logInfo("#" + index + " NewAccount");
-        const accountBefore = previousState.getAccount(create.accountNewID);
-        const accountAfter = state.getAccount(create.accountNewID);
+        const accountBefore = previousState.getAccount(create.newAccountID);
+        const accountAfter = state.getAccount(create.newAccountID);
         if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
           logInfo(
             "publicKeyX: " +
@@ -680,7 +680,7 @@ export class Simulator {
     const index = state.getAccount(1);
 
     const payerAccount = state.getAccount(create.payerAccountID);
-    const accountNew = state.getAccount(create.accountNewID);
+    const accountNew = state.getAccount(create.newAccountID);
 
     accountNew.owner = create.newOwner;
     accountNew.publicKeyX = create.newPublicKeyX;

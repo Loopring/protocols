@@ -563,7 +563,7 @@ export namespace NewAccountUtils {
         verifyingContract
       },
       message: {
-        accountID: update.accountNewID,
+        accountID: update.newAccountID,
         owner: update.newOwner,
         publicKey: new BN(
           EdDSA.pack(update.newPublicKeyX, update.newPublicKeyY),
@@ -589,7 +589,7 @@ export namespace NewAccountUtils {
       create.feeTokenID,
       create.fee,
       create.nonce,
-      create.accountNewID,
+      create.newAccountID,
       create.newOwner,
       create.newPublicKeyX,
       create.newPublicKeyY,
@@ -1552,7 +1552,7 @@ export class ExchangeTestUtil {
       fee,
       nonce: payerAccount.nonce++,
       newOwner,
-      accountNewID: account.accountID,
+      newAccountID: account.accountID,
       newPublicKeyX: account.publicKeyX,
       newPublicKeyY: account.publicKeyY,
       newWalletHash: walletHash
@@ -2502,7 +2502,7 @@ export class ExchangeTestUtil {
               toFloat(new BN(create.fee), Constants.Float16Encoding),
               2
             );
-            da.addNumber(create.accountNewID, 3);
+            da.addNumber(create.newAccountID, 3);
             da.addBN(new BN(create.newOwner), 20);
             da.addBN(
               new BN(

@@ -131,7 +131,7 @@ def accountNewFromJSON(jCreate):
     create.feeTokenID = int(jCreate["feeTokenID"])
     create.fee = str(jCreate["fee"])
     create.nonce = str(jCreate["nonce"])
-    create.accountNewID = int(jCreate["accountNewID"])
+    create.newAccountID = int(jCreate["newAccountID"])
     create.newOwner = str(jCreate["newOwner"])
     create.newPublicKeyX = str(jCreate["newPublicKeyX"])
     create.newPublicKeyY = str(jCreate["newPublicKeyY"])

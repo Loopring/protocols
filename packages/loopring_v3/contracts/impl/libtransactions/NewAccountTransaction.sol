@@ -48,7 +48,7 @@ library NewAccountTransaction
         offset += 2;
         //uint fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        uint24 accountNewID = data.toUint24(offset);
+        uint24 newAccountID = data.toUint24(offset);
         offset += 3;
         address newOwner = data.toAddress(offset);
         offset += 20;
@@ -63,7 +63,7 @@ library NewAccountTransaction
             keccak256(
                 abi.encode(
                     NEWACCOUNT_TYPEHASH,
-                    accountNewID,
+                    newAccountID,
                     newOwner,
                     newPublicKey,
                     newWalletHash
