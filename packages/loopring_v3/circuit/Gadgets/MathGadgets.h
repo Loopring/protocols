@@ -89,7 +89,7 @@ public:
         dummyPublicKeyX(make_variable(pb, ethsnarks::FieldT("132404916167441185773716937639098950030214269269071041759116060313694190797"), FMT(prefix, ".dummyPublicKeyX"))),
         dummyPublicKeyY(make_variable(pb, ethsnarks::FieldT("6933274320914065805670637410453081675154127044926882796951068647148079547843"), FMT(prefix, ".dummyPublicKeyY"))),
         txTypeTransfer(make_variable(pb, ethsnarks::FieldT(int(TransactionType::Transfer)), FMT(prefix, ".txTypeTransfer"))),
-        txTypeNewAccount(make_variable(pb, ethsnarks::FieldT(int(TransactionType::NewAccount)), FMT(prefix, ".txTypeNewAccount"))),
+        txTypeNewAccount(make_variable(pb, ethsnarks::FieldT(int(TransactionType::AccountNew)), FMT(prefix, ".txTypeNewAccount"))),
 
         pow10_c0(make_variable(pb, ethsnarks::FieldT(POW10_C0), FMT(prefix, ".pow10_c0"))),
         pow10_c1(make_variable(pb, ethsnarks::FieldT(POW10_C1), FMT(prefix, ".pow10_c1"))),
@@ -144,7 +144,7 @@ public:
         pb.add_r1cs_constraint(ConstraintT(dummyPublicKeyX, FieldT::one(), ethsnarks::FieldT("132404916167441185773716937639098950030214269269071041759116060313694190797")), ".dummyPublicKeyX");
         pb.add_r1cs_constraint(ConstraintT(dummyPublicKeyY, FieldT::one(), ethsnarks::FieldT("6933274320914065805670637410453081675154127044926882796951068647148079547843")), ".dummyPublicKeyY");
         pb.add_r1cs_constraint(ConstraintT(txTypeTransfer, FieldT::one(), ethsnarks::FieldT(int(TransactionType::Transfer))), ".txTypeTransfer");
-        pb.add_r1cs_constraint(ConstraintT(txTypeNewAccount, FieldT::one(), ethsnarks::FieldT(int(TransactionType::NewAccount))), ".txTypeNewAccount");
+        pb.add_r1cs_constraint(ConstraintT(txTypeNewAccount, FieldT::one(), ethsnarks::FieldT(int(TransactionType::AccountNew))), ".txTypeNewAccount");
 
         pb.add_r1cs_constraint(ConstraintT(pow10_c0, FieldT::one(), ethsnarks::FieldT(POW10_C0)), ".pow10_c0");
         pb.add_r1cs_constraint(ConstraintT(pow10_c1, FieldT::one(), ethsnarks::FieldT(POW10_C1)), ".pow10_c1");

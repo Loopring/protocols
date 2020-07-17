@@ -135,9 +135,9 @@ enum class TransactionType
     Withdrawal,
     Transfer,
     SpotTrade,
-    NewAccount,
+    AccountNew,
     AccountUpdate,
-    OwnerChange,
+    AccountTransfer,
 
     COUNT
 };
@@ -638,12 +638,12 @@ static void from_json(const json& j, UniversalTransaction& transaction)
     }
     else if (j.contains("newAccount"))
     {
-        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::NewAccount));
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountNew));
         transaction.newAccount = j.at("newAccount").get<Loopring::NewAccount>();
     }
     else if (j.contains("ownerChange"))
     {
-        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::OwnerChange));
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountTransfer));
         transaction.ownerChange = j.at("ownerChange").get<Loopring::OwnerChange>();
     }
 }
