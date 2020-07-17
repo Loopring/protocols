@@ -13,6 +13,10 @@ contract Operator is Claimable, ReentrancyGuard
 {
     IExchangeV3 public exchange;
 
+    bytes4 constant public SUBMIT_BLOCKS_SELECTOR = bytes4(
+        keccak256(bytes("submitBlocks(ExchangeData.Block[],address)"))
+    );
+
     bool public open;
 
     event StatusChanged(bool open);
@@ -50,7 +54,8 @@ contract Operator is Claimable, ReentrancyGuard
         onlyWhenOpenOrFromOperator
     {
         bytes memory decompressed = LzDecompressor.decompress(data);
-        // TODO(brecht): check function selector is submitBlocks
+        require(decompressed.toBytes4(0) == SUBMIT_BLOCKS_SELECTOR, "INVALID_METHOD");
+
         (bool success, bytes memory returnData) = address(exchange).call(decompressed);
         if (!success) {
             assembly { revert(add(returnData, 32), mload(returnData)) }
