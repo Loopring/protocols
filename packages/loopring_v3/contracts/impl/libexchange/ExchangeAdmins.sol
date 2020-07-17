@@ -60,7 +60,7 @@ library ExchangeAdmins
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(
-            newValue >= 6 hours ||
+            newValue >= 3 hours ||
             newValue <= ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND(),
             "INVALID_VALUE"
         );
