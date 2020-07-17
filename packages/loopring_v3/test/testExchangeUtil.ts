@@ -2747,7 +2747,7 @@ export class ExchangeTestUtil {
     const genesisBlock: Block = {
       blockIdx: 0,
       filename: null,
-      blockType: 0,
+      blockType: BlockType.UNIVERSAL,
       blockSize: 0,
       blockVersion: 0,
       operator: Constants.zeroAddress,
