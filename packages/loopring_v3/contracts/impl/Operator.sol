@@ -6,24 +6,24 @@ pragma experimental ABIEncoderV2;
 import "../iface/IExchangeV3.sol";
 
 import "../lib/LzDecompressor.sol";
+import "../lib/OwnerManagable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../thirdparty/BytesUtil.sol";
 
 
-contract Operator is Claimable, ReentrancyGuard
+contract Operator is OwnerManagable, ReentrancyGuard
 {
     using BytesUtil for bytes;
 
     IExchangeV3 public exchange;
-
-    bool public open;
+    bool        public open;
 
     event StatusChanged(bool open);
 
-    modifier onlyWhenOpenOrFromOperator()
+    modifier onlyWhenOpenOrFromManager()
     {
-        require(open || msg.sender == owner, "UNAUTHORIZED");
+        require(open || isManager(msg.sender), "UNAUTHORIZED");
         _;
     }
 
@@ -31,6 +31,7 @@ contract Operator is Claimable, ReentrancyGuard
         address _exchangeAddress
         )
         public
+        OwnerManagable()
     {
         exchange = IExchangeV3(_exchangeAddress);
     }
@@ -41,7 +42,7 @@ contract Operator is Claimable, ReentrancyGuard
         )
         external
         nonReentrant
-        onlyWhenOpenOrFromOperator
+        onlyWhenOpenOrFromManager
     {
         exchange.submitBlocks(blocks, feeRecipient);
     }
@@ -51,7 +52,7 @@ contract Operator is Claimable, ReentrancyGuard
         )
         external
         nonReentrant
-        onlyWhenOpenOrFromOperator
+        onlyWhenOpenOrFromManager
     {
         bytes memory decompressed = LzDecompressor.decompress(data);
         require(decompressed.toBytes4(0) == exchange.submitBlocks.selector, "INVALID_METHOD");
