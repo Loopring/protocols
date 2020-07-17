@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 SOLC_CMD="../../node_modules/.bin/solcjs"
 BASE_PATH="../../contracts/"
@@ -46,4 +46,3 @@ do
 done
 
 echo "done"
-exit(0)
