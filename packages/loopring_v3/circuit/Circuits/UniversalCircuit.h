@@ -13,11 +13,11 @@
 #include "./DepositCircuit.h"
 #include "./TransferCircuit.h"
 #include "./SpotTradeCircuit.h"
-#include "./AccountUpdateCircuit.h"
 #include "./WithdrawCircuit.h"
 #include "./NoopCircuit.h"
 #include "./AccountNewCircuit.h"
 #include "./AccountTransferCircuit.h"
+#include "./AccountUpdateCircuit.h"
 
 #include "ethsnarks.hpp"
 #include "utils.hpp"
