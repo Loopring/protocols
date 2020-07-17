@@ -8,9 +8,13 @@ import "../iface/IExchangeV3.sol";
 import "../lib/LzDecompressor.sol";
 import "../lib/ReentrancyGuard.sol";
 
+import "../thirdparty/BytesUtil.sol";
+
 
 contract Operator is Claimable, ReentrancyGuard
 {
+    using BytesUtil for bytes;
+
     IExchangeV3 public exchange;
 
     bool public open;
