@@ -71,7 +71,7 @@ library ExchangeBalances
         uint balanceItem = hashImpl(balance, index, tradeHistoryRoot, 0);
         uint _id = tokenID;
         for (uint depth = 0; depth < 6; depth++) {
-            uint base = depth << 1 + depth;
+            uint base = depth * 3;
             if (_id & 3 == 0) {
                 balanceItem = hashImpl(
                     balanceItem,
@@ -123,7 +123,7 @@ library ExchangeBalances
         uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, walletHash, balancesRoot);
         uint _id = accountID;
         for (uint depth = 0; depth < 12; depth++) {
-            uint base = depth << 1 + depth;
+            uint base = depth * 3;
             if (_id & 3 == 0) {
                 accountItem = hashImpl(
                     accountItem,
