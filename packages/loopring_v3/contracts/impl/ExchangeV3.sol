@@ -134,7 +134,7 @@ contract ExchangeV3 is IExchangeV3
             uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
             uint(ExchangeData.MIN_TIME_IN_SHUTDOWN()),
             uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE()),
-            uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE())
+            uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND())
         );
     }
 
@@ -565,6 +565,26 @@ contract ExchangeV3 is IExchangeV3
         returns (address payable)
     {
         return state.operator;
+    }
+
+    function setMaxAgeDepositUntilWithdrawable(
+        uint32 newValue
+        )
+        external
+        override
+        onlyOwner
+        returns (uint32)
+    {
+        return state.setMaxAgeDepositUntilWithdrawable(newValue);
+    }
+
+    function getMaxAgeDepositUntilWithdrawable()
+        external
+        override
+        view
+        returns (uint32)
+    {
+        return state.maxAgeDepositUntilWithdrawable;
     }
 
     function getExchangeCreationTimestamp()

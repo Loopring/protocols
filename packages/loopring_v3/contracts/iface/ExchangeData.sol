@@ -105,7 +105,7 @@ library ExchangeData
         uint MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED;
         uint MIN_TIME_IN_SHUTDOWN;
         uint TX_DATA_AVAILABILITY_SIZE;
-        uint MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE;
+        uint MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND;
     }
 
     function SNARK_SCALAR_FIELD() internal pure returns (uint) {
@@ -120,7 +120,7 @@ library ExchangeData
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
     function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 104; }
-    function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE() internal pure returns (uint32) { return 1 days; }
+    function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 14 days; }
 
 
     struct AccountLeaf
@@ -169,7 +169,7 @@ library ExchangeData
         IBlockVerifier   blockVerifier;
         IDepositContract depositContract;
 
-        uint    totalTimeInMaintenanceSeconds;
+        uint32  maxAgeDepositUntilWithdrawable;
         uint    numDowntimeMinutes;
         uint    downtimeStart;
 

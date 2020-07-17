@@ -136,7 +136,7 @@ library ExchangeWithdrawals
         require(deposit.timestamp != 0, "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
         // Check if the deposit has indeed exceeded the time limit
-        require(now >= deposit.timestamp + ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE(), "DEPOSIT_NOT_WITHDRAWABLE_YET");
+        require(now >= deposit.timestamp + S.maxAgeDepositUntilWithdrawable, "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
         uint amount = deposit.amount;
         uint fee = deposit.fee;

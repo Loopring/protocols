@@ -611,6 +611,24 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (address payable);
 
+    /// @dev Sets the max time deposits have to wait before becoming withdrawable.
+    /// @param newValue The new value.
+    /// @return  The old value.
+    function setMaxAgeDepositUntilWithdrawable(
+        uint32 newValue
+        )
+        external
+        virtual
+        returns (uint32);
+
+    /// @dev Returns the max time deposits have to wait before becoming withdrawable.
+    /// @return The value.
+    function getMaxAgeDepositUntilWithdrawable()
+        external
+        virtual
+        view
+        returns (uint32);
+
     /// @dev Gets the time the exchange was created.
     /// @return timestamp The time the exchange was created.
     function getExchangeCreationTimestamp()
