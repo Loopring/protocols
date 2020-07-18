@@ -37,17 +37,17 @@ library SignedRequest {
     {
         require(now <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
 
-        bytes32 encodedReqHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+        bytes32 _txAwareHash = EIP712.hashPacked(domainSeperator, encodedRequest);
 
         // If txAwareHash from the mata-transaction is non-zero,
         // we must verify it matches the hash signed by the respective signers.
         require(
-            txAwareHash == 0 || txAwareHash == encodedReqHash,
+            txAwareHash == 0 || txAwareHash == _txAwareHash,
             "TX_INNER_HASH_MISMATCH"
         );
 
         require(
-            encodedReqHash.verifySignatures(request.signers, request.signatures),
+            _txAwareHash.verifySignatures(request.signers, request.signatures),
             "INVALID_SIGNATURES"
         );
 
