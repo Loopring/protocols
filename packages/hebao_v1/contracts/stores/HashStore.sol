@@ -8,14 +8,16 @@ import "../lib/MathUint.sol";
 
 /// @title HashStore
 /// @dev This store maintains all hashes for SignedRequest.
-contract HashStore
+contract HashStore is DataStore
 {
+    // wallet => hash => consumed
     mapping(address => mapping(bytes32 => bool)) public hashes;
 
     constructor() public {}
 
     function verifyAndUpdate(address wallet, bytes32 hash)
         public
+        onlyWalletModule(wallet)
     {
         require(!hashes[wallet][hash], "HASH_EXIST");
         hashes[wallet][hash] = true;

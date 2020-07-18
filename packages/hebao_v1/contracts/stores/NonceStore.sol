@@ -32,6 +32,7 @@ contract NonceStore is DataStore
 
     function verifyAndUpdate(address wallet, uint nonce)
         public
+        onlyWalletModule(wallet)
     {
         require(isNonceValid(wallet, nonce), "INVALID_NONCE");
         nonces[wallet] = nonce;
