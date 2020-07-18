@@ -66,12 +66,7 @@ contract ForwarderModule is BaseModule
         )
         public
     {
-        require(
-            (to == from) ||
-            (to == controller.walletFactory()) ||
-            (to != address(this),
-            "INVALID_DESTINATION"
-        );
+        require(to != address(this), "INVALID_DESTINATION");
 
         bytes memory data_ = data;
 
