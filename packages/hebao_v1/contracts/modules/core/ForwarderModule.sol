@@ -54,7 +54,7 @@ contract ForwarderModule is BaseModule
     );
 
     function validateMetaTx(
-        address from,
+        address from, // can be an existing wallet, a new wallet to be created, or any EOA if price == 0.
         address to,
         uint    nonce,
         address gasToken,
