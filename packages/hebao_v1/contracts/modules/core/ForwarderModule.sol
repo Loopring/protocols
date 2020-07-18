@@ -66,7 +66,11 @@ contract ForwarderModule is BaseModule
         )
         public
     {
-        require(to != address(this), "INVALID_DESTINATION");
+        require(
+            to != address(this) &&
+            controller.moduleRegistry().isModuleRegistered(to),
+            "INVALID_DESTINATION"
+        );
         require(nonce == 0 || txAwareHash == 0, "INVALID_NONCE");
 
         bytes memory data_ = txAwareHash == 0 ? data : data.slice(0, 4); // function selector
