@@ -1,0 +1,32 @@
+#!/bin/bash
+
+echo "deploying all contract to goerli testnet ..."
+
+declare -a all_contracts=(
+    "base/WalletRegistryImpl.sol"
+    "base/ModuleRegistryImpl.sol"
+    "stores/DappAddressStore.sol"
+    "stores/HashStore.sol"
+    "stores/NonceStore.sol"
+    "stores/QuotaStore.sol"
+    "stores/SecurityStore.sol"
+    "stores/WhitelistStore.sol"
+    "modules/ControllerImpl.sol"
+    "modules/OfficialGuardian.sol"
+    "modules/WalletImpl.sol"
+    "modules/core/WalletFactory.sol"
+    "modules/core/ERC1271Module.sol"
+    "modules/core/ForwarderModule.sol"
+    "modules/core/UpgraderModule.sol"
+    "modules/security/SignedRequest.sol"
+    "modules/security/WhitelistModule.sol"
+    "modules/security/InheritanceModule.sol"
+    "modules/security/GuardianModule.sol"
+    "modules/transfers/TransferModule.sol"
+    "thirdparty/ens/BaseENSManager.sol"
+    "thirdparty/ens/BaseENSResolver.sol"
+    "thirdparty/ens/ENSRegistryImpl.sol"
+    "thirdparty/ens/ENSReverseRegistrarImpl.sol"
+    "test/tokens/LRC.sol"
+    "test/tokens/USDT.sol"
+)
