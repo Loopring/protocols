@@ -65,6 +65,7 @@ contract ForwarderModule is BaseModule
         bytes   memory signature
         )
         public
+        view
     {
         require(
             to != address(this) && controller.moduleRegistry().isModuleRegistered(to) ||
@@ -102,8 +103,10 @@ contract ForwarderModule is BaseModule
             bytes memory ret
         )
     {
+        uint gasLeft = gasleft();
+
         require(
-            gasleft() >= (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD),
+            gasLeft >= (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD),
             "INSUFFICIENT_GAS"
         );
 
@@ -118,8 +121,6 @@ contract ForwarderModule is BaseModule
             metaTx.data,
             signature
         );
-
-        uint gasLeft = gasleft();
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
