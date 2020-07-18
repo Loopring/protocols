@@ -137,7 +137,6 @@ contract ForwarderModule is BaseModule
         }
 
         uint gasUsed = gasLeft - gasleft();
-        uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 
         emit MetaTxExecuted(
             msg.sender,
@@ -148,6 +147,7 @@ contract ForwarderModule is BaseModule
         );
 
         if (metaTx.gasPrice > 0 && !waiveFees) {
+            uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
             reimburseGasFee(
                 metaTx.from,
                 controller.collectTo(),
