@@ -67,6 +67,9 @@ contract ForwarderModule is BaseModule
         public
         view
     {
+        // Since this contract is a module, we need to prevent wallet from interacting with
+        // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
+        // so no Store can be used as 'to'.
         require(
             to == controller.walletFactory() || // 'from' can be the wallet to create (not its owner),
                                                 // or an existing wallet,
