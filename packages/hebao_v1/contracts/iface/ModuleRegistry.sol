@@ -10,9 +10,9 @@ pragma solidity ^0.6.10;
 interface ModuleRegistry
 {
     function registerModule(address module) external;
-    function deregisterModule(address module) external;
+    function disableModule(address module) external;
+    function isModuleEnabled(address module) external view returns (bool);
     function isModuleRegistered(address module) external view returns (bool);
-    function isModule(address module) external view returns (bool);
-    function modules() external view returns (address[] memory _modules);
-    function numOfModules() external view returns (uint);
+    function enabledModules() external view returns (address[] memory _modules);
+    function numOfEnabledModules() external view returns (uint);
 }

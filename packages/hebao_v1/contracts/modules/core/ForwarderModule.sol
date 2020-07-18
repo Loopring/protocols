@@ -67,7 +67,7 @@ contract ForwarderModule is BaseModule
         public
     {
         require(
-            (to != address(this) && controller.moduleRegistry().isModule(to)) ||
+            (to != address(this) && controller.moduleRegistry().isModuleRegistered(to)) ||
             from == to,
             "INVALID_DESTINATION"
         );

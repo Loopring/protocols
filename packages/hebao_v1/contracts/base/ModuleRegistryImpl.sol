@@ -13,8 +13,8 @@ import "../lib/Claimable.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
 {
-    bytes32 internal constant MODULE = keccak256("__MODULE__");
-    bytes32 internal constant DEREGISTERED_MODULE = keccak256("__DEREGISTERED_MODULE__");
+    bytes32 internal constant ENABLED_MODULE = keccak256("__ENABLED_MODULE__");
+    bytes32 internal constant ALL_MODULE     = keccak256("__ALL_MODULE__");
 
     event ModuleRegistered      (address indexed module);
     event ModuleDeregistered    (address indexed module);
@@ -26,20 +26,30 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
         override
         onlyOwner
     {
-        addAddressToSet(MODULE, module, true);
+        addAddressToSet(ENABLED_MODULE, module, true);
+
+        if (!isAddressInSet(ALL_MODULE, module)) {
+             addAddressToSet(ALL_MODULE, module, false);
+        }
         emit ModuleRegistered(module);
     }
 
-    function deregisterModule(address module)
+    function disableModule(address module)
         external
         override
         onlyOwner
     {
-        if (!isAddressInSet(DEREGISTERED_MODULE, module)) {
-            addAddressToSet(DEREGISTERED_MODULE, module, false);
-        }
-        removeAddressFromSet(MODULE, module);
+        removeAddressFromSet(ENABLED_MODULE, module);
         emit ModuleDeregistered(module);
+    }
+
+    function isModuleEnabled(address module)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return isAddressInSet(ENABLED_MODULE, module);
     }
 
     function isModuleRegistered(address module)
@@ -48,33 +58,24 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
         override
         returns (bool)
     {
-        return isAddressInSet(MODULE, module);
+        return isAddressInSet(ALL_MODULE, module);
     }
 
-    function isModule(address module)
-        external
-        view
-        override
-        returns (bool)
-    {
-        return isAddressInSet(MODULE, module) || isAddressInSet(DEREGISTERED_MODULE, module);
-    }
-
-    function modules()
+    function enabledModules()
         external
         view
         override
         returns (address[] memory)
     {
-        return addressesInSet(MODULE);
+        return addressesInSet(ENABLED_MODULE);
     }
 
-    function numOfModules()
+    function numOfEnabledModules()
         external
         view
         override
         returns (uint)
     {
-        return numAddressesInSet(MODULE);
+        return numAddressesInSet(ENABLED_MODULE);
     }
 }

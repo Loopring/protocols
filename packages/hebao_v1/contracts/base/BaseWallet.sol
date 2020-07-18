@@ -161,7 +161,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         returns (bytes memory returnData)
     {
         require(
-            !controller.moduleRegistry().isModuleRegistered(to),
+            !controller.moduleRegistry().isModuleEnabled(to),
             "TRANSACT_ON_MODULE_DISALLOWED"
         );
 
@@ -183,7 +183,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         require(_module != address(0), "NULL_MODULE");
         require(modules[_module] == false, "MODULE_EXISTS");
         require(
-            controller.moduleRegistry().isModuleRegistered(_module),
+            controller.moduleRegistry().isModuleEnabled(_module),
             "INVALID_MODULE"
         );
         modules[_module] = true;
