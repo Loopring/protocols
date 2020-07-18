@@ -75,7 +75,6 @@ contract ForwarderModule is BaseModule
             // the `data` field. The actual function call in the real transaction will have to
             // check that txAwareHash is indeed valid.
             require(nonce == 0, "NONCE_MUST_BE_0");
-            controller.hashStore().verifyAndUpdate(from, txAwareHash);
             data_ = data.slice(0, 4); // function selector
         } else {
             controller.nonceStore().verifyAndUpdate(from, nonce);
@@ -133,6 +132,15 @@ contract ForwarderModule is BaseModule
             abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
         );
 
+        bool waiveFees = false;
+        if (metaTx.txAwareHash != 0) {
+            if (success) {
+                controller.hashStore().verifyAndUpdate(metaTx.from, metaTx.txAwareHash);
+            } else {
+                waiveFees = true;
+            }
+        }
+
         if (address(this).balance > 0) {
             payable(controller.collectTo()).transfer(address(this).balance);
         }
@@ -148,9 +156,7 @@ contract ForwarderModule is BaseModule
             gasUsed
         );
 
-        bool waiveFee = !success && metaTx.txAwareHash != 0;
-
-        if (metaTx.gasPrice > 0 && !waiveFee) {
+        if (metaTx.gasPrice > 0 && !waiveFees) {
             reimburseGasFee(
                 metaTx.from,
                 controller.collectTo(),
