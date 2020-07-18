@@ -67,8 +67,8 @@ contract ForwarderModule is BaseModule
         public
     {
         require(
-            (to != address(this) && controller.moduleRegistry().isModuleRegistered(to)) ||
-            from == to,
+            to != address(this) && controller.moduleRegistry().isModuleRegistered(to) ||
+            from == to && controller.walletRegistry().isWalletRegistered(from),
             "INVALID_DESTINATION"
         );
         require(nonce == 0 || txAwareHash == 0, "INVALID_NONCE");
