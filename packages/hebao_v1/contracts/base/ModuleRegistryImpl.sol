@@ -14,6 +14,7 @@ import "../lib/Claimable.sol";
 contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
 {
     bytes32 internal constant MODULE = keccak256("__MODULE__");
+    bytes32 internal constant DEREGISTERED_MODULE = keccak256("__DEREGISTERED_MODULE__");
 
     event ModuleRegistered      (address indexed module);
     event ModuleDeregistered    (address indexed module);
@@ -34,6 +35,9 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
         override
         onlyOwner
     {
+        if (!isAddressInSet(DEREGISTERED_MODULE, module)) {
+            addAddressToSet(DEREGISTERED_MODULE, module, false);
+        }
         removeAddressFromSet(MODULE, module);
         emit ModuleDeregistered(module);
     }
@@ -45,6 +49,15 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
         returns (bool)
     {
         return isAddressInSet(MODULE, module);
+    }
+
+    function isModule(address module)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return isAddressInSet(MODULE, module) || isAddressInSet(DEREGISTERED_MODULE, module);
     }
 
     function modules()

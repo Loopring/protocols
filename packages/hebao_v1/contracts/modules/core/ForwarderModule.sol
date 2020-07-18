@@ -68,7 +68,7 @@ contract ForwarderModule is BaseModule
     {
         require(
             to != address(this) &&
-            controller.moduleRegistry().isModuleRegistered(to),
+            controller.moduleRegistry().isModule(to),
             "INVALID_DESTINATION"
         );
         require(nonce == 0 || txAwareHash == 0, "INVALID_NONCE");
