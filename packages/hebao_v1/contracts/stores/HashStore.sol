@@ -10,14 +10,14 @@ import "../lib/MathUint.sol";
 /// @dev This store maintains all hashes for SignedRequest.
 contract HashStore
 {
-    mapping(bytes32 => bool) public hashes;
+    mapping(address => mapping(bytes32 => bool)) public hashes;
 
     constructor() public {}
 
-    function verifyAndUpdate(bytes32 hash)
+    function verifyAndUpdate(address wallet, bytes32 hash)
         public
     {
-        require(!hashes[hash], "HASH_EXIST");
-        hashes[hash] = true;
+        require(!hashes[wallet][hash], "HASH_EXIST");
+        hashes[wallet][hash] = true;
     }
 }

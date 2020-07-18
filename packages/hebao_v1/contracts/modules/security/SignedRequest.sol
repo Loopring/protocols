@@ -33,6 +33,7 @@ library SignedRequest {
         bytes   memory               encodedRequest
         )
         public
+        view
     {
         require(now <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
 

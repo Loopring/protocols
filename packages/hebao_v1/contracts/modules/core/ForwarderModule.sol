@@ -80,7 +80,7 @@ contract ForwarderModule is BaseModule
             // the `data` field. The actual function call in the real transaction will have to
             // check that txAwareHash is indeed valid.
             require(nonce == 0, "NONCE_MUST_BE_0");
-            controller.hashStore().verifyAndUpdate(txAwareHash);
+            controller.hashStore().verifyAndUpdate(from, txAwareHash);
             data_ = data.slice(0, 4); // function selector
         } else {
             controller.nonceStore().verifyAndUpdate(from, nonce);
