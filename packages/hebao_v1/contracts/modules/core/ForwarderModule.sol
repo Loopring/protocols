@@ -67,18 +67,9 @@ contract ForwarderModule is BaseModule
         public
     {
         require(to != address(this), "INVALID_DESTINATION");
+        require(nonce == 0 || txAwareHash == 0, "INVALID_NONCE");
 
-        bytes memory data_ = data;
-
-        if (txAwareHash != 0) {
-            // If a non-zero txAwareHash is provided, we do not verify signature against
-            // the `data` field. The actual function call in the real transaction will have to
-            // check that txAwareHash is indeed valid.
-            require(nonce == 0, "NONCE_MUST_BE_0");
-            data_ = data.slice(0, 4); // function selector
-        } else {
-            controller.nonceStore().verifyAndUpdate(from, nonce);
-        }
+        bytes memory data_ = txAwareHash == 0 ? data : data.slice(0, 4); // function selector
 
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
@@ -133,12 +124,12 @@ contract ForwarderModule is BaseModule
         );
 
         bool waiveFees = false;
-        if (metaTx.txAwareHash != 0) {
-            if (success) {
-                controller.hashStore().verifyAndUpdate(metaTx.from, metaTx.txAwareHash);
-            } else {
-                waiveFees = true;
-            }
+        if (metaTx.txAwareHash == 0) {
+            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
+        } else if (success) {
+            controller.hashStore().verifyAndUpdate(metaTx.from, metaTx.txAwareHash);
+        } else {
+            waiveFees = true;
         }
 
         if (address(this).balance > 0) {
