@@ -133,9 +133,9 @@ contract ForwarderModule is BaseModule
         } else if (success) {
             controller.hashStore().verifyAndUpdate(metaTx.from, metaTx.txAwareHash);
         } else {
-            // The relaer may provide invalid metaTx.data to make this meta-tx fail,
-            // so we need to prevent the relayer to charege the meta-tx fee from the 
-            // wallet owner if such a meta-tx fails.
+            // The relayer can provide invalid metaTx.data to make this meta-tx fail,
+            // therefore we we need to prevent the relayer from chareging the meta-tx
+            // fees from the wallet owner.
             waiveFees = true;
         }
 
