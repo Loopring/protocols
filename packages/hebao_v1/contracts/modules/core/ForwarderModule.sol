@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
+import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
 
 
@@ -15,6 +16,7 @@ import "../base/BaseModule.sol";
 contract ForwarderModule is BaseModule
 {
     using SignatureUtil for bytes32;
+    using BytesUtil     for bytes;
 
     uint    public constant GAS_OVERHEAD = 100000;
     bytes32 public DOMAIN_SEPARATOR;
@@ -63,7 +65,6 @@ contract ForwarderModule is BaseModule
         bytes   memory signature
         )
         public
-        view
     {
         require(
             (to == from) ||
@@ -72,10 +73,19 @@ contract ForwarderModule is BaseModule
             "INVALID_DESTINATION"
         );
 
-        // If a non-zero txAwareHash is provided, we do not verify signature against
-        // the `data` field. The actual function call in the real transaction will have to
-        // check that txAwareHash is indeed valid.
-        bytes memory data_ = (txAwareHash == 0) ? data : bytes("");
+        bytes memory data_ = data;
+
+        if (txAwareHash != 0) {
+            // If a non-zero txAwareHash is provided, we do not verify signature against
+            // the `data` field. The actual function call in the real transaction will have to
+            // check that txAwareHash is indeed valid.
+            require(nonce == 0, "NONCE_MUST_BE_0");
+            controller.hashStore().verifyAndUpdate(txAwareHash);
+            data_ = data.slice(0, 4); // function selector
+        } else {
+            controller.nonceStore().verifyAndUpdate(from, nonce);
+        }
+
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
             from,
@@ -107,8 +117,6 @@ contract ForwarderModule is BaseModule
             gasleft() >= (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD),
             "INSUFFICIENT_GAS"
         );
-
-        controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
 
         validateMetaTx(
             metaTx.from,
@@ -145,7 +153,9 @@ contract ForwarderModule is BaseModule
             gasUsed
         );
 
-        if (metaTx.gasPrice > 0) {
+        bool waiveFee = !success && metaTx.txAwareHash != 0;
+
+        if (metaTx.gasPrice > 0 && !waiveFee) {
             reimburseGasFee(
                 metaTx.from,
                 controller.collectTo(),
