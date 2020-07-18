@@ -68,9 +68,9 @@ contract ForwarderModule is BaseModule
         view
     {
         require(
-            to == controller.walletFactory() ||
-            to != address(this) && controller.moduleRegistry().isModuleRegistered(to) ||
-            to == from && controller.walletRegistry().isWalletRegistered(from),
+            to == controller.walletFactory() || // 'from' must be the wallet to create, not its owner.
+            controller.moduleRegistry().isModuleRegistered(to) && (to != address(this)) ||
+            controller.walletRegistry().isWalletRegistered(from) && (to == from),
             "INVALID_DESTINATION"
         );
         require(nonce == 0 || txAwareHash == 0, "INVALID_NONCE");
