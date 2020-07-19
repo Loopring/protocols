@@ -110,7 +110,7 @@ library ExchangeBlocks
 
         S.merkleRoot = _block.data.toBytes32(offset);
         offset += 32;
-        require(uint256(S.merkleRoot) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
+        require(uint(S.merkleRoot) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
         // Validate timestamp
         uint32 inputTimestamp = _block.data.toUint32(offset);
