@@ -43,17 +43,13 @@ library TransferTransaction
         uint offset = 1;
 
         // Check that this is a conditional transfer
-        {
-            uint transferType = data.toUint8(offset);
-            offset += 1;
-            require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
-        }
+        require(data.toUint8(offset) == 1, "INVALID_AUXILIARYDATA_DATA");
+        offset += 1;
 
         // Extract the transfer data
         //uint24 fromAccountID = data.toUint24(offset);
-        offset += 3;
         //uint24 toAccountID = data.toUint24(offset);
-        offset += 3;
+        offset += 6;
         uint16 tokenID = data.toUint16(offset) >> 4;
         uint16 feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
         offset += 3;
