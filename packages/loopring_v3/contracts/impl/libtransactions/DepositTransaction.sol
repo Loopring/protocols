@@ -14,10 +14,10 @@ import "../../lib/SignatureUtil.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library DepositTransaction
 {
-    using BytesUtil            for bytes;
-    using MathUint             for uint;
+    using BytesUtil for bytes;
+    using MathUint  for uint;
 
-    event DepositConsumed(
+    event DepositProcessed(
         address indexed owner,
         uint24  indexed accountId,
         uint16          token,
@@ -71,6 +71,6 @@ library DepositTransaction
             deposit.timestamp = 0;
         }
 
-        emit DepositConsumed(owner, accountID, tokenID, amount, index);
+        emit DepositProcessed(owner, accountID, tokenID, amount, index);
     }
 }
