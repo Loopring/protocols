@@ -47,7 +47,7 @@ library WithdrawTransaction
     // Auxiliary data for each withdrawal
     struct WithdrawalAuxiliaryData
     {
-        uint gasLimit;
+        uint  gasLimit;
         bytes signature;
         bytes auxiliaryData;
     }
@@ -98,7 +98,10 @@ library WithdrawTransaction
 
             // Verify the signature if one is provided, otherwise fall back to an approved tx
             if (auxData.signature.length > 0) {
-                require(txHash.verifySignature(withdrawal.owner, auxData.signature), "INVALID_SIGNATURE");
+                require(
+                    txHash.verifySignature(withdrawal.owner, auxData.signature),
+                    "INVALID_SIGNATURE"
+                );
             } else {
                 require(S.approvedTx[withdrawal.owner][txHash], "TX_NOT_APPROVED");
                 S.approvedTx[withdrawal.owner][txHash] = false;
@@ -110,9 +113,11 @@ library WithdrawTransaction
             require(withdrawal.fee == 0, "FEE_NOT_ZERO");
             require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
 
-            ExchangeData.ForcedWithdrawal storage forcedWithdrawal = S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
+            ExchangeData.ForcedWithdrawal storage forcedWithdrawal =
+                S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
+
             if (forcedWithdrawal.timestamp == 0) {
-                // Allow the operator to submit fill withdrawals without authorization
+                // Allow the operator to submit full withdrawals without authorization
                 // - when in shutdown mode
                 // - to withdraw protocol fees
                 require(withdrawal.accountID == 0 || S.isShutdown(), "FULL_WITHDRAWAL_UNAUTHORIZED");
@@ -120,21 +125,24 @@ library WithdrawTransaction
                 // Type == 2: valid onchain withdrawal started by the owner
                 // Type == 3: invalid onchain withdrawal started by someone else
                 bool authorized = (withdrawal.owner == forcedWithdrawal.owner);
-                require((withdrawal.withdrawalType == 2) == authorized, "INVALID_WITHDRAW_TYPE");
-                if (!authorized) {
-                    require(withdrawal.amount == 0, "UNAUTHORIZED_WITHDRAWAL");
-                }
+
+                require(authorized == (withdrawal.withdrawalType == 2), "INVALID_WITHDRAW_TYPE");
+                require(authorized || withdrawal.amount == 0, "UNAUTHORIZED_WITHDRAWAL");
 
                 // Get the fee
                 feeETH = forcedWithdrawal.fee;
 
                 // Reset the approval so it can't be used again
-                S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID] = ExchangeData.ForcedWithdrawal(address(0), 0, 0);
+                delete S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
 
                 // Open up a slot
                 S.numPendingForcedTransactions--;
 
-                emit ForcedWithdrawalProcessed(withdrawal.accountID, withdrawal.tokenID, withdrawal.amount);
+                emit ForcedWithdrawalProcessed(
+                    withdrawal.accountID,
+                    withdrawal.tokenID,
+                    withdrawal.amount
+                );
             }
         } else {
             revert("INVALID_WITHDRAWAL_TYPE");
