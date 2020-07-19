@@ -28,7 +28,7 @@ library ExchangeDeposits
         address indexed token,
         uint96          amount,
         uint96          index,
-        uint            fee
+        uint64          fee
     );
 
     function deposit(
@@ -47,7 +47,7 @@ library ExchangeDeposits
         uint16 tokenID = S.getTokenID(tokenAddress);
 
         // Transfer the tokens to this contract
-        (uint amountDeposited, uint tokenIndex, uint fee) = transferDeposit(
+        (uint96 amountDeposited, uint tokenIndex, uint64 fee) = transferDeposit(
             S,
             from,
             tokenAddress,
@@ -59,10 +59,10 @@ library ExchangeDeposits
         S.pendingDeposits[to][tokenID][tokenIndex].timestamp = uint32(now);
 
         S.pendingDeposits[to][tokenID][tokenIndex].amount =
-            S.pendingDeposits[to][tokenID][tokenIndex].amount.add96(uint96(amountDeposited));
+            S.pendingDeposits[to][tokenID][tokenIndex].amount.add96(amountDeposited);
 
         S.pendingDeposits[to][tokenID][tokenIndex].fee =
-            S.pendingDeposits[to][tokenID][tokenIndex].fee.add64(uint64(fee));
+            S.pendingDeposits[to][tokenID][tokenIndex].fee.add64(fee);
 
         emit DepositRequested(
             to,
@@ -77,22 +77,22 @@ library ExchangeDeposits
         ExchangeData.State storage S,
         address from,
         address tokenAddress,
-        uint    amount,
+        uint96  amount,
         bytes   memory auxiliaryData
         )
         private
         returns (
-            uint amountDeposited,
-            uint tokenIndex,
-            uint fee
+            uint96 amountDeposited,
+            uint   tokenIndex,
+            uint64 fee
         )
     {
         uint depositValueETH = 0;
         if (S.depositContract.isETH(tokenAddress)) {
             depositValueETH = amount;
-            fee = msg.value.sub(amount);
+            fee = uint64(msg.value.sub(amount));
         } else {
-            fee = msg.value;
+            fee = uint64(msg.value);
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
