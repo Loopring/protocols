@@ -93,7 +93,7 @@ public:
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
 
-    void generate_r1cs_witness(const OwnerChange& change)
+    void generate_r1cs_witness(const AccountTransfer& change)
     {
         // Inputs
         owner.generate_r1cs_witness();

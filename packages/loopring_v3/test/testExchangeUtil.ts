@@ -44,7 +44,7 @@ import {
   WithdrawalRequest,
   AccountNew,
   Wallet,
-  OwnerChange
+  AccountTransfer
 } from "./types";
 
 type TxType =
@@ -55,7 +55,7 @@ type TxType =
   | Deposit
   | AccountUpdate
   | AccountNew
-  | OwnerChange;
+  | AccountTransfer;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -119,7 +119,7 @@ export interface AccountUpdateOptions {
   authMethod?: AuthMethod;
 }
 
-export interface OwnerChangeOptions {
+export interface AccountTransferOptions {
   authMethod?: AuthMethod;
   walletCalldata?: string;
 }
@@ -482,9 +482,9 @@ export namespace WalletUtils {
   }
 }
 
-export namespace OwnerChangeUtils {
+export namespace AccountTransferUtils {
   export function toTypedData(
-    accountTransfer: OwnerChange,
+    accountTransfer: AccountTransfer,
     verifyingContract: string
   ) {
     const typedData = {
@@ -495,7 +495,7 @@ export namespace OwnerChangeUtils {
           { name: "chainId", type: "uint256" },
           { name: "verifyingContract", type: "address" }
         ],
-        OwnerChange: [
+        AccountTransfer: [
           { name: "owner", type: "address" },
           { name: "accountID", type: "uint24" },
           { name: "feeTokenID", type: "uint16" },
@@ -507,7 +507,7 @@ export namespace OwnerChangeUtils {
           { name: "walletCalldata", type: "bytes" }
         ]
       },
-      primaryType: "OwnerChange",
+      primaryType: "AccountTransfer",
       domain: {
         name: "Loopring Protocol",
         version: "3.6.0",
@@ -530,7 +530,7 @@ export namespace OwnerChangeUtils {
   }
 
   export function getHash(
-    accountTransfer: OwnerChange,
+    accountTransfer: AccountTransfer,
     verifyingContract: string
   ) {
     const typedData = this.toTypedData(accountTransfer, verifyingContract);
@@ -1662,12 +1662,12 @@ export class ExchangeTestUtil {
     return accountUpdate;
   }
 
-  public async requestOwnerChange(
+  public async requestAccountTransfer(
     owner: string,
     feeToken: string,
     fee: BN,
     newOwner: string,
-    options: OwnerChangeOptions = {}
+    options: AccountTransferOptions = {}
   ) {
     fee = roundToFloatValue(fee, Constants.Float16Encoding);
 
@@ -1700,8 +1700,8 @@ export class ExchangeTestUtil {
       walletDataHash = "0x" + dataHash.toString("hex");
     }
 
-    const accountTransfer: OwnerChange = {
-      txType: "OwnerChange",
+    const accountTransfer: AccountTransfer = {
+      txType: "AccountTransfer",
       owner,
       accountID: account.accountID,
       feeTokenID,
@@ -1718,7 +1718,7 @@ export class ExchangeTestUtil {
     };
 
     // New owner always has to sign
-    const hash = OwnerChangeUtils.getHash(
+    const hash = AccountTransferUtils.getHash(
       accountTransfer,
       this.exchange.address
     );
@@ -2304,9 +2304,9 @@ export class ExchangeTestUtil {
               )
             ]);
           }
-        } else if (transaction.txType === "OwnerChange") {
+        } else if (transaction.txType === "AccountTransfer") {
           numConditionalTransactions++;
-          const encodedOwnerChangeData = web3.eth.abi.encodeParameter(
+          const encodedAccountTransferData = web3.eth.abi.encodeParameter(
             "tuple(bytes,bytes,address,bytes32,bytes)",
             [
               web3.utils.hexToBytes(
@@ -2326,7 +2326,7 @@ export class ExchangeTestUtil {
           );
           auxiliaryData.push([
             i,
-            web3.utils.hexToBytes(encodedOwnerChangeData)
+            web3.utils.hexToBytes(encodedAccountTransferData)
           ]);
         }
       }

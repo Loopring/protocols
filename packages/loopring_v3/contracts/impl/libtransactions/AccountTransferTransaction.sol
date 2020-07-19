@@ -23,8 +23,9 @@ library AccountTransferTransaction
     // bytes4(keccak256("transferOwnership(bytes,bytes)")
     bytes4 constant internal MAGICVALUE = 0xd1f21f4f;
 
-    bytes32 constant public OWNERCHANGE_TYPEHASH = keccak256(
-        "OwnerChange(address owner,uint24 accountID,uint16 feeTokenID,uint256 fee,address newOwner,uint32 nonce,address walletAddress,bytes32 walletDataHash,bytes walletCalldata)"
+    // TODO(brecht): the first 4 fields should be exaly the fields in ACCOUNT_NEW_TYPEHASH
+    bytes32 constant public ACCOUNT_TRANSFER_TYPEHASH = keccak256(
+        "AccountTransfer(address owner,uint24 accountID,uint16 feeTokenID,uint256 fee,address newOwner,uint32 nonce,address walletAddress,bytes32 walletDataHash,bytes walletCalldata)"
     );
 
     bytes32 constant public WALLET_TYPEHASH = keccak256(
@@ -36,7 +37,7 @@ library AccountTransferTransaction
         address          newOwner
     );*/
 
-    struct OwnerChange
+    struct AccountTransfer
     {
         address owner;
         uint24  accountID;
@@ -48,7 +49,7 @@ library AccountTransferTransaction
     }
 
     // Auxiliary data for each owner change
-    struct OwnerChangeAuxiliaryData
+    struct AccountTransferAuxiliaryData
     {
         bytes   signatureOldOwner;
         bytes   signatureNewOwner;
@@ -67,16 +68,16 @@ library AccountTransferTransaction
         internal
         returns (uint /*feeETH*/)
     {
-        OwnerChange memory accountTransfer = readOwnerChange(data);
+        AccountTransfer memory accountTransfer = readAccountTransfer(data);
 
-        OwnerChangeAuxiliaryData memory auxData = abi.decode(auxiliaryData, (OwnerChangeAuxiliaryData));
+        AccountTransferAuxiliaryData memory auxData = abi.decode(auxiliaryData, (AccountTransferAuxiliaryData));
 
         // Calculate the tx hash
         bytes32 txHash = EIP712.hashPacked(
             ctx.DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
-                    OWNERCHANGE_TYPEHASH,
+                    ACCOUNT_TRANSFER_TYPEHASH,
                     accountTransfer.owner,
                     accountTransfer.accountID,
                     accountTransfer.feeTokenID,
@@ -151,12 +152,12 @@ library AccountTransferTransaction
         //emit AccountTransfered(accountTransfer.owner, accountTransfer.newOwner);
     }
 
-    function readOwnerChange(
+    function readAccountTransfer(
         bytes memory data
         )
         internal
         pure
-        returns (OwnerChange memory)
+        returns (AccountTransfer memory)
     {
         uint offset = 1;
 
@@ -176,7 +177,7 @@ library AccountTransferTransaction
         bytes32 walletHash = data.toBytes32(offset);
         offset += 32;
 
-        return OwnerChange({
+        return AccountTransfer({
             owner: owner,
             accountID: accountID,
             nonce: nonce,

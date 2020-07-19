@@ -841,7 +841,7 @@ class State(object):
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 
-        elif txInput.txType == "OwnerChange":
+        elif txInput.txType == "AccountTransfer":
 
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
 

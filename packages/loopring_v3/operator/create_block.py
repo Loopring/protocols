@@ -190,7 +190,7 @@ def createBlock(state, data):
             transaction = accountUpdateFromJSON(transactionInfo)
         if txType == "AccountNew":
             transaction = accountNewFromJSON(transactionInfo)
-        if txType == "OwnerChange":
+        if txType == "AccountTransfer":
             transaction = accountTransferFromJSON(transactionInfo)
 
         transaction.txType = txType
@@ -211,7 +211,7 @@ def createBlock(state, data):
             txWitness.accountUpdate = tx.input
         if txType == "AccountNew":
             txWitness.accountNew = tx.input
-        if txType == "OwnerChange":
+        if txType == "AccountTransfer":
             txWitness.accountTransfer = tx.input
         txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
         block.transactions.append(txWitness)

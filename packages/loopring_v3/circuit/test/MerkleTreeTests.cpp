@@ -33,7 +33,7 @@ TradeHistoryState createTradeHistoryState(ProtoboardT& pb, const TradeHistoryLea
     return tradeHistoryState;
 }
 
-TEST_CASE("UpdateAccount", "[UpdateAccountGadget]")
+TEST_CASE("AccountUpdate", "[UpdateAccountGadget]")
 {
     Block block = getBlock();
     const UniversalTransaction& tx = getSpotTrade(block);
