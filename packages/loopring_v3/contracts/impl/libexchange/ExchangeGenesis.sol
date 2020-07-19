@@ -19,6 +19,12 @@ library ExchangeGenesis
 {
     using ExchangeTokens    for ExchangeData.State;
 
+    modifier onlyWhenUninitialized
+    {
+        require(S.id == 0, "INITIALIZED_ALREADY");
+        _;
+    }
+
     function initializeGenesisBlock(
         ExchangeData.State storage S,
         uint    _id,
@@ -29,12 +35,12 @@ library ExchangeGenesis
         bytes32 _domainSeperator
         )
         external
+        onlyWhenUninitialized
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
         require(_genesisMerkleRoot != 0, "ZERO_GENESIS_MERKLE_ROOT");
-        require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;
@@ -52,7 +58,7 @@ library ExchangeGenesis
         S.blocks.push(ExchangeData.BlockInfo(bytes32(0)));
 
         // Get the protocol fees for this exchange
-        S.protocolFeeData.syncedAt = uint32(0);
+        S.protocolFeeData.syncedAt = uint32(now);
         S.protocolFeeData.takerFeeBips = S.loopring.maxProtocolTakerFeeBips();
         S.protocolFeeData.makerFeeBips = S.loopring.maxProtocolMakerFeeBips();
         S.protocolFeeData.previousTakerFeeBips = S.protocolFeeData.takerFeeBips;
