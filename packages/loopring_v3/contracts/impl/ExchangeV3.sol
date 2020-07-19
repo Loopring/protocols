@@ -614,14 +614,14 @@ contract ExchangeV3 is IExchangeV3
         override
         view
         returns (
-            uint32 refreshedAt,
+            uint32 syncedAt,
             uint8  takerFeeBips,
             uint8  makerFeeBips,
             uint8  previousTakerFeeBips,
             uint8  previousMakerFeeBips
         )
     {
-        refreshedAt = state.protocolFeeData.refreshedAt;
+        syncedAt = state.protocolFeeData.syncedAt;
         takerFeeBips = state.protocolFeeData.takerFeeBips;
         makerFeeBips = state.protocolFeeData.makerFeeBips;
         previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;

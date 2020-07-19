@@ -127,7 +127,7 @@ library ExchangeBlocks
         uint8 protocolMakerFeeBips = _block.data.toUint8(offset);
         offset += 1;
         require(
-            validateAndRefreshProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips),
+            validateAndSyncProtocolFees(S, protocolTakerFeeBips, protocolMakerFeeBips),
             "INVALID_PROTOCOL_FEES"
         );
 
@@ -309,7 +309,7 @@ library ExchangeBlocks
         }
     }
 
-    function validateAndRefreshProtocolFeeValues(
+    function validateAndSyncProtocolFees(
         ExchangeData.State storage S,
         uint8 takerFeeBips,
         uint8 makerFeeBips
@@ -318,7 +318,7 @@ library ExchangeBlocks
         returns (bool)
     {
         ExchangeData.ProtocolFeeData storage data = S.protocolFeeData;
-        if (now > data.refreshedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
+        if (now > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
             // Store the current protocol fees in the previous protocol fees
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;
@@ -327,12 +327,10 @@ library ExchangeBlocks
                 S.id,
                 S.rollupEnabled
             );
-            data.refreshedAt = uint32(now);
+            data.syncedAt = uint32(now);
 
-            bool feeUpdated = (data.takerFeeBips != data.previousTakerFeeBips) ||
-                (data.makerFeeBips != data.previousMakerFeeBips);
-
-            if (feeUpdated) {
+            if (data.takerFeeBips != data.previousTakerFeeBips ||
+                data.makerFeeBips != data.previousMakerFeeBips) {
                 emit ProtocolFeesUpdated(
                     data.takerFeeBips,
                     data.makerFeeBips,
@@ -342,7 +340,7 @@ library ExchangeBlocks
             }
         }
         // The given fee values are valid if they are the current or previous protocol fee values
-        return (takerFeeBips == data.takerFeeBips && makerFeeBips == data.makerFeeBips) ||
+        return (takerFeeBips == data.takerFeeBips &&makerFeeBips == data.makerFeeBips) ||
             (takerFeeBips == data.previousTakerFeeBips && makerFeeBips == data.previousMakerFeeBips);
     }
 }
