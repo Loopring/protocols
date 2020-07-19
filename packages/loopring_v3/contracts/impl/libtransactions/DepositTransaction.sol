@@ -54,12 +54,14 @@ library DepositTransaction
         // Earn a fee relative to the amount actually made available on layer 2.
         // This is done to ensure the user can do multiple deposits after each other
         // without invalidating work done by the operator for previous deposit amounts.
-        if (amount > 0 && deposit.amount > 0) {
+
+        // Also note the oritinal deposit.amount can be zero!
+        if (amount > 0) {
+            require(deposit.amount >= amount, "INVALID_AMOUNT");
             feeETH = uint(deposit.fee).mul(amount) / deposit.amount;
             deposit.fee = uint64(uint(deposit.fee).sub(feeETH));
+            deposit.amount = uint96(uint(deposit.amount).sub(amount));
         }
-        // Consume what was deposited
-        deposit.amount = uint96(uint(deposit.amount).sub(amount));
 
         // If the deposit was fully consumed, reset it so the storage is freed up
         // and the operator receives a gas refund.
