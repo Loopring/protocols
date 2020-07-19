@@ -42,7 +42,7 @@ import {
   AccountUpdate,
   SpotTrade,
   WithdrawalRequest,
-  NewAccount,
+  AccountNew,
   Wallet,
   OwnerChange
 } from "./types";
@@ -54,7 +54,7 @@ type TxType =
   | WithdrawalRequest
   | Deposit
   | AccountUpdate
-  | NewAccount
+  | AccountNew
   | OwnerChange;
 
 // JSON replacer function for BN values
@@ -111,7 +111,7 @@ export interface WithdrawOptions {
   signer?: string;
 }
 
-export interface NewAccountOptions {
+export interface AccountNewOptions {
   authMethod?: AuthMethod;
 }
 
@@ -538,8 +538,8 @@ export namespace OwnerChangeUtils {
   }
 }
 
-export namespace NewAccountUtils {
-  export function toTypedData(update: NewAccount, verifyingContract: string) {
+export namespace AccountNewUtils {
+  export function toTypedData(update: AccountNew, verifyingContract: string) {
     const typedData = {
       types: {
         EIP712Domain: [
@@ -548,14 +548,14 @@ export namespace NewAccountUtils {
           { name: "chainId", type: "uint256" },
           { name: "verifyingContract", type: "address" }
         ],
-        NewAccount: [
+        AccountNew: [
           { name: "accountID", type: "uint24" },
           { name: "owner", type: "address" },
           { name: "publicKey", type: "uint256" },
           { name: "walletHash", type: "uint256" }
         ]
       },
-      primaryType: "NewAccount",
+      primaryType: "AccountNew",
       domain: {
         name: "Loopring Protocol",
         version: "3.6.0",
@@ -575,12 +575,12 @@ export namespace NewAccountUtils {
     return typedData;
   }
 
-  export function getHash(create: NewAccount, verifyingContract: string) {
+  export function getHash(create: AccountNew, verifyingContract: string) {
     const typedData = this.toTypedData(create, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
   }
 
-  export function sign(keyPair: any, create: NewAccount) {
+  export function sign(keyPair: any, create: AccountNew) {
     // Calculate hash
     const hasher = Poseidon.createHash(11, 6, 53);
     const inputs = [
@@ -1501,14 +1501,14 @@ export class ExchangeTestUtil {
     return withdrawalRequest;
   }
 
-  public async requestNewAccount(
+  public async requestAccountNew(
     payer: string,
     feeToken: string,
     fee: BN,
     newOwner: string,
     keyPair: any,
     wallet?: Wallet,
-    options: NewAccountOptions = {}
+    options: AccountNewOptions = {}
   ) {
     fee = roundToFloatValue(fee, Constants.Float16Encoding);
 
@@ -1544,8 +1544,8 @@ export class ExchangeTestUtil {
     };
     this.accounts[this.exchangeId].push(account);
 
-    const accountNew: NewAccount = {
-      txType: "NewAccount",
+    const accountNew: AccountNew = {
+      txType: "AccountNew",
       exchange: this.exchange.address,
       payerAccountID: payerAccount.accountID,
       feeTokenID,
@@ -1557,11 +1557,11 @@ export class ExchangeTestUtil {
       newPublicKeyY: account.publicKeyY,
       newWalletHash: walletHash
     };
-    accountNew.signature = NewAccountUtils.sign(payerAccount, accountNew);
+    accountNew.signature = AccountNewUtils.sign(payerAccount, accountNew);
 
     // Let the new owner sign the new account data
     if (authMethod === AuthMethod.ECDSA) {
-      const hash = NewAccountUtils.getHash(accountNew, this.exchange.address);
+      const hash = AccountNewUtils.getHash(accountNew, this.exchange.address);
       accountNew.onchainSignature = await sign(
         newOwner,
         hash,
@@ -1569,7 +1569,7 @@ export class ExchangeTestUtil {
       );
       await verifySignature(newOwner, hash, accountNew.onchainSignature);
     } else if (authMethod === AuthMethod.APPROVE) {
-      const hash = NewAccountUtils.getHash(accountNew, this.exchange.address);
+      const hash = AccountNewUtils.getHash(accountNew, this.exchange.address);
       await this.exchange.approveTransaction(newOwner, hash, {
         from: newOwner
       });
@@ -2284,7 +2284,7 @@ export class ExchangeTestUtil {
         } else if (transaction.txType === "Deposit") {
           numConditionalTransactions++;
           auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
-        } else if (transaction.txType === "NewAccount") {
+        } else if (transaction.txType === "AccountNew") {
           numConditionalTransactions++;
           auxiliaryData.push([
             i,
@@ -2445,7 +2445,7 @@ export class ExchangeTestUtil {
             );
             da.addBN(
               new BN(
-                transfer.type > 0 || transfer.toNewAccount ? transfer.to : "0"
+                transfer.type > 0 || transfer.toAccountNew ? transfer.to : "0"
               ),
               20
             );
@@ -2737,7 +2737,9 @@ export class ExchangeTestUtil {
       { from: this.exchangeOperator }
     );
 
-    await operatorContract.addManager(this.exchangeOperator, { from: this.exchangeOperator });
+    await operatorContract.addManager(this.exchangeOperator, {
+      from: this.exchangeOperator
+    });
     await this.setOperatorContract(operatorContract);
 
     const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();

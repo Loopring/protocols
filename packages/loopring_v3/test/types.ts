@@ -180,8 +180,8 @@ export interface WithdrawalRequest {
   transactionHash?: string;
 }
 
-export interface NewAccount {
-  txType?: "NewAccount";
+export interface AccountNew {
+  txType?: "AccountNew";
   exchange: string;
 
   payerAccountID: number;

@@ -202,7 +202,7 @@ public:
         needsSignature(pb, isConditional.result(), ".needsSignature"),
 
         // DA optimization
-        da_NeedsToAddress(pb, {toAccountValid.isNewAccount(), isConditional.result()}, FMT(prefix, ".da_NeedsToAddress")),
+        da_NeedsToAddress(pb, {toAccountValid.isAccountNew(), isConditional.result()}, FMT(prefix, ".da_NeedsToAddress")),
         da_To(pb, da_NeedsToAddress.result(), to.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_To")),
         da_From(pb, isConditional.result(), from.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_From")),
         da_Nonce(pb, isConditional.result(), nonce.bits, VariableArrayT(NUM_BITS_NONCE, state.constants._0), FMT(prefix, ".da_Nonce")),

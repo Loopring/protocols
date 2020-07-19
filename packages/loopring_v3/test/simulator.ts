@@ -11,7 +11,7 @@ import {
   Transfer,
   TxBlock,
   AccountUpdate,
-  NewAccount,
+  AccountNew,
   OwnerChange
 } from "./types";
 
@@ -519,11 +519,11 @@ export class Simulator {
           accountBefore.getBalanceRaw(withdrawal.tokenID).balance,
           accountAfter.getBalanceRaw(withdrawal.tokenID).balance
         );
-      } else if (tx.txType === "NewAccount") {
-        const create: NewAccount = tx;
+      } else if (tx.txType === "AccountNew") {
+        const create: AccountNew = tx;
         report = this.accountNew(state, block, tx);
 
-        logInfo("#" + index + " NewAccount");
+        logInfo("#" + index + " AccountNew");
         const accountBefore = previousState.getAccount(create.newAccountID);
         const accountAfter = state.getAccount(create.newAccountID);
         if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
@@ -675,7 +675,7 @@ export class Simulator {
   public static accountNew(
     state: ExchangeState,
     block: TxBlock,
-    create: NewAccount
+    create: AccountNew
   ) {
     const index = state.getAccount(1);
 

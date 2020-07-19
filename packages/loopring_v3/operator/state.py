@@ -720,7 +720,7 @@ class State(object):
             newState.balanceA_O_AutoApplyIndex = True
 
             # For tests (used to set the DA data)
-            txInput.toNewAccount = True if accountB.owner == str(0) else False
+            txInput.toAccountNew = True if accountB.owner == str(0) else False
 
         elif txInput.txType == "Withdraw":
 
@@ -816,7 +816,7 @@ class State(object):
             if txInput.type != 0:
                 context.numConditionalTransactions = context.numConditionalTransactions + 1
 
-        elif txInput.txType == "NewAccount":
+        elif txInput.txType == "AccountNew":
 
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
 

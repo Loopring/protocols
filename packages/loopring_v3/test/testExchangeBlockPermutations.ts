@@ -41,12 +41,7 @@ contract("Exchange", (accounts: string[]) => {
       )
     );
     const token = exchangeTestUtil.getTokenAddress("LRC");
-    return await exchangeTestUtil.deposit(
-      owner,
-      owner,
-      token,
-      amount
-    );
+    return await exchangeTestUtil.deposit(owner, owner, token, amount);
   };
 
   const doRandomOnchainWithdrawal = async (deposit: Deposit) => {
@@ -56,7 +51,7 @@ contract("Exchange", (accounts: string[]) => {
       exchangeTestUtil.getRandomAmount(),
       "ETH",
       new BN(0),
-      {authMethod: AuthMethod.FORCE}
+      { authMethod: AuthMethod.FORCE }
     );
   };
 
@@ -258,7 +253,14 @@ contract("Exchange", (accounts: string[]) => {
       const ownerF = exchangeTestUtil.testContext.orderOwners[5];
 
       // Do a transfer
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee);
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee
+      );
 
       // Do a withdrawal
       await exchangeTestUtil.requestWithdrawal(
@@ -269,11 +271,27 @@ contract("Exchange", (accounts: string[]) => {
         new BN(0)
       );
 
-      await exchangeTestUtil.requestAccountUpdate(ownerB, "ETH", new BN(0), exchangeTestUtil.getKeyPairEDDSA());
+      await exchangeTestUtil.requestAccountUpdate(
+        ownerB,
+        "ETH",
+        new BN(0),
+        exchangeTestUtil.getKeyPairEDDSA()
+      );
 
-      await exchangeTestUtil.requestNewAccount(ownerB, "ETH", new BN(0), ownerE, exchangeTestUtil.getKeyPairEDDSA());
+      await exchangeTestUtil.requestAccountNew(
+        ownerB,
+        "ETH",
+        new BN(0),
+        ownerE,
+        exchangeTestUtil.getKeyPairEDDSA()
+      );
 
-      await exchangeTestUtil.requestOwnerChange(ownerE, "ETH", new BN(0), ownerF);
+      await exchangeTestUtil.requestOwnerChange(
+        ownerE,
+        "ETH",
+        new BN(0),
+        ownerF
+      );
 
       await exchangeTestUtil.submitTransactions(24);
       await verify();

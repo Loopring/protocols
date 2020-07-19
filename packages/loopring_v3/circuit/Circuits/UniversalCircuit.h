@@ -436,7 +436,7 @@ public:
         return flatten({reverse(type.bits), tx.getPublicData()});
     }
 
-    const VariableT& getNewAccountsRoot() const
+    const VariableT& getAccountNewsRoot() const
     {
         return updateAccount_O.result();
     }
@@ -554,7 +554,7 @@ public:
         for (size_t j = 0; j < numTransactions; j++)
         {
             std::cout << "------------------- tx: " << j << std::endl;
-            const VariableT txAccountsRoot = (j == 0) ? merkleRootBefore.packed : transactions.back().getNewAccountsRoot();
+            const VariableT txAccountsRoot = (j == 0) ? merkleRootBefore.packed : transactions.back().getAccountNewsRoot();
             const VariableT& txProtocolBalancesRoot = (j == 0) ? accountBefore_P.balancesRoot : transactions.back().getNewProtocolBalancesRoot();
             const VariableT& txIndexBalancesRoot = (j == 0) ? accountBefore_I.balancesRoot : transactions.back().getNewIndexBalancesRoot();
             transactions.emplace_back(
@@ -576,7 +576,7 @@ public:
         }
 
         // Update Protocol pool
-        updateAccount_P.reset(new UpdateAccountGadget(pb, transactions.back().getNewAccountsRoot(), constants.zeroAccount,
+        updateAccount_P.reset(new UpdateAccountGadget(pb, transactions.back().getAccountNewsRoot(), constants.zeroAccount,
                       {accountBefore_P.owner, accountBefore_P.publicKey.x, accountBefore_P.publicKey.y, accountBefore_P.nonce, accountBefore_P.walletHash, accountBefore_P.balancesRoot},
                       {accountBefore_P.owner, accountBefore_P.publicKey.x, accountBefore_P.publicKey.y, accountBefore_P.nonce, accountBefore_P.walletHash, transactions.back().getNewProtocolBalancesRoot()},
                       FMT(annotation_prefix, ".updateAccount_P")));

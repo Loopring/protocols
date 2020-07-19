@@ -34,7 +34,7 @@ public:
     Poseidon_gadget_T<11, 1, 6, 53, 10, 1> hash;
 
     // Validate
-    EqualGadget isNewAccountTx;
+    EqualGadget isAccountNewTx;
     RequireNotZeroGadget requireNewOwnerNotZero;
     IfThenRequireEqualGadget requireAccountLeafEmpty;
 
@@ -88,9 +88,9 @@ public:
         }), FMT(this->annotation_prefix, ".hash")),
 
         // Validate
-        isNewAccountTx(pb, state.type, state.constants.txTypeNewAccount, FMT(prefix, ".isNewAccountTx")),
+        isAccountNewTx(pb, state.type, state.constants.txTypeAccountNew, FMT(prefix, ".isAccountNewTx")),
         requireNewOwnerNotZero(pb, newOwner.packed, FMT(prefix, ".requireNewOwnerNotZero")),
-        requireAccountLeafEmpty(pb, isNewAccountTx.result(), state.accountB.account.owner, state.constants._0, FMT(prefix, ".requireAccountLeafEmpty")),
+        requireAccountLeafEmpty(pb, isAccountNewTx.result(), state.accountB.account.owner, state.constants._0, FMT(prefix, ".requireAccountLeafEmpty")),
 
         // Compress the public key
         compressPublicKey(pb, state.params, state.constants, newPublicKeyX, newPublicKeyY, FMT(this->annotation_prefix, ".compressPublicKey")),
@@ -137,7 +137,7 @@ public:
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
 
-    void generate_r1cs_witness(const NewAccount& create)
+    void generate_r1cs_witness(const AccountNew& create)
     {
         // Inputs
         payerAccountID.generate_r1cs_witness(pb, create.payerAccountID);
@@ -154,7 +154,7 @@ public:
         hash.generate_r1cs_witness();
 
         // Validate
-        isNewAccountTx.generate_r1cs_witness();
+        isAccountNewTx.generate_r1cs_witness();
         requireNewOwnerNotZero.generate_r1cs_witness();
         requireAccountLeafEmpty.generate_r1cs_witness();
 
@@ -191,7 +191,7 @@ public:
         hash.generate_r1cs_constraints();
 
         // Validate
-        isNewAccountTx.generate_r1cs_constraints();
+        isAccountNewTx.generate_r1cs_constraints();
         requireNewOwnerNotZero.generate_r1cs_constraints();
         requireAccountLeafEmpty.generate_r1cs_constraints();
 

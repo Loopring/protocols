@@ -97,7 +97,7 @@ static auto dummyAccountUpdate = R"({
     "type": 0
 })"_json;
 
-static auto dummyNewAccount = R"({
+static auto dummyAccountNew = R"({
     "payerAccountID": 0,
     "feeTokenID": 0,
     "fee": "0",
@@ -419,7 +419,7 @@ static void from_json(const json& j, AccountUpdateTx& update)
 }
 
 
-class NewAccount
+class AccountNew
 {
 public:
     ethsnarks::FieldT payerAccountID;
@@ -432,7 +432,7 @@ public:
     ethsnarks::FieldT newWalletHash;
 };
 
-static void from_json(const json& j, NewAccount& create)
+static void from_json(const json& j, AccountNew& create)
 {
     create.payerAccountID = ethsnarks::FieldT(j.at("payerAccountID"));
     create.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
@@ -581,7 +581,7 @@ public:
     ethsnarks::FieldT type;
     SpotTrade spotTrade;
     Transfer transfer;
-    NewAccount accountNew;
+    AccountNewaccountNew;
     Withdrawal withdraw;
     Deposit deposit;
     AccountUpdateTx accountUpdate;
@@ -598,7 +598,7 @@ static void from_json(const json& j, UniversalTransaction& transaction)
     transaction.withdraw = dummyWithdraw.get<Loopring::Withdrawal>();
     transaction.deposit = dummyDeposit.get<Loopring::Deposit>();
     transaction.accountUpdate = dummyAccountUpdate.get<Loopring::AccountUpdateTx>();
-    transaction.accountNew = dummyNewAccount.get<Loopring::NewAccount>();
+    transaction.accountNew = dummyAccountNew.get<Loopring::AccountNew>();
     transaction.accountTransfer = dummyOwnerChange.get<Loopring::OwnerChange>();
 
     // Patch some of the dummy tx's so they are valid against the current state
@@ -641,7 +641,7 @@ static void from_json(const json& j, UniversalTransaction& transaction)
     else if (j.contains("accountNew"))
     {
         transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountNew));
-        transaction.accountNew = j.at("accountNew").get<Loopring::NewAccount>();
+        transaction.accountNew = j.at("accountNew").get<Loopring::AccountNew>();
     }
     else if (j.contains("accountTransfer"))
     {

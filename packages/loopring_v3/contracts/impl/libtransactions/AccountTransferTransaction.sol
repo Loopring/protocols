@@ -11,9 +11,9 @@ import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
 
-/// @title OwnerChangeTransaction
+/// @title AccountTransferTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
-library OwnerChangeTransaction
+library AccountTransferTransaction
 {
     using BytesUtil            for bytes;
     using FloatUtil            for uint;

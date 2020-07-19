@@ -20,7 +20,7 @@ library AccountUpdateTransaction
     using MathUint             for uint;
     using SignatureUtil        for bytes32;
 
-    bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
+    bytes32 constant public ACCOUNT_UPDATE_TYPEHASH = keccak256(
         "AccountUpdate(address owner,uint24 accountID,uint32 nonce,uint256 publicKey,uint256 walletHash,uint16 feeTokenID,uint256 fee)"
     );
 
@@ -30,10 +30,10 @@ library AccountUpdateTransaction
     );*/
 
     function process(
-        ExchangeData.State storage S,
-        ExchangeData.BlockContext memory ctx,
-        bytes memory data,
-        bytes memory auxiliaryData
+        ExchangeData.State        storage S,
+        ExchangeData.BlockContext memory  ctx,
+        bytes                     memory  data,
+        bytes                     memory  auxiliaryData
         )
         internal
         returns (uint /*feeETH*/)
@@ -41,9 +41,8 @@ library AccountUpdateTransaction
         uint offset = 1;
 
         // Check that this is a conditional update
-        uint updateType = data.toUint8(offset);
+        require(data.toUint8(offset) == 1, "INVALID_AUXILIARYDATA_DATA");
         offset += 1;
-        require(updateType == 1, "INVALID_AUXILIARYDATA_DATA");
 
         // Extract the data from the tx data
         address owner = data.toAddress(offset);
@@ -66,7 +65,7 @@ library AccountUpdateTransaction
             ctx.DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
-                    ACCOUNTUPDATE_TYPEHASH,
+                    ACCOUNT_UPDATE_TYPEHASH,
                     owner,
                     accountID,
                     nonce,

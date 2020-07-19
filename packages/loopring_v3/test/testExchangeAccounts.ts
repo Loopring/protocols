@@ -23,7 +23,6 @@ contract("Exchange", (accounts: string[]) => {
     operator = ctx.getAccount(operatorAccountID).owner;
   };
 
-
   before(async () => {
     ctx = new ExchangeTestUtil();
     await ctx.initialize(accounts);
@@ -51,8 +50,8 @@ contract("Exchange", (accounts: string[]) => {
 
       // Wallet
       const guardians: Guardian[] = [];
-      guardians.push({addr: ownerB, group: 0});
-      guardians.push({addr: ownerC, group: 0});
+      guardians.push({ addr: ownerB, group: 0 });
+      guardians.push({ addr: ownerC, group: 0 });
       const wallet: Wallet = {
         accountID: 0,
         guardians,
@@ -64,31 +63,64 @@ contract("Exchange", (accounts: string[]) => {
       await ctx.deposit(ownerA, ownerA, token, balance);
 
       // Create a new account with keypair but without a wallet
-      await ctx.requestNewAccount(ownerA, token, fee, ownerB, ctx.getKeyPairEDDSA(), undefined);
+      await ctx.requestAccountNew(
+        ownerA,
+        token,
+        fee,
+        ownerB,
+        ctx.getKeyPairEDDSA(),
+        undefined
+      );
 
       // Create a new account without a keypair/wallet
-      await ctx.requestNewAccount(ownerA, token, fee, ownerC, ctx.getZeroKeyPairEDDSA(), undefined);
+      await ctx.requestAccountNew(
+        ownerA,
+        token,
+        fee,
+        ownerC,
+        ctx.getZeroKeyPairEDDSA(),
+        undefined
+      );
 
       // Create a new account with a keypair and wallet
-      await ctx.requestNewAccount(ownerA, token, fee, ownerD, ctx.getKeyPairEDDSA(), wallet);
+      await ctx.requestAccountNew(
+        ownerA,
+        token,
+        fee,
+        ownerD,
+        ctx.getKeyPairEDDSA(),
+        wallet
+      );
 
       // Create a new account with an onchain approval
-      await ctx.requestNewAccount(ownerA, token, fee, ownerD, ctx.getKeyPairEDDSA(), wallet, {authMethod: AuthMethod.APPROVE});
+      await ctx.requestAccountNew(
+        ownerA,
+        token,
+        fee,
+        ownerD,
+        ctx.getKeyPairEDDSA(),
+        wallet,
+        { authMethod: AuthMethod.APPROVE }
+      );
 
       // Submit
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
 
-
       // Try to create a new account without approval
-      await ctx.requestNewAccount(ownerA, token, fee, ownerD, ctx.getKeyPairEDDSA(), undefined, {authMethod: AuthMethod.NONE});
+      await ctx.requestAccountNew(
+        ownerA,
+        token,
+        fee,
+        ownerD,
+        ctx.getKeyPairEDDSA(),
+        undefined,
+        { authMethod: AuthMethod.NONE }
+      );
 
       // Submit
       await ctx.submitTransactions();
-      await expectThrow(
-        ctx.submitPendingBlocks(),
-        "TX_NOT_APPROVED"
-      );
+      await expectThrow(ctx.submitPendingBlocks(), "TX_NOT_APPROVED");
     });
 
     it("Should be able to update an account", async () => {
@@ -100,8 +132,8 @@ contract("Exchange", (accounts: string[]) => {
 
       // Wallet
       const guardians: Guardian[] = [];
-      guardians.push({addr: ownerB, group: 0});
-      guardians.push({addr: ownerC, group: 0});
+      guardians.push({ addr: ownerB, group: 0 });
+      guardians.push({ addr: ownerC, group: 0 });
       const wallet: Wallet = {
         accountID: 0,
         guardians,
@@ -113,10 +145,23 @@ contract("Exchange", (accounts: string[]) => {
       await ctx.deposit(ownerA, ownerA, token, balance);
 
       // Create a new account
-      await ctx.requestNewAccount(ownerA, token, balance, ownerB, ctx.getKeyPairEDDSA());
+      await ctx.requestAccountNew(
+        ownerA,
+        token,
+        balance,
+        ownerB,
+        ctx.getKeyPairEDDSA()
+      );
 
       // Send some funds over to the new account
-      await ctx.transfer(ownerA, ownerB, token, fee.mul(new BN(10)), token, fee);
+      await ctx.transfer(
+        ownerA,
+        ownerB,
+        token,
+        fee.mul(new BN(10)),
+        token,
+        fee
+      );
 
       // Update the key pair of the new account
       let newKeyPair = ctx.getKeyPairEDDSA();
@@ -126,33 +171,54 @@ contract("Exchange", (accounts: string[]) => {
       await ctx.requestAccountUpdate(ownerB, token, fee, newKeyPair, wallet);
 
       // Update the key pair of the new account again to disable EdDSA signatures
-      await ctx.requestAccountUpdate(ownerB, token, fee, ctx.getZeroKeyPairEDDSA(), wallet);
+      await ctx.requestAccountUpdate(
+        ownerB,
+        token,
+        fee,
+        ctx.getZeroKeyPairEDDSA(),
+        wallet
+      );
 
       // Transfer some funds using an ECDSA signature
-      await ctx.transfer(ownerB, ownerA, token, fee.mul(new BN(10)), token, fee, {authMethod: AuthMethod.ECDSA});
+      await ctx.transfer(
+        ownerB,
+        ownerA,
+        token,
+        fee.mul(new BN(10)),
+        token,
+        fee,
+        { authMethod: AuthMethod.ECDSA }
+      );
 
       // Enable EdDSA signature again
       newKeyPair = ctx.getKeyPairEDDSA();
-      await ctx.requestAccountUpdate(ownerB, token, fee, newKeyPair, wallet, {authMethod: AuthMethod.ECDSA});
+      await ctx.requestAccountUpdate(ownerB, token, fee, newKeyPair, wallet, {
+        authMethod: AuthMethod.ECDSA
+      });
 
       // Remove the wallet
       newKeyPair = ctx.getKeyPairEDDSA();
-      await ctx.requestAccountUpdate(ownerB, token, fee, newKeyPair, undefined, {authMethod: AuthMethod.EDDSA});
+      await ctx.requestAccountUpdate(
+        ownerB,
+        token,
+        fee,
+        newKeyPair,
+        undefined,
+        { authMethod: AuthMethod.EDDSA }
+      );
 
       // Submit
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
 
-
       // Try to update the account without approval
-      await ctx.requestAccountUpdate(ownerB, token, fee, newKeyPair, wallet, {authMethod: AuthMethod.NONE});
+      await ctx.requestAccountUpdate(ownerB, token, fee, newKeyPair, wallet, {
+        authMethod: AuthMethod.NONE
+      });
 
       // Submit
       await ctx.submitTransactions();
-      await expectThrow(
-        ctx.submitPendingBlocks(),
-        "TX_NOT_APPROVED"
-      );
+      await expectThrow(ctx.submitPendingBlocks(), "TX_NOT_APPROVED");
     });
 
     it("Should be able to change the account owner", async () => {
@@ -167,8 +233,8 @@ contract("Exchange", (accounts: string[]) => {
 
       // Wallet
       const guardians: Guardian[] = [];
-      guardians.push({addr: ownerB, group: 0});
-      guardians.push({addr: ownerC, group: 0});
+      guardians.push({ addr: ownerB, group: 0 });
+      guardians.push({ addr: ownerC, group: 0 });
       const wallet: Wallet = {
         accountID: ctx.accounts[ctx.exchangeId].length,
         guardians,
@@ -177,50 +243,80 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       // Create a new account
-      await ctx.requestNewAccount(ownerA, token, balance, ownerB, ctx.getKeyPairEDDSA(), wallet);
+      await ctx.requestAccountNew(
+        ownerA,
+        token,
+        balance,
+        ownerB,
+        ctx.getKeyPairEDDSA(),
+        wallet
+      );
 
       // Send some funds over to the new account
-      await ctx.transfer(ownerA, ownerB, token, fee.mul(new BN(10)), token, fee);
+      await ctx.transfer(
+        ownerA,
+        ownerB,
+        token,
+        fee.mul(new BN(10)),
+        token,
+        fee
+      );
 
       // Setup data necessary for recovery using a wallet
       let newOwner = ownerC;
       const accountB = ctx.findAccount(ownerB);
-      const permissionData: PermissionData = {signers: [], signatures: []};
-      const walletDataHash = WalletUtils.getWalletHash(wallet, ctx.statelessWallet.address);
-      const walletCalldata = ctx.statelessWallet.contract.methods.recover(
-        accountB.accountID,
-        accountB.nonce,
-        accountB.owner,
-        newOwner,
-        "0x" + walletDataHash.toString("hex"),
+      const permissionData: PermissionData = { signers: [], signatures: [] };
+      const walletDataHash = WalletUtils.getWalletHash(
         wallet,
-        permissionData
-      ).encodeABI();
+        ctx.statelessWallet.address
+      );
+      const walletCalldata = ctx.statelessWallet.contract.methods
+        .recover(
+          accountB.accountID,
+          accountB.nonce,
+          accountB.owner,
+          newOwner,
+          "0x" + walletDataHash.toString("hex"),
+          wallet,
+          permissionData
+        )
+        .encodeABI();
 
       // Transfer ownership with the help of the wallet data
-      await ctx.requestOwnerChange(ownerB, token, fee, newOwner, {authMethod: AuthMethod.WALLET, walletCalldata});
+      await ctx.requestOwnerChange(ownerB, token, fee, newOwner, {
+        authMethod: AuthMethod.WALLET,
+        walletCalldata
+      });
 
       // Transfer ownership again with the help of a signature of the original owner
       newOwner = ownerD;
-      await ctx.requestOwnerChange(ownerC, token, fee, newOwner, {authMethod: AuthMethod.ECDSA});
+      await ctx.requestOwnerChange(ownerC, token, fee, newOwner, {
+        authMethod: AuthMethod.ECDSA
+      });
 
       // Transfer some funds using an ECDSA signature
-      await ctx.transfer(newOwner, ownerA, token, fee.mul(new BN(10)), token, fee, {authMethod: AuthMethod.ECDSA});
+      await ctx.transfer(
+        newOwner,
+        ownerA,
+        token,
+        fee.mul(new BN(10)),
+        token,
+        fee,
+        { authMethod: AuthMethod.ECDSA }
+      );
 
       // Submit
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
 
-
       // Try to change owner without approval
-      await ctx.requestOwnerChange(newOwner, token, fee, ownerA, {authMethod: AuthMethod.NONE});
+      await ctx.requestOwnerChange(newOwner, token, fee, ownerA, {
+        authMethod: AuthMethod.NONE
+      });
 
       // Submit
       await ctx.submitTransactions();
-      await expectThrow(
-        ctx.submitPendingBlocks(),
-        "TX_NOT_APPROVED"
-      );
+      await expectThrow(ctx.submitPendingBlocks(), "TX_NOT_APPROVED");
     });
   });
 });

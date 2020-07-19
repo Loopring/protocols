@@ -188,7 +188,7 @@ def createBlock(state, data):
             transaction = depositFromJSON(transactionInfo)
         if txType == "AccountUpdate":
             transaction = accountUpdateFromJSON(transactionInfo)
-        if txType == "NewAccount":
+        if txType == "AccountNew":
             transaction = accountNewFromJSON(transactionInfo)
         if txType == "OwnerChange":
             transaction = accountTransferFromJSON(transactionInfo)
@@ -209,7 +209,7 @@ def createBlock(state, data):
             txWitness.deposit = tx.input
         if txType == "AccountUpdate":
             txWitness.accountUpdate = tx.input
-        if txType == "NewAccount":
+        if txType == "AccountNew":
             txWitness.accountNew = tx.input
         if txType == "OwnerChange":
             txWitness.accountTransfer = tx.input
