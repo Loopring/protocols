@@ -29,8 +29,8 @@ library NewAccountTransaction
     function process(
         ExchangeData.State        storage S,
         ExchangeData.BlockContext memory  ctx,
-        bytes                     memory data,
-        bytes                     memory auxiliaryData
+        bytes                     memory  data,
+        bytes                     memory  auxiliaryData
         )
         internal
         returns (uint /*feeETH*/)
