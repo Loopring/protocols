@@ -15,10 +15,11 @@ import "../../lib/SignatureUtil.sol";
 /// @dev There are a few concepts we need to clarify:
 ///   - StatelessWallet: it's a stateless contract that can be used to verify permissions for layer-2
 ///                      wallet recovery, inheritance, etc. We do not have to define an interface, as
-///                      the protocol to call a StatelessWallet's static functions based on data provided
+///                      the protocol will call a StatelessWallet's static functions based on data provided
 ///                      by the old/new owners.
 ///   - walletDataHash:  a hash of the wallet's data. Neither the data itself or this walletDataHash will
-///                      be stored in the Merkle tree.
+///                      be stored in the Merkle tree. We suppost the wallet data and this hash are both managed
+///                      on the client side.
 ///   - walletHash:      a hash calculated from both the walletDataHash and the address of the wallet's
 ///                      associated StatelessWallet. walletHash is the only wallet-related data stored in
 ///                      the Merkel tree.
