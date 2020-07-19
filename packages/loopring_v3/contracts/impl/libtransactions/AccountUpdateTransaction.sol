@@ -20,6 +20,7 @@ library AccountUpdateTransaction
     using MathUint             for uint;
     using SignatureUtil        for bytes32;
 
+    // TODO(brecht): the first 4 fields should be exaly the fields in ACCOUNT_NEW_TYPEHASH
     bytes32 constant public ACCOUNT_UPDATE_TYPEHASH = keccak256(
         "AccountUpdate(address owner,uint24 accountID,uint32 nonce,uint256 publicKey,uint256 walletHash,uint16 feeTokenID,uint256 fee)"
     );
