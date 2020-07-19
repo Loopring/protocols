@@ -2,13 +2,16 @@ import {
   Context,
   createContext,
   executeTransaction,
+  toAmount,
   createWallet
 } from "./helpers/TestUtils";
 import { addGuardian } from "./helpers/GuardianUtils";
+import { transferFrom } from "./helpers/TokenUtils";
 import { assertEventEmitted } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
 import { Constants } from "./helpers/Constants";
 import { SignedRequest, signRecover } from "./helpers/SignatureUtils";
+import BN = require("bn.js");
 
 contract("GuardianModule - Recovery", (accounts: string[]) => {
   let ctx: Context;
@@ -37,6 +40,22 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
         const guardians = ctx.guardians.slice(0, 3);
         const group = 0;
 
+        const metaTxSigner = ctx.owners[2];
+        const { wallet: metaTxSendWallet } = await createWallet(
+          ctx,
+          metaTxSigner
+        );
+        if (useMetaTx) {
+          // Transfer 0.1 ETH to the wallet to pay for the wallet creation
+          await transferFrom(
+            ctx,
+            metaTxSigner,
+            metaTxSendWallet,
+            "ETH",
+            toAmount("0.1")
+          );
+        }
+
         // Add the guardians
         for (const guardian of guardians) {
           await addGuardian(ctx, owner, wallet, guardian, group, true);
@@ -61,7 +80,12 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
             useMetaTx,
             wallet,
             [],
-            { from: owner, owner, wallet }
+            {
+              from: owner,
+              owner: metaTxSigner,
+              wallet: metaTxSendWallet,
+              gasPrice: new BN(1)
+            }
           );
 
           if (signers.length >= numSignersRequired) {
