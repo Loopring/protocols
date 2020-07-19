@@ -426,7 +426,7 @@ export namespace WalletUtils {
   }
 
   export function toTypedDataWallet(
-    walletAddress: string,
+    statelessWallet: string,
     walletDataHash: string,
     verifyingContract: string
   ) {
@@ -439,7 +439,7 @@ export namespace WalletUtils {
           { name: "verifyingContract", type: "address" }
         ],
         Wallet: [
-          { name: "walletAddress", type: "address" },
+          { name: "statelessWallet", type: "address" },
           { name: "walletDataHash", type: "bytes32" }
         ]
       },
@@ -451,7 +451,7 @@ export namespace WalletUtils {
         verifyingContract
       },
       message: {
-        walletAddress,
+        statelessWallet,
         walletDataHash
       }
     };
@@ -468,13 +468,13 @@ export namespace WalletUtils {
 
   export function getHash(
     wallet: Wallet,
-    walletAddress: string,
+    statelessWallet: string,
     verifyingContract: string
   ) {
     const walletDataHash =
-      "0x" + this.getWalletHash(wallet, walletAddress).toString("hex");
+      "0x" + this.getWalletHash(wallet, statelessWallet).toString("hex");
     const typedData = this.toTypedDataWallet(
-      walletAddress,
+      statelessWallet,
       walletDataHash,
       verifyingContract
     );
@@ -502,7 +502,7 @@ export namespace OwnerChangeUtils {
           { name: "fee", type: "uint256" },
           { name: "newOwner", type: "address" },
           { name: "nonce", type: "uint32" },
-          { name: "walletAddress", type: "address" },
+          { name: "statelessWallet", type: "address" },
           { name: "walletDataHash", type: "bytes32" },
           { name: "walletCalldata", type: "bytes" }
         ]
@@ -521,7 +521,7 @@ export namespace OwnerChangeUtils {
         fee: accountTransfer.fee,
         newOwner: accountTransfer.newOwner,
         nonce: accountTransfer.nonce,
-        walletAddress: accountTransfer.walletAddress,
+        statelessWallet: accountTransfer.statelessWallet,
         walletDataHash: accountTransfer.walletDataHash,
         walletCalldata: accountTransfer.walletCalldata
       }
@@ -1709,7 +1709,7 @@ export class ExchangeTestUtil {
       walletHash,
       nonce: account.nonce++,
       newOwner,
-      walletAddress:
+      statelessWallet:
         authMethod === AuthMethod.WALLET
           ? this.statelessWallet.address
           : Constants.zeroAddress,
@@ -2319,7 +2319,7 @@ export class ExchangeTestUtil {
                   ? transaction.onchainSignatureNewOwner
                   : "0x"
               ),
-              transaction.walletAddress,
+              transaction.statelessWallet,
               transaction.walletDataHash,
               transaction.walletCalldata
             ]
@@ -2737,7 +2737,9 @@ export class ExchangeTestUtil {
       { from: this.exchangeOperator }
     );
 
-    await operatorContract.addManager(this.exchangeOperator, { from: this.exchangeOperator });
+    await operatorContract.addManager(this.exchangeOperator, {
+      from: this.exchangeOperator
+    });
     await this.setOperatorContract(operatorContract);
 
     const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();

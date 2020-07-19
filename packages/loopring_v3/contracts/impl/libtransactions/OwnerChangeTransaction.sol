@@ -21,12 +21,12 @@ library OwnerChangeTransaction
     // bytes4(keccak256("transferOwnership(bytes,bytes)")
     bytes4  constant public RECOVERY_MAGICVALUE = 0xd1f21f4f;
 
-    bytes32 constant public OWNERCHANGE_TYPEHASH = keccak256(
-        "OwnerChange(address owner,uint24 accountID,uint16 feeTokenID,uint256 fee,address newOwner,uint32 nonce,address walletAddress,bytes32 walletDataHash,bytes walletCalldata)"
+    bytes32 constant public ACCOUNTTRANSFER_TYPEHASH = keccak256(
+        "OwnerChange(address owner,uint24 accountID,uint16 feeTokenID,uint256 fee,address newOwner,uint32 nonce,address statelessWallet,bytes32 walletDataHash,bytes walletCalldata)"
     );
 
     bytes32 constant public WALLET_TYPEHASH = keccak256(
-        "Wallet(address walletAddress,bytes32 walletDataHash)"
+        "Wallet(address statelessWallet,bytes32 walletDataHash)"
     );
 
     /*event AccountTransfered(
@@ -46,11 +46,11 @@ library OwnerChangeTransaction
     }
 
     // Auxiliary data for each owner change
-    struct OwnerChangeAuxiliaryData
+    struct AccountTransferAuxiliaryData
     {
         bytes   signatureOldOwner;
         bytes   signatureNewOwner;
-        address walletAddress;
+        address statelessWallet;
         bytes32 walletDataHash;
         bytes   walletCalldata;
     }
@@ -66,9 +66,9 @@ library OwnerChangeTransaction
     {
         AccountTransfer memory accountTransfer = readAccountTransfer(data);
 
-        OwnerChangeAuxiliaryData memory auxData = abi.decode(
+        AccountTransferAuxiliaryData memory auxData = abi.decode(
             auxiliaryData,
-            (OwnerChangeAuxiliaryData)
+            (AccountTransferAuxiliaryData)
         );
 
         // Calculate the tx hash
@@ -76,40 +76,52 @@ library OwnerChangeTransaction
             ctx.DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
-                    OWNERCHANGE_TYPEHASH,
+                    ACCOUNTTRANSFER_TYPEHASH,
                     accountTransfer.owner,
                     accountTransfer.accountID,
                     accountTransfer.feeTokenID,
                     accountTransfer.fee,
                     accountTransfer.newOwner,
                     accountTransfer.nonce,
-                    auxData.walletAddress,
+                    auxData.statelessWallet,
                     auxData.walletDataHash,
                     keccak256(auxData.walletCalldata)
                 )
             )
         );
 
-        // Verify authentication from the new owner
+        // Verify authorization from the new owner
         if (auxData.signatureNewOwner.length > 0) {
             require(
-                txHash.verifySignature(accountTransfer.newOwner, auxData.signatureNewOwner),
+                txHash.verifySignature(
+                    accountTransfer.newOwner,
+                    auxData.signatureNewOwner
+                ),
                 "INVALID_SIGNATURE_NEW_OWNER"
             );
         } else {
-            require(S.approvedTx[accountTransfer.newOwner][txHash], "TX_NOT_APPROVED_NEW_OWNER");
+            require(
+                S.approvedTx[accountTransfer.newOwner][txHash],
+                "TX_NOT_APPROVED_NEW_OWNER"
+            );
             delete S.approvedTx[accountTransfer.newOwner][txHash];
         }
 
-        if (auxData.walletAddress == address(0)) {
-            /// Verify authentication from the current owner
+        if (auxData.statelessWallet == address(0)) {
+            /// Verify authorization from the current owner
             if (auxData.signatureOldOwner.length > 0) {
                 require(
-                    txHash.verifySignature(accountTransfer.owner, auxData.signatureOldOwner),
+                    txHash.verifySignature(
+                        accountTransfer.owner,
+                        auxData.signatureOldOwner
+                    ),
                     "INVALID_SIGNATURE_OLD_OWNER"
                 );
             } else {
-                require(S.approvedTx[accountTransfer.owner][txHash], "TX_NOT_APPROVED_OLD_OWNER");
+                require(
+                    S.approvedTx[accountTransfer.owner][txHash],
+                    "TX_NOT_APPROVED_OLD_OWNER"
+                );
                 delete S.approvedTx[accountTransfer.owner][txHash];
             }
         } else {
@@ -122,13 +134,16 @@ library OwnerChangeTransaction
                 keccak256(
                     abi.encode(
                         WALLET_TYPEHASH,
-                        auxData.walletAddress,
+                        auxData.statelessWallet,
                         auxData.walletDataHash
                     )
                 )
             );
             // Hashes are stored using only 253 bits so the value fits inside a SNARK field element.
-            require((uint(walletHash) >> 3) == uint(accountTransfer.walletHash), "INVALID_WALLET_HASH");
+            require(
+                (uint(walletHash) >> 3) == uint(accountTransfer.walletHash),
+                "INVALID_WALLET_HASH"
+            );
 
             // Check that the calldata contains the correct inputs for data coming from layer 2.
             // This data is also padded with zeros to 32 bytes (at the MSB) inside the calldata.
@@ -169,7 +184,7 @@ library OwnerChangeTransaction
             offset += 32;
 
             (bool success, bytes memory result) =
-                auxData.walletAddress.staticcall(auxData.walletCalldata);
+                auxData.statelessWallet.staticcall(auxData.walletCalldata);
 
             require(
                 success &&

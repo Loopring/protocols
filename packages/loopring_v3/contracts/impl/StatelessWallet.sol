@@ -37,9 +37,7 @@ contract StatelessWallet
     struct Wallet
     {
         uint24     accountID;
-
         Guardian[] guardians;
-
         address    inheritor;
         uint       inheritableSince;
     }
@@ -52,47 +50,47 @@ contract StatelessWallet
 
     bytes32 DOMAIN_SEPARATOR;
 
-
     modifier validateWallet(
         Wallet memory wallet,
         bytes32       expectedWalletHash,
         uint24        accountID
-    )
+        )
     {
         {
-        bytes32[] memory guardianHashes = new bytes32[](wallet.guardians.length);
-        for (uint i = 0; i < wallet.guardians.length; i++) {
-            guardianHashes[i] = keccak256(
-                abi.encode(
-                    GUARDIAN_TYPEHASH,
-                    wallet.guardians[i].addr,
-                    wallet.guardians[i].group
+            bytes32[] memory guardianHashes = new bytes32[](wallet.guardians.length);
+            for (uint i = 0; i < wallet.guardians.length; i++) {
+                guardianHashes[i] = keccak256(
+                    abi.encode(
+                        GUARDIAN_TYPEHASH,
+                        wallet.guardians[i].addr,
+                        wallet.guardians[i].group
+                    )
+                );
+            }
+            bytes32 walletHash = EIP712.hashPacked(
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        STATELESSWALLET_TYPEHASH,
+                        wallet.accountID,
+                        keccak256(abi.encodePacked(guardianHashes)),
+                        wallet.inheritor,
+                        wallet.inheritableSince
+                    )
                 )
             );
-        }
-        bytes32 walletHash = EIP712.hashPacked(
-            DOMAIN_SEPARATOR,
-            keccak256(
-                abi.encode(
-                    STATELESSWALLET_TYPEHASH,
-                    wallet.accountID,
-                    keccak256(abi.encodePacked(guardianHashes)),
-                    wallet.inheritor,
-                    wallet.inheritableSince
-                )
-            )
-        );
-        require(walletHash == expectedWalletHash, "INVALID_WALLET_DATA");
-        require(wallet.accountID == accountID, "INVALID_WALLET_ACCOUNT");
+            require(walletHash == expectedWalletHash, "INVALID_WALLET_DATA");
+            require(wallet.accountID == accountID, "INVALID_WALLET_ACCOUNT");
         }
         _;
     }
 
-
     constructor()
         public
     {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Loopring Stateless Wallet", "1.0", address(this)));
+        DOMAIN_SEPARATOR = EIP712.hash(
+            EIP712.Domain("Loopring Stateless Wallet", "1.0", address(this))
+        );
     }
 
     function recover(
@@ -109,7 +107,10 @@ contract StatelessWallet
         validateWallet(wallet, walletHash, accountID)
         returns (bytes4)
     {
-        require(permissionData.signers.length == permissionData.signatures.length, "INVALID_DATA");
+        require(
+            permissionData.signers.length == permissionData.signatures.length,
+            "INVALID_PERMISSION_DATA"
+        );
 
         bytes32 hash = hashRecovery(
             accountID,
@@ -117,19 +118,24 @@ contract StatelessWallet
             newOwner,
             nonce
         );
-        require(hash.verifySignatures(permissionData.signers, permissionData.signatures), "INVALID_SIGNATURES");
 
-        // TODO: Check guardians like usual in our main smart wallet...
+        require(
+            hash.verifySignatures(permissionData.signers, permissionData.signatures),
+            "INVALID_SIGNATURES"
+        );
+
+        // TODO(brecht): Check guardians like usual in our main smart wallet...
+
         return RECOVERY_MAGICVALUE;
     }
 
     function inherit(
-        uint24                accountID,
-        uint32                /*nonce*/,
-        address               /*oldOwner*/,
-        address               newOwner,
-        bytes32               walletHash,
-        Wallet         memory wallet
+        uint24  accountID,
+        uint32  /*nonce*/,
+        address /*oldOwner*/,
+        address newOwner,
+        bytes32 walletHash,
+        Wallet  memory wallet
         )
         external
         view
@@ -141,13 +147,13 @@ contract StatelessWallet
         return RECOVERY_MAGICVALUE;
     }
 
-    // -- Internal
+    // -- Internal --
 
     function hashRecovery(
-        uint24                accountID,
-        address               oldOwner,
-        address               newOwner,
-        uint32                nonce
+        uint24  accountID,
+        address oldOwner,
+        address newOwner,
+        uint32  nonce
         )
         internal
         view
