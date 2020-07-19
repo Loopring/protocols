@@ -49,9 +49,9 @@ library ExchangeBlocks
     );
 
     function submitBlocks(
-        ExchangeData.State storage S,
-        ExchangeData.Block[] memory blocks,
-        address payable feeRecipient
+        ExchangeData.State   storage S,
+        ExchangeData.Block[] memory  blocks,
+        address              payable feeRecipient
         )
         public
     {
@@ -90,15 +90,15 @@ library ExchangeBlocks
 
     function commitBlock(
         ExchangeData.State storage S,
-        ExchangeData.Block memory _block,
-        address payable feeRecipient,
-        bytes32 publicDataHash
+        ExchangeData.Block memory  _block,
+        address            payable _feeRecipient,
+        bytes32                    _publicDataHash
         )
         private
     {
         uint offset = 0;
 
-        // Extract the exchange ID from the data
+        // Extract the exchange address from the data
         address exchange = _block.data.toAddress(offset);
         offset += 20;
         require(exchange == address(this), "INVALID_EXCHANGE");
@@ -106,10 +106,11 @@ library ExchangeBlocks
         // Get the old and new Merkle roots
         bytes32 merkleRootBefore = _block.data.toBytes32(offset);
         offset += 32;
-        bytes32 merkleRootAfter = _block.data.toBytes32(offset);
-        offset += 32;
         require(merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
-        require(uint256(merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
+
+        S.merkleRoot = _block.data.toBytes32(offset);
+        offset += 32;
+        require(uint256(S.merkleRoot) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
         // Validate timestamp
         uint32 inputTimestamp = _block.data.toUint32(offset);
@@ -139,16 +140,14 @@ library ExchangeBlocks
         );
 
         // Transfer the onchain block fee to the operator
-        feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
+        _feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
 
         // Emit an event
-        emit BlockSubmitted(S.blocks.length, publicDataHash, blockFeeETH);
+        emit BlockSubmitted(S.blocks.length, _publicDataHash, blockFeeETH);
 
-        // Update the onchain state
-        S.merkleRoot = merkleRootAfter;
         S.blocks.push(
             ExchangeData.BlockInfo(
-                _block.storeDataHashOnchain ? publicDataHash : bytes32(0)
+                _block.storeDataHashOnchain ? _publicDataHash : bytes32(0)
             )
         );
     }
