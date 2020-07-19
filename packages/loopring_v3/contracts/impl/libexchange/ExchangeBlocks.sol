@@ -127,7 +127,7 @@ library ExchangeBlocks
         uint8 protocolMakerFeeBips = _block.data.toUint8(offset);
         offset += 1;
         require(
-            validateAndUpdateProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips),
+            validateAndRefreshProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips),
             "INVALID_PROTOCOL_FEES"
         );
 
@@ -309,7 +309,7 @@ library ExchangeBlocks
         }
     }
 
-    function validateAndUpdateProtocolFeeValues(
+    function validateAndRefreshProtocolFeeValues(
         ExchangeData.State storage S,
         uint8 takerFeeBips,
         uint8 makerFeeBips
@@ -318,7 +318,7 @@ library ExchangeBlocks
         returns (bool)
     {
         ExchangeData.ProtocolFeeData storage data = S.protocolFeeData;
-        if (now > data.timestamp + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
+        if (now > data.refreshedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
             // Store the current protocol fees in the previous protocol fees
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;
@@ -327,7 +327,7 @@ library ExchangeBlocks
                 S.id,
                 S.rollupEnabled
             );
-            data.timestamp = uint32(now);
+            data.refreshedAt = uint32(now);
 
             bool feeUpdated = (data.takerFeeBips != data.previousTakerFeeBips) ||
                 (data.makerFeeBips != data.previousMakerFeeBips);

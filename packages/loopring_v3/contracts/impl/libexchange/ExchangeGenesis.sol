@@ -52,7 +52,7 @@ library ExchangeGenesis
         S.blocks.push(ExchangeData.BlockInfo(bytes32(0)));
 
         // Get the protocol fees for this exchange
-        S.protocolFeeData.timestamp = uint32(0);
+        S.protocolFeeData.refreshedAt = uint32(0);
         S.protocolFeeData.takerFeeBips = S.loopring.maxProtocolTakerFeeBips();
         S.protocolFeeData.makerFeeBips = S.loopring.maxProtocolMakerFeeBips();
         S.protocolFeeData.previousTakerFeeBips = S.protocolFeeData.takerFeeBips;
