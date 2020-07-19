@@ -18,6 +18,8 @@ library ExchangeDeposits
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
+    using MathUint          for uint64;
+    using MathUint          for uint96;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
 
@@ -54,9 +56,13 @@ library ExchangeDeposits
         );
 
         // Add the amount to the deposit request and reset the time the operator has to process it
-        S.pendingDeposits[to][tokenID][tokenIndex].amount += uint96(amountDeposited);
         S.pendingDeposits[to][tokenID][tokenIndex].timestamp = uint32(now);
-        S.pendingDeposits[to][tokenID][tokenIndex].fee += uint64(fee);
+
+        S.pendingDeposits[to][tokenID][tokenIndex].amount =
+            S.pendingDeposits[to][tokenID][tokenIndex].amount.add96(uint96(amountDeposited));
+
+        S.pendingDeposits[to][tokenID][tokenIndex].fee =
+            S.pendingDeposits[to][tokenID][tokenIndex].fee.add64(uint64(fee));
 
         emit DepositRequested(
             to,
@@ -75,7 +81,11 @@ library ExchangeDeposits
         bytes   memory auxiliaryData
         )
         private
-        returns (uint amountDeposited, uint tokenIndex, uint fee)
+        returns (
+            uint amountDeposited,
+            uint tokenIndex,
+            uint fee
+        )
     {
         uint depositValueETH = 0;
         if (S.depositContract.isETH(tokenAddress)) {
@@ -86,6 +96,11 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        (amountDeposited, tokenIndex) = S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount, auxiliaryData);
+        (amountDeposited, tokenIndex) = S.depositContract.deposit{value: depositValueETH}(
+            from,
+            tokenAddress,
+            amount,
+            auxiliaryData
+        );
     }
 }
