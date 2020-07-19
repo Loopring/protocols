@@ -52,7 +52,7 @@ function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
         { name: "gasPrice", type: "uint256" },
         { name: "gasLimit", type: "uint256" },
         { name: "txAwareHash", type: "bytes32" },
-        { name: "dataHash", type: "bytes32" }
+        { name: "data", type: "bytes" }
       ]
     },
     primaryType: "MetaTx",
@@ -70,7 +70,7 @@ function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
       gasPrice: metaTx.gasPrice,
       gasLimit: new BN(metaTx.gasLimit),
       txAwareHash: metaTx.txAwareHash,
-      dataHash: ethUtil.keccak(metaTx.data)
+      data: metaTx.data
     }
   };
   return typedData;
