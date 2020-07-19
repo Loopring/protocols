@@ -31,10 +31,10 @@ library NewAccountTransaction
     );*/
 
     function process(
-        ExchangeData.State storage S,
-        ExchangeData.BlockContext memory ctx,
-        bytes memory data,
-        bytes memory auxiliaryData
+        ExchangeData.State        storage S,
+        ExchangeData.BlockContext memory  ctx,
+        bytes                     memory data,
+        bytes                     memory auxiliaryData
         )
         internal
         returns (uint /*feeETH*/)
@@ -48,13 +48,13 @@ library NewAccountTransaction
         offset += 2;
         //uint fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        uint24 newAccountID = data.toUint24(offset);
+        uint24 accountID = data.toUint24(offset);
         offset += 3;
-        address newOwner = data.toAddress(offset);
+        address owner = data.toAddress(offset);
         offset += 20;
-        uint newPublicKey = data.toUint(offset);
+        uint publicKey = data.toUint(offset);
         offset += 32;
-        uint newWalletHash = data.toUint(offset);
+        uint walletHash = data.toUint(offset);
         offset += 32;
 
         // Calculate the tx hash
@@ -63,10 +63,10 @@ library NewAccountTransaction
             keccak256(
                 abi.encode(
                     NEWACCOUNT_TYPEHASH,
-                    newAccountID,
-                    newOwner,
-                    newPublicKey,
-                    newWalletHash
+                    accountID,
+                    owner,
+                    publicKey,
+                    walletHash
                 )
             )
         );
@@ -75,12 +75,12 @@ library NewAccountTransaction
         // Here we check that the new account owner has authorized the account settings.
         // Verify the signature if one is provided, otherwise fall back to an approved tx
         if (auxiliaryData.length > 0) {
-            require(txHash.verifySignature(newOwner, auxiliaryData), "INVALID_SIGNATURE");
+            require(txHash.verifySignature(owner, auxiliaryData), "INVALID_SIGNATURE");
         } else {
-            require(S.approvedTx[newOwner][txHash], "TX_NOT_APPROVED");
-            S.approvedTx[newOwner][txHash] = false;
+            require(S.approvedTx[owner][txHash], "TX_NOT_APPROVED");
+            S.approvedTx[owner][txHash] = false;
         }
 
-        //emit AccountCreated(newOwner, newPublicKey, newWalletHash);
+        //emit AccountCreated(owner, publicKey, walletHash);
     }
 }
