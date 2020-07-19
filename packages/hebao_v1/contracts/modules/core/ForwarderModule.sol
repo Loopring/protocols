@@ -50,7 +50,7 @@ contract ForwarderModule is BaseModule
     }
 
     bytes32 constant public META_TX_TYPEHASH = keccak256(
-        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txAwareHash,bytes data)"
+        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txAwareHash,bytes32 dataHash)"
     );
 
     function validateMetaTx(
@@ -116,6 +116,12 @@ contract ForwarderModule is BaseModule
             "INSUFFICIENT_GAS"
         );
 
+        // The trick is to append the really logical message sender and the
+        // transaction-aware hash to the end of the call data.
+        (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
+            abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
+        );
+
         validateMetaTx(
             metaTx.from,
             metaTx.to,
@@ -126,12 +132,6 @@ contract ForwarderModule is BaseModule
             metaTx.txAwareHash,
             metaTx.data,
             signature
-        );
-
-        // The trick is to append the really logical message sender and the
-        // transaction-aware hash to the end of the call data.
-        (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
-            abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
         );
 
         bool waiveFees = false;

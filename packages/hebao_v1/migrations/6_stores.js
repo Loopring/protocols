@@ -15,7 +15,7 @@ module.exports = function(deployer, network, accounts) {
         deployer.deploy(DappAddressStore),
         deployer.deploy(NonceStore),
         deployer.deploy(HashStore),
-        deployer.deploy(QuotaStore, 1000), // 1000 wei for unit test
+        deployer.deploy(QuotaStore, "1" + "0".repeat(19)), // 1000 wei for unit test
         deployer.deploy(SecurityStore),
         deployer.deploy(WhitelistStore)
       ]);

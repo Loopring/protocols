@@ -4,6 +4,7 @@ import { SignatureType, sign, verifySignatures, appendType } from "./Signature";
 import { Context } from "./TestUtils";
 import { getTokenAddress } from "./TokenUtils";
 import { getEIP712Message } from "../../util/EIP712";
+import ethUtil = require("ethereumjs-util");
 
 export interface MetaTx {
   from: string;
@@ -51,7 +52,7 @@ function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
         { name: "gasPrice", type: "uint256" },
         { name: "gasLimit", type: "uint256" },
         { name: "txAwareHash", type: "bytes32" },
-        { name: "data", type: "bytes" }
+        { name: "dataHash", type: "bytes32" }
       ]
     },
     primaryType: "MetaTx",
@@ -69,7 +70,7 @@ function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
       gasPrice: metaTx.gasPrice,
       gasLimit: new BN(metaTx.gasLimit),
       txAwareHash: metaTx.txAwareHash,
-      data: metaTx.data
+      dataHash: ethUtil.keccak(metaTx.data)
     }
   };
   return typedData;
