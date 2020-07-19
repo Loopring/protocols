@@ -16,6 +16,11 @@ import "../libexchange/ExchangeWithdrawals.sol";
 
 /// @title WithdrawTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
+/// @dev Four types of withdrawals are supported:
+///     withdrawalType = 0: offchain withdrawal with EdDSA signature
+///     withdrawalType = 1: offchian withdrawal with ECDSA signature or onchain withdrawl hash authorization.
+///     withdrawalType = 2: onchain forced full-amount withdrawal by and to the owner
+///     withdrawalType = 3: operator initiated full-amount withdrawal in shutdown mode.
 library WithdrawTransaction
 {
     using BytesUtil            for bytes;
@@ -74,7 +79,7 @@ library WithdrawTransaction
         if (withdrawal.withdrawalType == 0) {
             // Signature checked offchain, nothing to do
         } else if (withdrawal.withdrawalType == 1) {
-            // Check appproval onchain
+            // Offchain withdrawal with ECDSA signature or hash authorization.
 
             // Calculate the tx hash
             bytes32 txHash = EIP712.hashPacked(
@@ -104,7 +109,7 @@ library WithdrawTransaction
                 );
             } else {
                 require(S.approvedTx[withdrawal.owner][txHash], "TX_NOT_APPROVED");
-                S.approvedTx[withdrawal.owner][txHash] = false;
+                delete S.approvedTx[withdrawal.owner][txHash];
             }
         } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
             // Forced withdrawals cannot make use of certain features because the
