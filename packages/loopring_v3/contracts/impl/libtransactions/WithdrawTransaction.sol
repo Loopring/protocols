@@ -54,7 +54,7 @@ library WithdrawTransaction
     // Auxiliary data for each withdrawal
     struct WithdrawalAuxiliaryData
     {
-        uint gasLimit;
+        uint  gasLimit;
         bytes signature;
         bytes auxiliaryData;
     }
@@ -66,23 +66,34 @@ library WithdrawTransaction
     );
 
     function process(
-        ExchangeData.State storage S,
-        ExchangeData.BlockContext memory ctx,
-        bytes memory data,
-        bytes memory auxiliaryData
+        ExchangeData.State        storage S,
+        ExchangeData.BlockContext memory  ctx,
+        bytes                     memory  data,
+        bytes                     memory  auxiliaryData
         )
         internal
         returns (uint feeETH)
     {
         Withdrawal memory withdrawal = readWithdrawal(data);
-
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
+
+        // Validate gas provided
+        require(auxData.gasLimit >= withdrawal.minGas, "OUT_OF_GASH_FOR_WITHDRAWAL");
+
+        // Validate the auxixliary withdrawal data
+        if (withdrawal.dataHash == 0) {
+            require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
+        } else {
+            require(
+                uint(keccak256(auxData.auxiliaryData)) >> 3 == uint(withdrawal.dataHash),
+                "INVALID_WITHDRAWAL_AUX_DATA"
+            );
+        }
 
         if (withdrawal.withdrawalType == 0) {
             // Signature checked offchain, nothing to do
         } else if (withdrawal.withdrawalType == 1) {
             // Check appproval onchain
-
             // Calculate the tx hash
             bytes32 txHash = EIP712.hashPacked(
                 ctx.DOMAIN_SEPARATOR,
@@ -108,7 +119,7 @@ library WithdrawTransaction
                 require(txHash.verifySignature(withdrawal.owner, auxData.signature), "INVALID_SIGNATURE");
             } else {
                 require(S.approvedTx[withdrawal.owner][txHash], "TX_NOT_APPROVED");
-                S.approvedTx[withdrawal.owner][txHash] = false;
+                delete S.approvedTx[withdrawal.owner][txHash];
             }
         } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
             // Forced withdrawals cannot make use of certain features because the
@@ -156,15 +167,6 @@ library WithdrawTransaction
             }
         } else {
             revert("INVALID_WITHDRAWAL_TYPE");
-        }
-
-        // Validate gas provided
-        require(auxData.gasLimit >= withdrawal.minGas, "INVALID_GAS_AMOUNT");
-        // Validate the auxixliary withdrawal data
-        if (withdrawal.dataHash == bytes32(0)) {
-            require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
-        } else {
-            require((uint(keccak256(auxData.auxiliaryData)) >> 3) == uint(withdrawal.dataHash), "INVALID_WITHDRAWAL_AUX_DATA");
         }
 
         // Try to transfer the tokens with the provided gas limit
