@@ -33,9 +33,6 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         uint    amount
     );
 
-    // Max total amount that can be stored per token
-    uint constant public MAX_TOTAL_TOKEN_BALANCE = 2 ** 96 - 1;
-
     // Index base
     uint constant public INDEX_BASE = 10 ** 18;
 
@@ -71,18 +68,18 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
     function deposit(
         address from,
         address token,
-        uint    amount,
+        uint96  amount,
         bytes   calldata /*auxiliaryData*/
         )
         external
         override
         payable
         onlyExchange
-        returns (uint actualAmount, uint tokenIndex)
+        returns (uint96 actualAmount, uint tokenIndex)
     {
         // Check msg.value
         if (isETHInternal(token)) {
-            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
+            require(msg.value == uint(amount), "INVALID_ETH_DEPOSIT");
         } else {
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
              // Transfer the tokens from the owner into this contract
@@ -90,17 +87,14 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
                 token.safeTransferFromAndVerify(
                     from,
                     address(this),
-                    amount
+                    uint(amount)
                 );
             }
         }
 
         uint exchangeBalanceBefore = exchangeBalance[token];
         // Keep track how many tokens are deposited in the exchange
-        uint exchangeBalanceAfter = exchangeBalanceBefore.add(amount);
-        // Make sure the total max amount per token in the exchange is capped
-        require(exchangeBalanceAfter <= MAX_TOTAL_TOKEN_BALANCE, "MAX_AMOUNT_REACHED");
-        exchangeBalance[token] = exchangeBalanceAfter;
+        exchangeBalance[token] = exchangeBalanceBefore.add(uint(amount));;
 
         actualAmount = amount;
         tokenIndex = INDEX_BASE;
@@ -118,7 +112,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         onlyExchange
     {
         // Keep track how many tokens are deposited in the exchange
-        exchangeBalance[token] = exchangeBalance[token].sub(amount);
+        exchangeBalance[token] = exchangeBalance[token].sub(uint(amount));
 
         // Transfer the tokens from the contract to the recipient
         transferOut(to, token, amount);
@@ -188,7 +182,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
     function transferOut(
         address to,
         address token,
-        uint amount
+        uint    amount
         )
         internal
     {

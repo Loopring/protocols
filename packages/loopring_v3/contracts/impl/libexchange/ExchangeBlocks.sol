@@ -153,9 +153,9 @@ library ExchangeBlocks
     }
 
     function verifyBlocks(
-        ExchangeData.State storage S,
-        ExchangeData.Block[] memory blocks,
-        bytes32[] memory publicDataHashes
+        ExchangeData.State   storage S,
+        ExchangeData.Block[] memory  blocks,
+        bytes32[]            memory  publicDataHashes
         )
         private
         view
@@ -164,6 +164,7 @@ library ExchangeBlocks
         bool[] memory blockVerified = new bool[](blocks.length);
         ExchangeData.Block memory firstBlock;
         uint[] memory batch = new uint[](blocks.length);
+
         while (numBlocksVerified < blocks.length) {
             // Find all blocks of the same type
             uint batchLength = 0;
@@ -186,6 +187,7 @@ library ExchangeBlocks
             // Prepare the data for batch verification
             uint[] memory publicInputs = new uint[](batchLength);
             uint[] memory proofs = new uint[](batchLength * 8);
+
             for (uint i = 0; i < batchLength; i++) {
                 uint blockIdx = batch[i];
                 // Mark the block as verified
