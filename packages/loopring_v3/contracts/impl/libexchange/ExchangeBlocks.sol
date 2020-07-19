@@ -230,82 +230,100 @@ library ExchangeBlocks
         uint numConditionalTransactions = data.toUint32(offset);
         offset += 4;
 
-        if (numConditionalTransactions > 0) {
-            require(S.rollupEnabled, "CONDITIONAL_TRANSACTIONS_AVAILABLE_ONLY_IN_ROLLUP_MODE");
+        if (numConditionalTransactions == 0) {
+            return 0;
+        }
 
-            // Cache the domain seperator to save on SLOADs each time it is accessed.
-            ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
-                DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR
-            });
+        require(S.rollupEnabled, "AVAILABLE_ONLY_IN_ROLLUP_MODE");
 
-            ExchangeData.AuxiliaryData[] memory txAuxiliaryData = abi.decode(auxiliaryData, (ExchangeData.AuxiliaryData[]));
-            require(txAuxiliaryData.length == numConditionalTransactions, "AUXILIARYDATA_INVALID_LENGTH");
+        // Cache the domain seperator to save on SLOADs each time it is accessed.
+        ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
+            DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR
+        });
 
-            // uint24 operatorAccountID = data.toUint24(offset);
-            offset += 3;
+        ExchangeData.AuxiliaryData[] memory txAuxiliaryData = abi.decode(
+            auxiliaryData, (ExchangeData.AuxiliaryData[])
+        );
+        require(
+            txAuxiliaryData.length == numConditionalTransactions,
+            "AUXILIARYDATA_INVALID_LENGTH"
+        );
 
-            // Run over all conditional transactions
-            uint previousTransactionOffset = 0;
-            for (uint i = 0; i < txAuxiliaryData.length; i++) {
-                // Each conditional transaction needs to be processed from left to right
-                uint transactionOffset = offset + txAuxiliaryData[i].txIndex * ExchangeData.TX_DATA_AVAILABILITY_SIZE();
-                require(transactionOffset > previousTransactionOffset, "AUXILIARYDATA_INVALID_ORDER");
+        // uint24 operatorAccountID = data.toUint24(offset);
+        offset += 3;
 
-                // Get the transaction data
-                bytes memory txData = data.slice(transactionOffset, ExchangeData.TX_DATA_AVAILABILITY_SIZE());
+        // Run over all conditional transactions
+        uint prevTxDataOffset = 0;
+        for (uint i = 0; i < txAuxiliaryData.length; i++) {
+            // Each conditional transaction needs to be processed from left to right
+            uint txDataOffset = offset +
+                txAuxiliaryData[i].txIndex * ExchangeData.TX_DATA_AVAILABILITY_SIZE();
 
-                // Process the transaction
-                uint txFeeETH = 0;
-                ExchangeData.TransactionType txType = ExchangeData.TransactionType(txData.toUint8(0));
-                if (txType == ExchangeData.TransactionType.TRANSFER) {
-                    txFeeETH = TransferTransaction.process(
-                        S,
-                        ctx,
-                        txData,
-                        txAuxiliaryData[i].data
-                    );
-                } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
-                    txFeeETH = WithdrawTransaction.process(
-                        S,
-                        ctx,
-                        txData,
-                        txAuxiliaryData[i].data
-                    );
-                } else if (txType == ExchangeData.TransactionType.DEPOSIT) {
-                    txFeeETH = DepositTransaction.process(
-                        S,
-                        ctx,
-                        txData,
-                        txAuxiliaryData[i].data
-                    );
-                } else if (txType == ExchangeData.TransactionType.ACCOUNT_NEW) {
-                    txFeeETH = NewAccountTransaction.process(
-                        S,
-                        ctx,
-                        txData,
-                        txAuxiliaryData[i].data
-                    );
-                } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
-                    txFeeETH = AccountUpdateTransaction.process(
-                        S,
-                        ctx,
-                        txData,
-                        txAuxiliaryData[i].data
-                    );
-                } else if (txType == ExchangeData.TransactionType.ACCOUNT_TRANSFER) {
-                    txFeeETH = OwnerChangeTransaction.process(
-                        S,
-                        ctx,
-                        txData,
-                        txAuxiliaryData[i].data
-                    );
-                } else {
-                    revert("UNKNOWN_TX_TYPE");
-                }
+            require(txDataOffset > prevTxDataOffset, "AUXILIARYDATA_INVALID_ORDER");
 
-                blockFeeETH = blockFeeETH.add(txFeeETH);
-                previousTransactionOffset = transactionOffset;
+            // Get the transaction data
+            bytes memory txData = data.slice(
+                txDataOffset,
+                ExchangeData.TX_DATA_AVAILABILITY_SIZE()
+            );
+
+            // Process the transaction
+            uint txFeeETH = 0;
+            ExchangeData.TransactionType txType = ExchangeData.TransactionType(
+                txData.toUint8(0)
+            );
+
+            if (txType == ExchangeData.TransactionType.DEPOSIT) {
+                txFeeETH = DepositTransaction.process(
+                    S,
+                    ctx,
+                    txData,
+                    txAuxiliaryData[i].data
+                );
+            } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
+                txFeeETH = WithdrawTransaction.process(
+                    S,
+                    ctx,
+                    txData,
+                    txAuxiliaryData[i].data
+                );
+            } else if (txType == ExchangeData.TransactionType.TRANSFER) {
+                txFeeETH = TransferTransaction.process(
+                    S,
+                    ctx,
+                    txData,
+                    txAuxiliaryData[i].data
+                );
+            } else if (txType == ExchangeData.TransactionType.ACCOUNT_NEW) {
+                txFeeETH = NewAccountTransaction.process(
+                    S,
+                    ctx,
+                    txData,
+                    txAuxiliaryData[i].data
+                );
+            } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
+                txFeeETH = AccountUpdateTransaction.process(
+                    S,
+                    ctx,
+                    txData,
+                    txAuxiliaryData[i].data
+                );
+            } else if (txType == ExchangeData.TransactionType.ACCOUNT_TRANSFER) {
+                txFeeETH = OwnerChangeTransaction.process(
+                    S,
+                    ctx,
+                    txData,
+                    txAuxiliaryData[i].data
+                );
+            } else {
+                // ExchangeData.TransactionType.NOOP and
+                // ExchangeData.TransactionType.SPOT_TRADE
+                // are not supported
+                revert("UNSUPPORTED_TX_TYPE");
             }
+
+            blockFeeETH = blockFeeETH.add(txFeeETH);
+            prevTxDataOffset = txDataOffset;
         }
     }
 
