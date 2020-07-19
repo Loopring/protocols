@@ -19,7 +19,7 @@ library ExchangeGenesis
 {
     using ExchangeTokens    for ExchangeData.State;
 
-    modifier onlyWhenUninitialized
+    modifier onlyWhenUninitialized(ExchangeData.State memory S)
     {
         require(S.id == 0, "INITIALIZED_ALREADY");
         _;
@@ -35,7 +35,7 @@ library ExchangeGenesis
         bytes32 _domainSeperator
         )
         external
-        onlyWhenUninitialized
+        onlyWhenUninitialized(S)
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
