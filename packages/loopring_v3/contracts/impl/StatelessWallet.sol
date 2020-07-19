@@ -52,10 +52,11 @@ contract StatelessWallet
 
     modifier validateWallet(
         Wallet memory wallet,
-        bytes32       expectedWalletHash,
+        bytes32       walletDataHash,
         uint24        accountID
         )
     {
+        require(wallet.accountID == accountID, "INVALID_WALLET_ACCOUNT");
         {
             bytes32[] memory guardianHashes = new bytes32[](wallet.guardians.length);
             for (uint i = 0; i < wallet.guardians.length; i++) {
@@ -67,7 +68,7 @@ contract StatelessWallet
                     )
                 );
             }
-            bytes32 walletHash = EIP712.hashPacked(
+            bytes32 _walletDataHash = EIP712.hashPacked(
                 DOMAIN_SEPARATOR,
                 keccak256(
                     abi.encode(
@@ -79,8 +80,7 @@ contract StatelessWallet
                     )
                 )
             );
-            require(walletHash == expectedWalletHash, "INVALID_WALLET_DATA");
-            require(wallet.accountID == accountID, "INVALID_WALLET_ACCOUNT");
+            require(_walletDataHash == walletDataHash, "INVALID_WALLET_DATA");
         }
         _;
     }
@@ -98,13 +98,13 @@ contract StatelessWallet
         uint32                nonce,
         address               oldOwner,
         address               newOwner,
-        bytes32               walletHash,
+        bytes32               walletDataHash,
         Wallet         memory wallet,
         PermissionData memory permissionData
         )
         external
         view
-        validateWallet(wallet, walletHash, accountID)
+        validateWallet(wallet, walletDataHash, accountID)
         returns (bytes4)
     {
         require(
@@ -134,12 +134,12 @@ contract StatelessWallet
         uint32  /*nonce*/,
         address /*oldOwner*/,
         address newOwner,
-        bytes32 walletHash,
+        bytes32 walletDataHash,
         Wallet  memory wallet
         )
         external
         view
-        validateWallet(wallet, walletHash, accountID)
+        validateWallet(wallet, walletDataHash, accountID)
         returns (bytes4)
     {
         require(now >= wallet.inheritableSince, "TOO_SOON_TO_INHERIT");

@@ -19,7 +19,8 @@ import "../../lib/SignatureUtil.sol";
 ///                      by the old/new owners.
 ///   - walletDataHash:  a hash of the wallet's data. Neither the data itself or this walletDataHash will
 ///                      be stored in the Merkle tree. We suppost the wallet data and this hash are both managed
-///                      on the client side.
+///                      on the client side. The definition of wallet's data and the way it's hashed are also
+///                      controlled by the associated StatelessWallet.
 ///   - walletHash:      a hash calculated from both the walletDataHash and the address of the wallet's
 ///                      associated StatelessWallet. walletHash is the only wallet-related data stored in
 ///                      the Merkel tree.
@@ -71,8 +72,8 @@ library OwnerChangeTransaction
     function process(
         ExchangeData.State        storage S,
         ExchangeData.BlockContext memory  ctx,
-        bytes                     memory data,
-        bytes                     memory auxiliaryData
+        bytes                     memory  data,
+        bytes                     memory  auxiliaryData
         )
         internal
         returns (uint /*feeETH*/)
