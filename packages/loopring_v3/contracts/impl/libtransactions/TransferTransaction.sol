@@ -32,10 +32,10 @@ library TransferTransaction
     );*/
 
     function process(
-        ExchangeData.State storage S,
-        ExchangeData.BlockContext memory ctx,
-        bytes memory data,
-        bytes memory auxiliaryData
+        ExchangeData.State        storage S,
+        ExchangeData.BlockContext memory  ctx,
+        bytes                     memory  data,
+        bytes                     memory  auxiliaryData
         )
         internal
         returns (uint /*feeETH*/)
@@ -44,9 +44,9 @@ library TransferTransaction
 
         // Check that this is a conditional transfer
         {
-        uint transferType = data.toUint8(offset);
-        offset += 1;
-        require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
+            uint transferType = data.toUint8(offset);
+            offset += 1;
+            require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
         }
 
         // Extract the transfer data
@@ -88,7 +88,7 @@ library TransferTransaction
             require(txHash.verifySignature(from, auxiliaryData), "INVALID_SIGNATURE");
         } else {
             require(S.approvedTx[from][txHash], "TX_NOT_APPROVED");
-            S.approvedTx[from][txHash] = false;
+            delete S.approvedTx[from][txHash];
         }
 
         //emit ConditionalTransferProcessed(from, to, tokenID, amount);
