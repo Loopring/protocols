@@ -57,7 +57,7 @@ contract StatelessWallet
         )
     {
         require(wallet.accountID == accountID, "INVALID_WALLET_ACCOUNT");
-        require(hashWallet(wallet) == walletDataHash, "INVALID_WALLET_DATA");
+        require(hashWalletData(wallet) == walletDataHash, "INVALID_WALLET_DATA");
         _;
     }
 
@@ -123,7 +123,7 @@ contract StatelessWallet
         return RECOVERY_MAGICVALUE;
     }
 
-    function hashWallet(
+    function hashWalletData(
         Wallet memory wallet
         )
         public
