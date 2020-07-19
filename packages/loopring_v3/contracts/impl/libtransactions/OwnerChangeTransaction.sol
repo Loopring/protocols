@@ -204,7 +204,7 @@ library OwnerChangeTransaction
                 success &&
                 result.length == 32 &&
                 result.toBytes4(0) == RECOVERY_MAGICVALUE,
-                "WALLET_RECVOERY_FAILED"
+                "WALLET_RECOVERY_FAILED"
             );
         }
 

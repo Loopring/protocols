@@ -94,7 +94,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
 
         uint exchangeBalanceBefore = exchangeBalance[token];
         // Keep track how many tokens are deposited in the exchange
-        exchangeBalance[token] = exchangeBalanceBefore.add(uint(amount));;
+        exchangeBalance[token] = exchangeBalanceBefore.add(uint(amount));
 
         actualAmount = amount;
         tokenIndex = INDEX_BASE;

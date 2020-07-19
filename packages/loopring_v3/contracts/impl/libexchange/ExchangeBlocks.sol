@@ -358,7 +358,7 @@ library ExchangeBlocks
             }
         }
         // The given fee values are valid if they are the current or previous protocol fee values
-        return (takerFeeBips == data.takerFeeBips &&makerFeeBips == data.makerFeeBips) ||
+        return (takerFeeBips == data.takerFeeBips && makerFeeBips == data.makerFeeBips) ||
             (takerFeeBips == data.previousTakerFeeBips && makerFeeBips == data.previousMakerFeeBips);
     }
 }
