@@ -24,7 +24,7 @@ library TransferTransaction
         "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint256 data,uint32 nonce)"
     );
 
-    /*event ConditionalTransferConsumed(
+    /*event ConditionalTransferProcessed(
         address indexed from,
         address indexed to,
         uint16          token,
@@ -91,7 +91,7 @@ library TransferTransaction
             S.approvedTx[from][txHash] = false;
         }
 
-        //emit ConditionalTransferConsumed(from, to, tokenID, amount);
+        //emit ConditionalTransferProcessed(from, to, tokenID, amount);
     }
 
     function hash(

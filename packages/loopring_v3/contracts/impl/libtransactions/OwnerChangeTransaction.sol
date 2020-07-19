@@ -31,7 +31,7 @@ library OwnerChangeTransaction
         "Wallet(address walletAddress,bytes32 walletDataHash)"
     );
 
-    /*event ChangeOwnerConsumed(
+    /*event AccountTransfered(
         address  indexed owner,
         address          newOwner
     );*/
@@ -148,7 +148,7 @@ library OwnerChangeTransaction
             require(validated, "WALLET_CALL_FAILED");
         }
 
-        //emit ChangeOwnerConsumed(accountTransfer.owner, accountTransfer.newOwner);
+        //emit AccountTransfered(accountTransfer.owner, accountTransfer.newOwner);
     }
 
     function readOwnerChange(

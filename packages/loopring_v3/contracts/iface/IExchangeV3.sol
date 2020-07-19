@@ -98,6 +98,46 @@ abstract contract IExchangeV3 is IExchange
         bool            authorized
     );
 
+    // events from libraries
+    event DepositProcessed(
+        address indexed owner,
+        uint24  indexed accountId,
+        uint16          token,
+        uint            amount,
+        uint            index
+    );
+
+    event ForcedWithdrawalProcessed(
+        uint24  indexed accountID,
+        uint16          tokenID,
+        uint            amount
+    );
+
+    /*event ConditionalTransferProcessed(
+        address indexed from,
+        address indexed to,
+        uint16          token,
+        uint            amount
+    );*/
+
+    /*event NewAccountCreated(
+        address  indexed owner,
+        uint             publicKey,
+        uint             walletHash
+    );*/
+
+    /*event AccountUpdated(
+        uint24   indexed owner,
+        uint             publicKey
+    );*/
+
+
+    /*event ChangeOwnerConsumed(
+        address  indexed owner,
+        address          newOwner
+    );*/
+
+
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.
     /// @param  owner The owner of this exchange.

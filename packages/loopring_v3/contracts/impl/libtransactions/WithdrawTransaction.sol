@@ -52,7 +52,7 @@ library WithdrawTransaction
         bytes auxiliaryData;
     }
 
-    event ForcedWithdrawalConsumed(
+    event ForcedWithdrawalProcessed(
         uint24  indexed accountID,
         uint16          tokenID,
         uint            amount
@@ -134,7 +134,7 @@ library WithdrawTransaction
                 // Open up a slot
                 S.numPendingForcedTransactions--;
 
-                emit ForcedWithdrawalConsumed(withdrawal.accountID, withdrawal.tokenID, withdrawal.amount);
+                emit ForcedWithdrawalProcessed(withdrawal.accountID, withdrawal.tokenID, withdrawal.amount);
             }
         } else {
             revert("INVALID_WITHDRAWAL_TYPE");
