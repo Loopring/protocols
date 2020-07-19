@@ -19,7 +19,7 @@ library OwnerChangeTransaction
     using SignatureUtil        for bytes32;
 
     // bytes4(keccak256("transferOwnership(bytes,bytes)")
-    bytes4 constant internal MAGICVALUE = 0xd1f21f4f;
+    bytes4  constant public RECOVERY_MAGICVALUE = 0xd1f21f4f;
 
     bytes32 constant public OWNERCHANGE_TYPEHASH = keccak256(
         "OwnerChange(address owner,uint24 accountID,uint16 feeTokenID,uint256 fee,address newOwner,uint32 nonce,address walletAddress,bytes32 walletDataHash,bytes walletCalldata)"
@@ -90,25 +90,27 @@ library OwnerChangeTransaction
             )
         );
 
-        // Verify the signature if one is provided, otherwise fall back to an approved tx
+        // Verify authentication from the new owner
         if (auxData.signatureNewOwner.length > 0) {
             require(
                 txHash.verifySignature(accountTransfer.newOwner, auxData.signatureNewOwner),
-                "INVALID_SIGNATURE"
+                "INVALID_SIGNATURE_NEW_OWNER"
             );
         } else {
-            require(S.approvedTx[accountTransfer.newOwner][txHash], "TX_NOT_APPROVED");
-            S.approvedTx[accountTransfer.newOwner][txHash] = false;
+            require(S.approvedTx[accountTransfer.newOwner][txHash], "TX_NOT_APPROVED_NEW_OWNER");
+            delete S.approvedTx[accountTransfer.newOwner][txHash];
         }
 
         if (auxData.walletAddress == address(0)) {
-            // We allow the owner of the account to change when authorized by the current owner.
-            // Verify the signature if one is provided, otherwise fall back to an approved tx
+            /// Verify authentication from the current owner
             if (auxData.signatureOldOwner.length > 0) {
-                require(txHash.verifySignature(accountTransfer.owner, auxData.signatureOldOwner), "INVALID_SIGNATURE");
+                require(
+                    txHash.verifySignature(accountTransfer.owner, auxData.signatureOldOwner),
+                    "INVALID_SIGNATURE_OLD_OWNER"
+                );
             } else {
-                require(S.approvedTx[accountTransfer.owner][txHash], "TX_NOT_APPROVED");
-                S.approvedTx[accountTransfer.owner][txHash] = false;
+                require(S.approvedTx[accountTransfer.owner][txHash], "TX_NOT_APPROVED_OLD_OWNER");
+                delete S.approvedTx[accountTransfer.owner][txHash];
             }
         } else {
             // If the account has a wallet, use it to recover the account
@@ -136,19 +138,45 @@ library OwnerChangeTransaction
             // parameter 3: newOwner
             // parameter 4: walletDataHash
             uint offset = 4;
-            require(auxData.walletCalldata.toUint24(29 + offset) == accountTransfer.accountID, "INVALID_WALLET_CALLDATA");
+            require(
+                auxData.walletCalldata.toUint24(29 + offset) == accountTransfer.accountID,
+                "INVALID_WALLET_CALLDATA"
+            );
             offset += 32;
-            require(auxData.walletCalldata.toUint32(28 + offset) == accountTransfer.nonce, "INVALID_WALLET_CALLDATA");
+
+            require(
+                auxData.walletCalldata.toUint32(28 + offset) == accountTransfer.nonce,
+                "INVALID_WALLET_CALLDATA"
+            );
             offset += 32;
-            require(auxData.walletCalldata.toAddress(12 + offset) == accountTransfer.owner, "INVALID_WALLET_CALLDATA");
+
+            require(
+                auxData.walletCalldata.toAddress(12 + offset) == accountTransfer.owner,
+                "INVALID_WALLET_CALLDATA"
+            );
             offset += 32;
-            require(auxData.walletCalldata.toAddress(12 + offset) == accountTransfer.newOwner, "INVALID_WALLET_CALLDATA");
+
+            require(
+                auxData.walletCalldata.toAddress(12 + offset) == accountTransfer.newOwner,
+                "INVALID_WALLET_CALLDATA"
+            );
             offset += 32;
-            require(auxData.walletCalldata.toBytes32(offset) == auxData.walletDataHash, "INVALID_WALLET_CALLDATA");
+
+            require(
+                auxData.walletCalldata.toBytes32(offset) == auxData.walletDataHash,
+                "INVALID_WALLET_CALLDATA"
+            );
             offset += 32;
-            (bool success, bytes memory result) = auxData.walletAddress.staticcall(auxData.walletCalldata);
-            bool validated = success && result.length == 32 && result.toBytes4(0) == MAGICVALUE;
-            require(validated, "WALLET_CALL_FAILED");
+
+            (bool success, bytes memory result) =
+                auxData.walletAddress.staticcall(auxData.walletCalldata);
+
+            require(
+                success &&
+                result.length == 32 &&
+                result.toBytes4(0) == RECOVERY_MAGICVALUE,
+                "WALLET_RECVOERY_FAILED"
+            );
         }
 
         //emit AccountTransfered(accountTransfer.owner, accountTransfer.newOwner);

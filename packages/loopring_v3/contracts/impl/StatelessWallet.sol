@@ -14,7 +14,7 @@ contract StatelessWallet
     using SignatureUtil for bytes32;
 
     // bytes4(keccak256("transferOwnership(bytes,bytes)")
-    bytes4 constant internal MAGICVALUE = 0xd1f21f4f;
+    bytes4 constant internal RECOVERY_MAGICVALUE = 0xd1f21f4f;
 
     bytes32 constant public GUARDIAN_TYPEHASH = keccak256(
         "Guardian(address addr,uint256 group)"
@@ -120,7 +120,7 @@ contract StatelessWallet
         require(hash.verifySignatures(permissionData.signers, permissionData.signatures), "INVALID_SIGNATURES");
 
         // TODO: Check guardians like usual in our main smart wallet...
-        return MAGICVALUE;
+        return RECOVERY_MAGICVALUE;
     }
 
     function inherit(
@@ -138,7 +138,7 @@ contract StatelessWallet
     {
         require(now >= wallet.inheritableSince, "TOO_SOON_TO_INHERIT");
         require(wallet.inheritor == newOwner, "WRONG_INHERITOR");
-        return MAGICVALUE;
+        return RECOVERY_MAGICVALUE;
     }
 
     // -- Internal

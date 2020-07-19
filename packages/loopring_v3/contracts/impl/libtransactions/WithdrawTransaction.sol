@@ -84,6 +84,7 @@ library WithdrawTransaction
         if (withdrawal.dataHash == 0) {
             require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
         } else {
+            // Hashes are stored using only 253 bits so the value fits inside a SNARK field element.
             require(
                 uint(keccak256(auxData.auxiliaryData)) >> 3 == uint(withdrawal.dataHash),
                 "INVALID_WITHDRAWAL_AUX_DATA"
