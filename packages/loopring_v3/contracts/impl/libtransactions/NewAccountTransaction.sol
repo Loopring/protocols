@@ -6,8 +6,6 @@ pragma experimental ABIEncoderV2;
 import "../../iface/ExchangeData.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../lib/EIP712.sol";
-import "../../lib/FloatUtil.sol";
-import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
 
@@ -16,8 +14,6 @@ import "../../lib/SignatureUtil.sol";
 library NewAccountTransaction
 {
     using BytesUtil            for bytes;
-    using FloatUtil            for uint;
-    using MathUint             for uint;
     using SignatureUtil        for bytes32;
 
     bytes32 constant public NEWACCOUNT_TYPEHASH = keccak256(

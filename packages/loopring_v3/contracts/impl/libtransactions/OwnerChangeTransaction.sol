@@ -7,7 +7,6 @@ import "../../iface/ExchangeData.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/FloatUtil.sol";
-import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
 
@@ -17,7 +16,6 @@ library OwnerChangeTransaction
 {
     using BytesUtil            for bytes;
     using FloatUtil            for uint;
-    using MathUint             for uint;
     using SignatureUtil        for bytes32;
 
     // bytes4(keccak256("transferOwnership(bytes,bytes)")
@@ -59,10 +57,10 @@ library OwnerChangeTransaction
     }
 
     function process(
-        ExchangeData.State storage S,
-        ExchangeData.BlockContext memory ctx,
-        bytes memory data,
-        bytes memory auxiliaryData
+        ExchangeData.State        storage S,
+        ExchangeData.BlockContext memory  ctx,
+        bytes                     memory data,
+        bytes                     memory auxiliaryData
         )
         internal
         returns (uint /*feeETH*/)
