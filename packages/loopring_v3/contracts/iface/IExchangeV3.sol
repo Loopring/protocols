@@ -120,7 +120,7 @@ abstract contract IExchangeV3 is IExchange
         uint            amount
     );*/
 
-    /*event NewAccountCreated(
+    /*event AccountCreated(
         address  indexed owner,
         uint             publicKey,
         uint             walletHash
@@ -132,7 +132,7 @@ abstract contract IExchangeV3 is IExchange
     );*/
 
 
-    /*event ChangeOwnerConsumed(
+    /*event AccountTransfered(
         address  indexed owner,
         address          newOwner
     );*/

@@ -24,7 +24,7 @@ library NewAccountTransaction
         "NewAccount(uint24 accountID,address owner,uint256 publicKey,uint256 walletHash)"
     );
 
-    /*event NewAccountCreated(
+    /*event AccountCreated(
         address  indexed owner,
         uint             publicKey,
         uint             walletHash
@@ -81,6 +81,6 @@ library NewAccountTransaction
             S.approvedTx[newOwner][txHash] = false;
         }
 
-        //emit NewAccountCreated(newOwner, newPublicKey, newWalletHash);
+        //emit AccountCreated(newOwner, newPublicKey, newWalletHash);
     }
 }

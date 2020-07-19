@@ -24,7 +24,7 @@ library AccountUpdateTransaction
         "AccountUpdate(address owner,uint24 accountID,uint32 nonce,uint256 publicKey,uint256 walletHash,uint16 feeTokenID,uint256 fee)"
     );
 
-    /*event AccountUpdateConsumed(
+    /*event AccountUpdated(
         uint24   indexed owner,
         uint             publicKey
     );*/
@@ -86,6 +86,6 @@ library AccountUpdateTransaction
             S.approvedTx[owner][txHash] = false;
         }
 
-        //emit AccountUpdateConsumed(accountID, publicKey);
+        //emit AccountUpdated(accountID, publicKey);
     }
 }
