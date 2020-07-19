@@ -35,15 +35,18 @@ library NewAccountTransaction
         internal
         returns (uint /*feeETH*/)
     {
-        uint offset = 1;
+        // uint offset = 1;
 
         // Extract the data from the tx data
         //uint24 payerAccountID = data.toUint24(offset);
-        offset += 3;
+        // offset += 3;
         //uint16 feeTokenID = data.toUint16(offset);
-        offset += 2;
+        // offset += 2;
         //uint fee = uint(data.toUint16(offset)).decodeFloat(16);
-        offset += 2;
+        // offset += 2;
+
+        uint offset = 8;
+
         uint24 accountID = data.toUint24(offset);
         offset += 3;
         address owner = data.toAddress(offset);

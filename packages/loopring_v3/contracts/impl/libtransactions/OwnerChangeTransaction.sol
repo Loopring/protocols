@@ -34,7 +34,7 @@ library OwnerChangeTransaction
         address          newOwner
     );*/
 
-    struct OwnerChange
+    struct AccountTransfer
     {
         address owner;
         uint24  accountID;
@@ -50,7 +50,6 @@ library OwnerChangeTransaction
     {
         bytes   signatureOldOwner;
         bytes   signatureNewOwner;
-
         address walletAddress;
         bytes32 walletDataHash;
         bytes   walletCalldata;
@@ -65,9 +64,12 @@ library OwnerChangeTransaction
         internal
         returns (uint /*feeETH*/)
     {
-        OwnerChange memory accountTransfer = readOwnerChange(data);
+        AccountTransfer memory accountTransfer = readAccountTransfer(data);
 
-        OwnerChangeAuxiliaryData memory auxData = abi.decode(auxiliaryData, (OwnerChangeAuxiliaryData));
+        OwnerChangeAuxiliaryData memory auxData = abi.decode(
+            auxiliaryData,
+            (OwnerChangeAuxiliaryData)
+        );
 
         // Calculate the tx hash
         bytes32 txHash = EIP712.hashPacked(
@@ -90,7 +92,10 @@ library OwnerChangeTransaction
 
         // Verify the signature if one is provided, otherwise fall back to an approved tx
         if (auxData.signatureNewOwner.length > 0) {
-            require(txHash.verifySignature(accountTransfer.newOwner, auxData.signatureNewOwner), "INVALID_SIGNATURE");
+            require(
+                txHash.verifySignature(accountTransfer.newOwner, auxData.signatureNewOwner),
+                "INVALID_SIGNATURE"
+            );
         } else {
             require(S.approvedTx[accountTransfer.newOwner][txHash], "TX_NOT_APPROVED");
             S.approvedTx[accountTransfer.newOwner][txHash] = false;
@@ -149,12 +154,12 @@ library OwnerChangeTransaction
         //emit AccountTransfered(accountTransfer.owner, accountTransfer.newOwner);
     }
 
-    function readOwnerChange(
+    function readAccountTransfer(
         bytes memory data
         )
         internal
         pure
-        returns (OwnerChange memory)
+        returns (AccountTransfer memory)
     {
         uint offset = 1;
 
@@ -174,7 +179,7 @@ library OwnerChangeTransaction
         bytes32 walletHash = data.toBytes32(offset);
         offset += 32;
 
-        return OwnerChange({
+        return AccountTransfer({
             owner: owner,
             accountID: accountID,
             nonce: nonce,
