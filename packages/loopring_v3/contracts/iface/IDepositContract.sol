@@ -12,7 +12,7 @@ interface IDepositContract
     ///
     ///      We can use this information to track the amount of each token that are still being
     ///      held by this contract but withdrawn from layer-2 already, thus calculate a more
-    ///      reasonable interest index or even withdraw the tokens from DeFi contracts.
+    ///      reasonable interest index.
     /// @param token The address of the token withdrawn
     /// @param amount The amount of the token withdrawn
     function notifyWithdrawal(
