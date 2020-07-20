@@ -74,9 +74,16 @@ contract ForwarderModule is BaseModule
             to == controller.walletFactory() || // 'from' can be the wallet to create (not its owner),
                                                 // or an existing wallet,
                                                 // or an EOA iff gasPrice == 0
-            controller.moduleRegistry().isModuleRegistered(to) && (to != address(this)) ||
-            controller.walletRegistry().isWalletRegistered(from) && (to == from),
-            "INVALID_DESTINATION"
+
+            (to != address(this)) &&
+            controller.moduleRegistry().isModuleRegistered(to) ||
+
+            // We only allow the wallet to call itself to addModule
+            (to == from) &&
+            data.toBytes4(0) == Wallet(0).addModule.selector &&
+            controller.walletRegistry().isWalletRegistered(from),
+
+            "INVALID_DESTINATION_OR_METHOD"
         );
         require(nonce == 0 || txAwareHash == 0, "INVALID_NONCE");
 
