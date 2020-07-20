@@ -68,7 +68,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         loopring = ILoopringV3(loopringAddress);
     }
 
-    function notifyWithdrawal(
+    function notifyUntransferedWithdrawal(
         address token,
         uint    amount
         )

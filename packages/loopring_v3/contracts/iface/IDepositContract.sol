@@ -15,7 +15,7 @@ interface IDepositContract
     ///      reasonable interest index.
     /// @param token The address of the token withdrawn
     /// @param amount The amount of the token withdrawn
-    function notifyWithdrawal(
+    function notifyUntransferedWithdrawal(
         address token,
         uint    amount
         )

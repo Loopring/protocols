@@ -217,7 +217,7 @@ library ExchangeWithdrawals
             // Allow the amount to be withdrawn using `withdrawFromApprovedWithdrawal`.
             S.amountWithdrawable[to][tokenID] = S.amountWithdrawable[to][tokenID].add(amount);
 
-            S.depositContract.notifyWithdrawal(token, amount);
+            S.depositContract.notifyUntransferedWithdrawal(token, amount);
         }
     }
 
