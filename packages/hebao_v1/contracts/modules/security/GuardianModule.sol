@@ -22,9 +22,7 @@ contract GuardianModule is SecurityModule
 
     event Recovered(
         address indexed wallet,
-        address indexed oldOwner,
-        address indexed newOwner,
-        bool            removedAsGuardian
+        address         newOwner
     );
 
     bytes32 public constant RECOVER_TYPEHASH = keccak256(
@@ -137,18 +135,9 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         notWalletOwner(request.wallet, newOwner)
+        addressCanBeWalletOwner(newOwner)
         onlyHaveEnoughGuardians(request.wallet)
     {
-
-        Wallet w = Wallet(request.wallet);
-        address oldOwner = w.owner();
-        require(
-            newOwner != address(0) &&
-            newOwner != oldOwner &&
-            !newOwner.isContract(),
-            "INVALID_NEW_OWNER"
-        );
-
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
             txAwareHash(),
@@ -162,18 +151,11 @@ contract GuardianModule is SecurityModule
             )
         );
 
-        SecurityStore securityStore = controller.securityStore();
-        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(request.wallet, newOwner);
-
-        if (removedAsGuardian) {
-            securityStore.removeGuardian(request.wallet, newOwner, now);
-        }
-
-        w.setOwner(newOwner);
+        Wallet(request.wallet).setOwner(newOwner);
         // solium-disable-next-line
         unlockWallet(request.wallet, true /*force*/);
 
-        emit Recovered(request.wallet, oldOwner, newOwner, removedAsGuardian);
+        emit Recovered(request.wallet, newOwner);
     }
 
     function getLock(address wallet)

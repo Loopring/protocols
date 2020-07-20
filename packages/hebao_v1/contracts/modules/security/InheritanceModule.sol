@@ -17,8 +17,7 @@ contract InheritanceModule is SecurityModule
     event Inherited(
         address indexed wallet,
         address         inheritor,
-        address         newOwner,
-        uint            timestamp
+        address         newOwner
     );
 
     event InheritorChanged(
@@ -52,36 +51,29 @@ contract InheritanceModule is SecurityModule
 
     function inherit(
         address wallet,
-        address newOwner,
-        bool    removeAllGuardians
+        address newOwner
         )
         external
         nonReentrant
+        addressCanBeWalletOwner(newOwner)
+        notWalletOwner(wallet, newOwner)
     {
         (address _inheritor, uint lastActive) = controller.securityStore().inheritor(wallet);
         require(logicalSender() == _inheritor, "NOT_ALLOWED");
 
         require(lastActive > 0 && now >= lastActive + waitingPeriod, "NEED_TO_WAIT");
 
-        require(
-            newOwner != address(0) &&
-            newOwner != Wallet(wallet).owner() &&
-            !newOwner.isContract(),
-            "INVALID_NEW_OWNER"
-        );
-
         SecurityStore securityStore = controller.securityStore();
 
-        if (removeAllGuardians) {
-            securityStore.removeAllGuardians(wallet);
-        }
+        securityStore.removeAllGuardians(wallet);
 
         securityStore.setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(newOwner);
+
         // solium-disable-next-line
         unlockWallet(wallet, true /*force*/);
 
-        emit Inherited(wallet, _inheritor, newOwner, now);
+        emit Inherited(wallet, _inheritor, newOwner);
     }
 
     function setInheritor(

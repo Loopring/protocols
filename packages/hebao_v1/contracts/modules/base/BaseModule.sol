@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
+import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
@@ -21,7 +22,8 @@ import "../ControllerImpl.sol";
 /// https://github.com/argentlabs/argent-contracts
 abstract contract BaseModule is ReentrancyGuard, Module
 {
-    using MathUint for uint;
+    using MathUint      for uint;
+    using AddressUtil   for address;
 
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
@@ -56,6 +58,12 @@ abstract contract BaseModule is ReentrancyGuard, Module
         virtual
     {
         require(Wallet(wallet).owner() != addr, "IS_WALLET_OWNER");
+        _;
+    }
+
+    modifier addressCanBeWalletOwner(address addr)
+    {
+        require(addr != address(0) && !addr.isContract(), "INVALID_OWNER");
         _;
     }
 
