@@ -61,7 +61,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         _;
     }
 
-    modifier addressCanBeWalletOwner(address addr)
+    modifier eligibleAsWalletOwner(address addr)
     {
         require(addr != address(0) && !addr.isContract(), "INVALID_OWNER");
         _;

@@ -55,7 +55,7 @@ contract InheritanceModule is SecurityModule
         )
         external
         nonReentrant
-        addressCanBeWalletOwner(newOwner)
+        eligibleAsWalletOwner(newOwner)
         notWalletOwner(wallet, newOwner)
     {
         (address _inheritor, uint lastActive) = controller.securityStore().inheritor(wallet);

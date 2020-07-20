@@ -135,7 +135,7 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         notWalletOwner(request.wallet, newOwner)
-        addressCanBeWalletOwner(newOwner)
+        eligibleAsWalletOwner(newOwner)
         onlyHaveEnoughGuardians(request.wallet)
     {
         controller.verifyRequest(
