@@ -263,7 +263,7 @@ contract("ForwarderModule", () => {
         const signers = [owner, ...guardians].sort();
 
         const feeRecipient = await ctx.controllerImpl.collectTo();
-        const gasOverhead = 50000;
+        const gasOverhead = 100000;
         const gasPrice = new BN(7);
         const assetValue = new BN(3);
 
@@ -327,6 +327,7 @@ contract("ForwarderModule", () => {
           gasToken,
           feeRecipient
         );
+
         assert(
           oldBalanceWallet.gt(newBalanceWallet),
           "incorrect wallet balance"

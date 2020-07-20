@@ -59,11 +59,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         if (!useMetaTx) {
           await expectThrow(
             executeTransaction(
-              ctx.inheritanceModule.contract.methods.inherit(
-                wallet,
-                newOwner,
-                false
-              ),
+              ctx.inheritanceModule.contract.methods.inherit(wallet, newOwner),
               ctx,
               useMetaTx,
               wallet,
@@ -97,7 +93,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         //   // Try to inherit too soon
         //   try{
         //     executeTransaction(
-        //       ctx.inheritanceModule.contract.methods.inherit(wallet, ctx.miscAddresses[1], false),
+        //       ctx.inheritanceModule.contract.methods.inherit(wallet, ctx.miscAddresses[1]),
         //       ctx,
         //       true,
         //       wallet,
@@ -118,11 +114,7 @@ contract("InheritanceModule", (accounts: string[]) => {
 
         // Now inherit
         await executeTransaction(
-          ctx.inheritanceModule.contract.methods.inherit(
-            wallet,
-            newOwner,
-            false
-          ),
+          ctx.inheritanceModule.contract.methods.inherit(wallet, newOwner),
           ctx,
           true,
           wallet,
@@ -143,11 +135,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         // Try to inherit again
         const newOwner2 = ctx.miscAddresses[2];
         executeTransaction(
-          ctx.inheritanceModule.contract.methods.inherit(
-            wallet,
-            newOwner2,
-            false
-          ),
+          ctx.inheritanceModule.contract.methods.inherit(wallet, newOwner2),
           ctx,
           true,
           wallet,
@@ -162,7 +150,7 @@ contract("InheritanceModule", (accounts: string[]) => {
       }
     );
 
-    it.only(
+    it(
       description("using modules should update last active time"),
       async () => {
         const owner = ctx.owners[0];
@@ -209,7 +197,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         //   await advanceTimeAndBlockAsync(waitingPeriod - 100);
 
         //   executeTransaction(
-        //     ctx.inheritanceModule.contract.methods.inherit(wallet, newOwner, false),
+        //     ctx.inheritanceModule.contract.methods.inherit(wallet, newOwner),
         //     ctx,
         //     true,
         //     wallet,
@@ -241,11 +229,7 @@ contract("InheritanceModule", (accounts: string[]) => {
 
         // Inherit
         const tx2 = await executeTransaction(
-          ctx.inheritanceModule.contract.methods.inherit(
-            wallet,
-            newOwner,
-            false
-          ),
+          ctx.inheritanceModule.contract.methods.inherit(wallet, newOwner),
           ctx,
           true,
           wallet,

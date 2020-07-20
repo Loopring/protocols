@@ -174,16 +174,16 @@ contract ForwarderModule is BaseModule
             gasUsed
         );
 
-        /* if (metaTx.gasPrice > 0 && !waiveFees) { */
-        /*     uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit; */
-        /*     reimburseGasFee( */
-        /*         metaTx.from, */
-        /*         controller.collectTo(), */
-        /*         metaTx.gasToken, */
-        /*         metaTx.gasPrice, */
-        /*         gasAmount.add(GAS_OVERHEAD) */
-        /*     ); */
-        /* } */
+        if (metaTx.gasPrice > 0 && !waiveFees) {
+            uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
+            reimburseGasFee(
+                metaTx.from,
+                controller.collectTo(),
+                metaTx.gasToken,
+                metaTx.gasPrice,
+                gasAmount.add(GAS_OVERHEAD)
+            );
+        }
 
     }
 }

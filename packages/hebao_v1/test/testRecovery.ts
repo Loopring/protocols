@@ -40,7 +40,7 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
         const guardians = ctx.guardians.slice(0, 3);
         const group = 0;
 
-        const metaTxSigner = ctx.owners[2];
+        const metaTxSigner = ctx.miscAddresses[1];
         const { wallet: metaTxSendWallet } = await createWallet(
           ctx,
           metaTxSigner
@@ -94,11 +94,7 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
                 ctx.guardianModule,
                 "Recovered",
                 (event: any) => {
-                  return (
-                    event.wallet === wallet &&
-                    event.oldOwner === owner &&
-                    event.newOwner === newOwner
-                  );
+                  return event.wallet === wallet && event.newOwner === newOwner;
                 }
               );
             }
