@@ -127,6 +127,10 @@ contract ForwarderModule is BaseModule
             "INSUFFICIENT_GAS"
         );
 
+        if (metaTx.txAwareHash == 0) {
+            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
+        }
+
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
         (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
@@ -148,18 +152,6 @@ contract ForwarderModule is BaseModule
             signature
         );
 
-        bool waiveFees = false;
-        if (metaTx.txAwareHash == 0) {
-            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
-        } else if (success) {
-            // do nothing.
-        } else {
-            // The relayer can provide invalid metaTx.data to make this meta-tx fail,
-            // therefore we we need to prevent the relayer from chareging the meta-tx
-            // fees from the wallet owner.
-            waiveFees = true;
-        }
-
         if (address(this).balance > 0) {
             payable(controller.collectTo()).transfer(address(this).balance);
         }
@@ -174,7 +166,7 @@ contract ForwarderModule is BaseModule
             gasUsed
         );
 
-        if (metaTx.gasPrice > 0 && !waiveFees) {
+        if (metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success)) {
             uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
             reimburseGasFee(
                 metaTx.from,
