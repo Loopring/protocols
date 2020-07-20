@@ -36,12 +36,24 @@ contract("BasicDepositContract", (accounts: string[]) => {
       const exchange = exchange1;
       await depositContract.initialize(exchange1, loopringContract.address);
 
-      await depositContract.deposit(owner1, token.address, new BN(0), "0x", {
-        from: exchange
-      });
-      await depositContract.withdraw(owner1, token.address, new BN(0), "0x", {
-        from: exchange
-      });
+      await depositContract.transferDeposit(
+        owner1,
+        token.address,
+        new BN(0),
+        "0x",
+        {
+          from: exchange
+        }
+      );
+      await depositContract.transferWithdrawal(
+        owner1,
+        token.address,
+        new BN(0),
+        "0x",
+        {
+          from: exchange
+        }
+      );
       await depositContract.transfer(owner1, owner2, token.address, new BN(0), {
         from: exchange
       });
@@ -52,17 +64,29 @@ contract("BasicDepositContract", (accounts: string[]) => {
       await depositContract.initialize(exchange1, loopringContract.address);
 
       await expectThrow(
-        depositContract.deposit(owner1, Constants.zeroAddress, new BN(2), "0x", {
-          from: exchange,
-          value: new BN(1)
-        }),
+        depositContract.transferDeposit(
+          owner1,
+          Constants.zeroAddress,
+          new BN(2),
+          "0x",
+          {
+            from: exchange,
+            value: new BN(1)
+          }
+        ),
         "INVALID_ETH_DEPOSIT"
       );
       await expectThrow(
-        depositContract.deposit(owner1, token.address, new BN(1), "0x", {
-          from: exchange,
-          value: new BN(1)
-        }),
+        depositContract.transferDeposit(
+          owner1,
+          token.address,
+          new BN(1),
+          "0x",
+          {
+            from: exchange,
+            value: new BN(1)
+          }
+        ),
         "INVALID_TOKEN_DEPOSIT"
       );
     });
@@ -75,7 +99,7 @@ contract("BasicDepositContract", (accounts: string[]) => {
 
       // ETH
       {
-        await depositContract.deposit(
+        await depositContract.transferDeposit(
           owner1,
           Constants.zeroAddress,
           new BN(123),
@@ -87,7 +111,9 @@ contract("BasicDepositContract", (accounts: string[]) => {
         const vaultBalanceBefore = new BN(
           await web3.eth.getBalance(vaultAddress)
         );
-        await depositContract.withdrawTokenNotOwnedByUsers(token.address);
+        await depositContract.transferWithdrawalTokenNotOwnedByUsers(
+          token.address
+        );
         const vaultBalanceAfter = new BN(
           await web3.eth.getBalance(vaultAddress)
         );
@@ -102,15 +128,23 @@ contract("BasicDepositContract", (accounts: string[]) => {
         await token.approve(depositContract.address, new BN(123), {
           from: owner1
         });
-        await depositContract.deposit(owner1, token.address, new BN(123), "0x", {
-          from: exchange
-        });
+        await depositContract.transferDeposit(
+          owner1,
+          token.address,
+          new BN(123),
+          "0x",
+          {
+            from: exchange
+          }
+        );
         await token.transfer(depositContract.address, new BN(456), {
           from: owner1
         });
 
         const vaultBalanceBefore = await token.balanceOf(vaultAddress);
-        await depositContract.withdrawTokenNotOwnedByUsers(token.address);
+        await depositContract.transferWithdrawalTokenNotOwnedByUsers(
+          token.address
+        );
         const vaultBalanceAfter = await token.balanceOf(vaultAddress);
         assert(
           vaultBalanceAfter.eq(vaultBalanceBefore.add(new BN(456))),
@@ -138,15 +172,27 @@ contract("BasicDepositContract", (accounts: string[]) => {
     it("should not be to call the interface functions", async () => {
       await depositContract.initialize(exchange1, loopringContract.address);
       await expectThrow(
-        depositContract.deposit(owner1, token.address, new BN(0), "0x", {
-          from: exchange2
-        }),
+        depositContract.transferDeposit(
+          owner1,
+          token.address,
+          new BN(0),
+          "0x",
+          {
+            from: exchange2
+          }
+        ),
         "UNAUTHORIZED"
       );
       await expectThrow(
-        depositContract.withdraw(owner1, token.address, new BN(0), "0x", {
-          from: exchange2
-        }),
+        depositContract.transferWithdrawal(
+          owner1,
+          token.address,
+          new BN(0),
+          "0x",
+          {
+            from: exchange2
+          }
+        ),
         "UNAUTHORIZED"
       );
       await expectThrow(
