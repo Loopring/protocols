@@ -71,17 +71,17 @@ contract ForwarderModule is BaseModule
         // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
         // so no Store can be used as 'to'.
         require(
-            to == controller.walletFactory() || // 'from' can be the wallet to create (not its owner),
-                                                // or an existing wallet,
-                                                // or an EOA iff gasPrice == 0
-
             (to != address(this)) &&
             controller.moduleRegistry().isModuleRegistered(to) ||
 
             // We only allow the wallet to call itself to addModule
             (to == from) &&
             data.toBytes4(0) == Wallet(0).addModule.selector &&
-            controller.walletRegistry().isWalletRegistered(from),
+            controller.walletRegistry().isWalletRegistered(from) ||
+
+            to == controller.walletFactory(),   // 'from' can be the wallet to create (not its owner),
+                                                // or an existing wallet,
+                                                // or an EOA iff gasPrice == 0
 
             "INVALID_DESTINATION_OR_METHOD"
         );
