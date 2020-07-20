@@ -36,13 +36,23 @@ module.exports = function(deployer, network, accounts) {
               collecTo,
               ensManagerAddr,
               priceOracle.address,
+              true
+            )
+          ]);
+        })
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        ControllerImpl.deployed().then(controllerImpl => {
+          return Promise.all([
+            controllerImpl.initStores(
               DappAddressStore.address,
               HashStore.address,
               NonceStore.address,
               QuotaStore.address,
               SecurityStore.address,
-              WhitelistStore.address,
-              true
+              WhitelistStore.address
             )
           ]);
         })
