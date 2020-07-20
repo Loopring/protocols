@@ -19,12 +19,6 @@ library ExchangeGenesis
 {
     using ExchangeTokens    for ExchangeData.State;
 
-    modifier onlyWhenUninitialized(ExchangeData.State memory S)
-    {
-        require(S.id == 0, "INITIALIZED_ALREADY");
-        _;
-    }
-
     function initializeGenesisBlock(
         ExchangeData.State storage S,
         uint    _id,
@@ -35,12 +29,12 @@ library ExchangeGenesis
         bytes32 _domainSeperator
         )
         external
-        onlyWhenUninitialized(S)
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
         require(_genesisMerkleRoot != 0, "ZERO_GENESIS_MERKLE_ROOT");
+        require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;

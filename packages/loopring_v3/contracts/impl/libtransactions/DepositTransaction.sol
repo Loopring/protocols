@@ -58,7 +58,10 @@ library DepositTransaction
         // Also note the oritinal deposit.amount can be zero!
         if (amount > 0) {
             require(deposit.amount >= amount, "INVALID_AMOUNT");
-            feeETH = uint(deposit.fee).mul(amount) / deposit.amount;
+            feeETH = deposit.amount == amount?
+                uint(deposit.fee):
+                uint(deposit.fee).mul(amount) / deposit.amount;
+
             deposit.fee = uint64(uint(deposit.fee).sub(feeETH));
             deposit.amount = uint96(uint(deposit.amount).sub(amount));
         }
