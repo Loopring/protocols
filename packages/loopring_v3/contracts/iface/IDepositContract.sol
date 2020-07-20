@@ -7,8 +7,8 @@ pragma solidity ^0.6.10;
 /// @author Brecht Devos - <brecht@loopring.org>
 interface IDepositContract
 {
-    /// @dev Notify this contract that some token has been withdrawn to layer-1,  has NOT been
-    ///      transfered to the owner.
+    /// @dev Notify this contract that some token has been withdrawn to layer-1, but has
+    ///      NOT been transfered to the owner.
     ///
     ///      We can use this information to track the amount of each token that are still being
     ///      held by this contract but withdrawn from layer-2 already, thus calculate a more
