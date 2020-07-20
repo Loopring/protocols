@@ -32,14 +32,14 @@ contract ForwarderModule is BaseModule
 
     event MetaTxExecuted(
         address         relayer,
-        address indexed from,
+        address indexed wallet,
         uint            nonce,
         bool            success,
         uint            gasUsed
     );
 
     struct MetaTx {
-        address from;
+        address wallet;
         address to;
         uint    nonce;
         address gasToken;
@@ -50,11 +50,11 @@ contract ForwarderModule is BaseModule
     }
 
     bytes32 constant public META_TX_TYPEHASH = keccak256(
-        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txAwareHash,bytes data)"
+        "MetaTx(address wallet,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txAwareHash,bytes data)"
     );
 
     function validateMetaTx(
-        address from, // can be an existing wallet, a new wallet to be created, or any EOA if price == 0.
+        address wallet,
         address to,
         uint    nonce,
         address gasToken,
@@ -75,13 +75,11 @@ contract ForwarderModule is BaseModule
             controller.moduleRegistry().isModuleRegistered(to) ||
 
             // We only allow the wallet to call itself to addModule
-            (to == from) &&
+            (to == wallet) &&
             data.toBytes4(0) == Wallet(0).addModule.selector &&
-            controller.walletRegistry().isWalletRegistered(from) ||
+            controller.walletRegistry().isWalletRegistered(wallet) ||
 
-            to == controller.walletFactory(),   // 'from' can be the wallet to create (not its owner),
-                                                // or an existing wallet,
-                                                // or an EOA iff gasPrice == 0
+            to == controller.walletFactory(),
             "INVALID_DESTINATION_OR_METHOD"
         );
 
@@ -95,7 +93,7 @@ contract ForwarderModule is BaseModule
 
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
-            from,
+            wallet,
             to,
             nonce,
             gasToken,
@@ -106,7 +104,7 @@ contract ForwarderModule is BaseModule
         );
 
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
-        require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
+        require(metaTxHash.verifySignature(wallet, signature), "INVALID_SIGNATURE");
     }
 
     function executeMetaTx(
@@ -130,21 +128,14 @@ contract ForwarderModule is BaseModule
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
         (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
-            abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
+            abi.encodePacked(metaTx.data, metaTx.wallet, metaTx.txAwareHash)
         );
-
-        if (metaTx.txAwareHash == 0) {
-            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
-        } else {
-            // The target module will check txAwareHash and make sure that replay
-            // attack is not possible.
-        }
 
         // It's ok to do the validation after the 'call'. This is also necessary
         // in the case of creating the wallet, otherwise, wallet signature validation
         // will fail before the wallet is created.
         validateMetaTx(
-            metaTx.from,
+            metaTx.wallet,
             metaTx.to,
             metaTx.nonce,
             metaTx.gasToken,
@@ -155,6 +146,14 @@ contract ForwarderModule is BaseModule
             signature
         );
 
+        // Must nonce can only be checked and updated after the transaction in the
+        // case of wallet creation.
+        if (metaTx.txAwareHash == 0) {
+            controller.nonceStore().verifyAndUpdate(metaTx.wallet, metaTx.nonce);
+        } else {
+            // The target module will check txAwareHash and make sure that replay
+            // attack is not possible.
+        }
 
         if (address(this).balance > 0) {
             payable(controller.collectTo()).transfer(address(this).balance);
@@ -164,7 +163,7 @@ contract ForwarderModule is BaseModule
 
         emit MetaTxExecuted(
             msg.sender,
-            metaTx.from,
+            metaTx.wallet,
             metaTx.nonce,
             success,
             gasUsed
@@ -173,7 +172,7 @@ contract ForwarderModule is BaseModule
         if (metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success)) {
             uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
             reimburseGasFee(
-                metaTx.from,
+                metaTx.wallet,
                 controller.collectTo(),
                 metaTx.gasToken,
                 metaTx.gasPrice,
