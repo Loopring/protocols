@@ -121,6 +121,8 @@ export async function executeMetaTx(
     gasPrice: gasPrice.toString()
   });
 
+  // console.log("tx:", tx);
+
   // console.log("tx.reciept.logs:", tx.receipt.logs);
 
   return tx;
