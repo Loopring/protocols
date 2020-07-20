@@ -36,19 +36,20 @@ library SignedRequest {
     {
         require(now <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
 
-        bytes32 txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+        bytes32 _txAwareHash = EIP712.hashPacked(domainSeperator, encodedRequest);
 
-        controller.hashStore().verifyAndUpdate(txHash);
+        // Save hash to prevent replay attacks
+        controller.hashStore().verifyAndUpdate(request.wallet, _txAwareHash);
 
         // If txAwareHash from the mata-transaction is non-zero,
         // we must verify it matches the hash signed by the respective signers.
         require(
-            txAwareHash == 0 || txAwareHash == txHash,
+            txAwareHash == 0 || txAwareHash == _txAwareHash,
             "TX_INNER_HASH_MISMATCH"
         );
 
         require(
-            txHash.verifySignatures(request.signers, request.signatures),
+            _txAwareHash.verifySignatures(request.signers, request.signatures),
             "INVALID_SIGNATURES"
         );
 

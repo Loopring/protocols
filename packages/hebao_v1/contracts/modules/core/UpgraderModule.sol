@@ -21,7 +21,6 @@ contract UpgraderModule is BaseModule {
     address[]  public modulesToAdd;
 
     event ImplementationUpgraded(address impl);
-    event ModuleChanged(address model, bool addOrRemove /*true == add*/);
 
     constructor(
         ControllerImpl   _controller,

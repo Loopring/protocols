@@ -16,14 +16,13 @@ contract InheritanceModule is SecurityModule
 
     event Inherited(
         address indexed wallet,
-        address indexed inheritor,
-        uint            timestamp,
-        bool            removedAsGuardian
+        address         inheritor,
+        address         newOwner
     );
 
     event InheritorChanged(
         address indexed wallet,
-        address indexed inheritor
+        address         inheritor
     );
 
     constructor(
@@ -45,52 +44,51 @@ contract InheritanceModule is SecurityModule
     function inheritor(address wallet)
         public
         view
-        returns (address who, uint lastActive)
+        returns (address _inheritor, uint lastActive)
     {
         return controller.securityStore().inheritor(wallet);
     }
 
     function inherit(
         address wallet,
-        bool    removeAllGuardians
+        address newOwner
         )
         external
         nonReentrant
+        eligibleWalletOwner(newOwner)
+        notWalletOwner(wallet, newOwner)
     {
-        (address who, uint lastActive) = controller.securityStore().inheritor(wallet);
-        require(logicalSender() == who, "NOT_ALLOWED");
+        (address _inheritor, uint lastActive) = controller.securityStore().inheritor(wallet);
+        require(logicalSender() == _inheritor, "NOT_ALLOWED");
 
         require(lastActive > 0 && now >= lastActive + waitingPeriod, "NEED_TO_WAIT");
 
         SecurityStore securityStore = controller.securityStore();
-        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, who);
 
-        if (removeAllGuardians) {
-            securityStore.removeAllGuardians(wallet);
-        } else if (removedAsGuardian) {
-            securityStore.removeGuardian(wallet, who, now);
-        }
+        securityStore.removeAllGuardians(wallet);
 
         securityStore.setInheritor(wallet, address(0));
-        Wallet(wallet).setOwner(who);
+        Wallet(wallet).setOwner(newOwner);
+
         // solium-disable-next-line
         unlockWallet(wallet, true /*force*/);
 
-        emit Inherited(wallet, who, now, removedAsGuardian);
+        emit Inherited(wallet, _inheritor, newOwner);
     }
 
     function setInheritor(
         address wallet,
-        address who
+        address _inheritor
         )
         external
         nonReentrant
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
+        require(controller.walletRegistry().isWalletRegistered(_inheritor), "NOT_A_WALLET");
         (address existingInheritor,) = controller.securityStore().inheritor(wallet);
-        require(existingInheritor != who, "SAME_INHERITOR");
+        require(existingInheritor != _inheritor, "SAME_INHERITOR");
 
-        controller.securityStore().setInheritor(wallet, who);
-        emit InheritorChanged(wallet, who);
+        controller.securityStore().setInheritor(wallet, _inheritor);
+        emit InheritorChanged(wallet, _inheritor);
     }
 }

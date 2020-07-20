@@ -88,6 +88,7 @@ contract WalletFactory is ReentrancyGuard
         payable
         returns (address _wallet)
     {
+        require(_owner != address(0) && !_owner.isContract(), "INVALID_OWNER");
         require(_modules.length > 0, "EMPTY_MODULES");
 
         bytes memory encodedRequest = abi.encode(

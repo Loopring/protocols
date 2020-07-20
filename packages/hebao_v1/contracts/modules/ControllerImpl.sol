@@ -47,12 +47,6 @@ contract ControllerImpl is Claimable, Controller
         address           _collectTo,
         address           _ensManagerAddress,
         PriceOracle       _priceOracle,
-        DappAddressStore  _dappAddressStore,
-        HashStore         _hashStore,
-        NonceStore        _nonceStore,
-        QuotaStore        _quotaStore,
-        SecurityStore     _securityStore,
-        WhitelistStore    _whitelistStore,
         bool              _allowChangingWalletFactory
         )
         public
@@ -67,13 +61,50 @@ contract ControllerImpl is Claimable, Controller
 
         ensManagerAddress = _ensManagerAddress;
         priceOracle = _priceOracle;
+        allowChangingWalletFactory = _allowChangingWalletFactory;
+    }
+
+    function initStores(
+        DappAddressStore  _dappAddressStore,
+        HashStore         _hashStore,
+        NonceStore        _nonceStore,
+        QuotaStore        _quotaStore,
+        SecurityStore     _securityStore,
+        WhitelistStore    _whitelistStore
+        )
+        external
+        onlyOwner
+    {
+        require(
+            address(_dappAddressStore) != address(0),
+            "ZERO_ADDRESS"
+        );
+
+        // Make sure this function can only invoked once.
+        require(
+            address(dappAddressStore) == address(0),
+            "INITIALIZED_ALREADY"
+        );
+
         dappAddressStore = _dappAddressStore;
         hashStore = _hashStore;
         nonceStore = _nonceStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
-        allowChangingWalletFactory = _allowChangingWalletFactory;
+    }
+
+    function initWalletFactory(address _walletFactory)
+        external
+        onlyOwner
+    {
+        require(
+            allowChangingWalletFactory || walletFactory == address(0),
+            "INITIALIZED_ALREADY"
+        );
+        require(_walletFactory != address(0), "ZERO_ADDRESS");
+        walletFactory = _walletFactory;
+        emit AddressChanged("WalletFactory", walletFactory);
     }
 
     function setCollectTo(address _collectTo)
@@ -93,16 +124,4 @@ contract ControllerImpl is Claimable, Controller
         emit AddressChanged("PriceOracle", address(priceOracle));
     }
 
-    function initWalletFactory(address _walletFactory)
-        external
-        onlyOwner
-    {
-        require(
-            allowChangingWalletFactory || walletFactory == address(0),
-            "INITIALIZED_ALREADY"
-        );
-        require(_walletFactory != address(0), "ZERO_ADDRESS");
-        walletFactory = _walletFactory;
-        emit AddressChanged("WalletFactory", walletFactory);
-    }
 }

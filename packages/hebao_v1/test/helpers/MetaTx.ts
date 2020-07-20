@@ -4,6 +4,7 @@ import { SignatureType, sign, verifySignatures, appendType } from "./Signature";
 import { Context } from "./TestUtils";
 import { getTokenAddress } from "./TokenUtils";
 import { getEIP712Message } from "../../util/EIP712";
+import ethUtil = require("ethereumjs-util");
 
 export interface MetaTx {
   from: string;
@@ -119,6 +120,8 @@ export async function executeMetaTx(
     gas,
     gasPrice: gasPrice.toString()
   });
+
+  // console.log("tx:", tx);
 
   // console.log("tx.reciept.logs:", tx.receipt.logs);
 

@@ -15,16 +15,14 @@ contract GuardianModule is SecurityModule
     uint constant public MAX_GUARDIANS = 20;
     uint public pendingPeriod;
 
-    event GuardianAdded             (address indexed wallet, address indexed guardian, uint group, uint effectiveTime);
-    event GuardianAdditionCancelled (address indexed wallet, address indexed guardian);
-    event GuardianRemoved           (address indexed wallet, address indexed guardian, uint removalEffectiveTime);
-    event GuardianRemovalCancelled  (address indexed wallet, address indexed guardian);
+    event GuardianAdded             (address indexed wallet, address guardian, uint group, uint effectiveTime);
+    event GuardianAdditionCancelled (address indexed wallet, address guardian);
+    event GuardianRemoved           (address indexed wallet, address guardian, uint removalEffectiveTime);
+    event GuardianRemovalCancelled  (address indexed wallet, address guardian);
 
     event Recovered(
         address indexed wallet,
-        address indexed oldOwner,
-        address indexed newOwner,
-        bool            removedAsGuardian
+        address         newOwner
     );
 
     bytes32 public constant RECOVER_TYPEHASH = keccak256(
@@ -137,13 +135,9 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         notWalletOwner(request.wallet, newOwner)
+        eligibleWalletOwner(newOwner)
         onlyHaveEnoughGuardians(request.wallet)
     {
-
-        Wallet w = Wallet(request.wallet);
-        address oldOwner = w.owner();
-        require(newOwner != address(0), "ZERO_ADDRESS");
-
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
             txAwareHash(),
@@ -158,17 +152,16 @@ contract GuardianModule is SecurityModule
         );
 
         SecurityStore securityStore = controller.securityStore();
-        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(request.wallet, newOwner);
-
-        if (removedAsGuardian) {
+        if (securityStore.isGuardianOrPendingAddition(request.wallet, newOwner)) {
             securityStore.removeGuardian(request.wallet, newOwner, now);
         }
 
-        w.setOwner(newOwner);
+        Wallet(request.wallet).setOwner(newOwner);
+
         // solium-disable-next-line
         unlockWallet(request.wallet, true /*force*/);
 
-        emit Recovered(request.wallet, oldOwner, newOwner, removedAsGuardian);
+        emit Recovered(request.wallet, newOwner);
     }
 
     function getLock(address wallet)
