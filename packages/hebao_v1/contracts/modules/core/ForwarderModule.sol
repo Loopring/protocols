@@ -164,6 +164,10 @@ contract ForwarderModule is BaseModule
             gasUsed
         );
 
+        // Fees are not to be charged by a relayer if the transaction fails with a
+        // non-zero txAwareHash. The reason is that relayer can pick arbitrary 'data'
+        // to make the transaction fail. Charging fees for such failures can drain
+        // wallet funds.
         if (metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success)) {
             uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
             reimburseGasFee(
