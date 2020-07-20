@@ -115,7 +115,7 @@ library ExchangeWithdrawals
             S,
             owner,
             owner,
-            tokenID,
+            S.getTokenAddress(tokenID),
             balance,
             new bytes(0),
             gasleft(),
@@ -149,7 +149,7 @@ library ExchangeWithdrawals
             S,
             owner,
             owner,
-            tokenID,
+            S.getTokenAddress(tokenID),
             amount,
             new bytes(0),
             gasleft(),
@@ -181,7 +181,7 @@ library ExchangeWithdrawals
                 S,
                 owner,
                 owner,
-                tokenID,
+                S.getTokenAddress(tokenID),
                 amount,
                 new bytes(0),
                 gasleft(),
@@ -194,6 +194,7 @@ library ExchangeWithdrawals
         ExchangeData.State storage S,
         address from,
         address to,
+        address token,
         uint16  tokenID,
         uint    amount,
         bytes   memory auxiliaryData,
@@ -206,7 +207,7 @@ library ExchangeWithdrawals
             S,
             from,
             to,
-            tokenID,
+            token,
             amount,
             auxiliaryData,
             gasLimit,
@@ -229,7 +230,7 @@ library ExchangeWithdrawals
         ExchangeData.State storage S,
         address from,
         address to,
-        uint16  tokenID,
+        address token,
         uint    amount,
         bytes   memory auxiliaryData,
         uint    gasLimit,
@@ -241,11 +242,11 @@ library ExchangeWithdrawals
         if (to == address(0)) {
             to = S.loopring.protocolFeeVault();
         }
-        address token = S.getTokenAddress(tokenID);
-
         // Transfer the tokens from the deposit contract to the owner
         if (gasLimit > 0) {
-            try S.depositContract.withdraw{gas: gasLimit}(to, token, amount, auxiliaryData) {
+            try S.depositContract.transferWithdraw{gas: gasLimit}(
+                to, token, amount, auxiliaryData
+            ) {
                 success = true;
             } catch {
                 success = false;

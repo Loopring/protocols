@@ -11,6 +11,7 @@ import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
 import "../libexchange/ExchangeMode.sol";
+import "../libexchange/ExchangeTokens.sol";
 import "../libexchange/ExchangeWithdrawals.sol";
 
 
@@ -23,6 +24,7 @@ library WithdrawTransaction
     using MathUint             for uint;
     using SignatureUtil        for bytes32;
     using ExchangeMode         for ExchangeData.State;
+    using ExchangeTokens       for ExchangeData.State;
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
@@ -149,10 +151,14 @@ library WithdrawTransaction
             require((uint(keccak256(auxData.auxiliaryData)) >> 3) == uint(withdrawal.dataHash), "INVALID_WITHDRAWAL_AUX_DATA");
         }
 
+        address token = S.getTokenAddress(withdrawal.tokenID);
+        S.depositContract.notifyWithdrawal(token, withdrawal.amount);
+
         // Try to transfer the tokens with the provided gas limit
         S.distributeWithdrawal(
             withdrawal.owner,
             withdrawal.to,
+            token,
             withdrawal.tokenID,
             withdrawal.amount,
             auxData.auxiliaryData,
