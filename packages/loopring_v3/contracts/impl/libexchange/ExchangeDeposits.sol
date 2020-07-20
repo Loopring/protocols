@@ -86,12 +86,6 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        (amountDeposited, tokenIndex) =
-            S.depositContract.transferDeposit{value: depositValueETH}(
-                from,
-                tokenAddress,
-                amount,
-                auxiliaryData
-            );
+        (amountDeposited, tokenIndex) = S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount, auxiliaryData);
     }
 }
