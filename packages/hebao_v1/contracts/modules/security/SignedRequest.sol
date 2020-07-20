@@ -33,11 +33,13 @@ library SignedRequest {
         bytes   memory               encodedRequest
         )
         public
-        view
     {
         require(now <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
 
         bytes32 _txAwareHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+
+        // Save hash to prevent replay attacks
+        controller.hashStore().verifyAndUpdate(request.wallet, _txAwareHash);
 
         // If txAwareHash from the mata-transaction is non-zero,
         // we must verify it matches the hash signed by the respective signers.

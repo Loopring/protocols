@@ -16,8 +16,8 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
     bytes32 internal constant ENABLED_MODULE = keccak256("__ENABLED_MODULE__");
     bytes32 internal constant ALL_MODULE     = keccak256("__ALL_MODULE__");
 
-    event ModuleRegistered      (address indexed module);
-    event ModuleDeregistered    (address indexed module);
+    event ModuleRegistered      (address module);
+    event ModuleDeregistered    (address module);
 
     constructor() public Claimable() {}
 

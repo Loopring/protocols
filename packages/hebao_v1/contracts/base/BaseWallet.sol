@@ -29,7 +29,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     event OwnerChanged          (address indexed newOwner);
     event ModuleAdded           (address indexed module);
     event ModuleRemoved         (address indexed module);
-    event MethodBound           (bytes4  indexed method, address indexed module);
+    event MethodBound           (bytes4  method, address module);
 
     event WalletSetup(address indexed owner);
 
