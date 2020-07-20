@@ -7,10 +7,12 @@ pragma solidity ^0.6.10;
 /// @author Brecht Devos - <brecht@loopring.org>
 interface IDepositContract
 {
-    /// @dev Exchange will call this function to notify a IDepositContract that some tokens
-    ///      have been withdrawn to layer-1. If the tokens are not actually transfered to
-    ///      the owner, this contract can use the amount to update internal state to better
-    ///      calculate the index, or to withraw certain tokens from DeFi proactievly.
+    /// @dev Notify this contract that some token has been withdrawn to layer-1, but the
+    ///      token may or may not have been transfered to the owner.
+    ///
+    ///      We can use this information to track the amount of each token that are still being
+    ///      held by this contract but withdrawn from layer-2 already, thus calculate a more
+    ///      reasonable interest index or even withdraw the tokens from DeFi contracts.
     /// @param token The address of the token withdrawn
     /// @param amount The amounto of the token withdrawn
     function notifyWithdrawal(
