@@ -65,7 +65,7 @@ interface IDepositContract
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens transferred.
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the withdrawal
-    function transferWithdraw(
+    function transferWithdrawal(
         address to,
         address token,
         uint    amount,

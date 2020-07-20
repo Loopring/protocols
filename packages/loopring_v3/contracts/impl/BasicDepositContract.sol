@@ -115,7 +115,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         tokenIndex = INDEX_BASE;
     }
 
-    function transferWithdraw(
+    function transferWithdrawal(
         address to,
         address token,
         uint    amount,
