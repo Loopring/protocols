@@ -25,20 +25,6 @@ library ExchangeTokens
         uint16  indexed tokenId
     );
 
-    function registerToken(
-        ExchangeData.State storage S,
-        address tokenAddress
-        )
-        external
-        returns (uint16 tokenID)
-    {
-        tokenID = registerToken(
-            S,
-            tokenAddress,
-            getLRCFeeForRegisteringOneMoreToken(S)
-        );
-    }
-
     function getTokenAddress(
         ExchangeData.State storage S,
         uint16 tokenID
@@ -51,34 +37,16 @@ library ExchangeTokens
         return S.tokens[tokenID].token;
     }
 
-    function getLRCFeeForRegisteringOneMoreToken(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint feeLRC)
-    {
-        return S.loopring.tokenRegistrationFeeLRCBase().add(
-            S.loopring.tokenRegistrationFeeLRCDelta().mul(S.tokens.length)
-        );
-    }
-
     function registerToken(
         ExchangeData.State storage S,
-        address tokenAddress,
-        uint    amountToBurn
+        address tokenAddress
         )
-        public
+        external
         returns (uint16 tokenID)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.tokenToTokenId[tokenAddress] == 0, "TOKEN_ALREADY_EXIST");
         require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS(), "TOKEN_REGISTRY_FULL");
-
-        if (amountToBurn > 0) {
-            address feeVault = S.loopring.protocolFeeVault();
-            S.loopring.lrcAddress().safeTransferFromAndVerify(msg.sender, feeVault, amountToBurn);
-        }
 
         ExchangeData.Token memory token = ExchangeData.Token(
             tokenAddress

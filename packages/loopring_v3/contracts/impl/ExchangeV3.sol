@@ -157,14 +157,6 @@ contract ExchangeV3 is IExchangeV3
     }
 
     // -- Tokens --
-    function getLRCFeeForRegisteringOneMoreToken()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.getLRCFeeForRegisteringOneMoreToken();
-    }
 
     function registerToken(
         address tokenAddress
