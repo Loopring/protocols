@@ -82,9 +82,9 @@ contract ForwarderModule is BaseModule
             to == controller.walletFactory(),   // 'from' can be the wallet to create (not its owner),
                                                 // or an existing wallet,
                                                 // or an EOA iff gasPrice == 0
-
             "INVALID_DESTINATION_OR_METHOD"
         );
+
         require(
             nonce == 0 && txAwareHash != 0 ||
             nonce != 0 && txAwareHash == 0,
@@ -133,6 +133,13 @@ contract ForwarderModule is BaseModule
             abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
         );
 
+        if (metaTx.txAwareHash == 0) {
+            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
+        } else {
+            // The target module will check txAwareHash and make sure that replay
+            // attack is not possible.
+        }
+
         // It's ok to do the validation after the 'call'. This is also necessary
         // in the case of creating the wallet, otherwise, wallet signature validation
         // will fail before the wallet is created.
@@ -148,12 +155,6 @@ contract ForwarderModule is BaseModule
             signature
         );
 
-        if (metaTx.txAwareHash == 0) {
-            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
-        } else {
-            // The target module will check txAwareHash and make sure that replay
-            // attack is not possible.
-        }
 
         if (address(this).balance > 0) {
             payable(controller.collectTo()).transfer(address(this).balance);
