@@ -151,7 +151,13 @@ contract GuardianModule is SecurityModule
             )
         );
 
+        SecurityStore securityStore = controller.securityStore();
+        if (securityStore.isGuardianOrPendingAddition(request.wallet, newOwner)) {
+            securityStore.removeGuardian(request.wallet, newOwner, now);
+        }
+
         Wallet(request.wallet).setOwner(newOwner);
+
         // solium-disable-next-line
         unlockWallet(request.wallet, true /*force*/);
 
