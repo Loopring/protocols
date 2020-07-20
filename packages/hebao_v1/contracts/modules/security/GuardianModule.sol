@@ -142,7 +142,12 @@ contract GuardianModule is SecurityModule
 
         Wallet w = Wallet(request.wallet);
         address oldOwner = w.owner();
-        require(newOwner != address(0), "ZERO_ADDRESS");
+        require(
+            newOwner != address(0) &&
+            newOwner != oldOwner &&
+            !newOwner.isContract(),
+            "INVALID_NEW_OWNER"
+        );
 
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
