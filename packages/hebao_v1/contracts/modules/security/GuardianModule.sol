@@ -15,10 +15,10 @@ contract GuardianModule is SecurityModule
     uint constant public MAX_GUARDIANS = 20;
     uint public pendingPeriod;
 
-    event GuardianAdded             (address indexed wallet, address indexed guardian, uint group, uint effectiveTime);
-    event GuardianAdditionCancelled (address indexed wallet, address indexed guardian);
-    event GuardianRemoved           (address indexed wallet, address indexed guardian, uint removalEffectiveTime);
-    event GuardianRemovalCancelled  (address indexed wallet, address indexed guardian);
+    event GuardianAdded             (address indexed wallet, address guardian, uint group, uint effectiveTime);
+    event GuardianAdditionCancelled (address indexed wallet, address guardian);
+    event GuardianRemoved           (address indexed wallet, address guardian, uint removalEffectiveTime);
+    event GuardianRemovalCancelled  (address indexed wallet, address guardian);
 
     event Recovered(
         address indexed wallet,

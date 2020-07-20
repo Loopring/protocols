@@ -31,7 +31,7 @@ contract ForwarderModule is BaseModule
     }
 
     event MetaTxExecuted(
-        address indexed relayer,
+        address         relayer,
         address indexed from,
         uint            nonce,
         bool            success,

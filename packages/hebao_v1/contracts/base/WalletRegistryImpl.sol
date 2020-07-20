@@ -17,8 +17,8 @@ contract WalletRegistryImpl is Claimable, WalletRegistry
 
     address internal factory;
 
-    event WalletRegistered      (address indexed wallet);
-    event WalletFactoryUpdated  (address indexed factory);
+    event WalletRegistered      (address wallet);
+    event WalletFactoryUpdated  (address factory);
 
     modifier onlyFactory()
     {
