@@ -68,7 +68,16 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         loopring = ILoopringV3(loopringAddress);
     }
 
-    function deposit(
+    function notifyWithdrawal(
+        address token,
+        uint    amount
+        )
+        external
+        override
+    {
+    }
+
+    function depositTransfer(
         address from,
         address token,
         uint    amount,
@@ -106,7 +115,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         tokenIndex = INDEX_BASE;
     }
 
-    function withdraw(
+    function withdrawTransfer(
         address to,
         address token,
         uint    amount,

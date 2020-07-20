@@ -7,6 +7,20 @@ pragma solidity ^0.6.10;
 /// @author Brecht Devos - <brecht@loopring.org>
 interface IDepositContract
 {
+    /// @dev Notify this contract that some token has been withdrawn to layer-1,  has NOT been
+    ///      transfered to the owner.
+    ///
+    ///      We can use this information to track the amount of each token that are still being
+    ///      held by this contract but withdrawn from layer-2 already, thus calculate a more
+    ///      reasonable interest index or even withdraw the tokens from DeFi contracts.
+    /// @param token The address of the token withdrawn
+    /// @param amount The amounto of the token withdrawn
+    function notifyWithdrawal(
+        address token,
+        uint    amount
+        )
+        external;
+
     /// @dev Transfers tokens from a user to the exchange. This function will
     ///      be called when a user deposits funds to the exchange.
     ///      In a simple implementation the funds are simply stored inside the
@@ -24,7 +38,7 @@ interface IDepositContract
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the deposit
     /// @return actualAmount The amount to deposit to the user's account in the Merkle tree
     /// @return tokenIndex The current index for the token being deposited
-    function deposit(
+    function depositTransfer(
         address from,
         address token,
         uint    amount,
@@ -51,7 +65,7 @@ interface IDepositContract
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens transferred.
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the withdrawal
-    function withdraw(
+    function withdrawTransfer(
         address to,
         address token,
         uint    amount,
