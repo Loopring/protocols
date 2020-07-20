@@ -63,10 +63,9 @@ contract InheritanceModule is SecurityModule
 
         require(lastActive > 0 && now >= lastActive + waitingPeriod, "NEED_TO_WAIT");
 
-        address oldOwner = Wallet(wallet).owner();
         require(
             newOwner != address(0) &&
-            newOwner != oldOwner &&
+            newOwner != Wallet(wallet).owner() &&
             !newOwner.isContract(),
             "INVALID_NEW_OWNER"
         );
