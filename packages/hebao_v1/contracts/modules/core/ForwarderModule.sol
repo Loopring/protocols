@@ -127,10 +127,6 @@ contract ForwarderModule is BaseModule
             "INSUFFICIENT_GAS"
         );
 
-        if (metaTx.txAwareHash == 0) {
-            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
-        }
-
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
         (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
@@ -151,6 +147,13 @@ contract ForwarderModule is BaseModule
             metaTx.data,
             signature
         );
+
+        if (metaTx.txAwareHash == 0) {
+            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
+        } else {
+            // The target module will check txAwareHash and make sure that replay
+            // attack is not possible.
+        }
 
         if (address(this).balance > 0) {
             payable(controller.collectTo()).transfer(address(this).balance);
