@@ -7,7 +7,7 @@ pragma solidity ^0.6.10;
 /// @author Brecht Devos - <brecht@loopring.org>
 interface IDepositContract
 {
-    /// @dev Exchange will call the funciton to notify this contract some tokens
+    /// @dev Exchange will call this function to notify a IDepositContract that some tokens
     ///      have been withdrawn to layer-1. If the tokens are not actually transfered to
     ///      the owner, this contract can use the amount to update internal state to better
     ///      calculate the index, or to withraw certain tokens from DeFi proactievly.
