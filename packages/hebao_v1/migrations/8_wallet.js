@@ -13,7 +13,7 @@ module.exports = function(deployer, network, accounts) {
           WalletFactory,
           ControllerImpl.address,
           WalletImpl.address,
-          false
+          true
         )
       ]);
     })

@@ -50,6 +50,10 @@ contract("WalletFactory", () => {
       modules
     );
 
+    const opt = useMetaTx
+      ? { owner, wallet, gasPrice: new BN(1) }
+      : { from: owner };
+
     const tx = await executeTransaction(
       ctx.walletFactory.contract.methods.createWallet(
         owner,
@@ -62,12 +66,7 @@ contract("WalletFactory", () => {
       useMetaTx,
       wallet,
       [],
-      {
-        owner,
-        wallet: owner,
-        from: owner,
-        gasPrice: useMetaTx ? new BN(0) : new BN(1)
-      }
+      opt
     );
 
     await assertEventEmitted(
@@ -78,41 +77,43 @@ contract("WalletFactory", () => {
       }
     );
 
-    // if (walletName !== "") {
-    //   await assertEventEmitted(
-    //     ctx.baseENSManager,
-    //     "Registered",
-    //     (event: any) => {
-    //       return (
-    //         event._ens === walletName + walletDomain && event._owner === wallet
-    //       );
-    //     }
-    //   );
-    // } else {
-    //   await assertNoEventEmitted(ctx.baseENSManager, "Registered");
-    // }
+    if (walletName !== "") {
+      await assertEventEmitted(
+        ctx.baseENSManager,
+        "Registered",
+        (event: any) => {
+          return (
+            event._ens === walletName + walletDomain && event._owner === wallet
+          );
+        }
+      );
+    } else {
+      await assertNoEventEmitted(ctx.baseENSManager, "Registered");
+    }
 
-    // const walletContract = await ctx.contracts.WalletImpl.at(wallet);
-    // assert.equal(await walletContract.owner(), owner, "wallet owner incorrect");
+    const walletContract = await ctx.contracts.WalletImpl.at(wallet);
+    assert.equal(await walletContract.owner(), owner, "wallet owner incorrect");
 
-    // // Try to create the wallet again
-    // await expectThrow(
-    //   executeTransaction(
-    //     ctx.walletFactory.contract.methods.createWallet(
-    //       owner,
-    //       walletName,
-    //       ensApproval,
-    //       modules,
-    //       txSignature
-    //     ),
-    //     ctx,
-    //     useMetaTx,
-    //     wallet,
-    //     [],
-    //     { owner, wallet, from: owner, gasPrice: new BN(1) }
-    //   ),
-    //   useMetaTx ? "UNAUTHORIZED" : "CREATE2_FAILED"
-    // );
+    if (!useMetaTx) {
+      // Try to create the wallet again
+      await expectThrow(
+        executeTransaction(
+          ctx.walletFactory.contract.methods.createWallet(
+            owner,
+            walletName,
+            ensApproval,
+            modules,
+            txSignature
+          ),
+          ctx,
+          useMetaTx,
+          wallet,
+          [],
+          { owner, wallet, from: owner, gasPrice: new BN(1) }
+        ),
+        useMetaTx ? "UNAUTHORIZED" : "CREATE2_FAILED"
+      );
+    }
   };
 
   const description = (descr: string, metaTx: boolean = useMetaTx) => {
@@ -127,14 +128,14 @@ contract("WalletFactory", () => {
     ctx = await createContext(defaultCtx);
   });
 
-  [/*false,*/ true].forEach(function(metaTx) {
-    // it(
-    //   description("user should be able to create a wallet without ENS", metaTx),
-    //   async () => {
-    //     useMetaTx = metaTx;
-    //     await createWalletChecked(ctx.owners[0]);
-    //   }
-    // );
+  [false, true].forEach(function(metaTx) {
+    it(
+      description("user should be able to create a wallet without ENS", metaTx),
+      async () => {
+        useMetaTx = metaTx;
+        await createWalletChecked(ctx.owners[0]);
+      }
+    );
 
     it(
       description("user should be able to create a wallet with ENS", metaTx),

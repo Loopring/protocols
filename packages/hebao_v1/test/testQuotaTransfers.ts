@@ -34,8 +34,8 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
   let priceOracleMock: any;
   let targetContract: any;
-
-  const quotaPeriod = 24 * 3600; // 1 day
+  let defaultQuota: BN;
+  let quotaPeriod: number; // 24 * 3600; // 1 day
 
   let useMetaTx: boolean = false;
 
@@ -55,6 +55,21 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
   const description = (descr: string, metaTx: boolean = useMetaTx) => {
     return descr + (metaTx ? " (meta tx)" : "");
+  };
+
+  const equalWithPrecision = (
+    n1: BN,
+    n2: BN,
+    precision: number = 2,
+    description: string = ""
+  ) => {
+    // console.log("n1:", n1.toString(10));
+    // console.log("n2:", n1.toString(10));
+    // console.log("n1 - n2", Math.abs(n1.sub(n2).toNumber()));
+    return assert(
+      Math.abs(n1.sub(n2).toNumber()) < 10 ** precision,
+      description
+    );
   };
 
   const transferTokenChecked = async (
@@ -140,14 +155,20 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     const newSpentQuota = await ctx.quotaStore.spentQuota(wallet);
 
     const quotaDelta = isWhitelisted || approved ? new BN(0) : assetValue;
-    assert(
-      oldAvailableQuota.eq(newAvailableQuota.add(quotaDelta)),
+    equalWithPrecision(
+      oldAvailableQuota,
+      newAvailableQuota.add(quotaDelta),
+      15,
       "incorrect available quota"
     );
-    assert(
-      newSpentQuota.eq(oldSpentQuota.add(quotaDelta)),
+
+    equalWithPrecision(
+      newSpentQuota,
+      oldSpentQuota.add(quotaDelta),
+      15,
       "incorrect spent quota"
     );
+
     // Check balances
     const newBalanceWallet = await getBalance(ctx, token, wallet);
     const newBalanceTo = await getBalance(ctx, token, to);
@@ -528,14 +549,20 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     const newAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
     const newSpentQuota = await ctx.quotaStore.spentQuota(wallet);
     const quotaDelta = isWhitelisted || approved ? new BN(0) : assetValue;
-    assert(
-      oldAvailableQuota.eq(newAvailableQuota.add(quotaDelta)),
+    equalWithPrecision(
+      oldAvailableQuota,
+      newAvailableQuota.add(quotaDelta),
+      15,
       "incorrect available quota"
     );
-    assert(
-      newSpentQuota.eq(oldSpentQuota.add(quotaDelta)),
-      "incorrect available quota"
+
+    equalWithPrecision(
+      newSpentQuota,
+      oldSpentQuota.add(quotaDelta),
+      15,
+      "incorrect spent quota"
     );
+
     // Check Allowance
     const newAllowanceTo = await getAllowance(ctx, token, wallet, to);
     assert(newAllowanceTo.eq(amount), "incorrect allowance");
@@ -812,6 +839,8 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
     targetContract = await TestTargetContract.new();
+    quotaPeriod = (await ctx.transferModule.delayPeriod()).toNumber();
+    defaultQuota = await ctx.quotaStore.defaultQuota();
   });
 
   [false, true].forEach(function(metaTx) {
