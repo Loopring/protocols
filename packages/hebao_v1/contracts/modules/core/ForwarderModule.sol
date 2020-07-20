@@ -10,7 +10,7 @@ import "../base/BaseModule.sol";
 
 
 /// @title ForwarderModule
-/// @dev Base contract for all smart wallet modules.
+/// @dev A module to support wallet meta-transactions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ForwarderModule is BaseModule
@@ -39,7 +39,7 @@ contract ForwarderModule is BaseModule
     );
 
     struct MetaTx {
-        address from;
+        address from; // the wallet
         address to;
         uint    nonce;
         address gasToken;
@@ -54,7 +54,7 @@ contract ForwarderModule is BaseModule
     );
 
     function validateMetaTx(
-        address from, // can be an existing wallet, a new wallet to be created, or any EOA if price == 0.
+        address from, // the wallet
         address to,
         uint    nonce,
         address gasToken,
@@ -79,10 +79,7 @@ contract ForwarderModule is BaseModule
             data.toBytes4(0) == Wallet(0).addModule.selector &&
             controller.walletRegistry().isWalletRegistered(from) ||
 
-            to == controller.walletFactory(),   // 'from' can be the wallet to create (not its owner),
-                                                // or an existing wallet,
-                                                // or an EOA iff gasPrice == 0
-
+            to == controller.walletFactory(),
             "INVALID_DESTINATION_OR_METHOD"
         );
         require(
@@ -127,10 +124,6 @@ contract ForwarderModule is BaseModule
             "INSUFFICIENT_GAS"
         );
 
-        if (metaTx.txAwareHash == 0) {
-            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
-        }
-
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
         (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
@@ -151,6 +144,11 @@ contract ForwarderModule is BaseModule
             metaTx.data,
             signature
         );
+
+        // Nonce update must come after the real transaction.
+        if (metaTx.txAwareHash == 0) {
+            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
+        }
 
         if (address(this).balance > 0) {
             payable(controller.collectTo()).transfer(address(this).balance);
