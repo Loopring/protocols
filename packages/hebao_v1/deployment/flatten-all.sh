@@ -1,7 +1,13 @@
 #!/bin/bash
 
-FLATTER_COMMAND="../../node_modules/.bin/truffle-flattener"
-DEST="flattened"
+if [ "$#" -ne 1 ] || ! [ -d "$1" ]; then
+  echo "Usage: $0 DIRECTORY" >&2
+  exit 1
+fi
+
+DEST="$1/flattened"
+
+FLATTER_COMMAND="../node_modules/.bin/truffle-flattener"
 
 SPDX_FILTER="SPDX-License-Identifier"
 SPDX_LINE="// SPDX-License-Identifier: Apache-2.0"
@@ -46,7 +52,7 @@ do
     file_name=`basename $contract .sol`
     echo "flattening ${contract} ..."
     dest_file="$DEST/${file_name}_flat.sol"
-    $FLATTER_COMMAND "../../$contract" \
+    $FLATTER_COMMAND "../$contract" \
         | grep -v "$SPDX_FILTER" \
         | grep -v "$PRAGMA_SOL_FILTER" > $dest_file
 
