@@ -129,6 +129,9 @@ contract ForwarderModule is BaseModule
             abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
         );
 
+        // It's ok to do the validation after the 'call'. This is also necessary
+        // in the case of creating the wallet, otherwise, wallet signature validation
+        // will fail before the wallet is created.
         validateMetaTx(
             metaTx.from,
             metaTx.to,
