@@ -85,7 +85,11 @@ contract ForwarderModule is BaseModule
 
             "INVALID_DESTINATION_OR_METHOD"
         );
-        require(nonce == 0 || txAwareHash == 0, "INVALID_NONCE");
+        require(
+            nonce == 0 && txAwareHash != 0 ||
+            nonce != 0 && txAwareHash == 0,
+            "INVALID_NONCE"
+        );
 
         bytes memory data_ = txAwareHash == 0 ? data : data.slice(0, 4); // function selector
 
@@ -148,7 +152,7 @@ contract ForwarderModule is BaseModule
         if (metaTx.txAwareHash == 0) {
             controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
         } else if (success) {
-            controller.hashStore().verifyAndUpdate(metaTx.from, metaTx.txAwareHash);
+            // do nothing.
         } else {
             // The relayer can provide invalid metaTx.data to make this meta-tx fail,
             // therefore we we need to prevent the relayer from chareging the meta-tx
@@ -170,16 +174,16 @@ contract ForwarderModule is BaseModule
             gasUsed
         );
 
-        if (metaTx.gasPrice > 0 && !waiveFees) {
-            uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
-            reimburseGasFee(
-                metaTx.from,
-                controller.collectTo(),
-                metaTx.gasToken,
-                metaTx.gasPrice,
-                gasAmount.add(GAS_OVERHEAD)
-            );
-        }
+        /* if (metaTx.gasPrice > 0 && !waiveFees) { */
+        /*     uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit; */
+        /*     reimburseGasFee( */
+        /*         metaTx.from, */
+        /*         controller.collectTo(), */
+        /*         metaTx.gasToken, */
+        /*         metaTx.gasPrice, */
+        /*         gasAmount.add(GAS_OVERHEAD) */
+        /*     ); */
+        /* } */
 
     }
 }
