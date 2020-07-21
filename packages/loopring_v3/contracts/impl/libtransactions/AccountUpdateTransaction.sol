@@ -25,8 +25,8 @@ library AccountUpdateTransaction
     );
 
     /*event AccountUpdateConsumed(
-        uint24   indexed owner,
-        uint             publicKey
+        uint24 owner,
+        uint   publicKey
     );*/
 
     function process(

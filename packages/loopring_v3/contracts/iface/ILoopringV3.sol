@@ -88,8 +88,6 @@ abstract contract ILoopringV3 is ILoopring
         address _blockVerifierAddress,       // address(0) not allowed
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
         uint    _minExchangeStakeWithoutDataAvailability
         )
