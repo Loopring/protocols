@@ -21,6 +21,8 @@ contract ForwarderModule is BaseModule
     uint    public constant GAS_OVERHEAD = 100000;
     bytes32 public DOMAIN_SEPARATOR;
 
+    mapping(address => mapping(bytes32 => bool)) public metaTxHashes;
+
     constructor(ControllerImpl _controller)
         public
         BaseModule(_controller)
@@ -146,8 +148,13 @@ contract ForwarderModule is BaseModule
         );
 
         // Nonce update must come after the real transaction in case of new wallet creation.
-        if (metaTx.txAwareHash == 0) {
+        if (metaTx.nonce != 0) {
             controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
+        }
+
+        if (metaTx.txAwareHash != 0) {
+            require(!metaTxHashes[metaTx.from][metaTx.txAwareHash], "INVALID_METATX_HASH");
+            metaTxHashes[metaTx.from][metaTx.txAwareHash] = true;
         }
 
         if (address(this).balance > 0) {
