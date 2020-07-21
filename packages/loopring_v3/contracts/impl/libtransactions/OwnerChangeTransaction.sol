@@ -13,7 +13,7 @@ import "../../lib/SignatureUtil.sol";
 /// @title OwnerChangeTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev There are a few concepts we need to clarify:
-///   - StatelessWallet: it's a stateless contract that can be used to verify permissions for layer-2
+///   - statelessWallet: it's a stateless contract that can be used to verify permissions for layer-2
 ///                      wallet recovery, inheritance, etc. We do not have to define an interface, as
 ///                      the protocol will call a StatelessWallet's static functions based on data provided
 ///                      by the old/new owners.

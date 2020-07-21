@@ -19,10 +19,10 @@ import "../libexchange/ExchangeWithdrawals.sol";
 /// @dev The following 4 types of withdrawals are supported:
 ///      - withdrawType = 0: offchain withdrawals with EdDSA signatures
 ///      - withdrawType = 1: offchain withdrawals with ECDSA signatures or onchain appprovals
-///      - withdrawType = 2: onchain valid forced withdrawals (owner and accountID matche)
+///      - withdrawType = 2: onchain valid forced withdrawals (owner and accountID match), or
+///                          offchain operator-initiated withdrawals for protocol fees or for
+///                          users in shutdown mode
 ///      - withdrawType = 3: onchain invalid forced withdrawals (owner and accountID mismatch)
-/// TODO(brecht):
-///      - withdrawType = 4: offchain operator-initiated withdrawals for protocol fees or in shutdown mode.
 library WithdrawTransaction
 {
     using BytesUtil            for bytes;
