@@ -53,9 +53,9 @@ library WithdrawTransaction
     }
 
     event ForcedWithdrawalConsumed(
-        uint24  indexed accountID,
-        uint16          tokenID,
-        uint            amount
+        uint24 accountID,
+        uint16 tokenID,
+        uint   amount
     );
 
     function process(

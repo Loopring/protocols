@@ -32,8 +32,8 @@ library OwnerChangeTransaction
     );
 
     /*event ChangeOwnerConsumed(
-        address  indexed owner,
-        address          newOwner
+        address owner,
+        address newOwner
     );*/
 
     struct OwnerChange
