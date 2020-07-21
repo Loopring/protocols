@@ -151,6 +151,7 @@ contract ForwarderModule is BaseModule
         if (metaTx.nonce != 0) {
             controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
         } else {
+            // use txAwareHash as the meta-tx hash to prevent replay.
             require(!metaTxHashes[metaTx.from][metaTx.txAwareHash], "INVALID_METATX_HASH");
             metaTxHashes[metaTx.from][metaTx.txAwareHash] = true;
         }
