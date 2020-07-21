@@ -10,8 +10,8 @@ contract OwnerManagable is Claimable, AddressSet
 {
     bytes32 internal constant MANAGER = keccak256("__MANAGED__");
 
-    event ManagerAdded  (address indexed manager);
-    event ManagerRemoved(address indexed manager);
+    event ManagerAdded  (address manager);
+    event ManagerRemoved(address manager);
 
     modifier onlyManager
     {

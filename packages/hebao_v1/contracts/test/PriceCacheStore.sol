@@ -19,10 +19,10 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
     uint expiry;
 
     event PriceCached (
-        address indexed token,
-        uint            amount,
-        uint            value,
-        uint            timestamp
+        address token,
+        uint    amount,
+        uint    value,
+        uint    timestamp
     );
 
     struct TokenPrice

@@ -30,8 +30,8 @@ contract WalletFactory is ReentrancyGuard
     using SignatureUtil for bytes32;
 
     event WalletCreated(
-        address indexed wallet,
-        address indexed owner
+        address wallet,
+        address owner
     );
 
     address        public walletImplementation;
