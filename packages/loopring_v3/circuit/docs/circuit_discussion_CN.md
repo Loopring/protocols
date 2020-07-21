@@ -281,7 +281,7 @@ public:
 
 ![image-20190801221206000](https://user-images.githubusercontent.com/26989346/63238893-1cb68380-c27b-11e9-9ee8-f78e10c2e626.png)
 
-中间有些 value 需要开启 onchainDataAvailable 才会加入到 hash 计算中，因此用虚线标注，但不影响整体逻辑。
+中间有些 value 需要开启 rollupEnabled 才会加入到 hash 计算中，因此用虚线标注，但不影响整体逻辑。
 
 ### 3.3 Unflatten Circuit
 
