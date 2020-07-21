@@ -483,7 +483,7 @@ public:
     SignatureVerifier signatureVerifier;
 
     // Transactions
-    bool onchainDataAvailability;
+    bool rollupEnabled;
     unsigned int numTransactions;
     std::vector<TransactionGadget> transactions;
 
@@ -530,9 +530,9 @@ public:
 
     }
 
-    void generateConstraints(bool onchainDataAvailability, unsigned int blockSize) override
+    void generateConstraints(bool rollupEnabled, unsigned int blockSize) override
     {
-        this->onchainDataAvailability = onchainDataAvailability;
+        this->rollupEnabled = rollupEnabled;
         this->numTransactions = blockSize;
 
         constants.generate_r1cs_constraints();
@@ -611,7 +611,7 @@ public:
         publicData.add(protocolTakerFeeBips.bits);
         publicData.add(protocolMakerFeeBips.bits);
         publicData.add(numConditionalTransactions->bits);
-        if (onchainDataAvailability)
+        if (rollupEnabled)
         {
             publicData.add(operatorAccountID.bits);
             for (size_t j = 0; j < numTransactions; j++)

@@ -24,23 +24,23 @@ contract LoopringV3Owner is DelayedOwner
     Costs public USD;
 
     event LRCValuesUpdated(
-        uint minExchangeStakeWithDataAvailabilityLRC,
-        uint minExchangeStakeWithoutDataAvailabilityLRC
+        uint minExchangeStakeRollupLRC,
+        uint minExchangeStakeValidiumLRC
     );
 
     constructor(
         ILoopringV3                _loopringV3,
         ITokenPriceProvider        _provider,
-        uint                       _minExchangeStakeWithDataAvailabilityUSD,
-        uint                       _minExchangeStakeWithoutDataAvailabilityUSD
+        uint                       _minExchangeStakeRollupUSD,
+        uint                       _minExchangeStakeValidiumUSD
         )
         DelayedOwner(address(_loopringV3), 3 days)
         public
     {
         loopringV3 = _loopringV3;
         provider = _provider;
-        USD.minExchangeStakeDA = _minExchangeStakeWithDataAvailabilityUSD;
-        USD.minExchangeStakeWDA = _minExchangeStakeWithoutDataAvailabilityUSD;
+        USD.minExchangeStakeDA = _minExchangeStakeRollupUSD;
+        USD.minExchangeStakeWDA = _minExchangeStakeValidiumUSD;
 
         setFunctionDelay(loopringV3.transferOwnership.selector, 7 days);
         setFunctionDelay(loopringV3.updateSettings.selector, 7 days);

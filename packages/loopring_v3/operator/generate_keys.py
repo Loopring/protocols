@@ -3,9 +3,9 @@ import subprocess
 
 class Struct(object): pass
 
-def generate_keys(blockType, blockSize, onchainDataAvailability):
+def generate_keys(blockType, blockSize, rollupEnabled):
     block = Struct()
-    block.onchainDataAvailability = onchainDataAvailability
+    block.rollupEnabled = rollupEnabled
     block.blockType = blockType
     block.blockSize = blockSize
 

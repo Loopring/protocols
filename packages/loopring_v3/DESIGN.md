@@ -132,7 +132,7 @@ The operator contract can also be used to enforce an off-chain data-availability
 
 The operator creates a block and submits it on-chain by calling `submitBlocks`. Multiple blocks can be submitted at the same time. All blocks will be immediately verified. If possible, batch verification is used to verify multiple blocks of the same type.
 
-An operator can only submit new blocks when the the exchange owner has enough LRC staked. For an exchange with data-availability the exchange stake needs to be at least `minExchangeStakeWithDataAvailability`LRC and for an exchange without data-availability the stake needs to be at least `minExchangeStakeWithoutDataAvailability`LRC.
+An operator can only submit new blocks when the the exchange owner has enough LRC staked. For an exchange with data-availability the exchange stake needs to be at least `minExchangeStakeRollup`LRC and for an exchange without data-availability the stake needs to be at least `minExchangeStakeValidium`LRC.
 
 #### Only Allow Off-chain Requests to be Used Once
 

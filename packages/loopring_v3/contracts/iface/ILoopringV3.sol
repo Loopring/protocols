@@ -57,8 +57,8 @@ abstract contract ILoopringV3 is ILoopring
     uint    public forcedWithdrawalFee;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
-    uint    public minExchangeStakeWithDataAvailability;
-    uint    public minExchangeStakeWithoutDataAvailability;
+    uint    public minExchangeStakeRollup;
+    uint    public minExchangeStakeValidium;
     uint8   public minProtocolTakerFeeBips;
     uint8   public maxProtocolTakerFeeBips;
     uint8   public minProtocolMakerFeeBips;
@@ -88,8 +88,8 @@ abstract contract ILoopringV3 is ILoopring
         address _blockVerifierAddress,       // address(0) not allowed
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStakeWithDataAvailability,
-        uint    _minExchangeStakeWithoutDataAvailability
+        uint    _minExchangeStakeRollup,
+        uint    _minExchangeStakeValidium
         )
         external
         virtual;
@@ -112,9 +112,9 @@ abstract contract ILoopringV3 is ILoopring
 
     /// @dev Returns whether the Exchange has staked enough to submit blocks
     ///      Exchanges with on-chain data-availaiblity need to stake at least
-    ///      minExchangeStakeWithDataAvailability, exchanges without
+    ///      minExchangeStakeRollup, exchanges without
     ///      data-availability need to stake at least
-    ///      minExchangeStakeWithoutDataAvailability.
+    ///      minExchangeStakeValidium.
     /// @param exchangeId The id of the exchange
     /// @param rollupEnabled True if the exchange has on-chain
     ///        data-availability, else false

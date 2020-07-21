@@ -160,7 +160,7 @@ def ringFromJSON(jRing, state):
 
 def createBlock(state, data):
     block = Block()
-    block.onchainDataAvailability = data["onchainDataAvailability"]
+    block.rollupEnabled = data["rollupEnabled"]
     block.exchange = str(data["exchange"])
     block.merkleRootBefore = str(state.getRoot())
     block.timestamp = int(data["timestamp"])
