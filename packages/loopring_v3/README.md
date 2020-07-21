@@ -40,7 +40,15 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 
 ## Build
 
-If you are usign a Mac, you may need to install "lgmpxx":
+If you are using a Mac, you will need to (re）install the commandline tool:
+
+```
+sudo rm -rf /Library/Developer/CommandLineTools
+xcode-select --install
+
+```
+
+Then you may also need to install "lgmpxx":
 
 - Download the source from https://gmplib.org/download/gmp/gmp-6.2.0.tar.lz
 - unzip it using (lzip - `brew install lzip`) :`tar -xf gmp-6.2.0.tar.lz`
