@@ -56,15 +56,36 @@ async function doDeploy(txCount, i, args) {
   });
 }
 
-async function batchDeploy() {
-  let releaseDir = "";
-
+function checkCommandArg() {
   if (process.argv.length <= 2) {
     console.log("Usage: \n", process.argv[0], process.argv[1], "RELEASE_DIR");
+    process.exit(1);
   } else {
-    releaseDir = process.argv[2];
-    console.log("deploying contracts in ", releaseDir);
+    console.log("deploying simple contracts in ", process.argv[2]);
+    return process.argv[2];
   }
+}
+
+function getAbiAndBin(releaseDir, contractName) {
+  const abi =
+    releaseDir +
+    "/build/flattened_" +
+    contractName +
+    "_flat_sol_" +
+    contractName +
+    ".abi";
+  const bin =
+    releaseDir +
+    "/build/flattened_" +
+    contractName +
+    "_flat_sol_" +
+    contractName +
+    ".bin";
+  return { abi, bin };
+}
+
+async function batchDeploySimpleContracts() {
+  const releaseDir = checkCommandArg();
 
   const targetContractNames = [
     "SignedRequest",
@@ -75,10 +96,11 @@ async function batchDeploy() {
     "NonceStore",
     "QuotaStore",
     "SecurityStore",
-    "WhitelistStore"
+    "WhitelistStore",
+    "WalletImpl"
+
     // "ControllerImpl",
     // "OfficialGuardian",
-    // "WalletImpl",
     // "WalletFactory",
     // "ERC1271Module",
     // "ForwarderModule",
@@ -92,36 +114,64 @@ async function batchDeploy() {
   const deployableItems = [];
 
   for (const contractName of targetContractNames) {
-    const abi =
-      releaseDir +
-      "/build/flattened_" +
-      contractName +
-      "_flat_sol_" +
-      contractName +
-      ".abi";
-    const bin =
-      releaseDir +
-      "/build/flattened_" +
-      contractName +
-      "_flat_sol_" +
-      contractName +
-      ".bin";
+    const { abi, bin } = getAbiAndBin(releaseDir, contractName);
     const item = [abi, bin];
 
     if (contractName === "QuotaStore") {
-      item.push("0x" + "00".repeat(20));
+      item.push("1" + "0".repeat(19)); // default quota: 10 ETH
     }
     deployableItems.push(item);
   }
 
-  console.log("deployableItems:", deployableItems);
-
   const addressFrom = (await web3.eth.getAccounts())[0];
   const txCount = await web3.eth.getTransactionCount(addressFrom);
   deployableItems.forEach(async function(item, i) {
-    console.log("deploying:", targetContractNames[i], i);
+    console.log("deploying:", targetContractNames[i], "nonce:", txCount + i);
     return await doDeploy(txCount, i, item);
   });
 }
 
-batchDeploy();
+async function deployController() {
+  const releaseDir = checkCommandArg();
+  const contractName = "ControllerImpl";
+  const { abi, bin } = getAbiAndBin(releaseDir, contractName);
+
+  const moduleRegistryImplAddr = "";
+  const walletRegistryImplAddr = "";
+  const lockPeriod = "";
+  const collectTo = "";
+  const ensManager = "";
+  const priceOracle = "";
+
+  const deployArgs = [
+    abi,
+    bin,
+    moduleRegistryImplAddr,
+    walletRegistryImplAddr,
+    lockPeriod,
+    collectTo,
+    ensManager,
+    priceOracle,
+    false
+  ];
+
+  const addressFrom = (await web3.eth.getAccounts())[0];
+  const txCount = await web3.eth.getTransactionCount(addressFrom);
+  await doDeploy(txCount, 0, deployArgs);
+}
+
+async function deployWalletFactory() {
+  const releaseDir = checkCommandArg();
+  const contractName = "WalletFactory";
+  const { abi, bin } = getAbiAndBin(releaseDir, contractName);
+
+  const controllerImpl = "";
+  const walletImpl = "";
+  const deployArgs = [abi, bin, controllerImpl, walletImpl, false];
+
+  const addressFrom = (await web3.eth.getAccounts())[0];
+  const txCount = await web3.eth.getTransactionCount(addressFrom);
+  await doDeploy(txCount, 0, deployArgs);
+}
+
+batchDeploySimpleContracts();
