@@ -201,6 +201,7 @@ library ExchangeWithdrawals
         )
         public
     {
+        // Try to transfer the tokens
         bool success = transferTokens(
             S,
             from,
@@ -240,17 +241,11 @@ library ExchangeWithdrawals
         if (to == address(0)) {
             to = S.loopring.protocolFeeVault();
         }
-
         address token = S.getTokenAddress(tokenID);
 
         // Transfer the tokens from the deposit contract to the owner
         if (gasLimit > 0) {
-            try S.depositContract.withdrawTransfer{gas: gasLimit}(
-                to,
-                token,
-                amount,
-                auxiliaryData
-            ) {
+            try S.depositContract.withdrawTransfer{gas: gasLimit}(to, token, amount, auxiliaryData) {
                 success = true;
             } catch {
                 success = false;
