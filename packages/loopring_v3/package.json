@@ -31,7 +31,7 @@
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
     "testdocker": "npm run transpile && truffle test --network docker",
     "compile": "truffle compile",
-    "build": "./install && make && npm run compile",
+    "build": "./install && LIBRARY_PATH=$LIBRARY_PATH:/usr/local/lib/ make && npm run compile",
     "genabi": "./genAbi.sh",
     "ganache": "./ganache.sh",
     "migrate": "npm run transpile && truffle migrate --network live | tee -a mainnet.deployed",
