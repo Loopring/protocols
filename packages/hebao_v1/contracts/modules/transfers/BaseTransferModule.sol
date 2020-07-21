@@ -11,20 +11,20 @@ abstract contract BaseTransferModule is SecurityModule
 {
     event Transfered(
         address indexed wallet,
-        address indexed token,
-        address indexed to,
+        address         token,
+        address         to,
         uint            amount,
         bytes           logdata
     );
     event Approved(
         address indexed wallet,
-        address indexed token,
+        address         token,
         address         spender,
         uint            amount
     );
     event ContractCalled(
         address indexed wallet,
-        address indexed to,
+        address         to,
         uint            value,
         bytes           data
     );

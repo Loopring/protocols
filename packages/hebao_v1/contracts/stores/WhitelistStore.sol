@@ -15,7 +15,7 @@ contract WhitelistStore is DataStore, AddressSet
 
     event Whitelisted(
         address indexed wallet,
-        address indexed addr,
+        address         addr,
         bool            whitelisted,
         uint            effectiveTime
     );

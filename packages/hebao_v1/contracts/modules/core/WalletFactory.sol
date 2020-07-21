@@ -31,7 +31,7 @@ contract WalletFactory is ReentrancyGuard
 
     event WalletCreated(
         address indexed wallet,
-        address indexed owner
+        address         owner
     );
 
     address        public walletImplementation;
