@@ -50,7 +50,7 @@ library TransferTransaction
         //uint24 fromAccountID = data.toUint24(offset);
         offset += 3;
         //uint24 toAccountID = data.toUint24(offset);
-        offset += 3；
+        offset += 3;
 
         uint16 tokenID = data.toUint16(offset) >> 4;
         uint16 feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
