@@ -13,8 +13,8 @@ contract DappAddressStore is DataStore, OwnerManagable
     bytes32 internal constant DAPPS = keccak256("__DAPPS__");
 
     event Whitelisted(
-        address indexed addr,
-        bool            whitelisted
+        address addr,
+        bool    whitelisted
     );
 
     constructor() public DataStore() {}

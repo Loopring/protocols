@@ -31,11 +31,11 @@ contract ForwarderModule is BaseModule
     }
 
     event MetaTxExecuted(
-        address         relayer,
-        address indexed from,
-        uint            nonce,
-        bool            success,
-        uint            gasUsed
+        address relayer,
+        address from,
+        uint    nonce,
+        bool    success,
+        uint    gasUsed
     );
 
     struct MetaTx {
