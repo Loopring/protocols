@@ -23,8 +23,8 @@ abstract contract IExchangeV3 is IExchange
     // -- Events --
 
     event TokenRegistered(
-        address indexed token,
-        uint16  indexed tokenId
+        address token,
+        uint16  tokenId
     );
 
     event OperatorChanged(
@@ -48,31 +48,31 @@ abstract contract IExchangeV3 is IExchange
     );
 
     event DepositRequested(
-        address indexed owner,
-        address indexed token,
-        uint96          amount,
-        uint96          index,
-        uint            fee
+        address owner,
+        address token,
+        uint96  amount,
+        uint96  index,
+        uint    fee
     );
 
     event ForcedWithdrawalRequested(
-        address indexed owner,
-        address         token,
-        uint24  indexed accountID
+        address owner,
+        address token,
+        uint24  accountID
     );
 
     event WithdrawalCompleted(
-        address indexed from,
-        address indexed to,
-        address         token,
-        uint96          amount
+        address from,
+        address to,
+        address token,
+        uint96  amount
     );
 
     event WithdrawalFailed(
-        address indexed from,
-        address indexed to,
-        address         token,
-        uint96          amount
+        address from,
+        address to,
+        address token,
+        uint96  amount
     );
 
     event ProtocolFeesUpdated(
@@ -83,13 +83,13 @@ abstract contract IExchangeV3 is IExchange
     );
 
     event TransactionApproved(
-        address indexed owner,
-        bytes32 indexed transactionHash
+        address owner,
+        bytes32 transactionHash
     );
 
     event AgentAuthorized(
         address indexed owner,
-        address indexed agent,
+        address         agent,
         bool            authorized
     );
 
@@ -199,15 +199,6 @@ abstract contract IExchangeV3 is IExchange
         returns (bool);
 
     // -- Tokens --
-
-    /// @dev Gets the required amount of LRC to burn for registering one more token.
-    /// @return feeLRC The amount of LRC to burn.
-    function getLRCFeeForRegisteringOneMoreToken()
-        external
-        virtual
-        view
-        returns (uint feeLRC);
-
     /// @dev Registers an ERC20 token for a token id. Note that different exchanges may have
     ///      different ids for the same ERC20 token.
     ///

@@ -21,9 +21,9 @@ library NewAccountTransaction
     );
 
     /*event AccountCreated(
-        address  indexed owner,
-        uint             publicKey,
-        uint             walletHash
+        address owner,
+        uint    publicKey,
+        uint    walletHash
     );*/
 
     function process(

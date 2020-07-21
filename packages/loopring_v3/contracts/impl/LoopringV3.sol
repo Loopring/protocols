@@ -42,7 +42,7 @@ contract LoopringV3 is ILoopringV3
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            0, 0, 0, 0, 0, 0
+            0, 0, 0, 0
         );
     }
 
@@ -100,8 +100,6 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
         uint    _minExchangeStakeWithoutDataAvailability
         )
@@ -115,8 +113,6 @@ contract LoopringV3 is ILoopringV3
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _forcedWithdrawalFee,
-            _tokenRegistrationFeeLRCBase,
-            _tokenRegistrationFeeLRCDelta,
             _minExchangeStakeWithDataAvailability,
             _minExchangeStakeWithoutDataAvailability
         );
@@ -351,8 +347,6 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
         uint    _minExchangeStakeWithoutDataAvailability
         )
@@ -365,8 +359,6 @@ contract LoopringV3 is ILoopringV3
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         forcedWithdrawalFee = _forcedWithdrawalFee;
-        tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
-        tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
         minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;
         minExchangeStakeWithoutDataAvailability = _minExchangeStakeWithoutDataAvailability;
 

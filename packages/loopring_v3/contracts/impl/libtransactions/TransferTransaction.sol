@@ -25,10 +25,10 @@ library TransferTransaction
     );
 
     /*event ConditionalTransferProcessed(
-        address indexed from,
-        address indexed to,
-        uint16          token,
-        uint            amount
+        address from,
+        address to,
+        uint16  token,
+        uint    amount
     );*/
 
     function process(

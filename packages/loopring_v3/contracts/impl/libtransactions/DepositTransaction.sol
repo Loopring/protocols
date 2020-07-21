@@ -18,11 +18,11 @@ library DepositTransaction
     using MathUint  for uint;
 
     event DepositProcessed(
-        address indexed owner,
-        uint24  indexed accountId,
-        uint16          token,
-        uint            amount,
-        uint            index
+        address owner,
+        uint24  accountId,
+        uint16  token,
+        uint    amount,
+        uint    index
     );
 
     function process(

@@ -44,8 +44,8 @@ library OwnerChangeTransaction
     );
 
     /*event AccountTransfered(
-        address  indexed owner,
-        address          newOwner
+        address owner,
+        address newOwner
     );*/
 
     struct AccountTransfer
