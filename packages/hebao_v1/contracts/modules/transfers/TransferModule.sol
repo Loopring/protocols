@@ -53,6 +53,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         QuotaStore qs = controller.quotaStore();
@@ -99,6 +100,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         if (amount > 0 && !isTargetWhitelisted(wallet, to)) {
@@ -116,6 +118,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
@@ -134,6 +137,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
@@ -153,6 +157,7 @@ contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {

@@ -51,6 +51,7 @@ contract GuardianModule is SecurityModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         notWalletOwner(wallet, guardian)
     {
@@ -74,6 +75,7 @@ contract GuardianModule is SecurityModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         controller.securityStore().cancelGuardianAddition(wallet, guardian);
@@ -86,6 +88,7 @@ contract GuardianModule is SecurityModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
     {
@@ -99,6 +102,7 @@ contract GuardianModule is SecurityModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         controller.securityStore().cancelGuardianRemoval(wallet, guardian);
@@ -108,7 +112,7 @@ contract GuardianModule is SecurityModule
     function lock(address wallet)
         external
         nonReentrant
-        // onlyWhenWalletUnlocked(wallet)
+        txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
         onlyHaveEnoughGuardians(wallet)
     {
@@ -118,7 +122,7 @@ contract GuardianModule is SecurityModule
     function unlock(address wallet)
         external
         nonReentrant
-        // onlyWhenWalletLocked(wallet)
+        txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
     {
         unlockWallet(wallet, false);

@@ -28,6 +28,12 @@ abstract contract MetaTxAware
         trustedForwarder = _trustedForwarder;
     }
 
+    modifier txAwareHashNotAllowed()
+    {
+        require(txAwareHash() == 0, "INVALID_TX_AWARE_HASH");
+        _;
+    }
+
     /// @dev Return's the function's logicial message sender. This method should be
     // used to replace `msg.sender` for all meta-tx enabled functions.
     function msgSender()
