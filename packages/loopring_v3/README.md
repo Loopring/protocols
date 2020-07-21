@@ -10,11 +10,11 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 
 ### Performance
 
-|                           | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
-| :------------------------ | :----------: | :--------------------------------------: | :---------------------------------------: |
-| Trades per Ethereum Block |      26      |                  26300                   |                  216000                   |
-| Trades per Second         |      ~2      |                   2025                   |                   16400                   |
-| Cost per Trade            | ~300,000 gas |                 375 gas                  |                  47 gas                   |
+|                           | Loopring 2.x | Loopring 3.0 <br> (Rollup) | Loopring 3.0 <br> (Validium) |
+| :------------------------ | :----------: | :------------------------: | :--------------------------: |
+| Trades per Ethereum Block |      26      |           26300            |            216000            |
+| Trades per Second         |      ~2      |            2025            |            16400             |
+| Cost per Trade            | ~300,000 gas |          375 gas           |            47 gas            |
 
 - _Cost in USD per Trade_ in the table does not cover off-chain proof generation.
 
