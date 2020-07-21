@@ -22,11 +22,11 @@ library ExchangeDeposits
     using ExchangeTokens    for ExchangeData.State;
 
     event DepositRequested(
-        address indexed owner,
-        address indexed token,
-        uint96          amount,
-        uint96          index,
-        uint            fee
+        address owner,
+        address token,
+        uint96  amount,
+        uint96  index,
+        uint    fee
     );
 
     function deposit(

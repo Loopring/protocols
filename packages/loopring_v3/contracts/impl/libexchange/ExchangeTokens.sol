@@ -22,7 +22,7 @@ library ExchangeTokens
 
     event TokenRegistered(
         address indexed token,
-        uint16  indexed tokenId
+        uint16          tokenId
     );
 
     function registerToken(
