@@ -21,7 +21,7 @@ contract ForwarderModule is BaseModule
     uint    public constant GAS_OVERHEAD = 100000;
     bytes32 public DOMAIN_SEPARATOR;
 
-    mapping(address => mapping(bytes32 => bool)) public metaTxHashes;
+    mapping(address => mapping(bytes32 => bool)) public usedHashes;
 
     constructor(ControllerImpl _controller)
         public
@@ -152,8 +152,8 @@ contract ForwarderModule is BaseModule
             controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
         } else {
             // use txAwareHash as the meta-tx hash to prevent replay.
-            require(!metaTxHashes[metaTx.from][metaTx.txAwareHash], "INVALID_METATX_HASH");
-            metaTxHashes[metaTx.from][metaTx.txAwareHash] = true;
+            require(!usedHashes[metaTx.from][metaTx.txAwareHash], "INVALID_METATX_HASH");
+            usedHashes[metaTx.from][metaTx.txAwareHash] = true;
         }
 
         if (address(this).balance > 0) {
