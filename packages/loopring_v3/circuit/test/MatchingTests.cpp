@@ -687,7 +687,8 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
         VariableT expectedFillS_A = make_variable(pb, roundToFloatValue(_expectedFillS_A, Float24Encoding), "expectedFillS_A");
         VariableT expectedFillS_B = make_variable(pb, roundToFloatValue(_expectedFillS_B, Float24Encoding), "expectedFillS_B");
 
-        OrderMatchingGadget orderMatching(pb, constants, timestamp, orderA, orderB, tradeHistoryA.getFilled(), tradeHistoryB.getFilled(), expectedFillS_A, expectedFillS_B, "orderMatching");
+        OrderMatchingGadget orderMatching(pb, constants, timestamp, orderA, orderB, constants._0, constants._0,
+                                          tradeHistoryA.getFilled(), tradeHistoryB.getFilled(), expectedFillS_A, expectedFillS_B, "orderMatching");
         orderMatching.generate_r1cs_constraints();
         orderMatching.generate_r1cs_witness();
 

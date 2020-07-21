@@ -803,6 +803,67 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
+    it("Specific taker (correct)", async () => {
+      const ring: SpotTrade = {
+        orderA: {
+          owner: exchangeTestUtil.testContext.orderOwners[0],
+          tokenS: "ETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("10", "ether")),
+          taker: exchangeTestUtil.testContext.orderOwners[1]
+        },
+        orderB: {
+          owner: exchangeTestUtil.testContext.orderOwners[1],
+          tokenS: "GTO",
+          tokenB: "ETH",
+          amountS: new BN(web3.utils.toWei("10", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether"))
+        },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(ring);
+
+      await exchangeTestUtil.submitTransactions();
+
+      await verify();
+    });
+
+    it("Specific taker (incorrect)", async () => {
+      const ring: SpotTrade = {
+        orderA: {
+          owner: exchangeTestUtil.testContext.orderOwners[0],
+          tokenS: "ETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("10", "ether")),
+          taker: exchangeTestUtil.testContext.orderOwners[0]
+        },
+        orderB: {
+          owner: exchangeTestUtil.testContext.orderOwners[1],
+          tokenS: "GTO",
+          tokenB: "ETH",
+          amountS: new BN(web3.utils.toWei("10", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether"))
+        },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(ring);
+
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
+    });
+
     it("No funds available", async () => {
       const ring: SpotTrade = {
         orderA: {

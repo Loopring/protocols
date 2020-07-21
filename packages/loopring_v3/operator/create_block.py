@@ -35,6 +35,7 @@ def orderFromJSON(jOrder, state):
     validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
     buy = int(jOrder["buy"])
+    taker = str(jOrder["taker"])
     maxFeeBips = int(jOrder["maxFeeBips"])
 
     feeBips = int(jOrder["feeBips"])
@@ -46,7 +47,7 @@ def orderFromJSON(jOrder, state):
                   orderID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,
-                  allOrNone, validSince, validUntil, buy,
+                  allOrNone, validSince, validUntil, buy, taker,
                   maxFeeBips, feeBips, rebateBips)
 
     order.signature = jOrder["signature"]

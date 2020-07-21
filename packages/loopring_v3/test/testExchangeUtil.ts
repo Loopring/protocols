@@ -84,7 +84,8 @@ function replacer(name: any, val: any) {
     name === "to" ||
     name === "payerTo" ||
     name === "to" ||
-    name === "exchange"
+    name === "exchange" ||
+    name === "taker"
   ) {
     return new BN(val.slice(2), 16).toString(10);
   } else {
@@ -1068,6 +1069,8 @@ export class ExchangeTestUtil {
 
     order.buy = order.buy !== undefined ? order.buy : true;
 
+    order.taker = order.taker !== undefined ? order.taker : Constants.zeroAddress;
+
     order.maxFeeBips = order.maxFeeBips !== undefined ? order.maxFeeBips : 20;
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
 
@@ -1084,20 +1087,6 @@ export class ExchangeTestUtil {
     assert(order.feeBips < 64, "feeBips >= 64");
     assert(order.rebateBips < 64, "rebateBips >= 64");
 
-    order.transferAmountTrade =
-      order.transferAmountTrade !== undefined
-        ? order.transferAmountTrade
-        : new BN(0);
-    order.reduceOnly =
-      order.reduceOnly !== undefined ? order.reduceOnly : false;
-    order.triggerPrice =
-      order.triggerPrice !== undefined ? order.triggerPrice : new BN(0);
-
-    order.transferAmount =
-      order.transferAmount !== undefined ? order.transferAmount : new BN(0);
-    order.transferFee =
-      order.transferFee !== undefined ? order.transferFee : new BN(0);
-
     // setup initial balances:
     await this.setOrderBalances(order);
 
@@ -1112,7 +1101,7 @@ export class ExchangeTestUtil {
     const account = this.accounts[this.exchangeId][order.accountID];
 
     // Calculate hash
-    const hasher = Poseidon.createHash(13, 6, 53);
+    const hasher = Poseidon.createHash(14, 6, 53);
     const inputs = [
       order.exchange,
       order.orderID,
@@ -1125,7 +1114,8 @@ export class ExchangeTestUtil {
       order.validSince,
       order.validUntil,
       order.maxFeeBips,
-      order.buy ? 1 : 0
+      order.buy ? 1 : 0,
+      order.taker
     ];
     order.hash = hasher(inputs).toString(10);
 

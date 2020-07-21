@@ -360,11 +360,53 @@ public:
     }
 };
 
+// Checks if the order requirements are fulfilled with the given fill amounts
+class RequireValidTakerGadget : public GadgetT
+{
+public:
+    EqualGadget takerMatches;
+    EqualGadget takerOpen;
+    OrGadget valid;
+    RequireEqualGadget requireValid;
+
+    RequireValidTakerGadget(
+        ProtoboardT& pb,
+        const Constants& constants,
+        const VariableT& taker,
+        const VariableT& expectedTaker,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        takerMatches(pb, taker, expectedTaker, FMT(prefix, ".takerMatches")),
+        takerOpen(pb, constants._0, expectedTaker, FMT(prefix, ".takerOpen")),
+        valid(pb, {takerMatches.result(), takerOpen.result()}, FMT(prefix, ".valid")),
+        requireValid(pb, valid.result(), constants._1, FMT(prefix, ".requireValid"))
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+        takerMatches.generate_r1cs_witness();
+        takerOpen.generate_r1cs_witness();
+        valid.generate_r1cs_witness();
+        requireValid.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        takerMatches.generate_r1cs_constraints();
+        takerOpen.generate_r1cs_constraints();
+        valid.generate_r1cs_constraints();
+        requireValid.generate_r1cs_constraints();
+    }
+};
+
 // Matches 2 orders
 class OrderMatchingGadget : public GadgetT
 {
 public:
-
     const VariableT& fillS_A;
     const VariableT& fillS_B;
 
@@ -375,6 +417,10 @@ public:
     // Check if tokenS/tokenB match
     RequireEqualGadget orderA_tokenS_eq_orderB_tokenB;
     RequireEqualGadget orderA_tokenB_eq_orderB_tokenS;
+
+    // Check if the takers match
+    RequireValidTakerGadget validateTakerA;
+    RequireValidTakerGadget validateTakerB;
 
     // Check if the orders in the settlement are correctly filled
     CheckValidGadget checkValidA;
@@ -388,6 +434,8 @@ public:
         const VariableT& timestamp,
         const OrderGadget& orderA,
         const OrderGadget& orderB,
+        const VariableT& ownerA,
+        const VariableT& ownerB,
         const VariableT& filledA,
         const VariableT& filledB,
         const VariableT& _fillS_A,
@@ -405,6 +453,10 @@ public:
         // Check if tokenS/tokenB match
         orderA_tokenS_eq_orderB_tokenB(pb, orderA.tokenS.packed, orderB.tokenB.packed, FMT(prefix, ".orderA_tokenS_eq_orderB_tokenB")),
         orderA_tokenB_eq_orderB_tokenS(pb, orderA.tokenB.packed, orderB.tokenS.packed, FMT(prefix, ".orderA_tokenB_eq_orderB_tokenS")),
+
+        // Check if the takers match
+        validateTakerA(pb, constants, ownerB, orderA.taker, FMT(prefix, ".validateTakerA")),
+        validateTakerB(pb, constants, ownerA, orderB.taker, FMT(prefix, ".validateTakerB")),
 
         // Check if the orders in the settlement are correctly filled
         checkValidA(pb, constants, timestamp, orderA, fillS_A, fillS_B, FMT(prefix, ".checkValidA")),
@@ -425,6 +477,10 @@ public:
         orderA_tokenS_eq_orderB_tokenB.generate_r1cs_witness();
         orderA_tokenB_eq_orderB_tokenS.generate_r1cs_witness();
 
+        // Check if the takers match
+        validateTakerA.generate_r1cs_witness();
+        validateTakerB.generate_r1cs_witness();
+
         // Check if the orders in the settlement are correctly filled
         checkValidA.generate_r1cs_witness();
         checkValidB.generate_r1cs_witness();
@@ -441,6 +497,10 @@ public:
         // Check if tokenS/tokenB match
         orderA_tokenS_eq_orderB_tokenB.generate_r1cs_constraints();
         orderA_tokenB_eq_orderB_tokenS.generate_r1cs_constraints();
+
+        // Check if the takers match
+        validateTakerA.generate_r1cs_constraints();
+        validateTakerB.generate_r1cs_constraints();
 
         // Check if the orders in the settlement are correctly filled
         checkValidA.generate_r1cs_constraints();

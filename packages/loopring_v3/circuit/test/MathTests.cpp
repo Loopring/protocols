@@ -1449,26 +1449,11 @@ TEST_CASE("Range limit", "[dual_variable_gadget]")
     }}
 }
 
-FieldT power10(const FieldT& _x1)
-{
-    BigInt BASE(INDEX_BASE);
-    BigInt c0("10000000000000000000");
-    BigInt c1("23025850929940459520");
-    BigInt c2("26509490552391999488");
-    BigInt c3("20346785922934771712");
-
-    BigInt x1 = toBigInt(_x1);
-    BigInt x2 = (x1 * x1) / BASE;
-    BigInt x3 = (x2 * x1) / BASE;
-
-    return toFieldElement(c0 + (x1*c1 + x2*c2 + x3*c3)/BASE);
-}
 
 FieldT applyInterest(const FieldT& balance, const FieldT& oldIndex, const FieldT& newIndex)
 {
-    FieldT indexDiff = newIndex - oldIndex;
-    FieldT multiplier = power10(indexDiff);
-    FieldT newBalance = toFieldElement(toBigInt(balance) * toBigInt(power10(indexDiff)) / (BigInt(INDEX_BASE) * 10));
+    BigInt multiplier = (toBigInt(newIndex) * BigInt(INDEX_BASE)) / toBigInt(oldIndex);
+    FieldT newBalance = toFieldElement((toBigInt(balance) * multiplier) / BigInt(INDEX_BASE));
     return newBalance;
 }
 

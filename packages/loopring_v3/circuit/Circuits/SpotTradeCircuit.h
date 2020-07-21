@@ -91,7 +91,8 @@ public:
         tradeHistory_B(pb, state.constants, state.accountB.tradeHistory, orderB.orderID, FMT(prefix, ".tradeHistoryB")),
 
         // Match orders
-        orderMatching(pb, state.constants, state.timestamp, orderA, orderB, tradeHistory_A.getFilled(), tradeHistory_B.getFilled(), fillS_A.value(), fillS_B.value(), FMT(prefix, ".orderMatching")),
+        orderMatching(pb, state.constants, state.timestamp, orderA, orderB, state.accountA.account.owner, state.accountB.account.owner,
+                      tradeHistory_A.getFilled(), tradeHistory_B.getFilled(), fillS_A.value(), fillS_B.value(), FMT(prefix, ".orderMatching")),
 
         // Calculate fees
         feeCalculatorA(pb, state.constants, fillS_B.value(), state.protocolTakerFeeBips, orderA.feeBips.packed, orderA.rebateBips.packed, FMT(prefix, ".feeCalculatorA")),

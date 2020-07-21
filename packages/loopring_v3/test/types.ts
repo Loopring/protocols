@@ -29,16 +29,10 @@ export interface OrderInfo {
   validUntil?: number;
   maxFeeBips?: number;
   buy?: boolean;
+  taker?: string;
 
   feeBips?: number;
   rebateBips?: number;
-
-  transferAmountTrade?: BN;
-  reduceOnly?: boolean;
-  triggerPrice?: BN;
-
-  transferAmount?: BN;
-  transferFee?: BN;
 
   balanceS?: BN;
   balanceB?: BN;

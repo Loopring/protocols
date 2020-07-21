@@ -29,9 +29,6 @@ public:
     // Validate
     OwnerValidGadget ownerValid;
 
-    // Calculate the new index
-    MaxGadget newIndex;
-
     // Calculate the new balance
     DynamicBalanceGadget balanceS_A;
     DynamicBalanceGadget depositedAmount;
@@ -57,12 +54,9 @@ public:
         // Validate
         ownerValid(pb, state.constants, state.accountA.account.owner, owner.packed, FMT(prefix, ".ownerValid")),
 
-        // Calculate the new index
-        newIndex(pb, index.packed, state.index.balanceB.index, NUM_BITS_AMOUNT, FMT(prefix, ".newIndex")),
-
         // Calculate the new balance
-        balanceS_A(pb, state.constants, state.accountA.balanceS, newIndex.result(), FMT(prefix, ".balanceS_A")),
-        depositedAmount(pb, state.constants, amount.packed, index.packed, newIndex.result(), FMT(prefix, ".depositedAmount")),
+        balanceS_A(pb, state.constants, state.accountA.balanceS, index.packed, FMT(prefix, ".balanceS_A")),
+        depositedAmount(pb, state.constants, amount.packed, index.packed, index.packed, FMT(prefix, ".depositedAmount")),
         balance_after(pb, balanceS_A.balance(), depositedAmount.balance(), NUM_BITS_AMOUNT, FMT(prefix, ".balance_after")),
 
         // Increase the number of conditional transactions
@@ -73,10 +67,11 @@ public:
         setOutput(accountA_Owner, owner.packed);
         setArrayOutput(balanceA_S_Address, tokenID.bits);
         setOutput(balanceA_S_Balance, balance_after.result());
-        setOutput(balanceA_S_Index, newIndex.result());
+        setOutput(balanceA_S_Index, index.packed);
 
         // Update the index in the index account
-        setOutput(index_B, newIndex.result());
+        // Always update to the index of the deposit
+        setOutput(index_B, index.packed);
 
         // No singatures needed
         setOutput(signatureRequired_A, state.constants._0);
@@ -98,9 +93,6 @@ public:
         // Validate
         ownerValid.generate_r1cs_witness();
 
-        // Calculate the new index
-        newIndex.generate_r1cs_witness();
-
         // Calculate the new balance
         balanceS_A.generate_r1cs_witness();
         depositedAmount.generate_r1cs_witness();
@@ -121,9 +113,6 @@ public:
 
         // Validate
         ownerValid.generate_r1cs_constraints();
-
-        // Calculate the new index
-        newIndex.generate_r1cs_constraints();
 
         // Calculate the new balance
         balanceS_A.generate_r1cs_constraints();

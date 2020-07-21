@@ -262,8 +262,7 @@ class ApplyInterestGadget : public GadgetT
 {
 public:
 
-    SubGadget indexDiff;
-    PowerGadget multiplier;
+    MulDivGadget multiplier;
     MulDivGadget newBalance;
 
     ApplyInterestGadget(
@@ -276,9 +275,8 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        indexDiff(pb, newIndex, oldIndex, NUM_BITS_AMOUNT, FMT(prefix, ".indexDiff")),
-        multiplier(pb, constants, indexDiff.result(), FMT(prefix, ".multiplier")),
-        newBalance(pb, constants, balance, multiplier.result(), constants.pow10_c0, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 64/*log2(index*10)*/, FMT(prefix, ".newBalance"))
+        multiplier(pb, constants, newIndex, constants.indexBase, oldIndex, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, FMT(prefix, ".multiplier")),
+        newBalance(pb, constants, balance, multiplier.result(), constants.indexBase, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 60/*log2(index)*/, FMT(prefix, ".newBalance"))
     {
     }
 
@@ -295,14 +293,12 @@ public:
 
     void generate_r1cs_witness()
     {
-        indexDiff.generate_r1cs_witness();
         multiplier.generate_r1cs_witness();
         newBalance.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
-        indexDiff.generate_r1cs_constraints();
         multiplier.generate_r1cs_constraints();
         newBalance.generate_r1cs_constraints();
     }
@@ -318,12 +314,6 @@ class DynamicBalanceGadget : public DynamicVariableGadget
 {
 public:
 
-    // It's actually never possible that `new index < old index`, but it can happen
-    // because state data is passed into all tx types, while the state is only valid for the
-    // actual tx state it was made for. So it doesn't really matter what happends when this is the
-    // case, the output won't be used anyway.
-    MaxGadget correctedNewIndex;
-
     const VariableT& newIndex;
     ApplyInterestGadget applyInterest;
 
@@ -332,12 +322,11 @@ public:
         const Constants& constants,
         const VariableT& balance,
         const VariableT& oldIndex,
-        const VariableT& _index,
+        const VariableT& _newIndex,
         const std::string& prefix
     ) :
         DynamicVariableGadget(pb, prefix),
-        correctedNewIndex(pb, oldIndex, _index, NUM_BITS_AMOUNT, FMT(prefix, ".correctedNewIndex")),
-        newIndex(correctedNewIndex.result()),
+        newIndex(_newIndex),
         applyInterest(pb, constants, balance, oldIndex, newIndex, FMT(prefix, ".applyInterest"))
     {
         add(applyInterest.result());
@@ -348,10 +337,10 @@ public:
         ProtoboardT& pb,
         const Constants& constants,
         const BalanceGadget& balance,
-        const VariableT& _index,
+        const VariableT& _newIndex,
         const std::string& prefix
     ) :
-        DynamicBalanceGadget(pb, constants, balance.balance, balance.index, _index, prefix)
+        DynamicBalanceGadget(pb, constants, balance.balance, balance.index, _newIndex, prefix)
     {
     }
 
@@ -359,22 +348,20 @@ public:
         ProtoboardT& pb,
         const Constants& constants,
         const BalanceGadget& balance,
-        const BalanceGadget& _index,
+        const BalanceGadget& _newIndex,
         const std::string& prefix
     ) :
-        DynamicBalanceGadget(pb, constants, balance, _index.index, prefix)
+        DynamicBalanceGadget(pb, constants, balance, _newIndex.index, prefix)
     {
     }
 
     void generate_r1cs_witness()
     {
-        correctedNewIndex.generate_r1cs_witness();
         applyInterest.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
-        correctedNewIndex.generate_r1cs_constraints();
         applyInterest.generate_r1cs_constraints();
     }
 

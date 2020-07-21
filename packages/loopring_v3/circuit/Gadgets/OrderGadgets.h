@@ -32,6 +32,7 @@ public:
     DualVariableGadget validUntil;
     DualVariableGadget maxFeeBips;
     DualVariableGadget buy;
+    VariableT taker;
 
     DualVariableGadget feeBips;
     DualVariableGadget rebateBips;
@@ -49,7 +50,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> feeOrRebateBips;
 
     // Signature
-    Poseidon_gadget_T<13, 1, 6, 53, 12, 1> hash;
+    Poseidon_gadget_T<14, 1, 6, 53, 13, 1> hash;
 
     OrderGadget(
         ProtoboardT& pb,
@@ -71,6 +72,7 @@ public:
         validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
         maxFeeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".maxFeeBips")),
         buy(pb, 1, FMT(prefix, ".buy")),
+        taker(make_variable(pb, FMT(prefix, ".taker"))),
 
         feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
         rebateBips(pb, NUM_BITS_BIPS, FMT(prefix, ".rebateBips")),
@@ -100,7 +102,8 @@ public:
             validSince.packed,
             validUntil.packed,
             maxFeeBips.packed,
-            buy.packed
+            buy.packed,
+            taker
         }), FMT(this->annotation_prefix, ".hash"))
     {
 
@@ -120,6 +123,7 @@ public:
         validUntil.generate_r1cs_witness(pb, order.validUntil);
         maxFeeBips.generate_r1cs_witness(pb, order.maxFeeBips);
         buy.generate_r1cs_witness(pb, order.buy);
+        pb.val(taker) = order.taker;
 
         feeBips.generate_r1cs_witness(pb, order.feeBips);
         rebateBips.generate_r1cs_witness(pb, order.rebateBips);

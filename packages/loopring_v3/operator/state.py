@@ -49,24 +49,9 @@ def copyAccountInfo(account):
 def getDefaultAccount():
     return Account(0, Point(0, 0))
 
-
-def power10(x1):
-    c0 = floor(10 * INDEX_BASE)
-    c1 = floor(10*log(10) * INDEX_BASE)
-    c2 = floor(10*log(10)*log(10)/2 * INDEX_BASE)
-    c3 = floor(10*log(10)*log(10)*log(10)/6 * INDEX_BASE)
-
-    x2 = (x1*x1) // INDEX_BASE
-    x3 = (x2*x1) // INDEX_BASE
-
-    return c0 + (x1*c1 + x2*c2 + x3*c3) // INDEX_BASE
-
-
 def applyInterest(balance, oldIndex, newIndex):
-    assert(int(newIndex) >= int(oldIndex))
-    indexDiff = int(newIndex) - int(oldIndex)
-    multiplier = power10(indexDiff)
-    newBalance = (int(balance) * multiplier) // (INDEX_BASE * 10)
+    multiplier = (int(newIndex) * INDEX_BASE) // int(oldIndex)
+    newBalance = (int(balance) * multiplier) // INDEX_BASE
     return newBalance
 
 class Fill(object):
@@ -330,7 +315,7 @@ class Order(object):
                  orderID, accountID,
                  tokenS, tokenB,
                  amountS, amountB,
-                 allOrNone, validSince, validUntil, buy,
+                 allOrNone, validSince, validUntil, buy, taker,
                  maxFeeBips, feeBips, rebateBips):
         self.publicKeyX = str(publicKeyX)
         self.publicKeyY = str(publicKeyY)
@@ -348,6 +333,7 @@ class Order(object):
         self.validSince = validSince
         self.validUntil = validUntil
         self.buy = bool(buy)
+        self.taker = str(taker)
         self.maxFeeBips = maxFeeBips
 
         self.feeBips = feeBips
@@ -769,7 +755,7 @@ class State(object):
 
             # Update the index if needed
             accountIndex = self.getAccount(1)
-            newIndex = max(int(txInput.index), int(accountIndex.getBalanceLeaf(txInput.tokenID).index))
+            newIndex = int(txInput.index)
 
             #print("Token: " + str(txInput.tokenID))
             #print("current index: " + accountIndex.getBalanceLeaf(txInput.tokenID).index)
