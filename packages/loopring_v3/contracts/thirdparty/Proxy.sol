@@ -14,11 +14,15 @@ abstract contract Proxy {
   */
   function implementation() public view virtual returns (address);
 
-  /**
-  * @dev Fallback function allowing to perform a delegatecall to the given implementation.
-  * This function will return whatever the implementation call returns
-  */
+  receive() payable external {
+    _fallback();
+  }
+
   fallback() payable external {
+    _fallback();
+  }
+
+  function _fallback() private {
     address _impl = implementation();
     require(_impl != address(0));
 
