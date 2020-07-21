@@ -5,7 +5,9 @@ if [ "$#" -ne 1 ] || ! [ -d "$1" ]; then
   exit 1
 fi
 
-OUT_DIR="$1/build"
+cd $1
+
+OUT_DIR="build"
 
 mkdir -p $OUT_DIR
 
@@ -15,13 +17,11 @@ echo "build all flattened contracts in dir $1/flattened ..."
 
 ##cd $1
 
-SOLC_COMMAND="../node_modules/.bin/solcjs"
+SOLC_COMMAND="../../node_modules/.bin/solcjs"
 
-for contract in $1/flattened/*; do
+for contract in flattened/*; do
     echo "generate abi for $contract ..."
     $SOLC_COMMAND -o $OUT_DIR --abi $contract
     echo "generate binary for $contract ..."
     $SOLC_COMMAND -o $OUT_DIR --optimize --bin $contract
 done
-
-# mv $OUT_DIR ../
