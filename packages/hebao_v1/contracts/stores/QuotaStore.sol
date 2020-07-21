@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.6.10;
 
 import "../base/DataStore.sol";
@@ -32,9 +33,9 @@ contract QuotaStore is DataStore, Claimable
     );
 
     event QuotaScheduled(
-        address indexed wallet,
-        uint            pendingQuota,
-        uint64          pendingUntil
+        address wallet,
+        uint    pendingQuota,
+        uint64  pendingUntil
     );
 
     constructor(uint _defaultQuota)

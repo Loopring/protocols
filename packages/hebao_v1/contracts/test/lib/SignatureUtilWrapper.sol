@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/ERC1271.sol";
 import "../../lib/SignatureUtil.sol";
-import "../../thirdparty/ERC1271.sol";
 import "../../thirdparty/BytesUtil.sol";
 
 /// @title AddressSetWrapper

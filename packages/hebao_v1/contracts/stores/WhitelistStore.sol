@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.6.10;
 
 import "../base/DataStore.sol";
@@ -13,10 +14,10 @@ contract WhitelistStore is DataStore, AddressSet
     mapping(address => mapping(address => uint)) public effectiveTimeMap;
 
     event Whitelisted(
-        address indexed wallet,
-        address indexed addr,
-        bool            whitelisted,
-        uint            effectiveTime
+        address wallet,
+        address addr,
+        bool    whitelisted,
+        uint    effectiveTime
     );
 
     constructor() public DataStore() {}

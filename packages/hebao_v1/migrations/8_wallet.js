@@ -13,7 +13,7 @@ module.exports = function(deployer, network, accounts) {
           WalletFactory,
           ControllerImpl.address,
           WalletImpl.address,
-          false
+          true
         )
       ]);
     })
@@ -21,7 +21,7 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         ControllerImpl.deployed().then(controllerImpl => {
           return Promise.all([
-            controllerImpl.setWalletFactory(WalletFactory.address)
+            controllerImpl.initWalletFactory(WalletFactory.address)
           ]);
         })
       ]);

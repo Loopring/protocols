@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.6.10;
 
 import "../base/DataStore.sol";
@@ -24,13 +25,14 @@ contract NonceStore is DataStore
     function isNonceValid(address wallet, uint nonce)
         public
         view
-        returns(bool)
+        returns (bool)
     {
         return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
     }
 
     function verifyAndUpdate(address wallet, uint nonce)
         public
+        onlyWalletModule(wallet)
     {
         require(isNonceValid(wallet, nonce), "INVALID_NONCE");
         nonces[wallet] = nonce;

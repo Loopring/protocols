@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.6.10;
 
 import "../lib/MathUint.sol";
@@ -18,10 +19,10 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
     uint expiry;
 
     event PriceCached (
-        address indexed token,
-        uint            amount,
-        uint            value,
-        uint            timestamp
+        address token,
+        uint    amount,
+        uint    value,
+        uint    timestamp
     );
 
     struct TokenPrice

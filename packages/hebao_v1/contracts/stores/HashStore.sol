@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.6.10;
 
 import "../base/DataStore.sol";
@@ -7,16 +8,18 @@ import "../lib/MathUint.sol";
 
 /// @title HashStore
 /// @dev This store maintains all hashes for SignedRequest.
-contract HashStore
+contract HashStore is DataStore
 {
-    mapping(bytes32 => bool) public hashes;
+    // wallet => hash => consumed
+    mapping(address => mapping(bytes32 => bool)) public hashes;
 
     constructor() public {}
 
-    function verifyAndUpdate(bytes32 hash)
+    function verifyAndUpdate(address wallet, bytes32 hash)
         public
+        onlyWalletModule(wallet)
     {
-        require(!hashes[hash], "HASH_EXIST");
-        hashes[hash] = true;
+        require(!hashes[wallet][hash], "HASH_EXIST");
+        hashes[wallet][hash] = true;
     }
 }

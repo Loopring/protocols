@@ -25,6 +25,8 @@ module.exports = function(deployer, network, accounts) {
   const quotaDelayPeriod =
     Number(process.env.quotaDelayPeriod) || 1 * 24 * 3600;
 
+  const ensOperator = process.env.ensOperator || accounts[0];
+
   deployer
     .then(() => {
       let dest = [
@@ -107,7 +109,7 @@ module.exports = function(deployer, network, accounts) {
           BaseENSManager.deployed().then(ensManager => {
             return Promise.all([
               ensManager.addManager(WalletFactory.address),
-              ensManager.addManager(accounts[1])
+              ensManager.addManager(ensOperator)
             ]);
           })
         ]);

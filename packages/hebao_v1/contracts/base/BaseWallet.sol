@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.6.10;
 
 import "../iface/Module.sol";
@@ -25,18 +26,18 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
 
     mapping (bytes4  => address) internal methodToModule;
 
-    event OwnerChanged          (address indexed newOwner);
-    event ModuleAdded           (address indexed module);
-    event ModuleRemoved         (address indexed module);
-    event MethodBound           (bytes4  indexed method, address indexed module);
+    event OwnerChanged          (address newOwner);
+    event ModuleAdded           (address module);
+    event ModuleRemoved         (address module);
+    event MethodBound           (bytes4  method, address module);
 
-    event WalletSetup(address indexed owner);
+    event WalletSetup(address owner);
 
     event Transacted(
-        address indexed module,
-        address indexed to,
-        uint            value,
-        bytes           data
+        address module,
+        address to,
+        uint    value,
+        bytes   data
     );
 
     modifier onlyFromModule
@@ -45,18 +46,22 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
-    modifier onlyFromModuleOrOwner
+    /// @dev We need to make sure the Factory address cannot be changed without wallet owner's
+    ///      explicit authorization.
+    modifier onlyFromFactoryOrModule
     {
         require(
-            modules[msg.sender] ||
-            msg.sender == _owner ||
-            msg.sender == controller.walletFactory(),
+            msg.sender == controller.walletFactory() || modules[msg.sender],
             "UNAUTHORIZED"
         );
         _;
     }
 
-    function owner() override external view returns (address)
+    function owner()
+        override
+        external
+        view
+        returns (address)
     {
         return _owner;
     }
@@ -94,7 +99,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function addModule(address _module)
         external
         override
-        onlyFromModuleOrOwner
+        onlyFromFactoryOrModule
     {
         addModuleInternal(_module);
     }
@@ -152,7 +157,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         )
         external
         override
-        onlyFromModule
+        onlyFromFactoryOrModule
         returns (bytes memory returnData)
     {
         require(
@@ -178,16 +183,19 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         require(_module != address(0), "NULL_MODULE");
         require(modules[_module] == false, "MODULE_EXISTS");
         require(
-            controller.moduleRegistry().isModuleRegistered(_module),
+            controller.moduleRegistry().isModuleEnabled(_module),
             "INVALID_MODULE"
         );
-
         modules[_module] = true;
         emit ModuleAdded(_module);
         Module(_module).activate();
     }
 
-    receive() external payable { }
+    receive()
+        external
+        payable
+    {
+    }
 
     /// @dev This default function can receive Ether or perform queries to modules
     ///      using bound methods.

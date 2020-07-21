@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.6.10;
 
 import "../iface/WalletRegistry.sol";
@@ -16,8 +17,8 @@ contract WalletRegistryImpl is Claimable, WalletRegistry
 
     address internal factory;
 
-    event WalletRegistered      (address indexed wallet);
-    event WalletFactoryUpdated  (address indexed factory);
+    event WalletRegistered      (address wallet);
+    event WalletFactoryUpdated  (address factory);
 
     modifier onlyFactory()
     {

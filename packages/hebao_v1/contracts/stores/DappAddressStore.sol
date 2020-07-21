@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.6.10;
 
 import "../base/DataStore.sol";
@@ -12,8 +13,8 @@ contract DappAddressStore is DataStore, OwnerManagable
     bytes32 internal constant DAPPS = keccak256("__DAPPS__");
 
     event Whitelisted(
-        address indexed addr,
-        bool            whitelisted
+        address addr,
+        bool    whitelisted
     );
 
     constructor() public DataStore() {}
