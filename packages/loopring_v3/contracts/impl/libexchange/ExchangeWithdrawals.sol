@@ -202,7 +202,7 @@ library ExchangeWithdrawals
         public
     {
         address token = S.getTokenAddress(tokenID);
-        // Try to transfer the tokens
+
         bool success = transferTokens(
             S,
             from,
@@ -216,8 +216,6 @@ library ExchangeWithdrawals
         if (!success) {
             // Allow the amount to be withdrawn using `withdrawFromApprovedWithdrawal`.
             S.amountWithdrawable[to][tokenID] = S.amountWithdrawable[to][tokenID].add(amount);
-
-            S.depositContract.notifyUntransferedWithdrawal(token, amount);
         }
     }
 
@@ -247,7 +245,12 @@ library ExchangeWithdrawals
 
         // Transfer the tokens from the deposit contract to the owner
         if (gasLimit > 0) {
-            try S.depositContract.withdrawTransfer{gas: gasLimit}(to, token, amount, auxiliaryData) {
+            try S.depositContract.withdrawTransfer{gas: gasLimit}(
+                to,
+                token,
+                amount,
+                auxiliaryData
+            ) {
                 success = true;
             } catch {
                 success = false;

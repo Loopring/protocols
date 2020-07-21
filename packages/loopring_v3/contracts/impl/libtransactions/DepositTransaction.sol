@@ -9,6 +9,7 @@ import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
+import "../libexchange/ExchangeTokens.sol";
 
 /// @title DepositTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -16,6 +17,7 @@ library DepositTransaction
 {
     using BytesUtil            for bytes;
     using MathUint             for uint;
+    using ExchangeTokens       for ExchangeData.State;
 
     event DepositConsumed(
         address indexed owner,
@@ -70,6 +72,11 @@ library DepositTransaction
             deposit.fee = 0;
             deposit.timestamp = 0;
         }
+
+        S.depositContract.notifyDepositProcessed(
+            S.getTokenAddress(tokenID),
+            amount
+        );
 
         emit DepositConsumed(owner, accountID, tokenID, amount, index);
     }
