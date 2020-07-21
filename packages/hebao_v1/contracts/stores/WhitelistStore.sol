@@ -14,10 +14,10 @@ contract WhitelistStore is DataStore, AddressSet
     mapping(address => mapping(address => uint)) public effectiveTimeMap;
 
     event Whitelisted(
-        address indexed wallet,
-        address         addr,
-        bool            whitelisted,
-        uint            effectiveTime
+        address wallet,
+        address addr,
+        bool    whitelisted,
+        uint    effectiveTime
     );
 
     constructor() public DataStore() {}
