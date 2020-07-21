@@ -27,23 +27,23 @@ library ExchangeWithdrawals
     using ExchangeTokens    for ExchangeData.State;
 
     event ForcedWithdrawalRequested(
-        address indexed owner,
-        address         token,
-        uint24  indexed accountID
+        address owner,
+        address token,
+        uint24   accountID
     );
 
     event WithdrawalCompleted(
-        address indexed from,
-        address indexed to,
-        address         token,
-        uint96          amount
+        address from,
+        address to,
+        address token,
+        uint96  amount
     );
 
     event WithdrawalFailed(
-        address indexed from,
-        address indexed to,
-        address         token,
-        uint96          amount
+        address from,
+        address to,
+        address token,
+        uint96  amount
     );
 
     function forceWithdraw(
