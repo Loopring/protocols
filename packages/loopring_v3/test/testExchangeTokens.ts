@@ -8,15 +8,6 @@ contract("Exchange", (accounts: string[]) => {
   let loopring: any;
   let exchangeID = 0;
 
-  const getTokenRegistrationCost = async (numTokens: number) => {
-    const tokenRegistrationFeeLRCBase = await loopring.tokenRegistrationFeeLRCBase();
-    const tokenRegistrationFeeLRCDelta = await loopring.tokenRegistrationFeeLRCDelta();
-    const cost = tokenRegistrationFeeLRCBase.add(
-      tokenRegistrationFeeLRCDelta.mul(new BN(numTokens))
-    );
-    return cost;
-  };
-
   const registerTokenChecked = async (token: string, user: string) => {
     const tokenAddress = exchangeTestUtil.getTokenAddress(token);
     // LRC cost to register a token
@@ -151,35 +142,6 @@ contract("Exchange", (accounts: string[]) => {
         await createExchange(false);
         await expectThrow(exchange.getTokenAddress(123), "INVALID_TOKEN_ID");
       });
-    });
-
-    it("token registration cost should be as expected", async () => {
-      await createExchange(false);
-
-      let numTokens = 2;
-      let expectedCost = await getTokenRegistrationCost(numTokens);
-      let registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
-      assert(
-        registrationCost.eq(expectedCost),
-        "token registration cost not as expected"
-      );
-
-      // Register the token
-      await exchangeTestUtil.setBalanceAndApprove(
-        exchangeTestUtil.exchangeOwner,
-        "LRC",
-        registrationCost,
-        exchangeTestUtil.exchange.address
-      );
-      await registerTokenChecked("GTO", exchangeTestUtil.exchangeOwner);
-      numTokens++;
-
-      expectedCost = await getTokenRegistrationCost(numTokens);
-      registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
-      assert(
-        registrationCost.eq(expectedCost),
-        "token registration cost not as expected"
-      );
     });
 
     it("LRC and ETH should be preregistered", async () => {
