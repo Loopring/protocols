@@ -146,7 +146,7 @@ contract ForwarderModule is BaseModule
         );
 
         // Nonce update must come after the real transaction in case of new wallet creation.
-        if (metaTx.txAwareHash == 0) {
+        if (metaTx.nonce != 0) {
             controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
         }
 
