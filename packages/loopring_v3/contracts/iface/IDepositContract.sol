@@ -9,6 +9,7 @@ interface IDepositContract
 {
     /// @dev Notify this contract that a deposit has been processed.
     ///      This contract can transfer tokens to DeFi.
+    ///      This contract must throw in case of error.
     ///
     /// @param token The address of the token deposited
     /// @param amount The amount of the token deposited
@@ -19,8 +20,10 @@ interface IDepositContract
         external
         payable;
 
-    /// @dev Notify this contract that a withdrawal has been processed.
+    /// @dev Notify this contract that a withdrawal has been processed regardless if the
+    ///      token has been transfered to the owner.
     ///      This contract can transfer token from DeFi.
+    ///      This contract must throw in case of error.
     ///
     /// @param token The address of the token withdrawn
     /// @param amount The amount of the token withdrawn

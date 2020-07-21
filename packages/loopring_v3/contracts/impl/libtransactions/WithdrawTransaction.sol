@@ -151,13 +151,13 @@ library WithdrawTransaction
             require((uint(keccak256(auxData.auxiliaryData)) >> 3) == uint(withdrawal.dataHash), "INVALID_WITHDRAWAL_AUX_DATA");
         }
 
-        // Try to transfer the tokens with the provided gas limit
-                // Try to transfer the tokens
+        // Handle potential DeFi withdrawals.
         S.depositContract.notifyWithdrawalProcessed(
             S.getTokenAddress(withdrawal.tokenID),
             withdrawal.amount
         );
 
+        // Try to transfer the tokens
         S.distributeWithdrawal(
             withdrawal.owner,
             withdrawal.to,
