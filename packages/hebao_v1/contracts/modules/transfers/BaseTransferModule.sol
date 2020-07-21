@@ -10,23 +10,23 @@ import "../security/SecurityModule.sol";
 abstract contract BaseTransferModule is SecurityModule
 {
     event Transfered(
-        address indexed wallet,
-        address indexed token,
-        address indexed to,
-        uint            amount,
-        bytes           logdata
+        address wallet,
+        address token,
+        address to,
+        uint    amount,
+        bytes   logdata
     );
     event Approved(
-        address indexed wallet,
-        address indexed token,
-        address         spender,
-        uint            amount
+        address wallet,
+        address token,
+        address spender,
+        uint    amount
     );
     event ContractCalled(
-        address indexed wallet,
-        address indexed to,
-        uint            value,
-        bytes           data
+        address wallet,
+        address to,
+        uint    value,
+        bytes   data
     );
 
     constructor(

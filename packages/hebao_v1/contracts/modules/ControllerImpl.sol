@@ -36,8 +36,8 @@ contract ControllerImpl is Claimable, Controller
     bool                public allowChangingWalletFactory;
 
     event AddressChanged(
-        string  indexed name,
-        address         addr
+        string   name,
+        address  addr
     );
 
     constructor(

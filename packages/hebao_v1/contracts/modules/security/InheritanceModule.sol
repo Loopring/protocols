@@ -55,6 +55,7 @@ contract InheritanceModule is SecurityModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         eligibleWalletOwner(newOwner)
         notWalletOwner(wallet, newOwner)
     {
@@ -82,6 +83,7 @@ contract InheritanceModule is SecurityModule
         )
         external
         nonReentrant
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         require(controller.walletRegistry().isWalletRegistered(_inheritor), "NOT_A_WALLET");

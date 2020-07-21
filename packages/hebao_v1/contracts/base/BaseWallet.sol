@@ -26,18 +26,18 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
 
     mapping (bytes4  => address) internal methodToModule;
 
-    event OwnerChanged          (address indexed newOwner);
-    event ModuleAdded           (address indexed module);
-    event ModuleRemoved         (address indexed module);
+    event OwnerChanged          (address newOwner);
+    event ModuleAdded           (address module);
+    event ModuleRemoved         (address module);
     event MethodBound           (bytes4  method, address module);
 
-    event WalletSetup(address indexed owner);
+    event WalletSetup(address owner);
 
     event Transacted(
-        address indexed module,
-        address indexed to,
-        uint            value,
-        bytes           data
+        address module,
+        address to,
+        uint    value,
+        bytes   data
     );
 
     modifier onlyFromModule
@@ -161,7 +161,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         returns (bytes memory returnData)
     {
         require(
-            !controller.moduleRegistry().isModuleEnabled(to),
+            !controller.moduleRegistry().isModuleRegistered(to),
             "TRANSACT_ON_MODULE_DISALLOWED"
         );
 

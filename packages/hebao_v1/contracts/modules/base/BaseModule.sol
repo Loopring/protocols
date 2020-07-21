@@ -25,8 +25,8 @@ abstract contract BaseModule is ReentrancyGuard, Module
     using MathUint      for uint;
     using AddressUtil   for address;
 
-    event Activated   (address indexed wallet);
-    event Deactivated (address indexed wallet);
+    event Activated   (address wallet);
+    event Deactivated (address wallet);
 
     function logicalSender()
         internal

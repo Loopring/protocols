@@ -33,9 +33,9 @@ contract QuotaStore is DataStore, Claimable
     );
 
     event QuotaScheduled(
-        address indexed wallet,
-        uint            pendingQuota,
-        uint64          pendingUntil
+        address wallet,
+        uint    pendingQuota,
+        uint64  pendingUntil
     );
 
     constructor(uint _defaultQuota)
