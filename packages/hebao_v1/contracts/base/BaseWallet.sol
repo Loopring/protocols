@@ -161,7 +161,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         returns (bytes memory returnData)
     {
         require(
-            !controller.moduleRegistry().isModuleRegister(to),
+            !controller.moduleRegistry().isModuleRegistered(to),
             "TRANSACT_ON_MODULE_DISALLOWED"
         );
 
