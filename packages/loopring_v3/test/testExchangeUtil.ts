@@ -2592,14 +2592,6 @@ export class ExchangeTestUtil {
       // console.log(symbol + ": " + tokenAddress);
 
       if (symbol !== "ETH" && symbol !== "LRC") {
-        // Make sure the exchange owner can pay the registration fee
-        const registrationCost = await this.exchange.getLRCFeeForRegisteringOneMoreToken();
-        await this.setBalanceAndApprove(
-          this.exchangeOwner,
-          "LRC",
-          registrationCost,
-          this.exchange.address
-        );
         // Register the token
         const tx = await this.exchange.registerToken(tokenAddress, {
           from: this.exchangeOwner

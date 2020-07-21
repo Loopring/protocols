@@ -21,8 +21,8 @@ library ExchangeTokens
     using ExchangeMode      for ExchangeData.State;
 
     event TokenRegistered(
-        address indexed token,
-        uint16          tokenId
+        address token,
+        uint16  tokenId
     );
 
     function getTokenAddress(
