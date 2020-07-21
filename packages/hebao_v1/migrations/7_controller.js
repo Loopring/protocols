@@ -18,7 +18,7 @@ module.exports = function(deployer, network, accounts) {
   }
 
   const lockPeriod = Number(process.env.controllerLockPeriod) || 1 * 24 * 3600;
-  const collecTo = accounts[1];
+  const collecTo = process.env.collectTo || accounts[0];
 
   deployer
     .then(() => {
