@@ -196,8 +196,6 @@ contract("Loopring", (accounts: string[]) => {
         exchangeTestUtil.testContext.orderOwners[2],
         new BN(web3.utils.toWei("0.01", "ether")),
         new BN(web3.utils.toWei("9000", "ether")),
-        new BN(web3.utils.toWei("2", "ether")),
-        new BN(web3.utils.toWei("125000", "ether")),
         new BN(web3.utils.toWei("20", "ether")),
         new BN(web3.utils.toWei("250000", "ether")),
         { from: exchangeTestUtil.testContext.deployer }
@@ -241,8 +239,6 @@ contract("Loopring", (accounts: string[]) => {
           exchangeTestUtil.testContext.orderOwners[2], // block verifier
           new BN(web3.utils.toWei("0.01", "ether")),
           new BN(web3.utils.toWei("9000", "ether")),
-          new BN(web3.utils.toWei("2", "ether")),
-          new BN(web3.utils.toWei("125000", "ether")),
           new BN(web3.utils.toWei("20", "ether")),
           new BN(web3.utils.toWei("250000", "ether")),
           { from: exchangeTestUtil.testContext.orderOwners[0] }

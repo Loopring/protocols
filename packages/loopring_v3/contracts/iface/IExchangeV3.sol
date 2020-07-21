@@ -159,15 +159,6 @@ abstract contract IExchangeV3 is IExchange
         returns (bool);
 
     // -- Tokens --
-
-    /// @dev Gets the required amount of LRC to burn for registering one more token.
-    /// @return feeLRC The amount of LRC to burn.
-    function getLRCFeeForRegisteringOneMoreToken()
-        external
-        virtual
-        view
-        returns (uint feeLRC);
-
     /// @dev Registers an ERC20 token for a token id. Note that different exchanges may have
     ///      different ids for the same ERC20 token.
     ///

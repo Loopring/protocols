@@ -700,8 +700,6 @@ export class ExchangeTestUtil {
       this.blockVerifier.address,
       new BN(web3.utils.toWei("10000", "ether")),
       new BN(web3.utils.toWei("0.02", "ether")),
-      new BN(web3.utils.toWei("2000", "ether")),
-      new BN(web3.utils.toWei("1", "ether")),
       new BN(web3.utils.toWei("250000", "ether")),
       new BN(web3.utils.toWei("1000000", "ether")),
       { from: this.testContext.deployer }
@@ -2737,7 +2735,9 @@ export class ExchangeTestUtil {
       { from: this.exchangeOperator }
     );
 
-    await operatorContract.addManager(this.exchangeOperator, { from: this.exchangeOperator });
+    await operatorContract.addManager(this.exchangeOperator, {
+      from: this.exchangeOperator
+    });
     await this.setOperatorContract(operatorContract);
 
     const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();
@@ -2979,8 +2979,6 @@ export class ExchangeTestUtil {
       await this.loopringV3.blockVerifierAddress(),
       await this.loopringV3.exchangeCreationCostLRC(),
       this.getRandomFee(),
-      await this.loopringV3.tokenRegistrationFeeLRCBase(),
-      await this.loopringV3.tokenRegistrationFeeLRCDelta(),
       await this.loopringV3.minExchangeStakeWithDataAvailability(),
       await this.loopringV3.minExchangeStakeWithoutDataAvailability(),
       { from: this.testContext.deployer }
