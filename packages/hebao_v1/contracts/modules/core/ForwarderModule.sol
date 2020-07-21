@@ -183,6 +183,5 @@ contract ForwarderModule is BaseModule
                 gasAmount.add(GAS_OVERHEAD)
             );
         }
-
     }
 }
