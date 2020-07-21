@@ -34,10 +34,10 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     event WalletSetup(address owner);
 
     event Transacted(
-        address  indexed module,
-        address          to,
-        uint             value,
-        bytes            data
+        address module,
+        address to,
+        uint    value,
+        bytes   data
     );
 
     modifier onlyFromModule
