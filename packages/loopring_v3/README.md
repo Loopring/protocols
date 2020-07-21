@@ -49,8 +49,8 @@ If you are usign a Mac, you may need to install "lgmpxx":
 ```
 	./configure --prefix=/usr/local --enable-cxx
 	make
-make check
-sudo make install
+	make check
+	sudo make install
 ```
 
 Please use node v10.
