@@ -115,7 +115,7 @@ library ExchangeWithdrawals
             S,
             owner,
             owner,
-            S.getTokenAddress(tokenID),
+            tokenID,
             balance,
             new bytes(0),
             gasleft(),
@@ -149,7 +149,7 @@ library ExchangeWithdrawals
             S,
             owner,
             owner,
-            S.getTokenAddress(tokenID),
+            tokenID,
             amount,
             new bytes(0),
             gasleft(),
@@ -181,7 +181,7 @@ library ExchangeWithdrawals
                 S,
                 owner,
                 owner,
-                S.getTokenAddress(tokenID),
+                tokenID,
                 amount,
                 new bytes(0),
                 gasleft(),
@@ -201,13 +201,11 @@ library ExchangeWithdrawals
         )
         public
     {
-        address token = S.getTokenAddress(tokenID);
-
         bool success = transferTokens(
             S,
             from,
             to,
-            token,
+            tokenID,
             amount,
             auxiliaryData,
             gasLimit,
@@ -230,7 +228,7 @@ library ExchangeWithdrawals
         ExchangeData.State storage S,
         address from,
         address to,
-        address token,
+        uint16  tokenID,
         uint    amount,
         bytes   memory auxiliaryData,
         uint    gasLimit,
@@ -242,6 +240,8 @@ library ExchangeWithdrawals
         if (to == address(0)) {
             to = S.loopring.protocolFeeVault();
         }
+
+        address token = S.getTokenAddress(tokenID);
 
         // Transfer the tokens from the deposit contract to the owner
         if (gasLimit > 0) {
