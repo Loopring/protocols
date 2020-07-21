@@ -5439,7 +5439,7 @@
       }
     }
   ],
-  "rollupEnabled": true,
+  "rollupMode": true,
   "exchange": "2",
   "merkleRootBefore": "18890683650917029773435754164142184055862804814005971012873094383375129296141",
   "timestamp": 1594336804,

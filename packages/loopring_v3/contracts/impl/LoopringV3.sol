@@ -59,7 +59,7 @@ contract LoopringV3 is ILoopringV3
         uint    exchangeId,
         address owner,
         address payable operator,
-        bool    rollupEnabled
+        bool    rollupMode
         )
         external
         override
@@ -80,7 +80,7 @@ contract LoopringV3 is ILoopringV3
             owner,
             exchangeId,
             operator,
-            rollupEnabled
+            rollupMode
         );
 
         exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);
@@ -90,7 +90,7 @@ contract LoopringV3 is ILoopringV3
             exchangeAddress,
             owner,
             operator,
-            rollupEnabled
+            rollupMode
         );
     }
 
@@ -143,7 +143,7 @@ contract LoopringV3 is ILoopringV3
 
     function canExchangeSubmitBlocks(
         uint exchangeId,
-        bool rollupEnabled
+        bool rollupMode
         )
         external
         override
@@ -151,7 +151,7 @@ contract LoopringV3 is ILoopringV3
         returns (bool)
     {
         uint amountStaked = getExchangeStake(exchangeId);
-        if (rollupEnabled) {
+        if (rollupMode) {
             return amountStaked >= minExchangeStakeRollup;
         } else {
             return amountStaked >= minExchangeStakeValidium;
@@ -295,7 +295,7 @@ contract LoopringV3 is ILoopringV3
 
     function getProtocolFeeValues(
         uint exchangeId,
-        bool rollupEnabled
+        bool rollupMode
         )
         external
         override
@@ -310,9 +310,9 @@ contract LoopringV3 is ILoopringV3
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
         uint stake = 0;
-        if (rollupEnabled && exchange.exchangeStake > minExchangeStakeRollup) {
+        if (rollupMode && exchange.exchangeStake > minExchangeStakeRollup) {
             stake = exchange.exchangeStake - minExchangeStakeRollup;
-        } else if (!rollupEnabled && exchange.exchangeStake > minExchangeStakeValidium) {
+        } else if (!rollupMode && exchange.exchangeStake > minExchangeStakeValidium) {
             stake = exchange.exchangeStake - minExchangeStakeValidium;
         }
 

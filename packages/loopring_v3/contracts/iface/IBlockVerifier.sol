@@ -14,14 +14,14 @@ abstract contract IBlockVerifier is Claimable
 
     event CircuitRegistered(
         uint8  indexed blockType,
-        bool           rollupEnabled,
+        bool           rollupMode,
         uint16         blockSize,
         uint8          blockVersion
     );
 
     event CircuitDisabled(
         uint8  indexed blockType,
-        bool           rollupEnabled,
+        bool           rollupMode,
         uint16         blockSize,
         uint8          blockVersion
     );
@@ -33,13 +33,13 @@ abstract contract IBlockVerifier is Claimable
     ///      verification keys. Only a limited number of block sizes per block
     ///      type are supported.
     /// @param blockType The type of the block
-    /// @param rollupEnabled True to run in 100% zkRollup mode, false to run in Validium mode.
+    /// @param rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
     /// @param vk The verification key
     function registerCircuit(
         uint8    blockType,
-        bool     rollupEnabled,
+        bool     rollupMode,
         uint16   blockSize,
         uint8    blockVersion,
         uint[18] calldata vk
@@ -51,12 +51,12 @@ abstract contract IBlockVerifier is Claimable
     ///      This will stop NEW blocks from using the given circuit, blocks that were already committed
     ///      can still be verified.
     /// @param blockType The type of the block
-    /// @param rollupEnabled True to run in 100% zkRollup mode, false to run in Validium mode.
+    /// @param rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
     function disableCircuit(
         uint8  blockType,
-        bool   rollupEnabled,
+        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion
         )
@@ -67,7 +67,7 @@ abstract contract IBlockVerifier is Claimable
     ///      Verifying a block makes sure all requests handled in the block
     ///      are correctly handled by the operator.
     /// @param blockType The type of block
-    /// @param rollupEnabled True to run in 100% zkRollup mode, false to run in Validium mode.
+    /// @param rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
     /// @param publicInputs The hash of all the public data of the blocks
@@ -75,7 +75,7 @@ abstract contract IBlockVerifier is Claimable
     /// @return True if the block is valid, false otherwise
     function verifyProofs(
         uint8  blockType,
-        bool   rollupEnabled,
+        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion,
         uint[] calldata publicInputs,
@@ -88,13 +88,13 @@ abstract contract IBlockVerifier is Claimable
 
     /// @dev Checks if a circuit with the specified parameters is registered.
     /// @param blockType The type of the block
-    /// @param rollupEnabled True to run in 100% zkRollup mode, false to run in Validium mode.
+    /// @param rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
     /// @return True if the circuit is registered, false otherwise
     function isCircuitRegistered(
         uint8  blockType,
-        bool   rollupEnabled,
+        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion
         )
@@ -105,13 +105,13 @@ abstract contract IBlockVerifier is Claimable
 
     /// @dev Checks if a circuit can still be used to commit new blocks.
     /// @param blockType The type of the block
-    /// @param rollupEnabled True to run in 100% zkRollup mode, false to run in Validium mode.
+    /// @param rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
     /// @return True if the circuit is enabled, false otherwise
     function isCircuitEnabled(
         uint8  blockType,
-        bool   rollupEnabled,
+        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion
         )

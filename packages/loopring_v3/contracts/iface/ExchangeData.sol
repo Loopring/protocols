@@ -160,7 +160,7 @@ library ExchangeData
         uint    id;
         uint    exchangeCreationTimestamp;
         address payable operator; // The only address that can submit new blocks.
-        bool    rollupEnabled;
+        bool    rollupMode;
         uint32  maxAgeDepositUntilWithdrawable;
         bytes32 genesisMerkleRoot;
         bytes32 DOMAIN_SEPARATOR;
@@ -169,7 +169,7 @@ library ExchangeData
         IBlockVerifier   blockVerifier;
         IDepositContract depositContract;
 
-        
+
 
         // List of all tokens
         Token[] tokens;

@@ -24,7 +24,7 @@ library ExchangeGenesis
         uint    _id,
         address _loopringAddress,
         address payable _operator,
-        bool    _rollupEnabled,
+        bool    _rollupMode,
         bytes32 _genesisMerkleRoot,
         bytes32 _domainSeperator
         )
@@ -39,7 +39,7 @@ library ExchangeGenesis
         S.id = _id;
         S.exchangeCreationTimestamp = now;
         S.operator = _operator;
-        S.rollupEnabled = _rollupEnabled;
+        S.rollupMode = _rollupMode;
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
         S.genesisMerkleRoot = _genesisMerkleRoot;
         S.DOMAIN_SEPARATOR = _domainSeperator;

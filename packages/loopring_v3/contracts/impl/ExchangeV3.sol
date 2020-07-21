@@ -75,7 +75,7 @@ contract ExchangeV3 is IExchangeV3
         address _owner,
         uint    _id,
         address payable _operator,
-        bool    _rollupEnabled
+        bool    _rollupMode
         )
         external
         override
@@ -89,7 +89,7 @@ contract ExchangeV3 is IExchangeV3
             _id,
             _loopringAddress,
             _operator,
-            _rollupEnabled,
+            _rollupMode,
             genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );

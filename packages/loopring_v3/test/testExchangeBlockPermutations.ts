@@ -79,11 +79,11 @@ contract("Exchange", (accounts: string[]) => {
     );
   };
 
-  const createExchange = async (bRollupEnabled: boolean) => {
+  const createExchange = async (brollupMode: boolean) => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
       true,
-      bRollupEnabled
+      brollupMode
     );
   };
 
@@ -107,9 +107,9 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Spot trade", async () => {
-      const bRollupEnabledList = [true];
-      for (const bRollupEnabled of bRollupEnabledList) {
-        await createExchange(bRollupEnabled);
+      const brollupModeList = [true];
+      for (const brollupMode of brollupModeList) {
+        await createExchange(brollupMode);
         const blockSizes = exchangeTestUtil.blockSizes;
         for (const blockSize of blockSizes) {
           const rings: SpotTrade[] = [];
@@ -139,9 +139,9 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Withdrawal", async () => {
-      const bRollupEnabledList = [true];
-      for (const bRollupEnabled of bRollupEnabledList) {
-        await createExchange(bRollupEnabled);
+      const brollupModeList = [true];
+      for (const brollupMode of brollupModeList) {
+        await createExchange(brollupMode);
 
         const blockSizes = exchangeTestUtil.blockSizes;
         for (const blockSize of blockSizes) {
@@ -160,9 +160,9 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Transfer", async () => {
-      const bRollupEnabledList = [true];
-      for (const bRollupEnabled of bRollupEnabledList) {
-        await createExchange(bRollupEnabled);
+      const brollupModeList = [true];
+      for (const brollupMode of brollupModeList) {
+        await createExchange(brollupMode);
 
         // Do some deposits
         const numDeposits = 8;
