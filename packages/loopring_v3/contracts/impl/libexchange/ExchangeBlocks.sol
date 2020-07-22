@@ -135,6 +135,7 @@ library ExchangeBlocks
             merkleRootBefore := mload(add(data, 36))
             merkleRootAfter := mload(add(data, 68))
         }
+        require(merkleRootBefore != merkleRootAfter, "SAME_ROOT");
         require(merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
         require(uint256(merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
