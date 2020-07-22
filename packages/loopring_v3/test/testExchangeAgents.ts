@@ -13,10 +13,7 @@ contract("Exchange", (accounts: string[]) => {
   let ownerD: string;
 
   const createExchange = async (bSetupTestState: boolean = true) => {
-    await ctx.createExchange(
-      ctx.testContext.stateOwners[0],
-      bSetupTestState
-    );
+    await ctx.createExchange(ctx.testContext.stateOwners[0], bSetupTestState);
     exchange = ctx.exchange;
     exchangeOwner = ctx.exchangeOwner;
   };
@@ -60,7 +57,11 @@ contract("Exchange", (accounts: string[]) => {
 
       for (const owner of [ownerA, ownerB, ownerC, ownerD]) {
         const isAgent = await exchange.isAgent(owner, agents[i]);
-        assert.equal(isAgent, authorized[i] || owner === agents[i], "isAgent unexpected");
+        assert.equal(
+          isAgent,
+          authorized[i] || owner === agents[i],
+          "isAgent unexpected"
+        );
       }
     }
   };
@@ -123,10 +124,18 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Whitelist new agents
-      await whitelistAgentsChecked([ownerB, ownerC], [true, true], exchangeOwner);
+      await whitelistAgentsChecked(
+        [ownerB, ownerC],
+        [true, true],
+        exchangeOwner
+      );
 
       // Whitelist/Dewhitelist agents
-      await whitelistAgentsChecked([ownerB, ownerD], [false, true], exchangeOwner);
+      await whitelistAgentsChecked(
+        [ownerB, ownerD],
+        [false, true],
+        exchangeOwner
+      );
 
       // Dewhitelist agents
       await whitelistAgentsChecked([ownerD], [false], exchangeOwner);
@@ -182,7 +191,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.forceWithdraw(ownerA, token, 0, {
+        exchange.forceWithdraw(ownerA, 0, [token], {
           from: agent,
           value: withdrawalFee
         }),
@@ -202,9 +211,19 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), token, new BN(0), new BN(0), new BN(1), {
-          from: agent
-        }),
+        exchange.approveOffchainTransfer(
+          ownerA,
+          ownerB,
+          token,
+          new BN(0),
+          token,
+          new BN(0),
+          new BN(0),
+          new BN(1),
+          {
+            from: agent
+          }
+        ),
         "UNAUTHORIZED"
       );
 
@@ -225,7 +244,7 @@ contract("Exchange", (accounts: string[]) => {
         value: depositFee
       });
 
-      await exchange.forceWithdraw(ownerA, token, 0, {
+      await exchange.forceWithdraw(ownerA, 0, [token], {
         from: agent,
         value: withdrawalFee
       });
@@ -236,9 +255,19 @@ contract("Exchange", (accounts: string[]) => {
         from: agent
       });
 
-      await exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), token, new BN(0), new BN(0), new BN(1), {
-        from: agent
-      });
+      await exchange.approveOffchainTransfer(
+        ownerA,
+        ownerB,
+        token,
+        new BN(0),
+        token,
+        new BN(0),
+        new BN(0),
+        new BN(1),
+        {
+          from: agent
+        }
+      );
 
       await exchange.onchainTransferFrom(ownerA, ownerB, token, new BN(0), {
         from: agent

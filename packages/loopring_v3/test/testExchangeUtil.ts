@@ -1426,7 +1426,7 @@ export class ExchangeTestUtil {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
         const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
-        await this.exchange.forceWithdraw(owner, token, accountID, {
+        await this.exchange.forceWithdraw(owner, accountID, [token], {
           from: signer,
           value: withdrawalFee
         });

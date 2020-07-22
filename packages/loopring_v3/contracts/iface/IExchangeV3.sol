@@ -384,12 +384,12 @@ abstract contract IExchangeV3 is IExchange
     ///      and create the deposit to the offchain account.
     ///
     /// @param owner The expected owner of the account
-    /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param accountID The address the account in the Merkle tree.
+    /// @param tokens The addresses of the tokens, use `0x0` for Ether.
     function forceWithdraw(
-        address owner,
-        address tokenAddress,
-        uint24  accountID
+        address   owner,
+        uint24    accountID,
+        address[] calldata tokens
         )
         external
         virtual

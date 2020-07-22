@@ -323,9 +323,9 @@ contract ExchangeV3 is IExchangeV3
     // -- Withdrawals --
 
     function forceWithdraw(
-        address owner,
-        address token,
-        uint24  accountID
+        address   owner,
+        uint24    accountID,
+        address[] calldata tokens
         )
         external
         override
@@ -333,7 +333,9 @@ contract ExchangeV3 is IExchangeV3
         payable
         onlyAgentFor(owner)
     {
-        state.forceWithdraw(owner, token, accountID);
+        for (uint i = 0; i < tokens.length; i++) {
+            state.forceWithdraw(owner, token[i], accountID);
+        }
     }
 
     function withdrawProtocolFees(

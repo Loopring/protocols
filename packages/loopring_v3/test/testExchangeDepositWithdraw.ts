@@ -51,9 +51,16 @@ contract("Exchange", (accounts: string[]) => {
     await snapshot.verifyBalances();
 
     // Get the Deposit event
-    const event = await exchangeTestUtil.assertEventEmitted(exchange, "DepositRequested");
+    const event = await exchangeTestUtil.assertEventEmitted(
+      exchange,
+      "DepositRequested"
+    );
     assert.equal(event.owner, to, "owner unexpected");
-    assert.equal(event.token, exchangeTestUtil.getTokenAddress(token), "token unexpected");
+    assert.equal(
+      event.token,
+      exchangeTestUtil.getTokenAddress(token),
+      "token unexpected"
+    );
     assert(event.amount.eq(amount), "amount unexpected");
     assert(event.fee.eq(fee), "amount unexpected");
   };
@@ -144,7 +151,11 @@ contract("Exchange", (accounts: string[]) => {
           c++;
         }
       }
-      assert.equal(events.length, c, "Unexpected num WithdrawalCompleted events");
+      assert.equal(
+        events.length,
+        c,
+        "Unexpected num WithdrawalCompleted events"
+      );
     }
     // WithdrawalFailed events
     {
@@ -181,10 +192,7 @@ contract("Exchange", (accounts: string[]) => {
       block.blockIdx,
       "Unexpected block idx"
     );
-    assert(
-      event.blockFee.eq(blockFee),
-      "Unexpected block fee amount"
-    );
+    assert(event.blockFee.eq(blockFee), "Unexpected block fee amount");
   };
 
   const withdrawOnceChecked = async (
@@ -375,7 +383,11 @@ contract("Exchange", (accounts: string[]) => {
 
       const token = "ETH";
       const feeToken = "LRC";
-      const authMethods = [AuthMethod.EDDSA, AuthMethod.ECDSA, AuthMethod.APPROVE];
+      const authMethods = [
+        AuthMethod.EDDSA,
+        AuthMethod.ECDSA,
+        AuthMethod.APPROVE
+      ];
 
       // Do deposits
       const deposits: Deposit[] = [];
@@ -406,7 +418,7 @@ contract("Exchange", (accounts: string[]) => {
           deposit.amount,
           feeToken,
           feeDeposits[i].amount,
-          {authMethod: authMethods[i]}
+          { authMethod: authMethods[i] }
         );
       }
 
@@ -419,7 +431,11 @@ contract("Exchange", (accounts: string[]) => {
 
       const token = "ETH";
       const feeToken = "LRC";
-      const authMethods = [AuthMethod.EDDSA, AuthMethod.ECDSA, AuthMethod.APPROVE];
+      const authMethods = [
+        AuthMethod.EDDSA,
+        AuthMethod.ECDSA,
+        AuthMethod.APPROVE
+      ];
 
       // Do deposits
       const deposits: Deposit[] = [];
@@ -451,7 +467,7 @@ contract("Exchange", (accounts: string[]) => {
           deposit.amount,
           feeToken,
           feeDeposits[i].amount,
-          {authMethod: authMethods[i], to}
+          { authMethod: authMethods[i], to }
         );
       }
 
@@ -481,7 +497,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // No ETH sent
       await expectThrow(
-        exchange.forceWithdraw(ownerA, token, accountID, {
+        exchange.forceWithdraw(ownerA, accountID, [token], {
           from: ownerA,
           value: new BN(0)
         }),
@@ -489,7 +505,7 @@ contract("Exchange", (accounts: string[]) => {
       );
       // Not enough ETH sent
       await expectThrow(
-        exchange.forceWithdraw(ownerA, token, accountID, {
+        exchange.forceWithdraw(ownerA, accountID, [token], {
           from: ownerA,
           value: withdrawalFee.sub(one)
         }),
@@ -503,7 +519,7 @@ contract("Exchange", (accounts: string[]) => {
         balance,
         "ETH",
         new BN(0),
-        {authMethod: AuthMethod.FORCE}
+        { authMethod: AuthMethod.FORCE }
       );
 
       // Commit the withdrawal
@@ -596,12 +612,7 @@ contract("Exchange", (accounts: string[]) => {
         balance
       );
       // Deposit feeToken
-      await exchangeTestUtil.deposit(
-        owner,
-        owner,
-        feeToken,
-        fee
-      );
+      await exchangeTestUtil.deposit(owner, owner, feeToken, fee);
 
       await exchangeTestUtil.requestWithdrawal(
         owner,
@@ -684,7 +695,7 @@ contract("Exchange", (accounts: string[]) => {
         ring.orderA.amountB,
         "ETH",
         new BN(0),
-        {authMethod: AuthMethod.FORCE}
+        { authMethod: AuthMethod.FORCE }
       );
       await exchangeTestUtil.requestWithdrawal(
         Constants.zeroAddress,
@@ -692,7 +703,7 @@ contract("Exchange", (accounts: string[]) => {
         ring.orderB.amountB,
         "ETH",
         new BN(0),
-        {authMethod: AuthMethod.FORCE}
+        { authMethod: AuthMethod.FORCE }
       );
       await exchangeTestUtil.submitTransactions(16);
 
@@ -729,19 +740,33 @@ contract("Exchange", (accounts: string[]) => {
       const tokenB = exchangeTestUtil.getTokenAddress(ring.orderB.tokenB);
 
       // Get the time the protocol fees were withdrawn before
-      const timestampBeforeA = await exchange.getProtocolFeeLastWithdrawnTime(tokenA);
-      const timestampBeforeB = await exchange.getProtocolFeeLastWithdrawnTime(tokenB);
+      const timestampBeforeA = await exchange.getProtocolFeeLastWithdrawnTime(
+        tokenA
+      );
+      const timestampBeforeB = await exchange.getProtocolFeeLastWithdrawnTime(
+        tokenB
+      );
 
       // Submit the block
       await submitWithdrawalBlockChecked([depositA, depositB]);
 
       // Get the time the protocol fees were withdrawn after
-      const timestampAfterA = await exchange.getProtocolFeeLastWithdrawnTime(tokenA);
-      const timestampAfterB = await exchange.getProtocolFeeLastWithdrawnTime(tokenB);
+      const timestampAfterA = await exchange.getProtocolFeeLastWithdrawnTime(
+        tokenA
+      );
+      const timestampAfterB = await exchange.getProtocolFeeLastWithdrawnTime(
+        tokenB
+      );
 
       // Check that they were updated
-      assert(timestampAfterA.gt(timestampBeforeA), "protocol fees withdrawal time unexpected");
-      assert(timestampAfterB.gt(timestampBeforeB), "protocol fees withdrawal time unexpected");
+      assert(
+        timestampAfterA.gt(timestampBeforeA),
+        "protocol fees withdrawal time unexpected"
+      );
+      assert(
+        timestampAfterB.gt(timestampBeforeB),
+        "protocol fees withdrawal time unexpected"
+      );
     });
 
     it("Deposits should not total more than MAX_AMOUNT", async () => {
@@ -752,20 +777,10 @@ contract("Exchange", (accounts: string[]) => {
       const token = exchangeTestUtil.getTokenAddress("TEST");
 
       // Deposit
-      await exchangeTestUtil.deposit(
-        owner,
-        owner,
-        token,
-        amount
-      );
+      await exchangeTestUtil.deposit(owner, owner, token, amount);
       // Deposit again. This time the amount will be capped to 2**96
       await expectThrow(
-        exchangeTestUtil.deposit(
-          owner,
-          owner,
-          token,
-          amount
-        ),
+        exchangeTestUtil.deposit(owner, owner, token, amount),
         "MAX_AMOUNT_REACHED"
       );
     });
@@ -799,7 +814,7 @@ contract("Exchange", (accounts: string[]) => {
           deposit.amount,
           "LRC",
           new BN(0),
-          {gas: gasAmounts[i]}
+          { gas: gasAmounts[i] }
         );
       }
 
@@ -863,11 +878,15 @@ contract("Exchange", (accounts: string[]) => {
           deposit.amount,
           deposit.token,
           new BN(0),
-          {authMethod: AuthMethod.FORCE}
+          { authMethod: AuthMethod.FORCE }
         );
         const expectedResult = { ...deposit };
         const latestIndex = exchangeTestUtil.index.get(deposit.token);
-        expectedResult.amount = applyInterest(deposit.amount, deposit.index, latestIndex);
+        expectedResult.amount = applyInterest(
+          deposit.amount,
+          deposit.index,
+          latestIndex
+        );
         expectedResults.push(expectedResult);
       }
 
