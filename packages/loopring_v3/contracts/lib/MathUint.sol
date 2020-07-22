@@ -43,4 +43,28 @@ library MathUint
         c = a + b;
         require(c >= a, "ADD_OVERFLOW");
     }
+
+    function add64(
+        uint64 a,
+        uint64 b
+        )
+        internal
+        pure
+        returns (uint64 c)
+    {
+        c = a + b;
+        require(c >= a, "ADD_OVERFLOW");
+    }
+
+    function add96(
+        uint96 a,
+        uint96 b
+        )
+        internal
+        pure
+        returns (uint96 c)
+    {
+        c = a + b;
+        require(c >= a, "ADD_OVERFLOW");
+    }
 }

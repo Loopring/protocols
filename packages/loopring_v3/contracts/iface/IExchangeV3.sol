@@ -34,11 +34,11 @@ abstract contract IExchangeV3 is IExchange
     );
 
     event Shutdown(
-        uint            timestamp
+        uint timestamp
     );
 
     event WithdrawalModeActivated(
-        uint            timestamp
+        uint timestamp
     );
 
     event BlockSubmitted(
@@ -98,6 +98,46 @@ abstract contract IExchangeV3 is IExchange
         bool            authorized
     );
 
+    // events from libraries
+    event DepositProcessed(
+        address owner,
+        uint24  accountId,
+        uint16  token,
+        uint    amount,
+        uint    index
+    );
+
+    event ForcedWithdrawalProcessed(
+        uint24 accountID,
+        uint16 tokenID,
+        uint   amount
+    );
+
+    /*event ConditionalTransferProcessed(
+        address from,
+        address to,
+        uint16  token,
+        uint    amount
+    );*/
+
+    /*event AccountCreated(
+        address owner,
+        uint    publicKey,
+        uint    walletHash
+    );*/
+
+    /*event AccountUpdated(
+        uint24 owner,
+        uint   publicKey
+    );*/
+
+
+    /*event AccountTransfered(
+        address owner,
+        address newOwner
+    );*/
+
+
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.
     /// @param  owner The owner of this exchange.
@@ -105,14 +145,14 @@ abstract contract IExchangeV3 is IExchange
     /// @param  operator The operator address of the exchange who will be responsible for
     ///         submitting blocks and proofs.
     /// @param  loopringAddress The corresponding ILoopring contract address.
-    /// @param  rollupEnabled True to run in 100% zkRollup mode, false to run in Validium mode.
+    /// @param  rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
     function initialize(
         address loopringAddress,
         address owner,
         uint    exchangeId,
         address payable operator,
-        bool    rollupEnabled
+        bool    rollupMode
         )
         external
         virtual;

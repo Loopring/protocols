@@ -75,7 +75,7 @@ contract ExchangeV3 is IExchangeV3
         address _owner,
         uint    _id,
         address payable _operator,
-        bool    _rollupEnabled
+        bool    _rollupMode
         )
         external
         override
@@ -89,7 +89,7 @@ contract ExchangeV3 is IExchangeV3
             _id,
             _loopringAddress,
             _operator,
-            _rollupEnabled,
+            _rollupMode,
             genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );
@@ -606,14 +606,14 @@ contract ExchangeV3 is IExchangeV3
         override
         view
         returns (
-            uint32 timestamp,
+            uint32 syncedAt,
             uint8  takerFeeBips,
             uint8  makerFeeBips,
             uint8  previousTakerFeeBips,
             uint8  previousMakerFeeBips
         )
     {
-        timestamp = state.protocolFeeData.timestamp;
+        syncedAt = state.protocolFeeData.syncedAt;
         takerFeeBips = state.protocolFeeData.takerFeeBips;
         makerFeeBips = state.protocolFeeData.makerFeeBips;
         previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;

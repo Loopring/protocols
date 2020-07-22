@@ -254,9 +254,7 @@ library ExchangeWithdrawals
             success = false;
         }
 
-        if (!allowFailure) {
-            require(success, "TRANSFER_FAILURE");
-        }
+        require(allowFailure || success, "TRANSFER_FAILURE");
 
         if (success) {
             emit WithdrawalCompleted(

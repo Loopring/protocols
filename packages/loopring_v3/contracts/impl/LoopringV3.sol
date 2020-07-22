@@ -59,7 +59,7 @@ contract LoopringV3 is ILoopringV3
         uint    exchangeId,
         address owner,
         address payable operator,
-        bool    rollupEnabled
+        bool    rollupMode
         )
         external
         override
@@ -80,7 +80,7 @@ contract LoopringV3 is ILoopringV3
             owner,
             exchangeId,
             operator,
-            rollupEnabled
+            rollupMode
         );
 
         exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);
@@ -90,7 +90,7 @@ contract LoopringV3 is ILoopringV3
             exchangeAddress,
             owner,
             operator,
-            rollupEnabled
+            rollupMode
         );
     }
 
@@ -100,8 +100,8 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStakeWithDataAvailability,
-        uint    _minExchangeStakeWithoutDataAvailability
+        uint    _minExchangeStakeRollup,
+        uint    _minExchangeStakeValidium
         )
         external
         override
@@ -113,8 +113,8 @@ contract LoopringV3 is ILoopringV3
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _forcedWithdrawalFee,
-            _minExchangeStakeWithDataAvailability,
-            _minExchangeStakeWithoutDataAvailability
+            _minExchangeStakeRollup,
+            _minExchangeStakeValidium
         );
     }
 
@@ -143,7 +143,7 @@ contract LoopringV3 is ILoopringV3
 
     function canExchangeSubmitBlocks(
         uint exchangeId,
-        bool rollupEnabled
+        bool rollupMode
         )
         external
         override
@@ -151,10 +151,10 @@ contract LoopringV3 is ILoopringV3
         returns (bool)
     {
         uint amountStaked = getExchangeStake(exchangeId);
-        if (rollupEnabled) {
-            return amountStaked >= minExchangeStakeWithDataAvailability;
+        if (rollupMode) {
+            return amountStaked >= minExchangeStakeRollup;
         } else {
-            return amountStaked >= minExchangeStakeWithoutDataAvailability;
+            return amountStaked >= minExchangeStakeValidium;
         }
     }
 
@@ -295,7 +295,7 @@ contract LoopringV3 is ILoopringV3
 
     function getProtocolFeeValues(
         uint exchangeId,
-        bool rollupEnabled
+        bool rollupMode
         )
         external
         override
@@ -310,10 +310,10 @@ contract LoopringV3 is ILoopringV3
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
         uint stake = 0;
-        if (rollupEnabled && exchange.exchangeStake > minExchangeStakeWithDataAvailability) {
-            stake = exchange.exchangeStake - minExchangeStakeWithDataAvailability;
-        } else if (!rollupEnabled && exchange.exchangeStake > minExchangeStakeWithoutDataAvailability) {
-            stake = exchange.exchangeStake - minExchangeStakeWithoutDataAvailability;
+        if (rollupMode && exchange.exchangeStake > minExchangeStakeRollup) {
+            stake = exchange.exchangeStake - minExchangeStakeRollup;
+        } else if (!rollupMode && exchange.exchangeStake > minExchangeStakeValidium) {
+            stake = exchange.exchangeStake - minExchangeStakeValidium;
         }
 
         // The total stake used here is the exchange stake + the protocol fee stake, but
@@ -347,8 +347,8 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStakeWithDataAvailability,
-        uint    _minExchangeStakeWithoutDataAvailability
+        uint    _minExchangeStakeRollup,
+        uint    _minExchangeStakeValidium
         )
         private
     {
@@ -359,8 +359,8 @@ contract LoopringV3 is ILoopringV3
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         forcedWithdrawalFee = _forcedWithdrawalFee;
-        minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;
-        minExchangeStakeWithoutDataAvailability = _minExchangeStakeWithoutDataAvailability;
+        minExchangeStakeRollup = _minExchangeStakeRollup;
+        minExchangeStakeValidium = _minExchangeStakeValidium;
 
         emit SettingsUpdated(now);
     }

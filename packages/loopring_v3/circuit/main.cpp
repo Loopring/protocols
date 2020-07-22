@@ -301,12 +301,12 @@ Loopring::Circuit* newCircuit(unsigned int blockType, ethsnarks::ProtoboardT& ou
     return new Loopring::UniversalCircuit(outPb, "circuit");
 }
 
-Loopring::Circuit* createCircuit(unsigned int blockType, unsigned int blockSize, bool onchainDataAvailability, ethsnarks::ProtoboardT& outPb)
+Loopring::Circuit* createCircuit(unsigned int blockType, unsigned int blockSize, bool rollupMode, ethsnarks::ProtoboardT& outPb)
 {
     std::cout << "Creating circuit... " << std::endl;
     auto begin = now();
     Loopring::Circuit* circuit = newCircuit(blockType, outPb);
-    circuit->generateConstraints(onchainDataAvailability, blockSize);
+    circuit->generateConstraints(rollupMode, blockSize);
     circuit->printInfo();
     print_time(begin, "Circuit created");
     return circuit;
@@ -783,9 +783,9 @@ int main (int argc, char **argv)
     // Read meta data
     int iBlockType = input["blockType"].get<int>();
     unsigned int blockSize = input["blockSize"].get<int>();
-    bool onchainDataAvailability = input["onchainDataAvailability"].get<bool>();
-    std::string strOnchainDataAvailability = onchainDataAvailability ? "_DA_" : "_";
-    std::string postFix = strOnchainDataAvailability + std::to_string(blockSize);
+    bool rollupMode = input["rollupMode"].get<bool>();
+    std::string strrollupMode = rollupMode ? "_DA_" : "_";
+    std::string postFix = strrollupMode + std::to_string(blockSize);
 
     /*if (iBlockType >= int(Loopring::BlockType::COUNT))
     {
@@ -806,7 +806,7 @@ int main (int argc, char **argv)
     }
 
     ethsnarks::ProtoboardT pb;
-    Loopring::Circuit* circuit = createCircuit(blockType, blockSize, onchainDataAvailability, pb);
+    Loopring::Circuit* circuit = createCircuit(blockType, blockSize, rollupMode, pb);
     if (config.swapAB)
     {
         pb.constraint_system.swap_AB_if_beneficial();

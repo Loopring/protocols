@@ -27,12 +27,12 @@ interface IDepositContract
     function deposit(
         address from,
         address token,
-        uint    amount,
+        uint96  amount,
         bytes   calldata auxiliaryData
         )
         external
         payable
-        returns (uint actualAmount, uint tokenIndex);
+        returns (uint96 actualAmount, uint tokenIndex);
 
     /// @dev Transfers tokens from the exchange to a user. This function will
     ///      be called when a withdrawal is done for a user on the exchange.

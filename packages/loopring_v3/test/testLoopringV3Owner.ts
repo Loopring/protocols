@@ -44,8 +44,8 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     mockChainlink: any,
     priceFactor: number
   ) => {
-    const startMinExchangeStakeDALrc = await loopring.minExchangeStakeWithDataAvailability();
-    const startMinExchangeStakeWDALrc = await loopring.minExchangeStakeWithoutDataAvailability();
+    const startMinExchangeStakeDALrc = await loopring.minExchangeStakeRollup();
+    const startMinExchangeStakeWDALrc = await loopring.minExchangeStakeValidium();
 
     const transformPrice = (value: BN) => {
       return priceFactor > 1
@@ -82,14 +82,12 @@ contract("LoopringV3Owner", (accounts: string[]) => {
 
     // Check against the contract values
     assert(
-      expectedMinExchangeStakeDALrc.eq(
-        await loopring.minExchangeStakeWithDataAvailability()
-      ),
+      expectedMinExchangeStakeDALrc.eq(await loopring.minExchangeStakeRollup()),
       "unexpected currentMinExchangeStakeDALrc"
     );
     assert(
       expectedMinExchangeStakeWDALrc.eq(
-        await loopring.minExchangeStakeWithoutDataAvailability()
+        await loopring.minExchangeStakeValidium()
       ),
       "unexpected currentMinExchangeStakeWDALrc"
     );
@@ -100,13 +98,11 @@ contract("LoopringV3Owner", (accounts: string[]) => {
       "LRCValuesUpdated"
     );
     assert(
-      updateEvent.minExchangeStakeWithDataAvailabilityLRC.eq(
-        expectedMinExchangeStakeDALrc
-      ),
+      updateEvent.minExchangeStakeRollupLRC.eq(expectedMinExchangeStakeDALrc),
       "unexpected currentMinExchangeStakeDALrc"
     );
     assert(
-      updateEvent.minExchangeStakeWithoutDataAvailabilityLRC.eq(
+      updateEvent.minExchangeStakeValidiumLRC.eq(
         expectedMinExchangeStakeWDALrc
       ),
       "unexpected currentMinExchangeStakeWDALrc"

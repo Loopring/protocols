@@ -24,7 +24,7 @@ library ExchangeGenesis
         uint    _id,
         address _loopringAddress,
         address payable _operator,
-        bool    _rollupEnabled,
+        bool    _rollupMode,
         bytes32 _genesisMerkleRoot,
         bytes32 _domainSeperator
         )
@@ -39,7 +39,7 @@ library ExchangeGenesis
         S.id = _id;
         S.exchangeCreationTimestamp = now;
         S.operator = _operator;
-        S.rollupEnabled = _rollupEnabled;
+        S.rollupMode = _rollupMode;
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
         S.genesisMerkleRoot = _genesisMerkleRoot;
         S.DOMAIN_SEPARATOR = _domainSeperator;
@@ -52,7 +52,7 @@ library ExchangeGenesis
         S.blocks.push(ExchangeData.BlockInfo(bytes32(0)));
 
         // Get the protocol fees for this exchange
-        S.protocolFeeData.timestamp = uint32(0);
+        S.protocolFeeData.syncedAt = uint32(0);
         S.protocolFeeData.takerFeeBips = S.loopring.maxProtocolTakerFeeBips();
         S.protocolFeeData.makerFeeBips = S.loopring.maxProtocolMakerFeeBips();
         S.protocolFeeData.previousTakerFeeBips = S.protocolFeeData.takerFeeBips;

@@ -16,6 +16,13 @@ import "../libexchange/ExchangeWithdrawals.sol";
 
 /// @title WithdrawTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
+/// @dev The following 4 types of withdrawals are supported:
+///      - withdrawType = 0: offchain withdrawals with EdDSA signatures
+///      - withdrawType = 1: offchain withdrawals with ECDSA signatures or onchain appprovals
+///      - withdrawType = 2: onchain valid forced withdrawals (owner and accountID match), or
+///                          offchain operator-initiated withdrawals for protocol fees or for
+///                          users in shutdown mode
+///      - withdrawType = 3: onchain invalid forced withdrawals (owner and accountID mismatch)
 library WithdrawTransaction
 {
     using BytesUtil            for bytes;
@@ -47,35 +54,47 @@ library WithdrawTransaction
     // Auxiliary data for each withdrawal
     struct WithdrawalAuxiliaryData
     {
-        uint gasLimit;
+        uint  gasLimit;
         bytes signature;
         bytes auxiliaryData;
     }
 
-    event ForcedWithdrawalConsumed(
+    event ForcedWithdrawalProcessed(
         uint24 accountID,
         uint16 tokenID,
         uint   amount
     );
 
     function process(
-        ExchangeData.State storage S,
-        ExchangeData.BlockContext memory ctx,
-        bytes memory data,
-        bytes memory auxiliaryData
+        ExchangeData.State        storage S,
+        ExchangeData.BlockContext memory  ctx,
+        bytes                     memory  data,
+        bytes                     memory  auxiliaryData
         )
         internal
         returns (uint feeETH)
     {
         Withdrawal memory withdrawal = readWithdrawal(data);
-
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
+
+        // Validate gas provided
+        require(auxData.gasLimit >= withdrawal.minGas, "OUT_OF_GASH_FOR_WITHDRAWAL");
+
+        // Validate the auxixliary withdrawal data
+        if (withdrawal.dataHash == 0) {
+            require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
+        } else {
+            // Hashes are stored using only 253 bits so the value fits inside a SNARK field element.
+            require(
+                uint(keccak256(auxData.auxiliaryData)) >> 3 == uint(withdrawal.dataHash),
+                "INVALID_WITHDRAWAL_AUX_DATA"
+            );
+        }
 
         if (withdrawal.withdrawalType == 0) {
             // Signature checked offchain, nothing to do
         } else if (withdrawal.withdrawalType == 1) {
             // Check appproval onchain
-
             // Calculate the tx hash
             bytes32 txHash = EIP712.hashPacked(
                 ctx.DOMAIN_SEPARATOR,
@@ -101,52 +120,54 @@ library WithdrawTransaction
                 require(txHash.verifySignature(withdrawal.owner, auxData.signature), "INVALID_SIGNATURE");
             } else {
                 require(S.approvedTx[withdrawal.owner][txHash], "TX_NOT_APPROVED");
-                S.approvedTx[withdrawal.owner][txHash] = false;
+                delete S.approvedTx[withdrawal.owner][txHash];
             }
         } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
             // Forced withdrawals cannot make use of certain features because the
             // necessary data is not authorized by the account owner.
+            // For protocol fee withdrawals, `owner` and `to` are both address(0).
             require(withdrawal.owner == withdrawal.to, "INVALID_WITHDRAWAL_ADDRESS");
+
+            // Forced withdrawal fees are charged when the request is submitted.
             require(withdrawal.fee == 0, "FEE_NOT_ZERO");
+
             require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
 
-            ExchangeData.ForcedWithdrawal storage forcedWithdrawal = S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
-            if (forcedWithdrawal.timestamp == 0) {
-                // Allow the operator to submit fill withdrawals without authorization
-                // - when in shutdown mode
-                // - to withdraw protocol fees
-                require(withdrawal.accountID == 0 || S.isShutdown(), "FULL_WITHDRAWAL_UNAUTHORIZED");
-            } else {
-                // Type == 2: valid onchain withdrawal started by the owner
-                // Type == 3: invalid onchain withdrawal started by someone else
-                bool authorized = (withdrawal.owner == forcedWithdrawal.owner);
-                require((withdrawal.withdrawalType == 2) == authorized, "INVALID_WITHDRAW_TYPE");
-                if (!authorized) {
+            ExchangeData.ForcedWithdrawal storage forcedWithdrawal =
+                S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
+
+            if (forcedWithdrawal.timestamp != 0) {
+                if (withdrawal.withdrawalType == 2) {
+                    require(withdrawal.owner == forcedWithdrawal.owner, "INCONSISENT_OWNER");
+                } else { //withdrawal.withdrawalType == 3
+                    require(withdrawal.owner != forcedWithdrawal.owner, "INCONSISENT_OWNER");
                     require(withdrawal.amount == 0, "UNAUTHORIZED_WITHDRAWAL");
                 }
 
                 // Get the fee
                 feeETH = forcedWithdrawal.fee;
 
-                // Reset the approval so it can't be used again
-                S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID] = ExchangeData.ForcedWithdrawal(address(0), 0, 0);
-
-                // Open up a slot
+                // delete the withdrawal request and free a slot
+                delete S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
                 S.numPendingForcedTransactions--;
 
-                emit ForcedWithdrawalConsumed(withdrawal.accountID, withdrawal.tokenID, withdrawal.amount);
+                emit ForcedWithdrawalProcessed(
+                    withdrawal.accountID,
+                    withdrawal.tokenID,
+                    withdrawal.amount
+                );
+            } else {
+                // Allow the operator to submit full withdrawals without authorization
+                // - when in shutdown mode
+                // - to withdraw protocol fees
+                require(
+                    withdrawal.owner == address(0) && withdrawal.accountID == 0 ||
+                    S.isShutdown(),
+                    "FULL_WITHDRAWAL_UNAUTHORIZED"
+                );
             }
         } else {
             revert("INVALID_WITHDRAWAL_TYPE");
-        }
-
-        // Validate gas provided
-        require(auxData.gasLimit >= withdrawal.minGas, "INVALID_GAS_AMOUNT");
-        // Validate the auxixliary withdrawal data
-        if (withdrawal.dataHash == bytes32(0)) {
-            require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
-        } else {
-            require((uint(keccak256(auxData.auxiliaryData)) >> 3) == uint(withdrawal.dataHash), "INVALID_WITHDRAWAL_AUX_DATA");
         }
 
         // Try to transfer the tokens with the provided gas limit

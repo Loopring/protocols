@@ -27,7 +27,7 @@ library SignatureUtil
         ETH_SIGN,
         WALLET   // deprecated
     }
-    
+
     bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
 
     bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES_SELECTOR = bytes4(
@@ -37,7 +37,7 @@ library SignatureUtil
     bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES32_SELECTOR = bytes4(
         keccak256(bytes("isValidSignature(bytes32,bytes)"))
     );
-    
+
     function verifySignatures(
         bytes32   signHash,
         address[] memory signers,
@@ -121,7 +121,7 @@ library SignatureUtil
             v := and(mload(add(signature, 0x41)), 0xff)
         }
         // See https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol
-        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+        if (uint(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
             return address(0);
         }
         if (v == 27 || v == 28) {
