@@ -34,11 +34,11 @@ abstract contract IExchangeV3 is IExchange
     );
 
     event Shutdown(
-        uint            timestamp
+        uint timestamp
     );
 
     event WithdrawalModeActivated(
-        uint            timestamp
+        uint timestamp
     );
 
     event BlockSubmitted(
@@ -100,41 +100,41 @@ abstract contract IExchangeV3 is IExchange
 
     // events from libraries
     event DepositProcessed(
-        address indexed owner,
-        uint24  indexed accountId,
-        uint16          token,
-        uint            amount,
-        uint            index
+        address owner,
+        uint24  accountId,
+        uint16  token,
+        uint    amount,
+        uint    index
     );
 
     event ForcedWithdrawalProcessed(
-        uint24  indexed accountID,
-        uint16          tokenID,
-        uint            amount
+        uint24 accountID,
+        uint16 tokenID,
+        uint   amount
     );
 
     /*event ConditionalTransferProcessed(
-        address indexed from,
-        address indexed to,
-        uint16          token,
-        uint            amount
+        address from,
+        address to,
+        uint16  token,
+        uint    amount
     );*/
 
     /*event AccountCreated(
-        address  indexed owner,
-        uint             publicKey,
-        uint             walletHash
+        address owner,
+        uint    publicKey,
+        uint    walletHash
     );*/
 
     /*event AccountUpdated(
-        uint24   indexed owner,
-        uint             publicKey
+        uint24 owner,
+        uint   publicKey
     );*/
 
 
     /*event AccountTransfered(
-        address  indexed owner,
-        address          newOwner
+        address owner,
+        address newOwner
     );*/
 
 
