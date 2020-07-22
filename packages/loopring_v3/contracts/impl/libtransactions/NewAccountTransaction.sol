@@ -10,6 +10,12 @@ import "../../lib/SignatureUtil.sol";
 
 
 /// @title NewAccountTransaction
+/// @dev   With a CreateAccount someone pays a fee to completely setup a new account for
+///        a different Ethereum address. UpdateAccount is when the account owner himself
+///        wants to update his account he already owns (update the EdDSA keys or update
+///        the wallet data), and he pays the fee himself. Basically CreateAccount is
+///        pretty much the same as a Transfer to a new account  + UpdateAccount, rolled
+///        into a single transaction and completely paid by someone else.
 /// @author Brecht Devos - <brecht@loopring.org>
 library NewAccountTransaction
 {
