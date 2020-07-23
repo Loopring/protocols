@@ -14,10 +14,10 @@ import "../../lib/SignatureUtil.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library DepositTransaction
 {
-    using BytesUtil            for bytes;
-    using MathUint             for uint;
+    using BytesUtil for bytes;
+    using MathUint  for uint;
 
-    event DepositConsumed(
+    event DepositProcessed(
         address owner,
         uint24  accountId,
         uint16  token,
@@ -26,10 +26,10 @@ library DepositTransaction
     );
 
     function process(
-        ExchangeData.State storage S,
-        ExchangeData.BlockContext memory /*ctx*/,
-        bytes memory data,
-        bytes memory /*auxiliaryData*/
+        ExchangeData.State        storage S,
+        ExchangeData.BlockContext memory  /*ctx*/,
+        bytes                     memory  data,
+        bytes                     memory  /*auxiliaryData*/
         )
         internal
         returns (uint feeETH)
@@ -54,12 +54,17 @@ library DepositTransaction
         // Earn a fee relative to the amount actually made available on layer 2.
         // This is done to ensure the user can do multiple deposits after each other
         // without invalidating work done by the operator for previous deposit amounts.
-        if (amount > 0 && deposit.amount > 0) {
-            feeETH = uint(deposit.fee).mul(amount) / deposit.amount;
+
+        // Also note the oritinal deposit.amount can be zero!
+        if (amount > 0) {
+            require(deposit.amount >= amount, "INVALID_AMOUNT");
+            feeETH = deposit.amount == amount?
+                uint(deposit.fee):
+                uint(deposit.fee).mul(amount) / deposit.amount;
+
             deposit.fee = uint64(uint(deposit.fee).sub(feeETH));
+            deposit.amount = uint96(uint(deposit.amount).sub(amount));
         }
-        // Consume what was deposited
-        deposit.amount = uint96(uint(deposit.amount).sub(amount));
 
         // If the deposit was fully consumed, reset it so the storage is freed up
         // and the operator receives a gas refund.
@@ -71,6 +76,6 @@ library DepositTransaction
             deposit.timestamp = 0;
         }
 
-        emit DepositConsumed(owner, accountID, tokenID, amount, index);
+        emit DepositProcessed(owner, accountID, tokenID, amount, index);
     }
 }

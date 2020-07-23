@@ -73,7 +73,7 @@ In the long run, we still want to support on-chain transfers due to reasons such
 
 Note that there is never any risk of losing funds when depositing to the smart contract. Both options are trust-less and secure.
 
-Data availability for the Merkle tree is an option that can be turned on or off when creating exchange built on Loopring. When data-availability is enabled, anyone can recreate the Merkle tree just by using the data published on-chain.
+Data availability for the Merkle tree is an option that can be turned on (Rollup mode) or off (Validium mode) when creating exchange built on Loopring. When in Rollup mode, anyone can recreate the Merkle tree just by using the data published on-chain.
 
 ## Trading with Off-chain Balances
 
@@ -132,7 +132,7 @@ The operator contract can also be used to enforce an off-chain data-availability
 
 The operator creates a block and submits it on-chain by calling `submitBlocks`. Multiple blocks can be submitted at the same time. All blocks will be immediately verified. If possible, batch verification is used to verify multiple blocks of the same type.
 
-An operator can only submit new blocks when the the exchange owner has enough LRC staked. For an exchange with data-availability the exchange stake needs to be at least `minExchangeStakeWithDataAvailability`LRC and for an exchange without data-availability the stake needs to be at least `minExchangeStakeWithoutDataAvailability`LRC.
+An operator can only submit new blocks when the the exchange owner has enough LRC staked. For an exchange with data-availability the exchange stake needs to be at least `minExchangeStakeRollup`LRC and for an exchange without data-availability the stake needs to be at least `minExchangeStakeValidium`LRC.
 
 #### Only Allow Off-chain Requests to be Used Once
 
@@ -661,12 +661,12 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 - Gas cost/ring settlement: ~300,000 gas
 - => 10,000,000 / 300,000 = 33 trades/Ethereum block = **2-3 trades/second**.
 
-|                                        | Loopring 2  | Loopring 3 <br> (w/ Data Availability) | Loopring 3 <br> (w/o Data Availability) |
-| :------------------------------------- | :---------: | :------------------------------------: | :-------------------------------------: |
-| Trades per Ethereum Block              |     33      |                 27,500                 |                 531,250                 |
-| Trades per Second                      |     2-3     |                  2100                  |                 41,000                  |
-| Cost per Trade                         | 300,000 gas |                365 gas                 |                 19 gas                  |
-| Cost in USD per Trade <br> (1ETH=XUSD) |     0.1     |                  X\*                   |                   X\*                   |
+|                                        | Loopring 2  | Loopring 3 <br> (Rollup) | Loopring 3 <br> (Validium) |
+| :------------------------------------- | :---------: | :----------------------: | :------------------------: |
+| Trades per Ethereum Block              |     33      |          27,500          |          531,250           |
+| Trades per Second                      |     2-3     |           2100           |           41,000           |
+| Cost per Trade                         | 300,000 gas |         365 gas          |           19 gas           |
+| Cost in USD per Trade <br> (1ETH=XUSD) |     0.1     |           X\*            |            X\*             |
 
 - _Cost in USD per Trade_ in the table does not cover off-chain proof generation.
 

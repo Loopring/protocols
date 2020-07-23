@@ -224,7 +224,7 @@ export interface TxBlock {
   protocolTakerFeeBips?: number;
   protocolMakerFeeBips?: number;
 
-  onchainDataAvailability?: boolean;
+  rollupMode?: boolean;
   timestamp?: number;
   exchange?: string;
   operatorAccountID?: number;

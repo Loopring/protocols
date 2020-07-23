@@ -51,8 +51,8 @@ library ExchangeTokens
         ExchangeData.Token memory token = ExchangeData.Token(
             tokenAddress
         );
+        tokenID = uint16(S.tokens.length);
         S.tokens.push(token);
-        tokenID = uint16(S.tokens.length - 1);
         S.tokenToTokenId[tokenAddress] = tokenID + 1;
 
         emit TokenRegistered(tokenAddress, tokenID);
