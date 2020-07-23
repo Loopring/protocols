@@ -20,6 +20,8 @@ library ExchangeGenesis
 {
     using ExchangeTokens    for ExchangeData.State;
 
+    uint public constant MAX_ACCOUNT_TREE_DEPTH = 16;
+
     function initializeGenesisBlock(
         ExchangeData.State storage S,
         uint    _id,
@@ -72,7 +74,7 @@ library ExchangeGenesis
         )
         external
     {
-        require(S.accountTreeDepth < 16, "MAX_TREE_SIZE_REACHED");
+        require(S.accountTreeDepth < MAX_ACCOUNT_TREE_DEPTH, "MAX_TREE_SIZE_REACHED");
         S.accountTreeDepth += 1;
 
         S.merkleRoot = hashImpl(
