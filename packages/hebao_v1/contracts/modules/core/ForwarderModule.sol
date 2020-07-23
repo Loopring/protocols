@@ -43,25 +43,25 @@ contract ForwarderModule is BaseModule
         address from; // the wallet
         address to;
         uint    nonce;
+        bytes32 txAwareHash;
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
-        bytes32 txAwareHash;
         bytes   data;
     }
 
     bytes32 constant public META_TX_TYPEHASH = keccak256(
-        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txAwareHash,bytes data)"
+        "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
     );
 
     function validateMetaTx(
         address from, // the wallet
         address to,
         uint    nonce,
+        bytes32 txAwareHash,
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
-        bytes32 txAwareHash,
         bytes   memory data,
         bytes   memory signature
         )
@@ -96,10 +96,10 @@ contract ForwarderModule is BaseModule
             from,
             to,
             nonce,
+            txAwareHash,
             gasToken,
             gasPrice,
             gasLimit,
-            txAwareHash,
             keccak256(data_)
         );
 
@@ -138,10 +138,10 @@ contract ForwarderModule is BaseModule
             metaTx.from,
             metaTx.to,
             metaTx.nonce,
+            metaTx.txAwareHash,
             metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
-            metaTx.txAwareHash,
             metaTx.data,
             signature
         );
