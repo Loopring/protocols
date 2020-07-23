@@ -25,7 +25,7 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    bytes32 constant public genesisMerkleRoot = 0x1dacdc3f6863d9db1d903e7285ebf74b61f02d585ccb52ecaeaf97dbb773becf;
+    bytes32 constant public genesisMerkleRoot = 0x02b78c40c9dbb8728b88a7e341bafa71bf2d7af4c8cb9f6953b400b10c0d140e;
 
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
@@ -360,8 +360,7 @@ contract ExchangeV3 is IExchangeV3
 
     function withdrawFromDepositRequest(
         address owner,
-        address token,
-        uint    index
+        address token
         )
         external
         override
@@ -369,8 +368,7 @@ contract ExchangeV3 is IExchangeV3
     {
         state.withdrawFromDepositRequest(
             owner,
-            token,
-            index
+            token
         );
     }
 

@@ -25,7 +25,7 @@ export class SpotTradeProcessor {
   public static process(state: ExchangeState, block: BlockContext, data: Bitstream) {
     let offset = 1;
 
-    // Order IDs
+    // Storage IDs
     const tradeHistoryDataA = data.extractUint16(offset);
     offset += 2;
     const tradeHistoryDataB = data.extractUint16(offset);
@@ -94,53 +94,51 @@ export class SpotTradeProcessor {
       rebateBipsB
     );
 
-    const index = state.getAccount(1);
-
-    const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
+    const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_STORAGE;
     // Update accountA
     {
       const accountA = state.getAccount(accountIdA);
-      accountA.getBalance(tokenA, index).balance.isub(s.fillSA);
-      accountA.getBalance(tokenB, index).balance.iadd(s.fillBA).isub(s.feeA).iadd(s.rebateA);
+      accountA.getBalance(tokenA).balance.isub(s.fillSA);
+      accountA.getBalance(tokenB).balance.iadd(s.fillBA).isub(s.feeA).iadd(s.rebateA);
 
-      const tradeHistoryA = accountA.getBalanceRaw(tokenA).getTradeHistory(tradeHistorySlotA);
-      if (tradeHistoryA.orderID === 0) {
-        tradeHistoryA.orderID = tradeHistorySlotA;
+      const tradeHistoryA = accountA.getBalance(tokenA).getStorage(tradeHistorySlotA);
+      if (tradeHistoryA.storageID === 0) {
+        tradeHistoryA.storageID = tradeHistorySlotA;
       }
       if (overwriteTradeHistorySlotA) {
-        tradeHistoryA.orderID += numSlots;
-        tradeHistoryA.filled = new BN(0);
+        tradeHistoryA.storageID += numSlots;
+        tradeHistoryA.data = new BN(0);
       }
-      tradeHistoryA.filled.iadd(buyA ? s.fillBA : s.fillSA);
-      orderIdA = tradeHistoryA.orderID;
+      tradeHistoryA.data.iadd(buyA ? s.fillBA : s.fillSA);
+      orderIdA = tradeHistoryA.storageID;
     }
     // Update accountB
     {
       const accountB = state.getAccount(accountIdB);
-      accountB.getBalance(tokenB, index).balance.isub(s.fillSB);
-      accountB.getBalance(tokenA, index).balance.iadd(s.fillBB).isub(s.feeB).iadd(s.rebateB);
+      accountB.getBalance(tokenB).balance.isub(s.fillSB);
+      accountB.getBalance(tokenA).balance.iadd(s.fillBB).isub(s.feeB).iadd(s.rebateB);
 
-      const tradeHistoryB = accountB.getBalanceRaw(tokenB).getTradeHistory(tradeHistorySlotB);
-      if (tradeHistoryB.orderID === 0) {
-        tradeHistoryB.orderID = tradeHistorySlotB;
+      const tradeHistoryB = accountB.getBalance(tokenB).getStorage(tradeHistorySlotB);
+      if (tradeHistoryB.storageID === 0) {
+        tradeHistoryB.storageID = tradeHistorySlotB;
       }
       if (overwriteTradeHistorySlotB) {
-        tradeHistoryB.orderID += numSlots;
-        tradeHistoryB.filled = new BN(0);
+        tradeHistoryB.storageID += numSlots;
+        tradeHistoryB.data = new BN(0);
       }
-      tradeHistoryB.filled.iadd(buyB ? s.fillBB : s.fillSB);
-      orderIdB = tradeHistoryB.orderID;
+      tradeHistoryB.data.iadd(buyB ? s.fillBB : s.fillSB);
+      orderIdB = tradeHistoryB.storageID;
     }
 
     // Update protocol fee
     const protocol = state.getAccount(0);
-    protocol.getBalance(tokenA, index).balance.iadd(s.protocolFeeB);
-    protocol.getBalance(tokenB, index).balance.iadd(s.protocolFeeA);
+    protocol.getBalance(tokenA).balance.iadd(s.protocolFeeB);
+    protocol.getBalance(tokenB).balance.iadd(s.protocolFeeA);
 
     // Update operator
     const operator = state.getAccount(block.operatorAccountID);
-    operator.getBalance(tokenA, index).balance.iadd(s.feeB).isub(s.protocolFeeB).isub(s.rebateB);
-    operator.getBalance(tokenB, index).balance.iadd(s.feeA).isub(s.protocolFeeA).isub(s.rebateA);
+    operator.getBalance(tokenA).balance.iadd(s.feeB).isub(s.protocolFeeB).isub(s.rebateB);
+    operator.getBalance(tokenB).balance.iadd(s.feeA).isub(s.protocolFeeA).isub(s.rebateA);
 
 
     // Create struct

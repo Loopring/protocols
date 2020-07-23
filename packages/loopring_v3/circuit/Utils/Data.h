@@ -27,7 +27,7 @@ static auto dummySpotTrade = R"({
         "buy": true,
         "feeBips": 0,
         "maxFeeBips": 0,
-        "orderID": "0",
+        "storageID": "0",
         "rebateBips": 0,
         "tokenS": 0,
         "tokenB": 1,
@@ -43,7 +43,7 @@ static auto dummySpotTrade = R"({
         "buy": true,
         "feeBips": 0,
         "maxFeeBips": 0,
-        "orderID": "0",
+        "storageID": "0",
         "rebateBips": 0,
         "reduceOnly": 0,
         "tokenS": 1,
@@ -122,8 +122,7 @@ static auto dummyDeposit = R"({
     "owner": "0",
     "accountID": 0,
     "tokenID": 0,
-    "amount": "0",
-    "index": "1000000000000000000"
+    "amount": "0"
 })"_json;
 
 static auto dummySignature = R"({
@@ -160,32 +159,30 @@ static void from_json(const json& j, Proof& proof)
     }
 }
 
-class TradeHistoryLeaf
+class StorageLeaf
 {
 public:
-    ethsnarks::FieldT filled;
-    ethsnarks::FieldT orderID;
+    ethsnarks::FieldT data;
+    ethsnarks::FieldT storageID;
 };
 
-static void from_json(const json& j, TradeHistoryLeaf& leaf)
+static void from_json(const json& j, StorageLeaf& leaf)
 {
-    leaf.filled = ethsnarks::FieldT(j.at("filled").get<std::string>().c_str());
-    leaf.orderID = ethsnarks::FieldT(j.at("orderID").get<std::string>().c_str());
+    leaf.data = ethsnarks::FieldT(j.at("data").get<std::string>().c_str());
+    leaf.storageID = ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
 }
 
 class BalanceLeaf
 {
 public:
     ethsnarks::FieldT balance;
-    ethsnarks::FieldT index;
-    ethsnarks::FieldT tradingHistoryRoot;
+    ethsnarks::FieldT storageRoot;
 };
 
 static void from_json(const json& j, BalanceLeaf& leaf)
 {
     leaf.balance = ethsnarks::FieldT(j.at("balance").get<std::string>().c_str());
-    leaf.index = ethsnarks::FieldT(j.at("index").get<std::string>().c_str());
-    leaf.tradingHistoryRoot = ethsnarks::FieldT(j.at("tradingHistoryRoot").get<std::string>().c_str());
+    leaf.storageRoot = ethsnarks::FieldT(j.at("storageRoot").get<std::string>().c_str());
 }
 
 class Account
@@ -229,25 +226,25 @@ static void from_json(const json& j, BalanceUpdate& balanceUpdate)
     balanceUpdate.after = j.at("after").get<BalanceLeaf>();
 }
 
-class TradeHistoryUpdate
+class StorageUpdate
 {
 public:
-    ethsnarks::FieldT orderID;
+    ethsnarks::FieldT storageID;
     Proof proof;
     ethsnarks::FieldT rootBefore;
     ethsnarks::FieldT rootAfter;
-    TradeHistoryLeaf before;
-    TradeHistoryLeaf after;
+    StorageLeaf before;
+    StorageLeaf after;
 };
 
-static void from_json(const json& j, TradeHistoryUpdate& tradeHistoryUpdate)
+static void from_json(const json& j, StorageUpdate& storageUpdate)
 {
-    tradeHistoryUpdate.orderID = ethsnarks::FieldT(j.at("orderID").get<std::string>().c_str());
-    tradeHistoryUpdate.proof = j.at("proof").get<Proof>();
-    tradeHistoryUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
-    tradeHistoryUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
-    tradeHistoryUpdate.before = j.at("before").get<TradeHistoryLeaf>();
-    tradeHistoryUpdate.after = j.at("after").get<TradeHistoryLeaf>();
+    storageUpdate.storageID = ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
+    storageUpdate.proof = j.at("proof").get<Proof>();
+    storageUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
+    storageUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
+    storageUpdate.before = j.at("before").get<StorageLeaf>();
+    storageUpdate.after = j.at("after").get<StorageLeaf>();
 }
 
 class AccountUpdate
@@ -299,7 +296,7 @@ static void from_json(const json& j, Signature& signature)
 class Order
 {
 public:
-    ethsnarks::FieldT orderID;
+    ethsnarks::FieldT storageID;
     ethsnarks::FieldT accountID;
     ethsnarks::FieldT tokenS;
     ethsnarks::FieldT tokenB;
@@ -318,7 +315,7 @@ public:
 
 static void from_json(const json& j, Order& order)
 {
-    order.orderID = ethsnarks::FieldT(j.at("orderID").get<std::string>().c_str());
+    order.storageID = ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
     order.accountID = ethsnarks::FieldT(j.at("accountID"));
     order.tokenS = ethsnarks::FieldT(j.at("tokenS"));
     order.tokenB = ethsnarks::FieldT(j.at("tokenB"));
@@ -359,7 +356,6 @@ public:
     ethsnarks::FieldT accountID;
     ethsnarks::FieldT tokenID;
     ethsnarks::FieldT amount;
-    ethsnarks::FieldT index;
 };
 
 static void from_json(const json& j, Deposit& deposit)
@@ -368,7 +364,6 @@ static void from_json(const json& j, Deposit& deposit)
     deposit.accountID = ethsnarks::FieldT(j.at("accountID"));
     deposit.tokenID = ethsnarks::FieldT(j.at("tokenID"));
     deposit.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
-    deposit.index = ethsnarks::FieldT(j.at("index").get<std::string>().c_str());
 }
 
 class Withdrawal
@@ -511,8 +506,8 @@ static void from_json(const json& j, Transfer& transfer)
 class Witness
 {
 public:
-    TradeHistoryUpdate tradeHistoryUpdate_A;
-    TradeHistoryUpdate tradeHistoryUpdate_B;
+    StorageUpdate storageUpdate_A;
+    StorageUpdate storageUpdate_B;
 
     BalanceUpdate balanceUpdateS_A;
     BalanceUpdate balanceUpdateB_A;
@@ -529,9 +524,6 @@ public:
     BalanceUpdate balanceUpdateA_P;
     BalanceUpdate balanceUpdateB_P;
 
-    BalanceUpdate balanceUpdateA_I;
-    BalanceUpdate balanceUpdateB_I;
-
     Signature signatureA;
     Signature signatureB;
 
@@ -540,8 +532,8 @@ public:
 
 static void from_json(const json& j, Witness& state)
 {
-    state.tradeHistoryUpdate_A = j.at("tradeHistoryUpdate_A").get<TradeHistoryUpdate>();
-    state.tradeHistoryUpdate_B = j.at("tradeHistoryUpdate_B").get<TradeHistoryUpdate>();
+    state.storageUpdate_A = j.at("storageUpdate_A").get<StorageUpdate>();
+    state.storageUpdate_B = j.at("storageUpdate_B").get<StorageUpdate>();
 
     state.balanceUpdateS_A = j.at("balanceUpdateS_A").get<BalanceUpdate>();
     state.balanceUpdateB_A = j.at("balanceUpdateB_A").get<BalanceUpdate>();
@@ -557,9 +549,6 @@ static void from_json(const json& j, Witness& state)
 
     state.balanceUpdateA_P = j.at("balanceUpdateA_P").get<BalanceUpdate>();
     state.balanceUpdateB_P = j.at("balanceUpdateB_P").get<BalanceUpdate>();
-
-    state.balanceUpdateA_I = j.at("balanceUpdateA_I").get<BalanceUpdate>();
-    state.balanceUpdateB_I = j.at("balanceUpdateB_I").get<BalanceUpdate>();
 
     state.signatureA = dummySignature.get<Signature>();
     state.signatureB = dummySignature.get<Signature>();

@@ -33,9 +33,6 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         uint    amount
     );
 
-    // Index base
-    uint constant public INDEX_BASE = 10 ** 18;
-
     address public exchange;
     ILoopringV3 public loopring;
 
@@ -75,7 +72,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         override
         payable
         onlyExchange
-        returns (uint96 actualAmount, uint tokenIndex)
+        returns (uint96 actualAmount)
     {
         // Check msg.value
         if (isETHInternal(token)) {
@@ -97,7 +94,6 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         exchangeBalance[token] = exchangeBalanceBefore.add(uint(amount));
 
         actualAmount = amount;
-        tokenIndex = INDEX_BASE;
     }
 
     function withdraw(

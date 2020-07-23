@@ -25,7 +25,7 @@ class GeneralObject(object):
 
 
 def orderFromJSON(jOrder, state):
-    orderID = int(jOrder["orderID"])
+    storageID = int(jOrder["storageID"])
     accountID = int(jOrder["accountID"])
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
@@ -44,7 +44,7 @@ def orderFromJSON(jOrder, state):
     account = state.getAccount(accountID)
 
     order = Order(account.publicKeyX, account.publicKeyY,
-                  orderID, accountID,
+                  storageID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,
                   allOrNone, validSince, validUntil, buy, taker,
@@ -106,7 +106,6 @@ def depositFromJSON(jDeposit):
     deposit.accountID = int(jDeposit["accountID"])
     deposit.tokenID = int(jDeposit["tokenID"])
     deposit.amount = str(jDeposit["amount"])
-    deposit.index = str(jDeposit["index"])
     return deposit
 
 

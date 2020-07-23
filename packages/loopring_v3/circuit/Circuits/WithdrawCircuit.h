@@ -128,8 +128,8 @@ public:
         needsSignature(pb, isConditional.result(), FMT(prefix, ".needsSignature")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS, state.index.balanceB, FMT(prefix, ".balanceS_A")),
-        balanceB_P(pb, state.constants, state.pool.balanceB, state.index.balanceB, FMT(prefix, ".balanceB_P")),
+        balanceS_A(pb, state.constants, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_P(pb, state.constants, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
 
         // Check how much should be withdrawn
         fullBalance(pb, isProtocolFeeWithdrawal.result(), balanceB_P.balance(), balanceS_A.balance(), FMT(prefix, ".fullBalance")),
@@ -141,8 +141,8 @@ public:
         checkInvalidFullWithdrawal(pb, invalidFullWithdrawalType.result(), amountIsZero.result(), FMT(prefix, ".checkInvalidFullWithdrawal")),
 
         // Fee balances
-        balanceB_A(pb, state.constants, state.accountA.balanceB, state.index.balanceA, FMT(prefix, ".balanceB_A")),
-        balanceA_O(pb, state.constants, state.oper.balanceA, state.index.balanceA, FMT(prefix, ".balanceA_O")),
+        balanceB_A(pb, state.constants, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+        balanceA_O(pb, state.constants, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
         requireAccuracyFee(pb, fFee.value(), fee.packed, Float16Accuracy, NUM_BITS_AMOUNT, FMT(prefix, ".requireAccuracyFee")),
@@ -171,18 +171,14 @@ public:
         // Update the account balances (withdrawal + fee)
         setArrayOutput(balanceA_S_Address, tokenID.bits);
         setOutput(balanceA_S_Balance, balanceA_after.result());
-        setOutput(balanceA_S_Index, balanceS_A.index());
         setArrayOutput(balanceB_S_Address, feeTokenID.bits);
         setOutput(balanceA_B_Balance, balanceB_A.balance());
-        setOutput(balanceA_B_Index, balanceB_A.index());
 
         // Update the protocol fee pool balance when withdrawing from the protocol pool
         setOutput(balanceP_B_Balance, balanceP_after.result());
-        setOutput(balanceP_B_Index, balanceB_P.index());
 
         // Update the operator balance for the fee payment
         setOutput(balanceO_A_Balance, balanceA_O.balance());
-        setOutput(balanceO_A_Index, balanceA_O.index());
 
         // Verify a single signature of the account owner (if not conditional)
         setOutput(hash_A, hash.result());

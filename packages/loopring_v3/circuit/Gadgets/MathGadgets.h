@@ -45,19 +45,13 @@ public:
     const VariableT _1001;
     const VariableT _10000;
     const VariableT _100000;
-    const VariableT indexBase;
-    const VariableT emptyTradeHistory;
+    const VariableT emptyStorage;
     const VariableT maxAmount;
-    const VariableT maxConcurrentOrderIDs;
+    const VariableT numStorageSlots;
     const VariableT dummyPublicKeyX;
     const VariableT dummyPublicKeyY;
     const VariableT txTypeTransfer;
     const VariableT txTypeNewAccount;
-
-    const VariableT pow10_c0;
-    const VariableT pow10_c1;
-    const VariableT pow10_c2;
-    const VariableT pow10_c3;
 
     const VariableArrayT zeroAccount;
 
@@ -84,19 +78,13 @@ public:
         _1001(make_variable(pb, ethsnarks::FieldT(1001), FMT(prefix, "._1001"))),
         _10000(make_variable(pb, ethsnarks::FieldT(10000), FMT(prefix, "._10000"))),
         _100000(make_variable(pb, ethsnarks::FieldT(100000), FMT(prefix, "._100000"))),
-        indexBase(make_variable(pb, ethsnarks::FieldT(INDEX_BASE), FMT(prefix, ".indexBase"))),
-        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyTradeHistory"))),
+        emptyStorage(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyStorage"))),
         maxAmount(make_variable(pb, ethsnarks::FieldT(MAX_AMOUNT), FMT(prefix, ".maxAmount"))),
-        maxConcurrentOrderIDs(make_variable(pb, ethsnarks::FieldT(MAX_CONCURRENT_ORDERIDS), FMT(prefix, ".maxConcurrentOrderIDs"))),
+        numStorageSlots(make_variable(pb, ethsnarks::FieldT(NUM_STORAGE_SLOTS), FMT(prefix, ".numStorageSlots"))),
         dummyPublicKeyX(make_variable(pb, ethsnarks::FieldT("132404916167441185773716937639098950030214269269071041759116060313694190797"), FMT(prefix, ".dummyPublicKeyX"))),
         dummyPublicKeyY(make_variable(pb, ethsnarks::FieldT("6933274320914065805670637410453081675154127044926882796951068647148079547843"), FMT(prefix, ".dummyPublicKeyY"))),
         txTypeTransfer(make_variable(pb, ethsnarks::FieldT(int(TransactionType::Transfer)), FMT(prefix, ".txTypeTransfer"))),
         txTypeNewAccount(make_variable(pb, ethsnarks::FieldT(int(TransactionType::AccountNew)), FMT(prefix, ".txTypeNewAccount"))),
-
-        pow10_c0(make_variable(pb, ethsnarks::FieldT(POW10_C0), FMT(prefix, ".pow10_c0"))),
-        pow10_c1(make_variable(pb, ethsnarks::FieldT(POW10_C1), FMT(prefix, ".pow10_c1"))),
-        pow10_c2(make_variable(pb, ethsnarks::FieldT(POW10_C2), FMT(prefix, ".pow10_c2"))),
-        pow10_c3(make_variable(pb, ethsnarks::FieldT(POW10_C3), FMT(prefix, ".pow10_c3"))),
 
         zeroAccount(NUM_BITS_ACCOUNT, _0)
     {
@@ -139,19 +127,13 @@ public:
         pb.add_r1cs_constraint(ConstraintT(_1001, FieldT::one(), ethsnarks::FieldT(1001)), "._1001");
         pb.add_r1cs_constraint(ConstraintT(_10000, FieldT::one(), ethsnarks::FieldT(10000)), "._10000");
         pb.add_r1cs_constraint(ConstraintT(_100000, FieldT::one(), ethsnarks::FieldT(100000)), "._100000");
-        pb.add_r1cs_constraint(ConstraintT(indexBase, FieldT::one(), ethsnarks::FieldT(INDEX_BASE)), ".indexBase");
-        pb.add_r1cs_constraint(ConstraintT(emptyTradeHistory, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyTradeHistory");
+        pb.add_r1cs_constraint(ConstraintT(emptyStorage, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyStorage");
         pb.add_r1cs_constraint(ConstraintT(maxAmount, FieldT::one(), ethsnarks::FieldT(MAX_AMOUNT)), ".maxAmount");
-        pb.add_r1cs_constraint(ConstraintT(maxConcurrentOrderIDs, FieldT::one(), ethsnarks::FieldT(MAX_CONCURRENT_ORDERIDS)), ".maxConcurrentOrderIDs");
+        pb.add_r1cs_constraint(ConstraintT(numStorageSlots, FieldT::one(), ethsnarks::FieldT(NUM_STORAGE_SLOTS)), ".numStorageSlots");
         pb.add_r1cs_constraint(ConstraintT(dummyPublicKeyX, FieldT::one(), ethsnarks::FieldT("132404916167441185773716937639098950030214269269071041759116060313694190797")), ".dummyPublicKeyX");
         pb.add_r1cs_constraint(ConstraintT(dummyPublicKeyY, FieldT::one(), ethsnarks::FieldT("6933274320914065805670637410453081675154127044926882796951068647148079547843")), ".dummyPublicKeyY");
         pb.add_r1cs_constraint(ConstraintT(txTypeTransfer, FieldT::one(), ethsnarks::FieldT(int(TransactionType::Transfer))), ".txTypeTransfer");
         pb.add_r1cs_constraint(ConstraintT(txTypeNewAccount, FieldT::one(), ethsnarks::FieldT(int(TransactionType::AccountNew))), ".txTypeNewAccount");
-
-        pb.add_r1cs_constraint(ConstraintT(pow10_c0, FieldT::one(), ethsnarks::FieldT(POW10_C0)), ".pow10_c0");
-        pb.add_r1cs_constraint(ConstraintT(pow10_c1, FieldT::one(), ethsnarks::FieldT(POW10_C1)), ".pow10_c1");
-        pb.add_r1cs_constraint(ConstraintT(pow10_c2, FieldT::one(), ethsnarks::FieldT(POW10_C2)), ".pow10_c2");
-        pb.add_r1cs_constraint(ConstraintT(pow10_c3, FieldT::one(), ethsnarks::FieldT(POW10_C3)), ".pow10_c3");
     }
 };
 

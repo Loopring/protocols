@@ -26,9 +26,6 @@ export class NewAccountProcessor {
     txData: Bitstream
   ) {
     const create = this.extractData(txData);
-
-    const index = state.getAccount(1);
-
     const payerAccount = state.getAccount(create.payerAccountID);
     const newAccount = state.getAccount(create.newAccountID);
 
@@ -38,11 +35,11 @@ export class NewAccountProcessor {
     newAccount.walletHash = create.newWalletHash;
     payerAccount.nonce++;
 
-    const balance = payerAccount.getBalance(create.feeTokenID, index);
+    const balance = payerAccount.getBalance(create.feeTokenID);
     balance.balance.isub(create.fee);
 
     const operator = state.getAccount(block.operatorAccountID);
-    const balanceO = operator.getBalance(create.feeTokenID, index);
+    const balanceO = operator.getBalance(create.feeTokenID);
     balanceO.balance.iadd(create.fee);
 
     return create;

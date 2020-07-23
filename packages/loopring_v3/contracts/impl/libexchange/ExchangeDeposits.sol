@@ -27,7 +27,6 @@ library ExchangeDeposits
         address owner,
         address token,
         uint96  amount,
-        uint96  index,
         uint    fee
     );
 
@@ -47,7 +46,7 @@ library ExchangeDeposits
         uint16 tokenID = S.getTokenID(tokenAddress);
 
         // Transfer the tokens to this contract
-        (uint96 amountDeposited, uint tokenIndex, uint64 fee) = transferDeposit(
+        (uint96 amountDeposited, uint64 fee) = transferDeposit(
             S,
             from,
             tokenAddress,
@@ -56,19 +55,18 @@ library ExchangeDeposits
         );
 
         // Add the amount to the deposit request and reset the time the operator has to process it
-        S.pendingDeposits[to][tokenID][tokenIndex].timestamp = uint32(now);
+        S.pendingDeposits[to][tokenID].timestamp = uint32(now);
 
-        S.pendingDeposits[to][tokenID][tokenIndex].amount =
-            S.pendingDeposits[to][tokenID][tokenIndex].amount.add96(amountDeposited);
+        S.pendingDeposits[to][tokenID].amount =
+            S.pendingDeposits[to][tokenID].amount.add96(amountDeposited);
 
-        S.pendingDeposits[to][tokenID][tokenIndex].fee =
-            S.pendingDeposits[to][tokenID][tokenIndex].fee.add64(fee);
+        S.pendingDeposits[to][tokenID].fee =
+            S.pendingDeposits[to][tokenID].fee.add64(fee);
 
         emit DepositRequested(
             to,
             tokenAddress,
             uint96(amountDeposited),
-            uint96(tokenIndex),
             fee
         );
     }
@@ -83,7 +81,6 @@ library ExchangeDeposits
         private
         returns (
             uint96 amountDeposited,
-            uint   tokenIndex,
             uint64 fee
         )
     {
@@ -96,7 +93,7 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        (amountDeposited, tokenIndex) = S.depositContract.deposit{value: depositValueETH}(
+        amountDeposited = S.depositContract.deposit{value: depositValueETH}(
             from,
             tokenAddress,
             amount,

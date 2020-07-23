@@ -23,19 +23,17 @@ export class AccountUpdateProcessor {
   public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
     const update = AccountUpdateProcessor.extractData(txData);
 
-    const index = state.getAccount(1);
-
     const account = state.getAccount(update.accountID);
     account.publicKeyX = update.publicKeyX;
     account.publicKeyY = update.publicKeyY;
     account.walletHash = update.walletHash;
     account.nonce++;
 
-    const balance = account.getBalance(update.feeTokenID, index);
+    const balance = account.getBalance(update.feeTokenID);
     balance.balance.isub(update.fee);
 
     const operator = state.getAccount(block.operatorAccountID);
-    const balanceO = operator.getBalance(update.feeTokenID, index);
+    const balanceO = operator.getBalance(update.feeTokenID);
     balanceO.balance.iadd(update.fee);
 
     return update;

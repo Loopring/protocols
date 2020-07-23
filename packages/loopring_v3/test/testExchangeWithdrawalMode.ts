@@ -81,7 +81,6 @@ contract("Exchange", (accounts: string[]) => {
   const withdrawFromDepositRequestChecked = async (
     owner: string,
     token: string,
-    index: BN,
     expectedAmount: BN,
     expectedFee: BN
   ) => {
@@ -91,7 +90,7 @@ contract("Exchange", (accounts: string[]) => {
     await snapshot.transfer(exchange.address, owner, "ETH", expectedFee, "exchange", "owner");
 
     // Do the withdrawal
-    await exchangeTestUtil.exchange.withdrawFromDepositRequest(owner, token, index);
+    await exchangeTestUtil.exchange.withdrawFromDepositRequest(owner, token);
 
     // Verify balances
     await snapshot.verifyBalances();
@@ -405,7 +404,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchangeTestUtil.exchange.withdrawFromDepositRequest(depositA.owner, depositA.token, depositA.index),
+        exchangeTestUtil.exchange.withdrawFromDepositRequest(depositA.owner, depositA.token),
         "DEPOSIT_NOT_WITHDRAWABLE_YET"
       );
 
@@ -415,35 +414,15 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // We should be in withdrawal mode and able to withdraw from the pending deposits
-
-      if (depositB.index.eq(depositC.index)) {
-        await withdrawFromDepositRequestChecked(
-          depositB.owner,
-          depositB.token,
-          depositB.index,
-          depositB.amount.add(depositC.amount),
-          depositB.fee.add(depositC.fee)
-        );
-      } else {
-        await withdrawFromDepositRequestChecked(
-          depositB.owner,
-          depositB.token,
-          depositB.index,
-          depositB.amount,
-          depositB.fee
-        );
-        await withdrawFromDepositRequestChecked(
-          depositC.owner,
-          depositC.token,
-          depositC.index,
-          depositC.amount,
-          depositC.fee
-        );
-      }
+      await withdrawFromDepositRequestChecked(
+        depositB.owner,
+        depositB.token,
+        depositB.amount.add(depositC.amount),
+        depositB.fee.add(depositC.fee)
+      );
       await withdrawFromDepositRequestChecked(
         depositD.owner,
         depositD.token,
-        depositD.index,
         depositD.amount,
         depositD.fee
       );
@@ -453,7 +432,6 @@ contract("Exchange", (accounts: string[]) => {
         withdrawFromDepositRequestChecked(
           depositD.owner,
           depositD.token,
-          depositD.index,
           depositD.amount,
           depositD.fee
         ),
@@ -465,7 +443,6 @@ contract("Exchange", (accounts: string[]) => {
         withdrawFromDepositRequestChecked(
           depositA.owner,
           depositA.token,
-          depositA.index,
           depositA.amount,
           depositA.fee
         ),

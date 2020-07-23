@@ -126,13 +126,12 @@ library ExchangeWithdrawals
     function withdrawFromDepositRequest(
         ExchangeData.State storage S,
         address owner,
-        address token,
-        uint    index
+        address token
         )
         external
     {
         uint16 tokenID = S.getTokenID(token);
-        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID][index];
+        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID];
         require(deposit.timestamp != 0, "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
         // Check if the deposit has indeed exceeded the time limit
@@ -142,7 +141,7 @@ library ExchangeWithdrawals
         uint fee = deposit.fee;
 
         // Reset the deposit request
-        S.pendingDeposits[owner][tokenID][index] = ExchangeData.Deposit(0, 0, 0);
+        delete S.pendingDeposits[owner][tokenID];
 
         // Transfer the tokens
         transferTokens(
@@ -174,7 +173,7 @@ library ExchangeWithdrawals
             uint amount = S.amountWithdrawable[owner][tokenID];
 
             // Make sure this amount can't be withdrawn again
-            S.amountWithdrawable[owner][tokenID] = 0;
+            delete S.amountWithdrawable[owner][tokenID];
 
             // Transfer the tokens
             transferTokens(

@@ -25,34 +25,32 @@ export class TransferProcessor {
   public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
     const transfer = this.extractData(txData);
 
-    const index = state.getAccount(1);
-
     const from = state.getAccount(transfer.accountFromID);
     const to = state.getAccount(transfer.accountToID);
     if (transfer.to !== Constants.zeroAddress) {
       to.owner = transfer.to;
     }
 
-    from.getBalance(transfer.tokenID, index).balance.isub(transfer.amount);
-    to.getBalance(transfer.tokenID, index).balance.iadd(transfer.amount);
+    from.getBalance(transfer.tokenID).balance.isub(transfer.amount);
+    to.getBalance(transfer.tokenID).balance.iadd(transfer.amount);
 
-    from.getBalance(transfer.feeTokenID, index).balance.isub(transfer.fee);
+    from.getBalance(transfer.feeTokenID).balance.isub(transfer.fee);
 
     // Nonce
     const storageSlot = transfer.shortStorageID & 0b0011111111111111;
     const overwriteSlot = (transfer.shortStorageID & 0b0100000000000000) !== 0;
-    const storage = from.getBalanceRaw(transfer.tokenID).getTradeHistory(storageSlot);
-    if (storage.orderID === 0) {
-      storage.orderID = storageSlot;
+    const storage = from.getBalance(transfer.tokenID).getStorage(storageSlot);
+    if (storage.storageID === 0) {
+      storage.storageID = storageSlot;
     }
     if (overwriteSlot) {
-      storage.orderID += Constants.NUM_STORAGE_SLOTS;
-      storage.filled = new BN(0);
+      storage.storageID += Constants.NUM_STORAGE_SLOTS;
+      storage.data = new BN(0);
     }
-    storage.filled = new BN(1);
+    storage.data = new BN(1);
 
     const operator = state.getAccount(block.operatorAccountID);
-    operator.getBalance(transfer.feeTokenID, index).balance.iadd(transfer.fee);
+    operator.getBalance(transfer.feeTokenID).balance.iadd(transfer.fee);
 
     return transfer;
   }

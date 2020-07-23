@@ -5,7 +5,7 @@
 
 #include "../Utils/Constants.h"
 #include "../Utils/Data.h"
-#include "TradingHistoryGadgets.h"
+#include "StorageGadgets.h"
 #include "AccountGadgets.h"
 
 #include "ethsnarks.hpp"
@@ -21,7 +21,7 @@ class OrderGadget : public GadgetT
 {
 public:
     // Inputs
-    DualVariableGadget orderID;
+    DualVariableGadget storageID;
     DualVariableGadget accountID;
     DualVariableGadget tokenS;
     DualVariableGadget tokenB;
@@ -61,7 +61,7 @@ public:
         GadgetT(pb, prefix),
 
         // Inputs
-        orderID(pb, NUM_BITS_ORDERID, FMT(prefix, ".orderID")),
+        storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
         accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
         tokenS(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenS")),
         tokenB(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenB")),
@@ -92,7 +92,7 @@ public:
         // Signature
         hash(pb, var_array({
             blockExchange,
-            orderID.packed,
+            storageID.packed,
             accountID.packed,
             tokenS.packed,
             tokenB.packed,
@@ -112,7 +112,7 @@ public:
     void generate_r1cs_witness(const Order& order)
     {
         // Inputs
-        orderID.generate_r1cs_witness(pb, order.orderID);
+        storageID.generate_r1cs_witness(pb, order.storageID);
         accountID.generate_r1cs_witness(pb, order.accountID);
         tokenS.generate_r1cs_witness(pb, order.tokenS);
         tokenB.generate_r1cs_witness(pb, order.tokenB);
@@ -147,7 +147,7 @@ public:
     void generate_r1cs_constraints(bool doSignatureCheck = true)
     {
         // Inputs
-        orderID.generate_r1cs_constraints(true);
+        storageID.generate_r1cs_constraints(true);
         accountID.generate_r1cs_constraints(true);
         tokenS.generate_r1cs_constraints(true);
         tokenB.generate_r1cs_constraints(true);

@@ -7,7 +7,7 @@
 #include "../Utils/Data.h"
 #include "MathGadgets.h"
 #include "OrderGadgets.h"
-#include "TradingHistoryGadgets.h"
+#include "StorageGadgets.h"
 
 #include "ethsnarks.hpp"
 #include "utils.hpp"

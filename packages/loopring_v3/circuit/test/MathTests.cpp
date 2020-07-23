@@ -1449,69 +1449,6 @@ TEST_CASE("Range limit", "[dual_variable_gadget]")
     }}
 }
 
-
-FieldT applyInterest(const FieldT& balance, const FieldT& oldIndex, const FieldT& newIndex)
-{
-    BigInt multiplier = (toBigInt(newIndex) * BigInt(INDEX_BASE)) / toBigInt(oldIndex);
-    FieldT newBalance = toFieldElement((toBigInt(balance) * multiplier) / BigInt(INDEX_BASE));
-    return newBalance;
-}
-
-TEST_CASE("Apply Interest", "[ApplyInterestGadget]")
-{
-    auto applyInterestChecked = [](const FieldT& _balance, const FieldT& _oldIndex, const FieldT& _newIndex)
-    {
-        protoboard<FieldT> pb;
-        Constants constants(pb, "constants");
-
-        VariableT balance = make_variable(pb, _balance, "balance");
-        VariableT oldIndex = make_variable(pb, _oldIndex, "oldIndex");
-        VariableT newIndex = make_variable(pb, _newIndex, "newIndex");
-        ApplyInterestGadget applyInterestGadget(pb, constants, balance, oldIndex, newIndex, "applyInterest");
-        applyInterestGadget.generate_r1cs_witness();
-        applyInterestGadget.generate_r1cs_constraints();
-
-        FieldT expectedResult;
-
-        bool expectedSatisfied = toBigInt(_newIndex) >= toBigInt(_oldIndex);
-        if (expectedSatisfied)
-        {
-            expectedResult = applyInterest(_balance, _oldIndex, _newIndex);
-        }
-        expectedSatisfied = expectedSatisfied && (toBigInt(expectedResult) <= toBigInt(getMaxFieldElement(NUM_BITS_AMOUNT)));
-        REQUIRE(pb.is_satisfied() == expectedSatisfied);
-        if (expectedSatisfied)
-        {
-            REQUIRE((pb.val(applyInterestGadget.result()) == expectedResult));
-        }
-    };
-
-    unsigned int numIterations = 1024;
-    unsigned int n = NUM_BITS_AMOUNT;
-    FieldT indexBase = FieldT(INDEX_BASE);
-    FieldT max = getMaxFieldElement(n);
-
-    SECTION("0")
-    {
-        applyInterestChecked(0, indexBase, indexBase);
-    }
-
-    SECTION("max")
-    {
-        applyInterestChecked(max, indexBase, indexBase);
-    }
-
-    SECTION("random value")
-    {
-        for (unsigned int j = 0; j < numIterations; j++)
-        {
-            FieldT oldIndex = indexBase + getRandomFieldElement(64);
-            FieldT newIndex = indexBase + getRandomFieldElement(64);
-            applyInterestChecked(getRandomFieldElement(n-10), oldIndex, newIndex);
-        }
-    }
-}
-
 TEST_CASE("LtField", "[LtFieldGadget]")
 {
     unsigned int numIterations = 8*1024;

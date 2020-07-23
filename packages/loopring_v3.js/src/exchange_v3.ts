@@ -14,7 +14,7 @@ import {
   Block,
   Deposit,
   OnchainWithdrawal,
-  TradeHistory,
+  Storage,
   Token,
   Balance,
   Account,
@@ -65,9 +65,9 @@ export class ExchangeV3 {
 
   private merkleTree: SparseMerkleTree;
 
-  // decimal representation of `0x1dacdc3f6863d9db1d903e7285ebf74b61f02d585ccb52ecaeaf97dbb773becf`
+  // decimal representation of `0x02b78c40c9dbb8728b88a7e341bafa71bf2d7af4c8cb9f6953b400b10c0d140e`
   private genesisMerkleRoot =
-    "13422490397723095974327695797813848518088539216215104429864410479629968850639";
+    "1228926701204272881136010642145049523437081007992474610987651151871477617678";
 
   private protocolFees: ProtocolFees;
 
@@ -229,18 +229,17 @@ export class ExchangeV3 {
     const accountHasher = poseidon.createHash(7, 6, 52);
 
     // Make empty trees so we have all necessary default values
-    const tradeHistoryMerkleTree = new SparseMerkleTree(
-      Constants.BINARY_TREE_DEPTH_TRADING_HISTORY / 2
+    const storageMerkleTree = new SparseMerkleTree(
+      Constants.BINARY_TREE_DEPTH_STORAGE / 2
     );
-    tradeHistoryMerkleTree.newTree(hasher([0, 0]).toString(10));
+    storageMerkleTree.newTree(hasher([0, 0]).toString(10));
     const balancesMerkleTree = new SparseMerkleTree(
       Constants.BINARY_TREE_DEPTH_TOKENS / 2
     );
     balancesMerkleTree.newTree(
       hasher([
         0,
-        Constants.INDEX_BASE,
-        tradeHistoryMerkleTree.getRoot()
+        storageMerkleTree.getRoot()
       ]).toString(10)
     );
     this.merkleTree = new SparseMerkleTree(
@@ -264,23 +263,22 @@ export class ExchangeV3 {
       account.balancesMerkleTree.newTree(
         hasher([
           0,
-          Constants.INDEX_BASE,
-          tradeHistoryMerkleTree.getRoot()
+          storageMerkleTree.getRoot()
         ]).toString(10)
       );
       for (const tokenID of Object.keys(account.balances)) {
         const balanceValue = account.balances[Number(tokenID)];
-        balanceValue.tradeHistoryTree = new SparseMerkleTree(
-          Constants.BINARY_TREE_DEPTH_TRADING_HISTORY / 2
+        balanceValue.storageTree = new SparseMerkleTree(
+          Constants.BINARY_TREE_DEPTH_STORAGE / 2
         );
-        balanceValue.tradeHistoryTree.newTree(hasher([0, 0]).toString(10));
-        for (const orderID of Object.keys(balanceValue.tradeHistory)) {
-          const tradeHistoryValue = balanceValue.tradeHistory[Number(orderID)];
-          balanceValue.tradeHistoryTree.update(
+        balanceValue.storageTree.newTree(hasher([0, 0]).toString(10));
+        for (const orderID of Object.keys(balanceValue.storage)) {
+          const storageValue = balanceValue.storage[Number(orderID)];
+          balanceValue.storageTree.update(
             Number(orderID),
             hasher([
-              tradeHistoryValue.filled,
-              tradeHistoryValue.orderID
+              storageValue.data,
+              storageValue.storageID
             ]).toString(10)
           );
         }
@@ -288,8 +286,7 @@ export class ExchangeV3 {
           Number(tokenID),
           hasher([
             balanceValue.balance,
-            balanceValue.index,
-            balanceValue.tradeHistoryTree.getRoot()
+            balanceValue.storageTree.getRoot()
           ]).toString(10)
         );
       }
@@ -341,10 +338,10 @@ export class ExchangeV3 {
     const balanceMerkleProof = account.balancesMerkleTree.createProof(tokenID);
 
     const hasher = poseidon.createHash(5, 6, 52);
-    const tradeHistoryTree = new SparseMerkleTree(
-      Constants.BINARY_TREE_DEPTH_TRADING_HISTORY / 2
+    const storageTree = new SparseMerkleTree(
+      Constants.BINARY_TREE_DEPTH_STORAGE / 2
     );
-    tradeHistoryTree.newTree(hasher([0, 0]).toString(10));
+    storageTree.newTree(hasher([0, 0]).toString(10));
 
     const accountLeaf: OnchainAccountLeaf = {
       accountID: account.accountId,
@@ -356,12 +353,11 @@ export class ExchangeV3 {
     };
     const balanceLeaf: OnchainBalanceLeaf = {
       tokenID,
-      balance: account.getBalanceRaw(tokenID).balance.toString(10),
-      index: account.getBalanceRaw(tokenID).index.toString(10),
-      tradeHistoryRoot:
-        account.getBalanceRaw(tokenID).tradeHistoryTree !== undefined
-          ? account.getBalanceRaw(tokenID).tradeHistoryTree.getRoot()
-          : tradeHistoryTree.getRoot()
+      balance: account.getBalance(tokenID).balance.toString(10),
+      storageRoot:
+        account.getBalance(tokenID).storageTree !== undefined
+          ? account.getBalance(tokenID).storageTree.getRoot()
+          : storageTree.getRoot()
     };
     const withdrawFromMerkleTreeData: WithdrawFromMerkleTreeData = {
       accountLeaf,
@@ -833,7 +829,6 @@ export class ExchangeV3 {
       owner: event.returnValues.owner,
       token: event.returnValues.token,
       amount: new BN(event.returnValues.amount, 10),
-      index: new BN(event.returnValues.index, 10),
       fee: new BN(event.returnValues.fee, 10),
 
       transactionHash: event.transactionHash

@@ -59,8 +59,8 @@ public:
         walletHash(pb, state.accountA.account.walletHash, NUM_BITS_HASH, FMT(prefix, ".walletHash")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS, state.index.balanceB, FMT(prefix, ".balanceS_A")),
-        balanceB_O(pb, state.constants, state.oper.balanceB, state.index.balanceB, FMT(prefix, ".balanceB_O")),
+        balanceS_A(pb, state.constants, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_O(pb, state.constants, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
         requireAccuracyFee(pb, fFee.value(), fee.packed, Float16Accuracy, NUM_BITS_AMOUNT, FMT(prefix, ".requireAccuracyFee")),
@@ -80,10 +80,8 @@ public:
         // Update the account balance for the fee payment
         setArrayOutput(balanceA_S_Address, feeTokenID.bits);
         setOutput(balanceA_S_Balance, balanceS_A.balance());
-        setOutput(balanceA_S_Index, balanceS_A.index());
         // Update the operator balance for the fee payment
         setOutput(balanceO_B_Balance, balanceB_O.balance());
-        setOutput(balanceO_B_Index, balanceB_O.index());
 
         // No offchain signatures required
         setOutput(signatureRequired_A, state.constants._0);

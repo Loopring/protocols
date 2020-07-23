@@ -131,7 +131,7 @@ public:
         type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
         from(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".from")),
         to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".to")),
-        storageID(pb, NUM_BITS_ORDERID, FMT(prefix, ".storageID")),
+        storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
         dualAuthorX(make_variable(pb, FMT(prefix, ".dualAuthorX"))),
         dualAuthorY(make_variable(pb, FMT(prefix, ".dualAuthorY"))),
         data(pb, NUM_BITS_FIELD_CAPACITY, FMT(prefix, ".data")),
@@ -189,10 +189,10 @@ public:
         }), FMT(this->annotation_prefix, ".hashDual")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS, state.index.balanceB, FMT(prefix, ".balanceS_A")),
-        balanceB_A(pb, state.constants, state.accountA.balanceB, state.index.balanceA, FMT(prefix, ".balanceB_A")),
-        balanceB_B(pb, state.constants, state.accountB.balanceB, state.index.balanceB, FMT(prefix, ".balanceB_B")),
-        balanceA_O(pb, state.constants, state.oper.balanceA, state.index.balanceA, FMT(prefix, ".balanceA_O")),
+        balanceS_A(pb, state.constants, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_A(pb, state.constants, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+        balanceB_B(pb, state.constants, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
+        balanceA_O(pb, state.constants, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
 
         // Validation
         toAccountValid(pb, state.constants, state.accountB.account.owner, to.packed, FMT(prefix, ".ownerValid")),
@@ -205,7 +205,7 @@ public:
         da_NeedsToAddress(pb, {toAccountValid.isNewAccount(), isConditional.result()}, FMT(prefix, ".da_NeedsToAddress")),
         da_To(pb, da_NeedsToAddress.result(), to.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_To")),
         da_From(pb, isConditional.result(), from.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_From")),
-        da_StorageID(pb, isConditional.result(), storageID.bits, VariableArrayT(NUM_BITS_ORDERID, state.constants._0), FMT(prefix, ".da_StorageID")),
+        da_StorageID(pb, isConditional.result(), storageID.bits, VariableArrayT(NUM_BITS_STORAGEID, state.constants._0), FMT(prefix, ".da_StorageID")),
 
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
@@ -219,7 +219,7 @@ public:
         transferPayment(pb, balanceS_A, balanceB_B, fAmount.value(), FMT(prefix, ".transferPayment")),
 
         // Nonce
-        nonce(pb, state.constants, state.accountA.tradeHistory, storageID, isTransferTx.result(), FMT(prefix, ".nonce")),
+        nonce(pb, state.constants, state.accountA.storage, storageID, isTransferTx.result(), FMT(prefix, ".nonce")),
         // Increase the number of conditional transactions (if conditional)
         numConditionalTransactionsAfter(pb, state.numConditionalTransactions, isConditional.result(), FMT(prefix, ".numConditionalTransactionsAfter"))
     {
@@ -232,9 +232,7 @@ public:
 
         // Update the From balances (transfer + fee payment)
         setOutput(balanceA_S_Balance, balanceS_A.balance());
-        setOutput(balanceA_S_Index, balanceS_A.index());
         setOutput(balanceA_B_Balance, balanceB_A.balance());
-        setOutput(balanceA_B_Index, balanceB_A.index());
 
         // Update the To account
         setArrayOutput(accountB_Address, toAccountID.bits);
@@ -242,11 +240,9 @@ public:
 
         // Update the To balance (transfer)
         setOutput(balanceB_B_Balance, balanceB_B.balance());
-        setOutput(balanceB_B_Index, balanceB_B.index());
 
         // Update the operator balance for the fee payment
         setOutput(balanceO_A_Balance, balanceA_O.balance());
-        setOutput(balanceO_A_Index, balanceA_O.index());
 
         // Verify 2 signatures (one of the payer, one of the dual author)
         setOutput(hash_A, hashPayer.result());
@@ -260,9 +256,9 @@ public:
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
 
         // Nonce
-        setArrayOutput(tradeHistoryA_Address, subArray(storageID.bits, 0, NUM_BITS_TRADING_HISTORY));
-        setOutput(tradeHistoryA_Filled, nonce.getData());
-        setOutput(tradeHistoryA_OrderId, storageID.packed);
+        setArrayOutput(storageA_Address, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
+        setOutput(storageA_Data, nonce.getData());
+        setOutput(storageA_StorageId, storageID.packed);
     }
 
     void generate_r1cs_witness(const Transfer& transfer)
@@ -429,7 +425,7 @@ public:
             feeTokenID.bits,
             fAmount.bits(),
             fFee.bits(),
-            nonce.getShortID(),
+            nonce.getShortStorageID(),
             da_To.result(),
             da_StorageID.result(),
             da_From.result(),

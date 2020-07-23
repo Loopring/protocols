@@ -111,8 +111,6 @@ export interface Deposit {
   token: number;
   /** The amount that was deposited. */
   amount: BN;
-  /** The index at the time of deposit. */
-  index: BN;
   /** The fee paid for the deposit. */
   fee: BN;
 
@@ -271,11 +269,11 @@ export interface InternalTransfer {
 /**
  * Trade history data.
  */
-export interface TradeHistory {
-  /** How much the order is filled. */
-  filled: BN;
-  /** The orderID of the order the trade history is currently stored for. */
-  orderID: number;
+export interface Storage {
+  /** The data field. */
+  data: BN;
+  /** The storageID of the data that is currently stored for. */
+  storageID: number;
 }
 
 /**
@@ -284,12 +282,10 @@ export interface TradeHistory {
 export interface Balance {
   /** How amount of tokens the account owner has for a token. */
   balance: BN;
-  /** The index when the balance was last accessed. */
-  index: BN;
-  /** The trade history data. */
-  tradeHistory: { [key: number]: TradeHistory };
+  /** The storage. */
+  storage: { [key: number]: Storage };
 
-  tradeHistoryTree?: SparseMerkleTree;
+  storageTree?: SparseMerkleTree;
 }
 
 /**
@@ -354,10 +350,8 @@ export interface OnchainBalanceLeaf {
   tokenID: number;
   /** The current balance the account has for the requested token. */
   balance: string;
-  /** The current index the account has for the requested token. */
-  index: string;
-  /** The trade history root of the balance leaf. */
-  tradeHistoryRoot: string;
+  /** The storage root of the balance leaf. */
+  storageRoot: string;
 }
 export interface WithdrawFromMerkleTreeData {
   /** The account leaf. */
@@ -393,50 +387,41 @@ export interface Signature {
 
 /// Private
 
-export function applyInterest(balance: BN, oldIndex: BN, newIndex: BN) {
-  const multiplier = newIndex.mul(Constants.INDEX_BASE).div(oldIndex);
-  return balance.mul(multiplier).div(Constants.INDEX_BASE);
-}
-
-export class TradeHistoryLeaf implements TradeHistory {
-  filled: BN;
-  orderID: number;
+export class StorageLeaf implements Storage {
+  data: BN;
+  storageID: number;
 
   constructor() {
-    this.filled = new BN(0);
-    this.orderID = 0;
+    this.data = new BN(0);
+    this.storageID = 0;
   }
 }
 
 export class BalanceLeaf implements Balance {
   balance: BN;
-  index: BN;
-  tradeHistory: { [key: number]: TradeHistoryLeaf };
+  storage: { [key: number]: StorageLeaf };
 
-  tradeHistoryTree?: SparseMerkleTree;
+  storageTree?: SparseMerkleTree;
 
   constructor() {
     this.balance = new BN(0);
-    this.index = Constants.INDEX_BASE;
-    this.tradeHistory = {};
+    this.storage = {};
   }
 
   public init(
     balance: BN,
-    index: BN,
-    tradeHistory: { [key: number]: TradeHistoryLeaf }
+    storage: { [key: number]: StorageLeaf }
   ) {
     this.balance = new BN(balance.toString(10));
-    this.index = new BN(index.toString(10));
-    this.tradeHistory = tradeHistory;
+    this.storage = storage;
   }
 
-  public getTradeHistory(orderID: number) {
-    const address = orderID % 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
-    if (this.tradeHistory[address] === undefined) {
-      this.tradeHistory[address] = new TradeHistoryLeaf();
+  public getStorage(storageID: number) {
+    const address = storageID % 2 ** Constants.BINARY_TREE_DEPTH_STORAGE;
+    if (this.storage[address] === undefined) {
+      this.storage[address] = new StorageLeaf();
     }
-    return this.tradeHistory[address];
+    return this.storage[address];
   }
 }
 
@@ -482,24 +467,10 @@ export class AccountLeaf implements Account {
     this.balances = balances;
   }
 
-  public getBalanceRaw(tokenID: number) {
+  public getBalance(tokenID: number) {
     if (this.balances[tokenID] === undefined) {
       this.balances[tokenID] = new BalanceLeaf();
     }
-    return this.balances[tokenID];
-  }
-
-  public getBalance(tokenID: number, index: AccountLeaf) {
-    if (this.balances[tokenID] === undefined) {
-      this.balances[tokenID] = new BalanceLeaf();
-    }
-    const newIndex = index.getBalanceRaw(tokenID).index;
-    this.balances[tokenID].balance = applyInterest(
-      this.balances[tokenID].balance,
-      this.balances[tokenID].index,
-      newIndex
-    );
-    this.balances[tokenID].index = newIndex;
     return this.balances[tokenID];
   }
 }
@@ -522,8 +493,8 @@ export class ExchangeState {
 
     this.processedRequests = [];
 
-    // Create the protocol and index accounts
-    this.getAccount(1);
+    // Create the protocol fee pool accounts
+    this.getAccount(0);
   }
 
   public getAccount(accountID: number) {

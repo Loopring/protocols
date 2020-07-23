@@ -21,8 +21,7 @@ library DepositTransaction
         address owner,
         uint24  accountId,
         uint16  token,
-        uint    amount,
-        uint    index
+        uint    amount
     );
 
     function process(
@@ -45,10 +44,8 @@ library DepositTransaction
         offset += 2;
         uint96 amount = data.toUint96(offset);
         offset += 12;
-        uint96 index = data.toUint96(offset);
-        offset += 12;
 
-        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID][index];
+        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID];
         // Make sure the deposit was actually done (this also verifies the index is correct)
         require(deposit.timestamp > 0, "DEPOSIT_DOESNT_EXIST");
         // Earn a fee relative to the amount actually made available on layer 2.
@@ -76,6 +73,6 @@ library DepositTransaction
             deposit.timestamp = 0;
         }
 
-        emit DepositProcessed(owner, accountID, tokenID, amount, index);
+        emit DepositProcessed(owner, accountID, tokenID, amount);
     }
 }

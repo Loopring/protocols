@@ -40,8 +40,7 @@ library ExchangeBalances
         uint calculatedRoot = getBalancesRoot(
             merkleProof.balanceLeaf.tokenID,
             merkleProof.balanceLeaf.balance,
-            merkleProof.balanceLeaf.index,
-            merkleProof.balanceLeaf.tradeHistoryRoot,
+            merkleProof.balanceLeaf.storageRoot,
             merkleProof.balanceMerkleProof
         );
         calculatedRoot = getAccountInternalsRoot(
@@ -60,15 +59,14 @@ library ExchangeBalances
     function getBalancesRoot(
         uint16   tokenID,
         uint     balance,
-        uint     index,
-        uint     tradeHistoryRoot,
+        uint     storageRoot,
         uint[18] memory balanceMerkleProof
         )
         private
         pure
         returns (uint)
     {
-        uint balanceItem = hashImpl(balance, index, tradeHistoryRoot, 0);
+        uint balanceItem = hashImpl(balance, storageRoot, 0, 0);
         uint _id = tokenID;
         for (uint depth = 0; depth < 6; depth++) {
             uint base = depth * 3;

@@ -22,17 +22,15 @@ export class OwnerChangeProcessor {
   public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
     const change = this.extractData(txData);
 
-    const index = state.getAccount(1);
-
     const account = state.getAccount(change.accountID);
     account.owner = change.newOwner;
     account.nonce++;
 
-    const balance = account.getBalance(change.feeTokenID, index);
+    const balance = account.getBalance(change.feeTokenID);
     balance.balance.isub(change.fee);
 
     const operator = state.getAccount(block.operatorAccountID);
-    const balanceO = operator.getBalance(change.feeTokenID, index);
+    const balanceO = operator.getBalance(change.feeTokenID);
     balanceO.balance.iadd(change.fee);
 
     return change;

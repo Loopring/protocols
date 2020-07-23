@@ -662,8 +662,6 @@ export class ExchangeTestUtil {
   public tokenAddressToIDMap = new Map<string, number>();
   public tokenIDToAddressMap = new Map<number, string>();
 
-  public index = new Map<string, BN>();
-
   public contracts = new Artifacts(artifacts);
 
   public pendingBlocks: Block[][] = [];
@@ -677,7 +675,7 @@ export class ExchangeTestUtil {
 
   private pendingTransactions: TxType[][] = [];
 
-  private orderIDGenerator: number = 0;
+  private storageIDGenerator: number = 0;
 
   private MAX_NUM_EXCHANGES: number = 512;
 
@@ -939,7 +937,7 @@ export class ExchangeTestUtil {
       payerToAccountID: useDualAuthoring ? 0 : toAccountID,
       payerTo: useDualAuthoring ? Constants.zeroAddress : to,
       payeeToAccountID: toAccountID,
-      storageID: this.orderIDGenerator++,
+      storageID: this.storageIDGenerator++,
       dualSecretKey
     };
 
@@ -1017,10 +1015,10 @@ export class ExchangeTestUtil {
     bSetupOrderB: boolean = true
   ) {
     if (bSetupOrderA) {
-      await this.setupOrder(ring.orderA, this.orderIDGenerator++);
+      await this.setupOrder(ring.orderA, this.storageIDGenerator++);
     }
     if (bSetupOrderB) {
-      await this.setupOrder(ring.orderB, this.orderIDGenerator++);
+      await this.setupOrder(ring.orderB, this.storageIDGenerator++);
     }
     ring.tokenID =
       ring.tokenID !== undefined
@@ -1074,7 +1072,7 @@ export class ExchangeTestUtil {
       order.feeBips !== undefined ? order.feeBips : order.maxFeeBips;
     order.rebateBips = order.rebateBips !== undefined ? order.rebateBips : 0;
 
-    order.orderID = order.orderID !== undefined ? order.orderID : index;
+    order.storageID = order.storageID !== undefined ? order.storageID : index;
 
     order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
     order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
@@ -1100,7 +1098,7 @@ export class ExchangeTestUtil {
     const hasher = Poseidon.createHash(14, 6, 53);
     const inputs = [
       order.exchange,
-      order.orderID,
+      order.storageID,
       order.accountID,
       order.tokenIdS,
       order.tokenIdB,
@@ -1336,9 +1334,6 @@ export class ExchangeTestUtil {
       this.exchange,
       "DepositRequested"
     );
-    const index = event.index;
-    this.index.set(token, index);
-    // console.log("index: " + index.toString(10));
 
     const deposit: Deposit = {
       txType: "Deposit",
@@ -1346,7 +1341,6 @@ export class ExchangeTestUtil {
       accountID,
       tokenID: this.tokenAddressToIDMap.get(token),
       amount,
-      index,
       fee,
       token,
       timestamp: ethBlock.timestamp,
@@ -2383,13 +2377,13 @@ export class ExchangeTestUtil {
             da.addNumber(TransactionType.SPOT_TRADE, 1);
 
             da.addNumber(
-              spotTrade.overwriteTradeHistorySlotA * Constants.NUM_STORAGE_SLOTS +
-                (orderA.orderID % Constants.NUM_STORAGE_SLOTS),
+              spotTrade.overwriteDataSlotA * Constants.NUM_STORAGE_SLOTS +
+                (orderA.storageID % Constants.NUM_STORAGE_SLOTS),
               2
             );
             da.addNumber(
-              spotTrade.overwriteTradeHistorySlotB * Constants.NUM_STORAGE_SLOTS +
-                (orderB.orderID % Constants.NUM_STORAGE_SLOTS),
+              spotTrade.overwriteDataSlotB * Constants.NUM_STORAGE_SLOTS +
+                (orderB.storageID % Constants.NUM_STORAGE_SLOTS),
               2
             );
             da.addNumber(orderA.accountID, 3);
@@ -2427,7 +2421,7 @@ export class ExchangeTestUtil {
               2
             );
             da.addNumber(
-              transfer.overwriteTradeHistorySlot * Constants.NUM_STORAGE_SLOTS +
+              transfer.overwriteDataSlot * Constants.NUM_STORAGE_SLOTS +
                 (transfer.storageID % Constants.NUM_STORAGE_SLOTS),
               2
             );
@@ -2463,7 +2457,6 @@ export class ExchangeTestUtil {
             da.addNumber(deposit.accountID, 3);
             da.addNumber(deposit.tokenID, 2);
             da.addBN(new BN(deposit.amount), 12);
-            da.addBN(new BN(deposit.index), 12);
           } else if (tx.accountUpdate) {
             const update = tx.accountUpdate;
             da.addNumber(TransactionType.ACCOUNT_UPDATE, 1);

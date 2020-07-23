@@ -3,7 +3,7 @@ import { FloatEncoding } from "./float";
 import { Balance } from "./types";
 
 export class Constants {
-  static readonly BINARY_TREE_DEPTH_TRADING_HISTORY = 14;
+  static readonly BINARY_TREE_DEPTH_STORAGE = 14;
   static readonly BINARY_TREE_DEPTH_ACCOUNTS = 24;
   static readonly BINARY_TREE_DEPTH_TOKENS = 12;
 
@@ -11,11 +11,9 @@ export class Constants {
 
   static readonly NUM_BITS_ACCOUNTID = Constants.BINARY_TREE_DEPTH_ACCOUNTS;
   static readonly NUM_BITS_ORDERID = 64;
-  static readonly NUM_STORAGE_SLOTS = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
+  static readonly NUM_STORAGE_SLOTS = 2 ** Constants.BINARY_TREE_DEPTH_STORAGE;
 
   static readonly MAX_NUM_TOKENS = 2 ** 12;
-
-  static readonly INDEX_BASE = new BN(10).pow(new BN(18));
 
   static readonly MAX_AMOUNT = new BN(2).pow(new BN(96)).sub(new BN(1));
 
@@ -40,7 +38,6 @@ export class Constants {
 
   static readonly DefaultBalance: Balance = {
     balance: new BN(0),
-    index: Constants.INDEX_BASE,
-    tradeHistory: {}
+    storage: {}
   };
 }

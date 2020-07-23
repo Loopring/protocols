@@ -25,28 +25,26 @@ export class WithdrawalProcessor {
   public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
     const withdrawal = this.extractData(txData);
 
-    const index = state.getAccount(1);
-
     const account = state.getAccount(withdrawal.accountID);
     let amount = withdrawal.amount;
     if (withdrawal.type === 2) {
-      amount = account.getBalance(withdrawal.tokenID, index).balance;
+      amount = account.getBalance(withdrawal.tokenID).balance;
     } else if (withdrawal.type === 3) {
       amount = new BN(0);
     }
-    account.getBalance(withdrawal.tokenID, index).balance.isub(amount);
-    account.getBalance(withdrawal.feeTokenID, index).balance.isub(withdrawal.fee);
+    account.getBalance(withdrawal.tokenID).balance.isub(amount);
+    account.getBalance(withdrawal.feeTokenID).balance.isub(withdrawal.fee);
 
     // Special cases when withdrawing from the protocol fee pool.
     // These account balances will have interest accrued.
     if (withdrawal.accountID === 0) {
-      state.getAccount(2).getBalance(withdrawal.tokenID, index);
+      state.getAccount(2).getBalance(withdrawal.tokenID);
     } else {
-      state.getAccount(0).getBalance(withdrawal.tokenID, index);
+      state.getAccount(0).getBalance(withdrawal.tokenID);
     }
 
     const operator = state.getAccount(block.operatorAccountID);
-    operator.getBalance(withdrawal.feeTokenID, index).balance.iadd(withdrawal.fee);
+    operator.getBalance(withdrawal.feeTokenID).balance.iadd(withdrawal.fee);
 
     if (withdrawal.type === 0 || withdrawal.type === 1) {
       account.nonce++;

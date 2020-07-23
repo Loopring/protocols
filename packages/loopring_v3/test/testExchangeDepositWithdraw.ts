@@ -3,7 +3,6 @@ import { Constants, roundToFloatValue } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
 import { AuthMethod, Deposit, SpotTrade } from "./types";
-import { applyInterest } from "./simulator";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -711,8 +710,7 @@ contract("Exchange", (accounts: string[]) => {
         fee: new BN(0),
         timestamp: 0,
         accountID: 0,
-        tokenID: await exchangeTestUtil.getTokenID(ring.orderA.tokenB),
-        index: Constants.INDEX_BASE
+        tokenID: await exchangeTestUtil.getTokenID(ring.orderA.tokenB)
       };
       const depositB: Deposit = {
         owner: Constants.zeroAddress,
@@ -721,8 +719,7 @@ contract("Exchange", (accounts: string[]) => {
         fee: new BN(0),
         timestamp: 0,
         accountID: 0,
-        tokenID: await exchangeTestUtil.getTokenID(ring.orderB.tokenB),
-        index: Constants.INDEX_BASE
+        tokenID: await exchangeTestUtil.getTokenID(ring.orderB.tokenB)
       };
 
       const tokenA = exchangeTestUtil.getTokenAddress(ring.orderA.tokenB);
@@ -866,8 +863,7 @@ contract("Exchange", (accounts: string[]) => {
           {authMethod: AuthMethod.FORCE}
         );
         const expectedResult = { ...deposit };
-        const latestIndex = exchangeTestUtil.index.get(deposit.token);
-        expectedResult.amount = applyInterest(deposit.amount, deposit.index, latestIndex);
+        expectedResult.amount = deposit.amount;
         expectedResults.push(expectedResult);
       }
 

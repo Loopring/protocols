@@ -37,8 +37,8 @@ public:
     FloatGadget fillS_B;
 
     // Trade history
-    TradeHistoryTrimmingGadget tradeHistory_A;
-    TradeHistoryTrimmingGadget tradeHistory_B;
+    StorageReaderGadget tradeHistory_A;
+    StorageReaderGadget tradeHistory_B;
 
     // Match orders
     OrderMatchingGadget orderMatching;
@@ -73,26 +73,26 @@ public:
         orderB(pb, state.constants, state.exchange, FMT(prefix, ".orderB")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS, state.index.balanceB, FMT(prefix, ".balanceS_A")),
-        balanceB_A(pb, state.constants, state.accountA.balanceB, state.index.balanceA, FMT(prefix, ".balanceB_A")),
-        balanceS_B(pb, state.constants, state.accountB.balanceS, state.index.balanceA, FMT(prefix, ".balanceS_B")),
-        balanceB_B(pb, state.constants, state.accountB.balanceB, state.index.balanceB, FMT(prefix, ".balanceB_B")),
-        balanceA_P(pb, state.constants, state.pool.balanceA, state.index.balanceA, FMT(prefix, ".balanceA_P")),
-        balanceB_P(pb, state.constants, state.pool.balanceB, state.index.balanceB, FMT(prefix, ".balanceB_P")),
-        balanceA_O(pb, state.constants, state.oper.balanceA, state.index.balanceA, FMT(prefix, ".balanceA_O")),
-        balanceB_O(pb, state.constants, state.oper.balanceB, state.index.balanceB, FMT(prefix, ".balanceB_O")),
+        balanceS_A(pb, state.constants, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_A(pb, state.constants, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+        balanceS_B(pb, state.constants, state.accountB.balanceS, FMT(prefix, ".balanceS_B")),
+        balanceB_B(pb, state.constants, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
+        balanceA_P(pb, state.constants, state.pool.balanceA, FMT(prefix, ".balanceA_P")),
+        balanceB_P(pb, state.constants, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
+        balanceA_O(pb, state.constants, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
+        balanceB_O(pb, state.constants, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
 
         // Order fills
         fillS_A(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_A")),
         fillS_B(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_B")),
 
         // Trade history
-        tradeHistory_A(pb, state.constants, state.accountA.tradeHistory, orderA.orderID, FMT(prefix, ".tradeHistoryA")),
-        tradeHistory_B(pb, state.constants, state.accountB.tradeHistory, orderB.orderID, FMT(prefix, ".tradeHistoryB")),
+        tradeHistory_A(pb, state.constants, state.accountA.storage, orderA.storageID, FMT(prefix, ".tradeHistoryA")),
+        tradeHistory_B(pb, state.constants, state.accountB.storage, orderB.storageID, FMT(prefix, ".tradeHistoryB")),
 
         // Match orders
         orderMatching(pb, state.constants, state.timestamp, orderA, orderB, state.accountA.account.owner, state.accountB.account.owner,
-                      tradeHistory_A.getFilled(), tradeHistory_B.getFilled(), fillS_A.value(), fillS_B.value(), FMT(prefix, ".orderMatching")),
+                      tradeHistory_A.getData(), tradeHistory_B.getData(), fillS_A.value(), fillS_B.value(), FMT(prefix, ".orderMatching")),
 
         // Calculate fees
         feeCalculatorA(pb, state.constants, fillS_B.value(), state.protocolTakerFeeBips, orderA.feeBips.packed, orderA.rebateBips.packed, FMT(prefix, ".feeCalculatorA")),
@@ -113,39 +113,31 @@ public:
         protocolFeeB_from_balanceBO_to_balanceBP(pb, balanceB_O, balanceB_P, feeCalculatorB.getProtocolFee(), FMT(prefix, ".protocolFeeB_from_balanceBO_to_balanceBP"))
     {
         // Update account A
-        setArrayOutput(tradeHistoryA_Address, subArray(orderA.orderID.bits, 0, NUM_BITS_TRADING_HISTORY));
-        setOutput(tradeHistoryA_Filled, orderMatching.getFilledAfter_A());
-        setOutput(tradeHistoryA_OrderId, orderA.orderID.packed);
+        setArrayOutput(storageA_Address, subArray(orderA.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
+        setOutput(storageA_Data, orderMatching.getFilledAfter_A());
+        setOutput(storageA_StorageId, orderA.storageID.packed);
         setArrayOutput(balanceA_S_Address, orderA.tokenS.bits);
         setOutput(balanceA_S_Balance, balanceS_A.balance());
-        setOutput(balanceA_S_Index, balanceS_A.index());
         setArrayOutput(balanceB_S_Address, orderA.tokenB.bits);
         setOutput(balanceA_B_Balance, balanceB_A.balance());
-        setOutput(balanceA_B_Index, balanceB_A.index());
         setArrayOutput(accountA_Address, orderA.accountID.bits);
 
         // Update account B
-        setArrayOutput(tradeHistoryB_Address, subArray(orderB.orderID.bits, 0, NUM_BITS_TRADING_HISTORY));
-        setOutput(tradeHistoryB_Filled, orderMatching.getFilledAfter_B());
-        setOutput(tradeHistoryB_OrderId, orderB.orderID.packed);
+        setArrayOutput(storageB_Address, subArray(orderB.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
+        setOutput(storageB_Data, orderMatching.getFilledAfter_B());
+        setOutput(storageB_StorageId, orderB.storageID.packed);
         setArrayOutput(balanceB_S_Address, orderB.tokenS.bits);
         setOutput(balanceB_S_Balance, balanceS_B.balance());
-        setOutput(balanceB_S_Index, balanceS_B.index());
         setOutput(balanceB_B_Balance, balanceB_B.balance());
-        setOutput(balanceB_B_Index, balanceB_B.index());
         setArrayOutput(accountB_Address, orderB.accountID.bits);
 
         // Update balances of the protocol fee pool
         setOutput(balanceP_A_Balance, balanceA_P.balance());
-        setOutput(balanceP_A_Index, balanceA_P.index());
         setOutput(balanceP_B_Balance, balanceB_P.balance());
-        setOutput(balanceP_B_Index, balanceB_P.index());
 
         // Update the balance of the operator
         setOutput(balanceO_A_Balance, balanceA_O.balance());
-        setOutput(balanceO_A_Index, balanceA_O.index());
         setOutput(balanceO_B_Balance, balanceB_O.balance());
-        setOutput(balanceO_B_Index, balanceB_O.index());
 
         // A signature is required for each order
         setOutput(hash_A, orderA.hash.result());
@@ -247,8 +239,8 @@ public:
     const VariableArrayT getPublicData() const
     {
         return flattenReverse({
-            VariableArrayT(1, state.constants._0), VariableArrayT(1, tradeHistory_A.getOverwrite()), subArray(orderA.orderID.bits, 0, NUM_BITS_TRADING_HISTORY),
-            VariableArrayT(1, state.constants._0), VariableArrayT(1, tradeHistory_B.getOverwrite()), subArray(orderB.orderID.bits, 0, NUM_BITS_TRADING_HISTORY),
+            VariableArrayT(1, state.constants._0), VariableArrayT(1, tradeHistory_A.getOverwrite()), subArray(orderA.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
+            VariableArrayT(1, state.constants._0), VariableArrayT(1, tradeHistory_B.getOverwrite()), subArray(orderB.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
 
             orderA.accountID.bits,
             orderB.accountID.bits,

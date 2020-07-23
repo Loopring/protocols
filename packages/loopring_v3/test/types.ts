@@ -19,7 +19,7 @@ export interface OrderInfo {
 
   exchange?: string;
   accountID?: number;
-  orderID?: number;
+  storageID?: number;
 
   tokenIdS?: number;
   tokenIdB?: number;
@@ -77,7 +77,6 @@ export interface Deposit {
   accountID: number;
   tokenID: number;
   amount: BN;
-  index: BN;
 
   fee: BN;
   token: string;

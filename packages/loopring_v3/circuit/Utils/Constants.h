@@ -5,7 +5,7 @@
 
 namespace Loopring
 {
-    static const unsigned int TREE_DEPTH_TRADING_HISTORY = 7;
+    static const unsigned int TREE_DEPTH_STORAGE = 7;
     static const unsigned int TREE_DEPTH_ACCOUNTS = 12;
     static const unsigned int TREE_DEPTH_TOKENS = 6;
 
@@ -14,16 +14,16 @@ namespace Loopring
     static const unsigned int NUM_BITS_MAX_VALUE = 254;
     static const unsigned int NUM_BITS_FIELD_CAPACITY = 253;
     static const unsigned int NUM_BITS_AMOUNT = 96;
-    static const unsigned int NUM_BITS_TRADING_HISTORY = TREE_DEPTH_TRADING_HISTORY * 2;
+    static const unsigned int NUM_BITS_STORAGE_ADDRESS = TREE_DEPTH_STORAGE * 2;
     static const unsigned int NUM_BITS_ACCOUNT = TREE_DEPTH_ACCOUNTS * 2;
     static const unsigned int NUM_BITS_TOKEN = TREE_DEPTH_TOKENS * 2;
-    static const unsigned int NUM_BITS_ORDERID = 64;
+    static const unsigned int NUM_BITS_STORAGEID = 64;
     static const unsigned int NUM_BITS_TIMESTAMP = 32;
     static const unsigned int NUM_BITS_NONCE = 32;
     static const unsigned int NUM_BITS_BIPS = 6;
     static const unsigned int NUM_BITS_PROTOCOL_FEE_BIPS = 8;
     static const unsigned int NUM_BITS_TYPE = 8;
-    static const unsigned int MAX_CONCURRENT_ORDERIDS = 16384; // 2**NUM_BITS_TRADING_HISTORY
+    static const unsigned int NUM_STORAGE_SLOTS = 16384; // 2**NUM_BITS_STORAGE_ADDRESS
     static const unsigned int NUM_MARKETS_PER_BLOCK = 16;
     static const unsigned int NUM_BITS_TX_TYPE = 8;
     static const unsigned int NUM_BITS_ADDRESS = 160;

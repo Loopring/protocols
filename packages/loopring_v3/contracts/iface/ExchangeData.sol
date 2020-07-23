@@ -137,8 +137,7 @@ library ExchangeData
     {
         uint16   tokenID;
         uint96   balance;
-        uint96   index;
-        uint     tradeHistoryRoot;
+        uint     storageRoot;
     }
 
     struct MerkleProof
@@ -194,8 +193,8 @@ library ExchangeData
         // A map from an account to a token to the forced withdrawal (always full balance)
         mapping (uint24 => mapping (uint16 => ForcedWithdrawal)) pendingForcedWithdrawals;
 
-        // A map from an address to a token to an index to a deposit
-        mapping (address => mapping (uint16 => mapping (uint => Deposit))) pendingDeposits;
+        // A map from an address to a token to a deposit
+        mapping (address => mapping (uint16 => Deposit)) pendingDeposits;
 
         // A map from an account owner to an approved transaction hash to if the transaction is approved or not
         mapping (address => mapping (bytes32 => bool)) approvedTx;

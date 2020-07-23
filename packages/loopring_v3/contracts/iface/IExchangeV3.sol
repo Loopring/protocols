@@ -51,7 +51,6 @@ abstract contract IExchangeV3 is IExchange
         address owner,
         address token,
         uint96  amount,
-        uint96  index,
         uint    fee
     );
 
@@ -448,11 +447,9 @@ abstract contract IExchangeV3 is IExchange
     ///
     /// @param  owner The address of the account the withdrawal was done for.
     /// @param  token The token address
-    /// @param  index The token index at the time of deposit
     function withdrawFromDepositRequest(
         address owner,
-        address token,
-        uint    index
+        address token
         )
         external
         virtual;
