@@ -278,8 +278,9 @@ export function signApproveThenCallContractApproved(
 // export function signMetaTx(metaTx: MetaTx) {
 //   const META_TX_TYPEHASH = ethUtil.keccak(
 //     "MetaTx(address from,address to,\
-// uint256 nonce,address gasToken,uint256 gasPrice,\
-// uint256 gasLimit,bytes32 txAwareHash,bytes data)"
+// uint256 nonce,bytes32 txAwareHash,\
+// address gasToken,uint256 gasPrice,\
+// uint256 gasLimit,bytes data)"
 //   );
 
 //   const encoded = web3.eth.abi.encodeParameters(
