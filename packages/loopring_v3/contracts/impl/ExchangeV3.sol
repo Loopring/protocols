@@ -104,7 +104,7 @@ contract ExchangeV3 is IExchangeV3
         onlyOwner
     {
         state.increaseAccountCapacity();
-        emit CapacityChanged(state.accountTreeDepth);
+        emit AccountCapacityIncreased(state.accountTreeDepth);
     }
 
     function setDepositContract(address _depositContract)

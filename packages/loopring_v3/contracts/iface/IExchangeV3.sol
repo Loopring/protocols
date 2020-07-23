@@ -33,7 +33,7 @@ abstract contract IExchangeV3 is IExchange
         address         newOperator
     );
 
-    event CapacityChanged(
+    event AccountCapacityIncreased(
         uint accountTreeDepth
     );
 
