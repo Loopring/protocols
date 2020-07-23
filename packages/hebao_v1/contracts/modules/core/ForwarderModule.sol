@@ -34,6 +34,7 @@ contract ForwarderModule is BaseModule
         address relayer,
         address from,
         uint    nonce,
+        bytes32 txAwareHash,
         bool    success,
         uint    gasUsed
     );
@@ -160,6 +161,7 @@ contract ForwarderModule is BaseModule
             msg.sender,
             metaTx.from,
             metaTx.nonce,
+            metaTx.txAwareHash,
             success,
             gasUsed
         );
