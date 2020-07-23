@@ -66,10 +66,10 @@ function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
       from: metaTx.from,
       to: metaTx.to,
       nonce: new BN(metaTx.nonce),
+      txAwareHash: metaTx.txAwareHash,
       gasToken: metaTx.gasToken,
       gasPrice: metaTx.gasPrice,
       gasLimit: new BN(metaTx.gasLimit),
-      txAwareHash: metaTx.txAwareHash,
       data: metaTx.data
     }
   };
@@ -103,10 +103,10 @@ export async function executeMetaTx(
     from: options.wallet,
     to: contract._address,
     nonce,
+    txAwareHash,
     gasToken: await getTokenAddress(ctx, gasToken),
     gasPrice: gasPrice.toNumber(),
     gasLimit,
-    txAwareHash,
     data,
     chainId: /*await web3.eth.net.getId()*/ 1
   };
