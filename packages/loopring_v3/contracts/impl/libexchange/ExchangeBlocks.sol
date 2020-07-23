@@ -110,7 +110,7 @@ library ExchangeBlocks
 
         S.merkleRoot = _block.data.toBytes32(offset);
         offset += 32;
-        require(uint(S.merkleRoot) != merkleRootBefore, "EMPTY_BLOCK_DISABLED");
+        require(S.merkleRoot != merkleRootBefore, "EMPTY_BLOCK_DISABLED");
         require(uint(S.merkleRoot) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
         // Validate timestamp
