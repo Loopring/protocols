@@ -145,7 +145,7 @@ library ExchangeData
     {
         ExchangeData.AccountLeaf accountLeaf;
         ExchangeData.BalanceLeaf balanceLeaf;
-        uint[36]                 accountMerkleProof;
+        uint[]                   accountMerkleProof;
         uint[18]                 balanceMerkleProof;
     }
 
@@ -162,7 +162,8 @@ library ExchangeData
         address payable operator; // The only address that can submit new blocks.
         bool    rollupMode;
         uint32  maxAgeDepositUntilWithdrawable;
-        bytes32 genesisMerkleRoot;
+        bytes32 emptyMerkleRoot;
+        uint    accountTreeDepth;
         bytes32 DOMAIN_SEPARATOR;
 
         ILoopringV3      loopring;
