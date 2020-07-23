@@ -25,7 +25,7 @@ module.exports = function(deployer, network, accounts) {
   const quotaDelayPeriod =
     Number(process.env.quotaDelayPeriod) || 1 * 24 * 3600;
 
-  const ensOperator = process.env.ensOperator || accounts[0];
+  const ensOperator = process.env.ensOperator || accounts[1];
 
   deployer
     .then(() => {

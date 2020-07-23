@@ -10,10 +10,10 @@ export interface MetaTx {
   from: string;
   to: string;
   nonce: number;
+  txAwareHash: string;
   gasToken: string;
   gasPrice: number;
   gasLimit: number;
-  txAwareHash: string;
   data: string;
 
   chainId: number;
@@ -48,10 +48,10 @@ function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
         { name: "from", type: "address" },
         { name: "to", type: "address" },
         { name: "nonce", type: "uint256" },
+        { name: "txAwareHash", type: "bytes32" },
         { name: "gasToken", type: "address" },
         { name: "gasPrice", type: "uint256" },
         { name: "gasLimit", type: "uint256" },
-        { name: "txAwareHash", type: "bytes32" },
         { name: "data", type: "bytes" }
       ]
     },
@@ -66,10 +66,10 @@ function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
       from: metaTx.from,
       to: metaTx.to,
       nonce: new BN(metaTx.nonce),
+      txAwareHash: metaTx.txAwareHash,
       gasToken: metaTx.gasToken,
       gasPrice: metaTx.gasPrice,
       gasLimit: new BN(metaTx.gasLimit),
-      txAwareHash: metaTx.txAwareHash,
       data: metaTx.data
     }
   };
@@ -103,10 +103,10 @@ export async function executeMetaTx(
     from: options.wallet,
     to: contract._address,
     nonce,
+    txAwareHash,
     gasToken: await getTokenAddress(ctx, gasToken),
     gasPrice: gasPrice.toNumber(),
     gasLimit,
-    txAwareHash,
     data,
     chainId: /*await web3.eth.net.getId()*/ 1
   };
