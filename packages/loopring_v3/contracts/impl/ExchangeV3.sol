@@ -97,13 +97,14 @@ contract ExchangeV3 is IExchangeV3
         );
     }
 
-    function growMerkleTree()
+    function increaseAccountCapacity()
         external
         override
         nonReentrant
         onlyOwner
     {
-        state.growMerkleTree();
+        state.increaseAccountCapacity();
+        emit CapacityChanged(state.accountTreeDepth);
     }
 
     function setDepositContract(address _depositContract)

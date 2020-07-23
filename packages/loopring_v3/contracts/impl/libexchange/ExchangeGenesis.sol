@@ -67,7 +67,7 @@ library ExchangeGenesis
         S.registerToken(loopring.lrcAddress());
     }
 
-    function growMerkleTree(
+    function increaseAccountCapacity(
         ExchangeData.State storage S
         )
         external

@@ -103,6 +103,7 @@ library ExchangeWithdrawals
         require(S.withdrawnInWithdrawMode[accountID][tokenID] == false, "WITHDRAWN_ALREADY");
 
         ExchangeBalances.verifyAccountBalance(
+            S,
             uint(S.merkleRoot),
             merkleProof
         );

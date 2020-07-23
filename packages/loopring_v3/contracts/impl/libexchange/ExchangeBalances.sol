@@ -16,26 +16,32 @@ library ExchangeBalances
     using MathUint  for uint;
 
     function verifyAccountBalance(
-        uint                              merkleRoot,
-        ExchangeData.MerkleProof memory merkleProof
+        ExchangeData.State       storage S,
+        uint                             merkleRoot,
+        ExchangeData.MerkleProof memory  merkleProof
         )
         public
-        pure
+        view
     {
         require(
-            isAccountBalanceCorrect(merkleRoot, merkleProof),
+            isAccountBalanceCorrect(S, merkleRoot, merkleProof),
             "INVALID_MERKLE_TREE_DATA"
         );
     }
 
     function isAccountBalanceCorrect(
-        uint                            merkleRoot,
-        ExchangeData.MerkleProof memory merkleProof
+        ExchangeData.State       storage S,
+        uint                             merkleRoot,
+        ExchangeData.MerkleProof memory  merkleProof
         )
         public
-        pure
+        view
         returns (bool)
     {
+        require(
+            merkleProof.accountMerkleProof.length == S.accountTreeDepth * 3,
+            "INVALID_PROOF_LENGTH"
+        );
         // Verify data
         uint calculatedRoot = getBalancesRoot(
             merkleProof.balanceLeaf.tokenID,
@@ -120,7 +126,6 @@ library ExchangeBalances
         pure
         returns (uint)
     {
-        require(accountMerkleProof.length % 3 == 0, "INVALID_PROOF_LENGTH");
         uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, walletHash, balancesRoot);
         uint _id = accountID;
         for (uint depth = 0; depth < accountMerkleProof.length / 3; depth++) {

@@ -33,6 +33,10 @@ abstract contract IExchangeV3 is IExchange
         address         newOperator
     );
 
+    event CapacityChanged(
+        uint accountTreeDepth
+    );
+
     event Shutdown(
         uint timestamp
     );
@@ -157,16 +161,14 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual;
 
-    /// @dev Grow the merkle tree's height by 1 to increase the account capacity by 4x.
-    ///      Note the max account sub-tree's height is 16.
-    ///
+    /// @dev Grow the merkle tree's height by 1 and make the existing merkle the lef-most child of
+    ///      the new merkle tree. The max account capacity is 2^32 (~4.29 billion).
     ///
     ///      The operator should set up a new set of verificaiton keys with a new blockVersion
     ///      once the tree grows.
-    function growMerkleTree()
+    function increaseAccountCapacity()
         external
         virtual;
-
 
     /// @dev Initialized the deposit contract used by the exchange.
     ///      Can only be called by the exchange owner once.
