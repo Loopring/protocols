@@ -35,7 +35,7 @@ library ExchangeData
 
     struct ProtocolFeeData
     {
-        uint32 timestamp; // only valid before 2105 (85 years to go)
+        uint32 syncedAt; // only valid before 2105 (85 years to go)
         uint8  takerFeeBips;
         uint8  makerFeeBips;
         uint8  previousTakerFeeBips;
@@ -160,7 +160,7 @@ library ExchangeData
         uint    id;
         uint    exchangeCreationTimestamp;
         address payable operator; // The only address that can submit new blocks.
-        bool    rollupEnabled;
+        bool    rollupMode;
         uint32  maxAgeDepositUntilWithdrawable;
         bytes32 genesisMerkleRoot;
         bytes32 DOMAIN_SEPARATOR;
@@ -169,7 +169,7 @@ library ExchangeData
         IBlockVerifier   blockVerifier;
         IDepositContract depositContract;
 
-        
+
 
         // List of all tokens
         Token[] tokens;

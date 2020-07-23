@@ -153,7 +153,7 @@ public:
 	4.8 Wallet Account操作正确，即accountUpdate_W
 	4.9 Operator Recieved Fee的balance正确，即balanceUpdateF_O
 5. Operator Account操作正确，即accountUpdate_O （为什么不在4里面对单次做check？？理由似乎是因为Operator只有一个，而User，Wallet可能是不同的。。。但是operator的balance变化了，merkle root就会变化，似乎必须每次check才行？WHY？？）
-6. merkleRootBefore，merkleRootAfter，exchangeID，operatorAccountID，以及cancel.publicData()综合起来的hash值正确。（后两者需要onchainDataAvailability==true）
+6. merkleRootBefore，merkleRootAfter，exchangeID，operatorAccountID，以及cancel.publicData()综合起来的hash值正确。（后两者需要rollupMode==true）
 ```
 
 ​ 显然，Cancel 影响到了 3 个账户，User，Wallet 和 Operator，从这里的代码看 Cancel Order 是付费的，而且将来 Fee model 可能会有变化，账户相关的电路操作都在 OrderCancellationGadget 里面，就是上面 step 4 的逻辑，和 state 变化有关的几个值得注意的电路如下所示：
@@ -281,7 +281,7 @@ public:
 
 ![image-20190801221206000](https://user-images.githubusercontent.com/26989346/63238893-1cb68380-c27b-11e9-9ee8-f78e10c2e626.png)
 
-中间有些 value 需要开启 onchainDataAvailable 才会加入到 hash 计算中，因此用虚线标注，但不影响整体逻辑。
+中间有些 value 需要开启 rollupMode 才会加入到 hash 计算中，因此用虚线标注，但不影响整体逻辑。
 
 ### 3.3 Unflatten Circuit
 

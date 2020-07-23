@@ -24,7 +24,7 @@ library TransferTransaction
         "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint256 data,uint64 storageID)"
     );
 
-    /*event ConditionalTransferConsumed(
+    /*event ConditionalTransferProcessed(
         address from,
         address to,
         uint16  token,
@@ -32,10 +32,10 @@ library TransferTransaction
     );*/
 
     function process(
-        ExchangeData.State storage S,
-        ExchangeData.BlockContext memory ctx,
-        bytes memory data,
-        bytes memory auxiliaryData
+        ExchangeData.State        storage S,
+        ExchangeData.BlockContext memory  ctx,
+        bytes                     memory  data,
+        bytes                     memory  auxiliaryData
         )
         internal
         returns (uint /*feeETH*/)
@@ -43,17 +43,15 @@ library TransferTransaction
         uint offset = 1;
 
         // Check that this is a conditional transfer
-        {
-        uint transferType = data.toUint8(offset);
+        require(data.toUint8(offset) == 1, "INVALID_AUXILIARYDATA_DATA");
         offset += 1;
-        require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
-        }
 
         // Extract the transfer data
         //uint24 fromAccountID = data.toUint24(offset);
         offset += 3;
         //uint24 toAccountID = data.toUint24(offset);
         offset += 3;
+
         uint16 tokenID = data.toUint16(offset) >> 4;
         uint16 feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
         offset += 3;
@@ -90,10 +88,10 @@ library TransferTransaction
             require(txHash.verifySignature(from, auxiliaryData), "INVALID_SIGNATURE");
         } else {
             require(S.approvedTx[from][txHash], "TX_NOT_APPROVED");
-            S.approvedTx[from][txHash] = false;
+            delete S.approvedTx[from][txHash];
         }
 
-        //emit ConditionalTransferConsumed(from, to, tokenID, amount);
+        //emit ConditionalTransferProcessed(from, to, tokenID, amount);
     }
 
     function hash(

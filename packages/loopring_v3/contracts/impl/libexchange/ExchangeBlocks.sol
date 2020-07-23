@@ -49,9 +49,9 @@ library ExchangeBlocks
     );
 
     function submitBlocks(
-        ExchangeData.State storage S,
-        ExchangeData.Block[] memory blocks,
-        address payable feeRecipient
+        ExchangeData.State   storage S,
+        ExchangeData.Block[] memory  blocks,
+        address              payable feeRecipient
         )
         public
     {
@@ -60,7 +60,7 @@ library ExchangeBlocks
 
         // Check if this exchange has a minimal amount of LRC staked
         require(
-            S.loopring.canExchangeSubmitBlocks(S.id, S.rollupEnabled),
+            S.loopring.canExchangeSubmitBlocks(S.id, S.rollupMode),
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 
@@ -90,15 +90,15 @@ library ExchangeBlocks
 
     function commitBlock(
         ExchangeData.State storage S,
-        ExchangeData.Block memory _block,
-        address payable feeRecipient,
-        bytes32 publicDataHash
+        ExchangeData.Block memory  _block,
+        address            payable _feeRecipient,
+        bytes32                    _publicDataHash
         )
         private
     {
         uint offset = 0;
 
-        // Extract the exchange ID from the data
+        // Extract the exchange address from the data
         address exchange = _block.data.toAddress(offset);
         offset += 20;
         require(exchange == address(this), "INVALID_EXCHANGE");
@@ -106,10 +106,12 @@ library ExchangeBlocks
         // Get the old and new Merkle roots
         bytes32 merkleRootBefore = _block.data.toBytes32(offset);
         offset += 32;
-        bytes32 merkleRootAfter = _block.data.toBytes32(offset);
-        offset += 32;
         require(merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
-        require(uint256(merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
+
+        S.merkleRoot = _block.data.toBytes32(offset);
+        offset += 32;
+        require(S.merkleRoot != merkleRootBefore, "EMPTY_BLOCK_DISABLED");
+        require(uint(S.merkleRoot) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
         // Validate timestamp
         uint32 inputTimestamp = _block.data.toUint32(offset);
@@ -126,7 +128,7 @@ library ExchangeBlocks
         uint8 protocolMakerFeeBips = _block.data.toUint8(offset);
         offset += 1;
         require(
-            validateAndUpdateProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips),
+            validateAndSyncProtocolFees(S, protocolTakerFeeBips, protocolMakerFeeBips),
             "INVALID_PROTOCOL_FEES"
         );
 
@@ -139,24 +141,22 @@ library ExchangeBlocks
         );
 
         // Transfer the onchain block fee to the operator
-        feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
+        _feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
 
         // Emit an event
-        emit BlockSubmitted(S.blocks.length, publicDataHash, blockFeeETH);
+        emit BlockSubmitted(S.blocks.length, _publicDataHash, blockFeeETH);
 
-        // Update the onchain state
-        S.merkleRoot = merkleRootAfter;
         S.blocks.push(
             ExchangeData.BlockInfo(
-                _block.storeDataHashOnchain ? publicDataHash : bytes32(0)
+                _block.storeDataHashOnchain ? _publicDataHash : bytes32(0)
             )
         );
     }
 
     function verifyBlocks(
-        ExchangeData.State storage S,
-        ExchangeData.Block[] memory blocks,
-        bytes32[] memory publicDataHashes
+        ExchangeData.State   storage S,
+        ExchangeData.Block[] memory  blocks,
+        bytes32[]            memory  publicDataHashes
         )
         private
         view
@@ -165,6 +165,7 @@ library ExchangeBlocks
         bool[] memory blockVerified = new bool[](blocks.length);
         ExchangeData.Block memory firstBlock;
         uint[] memory batch = new uint[](blocks.length);
+
         while (numBlocksVerified < blocks.length) {
             // Find all blocks of the same type
             uint batchLength = 0;
@@ -187,6 +188,7 @@ library ExchangeBlocks
             // Prepare the data for batch verification
             uint[] memory publicInputs = new uint[](batchLength);
             uint[] memory proofs = new uint[](batchLength * 8);
+
             for (uint i = 0; i < batchLength; i++) {
                 uint blockIdx = batch[i];
                 // Mark the block as verified
@@ -205,7 +207,7 @@ library ExchangeBlocks
             require(
                 S.blockVerifier.verifyProofs(
                     uint8(firstBlock.blockType),
-                    S.rollupEnabled,
+                    S.rollupMode,
                     firstBlock.blockSize,
                     firstBlock.blockVersion,
                     publicInputs,
@@ -232,34 +234,47 @@ library ExchangeBlocks
         offset += 4;
 
         if (numConditionalTransactions > 0) {
-            require(S.rollupEnabled, "CONDITIONAL_TRANSACTIONS_AVAILABLE_ONLY_IN_ROLLUP_MODE");
+            require(S.rollupMode, "AVAILABLE_ONLY_IN_ROLLUP_MODE");
 
             // Cache the domain seperator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
                 DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR
             });
 
-            ExchangeData.AuxiliaryData[] memory txAuxiliaryData = abi.decode(auxiliaryData, (ExchangeData.AuxiliaryData[]));
-            require(txAuxiliaryData.length == numConditionalTransactions, "AUXILIARYDATA_INVALID_LENGTH");
+            ExchangeData.AuxiliaryData[] memory txAuxiliaryData = abi.decode(
+                auxiliaryData, (ExchangeData.AuxiliaryData[])
+            );
+            require(
+                txAuxiliaryData.length == numConditionalTransactions,
+                "AUXILIARYDATA_INVALID_LENGTH"
+            );
 
             // uint24 operatorAccountID = data.toUint24(offset);
             offset += 3;
 
             // Run over all conditional transactions
-            uint previousTransactionOffset = 0;
+            uint prevTxDataOffset = 0;
             for (uint i = 0; i < txAuxiliaryData.length; i++) {
                 // Each conditional transaction needs to be processed from left to right
-                uint transactionOffset = offset + txAuxiliaryData[i].txIndex * ExchangeData.TX_DATA_AVAILABILITY_SIZE();
-                require(transactionOffset > previousTransactionOffset, "AUXILIARYDATA_INVALID_ORDER");
+                uint txDataOffset = offset +
+                    txAuxiliaryData[i].txIndex * ExchangeData.TX_DATA_AVAILABILITY_SIZE();
+
+                require(txDataOffset > prevTxDataOffset, "AUXILIARYDATA_INVALID_ORDER");
 
                 // Get the transaction data
-                bytes memory txData = data.slice(transactionOffset, ExchangeData.TX_DATA_AVAILABILITY_SIZE());
+                bytes memory txData = data.slice(
+                    txDataOffset,
+                    ExchangeData.TX_DATA_AVAILABILITY_SIZE()
+                );
 
                 // Process the transaction
                 uint txFeeETH = 0;
-                ExchangeData.TransactionType txType = ExchangeData.TransactionType(txData.toUint8(0));
-                if (txType == ExchangeData.TransactionType.TRANSFER) {
-                    txFeeETH = TransferTransaction.process(
+                ExchangeData.TransactionType txType = ExchangeData.TransactionType(
+                    txData.toUint8(0)
+                );
+
+                if (txType == ExchangeData.TransactionType.DEPOSIT) {
+                    txFeeETH = DepositTransaction.process(
                         S,
                         ctx,
                         txData,
@@ -272,8 +287,8 @@ library ExchangeBlocks
                         txData,
                         txAuxiliaryData[i].data
                     );
-                } else if (txType == ExchangeData.TransactionType.DEPOSIT) {
-                    txFeeETH = DepositTransaction.process(
+                } else if (txType == ExchangeData.TransactionType.TRANSFER) {
+                    txFeeETH = TransferTransaction.process(
                         S,
                         ctx,
                         txData,
@@ -301,16 +316,19 @@ library ExchangeBlocks
                         txAuxiliaryData[i].data
                     );
                 } else {
-                    revert("UNKNOWN_TX_TYPE");
+                    // ExchangeData.TransactionType.NOOP and
+                    // ExchangeData.TransactionType.SPOT_TRADE
+                    // are not supported
+                    revert("UNSUPPORTED_TX_TYPE");
                 }
 
                 blockFeeETH = blockFeeETH.add(txFeeETH);
-                previousTransactionOffset = transactionOffset;
+                prevTxDataOffset = txDataOffset;
             }
         }
     }
 
-    function validateAndUpdateProtocolFeeValues(
+    function validateAndSyncProtocolFees(
         ExchangeData.State storage S,
         uint8 takerFeeBips,
         uint8 makerFeeBips
@@ -319,21 +337,19 @@ library ExchangeBlocks
         returns (bool)
     {
         ExchangeData.ProtocolFeeData storage data = S.protocolFeeData;
-        if (now > data.timestamp + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
+        if (now > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
             // Store the current protocol fees in the previous protocol fees
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;
             // Get the latest protocol fees for this exchange
             (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues(
                 S.id,
-                S.rollupEnabled
+                S.rollupMode
             );
-            data.timestamp = uint32(now);
+            data.syncedAt = uint32(now);
 
-            bool feeUpdated = (data.takerFeeBips != data.previousTakerFeeBips) ||
-                (data.makerFeeBips != data.previousMakerFeeBips);
-
-            if (feeUpdated) {
+            if (data.takerFeeBips != data.previousTakerFeeBips ||
+                data.makerFeeBips != data.previousMakerFeeBips) {
                 emit ProtocolFeesUpdated(
                     data.takerFeeBips,
                     data.makerFeeBips,

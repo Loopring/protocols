@@ -28,7 +28,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
     function registerCircuit(
         uint8    blockType,
-        bool     rollupEnabled,
+        bool     rollupMode,
         uint16   blockSize,
         uint8    blockVersion,
         uint[18] calldata vk
@@ -38,7 +38,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         nonReentrant
         onlyOwner
     {
-        Circuit storage circuit = circuits[rollupEnabled][blockType][blockSize][blockVersion];
+        Circuit storage circuit = circuits[rollupMode][blockType][blockSize][blockVersion];
         require(circuit.registered == false, "ALREADY_REGISTERED");
 
         for (uint i = 0; i < 18; i++) {
@@ -49,7 +49,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
         emit CircuitRegistered(
             blockType,
-            rollupEnabled,
+            rollupMode,
             blockSize,
             blockVersion
         );
@@ -57,7 +57,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
     function disableCircuit(
         uint8  blockType,
-        bool   rollupEnabled,
+        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion
         )
@@ -66,7 +66,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         nonReentrant
         onlyOwner
     {
-        Circuit storage circuit = circuits[rollupEnabled][blockType][blockSize][blockVersion];
+        Circuit storage circuit = circuits[rollupMode][blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");
         require(circuit.enabled == true, "ALREADY_DISABLED");
 
@@ -74,7 +74,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
         emit CircuitDisabled(
             blockType,
-            rollupEnabled,
+            rollupMode,
             blockSize,
             blockVersion
         );
@@ -82,7 +82,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
     function verifyProofs(
         uint8  blockType,
-        bool   rollupEnabled,
+        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion,
         uint[] calldata publicInputs,
@@ -93,7 +93,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         view
         returns (bool)
     {
-        Circuit storage circuit = circuits[rollupEnabled][blockType][blockSize][blockVersion];
+        Circuit storage circuit = circuits[rollupMode][blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");
 
         uint[18] storage vk = circuit.verificationKey;
@@ -118,7 +118,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
     function isCircuitRegistered(
         uint8  blockType,
-        bool   rollupEnabled,
+        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion
         )
@@ -127,12 +127,12 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         view
         returns (bool)
     {
-        return circuits[rollupEnabled][blockType][blockSize][blockVersion].registered;
+        return circuits[rollupMode][blockType][blockSize][blockVersion].registered;
     }
 
     function isCircuitEnabled(
         uint8  blockType,
-        bool   rollupEnabled,
+        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion
         )
@@ -141,6 +141,6 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         view
         returns (bool)
     {
-        return circuits[rollupEnabled][blockType][blockSize][blockVersion].enabled;
+        return circuits[rollupMode][blockType][blockSize][blockVersion].enabled;
     }
 }

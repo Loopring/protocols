@@ -14,7 +14,7 @@ contract StatelessWallet
     using SignatureUtil for bytes32;
 
     // bytes4(keccak256("transferOwnership(bytes,bytes)")
-    bytes4 constant internal MAGICVALUE = 0xd1f21f4f;
+    bytes4 constant internal RECOVERY_MAGICVALUE = 0xd1f21f4f;
 
     bytes32 constant public GUARDIAN_TYPEHASH = keccak256(
         "Guardian(address addr,uint256 group)"
@@ -37,9 +37,7 @@ contract StatelessWallet
     struct Wallet
     {
         uint24     accountID;
-
         Guardian[] guardians;
-
         address    inheritor;
         uint       inheritableSince;
     }
@@ -52,15 +50,87 @@ contract StatelessWallet
 
     bytes32 DOMAIN_SEPARATOR;
 
-
     modifier validateWallet(
         Wallet memory wallet,
-        bytes32       expectedWalletHash,
+        bytes32       walletDataHash,
         uint24        accountID
-    )
+        )
     {
-        {
-        bytes32[] memory guardianHashes = new bytes32[](wallet.guardians.length);
+        require(wallet.accountID == accountID, "INVALID_WALLET_ACCOUNT");
+        require(hashWalletData(wallet) == walletDataHash, "INVALID_WALLET_DATA");
+        _;
+    }
+
+    constructor()
+        public
+    {
+        DOMAIN_SEPARATOR = EIP712.hash(
+            EIP712.Domain("Loopring Stateless Wallet", "1.0", address(this))
+        );
+    }
+
+    function recover(
+        uint24                accountID,
+        uint32                nonce,
+        address               oldOwner,
+        address               newOwner,
+        bytes32               walletDataHash,
+        Wallet         memory wallet,
+        PermissionData memory permissionData
+        )
+        external
+        view
+        validateWallet(wallet, walletDataHash, accountID)
+        returns (bytes4)
+    {
+        require(
+            permissionData.signers.length == permissionData.signatures.length,
+            "INVALID_PERMISSION_DATA"
+        );
+
+        bytes32 hash = hashRecovery(
+            accountID,
+            oldOwner,
+            newOwner,
+            nonce
+        );
+
+        require(
+            hash.verifySignatures(permissionData.signers, permissionData.signatures),
+            "INVALID_SIGNATURES"
+        );
+
+        // TODO(brecht): Check guardians like usual in our main smart wallet...
+
+        return RECOVERY_MAGICVALUE;
+    }
+
+    function inherit(
+        uint24  accountID,
+        uint32  /*nonce*/,
+        address /*oldOwner*/,
+        address newOwner,
+        bytes32 walletDataHash,
+        Wallet  memory wallet
+        )
+        external
+        view
+        validateWallet(wallet, walletDataHash, accountID)
+        returns (bytes4)
+    {
+        require(now >= wallet.inheritableSince, "TOO_SOON_TO_INHERIT");
+        require(wallet.inheritor == newOwner, "WRONG_INHERITOR");
+        return RECOVERY_MAGICVALUE;
+    }
+
+    function hashWalletData(
+        Wallet memory wallet
+        )
+        public
+        view
+        returns (bytes32)
+    {
+       bytes32[] memory guardianHashes = new bytes32[](wallet.guardians.length);
         for (uint i = 0; i < wallet.guardians.length; i++) {
             guardianHashes[i] = keccak256(
                 abi.encode(
@@ -70,7 +140,7 @@ contract StatelessWallet
                 )
             );
         }
-        bytes32 walletHash = EIP712.hashPacked(
+        return EIP712.hashPacked(
             DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
@@ -82,72 +152,15 @@ contract StatelessWallet
                 )
             )
         );
-        require(walletHash == expectedWalletHash, "INVALID_WALLET_DATA");
-        require(wallet.accountID == accountID, "INVALID_WALLET_ACCOUNT");
-        }
-        _;
     }
 
-
-    constructor()
-        public
-    {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Loopring Stateless Wallet", "1.0", address(this)));
-    }
-
-    function recover(
-        uint24                accountID,
-        uint32                nonce,
-        address               oldOwner,
-        address               newOwner,
-        bytes32               walletHash,
-        Wallet         memory wallet,
-        PermissionData memory permissionData
-        )
-        external
-        view
-        validateWallet(wallet, walletHash, accountID)
-        returns (bytes4)
-    {
-        require(permissionData.signers.length == permissionData.signatures.length, "INVALID_DATA");
-
-        bytes32 hash = hashRecovery(
-            accountID,
-            oldOwner,
-            newOwner,
-            nonce
-        );
-        require(hash.verifySignatures(permissionData.signers, permissionData.signatures), "INVALID_SIGNATURES");
-
-        // TODO: Check guardians like usual in our main smart wallet...
-        return MAGICVALUE;
-    }
-
-    function inherit(
-        uint24                accountID,
-        uint32                /*nonce*/,
-        address               /*oldOwner*/,
-        address               newOwner,
-        bytes32               walletHash,
-        Wallet         memory wallet
-        )
-        external
-        view
-        validateWallet(wallet, walletHash, accountID)
-        returns (bytes4)
-    {
-        require(now >= wallet.inheritableSince, "TOO_SOON_TO_INHERIT");
-        require(wallet.inheritor == newOwner, "WRONG_INHERITOR");
-        return MAGICVALUE;
-    }
-
-    // -- Internal
+    // -- Internal --
 
     function hashRecovery(
-        uint24                accountID,
-        address               oldOwner,
-        address               newOwner,
-        uint32                nonce
+        uint24  accountID,
+        address oldOwner,
+        address newOwner,
+        uint32  nonce
         )
         internal
         view

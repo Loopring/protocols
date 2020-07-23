@@ -122,7 +122,7 @@
   "exchangeID": 2,
   "merkleRootAfter": "12083954473136967717544389051705163883601873435670261856371416749843473869735",
   "merkleRootBefore": "15233144801493187401435906937112666480341595500066237665975682607249360016114",
-  "onchainDataAvailability": true,
+  "rollupMode": true,
   "operatorAccountID": 2,
   "protocolMakerFeeBips": 25,
   "protocolTakerFeeBips": 50,

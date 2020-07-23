@@ -57,7 +57,7 @@ contract("Loopring", (accounts: string[]) => {
 
     const protocolFees = await loopring.getProtocolFeeValues(
       exchangeTestUtil.exchangeId,
-      exchangeTestUtil.onchainDataAvailability
+      exchangeTestUtil.rollupMode
     );
     assert(
       protocolFees.takerFeeBips.eq(expectedTakerFee),
@@ -135,7 +135,7 @@ contract("Loopring", (accounts: string[]) => {
         {
           const protocolFees = await loopring.getProtocolFeeValues(
             exchangeTestUtil.exchangeId,
-            exchangeTestUtil.onchainDataAvailability
+            exchangeTestUtil.rollupMode
           );
           assert(
             protocolFees.takerFeeBips.eq(maxProtocolTakerFeeBips),
@@ -170,7 +170,7 @@ contract("Loopring", (accounts: string[]) => {
         {
           const protocolFees = await loopring.getProtocolFeeValues(
             exchangeTestUtil.exchangeId,
-            exchangeTestUtil.onchainDataAvailability
+            exchangeTestUtil.rollupMode
           );
           assert(
             protocolFees.takerFeeBips.eq(minProtocolTakerFeeBips),
