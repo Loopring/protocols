@@ -10,10 +10,10 @@ export interface MetaTx {
   from: string;
   to: string;
   nonce: number;
+  txAwareHash: string;
   gasToken: string;
   gasPrice: number;
   gasLimit: number;
-  txAwareHash: string;
   data: string;
 
   chainId: number;
