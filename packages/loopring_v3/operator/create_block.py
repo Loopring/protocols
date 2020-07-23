@@ -63,7 +63,7 @@ def transferFromJSON(jTransfer):
     transfer.feeTokenID = int(jTransfer["feeTokenID"])
     transfer.fee = str(jTransfer["fee"])
     transfer.type = int(jTransfer["type"])
-    transfer.nonce = int(jTransfer["nonce"])
+    transfer.storageID = str(jTransfer["storageID"])
     transfer.from_ = str(jTransfer["from"])
     transfer.to = str(jTransfer["to"])
     transfer.validUntil = int(jTransfer["validUntil"])

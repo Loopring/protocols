@@ -692,7 +692,10 @@ export class Simulator {
 
     from.getBalance(transfer.feeTokenID, index).balance.isub(transfer.fee);
 
-    from.nonce++;
+    // Nonce
+    const storage = from.getBalanceRaw(transfer.tokenID).getTradeHistory(transfer.storageID);
+    storage.filled = new BN(1);
+    storage.orderID = transfer.storageID;
 
     const operator = state.getAccount(block.operatorAccountID);
     operator.getBalance(transfer.feeTokenID, index).balance.iadd(transfer.fee);
@@ -1253,8 +1256,7 @@ export class Simulator {
   }
 
   private static getFilled(order: OrderInfo, accountData: any) {
-    const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
-    const tradeHistorySlot = order.orderID % numSlots;
+    const tradeHistorySlot = order.orderID % Constants.NUM_STORAGE_SLOTS;
     const tradeHistory = accountData
       .getBalanceRaw(order.tokenIdS)
       .getTradeHistory(order.orderID);

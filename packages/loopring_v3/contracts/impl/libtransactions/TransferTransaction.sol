@@ -21,7 +21,7 @@ library TransferTransaction
     using SignatureUtil        for bytes32;
 
     bytes32 constant public TRANSFER_TYPEHASH = keccak256(
-        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint256 data,uint32 nonce)"
+        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint256 data,uint64 storageID)"
     );
 
     /*event ConditionalTransferConsumed(
@@ -61,10 +61,12 @@ library TransferTransaction
         offset += 3;
         uint fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
+        //uint16 shortStorageID = data.toUint16(offset);
+        offset += 2;
         address to = data.toAddress(offset);
         offset += 20;
-        uint32 nonce = data.toUint32(offset);
-        offset += 4;
+        uint64 storageID = data.toUint64(offset);
+        offset += 8;
         address from = data.toAddress(offset);
         offset += 20;
         uint customData = data.toUint(offset);
@@ -80,7 +82,7 @@ library TransferTransaction
             feeTokenID,
             fee,
             customData,
-            nonce
+            storageID
         );
 
         // Verify the signature if one is provided, otherwise fall back to an approved tx
@@ -103,7 +105,7 @@ library TransferTransaction
         uint16  feeTokenID,
         uint    fee,
         uint    data,
-        uint32  nonce
+        uint64  storageID
         )
         internal
         pure
@@ -121,7 +123,7 @@ library TransferTransaction
                     feeTokenID,
                     fee,
                     data,
-                    nonce
+                    storageID
                 )
             )
         );

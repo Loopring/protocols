@@ -11,7 +11,8 @@ interface Transfer {
   amount?: BN;
   feeTokenID?: number;
   fee?: BN;
-  nonce?: number;
+  shortStorageID?: number;
+  storageID?: BN;
   from?: string;
   to?: string;
   data?: string;
@@ -37,7 +38,18 @@ export class TransferProcessor {
 
     from.getBalance(transfer.feeTokenID, index).balance.isub(transfer.fee);
 
-    from.nonce++;
+    // Nonce
+    const storageSlot = transfer.shortStorageID & 0b0011111111111111;
+    const overwriteSlot = (transfer.shortStorageID & 0b0100000000000000) !== 0;
+    const storage = from.getBalanceRaw(transfer.tokenID).getTradeHistory(storageSlot);
+    if (storage.orderID === 0) {
+      storage.orderID = storageSlot;
+    }
+    if (overwriteSlot) {
+      storage.orderID += Constants.NUM_STORAGE_SLOTS;
+      storage.filled = new BN(0);
+    }
+    storage.filled = new BN(1);
 
     const operator = state.getAccount(block.operatorAccountID);
     operator.getBalance(transfer.feeTokenID, index).balance.iadd(transfer.fee);
@@ -63,10 +75,12 @@ export class TransferProcessor {
     offset += 3;
     transfer.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
     offset += 2;
+    transfer.shortStorageID = data.extractUint16(offset);
+    offset += 2;
     transfer.to = data.extractAddress(offset);
     offset += 20;
-    transfer.nonce = data.extractUint32(offset);
-    offset += 4;
+    transfer.storageID = data.extractUint64(offset);
+    offset += 8;
     transfer.from = data.extractAddress(offset);
     offset += 20;
     transfer.data = data.extractData(offset, 32);

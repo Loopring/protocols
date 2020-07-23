@@ -153,8 +153,8 @@ public:
         GadgetT(pb, prefix),
 
         address(make_variable(pb, FMT(prefix, ".address"))),
-
         packAddress(pb, subArray(orderID.bits, 0, NUM_BITS_TRADING_HISTORY), address, FMT(prefix, ".packAddress")),
+
         isNonZeroTradeHistoryOrderID(pb, tradeHistory.orderID, FMT(prefix, ".isNonZeroTradeHistoryOrderID")),
         tradeHistoryOrderID(pb, isNonZeroTradeHistoryOrderID.result(), tradeHistory.orderID, address, FMT(prefix, ".tradeHistoryOrderID")),
 
@@ -210,6 +210,64 @@ public:
     const VariableT& getOverwrite() const
     {
         return orderID_eq_nextTradeHistoryOrderID.result();
+    }
+};
+
+class NonceGadget : public GadgetT
+{
+    const Constants& constants;
+    const DualVariableGadget& storageID;
+
+    TradeHistoryTrimmingGadget tradeHistoryTrimming;
+    IfThenRequireEqualGadget requireFilledZero;
+
+public:
+
+    NonceGadget(
+        ProtoboardT& pb,
+        const Constants& _constants,
+        const TradeHistoryGadget& tradeHistory,
+        const DualVariableGadget& _storageID,
+        const VariableT& verify,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        constants(_constants),
+        storageID(_storageID),
+
+        tradeHistoryTrimming(pb, constants, tradeHistory, storageID, FMT(prefix, ".tradeHistoryTrimming")),
+        requireFilledZero(pb, verify, tradeHistoryTrimming.getFilled(), constants._0, FMT(prefix, ".requireFilledZero"))
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+        tradeHistoryTrimming.generate_r1cs_witness();
+        requireFilledZero.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        tradeHistoryTrimming.generate_r1cs_constraints();
+        requireFilledZero.generate_r1cs_constraints();
+    }
+
+    const VariableT& getData() const
+    {
+        return constants._1;
+    }
+
+    const VariableArrayT getShortID() const
+    {
+        return reverse(flattenReverse({VariableArrayT(1, constants._0), VariableArrayT(1, tradeHistoryTrimming.getOverwrite()),
+                                       subArray(storageID.bits, 0, NUM_BITS_TRADING_HISTORY)}));
+    }
+
+    const VariableT& getOverwrite() const
+    {
+        return tradeHistoryTrimming.getOverwrite();
     }
 };
 

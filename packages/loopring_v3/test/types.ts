@@ -132,7 +132,7 @@ export class Transfer {
   payerTo: string;
   payeeToAccountID: number;
 
-  nonce: number;
+  storageID: number;
 
   dualSecretKey?: string;
 

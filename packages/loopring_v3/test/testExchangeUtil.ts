@@ -322,7 +322,7 @@ export namespace TransferUtils {
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" },
           { name: "data", type: "uint256" },
-          { name: "nonce", type: "uint32" }
+          { name: "storageID", type: "uint64" }
         ]
       },
       primaryType: "Transfer",
@@ -340,7 +340,7 @@ export namespace TransferUtils {
         feeTokenID: transfer.feeTokenID,
         fee: transfer.fee,
         data: transfer.data,
-        nonce: transfer.nonce
+        storageID: transfer.storageID
       }
     };
     return typedData;
@@ -367,7 +367,7 @@ export namespace TransferUtils {
       transfer.dualAuthorX,
       transfer.dualAuthorY,
       transfer.data,
-      transfer.nonce
+      transfer.storageID
     ];
     const hash = hasher(inputs).toString(10);
 
@@ -943,7 +943,7 @@ export class ExchangeTestUtil {
       payerToAccountID: useDualAuthoring ? 0 : toAccountID,
       payerTo: useDualAuthoring ? Constants.zeroAddress : to,
       payeeToAccountID: toAccountID,
-      nonce: this.accounts[this.exchangeId][fromAccountID].nonce++,
+      storageID: this.orderIDGenerator++,
       dualSecretKey
     };
 
@@ -982,7 +982,7 @@ export class ExchangeTestUtil {
           feeToken,
           transfer.fee,
           transfer.data,
-          transfer.nonce,
+          transfer.storageID,
           { from: signer }
         );
       } else {
@@ -2386,15 +2386,14 @@ export class ExchangeTestUtil {
 
             da.addNumber(TransactionType.SPOT_TRADE, 1);
 
-            const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
             da.addNumber(
-              spotTrade.overwriteTradeHistorySlotA * numSlots +
-                (orderA.orderID % numSlots),
+              spotTrade.overwriteTradeHistorySlotA * Constants.NUM_STORAGE_SLOTS +
+                (orderA.orderID % Constants.NUM_STORAGE_SLOTS),
               2
             );
             da.addNumber(
-              spotTrade.overwriteTradeHistorySlotB * numSlots +
-                (orderB.orderID % numSlots),
+              spotTrade.overwriteTradeHistorySlotB * Constants.NUM_STORAGE_SLOTS +
+                (orderB.orderID % Constants.NUM_STORAGE_SLOTS),
               2
             );
             da.addNumber(orderA.accountID, 3);
@@ -2431,13 +2430,18 @@ export class ExchangeTestUtil {
               toFloat(new BN(transfer.fee), Constants.Float16Encoding),
               2
             );
+            da.addNumber(
+              transfer.overwriteTradeHistorySlot * Constants.NUM_STORAGE_SLOTS +
+                (transfer.storageID % Constants.NUM_STORAGE_SLOTS),
+              2
+            );
             da.addBN(
               new BN(
                 transfer.type > 0 || transfer.toNewAccount ? transfer.to : "0"
               ),
               20
             );
-            da.addNumber(transfer.type > 0 ? transfer.nonce : 0, 4);
+            da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 8);
             da.addBN(new BN(transfer.type > 0 ? transfer.from : "0"), 20);
             da.addBN(new BN(transfer.data), 32);
           } else if (tx.withdraw) {

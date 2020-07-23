@@ -447,15 +447,15 @@ class State(object):
         rebate = (amountB * rebateBips) // 10000
         return (fee, protocolFee, rebate)
 
-    def getFilled(self, order):
-        account = self.getAccount(order.accountID)
-        tradeHistory = account.getBalanceLeaf(order.tokenS).getTradeHistory(int(order.orderID))
+    def getFilled(self, accountID, tokenID, storageID):
+        account = self.getAccount(accountID)
+        tradeHistory = account.getBalanceLeaf(tokenID).getTradeHistory(int(storageID))
 
         # Trade history trimming
         numSlots = (2 ** BINARY_TREE_DEPTH_TRADING_HISTORY)
-        tradeHistoryOrderId = tradeHistory.orderID if int(tradeHistory.orderID) > 0 else int(order.orderID) % numSlots
-        filled = int(tradeHistory.filled) if (int(order.orderID) == int(tradeHistoryOrderId)) else 0
-        overwrite = 1 if (int(order.orderID) == int(tradeHistoryOrderId) + numSlots) else 0
+        tradeHistoryOrderId = tradeHistory.orderID if int(tradeHistory.orderID) > 0 else int(storageID) % numSlots
+        filled = int(tradeHistory.filled) if (int(storageID) == int(tradeHistoryOrderId)) else 0
+        overwrite = 1 if (int(storageID) == int(tradeHistoryOrderId) + numSlots) else 0
 
         return (filled, overwrite)
 
@@ -550,8 +550,8 @@ class State(object):
             ring = txInput
 
             # Amount filled in the trade history
-            (filled_A, overwriteTradeHistorySlotA) = self.getFilled(ring.orderA)
-            (filled_B, overwriteTradeHistorySlotB) = self.getFilled(ring.orderB)
+            (filled_A, overwriteTradeHistorySlotA) = self.getFilled(ring.orderA.accountID, ring.orderA.tokenS, ring.orderA.orderID)
+            (filled_B, overwriteTradeHistorySlotB) = self.getFilled(ring.orderB.accountID, ring.orderB.tokenS, ring.orderB.orderID)
 
             # Simple matching logic
             fillA = self.getMaxFill(ring.orderA, filled_A, True)
@@ -672,6 +672,8 @@ class State(object):
 
         elif txInput.txType == "Transfer":
 
+            (storageData, overwriteStorageData) = self.getFilled(txInput.fromAccountID, txInput.tokenID, txInput.storageID)
+
             transferAmount = roundToFloatValue(int(txInput.amount), Float24Encoding)
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
 
@@ -697,7 +699,9 @@ class State(object):
             newState.balanceB_B_Balance = transferAmount
             newState.balanceB_B_AutoApplyIndex = True
 
-            newState.accountA_Nonce = 1
+            newState.tradeHistoryA_Address = txInput.storageID
+            newState.tradeHistoryA_Filled = 1
+            newState.tradeHistoryA_OrderId = txInput.storageID
 
             if txInput.type != 0:
                 context.numConditionalTransactions = context.numConditionalTransactions + 1
@@ -707,6 +711,7 @@ class State(object):
 
             # For tests (used to set the DA data)
             txInput.toNewAccount = True if accountB.owner == str(0) else False
+            txInput.overwriteTradeHistorySlot = overwriteStorageData
 
         elif txInput.txType == "Withdraw":
 

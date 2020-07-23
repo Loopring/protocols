@@ -49,7 +49,7 @@ public:
     DualVariableGadget type;
     DualVariableGadget from;
     DualVariableGadget to;
-    DualVariableGadget nonce;
+    DualVariableGadget storageID;
     VariableT dualAuthorX;
     VariableT dualAuthorY;
     DualVariableGadget data;
@@ -95,7 +95,7 @@ public:
     OrGadget da_NeedsToAddress;
     ArrayTernaryGadget da_To;
     ArrayTernaryGadget da_From;
-    ArrayTernaryGadget da_Nonce;
+    ArrayTernaryGadget da_StorageID;
 
     // Fee as float
     FloatGadget fFee;
@@ -108,8 +108,8 @@ public:
     // Transfer from From to To
     TransferGadget transferPayment;
 
-    // Increase the nonce of From by 1
-    AddGadget nonce_From_after;
+    // Nonce
+    NonceGadget nonce;
     // Increase the number of conditional transactions (if conditional)
     UnsafeAddGadget numConditionalTransactionsAfter;
 
@@ -131,7 +131,7 @@ public:
         type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
         from(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".from")),
         to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".to")),
-        nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
+        storageID(pb, NUM_BITS_ORDERID, FMT(prefix, ".storageID")),
         dualAuthorX(make_variable(pb, FMT(prefix, ".dualAuthorX"))),
         dualAuthorY(make_variable(pb, FMT(prefix, ".dualAuthorY"))),
         data(pb, NUM_BITS_FIELD_CAPACITY, FMT(prefix, ".data")),
@@ -170,7 +170,7 @@ public:
             dualAuthorX,
             dualAuthorY,
             data.packed,
-            nonce.packed
+            storageID.packed
         }), FMT(this->annotation_prefix, ".hashPayer")),
         hashDual(pb, var_array({
             state.exchange,
@@ -185,7 +185,7 @@ public:
             dualAuthorX,
             dualAuthorY,
             data.packed,
-            nonce.packed
+            storageID.packed
         }), FMT(this->annotation_prefix, ".hashDual")),
 
         // Balances
@@ -205,7 +205,7 @@ public:
         da_NeedsToAddress(pb, {toAccountValid.isNewAccount(), isConditional.result()}, FMT(prefix, ".da_NeedsToAddress")),
         da_To(pb, da_NeedsToAddress.result(), to.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_To")),
         da_From(pb, isConditional.result(), from.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_From")),
-        da_Nonce(pb, isConditional.result(), nonce.bits, VariableArrayT(NUM_BITS_NONCE, state.constants._0), FMT(prefix, ".da_Nonce")),
+        da_StorageID(pb, isConditional.result(), storageID.bits, VariableArrayT(NUM_BITS_ORDERID, state.constants._0), FMT(prefix, ".da_StorageID")),
 
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
@@ -218,14 +218,13 @@ public:
         // Transfer from From to To
         transferPayment(pb, balanceS_A, balanceB_B, fAmount.value(), FMT(prefix, ".transferPayment")),
 
-        // Increase the nonce of From by 1
-        nonce_From_after(pb, state.accountA.account.nonce, state.constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonce_From_after")),
+        // Nonce
+        nonce(pb, state.constants, state.accountA.tradeHistory, storageID, isTransferTx.result(), FMT(prefix, ".nonce")),
         // Increase the number of conditional transactions (if conditional)
         numConditionalTransactionsAfter(pb, state.numConditionalTransactions, isConditional.result(), FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         // Update the From account
         setArrayOutput(accountA_Address, fromAccountID.bits);
-        setOutput(accountA_Nonce, nonce_From_after.result());
 
         // Set the 2 tokens used
         setArrayOutput(balanceA_S_Address, tokenID.bits);
@@ -259,6 +258,11 @@ public:
 
         // Increase the number of conditional transactions (if conditional)
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
+
+        // Nonce
+        setArrayOutput(tradeHistoryA_Address, subArray(storageID.bits, 0, NUM_BITS_TRADING_HISTORY));
+        setOutput(tradeHistoryA_Filled, nonce.getData());
+        setOutput(tradeHistoryA_OrderId, storageID.packed);
     }
 
     void generate_r1cs_witness(const Transfer& transfer)
@@ -274,7 +278,7 @@ public:
         type.generate_r1cs_witness(pb, transfer.type);
         from.generate_r1cs_witness();
         to.generate_r1cs_witness(pb, transfer.to);
-        nonce.generate_r1cs_witness();
+        storageID.generate_r1cs_witness(pb, transfer.storageID);
         pb.val(dualAuthorX) = transfer.dualAuthorX;
         pb.val(dualAuthorY) = transfer.dualAuthorY;
         data.generate_r1cs_witness(pb, transfer.data);
@@ -320,7 +324,7 @@ public:
         da_NeedsToAddress.generate_r1cs_witness();
         da_To.generate_r1cs_witness();
         da_From.generate_r1cs_witness();
-        da_Nonce.generate_r1cs_witness();
+        da_StorageID.generate_r1cs_witness();
 
         // Fee as float
         fFee.generate_r1cs_witness(toFloat(transfer.fee, Float16Encoding));
@@ -333,8 +337,8 @@ public:
         // Transfer from From to To
         transferPayment.generate_r1cs_witness();
 
-        // Increase the nonce of From by 1
-        nonce_From_after.generate_r1cs_witness();
+        // Nonce
+        nonce.generate_r1cs_witness();
         // Increase the number of conditional transactions (if conditional)
         numConditionalTransactionsAfter.generate_r1cs_witness();
     }
@@ -352,7 +356,7 @@ public:
         type.generate_r1cs_constraints(true);
         from.generate_r1cs_constraints(true);
         to.generate_r1cs_constraints(true);
-        nonce.generate_r1cs_constraints(true);
+        storageID.generate_r1cs_constraints(true);
         data.generate_r1cs_constraints(true);
         payer_toAccountID.generate_r1cs_constraints(true);
         payer_to.generate_r1cs_constraints(true);
@@ -396,7 +400,7 @@ public:
         da_NeedsToAddress.generate_r1cs_constraints();
         da_To.generate_r1cs_constraints();
         da_From.generate_r1cs_constraints();
-        da_Nonce.generate_r1cs_constraints();
+        da_StorageID.generate_r1cs_constraints();
 
         // Fee as float
         fFee.generate_r1cs_constraints();
@@ -409,8 +413,8 @@ public:
         // Transfer from From to To
         transferPayment.generate_r1cs_constraints();
 
-        // Increase the nonce of From by 1
-        nonce_From_after.generate_r1cs_constraints();
+        // Nonce
+        nonce.generate_r1cs_constraints();
         // Increase the number of conditional transactions (if conditional)
         numConditionalTransactionsAfter.generate_r1cs_constraints();
     }
@@ -425,8 +429,9 @@ public:
             feeTokenID.bits,
             fAmount.bits(),
             fFee.bits(),
+            nonce.getShortID(),
             da_To.result(),
-            da_Nonce.result(),
+            da_StorageID.result(),
             da_From.result(),
             VariableArrayT(256 - NUM_BITS_FIELD_CAPACITY, state.constants._0), data.bits
         });

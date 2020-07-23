@@ -71,7 +71,7 @@ static auto dummyTransfer = R"({
     "payerToAccountID": 2,
     "payerTo": "2",
     "payeeToAccountID": 2,
-    "nonce": 0
+    "storageID": "0"
 })"_json;
 
 static auto dummyWithdraw = R"({
@@ -481,6 +481,7 @@ public:
     ethsnarks::FieldT dualAuthorX;
     ethsnarks::FieldT dualAuthorY;
     ethsnarks::FieldT data;
+    ethsnarks::FieldT storageID;
     ethsnarks::FieldT payerToAccountID;
     ethsnarks::FieldT payerTo;
     ethsnarks::FieldT payeeToAccountID;
@@ -500,6 +501,7 @@ static void from_json(const json& j, Transfer& transfer)
     transfer.dualAuthorX = ethsnarks::FieldT(j["dualAuthorX"].get<std::string>().c_str());
     transfer.dualAuthorY = ethsnarks::FieldT(j["dualAuthorY"].get<std::string>().c_str());
     transfer.data = ethsnarks::FieldT(j["data"].get<std::string>().c_str());
+    transfer.storageID = ethsnarks::FieldT(j["storageID"].get<std::string>().c_str());
     transfer.payerToAccountID = ethsnarks::FieldT(j.at("payerToAccountID"));
     transfer.payerTo = ethsnarks::FieldT(j["payerTo"].get<std::string>().c_str());
     transfer.payeeToAccountID = ethsnarks::FieldT(j.at("payeeToAccountID"));
