@@ -157,6 +157,17 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual;
 
+    /// @dev Grow the merkle tree's height by 1 to increase the account capacity by 4x.
+    ///      Note the max account sub-tree's height is 16.
+    ///
+    ///
+    ///      The operator should set up a new set of verificaiton keys with a new blockVersion
+    ///      once the tree grows.
+    function growMerkleTree()
+        external
+        virtual;
+
+
     /// @dev Initialized the deposit contract used by the exchange.
     ///      Can only be called by the exchange owner once.
     /// @param depositContract The deposit contract to be used

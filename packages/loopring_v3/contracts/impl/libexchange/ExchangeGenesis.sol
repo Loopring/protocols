@@ -26,8 +26,8 @@ library ExchangeGenesis
         address _loopringAddress,
         address payable _operator,
         bool    _rollupMode,
-        bytes32 _emptyMerkleRoot,
-        uint    _accountTreeDepth,
+        bytes32 _genesisMerkleRoot,
+        uint    _genesisAccountTreeDepth,
         bytes32 _domainSeperator
         )
         external
@@ -35,8 +35,8 @@ library ExchangeGenesis
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
-        require(_emptyMerkleRoot != 0, "ZERO_GENESIS_MERKLE_ROOT");
-        require(_accountTreeDepth != 0, "ZERO_GENESIS_MERKLE_ROOT");
+        require(_genesisMerkleRoot != 0, "ZERO_GENESIS_MERKLE_ROOT");
+        require(_genesisAccountTreeDepth != 0, "ZERO_GENESIS_MERKLE_ROOT");
         require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
@@ -44,8 +44,8 @@ library ExchangeGenesis
         S.operator = _operator;
         S.rollupMode = _rollupMode;
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
-        S.emptyMerkleRoot = _emptyMerkleRoot;
-        S.accountTreeDepth = _accountTreeDepth;
+        S.emptyMerkleRoot = _genesisMerkleRoot;
+        S.accountTreeDepth = _genesisAccountTreeDepth;
         S.DOMAIN_SEPARATOR = _domainSeperator;
 
         ILoopringV3 loopring = ILoopringV3(_loopringAddress);
@@ -72,7 +72,6 @@ library ExchangeGenesis
         )
         external
     {
-        // TODO(daniel): also checks verification keys are there.
         require(S.accountTreeDepth < 16, "MAX_TREE_SIZE_REACHED");
         S.accountTreeDepth += 1;
 
