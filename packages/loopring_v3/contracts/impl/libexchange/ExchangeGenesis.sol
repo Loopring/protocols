@@ -34,6 +34,8 @@ library ExchangeGenesis
         )
         external
     {
+        require(S.id == 0, "INITIALIZED_ALREADY");
+
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
@@ -43,8 +45,6 @@ library ExchangeGenesis
             _genesisAccountTreeDepth <= MAX_ACCOUNT_TREE_DEPTH,
             "INVALID_GENESIS_ACCOUNT_TREE_DEPTH"
         );
-
-        require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;
