@@ -62,7 +62,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
 
     function setCheckBalance(
         address token,
-        bool checkBalance
+        bool    checkBalance
         )
         external
         onlyOwner
@@ -83,19 +83,19 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
+        nonReentrant
         ifNonZero(amount)
         returns (uint96 actualAmount, uint /*tokenIndex*/)
     {
-
-        // Check msg.value
         if (isETHInternal(token)) {
             require(msg.value == uint(amount), "INVALID_ETH_DEPOSIT");
             actualAmount = amount;
         } else {
+            require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
+
             bool checkBalance = needCheckBalance[token];
             uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
 
-            require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
             token.safeTransferFromAndVerify(from, address(this), uint(amount));
 
             uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
@@ -113,6 +113,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
+        nonReentrant
         ifNonZero(amount)
     {
         if (isETHInternal(token)) {
@@ -134,8 +135,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         external
         override
         payable
-        nonReentrant
         onlyExchange
+        nonReentrant
         ifNonZero(amount)
     {
         token.safeTransferFromAndVerify(from, to, amount);
