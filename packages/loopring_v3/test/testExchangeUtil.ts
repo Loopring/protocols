@@ -521,7 +521,7 @@ export namespace OwnerChangeUtils {
         fee: accountTransfer.fee,
         newOwner: accountTransfer.newOwner,
         nonce: accountTransfer.nonce,
-        statelessWallet: accountTransfer.statelessWallet,
+        statelessWallet: accountTransfer.walletAddress,
         walletDataHash: accountTransfer.walletDataHash,
         walletCalldata: accountTransfer.walletCalldata
       }
@@ -1703,7 +1703,7 @@ export class ExchangeTestUtil {
       walletHash,
       nonce: account.nonce++,
       newOwner,
-      statelessWallet:
+      walletAddress:
         authMethod === AuthMethod.WALLET
           ? this.statelessWallet.address
           : Constants.zeroAddress,
@@ -2313,7 +2313,7 @@ export class ExchangeTestUtil {
                   ? transaction.onchainSignatureNewOwner
                   : "0x"
               ),
-              transaction.statelessWallet,
+              transaction.walletAddress,
               transaction.walletDataHash,
               transaction.walletCalldata
             ]
