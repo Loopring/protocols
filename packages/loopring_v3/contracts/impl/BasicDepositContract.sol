@@ -131,7 +131,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
             actualAmount = balance < amount ? balance : amount;
             token.safeTransferAndVerify(to, actualAmount);
         }
-         emit Withdrawal(token, actualAmount);
+        emit Withdrawal(token, actualAmount);
     }
 
     function transfer(
