@@ -103,7 +103,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
 
             uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
             uint diff = balanceAfter.sub(balanceBefore);
-            amountReceived = uint96(diff)
+            amountReceived = uint96(diff);
             require(uint(amountReceived) == diff, "OUT_OF_RANGE");
         }
         emit Deposit(token, amountReceived);
