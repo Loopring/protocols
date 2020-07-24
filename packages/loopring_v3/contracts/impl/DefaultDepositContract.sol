@@ -47,8 +47,8 @@ contract DefaultDepositContract is IDepositContract, ReentrancyGuard, Claimable
         bool            checkBalance
     );
 
-    event Deposit   (address token, uint amount);
-    event Withdrawal(address token, uint amount);
+    event Deposit   (address token, uint amountReceived);
+    event Withdrawal(address token, uint amountPaid);
 
     function initialize(
         address _exchange
