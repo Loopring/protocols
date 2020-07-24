@@ -121,15 +121,15 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         ifNonZero(amount)
         returns (uint actualAmount)
     {
+        actualAmount = amount;
         if (isETHInternal(token)) {
-            uint balance = address(this).balance;
-            actualAmount = balance < amount ? balance : amount;
             to.sendETHAndVerify(actualAmount, gasleft());
         } else {
-            // Just in case the balance is unexpectedly smaller
-            uint balance = ERC20(token).balanceOf(address(this));
-            actualAmount = balance < amount ? balance : amount;
-            token.safeTransferAndVerify(to, actualAmount);
+            try ERC20(token).transfer(to, actualAmount) {} catch {
+                actualAmount = ERC20(token).balanceOf(address(this));
+                require(actualAmount < amount, "UNEXCPECTED");
+                token.safeTransferAndVerify(to, actualAmount);
+            }
         }
         emit Withdrawal(token, actualAmount);
     }
