@@ -20,7 +20,7 @@ import "../lib/ReentrancyGuard.sol";
 ///        when necessary.
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
-contract DefaultDepositContract is IDepositContract, ReentrancyGuard, Claimable
+contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
