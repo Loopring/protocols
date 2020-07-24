@@ -3,7 +3,6 @@
 pragma solidity ^0.6.10;
 
 import "../iface/IDepositContract.sol";
-import "../iface/ILoopringV3.sol";
 
 import "../lib/AddressUtil.sol";
 import "../lib/Claimable.sol";
@@ -27,8 +26,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-    address     public exchange;
-    ILoopringV3 public loopring;
+    address public exchange;
 
     mapping (address => bool) needCheckBalance;
 
@@ -49,15 +47,18 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         bool            checkBalance
     );
 
-    constructor(
-        address exchangeAddress,
-        address loopringAddress
+    function initialize(
+        address _exchange
         )
-        public
-        Claimable()
+        external
+        onlyOwner
     {
-        exchange = exchangeAddress;
-        loopring = ILoopringV3(loopringAddress);
+        require(
+            exchange == address(0) &&
+            _exchange != address(0),
+            "INVALID_EXCHANGE"
+        );
+        exchange = _exchange;
     }
 
     function setCheckBalance(
