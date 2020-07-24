@@ -115,7 +115,7 @@ library ExchangeData
     function MAX_OPEN_FORCED_REQUESTS() internal pure returns (uint16) { return 4096; }
     function MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 15 days; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 7 days; }
-    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 24; }
+    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 32; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
@@ -125,7 +125,7 @@ library ExchangeData
 
     struct AccountLeaf
     {
-        uint24   accountID;
+        uint32   accountID;
         address  owner;
         uint     pubKeyX;
         uint     pubKeyY;
@@ -184,14 +184,14 @@ library ExchangeData
         bytes32 merkleRoot;
 
         // A map from an accountID to a tokenID to if the balance is withdrawn
-        mapping (uint24 => mapping (uint16 => bool)) withdrawnInWithdrawMode;
+        mapping (uint32 => mapping (uint16 => bool)) withdrawnInWithdrawMode;
 
         // A map from an account to a token to the amount withdrawable for that account.
         // This is only used when the automatic distribution of the withdrawal failed.
         mapping (address => mapping (uint16 => uint)) amountWithdrawable;
 
         // A map from an account to a token to the forced withdrawal (always full balance)
-        mapping (uint24 => mapping (uint16 => ForcedWithdrawal)) pendingForcedWithdrawals;
+        mapping (uint32 => mapping (uint16 => ForcedWithdrawal)) pendingForcedWithdrawals;
 
         // A map from an address to a token to a deposit
         mapping (address => mapping (uint16 => Deposit)) pendingDeposits;

@@ -37,7 +37,7 @@ contract TestAccountContract {
     function withdraw(
         address token,
         uint96 amount,
-        uint24 accountID
+        uint32 accountID
         )
         external
         payable

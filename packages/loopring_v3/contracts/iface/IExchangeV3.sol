@@ -57,7 +57,7 @@ abstract contract IExchangeV3 is IExchange
     event ForcedWithdrawalRequested(
         address owner,
         address token,
-        uint24  accountID
+        uint32  accountID
     );
 
     event WithdrawalCompleted(
@@ -100,14 +100,14 @@ abstract contract IExchangeV3 is IExchange
     // events from libraries
     event DepositProcessed(
         address owner,
-        uint24  accountId,
+        uint32  accountId,
         uint16  token,
         uint    amount,
         uint    index
     );
 
     event ForcedWithdrawalProcessed(
-        uint24 accountID,
+        uint32 accountID,
         uint16 tokenID,
         uint   amount
     );
@@ -126,7 +126,7 @@ abstract contract IExchangeV3 is IExchange
     );*/
 
     /*event AccountUpdated(
-        uint24 owner,
+        uint32 owner,
         uint   publicKey
     );*/
 
@@ -388,7 +388,7 @@ abstract contract IExchangeV3 is IExchange
     function forceWithdraw(
         address owner,
         address tokenAddress,
-        uint24  accountID
+        uint32  accountID
         )
         external
         virtual
@@ -497,7 +497,7 @@ abstract contract IExchangeV3 is IExchange
     /// @param  accountID The accountID the forced request was made for
     /// @param  token The token address of the the forced request
     function notifyForcedRequestTooOld(
-        uint24  accountID,
+        uint32  accountID,
         address token
         )
         external

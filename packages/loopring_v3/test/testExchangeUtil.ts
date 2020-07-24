@@ -156,7 +156,7 @@ export namespace AccountUpdateUtils {
         ],
         AccountUpdate: [
           { name: "owner", type: "address" },
-          { name: "accountID", type: "uint24" },
+          { name: "accountID", type: "uint32" },
           { name: "nonce", type: "uint32" },
           { name: "publicKey", type: "uint256" },
           { name: "walletHash", type: "uint256" },
@@ -233,7 +233,7 @@ export namespace WithdrawalUtils {
         ],
         Withdrawal: [
           { name: "owner", type: "address" },
-          { name: "accountID", type: "uint24" },
+          { name: "accountID", type: "uint32" },
           { name: "nonce", type: "uint32" },
           { name: "tokenID", type: "uint16" },
           { name: "amount", type: "uint256" },
@@ -403,7 +403,7 @@ export namespace WalletUtils {
           { name: "group", type: "uint256" }
         ],
         StatelessWallet: [
-          { name: "accountID", type: "uint24" },
+          { name: "accountID", type: "uint32" },
           { name: "guardians", type: "Guardian[]" },
           { name: "inheritor", type: "address" },
           { name: "inheritableSince", type: "uint256" }
@@ -498,7 +498,7 @@ export namespace OwnerChangeUtils {
         ],
         OwnerChange: [
           { name: "owner", type: "address" },
-          { name: "accountID", type: "uint24" },
+          { name: "accountID", type: "uint32" },
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" },
           { name: "newOwner", type: "address" },
@@ -550,7 +550,7 @@ export namespace NewAccountUtils {
           { name: "verifyingContract", type: "address" }
         ],
         NewAccount: [
-          { name: "accountID", type: "uint24" },
+          { name: "accountID", type: "uint32" },
           { name: "owner", type: "address" },
           { name: "publicKey", type: "uint256" },
           { name: "walletHash", type: "uint256" }
@@ -734,15 +734,7 @@ export class ExchangeTestUtil {
         secretKey: "0",
         nonce: 0
       };
-      const indexAccount: Account = {
-        accountID: 1,
-        owner: Constants.zeroAddress,
-        publicKeyX: "0",
-        publicKeyY: "0",
-        secretKey: "0",
-        nonce: 0
-      };
-      this.accounts.push([protocolFeeAccount, indexAccount]);
+      this.accounts.push([protocolFeeAccount]);
     }
 
     await this.createExchange(this.testContext.deployer, true, this.rollupMode);
@@ -2363,7 +2355,7 @@ export class ExchangeTestUtil {
       bs.addNumber(numConditionalTransactions, 4);
       const allDa = new Bitstream();
       if (block.rollupMode) {
-        allDa.addNumber(block.operatorAccountID, 3);
+        allDa.addNumber(block.operatorAccountID, 4);
         for (const tx of block.transactions) {
           //console.log(tx);
           const da = new Bitstream();
@@ -2386,8 +2378,8 @@ export class ExchangeTestUtil {
                 (orderB.storageID % Constants.NUM_STORAGE_SLOTS),
               2
             );
-            da.addNumber(orderA.accountID, 3);
-            da.addNumber(orderB.accountID, 3);
+            da.addNumber(orderA.accountID, 4);
+            da.addNumber(orderB.accountID, 4);
             da.addNumber(orderA.tokenS * 2 ** 12 + orderB.tokenS, 3);
             da.addNumber(spotTrade.fFillS_A, 3);
             da.addNumber(spotTrade.fFillS_B, 3);
@@ -2409,8 +2401,8 @@ export class ExchangeTestUtil {
             const transfer = tx.transfer;
             da.addNumber(TransactionType.TRANSFER, 1);
             da.addNumber(transfer.type, 1);
-            da.addNumber(transfer.fromAccountID, 3);
-            da.addNumber(transfer.toAccountID, 3);
+            da.addNumber(transfer.fromAccountID, 4);
+            da.addNumber(transfer.toAccountID, 4);
             da.addNumber(transfer.tokenID * 2 ** 12 + transfer.feeTokenID, 3);
             da.addNumber(
               toFloat(new BN(transfer.amount), Constants.Float24Encoding),
@@ -2439,7 +2431,7 @@ export class ExchangeTestUtil {
             da.addNumber(TransactionType.WITHDRAWAL, 1);
             da.addNumber(withdraw.type, 1);
             da.addBN(new BN(withdraw.owner), 20);
-            da.addNumber(withdraw.accountID, 3);
+            da.addNumber(withdraw.accountID, 4);
             da.addNumber(withdraw.nonce, 4);
             da.addNumber(withdraw.tokenID * 2 ** 12 + withdraw.feeTokenID, 3);
             da.addBN(new BN(withdraw.amount), 12);
@@ -2454,7 +2446,7 @@ export class ExchangeTestUtil {
             const deposit = tx.deposit;
             da.addNumber(TransactionType.DEPOSIT, 1);
             da.addBN(new BN(deposit.owner), 20);
-            da.addNumber(deposit.accountID, 3);
+            da.addNumber(deposit.accountID, 4);
             da.addNumber(deposit.tokenID, 2);
             da.addBN(new BN(deposit.amount), 12);
           } else if (tx.accountUpdate) {
@@ -2462,7 +2454,7 @@ export class ExchangeTestUtil {
             da.addNumber(TransactionType.ACCOUNT_UPDATE, 1);
             da.addNumber(update.type, 1);
             da.addBN(new BN(update.owner), 20);
-            da.addNumber(update.accountID, 3);
+            da.addNumber(update.accountID, 4);
             da.addNumber(update.nonce, 4);
             da.addBN(
               new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
@@ -2477,13 +2469,13 @@ export class ExchangeTestUtil {
           } else if (tx.accountNew) {
             const create = tx.accountNew;
             da.addNumber(TransactionType.ACCOUNT_NEW, 1);
-            da.addNumber(create.payerAccountID, 3);
+            da.addNumber(create.payerAccountID, 4);
             da.addNumber(create.feeTokenID, 2);
             da.addNumber(
               toFloat(new BN(create.fee), Constants.Float16Encoding),
               2
             );
-            da.addNumber(create.newAccountID, 3);
+            da.addNumber(create.newAccountID, 4);
             da.addBN(new BN(create.newOwner), 20);
             da.addBN(
               new BN(
@@ -2497,7 +2489,7 @@ export class ExchangeTestUtil {
             const change = tx.accountTransfer;
             da.addNumber(TransactionType.ACCOUNT_TRANSFER, 1);
             da.addBN(new BN(change.owner), 20);
-            da.addNumber(change.accountID, 3);
+            da.addNumber(change.accountID, 4);
             da.addNumber(change.nonce, 4);
             da.addNumber(change.feeTokenID, 2);
             da.addNumber(

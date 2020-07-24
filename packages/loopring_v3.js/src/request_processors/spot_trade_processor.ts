@@ -32,10 +32,10 @@ export class SpotTradeProcessor {
     offset += 2;
 
     // Accounts
-    const accountIdA = data.extractUint24(offset);
-    offset += 3;
-    const accountIdB = data.extractUint24(offset);
-    offset += 3;
+    const accountIdA = data.extractUint32(offset);
+    offset += 4;
+    const accountIdB = data.extractUint32(offset);
+    offset += 4;
 
     // Tokens
     const tokenIds = data.extractUint24(offset);
@@ -94,7 +94,6 @@ export class SpotTradeProcessor {
       rebateBipsB
     );
 
-    const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_STORAGE;
     // Update accountA
     {
       const accountA = state.getAccount(accountIdA);
@@ -106,7 +105,7 @@ export class SpotTradeProcessor {
         tradeHistoryA.storageID = tradeHistorySlotA;
       }
       if (overwriteTradeHistorySlotA) {
-        tradeHistoryA.storageID += numSlots;
+        tradeHistoryA.storageID += Constants.NUM_STORAGE_SLOTS;
         tradeHistoryA.data = new BN(0);
       }
       tradeHistoryA.data.iadd(buyA ? s.fillBA : s.fillSA);
@@ -123,7 +122,7 @@ export class SpotTradeProcessor {
         tradeHistoryB.storageID = tradeHistorySlotB;
       }
       if (overwriteTradeHistorySlotB) {
-        tradeHistoryB.storageID += numSlots;
+        tradeHistoryB.storageID += Constants.NUM_STORAGE_SLOTS;
         tradeHistoryB.data = new BN(0);
       }
       tradeHistoryB.data.iadd(buyB ? s.fillBB : s.fillSB);

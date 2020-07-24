@@ -47,10 +47,10 @@ library TransferTransaction
         offset += 1;
 
         // Extract the transfer data
-        //uint24 fromAccountID = data.toUint24(offset);
-        offset += 3;
-        //uint24 toAccountID = data.toUint24(offset);
-        offset += 3;
+        //uint32 fromAccountID = data.toUint32(offset);
+        offset += 4;
+        //uint32 toAccountID = data.toUint32(offset);
+        offset += 4;
 
         uint16 tokenID = data.toUint16(offset) >> 4;
         uint16 feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);

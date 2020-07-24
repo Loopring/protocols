@@ -49,8 +49,8 @@ export class NewAccountProcessor {
     const create: NewAccount = {};
     let offset = 1;
 
-    create.payerAccountID = data.extractUint24(offset);
-    offset += 3;
+    create.payerAccountID = data.extractUint32(offset);
+    offset += 4;
     create.feeTokenID = data.extractUint16(offset);
     offset += 2;
     create.fee = fromFloat(
@@ -58,8 +58,8 @@ export class NewAccountProcessor {
       Constants.Float16Encoding
     );
     offset += 2;
-    create.newAccountID = data.extractUint24(offset);
-    offset += 3;
+    create.newAccountID = data.extractUint32(offset);
+    offset += 4;
     create.newOwner = data.extractAddress(offset);
     offset += 20;
     const publicKey = data.extractData(offset, 32);

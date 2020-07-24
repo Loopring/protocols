@@ -65,9 +65,9 @@ export class ExchangeV3 {
 
   private merkleTree: SparseMerkleTree;
 
-  // decimal representation of `0x02b78c40c9dbb8728b88a7e341bafa71bf2d7af4c8cb9f6953b400b10c0d140e`
+  // decimal representation of `0x1d68b19f53f28fe87bf82506d20235c1f659279665931a2894ef4c6675990b6f`
   private genesisMerkleRoot =
-    "1228926701204272881136010642145049523437081007992474610987651151871477617678";
+    "13302050608227283725520996754851570619715523916284269909477687368496725953391";
 
   private protocolFees: ProtocolFees;
 
@@ -922,8 +922,8 @@ export class ExchangeV3 {
     offset += 1;
     const numConditionalTransactions = data.extractUint32(offset);
     offset += 4;
-    const operatorAccountID = data.extractUint24(offset);
-    offset += 3;
+    const operatorAccountID = data.extractUint32(offset);
+    offset += 4;
 
     const ctx: BlockContext = {
       protocolFeeTakerBips,

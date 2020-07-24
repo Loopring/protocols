@@ -161,8 +161,8 @@ public:
     // General validation
     DualVariableGadget accountA;
     DualVariableGadget accountB;
-    RequireLtGadget one_lt_accountA;
-    RequireLtGadget one_lt_accountB;
+    RequireNotZeroGadget validateAccountA;
+    RequireNotZeroGadget validateAccountB;
 
     // Check signatures
     SignatureVerifier signatureVerifierA;
@@ -226,8 +226,8 @@ public:
         // General validation
         accountA(pb, tx.getArrayOutput(accountA_Address), FMT(prefix, ".packAccountA")),
         accountB(pb, tx.getArrayOutput(accountB_Address), FMT(prefix, ".packAccountA")),
-        one_lt_accountA(pb, state.constants._1, accountA.packed, NUM_BITS_ACCOUNT, FMT(prefix, ".one_lt_accountA")),
-        one_lt_accountB(pb, state.constants._1, accountB.packed, NUM_BITS_ACCOUNT, FMT(prefix, ".one_lt_accountB")),
+        validateAccountA(pb, accountA.packed, FMT(prefix, ".validateAccountA")),
+        validateAccountB(pb, accountB.packed, FMT(prefix, ".validateAccountB")),
 
         // Check signatures
         signatureVerifierA(pb, params, state.constants, jubjub::VariablePointT(tx.getOutput(publicKeyX_A), tx.getOutput(publicKeyY_A)), tx.getOutput(hash_A), tx.getOutput(signatureRequired_A), FMT(prefix, ".signatureVerifierA")),
@@ -329,8 +329,8 @@ public:
         // General validation
         accountA.generate_r1cs_witness();
         accountB.generate_r1cs_witness();
-        one_lt_accountA.generate_r1cs_witness();
-        one_lt_accountB.generate_r1cs_witness();
+        validateAccountA.generate_r1cs_witness();
+        validateAccountB.generate_r1cs_witness();
 
         // Check signatures
         signatureVerifierA.generate_r1cs_witness(uTx.witness.signatureA);
@@ -377,8 +377,8 @@ public:
         // General validation
         accountA.generate_r1cs_constraints();
         accountB.generate_r1cs_constraints();
-        one_lt_accountA.generate_r1cs_constraints();
-        one_lt_accountB.generate_r1cs_constraints();
+        validateAccountA.generate_r1cs_constraints();
+        validateAccountB.generate_r1cs_constraints();
 
         // Check signatures
         signatureVerifierA.generate_r1cs_constraints();

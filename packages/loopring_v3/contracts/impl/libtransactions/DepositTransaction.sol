@@ -19,7 +19,7 @@ library DepositTransaction
 
     event DepositProcessed(
         address owner,
-        uint24  accountId,
+        uint32  accountId,
         uint16  token,
         uint    amount
     );
@@ -38,8 +38,8 @@ library DepositTransaction
         // Read in the deposit data
         address owner = data.toAddress(offset);
         offset += 20;
-        uint24 accountID = data.toUint24(offset);
-        offset += 3;
+        uint32 accountID = data.toUint32(offset);
+        offset += 4;
         uint16 tokenID = data.toUint16(offset);
         offset += 2;
         uint96 amount = data.toUint96(offset);

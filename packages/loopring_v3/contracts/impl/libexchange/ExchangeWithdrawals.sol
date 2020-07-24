@@ -29,7 +29,7 @@ library ExchangeWithdrawals
     event ForcedWithdrawalRequested(
         address owner,
         address token,
-        uint24   accountID
+        uint32   accountID
     );
 
     event WithdrawalCompleted(
@@ -50,13 +50,13 @@ library ExchangeWithdrawals
         ExchangeData.State storage S,
         address owner,
         address token,
-        uint24  accountID
+        uint32  accountID
         )
         external
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
-        require(accountID != 1 && accountID < ExchangeData.MAX_NUM_ACCOUNTS(), "INVALID_ACCOUNTID");
+        require(accountID < ExchangeData.MAX_NUM_ACCOUNTS(), "INVALID_ACCOUNTID");
 
         uint16 tokenID = S.getTokenID(token);
 
@@ -96,7 +96,7 @@ library ExchangeWithdrawals
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
         address owner = merkleProof.accountLeaf.owner;
-        uint24 accountID = merkleProof.accountLeaf.accountID;
+        uint32 accountID = merkleProof.accountLeaf.accountID;
         uint16 tokenID = merkleProof.balanceLeaf.tokenID;
         uint96 balance = merkleProof.balanceLeaf.balance;
 

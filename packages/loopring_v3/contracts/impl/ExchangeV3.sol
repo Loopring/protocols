@@ -25,7 +25,7 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    bytes32 constant public genesisMerkleRoot = 0x02b78c40c9dbb8728b88a7e341bafa71bf2d7af4c8cb9f6953b400b10c0d140e;
+    bytes32 constant public genesisMerkleRoot = 0x1d68b19f53f28fe87bf82506d20235c1f659279665931a2894ef4c6675990b6f;
 
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
@@ -325,7 +325,7 @@ contract ExchangeV3 is IExchangeV3
     function forceWithdraw(
         address owner,
         address token,
-        uint24  accountID
+        uint32  accountID
         )
         external
         override
@@ -400,7 +400,7 @@ contract ExchangeV3 is IExchangeV3
     }
 
     function notifyForcedRequestTooOld(
-        uint24  accountID,
+        uint32  accountID,
         address token
         )
         external

@@ -19,11 +19,11 @@ library AccountUpdateTransaction
     using SignatureUtil        for bytes32;
 
     bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
-        "AccountUpdate(address owner,uint24 accountID,uint32 nonce,uint256 publicKey,uint256 walletHash,uint16 feeTokenID,uint256 fee)"
+        "AccountUpdate(address owner,uint32 accountID,uint32 nonce,uint256 publicKey,uint256 walletHash,uint16 feeTokenID,uint256 fee)"
     );
 
     /*event AccountUpdated(
-        uint24 owner,
+        uint32 owner,
         uint   publicKey
     );*/
 
@@ -46,8 +46,8 @@ library AccountUpdateTransaction
         // Extract the data from the tx data
         address owner = data.toAddress(offset);
         offset += 20;
-        uint24 accountID = data.toUint24(offset);
-        offset += 3;
+        uint32 accountID = data.toUint32(offset);
+        offset += 4;
         uint32 nonce = data.toUint32(offset);
         offset += 4;
         uint publicKey = data.toUint(offset);

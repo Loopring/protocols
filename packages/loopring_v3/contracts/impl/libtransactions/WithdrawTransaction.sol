@@ -33,14 +33,14 @@ library WithdrawTransaction
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
-        "Withdrawal(address owner,uint24 accountID,uint32 nonce,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes32 dataHash,uint24 minGas)"
+        "Withdrawal(address owner,uint32 accountID,uint32 nonce,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes32 dataHash,uint24 minGas)"
     );
 
     struct Withdrawal
     {
         uint    withdrawalType;
         address owner;
-        uint24  accountID;
+        uint32  accountID;
         uint32  nonce;
         uint16  tokenID;
         uint    amount;
@@ -60,7 +60,7 @@ library WithdrawTransaction
     }
 
     event ForcedWithdrawalProcessed(
-        uint24 accountID,
+        uint32 accountID,
         uint16 tokenID,
         uint   amount
     );
@@ -194,8 +194,8 @@ library WithdrawTransaction
         offset += 1;
         address owner = data.toAddress(offset);
         offset += 20;
-        uint24 accountID = data.toUint24(offset);
-        offset += 3;
+        uint32 accountID = data.toUint32(offset);
+        offset += 4;
         uint32 nonce = data.toUint32(offset);
         offset += 4;
         uint16 tokenID = data.toUint16(offset) >> 4;

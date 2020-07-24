@@ -49,8 +49,8 @@ export class AccountUpdateProcessor {
 
     update.owner = data.extractAddress(offset);
     offset += 20;
-    update.accountID = data.extractUint24(offset);
-    offset += 3;
+    update.accountID = data.extractUint32(offset);
+    offset += 4;
     update.nonce = data.extractUint32(offset);
     offset += 4;
     const publicKey = data.extractData(offset, 32);

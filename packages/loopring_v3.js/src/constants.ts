@@ -4,7 +4,7 @@ import { Balance } from "./types";
 
 export class Constants {
   static readonly BINARY_TREE_DEPTH_STORAGE = 14;
-  static readonly BINARY_TREE_DEPTH_ACCOUNTS = 24;
+  static readonly BINARY_TREE_DEPTH_ACCOUNTS = 32;
   static readonly BINARY_TREE_DEPTH_TOKENS = 12;
 
   static readonly TX_DATA_AVAILABILITY_SIZE = 104;

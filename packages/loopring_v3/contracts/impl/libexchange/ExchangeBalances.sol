@@ -105,7 +105,7 @@ library ExchangeBalances
     }
 
     function getAccountInternalsRoot(
-        uint24   accountID,
+        uint32   accountID,
         address  owner,
         uint     pubKeyX,
         uint     pubKeyY,

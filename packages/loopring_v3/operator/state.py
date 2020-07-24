@@ -19,7 +19,7 @@ poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon
 poseidonParamsStorage = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 
 BINARY_TREE_DEPTH_STORAGE = 14
-BINARY_TREE_DEPTH_ACCOUNTS = 24
+BINARY_TREE_DEPTH_ACCOUNTS = 32
 BINARY_TREE_DEPTH_TOKENS = 12
 
 MAX_AMOUNT = 2 ** 96 - 1
@@ -768,7 +768,7 @@ class State(object):
         newState.balanceB_S_Address = setValue(newState.balanceB_S_Address, 0)
 
         # A default values
-        newState.accountA_Address = setValue(newState.accountA_Address, 2)
+        newState.accountA_Address = setValue(newState.accountA_Address, 1)
         accountA = self.getAccount(newState.accountA_Address)
         newState.accountA_Owner = setValue(newState.accountA_Owner, accountA.owner)
         newState.accountA_PublicKeyX = setValue(newState.accountA_PublicKeyX, accountA.publicKeyX)
@@ -829,7 +829,7 @@ class State(object):
         ###
 
         # B default values
-        newState.accountB_Address = setValue(newState.accountB_Address, 2)
+        newState.accountB_Address = setValue(newState.accountB_Address, 1)
         accountB = self.getAccount(newState.accountB_Address)
         newState.accountB_Owner = setValue(newState.accountB_Owner, accountB.owner)
         newState.accountB_PublicKeyX = setValue(newState.accountB_PublicKeyX, accountB.publicKeyX)

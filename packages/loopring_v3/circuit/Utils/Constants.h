@@ -6,7 +6,7 @@
 namespace Loopring
 {
     static const unsigned int TREE_DEPTH_STORAGE = 7;
-    static const unsigned int TREE_DEPTH_ACCOUNTS = 12;
+    static const unsigned int TREE_DEPTH_ACCOUNTS = 16;
     static const unsigned int TREE_DEPTH_TOKENS = 6;
 
     static const unsigned int TX_DATA_AVAILABILITY_SIZE = 104;

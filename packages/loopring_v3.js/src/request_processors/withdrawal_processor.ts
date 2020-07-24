@@ -62,8 +62,8 @@ export class WithdrawalProcessor {
     offset += 1;
     withdrawal.owner = data.extractAddress(offset);
     offset += 20;
-    withdrawal.accountID = data.extractUint24(offset);
-    offset += 3;
+    withdrawal.accountID = data.extractUint32(offset);
+    offset += 4;
     withdrawal.nonce = data.extractUint32(offset);
     offset += 4;
     const tokenIDs = data.extractUint24(offset);

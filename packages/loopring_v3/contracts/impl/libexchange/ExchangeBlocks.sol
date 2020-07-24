@@ -249,8 +249,8 @@ library ExchangeBlocks
                 "AUXILIARYDATA_INVALID_LENGTH"
             );
 
-            // uint24 operatorAccountID = data.toUint24(offset);
-            offset += 3;
+            // uint32 operatorAccountID = data.toUint32(offset);
+            offset += 4;
 
             // Run over all conditional transactions
             uint prevTxDataOffset = 0;

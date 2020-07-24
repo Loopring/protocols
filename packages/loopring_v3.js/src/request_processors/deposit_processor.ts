@@ -33,8 +33,8 @@ export class DepositProcessor {
     // Read in the deposit data
     deposit.owner = data.extractAddress(offset);
     offset += 20;
-    deposit.accountID = data.extractUint24(offset);
-    offset += 3;
+    deposit.accountID = data.extractUint32(offset);
+    offset += 4;
     deposit.tokenID = data.extractUint16(offset);
     offset += 2;
     deposit.amount = data.extractUint96(offset);

@@ -63,10 +63,10 @@ export class TransferProcessor {
     const transferType = data.extractUint8(offset);
     offset += 1;
 
-    transfer.accountFromID = data.extractUint24(offset);
-    offset += 3;
-    transfer.accountToID = data.extractUint24(offset);
-    offset += 3;
+    transfer.accountFromID = data.extractUint32(offset);
+    offset += 4;
+    transfer.accountToID = data.extractUint32(offset);
+    offset += 4;
     const tokenIDs = data.extractUint24(offset);
     offset += 3;
     transfer.amount = fromFloat(data.extractUint24(offset), Constants.Float24Encoding);

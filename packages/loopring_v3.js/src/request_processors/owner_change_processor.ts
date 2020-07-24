@@ -42,8 +42,8 @@ export class OwnerChangeProcessor {
 
     change.owner = data.extractAddress(offset);
     offset += 20;
-    change.accountID = data.extractUint24(offset);
-    offset += 3;
+    change.accountID = data.extractUint32(offset);
+    offset += 4;
     change.nonce = data.extractUint32(offset);
     offset += 4;
     change.feeTokenID = data.extractUint16(offset);

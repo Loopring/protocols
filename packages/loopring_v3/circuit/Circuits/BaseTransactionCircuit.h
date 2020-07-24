@@ -243,7 +243,7 @@ public:
 
         uOutputs[balanceA_B_Balance] = state.accountA.balanceB.balance;
 
-        aOutputs[accountA_Address] = flatten({VariableArrayT(1, state.constants._0), VariableArrayT(1, state.constants._1), VariableArrayT(NUM_BITS_ACCOUNT - 2, state.constants._0)});
+        aOutputs[accountA_Address] = flatten({VariableArrayT(1, state.constants._1), VariableArrayT(NUM_BITS_ACCOUNT - 1, state.constants._0)});
         uOutputs[accountA_Owner] = state.accountA.account.owner;
         uOutputs[accountA_PublicKeyX] = state.accountA.account.publicKey.x;
         uOutputs[accountA_PublicKeyY] = state.accountA.account.publicKey.y;
@@ -261,7 +261,7 @@ public:
         uOutputs[balanceB_B_Balance] = state.accountB.balanceB.balance;
 
 
-        aOutputs[accountB_Address] = flatten({VariableArrayT(1, state.constants._0), VariableArrayT(1, state.constants._1), VariableArrayT(NUM_BITS_ACCOUNT - 2, state.constants._0)});
+        aOutputs[accountB_Address] = flatten({VariableArrayT(1, state.constants._1), VariableArrayT(NUM_BITS_ACCOUNT - 1, state.constants._0)});
         uOutputs[accountB_Owner] = state.accountB.account.owner;
         uOutputs[accountB_PublicKeyX] = state.accountB.account.publicKey.x;
         uOutputs[accountB_PublicKeyY] = state.accountB.account.publicKey.y;

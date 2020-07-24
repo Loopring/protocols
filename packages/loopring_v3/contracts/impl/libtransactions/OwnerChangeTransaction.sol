@@ -36,7 +36,7 @@ library OwnerChangeTransaction
     bytes4  constant public RECOVERY_MAGICVALUE = 0xd1f21f4f;
 
     bytes32 constant public ACCOUNTTRANSFER_TYPEHASH = keccak256(
-        "OwnerChange(address owner,uint24 accountID,uint16 feeTokenID,uint256 fee,address newOwner,uint32 nonce,address statelessWallet,bytes32 walletDataHash,bytes walletCalldata)"
+        "OwnerChange(address owner,uint32 accountID,uint16 feeTokenID,uint256 fee,address newOwner,uint32 nonce,address statelessWallet,bytes32 walletDataHash,bytes walletCalldata)"
     );
 
     bytes32 constant public WALLET_TYPEHASH = keccak256(
@@ -51,7 +51,7 @@ library OwnerChangeTransaction
     struct AccountTransfer
     {
         address owner;
-        uint24  accountID;
+        uint32  accountID;
         uint16  feeTokenID;
         uint    fee;
         address newOwner;
@@ -168,7 +168,7 @@ library OwnerChangeTransaction
             // parameter 4: walletDataHash
             uint offset = 4;
             require(
-                auxData.walletCalldata.toUint24(29 + offset) == accountTransfer.accountID,
+                auxData.walletCalldata.toUint32(28 + offset) == accountTransfer.accountID,
                 "INVALID_WALLET_CALLDATA"
             );
             offset += 32;
@@ -223,8 +223,8 @@ library OwnerChangeTransaction
         // Extract the transfer data
         address owner = data.toAddress(offset);
         offset += 20;
-        uint24 accountID = data.toUint24(offset);
-        offset += 3;
+        uint32 accountID = data.toUint32(offset);
+        offset += 4;
         uint32 nonce = data.toUint32(offset);
         offset += 4;
         uint16 feeTokenID = data.toUint16(offset);
