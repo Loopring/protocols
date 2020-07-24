@@ -118,6 +118,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         if (isETHInternal(token)) {
             to.sendETHAndVerify(amount, gasleft());
         } else {
+            // Just in case the balance is unexpectedly smaller
             uint balance = ERC20(token).balanceOf(address(this));
             uint _amount = balance < amount ? balance : amount;
             token.safeTransferAndVerify(to, _amount);
