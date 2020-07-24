@@ -110,7 +110,9 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         }
     }
 
-    function isCircuitRegistered(CircuitKey calldata key)
+    function isCircuitRegistered(
+        CircuitKey calldata key
+        )
         external
         override
         view
@@ -119,7 +121,9 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         return circuits[keyHash(key)].registered;
     }
 
-    function isCircuitEnabled(CircuitKey calldata key)
+    function isCircuitEnabled(
+        CircuitKey calldata key
+        )
         external
         override
         view
@@ -128,7 +132,9 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         return circuits[keyHash(key)].enabled;
     }
 
-    function keyHash(CircuitKey calldata key)
+    function keyHash(
+        CircuitKey calldata key
+        )
         public
         pure
         returns (bytes32)
