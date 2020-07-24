@@ -88,11 +88,11 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         onlyExchange
         nonReentrant
         ifNotZero(amount)
-        returns (uint96 actualAmount, uint /*tokenIndex*/)
+        returns (uint96 amountReceived, uint /*tokenIndex*/)
     {
         if (isETHInternal(token)) {
             require(msg.value == amount, "INVALID_ETH_DEPOSIT");
-            actualAmount = amount;
+            amountReceived = amount;
         } else {
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
 
@@ -102,9 +102,9 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
             token.safeTransferFromAndVerify(from, address(this), uint(amount));
 
             uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
-            actualAmount = uint96(balanceAfter.sub(balanceBefore));
+            amountReceived = uint96(balanceAfter.sub(balanceBefore));
         }
-        emit Deposit(token, actualAmount);
+        emit Deposit(token, amountReceived);
     }
 
     function withdraw(
@@ -119,19 +119,19 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         onlyExchange
         nonReentrant
         ifNotZero(amount)
-        returns (uint actualAmount)
+        returns (uint amountPaid)
     {
-        actualAmount = amount;
+        amountPaid = amount;
         if (isETHInternal(token)) {
-            to.sendETHAndVerify(actualAmount, gasleft());
+            to.sendETHAndVerify(amountPaid, gasleft());
         } else {
-            try ERC20(token).transfer(to, actualAmount) {} catch {
-                actualAmount = ERC20(token).balanceOf(address(this));
-                require(actualAmount < amount, "UNEXCPECTED");
-                token.safeTransferAndVerify(to, actualAmount);
+            try ERC20(token).transfer(to, amountPaid) {} catch {
+                amountPaid = ERC20(token).balanceOf(address(this));
+                require(amountPaid < amount, "UNEXCPECTED");
+                token.safeTransferAndVerify(to, amountPaid);
             }
         }
-        emit Withdrawal(token, actualAmount);
+        emit Withdrawal(token, amountPaid);
     }
 
     function transfer(
