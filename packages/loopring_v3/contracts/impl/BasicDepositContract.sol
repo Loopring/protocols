@@ -36,7 +36,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         _;
     }
 
-    modifier ifNonZero(uint amount)
+    modifier ifNotZero(uint amount)
     {
         if (amount == 0) return;
         else { _; }
@@ -87,7 +87,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         payable
         onlyExchange
         nonReentrant
-        ifNonZero(amount)
+        ifNotZero(amount)
         returns (uint96 actualAmount, uint /*tokenIndex*/)
     {
         if (isETHInternal(token)) {
@@ -118,7 +118,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         payable
         onlyExchange
         nonReentrant
-        ifNonZero(amount)
+        ifNotZero(amount)
         returns (uint actualAmount)
     {
         actualAmount = amount;
@@ -145,7 +145,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         payable
         onlyExchange
         nonReentrant
-        ifNonZero(amount)
+        ifNotZero(amount)
     {
         token.safeTransferFromAndVerify(from, to, amount);
     }
