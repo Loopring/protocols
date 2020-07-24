@@ -30,7 +30,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     address     public exchange;
     ILoopringV3 public loopring;
 
-    mapping (address => bool) balanceChecking;
+    mapping (address => bool) needCheckBalance;
 
     modifier onlyExchange()
     {
@@ -67,9 +67,9 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         external
         onlyOwner
     {
-        require(balanceChecking[token] != checkBalance, "INVALID_VALUE");
+        require(needCheckBalance[token] != checkBalance, "INVALID_VALUE");
 
-        balanceChecking[token] == checkBalance;
+        needCheckBalance[token] == checkBalance;
         emit CheckBalance(token, checkBalance);
     }
 
@@ -92,7 +92,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
             require(msg.value == uint(amount), "INVALID_ETH_DEPOSIT");
             actualAmount = amount;
         } else {
-            bool checkBalance = balanceChecking[token];
+            bool checkBalance = needCheckBalance[token];
             uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
 
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
