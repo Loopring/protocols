@@ -28,6 +28,7 @@ public:
     DualVariableGadget amount;
     DualVariableGadget feeTokenID;
     DualVariableGadget fee;
+    DualVariableGadget validUntil;
     DualVariableGadget to;
     DualVariableGadget dataHash;
     DualVariableGadget minGas;
@@ -41,7 +42,10 @@ public:
     DualVariableGadget nonce;
 
     // Signature
-    Poseidon_gadget_T<11, 1, 6, 53, 10, 1> hash;
+    Poseidon_gadget_T<12, 1, 6, 53, 11, 1> hash;
+
+    // Validate
+    RequireLtGadget requireValidUntil;
 
     // Type
     IsNonZero isConditional;
@@ -97,6 +101,7 @@ public:
         amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
         feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
         fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
+        validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
         to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".to")),
         dataHash(pb, NUM_BITS_HASH, FMT(prefix, ".dataHash")),
         minGas(pb, NUM_BITS_GAS, FMT(prefix, ".minGas")),
@@ -120,8 +125,12 @@ public:
             to.packed,
             dataHash.packed,
             minGas.packed,
+            validUntil.packed,
             state.accountA.account.nonce
         }), FMT(this->annotation_prefix, ".hash")),
+
+        // Validate
+        requireValidUntil(pb, state.timestamp, validUntil.packed, NUM_BITS_TIMESTAMP, FMT(prefix, ".requireValidUntil")),
 
         // Type
         isConditional(pb, type.packed, FMT(prefix, ".isConditional")),
@@ -197,6 +206,7 @@ public:
         amount.generate_r1cs_witness(pb, withdrawal.amount);
         feeTokenID.generate_r1cs_witness(pb, withdrawal.feeTokenID);
         fee.generate_r1cs_witness(pb, withdrawal.fee);
+        validUntil.generate_r1cs_witness(pb, withdrawal.validUntil);
         to.generate_r1cs_witness(pb, withdrawal.to);
         dataHash.generate_r1cs_witness(pb, withdrawal.dataHash);
         minGas.generate_r1cs_witness(pb, withdrawal.minGas);
@@ -211,6 +221,9 @@ public:
 
         // Signature
         hash.generate_r1cs_witness();
+
+        // Validate
+        requireValidUntil.generate_r1cs_witness();
 
         // Type
         isConditional.generate_r1cs_witness();
@@ -262,6 +275,7 @@ public:
         amount.generate_r1cs_constraints(true);
         feeTokenID.generate_r1cs_constraints(true);
         fee.generate_r1cs_constraints(true);
+        validUntil.generate_r1cs_constraints(true);
         to.generate_r1cs_constraints(true);
         dataHash.generate_r1cs_constraints(true);
         minGas.generate_r1cs_constraints(true);
@@ -276,6 +290,9 @@ public:
 
         // Signature
         hash.generate_r1cs_constraints();
+
+        // Validate
+        requireValidUntil.generate_r1cs_constraints();
 
         // Type
         isConditional.generate_r1cs_constraints();

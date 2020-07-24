@@ -95,6 +95,7 @@ def withdrawFromJSON(jWithdraw):
     withdraw.dataHash = str(jWithdraw["dataHash"])
     withdraw.minGas = int(jWithdraw["minGas"])
     withdraw.type = int(jWithdraw["type"])
+    withdraw.validUntil = int(jWithdraw["validUntil"])
     withdraw.signature = None
     if "signature" in jWithdraw:
         withdraw.signature = jWithdraw["signature"]
@@ -114,6 +115,7 @@ def accountUpdateFromJSON(jUpdate):
     update.owner = str(jUpdate["owner"])
     update.accountID = int(jUpdate["accountID"])
     update.nonce = str(jUpdate["nonce"])
+    update.validUntil = int(jUpdate["validUntil"])
     update.publicKeyX = str(jUpdate["publicKeyX"])
     update.publicKeyY = str(jUpdate["publicKeyY"])
     update.walletHash = str(jUpdate["walletHash"])
@@ -130,6 +132,7 @@ def accountNewFromJSON(jCreate):
     create.payerAccountID = int(jCreate["payerAccountID"])
     create.feeTokenID = int(jCreate["feeTokenID"])
     create.fee = str(jCreate["fee"])
+    create.validUntil = int(jCreate["validUntil"])
     create.nonce = str(jCreate["nonce"])
     create.newAccountID = int(jCreate["newAccountID"])
     create.newOwner = str(jCreate["newOwner"])
@@ -145,6 +148,7 @@ def accountTransferFromJSON(jChange):
     change.accountID = int(jChange["accountID"])
     change.feeTokenID = int(jChange["feeTokenID"])
     change.fee = str(jChange["fee"])
+    change.validUntil = int(jChange["validUntil"])
     change.nonce = int(jChange["nonce"])
     change.newOwner = str(jChange["newOwner"])
     change.walletHash = str(jChange["walletHash"])

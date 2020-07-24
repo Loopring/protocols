@@ -81,6 +81,7 @@ static auto dummyWithdraw = R"({
     "amount": "0",
     "feeTokenID": 0,
     "fee": "0",
+    "validUntil": 4294967295,
     "to": "0",
     "dataHash": "0",
     "minGas": 0,
@@ -90,7 +91,7 @@ static auto dummyWithdraw = R"({
 static auto dummyAccountUpdate = R"({
     "owner": "0",
     "accountID": 0,
-    "nonce": 0,
+    "validUntil": 4294967295,
     "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
     "publicKeyY": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
     "walletHash": "0",
@@ -103,7 +104,7 @@ static auto dummyNewAccount = R"({
     "payerAccountID": 0,
     "feeTokenID": 0,
     "fee": "0",
-    "nonce": 0,
+    "validUntil": 4294967295,
     "newAccountID": 2,
     "newOwner": "1",
     "newPublicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
@@ -115,6 +116,7 @@ static auto dummyOwnerChange = R"({
     "accountID": 0,
     "feeTokenID": 0,
     "fee": "0",
+    "validUntil": 4294967295,
     "newOwner": "0"
 })"_json;
 
@@ -377,6 +379,7 @@ public:
     ethsnarks::FieldT to;
     ethsnarks::FieldT dataHash;
     ethsnarks::FieldT minGas;
+    ethsnarks::FieldT validUntil;
     ethsnarks::FieldT type;
 };
 
@@ -390,6 +393,7 @@ static void from_json(const json& j, Withdrawal& withdrawal)
     withdrawal.to = ethsnarks::FieldT(j["to"].get<std::string>().c_str());
     withdrawal.dataHash = ethsnarks::FieldT(j["dataHash"].get<std::string>().c_str());
     withdrawal.minGas = ethsnarks::FieldT(j.at("minGas"));
+    withdrawal.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     withdrawal.type = ethsnarks::FieldT(j.at("type"));
 }
 
@@ -403,6 +407,7 @@ public:
     ethsnarks::FieldT walletHash;
     ethsnarks::FieldT feeTokenID;
     ethsnarks::FieldT fee;
+    ethsnarks::FieldT validUntil;
     ethsnarks::FieldT type;
 };
 
@@ -414,6 +419,7 @@ static void from_json(const json& j, AccountUpdateTx& update)
     update.walletHash = ethsnarks::FieldT(j["walletHash"].get<std::string>().c_str());
     update.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
     update.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
+    update.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     update.type = ethsnarks::FieldT(j.at("type"));
 }
 
@@ -424,6 +430,7 @@ public:
     ethsnarks::FieldT payerAccountID;
     ethsnarks::FieldT feeTokenID;
     ethsnarks::FieldT fee;
+    ethsnarks::FieldT validUntil;
     ethsnarks::FieldT newAccountID;
     ethsnarks::FieldT newOwner;
     ethsnarks::FieldT newPublicKeyX;
@@ -436,6 +443,7 @@ static void from_json(const json& j, NewAccount& create)
     create.payerAccountID = ethsnarks::FieldT(j.at("payerAccountID"));
     create.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
     create.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
+    create.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     create.newAccountID = ethsnarks::FieldT(j.at("newAccountID"));
     create.newOwner = ethsnarks::FieldT(j["newOwner"].get<std::string>().c_str());
     create.newPublicKeyX = ethsnarks::FieldT(j["newPublicKeyX"].get<std::string>().c_str());
@@ -450,6 +458,7 @@ public:
     ethsnarks::FieldT accountID;
     ethsnarks::FieldT feeTokenID;
     ethsnarks::FieldT fee;
+    ethsnarks::FieldT validUntil;
     ethsnarks::FieldT newOwner;
 };
 
@@ -458,6 +467,7 @@ static void from_json(const json& j, OwnerChange& change)
     change.accountID = ethsnarks::FieldT(j.at("accountID"));
     change.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
     change.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
+    change.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     change.newOwner = ethsnarks::FieldT(j["newOwner"].get<std::string>().c_str());
 }
 

@@ -158,7 +158,7 @@ export class Simulator {
       const jState = JSON.parse(fs.readFileSync(stateFile, "ascii"));
 
       const accountsKeys: string[] = Object.keys(jState.accounts_values);
-      let numAccounts = 4;
+      let numAccounts = 1;
       for (const accountKey of accountsKeys) {
         numAccounts =
           Number(accountKey) >= numAccounts

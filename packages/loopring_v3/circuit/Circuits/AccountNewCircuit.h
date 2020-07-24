@@ -23,6 +23,7 @@ public:
     DualVariableGadget payerAccountID;
     DualVariableGadget feeTokenID;
     DualVariableGadget fee;
+    DualVariableGadget validUntil;
     DualVariableGadget nonce;
     DualVariableGadget newAccountID;
     DualVariableGadget newOwner;
@@ -31,12 +32,13 @@ public:
     DualVariableGadget walletHash;
 
     // Signature
-    Poseidon_gadget_T<11, 1, 6, 53, 10, 1> hash;
+    Poseidon_gadget_T<12, 1, 6, 53, 11, 1> hash;
 
     // Validate
     EqualGadget isNewAccountTx;
     RequireNotZeroGadget requireNewOwnerNotZero;
     IfThenRequireEqualGadget requireAccountLeafEmpty;
+    RequireLtGadget requireValidUntil;
 
     // Compress the public key
     CompressPublicKey compressPublicKey;
@@ -66,6 +68,7 @@ public:
         payerAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".payerAccountID")),
         feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
         fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
+        validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
         nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
         newAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".newAccountID")),
         newOwner(pb, NUM_BITS_ADDRESS, FMT(prefix, ".newOwner")),
@@ -79,6 +82,7 @@ public:
             payerAccountID.packed,
             feeTokenID.packed,
             fee.packed,
+            validUntil.packed,
             nonce.packed,
             newAccountID.packed,
             newOwner.packed,
@@ -91,6 +95,7 @@ public:
         isNewAccountTx(pb, state.type, state.constants.txTypeNewAccount, FMT(prefix, ".isNewAccountTx")),
         requireNewOwnerNotZero(pb, newOwner.packed, FMT(prefix, ".requireNewOwnerNotZero")),
         requireAccountLeafEmpty(pb, isNewAccountTx.result(), state.accountB.account.owner, state.constants._0, FMT(prefix, ".requireAccountLeafEmpty")),
+        requireValidUntil(pb, state.timestamp, validUntil.packed, NUM_BITS_TIMESTAMP, FMT(prefix, ".requireValidUntil")),
 
         // Compress the public key
         compressPublicKey(pb, state.params, state.constants, newPublicKeyX, newPublicKeyY, FMT(this->annotation_prefix, ".compressPublicKey")),
@@ -141,6 +146,7 @@ public:
         payerAccountID.generate_r1cs_witness(pb, create.payerAccountID);
         feeTokenID.generate_r1cs_witness(pb, create.feeTokenID);
         fee.generate_r1cs_witness(pb, create.fee);
+        validUntil.generate_r1cs_witness(pb, create.validUntil);
         nonce.generate_r1cs_witness();
         newAccountID.generate_r1cs_witness(pb, create.newAccountID);
         newOwner.generate_r1cs_witness(pb, create.newOwner);
@@ -155,6 +161,7 @@ public:
         isNewAccountTx.generate_r1cs_witness();
         requireNewOwnerNotZero.generate_r1cs_witness();
         requireAccountLeafEmpty.generate_r1cs_witness();
+        requireValidUntil.generate_r1cs_witness();
 
         // Compress the public key
         compressPublicKey.generate_r1cs_witness();
@@ -180,6 +187,7 @@ public:
         payerAccountID.generate_r1cs_constraints();
         feeTokenID.generate_r1cs_constraints();
         fee.generate_r1cs_constraints();
+        validUntil.generate_r1cs_constraints(true);
         nonce.generate_r1cs_constraints();
         newAccountID.generate_r1cs_constraints();
         newOwner.generate_r1cs_constraints();
@@ -192,6 +200,7 @@ public:
         isNewAccountTx.generate_r1cs_constraints();
         requireNewOwnerNotZero.generate_r1cs_constraints();
         requireAccountLeafEmpty.generate_r1cs_constraints();
+        requireValidUntil.generate_r1cs_constraints();
 
         // Compress the public key
         compressPublicKey.generate_r1cs_constraints();

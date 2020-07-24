@@ -24,6 +24,7 @@ public:
     // Inputs
     DualVariableGadget owner;
     DualVariableGadget accountID;
+    DualVariableGadget validUntil;
     DualVariableGadget nonce;
     VariableT publicKeyX;
     VariableT publicKeyY;
@@ -33,7 +34,10 @@ public:
     DualVariableGadget type;
 
     // Signature
-    Poseidon_gadget_T<9, 1, 6, 53, 8, 1> hash;
+    Poseidon_gadget_T<10, 1, 6, 53, 9, 1> hash;
+
+    // Validate
+    RequireLtGadget requireValidUntil;
 
     // Type
     IsNonZero isConditional;
@@ -66,6 +70,7 @@ public:
         // Inputs
         owner(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
         accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
+        validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
         nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
         publicKeyX(make_variable(pb, FMT(prefix, ".publicKeyX"))),
         publicKeyY(make_variable(pb, FMT(prefix, ".publicKeyY"))),
@@ -83,8 +88,12 @@ public:
             publicKeyX,
             publicKeyY,
             walletHash.packed,
+            validUntil.packed,
             nonce.packed
         }), FMT(this->annotation_prefix, ".hash")),
+
+        // Validate
+        requireValidUntil(pb, state.timestamp, validUntil.packed, NUM_BITS_TIMESTAMP, FMT(prefix, ".requireValidUntil")),
 
         // Type
         isConditional(pb, type.packed, ".isConditional"),
@@ -134,6 +143,7 @@ public:
         // Inputs
         owner.generate_r1cs_witness();
         accountID.generate_r1cs_witness(pb, update.accountID);
+        validUntil.generate_r1cs_witness(pb, update.validUntil);
         nonce.generate_r1cs_witness();
         pb.val(publicKeyX) = update.publicKeyX;
         pb.val(publicKeyY) = update.publicKeyY;
@@ -144,6 +154,9 @@ public:
 
         // Signature
         hash.generate_r1cs_witness();
+
+        // Validate
+        requireValidUntil.generate_r1cs_witness();
 
         // Type
         isConditional.generate_r1cs_witness();
@@ -172,6 +185,7 @@ public:
         // Inputs
         owner.generate_r1cs_constraints();
         accountID.generate_r1cs_constraints(true);
+        validUntil.generate_r1cs_constraints(true);
         nonce.generate_r1cs_constraints();
         walletHash.generate_r1cs_constraints();
         feeTokenID.generate_r1cs_constraints(true);
@@ -181,7 +195,10 @@ public:
         // Signature
         hash.generate_r1cs_constraints();
 
-         // Type
+        // Validate
+        requireValidUntil.generate_r1cs_constraints();
+
+        // Type
         isConditional.generate_r1cs_constraints();
         needsSignature.generate_r1cs_constraints();
 

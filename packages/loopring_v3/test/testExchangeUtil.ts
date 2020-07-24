@@ -101,6 +101,7 @@ export interface TransferOptions {
   feeToDeposit?: BN;
   transferToNew?: boolean;
   signer?: string;
+  validUntil?: number;
 }
 
 export interface WithdrawOptions {
@@ -110,19 +111,23 @@ export interface WithdrawOptions {
   gas?: number;
   data?: string;
   signer?: string;
+  validUntil?: number;
 }
 
 export interface NewAccountOptions {
   authMethod?: AuthMethod;
+  validUntil?: number;
 }
 
 export interface AccountUpdateOptions {
   authMethod?: AuthMethod;
+  validUntil?: number;
 }
 
 export interface OwnerChangeOptions {
   authMethod?: AuthMethod;
   walletCalldata?: string;
+  validUntil?: number;
 }
 
 export interface OnchainBlock {
@@ -191,7 +196,7 @@ export namespace AccountUpdateUtils {
 
   export function sign(keyPair: any, update: AccountUpdate) {
     // Calculate hash
-    const hasher = Poseidon.createHash(9, 6, 53);
+    const hasher = Poseidon.createHash(10, 6, 53);
     const inputs = [
       update.exchange,
       update.accountID,
@@ -200,6 +205,7 @@ export namespace AccountUpdateUtils {
       update.publicKeyX,
       update.publicKeyY,
       update.walletHash,
+      update.validUntil,
       update.nonce
     ];
     const hash = hasher(inputs).toString(10);
@@ -277,7 +283,7 @@ export namespace WithdrawalUtils {
 
   export function sign(keyPair: any, withdrawal: WithdrawalRequest) {
     // Calculate hash
-    const hasher = Poseidon.createHash(11, 6, 53);
+    const hasher = Poseidon.createHash(12, 6, 53);
     const inputs = [
       withdrawal.exchange,
       withdrawal.accountID,
@@ -288,6 +294,7 @@ export namespace WithdrawalUtils {
       withdrawal.to,
       withdrawal.dataHash,
       withdrawal.minGas,
+      withdrawal.validUntil,
       withdrawal.nonce
     ];
     const hash = hasher(inputs).toString(10);
@@ -583,12 +590,13 @@ export namespace NewAccountUtils {
 
   export function sign(keyPair: any, create: NewAccount) {
     // Calculate hash
-    const hasher = Poseidon.createHash(11, 6, 53);
+    const hasher = Poseidon.createHash(12, 6, 53);
     const inputs = [
       create.exchange,
       create.payerAccountID,
       create.feeTokenID,
       create.fee,
+      create.validUntil,
       create.nonce,
       create.newAccountID,
       create.newOwner,
@@ -860,6 +868,7 @@ export class ExchangeTestUtil {
     const transferToNew =
       options.transferToNew !== undefined ? options.transferToNew : false;
     const signer = options.signer !== undefined ? options.signer : from;
+    const validUntil = options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
     // From
     await this.deposit(from, from, token, amountToDeposit);
@@ -923,7 +932,7 @@ export class ExchangeTestUtil {
       to,
       data: this.getRandomMemo(),
       type: authMethod === AuthMethod.EDDSA ? 0 : 1,
-      validUntil: 0xffffffff,
+      validUntil,
       dualAuthorX,
       dualAuthorY,
       payerToAccountID: useDualAuthoring ? 0 : toAccountID,
@@ -1376,6 +1385,7 @@ export class ExchangeTestUtil {
       options.gas !== undefined ? options.gas : minGas > 0 ? minGas : 100000;
     const signer = options.signer !== undefined ? options.signer : owner;
     const data = options.data !== undefined ? options.data : "0x";
+    const validUntil = options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
     let type = 0;
     if (authMethod === AuthMethod.ECDSA || authMethod === AuthMethod.APPROVE) {
@@ -1431,6 +1441,7 @@ export class ExchangeTestUtil {
       owner,
       accountID,
       nonce: account.nonce,
+      validUntil,
       tokenID,
       amount,
       feeTokenID,
@@ -1485,6 +1496,7 @@ export class ExchangeTestUtil {
     // Fill in defaults
     const authMethod =
       options.authMethod !== undefined ? options.authMethod : AuthMethod.ECDSA;
+    const validUntil = options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
@@ -1521,6 +1533,7 @@ export class ExchangeTestUtil {
       feeTokenID,
       fee,
       nonce: payerAccount.nonce++,
+      validUntil,
       newOwner,
       newAccountID: account.accountID,
       newPublicKeyX: account.publicKeyX,
@@ -1562,6 +1575,7 @@ export class ExchangeTestUtil {
     // Fill in defaults
     const authMethod =
       options.authMethod !== undefined ? options.authMethod : AuthMethod.EDDSA;
+    const validUntil = options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
     // Type
     let type = 0;
@@ -1593,6 +1607,7 @@ export class ExchangeTestUtil {
       owner,
       accountID: account.accountID,
       nonce: account.nonce++,
+      validUntil,
       publicKeyX: keyPair.publicKeyX,
       publicKeyY: keyPair.publicKeyY,
       walletHash,
@@ -1646,6 +1661,7 @@ export class ExchangeTestUtil {
       options.authMethod !== undefined ? options.authMethod : AuthMethod.ECDSA;
     const walletCalldata =
       options.walletCalldata !== undefined ? options.walletCalldata : "0x";
+    const validUntil = options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
@@ -1678,6 +1694,7 @@ export class ExchangeTestUtil {
       fee,
       walletHash,
       nonce: account.nonce++,
+      validUntil,
       newOwner,
       walletAddress:
         authMethod === AuthMethod.WALLET

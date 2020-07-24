@@ -93,6 +93,8 @@ export interface AccountUpdate {
   owner: string;
   accountID: number;
   nonce: number;
+  validUntil: number;
+
   publicKeyX: string;
   publicKeyY: string;
   walletHash: string;
@@ -123,8 +125,6 @@ export class Transfer {
 
   data: string;
 
-  validUntil: number;
-
   dualAuthorX: string;
   dualAuthorY: string;
   payerToAccountID: number;
@@ -132,6 +132,7 @@ export class Transfer {
   payeeToAccountID: number;
 
   storageID: number;
+  validUntil: number;
 
   dualSecretKey?: string;
 
@@ -150,6 +151,7 @@ export interface WithdrawalRequest {
   owner: string;
   accountID: number;
   nonce: number;
+  validUntil: number;
   tokenID: number;
   amount: BN;
 
@@ -181,6 +183,7 @@ export interface NewAccount {
   feeTokenID: number;
   fee: BN;
   nonce: number;
+  validUntil: number;
 
   newAccountID: number;
   newOwner: string;
@@ -200,6 +203,8 @@ export interface OwnerChange {
   feeTokenID: number;
   fee: BN;
   nonce: number;
+  validUntil: number;
+
   walletHash: string;
   newOwner: string;
   walletAddress: string;
