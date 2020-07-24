@@ -91,7 +91,10 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         returns (uint96 actualAmount, uint /*tokenIndex*/)
     {
         if (isETHInternal(token)) {
-            require(msg.value == uint(amount), "INVALID_ETH_DEPOSIT");
+            require(msg.value >= amount, "INVALID_ETH_DEPOSIT");
+            if (msg.value > amount) {
+                from.sendETHAndVerify(msg.value - amount, gasleft());
+            }
             actualAmount = amount;
         } else {
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
