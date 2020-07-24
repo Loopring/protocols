@@ -6,6 +6,7 @@ import "../iface/IDepositContract.sol";
 import "../iface/ILoopringV3.sol";
 
 import "../lib/AddressUtil.sol";
+import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
@@ -20,7 +21,7 @@ import "../lib/ReentrancyGuard.sol";
 ///        when necessary.
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BasicDepositContract is IDepositContract, ReentrancyGuard
+contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
@@ -28,6 +29,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
 
     address     public exchange;
     ILoopringV3 public loopring;
+
+    mapping (address => bool) balanceChecking;
 
     modifier onlyExchange()
     {
@@ -41,14 +44,33 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         else { _; }
     }
 
+    event CheckBalance(
+        address indexed token,
+        bool            checkBalance
+    );
+
     constructor(
         address exchangeAddress,
         address loopringAddress
         )
         public
+        Claimable()
     {
         exchange = exchangeAddress;
         loopring = ILoopringV3(loopringAddress);
+    }
+
+    function setCheckBalance(
+        address token,
+        bool checkBalance
+        )
+        external
+        onlyOwner
+    {
+        require(balanceChecking[token] != checkBalance, "INVALID_VALUE");
+
+        balanceChecking[token] == checkBalance;
+        emit CheckBalance(token, checkBalance);
     }
 
     function deposit(
@@ -64,14 +86,21 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         ifNonZero(amount)
         returns (uint96 actualAmount, uint /*tokenIndex*/)
     {
+
         // Check msg.value
         if (isETHInternal(token)) {
             require(msg.value == uint(amount), "INVALID_ETH_DEPOSIT");
+            actualAmount = amount;
         } else {
+            bool checkBalance = balanceChecking[token];
+            uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
+
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
             token.safeTransferFromAndVerify(from, address(this), uint(amount));
+
+            uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
+            actualAmount = uint96(balanceAfter.sub(balanceBefore));
         }
-        actualAmount = amount;
     }
 
     function withdraw(
