@@ -125,7 +125,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         if (isETHInternal(token)) {
             to.sendETHAndVerify(amountPaid, gasleft());
         } else {
-            try ERC20(token).transfer(to, amountPaid) {} catch {
+            if(!token.safeTransfer(to, amountPaid)){
                 amountPaid = ERC20(token).balanceOf(address(this));
                 require(amountPaid < amount, "UNEXCPECTED");
                 token.safeTransferAndVerify(to, amountPaid);
