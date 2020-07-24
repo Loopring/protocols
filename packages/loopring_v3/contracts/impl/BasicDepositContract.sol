@@ -54,8 +54,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         onlyOwner
     {
         require(
-            exchange == address(0) &&
-            _exchange != address(0),
+            exchange == address(0) && _exchange != address(0),
             "INVALID_EXCHANGE"
         );
         exchange = _exchange;
