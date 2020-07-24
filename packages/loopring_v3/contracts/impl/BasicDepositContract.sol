@@ -90,25 +90,20 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         ifNotZero(amount)
         returns (uint96 actualAmount, uint /*tokenIndex*/)
     {
-        uint ethToReturn;
         if (isETHInternal(token)) {
-            require(msg.value >= amount, "INVALID_ETH_DEPOSIT");
+            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
             actualAmount = amount;
-            ethToReturn = msg.value == amount ? 0 : msg.value - amount;
         } else {
+            require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
+
             bool checkBalance = needCheckBalance[token];
             uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
+
             token.safeTransferFromAndVerify(from, address(this), uint(amount));
+
             uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
-
             actualAmount = uint96(balanceAfter.sub(balanceBefore));
-            ethToReturn = msg.value;
         }
-
-        if (ethToReturn > 0) {
-            from.sendETHAndVerify(ethToReturn, gasleft());
-        }
-
         emit Deposit(token, actualAmount);
     }
 
