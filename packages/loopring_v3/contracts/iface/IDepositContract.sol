@@ -22,7 +22,7 @@ interface IDepositContract
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens to transfer.
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the deposit
-    /// @return actualAmount The amount to deposit to the user's account in the Merkle tree
+    /// @return actualAmount The amount deposited to the user's account in the Merkle tree
     /// @return tokenIndex The current index for the token being deposited
     function deposit(
         address from,
@@ -51,6 +51,7 @@ interface IDepositContract
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens transferred.
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the withdrawal
+    /// @return actualAmount The amount withdrawn
     function withdraw(
         address to,
         address token,
@@ -58,7 +59,8 @@ interface IDepositContract
         bytes   calldata auxiliaryData
         )
         external
-        payable;
+        payable
+        returns (uint actualAmount);
 
     /// @dev Transfers tokens (ETH not supported) for a user using the allowance set
     ///      for the exchange. This way the approval can be used for all functionality (and

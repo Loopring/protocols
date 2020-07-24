@@ -47,6 +47,9 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         bool            checkBalance
     );
 
+    event Deposit   (address token, uint amount);
+    event Withdrawal(address token, uint amount);
+
     function initialize(
         address _exchange
         )
@@ -101,6 +104,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
             uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
             actualAmount = uint96(balanceAfter.sub(balanceBefore));
         }
+        emit Deposit(token, actualAmount);
     }
 
     function withdraw(
@@ -115,17 +119,19 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         onlyExchange
         nonReentrant
         ifNonZero(amount)
+        returns (uint actualAmount)
     {
         if (isETHInternal(token)) {
             uint balance = address(this).balance;
-            uint _amount = balance < amount ? balance : amount;
-            to.sendETHAndVerify(_amount, gasleft());
+            actualAmount = balance < amount ? balance : amount;
+            to.sendETHAndVerify(actualAmount, gasleft());
         } else {
             // Just in case the balance is unexpectedly smaller
             uint balance = ERC20(token).balanceOf(address(this));
-            uint _amount = balance < amount ? balance : amount;
-            token.safeTransferAndVerify(to, _amount);
+            actualAmount = balance < amount ? balance : amount;
+            token.safeTransferAndVerify(to, actualAmount);
         }
+         emit Withdrawal(token, actualAmount);
     }
 
     function transfer(
