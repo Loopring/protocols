@@ -12,7 +12,7 @@ import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
 
 
-/// @title Basic implementation of IDepositContract that just stores
+/// @title Default implementation of IDepositContract that just stores
 ///        all funds without doing anything with them.
 ///
 ///        Should be able to work with proxy contracts so the contract
@@ -20,7 +20,7 @@ import "../lib/ReentrancyGuard.sol";
 ///        when necessary.
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
+contract DefaultDepositContract is IDepositContract, ReentrancyGuard, Claimable
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
