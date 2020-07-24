@@ -10,7 +10,7 @@ import "../lib/Claimable.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 abstract contract IBlockVerifier is Claimable
 {
-    // -- Events --
+    // -- Structs --
     struct CircuitKey
     {
         uint8    accountTreeDepth;
@@ -20,6 +20,7 @@ abstract contract IBlockVerifier is Claimable
         uint8    blockVersion;
     }
 
+    // -- Events --
     event CircuitRegistered(
         uint8  indexed accountTreeDepth,
         uint8  indexed blockType,
