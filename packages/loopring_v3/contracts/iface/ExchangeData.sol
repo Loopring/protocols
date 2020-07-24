@@ -163,7 +163,7 @@ library ExchangeData
         bool    rollupMode;
         uint32  maxAgeDepositUntilWithdrawable;
         bytes32 emptyMerkleRoot;
-        uint    accountTreeDepth;
+        uint8   accountTreeDepth;
         bytes32 DOMAIN_SEPARATOR;
 
         ILoopringV3      loopring;

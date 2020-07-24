@@ -204,12 +204,16 @@ library ExchangeBlocks
             }
 
             // Verify the proofs
+            IBlockVerifier.CircuitKey memory key = IBlockVerifier.CircuitKey(
+                S.accountTreeDepth,
+                uint8(firstBlock.blockType),
+                S.rollupMode,
+                firstBlock.blockSize,
+                firstBlock.blockVersion
+            );
             require(
                 S.blockVerifier.verifyProofs(
-                    uint8(firstBlock.blockType),
-                    S.rollupMode,
-                    firstBlock.blockSize,
-                    firstBlock.blockVersion,
+                    key,
                     publicInputs,
                     proofs
                 ),

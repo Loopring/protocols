@@ -29,7 +29,7 @@ library ExchangeGenesis
         address payable _operator,
         bool    _rollupMode,
         bytes32 _genesisMerkleRoot,
-        uint    _genesisAccountTreeDepth,
+        uint8   _genesisAccountTreeDepth,
         bytes32 _domainSeperator
         )
         external
