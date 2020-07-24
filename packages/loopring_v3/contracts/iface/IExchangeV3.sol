@@ -34,7 +34,7 @@ abstract contract IExchangeV3 is IExchange
     );
 
     event AccountCapacityIncreased(
-        uint accountTreeDepth
+        uint8 accountTreeDepth
     );
 
     event Shutdown(

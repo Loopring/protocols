@@ -205,7 +205,7 @@ library ExchangeBlocks
 
             // Verify the proofs
             IBlockVerifier.CircuitKey memory key = IBlockVerifier.CircuitKey(
-                uint8(S.accountTreeDepth),
+                S.accountTreeDepth,
                 uint8(firstBlock.blockType),
                 S.rollupMode,
                 firstBlock.blockSize,

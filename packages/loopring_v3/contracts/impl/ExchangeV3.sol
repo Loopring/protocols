@@ -26,7 +26,7 @@ import "../iface/IExchangeV3.sol";
 contract ExchangeV3 is IExchangeV3
 {
     bytes32 constant public genesisMerkleRoot       = 0x1dacdc3f6863d9db1d903e7285ebf74b61f02d585ccb52ecaeaf97dbb773becf;
-    uint    constant public genesisAccountTreeDepth = 12;
+    uint8   constant public genesisAccountTreeDepth = 12;
 
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
