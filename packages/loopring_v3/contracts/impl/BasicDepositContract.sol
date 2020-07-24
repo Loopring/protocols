@@ -93,12 +93,12 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
             actualAmount = amount;
         } else {
             bool checkBalance = needCheckBalance[token];
-            uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
+            uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
 
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
             token.safeTransferFromAndVerify(from, address(this), uint(amount));
 
-            uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
+            uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
             actualAmount = uint96(balanceAfter.sub(balanceBefore));
         }
     }
