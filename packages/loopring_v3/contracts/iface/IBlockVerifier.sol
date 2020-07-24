@@ -11,6 +11,14 @@ import "../lib/Claimable.sol";
 abstract contract IBlockVerifier is Claimable
 {
     // -- Events --
+    struct CircuitKey
+    {
+        uint8    accountTreeDepth;
+        uint8    blockType;
+        bool     rollupMode;
+        uint16   blockSize;
+        uint8    blockVersion;
+    }
 
     event CircuitRegistered(
         uint8  indexed accountTreeDepth,
@@ -27,15 +35,6 @@ abstract contract IBlockVerifier is Claimable
         uint16         blockSize,
         uint8          blockVersion
     );
-
-    struct CircuitKey
-    {
-        uint8    accountTreeDepth;
-        uint8    blockType;
-        bool     rollupMode;
-        uint16   blockSize;
-        uint8    blockVersion;
-    }
 
     // -- Public functions --
 
