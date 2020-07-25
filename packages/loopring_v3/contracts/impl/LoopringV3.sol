@@ -79,7 +79,6 @@ contract LoopringV3 is ILoopringV3
             address(this),
             owner,
             exchangeId,
-            operator,
             rollupMode
         );
 
@@ -89,7 +88,6 @@ contract LoopringV3 is ILoopringV3
             exchangeId,
             exchangeAddress,
             owner,
-            operator,
             rollupMode
         );
     }

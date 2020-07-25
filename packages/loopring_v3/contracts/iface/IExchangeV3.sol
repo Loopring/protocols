@@ -142,8 +142,6 @@ abstract contract IExchangeV3 is IExchange
     /// @dev Initializes this exchange. This method can only be called once.
     /// @param  owner The owner of this exchange.
     /// @param  exchangeId The id of this exchange.
-    /// @param  operator The operator address of the exchange who will be responsible for
-    ///         submitting blocks and proofs.
     /// @param  loopringAddress The corresponding ILoopring contract address.
     /// @param  rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
@@ -151,7 +149,6 @@ abstract contract IExchangeV3 is IExchange
         address loopringAddress,
         address owner,
         uint    exchangeId,
-        address payable operator,
         bool    rollupMode
         )
         external
@@ -623,25 +620,6 @@ abstract contract IExchangeV3 is IExchange
         returns (bool);
 
     // -- Admins --
-
-    /// @dev Sets the operator address.
-    /// @param _operator The new operator's address
-    /// @return oldOperator The old operator's address
-    function setOperator(
-        address payable _operator
-        )
-        external
-        virtual
-        returns (address payable oldOperator);
-
-    /// @dev Gets the operator address.
-    /// @return The current operator
-    function getOperator()
-        external
-        virtual
-        view
-        returns (address payable);
-
     /// @dev Sets the max time deposits have to wait before becoming withdrawable.
     /// @param newValue The new value.
     /// @return  The old value.

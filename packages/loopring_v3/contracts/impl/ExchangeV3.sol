@@ -39,12 +39,6 @@ contract ExchangeV3 is IExchangeV3
 
     ExchangeData.State private state;
 
-    modifier onlyOperator()
-    {
-        require(msg.sender == state.operator, "UNAUTHORIZED");
-        _;
-    }
-
     modifier onlyWhenUninitialized()
     {
         require(owner == address(0) && state.id == 0, "INITIALIZED");
@@ -74,7 +68,6 @@ contract ExchangeV3 is IExchangeV3
         address _loopringAddress,
         address _owner,
         uint    _id,
-        address payable _operator,
         bool    _rollupMode
         )
         external
@@ -88,7 +81,6 @@ contract ExchangeV3 is IExchangeV3
         state.initializeGenesisBlock(
             _id,
             _loopringAddress,
-            _operator,
             _rollupMode,
             genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
@@ -285,7 +277,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        onlyOperator
+        onlyOwner
     {
         state.submitBlocks(
             blocks,
@@ -537,27 +529,6 @@ contract ExchangeV3 is IExchangeV3
     }
 
     // -- Admins --
-    function setOperator(
-        address payable _operator
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-        returns (address payable)
-    {
-        return state.setOperator(_operator);
-    }
-
-    function getOperator()
-        external
-        override
-        view
-        returns (address payable)
-    {
-        return state.operator;
-    }
-
     function setMaxAgeDepositUntilWithdrawable(
         uint32 newValue
         )
