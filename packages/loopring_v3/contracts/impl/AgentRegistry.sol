@@ -35,7 +35,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
 
     function registerUniversalAgent(
         address agent,
-        bool toRegister
+        bool    toRegister
         )
         external
         onlyOwner
@@ -62,7 +62,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
 
     function registerUserAgent(
         address agent,
-        bool toRegister
+        bool    toRegister
         )
         external
     {
@@ -94,7 +94,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
     function registerInternal(
         bytes32 key,
         address agent,
-        bool toRegister
+        bool    toRegister
         )
         private
     {
