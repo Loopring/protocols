@@ -35,13 +35,12 @@ library TransferTransaction
         ExchangeData.State        storage S,
         ExchangeData.BlockContext memory  ctx,
         bytes                     memory  data,
+        uint                              offset,
         bytes                     memory  auxiliaryData
         )
         internal
         returns (uint /*feeETH*/)
     {
-        uint offset = 1;
-
         // Check that this is a conditional transfer
         require(data.toUint8(offset) == 1, "INVALID_AUXILIARYDATA_DATA");
         offset += 1;

@@ -36,13 +36,12 @@ library NewAccountTransaction
         ExchangeData.State        storage S,
         ExchangeData.BlockContext memory  ctx,
         bytes                     memory  data,
+        uint                              offset,
         bytes                     memory  auxiliaryData
         )
         internal
         returns (uint /*feeETH*/)
     {
-        uint offset = 1;
-
         // Extract the data from the tx data
         //uint32 payerAccountID = data.toUint32(offset);
         offset += 4;

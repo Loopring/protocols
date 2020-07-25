@@ -229,7 +229,7 @@ library ExchangeBlocks
         private
         returns (uint blockFeeETH)
     {
-        // The length of the auxiliary data needs to match the number of conditional transfers
+        // The length of the auxiliary data needs to match the number of conditional transactions
         uint numConditionalTransactions = data.toUint32(offset);
         offset += 4;
 
@@ -261,58 +261,59 @@ library ExchangeBlocks
 
                 require(txDataOffset > prevTxDataOffset, "AUXILIARYDATA_INVALID_ORDER");
 
-                // Get the transaction data
-                bytes memory txData = data.slice(
-                    txDataOffset,
-                    ExchangeData.TX_DATA_AVAILABILITY_SIZE()
-                );
-
                 // Process the transaction
-                uint txFeeETH = 0;
                 ExchangeData.TransactionType txType = ExchangeData.TransactionType(
-                    txData.toUint8(0)
+                    data.toUint8(txDataOffset)
                 );
+                txDataOffset += 1;
 
+                uint txFeeETH = 0;
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
                     txFeeETH = DepositTransaction.process(
                         S,
                         ctx,
-                        txData,
+                        data,
+                        txDataOffset,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
                     txFeeETH = WithdrawTransaction.process(
                         S,
                         ctx,
-                        txData,
+                        data,
+                        txDataOffset,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.TRANSFER) {
                     txFeeETH = TransferTransaction.process(
                         S,
                         ctx,
-                        txData,
+                        data,
+                        txDataOffset,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_NEW) {
                     txFeeETH = NewAccountTransaction.process(
                         S,
                         ctx,
-                        txData,
+                        data,
+                        txDataOffset,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
                     txFeeETH = AccountUpdateTransaction.process(
                         S,
                         ctx,
-                        txData,
+                        data,
+                        txDataOffset,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_TRANSFER) {
                     txFeeETH = OwnerChangeTransaction.process(
                         S,
                         ctx,
-                        txData,
+                        data,
+                        txDataOffset,
                         txAuxiliaryData[i].data
                     );
                 } else {

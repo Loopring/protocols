@@ -73,12 +73,13 @@ library OwnerChangeTransaction
         ExchangeData.State        storage S,
         ExchangeData.BlockContext memory  ctx,
         bytes                     memory  data,
+        uint                              offset,
         bytes                     memory  auxiliaryData
         )
         internal
         returns (uint /*feeETH*/)
     {
-        AccountTransfer memory accountTransfer = readAccountTransfer(data);
+        AccountTransfer memory accountTransfer = readAccountTransfer(data, offset);
 
         AccountTransferAuxiliaryData memory auxData = abi.decode(
             auxiliaryData,
@@ -166,36 +167,36 @@ library OwnerChangeTransaction
             // parameter 2: oldOwner
             // parameter 3: newOwner
             // parameter 4: walletDataHash
-            uint offset = 4;
+            uint calldataOffset = 4;
             require(
-                auxData.walletCalldata.toUint32(28 + offset) == accountTransfer.accountID,
+                auxData.walletCalldata.toUint32(28 + calldataOffset) == accountTransfer.accountID,
                 "INVALID_WALLET_CALLDATA"
             );
-            offset += 32;
+            calldataOffset += 32;
 
             require(
-                auxData.walletCalldata.toUint32(28 + offset) == accountTransfer.nonce,
+                auxData.walletCalldata.toUint32(28 + calldataOffset) == accountTransfer.nonce,
                 "INVALID_WALLET_CALLDATA"
             );
-            offset += 32;
+            calldataOffset += 32;
 
             require(
-                auxData.walletCalldata.toAddress(12 + offset) == accountTransfer.owner,
+                auxData.walletCalldata.toAddress(12 + calldataOffset) == accountTransfer.owner,
                 "INVALID_WALLET_CALLDATA"
             );
-            offset += 32;
+            calldataOffset += 32;
 
             require(
-                auxData.walletCalldata.toAddress(12 + offset) == accountTransfer.newOwner,
+                auxData.walletCalldata.toAddress(12 + calldataOffset) == accountTransfer.newOwner,
                 "INVALID_WALLET_CALLDATA"
             );
-            offset += 32;
+            calldataOffset += 32;
 
             require(
-                auxData.walletCalldata.toBytes32(offset) == auxData.walletDataHash,
+                auxData.walletCalldata.toBytes32(calldataOffset) == auxData.walletDataHash,
                 "INVALID_WALLET_CALLDATA"
             );
-            offset += 32;
+            calldataOffset += 32;
 
             (bool success, bytes memory result) =
                 auxData.statelessWallet.staticcall(auxData.walletCalldata);
@@ -212,14 +213,13 @@ library OwnerChangeTransaction
     }
 
     function readAccountTransfer(
-        bytes memory data
+        bytes memory data,
+        uint         offset
         )
         internal
         pure
         returns (AccountTransfer memory)
     {
-        uint offset = 1;
-
         // Extract the transfer data
         address owner = data.toAddress(offset);
         offset += 20;

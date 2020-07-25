@@ -69,12 +69,13 @@ library WithdrawTransaction
         ExchangeData.State        storage S,
         ExchangeData.BlockContext memory  ctx,
         bytes                     memory  data,
+        uint                              offset,
         bytes                     memory  auxiliaryData
         )
         internal
         returns (uint feeETH)
     {
-        Withdrawal memory withdrawal = readWithdrawal(data);
+        Withdrawal memory withdrawal = readWithdrawal(data, offset);
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
 
         // Validate gas provided
@@ -182,14 +183,13 @@ library WithdrawTransaction
     }
 
     function readWithdrawal(
-        bytes memory data
+        bytes memory data,
+        uint         offset
         )
         internal
         pure
         returns (Withdrawal memory)
     {
-        uint offset = 1;
-
         uint withdrawalType = data.toUint8(offset);
         offset += 1;
         address owner = data.toAddress(offset);
