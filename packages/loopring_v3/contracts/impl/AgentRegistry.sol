@@ -21,7 +21,10 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
 
     constructor() public Claimable() {}
 
-    function isAgent(address user, address agent)
+    function isAgent(
+        address user,
+        address agent
+        )
         external
         override
         view
@@ -30,7 +33,10 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         return isUnversalAgent(agent) || isUserAgent(user, agent);
     }
 
-    function registerUniversalAgent(address agent, bool toRegister)
+    function registerUniversalAgent(
+        address agent,
+        bool toRegister
+        )
         external
         onlyOwner
     {
@@ -54,7 +60,10 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         return isAddressInSet(UNIVERSAL_AGENTS, agent);
     }
 
-    function registerUserAgent(address agent, bool toRegister)
+    function registerUserAgent(
+        address agent,
+        bool toRegister
+        )
         external
     {
         registerInternal(userKey(msg.sender), agent, toRegister);
@@ -71,7 +80,10 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         }
     }
 
-    function isUserAgent(address user, address agent)
+    function isUserAgent(
+        address user,
+        address agent
+        )
         public
         view
         returns (bool)
@@ -79,7 +91,11 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         return isAddressInSet(userKey(user), agent);
     }
 
-    function registerInternal(bytes32 key, address agent, bool toRegister)
+    function registerInternal(
+        bytes32 key,
+        address agent,
+        bool toRegister
+        )
         private
     {
         require(agent != address(0), "ZERO_ADDRESS");
