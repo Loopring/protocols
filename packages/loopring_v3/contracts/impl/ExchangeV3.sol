@@ -57,7 +57,7 @@ contract ExchangeV3 is IExchangeV3
         require(
             owner == msg.sender ||
             state.agentRegistry != IAgentRegistry(address(0)) &&
-            IAgentRegistry(state.agentRegistry).isAgent(owner, msg.sender),
+            state.agentRegistry.isAgent(owner, msg.sender),
             "UNAUTHORIZED"
         );
         _;

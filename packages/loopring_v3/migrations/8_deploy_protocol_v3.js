@@ -27,7 +27,6 @@ module.exports = function(deployer, network, accounts) {
   // common deployment
 
   const UniversalRegistry = artifacts.require("./impl/UniversalRegistry.sol");
-  const AgentRegistry = artifacts.require("./impl/AgentRegistry.sol");
   const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
   const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
   const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
@@ -36,7 +35,6 @@ module.exports = function(deployer, network, accounts) {
     .then(() => {
       return Promise.all([
         UniversalRegistry.deployed(),
-        AgentRegistry.deployed(),
         BlockVerifier.deployed()
       ]);
     })
@@ -47,7 +45,6 @@ module.exports = function(deployer, network, accounts) {
           UniversalRegistry.address,
           lrcAddress,
           protocolFeeValutAddress,
-          AgentRegistry.address,
           BlockVerifier.address
         )
       ]);
@@ -73,7 +70,6 @@ module.exports = function(deployer, network, accounts) {
       console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
       console.log("userStakingPoolAddress:", userStakingPoolAddress);
       console.log("UniversalRegistry:", UniversalRegistry.address);
-      console.log("AgentRegistry:", AgentRegistry.address);
       console.log("BlockVerifier:", BlockVerifier.address);
       console.log("LoopringV3:", LoopringV3.address);
       console.log("");

@@ -60,7 +60,6 @@ module.exports = function(deployer, network, accounts) {
   }
 
   const BatchVerifier = artifacts.require("./thirdparty/BatchVerifier.sol");
-  const AgentRegistry = artifacts.require("./impl/AgentRegistry.sol");
   const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 
   deployer_
@@ -71,10 +70,7 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([deployer.link(BatchVerifier, BlockVerifier)]);
     })
     .then(() => {
-      return Promise.all([
-        deployer.deploy(AgentRegistry),
-        deployer.deploy(BlockVerifier)
-      ]);
+      return Promise.all([deployer.deploy(BlockVerifier)]);
     })
     .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_aux:");
@@ -82,7 +78,6 @@ module.exports = function(deployer, network, accounts) {
       console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
       console.log("userStakingPoolAddress:", userStakingPoolAddress);
       console.log("uniswapTokenSellerAddress:", uniswapTokenSellerAddress);
-      console.log("AgentRegistry:", AgentRegistry.address);
       console.log("BlockVerifier:", BlockVerifier.address);
       console.log("");
     });
