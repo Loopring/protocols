@@ -21,7 +21,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         bool            registered
     );
 
-    event Trust(
+    event TrustUniversalAgents(
         address indexed user,
         bool            trust
     );
@@ -66,7 +66,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
     {
         require(noTrustInUniversalAgents[msg.sender] == trust, "INVALID_VALUE");
         noTrustInUniversalAgents[msg.sender] = !trust;
-        emit Trust(msg.sender, trust);
+        emit TrustUniversalAgents(msg.sender, trust);
     }
 
     function registerUserAgent(
