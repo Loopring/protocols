@@ -54,14 +54,14 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         return isAddressInSet(UNIVERSAL_AGENTS, agent);
     }
 
-    function registerAgent(address agent, bool toRegister)
+    function registerUserAgent(address agent, bool toRegister)
         external
     {
         registerInternal(userKey(msg.sender), agent, toRegister);
         emit AgentRegistered(msg.sender, agent, toRegister);
     }
 
-    function getAgents(address user)
+    function getUserAgents(address user)
         public
         view
         returns (address[] memory agents)
