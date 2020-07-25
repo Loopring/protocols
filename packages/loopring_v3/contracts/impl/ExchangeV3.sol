@@ -15,6 +15,7 @@ import "./libexchange/ExchangeWithdrawals.sol";
 import "../lib/EIP712.sol";
 import "../lib/MathUint.sol";
 
+import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
 
 
@@ -55,7 +56,8 @@ contract ExchangeV3 is IExchangeV3
     {
         require(
             owner == msg.sender ||
-            state.agentRegistry.isAgent(owner, msg.sender),
+            state.agentRegistry != IAgentRegistry(address(0)) &&
+            IAgentRegistry(state.agentRegistry).isAgent(owner, msg.sender),
             "UNAUTHORIZED"
         );
         _;
@@ -97,6 +99,26 @@ contract ExchangeV3 is IExchangeV3
             genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );
+    }
+
+    function setAgentRegistry(address _agentRegistry)
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(_agentRegistry != address(0), "ZERO_ADDRESS");
+        require(state.agentRegistry == IAgentRegistry(0), "ALREADY_SET");
+        state.agentRegistry = IAgentRegistry(_agentRegistry);
+    }
+
+    function getAgentRegistry()
+        external
+        override
+        view
+        returns (IAgentRegistry)
+    {
+        return state.agentRegistry;
     }
 
     function setDepositContract(address _depositContract)

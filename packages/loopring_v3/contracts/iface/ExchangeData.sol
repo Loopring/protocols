@@ -166,9 +166,9 @@ library ExchangeData
         bytes32 genesisMerkleRoot;
         bytes32 DOMAIN_SEPARATOR;
 
-        IAgentRegistry   agentRegistry;
         ILoopringV3      loopring;
         IBlockVerifier   blockVerifier;
+        IAgentRegistry   agentRegistry;
         IDepositContract depositContract;
 
 

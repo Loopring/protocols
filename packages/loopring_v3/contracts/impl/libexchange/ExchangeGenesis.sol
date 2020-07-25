@@ -48,7 +48,6 @@ library ExchangeGenesis
         ILoopringV3 loopring = ILoopringV3(_loopring);
         S.loopring = loopring;
 
-        S.agentRegistry = IAgentRegistry(loopring.agentRegistryAddress());
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
 
         S.merkleRoot = S.genesisMerkleRoot;

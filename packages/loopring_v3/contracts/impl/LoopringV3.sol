@@ -25,7 +25,6 @@ contract LoopringV3 is ILoopringV3
         address _universalRegistry,
         address _lrcAddress,
         address payable _protocolFeeVault,
-        address _agentRegistryAddress,
         address _blockVerifierAddress
         )
         Claimable()
@@ -39,7 +38,6 @@ contract LoopringV3 is ILoopringV3
 
         updateSettingsInternal(
             _protocolFeeVault,
-            _agentRegistryAddress,
             _blockVerifierAddress,
             0, 0, 0, 0
         );
@@ -96,7 +94,6 @@ contract LoopringV3 is ILoopringV3
     // == Public Functions ==
     function updateSettings(
         address payable _protocolFeeVault,
-        address _agentRegistryAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
@@ -110,7 +107,6 @@ contract LoopringV3 is ILoopringV3
     {
         updateSettingsInternal(
             _protocolFeeVault,
-            _agentRegistryAddress,
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _forcedWithdrawalFee,
@@ -345,7 +341,6 @@ contract LoopringV3 is ILoopringV3
     // == Internal Functions ==
     function updateSettingsInternal(
         address payable  _protocolFeeVault,
-        address _agentRegistryAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
@@ -355,11 +350,9 @@ contract LoopringV3 is ILoopringV3
         private
     {
         require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
-        require(address(0) != _agentRegistryAddress, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
 
         protocolFeeVault = _protocolFeeVault;
-        agentRegistryAddress = _agentRegistryAddress;
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         forcedWithdrawalFee = _forcedWithdrawalFee;

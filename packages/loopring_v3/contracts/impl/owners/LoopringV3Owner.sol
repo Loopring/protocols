@@ -62,7 +62,6 @@ contract LoopringV3Owner is DelayedOwner
         // Set the new LRC values on the protocol contract immediately
         loopringV3.updateSettings(
             loopringV3.protocolFeeVault(),
-            loopringV3.agentRegistryAddress(),
             loopringV3.blockVerifierAddress(),
             loopringV3.exchangeCreationCostLRC(),
             loopringV3.forcedWithdrawalFee(),

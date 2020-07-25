@@ -146,7 +146,21 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual;
 
-    /// @dev Initialized the deposit contract used by the exchange.
+    /// @dev Initialized the agent registry contract used by the exchange.
+    ///      Can only be called by the exchange owner once.
+    /// @param agentRegistry The agent registry contract to be used
+    function setAgentRegistry(address agentRegistry)
+        external
+        virtual;
+
+    /// @dev Gets the agent registry contract used by the exchange.
+    /// @return the agent registry contract
+    function getAgentRegistry()
+        external
+        virtual
+        view
+        returns (IAgentRegistry);
+
     ///      Can only be called by the exchange owner once.
     /// @param depositContract The deposit contract to be used
     function setDepositContract(address depositContract)
