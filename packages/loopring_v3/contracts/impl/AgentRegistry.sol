@@ -13,11 +13,11 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
 {
     bytes32 internal constant UNIVERSAL_AGENTS = keccak256("__UNVERSAL_AGENTS__");
 
-	event AgentRegistered(
-		address user,
-		address agent,
-		bool    registered
-	);
+    event AgentRegistered(
+        address user,
+        address agent,
+        bool    registered
+    );
 
     constructor() public Claimable() {}
 
@@ -31,64 +31,64 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
     }
 
     function registerUniversalAgent(address agent, bool toRegister)
-    	external
-    	onlyOwner
+        external
+        onlyOwner
     {
-    	registerInternal(UNIVERSAL_AGENTS, agent, toRegister);
-    	emit AgentRegistered(address(0), agent, toRegister);
+        registerInternal(UNIVERSAL_AGENTS, agent, toRegister);
+        emit AgentRegistered(address(0), agent, toRegister);
     }
 
     function getUniversalAgents()
-    	public
-    	view
-    	returns (address[] memory)
+        public
+        view
+        returns (address[] memory)
     {
-    	return addressesInSet(UNIVERSAL_AGENTS);
+        return addressesInSet(UNIVERSAL_AGENTS);
     }
 
     function isUnversalAgent(address agent)
-    	public
-    	view
-    	returns (bool)
+        public
+        view
+        returns (bool)
     {
-    	return isAddressInSet(UNIVERSAL_AGENTS, agent);
+        return isAddressInSet(UNIVERSAL_AGENTS, agent);
     }
 
     function registerAgent(address agent, bool toRegister)
-    	external
+        external
     {
-    	registerInternal(userKey(msg.sender), agent, toRegister);
-    	emit AgentRegistered(msg.sender, agent, toRegister);
+        registerInternal(userKey(msg.sender), agent, toRegister);
+        emit AgentRegistered(msg.sender, agent, toRegister);
     }
 
     function getAgents(address user)
-    	public
-    	view
-    	returns (address[] memory agents)
+        public
+        view
+        returns (address[] memory agents)
     {
-    	if (user != address(0)) {
-	    	agents = addressesInSet(userKey(user));
-	    }
+        if (user != address(0)) {
+            agents = addressesInSet(userKey(user));
+        }
     }
 
-	function isUserAgent(address user, address agent)
-    	public
-    	view
-    	returns (bool)
+    function isUserAgent(address user, address agent)
+        public
+        view
+        returns (bool)
     {
-    	return isAddressInSet(userKey(user), agent);
+        return isAddressInSet(userKey(user), agent);
     }
 
-	function registerInternal(bytes32 key, address agent, bool toRegister)
-		private
-	{
-		require(agent != address(0), "ZERO_ADDRESS");
-    	if (toRegister) {
- 			addAddressToSet(key, agent, true);
- 		} else {
- 			removeAddressFromSet(key, agent);
- 		}
-	}
+    function registerInternal(bytes32 key, address agent, bool toRegister)
+        private
+    {
+        require(agent != address(0), "ZERO_ADDRESS");
+        if (toRegister) {
+            addAddressToSet(key, agent, true);
+        } else {
+            removeAddressFromSet(key, agent);
+        }
+    }
 
     function userKey(address addr)
         private
