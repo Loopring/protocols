@@ -14,9 +14,9 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
     bytes32 internal constant UNIVERSAL_AGENTS = keccak256("__UNVERSAL_AGENTS__");
 
     event AgentRegistered(
-        address user,
-        address agent,
-        bool    registered
+        address indexed user,
+        address indexed agent,
+        bool            registered
     );
 
     constructor() public Claimable() {}
@@ -44,14 +44,6 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         emit AgentRegistered(address(0), agent, toRegister);
     }
 
-    function getUniversalAgents()
-        public
-        view
-        returns (address[] memory)
-    {
-        return addressesInSet(UNIVERSAL_AGENTS);
-    }
-
     function isUnversalAgent(address agent)
         public
         view
@@ -68,16 +60,6 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
     {
         registerInternal(userKey(msg.sender), agent, toRegister);
         emit AgentRegistered(msg.sender, agent, toRegister);
-    }
-
-    function getUserAgents(address user)
-        public
-        view
-        returns (address[] memory agents)
-    {
-        if (user != address(0)) {
-            agents = addressesInSet(userKey(user));
-        }
     }
 
     function isUserAgent(
@@ -100,7 +82,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
     {
         require(agent != address(0), "ZERO_ADDRESS");
         if (toRegister) {
-            addAddressToSet(key, agent, true);
+            addAddressToSet(key, agent, false /* maintanList */);
         } else {
             removeAddressFromSet(key, agent);
         }
