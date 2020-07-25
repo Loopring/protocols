@@ -52,7 +52,7 @@ contract ExchangeV3 is IExchangeV3
         _;
     }
 
-    modifier fromUserOrAgent(address owner)
+    modifier onlyFromUserOrAgent(address owner)
     {
         require(
             owner == msg.sender ||
@@ -341,7 +341,7 @@ contract ExchangeV3 is IExchangeV3
         payable
         override
         nonReentrant
-        fromUserOrAgent(from)
+        onlyFromUserOrAgent(from)
     {
         state.deposit(from, to, tokenAddress, amount, auxiliaryData);
     }
@@ -357,7 +357,7 @@ contract ExchangeV3 is IExchangeV3
         override
         nonReentrant
         payable
-        fromUserOrAgent(owner)
+        onlyFromUserOrAgent(owner)
     {
         state.forceWithdraw(owner, token, accountID);
     }
@@ -461,7 +461,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        fromUserOrAgent(from)
+        onlyFromUserOrAgent(from)
     {
         uint16 tokenID = state.getTokenID(token);
         uint16 feeTokenID = state.getTokenID(feeToken);
@@ -489,7 +489,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        fromUserOrAgent(from)
+        onlyFromUserOrAgent(from)
     {
         state.depositContract.transfer(from, to, token, amount);
     }
@@ -501,7 +501,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        fromUserOrAgent(owner)
+        onlyFromUserOrAgent(owner)
     {
         state.approvedTx[owner][transactionHash] = true;
         emit TransactionApproved(owner, transactionHash);
