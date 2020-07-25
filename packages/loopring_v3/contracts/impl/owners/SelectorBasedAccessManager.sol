@@ -8,9 +8,9 @@ import "../../thirdparty/BytesUtil.sol";
 
 import "../../iface/IExchangeV3.sol";
 
-/// @title  AccessManager
+/// @title  SelectorBasedAccessManager
 /// @author Daniel Wang - <daniel@loopring.org>
-contract AccessManager is Claimable
+contract SelectorBasedAccessManager is Claimable
 {
     using BytesUtil for bytes;
 
