@@ -47,9 +47,6 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         bool            checkBalance
     );
 
-    event Deposit   (address token, uint amountReceived);
-    event Withdrawal(address token, uint amountPaid);
-
     function initialize(
         address _exchange
         )
@@ -106,7 +103,6 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
             amountReceived = uint96(diff);
             require(uint(amountReceived) == diff, "OUT_OF_RANGE");
         }
-        emit Deposit(token, amountReceived);
     }
 
     function withdraw(
@@ -121,19 +117,16 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         onlyExchange
         nonReentrant
         ifNotZero(amount)
-        returns (uint amountPaid)
     {
-        amountPaid = amount;
         if (isETHInternal(token)) {
-            to.sendETHAndVerify(amountPaid, gasleft());
+            to.sendETHAndVerify(amount, gasleft());
         } else {
-            if(!token.safeTransfer(to, amountPaid)){
-                amountPaid = ERC20(token).balanceOf(address(this));
+            if(!token.safeTransfer(to, amount)){
+                uint amountPaid = ERC20(token).balanceOf(address(this));
                 require(amountPaid < amount, "UNEXCPECTED");
                 token.safeTransferAndVerify(to, amountPaid);
             }
         }
-        emit Withdrawal(token, amountPaid);
     }
 
     function transfer(

@@ -51,7 +51,6 @@ interface IDepositContract
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens transferred.
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the withdrawal
-    /// @return amountPaid The amount withdrawn
     function withdraw(
         address to,
         address token,
@@ -59,8 +58,7 @@ interface IDepositContract
         bytes   calldata auxiliaryData
         )
         external
-        payable
-        returns (uint amountPaid);
+        payable;
 
     /// @dev Transfers tokens (ETH not supported) for a user using the allowance set
     ///      for the exchange. This way the approval can be used for all functionality (and
