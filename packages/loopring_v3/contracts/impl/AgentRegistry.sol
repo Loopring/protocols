@@ -13,10 +13,17 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
 {
     bytes32 internal constant UNIVERSAL_AGENTS = keccak256("__UNVERSAL_AGENTS__");
 
+    mapping (address => bool) noTrustInUniversalAgents;
+
     event AgentRegistered(
         address indexed user,
         address indexed agent,
         bool            registered
+    );
+
+    event Trust(
+        address indexed user,
+        bool            trust
     );
 
     constructor() public Claimable() {}
@@ -30,7 +37,9 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         view
         returns (bool)
     {
-        return isUnversalAgent(agent) || isUserAgent(user, agent);
+        return isUnversalAgent(agent) &&
+            !noTrustInUniversalAgents[user] ||
+            isUserAgent(user, agent);
     }
 
     function registerUniversalAgent(
@@ -50,6 +59,14 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         returns (bool)
     {
         return isAddressInSet(UNIVERSAL_AGENTS, agent);
+    }
+
+    function trustUniversalAgents(bool trust)
+        external
+    {
+        require(noTrustInUniversalAgents[msg.sender] == trust, "INVALID_VALUE");
+        noTrustInUniversalAgents[msg.sender] = !trust;
+        emit Trust(msg.sender, trust);
     }
 
     function registerUserAgent(
