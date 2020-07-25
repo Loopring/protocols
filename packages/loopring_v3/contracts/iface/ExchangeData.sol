@@ -3,6 +3,7 @@
 pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
+import "./IAgentRegistry.sol";
 import "./IBlockVerifier.sol";
 import "./IDepositContract.sol";
 import "./ILoopringV3.sol";
@@ -165,6 +166,7 @@ library ExchangeData
         bytes32 genesisMerkleRoot;
         bytes32 DOMAIN_SEPARATOR;
 
+        IAgentRegistry   agentRegistry;
         ILoopringV3      loopring;
         IBlockVerifier   blockVerifier;
         IDepositContract depositContract;

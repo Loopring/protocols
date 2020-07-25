@@ -51,8 +51,8 @@ abstract contract ILoopringV3 is ILoopring
 
     mapping (uint => Exchange) internal exchanges;
 
-    address public wethAddress;
     uint    public totalStake;
+    address public agentRegistryAddress;
     address public blockVerifierAddress;
     uint    public forcedWithdrawalFee;
     uint    public tokenRegistrationFeeLRCBase;
@@ -85,6 +85,7 @@ abstract contract ILoopringV3 is ILoopring
     ///      new Loopring exchanges.
     function updateSettings(
         address payable _protocolFeeVault,   // address(0) not allowed
+        address _agentRegistry,              // address(0) not allowed
         address _blockVerifierAddress,       // address(0) not allowed
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,

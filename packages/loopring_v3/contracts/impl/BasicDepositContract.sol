@@ -55,14 +55,14 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
     }
 
     function initialize(
-        address exchangeAddress,
-        address loopringAddress
+        address _exchange,
+        address _loopring
         )
         external
         onlyWhenUninitialized
     {
-        exchange = exchangeAddress;
-        loopring = ILoopringV3(loopringAddress);
+        exchange = _exchange;
+        loopring = ILoopringV3(_loopring);
     }
 
     function deposit(
