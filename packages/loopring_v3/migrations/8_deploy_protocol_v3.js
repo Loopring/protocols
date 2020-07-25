@@ -1,7 +1,6 @@
 // Deploy protocol: LoopringV3
 
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
-var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 var userStakingPoolAddress = "[undeployed]";
 
@@ -18,9 +17,6 @@ module.exports = function(deployer, network, accounts) {
         LRCToken.deployed().then(c => {
           lrcAddress = c.address;
         }),
-        WETHToken.deployed().then(c => {
-          wethAddress = c.address;
-        }),
         ProtocolFeeVault.deployed().then(c => {
           protocolFeeValutAddress = c.address;
         })
@@ -31,6 +27,7 @@ module.exports = function(deployer, network, accounts) {
   // common deployment
 
   const UniversalRegistry = artifacts.require("./impl/UniversalRegistry.sol");
+  const AgentRegistry = artifacts.require("./impl/AgentRegistry.sol");
   const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
   const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
   const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
@@ -39,6 +36,7 @@ module.exports = function(deployer, network, accounts) {
     .then(() => {
       return Promise.all([
         UniversalRegistry.deployed(),
+        AgentRegistry.deployed(),
         BlockVerifier.deployed()
       ]);
     })
@@ -48,8 +46,8 @@ module.exports = function(deployer, network, accounts) {
           LoopringV3,
           UniversalRegistry.address,
           lrcAddress,
-          wethAddress,
           protocolFeeValutAddress,
+          AgentRegistry.address,
           BlockVerifier.address
         )
       ]);
@@ -72,10 +70,10 @@ module.exports = function(deployer, network, accounts) {
     .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_protocol_v3:");
       console.log("lrcAddress:", lrcAddress);
-      console.log("wethAddress:", wethAddress);
       console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
       console.log("userStakingPoolAddress:", userStakingPoolAddress);
       console.log("UniversalRegistry:", UniversalRegistry.address);
+      console.log("AgentRegistry:", AgentRegistry.address);
       console.log("BlockVerifier:", BlockVerifier.address);
       console.log("LoopringV3:", LoopringV3.address);
       console.log("");
