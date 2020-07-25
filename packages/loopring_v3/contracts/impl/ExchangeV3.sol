@@ -471,7 +471,7 @@ contract ExchangeV3 is IExchangeV3
         address feeToken,
         uint96  fee,
         uint    data,
-        uint32  nonce
+        uint32  storageID
         )
         external
         override
@@ -489,7 +489,7 @@ contract ExchangeV3 is IExchangeV3
             feeTokenID,
             fee,
             data,
-            nonce
+            storageID
         );
         state.approvedTx[from][transactionHash] = true;
         emit TransactionApproved(from, transactionHash);

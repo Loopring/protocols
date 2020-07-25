@@ -559,7 +559,7 @@ abstract contract IExchangeV3 is IExchange
     /// @param feeToken The address of the token used for the fee ('0x0' for ETH).
     /// @param fee The fee for the transfer.
     /// @param data Custom data for the transfer.
-    /// @param nonce The nonce.
+    /// @param storageID The storageID.
     function approveOffchainTransfer(
         address from,
         address to,
@@ -568,7 +568,7 @@ abstract contract IExchangeV3 is IExchange
         address feeToken,
         uint96  fee,
         uint    data,
-        uint32  nonce
+        uint32  storageID
         )
         external
         virtual;

@@ -329,7 +329,7 @@ export namespace TransferUtils {
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" },
           { name: "data", type: "uint256" },
-          { name: "storageID", type: "uint64" }
+          { name: "storageID", type: "uint32" }
         ]
       },
       primaryType: "Transfer",
@@ -2440,7 +2440,7 @@ export class ExchangeTestUtil {
               ),
               20
             );
-            da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 8);
+            da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 4);
             da.addBN(new BN(transfer.type > 0 ? transfer.from : "0"), 20);
             da.addBN(new BN(transfer.data), 32);
           } else if (tx.withdraw) {
