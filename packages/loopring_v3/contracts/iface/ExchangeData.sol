@@ -49,7 +49,7 @@ library ExchangeData
         bytes data;
     }
 
-    // This is the (virtual) block an owner needs to submit onchain to maintain the
+    // This is the (virtual) block the owner  needs to submit onchain to maintain the
     // per-exchange (virtual) blockchain.
     struct Block
     {
