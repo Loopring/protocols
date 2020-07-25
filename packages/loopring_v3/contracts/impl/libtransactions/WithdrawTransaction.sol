@@ -78,9 +78,6 @@ library WithdrawTransaction
         Withdrawal memory withdrawal = readWithdrawal(data, offset);
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
 
-        // Validate gas provided
-        require(auxData.gasLimit >= withdrawal.minGas, "OUT_OF_GASH_FOR_WITHDRAWAL");
-
         // Validate the auxixliary withdrawal data
         if (withdrawal.dataHash == 0) {
             require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
@@ -170,6 +167,23 @@ library WithdrawTransaction
         } else {
             revert("INVALID_WITHDRAWAL_TYPE");
         }
+
+        // Check if there is a withdrawal recipient
+        address recipient = S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.nonce];
+        if (recipient != address(0)) {
+            // Auxiliary data is not supported
+            require (auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
+
+            // Set the new recipient address
+            withdrawal.to = recipient;
+            // Allow any amount of gas to be used on this withdrawal (which allows the transfer to be skipped)
+            withdrawal.minGas = 0;
+
+            delete S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.nonce];
+        }
+
+        // Validate gas provided
+        require(auxData.gasLimit >= withdrawal.minGas, "OUT_OF_GAS_FOR_WITHDRAWAL");
 
         // Try to transfer the tokens with the provided gas limit
         S.distributeWithdrawal(

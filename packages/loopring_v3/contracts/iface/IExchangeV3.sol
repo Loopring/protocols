@@ -573,6 +573,29 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual;
 
+    /// @dev Allows a withdrawal to be done to an adddresss that is different
+    ///      than initialy specified in the withdrawal request. This can be used to
+    ///      implement functionality like fast withdrawals.
+    ///
+    ///      This function can only be called by an agent.
+    ///
+    /// @param from The address of the account that does the withdrawal.
+    /// @param to The address to which 'amount' tokens were going to be withdrawn.
+    /// @param token The address of the token that is withdrawn ('0x0' for ETH).
+    /// @param amount The amount of tokens that are going to be withdrawn.
+    /// @param nonce The nonce of the withdrawal request.
+    /// @param newRecipient The new recipient address of the withdrawal.
+    function setWithdrawalRecipient(
+        address from,
+        address to,
+        address token,
+        uint96  amount,
+        uint32  nonce,
+        address newRecipient
+        )
+        external
+        virtual;
+
     /// @dev Allows an agent to transfer ERC-20 tokens for a user using the allowance
     ///      the user has set for the exchange. This way the user only needs to approve a single exchange contract
     ///      for all exchange/agent features, which allows for a more seamless user experience.

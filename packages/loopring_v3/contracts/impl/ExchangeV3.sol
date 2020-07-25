@@ -495,6 +495,24 @@ contract ExchangeV3 is IExchangeV3
         emit TransactionApproved(from, transactionHash);
     }
 
+    function setWithdrawalRecipient(
+        address from,
+        address to,
+        address token,
+        uint96  amount,
+        uint32  nonce,
+        address newRecipient
+        )
+        external
+        override
+        nonReentrant
+        onlyAgentFor(from)
+    {
+        uint16 tokenID = state.getTokenID(token);
+        require(state.withdrawalRecipient[from][to][tokenID][amount][nonce] == address(0), "CANNOT_OVERRIDE_RECIPIENT_ADDRESS");
+        state.withdrawalRecipient[from][to][tokenID][amount][nonce] = newRecipient;
+    }
+
     function onchainTransferFrom(
         address from,
         address to,

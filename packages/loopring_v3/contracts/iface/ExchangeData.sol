@@ -119,6 +119,8 @@ library ExchangeData
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
+    // The amount of bytes each rollup transaction uses in the block data for data-availability.
+    // This is the maximum amount of bytes of all different transaction types.
     function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 104; }
     function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 14 days; }
 
@@ -198,6 +200,9 @@ library ExchangeData
 
         // A map from an account owner to an approved transaction hash to if the transaction is approved or not
         mapping (address => mapping (bytes32 => bool)) approvedTx;
+
+        // A map from an account owner to a destination address to a tokenID to an amount to a nonce to a new recipient address
+        mapping (address => mapping (address => mapping (uint16 => mapping (uint => mapping (uint32 => address))))) withdrawalRecipient;
 
         // Whitelisted agents
         mapping (address => bool) whitelistedAgent;

@@ -60,6 +60,7 @@ contract("Exchange", (accounts: string[]) => {
   const submitWithdrawalBlockChecked = async (
     deposits: Deposit[],
     expectedSuccess?: boolean[],
+    expectedTo?: string[],
     blockFee?: BN
   ) => {
     assert.equal(
@@ -87,17 +88,21 @@ contract("Exchange", (accounts: string[]) => {
       expectedSuccess = new Array(numWithdrawals).fill(true);
     }
 
+    if (expectedTo === undefined) {
+      for (const [i, deposit] of deposits.entries()) {
+        expectedTo[i] = (deposit.owner === Constants.zeroAddress) ?
+         (await loopring.protocolFeeVault()) : deposit.owner;
+      }
+      expectedSuccess = new Array(numWithdrawals).fill(true);
+    }
+
     // Simulate all transfers
     const snapshot = new BalanceSnapshot(exchangeTestUtil);
     // Simulate withdrawals
     for (const [i, deposit] of deposits.entries()) {
-      let to = deposit.owner;
-      if (to === Constants.zeroAddress) {
-        to = await loopring.protocolFeeVault();
-      }
       await snapshot.transfer(
         depositContract.address,
-        to,
+        expectedTo[i],
         deposit.token,
         expectedSuccess[i] ? deposit.amount : new BN(0),
         "depositContract",
@@ -132,12 +137,8 @@ contract("Exchange", (accounts: string[]) => {
       let c = 0;
       for (const [i, deposit] of deposits.entries()) {
         if (expectedSuccess[i]) {
-          let to = deposit.owner;
-          if (to === Constants.zeroAddress) {
-            to = await loopring.protocolFeeVault();
-          }
           assert.equal(events[c].from, deposit.owner, "from should match");
-          assert.equal(events[c].to, to, "to should match");
+          assert.equal(events[c].to, expectedTo[i], "to should match");
           assert.equal(events[c].token, deposit.token, "token should match");
           assert(events[c].amount.eq(deposit.amount), "amount should match");
           c++;
@@ -156,12 +157,8 @@ contract("Exchange", (accounts: string[]) => {
       let c = 0;
       for (const [i, deposit] of deposits.entries()) {
         if (!expectedSuccess[i]) {
-          let to = deposit.owner;
-          if (to === Constants.zeroAddress) {
-            to = await loopring.protocolFeeVault();
-          }
           assert.equal(events[c].from, deposit.owner, "from should match");
-          assert.equal(events[c].to, to, "to should match");
+          assert.equal(events[c].to, expectedTo[i], "to should match");
           assert.equal(events[c].token, deposit.token, "token should match");
           assert(events[c].amount.eq(deposit.amount), "amount should match");
           c++;
@@ -456,6 +453,49 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.submitTransactions(16);
       await exchangeTestUtil.submitPendingBlocks();
+    });
+
+    it("Withdrawal redirected to a different recipient (setWithdrawalRecipient)", async () => {
+      await createExchange();
+
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
+      const balance = new BN(web3.utils.toWei("7", "ether"));
+      const token = exchangeTestUtil.getTokenAddress("LRC");
+
+      const deposit = await exchangeTestUtil.deposit(
+        ownerA,
+        ownerA,
+        token,
+        balance
+      );
+      await exchangeTestUtil.submitTransactions();
+      await exchangeTestUtil.submitPendingBlocks();
+
+      // Do the withdrawal request
+      const request = await exchangeTestUtil.requestWithdrawal(
+        ownerA,
+        token,
+        balance,
+        "ETH",
+        new BN(0),
+        {authMethod: AuthMethod.EDDSA}
+      );
+
+      // Set a new recipient address
+      await exchange.setWithdrawalRecipient(ownerA, ownerA, token, balance, request.nonce, ownerB, {from: ownerA});
+      // Try to set it again
+      await expectThrow(
+        exchange.setWithdrawalRecipient(ownerA, ownerA, token, balance, request.nonce, ownerB, {from: ownerA}),
+        "CANNOT_OVERRIDE_RECIPIENT_ADDRESS"
+      );
+
+      // Commit the withdrawal
+      await exchangeTestUtil.submitTransactions();
+
+      // Submit the block
+      const expectedResult = { ...deposit };
+      await submitWithdrawalBlockChecked([expectedResult], undefined, [ownerB]);
     });
 
     it("Forced withdrawal", async () => {

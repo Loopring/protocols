@@ -100,33 +100,57 @@ contract FastWithdrawalAgent is ReentrancyGuard
     function executeFastWithdrawal(FastWithdrawal memory fastWithdrawal)
         internal
     {
-        // Compute the hash
-        bytes32 hash = EIP712.hashPacked(
-            DOMAIN_SEPARATOR,
-            keccak256(
-                abi.encodePacked(
-                    FASTWITHDRAWAL_TYPEHASH,
-                    fastWithdrawal.exchange,
-                    fastWithdrawal.from,
-                    fastWithdrawal.to,
-                    fastWithdrawal.token,
-                    fastWithdrawal.amount,
-                    fastWithdrawal.feeToken,
-                    fastWithdrawal.fee,
-                    fastWithdrawal.nonce,
-                    fastWithdrawal.validUntil
-                )
-            )
-        );
-
-        // Check the signature
-        require(hash.verifySignature(fastWithdrawal.from, fastWithdrawal.signature), "INVALID_SIGNATURE");
-
-        // Check the time limit
-        require(now <= fastWithdrawal.validUntil, "TX_EXPIRED");
-
         // The liquidity provider always authorizes the fast withdrawal by being the direct caller
         address payable liquidityProvider = msg.sender;
+
+        if (fastWithdrawal.signature.length > 0) {
+            // Compute the hash
+            bytes32 hash = EIP712.hashPacked(
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encodePacked(
+                        FASTWITHDRAWAL_TYPEHASH,
+                        fastWithdrawal.exchange,
+                        fastWithdrawal.from,
+                        fastWithdrawal.to,
+                        fastWithdrawal.token,
+                        fastWithdrawal.amount,
+                        fastWithdrawal.feeToken,
+                        fastWithdrawal.fee,
+                        fastWithdrawal.nonce,
+                        fastWithdrawal.validUntil
+                    )
+                )
+            );
+
+            // Check the signature
+            require(hash.verifySignature(fastWithdrawal.from, fastWithdrawal.signature), "INVALID_SIGNATURE");
+
+            // Check the time limit
+            require(now <= fastWithdrawal.validUntil, "TX_EXPIRED");
+
+            // Approve the offchain transfer from the account that's withdrawing back to the liquidity provider
+            IExchangeV3(fastWithdrawal.exchange).approveOffchainTransfer(
+                fastWithdrawal.from,
+                liquidityProvider,
+                fastWithdrawal.token,
+                fastWithdrawal.amount,
+                fastWithdrawal.feeToken,
+                fastWithdrawal.fee,
+                0,
+                fastWithdrawal.nonce
+            );
+        } else {
+            // Override the destination address of a withdrawal to the address of the liquidity provider
+            IExchangeV3(fastWithdrawal.exchange).setWithdrawalRecipient(
+                fastWithdrawal.from,
+                fastWithdrawal.to,
+                fastWithdrawal.token,
+                fastWithdrawal.amount,
+                fastWithdrawal.nonce,
+                liquidityProvider
+            );
+        }
 
         // Transfer the tokens immediately to the requested address
         // using funds from the liquidity provider (`msg.sender`).
@@ -135,18 +159,6 @@ contract FastWithdrawalAgent is ReentrancyGuard
             fastWithdrawal.to,
             fastWithdrawal.token,
             fastWithdrawal.amount
-        );
-
-        // Approve the offchain transfer from the account that's withdrawing back to the liquidity provider
-        IExchangeV3(fastWithdrawal.exchange).approveOffchainTransfer(
-            fastWithdrawal.from,
-            liquidityProvider,
-            fastWithdrawal.token,
-            fastWithdrawal.amount,
-            fastWithdrawal.feeToken,
-            fastWithdrawal.fee,
-            0,
-            fastWithdrawal.nonce
         );
     }
 
