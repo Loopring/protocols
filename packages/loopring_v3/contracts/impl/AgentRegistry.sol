@@ -13,6 +13,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
 {
     bytes32 internal constant UNIVERSAL_AGENTS = keccak256("__UNVERSAL_AGENTS__");
 
+    // By default all users trust the universal agents.
     mapping (address => bool) noTrustInUniversalAgents;
 
     event AgentRegistered(
