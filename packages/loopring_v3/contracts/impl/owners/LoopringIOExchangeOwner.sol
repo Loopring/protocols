@@ -41,7 +41,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
         }
     }
 
-    function setOpen(bool _open)
+    function openAccessToSubmitBlocks(bool _open)
         external
         onlyOwner
     {
