@@ -249,7 +249,12 @@ export class Explorer {
 
   private async processProtocolRegistered(event: any) {
     const version = event.returnValues.version;
-    if (version === "3.0" || version === "3.1" || version === "3.5" || version === "3.6") {
+    if (
+      version === "3.0" ||
+      version === "3.1" ||
+      version === "3.5" ||
+      version === "3.6"
+    ) {
       const protocol = new ProtocolV3();
       protocol.initialize(
         this.web3,
@@ -290,7 +295,7 @@ export class Explorer {
       event.returnValues.exchangeAddress,
       parseInt(event.returnValues.exchangeId),
       event.returnValues.owner,
-      JSON.parse(event.returnValues.rollupEnabled),
+      JSON.parse(event.returnValues.rollupMode),
       parseInt(event.returnValues.forgeMode),
       protocol,
       event.returnValues.implementation
