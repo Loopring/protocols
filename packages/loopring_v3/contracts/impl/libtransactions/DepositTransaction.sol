@@ -17,12 +17,12 @@ library DepositTransaction
     using BytesUtil for bytes;
     using MathUint  for uint;
 
-    event DepositProcessed(
+    /*event DepositProcessed(
         address owner,
         uint32  accountId,
         uint16  token,
         uint    amount
-    );
+    );*/
 
     function process(
         ExchangeData.State        storage S,
@@ -37,7 +37,7 @@ library DepositTransaction
         // Read in the deposit data
         address owner = data.toAddress(offset);
         offset += 20;
-        uint32 accountID = data.toUint32(offset);
+        //uint32 accountID = data.toUint32(offset);
         offset += 4;
         uint16 tokenID = data.toUint16(offset);
         offset += 2;
@@ -72,6 +72,6 @@ library DepositTransaction
             deposit.timestamp = 0;
         }
 
-        emit DepositProcessed(owner, accountID, tokenID, amount);
+        //emit DepositProcessed(owner, accountID, tokenID, amount);
     }
 }

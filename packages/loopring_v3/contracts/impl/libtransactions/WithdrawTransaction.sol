@@ -59,11 +59,11 @@ library WithdrawTransaction
         bytes auxiliaryData;
     }
 
-    event ForcedWithdrawalProcessed(
+    /*event ForcedWithdrawalProcessed(
         uint32 accountID,
         uint16 tokenID,
         uint   amount
-    );
+    );*/
 
     function process(
         ExchangeData.State        storage S,
@@ -149,11 +149,11 @@ library WithdrawTransaction
                 delete S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
                 S.numPendingForcedTransactions--;
 
-                emit ForcedWithdrawalProcessed(
+                /*emit ForcedWithdrawalProcessed(
                     withdrawal.accountID,
                     withdrawal.tokenID,
                     withdrawal.amount
-                );
+                );*/
             } else {
                 // Allow the operator to submit full withdrawals without authorization
                 // - when in shutdown mode

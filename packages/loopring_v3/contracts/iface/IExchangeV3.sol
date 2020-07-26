@@ -99,19 +99,19 @@ abstract contract IExchangeV3 is IExchange
     );
 
     // events from libraries
-    event DepositProcessed(
+    /*event DepositProcessed(
         address owner,
         uint32  accountId,
         uint16  token,
         uint    amount,
         uint    index
-    );
+    );*/
 
-    event ForcedWithdrawalProcessed(
+    /*event ForcedWithdrawalProcessed(
         uint32 accountID,
         uint16 tokenID,
         uint   amount
-    );
+    );*/
 
     /*event ConditionalTransferProcessed(
         address from,
