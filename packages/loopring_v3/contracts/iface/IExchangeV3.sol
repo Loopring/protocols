@@ -87,17 +87,6 @@ abstract contract IExchangeV3 is IExchange
         bytes32 transactionHash
     );
 
-    event AgentAuthorized(
-        address indexed owner,
-        address         agent,
-        bool            authorized
-    );
-
-    event AgentWhitelisted(
-        address indexed agent,
-        bool            authorized
-    );
-
     // events from libraries
     event DepositProcessed(
         address owner,
@@ -144,11 +133,11 @@ abstract contract IExchangeV3 is IExchange
     /// @param  exchangeId The id of this exchange.
     /// @param  operator The operator address of the exchange who will be responsible for
     ///         submitting blocks and proofs.
-    /// @param  loopringAddress The corresponding ILoopring contract address.
+    /// @param  loopring The corresponding ILoopring contract address.
     /// @param  rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
     function initialize(
-        address loopringAddress,
+        address loopring,
         address owner,
         uint    exchangeId,
         address payable operator,
@@ -157,7 +146,21 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual;
 
-    /// @dev Initialized the deposit contract used by the exchange.
+    /// @dev Initialized the agent registry contract used by the exchange.
+    ///      Can only be called by the exchange owner once.
+    /// @param agentRegistry The agent registry contract to be used
+    function setAgentRegistry(address agentRegistry)
+        external
+        virtual;
+
+    /// @dev Gets the agent registry contract used by the exchange.
+    /// @return the agent registry contract
+    function getAgentRegistry()
+        external
+        virtual
+        view
+        returns (IAgentRegistry);
+
     ///      Can only be called by the exchange owner once.
     /// @param depositContract The deposit contract to be used
     function setDepositContract(address depositContract)
@@ -505,49 +508,6 @@ abstract contract IExchangeV3 is IExchange
         )
         external
         virtual;
-
-    // -- Agents --
-
-    /// @dev Authorizes/Deauthorizes agents for all accounts.
-    ///      An agent is allowed to authorize onchain operations for the account owner.
-    ///
-    ///      This function can only be called by the exchange owner.
-    ///
-    /// @param agents The agents to be authorized/deauthorized.
-    /// @param whitelisted True to authorize the agent, false to deauthorize
-    function whitelistAgents(
-        address[] calldata agents,
-        bool[]    calldata whitelisted
-        )
-        external
-        virtual;
-
-    /// @dev Authorizes/Deauthorizes agents for an account.
-    ///      An agent is allowed to authorize onchain operations for the account owner.
-    ///      By definition the account owner is an agent for himself.
-    ///
-    ///      This function can only be called by an agent.
-    ///
-    /// @param owner The account owner.
-    /// @param agents The agents to be authorized/deauthorized.
-    /// @param authorized True to authorize the agent, false to deauthorize
-    function authorizeAgents(
-        address   owner,
-        address[] calldata agents,
-        bool[]    calldata authorized
-        )
-        external
-        virtual;
-
-    /// @dev Returns whether an agent address is an agent of an account owner
-    /// @param owner The account owner.
-    /// @param agent The agent address
-    /// @return True if the agent address is an agent for the account owner, else false
-    function isAgent(address owner, address agent)
-        public
-        virtual
-        view
-        returns (bool);
 
     /// @dev Approves an offchain transfer. Helper function around `approveTransaction`.
     ///      Important! This is just an approval, the operator has full control

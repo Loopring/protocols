@@ -51,7 +51,6 @@ abstract contract ILoopringV3 is ILoopring
 
     mapping (uint => Exchange) internal exchanges;
 
-    address public wethAddress;
     uint    public totalStake;
     address public blockVerifierAddress;
     uint    public forcedWithdrawalFee;
