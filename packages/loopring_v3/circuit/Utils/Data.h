@@ -22,7 +22,7 @@ static auto dummySpotTrade = R"({
     "orderA": {
         "accountID": 0,
         "allOrNone": false,
-        "amountB": "79228162514264337593543950335",
+        "amountB": "79228162514264337593543950335", // max uint96
         "amountS": "79228162514264337593543950335",
         "buy": true,
         "feeBips": 0,
@@ -32,7 +32,7 @@ static auto dummySpotTrade = R"({
         "tokenS": 0,
         "tokenB": 1,
         "validSince": 0,
-        "validUntil": 4294967295
+        "validUntil": 4294967295 // max unit32
     },
     "orderB": {
         "accountID": 0,
@@ -422,26 +422,26 @@ static void from_json(const json& j, AccountUpdateTx& update)
 class NewAccount
 {
 public:
-    ethsnarks::FieldT payerAccountID;
-    ethsnarks::FieldT feeTokenID;
-    ethsnarks::FieldT fee;
     ethsnarks::FieldT newAccountID;
-    ethsnarks::FieldT newOwner;
     ethsnarks::FieldT newPublicKeyX;
     ethsnarks::FieldT newPublicKeyY;
     ethsnarks::FieldT newWalletHash;
+    ethsnarks::FieldT feeTokenID;
+    ethsnarks::FieldT fee;
+    ethsnarks::FieldT payerAccountID;
+    ethsnarks::FieldT newOwner;
 };
 
 static void from_json(const json& j, NewAccount& create)
 {
-    create.payerAccountID = ethsnarks::FieldT(j.at("payerAccountID"));
-    create.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
-    create.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
     create.newAccountID = ethsnarks::FieldT(j.at("newAccountID"));
-    create.newOwner = ethsnarks::FieldT(j["newOwner"].get<std::string>().c_str());
     create.newPublicKeyX = ethsnarks::FieldT(j["newPublicKeyX"].get<std::string>().c_str());
     create.newPublicKeyY = ethsnarks::FieldT(j["newPublicKeyY"].get<std::string>().c_str());
     create.newWalletHash = ethsnarks::FieldT(j["newWalletHash"].get<std::string>().c_str());
+    create.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
+    create.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
+    create.payerAccountID = ethsnarks::FieldT(j.at("payerAccountID"));
+    create.newOwner = ethsnarks::FieldT(j["newOwner"].get<std::string>().c_str());
 }
 
 
