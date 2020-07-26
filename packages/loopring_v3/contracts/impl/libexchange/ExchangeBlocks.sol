@@ -109,10 +109,10 @@ library ExchangeBlocks
         offset += 32;
         require(merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
 
-        S.merkleRoot = _block.data.toBytes32(offset);
+        bytes32 merkleRootAfter = _block.data.toBytes32(offset);
         offset += 32;
-        require(S.merkleRoot != merkleRootBefore, "EMPTY_BLOCK_DISABLED");
-        require(uint(S.merkleRoot) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
+        require(merkleRootAfter != merkleRootBefore, "EMPTY_BLOCK_DISABLED");
+        require(uint(merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
         // Validate timestamp
         uint32 inputTimestamp = _block.data.toUint32(offset);
@@ -145,8 +145,9 @@ library ExchangeBlocks
         _feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
 
         // Emit an event
-        emit BlockSubmitted(S.blocks.length, S.merkleRoot, _publicDataHash, blockFeeETH);
+        emit BlockSubmitted(S.blocks.length, merkleRootAfter, _publicDataHash, blockFeeETH);
 
+        S.merkleRoot = merkleRootAfter;
         S.blocks.push(
             ExchangeData.BlockInfo(
                 _block.storeDataHashOnchain ? _publicDataHash : bytes32(0)
