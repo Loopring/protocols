@@ -17,8 +17,8 @@ contract LoopringV3Owner is DelayedOwner
 
     struct Costs
     {
-        uint minExchangeStakeDA;
-        uint minExchangeStakeWDA;
+        uint minExchangeStakeRollup;
+        uint minExchangeStakeValidium;
     }
 
     Costs public USD;
@@ -39,8 +39,8 @@ contract LoopringV3Owner is DelayedOwner
     {
         loopringV3 = _loopringV3;
         provider = _provider;
-        USD.minExchangeStakeDA = _minExchangeStakeRollupUSD;
-        USD.minExchangeStakeWDA = _minExchangeStakeValidiumUSD;
+        USD.minExchangeStakeRollup = _minExchangeStakeRollupUSD;
+        USD.minExchangeStakeValidium = _minExchangeStakeValidiumUSD;
 
         setFunctionDelay(loopringV3.transferOwnership.selector, 7 days);
         setFunctionDelay(loopringV3.updateSettings.selector, 7 days);
@@ -55,8 +55,8 @@ contract LoopringV3Owner is DelayedOwner
     {
         // Get the current costs in LRC
         Costs memory lrcCosts = Costs(
-            provider.usd2lrc(USD.minExchangeStakeDA),
-            provider.usd2lrc(USD.minExchangeStakeWDA)
+            provider.usd2lrc(USD.minExchangeStakeRollup),
+            provider.usd2lrc(USD.minExchangeStakeValidium)
         );
 
         // Set the new LRC values on the protocol contract immediately
@@ -65,13 +65,13 @@ contract LoopringV3Owner is DelayedOwner
             loopringV3.blockVerifierAddress(),
             loopringV3.exchangeCreationCostLRC(),
             loopringV3.forcedWithdrawalFee(),
-            lrcCosts.minExchangeStakeDA,
-            lrcCosts.minExchangeStakeWDA
+            lrcCosts.minExchangeStakeRollup,
+            lrcCosts.minExchangeStakeValidium
         );
 
         emit LRCValuesUpdated(
-            lrcCosts.minExchangeStakeDA,
-            lrcCosts.minExchangeStakeWDA
+            lrcCosts.minExchangeStakeRollup,
+            lrcCosts.minExchangeStakeValidium
         );
     }
 }

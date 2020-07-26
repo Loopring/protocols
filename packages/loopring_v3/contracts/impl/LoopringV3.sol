@@ -24,7 +24,6 @@ contract LoopringV3 is ILoopringV3
     constructor(
         address _universalRegistry,
         address _lrcAddress,
-        address _wethAddress,
         address payable _protocolFeeVault,
         address _blockVerifierAddress
         )
@@ -33,11 +32,9 @@ contract LoopringV3 is ILoopringV3
     {
         require(address(0) != _universalRegistry, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
-        require(address(0) != _wethAddress, "ZERO_ADDRESS");
 
         universalRegistry = _universalRegistry;
         lrcAddress = _lrcAddress;
-        wethAddress = _wethAddress;
 
         updateSettingsInternal(
             _protocolFeeVault,
