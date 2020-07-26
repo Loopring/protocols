@@ -2140,6 +2140,7 @@ export class ExchangeTestUtil {
       for (const [i, event] of events.entries()) {
         const blockIdx = event.blockIdx.toNumber();
         assert.equal(blockIdx, blocks[i].blockIdx, "unexpected block idx");
+        assert.equal(event.merkleRoot, blocks[i].merkleRoot, "unexpected Merkle root");
         assert.equal(
           event.publicDataHash,
           blocks[i].publicDataHash,

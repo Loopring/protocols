@@ -37,6 +37,7 @@ library ExchangeBlocks
 
     event BlockSubmitted(
         uint    indexed blockIdx,
+        bytes32         merkleRoot,
         bytes32         publicDataHash,
         uint            blockFee
     );
@@ -144,7 +145,7 @@ library ExchangeBlocks
         _feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
 
         // Emit an event
-        emit BlockSubmitted(S.blocks.length, _publicDataHash, blockFeeETH);
+        emit BlockSubmitted(S.blocks.length, S.merkleRoot, _publicDataHash, blockFeeETH);
 
         S.blocks.push(
             ExchangeData.BlockInfo(
