@@ -572,6 +572,9 @@ export class Simulator {
   ) {
     const account = state.getAccount(change.accountID);
     account.owner = change.newOwner;
+    account.publicKeyX = "0";
+    account.publicKeyY = "0";
+    account.walletHash = "0";
     account.nonce++;
 
     const balance = account.getBalance(change.feeTokenID);

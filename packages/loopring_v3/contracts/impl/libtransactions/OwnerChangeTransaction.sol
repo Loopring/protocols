@@ -62,8 +62,8 @@ library OwnerChangeTransaction
     // Auxiliary data for each owner change
     struct AccountTransferAuxiliaryData
     {
-        bytes   signatureOldOwner;
-        bytes   signatureNewOwner;
+        bytes   signature;
+        bytes   signatureWallet;
         address statelessWallet;
         bytes32 walletDataHash;
         bytes   walletCalldata;
@@ -105,30 +105,13 @@ library OwnerChangeTransaction
             )
         );
 
-        // Verify authorization from the new owner
-        if (auxData.signatureNewOwner.length > 0) {
-            require(
-                txHash.verifySignature(
-                    accountTransfer.newOwner,
-                    auxData.signatureNewOwner
-                ),
-                "INVALID_SIGNATURE_NEW_OWNER"
-            );
-        } else {
-            require(
-                S.approvedTx[accountTransfer.newOwner][txHash],
-                "TX_NOT_APPROVED_NEW_OWNER"
-            );
-            delete S.approvedTx[accountTransfer.newOwner][txHash];
-        }
-
         if (auxData.statelessWallet == address(0)) {
-            /// Verify authorization from the current owner
-            if (auxData.signatureOldOwner.length > 0) {
+            // Verify authorization from the current owner
+            if (auxData.signature.length > 0) {
                 require(
                     txHash.verifySignature(
                         accountTransfer.owner,
-                        auxData.signatureOldOwner
+                        auxData.signature
                     ),
                     "INVALID_SIGNATURE_OLD_OWNER"
                 );
@@ -143,6 +126,23 @@ library OwnerChangeTransaction
             // If the account has a wallet, use it to recover the account
             require(accountTransfer.walletHash != 0, "ACCOUNT_HAS_NO_WALLET");
 
+            // Verify authorization from the new owner
+            if (auxData.signature.length > 0) {
+                require(
+                    txHash.verifySignature(
+                        accountTransfer.newOwner,
+                        auxData.signature
+                    ),
+                    "INVALID_SIGNATURE_NEW_OWNER"
+                );
+            } else {
+                require(
+                    S.approvedTx[accountTransfer.newOwner][txHash],
+                    "TX_NOT_APPROVED_NEW_OWNER"
+                );
+                delete S.approvedTx[accountTransfer.newOwner][txHash];
+            }
+
             // Calculate the wallet hash
             bytes32 walletHash = EIP712.hashPacked(
                 S.DOMAIN_SEPARATOR,
@@ -153,6 +153,14 @@ library OwnerChangeTransaction
                         auxData.walletDataHash
                     )
                 )
+            );
+            // Verify that the data was signed by the current owner
+            require(
+                walletHash.verifySignature(
+                    accountTransfer.owner,
+                    auxData.signatureWallet
+                ),
+                "INVALID_SIGNATURE_WALLET"
             );
             // Hashes are stored using only 253 bits so the value fits inside a SNARK field element.
             require(

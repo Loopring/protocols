@@ -1670,10 +1670,11 @@ export class ExchangeTestUtil {
 
     const account = this.findAccount(owner);
 
+    let fullWalletHash: Buffer;
     let walletHash = "0";
     let walletDataHash = "0x0";
     if (account.wallet !== undefined) {
-      const hash = WalletUtils.getHash(
+      fullWalletHash = WalletUtils.getHash(
         account.wallet,
         this.statelessWallet.address,
         this.exchange.address
@@ -1682,7 +1683,7 @@ export class ExchangeTestUtil {
         account.wallet,
         this.statelessWallet.address
       );
-      walletHash = this.hashToFieldElement("0x" + hash.toString("hex"));
+      walletHash = this.hashToFieldElement("0x" + fullWalletHash.toString("hex"));
       walletDataHash = "0x" + dataHash.toString("hex");
     }
 
@@ -1709,20 +1710,11 @@ export class ExchangeTestUtil {
       accountTransfer,
       this.exchange.address
     );
-    accountTransfer.onchainSignatureNewOwner = await sign(
-      newOwner,
-      hash,
-      SignatureType.EIP_712
-    );
-    await verifySignature(
-      newOwner,
-      hash,
-      accountTransfer.onchainSignatureNewOwner
-    );
 
     // Sign the public key update
     if (authMethod === AuthMethod.ECDSA) {
-      accountTransfer.onchainSignatureOldOwner = await sign(
+      // The current owner signs the transaction
+      accountTransfer.onchainSignature = await sign(
         owner,
         hash,
         SignatureType.EIP_712
@@ -1730,14 +1722,39 @@ export class ExchangeTestUtil {
       await verifySignature(
         owner,
         hash,
-        accountTransfer.onchainSignatureOldOwner
+        accountTransfer.onchainSignature
       );
     } else if (authMethod === AuthMethod.WALLET) {
-      // Nothing more to do
+      // The new owner signs the transaction
+      accountTransfer.onchainSignature = await sign(
+        newOwner,
+        hash,
+        SignatureType.EIP_712
+      );
+      await verifySignature(
+        newOwner,
+        hash,
+        accountTransfer.onchainSignature
+      );
+
+      // Need signature for the wallet from the current owner
+      accountTransfer.onchainSignatureWallet = await sign(
+        owner,
+        fullWalletHash,
+        SignatureType.EIP_712
+      );
+      await verifySignature(
+        owner,
+        fullWalletHash,
+        accountTransfer.onchainSignatureWallet
+      );
     }
 
     // Change the owner on the internal state
     account.owner = newOwner;
+    account.publicKeyX = "0";
+    account.publicKeyY = "0";
+    account.wallet = undefined;
 
     this.pendingTransactions[this.exchangeId].push(accountTransfer);
     return accountTransfer;
@@ -2297,13 +2314,13 @@ export class ExchangeTestUtil {
             "tuple(bytes,bytes,address,bytes32,bytes)",
             [
               web3.utils.hexToBytes(
-                transaction.onchainSignatureOldOwner
-                  ? transaction.onchainSignatureOldOwner
+                transaction.onchainSignature
+                  ? transaction.onchainSignature
                   : "0x"
               ),
               web3.utils.hexToBytes(
-                transaction.onchainSignatureNewOwner
-                  ? transaction.onchainSignatureNewOwner
+                transaction.onchainSignatureWallet
+                  ? transaction.onchainSignatureWallet
                   : "0x"
               ),
               transaction.walletAddress,

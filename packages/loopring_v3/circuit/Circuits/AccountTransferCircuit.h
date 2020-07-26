@@ -75,6 +75,9 @@ public:
         // Update the account owner
         setArrayOutput(accountA_Address, accountID.bits);
         setOutput(accountA_Owner, newOwner.packed);
+        setOutput(accountA_PublicKeyX, state.constants._0);
+        setOutput(accountA_PublicKeyY, state.constants._0);
+        setOutput(accountA_WalletHash, state.constants._0);
         setOutput(accountA_Nonce, nonce_after.result());
 
         // Update the account balance for the fee payment

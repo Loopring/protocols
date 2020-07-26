@@ -752,6 +752,9 @@ class State(object):
 
             newState.accountA_Address = txInput.accountID
             newState.accountA_Owner = txInput.newOwner
+            newState.accountA_PublicKeyX = "0"
+            newState.accountA_PublicKeyY = "0"
+            newState.accountA_WalletHash = "0"
             accountA = self.getAccount(newState.accountA_Address)
             newState.accountA_Nonce = 1
 

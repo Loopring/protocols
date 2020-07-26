@@ -211,8 +211,8 @@ export interface OwnerChange {
   walletDataHash: string;
   walletCalldata: string;
 
-  onchainSignatureOldOwner?: any;
-  onchainSignatureNewOwner?: any;
+  onchainSignature?: any;
+  onchainSignatureWallet?: any;
 }
 
 // Blocks
