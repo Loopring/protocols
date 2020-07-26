@@ -64,7 +64,7 @@ library ExchangeData
 
         // Block specific data that is only used to help process the block on-chain.
         // It is not used as input for the circuits and it is not necessary for data-availability.
-        bytes auxiliaryData;
+        AuxiliaryData[] auxiliaryData;
 
         // Arbitrary data, mainly for off-chain data-availability, i.e.,
         // the multihash of the IPFS file that contains the block data.

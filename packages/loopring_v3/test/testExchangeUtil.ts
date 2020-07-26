@@ -1825,7 +1825,7 @@ export class ExchangeTestUtil {
     data: string,
     filename: string,
     txBlock: TxBlock,
-    auxiliaryData: string = "0x"
+    auxiliaryData: any[]
   ) {
     const publicDataHashAndInput = this.getPublicDataHashAndInput(data);
     const publicDataHash = publicDataHashAndInput.publicDataHash;
@@ -2063,7 +2063,7 @@ export class ExchangeTestUtil {
         proof: block.proof,
         storeDataHashOnchain: this.getRandomBool(),
         offchainData: web3.utils.hexToBytes(block.offchainData),
-        auxiliaryData: web3.utils.hexToBytes(block.auxiliaryData)
+        auxiliaryData: block.auxiliaryData
       };
       onchainBlocks.push(onchainBlock);
     }
@@ -2318,10 +2318,6 @@ export class ExchangeTestUtil {
         }
       }
       console.log("numConditionalTransactions: " + numConditionalTransactions);
-      const encodedAuxiliaryData = web3.eth.abi.encodeParameter(
-        "tuple(uint256,bytes)[]",
-        auxiliaryData
-      );
 
       const currentBlockIdx = this.blocks[exchangeID].length - 1;
 
@@ -2516,7 +2512,7 @@ export class ExchangeTestUtil {
             da.addBN(new BN(change.newOwner), 20);
             da.addBN(new BN(change.walletHash), 32);
           }
-
+          //console.log("da size: " + da.length());
           assert(
             da.length() <= Constants.TX_DATA_AVAILABILITY_SIZE,
             "tx uses too much da"
@@ -2567,7 +2563,7 @@ export class ExchangeTestUtil {
         bs.getData(),
         blockFilename,
         txBlock,
-        encodedAuxiliaryData
+        auxiliaryData
       );
       blocks.push(blockInfo);
     }
@@ -2741,7 +2737,7 @@ export class ExchangeTestUtil {
       operatorId: 0,
       merkleRoot: "0x" + this.GENESIS_MERKLE_ROOT.toString(16, 64),
       data: "0x",
-      auxiliaryData: "0x",
+      auxiliaryData: [],
       offchainData: "0x",
       compressedData: "0x",
       publicDataHash: "0",

@@ -221,10 +221,10 @@ library ExchangeBlocks
     }
 
     function processConditionalTransactions(
-        ExchangeData.State storage S,
-        uint          offset,
-        bytes  memory data,
-        bytes  memory auxiliaryData
+        ExchangeData.State          storage S,
+        uint                                offset,
+        bytes                        memory data,
+        ExchangeData.AuxiliaryData[] memory txAuxiliaryData
         )
         private
         returns (uint blockFeeETH)
@@ -241,9 +241,6 @@ library ExchangeBlocks
                 DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR
             });
 
-            ExchangeData.AuxiliaryData[] memory txAuxiliaryData = abi.decode(
-                auxiliaryData, (ExchangeData.AuxiliaryData[])
-            );
             require(
                 txAuxiliaryData.length == numConditionalTransactions,
                 "AUXILIARYDATA_INVALID_LENGTH"

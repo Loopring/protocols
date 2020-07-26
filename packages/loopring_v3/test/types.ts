@@ -241,7 +241,7 @@ export interface Block {
   operatorId: number;
   merkleRoot: string;
   data: string;
-  auxiliaryData: string;
+  auxiliaryData: any[];
   offchainData: string;
   compressedData: string;
   publicDataHash: string;
