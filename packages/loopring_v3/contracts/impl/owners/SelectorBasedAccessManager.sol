@@ -23,6 +23,12 @@ contract SelectorBasedAccessManager is Claimable
     address public target;
     mapping(address => mapping(bytes4 => bool)) public permissions;
 
+    modifier withAccess(bytes4 selector)
+    {
+        require(hasAccessTo(msg.sender, selector), "PERMISSION_DENIED");
+        _;
+    }
+
     constructor(address _target)
         public
     {
@@ -30,28 +36,26 @@ contract SelectorBasedAccessManager is Claimable
         target = _target;
     }
 
-    function setPermission(
+    function grantAccess(
         address user,
         bytes4  selector,
-        bool    allowed
+        bool    granted
         )
         external
         onlyOwner
     {
-        require(permissions[user][selector] != allowed, "INVALID_VALUE");
-        permissions[user][selector] = allowed;
-        emit PermissionUpdate(user, selector, allowed);
+        require(permissions[user][selector] != granted, "INVALID_VALUE");
+        permissions[user][selector] = granted;
+        emit PermissionUpdate(user, selector, granted);
     }
 
     receive() payable external {}
 
-    fallback() payable external
+    fallback()
+        payable
+        external
+        withAccess(msg.data.toBytes4(0))
     {
-        require(
-            hasPermission(msg.sender, msg.data.toBytes4(0)),
-            "PERMISSION_DENIED"
-        );
-
         (bool success, bytes memory returnData) = target
             .call{value: msg.value}(msg.data);
 
@@ -60,7 +64,7 @@ contract SelectorBasedAccessManager is Claimable
         }
     }
 
-    function hasPermission(address user, bytes4 selector)
+    function hasAccessTo(address user, bytes4 selector)
         public
         view
         returns (bool)
