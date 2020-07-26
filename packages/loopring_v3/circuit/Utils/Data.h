@@ -89,7 +89,7 @@ static auto dummyAccountUpdate = R"({
     "owner": "0",
     "accountID": 0,
     "nonce": 0,
-    "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
+    "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866", // a randomly-chosen valid EdDSA pubkey
     "publicKeyY": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
     "walletHash": "0",
     "feeTokenID": 0,
@@ -367,6 +367,8 @@ static void from_json(const json& j, Deposit& deposit)
     deposit.index = ethsnarks::FieldT(j.at("index").get<std::string>().c_str());
 }
 
+// There is no `owner` field as for a withdrawal the owner is always the owner as
+// set in the account leaf the withdrawal is done for.
 class Withdrawal
 {
 public:
@@ -505,6 +507,7 @@ static void from_json(const json& j, Transfer& transfer)
 class Witness
 {
 public:
+    // account updates for up to two users
     TradeHistoryUpdate tradeHistoryUpdate_A;
     TradeHistoryUpdate tradeHistoryUpdate_B;
 
@@ -516,16 +519,19 @@ public:
     BalanceUpdate balanceUpdateB_B;
     AccountUpdate accountUpdate_B;
 
+    // operator account update
     BalanceUpdate balanceUpdateA_O;
     BalanceUpdate balanceUpdateB_O;
     AccountUpdate accountUpdate_O;
 
+    // protocol fee account update
     BalanceUpdate balanceUpdateA_P;
     BalanceUpdate balanceUpdateB_P;
 
     BalanceUpdate balanceUpdateA_I;
     BalanceUpdate balanceUpdateB_I;
 
+    // user signatures
     Signature signatureA;
     Signature signatureB;
 
