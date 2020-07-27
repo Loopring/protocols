@@ -15,7 +15,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
 {
     using BytesUtil for bytes;
 
-    bool   public open;
+    bytes4 private constant SUBMITBLOCKS_SELECTOR  = IExchangeV3.submitBlocks.selector;
+    bool   public  open;
 
     event SubmitBlocksAccessOpened(bool open);
 
@@ -30,10 +31,15 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
         )
         external
     {
-        bytes4 selector = IExchangeV3(0).submitBlocks.selector;
-        require(open || hasAccessTo(msg.sender, selector), "PERMISSION_DENIED");
+        require(
+            hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
+            "PERMISSION_DENIED"
+        );
         bytes memory decompressed = LzDecompressor.decompress(data);
-        require(decompressed.toBytes4(0) == selector, "INVALID_DATA");
+        require(
+            decompressed.toBytes4(0) == SUBMITBLOCKS_SELECTOR,
+            "INVALID_DATA"
+        );
 
         (bool success, bytes memory returnData) = target.call(decompressed);
         if (!success) {
