@@ -49,18 +49,6 @@ contract ExchangeV3 is IExchangeV3
         _;
     }
 
-    function isSenderUserOrAgent(address addr)
-        private
-        view
-        returns (bool)
-    {
-        if (msg.sender == addr) return true;
-        if (state.agentRegistry == IAgentRegistry(address(0))) return false;
-        if (msg.data.length < 24) return false;
-        if (!state.agentRegistry.isAgent(addr, msg.sender)) return false;
-        return msg.data.toAddress(msg.data.length - 20) == addr;
-    }
-
     modifier onlyFromUserOrAgent(address addr)
     {
         require(isSenderUserOrAgent(addr), "UNAUTHORIZED");
@@ -584,5 +572,15 @@ contract ExchangeV3 is IExchangeV3
         previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
     }
 
-
+    function isSenderUserOrAgent(address addr)
+        private
+        view
+        returns (bool)
+    {
+        if (msg.sender == addr) return true;
+        if (state.agentRegistry == IAgentRegistry(address(0))) return false;
+        if (msg.data.length < 24) return false;
+        if (!state.agentRegistry.isAgent(addr, msg.sender)) return false;
+        return msg.data.toAddress(msg.data.length - 20) == addr;
+    }
 }
