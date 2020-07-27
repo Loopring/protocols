@@ -53,7 +53,7 @@ library DepositTransaction
         require(deposit.timestamp > 0, "DEPOSIT_DOESNT_EXIST");
         // Earn a fee relative to the amount actually made available on layer 2.
         // This is done to ensure the user can do multiple deposits after each other
-        // without invalidating work done by the operator for previous deposit amounts.
+        // without invalidating work done by the owner for previous deposit amounts.
 
         // Also note the oritinal deposit.amount can be zero!
         if (amount > 0) {
@@ -67,9 +67,9 @@ library DepositTransaction
         }
 
         // If the deposit was fully consumed, reset it so the storage is freed up
-        // and the operator receives a gas refund.
+        // and the owner receives a gas refund.
         if (deposit.amount == 0) {
-            // Give the operator the remaining fee
+            // Give the owner the remaining fee
             feeETH = feeETH.add(uint(deposit.fee));
             // Reset the deposit data
             deposit.fee = 0;

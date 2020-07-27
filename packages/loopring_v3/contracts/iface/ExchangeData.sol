@@ -50,7 +50,7 @@ library ExchangeData
         bytes data;
     }
 
-    // This is the (virtual) block an operator needs to submit onchain to maintain the
+    // This is the (virtual) block the owner  needs to submit onchain to maintain the
     // per-exchange (virtual) blockchain.
     struct Block
     {
@@ -160,7 +160,6 @@ library ExchangeData
     {
         uint    id;
         uint    exchangeCreationTimestamp;
-        address payable operator; // The only address that can submit new blocks.
         bool    rollupMode;
         uint32  maxAgeDepositUntilWithdrawable;
         bytes32 genesisMerkleRoot;
@@ -209,7 +208,7 @@ library ExchangeData
         // on if the agent can be used for the account.
         mapping (address => mapping (address => bool)) agent;
 
-        // Counter to keep track of how many of forced requests are open so we can limit the work that needs to be done by the operator
+        // Counter to keep track of how many of forced requests are open so we can limit the work that needs to be done by the owner
         uint32 numPendingForcedTransactions;
 
         // Cached data for the protocol fee

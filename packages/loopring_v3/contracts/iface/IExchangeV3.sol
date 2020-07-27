@@ -131,8 +131,6 @@ abstract contract IExchangeV3 is IExchange
     /// @dev Initializes this exchange. This method can only be called once.
     /// @param  owner The owner of this exchange.
     /// @param  exchangeId The id of this exchange.
-    /// @param  operator The operator address of the exchange who will be responsible for
-    ///         submitting blocks and proofs.
     /// @param  loopring The corresponding ILoopring contract address.
     /// @param  rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
@@ -140,7 +138,6 @@ abstract contract IExchangeV3 is IExchange
         address loopring,
         address owner,
         uint    exchangeId,
-        address payable operator,
         bool    rollupMode
         )
         external
@@ -353,7 +350,7 @@ abstract contract IExchangeV3 is IExchange
     ///
     ///      This function is only callable by an agent of 'from'.
     ///
-    ///      A fee to the operator is paid in ETH to process the deposit.
+    ///      A fee to the owner is paid in ETH to process the deposit.
     ///      The operator is not forced to do the deposit and the user can send
     ///      any fee amount.
     ///
@@ -382,7 +379,7 @@ abstract contract IExchangeV3 is IExchange
     ///      The total fee in ETH that the user needs to pay is 'withdrawalFee'.
     ///      If the user sends too much ETH the surplus is sent back immediately.
     ///
-    ///      Note that after such an operation, it will take the operator some
+    ///      Note that after such an operation, it will take the owner some
     ///      time (no more than MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
     ///      and create the deposit to the offchain account.
     ///
@@ -403,7 +400,7 @@ abstract contract IExchangeV3 is IExchange
     ///
     ///      Anyone can request a withdrawal of the protocol fees.
     ///
-    ///      Note that after such an operation, it will take the operator some
+    ///      Note that after such an operation, it will take the owner some
     ///      time (no more than MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
     ///      and create the deposit to the offchain account.
     ///
@@ -429,7 +426,7 @@ abstract contract IExchangeV3 is IExchange
     /// @dev Allows anyone to withdraw funds for a specified user using the balances stored
     ///      in the Merkle tree. The funds will be sent to the owner of the acount.
     ///
-    ///      Can only be used in withdrawal mode (i.e. when the operator has stopped
+    ///      Can only be used in withdrawal mode (i.e. when the owner has stopped
     ///      committing blocks and is not able to commit any more blocks).
     ///
     ///      This will NOT modify the onchain merkle root! The merkle root stored
@@ -444,7 +441,7 @@ abstract contract IExchangeV3 is IExchange
         virtual;
 
     /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
-    ///      it was never processed by the operator within the maximum time allowed.
+    ///      it was never processed by the owner within the maximum time allowed.
     ///
     ///      Can be called by anyone. The deposited tokens will be sent back to
     ///      the owner of the account they were deposited in.
@@ -468,7 +465,7 @@ abstract contract IExchangeV3 is IExchange
     ///
     ///      Normally it is should not be needed for users to call this manually.
     ///      Funds from withdrawal requests will be sent to the account owner
-    ///      immediately by the operator when the block is submitted.
+    ///      immediately by the owner when the block is submitted.
     ///      The user will however need to call this manually if the transfer failed.
     ///
     ///      Tokens and owners must have the same size.
@@ -495,7 +492,7 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (uint);
 
-    /// @dev Notifies the exchange that the operator did not process a forced request.
+    /// @dev Notifies the exchange that the owner did not process a forced request.
     ///      If this is indeed the case, the exchange will enter withdrawal mode.
     ///
     ///      Can be called by anyone.
@@ -510,7 +507,7 @@ abstract contract IExchangeV3 is IExchange
         virtual;
 
     /// @dev Approves an offchain transfer. Helper function around `approveTransaction`.
-    ///      Important! This is just an approval, the operator has full control
+    ///      Important! This is just an approval, the owner has full control
     ///      whether the transfer will actally be done!
     ///
     ///      This function can only be called by an agent.
@@ -583,25 +580,6 @@ abstract contract IExchangeV3 is IExchange
         returns (bool);
 
     // -- Admins --
-
-    /// @dev Sets the operator address.
-    /// @param _operator The new operator's address
-    /// @return oldOperator The old operator's address
-    function setOperator(
-        address payable _operator
-        )
-        external
-        virtual
-        returns (address payable oldOperator);
-
-    /// @dev Gets the operator address.
-    /// @return The current operator
-    function getOperator()
-        external
-        virtual
-        view
-        returns (address payable);
-
     /// @dev Sets the max time deposits have to wait before becoming withdrawable.
     /// @param newValue The new value.
     /// @return  The old value.

@@ -24,7 +24,6 @@ library ExchangeGenesis
         ExchangeData.State storage S,
         uint    _id,
         address _loopring,
-        address payable _operator,
         bool    _rollupMode,
         bytes32 _genesisMerkleRoot,
         bytes32 _domainSeperator
@@ -33,13 +32,11 @@ library ExchangeGenesis
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopring, "INVALID_LOOPRING_ADDRESS");
-        require(address(0) != _operator, "INVALID_OPERATOR_ADDRESS");
         require(_genesisMerkleRoot != 0, "INVALID_GENESIS_MERKLE_ROOT");
         require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;
-        S.operator = _operator;
         S.rollupMode = _rollupMode;
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
         S.genesisMerkleRoot = _genesisMerkleRoot;

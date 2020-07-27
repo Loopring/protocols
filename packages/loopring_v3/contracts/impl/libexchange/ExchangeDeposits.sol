@@ -55,7 +55,7 @@ library ExchangeDeposits
             auxiliaryData
         );
 
-        // Add the amount to the deposit request and reset the time the operator has to process it
+        // Add the amount to the deposit request and reset the time the owner has to process it
         S.pendingDeposits[to][tokenID][tokenIndex].timestamp = uint32(now);
 
         S.pendingDeposits[to][tokenID][tokenIndex].amount =

@@ -32,25 +32,6 @@ library ExchangeAdmins
         uint32          newValue
     );
 
-    function setOperator(
-        ExchangeData.State storage S,
-        address payable _operator
-        )
-        external
-        returns (address payable oldOperator)
-    {
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(address(0) != _operator, "ZERO_ADDRESS");
-        oldOperator = S.operator;
-        S.operator = _operator;
-
-        emit OperatorChanged(
-            S.id,
-            oldOperator,
-            _operator
-        );
-    }
-
     function setMaxAgeDepositUntilWithdrawable(
         ExchangeData.State storage S,
         uint32 newValue
