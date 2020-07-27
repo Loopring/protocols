@@ -2,6 +2,8 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.6.10;
 
+import "../iface/IDecompressor.sol";
+
 /// @title LzDecompressor
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Decompresses data compressed with a LZ77/Snappy like compressor optimized for EVM
@@ -14,12 +16,13 @@ pragma solidity ^0.6.10;
 ///      - add mode copying from random location in calldata (faster than memory copies)
 ///      - add support to copy data from memory using the identity pre-compile
 ///        (large initital cost but cheaper copying, does not support overlapping memory ranges)
-library LzDecompressor
+contract LzDecompressor is IDecompressor
 {
     function decompress(
         bytes calldata /*data*/
         )
-        internal
+        external
+        override
         pure
         returns (bytes memory)
     {

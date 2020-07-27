@@ -17,15 +17,15 @@ contract SelectorBasedAccessManager is Claimable
     event PermissionUpdate(
         address indexed user,
         bytes4  indexed selector,
-        bool            allowed
+        bool            granted
     );
 
     address public target;
     mapping(address => mapping(bytes4 => bool)) public permissions;
 
-    modifier withAccess(bytes4 selector)
+    modifier withAccess()
     {
-        require(hasAccessTo(msg.sender, selector), "PERMISSION_DENIED");
+        require(hasAccessTo(msg.sender, msg.data.toBytes4(0)), "PERMISSION_DENIED");
         _;
     }
 
@@ -54,7 +54,7 @@ contract SelectorBasedAccessManager is Claimable
     fallback()
         payable
         external
-        withAccess(msg.data.toBytes4(0))
+        withAccess
     {
         (bool success, bytes memory returnData) = target
             .call{value: msg.value}(msg.data);

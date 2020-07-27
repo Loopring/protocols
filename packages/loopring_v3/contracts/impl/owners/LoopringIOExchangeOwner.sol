@@ -3,9 +3,8 @@
 pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
+import "../../iface/IDecompressor.sol";
 import "../../iface/IExchangeV3.sol";
-
-import "../../lib/LzDecompressor.sol";
 
 import "../../thirdparty/BytesUtil.sol";
 
@@ -16,14 +15,21 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     using BytesUtil for bytes;
 
     bytes4 private constant SUBMITBLOCKS_SELECTOR  = IExchangeV3.submitBlocks.selector;
-    bool   public  open;
+
+    bool          public open;
+    IDecompressor public decompressor;
 
     event SubmitBlocksAccessOpened(bool open);
+    event DecompressorChanged     (address decompressor);
 
-    constructor(address _exchange)
+    constructor(
+        address _exchange,
+        address _decompressor
+        )
         public
         SelectorBasedAccessManager(_exchange)
     {
+        decompressor = IDecompressor(_decompressor);
     }
 
     function submitBlocksCompressed(
@@ -35,7 +41,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
             "PERMISSION_DENIED"
         );
-        bytes memory decompressed = LzDecompressor.decompress(data);
+        bytes memory decompressed = decompressor.decompress(data);
         require(
             decompressed.toBytes4(0) == SUBMITBLOCKS_SELECTOR,
             "INVALID_DATA"
@@ -53,5 +59,16 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     {
         open = _open;
         emit SubmitBlocksAccessOpened(_open);
+    }
+
+    function setDecompressor(address _decompressor)
+        external
+        withAccess
+    {
+        require(_decompressor != address(0), "ZERO_ADDRESS");
+        require(decompressor != IDecompressor(_decompressor), "SAME_ADDRESS");
+
+        decompressor = IDecompressor(_decompressor);
+        emit DecompressorChanged(_decompressor);
     }
 }
