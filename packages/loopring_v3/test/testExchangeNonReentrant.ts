@@ -125,7 +125,7 @@ contract("Exchange", (accounts: string[]) => {
             values.push(new Array(8).fill("0"));
           } else if (input.type.startsWith("uint256[18]")) {
             values.push(new Array(18).fill("0"));
-          } else if (input.type.startsWith("uint256[36]")) {
+          } else if (input.type.startsWith("uint256[48]")) {
             values.push(new Array(36).fill("0"));
           } else {
             values.push("0");

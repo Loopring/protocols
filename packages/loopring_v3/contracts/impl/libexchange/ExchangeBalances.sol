@@ -112,7 +112,7 @@ library ExchangeBalances
         uint     nonce,
         uint     walletHash,
         uint     balancesRoot,
-        uint[36] memory accountMerkleProof
+        uint[48] memory accountMerkleProof
         )
         private
         pure
@@ -120,7 +120,7 @@ library ExchangeBalances
     {
         uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, walletHash, balancesRoot);
         uint _id = accountID;
-        for (uint depth = 0; depth < 12; depth++) {
+        for (uint depth = 0; depth < 16; depth++) {
             uint base = depth * 3;
             if (_id & 3 == 0) {
                 accountItem = hashImpl(

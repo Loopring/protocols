@@ -146,7 +146,7 @@ library ExchangeData
     {
         ExchangeData.AccountLeaf accountLeaf;
         ExchangeData.BalanceLeaf balanceLeaf;
-        uint[36]                 accountMerkleProof;
+        uint[48]                 accountMerkleProof;
         uint[18]                 balanceMerkleProof;
     }
 
