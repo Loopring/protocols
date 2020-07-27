@@ -15,6 +15,8 @@ import "./libexchange/ExchangeWithdrawals.sol";
 import "../lib/EIP712.sol";
 import "../lib/MathUint.sol";
 
+import "../thirdparty/BytesUtil.sol";
+
 import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
 
@@ -28,6 +30,7 @@ contract ExchangeV3 is IExchangeV3
 {
     bytes32 constant public genesisMerkleRoot = 0x1dacdc3f6863d9db1d903e7285ebf74b61f02d585ccb52ecaeaf97dbb773becf;
 
+    using BytesUtil             for bytes;
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeBalances      for ExchangeData.State;
@@ -46,14 +49,21 @@ contract ExchangeV3 is IExchangeV3
         _;
     }
 
-    modifier onlyFromUserOrAgent(address owner)
+    function isSenderUserOrAgent(address addr)
+        private
+        view
+        returns (bool)
     {
-        require(
-            owner == msg.sender ||
-            state.agentRegistry != IAgentRegistry(address(0)) &&
-            state.agentRegistry.isAgent(owner, msg.sender),
-            "UNAUTHORIZED"
-        );
+        if (msg.sender == addr) return true;
+        if (state.agentRegistry == IAgentRegistry(address(0))) return false;
+        if (msg.data.length < 24) return false;
+        if (!state.agentRegistry.isAgent(addr, msg.sender)) return false;
+        return msg.data.toAddress(msg.data.length - 20) == addr;
+    }
+
+    modifier onlyFromUserOrAgent(address addr)
+    {
+        require(isSenderUserOrAgent(addr), "UNAUTHORIZED");
         _;
     }
 
@@ -573,4 +583,6 @@ contract ExchangeV3 is IExchangeV3
         previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;
         previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
     }
+
+
 }

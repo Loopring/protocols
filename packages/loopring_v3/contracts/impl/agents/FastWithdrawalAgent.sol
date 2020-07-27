@@ -138,7 +138,9 @@ contract FastWithdrawalAgent is ReentrancyGuard
         );
 
         // Approve the offchain transfer from the account that's withdrawing back to the liquidity provider
-        IExchangeV3(fastWithdrawal.exchange).approveOffchainTransfer(
+
+        bytes memory data = abi.encodeWithSelector(
+            IExchangeV3.approveOffchainTransfer.selector,
             fastWithdrawal.from,
             liquidityProvider,
             fastWithdrawal.token,
@@ -148,6 +150,14 @@ contract FastWithdrawalAgent is ReentrancyGuard
             0,
             fastWithdrawal.nonce
         );
+
+        (bool success, bytes memory returnData) = fastWithdrawal.exchange.call(
+            abi.encodePacked(data, fastWithdrawal.from)
+        );
+
+        if (!success) {
+            assembly { revert(add(returnData, 32), mload(returnData)) }
+        }
     }
 
     function transfer(
