@@ -106,6 +106,10 @@ contract ExchangeV3 is IExchangeV3
     }
 
     function setAgentRegistry(address _agentRegistry)
+        external
+        override
+        nonReentrant
+        onlyOwner
     {
         require(_agentRegistry != address(0), "ZERO_ADDRESS");
         require(state.agentRegistry == IAgentRegistry(0), "ALREADY_SET");

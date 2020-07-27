@@ -37,9 +37,7 @@ library ExchangeGenesis
         require(S.id == 0, "INITIALIZED_ALREADY");
 
         require(0 != _id, "INVALID_ID");
-
         require(address(0) != _loopring, "INVALID_LOOPRING_ADDRESS");
-        require(address(0) != _operator, "ZERO_ADDRESS");
         require(_genesisMerkleRoot != 0, "INVALID_GENESIS_MERKLE_ROOT");
         require(
             _genesisAccountTreeDepth != 0 &&
