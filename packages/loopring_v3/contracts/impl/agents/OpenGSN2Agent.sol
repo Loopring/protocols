@@ -5,16 +5,48 @@ pragma solidity ^0.6.10;
 import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import "@opengsn/gsn/contracts/interfaces/IKnowForwarderAddress.sol";
 
-contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress //ReentrancyGuard
+import "../../lib/ReentrancyGuard.sol";
+
+contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress, ReentrancyGuard
 {
     address public exchange;
 
     constructor(
         address _exchange,
-        address _forwarder) public
+        address _forwarder
+        )
+        public
     {
         exchange = _exchange;
         trustedForwarder = _forwarder;
+    }
+
+    receive()
+        payable
+        external
+        nonReentrant
+    {
+        _fallback();
+    }
+
+    fallback()
+        payable
+        external
+        nonReentrant
+    {
+        _fallback();
+    }
+
+    function _fallback()
+        private
+    {
+        (bool success, bytes memory returnData) = exchange.call{value: msg.value}(
+            abi.encodePacked(msg.data, _msgSender())
+        );
+
+        if (!success) {
+            assembly { revert(add(returnData, 32), mload(returnData)) }
+        }
     }
 
     function versionRecipient()
@@ -33,22 +65,5 @@ contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress //Reentrancy
         returns (address)
     {
         return trustedForwarder;
-    }
-
-    receive() payable external {
-        revert("UNSUPPORTED");
-    }
-
-    fallback()
-        payable
-        external
-    {
-        (bool success, bytes memory returnData) = exchange.call{value: msg.value}(
-            abi.encodePacked(msg.data, _msgSender())
-        );
-
-        if (!success) {
-            assembly { revert(add(returnData, 32), mload(returnData)) }
-        }
     }
 }
