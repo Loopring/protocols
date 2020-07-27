@@ -3,16 +3,16 @@
 pragma solidity ^0.6.10;
 
 import "../iface/IDepositContract.sol";
-import "../iface/ILoopringV3.sol";
 
 import "../lib/AddressUtil.sol";
+import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
 
 
-/// @title Basic implementation of IDepositContract that just stores
+/// @title Default implementation of IDepositContract that just stores
 ///        all funds without doing anything with them.
 ///
 ///        Should be able to work with proxy contracts so the contract
@@ -20,30 +20,15 @@ import "../lib/ReentrancyGuard.sol";
 ///        when necessary.
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BasicDepositContract is IDepositContract, ReentrancyGuard
+contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-    event TokenNotOwnedByUsersWithdrawn(
-        address sender,
-        address token,
-        address feeVault,
-        uint    amount
-    );
-
     address public exchange;
-    ILoopringV3 public loopring;
 
-    // A map from token address to the total exchange balances
-    mapping (address => uint) public exchangeBalance;
-
-    modifier onlyWhenUninitialized()
-    {
-        require(exchange == address(0), "INITIALIZED");
-        _;
-    }
+    mapping (address => bool) needCheckBalance;
 
     modifier onlyExchange()
     {
@@ -51,15 +36,41 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         _;
     }
 
+    modifier ifNotZero(uint amount)
+    {
+        if (amount == 0) return;
+        else { _; }
+    }
+
+    event CheckBalance(
+        address indexed token,
+        bool            checkBalance
+    );
+
     function initialize(
-        address exchangeAddress,
-        address loopringAddress
+        address _exchange
         )
         external
-        onlyWhenUninitialized
+        onlyOwner
     {
-        exchange = exchangeAddress;
-        loopring = ILoopringV3(loopringAddress);
+        require(
+            exchange == address(0) && _exchange != address(0),
+            "INVALID_EXCHANGE"
+        );
+        exchange = _exchange;
+    }
+
+    function setCheckBalance(
+        address token,
+        bool    checkBalance
+        )
+        external
+        onlyOwner
+    {
+        require(needCheckBalance[token] != checkBalance, "INVALID_VALUE");
+
+        needCheckBalance[token] == checkBalance;
+        emit CheckBalance(token, checkBalance);
     }
 
     function deposit(
@@ -72,28 +83,26 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         override
         payable
         onlyExchange
-        returns (uint96 actualAmount)
+        nonReentrant
+        ifNotZero(amount)
+        returns (uint96 amountReceived)
     {
-        // Check msg.value
         if (isETHInternal(token)) {
-            require(msg.value == uint(amount), "INVALID_ETH_DEPOSIT");
+            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
+            amountReceived = amount;
         } else {
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
-             // Transfer the tokens from the owner into this contract
-            if (amount > 0) {
-                token.safeTransferFromAndVerify(
-                    from,
-                    address(this),
-                    uint(amount)
-                );
-            }
+
+            bool checkBalance = needCheckBalance[token];
+            uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
+
+            token.safeTransferFromAndVerify(from, address(this), uint(amount));
+
+            uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
+            uint diff = balanceAfter.sub(balanceBefore);
+            amountReceived = uint96(diff);
+            require(uint(amountReceived) == diff, "OUT_OF_RANGE");
         }
-
-        uint exchangeBalanceBefore = exchangeBalance[token];
-        // Keep track how many tokens are deposited in the exchange
-        exchangeBalance[token] = exchangeBalanceBefore.add(uint(amount));
-
-        actualAmount = amount;
     }
 
     function withdraw(
@@ -106,12 +115,18 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         override
         payable
         onlyExchange
+        nonReentrant
+        ifNotZero(amount)
     {
-        // Keep track how many tokens are deposited in the exchange
-        exchangeBalance[token] = exchangeBalance[token].sub(uint(amount));
-
-        // Transfer the tokens from the contract to the recipient
-        transferOut(to, token, amount);
+        if (isETHInternal(token)) {
+            to.sendETHAndVerify(amount, gasleft());
+        } else {
+            if(!token.safeTransfer(to, amount)){
+                uint amountPaid = ERC20(token).balanceOf(address(this));
+                require(amountPaid < amount, "UNEXCPECTED");
+                token.safeTransferAndVerify(to, amountPaid);
+            }
+        }
     }
 
     function transfer(
@@ -123,10 +138,11 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         external
         override
         payable
-        nonReentrant
         onlyExchange
+        nonReentrant
+        ifNotZero(amount)
     {
-        require(token.safeTransferFrom(from, to, amount), "TRANSFER_FAILED");
+        token.safeTransferFromAndVerify(from, to, amount);
     }
 
     function isETH(address addr)
@@ -138,33 +154,6 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         return isETHInternal(addr);
     }
 
-    function withdrawTokenNotOwnedByUsers(
-        address token
-        )
-        external
-        nonReentrant
-        returns(uint amount)
-    {
-        address payable feeVault = loopring.protocolFeeVault();
-        require(feeVault != address(0), "ZERO_ADDRESS");
-
-        // Total balance in this contract
-        uint totalBalance;
-        if (isETHInternal(token)) {
-            totalBalance = address(this).balance;
-        } else {
-            totalBalance = ERC20(token).balanceOf(address(this));
-        }
-
-        // Calculate the extra amount
-        amount = totalBalance.sub(exchangeBalance[token]);
-
-        // Transfer the extra tokens to the feeVault
-        transferOut(feeVault, token, amount);
-
-        emit TokenNotOwnedByUsersWithdrawn(msg.sender, token, feeVault, amount);
-    }
-
     // -- Internal --
 
     function isETHInternal(address addr)
@@ -173,25 +162,5 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         returns (bool)
     {
         return addr == address(0);
-    }
-
-    function transferOut(
-        address to,
-        address token,
-        uint    amount
-        )
-        internal
-    {
-        // TODO: check balances in this contract. Transfer the available amount out of this contract,
-        //       use the insurance contract for the remaining amount if needed.
-        if (amount > 0) {
-            if (isETHInternal(token)) {
-                // ETH
-                to.sendETHAndVerify(amount, gasleft());
-            } else {
-                // ERC20 token
-                token.safeTransferAndVerify(to, amount);
-            }
-        }
     }
 }

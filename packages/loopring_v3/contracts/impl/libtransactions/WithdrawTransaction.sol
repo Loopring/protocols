@@ -157,7 +157,7 @@ library WithdrawTransaction
                     withdrawal.amount
                 );*/
             } else {
-                // Allow the operator to submit full withdrawals without authorization
+                // Allow the owner to submit full withdrawals without authorization
                 // - when in shutdown mode
                 // - to withdraw protocol fees
                 require(

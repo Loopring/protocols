@@ -13,10 +13,7 @@ contract("Exchange", (accounts: string[]) => {
   let ownerD: string;
 
   const createExchange = async (bSetupTestState: boolean = true) => {
-    await ctx.createExchange(
-      ctx.testContext.stateOwners[0],
-      bSetupTestState
-    );
+    await ctx.createExchange(ctx.testContext.stateOwners[0], bSetupTestState);
     exchange = ctx.exchange;
     exchangeOwner = ctx.exchangeOwner;
   };

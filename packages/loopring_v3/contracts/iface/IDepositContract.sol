@@ -22,7 +22,7 @@ interface IDepositContract
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens to transfer.
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the deposit
-    /// @return actualAmount The amount to deposit to the user's account in the Merkle tree
+    /// @return amountReceived The amount to deposit to the user's account in the Merkle tree
     function deposit(
         address from,
         address token,
@@ -31,8 +31,7 @@ interface IDepositContract
         )
         external
         payable
-        returns (uint96 actualAmount);
-
+        returns (uint96 amountReceived);
     /// @dev Transfers tokens from the exchange to a user. This function will
     ///      be called when a withdrawal is done for a user on the exchange.
     ///      In the simplest implementation the funds are simply stored inside the

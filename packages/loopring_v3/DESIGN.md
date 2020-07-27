@@ -517,7 +517,7 @@ Conditional transfers are transfers that are approved on-chain by the account ow
 
 ## Agents
 
-An agent is an address that is allowed to authorize on-chain operations for the account owner. By definition the account owner is an agent for himself. `authorizeAgents` can be used by an agent to authorize or de-authorize other agents.
+An agent is an address that is allowed to authorize on-chain operations for the account owner. By definition the account owner is an agent for himself. `registerAgent` can be used by an agent to authorize or de-authorize other agents.
 
 Agents can be simple EOAs or smart contracts. Smart contracts are the most interesting case. This allows extending the exchange functionality by implementing extra logic on top of the basic exchange functionality that's built into the exchange contract. There's a lot functionality that can be added this way for users. Some examples:
 

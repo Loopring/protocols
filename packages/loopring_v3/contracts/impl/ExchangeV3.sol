@@ -15,6 +15,7 @@ import "./libexchange/ExchangeWithdrawals.sol";
 import "../lib/EIP712.sol";
 import "../lib/MathUint.sol";
 
+import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
 
 
@@ -39,21 +40,20 @@ contract ExchangeV3 is IExchangeV3
 
     ExchangeData.State private state;
 
-    modifier onlyOperator()
-    {
-        require(msg.sender == state.operator, "UNAUTHORIZED");
-        _;
-    }
-
     modifier onlyWhenUninitialized()
     {
         require(owner == address(0) && state.id == 0, "INITIALIZED");
         _;
     }
 
-    modifier onlyAgentFor(address owner)
+    modifier onlyFromUserOrAgent(address owner)
     {
-        require(isAgent(owner, msg.sender), "UNAUTHORIZED");
+        require(
+            owner == msg.sender ||
+            state.agentRegistry != IAgentRegistry(address(0)) &&
+            state.agentRegistry.isAgent(owner, msg.sender),
+            "UNAUTHORIZED"
+        );
         _;
     }
 
@@ -71,10 +71,9 @@ contract ExchangeV3 is IExchangeV3
 
     // -- Initialization --
     function initialize(
-        address _loopringAddress,
+        address _loopring,
         address _owner,
         uint    _id,
-        address payable _operator,
         bool    _rollupMode
         )
         external
@@ -87,12 +86,31 @@ contract ExchangeV3 is IExchangeV3
 
         state.initializeGenesisBlock(
             _id,
-            _loopringAddress,
-            _operator,
+            _loopring,
             _rollupMode,
             genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );
+    }
+
+    function setAgentRegistry(address _agentRegistry)
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(_agentRegistry != address(0), "ZERO_ADDRESS");
+        require(state.agentRegistry == IAgentRegistry(0), "ALREADY_SET");
+        state.agentRegistry = IAgentRegistry(_agentRegistry);
+    }
+
+    function getAgentRegistry()
+        external
+        override
+        view
+        returns (IAgentRegistry)
+    {
+        return state.agentRegistry;
     }
 
     function setDepositContract(address _depositContract)
@@ -285,7 +303,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        onlyOperator
+        onlyOwner
     {
         state.submitBlocks(
             blocks,
@@ -315,7 +333,7 @@ contract ExchangeV3 is IExchangeV3
         payable
         override
         nonReentrant
-        onlyAgentFor(from)
+        onlyFromUserOrAgent(from)
     {
         state.deposit(from, to, tokenAddress, amount, auxiliaryData);
     }
@@ -331,7 +349,7 @@ contract ExchangeV3 is IExchangeV3
         override
         nonReentrant
         payable
-        onlyAgentFor(owner)
+        onlyFromUserOrAgent(owner)
     {
         state.forceWithdraw(owner, token, accountID);
     }
@@ -420,49 +438,6 @@ contract ExchangeV3 is IExchangeV3
         emit WithdrawalModeActivated(state.withdrawalModeStartTime);
     }
 
-    // -- Agents --
-    function whitelistAgents(
-        address[] calldata agents,
-        bool[]    calldata whitelisted
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        require(agents.length == whitelisted.length, "INVALID_DATA");
-        for (uint i = 0; i < agents.length; i++) {
-            state.whitelistedAgent[agents[i]] = whitelisted[i];
-            emit AgentWhitelisted(agents[i], whitelisted[i]);
-        }
-    }
-
-    function authorizeAgents(
-        address   owner,
-        address[] calldata agents,
-        bool[]    calldata authorized
-        )
-        external
-        override
-        nonReentrant
-        onlyAgentFor(owner)
-    {
-        require(agents.length == authorized.length, "INVALID_DATA");
-        for (uint i = 0; i < agents.length; i++) {
-            state.agent[owner][agents[i]] = authorized[i];
-            emit AgentAuthorized(owner, agents[i], authorized[i]);
-        }
-    }
-
-    function isAgent(address owner, address agent)
-        public
-        override
-        view
-        returns (bool)
-    {
-        return owner == agent || state.whitelistedAgent[agent] || state.agent[owner][agent];
-    }
-
     function approveOffchainTransfer(
         address from,
         address to,
@@ -477,7 +452,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        onlyAgentFor(from)
+        onlyFromUserOrAgent(from)
     {
         uint16 tokenID = state.getTokenID(token);
         uint16 feeTokenID = state.getTokenID(feeToken);
@@ -508,7 +483,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        onlyAgentFor(from)
+        onlyFromUserOrAgent(from)
     {
         uint16 tokenID = state.getTokenID(token);
         require(state.withdrawalRecipient[from][to][tokenID][amount][nonce] == address(0), "CANNOT_OVERRIDE_RECIPIENT_ADDRESS");
@@ -524,7 +499,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        onlyAgentFor(from)
+        onlyFromUserOrAgent(from)
     {
         state.depositContract.transfer(from, to, token, amount);
     }
@@ -536,7 +511,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        onlyAgentFor(owner)
+        onlyFromUserOrAgent(owner)
     {
         state.approvedTx[owner][transactionHash] = true;
         emit TransactionApproved(owner, transactionHash);
@@ -555,27 +530,6 @@ contract ExchangeV3 is IExchangeV3
     }
 
     // -- Admins --
-    function setOperator(
-        address payable _operator
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-        returns (address payable)
-    {
-        return state.setOperator(_operator);
-    }
-
-    function getOperator()
-        external
-        override
-        view
-        returns (address payable)
-    {
-        return state.operator;
-    }
-
     function setMaxAgeDepositUntilWithdrawable(
         uint32 newValue
         )
