@@ -161,7 +161,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         }
 
         bytes memory txData = abi.encodeWithSelector(
-            ERC20(0).transfer.selector,
+            ERC20.transfer.selector,
             to,
             amount
         );
@@ -183,7 +183,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
     {
         require(token != address(0), "INVALID_TOKEN");
         bytes memory txData = abi.encodeWithSelector(
-            ERC20(0).approve.selector,
+            ERC20.approve.selector,
             spender,
             amount
         );

@@ -76,7 +76,7 @@ contract ForwarderModule is BaseModule
 
             // We only allow the wallet to call itself to addModule
             (to == from) &&
-            data.toBytes4(0) == Wallet(0).addModule.selector &&
+            data.toBytes4(0) == Wallet.addModule.selector &&
             controller.walletRegistry().isWalletRegistered(from) ||
 
             to == controller.walletFactory(),

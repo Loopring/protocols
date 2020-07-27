@@ -137,7 +137,7 @@ contract WalletFactory is ReentrancyGuard
         ensManager.register(wallet, label, labelApproval);
 
         bytes memory data = abi.encodeWithSelector(
-            ENSReverseRegistrar(0).claimWithResolver.selector,
+            ENSReverseRegistrar.claimWithResolver.selector,
             address(0), // the owner of the reverse record
             ensManager.ensResolver()
         );
