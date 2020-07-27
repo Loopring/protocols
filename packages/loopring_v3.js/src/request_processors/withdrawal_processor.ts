@@ -8,7 +8,6 @@ interface Withdrawal {
   type?: number;
   owner?: string;
   accountID?: number;
-  nonce?: number;
   tokenID?: number;
   amount?: BN;
   feeTokenID?: number;
@@ -16,6 +15,8 @@ interface Withdrawal {
   to?: string;
   dataHash?: string;
   minGas?: number;
+  validUntil?: number;
+  nonce?: number;
 }
 
 /**
@@ -64,8 +65,6 @@ export class WithdrawalProcessor {
     offset += 20;
     withdrawal.accountID = data.extractUint32(offset);
     offset += 4;
-    withdrawal.nonce = data.extractUint32(offset);
-    offset += 4;
     const tokenIDs = data.extractUint24(offset);
     offset += 3;
     withdrawal.amount = data.extractUint96(offset);
@@ -78,6 +77,10 @@ export class WithdrawalProcessor {
     offset += 32;
     withdrawal.minGas = data.extractUint24(offset);
     offset += 3;
+    withdrawal.validUntil = data.extractUint32(offset);
+    offset += 4;
+    withdrawal.nonce = data.extractUint32(offset);
+    offset += 4;
 
     withdrawal.tokenID = tokenIDs >> 12;
     withdrawal.feeTokenID = tokenIDs & 0b1111111111;

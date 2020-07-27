@@ -12,6 +12,7 @@ interface Transfer {
   feeTokenID?: number;
   fee?: BN;
   shortStorageID?: number;
+  validUntil?: number;
   storageID?: number;
   from?: string;
   to?: string;
@@ -77,6 +78,8 @@ export class TransferProcessor {
     offset += 2;
     transfer.to = data.extractAddress(offset);
     offset += 20;
+    transfer.validUntil = data.extractUint32(offset);
+    offset += 4;
     transfer.storageID = data.extractUint32(offset);
     offset += 4;
     transfer.from = data.extractAddress(offset);

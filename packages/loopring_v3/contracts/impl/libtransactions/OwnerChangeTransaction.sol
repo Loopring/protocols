@@ -36,7 +36,7 @@ library OwnerChangeTransaction
     bytes4  constant public RECOVERY_MAGICVALUE = 0xd1f21f4f;
 
     bytes32 constant public ACCOUNTTRANSFER_TYPEHASH = keccak256(
-        "OwnerChange(address owner,uint32 accountID,uint16 feeTokenID,uint256 fee,address newOwner,uint32 nonce,address statelessWallet,bytes32 walletDataHash,bytes walletCalldata)"
+        "OwnerChange(address owner,uint32 accountID,uint16 feeTokenID,uint256 fee,address newOwner,address statelessWallet,bytes32 walletDataHash,bytes walletCalldata,uint32 validUntil,uint32 nonce)"
     );
 
     bytes32 constant public WALLET_TYPEHASH = keccak256(
@@ -55,6 +55,7 @@ library OwnerChangeTransaction
         uint16  feeTokenID;
         uint    fee;
         address newOwner;
+        uint32  validUntil;
         uint32  nonce;
         bytes32 walletHash;
     }
@@ -97,10 +98,11 @@ library OwnerChangeTransaction
                     accountTransfer.feeTokenID,
                     accountTransfer.fee,
                     accountTransfer.newOwner,
-                    accountTransfer.nonce,
                     auxData.statelessWallet,
                     auxData.walletDataHash,
-                    keccak256(auxData.walletCalldata)
+                    keccak256(auxData.walletCalldata),
+                    accountTransfer.validUntil,
+                    accountTransfer.nonce
                 )
             )
         );
@@ -233,8 +235,6 @@ library OwnerChangeTransaction
         offset += 20;
         uint32 accountID = data.toUint32(offset);
         offset += 4;
-        uint32 nonce = data.toUint32(offset);
-        offset += 4;
         uint16 feeTokenID = data.toUint16(offset);
         offset += 2;
         uint fee = uint(data.toUint16(offset)).decodeFloat(16);
@@ -243,15 +243,20 @@ library OwnerChangeTransaction
         offset += 20;
         bytes32 walletHash = data.toBytes32(offset);
         offset += 32;
+        uint32 validUntil = data.toUint32(offset);
+        offset += 4;
+        uint32 nonce = data.toUint32(offset);
+        offset += 4;
 
         return AccountTransfer({
             owner: owner,
             accountID: accountID,
-            nonce: nonce,
             feeTokenID: feeTokenID,
             fee: fee,
             newOwner: newOwner,
-            walletHash: walletHash
+            walletHash: walletHash,
+            validUntil: validUntil,
+            nonce: nonce
         });
     }
 }

@@ -226,11 +226,12 @@ public:
             type.bits,
             owner.bits,
             accountID.bits,
-            nonce.bits,
-            compressPublicKey.result(),
-            walletHash.bits,
             VariableArrayT(4, state.constants._0), feeTokenID.bits,
             fFee.bits(),
+            compressPublicKey.result(),
+            walletHash.bits,
+            validUntil.bits,
+            nonce.bits
         });
     }
 };

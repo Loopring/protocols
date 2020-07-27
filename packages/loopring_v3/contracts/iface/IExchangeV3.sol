@@ -569,6 +569,7 @@ abstract contract IExchangeV3 is IExchange
         address feeToken,
         uint96  fee,
         uint    data,
+        uint32  validUntil,
         uint32  storageID
         )
         external

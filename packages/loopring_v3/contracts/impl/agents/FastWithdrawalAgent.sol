@@ -63,14 +63,14 @@ contract FastWithdrawalAgent is ReentrancyGuard
         address feeToken;
         uint96  fee;
         uint32  nonce;
-        uint    validUntil;
+        uint32  validUntil;
 
         bytes   signature;
     }
 
     // EIP712
     bytes32 constant public FASTWITHDRAWAL_TYPEHASH = keccak256(
-        "FastWithdrawal(address exchange,address from,address to,address token,uint96 amount,address feeToken,uint96 fee,uint32 nonce,uint256 validUntil)"
+        "FastWithdrawal(address exchange,address from,address to,address token,uint96 amount,address feeToken,uint96 fee,uint32 nonce,uint32 validUntil)"
     );
     bytes32 public DOMAIN_SEPARATOR;
 
@@ -138,6 +138,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 fastWithdrawal.feeToken,
                 fastWithdrawal.fee,
                 0,
+                fastWithdrawal.validUntil,
                 fastWithdrawal.nonce
             );
         } else {

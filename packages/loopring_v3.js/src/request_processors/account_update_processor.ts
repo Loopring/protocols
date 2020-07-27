@@ -8,12 +8,13 @@ import { BlockContext, ExchangeState } from "../types";
 interface AccountUpdate {
   owner?: string;
   accountID?: number;
-  nonce?: number;
+  feeTokenID?: number;
+  fee?: BN;
   publicKeyX?: string;
   publicKeyY?: string;
   walletHash?: string;
-  feeTokenID?: number;
-  fee?: BN;
+  validUntil?: number;
+  nonce?: number;
 }
 
 /**
@@ -51,16 +52,18 @@ export class AccountUpdateProcessor {
     offset += 20;
     update.accountID = data.extractUint32(offset);
     offset += 4;
-    update.nonce = data.extractUint32(offset);
-    offset += 4;
-    const publicKey = data.extractData(offset, 32);
-    offset += 32;
-    update.walletHash = data.extractUint(offset).toString(10);
-    offset += 32;
     update.feeTokenID = data.extractUint16(offset);
     offset += 2;
     update.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
     offset += 2;
+    const publicKey = data.extractData(offset, 32);
+    offset += 32;
+    update.walletHash = data.extractUint(offset).toString(10);
+    offset += 32;
+    update.validUntil = data.extractUint32(offset);
+    offset += 4;
+    update.nonce = data.extractUint32(offset);
+    offset += 4;
 
     // Unpack the public key
     const unpacked = EdDSA.unpack(publicKey);

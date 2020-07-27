@@ -162,11 +162,12 @@ export namespace AccountUpdateUtils {
         AccountUpdate: [
           { name: "owner", type: "address" },
           { name: "accountID", type: "uint32" },
-          { name: "nonce", type: "uint32" },
+          { name: "feeTokenID", type: "uint16" },
+          { name: "fee", type: "uint256" },
           { name: "publicKey", type: "uint256" },
           { name: "walletHash", type: "uint256" },
-          { name: "feeTokenID", type: "uint16" },
-          { name: "fee", type: "uint256" }
+          { name: "validUntil", type: "uint32" },
+          { name: "nonce", type: "uint32" }
         ]
       },
       primaryType: "AccountUpdate",
@@ -179,11 +180,12 @@ export namespace AccountUpdateUtils {
       message: {
         owner: update.owner,
         accountID: update.accountID,
-        nonce: update.nonce,
+        feeTokenID: update.feeTokenID,
+        fee: update.fee,
         publicKey: new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
         walletHash: new BN(update.walletHash),
-        feeTokenID: update.feeTokenID,
-        fee: update.fee
+        validUntil: update.validUntil,
+        nonce: update.nonce
       }
     };
     return typedData;
@@ -240,14 +242,15 @@ export namespace WithdrawalUtils {
         Withdrawal: [
           { name: "owner", type: "address" },
           { name: "accountID", type: "uint32" },
-          { name: "nonce", type: "uint32" },
           { name: "tokenID", type: "uint16" },
           { name: "amount", type: "uint256" },
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" },
           { name: "to", type: "address" },
           { name: "dataHash", type: "bytes32" },
-          { name: "minGas", type: "uint24" }
+          { name: "minGas", type: "uint24" },
+          { name: "validUntil", type: "uint32" },
+          { name: "nonce", type: "uint32" }
         ]
       },
       primaryType: "Withdrawal",
@@ -260,14 +263,15 @@ export namespace WithdrawalUtils {
       message: {
         owner: withdrawal.owner,
         accountID: withdrawal.accountID,
-        nonce: withdrawal.nonce,
         tokenID: withdrawal.tokenID,
         amount: withdrawal.amount,
         feeTokenID: withdrawal.feeTokenID,
         fee: withdrawal.fee,
         to: withdrawal.to,
         dataHash: "0x" + new BN(withdrawal.dataHash).toString(16),
-        minGas: withdrawal.minGas
+        minGas: withdrawal.minGas,
+        nonce: withdrawal.nonce,
+        validUntil: withdrawal.validUntil
       }
     };
     return typedData;
@@ -329,6 +333,7 @@ export namespace TransferUtils {
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" },
           { name: "data", type: "uint256" },
+          { name: "validUntil", type: "uint32" },
           { name: "storageID", type: "uint32" }
         ]
       },
@@ -347,6 +352,7 @@ export namespace TransferUtils {
         feeTokenID: transfer.feeTokenID,
         fee: transfer.fee,
         data: transfer.data,
+        validUntil: transfer.validUntil,
         storageID: transfer.storageID
       }
     };
@@ -369,11 +375,11 @@ export namespace TransferUtils {
       transfer.amount,
       transfer.feeTokenID,
       transfer.fee,
-      transfer.validUntil,
       payer ? transfer.payerTo : transfer.to,
       transfer.dualAuthorX,
       transfer.dualAuthorY,
       transfer.data,
+      transfer.validUntil,
       transfer.storageID
     ];
     const hash = hasher(inputs).toString(10);
@@ -509,10 +515,11 @@ export namespace OwnerChangeUtils {
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" },
           { name: "newOwner", type: "address" },
-          { name: "nonce", type: "uint32" },
           { name: "statelessWallet", type: "address" },
           { name: "walletDataHash", type: "bytes32" },
-          { name: "walletCalldata", type: "bytes" }
+          { name: "walletCalldata", type: "bytes" },
+          { name: "validUntil", type: "uint32" },
+          { name: "nonce", type: "uint32" }
         ]
       },
       primaryType: "OwnerChange",
@@ -528,10 +535,11 @@ export namespace OwnerChangeUtils {
         feeTokenID: accountTransfer.feeTokenID,
         fee: accountTransfer.fee,
         newOwner: accountTransfer.newOwner,
-        nonce: accountTransfer.nonce,
         statelessWallet: accountTransfer.walletAddress,
         walletDataHash: accountTransfer.walletDataHash,
-        walletCalldata: accountTransfer.walletCalldata
+        walletCalldata: accountTransfer.walletCalldata,
+        validUntil: accountTransfer.validUntil,
+        nonce: accountTransfer.nonce
       }
     };
     return typedData;
@@ -560,7 +568,8 @@ export namespace NewAccountUtils {
           { name: "accountID", type: "uint32" },
           { name: "owner", type: "address" },
           { name: "publicKey", type: "uint256" },
-          { name: "walletHash", type: "uint256" }
+          { name: "walletHash", type: "uint256" },
+          { name: "validUntil", type: "uint32" }
         ]
       },
       primaryType: "NewAccount",
@@ -577,7 +586,8 @@ export namespace NewAccountUtils {
           EdDSA.pack(update.newPublicKeyX, update.newPublicKeyY),
           16
         ),
-        walletHash: new BN(update.newWalletHash)
+        walletHash: new BN(update.newWalletHash),
+        validUntil: update.validUntil
       }
     };
     return typedData;
@@ -596,13 +606,13 @@ export namespace NewAccountUtils {
       create.payerAccountID,
       create.feeTokenID,
       create.fee,
-      create.validUntil,
-      create.nonce,
       create.newAccountID,
       create.newOwner,
       create.newPublicKeyX,
       create.newPublicKeyY,
-      create.newWalletHash
+      create.newWalletHash,
+      create.validUntil,
+      create.nonce,
     ];
     const hash = hasher(inputs).toString(10);
 
@@ -977,6 +987,7 @@ export class ExchangeTestUtil {
           feeToken,
           transfer.fee,
           transfer.data,
+          transfer.validUntil,
           transfer.storageID,
           { from: signer }
         );
@@ -2454,6 +2465,7 @@ export class ExchangeTestUtil {
               ),
               20
             );
+            da.addNumber(transfer.type > 0 ? transfer.validUntil : 0, 4);
             da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 4);
             da.addBN(new BN(transfer.type > 0 ? transfer.from : "0"), 20);
             da.addBN(new BN(transfer.data), 32);
@@ -2463,7 +2475,6 @@ export class ExchangeTestUtil {
             da.addNumber(withdraw.type, 1);
             da.addBN(new BN(withdraw.owner), 20);
             da.addNumber(withdraw.accountID, 4);
-            da.addNumber(withdraw.nonce, 4);
             da.addNumber(withdraw.tokenID * 2 ** 12 + withdraw.feeTokenID, 3);
             da.addBN(new BN(withdraw.amount), 12);
             da.addNumber(
@@ -2473,6 +2484,8 @@ export class ExchangeTestUtil {
             da.addBN(new BN(withdraw.to), 20);
             da.addBN(new BN(withdraw.dataHash), 32);
             da.addNumber(withdraw.minGas, 3);
+            da.addNumber(withdraw.validUntil, 4);
+            da.addNumber(withdraw.nonce, 4);
           } else if (tx.deposit) {
             const deposit = tx.deposit;
             da.addNumber(TransactionType.DEPOSIT, 1);
@@ -2486,17 +2499,18 @@ export class ExchangeTestUtil {
             da.addNumber(update.type, 1);
             da.addBN(new BN(update.owner), 20);
             da.addNumber(update.accountID, 4);
-            da.addNumber(update.nonce, 4);
-            da.addBN(
-              new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
-              32
-            );
-            da.addBN(new BN(update.walletHash), 32);
             da.addNumber(update.feeTokenID, 2);
             da.addNumber(
               toFloat(new BN(update.fee), Constants.Float16Encoding),
               2
             );
+            da.addBN(
+              new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
+              32
+            );
+            da.addBN(new BN(update.walletHash), 32);
+            da.addNumber(update.validUntil, 4);
+            da.addNumber(update.nonce, 4);
           } else if (tx.accountNew) {
             const create = tx.accountNew;
             da.addNumber(TransactionType.ACCOUNT_NEW, 1);
@@ -2516,12 +2530,12 @@ export class ExchangeTestUtil {
               32
             );
             da.addBN(new BN(create.newWalletHash), 32);
+            da.addNumber(create.validUntil, 4);
           } else if (tx.accountTransfer) {
             const change = tx.accountTransfer;
             da.addNumber(TransactionType.ACCOUNT_TRANSFER, 1);
             da.addBN(new BN(change.owner), 20);
             da.addNumber(change.accountID, 4);
-            da.addNumber(change.nonce, 4);
             da.addNumber(change.feeTokenID, 2);
             da.addNumber(
               toFloat(new BN(change.fee), Constants.Float16Encoding),
@@ -2529,8 +2543,9 @@ export class ExchangeTestUtil {
             );
             da.addBN(new BN(change.newOwner), 20);
             da.addBN(new BN(change.walletHash), 32);
+            da.addNumber(change.validUntil, 4);
+            da.addNumber(change.nonce, 4);
           }
-          //console.log("da size: " + da.length());
           assert(
             da.length() <= Constants.TX_DATA_AVAILABILITY_SIZE,
             "tx uses too much da"

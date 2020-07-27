@@ -21,7 +21,7 @@ library TransferTransaction
     using SignatureUtil        for bytes32;
 
     bytes32 constant public TRANSFER_TYPEHASH = keccak256(
-        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint256 data,uint32 storageID)"
+        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint256 data,uint32 validUntil,uint32 storageID)"
     );
 
     /*event ConditionalTransferProcessed(
@@ -62,6 +62,8 @@ library TransferTransaction
         offset += 2;
         address to = data.toAddress(offset);
         offset += 20;
+        uint32 validUntil = data.toUint32(offset);
+        offset += 4;
         uint32 storageID = data.toUint32(offset);
         offset += 4;
         address from = data.toAddress(offset);
@@ -79,6 +81,7 @@ library TransferTransaction
             feeTokenID,
             fee,
             customData,
+            validUntil,
             storageID
         );
 
@@ -102,6 +105,7 @@ library TransferTransaction
         uint16  feeTokenID,
         uint    fee,
         uint    data,
+        uint32  validUntil,
         uint32  storageID
         )
         internal
@@ -120,6 +124,7 @@ library TransferTransaction
                     feeTokenID,
                     fee,
                     data,
+                    validUntil,
                     storageID
                 )
             )

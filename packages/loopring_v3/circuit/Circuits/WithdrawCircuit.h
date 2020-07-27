@@ -342,18 +342,18 @@ public:
             type.bits,
             owner.bits,
             accountID.bits,
-            nonce.bits,
             tokenID.bits,
             feeTokenID.bits,
             amount.bits,
             fFee.bits(),
             to.bits,
             dataHash.bits,
-            minGas.bits
+            minGas.bits,
+            validUntil.bits,
+            nonce.bits
         });
     }
 };
-
 
 }
 

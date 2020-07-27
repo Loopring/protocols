@@ -22,11 +22,15 @@ public:
     // Inputs
     DualVariableGadget owner;
     DualVariableGadget accountID;
+    DualVariableGadget validUntil;
     DualVariableGadget nonce;
     DualVariableGadget feeTokenID;
     DualVariableGadget fee;
     DualVariableGadget newOwner;
     DualVariableGadget walletHash;
+
+    // Validate
+    RequireLtGadget requireValidUntil;
 
     // Balances
     DynamicBalanceGadget balanceS_A;
@@ -52,11 +56,15 @@ public:
         // Inputs
         owner(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
         accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
+        validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
         nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
         feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
         fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
         newOwner(pb, NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
         walletHash(pb, state.accountA.account.walletHash, NUM_BITS_HASH, FMT(prefix, ".walletHash")),
+
+        // Validate
+        requireValidUntil(pb, state.timestamp, validUntil.packed, NUM_BITS_TIMESTAMP, FMT(prefix, ".requireValidUntil")),
 
         // Balances
         balanceS_A(pb, state.constants, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
@@ -99,11 +107,15 @@ public:
         // Inputs
         owner.generate_r1cs_witness();
         accountID.generate_r1cs_witness(pb, change.accountID);
+        validUntil.generate_r1cs_witness(pb, change.validUntil);
         nonce.generate_r1cs_witness();
         feeTokenID.generate_r1cs_witness(pb, change.feeTokenID);
         fee.generate_r1cs_witness(pb, change.fee);
         newOwner.generate_r1cs_witness(pb, change.newOwner);
         walletHash.generate_r1cs_witness();
+
+        // Validate
+        requireValidUntil.generate_r1cs_witness();
 
         // Balances
         balanceS_A.generate_r1cs_witness();
@@ -125,11 +137,15 @@ public:
         // Inputs
         owner.generate_r1cs_constraints();
         accountID.generate_r1cs_constraints(true);
+        validUntil.generate_r1cs_constraints(true);
         nonce.generate_r1cs_constraints();
         feeTokenID.generate_r1cs_constraints(true);
         fee.generate_r1cs_constraints(true);
         newOwner.generate_r1cs_constraints(true);
         walletHash.generate_r1cs_constraints(true);
+
+        // Validate
+        requireValidUntil.generate_r1cs_constraints();
 
         // Balances
         balanceS_A.generate_r1cs_constraints();
@@ -151,11 +167,12 @@ public:
         return flattenReverse({
             owner.bits,
             accountID.bits,
-            nonce.bits,
             VariableArrayT(4, state.constants._0), feeTokenID.bits,
             fFee.bits(),
             newOwner.bits,
-            walletHash.bits
+            walletHash.bits,
+            validUntil.bits,
+            nonce.bits
         });
     }
 };

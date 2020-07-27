@@ -14,6 +14,7 @@ interface NewAccount {
   newPublicKeyX?: string;
   newPublicKeyY?: string;
   newWalletHash?: string;
+  validUntil?: number;
 }
 
 /**
@@ -66,6 +67,8 @@ export class NewAccountProcessor {
     offset += 32;
     create.newWalletHash = data.extractUint(offset).toString(10);
     offset += 32;
+    create.validUntil = data.extractUint32(offset);
+    offset += 4;
 
     // Unpack the public key
     const unpacked = EdDSA.unpack(publicKey);

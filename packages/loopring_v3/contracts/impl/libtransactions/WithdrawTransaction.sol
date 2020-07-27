@@ -33,7 +33,7 @@ library WithdrawTransaction
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
-        "Withdrawal(address owner,uint32 accountID,uint32 nonce,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes32 dataHash,uint24 minGas)"
+        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes32 dataHash,uint24 minGas,uint32 validUntil,uint32 nonce)"
     );
 
     struct Withdrawal
@@ -41,7 +41,6 @@ library WithdrawTransaction
         uint    withdrawalType;
         address owner;
         uint32  accountID;
-        uint32  nonce;
         uint16  tokenID;
         uint    amount;
         uint16  feeTokenID;
@@ -49,6 +48,8 @@ library WithdrawTransaction
         address to;
         bytes32 dataHash;
         uint24  minGas;
+        uint32  validUntil;
+        uint32  nonce;
     }
 
     // Auxiliary data for each withdrawal
@@ -101,14 +102,15 @@ library WithdrawTransaction
                         WITHDRAWAL_TYPEHASH,
                         withdrawal.owner,
                         withdrawal.accountID,
-                        withdrawal.nonce,
                         withdrawal.tokenID,
                         withdrawal.amount,
                         withdrawal.feeTokenID,
                         withdrawal.fee,
                         withdrawal.to,
                         withdrawal.dataHash,
-                        withdrawal.minGas
+                        withdrawal.minGas,
+                        withdrawal.validUntil,
+                        withdrawal.nonce
                     )
                 )
             );
@@ -202,42 +204,30 @@ library WithdrawTransaction
         )
         internal
         pure
-        returns (Withdrawal memory)
+        returns (Withdrawal memory withdrawal)
     {
-        uint withdrawalType = data.toUint8(offset);
+        withdrawal.withdrawalType = data.toUint8(offset);
         offset += 1;
-        address owner = data.toAddress(offset);
+        withdrawal.owner = data.toAddress(offset);
         offset += 20;
-        uint32 accountID = data.toUint32(offset);
+        withdrawal.accountID = data.toUint32(offset);
         offset += 4;
-        uint32 nonce = data.toUint32(offset);
-        offset += 4;
-        uint16 tokenID = data.toUint16(offset) >> 4;
-        uint16 feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
+        withdrawal.tokenID = data.toUint16(offset) >> 4;
+        withdrawal.feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
         offset += 3;
-        uint amount = data.toUint96(offset);
+        withdrawal.amount = data.toUint96(offset);
         offset += 12;
-        uint fee = uint(data.toUint16(offset)).decodeFloat(16);
+        withdrawal.fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        address to = data.toAddress(offset);
+        withdrawal.to = data.toAddress(offset);
         offset += 20;
-        bytes32 dataHash = data.toBytes32(offset);
+        withdrawal.dataHash = data.toBytes32(offset);
         offset += 32;
-        uint24 minGas = data.toUint24(offset);
+        withdrawal.minGas = data.toUint24(offset);
         offset += 3;
-
-        return Withdrawal({
-            withdrawalType: withdrawalType,
-            owner: owner,
-            accountID: accountID,
-            nonce: nonce,
-            tokenID: tokenID,
-            amount: amount,
-            feeTokenID: feeTokenID,
-            fee: fee,
-            to: to,
-            dataHash: dataHash,
-            minGas: minGas
-        });
+        withdrawal.validUntil = data.toUint32(offset);
+        offset += 4;
+        withdrawal.nonce = data.toUint32(offset);
+        offset += 4;
     }
 }

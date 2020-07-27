@@ -45,13 +45,13 @@ library DepositTransaction
         offset += 12;
 
         ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID];
-        // Make sure the deposit was actually done (this also verifies the index is correct)
+        // Make sure the deposit was actually done
         require(deposit.timestamp > 0, "DEPOSIT_DOESNT_EXIST");
         // Earn a fee relative to the amount actually made available on layer 2.
         // This is done to ensure the user can do multiple deposits after each other
         // without invalidating work done by the operator for previous deposit amounts.
 
-        // Also note the oritinal deposit.amount can be zero!
+        // Also note the original deposit.amount can be zero!
         if (amount > 0) {
             require(deposit.amount >= amount, "INVALID_AMOUNT");
             feeETH = deposit.amount == amount?

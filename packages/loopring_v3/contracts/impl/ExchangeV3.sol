@@ -471,6 +471,7 @@ contract ExchangeV3 is IExchangeV3
         address feeToken,
         uint96  fee,
         uint    data,
+        uint32  validUntil,
         uint32  storageID
         )
         external
@@ -489,6 +490,7 @@ contract ExchangeV3 is IExchangeV3
             feeTokenID,
             fee,
             data,
+            validUntil,
             storageID
         );
         state.approvedTx[from][transactionHash] = true;

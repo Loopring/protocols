@@ -8,6 +8,7 @@ import { BlockContext, ExchangeState } from "../types";
 interface OwnerChange {
   owner?: string;
   accountID?: number;
+  validUntil?: number;
   nonce?: number;
   feeTokenID?: number;
   fee?: BN;
@@ -47,8 +48,6 @@ export class OwnerChangeProcessor {
     offset += 20;
     change.accountID = data.extractUint32(offset);
     offset += 4;
-    change.nonce = data.extractUint32(offset);
-    offset += 4;
     change.feeTokenID = data.extractUint16(offset);
     offset += 2;
     change.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
@@ -57,6 +56,10 @@ export class OwnerChangeProcessor {
     offset += 20;
     change.walletHash = data.extractUint(offset).toString(10);
     offset += 32;
+    change.validUntil = data.extractUint32(offset);
+    offset += 4;
+    change.nonce = data.extractUint32(offset);
+    offset += 4;
 
     return change;
   }

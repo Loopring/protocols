@@ -96,6 +96,7 @@ public:
     ArrayTernaryGadget da_To;
     ArrayTernaryGadget da_From;
     ArrayTernaryGadget da_StorageID;
+    ArrayTernaryGadget da_ValidUntil;
 
     // Fee as float
     FloatGadget fFee;
@@ -165,11 +166,11 @@ public:
             amount.packed,
             feeTokenID.packed,
             fee.packed,
-            validUntil.packed,
             payer_to.packed,
             dualAuthorX,
             dualAuthorY,
             data.packed,
+            validUntil.packed,
             storageID.packed
         }), FMT(this->annotation_prefix, ".hashPayer")),
         hashDual(pb, var_array({
@@ -180,11 +181,11 @@ public:
             amount.packed,
             feeTokenID.packed,
             fee.packed,
-            validUntil.packed,
             to.packed,
             dualAuthorX,
             dualAuthorY,
             data.packed,
+            validUntil.packed,
             storageID.packed
         }), FMT(this->annotation_prefix, ".hashDual")),
 
@@ -206,6 +207,7 @@ public:
         da_To(pb, da_NeedsToAddress.result(), to.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_To")),
         da_From(pb, isConditional.result(), from.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_From")),
         da_StorageID(pb, isConditional.result(), storageID.bits, VariableArrayT(NUM_BITS_STORAGEID, state.constants._0), FMT(prefix, ".da_StorageID")),
+        da_ValidUntil(pb, isConditional.result(), validUntil.bits, VariableArrayT(NUM_BITS_TIMESTAMP, state.constants._0), FMT(prefix, ".da_ValidUntil")),
 
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
@@ -321,6 +323,7 @@ public:
         da_To.generate_r1cs_witness();
         da_From.generate_r1cs_witness();
         da_StorageID.generate_r1cs_witness();
+        da_ValidUntil.generate_r1cs_witness();
 
         // Fee as float
         fFee.generate_r1cs_witness(toFloat(transfer.fee, Float16Encoding));
@@ -397,6 +400,7 @@ public:
         da_To.generate_r1cs_constraints();
         da_From.generate_r1cs_constraints();
         da_StorageID.generate_r1cs_constraints();
+        da_ValidUntil.generate_r1cs_constraints();
 
         // Fee as float
         fFee.generate_r1cs_constraints();
@@ -427,6 +431,7 @@ public:
             fFee.bits(),
             nonce.getShortStorageID(),
             da_To.result(),
+            da_ValidUntil.result(),
             da_StorageID.result(),
             da_From.result(),
             VariableArrayT(256 - NUM_BITS_FIELD_CAPACITY, state.constants._0), data.bits

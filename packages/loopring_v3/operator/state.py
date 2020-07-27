@@ -381,7 +381,7 @@ class State(object):
         self._accounts = {}
         self._accounts[str(0)] = getDefaultAccount()
         self._accounts[str(1)] = getDefaultAccount()
-        print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
+        #print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
 
     def load(self, filename):
         with open(filename) as f:

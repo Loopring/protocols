@@ -121,7 +121,7 @@ library ExchangeData
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
     // The amount of bytes each rollup transaction uses in the block data for data-availability.
     // This is the maximum amount of bytes of all different transaction types.
-    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 104; }
+    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 106; }
     function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 14 days; }
 
 

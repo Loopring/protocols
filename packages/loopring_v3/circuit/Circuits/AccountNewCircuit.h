@@ -82,13 +82,13 @@ public:
             payerAccountID.packed,
             feeTokenID.packed,
             fee.packed,
-            validUntil.packed,
-            nonce.packed,
             newAccountID.packed,
             newOwner.packed,
             newPublicKeyX,
             newPublicKeyY,
-            walletHash.packed
+            walletHash.packed,
+            validUntil.packed,
+            nonce.packed,
         }), FMT(this->annotation_prefix, ".hash")),
 
         // Validate
@@ -229,7 +229,8 @@ public:
             newAccountID.bits,
             newOwner.bits,
             compressPublicKey.result(),
-            walletHash.bits
+            walletHash.bits,
+            validUntil.bits
         });
     }
 };

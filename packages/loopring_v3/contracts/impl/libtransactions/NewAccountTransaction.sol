@@ -23,7 +23,7 @@ library NewAccountTransaction
     using SignatureUtil        for bytes32;
 
     bytes32 constant public NEWACCOUNT_TYPEHASH = keccak256(
-        "NewAccount(uint32 accountID,address owner,uint256 publicKey,uint256 walletHash)"
+        "NewAccount(uint32 accountID,address owner,uint256 publicKey,uint256 walletHash,uint32 validUntil)"
     );
 
     /*event AccountCreated(
@@ -49,7 +49,6 @@ library NewAccountTransaction
         offset += 2;
         //uint fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-
         uint32 accountID = data.toUint32(offset);
         offset += 4;
         address owner = data.toAddress(offset);
@@ -58,6 +57,8 @@ library NewAccountTransaction
         offset += 32;
         uint walletHash = data.toUint(offset);
         offset += 32;
+        uint32 validUntil = data.toUint32(offset);
+        offset += 4;
 
         // Calculate the tx hash
         bytes32 txHash = EIP712.hashPacked(
@@ -68,7 +69,8 @@ library NewAccountTransaction
                     accountID,
                     owner,
                     publicKey,
-                    walletHash
+                    walletHash,
+                    validUntil
                 )
             )
         );
