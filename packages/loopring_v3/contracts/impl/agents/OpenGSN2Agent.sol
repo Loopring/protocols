@@ -40,6 +40,7 @@ contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress, ReentrancyG
     function _fallback()
         private
     {
+        // Append the logical exchange user to the end of the calldata.
         (bool success, bytes memory returnData) = exchange.call{value: msg.value}(
             abi.encodePacked(msg.data, _msgSender())
         );

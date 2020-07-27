@@ -151,6 +151,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
             fastWithdrawal.nonce
         );
 
+        // Append the logical exchange user to the end of the calldata.
         (bool success, bytes memory returnData) = fastWithdrawal.exchange.call(
             abi.encodePacked(data, fastWithdrawal.from)
         );
