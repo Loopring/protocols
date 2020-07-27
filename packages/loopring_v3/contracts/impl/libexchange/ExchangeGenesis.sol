@@ -7,6 +7,7 @@ import "../../lib/MathUint.sol";
 import "../../lib/Poseidon.sol";
 
 import "../../iface/ExchangeData.sol";
+import "../../iface/IAgentRegistry.sol";
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/ILoopringV3.sol";
 
@@ -25,8 +26,7 @@ library ExchangeGenesis
     function initializeGenesisBlock(
         ExchangeData.State storage S,
         uint    _id,
-        address _loopringAddress,
-        address payable _operator,
+        address _loopring,
         bool    _rollupMode,
         bytes32 _genesisMerkleRoot,
         uint8   _genesisAccountTreeDepth,
@@ -37,9 +37,10 @@ library ExchangeGenesis
         require(S.id == 0, "INITIALIZED_ALREADY");
 
         require(0 != _id, "INVALID_ID");
-        require(address(0) != _loopringAddress, "ZERO_ADDRESS");
+
+        require(address(0) != _loopring, "INVALID_LOOPRING_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
-        require(_genesisMerkleRoot != 0, "ZERO_GENESIS_MERKLE_ROOT");
+        require(_genesisMerkleRoot != 0, "INVALID_GENESIS_MERKLE_ROOT");
         require(
             _genesisAccountTreeDepth != 0 &&
             _genesisAccountTreeDepth <= MAX_ACCOUNT_TREE_DEPTH,
@@ -48,15 +49,15 @@ library ExchangeGenesis
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;
-        S.operator = _operator;
         S.rollupMode = _rollupMode;
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
         S.emptyMerkleRoot = _genesisMerkleRoot;
         S.accountTreeDepth = _genesisAccountTreeDepth;
         S.DOMAIN_SEPARATOR = _domainSeperator;
 
-        ILoopringV3 loopring = ILoopringV3(_loopringAddress);
+        ILoopringV3 loopring = ILoopringV3(_loopring);
         S.loopring = loopring;
+
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
 
         S.merkleRoot = S.emptyMerkleRoot;

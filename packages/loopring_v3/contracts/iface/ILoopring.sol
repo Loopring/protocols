@@ -18,7 +18,6 @@ abstract contract ILoopring is Claimable, ReentrancyGuard
         uint    indexed exchangeId,
         address indexed exchangeAddress,
         address indexed owner,
-        address         operator,
         bool            rollupMode
     );
 

@@ -16,7 +16,7 @@ import "../../lib/EIP712.sol";
 /// @title Fast withdrawal agent implementation. The fast withdrawal request reduces to
 ///        a normal onchain withdrawal request after a specified time limit has exceeded.
 ///
-///        Fast withdrawals are a way for an operator to provide instant withdrawals for
+///        Fast withdrawals are a way for the owner to provide instant withdrawals for
 ///        users with the help of a liquidity provider and conditional transfers.
 ///
 ///        A fast withdrawal requires the non-trustless cooperation of 2 parties:
@@ -29,7 +29,7 @@ import "../../lib/EIP712.sol";
 ///
 ///        However, there is a special case when the fast withdrawal reduces to a standard
 ///        withdrawal and the fee is paid onchain. In this case the withdrawal can be
-///        done completely trustless, no cooperation with the operator is needed.
+///        done completely trustless, no cooperation with the owner is needed.
 ///
 ///        We require the fast withdrawals to be executed by the liquidity provider (as msg.sender)
 ///        so that the liquidity provider can impose its own rules on how its funds are spent. This will

@@ -3,7 +3,7 @@
 #ifndef _MERKLETREE_H_
 #define _MERKLETREE_H_
 
-#include "ethsnarks.hpp"
+#include "  "
 #include "gadgets/poseidon.hpp"
 #include "MathGadgets.h"
 
