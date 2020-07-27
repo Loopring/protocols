@@ -12,6 +12,7 @@ import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
 
+import "../lib/AddressUtil.sol";
 import "../lib/EIP712.sol";
 import "../lib/MathUint.sol";
 
@@ -30,6 +31,7 @@ contract ExchangeV3 is IExchangeV3
 {
     bytes32 constant public genesisMerkleRoot = 0x1dacdc3f6863d9db1d903e7285ebf74b61f02d585ccb52ecaeaf97dbb773becf;
 
+    using AddressUtil           for address;
     using BytesUtil             for bytes;
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
@@ -577,10 +579,15 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (bool)
     {
-        if (msg.sender == addr) return true;
-        if (state.agentRegistry == IAgentRegistry(address(0))) return false;
+        address _sender = msg.sender;
+
+        if (_sender == addr) return true;
+        if (address(state.agentRegistry) == address(0)) return false;
+        if (!state.agentRegistry.isAgent(addr, _sender)) return false;
+
+        if (!_sender.isContract()) return true;
+
         if (msg.data.length < 24) return false;
-        if (!state.agentRegistry.isAgent(addr, msg.sender)) return false;
         return msg.data.toAddress(msg.data.length - 20) == addr;
     }
 }
