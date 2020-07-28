@@ -46,6 +46,19 @@ public:
 
     }
 
+    StorageGadget(
+        ProtoboardT& pb,
+        VariableT _data,
+        VariableT _storageID
+    ) :
+        GadgetT(pb, "storageGadget"),
+
+        data(_data),
+        storageID(_storageID)
+    {
+
+    }
+
     void generate_r1cs_witness(const StorageLeaf& storageLeaf)
     {
         pb.val(data) = storageLeaf.data;
@@ -218,8 +231,10 @@ class NonceGadget : public GadgetT
     const Constants& constants;
     const DualVariableGadget& storageID;
 
+    TernaryGadget storageData;
+    TernaryGadget storageStorageID;
+
     StorageReaderGadget storageReader;
-    IfThenRequireEqualGadget requireDataZero;
 
 public:
 
@@ -236,22 +251,27 @@ public:
         constants(_constants),
         storageID(_storageID),
 
-        storageReader(pb, constants, storage, storageID, FMT(prefix, ".storageReader")),
-        requireDataZero(pb, verify, storageReader.getData(), constants._0, FMT(prefix, ".requireDataZero"))
+        // If we don't have to verify, don't let the storage reader fail by passing in valid data
+        storageData(pb, verify, storage.data, constants._0, FMT(prefix, ".storageData")),
+        storageStorageID(pb, verify, storage.storageID, _storageID.packed, FMT(prefix, ".storageStorageID")),
+
+        storageReader(pb, constants, StorageGadget(pb, storageData.result(), storageStorageID.result()), storageID, FMT(prefix, ".storageReader"))
     {
 
     }
 
     void generate_r1cs_witness()
     {
+        storageData.generate_r1cs_witness();
+        storageStorageID.generate_r1cs_witness();
         storageReader.generate_r1cs_witness();
-        requireDataZero.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
+        storageData.generate_r1cs_constraints();
+        storageStorageID.generate_r1cs_constraints();
         storageReader.generate_r1cs_constraints();
-        requireDataZero.generate_r1cs_constraints();
     }
 
     const VariableT& getData() const

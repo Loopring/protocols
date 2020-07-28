@@ -5,11 +5,10 @@ import { ExchangeTestUtil } from "./testExchangeUtil";
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
-  let loopring: any;
-  let exchangeId = 0;
+  let maxAge = 123;
 
   const createExchange = async (bSetupTestState: boolean = true) => {
-    exchangeId = await exchangeTestUtil.createExchange(
+    await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
       bSetupTestState
     );
@@ -19,7 +18,6 @@ contract("Exchange", (accounts: string[]) => {
   before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
-    loopring = exchangeTestUtil.loopringV3;
   });
 
   after(async () => {
@@ -30,24 +28,24 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     describe("Exchange owner", () => {
-      it("should be able to set the operator", async () => {
+      it("should be able to set the max age of a deposit", async () => {
         await createExchange();
         const newOperator = exchangeTestUtil.testContext.orderOwners[5];
-        await exchange.setOperator(newOperator, {
+        await exchange.setMaxAgeDepositUntilWithdrawable(maxAge, {
           from: exchangeTestUtil.exchangeOwner
         });
 
-        const operator = await exchange.getOperator();
-        assert.equal(operator, newOperator, "operator unexpected");
+        const maxAgeOnchain = await exchange.getMaxAgeDepositUntilWithdrawable();
+        assert.equal(maxAgeOnchain, maxAge, "max age unexpected");
       });
     });
 
     describe("anyone", () => {
-      it("should not be able to set the operator", async () => {
+      it("should not be able to  set the max age of a deposit", async () => {
         await createExchange();
         const newOperator = exchangeTestUtil.testContext.orderOwners[5];
         await expectThrow(
-          exchange.setOperator(newOperator, {
+          exchange.setMaxAgeDepositUntilWithdrawable(maxAge, {
             from: exchangeTestUtil.testContext.orderOwners[0]
           }),
           "UNAUTHORIZED"

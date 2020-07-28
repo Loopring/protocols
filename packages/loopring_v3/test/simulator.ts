@@ -790,7 +790,7 @@ export class Simulator {
     if (spotTrade.expected) {
       if (spotTrade.expected.orderA) {
         const filledFraction = spotTrade.orderA.buy
-          ? fillA.B.mul(new BN(10000))
+          ? fillB.S.mul(new BN(10000))
               .div(spotTrade.orderA.amountB)
               .toNumber() / 10000
           : fillA.S.mul(new BN(10000))
@@ -814,7 +814,7 @@ export class Simulator {
       }
       if (spotTrade.expected.orderB) {
         const filledFraction = spotTrade.orderB.buy
-          ? fillB.B.mul(new BN(10000))
+          ? fillA.S.mul(new BN(10000))
               .div(spotTrade.orderB.amountB)
               .toNumber() / 10000
           : fillB.S.mul(new BN(10000))

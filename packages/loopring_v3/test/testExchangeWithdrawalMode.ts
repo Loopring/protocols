@@ -410,7 +410,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't process the deposits
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE + 1
+        exchangeTestUtil.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND + 1
       );
 
       // We should be in withdrawal mode and able to withdraw from the pending deposits

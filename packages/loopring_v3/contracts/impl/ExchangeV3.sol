@@ -535,6 +535,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         override
+        nonReentrant
         onlyOwner
         returns (uint32)
     {

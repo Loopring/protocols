@@ -1620,7 +1620,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-          storageID: storageIDA + 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
+          storageID: storageIDA + Constants.NUM_STORAGE_SLOTS
         },
         orderB: {
           tokenS: "GTO",
@@ -1642,7 +1642,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-          storageID: storageIDA + 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
+          storageID: storageIDA + Constants.NUM_STORAGE_SLOTS
         },
         orderB: {
           tokenS: "GTO",
@@ -1650,7 +1650,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
-          storageID: storageIDB + 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
+          storageID: storageIDB + Constants.NUM_STORAGE_SLOTS
         },
         expected: {
           orderA: { filledFraction: 1.0, spread: new BN(0) },
@@ -1664,7 +1664,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-            storageID: storageIDA + 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
+            storageID: storageIDA + Constants.NUM_STORAGE_SLOTS
         },
         orderB: {
           tokenS: "GTO",
@@ -1673,7 +1673,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
           storageID:
-            storageIDB + 2 * 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
+            storageIDB + 2 * Constants.NUM_STORAGE_SLOTS
         },
         expected: {
           orderA: { filledFraction: 0.0, spread: new BN(0) },
@@ -1688,7 +1688,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
           storageID:
-            storageIDA + 2 * 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
+            storageIDA + 2 * Constants.NUM_STORAGE_SLOTS
         },
         orderB: {
           tokenS: "GTO",
@@ -1697,7 +1697,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
           storageID:
-            storageIDB + 3 * 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
+            storageIDB + 3 * Constants.NUM_STORAGE_SLOTS
         },
         expected: {
           orderA: { filledFraction: 1.0, spread: new BN(0) },

@@ -675,7 +675,7 @@ export class ExchangeTestUtil {
   public MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED: number;
   public MIN_TIME_IN_SHUTDOWN: number;
   public TX_DATA_AVAILABILITY_SIZE: number;
-  public MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE: number;
+  public MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND: number;
 
   public tokenAddressToIDMap = new Map<string, number>();
   public tokenIDToAddressMap = new Map<number, string>();
@@ -778,8 +778,8 @@ export class ExchangeTestUtil {
     this.TX_DATA_AVAILABILITY_SIZE = new BN(
       constants.TX_DATA_AVAILABILITY_SIZE
     ).toNumber();
-    this.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE = new BN(
-      constants.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE
+    this.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND = new BN(
+      constants.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND
     ).toNumber();
   }
 
@@ -2107,7 +2107,7 @@ export class ExchangeTestUtil {
     const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
 
     // Submit the blocks onchain
-    const operatorContract = this.operator ? this.operator : this.exchange;
+    const operatorContract = /*this.operator ? this.operator : */this.exchange;
 
     // Compress the data
     const txData = operatorContract.contract.methods
@@ -2118,15 +2118,15 @@ export class ExchangeTestUtil {
     //console.log(compressed);
 
     let tx: any = undefined;
-    tx = await operatorContract.submitBlocksCompressed(
+    /*tx = await operatorContract.submitBlocksCompressed(
       web3.utils.hexToBytes(compressed),
       { from: this.exchangeOperator, gasPrice: 0 }
-    );
-    /*tx = await operatorContract.submitBlocks(
+    );*/
+    tx = await operatorContract.submitBlocks(
       onchainBlocks,
       this.exchangeOperator,
-      { from: this.exchangeOperator, gasPrice: 0 }
-    );*/
+      { from: this.exchangeOwner, gasPrice: 0 }
+    );
     logInfo(
       "\x1b[46m%s\x1b[0m",
       "[submitBlocks] Gas used: " + tx.receipt.gasUsed
@@ -2217,9 +2217,9 @@ export class ExchangeTestUtil {
   }
 
   public async setOperatorContract(operator: any) {
-    await this.exchange.setOperator(operator.address, {
+    /*await this.exchange.setOperator(operator.address, {
       from: this.exchangeOwner
-    });
+    });*/
     this.operator = operator;
   }
 
@@ -2718,10 +2718,9 @@ export class ExchangeTestUtil {
     this.depositContract = await this.contracts.BasicDepositContract.at(
       depositContractProxy.address
     );
-    // Ininitialze the deposit contract
+    // Initialize the deposit contract
     await this.depositContract.initialize(
-      this.exchange.address,
-      this.loopringV3.address
+      this.exchange.address
     );
 
     // Set the deposit contract on the exchange
@@ -2737,7 +2736,7 @@ export class ExchangeTestUtil {
     );
 
     this.exchangeOwner = owner;
-    this.exchangeOperator = operator;
+    this.exchangeOperator = /*operator*/owner;
     this.exchangeId = exchangeId;
     this.rollupMode = rollupMode;
     this.activeOperator = undefined;
@@ -3099,7 +3098,7 @@ export class ExchangeTestUtil {
         testBlock.offchainData,
         "unexpected offchainData"
       );
-      assert.equal(
+      /*assert.equal(
         explorerBlock.operator,
         testBlock.operator,
         "unexpected operator"
@@ -3108,7 +3107,7 @@ export class ExchangeTestUtil {
       assert(
         explorerBlock.blockFee.eq(testBlock.blockFee),
         "unexpected blockFee"
-      );
+      );*/
       assert.equal(
         explorerBlock.timestamp,
         testBlock.timestamp,

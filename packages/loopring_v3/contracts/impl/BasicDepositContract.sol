@@ -51,12 +51,12 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         address _exchange
         )
         external
-        onlyOwner
     {
         require(
             exchange == address(0) && _exchange != address(0),
             "INVALID_EXCHANGE"
         );
+        owner = msg.sender;
         exchange = _exchange;
     }
 

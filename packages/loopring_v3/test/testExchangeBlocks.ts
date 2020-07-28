@@ -23,7 +23,7 @@ contract("Exchange", (accounts: string[]) => {
       bSetupTestState
     );
     exchange = exchangeTestUtil.exchange;
-    operator = exchangeTestUtil.operator;
+    operator = /*exchangeTestUtil.operator*/exchange;
     loopring = exchangeTestUtil.loopringV3;
   };
 
@@ -402,12 +402,7 @@ contract("Exchange", (accounts: string[]) => {
                   }
                 }
                 auxiliaryData = auxiliaryData.reverse();
-                onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter(
-                    "tuple(uint256,bytes)[]",
-                    auxiliaryData
-                  )
-                );
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
               }
             ),
             "AUXILIARYDATA_INVALID_ORDER"
@@ -436,12 +431,7 @@ contract("Exchange", (accounts: string[]) => {
                   }
                 }
                 auxiliaryData[1][0] = auxiliaryData[0][0];
-                onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter(
-                    "tuple(uint256,bytes)[]",
-                    auxiliaryData
-                  )
-                );
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
               }
             ),
             "AUXILIARYDATA_INVALID_ORDER"
@@ -470,12 +460,7 @@ contract("Exchange", (accounts: string[]) => {
                   }
                 }
                 auxiliaryData.push([99, web3.utils.hexToBytes("0x")]);
-                onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter(
-                    "tuple(uint256,bytes)[]",
-                    auxiliaryData
-                  )
-                );
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
               }
             ),
             "AUXILIARYDATA_INVALID_LENGTH"
@@ -502,12 +487,7 @@ contract("Exchange", (accounts: string[]) => {
                   ]);
                 }
 
-                onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter(
-                    "tuple(uint256,bytes)[]",
-                    auxiliaryData
-                  )
-                );
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
               }
             }
           );

@@ -89,11 +89,11 @@ contract("Exchange", (accounts: string[]) => {
     }
 
     if (expectedTo === undefined) {
+      expectedTo = new Array(deposits.length).fill(Constants.zeroAddress);
       for (const [i, deposit] of deposits.entries()) {
         expectedTo[i] = (deposit.owner === Constants.zeroAddress) ?
          (await loopring.protocolFeeVault()) : deposit.owner;
       }
-      expectedSuccess = new Array(numWithdrawals).fill(true);
     }
 
     // Simulate all transfers
@@ -803,7 +803,7 @@ contract("Exchange", (accounts: string[]) => {
           token,
           amount
         ),
-        "MAX_AMOUNT_REACHED"
+        "ADD_OVERFLOW"
       );
     });
 
