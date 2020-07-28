@@ -46,7 +46,7 @@ contract UpgraderModule is BaseModule {
 
             if (implementation != oldImpl) {
                 bytes memory txData = abi.encodeWithSelector(
-                    OwnedUpgradabilityProxy(0).upgradeTo.selector,
+                    OwnedUpgradabilityProxy.upgradeTo.selector,
                     implementation
                 );
                 transactCall(wallet, wallet, 0, txData);
