@@ -32,7 +32,6 @@ contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress
         external
         override
         view
-
         returns (string memory)
     {
         return "1.0";
