@@ -157,7 +157,6 @@ contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress
         forwardCall();
     }
 
-
     function forwardCall()
         internal
     {
