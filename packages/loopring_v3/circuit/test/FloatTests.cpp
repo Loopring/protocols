@@ -152,9 +152,9 @@ TEST_CASE("Float", "[FloatGadget]")
 
 TEST_CASE("Float+Accuracy", "[FloatGadget+RequireAccuracy]")
 {
-    std::vector<FloatEncoding> encodings = {Float16Encoding, Float24Encoding, Float28Encoding};
-    std::vector<Accuracy> accuracies = {Float16Accuracy, Float24Accuracy, Float28Accuracy};
-    std::vector<FieldT> worstAccuracyValues = {FieldT("20499999999999999999999999999"), FieldT("52428999999999999999999999999"), FieldT("8388609999999999999999999999")};
+    std::vector<FloatEncoding> encodings = {Float16Encoding, Float24Encoding};
+    std::vector<Accuracy> accuracies = {Float16Accuracy, Float24Accuracy};
+    std::vector<FieldT> worstAccuracyValues = {FieldT("20499999999999999999999999999"), FieldT("52428999999999999999999999999")};
     for (unsigned int e = 0; e < encodings.size(); e++) {
         DYNAMIC_SECTION("Encoding: " << encodings[e].numBitsExponent + encodings[e].numBitsMantissa)
     {

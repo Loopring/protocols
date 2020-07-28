@@ -102,6 +102,7 @@ export interface TransferOptions {
   transferToNew?: boolean;
   signer?: string;
   validUntil?: number;
+  storageID?: number;
 }
 
 export interface WithdrawOptions {
@@ -879,6 +880,7 @@ export class ExchangeTestUtil {
       options.transferToNew !== undefined ? options.transferToNew : false;
     const signer = options.signer !== undefined ? options.signer : from;
     const validUntil = options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+    const storageID = options.storageID !== undefined ? options.storageID : this.storageIDGenerator++;
 
     // From
     await this.deposit(from, from, token, amountToDeposit);
@@ -948,7 +950,7 @@ export class ExchangeTestUtil {
       payerToAccountID: useDualAuthoring ? 0 : toAccountID,
       payerTo: useDualAuthoring ? Constants.zeroAddress : to,
       payeeToAccountID: toAccountID,
-      storageID: this.storageIDGenerator++,
+      storageID,
       dualSecretKey
     };
 

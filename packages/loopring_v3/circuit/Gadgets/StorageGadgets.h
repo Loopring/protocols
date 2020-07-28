@@ -150,7 +150,7 @@ class StorageReaderGadget : public GadgetT
     EqualGadget storageID_eq_nextStorageID;
 
     OrGadget isValidStorageID;
-    RequireEqualGadget requireValidStorageID;
+    IfThenRequireEqualGadget requireValidStorageID;
 
     TernaryGadget data;
 
@@ -161,6 +161,7 @@ public:
         const Constants& constants,
         const StorageGadget& storage,
         const DualVariableGadget& storageID,
+        const VariableT& verify,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
@@ -176,7 +177,7 @@ public:
         storageID_eq_leafStorageID(pb, storageID.packed, leafStorageID.result(), FMT(prefix, ".storageID_eq_leafStorageID")),
         storageID_eq_nextStorageID(pb, storageID.packed, nextStorageID.result(), FMT(prefix, ".storageID_eq_nextStorageID")),
         isValidStorageID(pb, {storageID_eq_leafStorageID.result(), storageID_eq_nextStorageID.result()}, FMT(prefix, ".isValidStorageID")),
-        requireValidStorageID(pb, isValidStorageID.result(), constants._1, FMT(prefix, ".requireValidStorageID")),
+        requireValidStorageID(pb, verify, isValidStorageID.result(), constants._1, FMT(prefix, ".requireValidStorageID")),
 
         data(pb, storageID_eq_leafStorageID.result(), storage.data, constants._0, FMT(prefix, ".data"))
     {
@@ -231,10 +232,8 @@ class NonceGadget : public GadgetT
     const Constants& constants;
     const DualVariableGadget& storageID;
 
-    TernaryGadget storageData;
-    TernaryGadget storageStorageID;
-
     StorageReaderGadget storageReader;
+    IfThenRequireEqualGadget requireDataZero;
 
 public:
 
@@ -251,27 +250,22 @@ public:
         constants(_constants),
         storageID(_storageID),
 
-        // If we don't have to verify, don't let the storage reader fail by passing in valid data
-        storageData(pb, verify, storage.data, constants._0, FMT(prefix, ".storageData")),
-        storageStorageID(pb, verify, storage.storageID, _storageID.packed, FMT(prefix, ".storageStorageID")),
-
-        storageReader(pb, constants, StorageGadget(pb, storageData.result(), storageStorageID.result()), storageID, FMT(prefix, ".storageReader"))
+        storageReader(pb, constants, storage, storageID, verify, FMT(prefix, ".storageReader")),
+        requireDataZero(pb, verify, storageReader.getData(), constants._0, FMT(prefix, ".requireDataZero"))
     {
 
     }
 
     void generate_r1cs_witness()
     {
-        storageData.generate_r1cs_witness();
-        storageStorageID.generate_r1cs_witness();
         storageReader.generate_r1cs_witness();
+        requireDataZero.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
-        storageData.generate_r1cs_constraints();
-        storageStorageID.generate_r1cs_constraints();
         storageReader.generate_r1cs_constraints();
+        requireDataZero.generate_r1cs_constraints();
     }
 
     const VariableT& getData() const

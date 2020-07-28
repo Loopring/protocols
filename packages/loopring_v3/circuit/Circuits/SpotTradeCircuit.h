@@ -37,6 +37,7 @@ public:
     FloatGadget fillS_B;
 
     // Trade history
+    EqualGadget isSpotTradeTx;
     StorageReaderGadget tradeHistory_A;
     StorageReaderGadget tradeHistory_B;
 
@@ -87,8 +88,9 @@ public:
         fillS_B(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_B")),
 
         // Trade history
-        tradeHistory_A(pb, state.constants, state.accountA.storage, orderA.storageID, FMT(prefix, ".tradeHistoryA")),
-        tradeHistory_B(pb, state.constants, state.accountB.storage, orderB.storageID, FMT(prefix, ".tradeHistoryB")),
+        isSpotTradeTx(pb, state.type, state.constants.txTypeSpotTrade, FMT(prefix, ".isSpotTradeTx")),
+        tradeHistory_A(pb, state.constants, state.accountA.storage, orderA.storageID, isSpotTradeTx.result(), FMT(prefix, ".tradeHistoryA")),
+        tradeHistory_B(pb, state.constants, state.accountB.storage, orderB.storageID, isSpotTradeTx.result(), FMT(prefix, ".tradeHistoryB")),
 
         // Match orders
         orderMatching(pb, state.constants, state.timestamp, orderA, orderB, state.accountA.account.owner, state.accountB.account.owner,
@@ -165,6 +167,7 @@ public:
         fillS_B.generate_r1cs_witness(spotTrade.fillS_B);
 
         // Trade history
+        isSpotTradeTx.generate_r1cs_witness();
         tradeHistory_A.generate_r1cs_witness();
         tradeHistory_B.generate_r1cs_witness();
 
@@ -211,6 +214,7 @@ public:
         fillS_B.generate_r1cs_constraints();
 
         // Trade history
+        isSpotTradeTx.generate_r1cs_constraints();
         tradeHistory_A.generate_r1cs_constraints();
         tradeHistory_B.generate_r1cs_constraints();
 
