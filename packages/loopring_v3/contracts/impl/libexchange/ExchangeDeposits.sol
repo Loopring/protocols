@@ -85,7 +85,7 @@ library ExchangeDeposits
         )
     {
         uint depositValueETH = 0;
-        if (S.depositContract.isETH(tokenAddress)) {
+        if (msg.value > 0 && (tokenAddress == address(0) || S.depositContract.isETH(tokenAddress))) {
             depositValueETH = amount;
             fee = uint64(msg.value.sub(amount));
         } else {
