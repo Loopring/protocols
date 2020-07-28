@@ -324,7 +324,7 @@ abstract contract IExchangeV3 is IExchange
     ///      - blockSize: The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
     ///      - blockVersion: The circuit version to use for verifying the block
-    ///      - storeDataHashOnchain: If the block data hash needs to be stored onchain
+    ///      - storeBlockInfoOnchain: If the block info for this block needs to be stored on-chain
     ///      - data: The data for this block
     ///      - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
@@ -619,14 +619,6 @@ abstract contract IExchangeV3 is IExchange
         virtual
         view
         returns (uint32);
-
-    /// @dev Gets the time the exchange was created.
-    /// @return timestamp The time the exchange was created.
-    function getExchangeCreationTimestamp()
-        external
-        virtual
-        view
-        returns (uint timestamp);
 
     /// @dev Shuts down the exchange.
     ///      Once the exchange is shutdown all onchain requests are permanently disabled.

@@ -60,8 +60,8 @@ library ExchangeData
         bytes      data;
         uint256[8] proof;
 
-        // Whether we should store the sha256 hash of the `data` on-chain.
-        bool  storeDataHashOnchain;
+        // Whether we should store the @BlockInfo for this block on-chain.
+        bool storeBlockInfoOnchain;
 
         // Block specific data that is only used to help process the block on-chain.
         // It is not used as input for the circuits and it is not necessary for data-availability.
@@ -74,7 +74,10 @@ library ExchangeData
 
     struct BlockInfo
     {
-        bytes32 blockDataHash;
+        // The time the block was submitted on-chain.
+        uint32  timestamp;
+        // The public data hash of the block (the 28 most significant bytes).
+        bytes28 blockDataHash;
     }
 
     // Represents an onchain deposit request.
@@ -160,10 +163,8 @@ library ExchangeData
     struct State
     {
         uint    id;
-        uint    exchangeCreationTimestamp;
         bool    rollupMode;
         uint32  maxAgeDepositUntilWithdrawable;
-        bytes32 genesisMerkleRoot;
         bytes32 DOMAIN_SEPARATOR;
 
         ILoopringV3      loopring;

@@ -45,7 +45,6 @@ export class ExchangeV3 {
   private forgeMode: ForgeMode;
   private protocol: ProtocolV3;
   private implementationAddress: string;
-  private exchangeCreationTimestamp: number;
 
   private syncedToEthereumBlockIdx: number;
 
@@ -108,9 +107,9 @@ export class ExchangeV3 {
     this.exchange = new web3.eth.Contract(JSON.parse(this.exchangeV3Abi));
     this.exchange.options.address = this.exchangeAddress;
 
-    this.exchangeCreationTimestamp = await this.exchange.methods
-      .getExchangeCreationTimestamp()
-      .call();
+    const exchangeCreationTimestamp = (await this.exchange.methods
+      .getBlockInfo(0)
+      .call()).timestamp;
 
     this.shutdown = false;
     this.shutdownStartTime = 0;
@@ -137,7 +136,7 @@ export class ExchangeV3 {
       blockFee: new BN(0),
 
       merkleRoot: this.genesisMerkleRoot,
-      timestamp: this.exchangeCreationTimestamp,
+      timestamp: exchangeCreationTimestamp,
 
       numRequestsProcessed: 0,
       totalNumRequestsProcessed: 0,
@@ -636,14 +635,6 @@ export class ExchangeV3 {
    */
   public getImplementationAddress() {
     return this.implementationAddress;
-  }
-
-  /**
-   * Gets the time the exchange was created
-   * @return  The exchange creation timestamp
-   */
-  public getExchangeCreationTimestamp() {
-    return this.exchangeCreationTimestamp;
   }
 
   /**

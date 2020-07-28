@@ -36,10 +36,8 @@ library ExchangeGenesis
         require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
-        S.exchangeCreationTimestamp = now;
         S.rollupMode = _rollupMode;
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
-        S.genesisMerkleRoot = _genesisMerkleRoot;
         S.DOMAIN_SEPARATOR = _domainSeperator;
 
         ILoopringV3 loopring = ILoopringV3(_loopring);
@@ -47,8 +45,8 @@ library ExchangeGenesis
 
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
 
-        S.merkleRoot = S.genesisMerkleRoot;
-        S.blocks.push(ExchangeData.BlockInfo(bytes32(0)));
+        S.merkleRoot = _genesisMerkleRoot;
+        S.blocks.push(ExchangeData.BlockInfo(uint32(now), bytes28(0)));
 
         // Get the protocol fees for this exchange
         S.protocolFeeData.syncedAt = uint32(0);

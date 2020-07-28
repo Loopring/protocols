@@ -149,9 +149,9 @@ library ExchangeBlocks
 
         S.merkleRoot = merkleRootAfter;
         S.blocks.push(
-            ExchangeData.BlockInfo(
-                _block.storeDataHashOnchain ? _publicDataHash : bytes32(0)
-            )
+            _block.storeBlockInfoOnchain ?
+                ExchangeData.BlockInfo(uint32(now), bytes28(_publicDataHash)) :
+                ExchangeData.BlockInfo(uint32(0), bytes28(0))
         );
     }
 

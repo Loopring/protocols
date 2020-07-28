@@ -104,7 +104,7 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
             proof: [0, 0, 0, 0, 0, 0, 0, 0],
-            storeDataHashOnchain: true,
+            storeBlockInfoOnchain: true,
             offchainData: Constants.emptyBytes,
             auxiliaryData: Constants.emptyBytes
           };
@@ -136,7 +136,7 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
             proof: [0, 0, 0, 0, 0, 0, 0, 0],
-            storeDataHashOnchain: true,
+            storeBlockInfoOnchain: true,
             offchainData: Constants.emptyBytes,
             auxiliaryData: Constants.emptyBytes
           };
@@ -174,7 +174,7 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
             proof: [0, 0, 0, 0, 0, 0, 0, 0],
-            storeDataHashOnchain: true,
+            storeBlockInfoOnchain: true,
             offchainData: Constants.emptyBytes,
             auxiliaryData: Constants.emptyBytes
           };
@@ -214,7 +214,7 @@ contract("Exchange", (accounts: string[]) => {
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
-              storeDataHashOnchain: true,
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
@@ -245,7 +245,7 @@ contract("Exchange", (accounts: string[]) => {
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
-              storeDataHashOnchain: true,
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
@@ -292,7 +292,7 @@ contract("Exchange", (accounts: string[]) => {
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
-              storeDataHashOnchain: true,
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
@@ -320,7 +320,7 @@ contract("Exchange", (accounts: string[]) => {
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
-              storeDataHashOnchain: true,
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
@@ -563,7 +563,7 @@ contract("Exchange", (accounts: string[]) => {
           blockVersion: 0,
           data: Constants.emptyBytes,
           proof: [0, 0, 0, 0, 0, 0, 0, 0],
-          storeDataHashOnchain: true,
+          storeBlockInfoOnchain: true,
           offchainData: Constants.emptyBytes,
           auxiliaryData: Constants.emptyBytes
         };

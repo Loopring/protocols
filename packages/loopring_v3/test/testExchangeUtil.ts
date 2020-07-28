@@ -136,7 +136,7 @@ export interface OnchainBlock {
   blockVersion: number;
   data: any;
   proof: any;
-  storeDataHashOnchain: boolean;
+  storeBlockInfoOnchain: boolean;
   auxiliaryData?: any;
   offchainData?: any;
 }
@@ -2089,7 +2089,7 @@ export class ExchangeTestUtil {
         blockVersion: block.blockVersion,
         data: web3.utils.hexToBytes(block.data),
         proof: block.proof,
-        storeDataHashOnchain: this.getRandomBool(),
+        storeBlockInfoOnchain: this.getRandomBool(),
         offchainData: web3.utils.hexToBytes(block.offchainData),
         auxiliaryData: block.auxiliaryData
       };
@@ -2175,13 +2175,21 @@ export class ExchangeTestUtil {
     // Check the Block info stored onchain
     for (const [i, block] of blocks.entries()) {
       const blockInfo = await this.exchange.getBlockInfo(block.blockIdx);
-      const expectedHash = onchainBlocks[i].storeDataHashOnchain
-        ? block.publicDataHash
-        : "0x" + "00".repeat(32);
+      const expectedHash = onchainBlocks[i].storeBlockInfoOnchain
+        ? block.publicDataHash.slice(0, 2 + 28*2)
+        : "0x" + "00".repeat(28);
       assert.equal(
         blockInfo.blockDataHash,
         expectedHash,
-        "unexpected public data hash"
+        "unexpected blockInfo public data hash"
+      );
+      const expectedTimestamp = onchainBlocks[i].storeBlockInfoOnchain
+        ? Number(ethBlock.timestamp)
+        : 0
+      assert.equal(
+        blockInfo.timestamp,
+        expectedTimestamp,
+        "unexpected blockInfo timestamp"
       );
     }
 
@@ -2752,7 +2760,7 @@ export class ExchangeTestUtil {
     });
     await this.setOperatorContract(operatorContract);
 
-    const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();
+    const exchangeCreationTimestamp = (await this.exchange.getBlockInfo(0)).timestamp;
     this.GENESIS_MERKLE_ROOT = new BN(
       (await this.exchange.genesisMerkleRoot()).slice(2),
       16

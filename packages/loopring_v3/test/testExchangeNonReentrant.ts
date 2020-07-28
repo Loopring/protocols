@@ -104,7 +104,7 @@ contract("Exchange", (accounts: string[]) => {
               blockVersion: 0,
               data: Constants.emptyBytes,
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
-              storeDataHashOnchain: true,
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };

@@ -551,15 +551,6 @@ contract ExchangeV3 is IExchangeV3
         return state.maxAgeDepositUntilWithdrawable;
     }
 
-    function getExchangeCreationTimestamp()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.exchangeCreationTimestamp;
-    }
-
     function shutdown()
         external
         override
