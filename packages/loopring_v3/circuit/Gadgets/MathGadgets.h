@@ -188,12 +188,14 @@ public:
 
     void generate_r1cs_witness(ProtoboardT& pb, const FieldT& value)
     {
+        assert(!fromPacked && !fromBits);
         pb.val(packed) = value;
         generate_r1cs_witness_from_packed();
     }
 
     void generate_r1cs_witness(ProtoboardT& pb, const LimbT& value)
     {
+        assert(!fromPacked && !fromBits);
         assert(value.max_bits() == 256);
         for (unsigned int i = 0; i < 256; i++)
         {
@@ -536,17 +538,19 @@ class ArrayTernaryGadget : public GadgetT
 {
 public:
 
+    VariableT b;
     std::vector<TernaryGadget> results;
     VariableArrayT res;
 
     ArrayTernaryGadget(
         ProtoboardT& pb,
-        const VariableT& b,
+        const VariableT& _b,
         const VariableArrayT& x,
         const VariableArrayT& y,
         const std::string& prefix
     ) :
-        GadgetT(pb, prefix)
+        GadgetT(pb, prefix),
+        b(_b)
     {
         assert(x.size() == y.size());
         results.reserve(x.size());
@@ -565,8 +569,12 @@ public:
         }
     }
 
-    void generate_r1cs_constraints()
+    void generate_r1cs_constraints(bool enforceBitness = true)
     {
+        if (enforceBitness)
+        {
+            libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, b, FMT(annotation_prefix, ".bitness"));
+        }
         for (unsigned int i = 0; i < results.size(); i++)
         {
             results[i].generate_r1cs_constraints(false);
