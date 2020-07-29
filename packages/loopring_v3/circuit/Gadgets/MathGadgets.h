@@ -292,8 +292,8 @@ public:
         GadgetT(pb, prefix),
         subadd(pb, NUM_BITS_AMOUNT, from.back(), to.back(), value, FMT(prefix, ".subadd"))
     {
-        from.add(subadd.X);
-        to.add(subadd.Y);
+        from.add(subadd.X); // X = from - value
+        to.add(subadd.Y);   // Y = to + value
     }
 
     void generate_r1cs_witness()
@@ -436,11 +436,10 @@ public:
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
-
         unsafeAdd(pb, A, B, FMT(prefix, ".unsafeAdd")),
         rangeCheck(pb, unsafeAdd.result(), n, FMT(prefix, ".rangeCheck"))
     {
-        assert(n + 1 <= NUM_BITS_FIELD_CAPACITY);
+        assert(n < NUM_BITS_FIELD_CAPACITY);
     }
 
     void generate_r1cs_witness()
@@ -480,7 +479,7 @@ public:
         unsafeSub(pb, A, B, FMT(prefix, ".unsafeAdd")),
         rangeCheck(pb, unsafeSub.result(), n, FMT(prefix, ".rangeCheck"))
     {
-        assert(n + 1 <= NUM_BITS_FIELD_CAPACITY);
+        assert(n < NUM_BITS_FIELD_CAPACITY);
     }
 
     void generate_r1cs_witness()
@@ -583,8 +582,12 @@ public:
         }
     }
 
-    void generate_r1cs_constraints()
+    void generate_r1cs_constraints(bool enforceBitness = true)
     {
+        if (enforceBitness)
+        {
+            libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, b, FMT(annotation_prefix, ".bitness"));
+        }
         for (unsigned int i = 0; i < results.size(); i++)
         {
             results[i].generate_r1cs_constraints(false);
@@ -598,6 +601,10 @@ public:
 };
 
 // (input[0] && input[1] && ...) (all inputs need to be boolean)
+//
+// This gadgent is not designed to handle inputs of more than a couple of
+// variables. Threfore, we are have not optimized the constraints as suggested
+// in https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 class AndGadget : public GadgetT
 {
 public:
@@ -613,6 +620,7 @@ public:
         inputs(_inputs)
     {
         assert(inputs.size() > 1);
+        results.reserve(inputs.size());
         for (unsigned int i = 1; i < inputs.size(); i++)
         {
             results.emplace_back(make_variable(pb, FMT(prefix, ".results")));
@@ -636,6 +644,9 @@ public:
     void generate_r1cs_constraints()
     {
         // This can be done more efficiently but we never have any long inputs so no need
+        if (inputs.size() > 3) {
+            printBits("[AndGadget] unexpected input length", inputs.size());
+        }
         pb.add_r1cs_constraint(ConstraintT(inputs[0], inputs[1], results[0]), FMT(annotation_prefix, ".A && B"));
         for (unsigned int i = 2; i < inputs.size(); i++)
         {
@@ -645,6 +656,10 @@ public:
 };
 
 // (input[0] || input[1] || ...) (all inputs need to be boolean)
+//
+// This gadgent is not designed to handle inputs of more than a couple of
+// variables. Threfore, we are have not optimized the constraints as suggested
+// in https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 class OrGadget : public GadgetT
 {
 public:
@@ -660,6 +675,7 @@ public:
         inputs(_inputs)
     {
         assert(inputs.size() > 1);
+        results.reserve(inputs.size());
         for (unsigned int i = 1; i < inputs.size(); i++)
         {
             results.emplace_back(make_variable(pb, FMT(prefix, ".results")));
@@ -682,6 +698,10 @@ public:
 
     void generate_r1cs_constraints()
     {
+        // This can be done more efficiently but we never have any long inputs so no need
+        if (inputs.size() > 3) {
+            printBits("[AndGadget] unexpected input length", inputs.size());
+        }
         pb.add_r1cs_constraint(ConstraintT(FieldT::one() - inputs[0], FieldT::one() - inputs[1], FieldT::one() - results[0]), FMT(annotation_prefix, ".A || B == _or"));
         for (unsigned int i = 2; i < inputs.size(); i++)
         {
@@ -721,7 +741,7 @@ public:
     }
 
     void generate_r1cs_constraints()
-    {
+    {// @: why not (A+ _not, one, one)
         pb.add_r1cs_constraint(ConstraintT(FieldT::one() - A, FieldT::one(), _not), FMT(annotation_prefix, ".!A == _not"));
     }
 };
@@ -1576,6 +1596,9 @@ public:
 
         f(make_var_array(pb, floatEncoding.numBitsExponent + floatEncoding.numBitsMantissa, FMT(prefix, ".f")))
     {
+        values.reserve(f.size());
+        baseMultipliers.reserve(floatEncoding.numBitsExponent);
+        multipliers.reserve(floatEncoding.numBitsExponent);
         for (unsigned int i = 0; i < f.size(); i++)
         {
             values.emplace_back(make_variable(pb, FMT(prefix, ".FloatToUintGadgetVariable")));
@@ -1685,6 +1708,8 @@ struct SelectorGadget : public GadgetT
         constants(_constants)
     {
         assert(maxBits < constants.values.size());
+        bits.reserve(maxBits);
+        sum.reserve(maxBits);
         for (unsigned int i = 0; i < maxBits; i++)
         {
             bits.emplace_back(pb, type, constants.values[i], FMT(annotation_prefix, ".bits"));
@@ -1734,6 +1759,7 @@ public:
         GadgetT(pb, prefix)
     {
         assert(values.size() == selector.size());
+        results.reserve(values.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
             results.emplace_back(TernaryGadget(pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
@@ -1777,6 +1803,7 @@ public:
         GadgetT(pb, prefix)
     {
         assert(values.size() == selector.size());
+        results.reserve(values.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
             results.emplace_back(ArrayTernaryGadget(pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
