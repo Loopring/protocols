@@ -817,7 +817,7 @@ public:
 
 
 // require(A == 0 || A == 1)
-class RequireBoolenBitness : public GadgetT
+class RequireBoolGadget : public GadgetT
 {
 public:
     VariableT value;
