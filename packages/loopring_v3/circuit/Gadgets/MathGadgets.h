@@ -1340,7 +1340,7 @@ public:
     }
 };
 
-// (value * numerator) = product
+// (value * numerator) = product = denominator * quotient + remainder
 // product / denominator = quotient
 // product % denominator = remainder
 class MulDivGadget : public GadgetT
@@ -1544,7 +1544,7 @@ public:
         calculatedHash.reset(new libsnark::dual_variable_gadget<FieldT>(
             pb, reverse(subArray(hasher->result().bits, 0, NUM_BITS_FIELD_CAPACITY)), ".packCalculatedHash")
         );
-        calculatedHash->generate_r1cs_constraints(false);
+        calculatedHash->generate_r1cs_constraints(false /* enforce_bitness */);
         requireEqual(pb, calculatedHash->packed, publicInput, ".publicDataCheck");
     }
 };
@@ -1570,12 +1570,13 @@ public:
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
-
         constants(_constants),
         floatEncoding(_floatEncoding),
-
         f(make_var_array(pb, floatEncoding.numBitsExponent + floatEncoding.numBitsMantissa, FMT(prefix, ".f")))
     {
+        values.reserve(f.size());
+        baseMultipliers.reserve(floatEncoding.numBitsExponent);
+        multipliers.reserve(floatEncoding.numBitsExponent);
         for (unsigned int i = 0; i < f.size(); i++)
         {
             values.emplace_back(make_variable(pb, FMT(prefix, ".FloatToUintGadgetVariable")));
@@ -1665,6 +1666,7 @@ public:
     }
 };
 
+// check 'type' is one of Constants.values - [0 - 10]
 struct SelectorGadget : public GadgetT
 {
     const Constants& constants;
@@ -1684,7 +1686,10 @@ struct SelectorGadget : public GadgetT
         GadgetT(pb, prefix),
         constants(_constants)
     {
-        assert(maxBits < constants.values.size());
+        assert(maxBits <= constants.values.size());
+        bits.reserve(maxBits);
+        sum.reserve(maxBits);
+
         for (unsigned int i = 0; i < maxBits; i++)
         {
             bits.emplace_back(pb, type, constants.values[i], FMT(annotation_prefix, ".bits"));
@@ -1719,6 +1724,11 @@ struct SelectorGadget : public GadgetT
     }
 };
 
+// if selector=[1,0,0] and values = [a,b,c], return a
+// if selector=[0,1,0] and values = [a,b,c], return b
+// if selector=[0,0,1] and values = [a,b,c], return c
+// special case,
+// if selector=[0,0,0] and values = [a,b,c], return a
 class SelectGadget : public GadgetT
 {
 public:
@@ -1734,6 +1744,7 @@ public:
         GadgetT(pb, prefix)
     {
         assert(values.size() == selector.size());
+        results.reserve(values.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
             results.emplace_back(TernaryGadget(pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
@@ -1777,6 +1788,7 @@ public:
         GadgetT(pb, prefix)
     {
         assert(values.size() == selector.size());
+        results.reserve(values.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
             results.emplace_back(ArrayTernaryGadget(pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
