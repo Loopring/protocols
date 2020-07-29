@@ -118,7 +118,6 @@ public:
 
     void generate_r1cs_witness()
     {
-
     }
 
     void generate_r1cs_constraints()
@@ -168,7 +167,6 @@ public:
     ) :
         libsnark::dual_variable_gadget<FieldT>(pb, width, prefix)
     {
-
     }
 
     DualVariableGadget(
@@ -220,7 +218,7 @@ public:
         generate_r1cs_witness_from_bits();
     }
 
-    void generate_r1cs_constraints(bool enforce = true)
+    void generate_r1cs_constraints(bool enforce)
     {
         libsnark::dual_variable_gadget<FieldT>::generate_r1cs_constraints(enforce);
     }
@@ -292,8 +290,8 @@ public:
         GadgetT(pb, prefix),
         subadd(pb, NUM_BITS_AMOUNT, from.back(), to.back(), value, FMT(prefix, ".subadd"))
     {
-        from.add(subadd.X);
-        to.add(subadd.Y);
+        from.add(subadd.X); // X = from - value
+        to.add(subadd.Y);   // Y = to + value
     }
 
     void generate_r1cs_witness()
@@ -326,7 +324,6 @@ public:
         sub(_sub),
         sum(make_variable(pb, FMT(prefix, ".sum")))
     {
-
     }
 
     const VariableT& result() const
@@ -364,7 +361,6 @@ public:
         add(_add),
         sum(make_variable(pb, FMT(prefix, ".sum")))
     {
-
     }
 
     const VariableT& result() const
@@ -402,7 +398,6 @@ public:
         valueB(_valueB),
         product(make_variable(pb, FMT(prefix, ".product")))
     {
-
     }
 
     const VariableT& result() const
@@ -436,11 +431,10 @@ public:
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
-
         unsafeAdd(pb, A, B, FMT(prefix, ".unsafeAdd")),
         rangeCheck(pb, unsafeAdd.result(), n, FMT(prefix, ".rangeCheck"))
     {
-        assert(n + 1 <= NUM_BITS_FIELD_CAPACITY);
+        assert(n < NUM_BITS_FIELD_CAPACITY);
     }
 
     void generate_r1cs_witness()
@@ -480,7 +474,7 @@ public:
         unsafeSub(pb, A, B, FMT(prefix, ".unsafeAdd")),
         rangeCheck(pb, unsafeSub.result(), n, FMT(prefix, ".rangeCheck"))
     {
-        assert(n + 1 <= NUM_BITS_FIELD_CAPACITY);
+        assert(n < NUM_BITS_FIELD_CAPACITY);
     }
 
     void generate_r1cs_witness()
@@ -526,7 +520,6 @@ public:
 
         selected(make_variable(pb, FMT(prefix, ".selected")))
     {
-
     }
 
     const VariableT& result() const
@@ -539,12 +532,8 @@ public:
         pb.val(selected) = (pb.val(b) == FieldT::one()) ? pb.val(x) : pb.val(y);
     }
 
-    void generate_r1cs_constraints(bool enforceBitness = true)
+    void generate_r1cs_constraints()
     {
-        if (enforceBitness)
-        {
-            libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, b, FMT(annotation_prefix, ".bitness"));
-        }
         pb.add_r1cs_constraint(ConstraintT(b, y - x, y - selected), FMT(annotation_prefix, ".b * (y - x) == (y - selected)"));
     }
 };
@@ -598,6 +587,10 @@ public:
 };
 
 // (input[0] && input[1] && ...) (all inputs need to be boolean)
+//
+// This gadgent is not designed to handle inputs of more than a couple of
+// variables. Threfore, we are have not optimized the constraints as suggested
+// in https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 class AndGadget : public GadgetT
 {
 public:
@@ -613,6 +606,7 @@ public:
         inputs(_inputs)
     {
         assert(inputs.size() > 1);
+        results.reserve(inputs.size());
         for (unsigned int i = 1; i < inputs.size(); i++)
         {
             results.emplace_back(make_variable(pb, FMT(prefix, ".results")));
@@ -636,6 +630,10 @@ public:
     void generate_r1cs_constraints()
     {
         // This can be done more efficiently but we never have any long inputs so no need
+        if (inputs.size() > 3)
+        {
+            std::cout << "[AndGadget] unexpected input length " << inputs.size() << endl;
+        }
         pb.add_r1cs_constraint(ConstraintT(inputs[0], inputs[1], results[0]), FMT(annotation_prefix, ".A && B"));
         for (unsigned int i = 2; i < inputs.size(); i++)
         {
@@ -645,6 +643,10 @@ public:
 };
 
 // (input[0] || input[1] || ...) (all inputs need to be boolean)
+//
+// This gadgent is not designed to handle inputs of more than a couple of
+// variables. Threfore, we are have not optimized the constraints as suggested
+// in https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 class OrGadget : public GadgetT
 {
 public:
@@ -660,6 +662,7 @@ public:
         inputs(_inputs)
     {
         assert(inputs.size() > 1);
+        results.reserve(inputs.size());
         for (unsigned int i = 1; i < inputs.size(); i++)
         {
             results.emplace_back(make_variable(pb, FMT(prefix, ".results")));
@@ -682,6 +685,11 @@ public:
 
     void generate_r1cs_constraints()
     {
+        // This can be done more efficiently but we never have any long inputs so no need
+        if (inputs.size() > 3)
+        {
+            std::cout << "[AndGadget] unexpected input length " << inputs.size() << endl;
+        }
         pb.add_r1cs_constraint(ConstraintT(FieldT::one() - inputs[0], FieldT::one() - inputs[1], FieldT::one() - results[0]), FMT(annotation_prefix, ".A || B == _or"));
         for (unsigned int i = 2; i < inputs.size(); i++)
         {
@@ -707,7 +715,6 @@ public:
         A(_A),
         _not(make_variable(pb, FMT(prefix, "._not")))
     {
-
     }
 
     const VariableT& result() const
@@ -722,7 +729,7 @@ public:
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(FieldT::one() - A, FieldT::one(), _not), FMT(annotation_prefix, ".!A == _not"));
+        pb.add_r1cs_constraint(ConstraintT(A + _not, FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".!A == _not"));
     }
 };
 
@@ -815,6 +822,32 @@ public:
     }
 };
 
+// require(A == 0 || A == 1)
+class RequireBoolGadget : public GadgetT
+{
+public:
+    VariableT value;
+
+    RequireEqualGadget(
+        ProtoboardT& pb,
+        const VariableT& _A,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+        A(_A)
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+    }
+
+    void generate_r1cs_constraints()
+    {
+        libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, A, FMT(annotation_prefix, ".bitness"));
+    }
+};
+
 // require(A == B)
 class RequireEqualGadget : public GadgetT
 {
@@ -832,12 +865,10 @@ public:
         A(_A),
         B(_B)
     {
-
     }
 
     void generate_r1cs_witness()
     {
-
     }
 
     void generate_r1cs_constraints()
@@ -863,12 +894,10 @@ public:
         A(_A),
         B(_B)
     {
-
     }
 
     void generate_r1cs_witness()
     {
-
     }
 
     void generate_r1cs_constraints()
@@ -893,7 +922,6 @@ public:
         A(_A),
         A_inv(make_variable(pb, FMT(prefix, ".A_inv")))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -929,7 +957,6 @@ public:
         difference(make_variable(pb, FMT(prefix, ".difference"))),
         notZero(pb, difference, FMT(prefix, ".difference != 0"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1052,7 +1079,6 @@ public:
         partHi(pb, Ahi.packed, Bhi.packed, 254/2, FMT(prefix, ".partHi")),
         res(pb, partHi.eq(), partLo.lt(), partHi.lt(), FMT(prefix, ".res"))
     {
-
     }
 
     const VariableT& lt() const
@@ -1106,7 +1132,6 @@ public:
         A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)")),
         minimum(pb, A_lt_B.lt(), A, B, FMT(prefix, ".minimum = (A < B) ? A : B"))
     {
-
     }
 
     const VariableT& result() const
@@ -1146,7 +1171,6 @@ public:
         A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)")),
         maximum(pb, A_lt_B.lt(), B, A, FMT(prefix, ".maximum = (A < B) ? B : A"))
     {
-
     }
 
     const VariableT& result() const
@@ -1184,7 +1208,6 @@ public:
 
         leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1216,7 +1239,6 @@ public:
 
         leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1231,7 +1253,8 @@ public:
     }
 };
 
-// if (C) then require(A)
+// if (C) then require(A), i.e.,
+// require(!C || A)
 class IfThenRequireGadget : public GadgetT
 {
 public:
@@ -1249,7 +1272,6 @@ public:
         notC(pb, C, FMT(prefix, ".notC")),
         res(pb, {notC.result(), A}, FMT(prefix, ".res"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1266,7 +1288,8 @@ public:
     }
 };
 
-// if (C) then require(A == B)
+// if (C) then require(A == B), i.e.,
+// require(!C || A == B)
 class IfThenRequireEqualGadget : public GadgetT
 {
 public:
@@ -1285,7 +1308,6 @@ public:
         eq(pb, A, B, FMT(prefix, ".eq")),
         res(pb, C, eq.result(), FMT(prefix, ".res"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1301,7 +1323,8 @@ public:
     }
 };
 
-// if (C) then require(A != B)
+// if (C) then require(A != B), i.e.,
+// require(!C || A != B)
 class IfThenRequireNotEqualGadget : public GadgetT
 {
 public:
@@ -1322,7 +1345,6 @@ public:
         notEq(pb, eq.result(), FMT(prefix, ".notEq")),
         res(pb, C, notEq.result(), FMT(prefix, ".res"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1340,7 +1362,7 @@ public:
     }
 };
 
-// (value * numerator) = product
+// (value * numerator) = product = denominator * quotient + remainder
 // product / denominator = quotient
 // product % denominator = remainder
 class MulDivGadget : public GadgetT
@@ -1468,7 +1490,6 @@ public:
 
         original_mul_accuracyN_LEQ_value_mul_accuracyD(pb, original_mul_accuracyN, value_mul_accuracyD, maxNumBits + 32, FMT(prefix, ".original_mul_accuracyN_LEQ_value_mul_accuracyD"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1544,7 +1565,7 @@ public:
         calculatedHash.reset(new libsnark::dual_variable_gadget<FieldT>(
             pb, reverse(subArray(hasher->result().bits, 0, NUM_BITS_FIELD_CAPACITY)), ".packCalculatedHash")
         );
-        calculatedHash->generate_r1cs_constraints(false);
+        calculatedHash->generate_r1cs_constraints(false /* enforce_bitness */);
         requireEqual(pb, calculatedHash->packed, publicInput, ".publicDataCheck");
     }
 };
@@ -1570,12 +1591,13 @@ public:
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
-
         constants(_constants),
         floatEncoding(_floatEncoding),
-
         f(make_var_array(pb, floatEncoding.numBitsExponent + floatEncoding.numBitsMantissa, FMT(prefix, ".f")))
     {
+        values.reserve(f.size());
+        baseMultipliers.reserve(floatEncoding.numBitsExponent);
+        multipliers.reserve(floatEncoding.numBitsExponent);
         for (unsigned int i = 0; i < f.size(); i++)
         {
             values.emplace_back(make_variable(pb, FMT(prefix, ".FloatToUintGadgetVariable")));
@@ -1665,6 +1687,7 @@ public:
     }
 };
 
+// check 'type' is one of Constants.values - [0 - 10]
 struct SelectorGadget : public GadgetT
 {
     const Constants& constants;
@@ -1685,6 +1708,8 @@ struct SelectorGadget : public GadgetT
         constants(_constants)
     {
         assert(maxBits < constants.values.size());
+        bits.reserve(maxBits);
+        sum.reserve(maxBits);
         for (unsigned int i = 0; i < maxBits; i++)
         {
             bits.emplace_back(pb, type, constants.values[i], FMT(annotation_prefix, ".bits"));
@@ -1719,6 +1744,11 @@ struct SelectorGadget : public GadgetT
     }
 };
 
+// if selector=[1,0,0] and values = [a,b,c], return a
+// if selector=[0,1,0] and values = [a,b,c], return b
+// if selector=[0,0,1] and values = [a,b,c], return c
+// special case,
+// if selector=[0,0,0] and values = [a,b,c], return a
 class SelectGadget : public GadgetT
 {
 public:
@@ -1734,6 +1764,7 @@ public:
         GadgetT(pb, prefix)
     {
         assert(values.size() == selector.size());
+        results.reserve(values.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
             results.emplace_back(TernaryGadget(pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
@@ -1777,6 +1808,7 @@ public:
         GadgetT(pb, prefix)
     {
         assert(values.size() == selector.size());
+        results.reserve(values.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
             results.emplace_back(ArrayTernaryGadget(pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
@@ -1828,7 +1860,6 @@ public:
         equal_owner_or_no_owner(pb, {newOwner_equal_oldOwner.result(), no_oldOwner.result()}, FMT(prefix, ".equal_owner_or_no_owner")),
         equal_owner_or_no_owner_eq_true(pb, equal_owner_or_no_owner.result(), constants._1, FMT(prefix, ".equal_owner_or_no_owner_eq_true"))
     {
-
     }
 
     void generate_r1cs_witness()
