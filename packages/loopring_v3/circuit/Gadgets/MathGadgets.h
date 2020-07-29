@@ -220,7 +220,7 @@ public:
         generate_r1cs_witness_from_bits();
     }
 
-    void generate_r1cs_constraints(bool enforce = true)
+    void generate_r1cs_constraints(bool enforce)
     {
         libsnark::dual_variable_gadget<FieldT>::generate_r1cs_constraints(enforce);
     }
@@ -538,7 +538,7 @@ public:
         pb.val(selected) = (pb.val(b) == FieldT::one()) ? pb.val(x) : pb.val(y);
     }
 
-    void generate_r1cs_constraints(bool enforceBitness = true)
+    void generate_r1cs_constraints(bool enforceBitness)
     {
         if (enforceBitness)
         {
@@ -582,7 +582,7 @@ public:
         }
     }
 
-    void generate_r1cs_constraints(bool enforceBitness = true)
+    void generate_r1cs_constraints(bool enforceBitness)
     {
         if (enforceBitness)
         {

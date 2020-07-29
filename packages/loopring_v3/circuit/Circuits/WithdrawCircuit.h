@@ -247,7 +247,7 @@ public:
         amountP.generate_r1cs_witness();
         balanceA_after.generate_r1cs_witness();
         balanceP_after.generate_r1cs_witness();
-        merkleTreeAccountA.generate_r1cs_witness();
+        merkleTreeAccountA.generate_r1cs_witness(true);
 
         // Increase the nonce by 1 (unless it's a forced withdrawal)
         isForcedWithdrawal.generate_r1cs_witness();
