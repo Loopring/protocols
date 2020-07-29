@@ -783,35 +783,42 @@ public:
 class EqualGadget : public GadgetT
 {
 public:
-    VariableT A;
-    VariableT B;
-    VariableT C;
+    UnsafeSubGadget difference;
+    IsNonZero isNonZeroDifference;
+    NotGadget isZeroDifference;
 
     EqualGadget(
         ProtoboardT& pb,
-        const VariableT& _A,
-        const VariableT& _B,
+        const VariableT& A,
+        const VariableT& B,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
-        A(_A),
-        B(_B)
+
+        difference(pb, A, B, FMT(prefix, ".difference")),
+        isNonZeroDifference(pb, difference.result(), FMT(prefix, ".isNonZeroDifference")),
+        isZeroDifference(pb, isNonZeroDifference.result(), FMT(prefix, ".isZeroDifference"))
     {
+
     }
 
     const VariableT& result() const
     {
-        return C;
+        return isZeroDifference.result();
     }
 
     void generate_r1cs_witness()
     {
-        pb.val(C) = pb.val(A) == pb.val(B) ? FieldT::one() : FieldT::zero;
+        difference.generate_r1cs_witness();
+        isNonZeroDifference.generate_r1cs_witness();
+        isZeroDifference.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(A - B, C, FieldT::zero), FMT(annotation_prefix, ".A == B = C"));
+        difference.generate_r1cs_constraints();
+        isNonZeroDifference.generate_r1cs_constraints();
+        isZeroDifference.generate_r1cs_constraints();
     }
 };
 
