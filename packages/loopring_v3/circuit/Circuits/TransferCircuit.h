@@ -394,9 +394,9 @@ public:
 
         // DA optimization
         da_NeedsToAddress.generate_r1cs_constraints();
-        da_To.generate_r1cs_constraints(true);
-        da_From.generate_r1cs_constraints(true);
-        da_Nonce.generate_r1cs_constraints(true);
+        da_To.generate_r1cs_constraints();
+        da_From.generate_r1cs_constraints();
+        da_Nonce.generate_r1cs_constraints();
 
         // Fee as float
         fFee.generate_r1cs_constraints();

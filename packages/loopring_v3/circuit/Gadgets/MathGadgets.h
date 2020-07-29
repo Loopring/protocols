@@ -728,8 +728,8 @@ public:
     }
 
     void generate_r1cs_constraints()
-    {// @: why not (A+ _not, one, one)
-        pb.add_r1cs_constraint(ConstraintT(FieldT::one() - A, FieldT::one(), _not), FMT(annotation_prefix, ".!A == _not"));
+    {
+        pb.add_r1cs_constraint(ConstraintT(A + _not, FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".!A == _not"));
     }
 };
 
