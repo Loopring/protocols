@@ -118,7 +118,6 @@ public:
 
     void generate_r1cs_witness()
     {
-
     }
 
     void generate_r1cs_constraints()
@@ -168,7 +167,6 @@ public:
     ) :
         libsnark::dual_variable_gadget<FieldT>(pb, width, prefix)
     {
-
     }
 
     DualVariableGadget(
@@ -326,7 +324,6 @@ public:
         sub(_sub),
         sum(make_variable(pb, FMT(prefix, ".sum")))
     {
-
     }
 
     const VariableT& result() const
@@ -364,7 +361,6 @@ public:
         add(_add),
         sum(make_variable(pb, FMT(prefix, ".sum")))
     {
-
     }
 
     const VariableT& result() const
@@ -402,7 +398,6 @@ public:
         valueB(_valueB),
         product(make_variable(pb, FMT(prefix, ".product")))
     {
-
     }
 
     const VariableT& result() const
@@ -525,7 +520,6 @@ public:
 
         selected(make_variable(pb, FMT(prefix, ".selected")))
     {
-
     }
 
     const VariableT& result() const
@@ -721,7 +715,6 @@ public:
         A(_A),
         _not(make_variable(pb, FMT(prefix, "._not")))
     {
-
     }
 
     const VariableT& result() const
@@ -806,7 +799,6 @@ public:
         isNonZeroDifference(pb, difference.result(), FMT(prefix, ".isNonZeroDifference")),
         isZeroDifference(pb, isNonZeroDifference.result(), FMT(prefix, ".isZeroDifference"))
     {
-
     }
 
     const VariableT& result() const
@@ -829,6 +821,33 @@ public:
     }
 };
 
+
+// require(A == B)
+class RequireBoolenBitness : public GadgetT
+{
+public:
+    VariableT value;
+
+    RequireEqualGadget(
+        ProtoboardT& pb,
+        const VariableT& _value,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+        value(_value)
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+    }
+
+    void generate_r1cs_constraints()
+    {
+        libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, value, FMT(annotation_prefix, ".bitness"));
+    }
+};
+
 // require(A == B)
 class RequireEqualGadget : public GadgetT
 {
@@ -846,12 +865,10 @@ public:
         A(_A),
         B(_B)
     {
-
     }
 
     void generate_r1cs_witness()
     {
-
     }
 
     void generate_r1cs_constraints()
@@ -877,12 +894,10 @@ public:
         A(_A),
         B(_B)
     {
-
     }
 
     void generate_r1cs_witness()
     {
-
     }
 
     void generate_r1cs_constraints()
@@ -907,7 +922,6 @@ public:
         A(_A),
         A_inv(make_variable(pb, FMT(prefix, ".A_inv")))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -943,7 +957,6 @@ public:
         difference(make_variable(pb, FMT(prefix, ".difference"))),
         notZero(pb, difference, FMT(prefix, ".difference != 0"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1066,7 +1079,6 @@ public:
         partHi(pb, Ahi.packed, Bhi.packed, 254/2, FMT(prefix, ".partHi")),
         res(pb, partHi.eq(), partLo.lt(), partHi.lt(), FMT(prefix, ".res"))
     {
-
     }
 
     const VariableT& lt() const
@@ -1120,7 +1132,6 @@ public:
         A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)")),
         minimum(pb, A_lt_B.lt(), A, B, FMT(prefix, ".minimum = (A < B) ? A : B"))
     {
-
     }
 
     const VariableT& result() const
@@ -1160,7 +1171,6 @@ public:
         A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)")),
         maximum(pb, A_lt_B.lt(), B, A, FMT(prefix, ".maximum = (A < B) ? B : A"))
     {
-
     }
 
     const VariableT& result() const
@@ -1198,7 +1208,6 @@ public:
 
         leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1230,7 +1239,6 @@ public:
 
         leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1263,7 +1271,6 @@ public:
         notC(pb, C, FMT(prefix, ".notC")),
         res(pb, {notC.result(), A}, FMT(prefix, ".res"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1299,7 +1306,6 @@ public:
         eq(pb, A, B, FMT(prefix, ".eq")),
         res(pb, C, eq.result(), FMT(prefix, ".res"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1336,7 +1342,6 @@ public:
         notEq(pb, eq.result(), FMT(prefix, ".notEq")),
         res(pb, C, notEq.result(), FMT(prefix, ".res"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1482,7 +1487,6 @@ public:
 
         original_mul_accuracyN_LEQ_value_mul_accuracyD(pb, original_mul_accuracyN, value_mul_accuracyD, maxNumBits + 32, FMT(prefix, ".original_mul_accuracyN_LEQ_value_mul_accuracyD"))
     {
-
     }
 
     void generate_r1cs_witness()
@@ -1849,7 +1853,6 @@ public:
         equal_owner_or_no_owner(pb, {newOwner_equal_oldOwner.result(), no_oldOwner.result()}, FMT(prefix, ".equal_owner_or_no_owner")),
         equal_owner_or_no_owner_eq_true(pb, equal_owner_or_no_owner.result(), constants._1, FMT(prefix, ".equal_owner_or_no_owner_eq_true"))
     {
-
     }
 
     void generate_r1cs_witness()
