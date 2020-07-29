@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../lib/EIP712.sol";
@@ -62,7 +62,6 @@ contract StatelessWallet
     }
 
     constructor()
-        public
     {
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("Loopring Stateless Wallet", "1.0", address(this))
@@ -118,7 +117,7 @@ contract StatelessWallet
         validateWallet(wallet, walletDataHash, accountID)
         returns (bytes4)
     {
-        require(now >= wallet.inheritableSince, "TOO_SOON_TO_INHERIT");
+        require(block.timestamp >= wallet.inheritableSince, "TOO_SOON_TO_INHERIT");
         require(wallet.inheritor == newOwner, "WRONG_INHERITOR");
         return RECOVERY_MAGICVALUE;
     }

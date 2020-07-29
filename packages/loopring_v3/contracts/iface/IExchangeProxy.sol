@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../thirdparty/Proxy.sol";
 
@@ -17,7 +17,6 @@ abstract contract IExchangeProxy is Proxy
     );
 
     constructor(address _registry)
-        public
     {
         setRegistry(_registry);
     }

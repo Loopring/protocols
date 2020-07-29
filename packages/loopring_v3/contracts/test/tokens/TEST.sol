@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../DummyToken.sol";
 import "../../iface/IExchangeV3.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
 contract TEST is DummyToken {
+    using SafeMath for uint;
 
     // Test cases
     uint8 public constant TEST_NOTHING = 0;
@@ -30,7 +31,7 @@ contract TEST is DummyToken {
         "TEST",
         18,
         2 ** 128
-    ) public
+    )
     {
     }
 

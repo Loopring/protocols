@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
@@ -118,8 +118,8 @@ library ExchangeBlocks
         uint32 inputTimestamp = _block.data.toUint32(offset);
         offset += 4;
         require(
-            inputTimestamp > now - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
-            inputTimestamp < now + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
+            inputTimestamp > block.timestamp - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
+            inputTimestamp < block.timestamp + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
             "INVALID_TIMESTAMP"
         );
 
@@ -150,7 +150,7 @@ library ExchangeBlocks
         S.merkleRoot = merkleRootAfter;
         S.blocks.push(
             _block.storeBlockInfoOnchain ?
-                ExchangeData.BlockInfo(uint32(now), bytes28(_publicDataHash)) :
+                ExchangeData.BlockInfo(uint32(block.timestamp), bytes28(_publicDataHash)) :
                 ExchangeData.BlockInfo(uint32(0), bytes28(0))
         );
     }
@@ -337,7 +337,7 @@ library ExchangeBlocks
         returns (bool)
     {
         ExchangeData.ProtocolFeeData storage data = S.protocolFeeData;
-        if (now > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
+        if (block.timestamp > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
             // Store the current protocol fees in the previous protocol fees
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;
@@ -346,7 +346,7 @@ library ExchangeBlocks
                 S.id,
                 S.rollupMode
             );
-            data.syncedAt = uint32(now);
+            data.syncedAt = uint32(block.timestamp);
 
             if (data.takerFeeBips != data.previousTakerFeeBips ||
                 data.makerFeeBips != data.previousMakerFeeBips) {

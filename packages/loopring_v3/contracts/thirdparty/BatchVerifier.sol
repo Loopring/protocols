@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://github.com/matter-labs/Groth16BatchVerifier/blob/master/BatchedSnarkVerifier/contracts/BatchVerifier.sol
 // Thanks Harry from ETHSNARKS for base code
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 library BatchVerifier {
     function GroupOrder ()

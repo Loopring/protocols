@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
@@ -66,14 +66,14 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
     /// @dev Registers a new protocol.
     /// @param protocol The address of the new protocol.
     /// @param implementation The new protocol's default implementation.
-    /// @return implManager A new implementation manager to manage the protocol's implementations.
+    /// @return manager A new implementation manager to manage the protocol's implementations.
     function registerProtocol(
         address protocol,
         address implementation
         )
         external
         virtual
-        returns (address implManager);
+        returns (address manager);
 
     /// @dev Sets the default protocol.
     /// @param protocol The new default protocol.
@@ -122,7 +122,7 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
 
     /// @dev Returns information regarding the default protocol.
     /// @return protocol The address of the default protocol.
-    /// @return versionmanager The address of the version manager
+    /// @return manager The address of the version manager
     /// @return defaultImpl The address of the default protocol's implementation manager.
     /// @return protocolVersion The version of the default protocol.
     /// @return defaultImplVersion The version of the default implementation.
@@ -132,7 +132,7 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         view
         returns (
             address protocol,
-            address versionmanager,
+            address manager,
             address defaultImpl,
             string  memory protocolVersion,
             string  memory defaultImplVersion

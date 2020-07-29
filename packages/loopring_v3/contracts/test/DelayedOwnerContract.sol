@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../impl/owners/DelayedOwner.sol";
 import "./DelayedTargetContract.sol";
@@ -15,7 +15,6 @@ contract DelayedOwnerContract is DelayedOwner
         bool setDefaultFunctionDelays
         )
         DelayedOwner(delayedTargetAddress, 3 days)
-        public
     {
         if (setDefaultFunctionDelays) {
             DelayedTargetContract delayedTarget = DelayedTargetContract(delayedTargetAddress);

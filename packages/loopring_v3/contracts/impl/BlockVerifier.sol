@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../thirdparty/Verifier.sol";
 import "../thirdparty/BatchVerifier.sol";
@@ -24,7 +24,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
     mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit)))) public circuits;
 
-    constructor() Claimable() public {}
+    constructor() Claimable() {}
 
     function registerCircuit(
         uint8    blockType,

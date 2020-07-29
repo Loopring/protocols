@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
@@ -46,7 +46,7 @@ library ExchangeGenesis
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
 
         S.merkleRoot = _genesisMerkleRoot;
-        S.blocks.push(ExchangeData.BlockInfo(uint32(now), bytes28(0)));
+        S.blocks.push(ExchangeData.BlockInfo(uint32(block.timestamp), bytes28(0)));
 
         // Get the protocol fees for this exchange
         S.protocolFeeData.syncedAt = uint32(0);

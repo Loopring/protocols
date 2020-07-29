@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/IExchangeV3.sol";
@@ -75,7 +75,6 @@ contract FastWithdrawalAgent is ReentrancyGuard
     bytes32 public DOMAIN_SEPARATOR;
 
     constructor()
-        public
     {
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalAgent", "1.0", address(this)));
     }
@@ -127,7 +126,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
             require(hash.verifySignature(fastWithdrawal.from, fastWithdrawal.signature), "INVALID_SIGNATURE");
 
             // Check the time limit
-            require(now <= fastWithdrawal.validUntil, "TX_EXPIRED");
+            require(block.timestamp <= fastWithdrawal.validUntil, "TX_EXPIRED");
 
             // Approve the offchain transfer from the account that's withdrawing back to the liquidity provider
             IExchangeV3(fastWithdrawal.exchange).approveOffchainTransfer(

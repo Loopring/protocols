@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 /**
  * @title ERC20Basic
@@ -109,6 +109,7 @@ abstract contract ERC20 is ERC20Basic {
  * @dev Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
  */
 contract StandardToken is ERC20, BasicToken {
+    using SafeMath for uint;
     mapping (address => mapping (address => uint)) internal allowed;
     /**
      * @dev Transfer tokens from one address to another
@@ -228,7 +229,6 @@ contract LRCToken is StandardToken {
         uint          _totalSupply,
         address       _firstHolder
         )
-        public
     {
         require(_totalSupply > 0, "INVALID_VALUE");
         require(_firstHolder != address(0), "ZERO_ADDRESS");

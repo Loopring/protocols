@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./ILoopring.sol";
 
@@ -168,7 +168,7 @@ abstract contract ILoopringV3 is ILoopring
     /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
     /// @param  requestedAmount The amount of LRC to withdraw
-    /// @return amount The amount of LRC withdrawn
+    /// @return amountLRC The amount of LRC withdrawn
     function withdrawExchangeStake(
         uint    exchangeId,
         address recipient,
@@ -176,7 +176,7 @@ abstract contract ILoopringV3 is ILoopring
         )
         external
         virtual
-        returns (uint amount);
+        returns (uint amountLRC);
 
     /// @dev Stakes more LRC for an exchange.
     /// @param  exchangeId The id of the exchange

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../iface/IDelayedTransaction.sol";
 
@@ -38,7 +38,6 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
     constructor(
         uint    _timeToLive
         )
-        public
     {
         timeToLive = _timeToLive;
     }
@@ -72,8 +71,8 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
         // Make sure the delay is respected
         bytes4 functionSelector = transaction.data.toBytes4(0);
         uint delay = getFunctionDelay(transaction.to, functionSelector);
-        require(now >= transaction.timestamp.add(delay), "TOO_EARLY");
-        require(now <= transaction.timestamp.add(delay).add(timeToLive), "TOO_LATE");
+        require(block.timestamp >= transaction.timestamp.add(delay), "TOO_EARLY");
+        require(block.timestamp <= transaction.timestamp.add(delay).add(timeToLive), "TOO_LATE");
 
         // Remove the transaction
         removeTransaction(transaction.id);
@@ -167,7 +166,7 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
     {
         Transaction memory transaction = Transaction(
             totalNumDelayedTransactions,
-            now,
+            block.timestamp,
             to,
             value,
             data

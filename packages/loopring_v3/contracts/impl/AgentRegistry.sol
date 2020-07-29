@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../iface/IAgentRegistry.sol";
@@ -27,7 +27,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         bool            trust
     );
 
-    constructor() public Claimable() {}
+    constructor() Claimable() {}
 
     function isAgent(
         address user,

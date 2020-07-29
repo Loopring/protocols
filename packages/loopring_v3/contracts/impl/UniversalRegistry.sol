@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../lib/SimpleProxy.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -42,7 +42,6 @@ contract UniversalRegistry is IUniversalRegistry {
         address _lrcAddress
         )
         Claimable()
-        public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
         lrcAddress = _lrcAddress;

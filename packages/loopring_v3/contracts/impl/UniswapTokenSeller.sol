@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../iface/ITokenSeller.sol";
 
@@ -40,7 +40,6 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
         address _uniswapFactoryAddress,
         address _recipient
         )
-        public
     {
         require(_uniswapFactoryAddress != address(0), "ZERO_ADDRESS");
         uniswapFactoryAddress = _uniswapFactoryAddress;
@@ -132,7 +131,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
             amountS,
             amountB,
             slippage,
-            uint64(now)
+            uint64(block.timestamp)
         );
 
         return true;

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
@@ -55,7 +55,7 @@ library ExchangeDeposits
         );
 
         // Add the amount to the deposit request and reset the time the operator has to process it
-        S.pendingDeposits[to][tokenID].timestamp = uint32(now);
+        S.pendingDeposits[to][tokenID].timestamp = uint32(block.timestamp);
 
         S.pendingDeposits[to][tokenID].amount =
             S.pendingDeposits[to][tokenID].amount.add96(amountDeposited);

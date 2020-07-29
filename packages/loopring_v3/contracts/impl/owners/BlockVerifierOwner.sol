@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./DelayedOwner.sol";
 import "../../iface/IBlockVerifier.sol";
@@ -14,7 +14,6 @@ contract BlockVerifierOwner is DelayedOwner
         IBlockVerifier blockVerifier
         )
         DelayedOwner(address(blockVerifier), 3 days)
-        public
     {
         setFunctionDelay(blockVerifier.transferOwnership.selector, 7 days);
         setFunctionDelay(blockVerifier.registerCircuit.selector, 7 days);

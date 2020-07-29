@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -28,7 +28,6 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress
         )
         Claimable()
-        public
     {
         require(address(0) != _universalRegistry, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
@@ -133,7 +132,7 @@ contract LoopringV3 is ILoopringV3
         targetProtocolTakerFeeStake = _targetProtocolTakerFeeStake;
         targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
 
-        emit SettingsUpdated(now);
+        emit SettingsUpdated(block.timestamp);
     }
 
     function canExchangeSubmitBlocks(
@@ -357,7 +356,7 @@ contract LoopringV3 is ILoopringV3
         minExchangeStakeRollup = _minExchangeStakeRollup;
         minExchangeStakeValidium = _minExchangeStakeValidium;
 
-        emit SettingsUpdated(now);
+        emit SettingsUpdated(block.timestamp);
     }
 
     function calculateProtocolFee(

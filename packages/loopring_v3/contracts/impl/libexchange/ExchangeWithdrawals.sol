@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
@@ -74,7 +74,7 @@ library ExchangeWithdrawals
         require(S.pendingForcedWithdrawals[accountID][tokenID].timestamp == 0, "WITHDRAWAL_ALREADY_PENDING");
 
         S.pendingForcedWithdrawals[accountID][tokenID].owner = owner;
-        S.pendingForcedWithdrawals[accountID][tokenID].timestamp = uint32(now);
+        S.pendingForcedWithdrawals[accountID][tokenID].timestamp = uint32(block.timestamp);
         S.pendingForcedWithdrawals[accountID][tokenID].fee = uint64(withdrawalFeeETH);
 
         S.numPendingForcedTransactions++;
@@ -135,7 +135,7 @@ library ExchangeWithdrawals
         require(deposit.timestamp != 0, "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
         // Check if the deposit has indeed exceeded the time limit
-        require(now >= deposit.timestamp + S.maxAgeDepositUntilWithdrawable, "DEPOSIT_NOT_WITHDRAWABLE_YET");
+        require(block.timestamp >= deposit.timestamp + S.maxAgeDepositUntilWithdrawable, "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
         uint amount = deposit.amount;
         uint fee = deposit.fee;
@@ -263,7 +263,7 @@ library ExchangeWithdrawals
                 uint96(amount)
             );
             if (from == address(0)) {
-                S.protocolFeeLastWithdrawnTime[token] = now;
+                S.protocolFeeLastWithdrawnTime[token] = block.timestamp;
             }
         } else {
             emit WithdrawalFailed(

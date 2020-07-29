@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../thirdparty/Proxy.sol";
 
@@ -20,7 +20,6 @@ contract ExchangeProxy is Proxy
     );
 
     constructor(address _registry)
-        public
     {
         bytes32 position = registryPosition;
         assembly {
@@ -48,10 +47,6 @@ contract ExchangeProxy is Proxy
         (_protocol, ) = r.getExchangeProtocol(address(this));
     }
 
-    /**
-    * @dev Tells the address of the current implementation
-    * @return impl address of the current implementation
-    */
     function implementation()
         public
         override

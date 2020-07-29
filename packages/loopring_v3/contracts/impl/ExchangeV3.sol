@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./libexchange/ExchangeAdmins.sol";
@@ -58,7 +58,7 @@ contract ExchangeV3 is IExchangeV3
     }
 
     /// @dev The constructor must do NOTHING to support proxy.
-    constructor() public {}
+    constructor() {}
 
     function version()
         public
@@ -430,10 +430,10 @@ contract ExchangeV3 is IExchangeV3
         require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
 
         // Check if the withdrawal has indeed exceeded the time limit
-        require(now >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE(), "WITHDRAWAL_NOT_TOO_OLD");
+        require(block.timestamp >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE(), "WITHDRAWAL_NOT_TOO_OLD");
 
         // Enter withdrawal mode
-        state.withdrawalModeStartTime = now;
+        state.withdrawalModeStartTime = block.timestamp;
 
         emit WithdrawalModeActivated(state.withdrawalModeStartTime);
     }
@@ -560,7 +560,7 @@ contract ExchangeV3 is IExchangeV3
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
         require(!state.isShutdown(), "ALREADY_SHUTDOWN");
-        state.shutdownModeStartTime = now;
+        state.shutdownModeStartTime = block.timestamp;
         emit Shutdown(state.shutdownModeStartTime);
         return true;
     }

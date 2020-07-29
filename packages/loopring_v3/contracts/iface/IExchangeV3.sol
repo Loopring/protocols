@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../iface/IExchange.sol";
@@ -259,13 +259,13 @@ abstract contract IExchangeV3 is IExchange
     ///
     ///      Can only be called by the exchange owner.
     ///
-    /// @return The amount of LRC withdrawn
+    /// @return amountLRC The amount of LRC withdrawn
     function withdrawExchangeStake(
         address recipient
         )
         external
         virtual
-        returns (uint);
+        returns (uint amountLRC);
 
     /// @dev Withdraws the amount staked for this exchange.
     ///      This can always be called.
@@ -639,7 +639,7 @@ abstract contract IExchangeV3 is IExchange
         returns (bool success);
 
     /// @dev Gets the protocol fees for this exchange.
-    /// @return timestamp The timestamp the protocol fees were last updated
+    /// @return syncedAt The timestamp the protocol fees were last updated
     /// @return takerFeeBips The protocol taker fee
     /// @return makerFeeBips The protocol maker fee
     /// @return previousTakerFeeBips The previous protocol taker fee
@@ -649,7 +649,7 @@ abstract contract IExchangeV3 is IExchange
         virtual
         view
         returns (
-            uint32 timestamp,
+            uint32 syncedAt,
             uint8 takerFeeBips,
             uint8 makerFeeBips,
             uint8 previousTakerFeeBips,

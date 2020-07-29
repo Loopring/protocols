@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./DelayedOwner.sol";
 
@@ -35,7 +35,6 @@ contract LoopringV3Owner is DelayedOwner
         uint                       _minExchangeStakeValidiumUSD
         )
         DelayedOwner(address(_loopringV3), 3 days)
-        public
     {
         loopringV3 = _loopringV3;
         provider = _provider;

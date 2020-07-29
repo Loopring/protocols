@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
@@ -25,7 +25,6 @@ contract ImplementationManager is IImplementationManager
         address _protocol,
         address _implementation
         )
-        public
     {
         require(_owner != address(0), "ZERO_ADDRESS");
         require(_protocol != address(0), "ZERO_PROTOCOL");
