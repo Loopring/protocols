@@ -822,7 +822,6 @@ public:
     }
 };
 
-
 // require(A == 0 || A == 1)
 class RequireBoolGadget : public GadgetT
 {
@@ -1254,7 +1253,8 @@ public:
     }
 };
 
-// if (C) then require(A)
+// if (C) then require(A), i.e.,
+// require(!C || A)
 class IfThenRequireGadget : public GadgetT
 {
 public:
@@ -1288,7 +1288,8 @@ public:
     }
 };
 
-// if (C) then require(A == B)
+// if (C) then require(A == B), i.e.,
+// require(!C || A == B)
 class IfThenRequireEqualGadget : public GadgetT
 {
 public:
@@ -1322,7 +1323,8 @@ public:
     }
 };
 
-// if (C) then require(A != B)
+// if (C) then require(A != B), i.e.,
+// require(!C || A != B)
 class IfThenRequireNotEqualGadget : public GadgetT
 {
 public:
