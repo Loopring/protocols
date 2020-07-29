@@ -33,7 +33,7 @@ contract("BasicDepositContract", (accounts: string[]) => {
       await depositContract.deposit(owner1, token.address, new BN(0), "0x", {
         from: exchange
       });
-      await depositContract.withdraw(owner1, token.address, new BN(0), "0x", {
+      await depositContract.withdraw(owner1, owner1, token.address, new BN(0), "0x", {
         from: exchange
       });
       await depositContract.transfer(owner1, owner2, token.address, new BN(0), {
@@ -88,7 +88,7 @@ contract("BasicDepositContract", (accounts: string[]) => {
         "UNAUTHORIZED"
       );
       await expectThrow(
-        depositContract.withdraw(owner1, token.address, new BN(0), "0x", {
+        depositContract.withdraw(owner1, owner1, token.address, new BN(0), "0x", {
           from: exchange2
         }),
         "UNAUTHORIZED"

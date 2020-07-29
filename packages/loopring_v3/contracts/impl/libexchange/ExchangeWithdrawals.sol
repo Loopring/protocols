@@ -244,7 +244,7 @@ library ExchangeWithdrawals
 
         // Transfer the tokens from the deposit contract to the owner
         if (gasLimit > 0) {
-            try S.depositContract.withdraw{gas: gasLimit}(to, token, amount, auxiliaryData) {
+            try S.depositContract.withdraw{gas: gasLimit}(from, to, token, amount, auxiliaryData) {
                 success = true;
             } catch {
                 success = false;
