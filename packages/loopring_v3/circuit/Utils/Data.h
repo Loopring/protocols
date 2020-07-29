@@ -22,7 +22,7 @@ static auto dummySpotTrade = R"({
     "orderA": {
         "accountID": 0,
         "allOrNone": false,
-        "amountB": "79228162514264337593543950335",
+        "amountB": "79228162514264337593543950335", // max uint96
         "amountS": "79228162514264337593543950335",
         "buy": true,
         "feeBips": 0,
@@ -32,7 +32,7 @@ static auto dummySpotTrade = R"({
         "tokenS": 0,
         "tokenB": 1,
         "validSince": 0,
-        "validUntil": 4294967295
+        "validUntil": 4294967295 // max unit32
     },
     "orderB": {
         "accountID": 0,
@@ -89,7 +89,7 @@ static auto dummyAccountUpdate = R"({
     "owner": "0",
     "accountID": 0,
     "nonce": 0,
-    "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
+    "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866", // a randomly-chosen valid EdDSA pubkey
     "publicKeyY": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
     "walletHash": "0",
     "feeTokenID": 0,
@@ -367,6 +367,8 @@ static void from_json(const json& j, Deposit& deposit)
     deposit.index = ethsnarks::FieldT(j.at("index").get<std::string>().c_str());
 }
 
+// There is no `owner` field as for a withdrawal the owner is always the owner as
+// set in the account leaf the withdrawal is done for.
 class Withdrawal
 {
 public:
@@ -422,26 +424,26 @@ static void from_json(const json& j, AccountUpdateTx& update)
 class NewAccount
 {
 public:
-    ethsnarks::FieldT payerAccountID;
-    ethsnarks::FieldT feeTokenID;
-    ethsnarks::FieldT fee;
     ethsnarks::FieldT newAccountID;
-    ethsnarks::FieldT newOwner;
     ethsnarks::FieldT newPublicKeyX;
     ethsnarks::FieldT newPublicKeyY;
     ethsnarks::FieldT newWalletHash;
+    ethsnarks::FieldT feeTokenID;
+    ethsnarks::FieldT fee;
+    ethsnarks::FieldT payerAccountID;
+    ethsnarks::FieldT newOwner;
 };
 
 static void from_json(const json& j, NewAccount& create)
 {
-    create.payerAccountID = ethsnarks::FieldT(j.at("payerAccountID"));
-    create.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
-    create.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
     create.newAccountID = ethsnarks::FieldT(j.at("newAccountID"));
-    create.newOwner = ethsnarks::FieldT(j["newOwner"].get<std::string>().c_str());
     create.newPublicKeyX = ethsnarks::FieldT(j["newPublicKeyX"].get<std::string>().c_str());
     create.newPublicKeyY = ethsnarks::FieldT(j["newPublicKeyY"].get<std::string>().c_str());
     create.newWalletHash = ethsnarks::FieldT(j["newWalletHash"].get<std::string>().c_str());
+    create.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
+    create.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
+    create.payerAccountID = ethsnarks::FieldT(j.at("payerAccountID"));
+    create.newOwner = ethsnarks::FieldT(j["newOwner"].get<std::string>().c_str());
 }
 
 
@@ -505,6 +507,7 @@ static void from_json(const json& j, Transfer& transfer)
 class Witness
 {
 public:
+    // account updates for up to two users
     TradeHistoryUpdate tradeHistoryUpdate_A;
     TradeHistoryUpdate tradeHistoryUpdate_B;
 
@@ -516,16 +519,19 @@ public:
     BalanceUpdate balanceUpdateB_B;
     AccountUpdate accountUpdate_B;
 
+    // operator account update
     BalanceUpdate balanceUpdateA_O;
     BalanceUpdate balanceUpdateB_O;
     AccountUpdate accountUpdate_O;
 
+    // protocol fee account update
     BalanceUpdate balanceUpdateA_P;
     BalanceUpdate balanceUpdateB_P;
 
     BalanceUpdate balanceUpdateA_I;
     BalanceUpdate balanceUpdateB_I;
 
+    // user signatures
     Signature signatureA;
     Signature signatureB;
 

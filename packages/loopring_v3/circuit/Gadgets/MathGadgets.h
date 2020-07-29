@@ -1362,7 +1362,7 @@ public:
     }
 };
 
-// (value * numerator) = product
+// (value * numerator) = product = denominator * quotient + remainder
 // product / denominator = quotient
 // product % denominator = remainder
 class MulDivGadget : public GadgetT
@@ -1565,7 +1565,7 @@ public:
         calculatedHash.reset(new libsnark::dual_variable_gadget<FieldT>(
             pb, reverse(subArray(hasher->result().bits, 0, NUM_BITS_FIELD_CAPACITY)), ".packCalculatedHash")
         );
-        calculatedHash->generate_r1cs_constraints(false);
+        calculatedHash->generate_r1cs_constraints(false /* enforce_bitness */);
         requireEqual(pb, calculatedHash->packed, publicInput, ".publicDataCheck");
     }
 };
@@ -1591,10 +1591,8 @@ public:
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
-
         constants(_constants),
         floatEncoding(_floatEncoding),
-
         f(make_var_array(pb, floatEncoding.numBitsExponent + floatEncoding.numBitsMantissa, FMT(prefix, ".f")))
     {
         values.reserve(f.size());
@@ -1689,6 +1687,7 @@ public:
     }
 };
 
+// check 'type' is one of Constants.values - [0 - 10]
 struct SelectorGadget : public GadgetT
 {
     const Constants& constants;
@@ -1745,6 +1744,11 @@ struct SelectorGadget : public GadgetT
     }
 };
 
+// if selector=[1,0,0] and values = [a,b,c], return a
+// if selector=[0,1,0] and values = [a,b,c], return b
+// if selector=[0,0,1] and values = [a,b,c], return c
+// special case,
+// if selector=[0,0,0] and values = [a,b,c], return a
 class SelectGadget : public GadgetT
 {
 public:
