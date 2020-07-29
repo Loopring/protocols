@@ -644,8 +644,9 @@ public:
     void generate_r1cs_constraints()
     {
         // This can be done more efficiently but we never have any long inputs so no need
-        if (inputs.size() > 3) {
-            printBits("[AndGadget] unexpected input length", inputs.size());
+        if (inputs.size() > 3)
+        {
+            std::cout << "[AndGadget] unexpected input length " << inputs.size() << endl;
         }
         pb.add_r1cs_constraint(ConstraintT(inputs[0], inputs[1], results[0]), FMT(annotation_prefix, ".A && B"));
         for (unsigned int i = 2; i < inputs.size(); i++)
@@ -699,8 +700,9 @@ public:
     void generate_r1cs_constraints()
     {
         // This can be done more efficiently but we never have any long inputs so no need
-        if (inputs.size() > 3) {
-            printBits("[AndGadget] unexpected input length", inputs.size());
+        if (inputs.size() > 3)
+        {
+            std::cout << "[AndGadget] unexpected input length " << inputs.size() << endl;
         }
         pb.add_r1cs_constraint(ConstraintT(FieldT::one() - inputs[0], FieldT::one() - inputs[1], FieldT::one() - results[0]), FMT(annotation_prefix, ".A || B == _or"));
         for (unsigned int i = 2; i < inputs.size(); i++)
