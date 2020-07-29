@@ -816,7 +816,7 @@ public:
 };
 
 
-// require(A == B)
+// require(A == 0 || A == 1)
 class RequireBoolenBitness : public GadgetT
 {
 public:
@@ -824,11 +824,11 @@ public:
 
     RequireEqualGadget(
         ProtoboardT& pb,
-        const VariableT& _value,
+        const VariableT& _A,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
-        value(_value)
+        A(_A)
     {
     }
 
@@ -838,7 +838,7 @@ public:
 
     void generate_r1cs_constraints()
     {
-        libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, value, FMT(annotation_prefix, ".bitness"));
+        libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, A, FMT(annotation_prefix, ".bitness"));
     }
 };
 
