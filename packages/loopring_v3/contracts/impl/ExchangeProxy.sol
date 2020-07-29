@@ -48,6 +48,10 @@ contract ExchangeProxy is Proxy
         (_protocol, ) = r.getExchangeProtocol(address(this));
     }
 
+    /**
+    * @dev Tells the address of the current implementation
+    * @return impl address of the current implementation
+    */
     function implementation()
         public
         override

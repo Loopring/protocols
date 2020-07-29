@@ -106,7 +106,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     }
 
     function withdraw(
-        address from,
+        address /*from*/,
         address to,
         address token,
         uint    amount,

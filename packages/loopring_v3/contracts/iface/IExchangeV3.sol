@@ -308,7 +308,7 @@ abstract contract IExchangeV3 is IExchange
         returns (uint);
 
     /// @dev Gets some minimal info of a previously submitted block that's kept onchain.
-    /// @return blockIdx The block index.
+    /// @param blockIdx The block index.
     function getBlockInfo(uint blockIdx)
         external
         virtual

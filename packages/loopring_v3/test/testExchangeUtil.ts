@@ -690,7 +690,7 @@ export class ExchangeTestUtil {
 
   public autoCommit = true;
 
-  public useProverServer: boolean = true;
+  public useProverServer: boolean = false;
 
   private pendingTransactions: TxType[][] = [];
 

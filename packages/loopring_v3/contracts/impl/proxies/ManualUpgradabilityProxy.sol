@@ -37,6 +37,10 @@ contract ManualUpgradabilityProxy is IExchangeProxy
         setImplementation(_implementation);
     }
 
+    /**
+    * @dev Tells the address of the current implementation
+    * @return impl address of the current implementation
+    */
     function implementation()
         public
         override
