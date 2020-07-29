@@ -538,12 +538,8 @@ public:
         pb.val(selected) = (pb.val(b) == FieldT::one()) ? pb.val(x) : pb.val(y);
     }
 
-    void generate_r1cs_constraints(bool enforceBitness)
+    void generate_r1cs_constraints()
     {
-        if (enforceBitness)
-        {
-            libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, b, FMT(annotation_prefix, ".bitness"));
-        }
         pb.add_r1cs_constraint(ConstraintT(b, y - x, y - selected), FMT(annotation_prefix, ".b * (y - x) == (y - selected)"));
     }
 };
@@ -582,12 +578,8 @@ public:
         }
     }
 
-    void generate_r1cs_constraints(bool enforceBitness)
+    void generate_r1cs_constraints()
     {
-        if (enforceBitness)
-        {
-            libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, b, FMT(annotation_prefix, ".bitness"));
-        }
         for (unsigned int i = 0; i < results.size(); i++)
         {
             results[i].generate_r1cs_constraints(false);
