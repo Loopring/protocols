@@ -786,7 +786,7 @@ export class ExchangeTestUtil {
 
   public async setupTestState(exchangeID: number) {
     this.operators[exchangeID] = await this.createOperator(
-      this.testContext.operators[0]
+      this.exchangeOperator
     );
   }
 

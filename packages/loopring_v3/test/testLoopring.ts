@@ -93,7 +93,7 @@ contract("Loopring", (accounts: string[]) => {
           exchangeTestUtil.exchange.withdrawProtocolFeeStake(
             exchangeTestUtil.exchangeOwner,
             stakeAmount,
-            { from: exchangeTestUtil.exchangeOperator }
+            { from: exchangeTestUtil.testContext.orderOwners[0] }
           ),
           "UNAUTHORIZED"
         );
