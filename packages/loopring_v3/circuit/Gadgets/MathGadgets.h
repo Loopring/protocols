@@ -811,7 +811,7 @@ public:
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(A - B, C, FieldT::zero), FMT(annotation_prefix, ".A ^ B == C"));
+        pb.add_r1cs_constraint(ConstraintT(A - B, C, FieldT::zero), FMT(annotation_prefix, ".A == B = C"));
     }
 };
 
