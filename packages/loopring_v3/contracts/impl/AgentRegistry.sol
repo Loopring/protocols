@@ -38,7 +38,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         view
         returns (bool)
     {
-        return isUnversalAgent(agent) &&
+        return isUniversalAgent(agent) &&
             !noTrustInUniversalAgents[user] ||
             isUserAgent(user, agent);
     }
@@ -54,7 +54,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         emit AgentRegistered(address(0), agent, toRegister);
     }
 
-    function isUnversalAgent(address agent)
+    function isUniversalAgent(address agent)
         public
         view
         returns (bool)
