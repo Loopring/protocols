@@ -6,7 +6,7 @@ pragma solidity ^0.7.0;
 /**
  * @dev Helper to make usage of the `CREATE2` EVM opcode easier and safer.
  * `CREATE2` can be used to compute in advance the address where a smart
- * contract will be deployed, which allows for interesting new mechanisms kblock.timestampn
+ * contract will be deployed, which allows for interesting new mechanisms known
  * as 'counterfactual interactions'.
  *
  * See the https://eips.ethereum.org/EIPS/eip-1014#motivation[EIP] for more
@@ -15,7 +15,7 @@ pragma solidity ^0.7.0;
 library Create2 {
     /**
      * @dev Deploys a contract using `CREATE2`. The address where the contract
-     * will be deployed can be kblock.timestampn in advance via {computeAddress}. Note that
+     * will be deployed can be known in advance via {computeAddress}. Note that
      * a contract cannot be deployed twice using the same salt.
      */
     function deploy(bytes32 salt, bytes memory bytecode) internal returns (address payable) {
