@@ -11,7 +11,7 @@ contract TestPriceOracle is PriceOracle
     // @dev Return's the token's value in ETH
     function tokenValue(address /*token*/, uint amount)
         external
-        view
+        pure
         override
         returns (uint value)
     {
