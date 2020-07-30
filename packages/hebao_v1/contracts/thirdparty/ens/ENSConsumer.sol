@@ -2,7 +2,7 @@
 // Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ENSConsumer.sol
 // with few modifications.
 
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 import "./ENS.sol";
 import "../strings.sol";
 
@@ -25,7 +25,7 @@ contract ENSConsumer {
     * @dev No address should be provided when deploying on Mainnet to avoid storage cost. The
     * contract will use the hardcoded value.
     */
-    constructor(address _ensRegistry) public {
+    constructor(address _ensRegistry) {
         ensRegistry = _ensRegistry;
     }
 

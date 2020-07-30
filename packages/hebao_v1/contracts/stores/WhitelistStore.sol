@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../base/DataStore.sol";
 import "../lib/AddressSet.sol";
@@ -20,7 +20,7 @@ contract WhitelistStore is DataStore, AddressSet
         uint    effectiveTime
     );
 
-    constructor() public DataStore() {}
+    constructor() DataStore() {}
 
     function addToWhitelist(
         address wallet,
@@ -31,7 +31,7 @@ contract WhitelistStore is DataStore, AddressSet
         onlyWalletModule(wallet)
     {
         addAddressToSet(walletKey(wallet), addr, true);
-        uint effective = effectiveTime >= now ? effectiveTime : now;
+        uint effective = effectiveTime >= block.timestamp ? effectiveTime : block.timestamp;
         effectiveTimeMap[wallet][addr] = effective;
         emit Whitelisted(wallet, addr, true, effective);
     }
@@ -75,7 +75,7 @@ contract WhitelistStore is DataStore, AddressSet
         )
     {
         effectiveTime = effectiveTimeMap[wallet][addr];
-        isWhitelistedAndEffective = effectiveTime > 0 && effectiveTime <= now;
+        isWhitelistedAndEffective = effectiveTime > 0 && effectiveTime <= block.timestamp;
     }
 
     function whitelistSize(address wallet)

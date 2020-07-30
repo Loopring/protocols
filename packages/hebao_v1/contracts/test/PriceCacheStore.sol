@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../lib/MathUint.sol";
 import "../lib/OwnerManagable.sol";
@@ -38,7 +38,6 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
         PriceOracle _oracle,
         uint        _expiry
         )
-        public
         DataStore()
     {
         oracle = _oracle;
@@ -52,7 +51,7 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
         returns (uint)
     {
         TokenPrice storage tp = prices[token];
-        if (tp.timestamp > 0 && now < tp.timestamp + expiry) {
+        if (tp.timestamp > 0 && block.timestamp < tp.timestamp + expiry) {
             return tp.value.mul(amount) / tp.amount;
         } else {
             return 0;
@@ -99,7 +98,7 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
     {
         prices[token].amount = amount;
         prices[token].value = value;
-        prices[token].timestamp = now;
-        emit PriceCached(token, amount, value, now);
+        prices[token].timestamp = block.timestamp;
+        emit PriceCached(token, amount, value, block.timestamp);
     }
 }

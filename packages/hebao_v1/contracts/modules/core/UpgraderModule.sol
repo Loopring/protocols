@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../thirdparty/OwnedUpgradabilityProxy.sol";
@@ -29,7 +29,6 @@ contract UpgraderModule is BaseModule {
         address[] memory _modulesToRemove
         )
         BaseModule(_controller)
-        public
     {
         implementation = _implementation;
         modulesToAdd = _modulesToAdd;

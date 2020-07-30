@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../iface/PriceOracle.sol";
 import "../lib/ERC20.sol";
@@ -29,7 +29,6 @@ contract KyberNetworkPriceOracle is PriceOracle
     address constant private ethTokenInKyber = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     constructor(KyberNetworkProxy _kyber)
-        public
     {
         kyber = _kyber;
     }

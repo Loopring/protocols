@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 
 /// @title Ownable
@@ -20,7 +20,6 @@ contract Ownable
     /// @dev The Ownable constructor sets the original `owner` of the contract
     ///      to the sender.
     constructor()
-        public
     {
         owner = msg.sender;
     }

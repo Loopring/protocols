@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../base/MetaTxModule.sol";
@@ -30,7 +30,6 @@ abstract contract SecurityModule is MetaTxModule
         ControllerImpl _controller,
         address        _trustedForwarder
         )
-        public
         MetaTxModule(_controller, _trustedForwarder) {}
 
     modifier onlyFromWalletOrOwnerWhenUnlocked(address wallet)
@@ -111,7 +110,7 @@ abstract contract SecurityModule is MetaTxModule
     {
         // cannot lock the wallet twice by different modules.
         require(_lockPeriod > 0, "ZERO_VALUE");
-        uint lock = now + _lockPeriod;
+        uint lock = block.timestamp + _lockPeriod;
         controller.securityStore().setLock(wallet, lock);
         emit WalletLock(wallet, lock);
     }
@@ -120,7 +119,7 @@ abstract contract SecurityModule is MetaTxModule
         internal
     {
         (uint _lock, address _lockedBy) = controller.securityStore().getLock(wallet);
-        if (_lock > now) {
+        if (_lock > block.timestamp) {
             require(forceUnlock || _lockedBy == address(this), "UNABLE_TO_UNLOCK");
             controller.securityStore().setLock(wallet, 0);
         }
@@ -141,7 +140,7 @@ abstract contract SecurityModule is MetaTxModule
         returns (bool)
     {
         (uint _lock,) = controller.securityStore().getLock(wallet);
-        return _lock > now;
+        return _lock > block.timestamp;
     }
 
     function updateQuota(

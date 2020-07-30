@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
@@ -12,7 +12,7 @@ contract NonceStore is DataStore
 {
     mapping(address => uint) public nonces;
 
-    constructor() public DataStore() {}
+    constructor() DataStore() {}
 
     function lastNonce(address wallet)
         public

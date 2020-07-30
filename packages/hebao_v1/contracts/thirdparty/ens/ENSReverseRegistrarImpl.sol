@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./ENS.sol";
 
@@ -18,7 +18,7 @@ contract ENSReverseRegistrarImpl is ENSReverseRegistrar {
      * @param ensAddr The address of the ENS registry.
      * @param resolverAddr The address of the default reverse resolver.
      */
-    constructor(address ensAddr, address resolverAddr) public {
+    constructor(address ensAddr, address resolverAddr) {
         ens = ENSRegistry(ensAddr);
         defaultResolver = ENSResolver(resolverAddr);
     }
@@ -81,7 +81,7 @@ contract ENSReverseRegistrarImpl is ENSReverseRegistrar {
      * @param addr The address to hash
      * @return ret The ENS node hash.
      */
-    function node(address addr) public view override returns (bytes32 ret) {
+    function node(address addr) public pure override returns (bytes32 ret) {
         return keccak256(abi.encodePacked(ADDR_REVERSE_NODE, sha3HexAddress(addr)));
     }
 

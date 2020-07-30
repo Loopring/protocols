@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../iface/PriceOracle.sol";
 import "../lib/MathUint.sol";
@@ -14,7 +14,6 @@ contract AggregationalPriceOracle is PriceOracle
     address[] public oracles;
 
     constructor(address[] memory _oracles)
-        public
     {
         oracles = _oracles;
     }

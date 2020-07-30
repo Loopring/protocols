@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/MathUint.sol";
 import "./SecurityModule.sol";
 
 /// @title WhitelistModule
 /// @dev Manages whitelisted addresses.
 contract WhitelistModule is SecurityModule
 {
+    using MathUint      for uint;
+    using SignedRequest for ControllerImpl;
+
     bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH = keccak256(
         "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
     );
@@ -20,7 +24,6 @@ contract WhitelistModule is SecurityModule
         address        _trustedForwarder,
         uint           _delayPeriod
         )
-        public
         SecurityModule(_controller, _trustedForwarder)
     {
         require(_delayPeriod > 0, "INVALID_DELAY");
@@ -40,7 +43,7 @@ contract WhitelistModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller.whitelistStore().addToWhitelist(wallet, addr, now.add(delayPeriod));
+        controller.whitelistStore().addToWhitelist(wallet, addr, block.timestamp.add(delayPeriod));
     }
 
     function addToWhitelistImmediately(
@@ -64,7 +67,7 @@ contract WhitelistModule is SecurityModule
             )
         );
 
-        controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
+        controller.whitelistStore().addToWhitelist(request.wallet, addr, block.timestamp);
     }
 
     function removeFromWhitelist(

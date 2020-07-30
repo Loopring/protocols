@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./ENS.sol";
 
@@ -25,7 +25,7 @@ contract ENSRegistryImpl is ENSRegistry {
     /**
      * @dev Constructs a new ENS registrar.
      */
-    constructor() public {
+    constructor() {
         records[0x0].owner = msg.sender;
     }
 

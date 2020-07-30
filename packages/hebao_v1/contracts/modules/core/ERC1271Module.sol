@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/Wallet.sol";
@@ -20,7 +20,6 @@ contract ERC1271Module is ERC1271, BaseModule
     using AddressUtil   for address;
 
     constructor(ControllerImpl _controller)
-        public
         BaseModule(_controller)
     {
     }
@@ -54,7 +53,7 @@ contract ERC1271Module is ERC1271, BaseModule
     {
         address wallet = msg.sender;
         (uint _lock,) = controller.securityStore().getLock(wallet);
-        if (_lock > now) { // wallet locked
+        if (_lock > block.timestamp) { // wallet locked
             return 0;
         }
 

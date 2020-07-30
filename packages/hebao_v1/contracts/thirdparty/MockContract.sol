@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /// Borrowed from https://github.com/gnosis/mock-contract
 
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 interface MockInterface {
     /**
@@ -105,7 +105,7 @@ contract MockContract is MockInterface {
     uint invocations;
     uint resetCount;
 
-    constructor() public {
+    constructor() {
         calldataMocks[MOCKS_LIST_START] = MOCKS_LIST_END;
         methodIdMocks[SENTINEL_ANY_MOCKS] = SENTINEL_ANY_MOCKS;
     }

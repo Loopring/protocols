@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../thirdparty/BytesUtil.sol";
@@ -27,7 +27,7 @@ library SignatureUtil
         ETH_SIGN,
         WALLET   // deprecated
     }
-    
+
     bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
 
     bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES_SELECTOR = bytes4(
@@ -37,7 +37,7 @@ library SignatureUtil
     bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES32_SELECTOR = bytes4(
         keccak256(bytes("isValidSignature(bytes32,bytes)"))
     );
-    
+
     function verifySignatures(
         bytes32   signHash,
         address[] memory signers,
