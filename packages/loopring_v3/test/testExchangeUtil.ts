@@ -1504,6 +1504,8 @@ export class ExchangeTestUtil {
     wallet?: Wallet,
     options: NewAccountOptions = {}
   ) {
+    return;
+
     fee = roundToFloatValue(fee, Constants.Float16Encoding);
 
     // Fill in defaults
@@ -1656,6 +1658,7 @@ export class ExchangeTestUtil {
     account.publicKeyX = keyPair.publicKeyX;
     account.publicKeyY = keyPair.publicKeyY;
     account.secretKey = keyPair.secretKey;
+    account.wallet = wallet;
 
     return accountUpdate;
   }

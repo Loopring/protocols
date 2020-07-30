@@ -7,7 +7,7 @@ const AgentRegistry = artifacts.require(
   "AgentRegistry"
 );
 
-contract.only("Exchange", (accounts: string[]) => {
+contract("Exchange", (accounts: string[]) => {
   let ctx: ExchangeTestUtil;
   let exchange: any;
   let exchangeOwner: string;

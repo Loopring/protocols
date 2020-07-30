@@ -140,11 +140,13 @@ enum class TransactionType
     Withdrawal,
     Transfer,
     SpotTrade,
-    AccountNew,
     AccountUpdate,
     AccountTransfer,
 
-    COUNT
+    COUNT,
+
+    // Disabled
+    AccountNew,
 };
 
 class Proof

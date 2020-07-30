@@ -18,9 +18,10 @@ export enum TransactionType {
   WITHDRAWAL,
   TRANSFER,
   SPOT_TRADE,
-  ACCOUNT_NEW,
   ACCOUNT_UPDATE,
-  ACCOUNT_TRANSFER
+  ACCOUNT_TRANSFER,
+  // Disabled
+  ACCOUNT_NEW
 }
 
 /**

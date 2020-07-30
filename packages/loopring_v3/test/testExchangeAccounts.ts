@@ -42,7 +42,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("Accounts", function() {
     this.timeout(0);
 
-    it("Should be able to create a new account", async () => {
+    it.skip("Should be able to create a new account", async () => {
       await createExchange();
 
       const balance = new BN(web3.utils.toWei("5484.24", "ether"));
@@ -162,35 +162,32 @@ contract("Exchange", (accounts: string[]) => {
       const token = ctx.getTokenAddress("LRC");
       const fee = ctx.getRandomFee();
 
-      // Fund the payer
+      // Create a new account
       await ctx.deposit(ownerA, ownerA, token, balance);
+      const accountA = ctx.findAccount(ownerA);
 
       // Wallet
       const guardians: Guardian[] = [];
       guardians.push({addr: ownerB, group: 0});
       guardians.push({addr: ownerC, group: 0});
       const wallet: Wallet = {
-        accountID: ctx.accounts[ctx.exchangeId].length,
+        accountID: accountA.accountID,
         guardians,
         inheritor: ownerD,
         inheritableSince: 0
       };
 
-      // Create a new account
-      await ctx.requestNewAccount(ownerA, token, balance, ownerB, ctx.getKeyPairEDDSA(), wallet);
-
-      // Send some funds over to the new account
-      await ctx.transfer(ownerA, ownerB, token, fee.mul(new BN(10)), token, fee);
+      // Setup the account
+      await ctx.requestAccountUpdate(ownerA, token, fee, ctx.getKeyPairEDDSA(), wallet, {authMethod: AuthMethod.ECDSA});
 
       // Setup data necessary for recovery using a wallet
       let newOwner = ownerC;
-      const accountB = ctx.findAccount(ownerB);
       const permissionData: PermissionData = {signers: [], signatures: []};
       const walletDataHash = WalletUtils.getWalletHash(wallet, ctx.statelessWallet.address);
       const walletCalldata = ctx.statelessWallet.contract.methods.recover(
-        accountB.accountID,
-        accountB.nonce,
-        accountB.owner,
+        accountA.accountID,
+        accountA.nonce,
+        accountA.owner,
         newOwner,
         "0x" + walletDataHash.toString("hex"),
         wallet,
@@ -198,19 +195,18 @@ contract("Exchange", (accounts: string[]) => {
       ).encodeABI();
 
       // Transfer ownership with the help of the wallet data
-      await ctx.requestOwnerChange(ownerB, token, fee, newOwner, {authMethod: AuthMethod.WALLET, walletCalldata});
+      await ctx.requestOwnerChange(ownerA, token, fee, newOwner, {authMethod: AuthMethod.WALLET, walletCalldata});
 
       // Transfer ownership again with the help of a signature of the original owner
       newOwner = ownerD;
       await ctx.requestOwnerChange(ownerC, token, fee, newOwner, {authMethod: AuthMethod.ECDSA});
 
       // Transfer some funds using an ECDSA signature
-      await ctx.transfer(newOwner, ownerA, token, fee.mul(new BN(10)), token, fee, {authMethod: AuthMethod.ECDSA});
+      await ctx.transfer(newOwner, ownerA, token, fee.mul(new BN(10)), token, fee, {authMethod: AuthMethod.ECDSA, transferToNew: true});
 
       // Submit
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
-
 
       // Try to change owner without approval
       await ctx.requestOwnerChange(newOwner, token, fee, ownerA, {authMethod: AuthMethod.NONE});

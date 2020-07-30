@@ -151,7 +151,6 @@ public:
     NoopCircuit noop;
     SpotTradeCircuit spotTrade;
     DepositCircuit deposit;
-    AccountNewCircuit newAccount;
     WithdrawCircuit withdraw;
     AccountUpdateCircuit accountUpdate;
     TransferCircuit transfer;
@@ -216,12 +215,11 @@ public:
         noop(pb, state, FMT(prefix, ".noop")),
         spotTrade(pb, state, FMT(prefix, ".spotTrade")),
         deposit(pb, state, FMT(prefix, ".deposit")),
-        newAccount(pb, state, FMT(prefix, ".newAccount")),
         withdraw(pb, state, FMT(prefix, ".withdraw")),
         accountUpdate(pb, state, FMT(prefix, ".accountUpdate")),
         transfer(pb, state, FMT(prefix, ".transfer")),
         ownerChange(pb, state, FMT(prefix, ".ownerChange")),
-        tx(pb, state, selector.result(), {&noop, &deposit, &withdraw, &transfer, &spotTrade, &newAccount, &accountUpdate, &ownerChange}, FMT(prefix, ".tx")),
+        tx(pb, state, selector.result(), {&noop, &deposit, &withdraw, &transfer, &spotTrade, &accountUpdate, &ownerChange}, FMT(prefix, ".tx")),
 
         // General validation
         accountA(pb, tx.getArrayOutput(accountA_Address), FMT(prefix, ".packAccountA")),
@@ -319,7 +317,6 @@ public:
         noop.generate_r1cs_witness();
         spotTrade.generate_r1cs_witness(uTx.spotTrade);
         deposit.generate_r1cs_witness(uTx.deposit);
-        newAccount.generate_r1cs_witness(uTx.accountNew);
         withdraw.generate_r1cs_witness(uTx.withdraw);
         accountUpdate.generate_r1cs_witness(uTx.accountUpdate);
         transfer.generate_r1cs_witness(uTx.transfer);
@@ -367,7 +364,6 @@ public:
         noop.generate_r1cs_constraints();
         spotTrade.generate_r1cs_constraints();
         deposit.generate_r1cs_constraints();
-        newAccount.generate_r1cs_constraints();
         withdraw.generate_r1cs_constraints();
         accountUpdate.generate_r1cs_constraints();
         transfer.generate_r1cs_constraints();
