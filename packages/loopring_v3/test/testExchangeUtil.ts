@@ -93,6 +93,13 @@ function replacer(name: any, val: any) {
   }
 }
 
+export interface DepositOptions {
+  fee?: BN;
+  autoSetKeys?: boolean;
+  accountContract?: any;
+  amountDepositedCanDiffer?: boolean;
+}
+
 export interface TransferOptions {
   authMethod?: AuthMethod;
   useDualAuthoring?: boolean;
@@ -1273,22 +1280,25 @@ export class ExchangeTestUtil {
     to: string,
     token: string,
     amount: BN,
-    fee?: BN,
-    autoSetKeys: boolean = true,
-    accountContract?: any
+    options: DepositOptions = {}
   ) {
+
+    // Fill in defaults
+    const fee = options.fee !== undefined ? options.fee : this.getRandomFee();
+    const autoSetKeys = options.autoSetKeys !== undefined ? options.autoSetKeys : true;
+    const contract = options.accountContract !== undefined ? options.accountContract : this.exchange;
+    const amountDepositedCanDiffer = options.amountDepositedCanDiffer !== undefined ? options.amountDepositedCanDiffer : this.exchange;
+
     console.log("token:" + token);
     console.log("amount:" + amount.toString(10));
-    if (fee === undefined) {
-      fee = this.getRandomFee();
-    }
+
+
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
     const tokenID = await this.getTokenID(token);
 
-    const contract = accountContract ? accountContract : this.exchange;
-    const caller = accountContract ? this.testContext.orderOwners[0] : from;
+    const caller = options.accountContract ? this.testContext.orderOwners[0] : from;
 
     let accountID = await this.getAccountID(to);
     let accountNewCreated = false;
@@ -1348,6 +1358,9 @@ export class ExchangeTestUtil {
       this.exchange,
       "DepositRequested"
     );
+    if (amountDepositedCanDiffer) {
+      amount = event.amount;
+    }
 
     const deposit: Deposit = {
       txType: "Deposit",
@@ -2978,11 +2991,25 @@ export class ExchangeTestUtil {
   }
 
   public async checkOffchainBalance(
-    accountID: number,
-    tokenID: number,
+    account: number | string,
+    token: number | string,
     expectedBalance: BN,
     desc: string
   ) {
+    let accountID: number;
+    if( typeof account === "number") {
+      accountID = account;
+    } else {
+      accountID = this.findAccount(account).accountID;
+    }
+
+    let tokenID: number;
+    if( typeof token === "number") {
+      tokenID = token;
+    } else {
+      tokenID = await this.getTokenID(token);
+    }
+
     const balance = await this.getOffchainBalance(
       this.exchangeId,
       accountID,

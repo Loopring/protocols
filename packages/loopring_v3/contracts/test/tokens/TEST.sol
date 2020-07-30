@@ -17,6 +17,7 @@ contract TEST is DummyToken {
     uint8 public constant TEST_NO_RETURN_VALUE = 4;
     uint8 public constant TEST_INVALID_RETURN_SIZE = 5;
     uint8 public constant TEST_EXPENSIVE_TRANSFER = 6;
+    uint8 public constant TEST_DIFFERENT_TRANSFER_AMOUNT = 7;
 
     uint public testCase = TEST_NOTHING;
 
@@ -43,6 +44,9 @@ contract TEST is DummyToken {
         override
         returns (bool)
     {
+        if (testCase == TEST_DIFFERENT_TRANSFER_AMOUNT) {
+            _value = _value.mul(99) / 100;
+        }
         // require(_to != address(0), "ZERO_ADDRESS");
         require(_value <= balances[msg.sender], "INVALID_VALUE");
         // SafeMath.sub will throw if there is not enough balance.
@@ -61,6 +65,9 @@ contract TEST is DummyToken {
         override
         returns (bool)
     {
+        if (testCase == TEST_DIFFERENT_TRANSFER_AMOUNT) {
+            _value = _value.mul(99) / 100;
+        }
         // require(_to != address(0), "ZERO_ADDRESS");
         require(_value <= balances[_from], "INVALID_VALUE");
         require(_value <= allowed[_from][msg.sender], "INVALID_VALUE");

@@ -69,7 +69,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     {
         require(needCheckBalance[token] != checkBalance, "INVALID_VALUE");
 
-        needCheckBalance[token] == checkBalance;
+        needCheckBalance[token] = checkBalance;
         emit CheckBalance(token, checkBalance);
     }
 
@@ -124,7 +124,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         } else {
             if(!token.safeTransfer(to, amount)){
                 uint amountPaid = ERC20(token).balanceOf(address(this));
-                require(amountPaid < amount, "UNEXCPECTED");
+                require(amountPaid < amount, "UNEXPECTED");
                 token.safeTransferAndVerify(to, amountPaid);
             }
         }

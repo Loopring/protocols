@@ -1,6 +1,7 @@
 import { expectThrow } from "./expectThrow";
 import { Artifacts } from "../util/Artifacts";
 import { Constants } from "loopringV3.js";
+import { ExchangeTestUtil } from "./testExchangeUtil";
 import BN = require("bn.js");
 
 contract("BasicDepositContract", (accounts: string[]) => {
@@ -16,8 +17,21 @@ contract("BasicDepositContract", (accounts: string[]) => {
 
   let token: any;
 
+  let ctx: ExchangeTestUtil;
+  let exchange: any;
+
+  const createExchange = async (bSetupTestState: boolean = true) => {
+    await ctx.createExchange(
+      ctx.testContext.stateOwners[0],
+      true
+    );
+    exchange = ctx.exchange;
+  };
+
   before(async () => {
-    contracts = new Artifacts(artifacts);
+    ctx = new ExchangeTestUtil();
+    await ctx.initialize(accounts);
+    contracts = ctx.contracts;
   });
 
   beforeEach(async () => {
@@ -99,6 +113,61 @@ contract("BasicDepositContract", (accounts: string[]) => {
         }),
         "UNAUTHORIZED"
       );
+    });
+  });
+
+  describe("exchange behavior", () => {
+    it("should be able to deposit tokens which transfer different amounts than specified", async () => {
+      await createExchange();
+
+      const amount = new BN(web3.utils.toWei("100", "ether"));
+      const amountTransfered = amount.mul(new BN(99)).div(new BN(100));
+
+      // Enable transfer mode that will transfer less than expected
+      const testTokenAddress = await ctx.getTokenAddress("TEST");
+      const TestToken = await ctx.contracts.TESTToken.at(
+        testTokenAddress
+      );
+      await TestToken.setTestCase(await TestToken.TEST_DIFFERENT_TRANSFER_AMOUNT());
+
+      // Deposit without checking the balance change, the amount deposited is wrong
+      {
+        await ctx.deposit(
+          owner1,
+          owner1,
+          "TEST",
+          amount
+        );
+        const event = await ctx.assertEventEmitted(ctx.exchange, "DepositRequested");
+        assert(event.amount.eq(amount), "unexpected amount");
+      }
+
+      // Enable balance checking
+      await ctx.depositContract.setCheckBalance(testTokenAddress, true);
+      const event = await ctx.assertEventEmitted(ctx.depositContract, "CheckBalance");
+      assert.equal(event.token, testTokenAddress, "unexpected token address");
+      assert.equal(event.checkBalance, true, "unexpected checkBalance");
+
+      // Deposit again, but with checking the balance change, the amount deposited is correct
+      {
+        await ctx.deposit(
+          owner2,
+          owner2,
+          "TEST",
+          amount,
+          {amountDepositedCanDiffer: true}
+        );
+        const event = await ctx.assertEventEmitted(ctx.exchange, "DepositRequested");
+        assert(event.amount.eq(amountTransfered), "unexpected amount");
+      }
+
+      // Submit
+      await ctx.submitTransactions();
+      await ctx.submitPendingBlocks();
+
+      // Check balances inside the Merkle tree
+      await ctx.checkOffchainBalance(owner1, "TEST", amount, "unexpected balance");
+      await ctx.checkOffchainBalance(owner2, "TEST", amountTransfered, "unexpected balance");
     });
   });
 });
