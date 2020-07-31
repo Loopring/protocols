@@ -10,7 +10,7 @@ import "../../lib/FloatUtil.sol";
 import "../../lib/SignatureUtil.sol";
 
 
-/// @title OwnerChangeTransaction
+/// @title AccountTransferTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev There are a few concepts we need to clarify:
 ///   - statelessWallet: it's a stateless contract that can be used to verify permissions for layer-2
@@ -26,7 +26,7 @@ import "../../lib/SignatureUtil.sol";
 ///                      the Merkel tree.
 ///   - walletCalldata:  the calldata for invoking the wallet's associated StatelessWallet.
 ///
-library OwnerChangeTransaction
+library AccountTransferTransaction
 {
     using BytesUtil            for bytes;
     using FloatUtil            for uint;
@@ -36,7 +36,7 @@ library OwnerChangeTransaction
     bytes4  constant public RECOVERY_MAGICVALUE = 0xd1f21f4f;
 
     bytes32 constant public ACCOUNTTRANSFER_TYPEHASH = keccak256(
-        "OwnerChange(address owner,uint32 accountID,uint16 feeTokenID,uint256 fee,address newOwner,address statelessWallet,bytes32 walletDataHash,bytes walletCalldata,uint32 validUntil,uint32 nonce)"
+        "AccountTransfer(address owner,uint32 accountID,uint16 feeTokenID,uint256 fee,address newOwner,address statelessWallet,bytes32 walletDataHash,bytes walletCalldata,uint32 validUntil,uint32 nonce)"
     );
 
     bytes32 constant public WALLET_TYPEHASH = keccak256(

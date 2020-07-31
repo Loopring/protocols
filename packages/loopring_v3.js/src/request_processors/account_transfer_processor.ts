@@ -5,7 +5,7 @@ import { EdDSA } from "../eddsa";
 import { fromFloat } from "../float";
 import { BlockContext, ExchangeState } from "../types";
 
-interface OwnerChange {
+interface AccountTransfer {
   owner?: string;
   accountID?: number;
   validUntil?: number;
@@ -19,7 +19,7 @@ interface OwnerChange {
 /**
  * Processes owner change requests.
  */
-export class OwnerChangeProcessor {
+export class AccountTransferProcessor {
   public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
     const change = this.extractData(txData);
 
@@ -41,7 +41,7 @@ export class OwnerChangeProcessor {
   }
 
   public static extractData(data: Bitstream) {
-    const change: OwnerChange = {};
+    const change: AccountTransfer = {};
     let offset = 1;
 
     change.owner = data.extractAddress(offset);

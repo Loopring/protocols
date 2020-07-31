@@ -276,7 +276,7 @@ contract("Exchange", (accounts: string[]) => {
         exchangeTestUtil.getKeyPairEDDSA()
       );*/
 
-      await exchangeTestUtil.requestOwnerChange(
+      await exchangeTestUtil.requestAccountTransfer(
         ownerB,
         "ETH",
         new BN(0),

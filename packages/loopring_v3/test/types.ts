@@ -195,8 +195,8 @@ export interface NewAccount {
   onchainSignature?: any;
 }
 
-export interface OwnerChange {
-  txType?: "OwnerChange";
+export interface AccountTransfer {
+  txType?: "AccountTransfer";
 
   owner: string;
   accountID: number;

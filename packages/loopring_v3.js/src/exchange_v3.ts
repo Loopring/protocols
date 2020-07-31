@@ -29,8 +29,8 @@ import { AccountUpdateProcessor } from "./request_processors/account_update_proc
 import { SpotTradeProcessor } from "./request_processors/spot_trade_processor";
 import { TransferProcessor } from "./request_processors/transfer_processor";
 import { WithdrawalProcessor } from "./request_processors/withdrawal_processor";
-import { NewAccountProcessor } from "./request_processors/new_account_processor";
-import { OwnerChangeProcessor } from "./request_processors/owner_change_processor";
+import { AccountNewProcessor } from "./request_processors/account_new_processor";
+import { AccountTransferProcessor } from "./request_processors/account_transfer_processor";
 import * as log from "./logs";
 
 /**
@@ -920,11 +920,11 @@ export class ExchangeV3 {
       } else if (txType === TransactionType.WITHDRAWAL) {
         request = WithdrawalProcessor.process(this.state, ctx, txData);
       } else if (txType === TransactionType.ACCOUNT_NEW) {
-        request = NewAccountProcessor.process(this.state, ctx, txData);
+        request = AccountNewProcessor.process(this.state, ctx, txData);
       } else if (txType === TransactionType.ACCOUNT_UPDATE) {
         request = AccountUpdateProcessor.process(this.state, ctx, txData);
       } else if (txType === TransactionType.ACCOUNT_TRANSFER) {
-        request = OwnerChangeProcessor.process(this.state, ctx, txData);
+        request = AccountTransferProcessor.process(this.state, ctx, txData);
       } else {
         assert(false, "unknown transaction type: " + txType);
       }

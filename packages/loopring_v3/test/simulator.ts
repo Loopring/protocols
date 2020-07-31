@@ -12,7 +12,7 @@ import {
   TxBlock,
   AccountUpdate,
   NewAccount,
-  OwnerChange
+  AccountTransfer
 } from "./types";
 
 interface SettlementValues {
@@ -492,11 +492,11 @@ export class Simulator {
           accountBefore.getBalance(create.feeTokenID).balance,
           accountAfter.getBalance(create.feeTokenID).balance
         );
-      } else if (tx.txType === "OwnerChange") {
-        const change: OwnerChange = tx;
+      } else if (tx.txType === "AccountTransfer") {
+        const change: AccountTransfer = tx;
         report = this.changeOwner(state, block, tx);
 
-        logInfo("#" + index + " OwnerChange");
+        logInfo("#" + index + " AccountTransfer");
         const accountBefore = previousState.getAccount(change.accountID);
         const accountAfter = state.getAccount(change.accountID);
         if (accountBefore.owner !== accountAfter.owner) {
@@ -568,7 +568,7 @@ export class Simulator {
   public static changeOwner(
     state: ExchangeState,
     block: TxBlock,
-    change: OwnerChange
+    change: AccountTransfer
   ) {
     const account = state.getAccount(change.accountID);
     account.owner = change.newOwner;

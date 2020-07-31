@@ -20,7 +20,7 @@ interface NewAccount {
 /**
  * Processes new account requests.
  */
-export class NewAccountProcessor {
+export class AccountNewProcessor {
   public static process(
     state: ExchangeState,
     block: BlockContext,

@@ -195,11 +195,11 @@ contract("Exchange", (accounts: string[]) => {
       ).encodeABI();
 
       // Transfer ownership with the help of the wallet data
-      await ctx.requestOwnerChange(ownerA, token, fee, newOwner, {authMethod: AuthMethod.WALLET, walletCalldata});
+      await ctx.requestAccountTransfer(ownerA, token, fee, newOwner, {authMethod: AuthMethod.WALLET, walletCalldata});
 
       // Transfer ownership again with the help of a signature of the original owner
       newOwner = ownerD;
-      await ctx.requestOwnerChange(ownerC, token, fee, newOwner, {authMethod: AuthMethod.ECDSA});
+      await ctx.requestAccountTransfer(ownerC, token, fee, newOwner, {authMethod: AuthMethod.ECDSA});
 
       // Transfer some funds using an ECDSA signature
       await ctx.transfer(newOwner, ownerA, token, fee.mul(new BN(10)), token, fee, {authMethod: AuthMethod.ECDSA, transferToNew: true});
@@ -209,7 +209,7 @@ contract("Exchange", (accounts: string[]) => {
       await ctx.submitPendingBlocks();
 
       // Try to change owner without approval
-      await ctx.requestOwnerChange(newOwner, token, fee, ownerA, {authMethod: AuthMethod.NONE});
+      await ctx.requestAccountTransfer(newOwner, token, fee, ownerA, {authMethod: AuthMethod.NONE});
 
       // Submit
       await ctx.submitTransactions();

@@ -112,7 +112,7 @@ static auto dummyNewAccount = R"({
     "newWalletHash": "0"
 })"_json;
 
-static auto dummyOwnerChange = R"({
+static auto dummyAccountTransfer = R"({
     "accountID": 0,
     "feeTokenID": 0,
     "fee": "0",
@@ -454,7 +454,7 @@ static void from_json(const json& j, NewAccount& create)
 }
 
 
-class OwnerChange
+class AccountTransfer
 {
 public:
     ethsnarks::FieldT accountID;
@@ -464,7 +464,7 @@ public:
     ethsnarks::FieldT newOwner;
 };
 
-static void from_json(const json& j, OwnerChange& change)
+static void from_json(const json& j, AccountTransfer& change)
 {
     change.accountID = ethsnarks::FieldT(j.at("accountID"));
     change.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
@@ -592,7 +592,7 @@ public:
     Withdrawal withdraw;
     Deposit deposit;
     AccountUpdateTx accountUpdate;
-    OwnerChange accountTransfer;
+    AccountTransfer accountTransfer;
 };
 
 static void from_json(const json& j, UniversalTransaction& transaction)
@@ -606,7 +606,7 @@ static void from_json(const json& j, UniversalTransaction& transaction)
     transaction.deposit = dummyDeposit.get<Loopring::Deposit>();
     transaction.accountUpdate = dummyAccountUpdate.get<Loopring::AccountUpdateTx>();
     transaction.accountNew = dummyNewAccount.get<Loopring::NewAccount>();
-    transaction.accountTransfer = dummyOwnerChange.get<Loopring::OwnerChange>();
+    transaction.accountTransfer = dummyAccountTransfer.get<Loopring::AccountTransfer>();
 
     // Patch some of the dummy tx's so they are valid against the current state
     // Deposit
@@ -653,7 +653,7 @@ static void from_json(const json& j, UniversalTransaction& transaction)
     else if (j.contains("accountTransfer"))
     {
         transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountTransfer));
-        transaction.accountTransfer = j.at("accountTransfer").get<Loopring::OwnerChange>();
+        transaction.accountTransfer = j.at("accountTransfer").get<Loopring::AccountTransfer>();
     }
 }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-#ifndef _OWNERCHANGECIRCUIT_H_
-#define _OWNERCHANGECIRCUIT_H_
+#ifndef _ACCOUNTTRANSFERCIRCUIT_H_
+#define _ACCOUNTTRANSFERCIRCUIT_H_
 
 #include "Circuit.h"
 #include "../Utils/Constants.h"
@@ -102,7 +102,7 @@ public:
         setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
     }
 
-    void generate_r1cs_witness(const OwnerChange& change)
+    void generate_r1cs_witness(const AccountTransfer& change)
     {
         // Inputs
         owner.generate_r1cs_witness();
