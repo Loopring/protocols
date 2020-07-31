@@ -24,7 +24,6 @@ library ExchangeGenesis
         ExchangeData.State storage S,
         uint    _id,
         address _loopring,
-        bool    _rollupMode,
         bytes32 _genesisMerkleRoot,
         bytes32 _domainSeperator
         )
@@ -36,7 +35,6 @@ library ExchangeGenesis
         require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
-        S.rollupMode = _rollupMode;
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
         S.DOMAIN_SEPARATOR = _domainSeperator;
 

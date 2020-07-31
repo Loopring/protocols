@@ -76,7 +76,6 @@ export class ExchangeV3 {
    * @param   exchangeAddress           The address of the exchange
    * @param   exchangeId                The exchange ID
    * @param   owner                     The owner of the exchange
-   * @param   onchainDataAvailability   The availability of on-chain data
    * @param   forgeMode                 The forge mode the exchange was created with
    * @param   protocol                  The protocol of the exchange
    * @param   implementationAddress     The address of the implementation
@@ -86,7 +85,6 @@ export class ExchangeV3 {
     exchangeAddress: string,
     exchangeId: number,
     owner: string,
-    onchainDataAvailability: boolean,
     forgeMode: ForgeMode,
     protocol: ProtocolV3,
     implementationAddress: string
@@ -220,10 +218,6 @@ export class ExchangeV3 {
    * Builds the Merkle tree on the current state
    */
   public buildMerkleTree() {
-    if (!this.state.onchainDataAvailability) {
-      // We cannot build the Merkle tree without on-chain data-availability
-      return;
-    }
     const hasher = poseidon.createHash(5, 6, 52);
     const accountHasher = poseidon.createHash(7, 6, 52);
 
@@ -325,10 +319,6 @@ export class ExchangeV3 {
    * @return  The necessary data for withdrawFromMerkleTree(for)
    */
   public getWithdrawFromMerkleTreeData(accountID: number, tokenID: number) {
-    assert(
-      this.state.onchainDataAvailability,
-      "cannot create the Merkle proofs for an exchange without on-chain data-availability"
-    );
     assert(accountID < this.state.accounts.length, "invalid account ID");
     assert(tokenID < this.tokens.length, "invalid token ID");
 
@@ -606,14 +596,6 @@ export class ExchangeV3 {
   }
 
   /**
-   * Returns if this exchange has on-chain data-availability or not
-   * @return  True if the exchange has on-chain data-availability, else false
-   */
-  public hasOnchainDataAvailability() {
-    return this.state.onchainDataAvailability;
-  }
-
-  /**
    * Gets the forge mode of the exchange
    * @return  The forge mode of the exchange
    */
@@ -791,11 +773,9 @@ export class ExchangeV3 {
         this.processBlock(newBlock);
 
         // TODO: remove (Only done here for debugging)
-        if (this.state.onchainDataAvailability) {
-          this.buildMerkleTree();
-          for (let a = 0; a < this.state.accounts.length; a++) {
-            this.merkleTree.createProof(a);
-          }
+        this.buildMerkleTree();
+        for (let a = 0; a < this.state.accounts.length; a++) {
+          this.merkleTree.createProof(a);
         }
       }
     } else {

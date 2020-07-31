@@ -165,7 +165,6 @@ library ExchangeData
     struct State
     {
         uint    id;
-        bool    rollupMode;
         uint32  maxAgeDepositUntilWithdrawable;
         bytes32 DOMAIN_SEPARATOR;
 
@@ -175,19 +174,18 @@ library ExchangeData
         IDepositContract depositContract;
 
 
-
-        // List of all tokens
-        Token[] tokens;
+        // The merkle root of the offchain data stored in a Merkle tree. The Merkle tree
+        // stores balances for users using an account model.
+        bytes32 merkleRoot;
 
         // List of all blocks
         BlockInfo[] blocks;
 
+        // List of all tokens
+        Token[] tokens;
+
         // A map from a token to its tokenID + 1
         mapping (address => uint16) tokenToTokenId;
-
-        // The merkle root of the offchain data stored in a Merkle tree. The Merkle tree
-        // stores balances for users using an account model.
-        bytes32 merkleRoot;
 
         // A map from an accountID to a tokenID to if the balance is withdrawn
         mapping (uint32 => mapping (uint16 => bool)) withdrawnInWithdrawMode;
@@ -208,12 +206,6 @@ library ExchangeData
         // A map from an account owner to a destination address to a tokenID to an amount to a nonce to a new recipient address
         mapping (address => mapping (address => mapping (uint16 => mapping (uint => mapping (uint32 => address))))) withdrawalRecipient;
 
-        // Whitelisted agents
-        mapping (address => bool) whitelistedAgent;
-
-        // Agents - A map from an account owner to an agent to a boolean that is true/false depending
-        // on if the agent can be used for the account.
-        mapping (address => mapping (address => bool)) agent;
 
         // Counter to keep track of how many of forced requests are open so we can limit the work that needs to be done by the owner
         uint32 numPendingForcedTransactions;

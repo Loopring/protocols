@@ -47,7 +47,6 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         address indexed exchangeAddress,
         address         owner,
         ForgeMode       forgeMode,
-        bool            rollupMode,
         uint            exchangeId,
         uint            amountLRCBurned
     );
@@ -102,14 +101,12 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
     /// @dev Creates a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
     /// @param forgeMode The forge mode.
-    /// @param rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
     /// @param protocol The protocol address, use 0x0 for default.
     /// @param implementation The implementation to use, use 0x0 for default.
     /// @return exchangeAddress The new exchange's address
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
         ForgeMode forgeMode,
-        bool      rollupMode,
         address   protocol,
         address   implementation
         )

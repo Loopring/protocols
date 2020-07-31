@@ -129,7 +129,6 @@ contract UniversalRegistry is IUniversalRegistry {
 
     function forgeExchange(
         ForgeMode forgeMode,
-        bool      rollupMode,
         address   protocol,
         address   implementation
         )
@@ -167,9 +166,7 @@ contract UniversalRegistry is IUniversalRegistry {
         loopring.initializeExchange(
             exchangeAddress,
             exchangeId,
-            msg.sender,  // owner
-            msg.sender,  // operator
-            rollupMode
+            msg.sender   // owner
         );
 
         emit ExchangeForged(
@@ -178,7 +175,6 @@ contract UniversalRegistry is IUniversalRegistry {
             exchangeAddress,
             msg.sender,
             forgeMode,
-            rollupMode,
             exchangeId,
             exchangeCreationCostLRC
         );

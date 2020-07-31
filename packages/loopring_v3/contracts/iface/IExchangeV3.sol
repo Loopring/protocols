@@ -132,13 +132,10 @@ abstract contract IExchangeV3 is IExchange
     /// @param  owner The owner of this exchange.
     /// @param  exchangeId The id of this exchange.
     /// @param  loopring The corresponding ILoopring contract address.
-    /// @param  rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
-    ///         exchange. Note that this value can not be changed once the exchange is initialized.
     function initialize(
         address loopring,
         address owner,
-        uint    exchangeId,
-        bool    rollupMode
+        uint    exchangeId
         )
         external
         virtual;

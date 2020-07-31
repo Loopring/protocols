@@ -448,7 +448,6 @@ public:
     SignatureVerifier signatureVerifier;
 
     // Transactions
-    bool rollupMode;
     unsigned int numTransactions;
     std::vector<TransactionGadget> transactions;
 
@@ -491,9 +490,8 @@ public:
 
     }
 
-    void generateConstraints(bool rollupMode, unsigned int blockSize) override
+    void generateConstraints(unsigned int blockSize) override
     {
-        this->rollupMode = rollupMode;
         this->numTransactions = blockSize;
 
         constants.generate_r1cs_constraints();
@@ -563,13 +561,10 @@ public:
         publicData.add(protocolTakerFeeBips.bits);
         publicData.add(protocolMakerFeeBips.bits);
         publicData.add(numConditionalTransactions->bits);
-        if (rollupMode)
+        publicData.add(operatorAccountID.bits);
+        for (size_t j = 0; j < numTransactions; j++)
         {
-            publicData.add(operatorAccountID.bits);
-            for (size_t j = 0; j < numTransactions; j++)
-            {
-                publicData.add(reverse(transactions[j].getPublicData()));
-            }
+            publicData.add(reverse(transactions[j].getPublicData()));
         }
         publicData.generate_r1cs_constraints();
 

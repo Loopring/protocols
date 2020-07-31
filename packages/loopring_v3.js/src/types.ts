@@ -482,7 +482,6 @@ export class ExchangeState {
 
   constructor(exchangeId: number, accounts: AccountLeaf[] = []) {
     this.exchangeId = exchangeId;
-    this.onchainDataAvailability = true;
 
     this.accounts = accounts;
 
@@ -512,8 +511,6 @@ export class ExchangeState {
   onchainWithdrawals: OnchainWithdrawal[];
 
   processedRequests: any[];
-
-  onchainDataAvailability: boolean;
 }
 
 export interface BlockContext {

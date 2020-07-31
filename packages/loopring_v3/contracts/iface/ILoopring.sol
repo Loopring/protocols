@@ -17,8 +17,7 @@ abstract contract ILoopring is Claimable, ReentrancyGuard
     event ExchangeInitialized(
         uint    indexed exchangeId,
         address indexed exchangeAddress,
-        address indexed owner,
-        bool            rollupMode
+        address indexed owner
     );
 
     /// @dev Returns the exchange version
@@ -35,15 +34,10 @@ abstract contract ILoopring is Claimable, ReentrancyGuard
     /// @param  exchangeAddress The address of the exchange to initialize and register.
     /// @param  exchangeId The unique exchange id.
     /// @param  owner The owner of the exchange.
-    /// @param  operator The operator of the exchange.
-    /// @param  rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
-    ///         Note that this value can not be changed once the exchange is initialized.
     function initializeExchange(
         address exchangeAddress,
         uint    exchangeId,
-        address owner,
-        address payable operator,
-        bool    rollupMode
+        address owner
         )
         external
         virtual;

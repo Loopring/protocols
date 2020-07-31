@@ -73,8 +73,7 @@ contract ExchangeV3 is IExchangeV3
     function initialize(
         address _loopring,
         address _owner,
-        uint    _id,
-        bool    _rollupMode
+        uint    _id
         )
         external
         override
@@ -87,7 +86,6 @@ contract ExchangeV3 is IExchangeV3
         state.initializeGenesisBlock(
             _id,
             _loopring,
-            _rollupMode,
             genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );

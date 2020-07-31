@@ -295,7 +295,6 @@ export class Explorer {
       event.returnValues.exchangeAddress,
       parseInt(event.returnValues.exchangeId),
       event.returnValues.owner,
-      JSON.parse(event.returnValues.rollupMode),
       parseInt(event.returnValues.forgeMode),
       protocol,
       event.returnValues.implementation

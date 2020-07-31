@@ -164,7 +164,6 @@ def ringFromJSON(jRing, state):
 
 def createBlock(state, data):
     block = Block()
-    block.rollupMode = data["rollupMode"]
     block.exchange = str(data["exchange"])
     block.merkleRootBefore = str(state.getRoot())
     block.timestamp = int(data["timestamp"])

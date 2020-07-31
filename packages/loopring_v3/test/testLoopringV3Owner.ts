@@ -44,19 +44,15 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     mockChainlink: any,
     priceFactor: number
   ) => {
-    const startMinExchangeStakeDALrc = await loopring.minExchangeStakeRollup();
-    const startMinExchangeStakeWDALrc = await loopring.minExchangeStakeValidium();
+    const startMinExchangeStakeLrc = await loopring.minExchangeStake();
 
     const transformPrice = (value: BN) => {
       return priceFactor > 1
         ? value.mul(new BN(priceFactor))
         : value.div(new BN(1 / priceFactor));
     };
-    const expectedMinExchangeStakeDALrc = transformPrice(
-      startMinExchangeStakeDALrc
-    );
-    const expectedMinExchangeStakeWDALrc = transformPrice(
-      startMinExchangeStakeWDALrc
+    const expectedMinExchangeStakeLrc = transformPrice(
+      startMinExchangeStakeLrc
     );
 
     // Set the conversion so the expected LRC amounts are returned by the oracle
@@ -69,12 +65,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     await setConversion(
       mockChainlink,
       minExchangeStakeDA,
-      expectedMinExchangeStakeDALrc
-    );
-    await setConversion(
-      mockChainlink,
-      minExchangeStakeWDA,
-      expectedMinExchangeStakeWDALrc
+      expectedMinExchangeStakeLrc
     );
 
     // Update the LRC amounts
@@ -82,14 +73,8 @@ contract("LoopringV3Owner", (accounts: string[]) => {
 
     // Check against the contract values
     assert(
-      expectedMinExchangeStakeDALrc.eq(await loopring.minExchangeStakeRollup()),
-      "unexpected currentMinExchangeStakeDALrc"
-    );
-    assert(
-      expectedMinExchangeStakeWDALrc.eq(
-        await loopring.minExchangeStakeValidium()
-      ),
-      "unexpected currentMinExchangeStakeWDALrc"
+      expectedMinExchangeStakeLrc.eq(await loopring.minExchangeStake()),
+      "unexpected currentMinExchangeStakeLrc"
     );
 
     // Check the LRCValuesUpdated event
@@ -98,14 +83,8 @@ contract("LoopringV3Owner", (accounts: string[]) => {
       "LRCValuesUpdated"
     );
     assert(
-      updateEvent.minExchangeStakeRollupLRC.eq(expectedMinExchangeStakeDALrc),
-      "unexpected currentMinExchangeStakeDALrc"
-    );
-    assert(
-      updateEvent.minExchangeStakeValidiumLRC.eq(
-        expectedMinExchangeStakeWDALrc
-      ),
-      "unexpected currentMinExchangeStakeWDALrc"
+      updateEvent.minExchangeStakeLRC.eq(expectedMinExchangeStakeLrc),
+      "unexpected currentMinExchangeStakeLrc"
     );
   };
 

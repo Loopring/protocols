@@ -692,7 +692,6 @@ export class ExchangeTestUtil {
 
   public pendingBlocks: Block[][] = [];
 
-  public rollupMode = true;
   public compressionType = CompressionType.LZ;
 
   public autoCommit = true;
@@ -726,7 +725,6 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("10000", "ether")),
       new BN(web3.utils.toWei("0.02", "ether")),
       new BN(web3.utils.toWei("250000", "ether")),
-      new BN(web3.utils.toWei("1000000", "ether")),
       { from: this.testContext.deployer }
     );
 
@@ -763,7 +761,7 @@ export class ExchangeTestUtil {
       this.accounts.push([protocolFeeAccount]);
     }
 
-    await this.createExchange(this.testContext.deployer, true, this.rollupMode);
+    await this.createExchange(this.testContext.deployer, true);
 
     const constants = await this.exchange.getConstants();
     this.SNARK_SCALAR_FIELD = new BN(constants.SNARK_SCALAR_FIELD);
@@ -1939,7 +1937,6 @@ export class ExchangeTestUtil {
     const block: any = {};
     block.blockType = blockType;
     block.blockSize = blockSize;
-    block.rollupMode = this.rollupMode;
     fs.writeFileSync(
       blockFilename,
       JSON.stringify(block, undefined, 4),
@@ -1948,7 +1945,6 @@ export class ExchangeTestUtil {
 
     const isCircuitRegistered = await this.blockVerifier.isCircuitRegistered(
       block.blockType,
-      block.rollupMode,
       block.blockSize,
       blockVersion
     );
@@ -1961,8 +1957,7 @@ export class ExchangeTestUtil {
       assert(result.status === 0, "generateKeys failed: " + blockFilename);
 
       let verificationKeyFilename = "keys/";
-      verificationKeyFilename += "all";
-      verificationKeyFilename += block.rollupMode ? "_DA_" : "_";
+      verificationKeyFilename += "all_";
       verificationKeyFilename += block.blockSize + "_vk.json";
 
       // Read the verification key and set it in the smart contract
@@ -1972,7 +1967,6 @@ export class ExchangeTestUtil {
 
       await this.blockVerifier.registerCircuit(
         block.blockType,
-        block.rollupMode,
         block.blockSize,
         blockVersion,
         vkFlattened
@@ -1987,8 +1981,6 @@ export class ExchangeTestUtil {
     key |= block.blockSize;
     key <<= 8;
     key |= block.blockVersion;
-    key <<= 1;
-    key |= this.rollupMode ? 1 : 0;
     return key;
   }
 
@@ -2387,7 +2379,6 @@ export class ExchangeTestUtil {
       const operator = await this.getActiveOperator(exchangeID);
       const txBlock: TxBlock = {
         transactions,
-        rollupMode: this.rollupMode,
         timestamp,
         protocolTakerFeeBips,
         protocolMakerFeeBips,
@@ -2422,169 +2413,165 @@ export class ExchangeTestUtil {
       bs.addNumber(txBlock.protocolMakerFeeBips, 1);
       bs.addNumber(numConditionalTransactions, 4);
       const allDa = new Bitstream();
-      if (block.rollupMode) {
-        allDa.addNumber(block.operatorAccountID, 4);
-        for (const tx of block.transactions) {
-          //console.log(tx);
-          const da = new Bitstream();
-          if (tx.noop) {
-            // Do nothing
-          } else if (tx.spotTrade) {
-            const spotTrade = tx.spotTrade;
-            const orderA = spotTrade.orderA;
-            const orderB = spotTrade.orderB;
+      allDa.addNumber(block.operatorAccountID, 4);
+      for (const tx of block.transactions) {
+        //console.log(tx);
+        const da = new Bitstream();
+        if (tx.noop) {
+          // Do nothing
+        } else if (tx.spotTrade) {
+          const spotTrade = tx.spotTrade;
+          const orderA = spotTrade.orderA;
+          const orderB = spotTrade.orderB;
 
-            da.addNumber(TransactionType.SPOT_TRADE, 1);
+          da.addNumber(TransactionType.SPOT_TRADE, 1);
 
-            da.addNumber(
-              spotTrade.overwriteDataSlotA * Constants.NUM_STORAGE_SLOTS +
-                (orderA.storageID % Constants.NUM_STORAGE_SLOTS),
-              2
-            );
-            da.addNumber(
-              spotTrade.overwriteDataSlotB * Constants.NUM_STORAGE_SLOTS +
-                (orderB.storageID % Constants.NUM_STORAGE_SLOTS),
-              2
-            );
-            da.addNumber(orderA.accountID, 4);
-            da.addNumber(orderB.accountID, 4);
-            da.addNumber(orderA.tokenS * 2 ** 12 + orderB.tokenS, 3);
-            da.addNumber(spotTrade.fFillS_A, 3);
-            da.addNumber(spotTrade.fFillS_B, 3);
-
-            let buyMask = orderA.buy ? 0b10000000 : 0;
-            let rebateMask = orderA.rebateBips > 0 ? 0b01000000 : 0;
-            da.addNumber(
-              buyMask + rebateMask + orderA.feeBips + orderA.rebateBips,
-              1
-            );
-
-            buyMask = orderB.buy ? 0b10000000 : 0;
-            rebateMask = orderB.rebateBips > 0 ? 0b01000000 : 0;
-            da.addNumber(
-              buyMask + rebateMask + orderB.feeBips + orderB.rebateBips,
-              1
-            );
-          } else if (tx.transfer) {
-            const transfer = tx.transfer;
-            da.addNumber(TransactionType.TRANSFER, 1);
-            da.addNumber(transfer.type, 1);
-            da.addNumber(transfer.fromAccountID, 4);
-            da.addNumber(transfer.toAccountID, 4);
-            da.addNumber(transfer.tokenID * 2 ** 12 + transfer.feeTokenID, 3);
-            da.addNumber(
-              toFloat(new BN(transfer.amount), Constants.Float24Encoding),
-              3
-            );
-            da.addNumber(
-              toFloat(new BN(transfer.fee), Constants.Float16Encoding),
-              2
-            );
-            da.addNumber(
-              transfer.overwriteDataSlot * Constants.NUM_STORAGE_SLOTS +
-                (transfer.storageID % Constants.NUM_STORAGE_SLOTS),
-              2
-            );
-            da.addBN(
-              new BN(
-                transfer.type > 0 || transfer.toNewAccount ? transfer.to : "0"
-              ),
-              20
-            );
-            da.addNumber(transfer.type > 0 ? transfer.validUntil : 0, 4);
-            da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 4);
-            da.addBN(new BN(transfer.type > 0 ? transfer.from : "0"), 20);
-            da.addBN(new BN(transfer.data), 32);
-          } else if (tx.withdraw) {
-            const withdraw = tx.withdraw;
-            da.addNumber(TransactionType.WITHDRAWAL, 1);
-            da.addNumber(withdraw.type, 1);
-            da.addBN(new BN(withdraw.owner), 20);
-            da.addNumber(withdraw.accountID, 4);
-            da.addNumber(withdraw.tokenID * 2 ** 12 + withdraw.feeTokenID, 3);
-            da.addBN(new BN(withdraw.amount), 12);
-            da.addNumber(
-              toFloat(new BN(withdraw.fee), Constants.Float16Encoding),
-              2
-            );
-            da.addBN(new BN(withdraw.to), 20);
-            da.addBN(new BN(withdraw.dataHash), 32);
-            da.addNumber(withdraw.minGas, 3);
-            da.addNumber(withdraw.validUntil, 4);
-            da.addNumber(withdraw.nonce, 4);
-          } else if (tx.deposit) {
-            const deposit = tx.deposit;
-            da.addNumber(TransactionType.DEPOSIT, 1);
-            da.addBN(new BN(deposit.owner), 20);
-            da.addNumber(deposit.accountID, 4);
-            da.addNumber(deposit.tokenID, 2);
-            da.addBN(new BN(deposit.amount), 12);
-          } else if (tx.accountUpdate) {
-            const update = tx.accountUpdate;
-            da.addNumber(TransactionType.ACCOUNT_UPDATE, 1);
-            da.addNumber(update.type, 1);
-            da.addBN(new BN(update.owner), 20);
-            da.addNumber(update.accountID, 4);
-            da.addNumber(update.feeTokenID, 2);
-            da.addNumber(
-              toFloat(new BN(update.fee), Constants.Float16Encoding),
-              2
-            );
-            da.addBN(
-              new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
-              32
-            );
-            da.addBN(new BN(update.walletHash), 32);
-            da.addNumber(update.validUntil, 4);
-            da.addNumber(update.nonce, 4);
-          } else if (tx.accountNew) {
-            const create = tx.accountNew;
-            da.addNumber(TransactionType.ACCOUNT_NEW, 1);
-            da.addNumber(create.payerAccountID, 4);
-            da.addNumber(create.feeTokenID, 2);
-            da.addNumber(
-              toFloat(new BN(create.fee), Constants.Float16Encoding),
-              2
-            );
-            da.addNumber(create.newAccountID, 4);
-            da.addBN(new BN(create.newOwner), 20);
-            da.addBN(
-              new BN(
-                EdDSA.pack(create.newPublicKeyX, create.newPublicKeyY),
-                16
-              ),
-              32
-            );
-            da.addBN(new BN(create.newWalletHash), 32);
-            da.addNumber(create.validUntil, 4);
-          } else if (tx.accountTransfer) {
-            const change = tx.accountTransfer;
-            da.addNumber(TransactionType.ACCOUNT_TRANSFER, 1);
-            da.addBN(new BN(change.owner), 20);
-            da.addNumber(change.accountID, 4);
-            da.addNumber(change.feeTokenID, 2);
-            da.addNumber(
-              toFloat(new BN(change.fee), Constants.Float16Encoding),
-              2
-            );
-            da.addBN(new BN(change.newOwner), 20);
-            da.addBN(new BN(change.walletHash), 32);
-            da.addNumber(change.validUntil, 4);
-            da.addNumber(change.nonce, 4);
-          }
-          assert(
-            da.length() <= Constants.TX_DATA_AVAILABILITY_SIZE,
-            "tx uses too much da"
+          da.addNumber(
+            spotTrade.overwriteDataSlotA * Constants.NUM_STORAGE_SLOTS +
+              (orderA.storageID % Constants.NUM_STORAGE_SLOTS),
+            2
           );
-          while (da.length() < Constants.TX_DATA_AVAILABILITY_SIZE) {
-            da.addNumber(0, 1);
-          }
-          allDa.addHex(da.getData());
+          da.addNumber(
+            spotTrade.overwriteDataSlotB * Constants.NUM_STORAGE_SLOTS +
+              (orderB.storageID % Constants.NUM_STORAGE_SLOTS),
+            2
+          );
+          da.addNumber(orderA.accountID, 4);
+          da.addNumber(orderB.accountID, 4);
+          da.addNumber(orderA.tokenS * 2 ** 12 + orderB.tokenS, 3);
+          da.addNumber(spotTrade.fFillS_A, 3);
+          da.addNumber(spotTrade.fFillS_B, 3);
+
+          let buyMask = orderA.buy ? 0b10000000 : 0;
+          let rebateMask = orderA.rebateBips > 0 ? 0b01000000 : 0;
+          da.addNumber(
+            buyMask + rebateMask + orderA.feeBips + orderA.rebateBips,
+            1
+          );
+
+          buyMask = orderB.buy ? 0b10000000 : 0;
+          rebateMask = orderB.rebateBips > 0 ? 0b01000000 : 0;
+          da.addNumber(
+            buyMask + rebateMask + orderB.feeBips + orderB.rebateBips,
+            1
+          );
+        } else if (tx.transfer) {
+          const transfer = tx.transfer;
+          da.addNumber(TransactionType.TRANSFER, 1);
+          da.addNumber(transfer.type, 1);
+          da.addNumber(transfer.fromAccountID, 4);
+          da.addNumber(transfer.toAccountID, 4);
+          da.addNumber(transfer.tokenID * 2 ** 12 + transfer.feeTokenID, 3);
+          da.addNumber(
+            toFloat(new BN(transfer.amount), Constants.Float24Encoding),
+            3
+          );
+          da.addNumber(
+            toFloat(new BN(transfer.fee), Constants.Float16Encoding),
+            2
+          );
+          da.addNumber(
+            transfer.overwriteDataSlot * Constants.NUM_STORAGE_SLOTS +
+              (transfer.storageID % Constants.NUM_STORAGE_SLOTS),
+            2
+          );
+          da.addBN(
+            new BN(
+              transfer.type > 0 || transfer.toNewAccount ? transfer.to : "0"
+            ),
+            20
+          );
+          da.addNumber(transfer.type > 0 ? transfer.validUntil : 0, 4);
+          da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 4);
+          da.addBN(new BN(transfer.type > 0 ? transfer.from : "0"), 20);
+          da.addBN(new BN(transfer.data), 32);
+        } else if (tx.withdraw) {
+          const withdraw = tx.withdraw;
+          da.addNumber(TransactionType.WITHDRAWAL, 1);
+          da.addNumber(withdraw.type, 1);
+          da.addBN(new BN(withdraw.owner), 20);
+          da.addNumber(withdraw.accountID, 4);
+          da.addNumber(withdraw.tokenID * 2 ** 12 + withdraw.feeTokenID, 3);
+          da.addBN(new BN(withdraw.amount), 12);
+          da.addNumber(
+            toFloat(new BN(withdraw.fee), Constants.Float16Encoding),
+            2
+          );
+          da.addBN(new BN(withdraw.to), 20);
+          da.addBN(new BN(withdraw.dataHash), 32);
+          da.addNumber(withdraw.minGas, 3);
+          da.addNumber(withdraw.validUntil, 4);
+          da.addNumber(withdraw.nonce, 4);
+        } else if (tx.deposit) {
+          const deposit = tx.deposit;
+          da.addNumber(TransactionType.DEPOSIT, 1);
+          da.addBN(new BN(deposit.owner), 20);
+          da.addNumber(deposit.accountID, 4);
+          da.addNumber(deposit.tokenID, 2);
+          da.addBN(new BN(deposit.amount), 12);
+        } else if (tx.accountUpdate) {
+          const update = tx.accountUpdate;
+          da.addNumber(TransactionType.ACCOUNT_UPDATE, 1);
+          da.addNumber(update.type, 1);
+          da.addBN(new BN(update.owner), 20);
+          da.addNumber(update.accountID, 4);
+          da.addNumber(update.feeTokenID, 2);
+          da.addNumber(
+            toFloat(new BN(update.fee), Constants.Float16Encoding),
+            2
+          );
+          da.addBN(
+            new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
+            32
+          );
+          da.addBN(new BN(update.walletHash), 32);
+          da.addNumber(update.validUntil, 4);
+          da.addNumber(update.nonce, 4);
+        } else if (tx.accountNew) {
+          const create = tx.accountNew;
+          da.addNumber(TransactionType.ACCOUNT_NEW, 1);
+          da.addNumber(create.payerAccountID, 4);
+          da.addNumber(create.feeTokenID, 2);
+          da.addNumber(
+            toFloat(new BN(create.fee), Constants.Float16Encoding),
+            2
+          );
+          da.addNumber(create.newAccountID, 4);
+          da.addBN(new BN(create.newOwner), 20);
+          da.addBN(
+            new BN(
+              EdDSA.pack(create.newPublicKeyX, create.newPublicKeyY),
+              16
+            ),
+            32
+          );
+          da.addBN(new BN(create.newWalletHash), 32);
+          da.addNumber(create.validUntil, 4);
+        } else if (tx.accountTransfer) {
+          const change = tx.accountTransfer;
+          da.addNumber(TransactionType.ACCOUNT_TRANSFER, 1);
+          da.addBN(new BN(change.owner), 20);
+          da.addNumber(change.accountID, 4);
+          da.addNumber(change.feeTokenID, 2);
+          da.addNumber(
+            toFloat(new BN(change.fee), Constants.Float16Encoding),
+            2
+          );
+          da.addBN(new BN(change.newOwner), 20);
+          da.addBN(new BN(change.walletHash), 32);
+          da.addNumber(change.validUntil, 4);
+          da.addNumber(change.nonce, 4);
         }
+        assert(
+          da.length() <= Constants.TX_DATA_AVAILABILITY_SIZE,
+          "tx uses too much da"
+        );
+        while (da.length() < Constants.TX_DATA_AVAILABILITY_SIZE) {
+          da.addNumber(0, 1);
+        }
+        allDa.addHex(da.getData());
       }
-      if (block.rollupMode) {
-        bs.addHex(allDa.getData());
-      }
+      bs.addHex(allDa.getData());
 
       // Write the block signature
       const publicDataHashAndInput = this.getPublicDataHashAndInput(
@@ -2692,8 +2679,7 @@ export class ExchangeTestUtil {
 
   public async createExchange(
     owner: string,
-    bSetupTestState: boolean = true,
-    rollupMode: boolean = true
+    bSetupTestState: boolean = true
   ) {
     const operator = this.testContext.operators[0];
     const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
@@ -2711,7 +2697,6 @@ export class ExchangeTestUtil {
     // Create the new exchange
     const tx = await this.universalRegistry.forgeExchange(
       forgeMode,
-      rollupMode,
       Constants.zeroAddress,
       Constants.zeroAddress,
       { from: owner }
@@ -2764,7 +2749,6 @@ export class ExchangeTestUtil {
     this.exchangeOwner = owner;
     this.exchangeOperator = /*operator*/owner;
     this.exchangeId = exchangeId;
-    this.rollupMode = rollupMode;
     this.activeOperator = undefined;
 
     // Set the operator
@@ -2814,9 +2798,7 @@ export class ExchangeTestUtil {
 
     // Deposit some LRC to stake for the exchange
     const depositer = this.testContext.operators[2];
-    const stakeAmount = rollupMode
-      ? await this.loopringV3.minExchangeStakeRollup()
-      : await this.loopringV3.minExchangeStakeValidium();
+    const stakeAmount = await this.loopringV3.minExchangeStake();
     await this.setBalanceAndApprove(
       depositer,
       "LRC",
@@ -3031,8 +3013,7 @@ export class ExchangeTestUtil {
       await this.loopringV3.blockVerifierAddress(),
       await this.loopringV3.exchangeCreationCostLRC(),
       this.getRandomFee(),
-      await this.loopringV3.minExchangeStakeRollup(),
-      await this.loopringV3.minExchangeStakeValidium(),
+      await this.loopringV3.minExchangeStake(),
       { from: this.testContext.deployer }
     );
   }
