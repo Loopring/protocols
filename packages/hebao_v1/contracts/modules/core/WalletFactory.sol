@@ -6,13 +6,13 @@ pragma experimental ABIEncoderV2;
 import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
 import "../../lib/OwnerManagable.sol";
+import "../../lib/SimpleProxy.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../thirdparty/Create2.sol";
 import "../../thirdparty/ens/BaseENSManager.sol";
 import "../../thirdparty/ens/ENS.sol";
-import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 import "../ControllerImpl.sol";
 
 
@@ -156,12 +156,9 @@ contract WalletFactory is ReentrancyGuard
         internal
         returns (address payable _wallet)
     {
-        // Deploy the wallet
         _wallet = Create2.deploy(getSalt(_owner), getWalletCode());
 
-        OwnedUpgradabilityProxy(_wallet).upgradeTo(_implementation);
-        OwnedUpgradabilityProxy(_wallet).transferProxyOwnership(_wallet);
-
+        SimpleProxy(_wallet).setImplementation(_implementation);
         Wallet(_wallet).setup(address(controller), _owner);
 
         controller.walletRegistry().registerWallet(_wallet);
@@ -184,6 +181,6 @@ contract WalletFactory is ReentrancyGuard
         pure
         returns (bytes memory)
     {
-        return type(OwnedUpgradabilityProxy).creationCode;
+        return type(SimpleProxy).creationCode;
     }
 }

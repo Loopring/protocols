@@ -8,6 +8,8 @@ import "./SignedRequest.sol";
 
 
 /// @title GuardianModule
+/// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang - <daniel@loopring.org>
 contract GuardianModule is SecurityModule
 {
     using SignatureUtil for bytes32;

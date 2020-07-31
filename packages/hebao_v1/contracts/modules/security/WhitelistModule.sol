@@ -8,6 +8,7 @@ import "./SecurityModule.sol";
 
 /// @title WhitelistModule
 /// @dev Manages whitelisted addresses.
+/// @author Daniel Wang - <daniel@loopring.org>
 contract WhitelistModule is SecurityModule
 {
     using MathUint      for uint;

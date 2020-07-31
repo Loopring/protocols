@@ -8,6 +8,8 @@ import "../security/SecurityModule.sol";
 
 
 /// @title BaseTransferModule
+/// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang - <daniel@loopring.org>
 abstract contract BaseTransferModule is SecurityModule
 {
     using MathUint      for uint;

@@ -10,6 +10,8 @@ import "./BaseTransferModule.sol";
 
 
 /// @title TransferModule
+/// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang - <daniel@loopring.org>
 contract TransferModule is BaseTransferModule
 {
     using MathUint      for uint;
