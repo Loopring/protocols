@@ -33,7 +33,6 @@ abstract contract SecurityModule is MetaTxModule
         MetaTxModule(_controller, _trustedForwarder) {}
 
     modifier onlyFromWalletOrOwnerWhenUnlocked(address wallet)
-        override
     {
         address payable _logicalSender = logicalSender();
         // If the wallet's signature verfication passes, the wallet must be unlocked.
