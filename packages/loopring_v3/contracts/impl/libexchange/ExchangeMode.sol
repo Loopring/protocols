@@ -46,16 +46,4 @@ library ExchangeMode
     {
         return ExchangeData.MAX_OPEN_FORCED_REQUESTS() - S.numPendingForcedTransactions;
     }
-
-    function areUserRequestsEnabled(
-        ExchangeData.State storage S
-        )
-        internal // inline call
-        view
-        returns (bool)
-    {
-        // User requests are possible when the exchange is not in maintenance mode,
-        // the exchange hasn't been shutdown, and the exchange isn't in withdrawal mode
-        return !isShutdown(S) && !isInWithdrawalMode(S);
-    }
 }

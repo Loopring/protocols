@@ -83,7 +83,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
-        nonReentrant
+        //nonReentrant
         ifNotZero(amount)
         returns (uint96 amountReceived)
     {
@@ -116,7 +116,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
-        nonReentrant
+        //nonReentrant
         ifNotZero(amount)
     {
         if (isETHInternal(token)) {
@@ -140,7 +140,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
-        nonReentrant
+        //nonReentrant
         ifNotZero(amount)
     {
         token.safeTransferFromAndVerify(from, to, amount);

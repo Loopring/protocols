@@ -35,6 +35,8 @@ library DepositTransaction
         returns (uint feeETH)
     {
         // Read in the deposit data
+        // We don't use abi.decode for this because of the large amount of zero-padding
+        // bytes the circuit would also have to hash.
         address owner = data.toAddress(offset);
         offset += 20;
         //uint32 accountID = data.toUint32(offset);

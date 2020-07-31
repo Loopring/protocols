@@ -206,6 +206,9 @@ library WithdrawTransaction
         pure
         returns (Withdrawal memory withdrawal)
     {
+        // Extract the transfer data
+        // We don't use abi.decode for this because of the large amount of zero-padding
+        // bytes the circuit would also have to hash.
         withdrawal.withdrawalType = data.toUint8(offset);
         offset += 1;
         withdrawal.owner = data.toAddress(offset);

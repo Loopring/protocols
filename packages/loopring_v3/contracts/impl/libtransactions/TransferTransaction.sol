@@ -46,11 +46,12 @@ library TransferTransaction
         offset += 1;
 
         // Extract the transfer data
+        // We don't use abi.decode for this because of the large amount of zero-padding
+        // bytes the circuit would also have to hash.
         //uint32 fromAccountID = data.toUint32(offset);
         offset += 4;
         //uint32 toAccountID = data.toUint32(offset);
         offset += 4;
-
         uint16 tokenID = data.toUint16(offset) >> 4;
         uint16 feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
         offset += 3;

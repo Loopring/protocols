@@ -55,6 +55,8 @@ library AccountUpdateTransaction
         require(updateType == 1, "INVALID_AUXILIARYDATA_DATA");
 
         // Extract the data from the tx data
+        // We don't use abi.decode for this because of the large amount of zero-padding
+        // bytes the circuit would also have to hash.
         AccountUpdate memory accountUpdate;
         accountUpdate.owner = data.toAddress(offset);
         offset += 20;

@@ -43,6 +43,8 @@ library NewAccountTransaction
         returns (uint /*feeETH*/)
     {
         // Extract the data from the tx data
+        // We don't use abi.decode for this because of the large amount of zero-padding
+        // bytes the circuit would also have to hash.
         //uint32 payerAccountID = data.toUint32(offset);
         offset += 4;
         //uint16 feeTokenID = data.toUint16(offset);

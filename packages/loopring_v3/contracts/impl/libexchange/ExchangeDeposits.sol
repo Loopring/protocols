@@ -41,7 +41,10 @@ library ExchangeDeposits
         internal  // inline call
     {
         require(to != address(0), "ZERO_ADDRESS");
-        require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
+
+        // Deposits are still possible when the exchange is being shutdown, or even in withdrawal mode.
+        // This is fine because the user can easily withdraw the deposited amounts again.
+        // We don't want to make all deposits more expensive just to stop that from happening.
 
         uint16 tokenID = S.getTokenID(tokenAddress);
 
@@ -55,13 +58,11 @@ library ExchangeDeposits
         );
 
         // Add the amount to the deposit request and reset the time the operator has to process it
-        S.pendingDeposits[to][tokenID].timestamp = uint32(block.timestamp);
-
-        S.pendingDeposits[to][tokenID].amount =
-            S.pendingDeposits[to][tokenID].amount.add96(amountDeposited);
-
-        S.pendingDeposits[to][tokenID].fee =
-            S.pendingDeposits[to][tokenID].fee.add64(fee);
+        ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
+        _deposit.timestamp = uint32(block.timestamp);
+        _deposit.amount = _deposit.amount.add96(amountDeposited);
+        _deposit.fee = _deposit.fee.add64(fee);
+        S.pendingDeposits[to][tokenID] = _deposit;
 
         emit DepositRequested(
             to,
@@ -84,8 +85,9 @@ library ExchangeDeposits
             uint64 fee
         )
     {
+        IDepositContract depositContract = S.depositContract;
         uint depositValueETH = 0;
-        if (msg.value > 0 && (tokenAddress == address(0) || S.depositContract.isETH(tokenAddress))) {
+        if (msg.value > 0 && (tokenAddress == address(0) || depositContract.isETH(tokenAddress))) {
             depositValueETH = amount;
             fee = uint64(msg.value.sub(amount));
         } else {
@@ -93,7 +95,7 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        amountDeposited = S.depositContract.deposit{value: depositValueETH}(
+        amountDeposited = depositContract.deposit{value: depositValueETH}(
             from,
             tokenAddress,
             amount,
