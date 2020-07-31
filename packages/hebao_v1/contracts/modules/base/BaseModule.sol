@@ -37,16 +37,6 @@ abstract contract BaseModule is ReentrancyGuard, Module
         return msg.sender;
     }
 
-    modifier onlyFromWalletOrOwnerWhenUnlocked(address wallet)
-        virtual
-    {
-        address payable _logicalSender = logicalSender();
-        require(
-            _logicalSender == wallet || _logicalSender == Wallet(wallet).owner(),
-            "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED");
-        _;
-    }
-
     modifier onlyWalletOwner(address wallet, address addr)
         virtual
     {
