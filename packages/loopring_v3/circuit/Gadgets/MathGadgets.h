@@ -263,37 +263,6 @@ public:
     }
 };
 
-// Helper function for subadd to do transfers
-class TransferGadget : public GadgetT
-{
-public:
-    subadd_gadget subadd;
-
-    TransferGadget(
-        ProtoboardT& pb,
-        DynamicVariableGadget& from,
-        DynamicVariableGadget& to,
-        const VariableT& value,
-        const std::string& prefix
-    ) :
-        GadgetT(pb, prefix),
-        subadd(pb, NUM_BITS_AMOUNT, from.back(), to.back(), value, FMT(prefix, ".subadd"))
-    {
-        from.add(subadd.X);
-        to.add(subadd.Y);
-    }
-
-    void generate_r1cs_witness()
-    {
-        subadd.generate_r1cs_witness();
-    }
-
-    void generate_r1cs_constraints()
-    {
-        subadd.generate_r1cs_constraints();
-    }
-};
-
 // A - B
 class UnsafeSubGadget : public GadgetT
 {
@@ -485,6 +454,43 @@ public:
     const VariableT& result() const
     {
         return unsafeSub.result();
+    }
+};
+
+// Helper function to do transfers
+class TransferGadget : public GadgetT
+{
+public:
+
+    SubGadget sub;
+    AddGadget add;
+
+    TransferGadget(
+        ProtoboardT& pb,
+        DynamicVariableGadget& from,
+        DynamicVariableGadget& to,
+        const VariableT& value,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        sub(pb, from.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".sub")),
+        add(pb, to.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".add"))
+    {
+        from.add(sub.result());
+        to.add(add.result());
+    }
+
+    void generate_r1cs_witness()
+    {
+        sub.generate_r1cs_witness();
+        add.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        sub.generate_r1cs_constraints();
+        add.generate_r1cs_constraints();
     }
 };
 
