@@ -986,7 +986,7 @@ export class ExchangeTestUtil {
       const txHash = TransferUtils.getHash(transfer, this.exchange.address);
 
       // Randomly approve using approveOffchainTransfer/approveTransaction
-      const toggle = this.getRandomBool();
+      const toggle = (transfer.from == signer) ? this.getRandomBool() : false;
       if (toggle) {
         await this.exchange.approveOffchainTransfer(
           signer,
@@ -1015,7 +1015,7 @@ export class ExchangeTestUtil {
       assert.equal(
         event.transactionHash,
         "0x" + txHash.toString("hex"),
-        "unexpected tx hasg"
+        "unexpected tx hash"
       );
       // Check the exchange state
       const isApproved = await this.exchange.isTransactionApproved(
