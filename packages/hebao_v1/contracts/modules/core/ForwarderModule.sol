@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
+import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
@@ -15,14 +16,14 @@ import "../base/BaseModule.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ForwarderModule is BaseModule
 {
-    using SignatureUtil for bytes32;
     using BytesUtil     for bytes;
+    using MathUint      for uint;
+    using SignatureUtil for bytes32;
 
     uint    public constant GAS_OVERHEAD = 100000;
     bytes32 public DOMAIN_SEPARATOR;
 
     constructor(ControllerImpl _controller)
-        public
         BaseModule(_controller)
     {
         DOMAIN_SEPARATOR = EIP712.hash(

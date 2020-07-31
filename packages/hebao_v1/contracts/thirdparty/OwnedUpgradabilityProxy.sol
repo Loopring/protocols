@@ -2,7 +2,7 @@
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
 
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 
 /**
@@ -18,7 +18,7 @@ contract OwnedUpgradabilityProxy  {
   /**
   * @dev the constructor sets the original owner of the contract to the sender account.
   */
-  constructor() public {
+  constructor() {
     _setUpgradeabilityOwner(msg.sender);
   }
 

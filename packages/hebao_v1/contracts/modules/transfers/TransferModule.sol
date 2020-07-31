@@ -1,14 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/MathUint.sol";
+import "../security/SecurityModule.sol";
+import "../security/SignedRequest.sol";
 import "./BaseTransferModule.sol";
 
 
 /// @title TransferModule
 contract TransferModule is BaseTransferModule
 {
+    using MathUint      for uint;
+    using SignedRequest for ControllerImpl;
+
     bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = keccak256(
         "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
     );
@@ -36,7 +42,6 @@ contract TransferModule is BaseTransferModule
         address        _trustedForwarder,
         uint           _delayPeriod
         )
-        public
         BaseTransferModule(_controller, _trustedForwarder)
     {
         require(_delayPeriod > 0, "INVALID_DELAY");
@@ -61,9 +66,9 @@ contract TransferModule is BaseTransferModule
         uint _currentQuota = qs.currentQuota(wallet);
 
         if (_currentQuota >= _newQuota) {
-            qs.changeQuota(wallet, _newQuota, now);
+            qs.changeQuota(wallet, _newQuota, block.timestamp);
         } else {
-            qs.changeQuota(wallet, _newQuota, now.add(delayPeriod));
+            qs.changeQuota(wallet, _newQuota, block.timestamp.add(delayPeriod));
         }
     }
 
@@ -88,7 +93,7 @@ contract TransferModule is BaseTransferModule
             )
         );
 
-        controller.quotaStore().changeQuota(request.wallet, newQuota, now);
+        controller.quotaStore().changeQuota(request.wallet, newQuota, block.timestamp);
     }
 
     function transferToken(

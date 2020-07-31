@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/Module.sol";
@@ -48,7 +48,6 @@ contract WalletFactory is ReentrancyGuard
         address        _walletImplementation,
         bool           _allowEmptyENS
         )
-        public
     {
         DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("WalletFactory", "1.1.0", address(this))

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./SecurityModule.sol";
+import "./SignedRequest.sol";
 
 
 /// @title GuardianModule
@@ -11,6 +12,7 @@ contract GuardianModule is SecurityModule
 {
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
+    using SignedRequest for ControllerImpl;
 
     uint constant public MAX_GUARDIANS = 20;
     uint public pendingPeriod;
@@ -34,7 +36,6 @@ contract GuardianModule is SecurityModule
         address        _trustedForwarder,
         uint           _pendingPeriod
         )
-        public
         SecurityModule(_controller, _trustedForwarder)
     {
         DOMAIN_SEPERATOR = EIP712.hash(
@@ -61,9 +62,9 @@ contract GuardianModule is SecurityModule
         uint numGuardians = controller.securityStore().numGuardiansWithPending(wallet);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
-        uint effectiveTime = now;
+        uint effectiveTime = block.timestamp;
         if (numGuardians >= MIN_ACTIVE_GUARDIANS) {
-            effectiveTime = now + pendingPeriod;
+            effectiveTime = block.timestamp + pendingPeriod;
         }
         controller.securityStore().addGuardian(wallet, guardian, group, effectiveTime);
         emit GuardianAdded(wallet, guardian, group, effectiveTime);
@@ -92,8 +93,8 @@ contract GuardianModule is SecurityModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
     {
-        controller.securityStore().removeGuardian(wallet, guardian, now + pendingPeriod);
-        emit GuardianRemoved(wallet, guardian, now + pendingPeriod);
+        controller.securityStore().removeGuardian(wallet, guardian, block.timestamp + pendingPeriod);
+        emit GuardianRemoved(wallet, guardian, block.timestamp + pendingPeriod);
     }
 
     function cancelGuardianRemoval(
@@ -157,7 +158,7 @@ contract GuardianModule is SecurityModule
 
         SecurityStore securityStore = controller.securityStore();
         if (securityStore.isGuardianOrPendingAddition(request.wallet, newOwner)) {
-            securityStore.removeGuardian(request.wallet, newOwner, now);
+            securityStore.removeGuardian(request.wallet, newOwner, block.timestamp);
         }
 
         Wallet(request.wallet).setOwner(newOwner);

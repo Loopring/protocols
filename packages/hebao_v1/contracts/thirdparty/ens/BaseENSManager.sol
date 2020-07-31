@@ -2,7 +2,7 @@
 // Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ArgentENSManager.sol
 // with few modifications.
 
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 import "../strings.sol";
 import "./ENS.sol";
 import "./ENSConsumer.sol";
@@ -63,7 +63,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
      */
     constructor(string memory _rootName, bytes32 _rootNode, address _ensRegistry, address _ensResolver)
         ENSConsumer(_ensRegistry)
-        public {
+    {
         rootName = _rootName;
         rootNode = _rootNode;
         ensResolver = _ensResolver;

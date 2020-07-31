@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./SecurityModule.sol";
@@ -30,7 +30,6 @@ contract InheritanceModule is SecurityModule
         address        _trustedForwarder,
         uint           _waitingPeriod
         )
-        public
         SecurityModule(_controller, _trustedForwarder)
     {
         require(_waitingPeriod > 0, "INVALID_DELAY");
@@ -62,7 +61,7 @@ contract InheritanceModule is SecurityModule
         (address _inheritor, uint lastActive) = controller.securityStore().inheritor(wallet);
         require(logicalSender() == _inheritor, "NOT_ALLOWED");
 
-        require(lastActive > 0 && now >= lastActive + waitingPeriod, "NEED_TO_WAIT");
+        require(lastActive > 0 && block.timestamp >= lastActive + waitingPeriod, "NEED_TO_WAIT");
 
         SecurityStore securityStore = controller.securityStore();
 

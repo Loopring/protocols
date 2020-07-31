@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
@@ -39,7 +39,6 @@ contract QuotaStore is DataStore, Claimable
     );
 
     constructor(uint _defaultQuota)
-        public
         DataStore()
     {
         defaultQuota = _defaultQuota;
@@ -98,7 +97,7 @@ contract QuotaStore is DataStore, Claimable
     {
         Quota storage q = quotas[wallet];
         q.spentAmount = spentQuota(wallet).add(amount);
-        q.spentTimestamp = uint64(now);
+        q.spentTimestamp = uint64(block.timestamp);
     }
 
     function currentQuota(address wallet)
@@ -107,7 +106,7 @@ contract QuotaStore is DataStore, Claimable
         returns (uint)
     {
         Quota storage q = quotas[wallet];
-        uint value = q.pendingUntil <= now ?
+        uint value = q.pendingUntil <= block.timestamp ?
             q.pendingQuota : q.currentQuota;
 
         return value == 0 ? defaultQuota : value;
@@ -122,7 +121,7 @@ contract QuotaStore is DataStore, Claimable
         )
     {
         Quota storage q = quotas[wallet];
-        if (q.pendingUntil > 0 && q.pendingUntil > now) {
+        if (q.pendingUntil > 0 && q.pendingUntil > block.timestamp) {
             _pendingQuota = q.pendingQuota > 0 ? q.pendingQuota : defaultQuota;
             _pendingUntil = q.pendingUntil;
         }
@@ -134,7 +133,7 @@ contract QuotaStore is DataStore, Claimable
         returns (uint)
     {
         Quota storage q = quotas[wallet];
-        uint timeSinceLastSpent = now.sub(q.spentTimestamp);
+        uint timeSinceLastSpent = block.timestamp.sub(q.spentTimestamp);
         if (timeSinceLastSpent < 1 days) {
             return q.spentAmount.sub(q.spentAmount.mul(timeSinceLastSpent) / 1 days);
         } else {

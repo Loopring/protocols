@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
@@ -26,7 +26,6 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
         ControllerImpl _controller,
         address        _trustedForwarder
         )
-        public
         BaseModule(_controller)
         MetaTxAware(_trustedForwarder)
     {

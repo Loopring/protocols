@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../iface/PriceOracle.sol";
 import "../lib/MathUint.sol";
@@ -21,7 +21,6 @@ contract UniswapV2PriceOracle is PriceOracle
         IUniswapV2Factory _factory,
         address           _wethAddress
         )
-        public
     {
         factory = _factory;
         wethAddress = _wethAddress;

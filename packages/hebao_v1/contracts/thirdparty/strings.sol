@@ -35,7 +35,7 @@
  *      corresponding to the left and right parts of the string.
  */
 
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 /* solium-disable */
 library strings {
@@ -151,7 +151,7 @@ library strings {
     /*
      * @dev Returns the length in runes of the slice. Note that this operation
      *      takes time proportional to the length of the slice; avoid using it
-     *      in loops, and call `slice.empty()` if you only need to know whether
+     *      in loops, and call `slice.empty()` if you only need to kblock.timestamp whether
      *      the slice is empty or not.
      * @param self The slice to operate on.
      * @return The length of the slice in runes.

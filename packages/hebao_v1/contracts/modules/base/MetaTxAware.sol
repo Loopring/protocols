@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
@@ -23,7 +23,7 @@ abstract contract MetaTxAware
 
     address public trustedForwarder;
 
-    constructor(address _trustedForwarder) public
+    constructor(address _trustedForwarder)
     {
         trustedForwarder = _trustedForwarder;
     }

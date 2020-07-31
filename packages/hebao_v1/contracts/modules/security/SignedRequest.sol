@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
@@ -34,7 +34,7 @@ library SignedRequest {
         )
         public
     {
-        require(now <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
+        require(block.timestamp <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
 
         bytes32 _txAwareHash = EIP712.hashPacked(domainSeperator, encodedRequest);
 

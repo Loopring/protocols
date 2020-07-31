@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/MathUint.sol";
 import "../security/SecurityModule.sol";
 
 
 /// @title BaseTransferModule
 abstract contract BaseTransferModule is SecurityModule
 {
+    using MathUint      for uint;
+
     event Transfered(
         address wallet,
         address token,
@@ -33,7 +36,6 @@ abstract contract BaseTransferModule is SecurityModule
         ControllerImpl _controller,
         address        _trustedForwarder
         )
-        public
         SecurityModule(_controller, _trustedForwarder)
     {
     }

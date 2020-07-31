@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
@@ -13,7 +13,7 @@ contract HashStore is DataStore
     // wallet => hash => consumed
     mapping(address => mapping(bytes32 => bool)) public hashes;
 
-    constructor() public {}
+    constructor() {}
 
     function verifyAndUpdate(address wallet, bytes32 hash)
         public

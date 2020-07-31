@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /// Borrowed from https://github.com/gnosis/mock-contract
 
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 interface MockInterface {
     /**
@@ -105,7 +105,7 @@ contract MockContract is MockInterface {
     uint invocations;
     uint resetCount;
 
-    constructor() public {
+    constructor() {
         calldataMocks[MOCKS_LIST_START] = MOCKS_LIST_END;
         methodIdMocks[SENTINEL_ANY_MOCKS] = SENTINEL_ANY_MOCKS;
     }
@@ -244,16 +244,16 @@ contract MockContract is MockInterface {
         trackMethodIdMock(method);
     }
 
-    function invocationCount() external override returns (uint) {
+    function invocationCount() external view override returns (uint) {
         return invocations;
     }
 
-    function invocationCountForMethod(bytes calldata call) external override returns (uint) {
+    function invocationCountForMethod(bytes calldata call) external view override returns (uint) {
         bytes4 method = bytesToBytes4(call);
         return methodIdInvocations[keccak256(abi.encodePacked(resetCount, method))];
     }
 
-    function invocationCountForCalldata(bytes calldata call) external override returns (uint) {
+    function invocationCountForCalldata(bytes calldata call) external view override returns (uint) {
         return calldataInvocations[keccak256(abi.encodePacked(resetCount, call))];
     }
 

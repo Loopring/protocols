@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
@@ -28,7 +28,7 @@ contract SecurityStore is DataStore
 
     mapping (address => Wallet) public wallets;
 
-    constructor() public DataStore() {}
+    constructor() DataStore() {}
 
     function isGuardian(
         address wallet,
@@ -249,7 +249,7 @@ contract SecurityStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-        require(lock == 0 || lock > now, "INVALID_LOCK_TIME");
+        require(lock == 0 || lock > block.timestamp, "INVALID_LOCK_TIME");
         uint128 _lock = uint128(lock);
         require(uint(_lock) == lock, "LOCK_TOO_LARGE");
 
@@ -261,7 +261,7 @@ contract SecurityStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-        wallets[wallet].lastActive = uint128(now);
+        wallets[wallet].lastActive = uint128(block.timestamp);
     }
 
     function inheritor(address wallet)
@@ -281,7 +281,7 @@ contract SecurityStore is DataStore
         onlyWalletModule(wallet)
     {
         wallets[wallet].inheritor = who;
-        wallets[wallet].lastActive = uint128(now);
+        wallets[wallet].lastActive = uint128(block.timestamp);
     }
 
     function cleanRemovedGuardians(address wallet)
@@ -309,7 +309,7 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.validSince > 0 && guardian.validSince <= now &&
+        return guardian.validSince > 0 && guardian.validSince <= block.timestamp &&
             !isGuardianExpired(guardian);
     }
 
@@ -318,7 +318,7 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.validSince > now;
+        return guardian.validSince > block.timestamp;
     }
 
     function isGuardianPendingRemoval(Data.Guardian memory guardian)
@@ -326,7 +326,7 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.validUntil > now;
+        return guardian.validUntil > block.timestamp;
     }
 
     function isGuardianExpired(Data.Guardian memory guardian)
@@ -335,7 +335,7 @@ contract SecurityStore is DataStore
         returns (bool)
     {
         return guardian.validUntil > 0 &&
-            guardian.validUntil <= now;
+            guardian.validUntil <= block.timestamp;
     }
 
 }
