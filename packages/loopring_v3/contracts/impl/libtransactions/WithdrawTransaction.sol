@@ -133,7 +133,7 @@ library WithdrawTransaction
 
             require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
 
-            ExchangeData.ForcedWithdrawal storage forcedWithdrawal =
+            ExchangeData.ForcedWithdrawal memory forcedWithdrawal =
                 S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
 
             if (forcedWithdrawal.timestamp != 0) {

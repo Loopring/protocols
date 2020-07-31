@@ -228,37 +228,26 @@ library OwnerChangeTransaction
         )
         internal
         pure
-        returns (AccountTransfer memory)
+        returns (AccountTransfer memory accountTransfer)
     {
         // Extract the transfer data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        address owner = data.toAddress(offset);
+        accountTransfer.owner = data.toAddress(offset);
         offset += 20;
-        uint32 accountID = data.toUint32(offset);
+        accountTransfer.accountID = data.toUint32(offset);
         offset += 4;
-        uint16 feeTokenID = data.toUint16(offset);
+        accountTransfer.feeTokenID = data.toUint16(offset);
         offset += 2;
-        uint fee = uint(data.toUint16(offset)).decodeFloat(16);
+        accountTransfer.fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        address newOwner = data.toAddress(offset);
+        accountTransfer.newOwner = data.toAddress(offset);
         offset += 20;
-        bytes32 walletHash = data.toBytes32(offset);
+        accountTransfer.walletHash = data.toBytes32(offset);
         offset += 32;
-        uint32 validUntil = data.toUint32(offset);
+        accountTransfer.validUntil = data.toUint32(offset);
         offset += 4;
-        uint32 nonce = data.toUint32(offset);
+        accountTransfer.nonce = data.toUint32(offset);
         offset += 4;
-
-        return AccountTransfer({
-            owner: owner,
-            accountID: accountID,
-            feeTokenID: feeTokenID,
-            fee: fee,
-            newOwner: newOwner,
-            walletHash: walletHash,
-            validUntil: validUntil,
-            nonce: nonce
-        });
     }
 }

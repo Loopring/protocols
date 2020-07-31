@@ -46,7 +46,7 @@ library DepositTransaction
         uint96 amount = data.toUint96(offset);
         offset += 12;
 
-        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID];
+        ExchangeData.Deposit memory deposit = S.pendingDeposits[owner][tokenID];
         // Make sure the deposit was actually done
         require(deposit.timestamp > 0, "DEPOSIT_DOESNT_EXIST");
         // Earn a fee relative to the amount actually made available on layer 2.
@@ -73,6 +73,9 @@ library DepositTransaction
             deposit.fee = 0;
             deposit.timestamp = 0;
         }
+
+        // Update the data in storage
+        S.pendingDeposits[owner][tokenID] = deposit;
 
         //emit DepositProcessed(owner, accountID, tokenID, amount);
     }

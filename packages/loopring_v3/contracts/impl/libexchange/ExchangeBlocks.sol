@@ -163,6 +163,7 @@ library ExchangeBlocks
         private
         view
     {
+        IBlockVerifier blockVerifier = S.blockVerifier;
         uint numBlocksVerified = 0;
         bool[] memory blockVerified = new bool[](blocks.length);
         ExchangeData.Block memory firstBlock;
@@ -207,7 +208,7 @@ library ExchangeBlocks
 
             // Verify the proofs
             require(
-                S.blockVerifier.verifyProofs(
+                blockVerifier.verifyProofs(
                     uint8(firstBlock.blockType),
                     firstBlock.blockSize,
                     firstBlock.blockVersion,
@@ -333,7 +334,7 @@ library ExchangeBlocks
         private
         returns (bool)
     {
-        ExchangeData.ProtocolFeeData storage data = S.protocolFeeData;
+        ExchangeData.ProtocolFeeData memory data = S.protocolFeeData;
         if (block.timestamp > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
             // Store the current protocol fees in the previous protocol fees
             data.previousTakerFeeBips = data.takerFeeBips;
@@ -353,6 +354,9 @@ library ExchangeBlocks
                     data.previousMakerFeeBips
                 );
             }
+
+            // Update the data in storage
+            S.protocolFeeData = data;
         }
         // The given fee values are valid if they are the current or previous protocol fee values
         return (takerFeeBips == data.takerFeeBips && makerFeeBips == data.makerFeeBips) ||
