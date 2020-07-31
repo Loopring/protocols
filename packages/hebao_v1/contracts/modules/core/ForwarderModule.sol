@@ -152,10 +152,6 @@ contract ForwarderModule is BaseModule
             controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
         }
 
-        if (address(this).balance > 0) {
-            payable(controller.collectTo()).transfer(address(this).balance);
-        }
-
         uint gasUsed = gasLeft - gasleft();
 
         emit MetaTxExecuted(

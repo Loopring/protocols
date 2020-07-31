@@ -7,7 +7,12 @@ import {
   toAmount,
   sortAddresses
 } from "./helpers/TestUtils";
-import { addBalance, getBalance, getTokenAddress } from "./helpers/TokenUtils";
+import {
+  transferFrom,
+  addBalance,
+  getBalance,
+  getTokenAddress
+} from "./helpers/TokenUtils";
 import { assertEventEmitted, assertEventsEmitted } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
 import BN = require("bn.js");
@@ -36,6 +41,19 @@ contract("ForwarderModule", () => {
 
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
+  });
+
+  it("should not be able to receive ETH", async () => {
+    await expectThrow(
+      transferFrom(
+        ctx,
+        ctx.owners[0],
+        ctx.forwarderModule.address,
+        "ETH",
+        new BN("1000000000000000000")
+      ),
+      "revert"
+    );
   });
 
   it("should not be able to execute a meta tx with an invalid signature", async () => {
