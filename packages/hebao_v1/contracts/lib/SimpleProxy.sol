@@ -27,9 +27,11 @@ contract SimpleProxy is Proxy
         public
         override
         view
-        returns (address impl)
+        returns (address)
     {
+        address impl;
         bytes32 position = implementationPosition;
         assembly { impl := sload(position) }
+        return impl;
     }
 }

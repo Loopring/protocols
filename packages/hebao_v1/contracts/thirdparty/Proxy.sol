@@ -33,4 +33,6 @@ abstract contract Proxy {
       default { return(ptr, size) }
     }
   }
+
+  receive() payable external {}
 }

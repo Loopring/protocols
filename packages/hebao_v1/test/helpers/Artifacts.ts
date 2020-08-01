@@ -9,7 +9,7 @@ export class Artifacts {
   public INDAToken: any;
   public INDBToken: any;
 
-  public OwnedUpgradabilityProxy: any;
+  public SimpleProxy: any;
 
   public ControllerImpl: any;
   public WalletImpl: any;
@@ -45,7 +45,7 @@ export class Artifacts {
     this.INDBToken = artifacts.require("test/tokens/INDB");
     this.PriceCacheStore = artifacts.require("test/PriceCacheStore");
 
-    this.OwnedUpgradabilityProxy = artifacts.require("OwnedUpgradabilityProxy");
+    this.SimpleProxy = artifacts.require("SimpleProxy");
 
     this.ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
     this.WalletImpl = artifacts.require("./base/WalletImpl.sol");

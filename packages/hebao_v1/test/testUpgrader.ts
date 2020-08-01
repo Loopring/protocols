@@ -94,9 +94,7 @@ contract("UpgraderModule", () => {
           ctx.erc1271Module.address,
           ctx.forwarderModule.address
         ]);
-        const walletContract = await ctx.contracts.OwnedUpgradabilityProxy.at(
-          wallet
-        );
+        const walletContract = await ctx.contracts.SimpleProxy.at(wallet);
         const walletImpl = await ctx.contracts.WalletImpl.at(wallet);
 
         // Create a new wallet implementation contract

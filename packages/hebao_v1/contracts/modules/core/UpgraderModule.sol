@@ -3,7 +3,6 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 import "../base/BaseModule.sol";
 
 
