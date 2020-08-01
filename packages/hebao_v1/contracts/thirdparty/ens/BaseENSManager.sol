@@ -149,11 +149,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
      */
     function isAvailable(bytes32 _subnode) public view override returns (bool) {
         bytes32 node = keccak256(abi.encodePacked(rootNode, _subnode));
-        address currentOwner = getENSRegistry().owner(node);
-        if(currentOwner == address(0)) {
-            return true;
-        }
-        return false;
+        return getENSRegistry().owner(node) == address(0);
     }
 
     function verifyApproval(
@@ -164,10 +160,6 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         internal
         view
     {
-        if (numManagers() == 1) {
-            return;
-        }
-
         bytes32 messageHash = keccak256(
             abi.encodePacked(
                 _owner,

@@ -90,15 +90,16 @@ contract WalletFactory is ReentrancyGuard
         require(_owner != address(0) && !_owner.isContract(), "INVALID_OWNER");
         require(_modules.length > 0, "EMPTY_MODULES");
 
-        bytes memory encodedRequest = abi.encode(
-            CREATE_WALLET_TYPEHASH,
-            _owner,
-            keccak256(bytes(_label)),
-            keccak256(_labelApproval),
-            keccak256(abi.encode(_modules))
+        bytes32 txHash = EIP712.hashPacked(
+            DOMAIN_SEPERATOR,
+            abi.encode(
+                CREATE_WALLET_TYPEHASH,
+                _owner,
+                keccak256(bytes(_label)),
+                keccak256(_labelApproval),
+                keccak256(abi.encode(_modules))
+            )
         );
-
-        bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
         require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
 
         _wallet = createWalletInternal(walletImplementation, _owner);
