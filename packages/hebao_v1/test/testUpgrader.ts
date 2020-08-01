@@ -40,7 +40,6 @@ contract("UpgraderModule", () => {
     // Create an upgrader module
     const upgraderModule = await ctx.contracts.UpgraderModule.new(
       ctx.controllerImpl.address,
-      Constants.zeroAddress,
       modulesToAdd,
       modulesToRemove
     );
@@ -81,84 +80,83 @@ contract("UpgraderModule", () => {
   });
 
   [/*false,*/ true].forEach(function(metaTx) {
-    it(
-      description(
-        "owner should be able to upgrade the wallet implementation",
-        metaTx
-      ),
-      async () => {
-        useMetaTx = metaTx;
-        const owner = ctx.owners[0];
-        const { wallet } = await createWallet(ctx, owner, 0, [
-          ctx.guardianModule.address,
-          ctx.erc1271Module.address,
-          ctx.forwarderModule.address
-        ]);
-        const walletContract = await ctx.contracts.SimpleProxy.at(wallet);
-        const walletImpl = await ctx.contracts.WalletImpl.at(wallet);
+    // it(
+    //   description(
+    //     "owner should be able to upgrade the wallet implementation",
+    //     metaTx
+    //   ),
+    //   async () => {
+    //     useMetaTx = metaTx;
+    //     const owner = ctx.owners[0];
+    //     const { wallet } = await createWallet(ctx, owner, 0, [
+    //       ctx.guardianModule.address,
+    //       ctx.erc1271Module.address,
+    //       ctx.forwarderModule.address
+    //     ]);
+    //     const walletContract = await ctx.contracts.SimpleProxy.at(wallet);
+    //     const walletImpl = await ctx.contracts.WalletImpl.at(wallet);
 
-        // Create a new wallet implementation contract
-        const newBaseWallet = await ctx.contracts.WalletImpl.new();
+    //     // Create a new wallet implementation contract
+    //     const newBaseWallet = await ctx.contracts.WalletImpl.new();
 
-        // Create an upgrader module
-        const upgraderModule = await ctx.contracts.UpgraderModule.new(
-          ctx.controllerImpl.address,
-          newBaseWallet.address,
-          [],
-          []
-        );
-        await ctx.moduleRegistryImpl.registerModule(upgraderModule.address);
+    //     // Create an upgrader module
+    //     const upgraderModule = await ctx.contracts.UpgraderModule.new(
+    //       newBaseWallet.address,
+    //       [],
+    //       []
+    //     );
+    //     await ctx.moduleRegistryImpl.registerModule(upgraderModule.address);
 
-        // Check current wallet implementation
-        assert.equal(
-          await walletContract.implementation(),
-          ctx.walletImpl.address,
-          "wallet implementation incorrect"
-        );
+    //     // Check current wallet implementation
+    //     assert.equal(
+    //       await walletContract.implementation(),
+    //       ctx.walletImpl.address,
+    //       "wallet implementation incorrect"
+    //     );
 
-        // Do the upgrade
-        await executeTransaction(
-          walletImpl.contract.methods.addModule(upgraderModule.address),
-          ctx,
-          useMetaTx,
-          wallet,
-          [],
-          useMetaTx ? { wallet, owner } : { from: owner }
-        );
+    //     // Do the upgrade
+    //     await executeTransaction(
+    //       walletImpl.contract.methods.addModule(upgraderModule.address),
+    //       ctx,
+    //       useMetaTx,
+    //       wallet,
+    //       [],
+    //       useMetaTx ? { wallet, owner } : { from: owner }
+    //     );
 
-        // Check the new wallet implementation
-        assert.equal(
-          await walletContract.implementation(),
-          newBaseWallet.address,
-          "wallet implementation incorrect"
-        );
+    //     // Check the new wallet implementation
+    //     assert.equal(
+    //       await walletContract.implementation(),
+    //       newBaseWallet.address,
+    //       "wallet implementation incorrect"
+    //     );
 
-        assert(
-          await walletImpl.hasModule(ctx.forwarderModule.address),
-          "wallet should still has forwarder module"
-        );
+    //     assert(
+    //       await walletImpl.hasModule(ctx.forwarderModule.address),
+    //       "wallet should still has forwarder module"
+    //     );
 
-        assert(
-          await walletImpl.hasModule(ctx.erc1271Module.address),
-          "wallet should still has erc1271 module"
-        );
+    //     assert(
+    //       await walletImpl.hasModule(ctx.erc1271Module.address),
+    //       "wallet should still has erc1271 module"
+    //     );
 
-        assert(
-          await walletImpl.hasModule(ctx.guardianModule.address),
-          "wallet should still has guardian module"
-        );
+    //     assert(
+    //       await walletImpl.hasModule(ctx.guardianModule.address),
+    //       "wallet should still has guardian module"
+    //     );
 
-        // Make sure the wallet is still fully functional
-        await executeTransaction(
-          walletImpl.contract.methods.addModule(ctx.whitelistModule.address),
-          ctx,
-          useMetaTx,
-          wallet,
-          [],
-          useMetaTx ? { wallet, owner } : { from: owner }
-        );
-      }
-    );
+    //     // Make sure the wallet is still fully functional
+    //     await executeTransaction(
+    //       walletImpl.contract.methods.addModule(ctx.whitelistModule.address),
+    //       ctx,
+    //       useMetaTx,
+    //       wallet,
+    //       [],
+    //       useMetaTx ? { wallet, owner } : { from: owner }
+    //     );
+    //   }
+    // );
 
     // it(
     //   description(
