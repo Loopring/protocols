@@ -7,6 +7,8 @@ import "./SecurityModule.sol";
 
 
 /// @title InheritanceModule
+/// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang - <daniel@loopring.org>
 contract InheritanceModule is SecurityModule
 {
     using AddressUtil   for address;

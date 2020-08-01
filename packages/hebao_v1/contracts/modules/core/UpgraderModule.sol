@@ -3,7 +3,6 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 import "../base/BaseModule.sol";
 
 
@@ -16,21 +15,16 @@ import "../base/BaseModule.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
-    address    public implementation;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
-    event ImplementationUpgraded(address impl);
-
     constructor(
         ControllerImpl   _controller,
-        address          _implementation,
         address[] memory _modulesToAdd,
         address[] memory _modulesToRemove
         )
         BaseModule(_controller)
     {
-        implementation = _implementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
     }
@@ -40,18 +34,6 @@ contract UpgraderModule is BaseModule {
         override
     {
         address payable wallet = msg.sender;
-        if (implementation != address(0)) {
-            address oldImpl = OwnedUpgradabilityProxy(wallet).implementation();
-
-            if (implementation != oldImpl) {
-                bytes memory txData = abi.encodeWithSelector(
-                    OwnedUpgradabilityProxy.upgradeTo.selector,
-                    implementation
-                );
-                transactCall(wallet, wallet, 0, txData);
-                emit ImplementationUpgraded(implementation);
-            }
-        }
 
         Wallet w = Wallet(wallet);
         for(uint i = 0; i < modulesToAdd.length; i++) {
