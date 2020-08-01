@@ -54,7 +54,7 @@ library BytesUtil {
                 mstore(tempBytes, _length)
 
                 //update free-memory pointer
-                //allocating the array padded to 32 bytes like the compiler does block.timestamp
+                //allocating the array padded to 32 bytes like the compiler does now
                 mstore(0x40, and(add(mc, 31), not(31)))
             }
             //if we want a zero-length slice let's just return a zero-length array
