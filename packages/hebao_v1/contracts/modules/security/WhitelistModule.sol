@@ -6,10 +6,10 @@ pragma experimental ABIEncoderV2;
 import "../../lib/MathUint.sol";
 import "./SecurityModule.sol";
 
-/// @title WhitelistModule
+/// @title WhitelistModule_
 /// @dev Manages whitelisted addresses.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract WhitelistModule is SecurityModule
+abstract contract WhitelistModule_ is SecurityModule
 {
     using MathUint      for uint;
     using SignedRequest for ControllerImpl;
@@ -18,21 +18,16 @@ contract WhitelistModule is SecurityModule
         "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
     );
 
-    uint public delayPeriod;
+    uint public whitelistDelayPeriod;
 
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _delayPeriod
-        )
-        SecurityModule(_controller, _trustedForwarder)
+    constructor(uint _whitelistDelayPeriod)
     {
-        require(_delayPeriod > 0, "INVALID_DELAY");
+        require(_whitelistDelayPeriod > 0, "INVALID_DELAY");
 
         DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("WhitelistModule", "1.1.0", address(this))
         );
-        delayPeriod = _delayPeriod;
+        whitelistDelayPeriod = _whitelistDelayPeriod;
     }
 
     function addToWhitelist(
@@ -44,7 +39,7 @@ contract WhitelistModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller.whitelistStore().addToWhitelist(wallet, addr, block.timestamp.add(delayPeriod));
+        controller().whitelistStore().addToWhitelist(wallet, addr, block.timestamp.add(whitelistDelayPeriod));
     }
 
     function addToWhitelistImmediately(
@@ -55,7 +50,7 @@ contract WhitelistModule is SecurityModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        controller.verifyRequest(
+        controller().verifyRequest(
             DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
@@ -68,7 +63,7 @@ contract WhitelistModule is SecurityModule
             )
         );
 
-        controller.whitelistStore().addToWhitelist(request.wallet, addr, block.timestamp);
+        controller().whitelistStore().addToWhitelist(request.wallet, addr, block.timestamp);
     }
 
     function removeFromWhitelist(
@@ -80,7 +75,7 @@ contract WhitelistModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller.whitelistStore().removeFromWhitelist(wallet, addr);
+        controller().whitelistStore().removeFromWhitelist(wallet, addr);
     }
 
     function getWhitelist(address wallet)
@@ -91,7 +86,7 @@ contract WhitelistModule is SecurityModule
             uint[]    memory effectiveTimes
         )
     {
-        return controller.whitelistStore().whitelist(wallet);
+        return controller().whitelistStore().whitelist(wallet);
     }
 
     function isWhitelisted(
@@ -104,6 +99,39 @@ contract WhitelistModule is SecurityModule
             uint effectiveTime
         )
     {
-        return controller.whitelistStore().isWhitelisted(wallet, addr);
+        return controller().whitelistStore().isWhitelisted(wallet, addr);
+    }
+}
+
+contract WhitelistModule is WhitelistModule_
+{
+    ControllerImpl private controller_;
+
+    constructor(
+        ControllerImpl _controller,
+        address        _trustedForwarder,
+        uint           _whitelistDelayPeriod
+        )
+        SecurityModule(_trustedForwarder)
+        WhitelistModule_(_whitelistDelayPeriod)
+    {
+        controller_ = _controller;
+    }
+
+    function controller()
+        internal
+        view
+        override
+        returns(ControllerImpl)
+    {
+        return ControllerImpl(controller_);
+    }
+
+    function bindableMethods()
+        public
+        pure
+        override
+        returns (bytes4[] memory methods)
+    {
     }
 }

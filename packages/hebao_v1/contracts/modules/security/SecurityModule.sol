@@ -26,11 +26,10 @@ abstract contract SecurityModule is MetaTxModule
         uint            lock
     );
 
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder
-        )
-        MetaTxModule(_controller, _trustedForwarder) {}
+    constructor(address _trustedForwarder)
+        MetaTxModule(_trustedForwarder)
+    {
+    }
 
     modifier onlyFromWalletOrOwnerWhenUnlocked(address wallet)
     {
@@ -41,14 +40,14 @@ abstract contract SecurityModule is MetaTxModule
             (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
-        controller.securityStore().touchLastActive(wallet);
+        controller().securityStore().touchLastActive(wallet);
         _;
     }
 
     modifier onlyFromGuardian(address wallet)
     {
         require(
-            controller.securityStore().isGuardian(wallet, logicalSender()),
+            controller().securityStore().isGuardian(wallet, logicalSender()),
             "NOT_FROM_GUARDIAN"
         );
         _;
@@ -68,20 +67,20 @@ abstract contract SecurityModule is MetaTxModule
 
     modifier onlyWalletGuardian(address wallet, address guardian)
     {
-        require(controller.securityStore().isGuardian(wallet, guardian), "NOT_GUARDIAN");
+        require(controller().securityStore().isGuardian(wallet, guardian), "NOT_GUARDIAN");
         _;
     }
 
     modifier notWalletGuardian(address wallet, address guardian)
     {
-        require(!controller.securityStore().isGuardian(wallet, guardian), "IS_GUARDIAN");
+        require(!controller().securityStore().isGuardian(wallet, guardian), "IS_GUARDIAN");
         _;
     }
 
     modifier onlyHaveEnoughGuardians(address wallet)
     {
         require(
-            controller.securityStore().numGuardians(wallet) >= MIN_ACTIVE_GUARDIANS,
+            controller().securityStore().numGuardians(wallet) >= MIN_ACTIVE_GUARDIANS,
             "NO_ENOUGH_ACTIVE_GUARDIANS"
         );
         _;
@@ -94,13 +93,13 @@ abstract contract SecurityModule is MetaTxModule
         view
         returns (address)
     {
-        return address(controller.quotaStore());
+        return address(controller().quotaStore());
     }
 
     function lockWallet(address wallet)
         internal
     {
-        lockWallet(wallet, controller.defaultLockPeriod());
+        lockWallet(wallet, controller().defaultLockPeriod());
     }
 
     function lockWallet(address wallet, uint _lockPeriod)
@@ -110,17 +109,17 @@ abstract contract SecurityModule is MetaTxModule
         // cannot lock the wallet twice by different modules.
         require(_lockPeriod > 0, "ZERO_VALUE");
         uint lock = block.timestamp + _lockPeriod;
-        controller.securityStore().setLock(wallet, lock);
+        controller().securityStore().setLock(wallet, lock);
         emit WalletLock(wallet, lock);
     }
 
     function unlockWallet(address wallet, bool forceUnlock)
         internal
     {
-        (uint _lock, address _lockedBy) = controller.securityStore().getLock(wallet);
+        (uint _lock, address _lockedBy) = controller().securityStore().getLock(wallet);
         if (_lock > block.timestamp) {
             require(forceUnlock || _lockedBy == address(this), "UNABLE_TO_UNLOCK");
-            controller.securityStore().setLock(wallet, 0);
+            controller().securityStore().setLock(wallet, 0);
         }
         emit WalletLock(wallet, 0);
     }
@@ -130,7 +129,7 @@ abstract contract SecurityModule is MetaTxModule
         view
         returns (uint _lock, address _lockedBy)
     {
-        return controller.securityStore().getLock(wallet);
+        return controller().securityStore().getLock(wallet);
     }
 
     function isWalletLocked(address wallet)
@@ -138,7 +137,7 @@ abstract contract SecurityModule is MetaTxModule
         view
         returns (bool)
     {
-        (uint _lock,) = controller.securityStore().getLock(wallet);
+        (uint _lock,) = controller().securityStore().getLock(wallet);
         return _lock > block.timestamp;
     }
 
@@ -150,7 +149,7 @@ abstract contract SecurityModule is MetaTxModule
         internal
     {
         if (amount > 0 && quotaStore() != address(0)) {
-            uint value = controller.priceOracle().tokenValue(token, amount);
+            uint value = controller().priceOracle().tokenValue(token, amount);
             QuotaStore(quotaStore()).checkAndAddToSpent(wallet, value);
         }
     }

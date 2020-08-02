@@ -6,15 +6,15 @@ pragma experimental ABIEncoderV2;
 import "./SecurityModule.sol";
 
 
-/// @title InheritanceModule
+/// @title InheritanceModule_
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-contract InheritanceModule is SecurityModule
+abstract contract InheritanceModule_ is SecurityModule
 {
     using AddressUtil   for address;
     using SignatureUtil for bytes32;
 
-    uint public waitingPeriod;
+    uint public inheritWaitingPeriod;
 
     event Inherited(
         address indexed wallet,
@@ -27,19 +27,14 @@ contract InheritanceModule is SecurityModule
         address         inheritor
     );
 
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _waitingPeriod
-        )
-        SecurityModule(_controller, _trustedForwarder)
+    constructor(uint _inheritWaitingPeriod)
     {
-        require(_waitingPeriod > 0, "INVALID_DELAY");
+        require(_inheritWaitingPeriod > 0, "INVALID_DELAY");
 
         DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("InheritanceModule", "1.1.0", address(this))
         );
-        waitingPeriod = _waitingPeriod;
+        inheritWaitingPeriod = _inheritWaitingPeriod;
     }
 
     function inheritor(address wallet)
@@ -47,7 +42,7 @@ contract InheritanceModule is SecurityModule
         view
         returns (address _inheritor, uint lastActive)
     {
-        return controller.securityStore().inheritor(wallet);
+        return controller().securityStore().inheritor(wallet);
     }
 
     function inherit(
@@ -60,12 +55,12 @@ contract InheritanceModule is SecurityModule
         eligibleWalletOwner(newOwner)
         notWalletOwner(wallet, newOwner)
     {
-        (address _inheritor, uint lastActive) = controller.securityStore().inheritor(wallet);
+        (address _inheritor, uint lastActive) = controller().securityStore().inheritor(wallet);
         require(logicalSender() == _inheritor, "NOT_ALLOWED");
 
-        require(lastActive > 0 && block.timestamp >= lastActive + waitingPeriod, "NEED_TO_WAIT");
+        require(lastActive > 0 && block.timestamp >= lastActive + inheritWaitingPeriod, "NEED_TO_WAIT");
 
-        SecurityStore securityStore = controller.securityStore();
+        SecurityStore securityStore = controller().securityStore();
 
         securityStore.removeAllGuardians(wallet);
 
@@ -87,11 +82,44 @@ contract InheritanceModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        require(controller.walletRegistry().isWalletRegistered(_inheritor), "NOT_A_WALLET");
-        (address existingInheritor,) = controller.securityStore().inheritor(wallet);
+        require(controller().walletRegistry().isWalletRegistered(_inheritor), "NOT_A_WALLET");
+        (address existingInheritor,) = controller().securityStore().inheritor(wallet);
         require(existingInheritor != _inheritor, "SAME_INHERITOR");
 
-        controller.securityStore().setInheritor(wallet, _inheritor);
+        controller().securityStore().setInheritor(wallet, _inheritor);
         emit InheritorChanged(wallet, _inheritor);
+    }
+}
+
+contract InheritanceModule is InheritanceModule_
+{
+    ControllerImpl private controller_;
+
+    constructor(
+        ControllerImpl _controller,
+        address        _trustedForwarder,
+        uint           _inheritWaitingPeriod
+        )
+        SecurityModule(_trustedForwarder)
+        InheritanceModule_(_inheritWaitingPeriod)
+    {
+        controller_ = _controller;
+    }
+
+    function controller()
+        internal
+        view
+        override
+        returns(ControllerImpl)
+    {
+        return ControllerImpl(controller_);
+    }
+
+    function bindableMethods()
+        public
+        pure
+        override
+        returns (bytes4[] memory methods)
+    {
     }
 }

@@ -9,10 +9,10 @@ import "../security/SignedRequest.sol";
 import "./BaseTransferModule.sol";
 
 
-/// @title TransferModule
+/// @title TransferModule_
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-contract TransferModule is BaseTransferModule
+abstract contract TransferModule_ is BaseTransferModule
 {
     using MathUint      for uint;
     using SignedRequest for ControllerImpl;
@@ -37,21 +37,16 @@ contract TransferModule is BaseTransferModule
         "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
-    uint public delayPeriod;
+    uint public transferDelayPeriod;
 
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _delayPeriod
-        )
-        BaseTransferModule(_controller, _trustedForwarder)
+    constructor(uint _transferDelayPeriod)
     {
-        require(_delayPeriod > 0, "INVALID_DELAY");
+        require(_transferDelayPeriod > 0, "INVALID_DELAY");
 
         DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("TransferModule", "1.1.0", address(this))
         );
-        delayPeriod = _delayPeriod;
+        transferDelayPeriod = _transferDelayPeriod;
     }
 
     function changeDailyQuota(
@@ -63,14 +58,14 @@ contract TransferModule is BaseTransferModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        QuotaStore qs = controller.quotaStore();
+        QuotaStore qs = controller().quotaStore();
         uint _newQuota = newQuota == 0 ? qs.defaultQuota(): newQuota;
         uint _currentQuota = qs.currentQuota(wallet);
 
         if (_currentQuota >= _newQuota) {
             qs.changeQuota(wallet, _newQuota, block.timestamp);
         } else {
-            qs.changeQuota(wallet, _newQuota, block.timestamp.add(delayPeriod));
+            qs.changeQuota(wallet, _newQuota, block.timestamp.add(transferDelayPeriod));
         }
     }
 
@@ -82,7 +77,7 @@ contract TransferModule is BaseTransferModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        controller.verifyRequest(
+        controller().verifyRequest(
             DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
@@ -95,7 +90,7 @@ contract TransferModule is BaseTransferModule
             )
         );
 
-        controller.quotaStore().changeQuota(request.wallet, newQuota, block.timestamp);
+        controller().quotaStore().changeQuota(request.wallet, newQuota, block.timestamp);
     }
 
     function transferToken(
@@ -187,9 +182,9 @@ contract TransferModule is BaseTransferModule
             uint available
         )
     {
-        total = controller.quotaStore().currentQuota(wallet);
-        spent = controller.quotaStore().spentQuota(wallet);
-        available = controller.quotaStore().availableQuota(wallet);
+        total = controller().quotaStore().currentQuota(wallet);
+        spent = controller().quotaStore().spentQuota(wallet);
+        available = controller().quotaStore().availableQuota(wallet);
     }
 
     function transferTokenWithApproval(
@@ -203,7 +198,7 @@ contract TransferModule is BaseTransferModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        controller.verifyRequest(
+        controller().verifyRequest(
             DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
@@ -232,7 +227,7 @@ contract TransferModule is BaseTransferModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        controller.verifyRequest(
+        controller().verifyRequest(
             DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
@@ -261,7 +256,7 @@ contract TransferModule is BaseTransferModule
         onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
-        controller.verifyRequest(
+        controller().verifyRequest(
             DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
@@ -303,7 +298,7 @@ contract TransferModule is BaseTransferModule
             keccak256(data)
         );
 
-        controller.verifyRequest(
+        controller().verifyRequest(
             DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
@@ -315,3 +310,37 @@ contract TransferModule is BaseTransferModule
         return callContractInternal(request.wallet, to, value, data);
     }
 }
+
+contract TransferModule is TransferModule_
+{
+    ControllerImpl private controller_;
+
+    constructor(
+        ControllerImpl _controller,
+        address        _trustedForwarder,
+        uint           _transferDelayPeriod
+        )
+        SecurityModule(_trustedForwarder)
+        TransferModule_(_transferDelayPeriod)
+    {
+        controller_ = _controller;
+    }
+
+    function controller()
+        internal
+        view
+        override
+        returns(ControllerImpl)
+    {
+        return ControllerImpl(controller_);
+    }
+
+    function bindableMethods()
+        public
+        pure
+        override
+        returns (bytes4[] memory methods)
+    {
+    }
+}
+

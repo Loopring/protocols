@@ -34,14 +34,6 @@ abstract contract BaseTransferModule is SecurityModule
         bytes   data
     );
 
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder
-        )
-        SecurityModule(_controller, _trustedForwarder)
-    {
-    }
-
     function transferInternal(
         address wallet,
         address token,
@@ -102,7 +94,7 @@ abstract contract BaseTransferModule is SecurityModule
 
         // Disallow general calls to token contracts (for tokens that have price data
         // so the quota is actually used).
-        require(controller.priceOracle().tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
+        require(controller().priceOracle().tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
 
         returnData = transactCall(wallet, to, value, txData);
         emit ContractCalled(wallet, to, value, txData);
@@ -113,7 +105,7 @@ abstract contract BaseTransferModule is SecurityModule
         view
         returns (bool res)
     {
-        (res,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        res = res || controller.dappAddressStore().isDapp(to);
+        (res,) = controller().whitelistStore().isWhitelisted(wallet, to);
+        res = res || controller().dappAddressStore().isDapp(to);
     }
 }
