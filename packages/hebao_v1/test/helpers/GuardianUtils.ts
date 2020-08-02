@@ -16,7 +16,9 @@ export async function addGuardian(
   group: number,
   useMetaTx: boolean = true
 ) {
-  const pendingPeriod = (await ctx.guardianModule.pendingPeriod()).toNumber();
+  const pendingPeriod = (
+    await ctx.guardianModule.recoveryPendingPeriod()
+  ).toNumber();
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);
 
@@ -113,7 +115,9 @@ export async function removeGuardian(
   guardian: string,
   useMetaTx: boolean = true
 ) {
-  const pendingPeriod = (await ctx.guardianModule.pendingPeriod()).toNumber();
+  const pendingPeriod = (
+    await ctx.guardianModule.recoveryPendingPeriod()
+  ).toNumber();
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);
 
