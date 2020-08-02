@@ -18,10 +18,7 @@ export enum TransactionType {
   WITHDRAWAL,
   TRANSFER,
   SPOT_TRADE,
-  ACCOUNT_UPDATE,
-  ACCOUNT_TRANSFER,
-  // Disabled
-  ACCOUNT_NEW
+  ACCOUNT_UPDATE
 }
 
 /**
@@ -306,8 +303,6 @@ export interface Account {
   publicKeyY: string;
   /** The nonce value of the account. */
   nonce: number;
-  /** The wallet hash. */
-  walletHash: string;
 
   balancesMerkleTree?: SparseMerkleTree;
 }
@@ -343,8 +338,6 @@ export interface OnchainAccountLeaf {
   pubKeyY: string;
   /** The current nonce value of the account. */
   nonce: number;
-  /** The wallet hash of the account. */
-  walletHash: string;
 }
 export interface OnchainBalanceLeaf {
   /** The ID of the token. */
@@ -434,7 +427,6 @@ export class AccountLeaf implements Account {
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
-  walletHash: string;
   balances: { [key: number]: BalanceLeaf };
 
   balancesMerkleTree?: SparseMerkleTree;
@@ -446,7 +438,6 @@ export class AccountLeaf implements Account {
     this.publicKeyX = "0";
     this.publicKeyY = "0";
     this.nonce = 0;
-    this.walletHash = "0";
     this.balances = {};
   }
 
@@ -455,7 +446,6 @@ export class AccountLeaf implements Account {
     publicKeyX: string,
     publicKeyY: string,
     nonce: number,
-    walletHash: string,
     balances: { [key: number]: BalanceLeaf } = {}
   ) {
     this.exchangeId = 0;
@@ -464,7 +454,6 @@ export class AccountLeaf implements Account {
     this.publicKeyX = publicKeyX;
     this.publicKeyY = publicKeyY;
     this.nonce = nonce;
-    this.walletHash = walletHash;
     this.balances = balances;
   }
 

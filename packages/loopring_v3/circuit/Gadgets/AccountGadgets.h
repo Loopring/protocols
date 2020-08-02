@@ -24,7 +24,6 @@ struct AccountState
     VariableT publicKeyX;
     VariableT publicKeyY;
     VariableT nonce;
-    VariableT walletHash;
     VariableT balancesRoot;
 };
 
@@ -34,7 +33,6 @@ static void printAccount(const ProtoboardT& pb, const AccountState& state)
     std::cout << "- publicKeyX: " << pb.val(state.publicKeyX) << std::endl;
     std::cout << "- publicKeyY: " << pb.val(state.publicKeyY) << std::endl;
     std::cout << "- nonce: " << pb.val(state.nonce) << std::endl;
-    std::cout << "- walletHash: " << pb.val(state.walletHash) << std::endl;
     std::cout << "- balancesRoot: " << pb.val(state.balancesRoot) << std::endl;
 }
 
@@ -44,7 +42,6 @@ public:
     VariableT owner;
     const jubjub::VariablePointT publicKey;
     VariableT nonce;
-    VariableT walletHash;
     VariableT balancesRoot;
 
     AccountGadget(
@@ -56,7 +53,6 @@ public:
         owner(make_variable(pb, FMT(prefix, ".owner"))),
         publicKey(pb, FMT(prefix, ".publicKey")),
         nonce(make_variable(pb, FMT(prefix, ".nonce"))),
-        walletHash(make_variable(pb, FMT(prefix, ".walletHash"))),
         balancesRoot(make_variable(pb, FMT(prefix, ".balancesRoot")))
     {
 
@@ -68,7 +64,6 @@ public:
         pb.val(publicKey.x) = account.publicKey.x;
         pb.val(publicKey.y) = account.publicKey.y;
         pb.val(nonce) = account.nonce;
-        pb.val(walletHash) = account.walletHash;
         pb.val(balancesRoot) = account.balancesRoot;
     }
 };
@@ -99,8 +94,8 @@ public:
         valuesBefore(before),
         valuesAfter(after),
 
-        leafBefore(pb, var_array({before.owner, before.publicKeyX, before.publicKeyY, before.nonce, before.walletHash, before.balancesRoot}), FMT(prefix, ".leafBefore")),
-        leafAfter(pb, var_array({after.owner, after.publicKeyX, after.publicKeyY, after.nonce, after.walletHash, after.balancesRoot}), FMT(prefix, ".leafAfter")),
+        leafBefore(pb, var_array({before.owner, before.publicKeyX, before.publicKeyY, before.nonce, before.balancesRoot}), FMT(prefix, ".leafBefore")),
+        leafAfter(pb, var_array({after.owner, after.publicKeyX, after.publicKeyY, after.nonce, after.balancesRoot}), FMT(prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS * 3, FMT(prefix, ".proof"))),
         proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address, leafBefore.result(), merkleRoot, proof, FMT(prefix, ".pathBefore")),

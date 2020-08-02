@@ -49,7 +49,6 @@ library ExchangeBalances
             merkleProof.accountLeaf.pubKeyX,
             merkleProof.accountLeaf.pubKeyY,
             merkleProof.accountLeaf.nonce,
-            merkleProof.accountLeaf.walletHash,
             calculatedRoot,
             merkleProof.accountMerkleProof
         );
@@ -110,7 +109,6 @@ library ExchangeBalances
         uint     pubKeyX,
         uint     pubKeyY,
         uint     nonce,
-        uint     walletHash,
         uint     balancesRoot,
         uint[48] memory accountMerkleProof
         )
@@ -118,7 +116,7 @@ library ExchangeBalances
         pure
         returns (uint)
     {
-        uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, walletHash, balancesRoot);
+        uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, balancesRoot);
         uint _id = accountID;
         for (uint depth = 0; depth < 16; depth++) {
             uint base = depth * 3;
@@ -161,15 +159,14 @@ library ExchangeBalances
         uint t1,
         uint t2,
         uint t3,
-        uint t4,
-        uint t5
+        uint t4
         )
         public
         pure
         returns (uint)
     {
-        Poseidon.HashInputs7 memory inputs = Poseidon.HashInputs7(t0, t1, t2, t3, t4, t5, 0);
-        return Poseidon.hash_t7f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
+        Poseidon.HashInputs6 memory inputs = Poseidon.HashInputs6(t0, t1, t2, t3, t4, 0);
+        return Poseidon.hash_t6f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
     }
 
     function hashImpl(

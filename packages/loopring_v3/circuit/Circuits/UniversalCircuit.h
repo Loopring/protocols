@@ -18,8 +18,6 @@
 #include "./AccountUpdateCircuit.h"
 #include "./WithdrawCircuit.h"
 #include "./NoopCircuit.h"
-#include "./AccountNewCircuit.h"
-#include "./AccountTransferCircuit.h"
 
 #include "ethsnarks.hpp"
 #include "utils.hpp"
@@ -154,7 +152,6 @@ public:
     WithdrawCircuit withdraw;
     AccountUpdateCircuit accountUpdate;
     TransferCircuit transfer;
-    AccountTransferCircuit accountTransfer;
     SelectTransactionGadget tx;
 
     // General validation
@@ -218,8 +215,7 @@ public:
         withdraw(pb, state, FMT(prefix, ".withdraw")),
         accountUpdate(pb, state, FMT(prefix, ".accountUpdate")),
         transfer(pb, state, FMT(prefix, ".transfer")),
-        accountTransfer(pb, state, FMT(prefix, ".accountTransfer")),
-        tx(pb, state, selector.result(), {&noop, &deposit, &withdraw, &transfer, &spotTrade, &accountUpdate, &accountTransfer}, FMT(prefix, ".tx")),
+        tx(pb, state, selector.result(), {&noop, &deposit, &withdraw, &transfer, &spotTrade, &accountUpdate}, FMT(prefix, ".tx")),
 
         // General validation
         accountA(pb, tx.getArrayOutput(accountA_Address), FMT(prefix, ".packAccountA")),
@@ -245,8 +241,8 @@ public:
                          {tx.getOutput(balanceA_B_Balance), state.accountA.balanceB.storage},
                          FMT(prefix, ".updateBalanceB_A")),
         updateAccount_A(pb, accountsRoot, tx.getArrayOutput(accountA_Address),
-                        {state.accountA.account.owner, state.accountA.account.publicKey.x, state.accountA.account.publicKey.y, state.accountA.account.nonce, state.accountA.account.walletHash, state.accountA.account.balancesRoot},
-                        {tx.getOutput(accountA_Owner), tx.getOutput(accountA_PublicKeyX), tx.getOutput(accountA_PublicKeyY), tx.getOutput(accountA_Nonce), tx.getOutput(accountA_WalletHash), updateBalanceB_A.result()},
+                        {state.accountA.account.owner, state.accountA.account.publicKey.x, state.accountA.account.publicKey.y, state.accountA.account.nonce, state.accountA.account.balancesRoot},
+                        {tx.getOutput(accountA_Owner), tx.getOutput(accountA_PublicKeyX), tx.getOutput(accountA_PublicKeyY), tx.getOutput(accountA_Nonce), updateBalanceB_A.result()},
                         FMT(prefix, ".updateAccount_A")),
 
         // Update UserB
@@ -263,8 +259,8 @@ public:
                          {tx.getOutput(balanceB_B_Balance), state.accountB.balanceB.storage},
                          FMT(prefix, ".updateBalanceB_B")),
         updateAccount_B(pb, updateAccount_A.result(), tx.getArrayOutput(accountB_Address),
-                        {state.accountB.account.owner, state.accountB.account.publicKey.x, state.accountB.account.publicKey.y, state.accountB.account.nonce, state.accountB.account.walletHash, state.accountB.account.balancesRoot},
-                        {tx.getOutput(accountB_Owner), tx.getOutput(accountB_PublicKeyX), tx.getOutput(accountB_PublicKeyY), tx.getOutput(accountB_Nonce), tx.getOutput(accountB_WalletHash), updateBalanceB_B.result()},
+                        {state.accountB.account.owner, state.accountB.account.publicKey.x, state.accountB.account.publicKey.y, state.accountB.account.nonce, state.accountB.account.balancesRoot},
+                        {tx.getOutput(accountB_Owner), tx.getOutput(accountB_PublicKeyX), tx.getOutput(accountB_PublicKeyY), tx.getOutput(accountB_Nonce), updateBalanceB_B.result()},
                         FMT(prefix, ".updateAccount_B")),
 
         // Update Operator
@@ -277,8 +273,8 @@ public:
                          {tx.getOutput(balanceO_A_Balance), state.oper.balanceA.storage},
                          FMT(prefix, ".updateBalanceA_O")),
         updateAccount_O(pb, updateAccount_B.result(), operatorAccountID,
-                        {state.oper.account.owner, state.oper.account.publicKey.x, state.oper.account.publicKey.y, state.oper.account.nonce, state.oper.account.walletHash, state.oper.account.balancesRoot},
-                        {state.oper.account.owner, state.oper.account.publicKey.x, state.oper.account.publicKey.y, state.oper.account.nonce, state.oper.account.walletHash, updateBalanceA_O.result()},
+                        {state.oper.account.owner, state.oper.account.publicKey.x, state.oper.account.publicKey.y, state.oper.account.nonce, state.oper.account.balancesRoot},
+                        {state.oper.account.owner, state.oper.account.publicKey.x, state.oper.account.publicKey.y, state.oper.account.nonce, updateBalanceA_O.result()},
                         FMT(prefix, ".updateAccount_O")),
 
         // Update Protocol pool
@@ -320,7 +316,6 @@ public:
         withdraw.generate_r1cs_witness(uTx.withdraw);
         accountUpdate.generate_r1cs_witness(uTx.accountUpdate);
         transfer.generate_r1cs_witness(uTx.transfer);
-        accountTransfer.generate_r1cs_witness(uTx.accountTransfer);
         tx.generate_r1cs_witness();
 
         // General validation
@@ -367,7 +362,6 @@ public:
         withdraw.generate_r1cs_constraints();
         accountUpdate.generate_r1cs_constraints();
         transfer.generate_r1cs_constraints();
-        accountTransfer.generate_r1cs_constraints();
         tx.generate_r1cs_constraints();
 
         // General validation
@@ -534,15 +528,15 @@ public:
 
         // Update Protocol pool
         updateAccount_P.reset(new UpdateAccountGadget(pb, transactions.back().getNewAccountsRoot(), constants.zeroAccount,
-                      {accountBefore_P.owner, accountBefore_P.publicKey.x, accountBefore_P.publicKey.y, accountBefore_P.nonce, accountBefore_P.walletHash, accountBefore_P.balancesRoot},
-                      {accountBefore_P.owner, accountBefore_P.publicKey.x, accountBefore_P.publicKey.y, accountBefore_P.nonce, accountBefore_P.walletHash, transactions.back().getNewProtocolBalancesRoot()},
+                      {accountBefore_P.owner, accountBefore_P.publicKey.x, accountBefore_P.publicKey.y, accountBefore_P.nonce, accountBefore_P.balancesRoot},
+                      {accountBefore_P.owner, accountBefore_P.publicKey.x, accountBefore_P.publicKey.y, accountBefore_P.nonce, transactions.back().getNewProtocolBalancesRoot()},
                       FMT(annotation_prefix, ".updateAccount_P")));
         updateAccount_P->generate_r1cs_constraints();
 
         // Update Operator
         updateAccount_O.reset(new UpdateAccountGadget(pb, updateAccount_P->result(), operatorAccountID.bits,
-                      {accountBefore_O.owner, accountBefore_O.publicKey.x, accountBefore_O.publicKey.y, accountBefore_O.nonce, accountBefore_O.walletHash, accountBefore_O.balancesRoot},
-                      {accountBefore_O.owner, accountBefore_O.publicKey.x, accountBefore_O.publicKey.y, nonce_after.result(), accountBefore_O.walletHash, accountBefore_O.balancesRoot},
+                      {accountBefore_O.owner, accountBefore_O.publicKey.x, accountBefore_O.publicKey.y, accountBefore_O.nonce, accountBefore_O.balancesRoot},
+                      {accountBefore_O.owner, accountBefore_O.publicKey.x, accountBefore_O.publicKey.y, nonce_after.result(), accountBefore_O.balancesRoot},
                       FMT(annotation_prefix, ".updateAccount_O")));
         updateAccount_O->generate_r1cs_constraints();
 

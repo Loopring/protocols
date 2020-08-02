@@ -29,8 +29,6 @@ import { AccountUpdateProcessor } from "./request_processors/account_update_proc
 import { SpotTradeProcessor } from "./request_processors/spot_trade_processor";
 import { TransferProcessor } from "./request_processors/transfer_processor";
 import { WithdrawalProcessor } from "./request_processors/withdrawal_processor";
-import { AccountNewProcessor } from "./request_processors/account_new_processor";
-import { AccountTransferProcessor } from "./request_processors/account_transfer_processor";
 import * as log from "./logs";
 
 /**
@@ -64,9 +62,9 @@ export class ExchangeV3 {
 
   private merkleTree: SparseMerkleTree;
 
-  // decimal representation of `0x1d68b19f53f28fe87bf82506d20235c1f659279665931a2894ef4c6675990b6f`
+  // decimal representation of `0x160ca280c25b71c85d58fc0dd7b9eb42268c73c8812333da3cc2bdc8af3ee7b7`
   private genesisMerkleRoot =
-    "13302050608227283725520996754851570619715523916284269909477687368496725953391";
+    "9973206387858757276870965637020996982330817360942098161585584652959352809399";
 
   private protocolFees: ProtocolFees;
 
@@ -219,7 +217,7 @@ export class ExchangeV3 {
    */
   public buildMerkleTree() {
     const hasher = poseidon.createHash(5, 6, 52);
-    const accountHasher = poseidon.createHash(7, 6, 52);
+    const accountHasher = poseidon.createHash(6, 6, 52);
 
     // Make empty trees so we have all necessary default values
     const storageMerkleTree = new SparseMerkleTree(
@@ -239,7 +237,7 @@ export class ExchangeV3 {
       Constants.BINARY_TREE_DEPTH_ACCOUNTS / 2
     );
     this.merkleTree.newTree(
-      accountHasher([0, 0, 0, 0, 0, balancesMerkleTree.getRoot()]).toString(10)
+      accountHasher([0, 0, 0, 0, balancesMerkleTree.getRoot()]).toString(10)
     );
 
     assert.equal(
@@ -290,7 +288,6 @@ export class ExchangeV3 {
           account.publicKeyX,
           account.publicKeyY,
           account.nonce,
-          account.walletHash,
           account.balancesMerkleTree.getRoot()
         ]).toString(10)
       );
@@ -337,8 +334,7 @@ export class ExchangeV3 {
       owner: account.owner,
       pubKeyX: account.publicKeyX,
       pubKeyY: account.publicKeyY,
-      nonce: account.nonce,
-      walletHash: account.walletHash
+      nonce: account.nonce
     };
     const balanceLeaf: OnchainBalanceLeaf = {
       tokenID,
@@ -919,12 +915,8 @@ export class ExchangeV3 {
         request = TransferProcessor.process(this.state, ctx, txData);
       } else if (txType === TransactionType.WITHDRAWAL) {
         request = WithdrawalProcessor.process(this.state, ctx, txData);
-      } else if (txType === TransactionType.ACCOUNT_NEW) {
-        request = AccountNewProcessor.process(this.state, ctx, txData);
       } else if (txType === TransactionType.ACCOUNT_UPDATE) {
         request = AccountUpdateProcessor.process(this.state, ctx, txData);
-      } else if (txType === TransactionType.ACCOUNT_TRANSFER) {
-        request = AccountTransferProcessor.process(this.state, ctx, txData);
       } else {
         assert(false, "unknown transaction type: " + txType);
       }

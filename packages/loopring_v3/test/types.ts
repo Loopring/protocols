@@ -6,8 +6,7 @@ export enum AuthMethod {
   EDDSA,
   ECDSA,
   APPROVE,
-  FORCE,
-  WALLET
+  FORCE
 }
 
 export interface OrderInfo {
@@ -97,7 +96,6 @@ export interface AccountUpdate {
 
   publicKeyX: string;
   publicKeyY: string;
-  walletHash: string;
   feeTokenID: number;
   fee: BN;
 
@@ -175,46 +173,6 @@ export interface WithdrawalRequest {
   transactionHash?: string;
 }
 
-export interface NewAccount {
-  txType?: "NewAccount";
-  exchange: string;
-
-  payerAccountID: number;
-  feeTokenID: number;
-  fee: BN;
-  nonce: number;
-  validUntil: number;
-
-  newAccountID: number;
-  newOwner: string;
-  newPublicKeyX: string;
-  newPublicKeyY: string;
-  newWalletHash: string;
-
-  signature?: any;
-  onchainSignature?: any;
-}
-
-export interface AccountTransfer {
-  txType?: "AccountTransfer";
-
-  owner: string;
-  accountID: number;
-  feeTokenID: number;
-  fee: BN;
-  nonce: number;
-  validUntil: number;
-
-  walletHash: string;
-  newOwner: string;
-  walletAddress: string;
-  walletDataHash: string;
-  walletCalldata: string;
-
-  onchainSignature?: any;
-  onchainSignatureWallet?: any;
-}
-
 // Blocks
 
 export interface TxBlock {
@@ -259,25 +217,5 @@ export interface Account {
   publicKeyX: string;
   publicKeyY: string;
   secretKey: string;
-  wallet?: Wallet;
   nonce: number;
-}
-
-// Wallet
-
-export interface Guardian {
-  addr: string;
-  group: number;
-}
-
-export interface Wallet {
-  accountID: number;
-  guardians: Guardian[];
-  inheritor: string;
-  inheritableSince: number;
-}
-
-export interface PermissionData {
-  signers: string[];
-  signatures: string[];
 }

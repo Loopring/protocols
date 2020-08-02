@@ -19,7 +19,7 @@ library AccountUpdateTransaction
     using SignatureUtil        for bytes32;
 
     bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
-        "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint256 fee,uint256 publicKey,uint256 walletHash,uint32 validUntil,uint32 nonce)"
+        "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint256 fee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
     );
 
     /*event AccountUpdated(
@@ -34,7 +34,6 @@ library AccountUpdateTransaction
         uint16  feeTokenID;
         uint    fee;
         uint    publicKey;
-        uint    walletHash;
         uint32  validUntil;
         uint32  nonce;
     }
@@ -68,8 +67,6 @@ library AccountUpdateTransaction
         offset += 2;
         accountUpdate.publicKey = data.toUint(offset);
         offset += 32;
-        accountUpdate.walletHash = data.toUint(offset);
-        offset += 32;
         accountUpdate.validUntil = data.toUint32(offset);
         offset += 4;
         accountUpdate.nonce = data.toUint32(offset);
@@ -86,7 +83,6 @@ library AccountUpdateTransaction
                     accountUpdate.feeTokenID,
                     accountUpdate.fee,
                     accountUpdate.publicKey,
-                    accountUpdate.walletHash,
                     accountUpdate.validUntil,
                     accountUpdate.nonce
                 )

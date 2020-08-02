@@ -28,13 +28,12 @@ public:
     DualVariableGadget nonce;
     VariableT publicKeyX;
     VariableT publicKeyY;
-    DualVariableGadget walletHash;
     DualVariableGadget feeTokenID;
     DualVariableGadget fee;
     DualVariableGadget type;
 
     // Signature
-    Poseidon_gadget_T<10, 1, 6, 53, 9, 1> hash;
+    Poseidon_gadget_T<9, 1, 6, 53, 8, 1> hash;
 
     // Validate
     RequireLtGadget requireValidUntil;
@@ -74,7 +73,6 @@ public:
         nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
         publicKeyX(make_variable(pb, FMT(prefix, ".publicKeyX"))),
         publicKeyY(make_variable(pb, FMT(prefix, ".publicKeyY"))),
-        walletHash(pb, NUM_BITS_HASH, FMT(prefix, ".walletHash")),
         feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
         fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
         type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
@@ -87,7 +85,6 @@ public:
             fee.packed,
             publicKeyX,
             publicKeyY,
-            walletHash.packed,
             validUntil.packed,
             nonce.packed
         }), FMT(this->annotation_prefix, ".hash")),
@@ -120,7 +117,6 @@ public:
         setArrayOutput(accountA_Address, accountID.bits);
         setOutput(accountA_PublicKeyX, publicKeyX);
         setOutput(accountA_PublicKeyY, publicKeyY);
-        setOutput(accountA_WalletHash, walletHash.packed);
         setOutput(accountA_Nonce, nonce_after.result());
 
         // Update the account balance for the fee payment
@@ -147,7 +143,6 @@ public:
         nonce.generate_r1cs_witness();
         pb.val(publicKeyX) = update.publicKeyX;
         pb.val(publicKeyY) = update.publicKeyY;
-        walletHash.generate_r1cs_witness(pb, update.walletHash);
         feeTokenID.generate_r1cs_witness(pb, update.feeTokenID);
         fee.generate_r1cs_witness(pb, update.fee);
         type.generate_r1cs_witness(pb, update.type);
@@ -187,7 +182,6 @@ public:
         accountID.generate_r1cs_constraints(true);
         validUntil.generate_r1cs_constraints(true);
         nonce.generate_r1cs_constraints();
-        walletHash.generate_r1cs_constraints();
         feeTokenID.generate_r1cs_constraints(true);
         fee.generate_r1cs_constraints(true);
         type.generate_r1cs_constraints(true);
@@ -229,7 +223,6 @@ public:
             VariableArrayT(4, state.constants._0), feeTokenID.bits,
             fFee.bits(),
             compressPublicKey.result(),
-            walletHash.bits,
             validUntil.bits,
             nonce.bits
         });

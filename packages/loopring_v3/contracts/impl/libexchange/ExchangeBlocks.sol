@@ -18,8 +18,6 @@ import "../libtransactions/TransferTransaction.sol";
 import "../libtransactions/AccountUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
 import "../libtransactions/WithdrawTransaction.sol";
-import "../libtransactions/AccountTransferTransaction.sol";
-import "../libtransactions/AccountNewTransaction.sol";
 
 
 /// @title ExchangeBlocks.
@@ -289,24 +287,8 @@ library ExchangeBlocks
                         txDataOffset,
                         txAuxiliaryData[i].data
                     );
-                } else if (txType == ExchangeData.TransactionType.ACCOUNT_NEW) {
-                    txFeeETH = AccountNewTransaction.process(
-                        S,
-                        ctx,
-                        data,
-                        txDataOffset,
-                        txAuxiliaryData[i].data
-                    );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
                     txFeeETH = AccountUpdateTransaction.process(
-                        S,
-                        ctx,
-                        data,
-                        txDataOffset,
-                        txAuxiliaryData[i].data
-                    );
-                } else if (txType == ExchangeData.TransactionType.ACCOUNT_TRANSFER) {
-                    txFeeETH = AccountTransferTransaction.process(
                         S,
                         ctx,
                         data,

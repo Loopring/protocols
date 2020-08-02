@@ -12,7 +12,6 @@ interface AccountUpdate {
   fee?: BN;
   publicKeyX?: string;
   publicKeyY?: string;
-  walletHash?: string;
   validUntil?: number;
   nonce?: number;
 }
@@ -27,7 +26,6 @@ export class AccountUpdateProcessor {
     const account = state.getAccount(update.accountID);
     account.publicKeyX = update.publicKeyX;
     account.publicKeyY = update.publicKeyY;
-    account.walletHash = update.walletHash;
     account.nonce++;
 
     const balance = account.getBalance(update.feeTokenID);
@@ -57,8 +55,6 @@ export class AccountUpdateProcessor {
     update.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
     offset += 2;
     const publicKey = data.extractData(offset, 32);
-    offset += 32;
-    update.walletHash = data.extractUint(offset).toString(10);
     offset += 32;
     update.validUntil = data.extractUint32(offset);
     offset += 4;

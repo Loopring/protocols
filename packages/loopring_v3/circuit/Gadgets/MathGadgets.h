@@ -52,7 +52,6 @@ public:
     const VariableT dummyPublicKeyY;
     const VariableT txTypeSpotTrade;
     const VariableT txTypeTransfer;
-    const VariableT txTypeNewAccount;
 
     const VariableArrayT zeroAccount;
 
@@ -86,7 +85,6 @@ public:
         dummyPublicKeyY(make_variable(pb, ethsnarks::FieldT("6933274320914065805670637410453081675154127044926882796951068647148079547843"), FMT(prefix, ".dummyPublicKeyY"))),
         txTypeSpotTrade(make_variable(pb, ethsnarks::FieldT(int(TransactionType::SpotTrade)), FMT(prefix, ".txTypeSpotTrade"))),
         txTypeTransfer(make_variable(pb, ethsnarks::FieldT(int(TransactionType::Transfer)), FMT(prefix, ".txTypeTransfer"))),
-        txTypeNewAccount(make_variable(pb, ethsnarks::FieldT(int(TransactionType::AccountNew)), FMT(prefix, ".txTypeNewAccount"))),
 
         zeroAccount(NUM_BITS_ACCOUNT, _0)
     {
@@ -136,7 +134,6 @@ public:
         pb.add_r1cs_constraint(ConstraintT(dummyPublicKeyY, FieldT::one(), ethsnarks::FieldT("6933274320914065805670637410453081675154127044926882796951068647148079547843")), ".dummyPublicKeyY");
         pb.add_r1cs_constraint(ConstraintT(txTypeSpotTrade, FieldT::one(), ethsnarks::FieldT(int(TransactionType::SpotTrade))), ".txTypeSpotTrade");
         pb.add_r1cs_constraint(ConstraintT(txTypeTransfer, FieldT::one(), ethsnarks::FieldT(int(TransactionType::Transfer))), ".txTypeTransfer");
-        pb.add_r1cs_constraint(ConstraintT(txTypeNewAccount, FieldT::one(), ethsnarks::FieldT(int(TransactionType::AccountNew))), ".txTypeNewAccount");
     }
 };
 

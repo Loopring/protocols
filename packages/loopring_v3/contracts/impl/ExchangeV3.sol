@@ -26,7 +26,7 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    bytes32 constant public genesisMerkleRoot = 0x1d68b19f53f28fe87bf82506d20235c1f659279665931a2894ef4c6675990b6f;
+    bytes32 constant public genesisMerkleRoot = 0x160ca280c25b71c85d58fc0dd7b9eb42268c73c8812333da3cc2bdc8af3ee7b7;
 
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;

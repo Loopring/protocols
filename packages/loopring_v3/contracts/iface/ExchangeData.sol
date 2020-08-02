@@ -138,7 +138,6 @@ library ExchangeData
         uint     pubKeyX;
         uint     pubKeyY;
         uint32   nonce;
-        uint     walletHash;
     }
 
     struct BalanceLeaf

@@ -94,30 +94,9 @@ static auto dummyAccountUpdate = R"({
     "validUntil": 4294967295,
     "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
     "publicKeyY": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
-    "walletHash": "0",
     "feeTokenID": 0,
     "fee": "0",
     "type": 0
-})"_json;
-
-static auto dummyNewAccount = R"({
-    "payerAccountID": 0,
-    "feeTokenID": 0,
-    "fee": "0",
-    "validUntil": 4294967295,
-    "newAccountID": 2,
-    "newOwner": "1",
-    "newPublicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
-    "newPublicKeyY": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
-    "newWalletHash": "0"
-})"_json;
-
-static auto dummyAccountTransfer = R"({
-    "accountID": 0,
-    "feeTokenID": 0,
-    "fee": "0",
-    "validUntil": 4294967295,
-    "newOwner": "0"
 })"_json;
 
 static auto dummyDeposit = R"({
@@ -141,12 +120,8 @@ enum class TransactionType
     Transfer,
     SpotTrade,
     AccountUpdate,
-    AccountTransfer,
 
-    COUNT,
-
-    // Disabled
-    AccountNew,
+    COUNT
 };
 
 class Proof
@@ -195,7 +170,6 @@ public:
     ethsnarks::FieldT owner;
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::FieldT nonce;
-    ethsnarks::FieldT walletHash;
     ethsnarks::FieldT balancesRoot;
 };
 
@@ -205,7 +179,6 @@ static void from_json(const json& j, Account& account)
     account.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     account.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     account.nonce = ethsnarks::FieldT(j.at("nonce"));
-    account.walletHash = ethsnarks::FieldT(j.at("walletHash").get<std::string>().c_str());
     account.balancesRoot = ethsnarks::FieldT(j.at("balancesRoot").get<std::string>().c_str());
 }
 
@@ -406,7 +379,6 @@ public:
     ethsnarks::FieldT accountID;
     ethsnarks::FieldT publicKeyX;
     ethsnarks::FieldT publicKeyY;
-    ethsnarks::FieldT walletHash;
     ethsnarks::FieldT feeTokenID;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT validUntil;
@@ -418,59 +390,10 @@ static void from_json(const json& j, AccountUpdateTx& update)
     update.accountID = ethsnarks::FieldT(j.at("accountID"));
     update.publicKeyX = ethsnarks::FieldT(j["publicKeyX"].get<std::string>().c_str());
     update.publicKeyY = ethsnarks::FieldT(j["publicKeyY"].get<std::string>().c_str());
-    update.walletHash = ethsnarks::FieldT(j["walletHash"].get<std::string>().c_str());
     update.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
     update.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
     update.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     update.type = ethsnarks::FieldT(j.at("type"));
-}
-
-
-class NewAccount
-{
-public:
-    ethsnarks::FieldT payerAccountID;
-    ethsnarks::FieldT feeTokenID;
-    ethsnarks::FieldT fee;
-    ethsnarks::FieldT validUntil;
-    ethsnarks::FieldT newAccountID;
-    ethsnarks::FieldT newOwner;
-    ethsnarks::FieldT newPublicKeyX;
-    ethsnarks::FieldT newPublicKeyY;
-    ethsnarks::FieldT newWalletHash;
-};
-
-static void from_json(const json& j, NewAccount& create)
-{
-    create.payerAccountID = ethsnarks::FieldT(j.at("payerAccountID"));
-    create.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
-    create.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
-    create.validUntil = ethsnarks::FieldT(j.at("validUntil"));
-    create.newAccountID = ethsnarks::FieldT(j.at("newAccountID"));
-    create.newOwner = ethsnarks::FieldT(j["newOwner"].get<std::string>().c_str());
-    create.newPublicKeyX = ethsnarks::FieldT(j["newPublicKeyX"].get<std::string>().c_str());
-    create.newPublicKeyY = ethsnarks::FieldT(j["newPublicKeyY"].get<std::string>().c_str());
-    create.newWalletHash = ethsnarks::FieldT(j["newWalletHash"].get<std::string>().c_str());
-}
-
-
-class AccountTransfer
-{
-public:
-    ethsnarks::FieldT accountID;
-    ethsnarks::FieldT feeTokenID;
-    ethsnarks::FieldT fee;
-    ethsnarks::FieldT validUntil;
-    ethsnarks::FieldT newOwner;
-};
-
-static void from_json(const json& j, AccountTransfer& change)
-{
-    change.accountID = ethsnarks::FieldT(j.at("accountID"));
-    change.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
-    change.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
-    change.validUntil = ethsnarks::FieldT(j.at("validUntil"));
-    change.newOwner = ethsnarks::FieldT(j["newOwner"].get<std::string>().c_str());
 }
 
 class Transfer
@@ -588,11 +511,9 @@ public:
     ethsnarks::FieldT type;
     SpotTrade spotTrade;
     Transfer transfer;
-    NewAccount accountNew;
     Withdrawal withdraw;
     Deposit deposit;
     AccountUpdateTx accountUpdate;
-    AccountTransfer accountTransfer;
 };
 
 static void from_json(const json& j, UniversalTransaction& transaction)
@@ -605,8 +526,6 @@ static void from_json(const json& j, UniversalTransaction& transaction)
     transaction.withdraw = dummyWithdraw.get<Loopring::Withdrawal>();
     transaction.deposit = dummyDeposit.get<Loopring::Deposit>();
     transaction.accountUpdate = dummyAccountUpdate.get<Loopring::AccountUpdateTx>();
-    transaction.accountNew = dummyNewAccount.get<Loopring::NewAccount>();
-    transaction.accountTransfer = dummyAccountTransfer.get<Loopring::AccountTransfer>();
 
     // Patch some of the dummy tx's so they are valid against the current state
     // Deposit
@@ -644,16 +563,6 @@ static void from_json(const json& j, UniversalTransaction& transaction)
     {
         transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountUpdate));
         transaction.accountUpdate = j.at("accountUpdate").get<Loopring::AccountUpdateTx>();
-    }
-    else if (j.contains("accountNew"))
-    {
-        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountNew));
-        transaction.accountNew = j.at("accountNew").get<Loopring::NewAccount>();
-    }
-    else if (j.contains("accountTransfer"))
-    {
-        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountTransfer));
-        transaction.accountTransfer = j.at("accountTransfer").get<Loopring::AccountTransfer>();
     }
 }
 

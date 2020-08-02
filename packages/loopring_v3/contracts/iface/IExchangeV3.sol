@@ -111,8 +111,7 @@ abstract contract IExchangeV3 is IExchange
 
     /*event AccountCreated(
         address owner,
-        uint    publicKey,
-        uint    walletHash
+        uint    publicKey
     );*/
 
     /*event AccountUpdated(

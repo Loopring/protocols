@@ -14,7 +14,7 @@ from ethsnarks.merkletree import MerkleTree
 from ethsnarks.poseidon import poseidon, poseidon_params
 from ethsnarks.field import SNARK_SCALAR_FIELD
 
-poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 7, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 6, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsStorage = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 
@@ -144,7 +144,6 @@ class Account(object):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
-        self.walletHash = str(0)
         # Balances
         self._balancesTree = SparseMerkleTree(BINARY_TREE_DEPTH_TOKENS // 2, 4)
         self._balancesTree.newTree(BalanceLeaf().hash())
@@ -152,14 +151,13 @@ class Account(object):
         # print("Empty balances tree: " + str(self._balancesTree._root))
 
     def hash(self):
-        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self.walletHash), int(self._balancesTree._root)], poseidonParamsAccount)
+        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], poseidonParamsAccount)
 
     def fromJSON(self, jAccount):
         self.owner = jAccount["owner"]
         self.publicKeyX = jAccount["publicKeyX"]
         self.publicKeyY = jAccount["publicKeyY"]
         self.nonce = int(jAccount["nonce"])
-        self.walletHash = jAccount["walletHash"]
         # Balances
         balancesLeafsDict = jAccount["_balancesLeafs"]
         for key, val in balancesLeafsDict.items():
@@ -381,7 +379,7 @@ class State(object):
         self._accounts = {}
         self._accounts[str(0)] = getDefaultAccount()
         self._accounts[str(1)] = getDefaultAccount()
-        #print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
+        print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
 
     def load(self, filename):
         with open(filename) as f:
@@ -464,7 +462,6 @@ class State(object):
         newState.accountA_Owner = None
         newState.accountA_PublicKeyX = None
         newState.accountA_PublicKeyY = None
-        newState.accountA_WalletHash = None
         newState.accountA_Nonce = None
         newState.balanceA_S_Address = None
         newState.balanceA_S_Balance = None
@@ -477,7 +474,6 @@ class State(object):
         newState.accountB_Owner = None
         newState.accountB_PublicKeyX = None
         newState.accountB_PublicKeyY = None
-        newState.accountB_WalletHash = None
         newState.accountB_Nonce = None
         newState.balanceB_S_Address = None
         newState.balanceB_S_Balance = None
@@ -710,7 +706,6 @@ class State(object):
 
             newState.accountA_PublicKeyX = txInput.publicKeyX
             newState.accountA_PublicKeyY = txInput.publicKeyY
-            newState.accountA_WalletHash = txInput.walletHash
             newState.accountA_Nonce = 1
 
             newState.balanceA_S_Address = txInput.feeTokenID
@@ -734,7 +729,6 @@ class State(object):
             newState.accountB_Owner = txInput.newOwner
             newState.accountB_PublicKeyX = txInput.newPublicKeyX
             newState.accountB_PublicKeyY = txInput.newPublicKeyY
-            newState.accountB_WalletHash = txInput.newWalletHash
             newState.accountA_Nonce = 1
 
             newState.balanceA_S_Address = txInput.feeTokenID
@@ -754,7 +748,6 @@ class State(object):
             newState.accountA_Owner = txInput.newOwner
             newState.accountA_PublicKeyX = "0"
             newState.accountA_PublicKeyY = "0"
-            newState.accountA_WalletHash = "0"
             accountA = self.getAccount(newState.accountA_Address)
             newState.accountA_Nonce = 1
 
@@ -777,7 +770,6 @@ class State(object):
         newState.accountA_PublicKeyX = setValue(newState.accountA_PublicKeyX, accountA.publicKeyX)
         newState.accountA_PublicKeyY = setValue(newState.accountA_PublicKeyY, accountA.publicKeyY)
         newState.accountA_Nonce = setValue(newState.accountA_Nonce, 0)
-        newState.accountA_WalletHash = setValue(newState.accountA_WalletHash, accountA.walletHash)
 
         balanceLeafA_S = accountA.getBalanceLeaf(newState.balanceA_S_Address)
         newState.balanceA_S_Balance = setValue(newState.balanceA_S_Balance, 0)
@@ -823,7 +815,6 @@ class State(object):
         accountA.publicKeyX = newState.accountA_PublicKeyX
         accountA.publicKeyY = newState.accountA_PublicKeyY
         accountA.nonce = accountA.nonce + newState.accountA_Nonce
-        accountA.walletHash = newState.accountA_WalletHash
 
         self.updateAccountTree(newState.accountA_Address)
         accountAfter = copyAccountInfo(self.getAccount(newState.accountA_Address))
@@ -838,7 +829,6 @@ class State(object):
         newState.accountB_PublicKeyX = setValue(newState.accountB_PublicKeyX, accountB.publicKeyX)
         newState.accountB_PublicKeyY = setValue(newState.accountB_PublicKeyY, accountB.publicKeyY)
         newState.accountB_Nonce = setValue(newState.accountB_Nonce, 0)
-        newState.accountB_WalletHash = setValue(newState.accountB_WalletHash, accountB.walletHash)
 
         balanceLeafB_S = accountB.getBalanceLeaf(newState.balanceB_S_Address)
         newState.balanceB_S_Balance = setValue(newState.balanceB_S_Balance, 0)
@@ -872,7 +862,6 @@ class State(object):
         accountB.publicKeyX = newState.accountB_PublicKeyX
         accountB.publicKeyY = newState.accountB_PublicKeyY
         accountB.nonce = accountB.nonce + newState.accountB_Nonce
-        accountB.walletHash = newState.accountB_WalletHash
 
         self.updateAccountTree(newState.accountB_Address)
         accountAfter = copyAccountInfo(self.getAccount(newState.accountB_Address))

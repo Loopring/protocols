@@ -268,20 +268,6 @@ contract("Exchange", (accounts: string[]) => {
         exchangeTestUtil.getKeyPairEDDSA()
       );
 
-      /*await exchangeTestUtil.requestNewAccount(
-        ownerB,
-        "ETH",
-        new BN(0),
-        ownerE,
-        exchangeTestUtil.getKeyPairEDDSA()
-      );*/
-
-      await exchangeTestUtil.requestAccountTransfer(
-        ownerB,
-        "ETH",
-        new BN(0),
-        ownerF
-      );
 
       await exchangeTestUtil.submitTransactions(24);
       await verify();

@@ -11,7 +11,6 @@ AccountState createAccountState(ProtoboardT& pb, const Account& state)
     accountState.publicKeyX = make_variable(pb, state.publicKey.x, ".publicKeyX");
     accountState.publicKeyY = make_variable(pb, state.publicKey.y, ".publicKeyY");
     accountState.nonce = make_variable(pb, state.nonce, ".nonce");
-    accountState.walletHash = make_variable(pb, state.walletHash, ".walletHash");
     accountState.balancesRoot = make_variable(pb, state.balancesRoot, ".balancesRoot");
     return accountState;
 }

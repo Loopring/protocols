@@ -176,7 +176,6 @@ enum TxVariable
     accountA_PublicKeyX,
     accountA_PublicKeyY,
     accountA_Nonce,
-    accountA_WalletHash,
 
 
     storageB_Address,
@@ -193,7 +192,6 @@ enum TxVariable
     accountB_PublicKeyX,
     accountB_PublicKeyY,
     accountB_Nonce,
-    accountB_WalletHash,
 
 
     balanceP_A_Balance,
@@ -248,7 +246,6 @@ public:
         uOutputs[accountA_PublicKeyX] = state.accountA.account.publicKey.x;
         uOutputs[accountA_PublicKeyY] = state.accountA.account.publicKey.y;
         uOutputs[accountA_Nonce] = state.accountA.account.nonce;
-        uOutputs[accountA_WalletHash] = state.accountA.account.walletHash;
 
 
         aOutputs[storageB_Address] = VariableArrayT(NUM_BITS_STORAGE_ADDRESS, state.constants._0);
@@ -266,7 +263,6 @@ public:
         uOutputs[accountB_PublicKeyX] = state.accountB.account.publicKey.x;
         uOutputs[accountB_PublicKeyY] = state.accountB.account.publicKey.y;
         uOutputs[accountB_Nonce] = state.accountB.account.nonce;
-        uOutputs[accountB_WalletHash] = state.accountB.account.walletHash;
 
 
         uOutputs[balanceP_A_Balance] = state.pool.balanceA.balance;

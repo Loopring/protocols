@@ -118,7 +118,6 @@ def accountUpdateFromJSON(jUpdate):
     update.validUntil = int(jUpdate["validUntil"])
     update.publicKeyX = str(jUpdate["publicKeyX"])
     update.publicKeyY = str(jUpdate["publicKeyY"])
-    update.walletHash = str(jUpdate["walletHash"])
     update.feeTokenID = int(jUpdate["feeTokenID"])
     update.fee = str(jUpdate["fee"])
     update.type = int(jUpdate["type"])
@@ -138,7 +137,6 @@ def accountNewFromJSON(jCreate):
     create.newOwner = str(jCreate["newOwner"])
     create.newPublicKeyX = str(jCreate["newPublicKeyX"])
     create.newPublicKeyY = str(jCreate["newPublicKeyY"])
-    create.newWalletHash = str(jCreate["newWalletHash"])
     create.signature = jCreate["signature"]
     return create
 
@@ -151,7 +149,6 @@ def accountTransferFromJSON(jChange):
     change.validUntil = int(jChange["validUntil"])
     change.nonce = int(jChange["nonce"])
     change.newOwner = str(jChange["newOwner"])
-    change.walletHash = str(jChange["walletHash"])
     return change
 
 def ringFromJSON(jRing, state):
