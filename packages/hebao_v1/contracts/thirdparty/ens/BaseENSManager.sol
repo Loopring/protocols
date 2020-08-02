@@ -164,10 +164,6 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         internal
         view
     {
-        if (numManagers() == 1) {
-            return;
-        }
-
         bytes32 messageHash = keccak256(
             abi.encodePacked(
                 _owner,
