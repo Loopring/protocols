@@ -7,7 +7,10 @@ import "./GuardianModule.sol";
 import "./InheritanceModule.sol";
 import "./WhitelistModule.sol";
 
-contract PackedSecurityModule is GuardianModule_, InheritanceModule_, WhitelistModule_
+contract PackedSecurityModule is
+    GuardianModule_,
+    InheritanceModule_,
+    WhitelistModule_
 {
     ControllerImpl private controller_;
 

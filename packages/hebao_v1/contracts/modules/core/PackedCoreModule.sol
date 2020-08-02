@@ -6,7 +6,9 @@ pragma experimental ABIEncoderV2;
 import "./ERC1271Module.sol";
 import "./ForwarderModule.sol";
 
-contract PackedCoreModule is ERC1271Module_, ForwarderModule_
+contract PackedCoreModule is
+    ERC1271Module_,
+    ForwarderModule_
 {
     ControllerImpl private controller_;
 
