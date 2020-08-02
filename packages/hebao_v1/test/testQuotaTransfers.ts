@@ -839,7 +839,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
     targetContract = await TestTargetContract.new();
-    quotaPeriod = (await ctx.transferModule.delayPeriod()).toNumber();
+    quotaPeriod = (await ctx.transferModule.transferDelayPeriod()).toNumber();
     defaultQuota = await ctx.quotaStore.defaultQuota();
   });
 

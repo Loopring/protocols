@@ -11,25 +11,19 @@ import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
 
 
-/// @title ERC1271Module
+/// @title ERC1271Module_
 /// @dev This module enables our smart wallets to message signers.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ERC1271Module is ERC1271, BaseModule
+abstract contract ERC1271Module_ is ERC1271, BaseModule
 {
     using SignatureUtil for bytes;
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
-    constructor(ControllerImpl _controller)
-        BaseModule(_controller)
-    {
-    }
-
-    function bindableMethods()
-        public
+    function bindableMethods_()
+        internal
         pure
-        override
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](2);
@@ -54,7 +48,7 @@ contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4)
     {
         address wallet = msg.sender;
-        (uint _lock,) = controller.securityStore().getLock(wallet);
+        (uint _lock,) = controller().securityStore().getLock(wallet);
         if (_lock > block.timestamp) { // wallet locked
             return 0;
         }
@@ -64,5 +58,33 @@ contract ERC1271Module is ERC1271, BaseModule
         } else {
             return 0;
         }
+    }
+}
+
+contract ERC1271Module is ERC1271Module_
+{
+    ControllerImpl private controller_;
+
+    constructor(ControllerImpl _controller)
+    {
+        controller_ = _controller;
+    }
+
+    function controller()
+        internal
+        view
+        override
+        returns(ControllerImpl)
+    {
+        return ControllerImpl(controller_);
+    }
+
+    function bindableMethods()
+        public
+        pure
+        override
+        returns (bytes4[] memory methods)
+    {
+        return bindableMethods_();
     }
 }

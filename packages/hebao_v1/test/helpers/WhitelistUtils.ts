@@ -76,7 +76,9 @@ export async function addToWhitelist(
   addr: string,
   useMetaTx: boolean = true
 ) {
-  const delayPeriod = (await ctx.whitelistModule.delayPeriod()).toNumber();
+  const delayPeriod = (
+    await ctx.whitelistModule.whitelistDelayPeriod()
+  ).toNumber();
 
   let whitelistBefore = toPrettyList(
     await ctx.whitelistStore.whitelist(wallet)

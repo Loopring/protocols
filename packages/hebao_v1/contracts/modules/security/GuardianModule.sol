@@ -7,17 +7,17 @@ import "./SecurityModule.sol";
 import "./SignedRequest.sol";
 
 
-/// @title GuardianModule
+/// @title GuardianModule_
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-contract GuardianModule is SecurityModule
+abstract contract GuardianModule_ is SecurityModule
 {
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
     using SignedRequest for ControllerImpl;
 
     uint constant public MAX_GUARDIANS = 20;
-    uint public pendingPeriod;
+    uint public recoveryPendingPeriod;
 
     event GuardianAdded             (address indexed wallet, address guardian, uint group, uint effectiveTime);
     event GuardianAdditionCancelled (address indexed wallet, address guardian);
@@ -33,18 +33,13 @@ contract GuardianModule is SecurityModule
         "recover(address wallet,uint256 validUntil,address newOwner)"
     );
 
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _pendingPeriod
-        )
-        SecurityModule(_controller, _trustedForwarder)
+    constructor(uint _recoveryPendingPeriod)
     {
         DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("GuardianModule", "1.1.0", address(this))
         );
-        require(_pendingPeriod > 0, "INVALID_DELAY");
-        pendingPeriod = _pendingPeriod;
+        require(_recoveryPendingPeriod > 0, "INVALID_DELAY");
+        recoveryPendingPeriod = _recoveryPendingPeriod;
     }
 
     function addGuardian(
@@ -61,14 +56,14 @@ contract GuardianModule is SecurityModule
         require(guardian != wallet, "INVALID_ADDRESS");
         require(guardian != address(0), "ZERO_ADDRESS");
         require(group < GuardianUtils.MAX_NUM_GROUPS, "INVALID_GROUP");
-        uint numGuardians = controller.securityStore().numGuardiansWithPending(wallet);
+        uint numGuardians = controller().securityStore().numGuardiansWithPending(wallet);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         uint effectiveTime = block.timestamp;
         if (numGuardians >= MIN_ACTIVE_GUARDIANS) {
-            effectiveTime = block.timestamp + pendingPeriod;
+            effectiveTime = block.timestamp + recoveryPendingPeriod;
         }
-        controller.securityStore().addGuardian(wallet, guardian, group, effectiveTime);
+        controller().securityStore().addGuardian(wallet, guardian, group, effectiveTime);
         emit GuardianAdded(wallet, guardian, group, effectiveTime);
     }
 
@@ -81,7 +76,7 @@ contract GuardianModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller.securityStore().cancelGuardianAddition(wallet, guardian);
+        controller().securityStore().cancelGuardianAddition(wallet, guardian);
         emit GuardianAdditionCancelled(wallet, guardian);
     }
 
@@ -95,8 +90,8 @@ contract GuardianModule is SecurityModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
     {
-        controller.securityStore().removeGuardian(wallet, guardian, block.timestamp + pendingPeriod);
-        emit GuardianRemoved(wallet, guardian, block.timestamp + pendingPeriod);
+        controller().securityStore().removeGuardian(wallet, guardian, block.timestamp + recoveryPendingPeriod);
+        emit GuardianRemoved(wallet, guardian, block.timestamp + recoveryPendingPeriod);
     }
 
     function cancelGuardianRemoval(
@@ -108,7 +103,7 @@ contract GuardianModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller.securityStore().cancelGuardianRemoval(wallet, guardian);
+        controller().securityStore().cancelGuardianRemoval(wallet, guardian);
         emit GuardianRemovalCancelled(wallet, guardian);
     }
 
@@ -145,7 +140,7 @@ contract GuardianModule is SecurityModule
         eligibleWalletOwner(newOwner)
         onlyHaveEnoughGuardians(request.wallet)
     {
-        controller.verifyRequest(
+        controller().verifyRequest(
             DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerNotAllowed,
@@ -158,7 +153,7 @@ contract GuardianModule is SecurityModule
             )
         );
 
-        SecurityStore securityStore = controller.securityStore();
+        SecurityStore securityStore = controller().securityStore();
         if (securityStore.isGuardianOrPendingAddition(request.wallet, newOwner)) {
             securityStore.removeGuardian(request.wallet, newOwner, block.timestamp);
         }
@@ -185,5 +180,38 @@ contract GuardianModule is SecurityModule
         returns (bool)
     {
         return isWalletLocked(wallet);
+    }
+}
+
+contract GuardianModule is GuardianModule_
+{
+    ControllerImpl private controller_;
+
+    constructor(
+        ControllerImpl _controller,
+        address        _trustedForwarder,
+        uint           _recoveryPendingPeriod
+        )
+        SecurityModule(_trustedForwarder)
+        GuardianModule_(_recoveryPendingPeriod)
+    {
+        controller_ = _controller;
+    }
+
+    function controller()
+        internal
+        view
+        override
+        returns(ControllerImpl)
+    {
+        return ControllerImpl(controller_);
+    }
+
+    function bindableMethods()
+        public
+        pure
+        override
+        returns (bytes4[] memory methods)
+    {
     }
 }

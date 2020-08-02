@@ -15,6 +15,8 @@ import "../base/BaseModule.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
+    ControllerImpl private controller_;
+
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
@@ -23,10 +25,27 @@ contract UpgraderModule is BaseModule {
         address[] memory _modulesToAdd,
         address[] memory _modulesToRemove
         )
-        BaseModule(_controller)
     {
+        controller_ = _controller;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
+    }
+
+    function controller()
+        internal
+        view
+        override
+        returns(ControllerImpl)
+    {
+        return ControllerImpl(controller_);
+    }
+
+    function bindableMethods()
+        public
+        pure
+        override
+        returns (bytes4[] memory methods)
+    {
     }
 
     function activate()

@@ -22,11 +22,7 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
 
     bytes32 public DOMAIN_SEPERATOR;
 
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder
-        )
-        BaseModule(_controller)
+    constructor(address _trustedForwarder)
         MetaTxAware(_trustedForwarder)
     {
     }

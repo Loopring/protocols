@@ -57,12 +57,11 @@ abstract contract BaseModule is ReentrancyGuard, Module
         _;
     }
 
-    ControllerImpl public controller;
-
-    constructor(ControllerImpl _controller)
-    {
-        controller = _controller;
-    }
+    function controller()
+        internal
+        view
+        virtual
+        returns(ControllerImpl);
 
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()
@@ -95,9 +94,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         public
         pure
         virtual
-        returns (bytes4[] memory methods)
-    {
-    }
+        returns (bytes4[] memory methods);
 
     // ===== internal & private methods =====
 
@@ -216,9 +213,9 @@ abstract contract BaseModule is ReentrancyGuard, Module
         internal
     {
         uint gasCost = gasAmount.mul(gasPrice);
-        uint value = controller.priceOracle().tokenValue(gasToken, gasCost);
+        uint value = controller().priceOracle().tokenValue(gasToken, gasCost);
         if (value > 0) {
-          controller.quotaStore().checkAndAddToSpent(wallet, value);
+          controller().quotaStore().checkAndAddToSpent(wallet, value);
         }
 
         transactTokenTransfer(wallet, gasToken, recipient, gasCost);

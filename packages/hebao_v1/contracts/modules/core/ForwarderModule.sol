@@ -10,11 +10,11 @@ import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
 
 
-/// @title ForwarderModule
+/// @title ForwarderModule_
 /// @dev A module to support wallet meta-transactions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ForwarderModule is BaseModule
+abstract contract ForwarderModule_ is BaseModule
 {
     using BytesUtil     for bytes;
     using MathUint      for uint;
@@ -22,14 +22,6 @@ contract ForwarderModule is BaseModule
 
     uint    public constant GAS_OVERHEAD = 100000;
     bytes32 public DOMAIN_SEPARATOR;
-
-    constructor(ControllerImpl _controller)
-        BaseModule(_controller)
-    {
-        DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("ForwarderModule", "1.1.0", address(this))
-        );
-    }
 
     event MetaTxExecuted(
         address relayer,
@@ -74,14 +66,14 @@ contract ForwarderModule is BaseModule
         // so no Store can be used as 'to'.
         require(
             (to != address(this)) &&
-            controller.moduleRegistry().isModuleRegistered(to) ||
+            controller().moduleRegistry().isModuleRegistered(to) ||
 
             // We only allow the wallet to call itself to addModule
             (to == from) &&
             data.toBytes4(0) == Wallet.addModule.selector &&
-            controller.walletRegistry().isWalletRegistered(from) ||
+            controller().walletRegistry().isWalletRegistered(from) ||
 
-            to == controller.walletFactory(),
+            to == controller().walletFactory(),
             "INVALID_DESTINATION_OR_METHOD"
         );
         require(
@@ -149,7 +141,7 @@ contract ForwarderModule is BaseModule
 
         // Nonce update must come after the real transaction in case of new wallet creation.
         if (metaTx.nonce != 0) {
-            controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
+            controller().nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
         }
 
         uint gasUsed = gasLeft - gasleft();
@@ -171,12 +163,46 @@ contract ForwarderModule is BaseModule
             uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
             reimburseGasFee(
                 metaTx.from,
-                controller.collectTo(),
+                controller().collectTo(),
                 metaTx.gasToken,
                 metaTx.gasPrice,
                 gasAmount.add(GAS_OVERHEAD)
             );
         }
 
+    }
+}
+
+/// @title ForwarderModule
+/// @dev A module to support wallet meta-transactions.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+contract ForwarderModule is ForwarderModule_
+{
+    ControllerImpl private controller_;
+
+    constructor(ControllerImpl _controller)
+    {
+        DOMAIN_SEPARATOR = EIP712.hash(
+            EIP712.Domain("ForwarderModule", "1.1.0", address(this))
+        );
+        controller_ = _controller;
+    }
+
+    function controller()
+        internal
+        view
+        override
+        returns(ControllerImpl)
+    {
+        return ControllerImpl(controller_);
+    }
+
+    function bindableMethods()
+        public
+        pure
+        override
+        returns (bytes4[] memory methods)
+    {
     }
 }
