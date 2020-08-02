@@ -14,7 +14,7 @@ contract("InheritanceModule", (accounts: string[]) => {
   let defaultCtx: Context;
   let ctx: Context;
 
-  let waitingPeriod: number;
+  let inheritWaitingPeriod: number;
 
   const getInheritor = async (wallet: string) => {
     const inheritorData = await ctx.inheritanceModule.inheritor(wallet);
@@ -32,7 +32,9 @@ contract("InheritanceModule", (accounts: string[]) => {
 
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
-    waitingPeriod = (await ctx.inheritanceModule.waitingPeriod()).toNumber();
+    inheritWaitingPeriod = (
+      await ctx.inheritanceModule.inheritWaitingPeriod()
+    ).toNumber();
   });
 
   [false, true].forEach(function(useMetaTx) {
@@ -109,8 +111,8 @@ contract("InheritanceModule", (accounts: string[]) => {
         //   );
         // }
 
-        // Skip forward `waitingPeriod` seconds
-        await advanceTimeAndBlockAsync(waitingPeriod);
+        // Skip forward `inheritWaitingPeriod` seconds
+        await advanceTimeAndBlockAsync(inheritWaitingPeriod);
 
         // Now inherit
         await executeTransaction(
@@ -193,8 +195,8 @@ contract("InheritanceModule", (accounts: string[]) => {
         );
 
         // if (!useMetaTx) {
-        //   // Skip forward `waitingPeriod` - 100
-        //   await advanceTimeAndBlockAsync(waitingPeriod - 100);
+        //   // Skip forward `inheritWaitingPeriod` - 100
+        //   await advanceTimeAndBlockAsync(inheritWaitingPeriod - 100);
 
         //   executeTransaction(
         //     ctx.inheritanceModule.contract.methods.inherit(wallet, newOwner),
@@ -215,10 +217,10 @@ contract("InheritanceModule", (accounts: string[]) => {
         //   await advanceTimeAndBlockAsync(200);
 
         // } else {
-        //     await advanceTimeAndBlockAsync(waitingPeriod);
+        //     await advanceTimeAndBlockAsync(inheritWaitingPeriod);
         // }
 
-        await advanceTimeAndBlockAsync(waitingPeriod);
+        await advanceTimeAndBlockAsync(inheritWaitingPeriod);
 
         // Last active time should be unchanged
         assert.equal(
