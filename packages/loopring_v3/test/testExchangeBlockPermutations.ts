@@ -249,7 +249,8 @@ contract("Exchange", (accounts: string[]) => {
         token,
         amount,
         feeToken,
-        fee
+        fee,
+        {authMethod: AuthMethod.ECDSA}
       );
 
       // Do a withdrawal

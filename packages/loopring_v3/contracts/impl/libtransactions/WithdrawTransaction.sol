@@ -11,6 +11,7 @@ import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
 import "../libexchange/ExchangeMode.sol";
+import "../libexchange/ExchangeSignatures.sol";
 import "../libexchange/ExchangeWithdrawals.sol";
 
 
@@ -28,8 +29,8 @@ library WithdrawTransaction
     using BytesUtil            for bytes;
     using FloatUtil            for uint;
     using MathUint             for uint;
-    using SignatureUtil        for bytes32;
     using ExchangeMode         for ExchangeData.State;
+    using ExchangeSignatures   for ExchangeData.State;
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
@@ -95,33 +96,9 @@ library WithdrawTransaction
         } else if (withdrawal.withdrawalType == 1) {
             // Check appproval onchain
             // Calculate the tx hash
-            bytes32 txHash = EIP712.hashPacked(
-                ctx.DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encode(
-                        WITHDRAWAL_TYPEHASH,
-                        withdrawal.owner,
-                        withdrawal.accountID,
-                        withdrawal.tokenID,
-                        withdrawal.amount,
-                        withdrawal.feeTokenID,
-                        withdrawal.fee,
-                        withdrawal.to,
-                        withdrawal.dataHash,
-                        withdrawal.minGas,
-                        withdrawal.validUntil,
-                        withdrawal.nonce
-                    )
-                )
-            );
-
-            // Verify the signature if one is provided, otherwise fall back to an approved tx
-            if (auxData.signature.length > 0) {
-                require(txHash.verifySignature(withdrawal.owner, auxData.signature), "INVALID_SIGNATURE");
-            } else {
-                require(S.approvedTx[withdrawal.owner][txHash], "TX_NOT_APPROVED");
-                delete S.approvedTx[withdrawal.owner][txHash];
-            }
+            bytes32 txHash = hash(ctx.DOMAIN_SEPARATOR, withdrawal);
+            // Check onchain authorization
+            S.requireAuthorizedTx(withdrawal.owner, auxData.signature, txHash);
         } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
             // Forced withdrawals cannot make use of certain features because the
             // necessary data is not authorized by the account owner.
@@ -161,7 +138,7 @@ library WithdrawTransaction
                 // - when in shutdown mode
                 // - to withdraw protocol fees
                 require(
-                    withdrawal.owner == address(0) && withdrawal.accountID == 0 ||
+                    withdrawal.accountID == ExchangeData.ACCOUNTID_PROTOCOLFEE() ||
                     S.isShutdown(),
                     "FULL_WITHDRAWAL_UNAUTHORIZED"
                 );
@@ -232,5 +209,34 @@ library WithdrawTransaction
         offset += 4;
         withdrawal.nonce = data.toUint32(offset);
         offset += 4;
+    }
+
+    function hash(
+        bytes32 DOMAIN_SEPARATOR,
+        Withdrawal memory withdrawal
+        )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return EIP712.hashPacked(
+            DOMAIN_SEPARATOR,
+            keccak256(
+                abi.encode(
+                    WITHDRAWAL_TYPEHASH,
+                    withdrawal.owner,
+                    withdrawal.accountID,
+                    withdrawal.tokenID,
+                    withdrawal.amount,
+                    withdrawal.feeTokenID,
+                    withdrawal.fee,
+                    withdrawal.to,
+                    withdrawal.dataHash,
+                    withdrawal.minGas,
+                    withdrawal.validUntil,
+                    withdrawal.nonce
+                )
+            )
+        );
     }
 }

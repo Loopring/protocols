@@ -8,7 +8,8 @@ import "../../thirdparty/BytesUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/FloatUtil.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/SignatureUtil.sol";
+
+import "../libexchange/ExchangeSignatures.sol";
 
 
 /// @title TransferTransaction
@@ -18,11 +19,24 @@ library TransferTransaction
     using BytesUtil            for bytes;
     using FloatUtil            for uint;
     using MathUint             for uint;
-    using SignatureUtil        for bytes32;
+    using ExchangeSignatures   for ExchangeData.State;
 
     bytes32 constant public TRANSFER_TYPEHASH = keccak256(
         "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint256 data,uint32 validUntil,uint32 storageID)"
     );
+
+    struct Transfer
+    {
+        address from;
+        address to;
+        uint16  tokenID;
+        uint    amount;
+        uint16  feeTokenID;
+        uint    fee;
+        uint    data;
+        uint32  validUntil;
+        uint32  storageID;
+    }
 
     /*event ConditionalTransferProcessed(
         address from,
@@ -41,6 +55,26 @@ library TransferTransaction
         internal
         returns (uint /*feeETH*/)
     {
+        // Read the transfer
+        Transfer memory transfer = readTransfer(data, offset);
+
+        // Calculate the tx hash
+        bytes32 txHash = hash(ctx.DOMAIN_SEPARATOR, transfer);
+
+        // Check the on-chain authorization
+        S.requireAuthorizedTx(transfer.from, auxiliaryData, txHash);
+
+        //emit ConditionalTransferProcessed(from, to, tokenID, amount);
+    }
+
+    function readTransfer(
+        bytes memory data,
+        uint         offset
+        )
+        internal
+        pure
+        returns (Transfer memory transfer)
+    {
         // Check that this is a conditional transfer
         require(data.toUint8(offset) == 1, "INVALID_AUXILIARYDATA_DATA");
         offset += 1;
@@ -48,66 +82,34 @@ library TransferTransaction
         // Extract the transfer data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        //uint32 fromAccountID = data.toUint32(offset);
+        //transfer.fromAccountID = data.toUint32(offset);
         offset += 4;
-        //uint32 toAccountID = data.toUint32(offset);
+        //transfer.toAccountID = data.toUint32(offset);
         offset += 4;
-        uint16 tokenID = data.toUint16(offset) >> 4;
-        uint16 feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
+        transfer.tokenID = data.toUint16(offset) >> 4;
+        transfer.feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
         offset += 3;
-        uint amount = uint(data.toUint24(offset)).decodeFloat(24);
+        transfer.amount = uint(data.toUint24(offset)).decodeFloat(24);
         offset += 3;
-        uint fee = uint(data.toUint16(offset)).decodeFloat(16);
+        transfer.fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
         //uint16 shortStorageID = data.toUint16(offset);
         offset += 2;
-        address to = data.toAddress(offset);
+        transfer.to = data.toAddress(offset);
         offset += 20;
-        uint32 validUntil = data.toUint32(offset);
+        transfer.validUntil = data.toUint32(offset);
         offset += 4;
-        uint32 storageID = data.toUint32(offset);
+        transfer.storageID = data.toUint32(offset);
         offset += 4;
-        address from = data.toAddress(offset);
+        transfer.from = data.toAddress(offset);
         offset += 20;
-        uint customData = data.toUint(offset);
+        transfer.data = data.toUint(offset);
         offset += 32;
-
-        // Calculate the tx hash
-        bytes32 txHash = hash(
-            ctx.DOMAIN_SEPARATOR,
-            from,
-            to,
-            tokenID,
-            amount,
-            feeTokenID,
-            fee,
-            customData,
-            validUntil,
-            storageID
-        );
-
-        // Verify the signature if one is provided, otherwise fall back to an approved tx
-        if (auxiliaryData.length > 0) {
-            require(txHash.verifySignature(from, auxiliaryData), "INVALID_SIGNATURE");
-        } else {
-            require(S.approvedTx[from][txHash], "TX_NOT_APPROVED");
-            delete S.approvedTx[from][txHash];
-        }
-
-        //emit ConditionalTransferProcessed(from, to, tokenID, amount);
     }
 
     function hash(
         bytes32 DOMAIN_SEPARATOR,
-        address from,
-        address to,
-        uint16  tokenID,
-        uint    amount,
-        uint16  feeTokenID,
-        uint    fee,
-        uint    data,
-        uint32  validUntil,
-        uint32  storageID
+        Transfer memory transfer
         )
         internal
         pure
@@ -118,15 +120,15 @@ library TransferTransaction
             keccak256(
                 abi.encode(
                     TRANSFER_TYPEHASH,
-                    from,
-                    to,
-                    tokenID,
-                    amount,
-                    feeTokenID,
-                    fee,
-                    data,
-                    validUntil,
-                    storageID
+                    transfer.from,
+                    transfer.to,
+                    transfer.tokenID,
+                    transfer.amount,
+                    transfer.feeTokenID,
+                    transfer.fee,
+                    transfer.data,
+                    transfer.validUntil,
+                    transfer.storageID
                 )
             )
         );

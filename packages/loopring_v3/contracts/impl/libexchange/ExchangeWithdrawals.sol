@@ -134,8 +134,12 @@ library ExchangeWithdrawals
         ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID];
         require(deposit.timestamp != 0, "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
-        // Check if the deposit has indeed exceeded the time limit
-        require(block.timestamp >= deposit.timestamp + S.maxAgeDepositUntilWithdrawable, "DEPOSIT_NOT_WITHDRAWABLE_YET");
+        // Check if the deposit has indeed exceeded the time limit of if the exchange is in withdrawal mode
+        require(
+            block.timestamp >= deposit.timestamp + S.maxAgeDepositUntilWithdrawable ||
+            S.isInWithdrawalMode(),
+            "DEPOSIT_NOT_WITHDRAWABLE_YET"
+        );
 
         uint amount = deposit.amount;
         uint fee = deposit.fee;

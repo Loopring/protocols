@@ -11,6 +11,7 @@ import "./libexchange/ExchangeGenesis.sol";
 import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
+import "./libtransactions/TransferTransaction.sol";
 
 import "../lib/EIP712.sol";
 import "../lib/MathUint.sol";
@@ -360,7 +361,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         payable
     {
-        state.forceWithdraw(address(0), token, 0);
+        state.forceWithdraw(address(0), token, ExchangeData.ACCOUNTID_PROTOCOLFEE());
     }
 
     // We still alow anyone to withdraw these funds for the account owner
@@ -454,20 +455,20 @@ contract ExchangeV3 is IExchangeV3
     {
         uint16 tokenID = state.getTokenID(token);
         uint16 feeTokenID = state.getTokenID(feeToken);
-        bytes32 transactionHash = TransferTransaction.hash(
-            state.DOMAIN_SEPARATOR,
-            from,
-            to,
-            tokenID,
-            amount,
-            feeTokenID,
-            fee,
-            data,
-            validUntil,
-            storageID
-        );
-        state.approvedTx[from][transactionHash] = true;
-        emit TransactionApproved(from, transactionHash);
+        TransferTransaction.Transfer memory transfer = TransferTransaction.Transfer({
+            from: from,
+            to: to,
+            tokenID: tokenID,
+            amount: amount,
+            feeTokenID: feeTokenID,
+            fee: fee,
+            data: data,
+            validUntil: validUntil,
+            storageID: storageID
+        });
+        bytes32 txHash = TransferTransaction.hash(state.DOMAIN_SEPARATOR, transfer);
+        state.approvedTx[transfer.from][txHash] = true;
+        emit TransactionApproved(transfer.from, txHash);
     }
 
     function setWithdrawalRecipient(

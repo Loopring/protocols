@@ -129,7 +129,7 @@ library ExchangeData
     // This is the maximum amount of bytes of all different transaction types.
     function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 106; }
     function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 14 days; }
-
+    function ACCOUNTID_PROTOCOLFEE() internal pure returns (uint32) { return 0; }
 
     struct AccountLeaf
     {
