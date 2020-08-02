@@ -6,6 +6,11 @@ pragma experimental ABIEncoderV2;
 import "./ERC1271Module.sol";
 import "./ForwarderModule.sol";
 
+
+/// @title PackedCoreModule
+/// @dev This module combines multiple small modules to
+///      minimize the number of modules to reduce gas used
+///      by wallet creation.
 contract PackedCoreModule is
     ERC1271Module_,
     ForwarderModule_

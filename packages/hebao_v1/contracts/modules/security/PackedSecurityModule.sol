@@ -7,6 +7,11 @@ import "./GuardianModule.sol";
 import "./InheritanceModule.sol";
 import "./WhitelistModule.sol";
 
+
+/// @title PackedSecurityModule
+/// @dev This module combines multiple small modules to
+///      minimize the number of modules to reduce gas used
+///      by wallet creation.
 contract PackedSecurityModule is
     GuardianModule_,
     InheritanceModule_,
