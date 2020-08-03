@@ -218,7 +218,7 @@ abstract contract IExchangeV3 is IExchange
 
     /// @dev Returns the address of a registered token.
     /// @param  tokenID The token's ID in this exchanges.
-    /// @return token The token's address
+    /// @return token The token's address and tid
     function getToken(
         uint16 tokenID
         )
@@ -345,7 +345,7 @@ abstract contract IExchangeV3 is IExchange
     ///
     /// @param from The address that deposits the funds to the exchange
     /// @param to The account owner's address receiving the funds
-    /// @param token The address of the token, use `0x0` for Ether.
+    /// @param token The address and tid of the token, use `0x0` and 0 for Ether.
     /// @param amount The amount of tokens to deposit
     /// @param auxiliaryData Optional extra data used by the deposit contract
     function deposit(
@@ -373,7 +373,7 @@ abstract contract IExchangeV3 is IExchange
     ///      and create the deposit to the offchain account.
     ///
     /// @param owner The expected owner of the account
-    /// @param token The address of the token, use `0x0` for Ether.
+    /// @param token The address and tid of the token, use `0x0` and 0 for Ether.
     /// @param accountID The address the account in the Merkle tree.
     function forceWithdraw(
         address owner,
@@ -393,7 +393,7 @@ abstract contract IExchangeV3 is IExchange
     ///      time (no more than MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
     ///      and create the deposit to the offchain account.
     ///
-    /// @param token The address of the token, use `0x0` for Ether.
+    /// @param token The address and tid of the token, use `0x0` and 0 for Ether.
     function withdrawProtocolFees(
         ExchangeData.Token calldata token
         )
@@ -402,7 +402,7 @@ abstract contract IExchangeV3 is IExchange
         payable;
 
     /// @dev Gets the time the protocol fee for a token was last withdrawn.
-    /// @param token The address of the token, use `0x0` for Ether.
+    /// @param token The address and tid of the token, use `0x0` and 0 for Ether.
     /// @return The time the protocol fee was last withdrawn.
     function getProtocolFeeLastWithdrawnTime(
         ExchangeData.Token calldata token
