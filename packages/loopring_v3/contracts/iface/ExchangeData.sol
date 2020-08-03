@@ -30,7 +30,7 @@ library ExchangeData
     struct Token
     {
         address addr;
-        uint    tid;
+        uint    tid; // ERC1155 ID, must be 0 for ERC20.
     }
 
     struct ProtocolFeeData
