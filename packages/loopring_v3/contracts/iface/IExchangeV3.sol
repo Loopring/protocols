@@ -225,7 +225,7 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual
         view
-        returns (ExchangeData.Token calldata token);
+        returns (ExchangeData.Token memory token);
 
     // -- Stakes --
     /// @dev Gets the amount of LRC the owner has staked onchain for this exchange.
