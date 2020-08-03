@@ -126,31 +126,6 @@ def accountUpdateFromJSON(jUpdate):
         update.signature = jUpdate["signature"]
     return update
 
-def accountNewFromJSON(jCreate):
-    create = GeneralObject()
-    create.payerAccountID = int(jCreate["payerAccountID"])
-    create.feeTokenID = int(jCreate["feeTokenID"])
-    create.fee = str(jCreate["fee"])
-    create.validUntil = int(jCreate["validUntil"])
-    create.nonce = str(jCreate["nonce"])
-    create.newAccountID = int(jCreate["newAccountID"])
-    create.newOwner = str(jCreate["newOwner"])
-    create.newPublicKeyX = str(jCreate["newPublicKeyX"])
-    create.newPublicKeyY = str(jCreate["newPublicKeyY"])
-    create.signature = jCreate["signature"]
-    return create
-
-def accountTransferFromJSON(jChange):
-    change = GeneralObject()
-    change.owner = str(jChange["owner"])
-    change.accountID = int(jChange["accountID"])
-    change.feeTokenID = int(jChange["feeTokenID"])
-    change.fee = str(jChange["fee"])
-    change.validUntil = int(jChange["validUntil"])
-    change.nonce = int(jChange["nonce"])
-    change.newOwner = str(jChange["newOwner"])
-    return change
-
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
@@ -188,10 +163,6 @@ def createBlock(state, data):
             transaction = depositFromJSON(transactionInfo)
         if txType == "AccountUpdate":
             transaction = accountUpdateFromJSON(transactionInfo)
-        if txType == "NewAccount":
-            transaction = accountNewFromJSON(transactionInfo)
-        if txType == "AccountTransfer":
-            transaction = accountTransferFromJSON(transactionInfo)
 
         transaction.txType = txType
         tx = state.executeTransaction(context, transaction)
@@ -209,10 +180,6 @@ def createBlock(state, data):
             txWitness.deposit = tx.input
         if txType == "AccountUpdate":
             txWitness.accountUpdate = tx.input
-        if txType == "NewAccount":
-            txWitness.accountNew = tx.input
-        if txType == "AccountTransfer":
-            txWitness.accountTransfer = tx.input
         txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
         block.transactions.append(txWitness)
 

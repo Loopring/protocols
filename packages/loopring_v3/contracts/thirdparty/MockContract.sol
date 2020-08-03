@@ -243,16 +243,16 @@ contract MockContract is MockInterface {
 		trackMethodIdMock(method);
 	}
 
-	function invocationCount() external override returns (uint) {
+	function invocationCount() external override view returns (uint) {
 		return invocations;
 	}
 
-	function invocationCountForMethod(bytes calldata call) external override returns (uint) {
+	function invocationCountForMethod(bytes calldata call) external view override returns (uint) {
 		bytes4 method = bytesToBytes4(call);
 		return methodIdInvocations[keccak256(abi.encodePacked(resetCount, method))];
 	}
 
-	function invocationCountForCalldata(bytes calldata call) external override returns (uint) {
+	function invocationCountForCalldata(bytes calldata call) external view override returns (uint) {
 		return calldataInvocations[keccak256(abi.encodePacked(resetCount, call))];
 	}
 

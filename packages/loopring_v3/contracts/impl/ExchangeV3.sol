@@ -64,7 +64,7 @@ contract ExchangeV3 is IExchangeV3
     function version()
         public
         override
-        view
+        pure
         returns (string memory)
     {
         return "3.6.0";
