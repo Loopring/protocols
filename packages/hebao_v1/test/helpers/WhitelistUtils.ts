@@ -56,7 +56,10 @@ export async function isWhitelisted(
   wallet: string,
   addr: string
 ) {
-  const whitelistedData = await ctx.whitelistModule.isWhitelisted(wallet, addr);
+  const whitelistedData = await ctx.packedSecurityModule.isWhitelisted(
+    wallet,
+    addr
+  );
   return whitelistedData.isWhitelistedAndEffective;
 }
 
@@ -65,7 +68,10 @@ export async function getEffectiveTime(
   wallet: string,
   addr: string
 ) {
-  const whitelistedData = await ctx.whitelistModule.isWhitelisted(wallet, addr);
+  const whitelistedData = await ctx.packedSecurityModule.isWhitelisted(
+    wallet,
+    addr
+  );
   return whitelistedData.effectiveTime;
 }
 
@@ -77,7 +83,7 @@ export async function addToWhitelist(
   useMetaTx: boolean = true
 ) {
   const delayPeriod = (
-    await ctx.whitelistModule.whitelistDelayPeriod()
+    await ctx.packedSecurityModule.whitelistDelayPeriod()
   ).toNumber();
 
   let whitelistBefore = toPrettyList(
@@ -86,7 +92,7 @@ export async function addToWhitelist(
 
   // Add to the whitelist
   const tx = await executeTransaction(
-    ctx.whitelistModule.contract.methods.addToWhitelist(wallet, addr),
+    ctx.packedSecurityModule.contract.methods.addToWhitelist(wallet, addr),
     ctx,
     useMetaTx,
     wallet,
@@ -157,7 +163,7 @@ export async function removeFromWhitelist(
 
   // Start removing the guardian
   await executeTransaction(
-    ctx.whitelistModule.contract.methods.removeFromWhitelist(wallet, addr),
+    ctx.packedSecurityModule.contract.methods.removeFromWhitelist(wallet, addr),
     ctx,
     useMetaTx,
     wallet,

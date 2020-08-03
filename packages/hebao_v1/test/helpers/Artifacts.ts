@@ -14,18 +14,15 @@ export class Artifacts {
   public ControllerImpl: any;
   public WalletImpl: any;
   public WalletFactory: any;
-  public ForwarderModule: any;
   public UpgraderModule: any;
   public WalletRegistryImpl: any;
   public ModuleRegistryImpl: any;
   public BaseENSManager: any;
   public ENSRegistryImpl: any;
 
-  public GuardianModule: any;
-  public InheritanceModule: any;
-  public WhitelistModule: any;
-  public TransferModule: any;
-  public ERC1271Module: any;
+  public PackedCoreModule: any;
+  public PackedSecurityModule: any;
+  public PackedTransferModule: any;
 
   public SecurityStore: any;
   public WhitelistStore: any;
@@ -50,7 +47,6 @@ export class Artifacts {
     this.ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
     this.WalletImpl = artifacts.require("./base/WalletImpl.sol");
     this.WalletFactory = artifacts.require("WalletFactory");
-    this.ForwarderModule = artifacts.require("ForwarderModule");
     this.UpgraderModule = artifacts.require("UpgraderModule");
     this.WalletRegistryImpl = artifacts.require(
       "./base/WalletRegistryImpl.sol"
@@ -61,11 +57,9 @@ export class Artifacts {
     this.BaseENSManager = artifacts.require("BaseENSManager.sol");
     this.ENSRegistryImpl = artifacts.require("ENSRegistryImpl.sol");
 
-    this.GuardianModule = artifacts.require("GuardianModule");
-    this.InheritanceModule = artifacts.require("InheritanceModule");
-    this.WhitelistModule = artifacts.require("WhitelistModule");
-    this.TransferModule = artifacts.require("TransferModule");
-    this.ERC1271Module = artifacts.require("ERC1271Module");
+    this.PackedCoreModule = artifacts.require("PackedCoreModule");
+    this.PackedSecurityModule = artifacts.require("PackedSecurityModule");
+    this.PackedTransferModule = artifacts.require("PackedTransferModule");
 
     this.SecurityStore = artifacts.require("SecurityStore");
     this.WhitelistStore = artifacts.require("WhitelistStore");

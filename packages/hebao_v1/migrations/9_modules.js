@@ -4,16 +4,13 @@ const WalletRegistryImpl = artifacts.require("WalletRegistryImpl");
 const ModuleRegistryImpl = artifacts.require("ModuleRegistryImpl");
 const BaseENSManager = artifacts.require("BaseENSManager");
 
-const ForwarderModule = artifacts.require("ForwarderModule");
-const ERC1271Module = artifacts.require("ERC1271Module");
 const ControllerImpl = artifacts.require("ControllerImpl");
 const WalletImpl = artifacts.require("WalletImpl");
 
 const WalletFactory = artifacts.require("WalletFactory");
-const GuardianModule = artifacts.require("GuardianModule");
-const InheritanceModule = artifacts.require("InheritanceModule");
-const WhitelistModule = artifacts.require("WhitelistModule");
-const TransferModule = artifacts.require("TransferModule");
+const PackedCoreModule = artifacts.require("PackedCoreModule");
+const PackedSecurityModule = artifacts.require("PackedSecurityModule");
+const PackedTransferModule = artifacts.require("PackedTransferModule");
 
 module.exports = function(deployer, network, accounts) {
   const guardianPendingPeriod =
@@ -29,46 +26,28 @@ module.exports = function(deployer, network, accounts) {
 
   deployer
     .then(() => {
-      let dest = [
-        ForwarderModule,
-        ERC1271Module,
-        GuardianModule,
-        InheritanceModule,
-        WhitelistModule,
-        TransferModule
-      ];
+      let dest = [PackedCoreModule, PackedSecurityModule, PackedTransferModule];
       return Promise.all([deployer.link(SignedRequest, dest)]);
     })
     .then(() => {
       return Promise.all([
-        deployer.deploy(ForwarderModule, ControllerImpl.address),
-        deployer.deploy(ERC1271Module, ControllerImpl.address)
+        deployer.deploy(PackedCoreModule, ControllerImpl.address)
       ]);
     })
     .then(() => {
       return Promise.all([
         deployer.deploy(
-          GuardianModule,
+          PackedSecurityModule,
           ControllerImpl.address,
-          ForwarderModule.address,
-          guardianPendingPeriod
-        ),
-        deployer.deploy(
-          InheritanceModule,
-          ControllerImpl.address,
-          ForwarderModule.address,
-          inheritanceWaitingPeriod
-        ),
-        deployer.deploy(
-          WhitelistModule,
-          ControllerImpl.address,
-          ForwarderModule.address,
+          PackedCoreModule.address,
+          guardianPendingPeriod,
+          inheritanceWaitingPeriod,
           whitelistDelayPeriod
         ),
         deployer.deploy(
-          TransferModule,
+          PackedTransferModule,
           ControllerImpl.address,
-          ForwarderModule.address,
+          PackedCoreModule.address,
           quotaDelayPeriod
         )
       ]);
@@ -77,12 +56,9 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         ModuleRegistryImpl.deployed().then(moduleRegistry => {
           return Promise.all([
-            moduleRegistry.registerModule(ForwarderModule.address),
-            moduleRegistry.registerModule(ERC1271Module.address),
-            moduleRegistry.registerModule(GuardianModule.address),
-            moduleRegistry.registerModule(InheritanceModule.address),
-            moduleRegistry.registerModule(WhitelistModule.address),
-            moduleRegistry.registerModule(TransferModule.address)
+            moduleRegistry.registerModule(PackedCoreModule.address),
+            moduleRegistry.registerModule(PackedSecurityModule.address),
+            moduleRegistry.registerModule(PackedTransferModule.address)
           ]);
         })
       ]);

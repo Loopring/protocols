@@ -20,8 +20,6 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
 {
     using SignatureUtil for bytes32;
 
-    bytes32 public DOMAIN_SEPERATOR;
-
     constructor(address _trustedForwarder)
         MetaTxAware(_trustedForwarder)
     {
@@ -37,4 +35,3 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
         return msgSender();
     }
 }
-

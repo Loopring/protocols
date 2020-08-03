@@ -39,7 +39,7 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
 
     // Start changing the daily quota
     const tx = await executeTransaction(
-      ctx.transferModule.contract.methods.changeDailyQuota(
+      ctx.packedTransferModule.contract.methods.changeDailyQuota(
         wallet,
         newQuota.toString(10)
       ),
@@ -124,7 +124,9 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
 
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
-    delayPeriod = (await ctx.transferModule.transferDelayPeriod()).toNumber();
+    delayPeriod = (
+      await ctx.packedTransferModule.transferDelayPeriod()
+    ).toNumber();
     defaultQuota = await ctx.quotaStore.defaultQuota();
   });
 
@@ -181,11 +183,11 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
         signChangeDailyQuotaImmediately(
           request,
           newQuota,
-          ctx.transferModule.address
+          ctx.packedTransferModule.address
         );
 
         const transaction = executeTransaction(
-          ctx.transferModule.contract.methods.changeDailyQuotaImmediately(
+          ctx.packedTransferModule.contract.methods.changeDailyQuotaImmediately(
             request,
             newQuota.toString(10)
           ),

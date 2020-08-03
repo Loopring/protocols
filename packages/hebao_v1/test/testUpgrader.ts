@@ -90,7 +90,7 @@ contract("UpgraderModule", () => {
     //     const owner = ctx.owners[0];
     //     const { wallet } = await createWallet(ctx, owner, 0, [
     //       ctx.guardianModule.address,
-    //       ctx.erc1271Module.address,
+    //       ctx.packedCoreModule.address,
     //       ctx.forwarderModule.address
     //     ]);
     //     const walletContract = await ctx.contracts.SimpleProxy.at(wallet);
@@ -137,7 +137,7 @@ contract("UpgraderModule", () => {
     //     );
 
     //     assert(
-    //       await walletImpl.hasModule(ctx.erc1271Module.address),
+    //       await walletImpl.hasModule(ctx.packedCoreModule.address),
     //       "wallet should still has erc1271 module"
     //     );
 
@@ -148,7 +148,7 @@ contract("UpgraderModule", () => {
 
     //     // Make sure the wallet is still fully functional
     //     await executeTransaction(
-    //       walletImpl.contract.methods.addModule(ctx.whitelistModule.address),
+    //       walletImpl.contract.methods.addModule(ctx.packedSecurityModule.address),
     //       ctx,
     //       useMetaTx,
     //       wallet,
@@ -167,7 +167,7 @@ contract("UpgraderModule", () => {
     //     useMetaTx = metaTx;
     //     const owner = ctx.owners[0];
     //     const { wallet } = await createWallet(ctx, owner, 0, [
-    //       ctx.erc1271Module.address,
+    //       ctx.packedCoreModule.address,
     //       ctx.forwarderModule.address
     //     ]);
     //     const walletContract = await ctx.contracts.WalletImpl.at(wallet);
@@ -212,41 +212,33 @@ contract("UpgraderModule", () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
         const { wallet } = await createWallet(ctx, owner, 0, [
-          ctx.erc1271Module.address,
-          ctx.forwarderModule.address
+          ctx.packedCoreModule.address
         ]);
 
         const modules = getAllModuleAddresses(ctx).filter(
-          addr =>
-            addr !== ctx.erc1271Module.address &&
-            addr !== ctx.forwarderModule.address
+          addr => addr !== ctx.packedCoreModule.address
         );
 
         await addAndRemoveModulesChecked(owner, wallet, [modules[0]], []);
-        await addAndRemoveModulesChecked(
-          owner,
-          wallet,
-          [modules[1], modules[2]],
-          []
-        );
+        await addAndRemoveModulesChecked(owner, wallet, [modules[1]], []);
         // Add a module that was already added, remove a module that has not yet been added
         await addAndRemoveModulesChecked(
           owner,
           wallet,
-          [modules[2]],
-          [modules[3]]
+          [modules[0]],
+          [modules[1]]
         );
         await addAndRemoveModulesChecked(
           owner,
           wallet,
-          [modules[3]],
-          [modules[0], modules[2]]
+          [modules[1]],
+          [modules[0]]
         );
         await addAndRemoveModulesChecked(
           owner,
           wallet,
           [],
-          [modules[1], modules[3]]
+          [modules[0], modules[1]]
         );
       }
     );

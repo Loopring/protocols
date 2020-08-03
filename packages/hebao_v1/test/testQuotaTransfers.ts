@@ -119,7 +119,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     //   );
     // } else {
     await executeTransaction(
-      ctx.transferModule.contract.methods.transferToken(
+      ctx.packedTransferModule.contract.methods.transferToken(
         wallet,
         token,
         to,
@@ -135,7 +135,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     //  }
 
     await assertEventEmitted(
-      approved ? ctx.transferModule : ctx.transferModule,
+      approved ? ctx.packedTransferModule : ctx.packedTransferModule,
       "Transfered",
       (event: any) => {
         return (
@@ -216,12 +216,12 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       to,
       amount,
       logdata,
-      ctx.transferModule.address
+      ctx.packedTransferModule.address
     );
 
     // Transfer the tokens
     await executeTransaction(
-      ctx.transferModule.contract.methods.transferTokenWithApproval(
+      ctx.packedTransferModule.contract.methods.transferTokenWithApproval(
         request,
         token,
         to,
@@ -235,15 +235,21 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       { wallet, owner }
     );
 
-    await assertEventEmitted(ctx.transferModule, "Transfered", (event: any) => {
-      return (
-        event.wallet === wallet &&
-        event.token === token &&
-        event.to === to &&
-        event.amount.eq(amount) &&
-        (logdata === "0x" ? event.logdata === null : event.logdata === logdata)
-      );
-    });
+    await assertEventEmitted(
+      ctx.packedTransferModule,
+      "Transfered",
+      (event: any) => {
+        return (
+          event.wallet === wallet &&
+          event.token === token &&
+          event.to === to &&
+          event.amount.eq(amount) &&
+          (logdata === "0x"
+            ? event.logdata === null
+            : event.logdata === logdata)
+        );
+      }
+    );
 
     // Check balances
     const newBalanceWallet = await getBalance(ctx, token, wallet);
@@ -298,7 +304,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     // Call the contract
     if (approved) {
       await executeTransaction(
-        ctx.transferModule.contract.methods.callContract(
+        ctx.packedTransferModule.contract.methods.callContract(
           wallet,
           to,
           value.toString(10),
@@ -312,7 +318,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       );
     } else {
       await executeTransaction(
-        ctx.transferModule.contract.methods.callContract(
+        ctx.packedTransferModule.contract.methods.callContract(
           wallet,
           to,
           value.toString(10),
@@ -327,7 +333,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     }
 
     await assertEventEmitted(
-      approved ? ctx.transferModule : ctx.transferModule,
+      approved ? ctx.packedTransferModule : ctx.packedTransferModule,
       "ContractCalled",
       (event: any) => {
         return (
@@ -413,11 +419,11 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       to,
       value,
       data,
-      ctx.transferModule.address
+      ctx.packedTransferModule.address
     );
 
     await executeTransaction(
-      ctx.transferModule.contract.methods.callContractWithApproval(
+      ctx.packedTransferModule.contract.methods.callContractWithApproval(
         request,
         to,
         value.toString(10),
@@ -431,7 +437,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     );
 
     await assertEventEmitted(
-      ctx.transferModule,
+      ctx.packedTransferModule,
       "ContractCalled",
       (event: any) => {
         return (
@@ -505,7 +511,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     // Approve the tokens
     if (approved) {
       await executeTransaction(
-        ctx.transferModule.contract.methods.approveToken(
+        ctx.packedTransferModule.contract.methods.approveToken(
           wallet,
           token,
           to,
@@ -519,7 +525,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       );
     } else {
       await executeTransaction(
-        ctx.transferModule.contract.methods.approveToken(
+        ctx.packedTransferModule.contract.methods.approveToken(
           wallet,
           token,
           to,
@@ -533,7 +539,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       );
     }
     await assertEventEmitted(
-      approved ? ctx.transferModule : ctx.transferModule,
+      approved ? ctx.packedTransferModule : ctx.packedTransferModule,
       "Approved",
       (event: any) => {
         return (
@@ -595,12 +601,12 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       token,
       to,
       amount,
-      ctx.transferModule.address
+      ctx.packedTransferModule.address
     );
 
     // Approve the tokens
     await executeTransaction(
-      ctx.transferModule.contract.methods.approveTokenWithApproval(
+      ctx.packedTransferModule.contract.methods.approveTokenWithApproval(
         request,
         token,
         to,
@@ -613,14 +619,18 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       { wallet, owner }
     );
 
-    await assertEventEmitted(ctx.transferModule, "Approved", (event: any) => {
-      return (
-        event.wallet === wallet &&
-        event.token === token &&
-        event.spender === to &&
-        event.amount.eq(amount)
-      );
-    });
+    await assertEventEmitted(
+      ctx.packedTransferModule,
+      "Approved",
+      (event: any) => {
+        return (
+          event.wallet === wallet &&
+          event.token === token &&
+          event.spender === to &&
+          event.amount.eq(amount)
+        );
+      }
+    );
 
     // Check Allowance
     const newAllowanceTo = await getAllowance(ctx, token, wallet, to);
@@ -673,7 +683,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     // Approve the tokens and call the contract
     if (approved) {
       await executeTransaction(
-        ctx.transferModule.contract.methods.approveThenCallContract(
+        ctx.packedTransferModule.contract.methods.approveThenCallContract(
           wallet,
           token,
           to,
@@ -689,7 +699,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       );
     } else {
       await executeTransaction(
-        ctx.transferModule.contract.methods.approveThenCallContract(
+        ctx.packedTransferModule.contract.methods.approveThenCallContract(
           wallet,
           token,
           to,
@@ -705,7 +715,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       );
     }
     await assertEventEmitted(
-      approved ? ctx.transferModule : ctx.transferModule,
+      approved ? ctx.packedTransferModule : ctx.packedTransferModule,
       "Approved",
       (event: any) => {
         return (
@@ -717,7 +727,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       }
     );
     await assertEventEmitted(
-      approved ? ctx.transferModule : ctx.transferModule,
+      approved ? ctx.packedTransferModule : ctx.packedTransferModule,
       "ContractCalled",
       (event: any) => {
         return (
@@ -782,12 +792,12 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       amount,
       value,
       data,
-      ctx.transferModule.address
+      ctx.packedTransferModule.address
     );
 
     // Approve the tokens and call the contract
     await executeTransaction(
-      ctx.transferModule.contract.methods.approveThenCallContractWithApproval(
+      ctx.packedTransferModule.contract.methods.approveThenCallContractWithApproval(
         request,
         token,
         to,
@@ -801,16 +811,20 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       [],
       { wallet, owner }
     );
-    await assertEventEmitted(ctx.transferModule, "Approved", (event: any) => {
-      return (
-        event.wallet === wallet &&
-        event.token === token &&
-        event.spender === to &&
-        event.amount.eq(amount)
-      );
-    });
     await assertEventEmitted(
-      ctx.transferModule,
+      ctx.packedTransferModule,
+      "Approved",
+      (event: any) => {
+        return (
+          event.wallet === wallet &&
+          event.token === token &&
+          event.spender === to &&
+          event.amount.eq(amount)
+        );
+      }
+    );
+    await assertEventEmitted(
+      ctx.packedTransferModule,
       "ContractCalled",
       (event: any) => {
         return (
@@ -839,7 +853,9 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
     targetContract = await TestTargetContract.new();
-    quotaPeriod = (await ctx.transferModule.transferDelayPeriod()).toNumber();
+    quotaPeriod = (
+      await ctx.packedTransferModule.transferDelayPeriod()
+    ).toNumber();
     defaultQuota = await ctx.quotaStore.defaultQuota();
   });
 

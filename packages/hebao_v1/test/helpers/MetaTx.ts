@@ -5,6 +5,7 @@ import { Context } from "./TestUtils";
 import { getTokenAddress } from "./TokenUtils";
 import { getEIP712Message } from "../../util/EIP712";
 import ethUtil = require("ethereumjs-util");
+import { getMetaTxHash } from "./SignatureUtils";
 
 export interface MetaTx {
   from: string;
@@ -112,17 +113,16 @@ export async function executeMetaTx(
   };
 
   // Sign the meta transaction
-  const hash: Buffer = getHash(metaTx, ctx.forwarderModule.address);
+  const hash: Buffer = getMetaTxHash(metaTx, ctx.packedCoreModule.address);
   const signature = sign(options.owner, hash);
 
-  const tx = await ctx.forwarderModule.executeMetaTx(metaTx, signature, {
+  const tx = await ctx.packedCoreModule.executeMetaTx(metaTx, signature, {
     from,
     gas,
     gasPrice: gasPrice.toString()
   });
 
   // console.log("tx:", tx);
-
   // console.log("tx.reciept.logs:", tx.receipt.logs);
 
   return tx;

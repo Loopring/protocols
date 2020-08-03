@@ -19,6 +19,10 @@ contract PackedCoreModule is
 
     constructor(ControllerImpl _controller)
     {
+        FORWARDER_DOMAIN_SEPARATOR = EIP712.hash(
+            EIP712.Domain("ForwarderModule", "1.1.0", address(this))
+        );
+
         controller_ = _controller;
     }
 

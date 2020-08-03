@@ -18,16 +18,13 @@ export interface Context {
 
   controllerImpl: any;
   walletFactory: any;
-  forwarderModule: any;
   walletRegistryImpl: any;
   moduleRegistryImpl: any;
   baseENSManager: any;
 
-  guardianModule: any;
-  inheritanceModule: any;
-  whitelistModule: any;
-  transferModule: any;
-  erc1271Module: any;
+  packedSecurityModule: any;
+  packedTransferModule: any;
+  packedCoreModule: any;
 
   walletImpl: any;
 
@@ -53,16 +50,13 @@ export async function getContext() {
 
     controllerImpl: await contracts.ControllerImpl.deployed(),
     walletFactory: await contracts.WalletFactory.deployed(),
-    forwarderModule: await contracts.ForwarderModule.deployed(),
     walletRegistryImpl: await contracts.WalletRegistryImpl.deployed(),
     moduleRegistryImpl: await contracts.ModuleRegistryImpl.deployed(),
     baseENSManager: await contracts.BaseENSManager.deployed(),
 
-    guardianModule: await contracts.GuardianModule.deployed(),
-    inheritanceModule: await contracts.InheritanceModule.deployed(),
-    whitelistModule: await contracts.WhitelistModule.deployed(),
-    transferModule: await contracts.TransferModule.deployed(),
-    erc1271Module: await contracts.ERC1271Module.deployed(),
+    packedCoreModule: await contracts.PackedCoreModule.deployed(),
+    packedSecurityModule: await contracts.PackedSecurityModule.deployed(),
+    packedTransferModule: await contracts.PackedTransferModule.deployed(),
 
     walletImpl: await contracts.WalletImpl.deployed(),
     securityStore: await contracts.SecurityStore.deployed(),
@@ -95,12 +89,9 @@ export async function createContext(context?: Context) {
 
 export function getAllModuleAddresses(ctx: Context) {
   return [
-    ctx.guardianModule.address,
-    ctx.inheritanceModule.address,
-    ctx.whitelistModule.address,
-    ctx.transferModule.address,
-    ctx.erc1271Module.address,
-    ctx.forwarderModule.address
+    ctx.packedCoreModule.address,
+    ctx.packedSecurityModule.address,
+    ctx.packedTransferModule.address
   ];
 }
 
@@ -199,7 +190,7 @@ export async function executeTransaction(
     );
 
     const event = await assertEventEmitted(
-      ctx.forwarderModule,
+      ctx.packedCoreModule,
       "MetaTxExecuted"
     );
     assert.equal(event.from, options.wallet, "MetaTx from not match");

@@ -91,10 +91,14 @@ contract("WhitelistModule", (accounts: string[]) => {
         validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
         wallet
       };
-      signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+      signAddToWhitelistImmediately(
+        request,
+        addr,
+        ctx.packedSecurityModule.address
+      );
 
       const tx = await executeTransaction(
-        ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+        ctx.packedSecurityModule.contract.methods.addToWhitelistImmediately(
           request,
           addr
         ),

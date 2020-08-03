@@ -15,7 +15,7 @@ import util = require("util");
 contract("GuardianModule - Lock", (accounts: string[]) => {
   let defaultCtx: Context;
   let ctx: Context;
-  let guardianModule2: any;
+  let packedSecurityModule2: any;
 
   let defaultLockPeriod: number;
 
@@ -27,7 +27,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
   let fakeGuardianWallet: any;
 
   const isLocked = async (wallet: string) => {
-    return ctx.guardianModule.isLocked(wallet);
+    return ctx.packedSecurityModule.isLocked(wallet);
   };
 
   const lockChecked = async (
@@ -44,7 +44,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     const blockNumberBefore = await web3.eth.getBlockNumber();
     // Lock the wallet
     const tx = await executeTransaction(
-      ctx.guardianModule.contract.methods.lock(wallet),
+      ctx.packedSecurityModule.contract.methods.lock(wallet),
       ctx,
       useMetaTx,
       wallet,
@@ -52,19 +52,23 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       opt
     );
 
-    await assertEventEmitted(ctx.guardianModule, "WalletLock", (event: any) => {
-      return event.wallet == wallet;
-    });
+    await assertEventEmitted(
+      ctx.packedSecurityModule,
+      "WalletLock",
+      (event: any) => {
+        return event.wallet == wallet;
+      }
+    );
 
-    const getWalletLock = await ctx.guardianModule.getLock(wallet);
+    const getWalletLock = await ctx.packedSecurityModule.getLock(wallet);
     const blockTime = await getBlockTime(tx.blockNumber);
 
     assert(await isLocked(wallet), "wallet needs to be locked");
     // Check the lock data
-    const lockData = await ctx.guardianModule.getLock(wallet);
+    const lockData = await ctx.packedSecurityModule.getLock(wallet);
     assert.equal(
       lockData._lockedBy,
-      ctx.guardianModule.address,
+      ctx.packedSecurityModule.address,
       "wallet locker unexpected"
     );
   };
@@ -74,7 +78,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     guardian: string,
     from?: string,
     guardianWallet?: any,
-    guardianModule: any = ctx.guardianModule
+    packedSecurityModule: any = ctx.packedSecurityModule
   ) => {
     const opt = useMetaTx
       ? { owner: guardian, wallet: guardianWallet, from }
@@ -83,7 +87,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     const wasLocked = await isLocked(wallet);
     // Unlock the wallet
     await executeTransaction(
-      guardianModule.contract.methods.unlock(wallet),
+      packedSecurityModule.contract.methods.unlock(wallet),
       ctx,
       useMetaTx,
       wallet,
@@ -91,9 +95,13 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       opt
     );
     if (wasLocked && useMetaTx) {
-      await assertEventEmitted(guardianModule, "WalletLock", (event: any) => {
-        return event.wallet == wallet && event.lock == 0;
-      });
+      await assertEventEmitted(
+        packedSecurityModule,
+        "WalletLock",
+        (event: any) => {
+          return event.wallet == wallet && event.lock == 0;
+        }
+      );
     }
     assert(!(await isLocked(wallet)), "wallet needs to be unlocked");
   };
@@ -106,12 +114,16 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     // Create another lock module for testing
     defaultCtx = await getContext();
     ctx = await createContext(defaultCtx);
-    guardianModule2 = await defaultCtx.contracts.GuardianModule.new(
+    packedSecurityModule2 = await defaultCtx.contracts.PackedSecurityModule.new(
       defaultCtx.controllerImpl.address,
-      defaultCtx.forwarderModule.address,
+      defaultCtx.packedCoreModule.address,
+      3600 * 24,
+      3600 * 24 * 365,
       3600 * 24
     );
-    await defaultCtx.moduleRegistryImpl.registerModule(guardianModule2.address);
+    await defaultCtx.moduleRegistryImpl.registerModule(
+      packedSecurityModule2.address
+    );
 
     fakeGuardianWallet = (await createWallet(ctx, ctx.miscAddresses[0])).wallet;
   });
@@ -227,7 +239,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
               guardians[1],
               undefined,
               undefined,
-              guardianModule2
+              packedSecurityModule2
             ),
             "UNABLE_TO_UNLOCK"
           );
