@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
-
-pragma solidity ^0.6.6;
+pragma solidity ^0.7.0;
 
 import './Proxy.sol';
 
@@ -23,7 +23,7 @@ contract UpgradeabilityProxy is Proxy {
   /**
    * @dev Constructor function
    */
-  constructor() public {}
+  constructor() {}
 
   /**
    * @dev Tells the address of the current implementation

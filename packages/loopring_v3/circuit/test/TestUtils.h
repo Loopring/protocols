@@ -11,7 +11,7 @@ using namespace libsnark;
 using namespace ethsnarks;
 using namespace Loopring;
 
-static const char* TEST_DATA_PATH = "../../../protocol3-circuits/test/data/";
+static const char* TEST_DATA_PATH = "./circuit/test/data/";
 static BigInt SNARK_SCALAR_FIELD = BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617");
 
 
@@ -117,10 +117,10 @@ static bool compareBits(const libff::bit_vector& A, const libff::bit_vector& B)
     return true;
 }
 
-static RingSettlementBlock getRingSettlementBlock()
+static Block getBlock()
 {
     // Read the JSON file
-    string filename = string(TEST_DATA_PATH) + "settlement_block.json";
+    string filename = string(TEST_DATA_PATH) + "block.json";
     ifstream file(filename);
     if (!file.is_open())
     {
@@ -131,8 +131,15 @@ static RingSettlementBlock getRingSettlementBlock()
     file >> input;
     file.close();
 
-    RingSettlementBlock block = input.get<RingSettlementBlock>();
+    Block block = input.get<Block>();
     return block;
+}
+
+static UniversalTransaction getSpotTrade(const Block& block)
+{
+    REQUIRE(block.transactions.size() > 0);
+    const UniversalTransaction& tx = block.transactions[2];
+    return tx;
 }
 
 

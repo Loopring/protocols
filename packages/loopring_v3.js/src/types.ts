@@ -1,16 +1,24 @@
 import BN from "bn.js";
+import { Constants } from "./constants";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
 
 /**
- * The type of requests handled in a block.
+ * The block type.
  */
 export enum BlockType {
-  SETTLEMENT = 0,
+  UNIVERSAL = 0
+}
+
+/**
+ * The transaction type.
+ */
+export enum TransactionType {
+  NOOP = 0,
   DEPOSIT,
-  ONCHAIN_WITHDRAWAL,
-  OFFCHAIN_WITHDRAWAL,
-  ORDER_CANCELLATION,
-  INTERNAL_TRANSFER
+  WITHDRAWAL,
+  TRANSFER,
+  SPOT_TRADE,
+  ACCOUNT_UPDATE
 }
 
 /**
@@ -33,7 +41,7 @@ export interface Block {
   blockIdx: number;
 
   /** The type of requests handled in the block. */
-  blockType: BlockType;
+  blockType: number;
   /** The block size (in number of requests). */
   blockSize: number;
   /** The block version. */
@@ -49,9 +57,7 @@ export interface Block {
   origin: string;
 
   /** The block fee received for this block (in ETH). */
-  blockFeeRewarded: BN;
-  /** The block fee fined for this block (in ETH). */
-  blockFeeFined: BN;
+  blockFee: BN;
 
   /** The Merkle root of the Merkle tree after doing all requests in the block. */
   merkleRoot: string;
@@ -64,18 +70,6 @@ export interface Block {
 
   /** The total number of requests that were processed up to, and including, this block. */
   totalNumRequestsProcessed: number;
-  /** The total number of deposits that were processed up to, and including, this block. */
-  totalNumDepositsProccesed: number;
-  /** The total number of on-chain withdrawal requests that were processed up to, and including, this block. */
-  totalNumOnchainWithdrawalsProcessed: number;
-  /** The total number of trades that were processed up to, and including, this block. */
-  totalNumTradesProccesed: number;
-  /** The total number of off-chain withdrawals that were processed up to, and including, this block. */
-  totalNumOffchainWithdrawalsProcessed: number;
-  /** The total number of order canellations that were processed up to, and including, this block. */
-  totalNumOrderCancellationsProcessed: number;
-  /** The total number of internal transfers that were processed up to, and including, this block. */
-  totalNumOrderInternalTransfersProcessed: number;
 
   /** The Ethereum transaction in which this block was committed. */
   transactionHash: string;
@@ -106,21 +100,17 @@ export interface Deposit {
   /** If the request was processed: The request index of this deposit in the processed requests list. */
   requestIdx?: number;
 
-  /** The deposit index (in the queue on-chain). */
-  depositIdx: number;
   /** The time this deposit was done on-chain. */
   timestamp: number;
 
   /** The account this deposit is for. */
-  accountID: number;
+  owner: string;
   /** The token that was deposited. */
-  tokenID: number;
+  token: number;
   /** The amount that was deposited. */
   amount: BN;
-  /** The (new) public key X of the account. */
-  publicKeyX: string;
-  /** The (new) public key Y of the account. */
-  publicKeyY: string;
+  /** The fee paid for the deposit. */
+  fee: BN;
 
   /** The Ethereum transaction in which this deposit was done. */
   transactionHash: string;
@@ -158,7 +148,7 @@ export interface OnchainWithdrawal {
 /**
  * Trading data for a ring-settlement.
  */
-export interface Trade {
+export interface SpotTrade {
   /** The exchange the trade was made on. */
   exchangeId: number;
   /** The block this trade was pocessed in. */
@@ -259,9 +249,9 @@ export interface InternalTransfer {
   requestIdx: number;
 
   /** The 'from' account for this internal transfer. */
-  accountFromID: number;
+  fromAccountID: number;
   /** The 'to' account for this internal transfer. */
-  accountToID: number;
+  toAccountID: number;
   /** The token that is being transferred. */
   tokenID: number;
   /** The amount that was actually withdrawn. */
@@ -277,11 +267,11 @@ export interface InternalTransfer {
 /**
  * Trade history data.
  */
-export interface TradeHistory {
-  /** How much the order is filled. */
-  filled: BN;
-  /** The orderID of the order the trade history is currently stored for. */
-  orderID: number;
+export interface Storage {
+  /** The data field. */
+  data: BN;
+  /** The storageID of the data that is currently stored for. */
+  storageID: number;
 }
 
 /**
@@ -290,10 +280,10 @@ export interface TradeHistory {
 export interface Balance {
   /** How amount of tokens the account owner has for a token. */
   balance: BN;
-  /** The trade history data. */
-  tradeHistory: { [key: number]: TradeHistory };
+  /** The storage. */
+  storage: { [key: number]: Storage };
 
-  tradeHistoryTree?: SparseMerkleTree;
+  storageTree?: SparseMerkleTree;
 }
 
 /**
@@ -304,36 +294,17 @@ export interface Account {
   exchangeId: number;
   /** The account ID of the account. */
   accountId: number;
+
   /** The owner of the account. */
   owner: string;
-
   /** The EdDSA public key X of the account (used for signing off-chain messages). */
   publicKeyX: string;
   /** The EdDSA public key Y of the account (used for signing off-chain messages). */
   publicKeyY: string;
   /** The nonce value of the account. */
   nonce: number;
-  /** The balance data. */
-  balances: { [key: number]: Balance };
 
   balancesMerkleTree?: SparseMerkleTree;
-}
-
-/**
- * Fees charted by the exchange for on-chain requests.
- */
-export interface ExchangeFees {
-  /** The exchange with these fees. */
-  exchangeId: number;
-
-  /** The fee charged (in ETH) for creating an account. */
-  accountCreationFeeETH: BN;
-  /** The fee charged (in ETH) for updating an account. */
-  accountUpdateFeeETH: BN;
-  /** The fee charged (in ETH) for depositing. */
-  depositFeeETH: BN;
-  /** The fee charged (in ETH) for an on-chain withdrawal request. */
-  withdrawalFeeETH: BN;
 }
 
 /**
@@ -356,21 +327,31 @@ export interface ProtocolFees {
 /**
  * The data needed to withdraw from the Merkle tree on-chain (@see getWithdrawFromMerkleTreeData)
  */
-export interface WithdrawFromMerkleTreeData {
+export interface OnchainAccountLeaf {
+  /** The ID of the account. */
+  accountID: number;
   /** The owner of the account. */
   owner: string;
-  /** The token that needs to be withdrawn. */
-  token: string;
   /** The public key X of the account. */
-  publicKeyX: string;
+  pubKeyX: string;
   /** The public key Y of the account. */
-  publicKeyY: string;
+  pubKeyY: string;
   /** The current nonce value of the account. */
   nonce: number;
+}
+export interface OnchainBalanceLeaf {
+  /** The ID of the token. */
+  tokenID: number;
   /** The current balance the account has for the requested token. */
-  balance: BN;
-  /** The trade history root of the balance leaf. */
-  tradeHistoryRoot: string;
+  balance: string;
+  /** The storage root of the balance leaf. */
+  storageRoot: string;
+}
+export interface WithdrawFromMerkleTreeData {
+  /** The account leaf. */
+  accountLeaf: OnchainAccountLeaf;
+  /** The balance leaf. */
+  balanceLeaf: OnchainBalanceLeaf;
   /** The Merkle proof for the account leaf. */
   accountMerkleProof: string[];
   /** The Merkle proof for the balance leaf. */
@@ -400,9 +381,117 @@ export interface Signature {
 
 /// Private
 
-export interface ExchangeState {
+export class StorageLeaf implements Storage {
+  data: BN;
+  storageID: number;
+
+  constructor() {
+    this.data = new BN(0);
+    this.storageID = 0;
+  }
+}
+
+export class BalanceLeaf implements Balance {
+  balance: BN;
+  storage: { [key: number]: StorageLeaf };
+
+  storageTree?: SparseMerkleTree;
+
+  constructor() {
+    this.balance = new BN(0);
+    this.storage = {};
+  }
+
+  public init(
+    balance: BN,
+    storage: { [key: number]: StorageLeaf }
+  ) {
+    this.balance = new BN(balance.toString(10));
+    this.storage = storage;
+  }
+
+  public getStorage(storageID: number) {
+    const address = storageID % 2 ** Constants.BINARY_TREE_DEPTH_STORAGE;
+    if (this.storage[address] === undefined) {
+      this.storage[address] = new StorageLeaf();
+    }
+    return this.storage[address];
+  }
+}
+
+export class AccountLeaf implements Account {
   exchangeId: number;
-  accounts: Account[];
+  accountId: number;
+
+  owner: string;
+  publicKeyX: string;
+  publicKeyY: string;
+  nonce: number;
+  balances: { [key: number]: BalanceLeaf };
+
+  balancesMerkleTree?: SparseMerkleTree;
+
+  constructor(accountId: number) {
+    this.exchangeId = 0;
+    this.accountId = accountId;
+    this.owner = Constants.zeroAddress;
+    this.publicKeyX = "0";
+    this.publicKeyY = "0";
+    this.nonce = 0;
+    this.balances = {};
+  }
+
+  public init(
+    owner: string,
+    publicKeyX: string,
+    publicKeyY: string,
+    nonce: number,
+    balances: { [key: number]: BalanceLeaf } = {}
+  ) {
+    this.exchangeId = 0;
+    this.accountId = 0;
+    this.owner = owner;
+    this.publicKeyX = publicKeyX;
+    this.publicKeyY = publicKeyY;
+    this.nonce = nonce;
+    this.balances = balances;
+  }
+
+  public getBalance(tokenID: number) {
+    if (this.balances[tokenID] === undefined) {
+      this.balances[tokenID] = new BalanceLeaf();
+    }
+    return this.balances[tokenID];
+  }
+}
+
+export class ExchangeState {
+  exchangeId: number;
+  accounts: AccountLeaf[];
+
+  constructor(exchangeId: number, accounts: AccountLeaf[] = []) {
+    this.exchangeId = exchangeId;
+
+    this.accounts = accounts;
+
+    this.accountIdToOwner = {};
+    this.ownerToAccountId = {};
+
+    this.deposits = [];
+    this.onchainWithdrawals = [];
+
+    this.processedRequests = [];
+
+    // Create the protocol fee pool accounts
+    this.getAccount(0);
+  }
+
+  public getAccount(accountID: number) {
+    while (accountID >= this.accounts.length) {
+      this.accounts.push(new AccountLeaf(this.accounts.length));
+    }
+    return this.accounts[accountID];
+  }
 
   accountIdToOwner: { [key: number]: string };
   ownerToAccountId: { [key: string]: number };
@@ -411,6 +500,10 @@ export interface ExchangeState {
   onchainWithdrawals: OnchainWithdrawal[];
 
   processedRequests: any[];
+}
 
-  onchainDataAvailability: boolean;
+export interface BlockContext {
+  protocolFeeTakerBips: number;
+  protocolFeeMakerBips: number;
+  operatorAccountID: number;
 }

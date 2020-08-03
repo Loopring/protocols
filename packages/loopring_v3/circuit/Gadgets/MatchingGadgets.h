@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 #ifndef _MATCHINGGADGETS_H_
 #define _MATCHINGGADGETS_H_
 
@@ -5,7 +7,7 @@
 #include "../Utils/Data.h"
 #include "MathGadgets.h"
 #include "OrderGadgets.h"
-#include "TradingHistoryGadgets.h"
+#include "StorageGadgets.h"
 
 #include "ethsnarks.hpp"
 #include "utils.hpp"
@@ -65,7 +67,7 @@ public:
         isZeroFillAmountB(pb, isNonZeroFillAmountB.result(), FMT(prefix, "isZeroFillAmountB")),
         fillsZero(pb, {isZeroFillAmountS.result(), isZeroFillAmountB.result()}, FMT(prefix, "fillsZero")),
         fillsValid(pb, {fillsNonZero.result(), fillsZero.result()}, FMT(prefix, "fillsValid")),
-        requireFillsValid(pb, fillsValid.result(), constants.one, FMT(prefix, "requireFillsValid"))
+        requireFillsValid(pb, fillsValid.result(), constants._1, FMT(prefix, "requireFillsValid"))
     {
 
     }
@@ -275,6 +277,7 @@ public:
         ProtoboardT& pb,
         const Constants& constants,
         const OrderGadget& order,
+        const VariableT& filled,
         const VariableT& fillS,
         const VariableT& fillB,
         const std::string& prefix
@@ -283,7 +286,7 @@ public:
 
         fillAmount(pb, order.buy.packed, fillB, fillS, FMT(prefix, ".fillAmount")),
         fillLimit(pb, order.buy.packed, order.amountB.packed, order.amountS.packed, FMT(prefix, ".fillLimit")),
-        filledAfter(pb, order.tradeHistory.getFilled(), fillAmount.result(), NUM_BITS_AMOUNT, FMT(prefix, ".filledAfter")),
+        filledAfter(pb, filled, fillAmount.result(), NUM_BITS_AMOUNT, FMT(prefix, ".filledAfter")),
         filledAfter_leq_fillLimit(pb, filledAfter.result(), fillLimit.result(), NUM_BITS_AMOUNT, FMT(prefix, ".filledAfter_leq_fillLimit"))
     {
 
@@ -315,8 +318,6 @@ public:
 class RequireOrderFillsGadget : public GadgetT
 {
 public:
-    // Check balance limit
-    RequireLeqGadget fillS_leq_balanceS;
     // Check rate
     RequireFillRateGadget requireFillRate;
     // Check fill limit
@@ -326,32 +327,29 @@ public:
         ProtoboardT& pb,
         const Constants& constants,
         const OrderGadget& order,
+        const VariableT& filled,
         const VariableT& fillS,
         const VariableT& fillB,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
-        // Check balance
-        fillS_leq_balanceS(pb, fillS, order.balanceSBefore.balance, NUM_BITS_AMOUNT, FMT(prefix, ".fillS_leq_balanceS")),
         // Check rate
         requireFillRate(pb, constants, order.amountS.packed, order.amountB.packed, fillS, fillB, NUM_BITS_AMOUNT, FMT(prefix, ".requireFillRate")),
         // Check fill limit
-        requireFillLimit(pb, constants, order, fillS, fillB,  FMT(prefix, ".requireFillLimit"))
+        requireFillLimit(pb, constants, order, filled, fillS, fillB,  FMT(prefix, ".requireFillLimit"))
     {
 
     }
 
     void generate_r1cs_witness()
     {
-        fillS_leq_balanceS.generate_r1cs_witness();
         requireFillRate.generate_r1cs_witness();
         requireFillLimit.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
-        fillS_leq_balanceS.generate_r1cs_constraints();
         requireFillRate.generate_r1cs_constraints();
         requireFillLimit.generate_r1cs_constraints();
     }
@@ -362,11 +360,53 @@ public:
     }
 };
 
+// Checks if the order requirements are fulfilled with the given fill amounts
+class RequireValidTakerGadget : public GadgetT
+{
+public:
+    EqualGadget takerMatches;
+    EqualGadget takerOpen;
+    OrGadget valid;
+    RequireEqualGadget requireValid;
+
+    RequireValidTakerGadget(
+        ProtoboardT& pb,
+        const Constants& constants,
+        const VariableT& taker,
+        const VariableT& expectedTaker,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        takerMatches(pb, taker, expectedTaker, FMT(prefix, ".takerMatches")),
+        takerOpen(pb, constants._0, expectedTaker, FMT(prefix, ".takerOpen")),
+        valid(pb, {takerMatches.result(), takerOpen.result()}, FMT(prefix, ".valid")),
+        requireValid(pb, valid.result(), constants._1, FMT(prefix, ".requireValid"))
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+        takerMatches.generate_r1cs_witness();
+        takerOpen.generate_r1cs_witness();
+        valid.generate_r1cs_witness();
+        requireValid.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        takerMatches.generate_r1cs_constraints();
+        takerOpen.generate_r1cs_constraints();
+        valid.generate_r1cs_constraints();
+        requireValid.generate_r1cs_constraints();
+    }
+};
+
 // Matches 2 orders
 class OrderMatchingGadget : public GadgetT
 {
 public:
-
     const VariableT& fillS_A;
     const VariableT& fillS_B;
 
@@ -377,6 +417,10 @@ public:
     // Check if tokenS/tokenB match
     RequireEqualGadget orderA_tokenS_eq_orderB_tokenB;
     RequireEqualGadget orderA_tokenB_eq_orderB_tokenS;
+
+    // Check if the takers match
+    RequireValidTakerGadget validateTakerA;
+    RequireValidTakerGadget validateTakerB;
 
     // Check if the orders in the settlement are correctly filled
     CheckValidGadget checkValidA;
@@ -390,6 +434,10 @@ public:
         const VariableT& timestamp,
         const OrderGadget& orderA,
         const OrderGadget& orderB,
+        const VariableT& ownerA,
+        const VariableT& ownerB,
+        const VariableT& filledA,
+        const VariableT& filledB,
         const VariableT& _fillS_A,
         const VariableT& _fillS_B,
         const std::string& prefix
@@ -399,18 +447,22 @@ public:
         fillS_B(_fillS_B),
 
         // Check if the fills are valid for the orders
-        requireOrderFillsA(pb, constants, orderA, fillS_A, fillS_B, FMT(prefix, ".requireOrderFillsA")),
-        requireOrderFillsB(pb, constants, orderB, fillS_B, fillS_A, FMT(prefix, ".requireOrderFillsB")),
+        requireOrderFillsA(pb, constants, orderA, filledA, fillS_A, fillS_B, FMT(prefix, ".requireOrderFillsA")),
+        requireOrderFillsB(pb, constants, orderB, filledB, fillS_B, fillS_A, FMT(prefix, ".requireOrderFillsB")),
 
         // Check if tokenS/tokenB match
         orderA_tokenS_eq_orderB_tokenB(pb, orderA.tokenS.packed, orderB.tokenB.packed, FMT(prefix, ".orderA_tokenS_eq_orderB_tokenB")),
         orderA_tokenB_eq_orderB_tokenS(pb, orderA.tokenB.packed, orderB.tokenS.packed, FMT(prefix, ".orderA_tokenB_eq_orderB_tokenS")),
 
+        // Check if the takers match
+        validateTakerA(pb, constants, ownerB, orderA.taker, FMT(prefix, ".validateTakerA")),
+        validateTakerB(pb, constants, ownerA, orderB.taker, FMT(prefix, ".validateTakerB")),
+
         // Check if the orders in the settlement are correctly filled
         checkValidA(pb, constants, timestamp, orderA, fillS_A, fillS_B, FMT(prefix, ".checkValidA")),
         checkValidB(pb, constants, timestamp, orderB, fillS_B, fillS_A, FMT(prefix, ".checkValidB")),
         valid(pb, {checkValidA.isValid(), checkValidB.isValid()}, FMT(prefix, ".valid")),
-        requireValid(pb, valid.result(), constants.one, FMT(prefix, ".requireValid"))
+        requireValid(pb, valid.result(), constants._1, FMT(prefix, ".requireValid"))
     {
 
     }
@@ -424,6 +476,10 @@ public:
         // Check if tokenS/tokenB match
         orderA_tokenS_eq_orderB_tokenB.generate_r1cs_witness();
         orderA_tokenB_eq_orderB_tokenS.generate_r1cs_witness();
+
+        // Check if the takers match
+        validateTakerA.generate_r1cs_witness();
+        validateTakerB.generate_r1cs_witness();
 
         // Check if the orders in the settlement are correctly filled
         checkValidA.generate_r1cs_witness();
@@ -442,6 +498,10 @@ public:
         orderA_tokenS_eq_orderB_tokenB.generate_r1cs_constraints();
         orderA_tokenB_eq_orderB_tokenS.generate_r1cs_constraints();
 
+        // Check if the takers match
+        validateTakerA.generate_r1cs_constraints();
+        validateTakerB.generate_r1cs_constraints();
+
         // Check if the orders in the settlement are correctly filled
         checkValidA.generate_r1cs_constraints();
         checkValidB.generate_r1cs_constraints();
@@ -459,7 +519,6 @@ public:
         return requireOrderFillsB.getFilledAfter();
     }
 };
-
 
 }
 

@@ -1,23 +1,8 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./libexchange/ExchangeAccounts.sol";
 import "./libexchange/ExchangeAdmins.sol";
 import "./libexchange/ExchangeBalances.sol";
 import "./libexchange/ExchangeBlocks.sol";
@@ -26,9 +11,12 @@ import "./libexchange/ExchangeGenesis.sol";
 import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
+import "./libtransactions/TransferTransaction.sol";
 
+import "../lib/EIP712.sol";
 import "../lib/MathUint.sol";
 
+import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
 
 
@@ -39,11 +27,10 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    bytes32 constant public genesisBlockHash = 0x107018ff4240423a154c81e966fe3216d239fe33f5c30911c2d04799df603c81;
+    bytes32 constant public genesisMerkleRoot = 0x160ca280c25b71c85d58fc0dd7b9eb42268c73c8812333da3cc2bdc8af3ee7b7;
 
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
-    using ExchangeAccounts      for ExchangeData.State;
     using ExchangeBalances      for ExchangeData.State;
     using ExchangeBlocks        for ExchangeData.State;
     using ExchangeDeposits      for ExchangeData.State;
@@ -54,43 +41,40 @@ contract ExchangeV3 is IExchangeV3
 
     ExchangeData.State private state;
 
-    modifier onlyOperator()
-    {
-        require(msg.sender == state.operator, "UNAUTHORIZED");
-        _;
-    }
-
     modifier onlyWhenUninitialized()
     {
         require(owner == address(0) && state.id == 0, "INITIALIZED");
         _;
     }
 
-    modifier onlyAgentFor(address owner)
+    modifier onlyFromUserOrAgent(address owner)
     {
-        require(isAgent(owner, msg.sender), "UNAUTHORIZED");
+        require(
+            owner == msg.sender ||
+            state.agentRegistry != IAgentRegistry(address(0)) &&
+            state.agentRegistry.isAgent(owner, msg.sender),
+            "UNAUTHORIZED"
+        );
         _;
     }
 
     /// @dev The constructor must do NOTHING to support proxy.
-    constructor() public {}
+    constructor() {}
 
     function version()
         public
         override
-        view
+        pure
         returns (string memory)
     {
-        return "3.5.0";
+        return "3.6.0";
     }
 
     // -- Initialization --
     function initialize(
-        address _loopringAddress,
+        address _loopring,
         address _owner,
-        uint    _id,
-        address payable _operator,
-        bool    _onchainDataAvailability
+        uint    _id
         )
         external
         override
@@ -102,11 +86,30 @@ contract ExchangeV3 is IExchangeV3
 
         state.initializeGenesisBlock(
             _id,
-            _loopringAddress,
-            _operator,
-            _onchainDataAvailability,
-            genesisBlockHash
+            _loopring,
+            genesisMerkleRoot,
+            EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );
+    }
+
+    function setAgentRegistry(address _agentRegistry)
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(_agentRegistry != address(0), "ZERO_ADDRESS");
+        require(state.agentRegistry == IAgentRegistry(0), "ALREADY_SET");
+        state.agentRegistry = IAgentRegistry(_agentRegistry);
+    }
+
+    function getAgentRegistry()
+        external
+        override
+        view
+        returns (IAgentRegistry)
+    {
+        return state.agentRegistry;
     }
 
     function setDepositContract(address _depositContract)
@@ -139,19 +142,15 @@ contract ExchangeV3 is IExchangeV3
     {
         return ExchangeData.Constants(
             uint(ExchangeData.SNARK_SCALAR_FIELD()),
-            uint(ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS()),
-            uint(ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS()),
-            uint(ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED()),
-            uint(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE()),
-            uint(ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE()),
-            uint(ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA()),
+            uint(ExchangeData.MAX_OPEN_FORCED_REQUESTS()),
+            uint(ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE()),
             uint(ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS()),
-            uint(ExchangeData.MAX_NUM_TOKENS()),
             uint(ExchangeData.MAX_NUM_ACCOUNTS()),
-            uint(ExchangeData.FEE_BLOCK_FINE_START_TIME()),
-            uint(ExchangeData.FEE_BLOCK_FINE_MAX_DURATION()),
+            uint(ExchangeData.MAX_NUM_TOKENS()),
             uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
-            uint(ExchangeData.GAS_LIMIT_SEND_TOKENS())
+            uint(ExchangeData.MIN_TIME_IN_SHUTDOWN()),
+            uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE()),
+            uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND())
         );
     }
 
@@ -174,118 +173,7 @@ contract ExchangeV3 is IExchangeV3
         return state.isShutdown();
     }
 
-    function isInMaintenance()
-        external
-        override
-        view
-        returns (bool)
-    {
-        return state.isInMaintenance();
-    }
-
-    // -- Accounts --
-    function getNumAccounts()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.accounts.length;
-    }
-
-    function getAccount(
-        address owner
-        )
-        external
-        override
-        view
-        returns (
-            uint24 accountID,
-            uint   pubKeyX,
-            uint   pubKeyY
-        )
-    {
-        return state.getAccount(owner);
-    }
-
-    function createOrUpdateAccount(
-        address owner,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        bytes   calldata permission
-        )
-        external
-        override
-        nonReentrant
-        payable
-        returns (
-            uint24 accountID,
-            bool   isAccountNew,
-            bool   isAccountUpdated
-        )
-    {
-        try state.getAccountID(owner) {
-            // Account exists
-            require(isAgent(owner, msg.sender), "UNAUTHORIZED");
-        } catch {
-             // Account doesn't exist
-            require(
-                isAgent(owner, msg.sender) || (pubKeyX == 1 && pubKeyY == 0),
-                "UNAUTHORIZED_OR_INVALID_PUBKEY"
-            );
-        }   
-
-        return updateAccountAndDepositInternal(
-            owner,
-            pubKeyX,
-            pubKeyY,
-            address(0),
-            0,
-            permission
-        );
-    }
-
-    // -- Balances --
-    function isAccountBalanceCorrect(
-        uint     merkleRoot,
-        uint24   accountID,
-        uint16   tokenID,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[36] calldata accountPath,
-        uint[15] calldata balancePath
-        )
-        external
-        override
-        pure
-        returns (bool)
-    {
-        return ExchangeBalances.isAccountBalanceCorrect(
-            merkleRoot,
-            accountID,
-            tokenID,
-            pubKeyX,
-            pubKeyY,
-            nonce,
-            balance,
-            tradeHistoryRoot,
-            accountPath,
-            balancePath
-        );
-    }
-
     // -- Tokens --
-    function getLRCFeeForRegisteringOneMoreToken()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.getLRCFeeForRegisteringOneMoreToken();
-    }
 
     function registerToken(
         address tokenAddress
@@ -319,28 +207,6 @@ contract ExchangeV3 is IExchangeV3
         returns (address)
     {
         return state.getTokenAddress(tokenID);
-    }
-
-    function disableTokenDeposit(
-        address tokenAddress
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.disableTokenDeposit(tokenAddress);
-    }
-
-    function enableTokenDeposit(
-        address tokenAddress
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.enableTokenDeposit(tokenAddress);
     }
 
     // -- Stakes --
@@ -377,6 +243,17 @@ contract ExchangeV3 is IExchangeV3
         state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
     }
 
+    function getProtocolFeeLastWithdrawnTime(
+        address tokenAddress
+        )
+        external
+        override
+        view
+        returns (uint)
+    {
+        return state.protocolFeeLastWithdrawnTime[tokenAddress];
+    }
+
     function burnExchangeStake()
         external
         override
@@ -406,7 +283,16 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (uint)
     {
-        return state.numBlocksSubmitted;
+        return state.blocks.length;
+    }
+
+    function getBlockInfo(uint blockIdx)
+        external
+        override
+        view
+        returns (ExchangeData.BlockInfo memory)
+    {
+        return state.blocks[blockIdx];
     }
 
     function submitBlocks(
@@ -416,7 +302,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        onlyOperator
+        onlyOwner
     {
         state.submitBlocks(
             blocks,
@@ -424,131 +310,47 @@ contract ExchangeV3 is IExchangeV3
         );
     }
 
+    function getNumAvailableForcedSlots()
+        external
+        override
+        view
+        returns (uint)
+    {
+        return state.getNumAvailableForcedSlots();
+    }
+
     // -- Deposits --
-    function getNumDepositRequestsProcessed()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.getNumDepositRequestsProcessed();
-    }
-
-    function getNumAvailableDepositSlots()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.getNumAvailableDepositSlots();
-    }
-
-    function getDepositRequest(
-        uint index
-        )
-        external
-        override
-        view
-        returns (
-          bytes32 accumulatedHash,
-          uint    accumulatedFee,
-          uint32  timestamp
-        )
-    {
-        return state.getDepositRequest(index);
-    }
-
-    function updateAccountAndDeposit(
-        address owner,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        address token,
-        uint96  amount,
-        bytes   calldata permission
-        )
-        external
-        override
-        nonReentrant
-        payable
-        onlyAgentFor(owner)
-        returns (
-            uint24 accountID,
-            bool   isAccountNew,
-            bool   isAccountUpdated
-        )
-    {
-        return updateAccountAndDepositInternal(
-            owner,
-            pubKeyX,
-            pubKeyY,
-            token,
-            amount,
-            permission
-        );
-    }
 
     function deposit(
         address from,
         address to,
         address tokenAddress,
-        uint96  amount
+        uint96  amount,
+        bytes   calldata auxiliaryData
         )
         external
         payable
         override
         nonReentrant
-        onlyAgentFor(from)
+        onlyFromUserOrAgent(from)
     {
-        state.deposit(from, to, tokenAddress, amount, 0);
+        state.deposit(from, to, tokenAddress, amount, auxiliaryData);
     }
 
     // -- Withdrawals --
-    function getNumWithdrawalRequestsProcessed()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.getNumWithdrawalRequestsProcessed();
-    }
 
-    function getNumAvailableWithdrawalSlots()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.getNumAvailableWithdrawalSlots();
-    }
-
-    function getWithdrawRequest(
-        uint index
-        )
-        external
-        override
-        view
-        returns (
-            bytes32 accumulatedHash,
-            uint    accumulatedFee,
-            uint32  timestamp
-        )
-    {
-        return state.getWithdrawRequest(index);
-    }
-
-    function withdraw(
+    function forceWithdraw(
         address owner,
         address token,
-        uint96 amount
+        uint32  accountID
         )
         external
         override
         nonReentrant
         payable
-        onlyAgentFor(owner)
+        onlyFromUserOrAgent(owner)
     {
-        uint24 accountID = state.getAccountID(owner);
-        state.withdraw(accountID, token, amount);
+        state.forceWithdraw(owner, token, accountID);
     }
 
     function withdrawProtocolFees(
@@ -559,50 +361,21 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         payable
     {
-        // Always request the maximum amount so the complete balance is withdrawn
-        state.withdraw(0, token, ~uint96(0));
+        state.forceWithdraw(address(0), token, ExchangeData.ACCOUNTID_PROTOCOLFEE());
     }
 
     // We still alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTree(
-        address  owner,
-        address  token,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[36] calldata accountPath,
-        uint[15] calldata balancePath
+        ExchangeData.MerkleProof calldata merkleProof
         )
         external
         override
         nonReentrant
     {
-        state.withdrawFromMerkleTree(
-            owner,
-            token,
-            pubKeyX,
-            pubKeyY,
-            nonce,
-            balance,
-            tradeHistoryRoot,
-            accountPath,
-            balancePath
-        );
+        state.withdrawFromMerkleTree(merkleProof);
     }
 
     function withdrawFromDepositRequest(
-        uint depositIdx
-        )
-        external
-        override
-        nonReentrant
-    {
-        state.withdrawFromDepositRequest(depositIdx);
-    }
-
-    function withdrawFromApprovedWithdrawal(
         address owner,
         address token
         )
@@ -610,9 +383,23 @@ contract ExchangeV3 is IExchangeV3
         override
         nonReentrant
     {
-        state.withdrawFromApprovedWithdrawal(
+        state.withdrawFromDepositRequest(
             owner,
             token
+        );
+    }
+
+    function withdrawFromApprovedWithdrawals(
+        address[] calldata owners,
+        address[] calldata tokens
+        )
+        external
+        override
+        nonReentrant
+    {
+        state.withdrawFromApprovedWithdrawals(
+            owners,
+            tokens
         );
     }
 
@@ -625,78 +412,81 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (uint)
     {
-        uint24 accountID = (owner == address(0)) ? 0 : state.getAccountID(owner);
         uint16 tokenID = state.getTokenID(token);
-        return state.amountWithdrawable[accountID][tokenID];
+        return state.amountWithdrawable[owner][tokenID];
     }
 
-    // -- Agents --
-    function authorizeAgents(
-        address   owner,
-        address[] calldata agents,
-        bool[]    calldata authorized
+    function notifyForcedRequestTooOld(
+        uint32  accountID,
+        address token
         )
         external
         override
         nonReentrant
-        onlyAgentFor(owner)
     {
-        require(agents.length == authorized.length, "INVALID_DATA");
-        for (uint i = 0; i < agents.length; i++) {
-            state.agent[owner][agents[i]] = authorized[i];
-            emit AgentAuthorized(owner, agents[i], authorized[i]);
-        }
-    }
+        uint16 tokenID = state.getTokenID(token);
+        ExchangeData.ForcedWithdrawal storage withdrawal = state.pendingForcedWithdrawals[accountID][tokenID];
+        require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
 
-    function isAgent(address owner, address agent)
-        public
-        override
-        view
-        returns (bool)
-    {
-        return owner == agent || state.agent[owner][agent];
+        // Check if the withdrawal has indeed exceeded the time limit
+        require(block.timestamp >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE(), "WITHDRAWAL_NOT_TOO_OLD");
+
+        // Enter withdrawal mode
+        state.withdrawalModeStartTime = block.timestamp;
+
+        emit WithdrawalModeActivated(state.withdrawalModeStartTime);
     }
 
     function approveOffchainTransfer(
         address from,
         address to,
         address token,
-        uint    amount
+        uint96  amount,
+        address feeToken,
+        uint96  fee,
+        uint    data,
+        uint32  validUntil,
+        uint32  storageID
         )
         external
         override
         nonReentrant
-        onlyAgentFor(from)
+        onlyFromUserOrAgent(from)
     {
-        uint24 fromID = state.getAccountID(from);
-        uint24 toID = state.getAccountID(to);
         uint16 tokenID = state.getTokenID(token);
-
-        state.approvedTransferAmounts[fromID][toID][tokenID] =
-            state.approvedTransferAmounts[fromID][toID][tokenID].add(amount);
-
-        emit ConditionalTransferApproved(
-            fromID,
-            toID,
-            tokenID,
-            amount
-        );
+        uint16 feeTokenID = state.getTokenID(feeToken);
+        TransferTransaction.Transfer memory transfer = TransferTransaction.Transfer({
+            from: from,
+            to: to,
+            tokenID: tokenID,
+            amount: amount,
+            feeTokenID: feeTokenID,
+            fee: fee,
+            data: data,
+            validUntil: validUntil,
+            storageID: storageID
+        });
+        bytes32 txHash = TransferTransaction.hash(state.DOMAIN_SEPARATOR, transfer);
+        state.approvedTx[transfer.from][txHash] = true;
+        emit TransactionApproved(transfer.from, txHash);
     }
 
-    function getApprovedTransferAmount(
+    function setWithdrawalRecipient(
         address from,
         address to,
-        address token
+        address token,
+        uint96  amount,
+        uint32  nonce,
+        address newRecipient
         )
         external
         override
-        view
-        returns (uint)
+        nonReentrant
+        onlyFromUserOrAgent(from)
     {
-        uint24 fromAccountID = state.getAccountID(from);
-        uint24 toAccountID = state.getAccountID(to);
         uint16 tokenID = state.getTokenID(token);
-        return state.approvedTransferAmounts[fromAccountID][toAccountID][tokenID];
+        require(state.withdrawalRecipient[from][to][tokenID][amount][nonce] == address(0), "CANNOT_OVERRIDE_RECIPIENT_ADDRESS");
+        state.withdrawalRecipient[from][to][tokenID][amount][nonce] = newRecipient;
     }
 
     function onchainTransferFrom(
@@ -708,147 +498,56 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
-        onlyAgentFor(from)
+        onlyFromUserOrAgent(from)
     {
         state.depositContract.transfer(from, to, token, amount);
     }
 
+    function approveTransaction(
+        address owner,
+        bytes32 transactionHash
+        )
+        external
+        override
+        nonReentrant
+        onlyFromUserOrAgent(owner)
+    {
+        state.approvedTx[owner][transactionHash] = true;
+        emit TransactionApproved(owner, transactionHash);
+    }
+
+    function isTransactionApproved(
+        address owner,
+        bytes32 transactionHash
+        )
+        external
+        override
+        view
+        returns (bool)
+    {
+        return state.approvedTx[owner][transactionHash];
+    }
+
     // -- Admins --
-    function setOperator(
-        address payable _operator
+    function setMaxAgeDepositUntilWithdrawable(
+        uint32 newValue
         )
         external
         override
         nonReentrant
         onlyOwner
-        returns (address payable)
+        returns (uint32)
     {
-        return state.setOperator(_operator);
+        return state.setMaxAgeDepositUntilWithdrawable(newValue);
     }
 
-    function getOperator()
+    function getMaxAgeDepositUntilWithdrawable()
         external
         override
         view
-        returns (address payable)
+        returns (uint32)
     {
-        return state.operator;
-    }
-
-    function setAddressWhitelist(
-        address _addressWhitelist
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-        returns (address)
-    {
-        return state.setAddressWhitelist(_addressWhitelist);
-    }
-
-
-    function getAddressWhitelist()
-        external
-        override
-        view
-        returns (address)
-    {
-        return state.addressWhitelist;
-    }
-
-    function setFees(
-        uint _accountCreationFeeETH,
-        uint _accountUpdateFeeETH,
-        uint _depositFeeETH,
-        uint _withdrawalFeeETH
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.setFees(
-            _accountCreationFeeETH,
-            _accountUpdateFeeETH,
-            _depositFeeETH,
-            _withdrawalFeeETH
-        );
-    }
-
-    function getFees()
-        external
-        override
-        view
-        returns (
-            uint _accountCreationFeeETH,
-            uint _accountUpdateFeeETH,
-            uint _depositFeeETH,
-            uint _withdrawalFeeETH
-        )
-    {
-        _accountCreationFeeETH = state.accountCreationFeeETH;
-        _accountUpdateFeeETH = state.accountUpdateFeeETH;
-        _depositFeeETH = state.depositFeeETH;
-        _withdrawalFeeETH = state.withdrawalFeeETH;
-    }
-
-    function startOrContinueMaintenanceMode(
-        uint durationMinutes
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.startOrContinueMaintenanceMode(durationMinutes);
-    }
-
-    function stopMaintenanceMode()
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.stopMaintenanceMode();
-    }
-
-    function getRemainingDowntime()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.getRemainingDowntime();
-    }
-
-    function getDowntimeCostLRC(
-        uint durationMinutes
-        )
-        external
-        override
-        view
-        returns (uint costLRC)
-    {
-        return state.getDowntimeCostLRC(durationMinutes);
-    }
-
-    function getTotalTimeInMaintenanceSeconds()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.getTotalTimeInMaintenanceSeconds();
-    }
-
-    function getExchangeCreationTimestamp()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.exchangeCreationTimestamp;
+        return state.maxAgeDepositUntilWithdrawable;
     }
 
     function shutdown()
@@ -860,26 +559,9 @@ contract ExchangeV3 is IExchangeV3
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
         require(!state.isShutdown(), "ALREADY_SHUTDOWN");
-        state.shutdownStartTime = now;
-        emit Shutdown(state.shutdownStartTime);
+        state.shutdownModeStartTime = block.timestamp;
+        emit Shutdown(state.shutdownModeStartTime);
         return true;
-    }
-
-    function getRequestStats()
-        external
-        override
-        view
-        returns(
-            uint numDepositRequestsProcessed,
-            uint numAvailableDepositSlots,
-            uint numWithdrawalRequestsProcessed,
-            uint numAvailableWithdrawalSlots
-        )
-    {
-        numDepositRequestsProcessed = state.getNumDepositRequestsProcessed();
-        numAvailableDepositSlots = state.getNumAvailableDepositSlots();
-        numWithdrawalRequestsProcessed = state.getNumWithdrawalRequestsProcessed();
-        numAvailableWithdrawalSlots = state.getNumAvailableWithdrawalSlots();
     }
 
     function getProtocolFeeValues()
@@ -887,49 +569,17 @@ contract ExchangeV3 is IExchangeV3
         override
         view
         returns (
-            uint32 timestamp,
+            uint32 syncedAt,
             uint8  takerFeeBips,
             uint8  makerFeeBips,
             uint8  previousTakerFeeBips,
             uint8  previousMakerFeeBips
         )
     {
-        timestamp = state.protocolFeeData.timestamp;
+        syncedAt = state.protocolFeeData.syncedAt;
         takerFeeBips = state.protocolFeeData.takerFeeBips;
         makerFeeBips = state.protocolFeeData.makerFeeBips;
         previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;
         previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
-    }
-
-    // == Internal Functions ==
-    function updateAccountAndDepositInternal(
-        address owner,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        address token,
-        uint96  amount,
-        bytes   memory permission
-        )
-        internal
-        returns (
-            uint24 accountID,
-            bool   isAccountNew,
-            bool   isAccountUpdated
-        )
-    {
-        (accountID, isAccountNew, isAccountUpdated) = state.createOrUpdateAccount(
-            owner,
-            msg.sender,
-            pubKeyX,
-            pubKeyY,
-            permission
-        );
-        uint additionalFeeETH = 0;
-        if (isAccountNew) {
-            additionalFeeETH = state.accountCreationFeeETH;
-        } else if (isAccountUpdated) {
-            additionalFeeETH = state.accountUpdateFeeETH;
-        }
-        state.deposit(owner, owner, token, amount, additionalFeeETH);
     }
 }

@@ -1,20 +1,6 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 
 import "../../iface/ITokenPriceProvider.sol";
 
@@ -50,7 +36,6 @@ contract MovingAveragePriceProvider is ITokenPriceProvider
         uint                _numMovingAverageDataPoints,
         uint                _defaultValue
         )
-        public
     {
         require(_movingAverageTimePeriod > 0, "INVALID_INPUT");
         require(_numMovingAverageDataPoints > 0, "INVALID_INPUT");
@@ -67,7 +52,7 @@ contract MovingAveragePriceProvider is ITokenPriceProvider
             history.push(currentConversion);
         }
         movingAverage = currentConversion;
-        lastUpdateTime = now;
+        lastUpdateTime = block.timestamp;
     }
 
     function usd2lrc(uint usd)
@@ -85,7 +70,7 @@ contract MovingAveragePriceProvider is ITokenPriceProvider
         external
     {
         // Allow the costs to be updated every time span
-        require(now >= lastUpdateTime.add(movingAverageTimePeriod), "TOO_SOON");
+        require(block.timestamp >= lastUpdateTime.add(movingAverageTimePeriod), "TOO_SOON");
 
         // Get the current price. Use the history array as a circular buffer
         history[updateIndex] = provider.usd2lrc(defaultValue);
@@ -98,8 +83,8 @@ contract MovingAveragePriceProvider is ITokenPriceProvider
         }
         movingAverage = newMovingAverage / numMovingAverageDataPoints;
 
-        lastUpdateTime = now;
+        lastUpdateTime = block.timestamp;
 
-        emit MovingAverageUpdated(now, defaultValue, movingAverage);
+        emit MovingAverageUpdated(block.timestamp, defaultValue, movingAverage);
     }
 }

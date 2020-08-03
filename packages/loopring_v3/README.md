@@ -10,37 +10,56 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 
 ### Performance
 
-|                           | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
-| :------------------------ | :----------: | :--------------------------------------: | :---------------------------------------: |
-| Trades per Ethereum Block |      26      |                  26300                   |                  216000                   |
-| Trades per Second         |      ~2      |                   2025                   |                   16400                   |
-| Cost per Trade            | ~300,000 gas |                 375 gas                  |                  47 gas                   |
+|                           | Loopring 2.x | Loopring 3.0 <br> (Rollup) | Loopring 3.0 <br> (Validium) |
+| :------------------------ | :----------: | :------------------------: | :--------------------------: |
+| Trades per Ethereum Block |      26      |           26300            |            216000            |
+| Trades per Second         |      ~2      |            2025            |            16400             |
+| Cost per Trade            | ~300,000 gas |          375 gas           |            47 gas            |
 
 - _Cost in USD per Trade_ in the table does not cover off-chain proof generation.
 
 ## Top Features
 
 - Onchain data-availability (DEXes can opt out for even greater throughput & lower cost)
-- All ERC20 tokens and Ether are supported by default
+- ERC20 tokens and Ether are supported by default
 - Multiple on-chain DEX instances with isolated state and dedicated event stream (different from 2.0)
 - Onchain deposit + on-chain & offchain withdrawal support
 - Support offchain order cancellation and order time-to-live settings (inherited from 2.0)
 - Allow partial order matching (aka partial fill) and offchain order-scaling (inherited from 2.0)
 - Multiple circuit permutations for different request batch sizes
 - Use tokens/ether traded as trading fee
-- A built-in mechanism to force DEX operators to fulfill duties in time (especially for handling deposits and withdrawals)
+- A built-in mechanism to force DEX operators to fulfill duties in time
 - Support DEX operators to stake tokens to lower down protocol fees
-- Support a "maintenance mode" for DEX operators to upgrade backends within a time window
 - Support a unique feature called Order Aliasing (new to 3.0)
 - 100% secure for end users, even when DEX operators are evil (same as 2.0)
-- whitelist support through customizable sub-contract
 - and more...
 
 ## Challenges
 
-- SNARKs require trusted setups
+- SNARKs using groth16 require trusted setups
 
 ## Build
+
+If you are using a Mac, you will need to (re）install the commandline tool:
+
+```
+	sudo rm -rf /Library/Developer/CommandLineTools
+	xcode-select --install
+
+```
+
+Then you may also need to install "lgmpxx":
+
+- Download the source from https://gmplib.org/download/gmp/gmp-6.2.0.tar.lz
+- unzip it using (lzip - `brew install lzip`) :`tar -xf gmp-6.2.0.tar.lz`
+- install it:
+
+```
+	./configure --prefix=/usr/local --enable-cxx
+	make
+	make check
+	sudo make install
+```
 
 Please use node v10.
 
@@ -48,17 +67,10 @@ Please use node v10.
 
 ### Circuits
 
-Clone the `protocol3-circuits` repo and update the `circuit_src_folder` variable in `circuit/CMakeLists.txt` so it points to the correct folder.
-
-```
-make
-```
-
-The circuit tests can be run with `npm run build && npm run testc`. A single test can be run with `npm run test-circuits <test_name>`.
+The circuit tests can be run with `npm run testc`. A single test can be run with `npm run test-circuits <test_name>`.
 
 ## Run Unit Tests
 
-- please clone the circuits repository `https://github.com/Loopring/protocol3-circuits.git` to the same directory as this project.
 - please make sure you run `npm run build` for the first time.
 - run `npm run ganache` from project's root directory in terminal.
 - run `npm run test` from project's root directory in another terminal window.
@@ -66,9 +78,9 @@ The circuit tests can be run with `npm run build && npm run testc`. A single tes
 - print info logs in tests: `npm run test -- -i`
 - print more detailed debug logs in tests: `npm run test -- -x`
 
-Running all tests takes around 2 hours on a modern PC with a CPU with 4 cores. Creating proofs is computationaly heavy and takes time even when multi-threading is used. Run individual tests when you can.
+Running all tests takes around 1 hour on a modern PC with a CPU with 4 cores. Creating proofs is computationaly heavy and takes time even when multi-threading is used. Run individual tests when you can.
 
-Verifier/Prover keys are cached in the `keys` folder. When updating the circuits make sure to delete the keys of older circuit versions because this is not automatically detected.
+Verifier/Prover keys are cached in the `keys` folder. When running `make` these keys are automatically deleted so they cannot be outdated.
 
 ## Contract Deployment
 

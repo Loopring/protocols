@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
@@ -12,6 +14,22 @@
 #include "gadgets/merkle_tree.hpp"
 #include "gadgets/sha256_many.hpp"
 #include "gadgets/subadd.hpp"
+
+
+
+#ifndef NDEBUG
+#   define ASSERT(condition, message) \
+    do { \
+        if (! (condition)) { \
+            std::cerr << "Assertion `" #condition "` failed in " << __FILE__ \
+                      << " line " << __LINE__ << ": " << message << std::endl; \
+            std::terminate(); \
+        } \
+    } while (false)
+#else
+#   define ASSERT(condition, message) do { } while (false)
+#endif
+
 
 using namespace ethsnarks;
 

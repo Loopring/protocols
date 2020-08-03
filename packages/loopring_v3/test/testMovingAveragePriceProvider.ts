@@ -9,8 +9,8 @@ const MovingAveragePriceProvider = artifacts.require(
 );
 
 contract("MovingAveragePriceProvider", (accounts: string[]) => {
-  const contracts = new Artifacts(artifacts);
-  const MockContract = contracts.MockContract;
+  let contracts: Artifacts;
+  let MockContract: any;
 
   let exchangeTestUtil: ExchangeTestUtil;
 
@@ -24,6 +24,8 @@ contract("MovingAveragePriceProvider", (accounts: string[]) => {
   };
 
   before(async () => {
+    contracts = new Artifacts(artifacts);
+    MockContract = contracts.MockContract;
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
   });

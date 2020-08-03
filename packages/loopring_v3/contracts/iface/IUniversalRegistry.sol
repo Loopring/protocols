@@ -1,20 +1,6 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
@@ -61,7 +47,6 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         address indexed exchangeAddress,
         address         owner,
         ForgeMode       forgeMode,
-        bool            onchainDataAvailability,
         uint            exchangeId,
         uint            amountLRCBurned
     );
@@ -80,14 +65,14 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
     /// @dev Registers a new protocol.
     /// @param protocol The address of the new protocol.
     /// @param implementation The new protocol's default implementation.
-    /// @return implManager A new implementation manager to manage the protocol's implementations.
+    /// @return manager A new implementation manager to manage the protocol's implementations.
     function registerProtocol(
         address protocol,
         address implementation
         )
         external
         virtual
-        returns (address implManager);
+        returns (address manager);
 
     /// @dev Sets the default protocol.
     /// @param protocol The new default protocol.
@@ -116,14 +101,12 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
     /// @dev Creates a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
     /// @param forgeMode The forge mode.
-    /// @param onchainDataAvailability IF the on-chain DA is on
     /// @param protocol The protocol address, use 0x0 for default.
     /// @param implementation The implementation to use, use 0x0 for default.
     /// @return exchangeAddress The new exchange's address
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
         ForgeMode forgeMode,
-        bool      onchainDataAvailability,
         address   protocol,
         address   implementation
         )
@@ -136,7 +119,7 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
 
     /// @dev Returns information regarding the default protocol.
     /// @return protocol The address of the default protocol.
-    /// @return versionmanager The address of the version manager
+    /// @return manager The address of the version manager
     /// @return defaultImpl The address of the default protocol's implementation manager.
     /// @return protocolVersion The version of the default protocol.
     /// @return defaultImplVersion The version of the default implementation.
@@ -146,7 +129,7 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         view
         returns (
             address protocol,
-            address versionmanager,
+            address manager,
             address defaultImpl,
             string  memory protocolVersion,
             string  memory defaultImplVersion

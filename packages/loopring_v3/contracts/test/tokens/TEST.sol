@@ -1,26 +1,13 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 
 import "../DummyToken.sol";
 import "../../iface/IExchangeV3.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
 contract TEST is DummyToken {
+    using SafeMath for uint;
 
     // Test cases
     uint8 public constant TEST_NOTHING = 0;
@@ -30,6 +17,7 @@ contract TEST is DummyToken {
     uint8 public constant TEST_NO_RETURN_VALUE = 4;
     uint8 public constant TEST_INVALID_RETURN_SIZE = 5;
     uint8 public constant TEST_EXPENSIVE_TRANSFER = 6;
+    uint8 public constant TEST_DIFFERENT_TRANSFER_AMOUNT = 7;
 
     uint public testCase = TEST_NOTHING;
 
@@ -44,7 +32,7 @@ contract TEST is DummyToken {
         "TEST",
         18,
         2 ** 128
-    ) public
+    )
     {
     }
 
@@ -56,6 +44,9 @@ contract TEST is DummyToken {
         override
         returns (bool)
     {
+        if (testCase == TEST_DIFFERENT_TRANSFER_AMOUNT) {
+            _value = _value.mul(99) / 100;
+        }
         // require(_to != address(0), "ZERO_ADDRESS");
         require(_value <= balances[msg.sender], "INVALID_VALUE");
         // SafeMath.sub will throw if there is not enough balance.
@@ -74,6 +65,9 @@ contract TEST is DummyToken {
         override
         returns (bool)
     {
+        if (testCase == TEST_DIFFERENT_TRANSFER_AMOUNT) {
+            _value = _value.mul(99) / 100;
+        }
         // require(_to != address(0), "ZERO_ADDRESS");
         require(_value <= balances[_from], "INVALID_VALUE");
         require(_value <= allowed[_from][msg.sender], "INVALID_VALUE");

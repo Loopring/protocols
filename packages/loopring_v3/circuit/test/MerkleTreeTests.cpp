@@ -1,12 +1,13 @@
 #include "../ThirdParty/catch.hpp"
 #include "TestUtils.h"
 
-#include "../Gadgets/TradingHistoryGadgets.h"
+#include "../Gadgets/StorageGadgets.h"
 #include "../Gadgets/AccountGadgets.h"
 
 AccountState createAccountState(ProtoboardT& pb, const Account& state)
 {
     AccountState accountState;
+    accountState.owner = make_variable(pb, state.owner, ".owner");
     accountState.publicKeyX = make_variable(pb, state.publicKey.x, ".publicKeyX");
     accountState.publicKeyY = make_variable(pb, state.publicKey.y, ".publicKeyY");
     accountState.nonce = make_variable(pb, state.nonce, ".nonce");
@@ -18,24 +19,23 @@ BalanceState createBalanceState(ProtoboardT& pb, const BalanceLeaf& state)
 {
     BalanceState balanceState;
     balanceState.balance = make_variable(pb, state.balance, ".balance");
-    balanceState.tradingHistory = make_variable(pb, state.tradingHistoryRoot, ".tradingHistory");
+    balanceState.storage = make_variable(pb, state.storageRoot, ".storage");
     return balanceState;
 }
 
-TradeHistoryState createTradeHistoryState(ProtoboardT& pb, const TradeHistoryLeaf& state)
+StorageState createStorageState(ProtoboardT& pb, const StorageLeaf& state)
 {
-    TradeHistoryState tradeHistoryState;
-    tradeHistoryState.filled = make_variable(pb, state.filled, ".filled");
-    tradeHistoryState.orderID = make_variable(pb, state.orderID, ".orderID");
-    return tradeHistoryState;
+    StorageState storageState;
+    storageState.data = make_variable(pb, state.data, ".data");
+    storageState.storageID = make_variable(pb, state.storageID, ".storageID");
+    return storageState;
 }
 
 TEST_CASE("UpdateAccount", "[UpdateAccountGadget]")
 {
-    RingSettlementBlock block = getRingSettlementBlock();
-    REQUIRE(block.ringSettlements.size() > 0);
-    const RingSettlement& ringSettlement = block.ringSettlements[0];
-    const AccountUpdate& accountUpdate = ringSettlement.accountUpdate_B;
+    Block block = getBlock();
+    const UniversalTransaction& tx = getSpotTrade(block);
+    const AccountUpdate& accountUpdate = tx.witness.accountUpdate_B;
 
     auto updateAccountChecked = [](const AccountUpdate& accountUpdate, bool expectedSatisfied, bool expectedRootAfterCorrect = true)
     {
@@ -50,7 +50,7 @@ TEST_CASE("UpdateAccount", "[UpdateAccountGadget]")
 
         UpdateAccountGadget updateAccount(pb, rootBefore, address, stateBefore, stateAfter, "updateAccount");
         updateAccount.generate_r1cs_constraints();
-        updateAccount.generate_r1cs_witness(accountUpdate.proof);
+        updateAccount.generate_r1cs_witness(accountUpdate);
 
         REQUIRE(pb.is_satisfied() == expectedSatisfied);
         if (expectedSatisfied)
@@ -96,10 +96,9 @@ TEST_CASE("UpdateAccount", "[UpdateAccountGadget]")
 
 TEST_CASE("UpdateBalance", "[UpdateBalanceGadget]")
 {
-    RingSettlementBlock block = getRingSettlementBlock();
-    REQUIRE(block.ringSettlements.size() > 0);
-    const RingSettlement& ringSettlement = block.ringSettlements[0];
-    const BalanceUpdate& balanceUpdate = ringSettlement.balanceUpdateB_B;
+    Block block = getBlock();
+    const UniversalTransaction& tx = getSpotTrade(block);
+    const BalanceUpdate& balanceUpdate = tx.witness.balanceUpdateB_B;
 
     auto updateBalanceChecked = [](const BalanceUpdate& balanceUpdate, bool expectedSatisfied, bool expectedRootAfterCorrect = true)
     {
@@ -114,7 +113,7 @@ TEST_CASE("UpdateBalance", "[UpdateBalanceGadget]")
 
         UpdateBalanceGadget updateBalance(pb, rootBefore, address, stateBefore, stateAfter, "updateBalance");
         updateBalance.generate_r1cs_constraints();
-        updateBalance.generate_r1cs_witness(balanceUpdate.proof);
+        updateBalance.generate_r1cs_witness(balanceUpdate);
 
         REQUIRE(pb.is_satisfied() == expectedSatisfied);
         if (expectedSatisfied)
@@ -158,66 +157,65 @@ TEST_CASE("UpdateBalance", "[UpdateBalanceGadget]")
     }
 }
 
-TEST_CASE("UpdateTradeHistory", "[UpdateTradeHistoryGadget]")
+TEST_CASE("UpdateStorage", "[UpdateStorageGadget]")
 {
-    RingSettlementBlock block = getRingSettlementBlock();
-    REQUIRE(block.ringSettlements.size() > 0);
-    const RingSettlement& ringSettlement = block.ringSettlements[0];
-    const TradeHistoryUpdate& tradeHistoryUpdate = ringSettlement.tradeHistoryUpdate_A;
+    Block block = getBlock();
+    const UniversalTransaction& tx = getSpotTrade(block);
+    const StorageUpdate& storageUpdate = tx.witness.storageUpdate_A;
 
-    auto updateTradeHistoryChecked = [](const TradeHistoryUpdate& tradeHistoryUpdate, bool expectedSatisfied, bool expectedRootAfterCorrect = true)
+    auto updateStorageChecked = [](const StorageUpdate& storageUpdate, bool expectedSatisfied, bool expectedRootAfterCorrect = true)
     {
         protoboard<FieldT> pb;
 
         pb_variable<FieldT> rootBefore = make_variable(pb, "rootBefore");
-        VariableArrayT address = make_var_array(pb, NUM_BITS_TRADING_HISTORY, ".address");
-        TradeHistoryState stateBefore = createTradeHistoryState(pb, tradeHistoryUpdate.before);
-        TradeHistoryState stateAfter = createTradeHistoryState(pb, tradeHistoryUpdate.after);
-        address.fill_with_bits_of_field_element(pb, tradeHistoryUpdate.orderID);
-        pb.val(rootBefore) = tradeHistoryUpdate.rootBefore;
+        VariableArrayT address = make_var_array(pb, NUM_BITS_STORAGE_ADDRESS, ".address");
+        StorageState stateBefore = createStorageState(pb, storageUpdate.before);
+        StorageState stateAfter = createStorageState(pb, storageUpdate.after);
+        address.fill_with_bits_of_field_element(pb, storageUpdate.storageID);
+        pb.val(rootBefore) = storageUpdate.rootBefore;
 
-        UpdateTradeHistoryGadget updateTradeHistory(pb, rootBefore, subArray(address, 0, NUM_BITS_TRADING_HISTORY), stateBefore, stateAfter, "updateTradeHistory");
-        updateTradeHistory.generate_r1cs_constraints();
-        updateTradeHistory.generate_r1cs_witness(tradeHistoryUpdate.proof);
+        UpdateStorageGadget updateStorage(pb, rootBefore, subArray(address, 0, NUM_BITS_STORAGE_ADDRESS), stateBefore, stateAfter, "updateStorage");
+        updateStorage.generate_r1cs_constraints();
+        updateStorage.generate_r1cs_witness(storageUpdate);
 
         REQUIRE(pb.is_satisfied() == expectedSatisfied);
         if (expectedSatisfied)
         {
-            REQUIRE((pb.val(updateTradeHistory.result()) == tradeHistoryUpdate.rootAfter) == expectedRootAfterCorrect);
+            REQUIRE((pb.val(updateStorage.result()) == storageUpdate.rootAfter) == expectedRootAfterCorrect);
         }
     };
 
     SECTION("Everything correct")
     {
-        updateTradeHistoryChecked(tradeHistoryUpdate, true, true);
+        updateStorageChecked(storageUpdate, true, true);
     }
 
     SECTION("Incorrect address")
     {
-        TradeHistoryUpdate modifiedTradeHistoryUpdate = tradeHistoryUpdate;
-        modifiedTradeHistoryUpdate.orderID += 1;
-        updateTradeHistoryChecked(modifiedTradeHistoryUpdate, true, false);
+        StorageUpdate modifiedStorageUpdate = storageUpdate;
+        modifiedStorageUpdate.storageID += 1;
+        updateStorageChecked(modifiedStorageUpdate, true, false);
     }
 
     SECTION("Incorrect leaf before")
     {
-        TradeHistoryUpdate modifiedTradeHistoryUpdate = tradeHistoryUpdate;
-        modifiedTradeHistoryUpdate.before.filled += 1;
-        updateTradeHistoryChecked(modifiedTradeHistoryUpdate, false);
+        StorageUpdate modifiedStorageUpdate = storageUpdate;
+        modifiedStorageUpdate.before.data += 1;
+        updateStorageChecked(modifiedStorageUpdate, false);
     }
 
     SECTION("Different leaf after")
     {
-        TradeHistoryUpdate modifiedTradeHistoryUpdate = tradeHistoryUpdate;
-        modifiedTradeHistoryUpdate.after.filled += 1;
-        updateTradeHistoryChecked(modifiedTradeHistoryUpdate, true, false);
+        StorageUpdate modifiedStorageUpdate = storageUpdate;
+        modifiedStorageUpdate.after.data += 1;
+        updateStorageChecked(modifiedStorageUpdate, true, false);
     }
 
     SECTION("Incorrect proof")
     {
-        TradeHistoryUpdate modifiedTradeHistoryUpdate = tradeHistoryUpdate;
-        unsigned int randomIndex = rand() % modifiedTradeHistoryUpdate.proof.data.size();
-        modifiedTradeHistoryUpdate.proof.data[randomIndex] += 1;
-        updateTradeHistoryChecked(modifiedTradeHistoryUpdate, false);
+        StorageUpdate modifiedStorageUpdate = storageUpdate;
+        unsigned int randomIndex = rand() % modifiedStorageUpdate.proof.data.size();
+        modifiedStorageUpdate.proof.data[randomIndex] += 1;
+        updateStorageChecked(modifiedStorageUpdate, false);
     }
 }

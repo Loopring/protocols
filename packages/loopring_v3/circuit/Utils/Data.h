@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 #ifndef _DATA_H_
 #define _DATA_H_
 
@@ -14,14 +16,110 @@ using json = nlohmann::json;
 namespace Loopring
 {
 
-enum class BlockType
+static auto dummySpotTrade = R"({
+    "fFillS_A": 0,
+    "fFillS_B": 0,
+    "orderA": {
+        "accountID": 0,
+        "allOrNone": false,
+        "amountB": "79228162514264337593543950335",
+        "amountS": "79228162514264337593543950335",
+        "buy": true,
+        "feeBips": 0,
+        "maxFeeBips": 0,
+        "storageID": "0",
+        "rebateBips": 0,
+        "tokenS": 0,
+        "tokenB": 1,
+        "validSince": 0,
+        "validUntil": 4294967295,
+        "taker": "0"
+    },
+    "orderB": {
+        "accountID": 0,
+        "allOrNone": false,
+        "amountB": "79228162514264337593543950335",
+        "amountS": "79228162514264337593543950335",
+        "buy": true,
+        "feeBips": 0,
+        "maxFeeBips": 0,
+        "storageID": "0",
+        "rebateBips": 0,
+        "reduceOnly": 0,
+        "tokenS": 1,
+        "tokenB": 0,
+        "validSince": 0,
+        "validUntil": 4294967295,
+        "taker": "0"
+    }
+})"_json;
+
+static auto dummyTransfer = R"({
+    "fromAccountID": 0,
+    "toAccountID": 2,
+    "amount": "0",
+    "fee": "0",
+    "feeTokenID": 0,
+    "tokenID": 0,
+    "validUntil": 4294967295,
+    "type": 0,
+    "ownerFrom": "0",
+    "to": "2",
+    "dualAuthorX": "0",
+    "dualAuthorY": "0",
+    "data": "0",
+    "payerToAccountID": 2,
+    "payerTo": "2",
+    "payeeToAccountID": 2,
+    "storageID": "0"
+})"_json;
+
+static auto dummyWithdraw = R"({
+    "owner": "0",
+    "accountID": 0,
+    "tokenID": 0,
+    "amount": "0",
+    "feeTokenID": 0,
+    "fee": "0",
+    "validUntil": 4294967295,
+    "to": "0",
+    "dataHash": "0",
+    "minGas": 0,
+    "type": 0
+})"_json;
+
+static auto dummyAccountUpdate = R"({
+    "owner": "0",
+    "accountID": 0,
+    "validUntil": 4294967295,
+    "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
+    "publicKeyY": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
+    "feeTokenID": 0,
+    "fee": "0",
+    "type": 0
+})"_json;
+
+static auto dummyDeposit = R"({
+    "owner": "0",
+    "accountID": 0,
+    "tokenID": 0,
+    "amount": "0"
+})"_json;
+
+static auto dummySignature = R"({
+    "Rx": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
+    "Ry": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
+    "s": "2049853744288428596543952232796911341686225132653835991176529722328469628710"
+})"_json;
+
+enum class TransactionType
 {
-    RingSettlement = 0,
+    Noop = 0,
     Deposit,
-    OnchainWithdrawal,
-    OffchainWithdrawal,
-    OrderCancellation,
-    InternalTransfer,
+    Withdrawal,
+    Transfer,
+    SpotTrade,
+    AccountUpdate,
 
     COUNT
 };
@@ -40,35 +138,36 @@ static void from_json(const json& j, Proof& proof)
     }
 }
 
-class TradeHistoryLeaf
+class StorageLeaf
 {
 public:
-    ethsnarks::FieldT filled;
-    ethsnarks::FieldT orderID;
+    ethsnarks::FieldT data;
+    ethsnarks::FieldT storageID;
 };
 
-static void from_json(const json& j, TradeHistoryLeaf& leaf)
+static void from_json(const json& j, StorageLeaf& leaf)
 {
-    leaf.filled = ethsnarks::FieldT(j.at("filled").get<std::string>().c_str());
-    leaf.orderID = ethsnarks::FieldT(j.at("orderID").get<std::string>().c_str());
+    leaf.data = ethsnarks::FieldT(j.at("data").get<std::string>().c_str());
+    leaf.storageID = ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
 }
 
 class BalanceLeaf
 {
 public:
     ethsnarks::FieldT balance;
-    ethsnarks::FieldT tradingHistoryRoot;
+    ethsnarks::FieldT storageRoot;
 };
 
 static void from_json(const json& j, BalanceLeaf& leaf)
 {
     leaf.balance = ethsnarks::FieldT(j.at("balance").get<std::string>().c_str());
-    leaf.tradingHistoryRoot = ethsnarks::FieldT(j.at("tradingHistoryRoot").get<std::string>().c_str());
+    leaf.storageRoot = ethsnarks::FieldT(j.at("storageRoot").get<std::string>().c_str());
 }
 
 class Account
 {
 public:
+    ethsnarks::FieldT owner;
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::FieldT nonce;
     ethsnarks::FieldT balancesRoot;
@@ -76,6 +175,7 @@ public:
 
 static void from_json(const json& j, Account& account)
 {
+    account.owner = ethsnarks::FieldT(j.at("owner").get<std::string>().c_str());
     account.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     account.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     account.nonce = ethsnarks::FieldT(j.at("nonce"));
@@ -103,25 +203,25 @@ static void from_json(const json& j, BalanceUpdate& balanceUpdate)
     balanceUpdate.after = j.at("after").get<BalanceLeaf>();
 }
 
-class TradeHistoryUpdate
+class StorageUpdate
 {
 public:
-    ethsnarks::FieldT orderID;
+    ethsnarks::FieldT storageID;
     Proof proof;
     ethsnarks::FieldT rootBefore;
     ethsnarks::FieldT rootAfter;
-    TradeHistoryLeaf before;
-    TradeHistoryLeaf after;
+    StorageLeaf before;
+    StorageLeaf after;
 };
 
-static void from_json(const json& j, TradeHistoryUpdate& tradeHistoryUpdate)
+static void from_json(const json& j, StorageUpdate& storageUpdate)
 {
-    tradeHistoryUpdate.orderID = ethsnarks::FieldT(j.at("orderID").get<std::string>().c_str());
-    tradeHistoryUpdate.proof = j.at("proof").get<Proof>();
-    tradeHistoryUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
-    tradeHistoryUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
-    tradeHistoryUpdate.before = j.at("before").get<TradeHistoryLeaf>();
-    tradeHistoryUpdate.after = j.at("after").get<TradeHistoryLeaf>();
+    storageUpdate.storageID = ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
+    storageUpdate.proof = j.at("proof").get<Proof>();
+    storageUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
+    storageUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
+    storageUpdate.before = j.at("before").get<StorageLeaf>();
+    storageUpdate.after = j.at("after").get<StorageLeaf>();
 }
 
 class AccountUpdate
@@ -173,8 +273,7 @@ static void from_json(const json& j, Signature& signature)
 class Order
 {
 public:
-    ethsnarks::FieldT exchangeID;
-    ethsnarks::FieldT orderID;
+    ethsnarks::FieldT storageID;
     ethsnarks::FieldT accountID;
     ethsnarks::FieldT tokenS;
     ethsnarks::FieldT tokenB;
@@ -185,17 +284,15 @@ public:
     ethsnarks::FieldT validUntil;
     ethsnarks::FieldT maxFeeBips;
     ethsnarks::FieldT buy;
+    ethsnarks::FieldT taker;
 
     ethsnarks::FieldT feeBips;
     ethsnarks::FieldT rebateBips;
-
-    Signature signature;
 };
 
 static void from_json(const json& j, Order& order)
 {
-    order.exchangeID = ethsnarks::FieldT(j.at("exchangeID"));
-    order.orderID = ethsnarks::FieldT(j.at("orderID").get<std::string>().c_str());
+    order.storageID = ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
     order.accountID = ethsnarks::FieldT(j.at("accountID"));
     order.tokenS = ethsnarks::FieldT(j.at("tokenS"));
     order.tokenB = ethsnarks::FieldT(j.at("tokenB"));
@@ -206,14 +303,13 @@ static void from_json(const json& j, Order& order)
     order.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     order.maxFeeBips = ethsnarks::FieldT(j.at("maxFeeBips"));
     order.buy = ethsnarks::FieldT(j.at("buy").get<bool>() ? 1 : 0);
+    order.taker = ethsnarks::FieldT(j.at("taker").get<std::string>().c_str());
 
     order.feeBips = ethsnarks::FieldT(j.at("feeBips"));
     order.rebateBips = ethsnarks::FieldT(j.at("rebateBips"));
-
-    order.signature = j.at("signature").get<Signature>();
 }
 
-class Ring
+class SpotTrade
 {
 public:
     Order orderA;
@@ -222,23 +318,131 @@ public:
     ethsnarks::FieldT fillS_B;
 };
 
-static void from_json(const json& j, Ring& ring)
+static void from_json(const json& j, SpotTrade& spotTrade)
 {
-    ring.orderA = j.at("orderA").get<Order>();
-    ring.orderB = j.at("orderB").get<Order>();
-    ring.fillS_A = ethsnarks::FieldT(j["fFillS_A"]);
-    ring.fillS_B = ethsnarks::FieldT(j["fFillS_B"]);
+    spotTrade.orderA = j.at("orderA").get<Order>();
+    spotTrade.orderB = j.at("orderB").get<Order>();
+    spotTrade.fillS_A = ethsnarks::FieldT(j["fFillS_A"]);
+    spotTrade.fillS_B = ethsnarks::FieldT(j["fFillS_B"]);
 }
 
-class RingSettlement
+class Deposit
 {
 public:
-    Ring ring;
+    ethsnarks::FieldT owner;
+    ethsnarks::FieldT accountID;
+    ethsnarks::FieldT tokenID;
+    ethsnarks::FieldT amount;
+};
 
-    ethsnarks::FieldT accountsMerkleRoot;
+static void from_json(const json& j, Deposit& deposit)
+{
+    deposit.owner = ethsnarks::FieldT(j.at("owner").get<std::string>().c_str());
+    deposit.accountID = ethsnarks::FieldT(j.at("accountID"));
+    deposit.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    deposit.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
+}
 
-    TradeHistoryUpdate tradeHistoryUpdate_A;
-    TradeHistoryUpdate tradeHistoryUpdate_B;
+class Withdrawal
+{
+public:
+    ethsnarks::FieldT accountID;
+    ethsnarks::FieldT tokenID;
+    ethsnarks::FieldT amount;
+    ethsnarks::FieldT feeTokenID;
+    ethsnarks::FieldT fee;
+    ethsnarks::FieldT to;
+    ethsnarks::FieldT dataHash;
+    ethsnarks::FieldT minGas;
+    ethsnarks::FieldT validUntil;
+    ethsnarks::FieldT type;
+};
+
+static void from_json(const json& j, Withdrawal& withdrawal)
+{
+    withdrawal.accountID = ethsnarks::FieldT(j.at("accountID"));
+    withdrawal.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    withdrawal.amount = ethsnarks::FieldT(j["amount"].get<std::string>().c_str());
+    withdrawal.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
+    withdrawal.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
+    withdrawal.to = ethsnarks::FieldT(j["to"].get<std::string>().c_str());
+    withdrawal.dataHash = ethsnarks::FieldT(j["dataHash"].get<std::string>().c_str());
+    withdrawal.minGas = ethsnarks::FieldT(j.at("minGas"));
+    withdrawal.validUntil = ethsnarks::FieldT(j.at("validUntil"));
+    withdrawal.type = ethsnarks::FieldT(j.at("type"));
+}
+
+
+class AccountUpdateTx
+{
+public:
+    ethsnarks::FieldT accountID;
+    ethsnarks::FieldT publicKeyX;
+    ethsnarks::FieldT publicKeyY;
+    ethsnarks::FieldT feeTokenID;
+    ethsnarks::FieldT fee;
+    ethsnarks::FieldT validUntil;
+    ethsnarks::FieldT type;
+};
+
+static void from_json(const json& j, AccountUpdateTx& update)
+{
+    update.accountID = ethsnarks::FieldT(j.at("accountID"));
+    update.publicKeyX = ethsnarks::FieldT(j["publicKeyX"].get<std::string>().c_str());
+    update.publicKeyY = ethsnarks::FieldT(j["publicKeyY"].get<std::string>().c_str());
+    update.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
+    update.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
+    update.validUntil = ethsnarks::FieldT(j.at("validUntil"));
+    update.type = ethsnarks::FieldT(j.at("type"));
+}
+
+class Transfer
+{
+public:
+
+    ethsnarks::FieldT fromAccountID;
+    ethsnarks::FieldT toAccountID;
+    ethsnarks::FieldT tokenID;
+    ethsnarks::FieldT amount;
+    ethsnarks::FieldT feeTokenID;
+    ethsnarks::FieldT fee;
+    ethsnarks::FieldT validUntil;
+    ethsnarks::FieldT to;
+    ethsnarks::FieldT dualAuthorX;
+    ethsnarks::FieldT dualAuthorY;
+    ethsnarks::FieldT data;
+    ethsnarks::FieldT storageID;
+    ethsnarks::FieldT payerToAccountID;
+    ethsnarks::FieldT payerTo;
+    ethsnarks::FieldT payeeToAccountID;
+    ethsnarks::FieldT type;
+};
+
+static void from_json(const json& j, Transfer& transfer)
+{
+    transfer.fromAccountID = ethsnarks::FieldT(j.at("fromAccountID"));
+    transfer.toAccountID = ethsnarks::FieldT(j.at("toAccountID"));
+    transfer.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    transfer.amount = ethsnarks::FieldT(j["amount"].get<std::string>().c_str());
+    transfer.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
+    transfer.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
+    transfer.validUntil = ethsnarks::FieldT(j.at("validUntil"));
+    transfer.to = ethsnarks::FieldT(j["to"].get<std::string>().c_str());
+    transfer.dualAuthorX = ethsnarks::FieldT(j["dualAuthorX"].get<std::string>().c_str());
+    transfer.dualAuthorY = ethsnarks::FieldT(j["dualAuthorY"].get<std::string>().c_str());
+    transfer.data = ethsnarks::FieldT(j["data"].get<std::string>().c_str());
+    transfer.storageID = ethsnarks::FieldT(j["storageID"].get<std::string>().c_str());
+    transfer.payerToAccountID = ethsnarks::FieldT(j.at("payerToAccountID"));
+    transfer.payerTo = ethsnarks::FieldT(j["payerTo"].get<std::string>().c_str());
+    transfer.payeeToAccountID = ethsnarks::FieldT(j.at("payeeToAccountID"));
+    transfer.type = ethsnarks::FieldT(j.at("type"));
+}
+
+class Witness
+{
+public:
+    StorageUpdate storageUpdate_A;
+    StorageUpdate storageUpdate_B;
 
     BalanceUpdate balanceUpdateS_A;
     BalanceUpdate balanceUpdateB_A;
@@ -248,42 +452,125 @@ public:
     BalanceUpdate balanceUpdateB_B;
     AccountUpdate accountUpdate_B;
 
+    BalanceUpdate balanceUpdateA_O;
+    BalanceUpdate balanceUpdateB_O;
+    AccountUpdate accountUpdate_O;
+
     BalanceUpdate balanceUpdateA_P;
     BalanceUpdate balanceUpdateB_P;
 
-    BalanceUpdate balanceUpdateA_O;
-    BalanceUpdate balanceUpdateB_O;
+    Signature signatureA;
+    Signature signatureB;
+
+    ethsnarks::FieldT numConditionalTransactionsAfter;
 };
 
-static void from_json(const json& j, RingSettlement& ringSettlement)
+static void from_json(const json& j, Witness& state)
 {
-    ringSettlement.ring = j.at("ring").get<Ring>();
+    state.storageUpdate_A = j.at("storageUpdate_A").get<StorageUpdate>();
+    state.storageUpdate_B = j.at("storageUpdate_B").get<StorageUpdate>();
 
-    ringSettlement.accountsMerkleRoot = ethsnarks::FieldT(j.at("accountsMerkleRoot").get<std::string>().c_str());
+    state.balanceUpdateS_A = j.at("balanceUpdateS_A").get<BalanceUpdate>();
+    state.balanceUpdateB_A = j.at("balanceUpdateB_A").get<BalanceUpdate>();
+    state.accountUpdate_A = j.at("accountUpdate_A").get<AccountUpdate>();
 
-    ringSettlement.tradeHistoryUpdate_A = j.at("tradeHistoryUpdate_A").get<TradeHistoryUpdate>();
-    ringSettlement.tradeHistoryUpdate_B = j.at("tradeHistoryUpdate_B").get<TradeHistoryUpdate>();
+    state.balanceUpdateS_B = j.at("balanceUpdateS_B").get<BalanceUpdate>();
+    state.balanceUpdateB_B = j.at("balanceUpdateB_B").get<BalanceUpdate>();
+    state.accountUpdate_B = j.at("accountUpdate_B").get<AccountUpdate>();
 
-    ringSettlement.balanceUpdateS_A = j.at("balanceUpdateS_A").get<BalanceUpdate>();
-    ringSettlement.balanceUpdateB_A = j.at("balanceUpdateB_A").get<BalanceUpdate>();
-    ringSettlement.accountUpdate_A = j.at("accountUpdate_A").get<AccountUpdate>();
+    state.balanceUpdateA_O = j.at("balanceUpdateA_O").get<BalanceUpdate>();
+    state.balanceUpdateB_O = j.at("balanceUpdateB_O").get<BalanceUpdate>();
+    state.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
-    ringSettlement.balanceUpdateS_B = j.at("balanceUpdateS_B").get<BalanceUpdate>();
-    ringSettlement.balanceUpdateB_B = j.at("balanceUpdateB_B").get<BalanceUpdate>();
-    ringSettlement.accountUpdate_B = j.at("accountUpdate_B").get<AccountUpdate>();
+    state.balanceUpdateA_P = j.at("balanceUpdateA_P").get<BalanceUpdate>();
+    state.balanceUpdateB_P = j.at("balanceUpdateB_P").get<BalanceUpdate>();
 
-    ringSettlement.balanceUpdateA_P = j.at("balanceUpdateA_P").get<BalanceUpdate>();
-    ringSettlement.balanceUpdateB_P = j.at("balanceUpdateB_P").get<BalanceUpdate>();
+    state.signatureA = dummySignature.get<Signature>();
+    state.signatureB = dummySignature.get<Signature>();
 
-    ringSettlement.balanceUpdateA_O = j.at("balanceUpdateA_O").get<BalanceUpdate>();
-    ringSettlement.balanceUpdateB_O = j.at("balanceUpdateB_O").get<BalanceUpdate>();
+    state.numConditionalTransactionsAfter = ethsnarks::FieldT(j.at("numConditionalTransactionsAfter"));
+
+    if (j.contains("signatureA"))
+    {
+        state.signatureA = j.at("signatureA").get<Signature>();
+    }
+    if (j.contains("signatureB"))
+    {
+        state.signatureB = j.at("signatureB").get<Signature>();
+    }
+    else
+    {
+        state.signatureB = state.signatureA;
+    }
 }
 
-class RingSettlementBlock
+class UniversalTransaction
+{
+public:
+    Witness witness;
+    ethsnarks::FieldT type;
+    SpotTrade spotTrade;
+    Transfer transfer;
+    Withdrawal withdraw;
+    Deposit deposit;
+    AccountUpdateTx accountUpdate;
+};
+
+static void from_json(const json& j, UniversalTransaction& transaction)
+{
+    transaction.witness = j.at("witness").get<Witness>();
+
+    // Fill in dummy data for all tx types
+    transaction.spotTrade = dummySpotTrade.get<Loopring::SpotTrade>();
+    transaction.transfer = dummyTransfer.get<Loopring::Transfer>();
+    transaction.withdraw = dummyWithdraw.get<Loopring::Withdrawal>();
+    transaction.deposit = dummyDeposit.get<Loopring::Deposit>();
+    transaction.accountUpdate = dummyAccountUpdate.get<Loopring::AccountUpdateTx>();
+
+    // Patch some of the dummy tx's so they are valid against the current state
+    // Deposit
+    transaction.deposit.owner = transaction.witness.accountUpdate_A.before.owner;
+    // Transfer
+    transaction.transfer.to = transaction.witness.accountUpdate_B.before.owner;
+    transaction.transfer.payerTo = transaction.witness.accountUpdate_B.before.owner;
+
+    // Now get the actual transaction data for the actual transaction that will execute from the block
+    if (j.contains("noop"))
+    {
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::Noop));
+    }
+    if (j.contains("spotTrade"))
+    {
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::SpotTrade));
+        transaction.spotTrade = j.at("spotTrade").get<Loopring::SpotTrade>();
+    }
+    else if (j.contains("transfer"))
+    {
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::Transfer));
+        transaction.transfer = j.at("transfer").get<Loopring::Transfer>();
+    }
+    else if (j.contains("withdraw"))
+    {
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::Withdrawal));
+        transaction.withdraw = j.at("withdraw").get<Loopring::Withdrawal>();
+    }
+    else if (j.contains("deposit"))
+    {
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::Deposit));
+        transaction.deposit = j.at("deposit").get<Loopring::Deposit>();
+    }
+    else if (j.contains("accountUpdate"))
+    {
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountUpdate));
+        transaction.accountUpdate = j.at("accountUpdate").get<Loopring::AccountUpdateTx>();
+    }
+}
+
+class Block
 {
 public:
 
-    ethsnarks::FieldT exchangeID;
+    ethsnarks::FieldT exchange;
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
@@ -300,12 +587,14 @@ public:
     ethsnarks::FieldT operatorAccountID;
     AccountUpdate accountUpdate_O;
 
-    std::vector<Loopring::RingSettlement> ringSettlements;
+    AccountUpdate accountUpdate_I;
+
+    std::vector<Loopring::UniversalTransaction> transactions;
 };
 
-static void from_json(const json& j, RingSettlementBlock& block)
+static void from_json(const json& j, Block& block)
 {
-    block.exchangeID = ethsnarks::FieldT(j["exchangeID"].get<unsigned int>());
+    block.exchange = ethsnarks::FieldT(j["exchange"].get<std::string>().c_str());
 
     block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
@@ -322,252 +611,15 @@ static void from_json(const json& j, RingSettlementBlock& block)
     block.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
     block.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
-    // Read settlements
-    json jRingSettlements = j["ringSettlements"];
-    for(unsigned int i = 0; i < jRingSettlements.size(); i++)
+    block.accountUpdate_I = j.at("accountUpdate_I").get<AccountUpdate>();
+
+    // Read transactions
+    json jTransactions = j["transactions"];
+    for(unsigned int i = 0; i < jTransactions.size(); i++)
     {
-        block.ringSettlements.emplace_back(jRingSettlements[i].get<Loopring::RingSettlement>());
+        block.transactions.emplace_back(jTransactions[i].get<Loopring::UniversalTransaction>());
     }
 }
-
-class Deposit
-{
-public:
-    ethsnarks::FieldT amount;
-    BalanceUpdate balanceUpdate;
-    AccountUpdate accountUpdate;
-};
-
-static void from_json(const json& j, Deposit& deposit)
-{
-    deposit.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
-    deposit.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
-    deposit.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
-}
-
-class DepositBlock
-{
-public:
-    ethsnarks::FieldT exchangeID;
-
-    ethsnarks::FieldT merkleRootBefore;
-    ethsnarks::FieldT merkleRootAfter;
-
-    ethsnarks::LimbT startHash;
-
-    ethsnarks::FieldT startIndex;
-    ethsnarks::FieldT count;
-
-    std::vector<Loopring::Deposit> deposits;
-};
-
-static void from_json(const json& j, DepositBlock& block)
-{
-    block.exchangeID = ethsnarks::FieldT(j["exchangeID"].get<unsigned int>());
-
-    block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
-    block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
-
-    block.startHash = ethsnarks::LimbT(j["startHash"].get<std::string>().c_str());
-
-    block.startIndex = ethsnarks::FieldT(j["startIndex"].get<std::string>().c_str());
-    block.count = ethsnarks::FieldT(j["count"].get<std::string>().c_str());
-
-    // Read deposits
-    json jDeposits = j["deposits"];
-    for(unsigned int i = 0; i < jDeposits.size(); i++)
-    {
-        block.deposits.emplace_back(jDeposits[i].get<Loopring::Deposit>());
-    }
-}
-
-class OnchainWithdrawal
-{
-public:
-    ethsnarks::FieldT amountRequested;
-    BalanceUpdate balanceUpdate;
-    AccountUpdate accountUpdate;
-};
-
-static void from_json(const json& j, OnchainWithdrawal& withdrawal)
-{
-    withdrawal.amountRequested = ethsnarks::FieldT(j.at("amountRequested").get<std::string>().c_str());
-    withdrawal.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
-    withdrawal.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
-}
-
-class OnchainWithdrawalBlock
-{
-public:
-
-    ethsnarks::FieldT exchangeID;
-
-    ethsnarks::FieldT merkleRootBefore;
-    ethsnarks::FieldT merkleRootAfter;
-
-    ethsnarks::LimbT startHash;
-
-    ethsnarks::FieldT startIndex;
-    ethsnarks::FieldT count;
-
-    std::vector<Loopring::OnchainWithdrawal> withdrawals;
-};
-
-static void from_json(const json& j, OnchainWithdrawalBlock& block)
-{
-    block.exchangeID = ethsnarks::FieldT(j["exchangeID"].get<unsigned int>());
-
-    block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
-    block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
-
-    block.startHash = ethsnarks::LimbT(j["startHash"].get<std::string>().c_str());
-
-    block.startIndex = ethsnarks::FieldT(j["startIndex"].get<std::string>().c_str());
-    block.count = ethsnarks::FieldT(j["count"].get<std::string>().c_str());
-
-    // Read withdrawals
-    json jWithdrawals = j["withdrawals"];
-    for(unsigned int i = 0; i < jWithdrawals.size(); i++)
-    {
-        block.withdrawals.emplace_back(jWithdrawals[i].get<Loopring::OnchainWithdrawal>());
-    }
-}
-
-
-class OffchainWithdrawal
-{
-public:
-    ethsnarks::FieldT amountRequested;
-    ethsnarks::FieldT fee;
-    Signature signature;
-
-    BalanceUpdate balanceUpdateF_A;
-    BalanceUpdate balanceUpdateW_A;
-    AccountUpdate accountUpdate_A;
-    BalanceUpdate balanceUpdateF_O;
-};
-
-static void from_json(const json& j, OffchainWithdrawal& withdrawal)
-{
-    withdrawal.amountRequested = ethsnarks::FieldT(j.at("amountRequested").get<std::string>().c_str());
-    withdrawal.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
-    withdrawal.signature = j.at("signature").get<Signature>();
-
-    withdrawal.balanceUpdateF_A = j.at("balanceUpdateF_A").get<BalanceUpdate>();
-    withdrawal.balanceUpdateW_A = j.at("balanceUpdateW_A").get<BalanceUpdate>();
-    withdrawal.accountUpdate_A = j.at("accountUpdate_A").get<AccountUpdate>();
-    withdrawal.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
-}
-
-class OffchainWithdrawalBlock
-{
-public:
-
-    ethsnarks::FieldT exchangeID;
-
-    ethsnarks::FieldT merkleRootBefore;
-    ethsnarks::FieldT merkleRootAfter;
-
-    ethsnarks::LimbT startHash;
-
-    ethsnarks::FieldT operatorAccountID;
-    AccountUpdate accountUpdate_O;
-
-    std::vector<Loopring::OffchainWithdrawal> withdrawals;
-};
-
-static void from_json(const json& j, OffchainWithdrawalBlock& block)
-{
-    block.exchangeID = ethsnarks::FieldT(j["exchangeID"].get<unsigned int>());
-
-    block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
-    block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
-
-    block.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
-    block.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
-
-    // Read withdrawals
-    json jWithdrawals = j["withdrawals"];
-    for(unsigned int i = 0; i < jWithdrawals.size(); i++)
-    {
-        block.withdrawals.emplace_back(jWithdrawals[i].get<Loopring::OffchainWithdrawal>());
-    }
-}
-
-/*
- * New internal transfer protocal
- */
-class InternalTransfer
-{
-public:
-    ethsnarks::FieldT fee;
-    ethsnarks::FieldT amount;
-    ethsnarks::FieldT type;
-    Signature signature;
-
-    ethsnarks::FieldT numConditionalTransfersAfter;
-
-    BalanceUpdate balanceUpdateF_From; // pay fee step
-    BalanceUpdate balanceUpdateT_From; // transfer step
-    AccountUpdate accountUpdate_From;
-
-    BalanceUpdate balanceUpdateT_To;   // receive transfer
-    AccountUpdate accountUpdate_To;
-
-    BalanceUpdate balanceUpdateF_O;	   // receive fee
-};
-
-static void from_json(const json& j, InternalTransfer& interTrans)
-{
-    interTrans.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
-    interTrans.amount = ethsnarks::FieldT(j["amountRequested"].get<std::string>().c_str());
-    interTrans.type = ethsnarks::FieldT(j.at("type"));
-    interTrans.signature = j.at("signature").get<Signature>();
-
-    interTrans.numConditionalTransfersAfter = ethsnarks::FieldT(j.at("numConditionalTransfersAfter"));
-
-    interTrans.balanceUpdateF_From = j.at("balanceUpdateF_From").get<BalanceUpdate>();
-    interTrans.balanceUpdateT_From = j.at("balanceUpdateT_From").get<BalanceUpdate>();
-    interTrans.accountUpdate_From = j.at("accountUpdate_From").get<AccountUpdate>();
-
-    interTrans.balanceUpdateT_To = j.at("balanceUpdateT_To").get<BalanceUpdate>();
-    interTrans.accountUpdate_To = j.at("accountUpdate_To").get<AccountUpdate>();
-
-    interTrans.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
-}
-
-class InternalTransferBlock
-{
-public:
-    ethsnarks::FieldT exchangeID;
-
-    ethsnarks::FieldT merkleRootBefore;
-    ethsnarks::FieldT merkleRootAfter;
-
-    ethsnarks::FieldT operatorAccountID;
-    AccountUpdate accountUpdate_O;
-
-    std::vector<Loopring::InternalTransfer> transfers;
-};
-
-static void from_json(const json& j, InternalTransferBlock& block)
-{
-    block.exchangeID = ethsnarks::FieldT(j["exchangeID"].get<unsigned int>());
-
-    block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
-    block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
-
-    block.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
-    block.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
-
-    // Read internal transfers
-    json jTransfers = j["transfers"];
-    for(unsigned int i = 0; i < jTransfers.size(); i++)
-    {
-        block.transfers.emplace_back(jTransfers[i].get<Loopring::InternalTransfer>());
-    }
-}
-
 
 }
 

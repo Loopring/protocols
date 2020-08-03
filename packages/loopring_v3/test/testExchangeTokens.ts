@@ -8,19 +8,8 @@ contract("Exchange", (accounts: string[]) => {
   let loopring: any;
   let exchangeID = 0;
 
-  const getTokenRegistrationCost = async (numTokens: number) => {
-    const tokenRegistrationFeeLRCBase = await loopring.tokenRegistrationFeeLRCBase();
-    const tokenRegistrationFeeLRCDelta = await loopring.tokenRegistrationFeeLRCDelta();
-    const cost = tokenRegistrationFeeLRCBase.add(
-      tokenRegistrationFeeLRCDelta.mul(new BN(numTokens))
-    );
-    return cost;
-  };
-
   const registerTokenChecked = async (token: string, user: string) => {
     const tokenAddress = exchangeTestUtil.getTokenAddress(token);
-    // LRC cost to register a token
-    const registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
 
     const lrc = (await exchangeTestUtil.contracts.LRCToken.deployed()).address;
     const snapshot = new BalanceSnapshot(exchangeTestUtil);
@@ -29,14 +18,6 @@ contract("Exchange", (accounts: string[]) => {
       exchangeTestUtil.depositContract.address,
       lrc,
       "depositContract"
-    );
-    await snapshot.transfer(
-      user,
-      exchangeTestUtil.protocolFeeVault,
-      lrc,
-      registrationCost,
-      "user",
-      "protocolFeeVault"
     );
 
     await exchange.registerToken(tokenAddress, { from: user });
@@ -91,30 +72,12 @@ contract("Exchange", (accounts: string[]) => {
       it("should be able to register a token", async () => {
         await createExchange(false);
 
-        // Make sure the exchange owner has enough LRC
-        const registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
-        await exchangeTestUtil.setBalanceAndApprove(
-          exchangeTestUtil.exchangeOwner,
-          "LRC",
-          registrationCost,
-          exchangeTestUtil.exchange.address
-        );
-
         // Register the token
         await registerTokenChecked("GTO", exchangeTestUtil.exchangeOwner);
       });
 
       it("should not be able to register a token multiple times", async () => {
         await createExchange(false);
-
-        // Make sure the exchange owner has enough LRC
-        const registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
-        await exchangeTestUtil.setBalanceAndApprove(
-          exchangeTestUtil.exchangeOwner,
-          "LRC",
-          registrationCost,
-          exchangeTestUtil.exchange.address
-        );
 
         // Register the token
         await registerTokenChecked("GTO", exchangeTestUtil.exchangeOwner);
@@ -153,46 +116,8 @@ contract("Exchange", (accounts: string[]) => {
       });
     });
 
-    it("token registration cost should be as expected", async () => {
+    it("LRC and ETH should be preregistered", async () => {
       await createExchange(false);
-
-      let numTokens = 3;
-      let expectedCost = await getTokenRegistrationCost(numTokens);
-      let registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
-      assert(
-        registrationCost.eq(expectedCost),
-        "token registration cost not as expected"
-      );
-
-      // Register the token
-      await exchangeTestUtil.setBalanceAndApprove(
-        exchangeTestUtil.exchangeOwner,
-        "LRC",
-        registrationCost,
-        exchangeTestUtil.exchange.address
-      );
-      await registerTokenChecked("GTO", exchangeTestUtil.exchangeOwner);
-      numTokens++;
-
-      expectedCost = await getTokenRegistrationCost(numTokens);
-      registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
-      assert(
-        registrationCost.eq(expectedCost),
-        "token registration cost not as expected"
-      );
-    });
-
-    it("LRC, ETH and WETH should be preregistered", async () => {
-      await createExchange(false);
-
-      // Make sure the exchange owner has enough LRC
-      const registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
-      await exchangeTestUtil.setBalanceAndApprove(
-        exchangeTestUtil.exchangeOwner,
-        "LRC",
-        registrationCost,
-        exchangeTestUtil.exchange.address
-      );
 
       // Try to register LRC
       await expectThrow(
@@ -204,13 +129,6 @@ contract("Exchange", (accounts: string[]) => {
       // Try to register ETH
       await expectThrow(
         exchange.registerToken(exchangeTestUtil.getTokenAddress("ETH"), {
-          from: exchangeTestUtil.exchangeOwner
-        }),
-        "TOKEN_ALREADY_EXIST"
-      );
-      // Try to register WETH
-      await expectThrow(
-        exchange.registerToken(exchangeTestUtil.getTokenAddress("WETH"), {
           from: exchangeTestUtil.exchangeOwner
         }),
         "TOKEN_ALREADY_EXIST"

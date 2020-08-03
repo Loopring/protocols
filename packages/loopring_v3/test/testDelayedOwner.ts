@@ -4,7 +4,7 @@ import { ExchangeTestUtil } from "./testExchangeUtil";
 import { expectThrow } from "./expectThrow";
 
 contract("DelayedOwner", (accounts: string[]) => {
-  const contracts = new Artifacts(artifacts);
+  let contracts: Artifacts;
   let targetContract: any;
   let delayedContract: any;
   let targetInterface: any;
@@ -83,6 +83,7 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   before(async () => {
+    contracts = new Artifacts(artifacts);
     exchangeTestUtil = new ExchangeTestUtil();
   });
 

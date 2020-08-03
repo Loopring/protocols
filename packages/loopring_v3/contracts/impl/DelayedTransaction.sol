@@ -1,25 +1,11 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 
 import "../iface/IDelayedTransaction.sol";
 
 import "../lib/AddressUtil.sol";
-import "../lib/BytesUtil.sol";
+import "../thirdparty/BytesUtil.sol";
 import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
 
@@ -52,7 +38,6 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
     constructor(
         uint    _timeToLive
         )
-        public
     {
         timeToLive = _timeToLive;
     }
@@ -84,10 +69,10 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
         Transaction memory transaction = getTransaction(transactionId);
 
         // Make sure the delay is respected
-        bytes4 functionSelector = transaction.data.bytesToBytes4(0);
+        bytes4 functionSelector = transaction.data.toBytes4(0);
         uint delay = getFunctionDelay(transaction.to, functionSelector);
-        require(now >= transaction.timestamp.add(delay), "TOO_EARLY");
-        require(now <= transaction.timestamp.add(delay).add(timeToLive), "TOO_LATE");
+        require(block.timestamp >= transaction.timestamp.add(delay), "TOO_EARLY");
+        require(block.timestamp <= transaction.timestamp.add(delay).add(timeToLive), "TOO_LATE");
 
         // Remove the transaction
         removeTransaction(transaction.id);
@@ -181,13 +166,13 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
     {
         Transaction memory transaction = Transaction(
             totalNumDelayedTransactions,
-            now,
+            block.timestamp,
             to,
             value,
             data
         );
 
-        bytes4 functionSelector = transaction.data.bytesToBytes4(0);
+        bytes4 functionSelector = transaction.data.toBytes4(0);
         uint delay = getFunctionDelay(transaction.to, functionSelector);
         if (delay == 0) {
             (bool success, bytes memory returnData) = exectuteTransaction(transaction);

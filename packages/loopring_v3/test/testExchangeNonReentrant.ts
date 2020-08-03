@@ -1,6 +1,6 @@
 import BN = require("bn.js");
 import fs = require("fs");
-import { Constants } from "loopringV3.js";
+import { Constants, BlockType } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
 
@@ -70,11 +70,7 @@ contract("Exchange", (accounts: string[]) => {
         );
         const owner = exchangeTestUtil.testContext.orderOwners[0];
         const amount = new BN(web3.utils.toWei("7", "ether"));
-
-        // The correct deposit fee expected by the contract
-        const fees = await exchange.getFees();
-        const accountCreationFee = fees._accountCreationFeeETH;
-        const depositFee = fees._depositFeeETH;
+        const depositFee = exchangeTestUtil.getRandomFee();
 
         // Set the correct balance/approval
         await exchangeTestUtil.setBalanceAndApprove(
@@ -97,28 +93,39 @@ contract("Exchange", (accounts: string[]) => {
             values.push([false]);
           } else if (input.type === "bytes") {
             values.push(web3.utils.hexToBytes("0x"));
+          } else if (input.type === "bytes32") {
+            values.push("0x0");
           } else if (
             input.internalType.startsWith("struct ExchangeData.Block[]")
           ) {
             const block: OnchainBlock = {
-              blockType: 0,
+              blockType: BlockType.UNIVERSAL,
               blockSize: 1,
               blockVersion: 0,
               data: Constants.emptyBytes,
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
             values.push([block]);
+          } else if (
+            input.internalType.startsWith("struct ExchangeData.MerkleProof")
+          ) {
+            const proof = await exchangeTestUtil.createMerkleTreeInclusionProof(
+              0,
+              "ETH"
+            );
+            values.push(proof);
           } else if (input.type.startsWith("uint256[][]")) {
             values.push([new Array(1).fill("0")]);
           } else if (input.type.startsWith("uint256[]")) {
             values.push(new Array(1).fill("0"));
           } else if (input.type.startsWith("uint256[8]")) {
             values.push(new Array(8).fill("0"));
-          } else if (input.type.startsWith("uint256[15]")) {
-            values.push(new Array(15).fill("0"));
-          } else if (input.type.startsWith("uint256[36]")) {
+          } else if (input.type.startsWith("uint256[18]")) {
+            values.push(new Array(18).fill("0"));
+          } else if (input.type.startsWith("uint256[48]")) {
             values.push(new Array(36).fill("0"));
           } else {
             values.push("0");
@@ -131,12 +138,11 @@ contract("Exchange", (accounts: string[]) => {
         await TestToken.setCalldata(web3.utils.hexToBytes(calldata));
 
         // TESTToken will check if the revert message is REENTRANCY.
-        const ethToSend = accountCreationFee.add(depositFee);
+        const ethToSend = depositFee;
         await expectThrow(
-          exchange.updateAccountAndDeposit(
+          exchange.deposit(
             owner,
-            new BN(1),
-            new BN(0),
+            owner,
             testTokenAddress,
             web3.utils.toBN(amount),
             Constants.emptyBytes,
@@ -147,10 +153,9 @@ contract("Exchange", (accounts: string[]) => {
 
         // Disable the test and deposit again
         await TestToken.setTestCase(await TestToken.TEST_NOTHING());
-        exchange.updateAccountAndDeposit(
+        exchange.deposit(
           owner,
-          new BN(1),
-          new BN(0),
+          owner,
           testTokenAddress,
           web3.utils.toBN(amount),
           Constants.emptyBytes,

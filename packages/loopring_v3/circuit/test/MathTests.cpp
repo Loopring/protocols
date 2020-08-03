@@ -1,9 +1,11 @@
 #include "../ThirdParty/catch.hpp"
 #include "TestUtils.h"
 
+#include "../Utils/Constants.h"
 #include "../Gadgets/MathGadgets.h"
+#include "../Gadgets/AccountGadgets.h"
 
-TEST_CASE("Variable selection", "[TernaryGadget]")
+TEST_CASE("ternary variable", "[TernaryGadget]")
 {
     protoboard<FieldT> pb;
 
@@ -43,6 +45,46 @@ TEST_CASE("Variable selection", "[TernaryGadget]")
 
         REQUIRE(!pb.is_satisfied());
     }
+}
+
+TEST_CASE("ternary array", "[ArrayTernaryGadget]")
+{
+    unsigned int maxNumInputs = 1024;
+    unsigned int numIterations = 16;
+    for (unsigned int n = 1; n < maxNumInputs; n++) {
+        DYNAMIC_SECTION("Length: " << n)
+    {
+        for (unsigned int j = 0; j < numIterations; j++)
+        {
+            protoboard<FieldT> pb;
+
+            bool toggle = (rand() % 2) == 0;
+
+            VariableT b = make_variable(pb, toggle ? 1 : 0, "b");
+            VariableArrayT A = make_var_array(pb, n, ".A");
+            VariableArrayT B = make_var_array(pb, n, ".B");
+            for (unsigned int i = 0; i < n; i++)
+            {
+                pb.val(A[i]) = rand() % 2;
+                pb.val(B[i]) = rand() % 2;
+            }
+
+            ArrayTernaryGadget arrayTernaryGadget(pb, b, A, B, "arrayTernaryGadget");
+            arrayTernaryGadget.generate_r1cs_constraints();
+            arrayTernaryGadget.generate_r1cs_witness();
+
+            REQUIRE(pb.is_satisfied());
+            for (unsigned int i = 0; i < n; i++)
+            {
+                REQUIRE((pb.val(arrayTernaryGadget.result()[i]) == (toggle ? pb.val(A[i]) : pb.val(B[i]))));
+            }
+
+            // Flip a bit
+            unsigned int randomBit = rand() % n;
+            pb.val(arrayTernaryGadget.result()[randomBit]) = FieldT::one() - pb.val(arrayTernaryGadget.result()[randomBit]);
+            REQUIRE(pb.is_satisfied() == false);
+        }
+    }}
 }
 
 TEST_CASE("AND", "[AndGadget]")
@@ -456,14 +498,136 @@ TEST_CASE("RequireNotEqual", "[RequireNotEqualGadget]")
     }}
 }
 
+TEST_CASE("IfThenRequire", "[IfThenRequireGadget]")
+{
+    auto ifThenRequireChecked = [](const BigInt& _A, const BigInt& _B)
+    {
+        protoboard<FieldT> pb;
+
+        VariableT a = make_variable(pb, toFieldElement(_A), ".A");
+        VariableT b = make_variable(pb, toFieldElement(_B), ".B");
+
+        IfThenRequireGadget ifThenRequireGadget(pb, a, b, "ifThenRequireGadget");
+        ifThenRequireGadget.generate_r1cs_constraints();
+        ifThenRequireGadget.generate_r1cs_witness();
+
+        bool expectedResult = (_A == 1) ? (_B == 1) : true;
+        REQUIRE(pb.is_satisfied() == expectedResult);
+    };
+
+    SECTION("if false then false")
+    {
+        ifThenRequireChecked(0, 0);
+    }
+
+    SECTION("if false then true")
+    {
+        ifThenRequireChecked(0, 1);
+    }
+
+    SECTION("if true then false")
+    {
+        ifThenRequireChecked(1, 0);
+    }
+
+    SECTION("if false then true")
+    {
+        ifThenRequireChecked(1, 1);
+    }
+}
+
+TEST_CASE("IfThenRequireEqual", "[IfThenRequireEqualGadget]")
+{
+    auto ifThenRequireEqualChecked = [](const BigInt& _C, const BigInt& _A, const BigInt& _B)
+    {
+        protoboard<FieldT> pb;
+
+        VariableT c = make_variable(pb, toFieldElement(_C), ".C");
+        VariableT a = make_variable(pb, toFieldElement(_A), ".A");
+        VariableT b = make_variable(pb, toFieldElement(_B), ".B");
+
+        IfThenRequireEqualGadget ifThenRequireEqualGadget(pb, c, a, b, "ifThenRequireEqualGadget");
+        ifThenRequireEqualGadget.generate_r1cs_constraints();
+        ifThenRequireEqualGadget.generate_r1cs_witness();
+
+        bool expectedResult = (_C == 1) ? (_A == _B) : true;
+        REQUIRE(pb.is_satisfied() == expectedResult);
+    };
+
+    auto A = getRandomFieldElementAsBigInt();
+    auto B = getRandomFieldElementAsBigInt();
+
+    SECTION("if false then (A != B)")
+    {
+        ifThenRequireEqualChecked(0, A, B);
+    }
+
+    SECTION("if false then (A == B)")
+    {
+        ifThenRequireEqualChecked(0, A, A);
+    }
+
+    SECTION("if true then (A != B)")
+    {
+        ifThenRequireEqualChecked(1, B, A);
+    }
+
+    SECTION("if true then (A == B)")
+    {
+        ifThenRequireEqualChecked(1, B, B);
+    }
+}
+
+TEST_CASE("IfThenRequireNotEqual", "[IfThenRequireNotEqualGadget]")
+{
+    auto ifThenRequireNotEqualGadget = [](const BigInt& _C, const BigInt& _A, const BigInt& _B)
+    {
+        protoboard<FieldT> pb;
+
+        VariableT c = make_variable(pb, toFieldElement(_C), ".C");
+        VariableT a = make_variable(pb, toFieldElement(_A), ".A");
+        VariableT b = make_variable(pb, toFieldElement(_B), ".B");
+
+        IfThenRequireNotEqualGadget ifThenRequireNotEqualGadget(pb, c, a, b, "ifThenRequireNotEqualGadget");
+        ifThenRequireNotEqualGadget.generate_r1cs_constraints();
+        ifThenRequireNotEqualGadget.generate_r1cs_witness();
+
+        bool expectedResult = (_C == 1) ? (_A != _B) : true;
+        REQUIRE(pb.is_satisfied() == expectedResult);
+    };
+
+    auto A = getRandomFieldElementAsBigInt();
+    auto B = getRandomFieldElementAsBigInt();
+
+    SECTION("if false then (A != B)")
+    {
+        ifThenRequireNotEqualGadget(0, A, B);
+    }
+
+    SECTION("if false then (A == B)")
+    {
+        ifThenRequireNotEqualGadget(0, A, A);
+    }
+
+    SECTION("if true then (A != B)")
+    {
+        ifThenRequireNotEqualGadget(1, B, A);
+    }
+
+    SECTION("if true then (A == B)")
+    {
+        ifThenRequireNotEqualGadget(1, B, B);
+    }
+}
+
 TEST_CASE("Min", "[MinGadget]")
 {
     unsigned int maxLength = 252;
-    unsigned int numIterations = 8;
+    unsigned int numIterations = 16;
     for (unsigned int n = 1; n <= maxLength; n++) {
         DYNAMIC_SECTION("Bit-length: " << n)
     {
-        auto requireLeqChecked = [n](const BigInt& _A, const BigInt& _B)
+        auto minChecked = [n](const BigInt& _A, const BigInt& _B)
         {
             protoboard<FieldT> pb;
 
@@ -483,47 +647,125 @@ TEST_CASE("Min", "[MinGadget]")
 
         SECTION("min(0, 0)")
         {
-            requireLeqChecked(0, 0);
+            minChecked(0, 0);
         }
 
         SECTION("min(1, 0)")
         {
-            requireLeqChecked(1, 0);
+            minChecked(1, 0);
         }
 
         SECTION("min(0, 1)")
         {
-            requireLeqChecked(0, 1);
+            minChecked(0, 1);
         }
 
         SECTION("min(max, max)")
         {
-            requireLeqChecked(max, max);
+            minChecked(max, max);
         }
 
         SECTION("min(max - 1, max)")
         {
-            requireLeqChecked(max - 1, max);
+            minChecked(max - 1, max);
         }
 
         SECTION("min(max, max - 1)")
         {
-            requireLeqChecked(max, max - 1);
+            minChecked(max, max - 1);
         }
 
         SECTION("min(0, max)")
         {
-            requireLeqChecked(0, max);
+            minChecked(0, max);
         }
 
         SECTION("min(max, 0)")
         {
-            requireLeqChecked(max, 0);
+            minChecked(max, 0);
         }
 
         SECTION("Random")
         {
-            requireLeqChecked(getRandomFieldElementAsBigInt(n), getRandomFieldElementAsBigInt(n));
+            for (unsigned int j = 0; j < numIterations; j++)
+            {
+                minChecked(getRandomFieldElementAsBigInt(n), getRandomFieldElementAsBigInt(n));
+            }
+        }
+    }}
+}
+
+TEST_CASE("Max", "[MaxGadget]")
+{
+    unsigned int maxLength = 252;
+    unsigned int numIterations = 16;
+    for (unsigned int n = 1; n <= maxLength; n++) {
+        DYNAMIC_SECTION("Bit-length: " << n)
+    {
+        auto maxChecked = [n](const BigInt& _A, const BigInt& _B)
+        {
+            protoboard<FieldT> pb;
+
+            pb_variable<FieldT> a = make_variable(pb, toFieldElement(_A), ".A");
+            pb_variable<FieldT> b = make_variable(pb, toFieldElement(_B), ".B");
+
+            MaxGadget maxGadget(pb, a, b, n, "maxGadget");
+            maxGadget.generate_r1cs_constraints();
+            maxGadget.generate_r1cs_witness();
+
+            BigInt expectedResult = (_A > _B) ? _A : _B;
+            REQUIRE(pb.is_satisfied());
+            REQUIRE((pb.val(maxGadget.result()) == toFieldElement(expectedResult)));
+        };
+
+        BigInt max = getMaxFieldElementAsBigInt(n);
+
+        SECTION("max(0, 0)")
+        {
+            maxChecked(0, 0);
+        }
+
+        SECTION("max(1, 0)")
+        {
+            maxChecked(1, 0);
+        }
+
+        SECTION("max(0, 1)")
+        {
+            maxChecked(0, 1);
+        }
+
+        SECTION("max(max, max)")
+        {
+            maxChecked(max, max);
+        }
+
+        SECTION("max(max - 1, max)")
+        {
+            maxChecked(max - 1, max);
+        }
+
+        SECTION("max(max, max - 1)")
+        {
+            maxChecked(max, max - 1);
+        }
+
+        SECTION("max(0, max)")
+        {
+            maxChecked(0, max);
+        }
+
+        SECTION("max(max, 0)")
+        {
+            maxChecked(max, 0);
+        }
+
+        SECTION("Random")
+        {
+            for (unsigned int j = 0; j < numIterations; j++)
+            {
+                maxChecked(getRandomFieldElementAsBigInt(n), getRandomFieldElementAsBigInt(n));
+            }
         }
     }}
 }
@@ -548,9 +790,15 @@ TEST_CASE("Leq", "[LeqGadget]")
 
             bool expectedLt = _A < _B;
             bool expectedLeq = _A <= _B;
+            bool expectedEq = _A == _B;
+            bool expectedGte = _A >= _B;
+            bool expectedGt = _A > _B;
             REQUIRE(pb.is_satisfied());
             REQUIRE((pb.val(leqGadget.lt()) == (expectedLt ? FieldT::one() : FieldT::zero())));
             REQUIRE((pb.val(leqGadget.leq()) == (expectedLeq ? FieldT::one() : FieldT::zero())));
+            REQUIRE((pb.val(leqGadget.eq()) == (expectedEq ? FieldT::one() : FieldT::zero())));
+            REQUIRE((pb.val(leqGadget.gte()) == (expectedGte ? FieldT::one() : FieldT::zero())));
+            REQUIRE((pb.val(leqGadget.gt()) == (expectedGt ? FieldT::one() : FieldT::zero())));
         };
 
         BigInt max = getMaxFieldElementAsBigInt(n);
@@ -959,96 +1207,166 @@ TEST_CASE("Add", "[AddGadget]")
     }}
 }
 
-TEST_CASE("subadd", "[subadd_gadget]")
+TEST_CASE("Sub", "[SubGadget]")
 {
     unsigned int maxLength = 252;
     for (unsigned int n = 1; n <= maxLength; n++) {
         DYNAMIC_SECTION("Bit-length: " << n)
     {
-        auto subaddChecked = [n](const FieldT& _from, const FieldT& _to, const FieldT& _amount,
-                                 bool expectedSatisfied, const FieldT& expectedFromAfter = 0, const FieldT& expectedToAfter = 0)
+        auto subChecked = [n](const BigInt& _A, const BigInt& _B)
         {
             protoboard<FieldT> pb;
 
-            pb_variable<FieldT> from = make_variable(pb, _from, "from");
-            pb_variable<FieldT> to = make_variable(pb, _to, "to");
-            pb_variable<FieldT> amount = make_variable(pb, _amount, "amount");
+            pb_variable<FieldT> A = make_variable(pb, toFieldElement(_A), "A");
+            pb_variable<FieldT> B = make_variable(pb, toFieldElement(_B), "B");
 
-            subadd_gadget subAddGadget(pb, n, from, to, amount, "subAddGadget");
-            subAddGadget.generate_r1cs_constraints();
-            subAddGadget.generate_r1cs_witness();
+            SubGadget subGadget(pb, A, B, n, "subGadget");
+            subGadget.generate_r1cs_constraints();
+            subGadget.generate_r1cs_witness();
+
+            BigInt difference = _A - _B;
+            bool expectedSatisfied = (difference >= BigInt(0));
 
             REQUIRE(pb.is_satisfied() == expectedSatisfied);
             if (expectedSatisfied)
             {
-                REQUIRE(((pb.val(subAddGadget.X)) == expectedFromAfter));
-                REQUIRE(((pb.val(subAddGadget.Y)) == expectedToAfter));
+                REQUIRE(((pb.val(subGadget.result())) == toFieldElement(difference)));
             }
         };
 
-        FieldT max = getMaxFieldElement(n);
-        FieldT halfMax = getMaxFieldElement(n - 1);
+        BigInt max = getMaxFieldElementAsBigInt(n);
+        BigInt halfMax = getMaxFieldElementAsBigInt(n - 1);
 
-        SECTION("(0, 0) -+ 0")
+        SECTION("0 - 0")
         {
-            subaddChecked(0, 0, 0, true, 0, 0);
+            subChecked(0, 0);
         }
 
-        SECTION("(1, 0) -+ 1")
+        SECTION("0 - 1")
         {
-            subaddChecked(1, 0, 1, true, 0, 1);
+            subChecked(0, 1);
         }
 
-        SECTION("(max, 0) -+ 0")
+        SECTION("1 - 0")
         {
-            subaddChecked(max, 0, 0, true, max, 0);
+            subChecked(1, 0);
         }
 
-        SECTION("(max, 0) -+ max")
+        SECTION("max - 0")
         {
-            subaddChecked(max, 0, max, true, 0, max);
+            subChecked(max, 0);
         }
 
-        SECTION("(halfMax, halfMax + 1) -+ halfMax")
+        SECTION("max - 1")
         {
-            subaddChecked(halfMax, halfMax + 1, halfMax, true, 0, max);
+            subChecked(max, 1);
         }
 
-        SECTION("(max, max) -+ max  (overflow)")
+        SECTION("0 - max")
         {
-            subaddChecked(max, max, max, false);
+            subChecked(0, max);
         }
 
-        SECTION("(halfMax, halfMax + 2) -+ halfMax  (overflow)")
+        SECTION("max - max")
         {
-            subaddChecked(halfMax, halfMax + 2, halfMax, false);
+            subChecked(max, max);
         }
 
-        SECTION("(halfMax - 1, halfMax + 1) -+ halfMax (underflow)")
+        SECTION("halfMax - (halfMax + 2) (underflow)")
         {
-            subaddChecked(halfMax - 1, halfMax + 1, halfMax, false);
-        }
-
-        SECTION("(0, 0) -+ 1 (underflow)")
-        {
-            subaddChecked(0, 0, 1, false);
-        }
-
-        SECTION("(0, 0) -+ max (underflow)")
-        {
-            subaddChecked(0, 0, max, false);
-        }
-
-        SECTION("(max - 1, 0) -+ max  (underflow)")
-        {
-            subaddChecked(max - 1, 0, max, false);
-        }
-
-        SECTION("(max, 1) -+ max  (overflow)")
-        {
-            subaddChecked(max, 1, max, false);
+            subChecked(halfMax, halfMax + 2);
         }
     }}
+}
+
+TEST_CASE("transfer", "[TransferGadget]")
+{
+    auto transferChecked = [](const FieldT& _from, const FieldT& _to, const FieldT& _amount,
+                              bool expectedSatisfied, const FieldT& expectedFromAfter = 0, const FieldT& expectedToAfter = 0)
+    {
+        protoboard<FieldT> pb;
+
+        pb_variable<FieldT> from = make_variable(pb, _from, "from");
+        pb_variable<FieldT> to = make_variable(pb, _to, "to");
+        pb_variable<FieldT> amount = make_variable(pb, _amount, "amount");
+
+        DynamicVariableGadget dFrom(pb, from, ".dFrom");
+        DynamicVariableGadget dTo(pb, to, ".ddToFrom");
+
+        TransferGadget transferGadget(pb, dFrom, dTo, amount, "transferGadget");
+        transferGadget.generate_r1cs_constraints();
+        transferGadget.generate_r1cs_witness();
+
+        REQUIRE(pb.is_satisfied() == expectedSatisfied);
+        if (expectedSatisfied)
+        {
+            REQUIRE(((pb.val(dFrom.back())) == expectedFromAfter));
+            REQUIRE(((pb.val(dTo.back())) == expectedToAfter));
+        }
+    };
+
+    FieldT max = getMaxFieldElement(NUM_BITS_AMOUNT);
+    FieldT halfMax = getMaxFieldElement(NUM_BITS_AMOUNT - 1);
+
+    SECTION("(0, 0) -+ 0")
+    {
+        transferChecked(0, 0, 0, true, 0, 0);
+    }
+
+    SECTION("(1, 0) -+ 1")
+    {
+        transferChecked(1, 0, 1, true, 0, 1);
+    }
+
+    SECTION("(max, 0) -+ 0")
+    {
+        transferChecked(max, 0, 0, true, max, 0);
+    }
+
+    SECTION("(max, 0) -+ max")
+    {
+        transferChecked(max, 0, max, true, 0, max);
+    }
+
+    SECTION("(halfMax, halfMax + 1) -+ halfMax")
+    {
+        transferChecked(halfMax, halfMax + 1, halfMax, true, 0, max);
+    }
+
+    SECTION("(max, max) -+ max  (overflow)")
+    {
+        transferChecked(max, max, max, false);
+    }
+
+    SECTION("(halfMax, halfMax + 2) -+ halfMax  (overflow)")
+    {
+        transferChecked(halfMax, halfMax + 2, halfMax, false);
+    }
+
+    SECTION("(halfMax - 1, halfMax + 1) -+ halfMax (underflow)")
+    {
+        transferChecked(halfMax - 1, halfMax + 1, halfMax, false);
+    }
+
+    SECTION("(0, 0) -+ 1 (underflow)")
+    {
+        transferChecked(0, 0, 1, false);
+    }
+
+    SECTION("(0, 0) -+ max (underflow)")
+    {
+        transferChecked(0, 0, max, false);
+    }
+
+    SECTION("(max - 1, 0) -+ max  (underflow)")
+    {
+        transferChecked(max - 1, 0, max, false);
+    }
+
+    SECTION("(max, 1) -+ max  (overflow)")
+    {
+        transferChecked(max, 1, max, false);
+    }
 }
 
 TEST_CASE("Range limit", "[dual_variable_gadget]")
@@ -1128,3 +1446,243 @@ TEST_CASE("Range limit", "[dual_variable_gadget]")
         }
     }}
 }
+
+TEST_CASE("LtField", "[LtFieldGadget]")
+{
+    unsigned int numIterations = 8*1024;
+    unsigned int n = 254;
+
+    auto LtFieldChecked = [](const BigInt& _A, const BigInt& _B)
+    {
+        protoboard<FieldT> pb;
+
+        pb_variable<FieldT> a = make_variable(pb, toFieldElement(_A), ".A");
+        pb_variable<FieldT> b = make_variable(pb, toFieldElement(_B), ".B");
+
+        LtFieldGadget ltFieldGadget(pb, a, b, "ltFieldGadget");
+        ltFieldGadget.generate_r1cs_constraints();
+        ltFieldGadget.generate_r1cs_witness();
+
+        bool expectedLt = _A < _B;
+        REQUIRE(pb.is_satisfied());
+        REQUIRE((pb.val(ltFieldGadget.lt()) == (expectedLt ? FieldT::one() : FieldT::zero())));
+    };
+
+    BigInt max = getMaxFieldElementAsBigInt(n);
+
+    SECTION("0 < 0")
+    {
+        LtFieldChecked(0, 0);
+    }
+
+    SECTION("0 < 1")
+    {
+        LtFieldChecked(0, 1);
+    }
+
+    SECTION("1 < 0")
+    {
+        LtFieldChecked(1, 0);
+    }
+
+    SECTION("max < max")
+    {
+        LtFieldChecked(max, max);
+    }
+
+    SECTION("max - 1 < max")
+    {
+        LtFieldChecked(max - 1, max);
+    }
+
+    SECTION("max < max - 1")
+    {
+        LtFieldChecked(max, max - 1);
+    }
+
+    SECTION("0 < max")
+    {
+        LtFieldChecked(0, max);
+    }
+
+    SECTION("max < 0")
+    {
+        LtFieldChecked(max, 0);
+    }
+
+    SECTION("Random")
+    {
+        for (unsigned int j = 0; j < numIterations; j++)
+        {
+            LtFieldChecked(getRandomFieldElementAsBigInt(n), getRandomFieldElementAsBigInt(n));
+        }
+    }
+}
+
+
+TEST_CASE("Selector", "[SelectorGadget]")
+{
+    unsigned int numIterations = 128;
+    unsigned int n = 8;
+
+    auto selectorChecked = [](const FieldT& _type, unsigned int maxBits)
+    {
+        protoboard<FieldT> pb;
+        Constants constants(pb, "constants");
+
+        pb_variable<FieldT> type = make_variable(pb, _type, ".type");
+
+        SelectorGadget selectorGadget(pb, constants, type, maxBits, "selectorGadget");
+        selectorGadget.generate_r1cs_constraints();
+        selectorGadget.generate_r1cs_witness();
+
+        std::vector<FieldT> expectedBits;
+        bool valid = false;
+        for (unsigned int i = 0; i < maxBits; i++)
+        {
+            expectedBits.push_back((FieldT(i) == _type) ? FieldT::one() : FieldT::zero());
+            valid = valid || (FieldT(i) == _type);
+        }
+        REQUIRE(pb.is_satisfied() == valid);
+        if (valid)
+        {
+            for (unsigned int i = 0; i < maxBits; i++)
+            {
+                REQUIRE((pb.val(selectorGadget.result()[i]) == expectedBits[i]));
+            }
+        }
+
+        // Flip a bit
+        unsigned int randomBit = rand() % maxBits;
+        pb.val(selectorGadget.result()[randomBit]) = FieldT::one() - pb.val(selectorGadget.result()[randomBit]);
+        REQUIRE(pb.is_satisfied() == false);
+    };
+
+    SECTION("No bits selected")
+    {
+        selectorChecked(FieldT(6), 5);
+    }
+
+    SECTION("Random")
+    {
+        for (unsigned int i = 1; i < n; i++)
+        {
+            for (unsigned int j = 0; j < numIterations; j++)
+            {
+                selectorChecked(FieldT(rand() % i), i);
+            }
+        }
+    }
+}
+
+TEST_CASE("Select", "[SelectGadget]")
+{
+    unsigned int numIterations = 128;
+    unsigned int n = 8;
+
+    auto selectChecked = [](unsigned int _index, std::vector<FieldT>& _values)
+    {
+        protoboard<FieldT> pb;
+        Constants constants(pb, "constants");
+
+        VariableT index = make_variable(pb, FieldT(_index), ".index");
+        std::vector<VariableT> values;
+        for (unsigned int i = 0; i < _values.size(); i++)
+        {
+            values.push_back(make_variable(pb, _values[i], ".values"));
+        }
+
+        SelectorGadget selectorGadget(pb, constants, index, values.size(), "selectorGadget");
+        selectorGadget.generate_r1cs_constraints();
+        selectorGadget.generate_r1cs_witness();
+
+        SelectGadget selectGadget(pb, selectorGadget.result(), values, "selectGadget");
+        selectGadget.generate_r1cs_constraints();
+        selectGadget.generate_r1cs_witness();
+
+        FieldT expectedValue = _values[_index];
+        REQUIRE(pb.is_satisfied());
+        REQUIRE((pb.val(selectGadget.result()) == expectedValue));
+
+        // Change the selected value
+        unsigned int randomIndex = (_index + 1 + rand() % (_values.size() - 1)) % _values.size();
+        pb.val(selectGadget.result()) = _values[randomIndex];
+        REQUIRE(pb.is_satisfied() == false);
+    };
+
+    SECTION("Random")
+    {
+        for (unsigned int i = 1; i < n; i++)
+        {
+            for (unsigned int j = 0; j < numIterations; j++)
+            {
+                std::vector<FieldT> values;
+                for (unsigned int k = 0; k < n; k++)
+                {
+                    values.push_back(getRandomFieldElement());
+                }
+                selectChecked(rand() % i, values);
+            }
+        }
+    }
+}
+
+TEST_CASE("ArraySelect", "[ArraySelectGadget]")
+{
+    unsigned int numIterations = 4;
+    unsigned int n = 8;
+    unsigned int maxLength = 1024;
+
+    auto selectArrayChecked = [](unsigned int _index, unsigned int numValues, unsigned int varLength)
+    {
+        protoboard<FieldT> pb;
+        Constants constants(pb, "constants");
+
+        VariableT index = make_variable(pb, FieldT(_index), ".index");
+
+        std::vector<VariableArrayT> values;
+        for (unsigned int i = 0; i < numValues; i++)
+        {
+            VariableArrayT value = make_var_array(pb, varLength, ".value");
+            for (unsigned int i = 0; i < varLength; i++)
+            {
+                pb.val(value[i]) = rand() % 2;
+            }
+            values.push_back(value);
+        }
+
+        SelectorGadget selectorGadget(pb, constants, index, values.size(), "selectorGadget");
+        selectorGadget.generate_r1cs_constraints();
+        selectorGadget.generate_r1cs_witness();
+
+        ArraySelectGadget arraySelectGadget(pb, selectorGadget.result(), values, "arraySelectGadget");
+        arraySelectGadget.generate_r1cs_constraints();
+        arraySelectGadget.generate_r1cs_witness();
+
+        REQUIRE(pb.is_satisfied());
+        for (unsigned int i = 0; i < varLength; i++)
+        {
+            REQUIRE((pb.val(arraySelectGadget.result()[i]) == pb.val(values[_index][i])));
+        }
+
+        // Flip a bit
+        unsigned int randomBit = rand() % varLength;
+        pb.val(arraySelectGadget.result()[randomBit]) = FieldT::one() - pb.val(arraySelectGadget.result()[randomBit]);
+        REQUIRE(pb.is_satisfied() == false);
+    };
+
+    SECTION("Random")
+    {
+        for (unsigned int i = 1; i < n; i++)
+        {
+            for (unsigned int l = 1; l < maxLength; l++)
+            {
+                for (unsigned int j = 0; j < numIterations; j++)
+                {
+                    selectArrayChecked(rand() % i, i, maxLength);
+                }
+            }
+        }
+    }
+}
+

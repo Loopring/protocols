@@ -1,20 +1,6 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -38,27 +24,21 @@ contract LoopringV3 is ILoopringV3
     constructor(
         address _universalRegistry,
         address _lrcAddress,
-        address _wethAddress,
         address payable _protocolFeeVault,
-        address _blockVerifierAddress,
-        address _downtimeCostCalculator
+        address _blockVerifierAddress
         )
         Claimable()
-        public
     {
         require(address(0) != _universalRegistry, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
-        require(address(0) != _wethAddress, "ZERO_ADDRESS");
 
         universalRegistry = _universalRegistry;
         lrcAddress = _lrcAddress;
-        wethAddress = _wethAddress;
 
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            _downtimeCostCalculator,
-            0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0
         );
     }
 
@@ -73,9 +53,7 @@ contract LoopringV3 is ILoopringV3
     function initializeExchange(
         address exchangeAddress,
         uint    exchangeId,
-        address owner,
-        address payable operator,
-        bool    onchainDataAvailability
+        address owner
         )
         external
         override
@@ -85,7 +63,6 @@ contract LoopringV3 is ILoopringV3
         require(exchangeId != 0, "ZERO_ID");
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
         require(owner != address(0), "ZERO_ADDRESS");
-        require(operator != address(0), "ZERO_ADDRESS");
         require(exchanges[exchangeId].exchangeAddress == address(0), "ID_USED_ALREADY");
 
         IExchangeV3 exchange = IExchangeV3(exchangeAddress);
@@ -94,9 +71,7 @@ contract LoopringV3 is ILoopringV3
         exchange.initialize(
             address(this),
             owner,
-            exchangeId,
-            operator,
-            onchainDataAvailability
+            exchangeId
         );
 
         exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);
@@ -104,9 +79,7 @@ contract LoopringV3 is ILoopringV3
         emit ExchangeInitialized(
             exchangeId,
             exchangeAddress,
-            owner,
-            operator,
-            onchainDataAvailability
+            owner
         );
     }
 
@@ -114,15 +87,9 @@ contract LoopringV3 is ILoopringV3
     function updateSettings(
         address payable _protocolFeeVault,
         address _blockVerifierAddress,
-        address _downtimeCostCalculator,
         uint    _exchangeCreationCostLRC,
-        uint    _maxWithdrawalFee,
-        uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta,
-        uint    _minExchangeStakeWithDataAvailability,
-        uint    _minExchangeStakeWithoutDataAvailability,
-        uint    _revertFineLRC,
-        uint    _withdrawalFineLRC
+        uint    _forcedWithdrawalFee,
+        uint    _minExchangeStake
         )
         external
         override
@@ -132,15 +99,9 @@ contract LoopringV3 is ILoopringV3
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            _downtimeCostCalculator,
             _exchangeCreationCostLRC,
-            _maxWithdrawalFee,
-            _tokenRegistrationFeeLRCBase,
-            _tokenRegistrationFeeLRCDelta,
-            _minExchangeStakeWithDataAvailability,
-            _minExchangeStakeWithoutDataAvailability,
-            _revertFineLRC,
-            _withdrawalFineLRC
+            _forcedWithdrawalFee,
+            _minExchangeStake
         );
     }
 
@@ -164,12 +125,11 @@ contract LoopringV3 is ILoopringV3
         targetProtocolTakerFeeStake = _targetProtocolTakerFeeStake;
         targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
 
-        emit SettingsUpdated(now);
+        emit SettingsUpdated(block.timestamp);
     }
 
-    function canExchangeCommitBlocks(
-        uint exchangeId,
-        bool onchainDataAvailability
+    function canExchangeSubmitBlocks(
+        uint exchangeId
         )
         external
         override
@@ -177,11 +137,7 @@ contract LoopringV3 is ILoopringV3
         returns (bool)
     {
         uint amountStaked = getExchangeStake(exchangeId);
-        if (onchainDataAvailability) {
-            return amountStaked >= minExchangeStakeWithDataAvailability;
-        } else {
-            return amountStaked >= minExchangeStakeWithoutDataAvailability;
-        }
+        return amountStaked >= minExchangeStake;
     }
 
     function getExchangeStake(
@@ -320,8 +276,7 @@ contract LoopringV3 is ILoopringV3
     }
 
     function getProtocolFeeValues(
-        uint exchangeId,
-        bool onchainDataAvailability
+        uint exchangeId
         )
         external
         override
@@ -335,12 +290,7 @@ contract LoopringV3 is ILoopringV3
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
-        uint stake = 0;
-        if (onchainDataAvailability && exchange.exchangeStake > minExchangeStakeWithDataAvailability) {
-            stake = exchange.exchangeStake - minExchangeStakeWithDataAvailability;
-        } else if (!onchainDataAvailability && exchange.exchangeStake > minExchangeStakeWithoutDataAvailability) {
-            stake = exchange.exchangeStake - minExchangeStakeWithoutDataAvailability;
-        }
+        uint stake = exchange.exchangeStake - minExchangeStake;
 
         // The total stake used here is the exchange stake + the protocol fee stake, but
         // the protocol fee stake has a reduced weight of 50%.
@@ -371,35 +321,22 @@ contract LoopringV3 is ILoopringV3
     function updateSettingsInternal(
         address payable  _protocolFeeVault,
         address _blockVerifierAddress,
-        address _downtimeCostCalculator,
         uint    _exchangeCreationCostLRC,
-        uint    _maxWithdrawalFee,
-        uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta,
-        uint    _minExchangeStakeWithDataAvailability,
-        uint    _minExchangeStakeWithoutDataAvailability,
-        uint    _revertFineLRC,
-        uint    _withdrawalFineLRC
+        uint    _forcedWithdrawalFee,
+        uint    _minExchangeStake
         )
         private
     {
         require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
-        require(address(0) != _downtimeCostCalculator, "ZERO_ADDRESS");
 
         protocolFeeVault = _protocolFeeVault;
         blockVerifierAddress = _blockVerifierAddress;
-        downtimeCostCalculator = _downtimeCostCalculator;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
-        maxWithdrawalFee = _maxWithdrawalFee;
-        tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
-        tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
-        minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;
-        minExchangeStakeWithoutDataAvailability = _minExchangeStakeWithoutDataAvailability;
-        revertFineLRC = _revertFineLRC;
-        withdrawalFineLRC = _withdrawalFineLRC;
+        forcedWithdrawalFee = _forcedWithdrawalFee;
+        minExchangeStake = _minExchangeStake;
 
-        emit SettingsUpdated(now);
+        emit SettingsUpdated(block.timestamp);
     }
 
     function calculateProtocolFee(

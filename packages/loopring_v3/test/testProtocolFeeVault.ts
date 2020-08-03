@@ -6,9 +6,9 @@ const truffleAssert = require("truffle-assertions");
 const abi = require("ethereumjs-abi");
 
 contract("ProtocolFeeVault", (accounts: string[]) => {
-  const contracts = new Artifacts(artifacts);
-  const MockContract = contracts.MockContract;
-  const ProtocolFeeVault = contracts.ProtocolFeeVault;
+  let contracts: Artifacts;
+  let MockContract: any;
+  let ProtocolFeeVault: any;
 
   const ZERO = new BN(0);
   const amount = new BN(web3.utils.toWei("77", "ether"));
@@ -26,6 +26,12 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
   const owner = accounts[0];
   const userStakingPoolAddress = accounts[1];
   const daoAddress = accounts[2];
+
+  before(async () => {
+    contracts = new Artifacts(artifacts);
+    MockContract = contracts.MockContract;
+    ProtocolFeeVault = contracts.ProtocolFeeVault;
+  });
 
   describe("ProtocolFeeVault related test", () => {
     before(async () => {

@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { Block, RingInfo } from "./types";
+import { Block, SpotTrade } from "./types";
 
 const BlockVerifier = artifacts.require("BlockVerifier");
 
@@ -25,7 +25,7 @@ contract("BlockVerifier", (accounts: string[]) => {
   };
 
   const setupRandomRing = async () => {
-    const ring: RingInfo = {
+    const ring: SpotTrade = {
       orderA: {
         tokenS: "WETH",
         tokenB: "GTO",
@@ -49,7 +49,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
   const registerCircuitChecked = async (
     blockType: number,
-    onchainDataAvailability: boolean,
     blockSize: number,
     blockVersion: number,
     verificationKey: string[],
@@ -57,13 +56,11 @@ contract("BlockVerifier", (accounts: string[]) => {
   ) => {
     const isRegisteredBefore = await blockVerifier.isCircuitRegistered(
       blockType,
-      onchainDataAvailability,
       blockSize,
       blockVersion
     );
     const isEnabledBefore = await blockVerifier.isCircuitEnabled(
       blockType,
-      onchainDataAvailability,
       blockSize,
       blockVersion
     );
@@ -80,7 +77,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     await blockVerifier.registerCircuit(
       blockType,
-      onchainDataAvailability,
       blockSize,
       blockVersion,
       verificationKey,
@@ -89,13 +85,11 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     const isRegisteredAfter = await blockVerifier.isCircuitRegistered(
       blockType,
-      onchainDataAvailability,
       blockSize,
       blockVersion
     );
     const isEnabledAfter = await blockVerifier.isCircuitEnabled(
       blockType,
-      onchainDataAvailability,
       blockSize,
       blockVersion
     );
@@ -108,31 +102,23 @@ contract("BlockVerifier", (accounts: string[]) => {
       "CircuitRegistered"
     );
     assert.equal(event.blockType, blockType, "blockType should match");
-    assert.equal(
-      event.onchainDataAvailability,
-      onchainDataAvailability,
-      "onchainDataAvailability should match"
-    );
     assert.equal(event.blockSize, blockSize, "blockSize should match");
     assert.equal(event.blockVersion, blockVersion, "blockVersion should match");
   };
 
   const disableCircuitChecked = async (
     blockType: number,
-    onchainDataAvailability: boolean,
     blockSize: number,
     blockVersion: number,
     owner: string
   ) => {
     const isRegisteredBefore = await blockVerifier.isCircuitRegistered(
       blockType,
-      onchainDataAvailability,
       blockSize,
       blockVersion
     );
     const isEnabledBefore = await blockVerifier.isCircuitEnabled(
       blockType,
-      onchainDataAvailability,
       blockSize,
       blockVersion
     );
@@ -145,7 +131,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     await blockVerifier.disableCircuit(
       blockType,
-      onchainDataAvailability,
       blockSize,
       blockVersion,
       { from: owner }
@@ -153,13 +138,11 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     const isRegisteredAfter = await blockVerifier.isCircuitRegistered(
       blockType,
-      onchainDataAvailability,
       blockSize,
       blockVersion
     );
     const isEnabledAfter = await blockVerifier.isCircuitEnabled(
       blockType,
-      onchainDataAvailability,
       blockSize,
       blockVersion
     );
@@ -172,11 +155,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       "CircuitDisabled"
     );
     assert.equal(event.blockType, blockType, "blockType should match");
-    assert.equal(
-      event.onchainDataAvailability,
-      onchainDataAvailability,
-      "onchainDataAvailability should match"
-    );
     assert.equal(event.blockSize, blockSize, "blockSize should match");
     assert.equal(event.blockVersion, blockVersion, "blockVersion should match");
   };
@@ -197,12 +175,10 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should be able to register a new circuit", async () => {
       const blockType = 0;
-      const onchainDataAvailability = false;
       const blockSize = 512;
       const blockVersion = 3;
       await registerCircuitChecked(
         blockType,
-        onchainDataAvailability,
         blockSize,
         blockVersion,
         new Array(18).fill("0x123"),
@@ -212,12 +188,10 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to register a circuit twice", async () => {
       const blockType = 0;
-      const onchainDataAvailability = false;
       const blockSize = 512;
       const blockVersion = 3;
       await registerCircuitChecked(
         blockType,
-        onchainDataAvailability,
         blockSize,
         blockVersion,
         new Array(18).fill("0x123"),
@@ -227,7 +201,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.registerCircuit(
           blockType,
-          onchainDataAvailability,
           blockSize,
           blockVersion,
           new Array(18).fill("0x123"),
@@ -239,12 +212,10 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should be able to disable a circuit", async () => {
       const blockType = 1;
-      const onchainDataAvailability = false;
       const blockSize = 128;
       const blockVersion = 3;
       await registerCircuitChecked(
         blockType,
-        onchainDataAvailability,
         blockSize,
         blockVersion,
         new Array(18).fill("0x123"),
@@ -252,7 +223,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       );
       await disableCircuitChecked(
         blockType,
-        onchainDataAvailability,
         blockSize,
         blockVersion,
         owner
@@ -261,13 +231,11 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to disable a circuit that wasn't registered", async () => {
       const blockType = 1;
-      const onchainDataAvailability = false;
       const blockSize = 128;
       const blockVersion = 3;
       await expectThrow(
         blockVerifier.disableCircuit(
           blockType,
-          onchainDataAvailability,
           blockSize,
           blockVersion,
           { from: owner }
@@ -284,13 +252,11 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to register a new circuit", async () => {
       const blockType = 0;
-      const onchainDataAvailability = false;
       const blockSize = 512;
       const blockVersion = 3;
       await expectThrow(
         blockVerifier.registerCircuit(
           blockType,
-          onchainDataAvailability,
           blockSize,
           blockVersion,
           new Array(18).fill("0x123"),
@@ -302,12 +268,10 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to disable a circuit", async () => {
       const blockType = 1;
-      const onchainDataAvailability = false;
       const blockSize = 128;
       const blockVersion = 3;
       await registerCircuitChecked(
         blockType,
-        onchainDataAvailability,
         blockSize,
         blockVersion,
         new Array(18).fill("0x123"),
@@ -316,7 +280,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.disableCircuit(
           blockType,
-          onchainDataAvailability,
           blockSize,
           blockVersion,
           { from: anyone }
@@ -333,45 +296,46 @@ contract("BlockVerifier", (accounts: string[]) => {
     const commitBlocksSize2: Block[] = [];
     const settlementBlocksSize1: Block[] = [];
     const settlementBlocksSize2: Block[] = [];
-    let onchainDataAvailability: boolean;
 
     before(async () => {
       await createExchange();
       blockVerifier = exchangeTestUtil.blockVerifier;
-      onchainDataAvailability = exchangeTestUtil.onchainDataAvailability;
 
       // Create some blocks
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 2; i++) {
         const ring = await setupRandomRing();
-        await exchangeTestUtil.sendRing(exchangeId, ring);
+        await exchangeTestUtil.sendRing(ring);
       }
-      commitBlocksSize1.push(
-        ...(await exchangeTestUtil.commitDeposits(exchangeId, undefined, 1))
-      );
+      commitBlocksSize1.push(...(await exchangeTestUtil.submitTransactions(2)));
+      for (let i = 0; i < 2; i++) {
+        const ring = await setupRandomRing();
+        await exchangeTestUtil.sendRing(ring);
+      }
       settlementBlocksSize1.push(
-        ...(await exchangeTestUtil.commitRings(exchangeId, 1))
+        ...(await exchangeTestUtil.submitTransactions(2))
       );
 
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 2; i++) {
         const ring = await setupRandomRing();
-        await exchangeTestUtil.sendRing(exchangeId, ring);
+        await exchangeTestUtil.sendRing(ring);
       }
-      commitBlocksSize2.push(
-        ...(await exchangeTestUtil.commitDeposits(exchangeId, undefined, 2))
-      );
+      commitBlocksSize2.push(...(await exchangeTestUtil.submitTransactions(4)));
+      for (let i = 0; i < 2; i++) {
+        const ring = await setupRandomRing();
+        await exchangeTestUtil.sendRing(ring);
+      }
       settlementBlocksSize2.push(
-        ...(await exchangeTestUtil.commitRings(exchangeId, 2))
+        ...(await exchangeTestUtil.submitTransactions(4))
       );
 
       // Generate the proofs
-      await exchangeTestUtil.submitPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks();
     });
 
     it("should be able to verify a single block with a valid proof", async () => {
       const block = commitBlocksSize1[0];
       const success = await blockVerifier.verifyProofs(
         block.blockType,
-        onchainDataAvailability,
         block.blockSize,
         block.blockVersion,
         [block.publicInput],
@@ -384,7 +348,6 @@ contract("BlockVerifier", (accounts: string[]) => {
     it("should not be able to verify a single block with an invalid proof", async () => {
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         [commitBlocksSize1[0].publicInput],
@@ -397,7 +360,6 @@ contract("BlockVerifier", (accounts: string[]) => {
     it("should not be able to verify a single block with invalid publicData", async () => {
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         [commitBlocksSize1[1].publicInput],
@@ -411,7 +373,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.verifyProofs(
           commitBlocksSize1[0].blockType,
-          onchainDataAvailability,
           commitBlocksSize1[0].blockSize,
           commitBlocksSize1[0].blockVersion,
           [Constants.scalarField],
@@ -427,7 +388,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.verifyProofs(
           8,
-          onchainDataAvailability,
           block.blockSize,
           block.blockVersion,
           [block.publicInput],
@@ -439,7 +399,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.verifyProofs(
           block.blockType,
-          onchainDataAvailability,
           7,
           block.blockVersion,
           [block.publicInput],
@@ -451,7 +410,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.verifyProofs(
           block.blockType,
-          onchainDataAvailability,
           block.blockSize,
           1,
           [block.publicInput],
@@ -465,7 +423,6 @@ contract("BlockVerifier", (accounts: string[]) => {
     it("should be able to verify multiple blocks of the same circuit with valid proofs", async () => {
       let success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         commitBlocksSize1.map(x => x.publicInput),
@@ -476,7 +433,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
       success = await blockVerifier.verifyProofs(
         settlementBlocksSize2[0].blockType,
-        onchainDataAvailability,
         settlementBlocksSize2[0].blockSize,
         settlementBlocksSize2[0].blockVersion,
         settlementBlocksSize2.map(x => x.publicInput),
@@ -493,7 +449,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         mixedBlocks.map(x => x.publicInput),
@@ -517,7 +472,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         commitBlocksSize1.map(x => x.publicInput),
@@ -541,7 +495,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         publicInputs,
@@ -563,7 +516,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.verifyProofs(
           commitBlocksSize1[0].blockType,
-          onchainDataAvailability,
           commitBlocksSize1[0].blockSize,
           commitBlocksSize1[0].blockVersion,
           publicInputs,

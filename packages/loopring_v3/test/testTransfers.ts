@@ -3,7 +3,7 @@ import { Artifacts } from "../util/Artifacts";
 import { expectThrow } from "./expectThrow";
 
 contract("Transfers", (accounts: string[]) => {
-  const contracts = new Artifacts(artifacts);
+  let contracts: Artifacts;
 
   let transferContract: any;
   let testToken: any;
@@ -16,9 +16,10 @@ contract("Transfers", (accounts: string[]) => {
   const maxAmount = new BN(web3.utils.toWei("1000000", "ether"));
 
   before(async () => {
+    contracts = new Artifacts(artifacts);
     transferContract = await contracts.TransferContract.new({ from: deployer });
     testToken = await contracts.TESTToken.new({ from: deployer });
-    noDefaultFunctionContract = await contracts.LzDecompressor.new({
+    noDefaultFunctionContract = await contracts.LzDecompressorContract.new({
       from: deployer
     });
     // Approve the transferContract for the 'transferFrom' tests

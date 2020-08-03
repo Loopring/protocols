@@ -2,12 +2,6 @@
 // gas usage. We need to deploy most libraries linked from it as stand-alone
 // libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
 
-const ExchangeConstants = artifacts.require(
-  "./impl/libexchange/ExchangeConstants.sol"
-);
-const ExchangeAccounts = artifacts.require(
-  "./impl/libexchange/ExchangeAccounts.sol"
-);
 const ExchangeAdmins = artifacts.require(
   "./impl/libexchange/ExchangeAdmins.sol"
 );
@@ -35,28 +29,11 @@ module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
   deployer
     .then(() => {
-      return Promise.all([
-        deployer.deploy(ExchangeConstants) // only for testing purpose
-      ]);
-    })
-    .then(() => {
       return Promise.all([deployer.deploy(ExchangeBalances)]);
     })
     .then(() => {
       return Promise.all([
-        deployer.link(ExchangeBalances, [ExchangeAccounts, ExchangeWithdrawals])
-      ]);
-    })
-    .then(() => {
-      return Promise.all([deployer.deploy(ExchangeAccounts)]);
-    })
-    .then(() => {
-      return Promise.all([
-        deployer.link(ExchangeAccounts, [
-          ExchangeDeposits,
-          ExchangeGenesis,
-          ExchangeWithdrawals
-        ])
+        deployer.link(ExchangeBalances, [ExchangeWithdrawals])
       ]);
     })
     .then(() => {
@@ -91,9 +68,7 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_exchange_v3_libs:");
-      console.log("ExchangeConstants: ", ExchangeConstants.address);
       console.log("ExchangeBalances: ", ExchangeBalances.address);
-      console.log("ExchangeAccounts: ", ExchangeAccounts.address);
       console.log("ExchangeAdmins: ", ExchangeAdmins.address);
       console.log("ExchangeBlocks: ", ExchangeBlocks.address);
       console.log("ExchangeTokens: ", ExchangeTokens.address);

@@ -3,9 +3,17 @@ import { expectThrow } from "./expectThrow";
 import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
 import { Constants } from "loopringV3.js";
 
+const AgentRegistry = artifacts.require(
+  "AgentRegistry"
+);
+
 contract("Exchange", (accounts: string[]) => {
-  let exchangeTestUtil: ExchangeTestUtil;
+  let ctx: ExchangeTestUtil;
   let exchange: any;
+  let exchangeOwner: string;
+
+  let agentRegistry: any;
+  let registryOwner:  string;
 
   let ownerA: string;
   let ownerB: string;
@@ -13,36 +21,56 @@ contract("Exchange", (accounts: string[]) => {
   let ownerD: string;
 
   const createExchange = async (bSetupTestState: boolean = true) => {
-    await exchangeTestUtil.createExchange(
-      exchangeTestUtil.testContext.stateOwners[0],
-      bSetupTestState
-    );
-    exchange = exchangeTestUtil.exchange;
+    await ctx.createExchange(ctx.testContext.stateOwners[0], bSetupTestState);
+    exchange = ctx.exchange;
+    exchangeOwner = ctx.exchangeOwner;
+
+    // Create the agent registry
+    registryOwner = accounts[7];
+    agentRegistry = await AgentRegistry.new({from: registryOwner});
+
+    // Register it on the exchange contract
+    await exchange.setAgentRegistry(agentRegistry.address, {from: exchangeOwner});
+    // Check if it's set correctly
+    const exchangeAgentRegistry = await exchange.getAgentRegistry();
+    assert.equal(exchangeAgentRegistry, agentRegistry.address, "unexpected agent registry");
   };
 
-  const authorizeAgentsChecked = async (
-    owner: string,
-    agents: string[],
-    authorized: boolean[],
+  const registerUserAgentChecked = async (
+    agent: string,
+    registered: boolean,
     from: string
   ) => {
-    await exchange.authorizeAgents(owner, agents, authorized, { from });
-    const events = await exchangeTestUtil.assertEventsEmitted(
-      exchange,
-      "AgentAuthorized",
-      agents.length
-    );
-    for (const [i, event] of events.entries()) {
-      assert.equal(event.owner, owner, "AgentAuthorized owner unexpected");
-      assert.equal(event.agent, agents[i], "AgentAuthorized agent unexpected");
-      assert.equal(
-        event.authorized,
-        authorized[i],
-        "AgentAuthorized authorized unexpected"
-      );
+    await agentRegistry.registerUserAgent(agent, registered, { from });
+    const event = await ctx.assertEventEmitted(agentRegistry, "AgentRegistered");
+    assert.equal(event.user, from, "user unexpected");
+    assert.equal(event.agent, agent, "agent unexpected");
+    assert.equal(event.registered, registered, "registered unexpected");
 
-      const isAgent = await exchange.isAgent(owner, agents[i]);
-      assert.equal(isAgent, authorized[i], "isAgent unexpected");
+    const isUserAgent = await agentRegistry.isUserAgent(from, agent);
+    assert.equal(isUserAgent, registered, "isUserAgent unexpected");
+
+    const isAgent = await agentRegistry.isAgent(from, agent);
+    assert.equal(isAgent, registered, "isAgent unexpected");
+  };
+
+  const registerUniversalAgentChecked = async (
+    agent: string,
+    registered: boolean,
+    from: string
+  ) => {
+    await agentRegistry.registerUniversalAgent(agent, registered, { from });
+    const event = await ctx.assertEventEmitted(agentRegistry, "AgentRegistered");
+    assert.equal(event.user, Constants.zeroAddress, "user unexpected");
+    assert.equal(event.agent, agent, "agent unexpected");
+    assert.equal(event.registered, registered, "registered unexpected");
+
+    const isUniversalAgent = await agentRegistry.isUniversalAgent(agent);
+    assert.equal(isUniversalAgent, registered, "isUniversalAgent unexpected");
+
+    for (const owner of [ownerA, ownerB, ownerC, ownerD]) {
+      const isAgent = await agentRegistry.isAgent(owner, agent);
+      assert.equal(isAgent, registered, "isAgent unexpected");
     }
   };
 
@@ -53,10 +81,10 @@ contract("Exchange", (accounts: string[]) => {
     amount: BN,
     sender: string
   ) => {
-    token = exchangeTestUtil.getTokenAddress(token);
+    token = ctx.getTokenAddress(token);
 
     // Simulate all transfers
-    const snapshot = new BalanceSnapshot(exchangeTestUtil);
+    const snapshot = new BalanceSnapshot(ctx);
     await snapshot.transfer(from, to, token, amount, "from", "to");
 
     // Do the transfer
@@ -69,102 +97,71 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   before(async () => {
-    exchangeTestUtil = new ExchangeTestUtil();
-    await exchangeTestUtil.initialize(accounts);
+    ctx = new ExchangeTestUtil();
+    await ctx.initialize(accounts);
 
-    ownerA = exchangeTestUtil.testContext.orderOwners[0];
-    ownerB = exchangeTestUtil.testContext.orderOwners[1];
-    ownerC = exchangeTestUtil.testContext.orderOwners[2];
-    ownerD = exchangeTestUtil.testContext.orderOwners[3];
+    ownerA = ctx.testContext.orderOwners[0];
+    ownerB = ctx.testContext.orderOwners[1];
+    ownerC = ctx.testContext.orderOwners[2];
+    ownerD = ctx.testContext.orderOwners[3];
   });
 
   after(async () => {
-    await exchangeTestUtil.stop();
+    await ctx.stop();
   });
 
   describe("Agents", function() {
     this.timeout(0);
 
+    it("should be able to whitelist and dewhitelist agents", async () => {
+      await createExchange();
+
+      // Only the exchange owner should be able to whitelist agents
+      await expectThrow(
+        registerUniversalAgentChecked(ownerA, true, ownerB),
+        "UNAUTHORIZED"
+      );
+
+      // Whitelist an agent
+      await registerUniversalAgentChecked(ownerA, true, registryOwner);
+
+      // Whitelist new agent
+      await registerUniversalAgentChecked(ownerD, true, registryOwner);
+
+      // Dewhitelist agent
+      await registerUniversalAgentChecked(ownerA, false, registryOwner);
+
+      // User stops trusting universal agents
+      await agentRegistry.trustUniversalAgents(false, { from: ownerB });
+      const isAgent = await agentRegistry.isAgent(ownerB, ownerD);
+      assert.equal(isAgent, false, "isAgent unexpected");
+    });
+
     it("should be able to authorize and deauthorize an agent", async () => {
       await createExchange();
 
-      // Only the owner should be able to authorize the first agent
-      await expectThrow(
-        authorizeAgentsChecked(ownerA, [ownerB], [true], ownerB),
-        "UNAUTHORIZED"
-      );
-
       // Authorize an agent
-      await authorizeAgentsChecked(ownerA, [ownerB], [true], ownerA);
+      await registerUserAgentChecked(ownerB, true, ownerA);
 
-      // Try to authorize another agent using a non-agent address
-      await expectThrow(
-        authorizeAgentsChecked(ownerA, [ownerD], [true], ownerC),
-        "UNAUTHORIZED"
-      );
+      // Authorize another agent
+      await registerUserAgentChecked(ownerC, true, ownerA);
 
-      // Authorize a new agent using an agent
-      await authorizeAgentsChecked(ownerA, [ownerC], [true], ownerB);
-
-      // Deauthorize the old agent with the new agent
-      await authorizeAgentsChecked(ownerA, [ownerB], [false], ownerC);
-
-      // Make sure the deauthorized agent isn't an agent anymore
-      await expectThrow(
-        authorizeAgentsChecked(ownerA, [ownerD], [true], ownerB),
-        "UNAUTHORIZED"
-      );
+      // Deauthorize an agent
+      await registerUserAgentChecked(ownerB, false, ownerA);
     });
 
     it("should be able to call agent functions", async () => {
       await createExchange();
 
-      const fees = await exchange.getFees();
-      const accountCreationFee = fees._accountCreationFeeETH;
-      const depositFee = fees._depositFeeETH;
-      const withdrawalFee = fees._withdrawalFeeETH;
+      const withdrawalFee = await ctx.loopringV3.forcedWithdrawalFee();
+      const depositFee = ctx.getRandomFee();
 
       const agent = ownerC;
 
-      const token = exchangeTestUtil.getTokenAddress("LRC");
-
-      // Create an extra account for ownerB
-      await exchange.createOrUpdateAccount(
-        ownerB,
-        new BN(1),
-        new BN(1),
-        Constants.emptyBytes,
-        { from: ownerB, value: accountCreationFee.add(depositFee) }
-      );
-
-      // Try calling the functions without authorizing the agents first
+      const token = ctx.getTokenAddress("LRC");
 
       await expectThrow(
-        exchange.createOrUpdateAccount(
-          ownerA,
-          new BN(1),
-          new BN(1),
-          Constants.emptyBytes,
-          { from: agent, value: accountCreationFee.add(depositFee) }
-        ),
-        "UNAUTHORIZED"
-      );
-
-      await expectThrow(
-        exchange.updateAccountAndDeposit(
-          ownerA,
-          new BN(1),
-          new BN(1),
-          token,
-          new BN(0),
-          Constants.emptyBytes,
-          { from: agent, value: depositFee }
-        ),
-        "UNAUTHORIZED"
-      );
-
-      await expectThrow(
-        exchange.deposit(ownerA, ownerA, token, new BN(0), {
+        exchange.deposit(ownerA, ownerA, token, new BN(0), "0x", {
           from: agent,
           value: depositFee
         }),
@@ -172,7 +169,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.withdraw(ownerA, token, new BN(1), {
+        exchange.forceWithdraw(ownerA, token, 0, {
           from: agent,
           value: withdrawalFee
         }),
@@ -180,12 +177,21 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.authorizeAgents(ownerA, [agent], [true], { from: agent }),
+        exchange.approveTransaction(ownerA, Buffer.from("FF"), {
+          from: agent
+        }),
         "UNAUTHORIZED"
       );
 
       await expectThrow(
-        exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), {
+        exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), token, new BN(0), new BN(0), 0xffffffff, new BN(1), {
+          from: agent
+        }),
+        "UNAUTHORIZED"
+      );
+
+      await expectThrow(
+        exchange.setWithdrawalRecipient(ownerA, ownerB, token, new BN(0), 0, ownerB, {
           from: agent
         }),
         "UNAUTHORIZED"
@@ -199,41 +205,29 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Authorize the agent
-      await authorizeAgentsChecked(ownerA, [agent], [true], ownerA);
+      await registerUserAgentChecked(agent, true, ownerA);
 
       // Now call the functions successfully
 
-      await exchange.createOrUpdateAccount(
-        ownerA,
-        new BN(1),
-        new BN(1),
-        Constants.emptyBytes,
-        { from: agent, value: accountCreationFee.add(depositFee) }
-      );
-
-      await exchange.updateAccountAndDeposit(
-        ownerA,
-        new BN(1),
-        new BN(1),
-        token,
-        new BN(0),
-        Constants.emptyBytes,
-        { from: agent, value: depositFee }
-      );
-
-      await exchange.deposit(ownerA, ownerA, token, new BN(0), {
+      await exchange.deposit(ownerA, ownerA, token, new BN(0), "0x", {
         from: agent,
         value: depositFee
       });
 
-      await exchange.withdraw(ownerA, token, new BN(1), {
+      await exchange.forceWithdraw(ownerA, token, 0, {
         from: agent,
         value: withdrawalFee
       });
 
-      await exchange.authorizeAgents(ownerA, [agent], [true], { from: agent });
+      await exchange.approveTransaction(ownerA, Buffer.from("FF"), {
+        from: agent
+      });
 
-      await exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), {
+      await exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), token, new BN(0), new BN(0), 0xfffffff, new BN(1), {
+        from: agent
+      });
+
+      await exchange.setWithdrawalRecipient(ownerA, ownerB, token, new BN(0), 0, ownerB, {
         from: agent
       });
 
@@ -248,9 +242,9 @@ contract("Exchange", (accounts: string[]) => {
       const amount = new BN(web3.utils.toWei("412.8", "ether"));
 
       // Authorize an agent
-      await authorizeAgentsChecked(ownerA, [ownerD], [true], ownerA);
+      await registerUserAgentChecked(ownerD, true, ownerA);
 
-      await exchangeTestUtil.setBalanceAndApprove(ownerA, "LRC", amount);
+      await ctx.setBalanceAndApprove(ownerA, "LRC", amount);
       // Transfer the tokens
       await onchainTransferFromChecked(
         ownerA,
@@ -276,7 +270,7 @@ contract("Exchange", (accounts: string[]) => {
           amount.div(new BN(2)),
           ownerD
         ),
-        "TRANSFER_FAILED"
+        "TRANSFER_FAILURE"
       );
     });
   });

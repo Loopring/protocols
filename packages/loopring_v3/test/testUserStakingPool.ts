@@ -30,9 +30,9 @@ const isTimeCloseEnough = (bn1: BN, bn2: BN) => {
 };
 
 contract("UserStakingPool", (accounts: string[]) => {
-  const contracts = new Artifacts(artifacts);
-  const MockContract = contracts.MockContract;
-  const UserStakingPool = contracts.UserStakingPool;
+  let contracts: Artifacts;
+  let MockContract: any;
+  let UserStakingPool: any;
 
   const ZERO = new BN(0);
 
@@ -47,6 +47,12 @@ contract("UserStakingPool", (accounts: string[]) => {
   const alice = accounts[1];
   const bob = accounts[2];
   const charles = accounts[3];
+
+  before(async () => {
+    contracts = new Artifacts(artifacts);
+    MockContract = contracts.MockContract;
+    UserStakingPool = contracts.UserStakingPool;
+  });
 
   describe("when protocol fee valut is NOT set", () => {
     before(async () => {

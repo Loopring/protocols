@@ -1,5 +1,13 @@
 import BN = require("bn.js");
-import { BlockType, Signature } from "loopringV3.js";
+import { Signature } from "loopringV3.js";
+
+export enum AuthMethod {
+  NONE,
+  EDDSA,
+  ECDSA,
+  APPROVE,
+  FORCE
+}
 
 export interface OrderInfo {
   owner?: string;
@@ -8,9 +16,9 @@ export interface OrderInfo {
   amountS: BN;
   amountB: BN;
 
-  exchangeID?: number;
+  exchange?: string;
   accountID?: number;
-  orderID?: number;
+  storageID?: number;
 
   tokenIdS?: number;
   tokenIdB?: number;
@@ -20,6 +28,7 @@ export interface OrderInfo {
   validUntil?: number;
   maxFeeBips?: number;
   buy?: boolean;
+  taker?: string;
 
   feeBips?: number;
   rebateBips?: number;
@@ -43,7 +52,15 @@ export interface RingExpectation {
   orderB?: OrderExpectation;
 }
 
-export interface RingInfo {
+// Transactions
+
+export interface Noop {
+  txType?: "Noop";
+}
+
+export interface SpotTrade {
+  txType?: "SpotTrade";
+
   orderA: OrderInfo;
   orderB: OrderInfo;
 
@@ -53,104 +70,127 @@ export interface RingInfo {
   expected?: RingExpectation;
 }
 
-export interface RingBlock {
-  rings: RingInfo[];
-  protocolTakerFeeBips?: number;
-  protocolMakerFeeBips?: number;
-
-  onchainDataAvailability?: boolean;
-  timestamp?: number;
-  exchangeID?: number;
-  operatorAccountID?: number;
-
-  signature?: Signature;
-}
-
 export interface Deposit {
-  exchangeId: number;
-  depositIdx: number;
+  txType?: "Deposit";
+  owner: string;
   accountID: number;
-  publicKeyX: string;
-  publicKeyY: string;
   tokenID: number;
   amount: BN;
+
+  fee: BN;
+  token: string;
   timestamp?: number;
   transactionHash?: string;
 }
 
-export interface DepositBlock {
-  deposits: Deposit[];
+export interface AccountUpdate {
+  txType?: "AccountUpdate";
+  exchange: string;
 
-  onchainDataAvailability?: boolean;
-  startHash: BN;
-  startIndex: number;
-  count: number;
-}
-
-export interface InternalTransferRequest {
   type: number;
 
-  accountFromID: number;
-  accountToID: number;
+  owner: string;
+  accountID: number;
+  nonce: number;
+  validUntil: number;
 
-  transTokenID: number;
+  publicKeyX: string;
+  publicKeyY: string;
+  feeTokenID: number;
+  fee: BN;
+
+  signature?: Signature;
+  onchainSignature?: any;
+}
+
+export class Transfer {
+  txType?: "Transfer";
+  exchange: string;
+
+  type: number;
+
+  fromAccountID: number;
+  toAccountID: number;
+
+  tokenID: number;
   amount: BN;
 
   feeTokenID: number;
   fee: BN;
 
+  from: string;
+  to: string;
+
+  data: string;
+
+  dualAuthorX: string;
+  dualAuthorY: string;
+  payerToAccountID: number;
+  payerTo: string;
+  payeeToAccountID: number;
+
+  storageID: number;
+  validUntil: number;
+
+  dualSecretKey?: string;
+
   signature?: Signature;
-}
+  dualSignature?: Signature;
 
-export interface InternalTransferBlock {
-  transfers: InternalTransferRequest[];
-
-  onchainDataAvailability?: boolean;
-
-  operatorAccountID?: number;
+  onchainSignature?: any;
 }
 
 export interface WithdrawalRequest {
-  exchangeId: number;
+  txType?: "Withdraw";
+  exchange: string;
+
+  type: number;
+
+  owner: string;
   accountID: number;
+  nonce: number;
+  validUntil: number;
   tokenID: number;
   amount: BN;
 
   feeTokenID?: number;
   fee?: BN;
 
-  withdrawalIdx?: number;
-  slotIdx?: number;
+  to: string;
+
+  dataHash: string;
+  minGas: number;
+
+  gas?: number;
 
   withdrawalFee?: BN;
 
   signature?: Signature;
+  onchainSignature?: any;
+  data?: string;
+
   timestamp?: number;
   transactionHash?: string;
 }
 
-export interface Withdrawal {
-  exchangeID: number;
-  blockIdx: number;
-  withdrawalIdx: number;
-}
+// Blocks
 
-export interface WithdrawBlock {
-  withdrawals: WithdrawalRequest[];
+export interface TxBlock {
+  transactions: any[];
+  protocolTakerFeeBips?: number;
+  protocolMakerFeeBips?: number;
 
-  onchainDataAvailability?: boolean;
-
+  timestamp?: number;
+  exchange?: string;
   operatorAccountID?: number;
 
-  startHash: BN;
-  startIndex: number;
-  count: number;
+  signature?: Signature;
 }
 
 export interface Block {
   blockIdx: number;
   filename: string;
-  blockType: BlockType;
+  blockType: number;
   blockSize: number;
   blockVersion: number;
   operator: string;
@@ -158,18 +198,17 @@ export interface Block {
   operatorId: number;
   merkleRoot: string;
   data: string;
-  auxiliaryData: string;
+  auxiliaryData: any[];
   offchainData: string;
   compressedData: string;
   publicDataHash: string;
   publicInput: string;
   proof?: string[];
-  blockFeeRewarded?: BN;
-  blockFeeFined?: BN;
+  blockFee?: BN;
   timestamp: number;
   transactionHash: string;
+  internalBlock: TxBlock;
   shutdown?: boolean;
-  internalBlock?: any;
 }
 
 export interface Account {
@@ -179,55 +218,4 @@ export interface Account {
   publicKeyY: string;
   secretKey: string;
   nonce: number;
-}
-
-export interface TradeHistory {
-  filled: BN;
-  orderID: number;
-}
-
-export interface Balance {
-  balance: BN;
-  tradeHistory: { [key: number]: TradeHistory };
-}
-
-export interface AccountLeaf {
-  publicKeyX: string;
-  publicKeyY: string;
-  nonce: number;
-  balances: { [key: number]: Balance };
-}
-
-export interface ExchangeState {
-  accounts: AccountLeaf[];
-}
-
-export interface DetailedTokenTransfer {
-  description: string;
-  token: number;
-  from: number;
-  to: number;
-  amount: BN;
-  subPayments: DetailedTokenTransfer[];
-}
-
-export interface DetailedSimulatorReport {
-  exchangeStateBefore: ExchangeState;
-  exchangeStateAfter: ExchangeState;
-  detailedTransfers: DetailedTokenTransfer[];
-}
-
-export interface SimulatorReport {
-  exchangeStateBefore: ExchangeState;
-  exchangeStateAfter: ExchangeState;
-}
-
-export interface DepositInfo {
-  owner: string;
-  token: string;
-  amount: BN;
-  fee: BN;
-  timestamp: number;
-  accountID: number;
-  depositIdx: number;
 }

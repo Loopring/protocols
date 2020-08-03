@@ -99,6 +99,10 @@ export class Bitstream {
     return new BN(this.extractData(offset, 8), 16);
   }
 
+  public extractUint96(offset: number) {
+    return new BN(this.extractData(offset, 12), 16);
+  }
+
   public extractUint(offset: number) {
     return new BN(this.extractData(offset, 32), 16);
   }

@@ -50,7 +50,7 @@ module.exports = {
           runs: 200
         }
       },
-      version: "0.6.6"
+      version: "0.7.0"
     }
   },
   plugins: ["truffle-plugin-verify", "solidity-coverage"],

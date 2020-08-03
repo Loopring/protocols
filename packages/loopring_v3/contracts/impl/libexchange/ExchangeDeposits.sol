@@ -1,27 +1,12 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
 
 import "../../lib/AddressUtil.sol";
 
-import "./ExchangeAccounts.sol";
 import "./ExchangeMode.sol";
 import "./ExchangeTokens.sol";
 
@@ -33,162 +18,88 @@ library ExchangeDeposits
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
-    using ExchangeAccounts  for ExchangeData.State;
+    using MathUint          for uint64;
+    using MathUint          for uint96;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
 
     event DepositRequested(
-        uint    indexed depositIdx,
-        uint24  indexed accountID,
-        uint16  indexed tokenID,
-        uint96          amount,
-        uint            pubKeyX,
-        uint            pubKeyY
+        address owner,
+        address token,
+        uint96  amount,
+        uint    fee
     );
-
-    function getDepositRequest(
-        ExchangeData.State storage S,
-        uint index
-        )
-        external
-        view
-        returns (
-          bytes32 accumulatedHash,
-          uint    accumulatedFee,
-          uint32  timestamp
-        )
-    {
-        require(index < S.depositChain.length, "INVALID_INDEX");
-        ExchangeData.Request storage request = S.depositChain[index];
-        accumulatedHash = request.accumulatedHash;
-        accumulatedFee = request.accumulatedFee;
-        timestamp = request.timestamp;
-    }
 
     function deposit(
         ExchangeData.State storage S,
         address from,
         address to,
         address tokenAddress,
-        uint96  amount,  // can be zero
-        uint    additionalFeeETH
+        uint96  amount,                 // can be zero
+        bytes   memory auxiliaryData
         )
-        external
+        internal  // inline call
     {
         require(to != address(0), "ZERO_ADDRESS");
-        require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
-        require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
+
+        // Deposits are still possible when the exchange is being shutdown, or even in withdrawal mode.
+        // This is fine because the user can easily withdraw the deposited amounts again.
+        // We don't want to make all deposits more expensive just to stop that from happening.
 
         uint16 tokenID = S.getTokenID(tokenAddress);
-        require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
-
-        uint24 accountID = S.getAccountID(to);
-        ExchangeData.Account storage account = S.accounts[accountID];
-
-        // We allow invalid public keys to be set for accounts to
-        // disable offchain request signing.
-        // Make sure we can detect accounts that were not yet created in the circuits
-        // by forcing the pubKeyX to be non-zero.
-        require(account.pubKeyX > 0, "INVALID_PUBKEY");
-        // Make sure the public key can be stored in the SNARK field
-        require(account.pubKeyX < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
-        require(account.pubKeyY < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
-
-        // Total fee to be paid by the user
-        uint feeETH = additionalFeeETH.add(S.depositFeeETH);
-
-        // Add the request to the deposit chain
-        ExchangeData.Request storage prevRequest = S.depositChain[S.depositChain.length - 1];
-        ExchangeData.Request memory request = ExchangeData.Request(
-            sha256(
-                abi.encodePacked(
-                    prevRequest.accumulatedHash,
-                    accountID,
-                    account.pubKeyX,  // Include the pubKey to allow using the same circuit for
-                                      // account creation, account updating and depositing.
-                                      // In the circuit we always overwrite the public keys in
-                                      // the Account leaf with the data given onchain.
-                    account.pubKeyY,
-                    uint16(tokenID),
-                    amount
-                )
-            ),
-            prevRequest.accumulatedFee.add(feeETH),
-            uint32(now)
-        );
-        S.depositChain.push(request);
-
-        // Store deposit info onchain so we can withdraw from uncommitted deposit blocks
-        ExchangeData.Deposit memory _deposit = ExchangeData.Deposit(
-            accountID,
-            tokenID,
-            amount
-        );
-        S.deposits.push(_deposit);
 
         // Transfer the tokens to this contract
-        transferDeposit(
+        (uint96 amountDeposited, uint64 fee) = transferDeposit(
             S,
             from,
             tokenAddress,
             amount,
-            feeETH
+            auxiliaryData
         );
+
+        // Add the amount to the deposit request and reset the time the operator has to process it
+        ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
+        _deposit.timestamp = uint32(block.timestamp);
+        _deposit.amount = _deposit.amount.add96(amountDeposited);
+        _deposit.fee = _deposit.fee.add64(fee);
+        S.pendingDeposits[to][tokenID] = _deposit;
 
         emit DepositRequested(
-            uint32(S.depositChain.length - 1),
-            accountID,
-            tokenID,
-            amount,
-            account.pubKeyX,
-            account.pubKeyY
+            to,
+            tokenAddress,
+            uint96(amountDeposited),
+            fee
         );
-    }
-
-    function getNumDepositRequestsProcessed(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        return S.numDepositRequestsCommitted;
-    }
-
-    function getNumAvailableDepositSlots(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        uint numOpenRequests = S.depositChain.length - getNumDepositRequestsProcessed(S);
-        return ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS() - numOpenRequests;
     }
 
     function transferDeposit(
         ExchangeData.State storage S,
         address from,
         address tokenAddress,
-        uint    amount,
-        uint    feeETH
+        uint96  amount,
+        bytes   memory auxiliaryData
         )
         private
+        returns (
+            uint96 amountDeposited,
+            uint64 fee
+        )
     {
-        uint totalRequiredETH = feeETH;
+        IDepositContract depositContract = S.depositContract;
         uint depositValueETH = 0;
-        if (S.depositContract.isETH(tokenAddress)) {
-            totalRequiredETH = totalRequiredETH.add(amount);
+        if (msg.value > 0 && (tokenAddress == address(0) || depositContract.isETH(tokenAddress))) {
             depositValueETH = amount;
-        }
-
-        require(msg.value >= totalRequiredETH, "INSUFFICIENT_FEE");
-        uint feeSurplus = msg.value.sub(totalRequiredETH);
-        if (feeSurplus > 0) {
-            msg.sender.sendETHAndVerify(feeSurplus, gasleft());
+            fee = uint64(msg.value.sub(amount));
+        } else {
+            fee = uint64(msg.value);
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount);
+        amountDeposited = depositContract.deposit{value: depositValueETH}(
+            from,
+            tokenAddress,
+            amount,
+            auxiliaryData
+        );
     }
 }

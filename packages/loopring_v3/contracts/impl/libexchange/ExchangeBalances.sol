@@ -1,22 +1,9 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../iface/ExchangeData.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/Poseidon.sol";
 
@@ -29,108 +16,85 @@ library ExchangeBalances
     using MathUint  for uint;
 
     function verifyAccountBalance(
-        uint     merkleRoot,
-        uint24   accountID,
-        uint16   tokenID,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[36] calldata accountMerkleProof,
-        uint[15] calldata balanceMerkleProof
+        uint                              merkleRoot,
+        ExchangeData.MerkleProof calldata merkleProof
         )
         external
         pure
     {
-        bool isCorrect = isAccountBalanceCorrect(
-            merkleRoot,
-            accountID,
-            tokenID,
-            pubKeyX,
-            pubKeyY,
-            nonce,
-            balance,
-            tradeHistoryRoot,
-            accountMerkleProof,
-            balanceMerkleProof
+        require(
+            isAccountBalanceCorrect(merkleRoot, merkleProof),
+            "INVALID_MERKLE_TREE_DATA"
         );
-        require(isCorrect, "INVALID_MERKLE_TREE_DATA");
     }
 
     function isAccountBalanceCorrect(
-        uint     merkleRoot,
-        uint24   accountID,
-        uint16   tokenID,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[36] memory accountMerkleProof,
-        uint[15] memory balanceMerkleProof
+        uint                            merkleRoot,
+        ExchangeData.MerkleProof memory merkleProof
         )
         public
         pure
-        returns (bool isCorrect)
+        returns (bool)
     {
         // Verify data
         uint calculatedRoot = getBalancesRoot(
-            tokenID,
-            balance,
-            tradeHistoryRoot,
-            balanceMerkleProof
+            merkleProof.balanceLeaf.tokenID,
+            merkleProof.balanceLeaf.balance,
+            merkleProof.balanceLeaf.storageRoot,
+            merkleProof.balanceMerkleProof
         );
         calculatedRoot = getAccountInternalsRoot(
-            accountID,
-            pubKeyX,
-            pubKeyY,
-            nonce,
+            merkleProof.accountLeaf.accountID,
+            merkleProof.accountLeaf.owner,
+            merkleProof.accountLeaf.pubKeyX,
+            merkleProof.accountLeaf.pubKeyY,
+            merkleProof.accountLeaf.nonce,
             calculatedRoot,
-            accountMerkleProof
+            merkleProof.accountMerkleProof
         );
-        isCorrect = (calculatedRoot == merkleRoot);
+        return (calculatedRoot == merkleRoot);
     }
 
     function getBalancesRoot(
         uint16   tokenID,
         uint     balance,
-        uint     tradeHistoryRoot,
-        uint[15] memory balanceMerkleProof
+        uint     storageRoot,
+        uint[18] memory balanceMerkleProof
         )
         private
         pure
         returns (uint)
     {
-        uint balanceItem = hashImpl(balance, tradeHistoryRoot, 0, 0);
+        uint balanceItem = hashImpl(balance, storageRoot, 0, 0);
         uint _id = tokenID;
-        for (uint depth = 0; depth < 5; depth++) {
+        for (uint depth = 0; depth < 6; depth++) {
+            uint base = depth * 3;
             if (_id & 3 == 0) {
                 balanceItem = hashImpl(
                     balanceItem,
-                    balanceMerkleProof[depth * 3],
-                    balanceMerkleProof[depth * 3 + 1],
-                    balanceMerkleProof[depth * 3 + 2]
+                    balanceMerkleProof[base],
+                    balanceMerkleProof[base + 1],
+                    balanceMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 1) {
                 balanceItem = hashImpl(
-                    balanceMerkleProof[depth * 3],
+                    balanceMerkleProof[base],
                     balanceItem,
-                    balanceMerkleProof[depth * 3 + 1],
-                    balanceMerkleProof[depth * 3 + 2]
+                    balanceMerkleProof[base + 1],
+                    balanceMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 2) {
                 balanceItem = hashImpl(
-                    balanceMerkleProof[depth * 3],
-                    balanceMerkleProof[depth * 3 + 1],
+                    balanceMerkleProof[base],
+                    balanceMerkleProof[base + 1],
                     balanceItem,
-                    balanceMerkleProof[depth * 3 + 2]
+                    balanceMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 3) {
                 balanceItem = hashImpl(
-                    balanceMerkleProof[depth * 3],
-                    balanceMerkleProof[depth * 3 + 1],
-                    balanceMerkleProof[depth * 3 + 2],
+                    balanceMerkleProof[base],
+                    balanceMerkleProof[base + 1],
+                    balanceMerkleProof[base + 2],
                     balanceItem
                 );
             }
@@ -140,52 +104,69 @@ library ExchangeBalances
     }
 
     function getAccountInternalsRoot(
-        uint24   accountID,
+        uint32   accountID,
+        address  owner,
         uint     pubKeyX,
         uint     pubKeyY,
         uint     nonce,
         uint     balancesRoot,
-        uint[36] memory accountMerkleProof
+        uint[48] memory accountMerkleProof
         )
         private
         pure
         returns (uint)
     {
-        uint accountItem = hashImpl(pubKeyX, pubKeyY, nonce, balancesRoot);
+        uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, balancesRoot);
         uint _id = accountID;
-        for (uint depth = 0; depth < 12; depth++) {
+        for (uint depth = 0; depth < 16; depth++) {
+            uint base = depth * 3;
             if (_id & 3 == 0) {
                 accountItem = hashImpl(
                     accountItem,
-                    accountMerkleProof[depth * 3],
-                    accountMerkleProof[depth * 3 + 1],
-                    accountMerkleProof[depth * 3 + 2]
+                    accountMerkleProof[base],
+                    accountMerkleProof[base + 1],
+                    accountMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 1) {
                 accountItem = hashImpl(
-                    accountMerkleProof[depth * 3],
+                    accountMerkleProof[base],
                     accountItem,
-                    accountMerkleProof[depth * 3 + 1],
-                    accountMerkleProof[depth * 3 + 2]
+                    accountMerkleProof[base + 1],
+                    accountMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 2) {
                 accountItem = hashImpl(
-                    accountMerkleProof[depth * 3],
-                    accountMerkleProof[depth * 3 + 1],
+                    accountMerkleProof[base],
+                    accountMerkleProof[base + 1],
                     accountItem,
-                    accountMerkleProof[depth * 3 + 2]
+                    accountMerkleProof[base + 2]
                 );
             } else if (_id & 3 == 3) {
                 accountItem = hashImpl(
-                    accountMerkleProof[depth * 3],
-                    accountMerkleProof[depth * 3 + 1],
-                    accountMerkleProof[depth * 3 + 2],
+                    accountMerkleProof[base],
+                    accountMerkleProof[base + 1],
+                    accountMerkleProof[base + 2],
                     accountItem
                 );
             }
             _id = _id >> 2;
         }
         return accountItem;
+    }
+
+    function hashAccountLeaf(
+        uint t0,
+        uint t1,
+        uint t2,
+        uint t3,
+        uint t4
+        )
+        public
+        pure
+        returns (uint)
+    {
+        Poseidon.HashInputs6 memory inputs = Poseidon.HashInputs6(t0, t1, t2, t3, t4, 0);
+        return Poseidon.hash_t6f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
     }
 
     function hashImpl(
@@ -198,6 +179,7 @@ library ExchangeBalances
         pure
         returns (uint)
     {
-        return Poseidon.hash_t5f6p52(t0, t1, t2, t3, 0);
+        Poseidon.HashInputs5 memory inputs = Poseidon.HashInputs5(t0, t1, t2, t3, 0);
+        return Poseidon.hash_t5f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
     }
 }

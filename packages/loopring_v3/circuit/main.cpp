@@ -1,11 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
 
 #include "ThirdParty/BigInt.hpp"
 #include "Utils/Data.h"
-#include "Circuits/RingSettlementCircuit.h"
-#include "Circuits/DepositCircuit.h"
-#include "Circuits/OnchainWithdrawalCircuit.h"
-#include "Circuits/OffchainWithdrawalCircuit.h"
-#include "Circuits/InternalTransferCircuit.h"
+#include "Circuits/UniversalCircuit.h"
 
 #include "ThirdParty/httplib.h"
 //#include "ThirdParty/json.hpp"
@@ -298,29 +296,17 @@ bool writeProof(const std::string& jProof, const std::string& proofFilename)
     return true;
 }
 
-Loopring::Circuit* newCircuit(Loopring::BlockType blockType, ethsnarks::ProtoboardT& outPb)
+Loopring::Circuit* newCircuit(unsigned int blockType, ethsnarks::ProtoboardT& outPb)
 {
-    switch(blockType)
-    {
-        case Loopring::BlockType::RingSettlement: return new Loopring::RingSettlementCircuit(outPb, "circuit");
-        case Loopring::BlockType::Deposit: return new Loopring::DepositCircuit(outPb, "circuit");
-        case Loopring::BlockType::OnchainWithdrawal: return new Loopring::OnchainWithdrawalCircuit(outPb, "circuit");
-        case Loopring::BlockType::OffchainWithdrawal: return new Loopring::OffchainWithdrawalCircuit(outPb, "circuit");
-        case Loopring::BlockType::InternalTransfer: return new Loopring::InternalTransferCircuit(outPb, "circuit");
-        default:
-        {
-            std::cerr << "Cannot create circuit for unknown block type: " << int(blockType) << std::endl;
-            return nullptr;
-        }
-    }
+    return new Loopring::UniversalCircuit(outPb, "circuit");
 }
 
-Loopring::Circuit* createCircuit(Loopring::BlockType blockType, unsigned int blockSize, bool onchainDataAvailability, ethsnarks::ProtoboardT& outPb)
+Loopring::Circuit* createCircuit(unsigned int blockType, unsigned int blockSize, ethsnarks::ProtoboardT& outPb)
 {
     std::cout << "Creating circuit... " << std::endl;
     auto begin = now();
     Loopring::Circuit* circuit = newCircuit(blockType, outPb);
-    circuit->generateConstraints(onchainDataAvailability, blockSize);
+    circuit->generateConstraints(blockSize);
     circuit->printInfo();
     print_time(begin, "Circuit created");
     return circuit;
@@ -353,16 +339,11 @@ bool validateCircuit(Loopring::Circuit* circuit)
     return true;
 }
 
-std::string getBaseName(Loopring::BlockType blockType)
+std::string getBaseName(unsigned int blockType)
 {
     switch(blockType)
     {
-        case Loopring::BlockType::RingSettlement: return "trade";
-        case Loopring::BlockType::Deposit: return "deposit";
-        case Loopring::BlockType::OnchainWithdrawal: return "withdraw_onchain";
-        case Loopring::BlockType::OffchainWithdrawal: return "withdraw_offchain";
-        case Loopring::BlockType::InternalTransfer: return "internal_transfer";
-        default: return "unknown";
+        default: return "all";
     }
 }
 
@@ -441,7 +422,7 @@ void runServer(Loopring::Circuit* circuit, const std::string& provingKeyFilename
         // Some checks to see if this block is compatible with the loaded circuit
         int iBlockType = input["blockType"].get<int>();
         unsigned int blockSize = input["blockSize"].get<int>();
-        if (Loopring::BlockType(iBlockType) != circuit->getBlockType() || blockSize != circuit->getBlockSize())
+        if (/*iBlockType & circuit->getBlockType() != 1 || */blockSize != circuit->getBlockSize())
         {
             res.set_content("Error: Incompatible block requested! Use /info to check which blocks can be proven.\n", "text/plain");
             return;
@@ -802,16 +783,14 @@ int main (int argc, char **argv)
     // Read meta data
     int iBlockType = input["blockType"].get<int>();
     unsigned int blockSize = input["blockSize"].get<int>();
-    bool onchainDataAvailability = input["onchainDataAvailability"].get<bool>();
-    std::string strOnchainDataAvailability = onchainDataAvailability ? "_DA_" : "_";
-    std::string postFix = strOnchainDataAvailability + std::to_string(blockSize);
+    std::string postFix = "_" + std::to_string(blockSize);
 
-    if (iBlockType >= int(Loopring::BlockType::COUNT))
+    /*if (iBlockType >= int(Loopring::BlockType::COUNT))
     {
         std::cerr << "Invalid block type: " << iBlockType << std::endl;
         return 1;
-    }
-    Loopring::BlockType blockType = Loopring::BlockType(iBlockType);
+    }*/
+    unsigned int blockType = iBlockType;
     baseFilename += getBaseName(blockType) + postFix;
     std::string provingKeyFilename = getProvingKeyFilename(baseFilename);
 
@@ -825,7 +804,7 @@ int main (int argc, char **argv)
     }
 
     ethsnarks::ProtoboardT pb;
-    Loopring::Circuit* circuit = createCircuit(blockType, blockSize, onchainDataAvailability, pb);
+    Loopring::Circuit* circuit = createCircuit(blockType, blockSize, pb);
     if (config.swapAB)
     {
         pb.constraint_system.swap_AB_if_beneficial();

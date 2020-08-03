@@ -2,14 +2,20 @@ import BN = require("bn.js");
 import { Bitstream, BlockType, Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { Block, DepositInfo, RingInfo } from "./types";
+import { AuthMethod, Block, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchangeId = 0;
   let exchange: any;
+  let operator: any;
   let loopring: any;
   let blockVersionGenerator = 128;
+
+  let ownerA: string;
+  let ownerB: string;
+  let ownerC: string;
+  let ownerD: string;
 
   const createExchange = async (bSetupTestState: boolean = true) => {
     exchangeId = await exchangeTestUtil.createExchange(
@@ -17,11 +23,12 @@ contract("Exchange", (accounts: string[]) => {
       bSetupTestState
     );
     exchange = exchangeTestUtil.exchange;
+    operator = /*exchangeTestUtil.operator*/exchange;
     loopring = exchangeTestUtil.loopringV3;
   };
 
   const setupRandomRing = async (send: boolean = true) => {
-    const ring: RingInfo = {
+    const ring: SpotTrade = {
       orderA: {
         tokenS: "WETH",
         tokenB: "GTO",
@@ -40,21 +47,25 @@ contract("Exchange", (accounts: string[]) => {
       }
     };
     await exchangeTestUtil.setupRing(ring);
-    await exchangeTestUtil.commitDeposits(exchangeId);
     if (send) {
-      await exchangeTestUtil.sendRing(exchangeId, ring);
+      await exchangeTestUtil.sendRing(ring);
     }
     return ring;
   };
 
   const commitSomeWork = async () => {
     await setupRandomRing();
-    await exchangeTestUtil.commitRings(exchangeId);
+    await exchangeTestUtil.submitTransactions();
   };
 
   before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+
+    ownerA = exchangeTestUtil.testContext.orderOwners[0];
+    ownerB = exchangeTestUtil.testContext.orderOwners[1];
+    ownerC = exchangeTestUtil.testContext.orderOwners[2];
+    ownerD = exchangeTestUtil.testContext.orderOwners[3];
   });
 
   after(async () => {
@@ -65,6 +76,13 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     describe("Operator", () => {
+      const tokenA = "ETH";
+      const tokenB = "LRC";
+      const amountA = new BN(web3.utils.toWei("1.8", "ether"));
+      const amountB = new BN(web3.utils.toWei("3.4", "ether"));
+      const amountC = new BN(web3.utils.toWei("0.1", "ether"));
+      const amountD = new BN(web3.utils.toWei("0.01", "ether"));
+
       describe("submitBlocks", () => {
         it("should not be able to submit blocks from different exchanges", async () => {
           await createExchange(false);
@@ -77,24 +95,24 @@ contract("Exchange", (accounts: string[]) => {
             new Array(18).fill(1)
           );
           const bs = new Bitstream();
-          //bs.addNumber(0, 1);
-          bs.addNumber(exchangeId + 1, 4);
+          bs.addAddress(exchangeTestUtil.blockVerifier.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           const block: OnchainBlock = {
-            blockType: 0,
+            blockType: BlockType.UNIVERSAL,
             blockSize: 2,
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
             proof: [0, 0, 0, 0, 0, 0, 0, 0],
+            storeBlockInfoOnchain: true,
             offchainData: Constants.emptyBytes,
             auxiliaryData: Constants.emptyBytes
           };
           await expectThrow(
-            exchange.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
+            operator.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
               from: exchangeTestUtil.exchangeOperator
             }),
-            "INVALID_EXCHANGE_ID"
+            "INVALID_EXCHANGE"
           );
         });
 
@@ -109,21 +127,21 @@ contract("Exchange", (accounts: string[]) => {
             new Array(18).fill(1)
           );
           const bs = new Bitstream();
-          //bs.addNumber(0, 1);
-          bs.addNumber(exchangeId, 4);
+          bs.addAddress(exchange.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)), 32);
           const block: OnchainBlock = {
-            blockType: 0,
+            blockType: BlockType.UNIVERSAL,
             blockSize: 2,
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
             proof: [0, 0, 0, 0, 0, 0, 0, 0],
+            storeBlockInfoOnchain: true,
             offchainData: Constants.emptyBytes,
             auxiliaryData: Constants.emptyBytes
           };
           await expectThrow(
-            exchange.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
+            operator.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
               from: exchangeTestUtil.exchangeOperator
             }),
             "INVALID_MERKLE_ROOT"
@@ -134,34 +152,34 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.SETTLEMENT,
+            0,
             true,
             2,
             blockVersion,
             new Array(18).fill(1)
           );
-          let timestamp = (
-            await web3.eth.getBlock(await web3.eth.getBlockNumber())
-          ).timestamp;
+          let timestamp = (await web3.eth.getBlock(
+            await web3.eth.getBlockNumber()
+          )).timestamp;
           timestamp -=
             exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
           const bs = new Bitstream();
-          //bs.addNumber(0, 1);
-          bs.addNumber(exchangeId, 4);
+          bs.addAddress(exchange.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.SNARK_SCALAR_FIELD, 32);
           bs.addNumber(timestamp, 4);
           const block: OnchainBlock = {
-            blockType: BlockType.SETTLEMENT,
+            blockType: BlockType.UNIVERSAL,
             blockSize: 2,
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
             proof: [0, 0, 0, 0, 0, 0, 0, 0],
+            storeBlockInfoOnchain: true,
             offchainData: Constants.emptyBytes,
             auxiliaryData: Constants.emptyBytes
           };
           await expectThrow(
-            exchange.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
+            operator.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
               from: exchangeTestUtil.exchangeOperator
             }),
             "INVALID_MERKLE_ROOT"
@@ -172,7 +190,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.SETTLEMENT,
+            0,
             true,
             2,
             blockVersion,
@@ -180,28 +198,28 @@ contract("Exchange", (accounts: string[]) => {
           );
           // Timestamp too early
           {
-            let timestamp = (
-              await web3.eth.getBlock(await web3.eth.getBlockNumber())
-            ).timestamp;
+            let timestamp = (await web3.eth.getBlock(
+              await web3.eth.getBlockNumber()
+            )).timestamp;
             timestamp -=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
             const bs = new Bitstream();
-            //bs.addNumber(0, 1);
-            bs.addNumber(exchangeId, 4);
+            bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             const block: OnchainBlock = {
-              blockType: BlockType.SETTLEMENT,
+              blockType: BlockType.UNIVERSAL,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              exchange.submitBlocks(
+              operator.submitBlocks(
                 [block],
                 exchangeTestUtil.exchangeOperator,
                 { from: exchangeTestUtil.exchangeOperator }
@@ -211,28 +229,28 @@ contract("Exchange", (accounts: string[]) => {
           }
           // Timestamp too late
           {
-            let timestamp = (
-              await web3.eth.getBlock(await web3.eth.getBlockNumber())
-            ).timestamp;
+            let timestamp = (await web3.eth.getBlock(
+              await web3.eth.getBlockNumber()
+            )).timestamp;
             timestamp +=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
             const bs = new Bitstream();
-            //bs.addNumber(0, 1);
-            bs.addNumber(exchangeId, 4);
+            bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             const block: OnchainBlock = {
-              blockType: BlockType.SETTLEMENT,
+              blockType: BlockType.UNIVERSAL,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              exchange.submitBlocks(
+              operator.submitBlocks(
                 [block],
                 exchangeTestUtil.exchangeOperator,
                 { from: exchangeTestUtil.exchangeOperator }
@@ -246,40 +264,39 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.SETTLEMENT,
+            0,
             true,
             2,
             blockVersion,
             new Array(18).fill(1)
           );
           const protocolFees = await loopring.getProtocolFeeValues(
-            exchangeTestUtil.exchangeId,
-            exchangeTestUtil.onchainDataAvailability
+            exchangeTestUtil.exchangeId
           );
-          const timestamp = (
-            await web3.eth.getBlock(await web3.eth.getBlockNumber())
-          ).timestamp;
+          const timestamp = (await web3.eth.getBlock(
+            await web3.eth.getBlockNumber()
+          )).timestamp;
           // Invalid taker protocol fee
           {
             const bs = new Bitstream();
-            //bs.addNumber(0, 1);
-            bs.addNumber(exchangeId, 4);
+            bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
             bs.addNumber(protocolFees.makerFeeBips, 1);
             const block: OnchainBlock = {
-              blockType: BlockType.SETTLEMENT,
+              blockType: BlockType.UNIVERSAL,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              exchange.submitBlocks(
+              operator.submitBlocks(
                 [block],
                 exchangeTestUtil.exchangeOperator,
                 { from: exchangeTestUtil.exchangeOperator }
@@ -290,24 +307,24 @@ contract("Exchange", (accounts: string[]) => {
           // Invalid maker protocol fee
           {
             const bs = new Bitstream();
-            //bs.addNumber(0, 1);
-            bs.addNumber(exchangeId, 4);
+            bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             bs.addNumber(protocolFees.takerFeeBips, 1);
             bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
             const block: OnchainBlock = {
-              blockType: BlockType.SETTLEMENT,
+              blockType: BlockType.UNIVERSAL,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              exchange.submitBlocks(
+              operator.submitBlocks(
                 [block],
                 exchangeTestUtil.exchangeOperator,
                 { from: exchangeTestUtil.exchangeOperator }
@@ -317,333 +334,162 @@ contract("Exchange", (accounts: string[]) => {
           }
         });
 
-        it("should not be able to submit deposit/on-chain withdrawal blocks with invalid data", async () => {
-          await createExchange(false);
-          const blockVersion = blockVersionGenerator++;
-          await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.DEPOSIT,
-            false,
-            2,
-            blockVersion,
-            new Array(18).fill(1)
-          );
-          await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.DEPOSIT,
-            false,
-            8,
-            blockVersion,
-            new Array(18).fill(1)
-          );
-          await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.ONCHAIN_WITHDRAWAL,
-            false,
-            2,
-            blockVersion,
-            new Array(18).fill(1)
-          );
-          await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.ONCHAIN_WITHDRAWAL,
-            false,
-            8,
-            blockVersion,
-            new Array(18).fill(1)
-          );
-          const numRequests = 4;
-          // Do some deposit
-          const fees = await exchange.getFees();
-          const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-          const owner = exchangeTestUtil.testContext.orderOwners[0];
-          const token = exchangeTestUtil.getTokenAddress("LRC");
-          const amount = new BN(web3.utils.toWei("3", "ether"));
-          // Deposits
-          for (let i = 0; i < numRequests; i++) {
-            await exchangeTestUtil.deposit(
-              exchangeId,
-              owner,
-              keyPair.secretKey,
-              keyPair.publicKeyX,
-              keyPair.publicKeyY,
-              token,
-              amount
-            );
-          }
-          // On-chain withdrawals
-          for (let i = 0; i < numRequests; i++) {
-            await exchange.withdraw(owner, token, amount, {
-              from: owner,
-              value: fees._withdrawalFeeETH
-            });
-          }
-
-          const blockTypes = [BlockType.DEPOSIT, BlockType.ONCHAIN_WITHDRAWAL];
-          for (const blockType of blockTypes) {
-            let startIndex = 0;
-            let startingHash = "0x0";
-            if (blockType === BlockType.DEPOSIT) {
-              startIndex = (
-                await exchange.getNumDepositRequestsProcessed()
-              ).toNumber();
-              const firstRequestData = await exchange.getDepositRequest(
-                startIndex - 1
-              );
-              startingHash = firstRequestData.accumulatedHash;
-            } else {
-              startIndex = (
-                await exchange.getNumDepositRequestsProcessed()
-              ).toNumber();
-              const firstRequestData = await exchange.getWithdrawRequest(
-                startIndex - 1
-              );
-              startingHash = firstRequestData.accumulatedHash;
-            }
-
-            // startIdx != numRequestsCommitted
-            {
-              const bs = new Bitstream();
-              //bs.addNumber(0, 1);
-              bs.addNumber(exchangeId, 4);
-              bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-              bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
-              bs.addBN(new BN(startingHash.slice(2), 16).add(new BN(1)), 32);
-              bs.addBN(new BN(0, 16), 32);
-              bs.addNumber(startIndex + 1, 4);
-              bs.addNumber(2, 4);
-              const block: OnchainBlock = {
-                blockType,
-                blockSize: 2,
-                blockVersion: blockVersion,
-                data: web3.utils.hexToBytes(bs.getData()),
-                proof: [0, 0, 0, 0, 0, 0, 0, 0],
-                offchainData: Constants.emptyBytes,
-                auxiliaryData: Constants.emptyBytes
-              };
-              await expectThrow(
-                exchange.submitBlocks(
-                  [block],
-                  exchangeTestUtil.exchangeOperator,
-                  { from: exchangeTestUtil.exchangeOperator }
-                ),
-                "INVALID_REQUEST_RANGE"
-              );
-            }
-            // count > blockSize
-            {
-              const bs = new Bitstream();
-              //bs.addNumber(0, 1);
-              bs.addNumber(exchangeId, 4);
-              bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-              bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
-              bs.addBN(new BN(startingHash.slice(2), 16).add(new BN(1)), 32);
-              bs.addBN(new BN(0, 16), 32);
-              bs.addNumber(startIndex, 4);
-              bs.addNumber(4, 4);
-              const block: OnchainBlock = {
-                blockType,
-                blockSize: 2,
-                blockVersion: blockVersion,
-                data: web3.utils.hexToBytes(bs.getData()),
-                proof: [0, 0, 0, 0, 0, 0, 0, 0],
-                offchainData: Constants.emptyBytes,
-                auxiliaryData: Constants.emptyBytes
-              };
-              await expectThrow(
-                exchange.submitBlocks(
-                  [block],
-                  exchangeTestUtil.exchangeOperator,
-                  { from: exchangeTestUtil.exchangeOperator }
-                ),
-                "INVALID_REQUEST_RANGE"
-              );
-            }
-            // startIdx + count > depositChain.length
-            {
-              const bs = new Bitstream();
-              //bs.addNumber(0, 1);
-              bs.addNumber(exchangeId, 4);
-              bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-              bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
-              bs.addBN(new BN(startingHash.slice(2), 16).add(new BN(1)), 32);
-              bs.addBN(new BN(0, 16), 32);
-              bs.addNumber(startIndex, 4);
-              bs.addNumber(8, 4);
-              const block: OnchainBlock = {
-                blockType,
-                blockSize: 8,
-                blockVersion: blockVersion,
-                data: web3.utils.hexToBytes(bs.getData()),
-                proof: [0, 0, 0, 0, 0, 0, 0, 0],
-                offchainData: Constants.emptyBytes,
-                auxiliaryData: Constants.emptyBytes
-              };
-              await expectThrow(
-                exchange.submitBlocks(
-                  [block],
-                  exchangeTestUtil.exchangeOperator,
-                  { from: exchangeTestUtil.exchangeOperator }
-                ),
-                "INVALID_REQUEST_RANGE"
-              );
-            }
-            // Wrong starting hash
-            {
-              const bs = new Bitstream();
-              //bs.addNumber(0, 1);
-              bs.addNumber(exchangeId, 4);
-              bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-              bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
-              bs.addBN(new BN(123), 32);
-              bs.addBN(new BN(123), 32);
-              bs.addNumber(startIndex, 4);
-              bs.addNumber(2, 4);
-              const block: OnchainBlock = {
-                blockType,
-                blockSize: 2,
-                blockVersion: blockVersion,
-                data: web3.utils.hexToBytes(bs.getData()),
-                proof: [0, 0, 0, 0, 0, 0, 0, 0],
-                offchainData: Constants.emptyBytes,
-                auxiliaryData: Constants.emptyBytes
-              };
-              await expectThrow(
-                exchange.submitBlocks(
-                  [block],
-                  exchangeTestUtil.exchangeOperator,
-                  { from: exchangeTestUtil.exchangeOperator }
-                ),
-                "INVALID_STARTING_HASH"
-              );
-            }
-            // Wrong ending hash
-            {
-              const bs = new Bitstream();
-              //bs.addNumber(0, 1);
-              bs.addNumber(exchangeId, 4);
-              bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-              bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
-              bs.addBN(new BN(startingHash.slice(2), 16), 32);
-              bs.addBN(new BN(0, 16), 32);
-              bs.addNumber(startIndex, 4);
-              bs.addNumber(2, 4);
-              const block: OnchainBlock = {
-                blockType,
-                blockSize: 2,
-                blockVersion: blockVersion,
-                data: web3.utils.hexToBytes(bs.getData()),
-                proof: [0, 0, 0, 0, 0, 0, 0, 0],
-                offchainData: Constants.emptyBytes,
-                auxiliaryData: Constants.emptyBytes
-              };
-              await expectThrow(
-                exchange.submitBlocks(
-                  [block],
-                  exchangeTestUtil.exchangeOperator,
-                  { from: exchangeTestUtil.exchangeOperator }
-                ),
-                "INVALID_ENDING_HASH"
-              );
-            }
-          }
-        });
-
-        it("On-chain requests should be forced after MAX_AGE_REQUEST_UNTIL_FORCED", async () => {
+        it("Invalid auxiliary data", async () => {
           await createExchange();
-          const operatorAccountId = await exchangeTestUtil.getActiveOperator(
-            exchangeId
+          // Do some transfers
+          await exchangeTestUtil.transfer(
+            ownerA,
+            ownerD,
+            tokenA,
+            amountA,
+            tokenB,
+            amountC,
+            {
+              authMethod: AuthMethod.APPROVE
+            }
           );
-          const operatorAccount =
-            exchangeTestUtil.accounts[exchangeId][operatorAccountId];
-          // Prepare a ring
-          const ring = await setupRandomRing();
-          // Do a deposit
-          const deposit = await exchangeTestUtil.doRandomDeposit(5);
-          // Wait
-          await exchangeTestUtil.advanceBlockTimestamp(
-            exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_FORCED + 1
+          await exchangeTestUtil.transfer(
+            ownerB,
+            ownerC,
+            tokenA,
+            amountB,
+            tokenA,
+            amountD
           );
-          await exchangeTestUtil.commitRings(exchangeId);
-          // Try to submit the rings
-          await expectThrow(
-            exchangeTestUtil.submitPendingBlocks(exchangeId),
-            "DEPOSIT_BLOCK_FORCED"
+          await exchangeTestUtil.transfer(
+            ownerA,
+            ownerB,
+            tokenA,
+            amountC,
+            tokenB,
+            amountD,
+            {
+              authMethod: AuthMethod.APPROVE
+            }
           );
-          // Revert the nonce of the operator
-        });
+          await exchangeTestUtil.transfer(
+            ownerA,
+            ownerB,
+            tokenB,
+            amountD,
+            tokenA,
+            amountA
+          );
+          // Commmit the transfers
+          await exchangeTestUtil.submitTransactions(24);
 
-        it("On-chain requests should be forced after MAX_AGE_REQUEST_UNTIL_FORCED", async () => {
-          await createExchange();
-          await exchangeTestUtil.commitDeposits(exchangeId);
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
-
-          // Do a deposit
-          const deposit = await exchangeTestUtil.doRandomDeposit(5);
-          // Do a withdrawal
-          await exchangeTestUtil.requestWithdrawalOnchain(
-            exchangeId,
-            deposit.accountID,
-            "ETH",
-            new BN(123),
-            deposit.owner
-          );
-          // Wait
-          await exchangeTestUtil.advanceBlockTimestamp(
-            exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_FORCED + 1
-          );
-          // Try to submit trades
-          const bs = new Bitstream();
-          //bs.addNumber(0, 1);
-          const merkleRoot = new BN(
-            (await exchangeTestUtil.getMerkleRootOnchain()).slice(2),
-            16
-          );
-          bs.addNumber(exchangeId, 4);
-          bs.addBN(merkleRoot, 32);
-          bs.addBN(merkleRoot.add(new BN(1)), 32);
-          bs.addNumber(0, 4);
-          const tradeBlock: OnchainBlock = {
-            blockType: BlockType.SETTLEMENT,
-            blockSize: exchangeTestUtil.ringSettlementBlockSizes[0],
-            blockVersion: 0,
-            data: web3.utils.hexToBytes(bs.getData()),
-            proof: [0, 0, 0, 0, 0, 0, 0, 0],
-            offchainData: Constants.emptyBytes,
-            auxiliaryData: Constants.emptyBytes
-          };
-          await exchangeTestUtil.registerCircuit(
-            tradeBlock.blockType,
-            tradeBlock.blockSize,
-            tradeBlock.blockVersion
-          );
+          // Submit the transfers: wrong order
           await expectThrow(
-            exchange.submitBlocks(
-              [tradeBlock],
-              exchangeTestUtil.exchangeOperator,
-              { from: exchangeTestUtil.exchangeOperator }
+            exchangeTestUtil.submitPendingBlocks(
+              (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
+                assert(blocks.length === 1, "unexpected number of blocks");
+                let auxiliaryData: any[] = [];
+                for (const [
+                  i,
+                  tx
+                ] of blocks[0].internalBlock.transactions.entries()) {
+                  if (
+                    tx.txType === "Deposit" ||
+                    (tx.txType === "Transfer" && tx.type > 0)
+                  ) {
+                    auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+                  } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
+                    auxiliaryData.push([
+                      i,
+                      web3.utils.hexToBytes(tx.onchainSignature)
+                    ]);
+                  }
+                }
+                auxiliaryData = auxiliaryData.reverse();
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
+              }
             ),
-            "WITHDRAWAL_BLOCK_FORCED"
+            "AUXILIARYDATA_INVALID_ORDER"
           );
 
-          // Commit the withdrawals
-          await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
-          // Try to commit the rings again
+          // Submit the transfers: duplicated index
           await expectThrow(
-            exchange.submitBlocks(
-              [tradeBlock],
-              exchangeTestUtil.exchangeOperator,
-              { from: exchangeTestUtil.exchangeOperator }
+            exchangeTestUtil.submitPendingBlocks(
+              (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
+                assert(blocks.length === 1, "unexpected number of blocks");
+                let auxiliaryData: any[] = [];
+                for (const [
+                  i,
+                  tx
+                ] of blocks[0].internalBlock.transactions.entries()) {
+                  if (
+                    tx.txType === "Deposit" ||
+                    (tx.txType === "Transfer" && tx.type > 0)
+                  ) {
+                    auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+                  } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
+                    auxiliaryData.push([
+                      i,
+                      web3.utils.hexToBytes(tx.onchainSignature)
+                    ]);
+                  }
+                }
+                auxiliaryData[1][0] = auxiliaryData[0][0];
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
+              }
             ),
-            "DEPOSIT_BLOCK_FORCED"
+            "AUXILIARYDATA_INVALID_ORDER"
           );
-          // Commit the deposits
-          await exchangeTestUtil.commitDeposits(exchangeId);
-          // Commit the rings
-          await exchangeTestUtil.sendRing(
-            exchangeId,
-            exchangeTestUtil.dummyRing
+
+          // Submit the transfers: invalid length
+          await expectThrow(
+            exchangeTestUtil.submitPendingBlocks(
+              (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
+                assert(blocks.length === 1, "unexpected number of blocks");
+                const auxiliaryData: any[] = [];
+                for (const [
+                  i,
+                  tx
+                ] of blocks[0].internalBlock.transactions.entries()) {
+                  if (
+                    tx.txType === "Deposit" ||
+                    (tx.txType === "Transfer" && tx.type > 0)
+                  ) {
+                    auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+                  } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
+                    auxiliaryData.push([
+                      i,
+                      web3.utils.hexToBytes(tx.onchainSignature)
+                    ]);
+                  }
+                }
+                auxiliaryData.push([99, web3.utils.hexToBytes("0x")]);
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
+              }
+            ),
+            "AUXILIARYDATA_INVALID_LENGTH"
           );
-          await exchangeTestUtil.commitRings(exchangeId);
-          // Submit the blocks
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
+
+          // Submit the transfers: everything alright
+          await exchangeTestUtil.submitPendingBlocks(
+            (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
+              assert(blocks.length === 1, "unexpected number of blocks");
+              const auxiliaryData: any[] = [];
+              for (const [
+                i,
+                tx
+              ] of blocks[0].internalBlock.transactions.entries()) {
+                if (
+                  tx.txType === "Deposit" ||
+                  (tx.txType === "Transfer" && tx.type > 0)
+                ) {
+                  auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+                } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
+                  auxiliaryData.push([
+                    i,
+                    web3.utils.hexToBytes(tx.onchainSignature)
+                  ]);
+                }
+
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
+              }
+            }
+          );
         });
 
         it("should be able to submit blocks of different types", async () => {
@@ -653,7 +499,7 @@ contract("Exchange", (accounts: string[]) => {
           await commitSomeWork();
           await commitSomeWork();
           // Verify all blocks
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
+          await exchangeTestUtil.submitPendingBlocks();
         });
 
         it("should not be able to submit blocks when one of the proofs is incorrect", async () => {
@@ -664,24 +510,21 @@ contract("Exchange", (accounts: string[]) => {
           await commitSomeWork();
           // Try so submit blocks with invalid proofs
           await expectThrow(
-            exchangeTestUtil.submitPendingBlocks(
-              exchangeId,
-              (blocks: OnchainBlock[]) => {
-                // Change a random proof
-                const blockToModify = exchangeTestUtil.getRandomInt(
-                  blocks.length
-                );
-                const proofIdxToModify = exchangeTestUtil.getRandomInt(8);
-                blocks[blockToModify].proof[proofIdxToModify] =
-                  "0x" +
-                  new BN(
-                    blocks[blockToModify].proof[proofIdxToModify].slice(2),
-                    16
-                  )
-                    .add(new BN(1))
-                    .toString(16);
-              }
-            ),
+            exchangeTestUtil.submitPendingBlocks((blocks: OnchainBlock[]) => {
+              // Change a random proof
+              const blockToModify = exchangeTestUtil.getRandomInt(
+                blocks.length
+              );
+              const proofIdxToModify = exchangeTestUtil.getRandomInt(8);
+              blocks[blockToModify].proof[proofIdxToModify] =
+                "0x" +
+                new BN(
+                  blocks[blockToModify].proof[proofIdxToModify].slice(2),
+                  16
+                )
+                  .add(new BN(1))
+                  .toString(16);
+            }),
             "INVALID_PROOF"
           );
         });
@@ -694,19 +537,16 @@ contract("Exchange", (accounts: string[]) => {
           await commitSomeWork();
           // Try so submit blocks with invalid proofs
           await expectThrow(
-            exchangeTestUtil.submitPendingBlocks(
-              exchangeId,
-              (blocks: OnchainBlock[]) => {
-                // Change the data of a random block
-                const blockToModify = exchangeTestUtil.getRandomInt(
-                  blocks.length
-                );
-                blocks[blockToModify].data = [
-                  ...blocks[blockToModify].data,
-                  ...web3.utils.hexToBytes(web3.utils.randomHex(1))
-                ];
-              }
-            ),
+            exchangeTestUtil.submitPendingBlocks((blocks: OnchainBlock[]) => {
+              // Change the data of a random block
+              const blockToModify = exchangeTestUtil.getRandomInt(
+                blocks.length
+              );
+              blocks[blockToModify].data = [
+                ...blocks[blockToModify].data,
+                ...web3.utils.hexToBytes(web3.utils.randomHex(1))
+              ];
+            }),
             "INVALID_PROOF"
           );
         });
@@ -717,11 +557,12 @@ contract("Exchange", (accounts: string[]) => {
       it("shouldn't be able to submit blocks", async () => {
         await createExchange();
         const block: OnchainBlock = {
-          blockType: 0,
+          blockType: BlockType.UNIVERSAL,
           blockSize: 1,
           blockVersion: 0,
           data: Constants.emptyBytes,
           proof: [0, 0, 0, 0, 0, 0, 0, 0],
+          storeBlockInfoOnchain: true,
           offchainData: Constants.emptyBytes,
           auxiliaryData: Constants.emptyBytes
         };

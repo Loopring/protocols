@@ -1,11 +1,17 @@
-// Copied from https://eips.ethereum.org/EIPS/eip-1271.
-
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.7.0;
 
 abstract contract ERC1271 {
-
     // bytes4(keccak256("isValidSignature(bytes,bytes)")
-    bytes4 constant internal MAGICVALUE = 0x20c13b0b;
+    bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
+
+    bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES_SELECTOR = bytes4(
+        keccak256(bytes("isValidSignature(bytes,bytes)"))
+    );
+
+    bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES32_SELECTOR = bytes4(
+        keccak256(bytes("isValidSignature(bytes32,bytes)"))
+    );
 
     /**
      * @dev Should return whether the signature provided is valid for the provided data
@@ -20,7 +26,18 @@ abstract contract ERC1271 {
         bytes memory _data,
         bytes memory _signature)
         public
-        virtual
         view
+        virtual
         returns (bytes4 magicValue);
+
+    function isValidSignature(
+        bytes32      _hash,
+        bytes memory _signature)
+        public
+        view
+        virtual
+        returns (bytes4 magicValue)
+    {
+        return isValidSignature(abi.encodePacked(_hash), _signature);
+    }
 }

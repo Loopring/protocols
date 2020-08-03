@@ -1,9 +1,8 @@
 
+// SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://github.com/matter-labs/Groth16BatchVerifier/blob/master/BatchedSnarkVerifier/contracts/BatchVerifier.sol
 // Thanks Harry from ETHSNARKS for base code
-
-pragma solidity ^0.6.6;
-
+pragma solidity ^0.7.0;
 
 library BatchVerifier {
     function GroupOrder ()
@@ -27,7 +26,7 @@ library BatchVerifier {
         internal pure returns (uint256)
     {
         // Truncate the least significant 3 bits from the 256bit entropy so it fits the scalar field
-        return uint256(
+        return uint(
             keccak256(
                 abi.encodePacked(
                     in_proof[proofNumber*8 + 0], in_proof[proofNumber*8 + 1], in_proof[proofNumber*8 + 2], in_proof[proofNumber*8 + 3],
@@ -56,7 +55,7 @@ library BatchVerifier {
             if (proofNumber == 0) {
                 entropy[proofNumber] = 1;
             } else {
-                // entropy[proofNumber] = uint256(blockhash(block.number - proofNumber)) % q;
+                // entropy[proofNumber] = uint(blockhash(block.number - proofNumber)) % q;
                 // Safer entropy:
                 entropy[proofNumber] = getProofEntropy(in_proof, proof_inputs, proofNumber);
             }

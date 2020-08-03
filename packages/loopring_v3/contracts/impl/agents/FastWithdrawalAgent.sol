@@ -1,20 +1,6 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/IExchangeV3.sol";
@@ -30,7 +16,7 @@ import "../../lib/EIP712.sol";
 /// @title Fast withdrawal agent implementation. The fast withdrawal request reduces to
 ///        a normal onchain withdrawal request after a specified time limit has exceeded.
 ///
-///        Fast withdrawals are a way for an operator to provide instant withdrawals for
+///        Fast withdrawals are a way for the owner to provide instant withdrawals for
 ///        users with the help of a liquidity provider and conditional transfers.
 ///
 ///        A fast withdrawal requires the non-trustless cooperation of 2 parties:
@@ -43,7 +29,7 @@ import "../../lib/EIP712.sol";
 ///
 ///        However, there is a special case when the fast withdrawal reduces to a standard
 ///        withdrawal and the fee is paid onchain. In this case the withdrawal can be
-///        done completely trustless, no cooperation with the operator is needed.
+///        done completely trustless, no cooperation with the owner is needed.
 ///
 ///        We require the fast withdrawals to be executed by the liquidity provider (as msg.sender)
 ///        so that the liquidity provider can impose its own rules on how its funds are spent. This will
@@ -73,27 +59,22 @@ contract FastWithdrawalAgent is ReentrancyGuard
         address from;                   // The owner of the account
         address to;                     // The address that will receive the tokens withdrawn
         address token;
-        uint    amount;
+        uint96  amount;
         address feeToken;
-        uint    fastFee;                // Fee paid for a fast withdrawal
-        uint    fee;                    // Fee paid for a standard onchain withdrawal
-        bool    onchainFeePayment;
-        uint    fastUntil;
-        uint    validUntil;
+        uint96  fee;
+        uint32  nonce;
+        uint32  validUntil;
+
         bytes   signature;
     }
 
-    // Replay protection
-    mapping (bytes32 => bool) txHash;
-
     // EIP712
     bytes32 constant public FASTWITHDRAWAL_TYPEHASH = keccak256(
-        "FastWithdrawal(address exchange,address from,address to,address token,uint256 amount,address feeToken,uint256 fastFee,uint256 fee,bool onchainFeePayment,uint256 fastUntil,uint256 validUntil)"
+        "FastWithdrawal(address exchange,address from,address to,address token,uint96 amount,address feeToken,uint96 fee,uint32 nonce,uint32 validUntil)"
     );
     bytes32 public DOMAIN_SEPARATOR;
 
     constructor()
-        public
     {
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalAgent", "1.0", address(this)));
     }
@@ -118,109 +99,67 @@ contract FastWithdrawalAgent is ReentrancyGuard
     function executeFastWithdrawal(FastWithdrawal memory fastWithdrawal)
         internal
     {
-        // Compute the hash
-        bytes32 hash = EIP712.hashPacked(
-            DOMAIN_SEPARATOR,
-            keccak256(
-                abi.encodePacked(
-                    FASTWITHDRAWAL_TYPEHASH,
-                    fastWithdrawal.exchange,
-                    fastWithdrawal.from,
-                    fastWithdrawal.to,
-                    fastWithdrawal.token,
-                    fastWithdrawal.amount,
-                    fastWithdrawal.feeToken,
-                    fastWithdrawal.fastFee,
-                    fastWithdrawal.fee,
-                    fastWithdrawal.onchainFeePayment,
-                    fastWithdrawal.fastUntil,
-                    fastWithdrawal.validUntil
-                )
-            )
-        );
-
-        // Make sure the tx isn't used multiple times
-        require(txHash[hash] == false, "TX_REPLAY");
-        txHash[hash] = true;
-
-        // Check the signature
-        require(hash.verifySignature(fastWithdrawal.from, fastWithdrawal.signature), "INVALID_SIGNATURE");
-
         // The liquidity provider always authorizes the fast withdrawal by being the direct caller
         address payable liquidityProvider = msg.sender;
 
-        IExchangeV3 exchange = IExchangeV3(fastWithdrawal.exchange);
-
-        uint fee;
-        if (now <= fastWithdrawal.fastUntil) {
-            /* Fast withdrawal */
-
-            // Transfer the tokens immediately to the requested address
-            // using funds from the liquidity provider (`msg.sender`).
-            transfer(
-                liquidityProvider,
-                fastWithdrawal.to,
-                fastWithdrawal.token,
-                fastWithdrawal.amount
+        if (fastWithdrawal.signature.length > 0) {
+            // Compute the hash
+            bytes32 hash = EIP712.hashPacked(
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encodePacked(
+                        FASTWITHDRAWAL_TYPEHASH,
+                        fastWithdrawal.exchange,
+                        fastWithdrawal.from,
+                        fastWithdrawal.to,
+                        fastWithdrawal.token,
+                        fastWithdrawal.amount,
+                        fastWithdrawal.feeToken,
+                        fastWithdrawal.fee,
+                        fastWithdrawal.nonce,
+                        fastWithdrawal.validUntil
+                    )
+                )
             );
 
-            // Pay the fast fee
-            fee = fastWithdrawal.fastFee;
-
-            // If the fee is paid offchain in the same token as the main transfer
-            // just add it to the transfer amount
-            if (!fastWithdrawal.onchainFeePayment && fastWithdrawal.token == fastWithdrawal.feeToken) {
-                fastWithdrawal.amount = fastWithdrawal.amount.add(fee);
-                fee = 0;
-            }
-
-            // Approve the offchain transfer from the account that's withdrawing back to the liquidity provider
-            exchange.approveOffchainTransfer(
-                fastWithdrawal.from,
-                liquidityProvider,
-                fastWithdrawal.token,
-                fastWithdrawal.amount
-            );
-        } else {
-            /* Standard onchain withdrawal */
+            // Check the signature
+            require(hash.verifySignature(fastWithdrawal.from, fastWithdrawal.signature), "INVALID_SIGNATURE");
 
             // Check the time limit
-            require(now <= fastWithdrawal.validUntil, "TX_EXPIRED");
+            require(block.timestamp <= fastWithdrawal.validUntil, "TX_EXPIRED");
 
-            // Do the onchain withdrawal request
-            (,,, uint withdrawalFeeETH) = exchange.getFees();
-            exchange.withdraw{value: withdrawalFeeETH}(
+            // Approve the offchain transfer from the account that's withdrawing back to the liquidity provider
+            IExchangeV3(fastWithdrawal.exchange).approveOffchainTransfer(
                 fastWithdrawal.from,
+                liquidityProvider,
                 fastWithdrawal.token,
-                uint96(fastWithdrawal.amount)
+                fastWithdrawal.amount,
+                fastWithdrawal.feeToken,
+                fastWithdrawal.fee,
+                0,
+                fastWithdrawal.validUntil,
+                fastWithdrawal.nonce
             );
-
-            // Pay the standard fee
-            fee = fastWithdrawal.fee;
+        } else {
+            // Override the destination address of a withdrawal to the address of the liquidity provider
+            IExchangeV3(fastWithdrawal.exchange).setWithdrawalRecipient(
+                fastWithdrawal.from,
+                fastWithdrawal.to,
+                fastWithdrawal.token,
+                fastWithdrawal.amount,
+                fastWithdrawal.nonce,
+                liquidityProvider
+            );
         }
 
-        // Fee payment to the liquidity provider
-        if (fee > 0) {
-            if (fastWithdrawal.onchainFeePayment) {
-                // Do fee payment directly from the user's wallet if requested
-                // (using the approval for the exchange)
-                exchange.onchainTransferFrom(
-                    fastWithdrawal.from,
-                    liquidityProvider,
-                    fastWithdrawal.feeToken,
-                    fee
-                );
-            } else {
-                // Do the fee payment with an internal transfer as well
-                // Approve the fee transfer
-                exchange.approveOffchainTransfer(
-                    fastWithdrawal.from,
-                    liquidityProvider,
-                    fastWithdrawal.feeToken, 
-                    fee
-                );
-            }
-        }
+        // Transfer the tokens immediately to the requested address
+        // using funds from the liquidity provider (`msg.sender`).
+        transfer(
+            liquidityProvider,
+            fastWithdrawal.to,
+            fastWithdrawal.token,
+            fastWithdrawal.amount
+        );
     }
 
     function transfer(

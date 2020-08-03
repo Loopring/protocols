@@ -1,20 +1,6 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 
 import "./ILoopring.sol";
 
@@ -65,17 +51,12 @@ abstract contract ILoopringV3 is ILoopring
 
     mapping (uint => Exchange) internal exchanges;
 
-    address public wethAddress;
     uint    public totalStake;
     address public blockVerifierAddress;
-    address public downtimeCostCalculator;
-    uint    public maxWithdrawalFee;
-    uint    public withdrawalFineLRC;
+    uint    public forcedWithdrawalFee;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
-    uint    public minExchangeStakeWithDataAvailability;
-    uint    public minExchangeStakeWithoutDataAvailability;
-    uint    public revertFineLRC;
+    uint    public minExchangeStake;
     uint8   public minProtocolTakerFeeBips;
     uint8   public maxProtocolTakerFeeBips;
     uint8   public minProtocolMakerFeeBips;
@@ -89,10 +70,10 @@ abstract contract ILoopringV3 is ILoopring
     function version()
         public
         override
-        view
+        pure
         returns (string memory)
     {
-        return "3.5";
+        return "3.6";
     }
 
     /// @dev Updates the global exchange settings.
@@ -103,15 +84,9 @@ abstract contract ILoopringV3 is ILoopring
     function updateSettings(
         address payable _protocolFeeVault,   // address(0) not allowed
         address _blockVerifierAddress,       // address(0) not allowed
-        address _downtimeCostCalculator,     // address(0) allowed
         uint    _exchangeCreationCostLRC,
-        uint    _maxWithdrawalFee,
-        uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta,
-        uint    _minExchangeStakeWithDataAvailability,
-        uint    _minExchangeStakeWithoutDataAvailability,
-        uint    _revertFineLRC,
-        uint    _withdrawalFineLRC
+        uint    _forcedWithdrawalFee,
+        uint    _minExchangeStake
         )
         external
         virtual;
@@ -134,16 +109,11 @@ abstract contract ILoopringV3 is ILoopring
 
     /// @dev Returns whether the Exchange has staked enough to submit blocks
     ///      Exchanges with on-chain data-availaiblity need to stake at least
-    ///      minExchangeStakeWithDataAvailability, exchanges without
-    ///      data-availability need to stake at least
-    ///      minExchangeStakeWithoutDataAvailability.
+    ///      minExchangeStake.
     /// @param exchangeId The id of the exchange
-    /// @param onchainDataAvailability True if the exchange has on-chain
-    ///        data-availability, else false
     /// @return True if the exchange has staked enough, else false
-    function canExchangeCommitBlocks(
-        uint exchangeId,
-        bool onchainDataAvailability
+    function canExchangeSubmitBlocks(
+        uint exchangeId
         )
         external
         virtual
@@ -191,7 +161,7 @@ abstract contract ILoopringV3 is ILoopring
     /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
     /// @param  requestedAmount The amount of LRC to withdraw
-    /// @return amount The amount of LRC withdrawn
+    /// @return amountLRC The amount of LRC withdrawn
     function withdrawExchangeStake(
         uint    exchangeId,
         address recipient,
@@ -199,7 +169,7 @@ abstract contract ILoopringV3 is ILoopring
         )
         external
         virtual
-        returns (uint amount);
+        returns (uint amountLRC);
 
     /// @dev Stakes more LRC for an exchange.
     /// @param  exchangeId The id of the exchange
@@ -228,13 +198,10 @@ abstract contract ILoopringV3 is ILoopring
 
     /// @dev Gets the protocol fee values for an exchange.
     /// @param exchangeId The id of the exchange
-    /// @param onchainDataAvailability True if the exchange has on-chain
-    ///        data-availability, else false
     /// @return takerFeeBips The protocol taker fee
     /// @return makerFeeBips The protocol maker fee
     function getProtocolFeeValues(
-        uint exchangeId,
-        bool onchainDataAvailability
+        uint exchangeId
         )
         external
         virtual

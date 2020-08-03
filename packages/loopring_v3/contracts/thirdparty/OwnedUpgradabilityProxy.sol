@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
-
-pragma solidity ^0.6.6;
+pragma solidity ^0.7.0;
 
 import './UpgradabilityProxy.sol';
 
@@ -24,7 +24,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityProxy {
   /**
   * @dev the constructor sets the original owner of the contract to the sender account.
   */
-  constructor() public {
+  constructor() {
     setUpgradeabilityOwner(msg.sender);
   }
 

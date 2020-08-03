@@ -16,14 +16,71 @@ export class EdDSA {
     const Fr = new F1Field(babyJub.subOrder);
     let secretKey = utils.leBuff2int(entropy);
     secretKey = Fr.e(secretKey);
-    const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
+
+    // Increment the secretKey until we found a point that is compressable
+    let unpacked = null;
+    while (unpacked == null) {
+      const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
+      const packed = this.pack(publicKey[0].toString(10), publicKey[1].toString(10));
+      unpacked = this.unpack(packed);
+      if (unpacked == null) {
+        secretKey = Fr.add(secretKey, Fr.e("1"));
+      } else {
+        assert(unpacked.publicKeyX === publicKey[0].toString(10), "invalid unpack X");
+        assert(unpacked.publicKeyY === publicKey[1].toString(10), "invalid unpack Y");
+      }
+    }
+    assert(babyJub.inCurve([babyJub.F.e(unpacked.publicKeyX), babyJub.F.e(unpacked.publicKeyY)]), "invalid point");
 
     const keyPair: KeyPair = {
-      publicKeyX: publicKey[0].toString(10),
-      publicKeyY: publicKey[1].toString(10),
+      publicKeyX: unpacked.publicKeyX,
+      publicKeyY: unpacked.publicKeyY,
       secretKey: secretKey.toString(10)
     };
     return keyPair;
+  }
+
+  public static pack(publicKeyX: string, publicKeyY: string) {
+    const keyX = babyJub.F.e(publicKeyX);
+    const keyY = babyJub.F.e(publicKeyY);
+    const packed = babyJub.packPoint([keyX, keyY]);
+    const reversed = Buffer.alloc(32);
+    for (let i = 0; i < 32; i++) {
+      reversed[31 - i] = packed[i];
+    }
+    return reversed.toString("hex");
+  }
+
+  public static unpack(publicKey: string) {
+    if (publicKey.startsWith("0x")) {
+      publicKey = publicKey.slice(2);
+    }
+    while (publicKey.length < 64) {
+      publicKey = "0" + publicKey;
+    }
+    // Special case for 0
+    if (publicKey === "00".repeat(32)) {
+      const pubKey = {
+        publicKeyX: "0",
+        publicKeyY: "0",
+      };
+      return pubKey;
+    } else {
+      let packed = Buffer.from(publicKey, "hex");
+      const reversed = Buffer.alloc(32);
+      for (let i = 0; i < 32; i++) {
+        reversed[31 - i] = packed[i];
+      }
+      const unpacked = babyJub.unpackPoint(reversed);
+      if (unpacked == null) {
+        return null;
+      }
+      const pubKey = {
+        publicKeyX: unpacked[0].toString(10),
+        publicKeyY: unpacked[1].toString(10),
+      };
+      return pubKey;
+    }
   }
 
   public static sign(strKey: string, msg: string) {

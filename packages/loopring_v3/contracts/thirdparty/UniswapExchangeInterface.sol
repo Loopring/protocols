@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: UNLICENSED
 // Solidity Interface
-pragma solidity ^0.6.6;
+pragma solidity ^0.7.0;
 
 abstract contract UniswapExchangeInterface {
     // Address of ERC20 token sold on this exchange

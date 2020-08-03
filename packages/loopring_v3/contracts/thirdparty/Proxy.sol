@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
-
-pragma solidity ^0.6.6;
-
+pragma solidity ^0.7.0;
 
 /**
  * @title Proxy
@@ -11,15 +10,19 @@ pragma solidity ^0.6.6;
 abstract contract Proxy {
   /**
   * @dev Tells the address of the implementation where every call will be delegated.
-  * @return address of the implementation to which it will be delegated
+  * @return impl address of the implementation to which it will be delegated
   */
-  function implementation() public view virtual returns (address);
+  function implementation() public view virtual returns (address impl);
 
-  /**
-  * @dev Fallback function allowing to perform a delegatecall to the given implementation.
-  * This function will return whatever the implementation call returns
-  */
+  receive() payable external {
+    _fallback();
+  }
+
   fallback() payable external {
+    _fallback();
+  }
+
+  function _fallback() private {
     address _impl = implementation();
     require(_impl != address(0));
 
