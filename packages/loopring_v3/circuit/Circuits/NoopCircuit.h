@@ -3,50 +3,35 @@
 #ifndef _NOOPCIRCUIT_H_
 #define _NOOPCIRCUIT_H_
 
-#include "Circuit.h"
 #include "../Utils/Constants.h"
 #include "../Utils/Data.h"
-
+#include "Circuit.h"
 #include "ethsnarks.hpp"
 #include "utils.hpp"
 
 using namespace ethsnarks;
 
-namespace Loopring
-{
+namespace Loopring {
 
-class NoopCircuit : public BaseTransactionCircuit
-{
-public:
+class NoopCircuit : public BaseTransactionCircuit {
+ public:
+  NoopCircuit(ProtoboardT& pb, const TransactionState& state,
+              const std::string& prefix)
+      : BaseTransactionCircuit(pb, state, prefix) {
+    // No signatures needed
+    setOutput(signatureRequired_A, state.constants._0);
+    setOutput(signatureRequired_B, state.constants._0);
+  }
 
-    NoopCircuit(
-        ProtoboardT& pb,
-        const TransactionState& state,
-        const std::string& prefix
-    ) :
-        BaseTransactionCircuit(pb, state, prefix)
-    {
-        // No signatures needed
-        setOutput(signatureRequired_A, state.constants._0);
-        setOutput(signatureRequired_B, state.constants._0);
-    }
+  void generate_r1cs_witness() {}
 
-    void generate_r1cs_witness()
-    {
+  void generate_r1cs_constraints() {}
 
-    }
-
-    void generate_r1cs_constraints()
-    {
-
-    }
-
-    const VariableArrayT getPublicData() const
-    {
-        return VariableArrayT(0, state.constants._0);
-    }
+  const VariableArrayT getPublicData() const {
+    return VariableArrayT(0, state.constants._0);
+  }
 };
 
-}
+}  // namespace Loopring
 
 #endif
