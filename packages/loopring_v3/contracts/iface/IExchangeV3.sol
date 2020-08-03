@@ -109,22 +109,10 @@ abstract contract IExchangeV3 is IExchange
         uint    amount
     );*/
 
-    /*event AccountCreated(
-        address owner,
-        uint    publicKey
-    );*/
-
     /*event AccountUpdated(
         uint32 owner,
         uint   publicKey
     );*/
-
-
-    /*event AccountTransfered(
-        address owner,
-        address newOwner
-    );*/
-
 
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.

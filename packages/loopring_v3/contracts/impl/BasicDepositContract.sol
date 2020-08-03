@@ -149,7 +149,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     function isETH(address addr)
         external
         override
-        view
+        pure
         returns (bool)
     {
         return isETHInternal(addr);

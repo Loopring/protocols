@@ -23,11 +23,7 @@ library ExchangeData
         WITHDRAWAL,
         TRANSFER,
         SPOT_TRADE,
-        ACCOUNT_UPDATE,
-        ACCOUNT_TRANSFER,
-
-        // Disabled
-        ACCOUNT_NEW
+        ACCOUNT_UPDATE
     }
 
     // -- Structs --

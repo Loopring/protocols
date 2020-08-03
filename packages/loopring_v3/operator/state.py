@@ -718,46 +718,6 @@ class State(object):
             if txInput.type != 0:
                 context.numConditionalTransactions = context.numConditionalTransactions + 1
 
-        elif txInput.txType == "NewAccount":
-
-            feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
-
-            newState.accountA_Address = txInput.payerAccountID
-            accountA = self.getAccount(newState.accountA_Address)
-
-            newState.accountB_Address = txInput.newAccountID
-            newState.accountB_Owner = txInput.newOwner
-            newState.accountB_PublicKeyX = txInput.newPublicKeyX
-            newState.accountB_PublicKeyY = txInput.newPublicKeyY
-            newState.accountA_Nonce = 1
-
-            newState.balanceA_S_Address = txInput.feeTokenID
-            newState.balanceA_S_Balance = -feeValue
-
-            newState.balanceDeltaB_O = feeValue
-
-            newState.signatureA = txInput.signature
-
-            context.numConditionalTransactions = context.numConditionalTransactions + 1
-
-        elif txInput.txType == "AccountTransfer":
-
-            feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
-
-            newState.accountA_Address = txInput.accountID
-            newState.accountA_Owner = txInput.newOwner
-            newState.accountA_PublicKeyX = "0"
-            newState.accountA_PublicKeyY = "0"
-            accountA = self.getAccount(newState.accountA_Address)
-            newState.accountA_Nonce = 1
-
-            newState.balanceA_S_Address = txInput.feeTokenID
-            newState.balanceA_S_Balance = -feeValue
-
-            newState.balanceDeltaB_O = feeValue
-
-            context.numConditionalTransactions = context.numConditionalTransactions + 1
-
 
         # Tokens default values
         newState.balanceA_S_Address = setValue(newState.balanceA_S_Address, 0)
