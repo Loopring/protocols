@@ -9,10 +9,10 @@ import "../security/SignedRequest.sol";
 import "./BaseTransferModule.sol";
 
 
-/// @title TransferModule_
+/// @title TransferModule
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract TransferModule_ is BaseTransferModule
+abstract contract TransferModule is BaseTransferModule
 {
     using MathUint      for uint;
     using SignedRequest for ControllerImpl;

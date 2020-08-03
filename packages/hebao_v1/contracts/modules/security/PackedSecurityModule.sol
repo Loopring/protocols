@@ -13,9 +13,9 @@ import "./WhitelistModule.sol";
 ///      minimize the number of modules to reduce gas used
 ///      by wallet creation.
 contract PackedSecurityModule is
-    GuardianModule_,
-    InheritanceModule_,
-    WhitelistModule_
+    GuardianModule,
+    InheritanceModule,
+    WhitelistModule
 {
     ControllerImpl private controller_;
 
@@ -27,9 +27,9 @@ contract PackedSecurityModule is
         uint           _whitelistDelayPeriod
         )
         SecurityModule(_trustedForwarder)
-        GuardianModule_(_recoveryPendingPeriod)
-        InheritanceModule_(_inheritWaitingPeriod)
-        WhitelistModule_(_whitelistDelayPeriod)
+        GuardianModule(_recoveryPendingPeriod)
+        InheritanceModule(_inheritWaitingPeriod)
+        WhitelistModule(_whitelistDelayPeriod)
     {
         controller_ = _controller;
     }

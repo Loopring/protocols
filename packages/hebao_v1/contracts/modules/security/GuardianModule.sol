@@ -7,10 +7,10 @@ import "./SecurityModule.sol";
 import "./SignedRequest.sol";
 
 
-/// @title GuardianModule_
+/// @title GuardianModule
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract GuardianModule_ is SecurityModule
+abstract contract GuardianModule is SecurityModule
 {
     using SignatureUtil for bytes32;
     using AddressUtil   for address;

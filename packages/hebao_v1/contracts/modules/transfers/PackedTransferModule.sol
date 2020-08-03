@@ -10,7 +10,7 @@ import "./TransferModule.sol";
 /// @dev This module combines multiple small modules to
 ///      minimize the number of modules to reduce gas used
 ///      by wallet creation.
-contract PackedTransferModule is TransferModule_
+contract PackedTransferModule is TransferModule
 {
     ControllerImpl private controller_;
 
@@ -20,7 +20,7 @@ contract PackedTransferModule is TransferModule_
         uint           _transferDelayPeriod
         )
         SecurityModule(_trustedForwarder)
-        TransferModule_(_transferDelayPeriod)
+        TransferModule(_transferDelayPeriod)
     {
         controller_ = _controller;
     }

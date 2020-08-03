@@ -6,10 +6,10 @@ pragma experimental ABIEncoderV2;
 import "../../lib/MathUint.sol";
 import "./SecurityModule.sol";
 
-/// @title WhitelistModule_
+/// @title WhitelistModule
 /// @dev Manages whitelisted addresses.
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract WhitelistModule_ is SecurityModule
+abstract contract WhitelistModule is SecurityModule
 {
     using MathUint      for uint;
     using SignedRequest for ControllerImpl;

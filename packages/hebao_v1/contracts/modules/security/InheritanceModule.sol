@@ -6,10 +6,10 @@ pragma experimental ABIEncoderV2;
 import "./SecurityModule.sol";
 
 
-/// @title InheritanceModule_
+/// @title InheritanceModule
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract InheritanceModule_ is SecurityModule
+abstract contract InheritanceModule is SecurityModule
 {
     using AddressUtil   for address;
     using SignatureUtil for bytes32;
