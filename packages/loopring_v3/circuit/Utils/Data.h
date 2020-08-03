@@ -20,7 +20,7 @@ static auto dummySpotTrade = R"({
     "orderA": {
         "accountID": 0,
         "allOrNone": false,
-        "amountB": "79228162514264337593543950335", // max uint96
+        "amountB": "79228162514264337593543950335",
         "amountS": "79228162514264337593543950335",
         "buy": true,
         "feeBips": 0,
@@ -30,7 +30,7 @@ static auto dummySpotTrade = R"({
         "tokenS": 0,
         "tokenB": 1,
         "validSince": 0,
-        "validUntil": 4294967295, / max unit32
+        "validUntil": 4294967295,
         "taker": "0"
     },
     "orderB": {
@@ -90,7 +90,7 @@ static auto dummyAccountUpdate = R"({
     "owner": "0",
     "accountID": 0,
     "validUntil": 4294967295,
-    "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866", // a randomly-chosen valid EdDSA pubkey
+    "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
     "publicKeyY": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
     "feeTokenID": 0,
     "fee": "0",
@@ -107,8 +107,9 @@ static auto dummyDeposit = R"({
 static auto dummySignature = R"({
     "Rx": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
     "Ry": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
-    "s": "2049853744288428596543952232796911341686225132653835991176529722328469628710" // TODO(daniel): how is this value calculated?
+    "s": "2049853744288428596543952232796911341686225132653835991176529722328469628710"
 })"_json;
+ // TODO(daniel): how `s` is calculated in "dummySignature"?
 
 enum class TransactionType {
   Noop = 0,
