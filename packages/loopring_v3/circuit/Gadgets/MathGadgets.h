@@ -447,7 +447,7 @@ public:
   }
 };
 
-// b ? A : B
+// b ? A[] : B[]
 class ArrayTernaryGadget : public GadgetT {
 public:
   VariableT b;
@@ -1395,7 +1395,7 @@ struct SelectorGadget : public GadgetT {
 // if selector=[0,1,0] and values = [a,b,c], return b
 // if selector=[0,0,1] and values = [a,b,c], return c
 // special case,
-// if selector=[0,0,0] and values = [a,b,c], return a
+// if selector=[0,0,0] and values = [a,b,c], return c
 class SelectGadget : public GadgetT {
 public:
   std::vector<TernaryGadget> results;
@@ -1428,6 +1428,8 @@ public:
   const VariableT &result() const { return results.back().result(); }
 };
 
+// Select one out of many arrays based on mutiple boolean selector values.
+// If all the selector values are false, then the last array is selected.
 class ArraySelectGadget : public GadgetT {
 public:
   std::vector<ArrayTernaryGadget> results;
@@ -1460,43 +1462,44 @@ public:
   const VariableArrayT &result() const { return results.back().result(); }
 };
 
+// Checks that the new ower equals the current onwer or the current ower is 0.
 class OwnerValidGadget : public GadgetT {
 public:
-  EqualGadget newOwner_equal_oldOwner;
-  EqualGadget no_oldOwner;
+  EqualGadget newOwner_equal_currentOwner;
+  EqualGadget no_currentOwner;
   OrGadget equal_owner_or_no_owner;
-  RequireEqualGadget equal_owner_or_no_owner_eq_true;
+  RequireEqualGadget require_equal_owner_or_no_owner_is_true;
 
   OwnerValidGadget(ProtoboardT &pb, const Constants &constants,
-                   const VariableT &oldOwner, const VariableT &newOwner,
+                   const VariableT &currentOwner, const VariableT &newOwner,
                    const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        newOwner_equal_oldOwner(pb, newOwner, oldOwner,
-                                FMT(prefix, ".newOwner_equal_oldOwner")),
-        no_oldOwner(pb, oldOwner, constants._0, FMT(prefix, ".no_oldOwner")),
+        newOwner_equal_currentOwner(pb, newOwner, currentOwner,
+                                FMT(prefix, ".newOwner_equal_currentOwner")),
+        no_currentOwner(pb, currentOwner, constants._0, FMT(prefix, ".no_currentOwner")),
         equal_owner_or_no_owner(
-            pb, {newOwner_equal_oldOwner.result(), no_oldOwner.result()},
+            pb, {newOwner_equal_currentOwner.result(), no_currentOwner.result()},
             FMT(prefix, ".equal_owner_or_no_owner")),
-        equal_owner_or_no_owner_eq_true(
+        require_equal_owner_or_no_owner_is_true(
             pb, equal_owner_or_no_owner.result(), constants._1,
             FMT(prefix, ".equal_owner_or_no_owner_eq_true")) {}
 
   void generate_r1cs_witness() {
-    newOwner_equal_oldOwner.generate_r1cs_witness();
-    no_oldOwner.generate_r1cs_witness();
+    newOwner_equal_currentOwner.generate_r1cs_witness();
+    no_currentOwner.generate_r1cs_witness();
     equal_owner_or_no_owner.generate_r1cs_witness();
-    equal_owner_or_no_owner_eq_true.generate_r1cs_witness();
+    require_equal_owner_or_no_owner_is_true.generate_r1cs_witness();
   }
 
   void generate_r1cs_constraints() {
-    newOwner_equal_oldOwner.generate_r1cs_constraints();
-    no_oldOwner.generate_r1cs_constraints();
+    newOwner_equal_currentOwner.generate_r1cs_constraints();
+    no_currentOwner.generate_r1cs_constraints();
     equal_owner_or_no_owner.generate_r1cs_constraints();
-    equal_owner_or_no_owner_eq_true.generate_r1cs_constraints();
+    require_equal_owner_or_no_owner_is_true.generate_r1cs_constraints();
   }
 
-  const VariableT &isNewAccount() const { return no_oldOwner.result(); }
+  const VariableT &isNewAccount() const { return no_currentOwner.result(); }
 };
 
 } // namespace Loopring
