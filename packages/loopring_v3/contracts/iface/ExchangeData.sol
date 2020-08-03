@@ -29,7 +29,8 @@ library ExchangeData
     // -- Structs --
     struct Token
     {
-        address token;
+        address addr;
+        uint    tid;
     }
 
     struct ProtocolFeeData
@@ -180,7 +181,7 @@ library ExchangeData
         Token[] tokens;
 
         // A map from a token to its tokenID + 1
-        mapping (address => uint16) tokenToTokenId;
+        mapping (address => mapping (uint => uint16)) tokenToTokenId;
 
         // A map from an accountID to a tokenID to if the balance is withdrawn
         mapping (uint32 => mapping (uint16 => bool)) withdrawnInWithdrawMode;
@@ -215,6 +216,6 @@ library ExchangeData
         uint withdrawalModeStartTime;
 
         // Last time the protocol fee was withdrawn for a specific token
-        mapping (address => uint) protocolFeeLastWithdrawnTime;
+        mapping (address => mapping(uint => uint)) protocolFeeLastWithdrawnTime;
     }
 }

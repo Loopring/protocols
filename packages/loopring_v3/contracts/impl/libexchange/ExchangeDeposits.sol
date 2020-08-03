@@ -25,7 +25,8 @@ library ExchangeDeposits
 
     event DepositRequested(
         address owner,
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint96  amount,
         uint    fee
     );
@@ -34,7 +35,7 @@ library ExchangeDeposits
         ExchangeData.State storage S,
         address from,
         address to,
-        address tokenAddress,
+        ExchangeData.Token memory token,
         uint96  amount,                 // can be zero
         bytes   memory auxiliaryData
         )
@@ -46,13 +47,13 @@ library ExchangeDeposits
         // This is fine because the user can easily withdraw the deposited amounts again.
         // We don't want to make all deposits more expensive just to stop that from happening.
 
-        uint16 tokenID = S.getTokenID(tokenAddress);
+        uint16 tokenID = S.getTokenID(token);
 
         // Transfer the tokens to this contract
         (uint96 amountDeposited, uint64 fee) = transferDeposit(
             S,
             from,
-            tokenAddress,
+            token,
             amount,
             auxiliaryData
         );
@@ -66,7 +67,8 @@ library ExchangeDeposits
 
         emit DepositRequested(
             to,
-            tokenAddress,
+            token.addr,
+            token.tid,
             uint96(amountDeposited),
             fee
         );
@@ -75,7 +77,7 @@ library ExchangeDeposits
     function transferDeposit(
         ExchangeData.State storage S,
         address from,
-        address tokenAddress,
+        ExchangeData.Token memory token,
         uint96  amount,
         bytes   memory auxiliaryData
         )
@@ -87,7 +89,7 @@ library ExchangeDeposits
     {
         IDepositContract depositContract = S.depositContract;
         uint depositValueETH = 0;
-        if (msg.value > 0 && (tokenAddress == address(0) || depositContract.isETH(tokenAddress))) {
+        if (msg.value > 0 && (token.addr == address(0) || depositContract.isETH(token.addr))) {
             depositValueETH = amount;
             fee = uint64(msg.value.sub(amount));
         } else {
@@ -97,7 +99,8 @@ library ExchangeDeposits
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
         amountDeposited = depositContract.deposit{value: depositValueETH}(
             from,
-            tokenAddress,
+            token.addr,
+            token.tid,
             amount,
             auxiliaryData
         );

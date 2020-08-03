@@ -23,7 +23,8 @@ abstract contract IExchangeV3 is IExchange
     // -- Events --
 
     event TokenRegistered(
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint16  tokenId
     );
 
@@ -50,28 +51,32 @@ abstract contract IExchangeV3 is IExchange
 
     event DepositRequested(
         address owner,
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint96  amount,
         uint    fee
     );
 
     event ForcedWithdrawalRequested(
         address owner,
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint32  accountID
     );
 
     event WithdrawalCompleted(
         address from,
         address to,
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint96  amount
     );
 
     event WithdrawalFailed(
         address from,
         address to,
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint96  amount
     );
 
@@ -191,20 +196,20 @@ abstract contract IExchangeV3 is IExchange
     ///
     ///      This function is only callable by the exchange owner.
     ///
-    /// @param  tokenAddress The token's address
+    /// @param  token The token's address
     /// @return tokenID The token's ID in this exchanges.
     function registerToken(
-        address tokenAddress
+        ExchangeData.Token calldata token
         )
         external
         virtual
         returns (uint16 tokenID);
 
     /// @dev Returns the id of a registered token.
-    /// @param  tokenAddress The token's address
+    /// @param  token The token's address
     /// @return tokenID The token's ID in this exchanges.
     function getTokenID(
-        address tokenAddress
+        ExchangeData.Token calldata token
         )
         external
         virtual
@@ -213,14 +218,14 @@ abstract contract IExchangeV3 is IExchange
 
     /// @dev Returns the address of a registered token.
     /// @param  tokenID The token's ID in this exchanges.
-    /// @return tokenAddress The token's address
-    function getTokenAddress(
+    /// @return token The token's address
+    function getToken(
         uint16 tokenID
         )
         external
         virtual
         view
-        returns (address tokenAddress);
+        returns (ExchangeData.Token calldata token);
 
     // -- Stakes --
     /// @dev Gets the amount of LRC the owner has staked onchain for this exchange.
@@ -340,13 +345,13 @@ abstract contract IExchangeV3 is IExchange
     ///
     /// @param from The address that deposits the funds to the exchange
     /// @param to The account owner's address receiving the funds
-    /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    /// @param token The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
     /// @param auxiliaryData Optional extra data used by the deposit contract
     function deposit(
         address from,
         address to,
-        address tokenAddress,
+        ExchangeData.Token calldata token,
         uint96  amount,
         bytes   calldata auxiliaryData
         )
@@ -368,11 +373,11 @@ abstract contract IExchangeV3 is IExchange
     ///      and create the deposit to the offchain account.
     ///
     /// @param owner The expected owner of the account
-    /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    /// @param token The address of the token, use `0x0` for Ether.
     /// @param accountID The address the account in the Merkle tree.
     function forceWithdraw(
         address owner,
-        address tokenAddress,
+        ExchangeData.Token calldata token,
         uint32  accountID
         )
         external
@@ -388,19 +393,19 @@ abstract contract IExchangeV3 is IExchange
     ///      time (no more than MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
     ///      and create the deposit to the offchain account.
     ///
-    /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    /// @param token The address of the token, use `0x0` for Ether.
     function withdrawProtocolFees(
-        address tokenAddress
+        ExchangeData.Token calldata token
         )
         external
         virtual
         payable;
 
     /// @dev Gets the time the protocol fee for a token was last withdrawn.
-    /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    /// @param token The address of the token, use `0x0` for Ether.
     /// @return The time the protocol fee was last withdrawn.
     function getProtocolFeeLastWithdrawnTime(
-        address tokenAddress
+        ExchangeData.Token calldata token
         )
         external
         virtual
@@ -434,7 +439,7 @@ abstract contract IExchangeV3 is IExchange
     /// @param  token The token address
     function withdrawFromDepositRequest(
         address owner,
-        address token
+        ExchangeData.Token calldata token
         )
         external
         virtual;
@@ -456,7 +461,7 @@ abstract contract IExchangeV3 is IExchange
     /// @param  tokens The token addresses
     function withdrawFromApprovedWithdrawals(
         address[] calldata owners,
-        address[] calldata tokens
+        ExchangeData.Token[] calldata tokens
         )
         external
         virtual;
@@ -467,7 +472,7 @@ abstract contract IExchangeV3 is IExchange
     /// @return The amount withdrawable
     function getAmountWithdrawable(
         address owner,
-        address token
+        ExchangeData.Token calldata token
         )
         external
         virtual
@@ -483,7 +488,7 @@ abstract contract IExchangeV3 is IExchange
     /// @param  token The token address of the the forced request
     function notifyForcedRequestTooOld(
         uint32  accountID,
-        address token
+        ExchangeData.Token calldata token
         )
         external
         virtual;
@@ -505,9 +510,9 @@ abstract contract IExchangeV3 is IExchange
     function approveOffchainTransfer(
         address from,
         address to,
-        address token,
+        ExchangeData.Token calldata token,
         uint96  amount,
-        address feeToken,
+        ExchangeData.Token calldata feeToken,
         uint96  fee,
         uint    data,
         uint32  validUntil,
@@ -531,7 +536,7 @@ abstract contract IExchangeV3 is IExchange
     function setWithdrawalRecipient(
         address from,
         address to,
-        address token,
+        ExchangeData.Token calldata token,
         uint96  amount,
         uint32  nonce,
         address newRecipient
@@ -552,7 +557,7 @@ abstract contract IExchangeV3 is IExchange
     function onchainTransferFrom(
         address from,
         address to,
-        address token,
+        ExchangeData.Token calldata token,
         uint    amount
         )
         external

@@ -28,28 +28,31 @@ library ExchangeWithdrawals
 
     event ForcedWithdrawalRequested(
         address owner,
-        address token,
-        uint32   accountID
+        address tokenAddr,
+        uint    tokenTid,
+        uint32  accountID
     );
 
     event WithdrawalCompleted(
         address from,
         address to,
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint96  amount
     );
 
     event WithdrawalFailed(
         address from,
         address to,
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint96  amount
     );
 
     function forceWithdraw(
         ExchangeData.State storage S,
         address owner,
-        address token,
+        ExchangeData.Token memory token,
         uint32  accountID
         )
         external
@@ -81,7 +84,8 @@ library ExchangeWithdrawals
 
         emit ForcedWithdrawalRequested(
             owner,
-            token,
+            token.addr,
+            token.tid,
             accountID
         );
     }
@@ -126,7 +130,7 @@ library ExchangeWithdrawals
     function withdrawFromDepositRequest(
         ExchangeData.State storage S,
         address owner,
-        address token
+        ExchangeData.Token memory token
         )
         external
     {
@@ -166,7 +170,7 @@ library ExchangeWithdrawals
     function withdrawFromApprovedWithdrawals(
         ExchangeData.State storage S,
         address[] memory owners,
-        address[] memory tokens
+        ExchangeData.Token[] memory tokens
         )
         public
     {
@@ -244,11 +248,18 @@ library ExchangeWithdrawals
         if (to == address(0)) {
             to = S.loopring.protocolFeeVault();
         }
-        address token = S.getTokenAddress(tokenID);
+        ExchangeData.Token memory token = S.getToken(tokenID);
 
         // Transfer the tokens from the deposit contract to the owner
         if (gasLimit > 0) {
-            try S.depositContract.withdraw{gas: gasLimit}(from, to, token, amount, auxiliaryData) {
+            try S.depositContract.withdraw{gas: gasLimit}(
+                from,
+                to,
+                token.addr,
+                token.tid,
+                amount,
+                auxiliaryData
+            ) {
                 success = true;
             } catch {
                 success = false;
@@ -263,17 +274,19 @@ library ExchangeWithdrawals
             emit WithdrawalCompleted(
                 from,
                 to,
-                token,
+                token.addr,
+                token.tid,
                 uint96(amount)
             );
             if (from == address(0)) {
-                S.protocolFeeLastWithdrawnTime[token] = block.timestamp;
+                S.protocolFeeLastWithdrawnTime[token.addr][token.tid] = block.timestamp;
             }
         } else {
             emit WithdrawalFailed(
                 from,
                 to,
-                token,
+                token.addr,
+                token.tid,
                 uint96(amount)
             );
         }

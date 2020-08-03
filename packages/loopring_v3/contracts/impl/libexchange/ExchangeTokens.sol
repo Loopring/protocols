@@ -21,52 +21,50 @@ library ExchangeTokens
     using ExchangeMode      for ExchangeData.State;
 
     event TokenRegistered(
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint16  tokenId
     );
 
-    function getTokenAddress(
+    function getToken(
         ExchangeData.State storage S,
         uint16 tokenID
         )
         external
         view
-        returns (address)
+        returns (ExchangeData.Token memory)
     {
         require(tokenID < S.tokens.length, "INVALID_TOKEN_ID");
-        return S.tokens[tokenID].token;
+        return S.tokens[tokenID];
     }
 
     function registerToken(
         ExchangeData.State storage S,
-        address tokenAddress
+        ExchangeData.Token memory token
         )
         external
         returns (uint16 tokenID)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(S.tokenToTokenId[tokenAddress] == 0, "TOKEN_ALREADY_EXIST");
+        require(S.tokenToTokenId[token.addr][token.tid] == 0, "TOKEN_ALREADY_EXIST");
         require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS(), "TOKEN_REGISTRY_FULL");
 
-        ExchangeData.Token memory token = ExchangeData.Token(
-            tokenAddress
-        );
         tokenID = uint16(S.tokens.length);
         S.tokens.push(token);
-        S.tokenToTokenId[tokenAddress] = tokenID + 1;
+        S.tokenToTokenId[token.addr][token.tid] = tokenID + 1;
 
-        emit TokenRegistered(tokenAddress, tokenID);
+        emit TokenRegistered(token.addr, token.tid, tokenID);
     }
 
     function getTokenID(
         ExchangeData.State storage S,
-        address tokenAddress
+        ExchangeData.Token memory token
         )
         internal  // inline call
         view
         returns (uint16 tokenID)
     {
-        tokenID = S.tokenToTokenId[tokenAddress];
+        tokenID = S.tokenToTokenId[token.addr][token.tid];
         require(tokenID != 0, "TOKEN_NOT_FOUND");
         tokenID = tokenID - 1;
     }

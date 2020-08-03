@@ -54,7 +54,7 @@ library ExchangeGenesis
         S.protocolFeeData.previousMakerFeeBips = S.protocolFeeData.makerFeeBips;
 
         // Call these after the main state has been set up
-        S.registerToken(address(0));
-        S.registerToken(loopring.lrcAddress());
+        S.registerToken(ExchangeData.Token({addr:address(0), tid:0}));
+        S.registerToken(ExchangeData.Token({addr:loopring.lrcAddress(), tid:0}));
     }
 }

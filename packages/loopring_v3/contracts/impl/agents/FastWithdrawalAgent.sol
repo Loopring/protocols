@@ -58,9 +58,9 @@ contract FastWithdrawalAgent is ReentrancyGuard
         address exchange;
         address from;                   // The owner of the account
         address to;                     // The address that will receive the tokens withdrawn
-        address token;
+        ExchangeData.Token token;
         uint96  amount;
-        address feeToken;
+        ExchangeData.Token feeToken;
         uint96  fee;
         uint32  nonce;
         uint32  validUntil;
@@ -70,7 +70,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
 
     // EIP712
     bytes32 constant public FASTWITHDRAWAL_TYPEHASH = keccak256(
-        "FastWithdrawal(address exchange,address from,address to,address token,uint96 amount,address feeToken,uint96 fee,uint32 nonce,uint32 validUntil)"
+        "FastWithdrawal(address exchange,address from,address to,address tokenAddr,uint tokenTid,uint96 amount,address feeTokenAddr,uint feeTokenTid,uint96 fee,uint32 nonce,uint32 validUntil)"
     );
     bytes32 public DOMAIN_SEPARATOR;
 
@@ -112,9 +112,11 @@ contract FastWithdrawalAgent is ReentrancyGuard
                         fastWithdrawal.exchange,
                         fastWithdrawal.from,
                         fastWithdrawal.to,
-                        fastWithdrawal.token,
+                        fastWithdrawal.token.addr,
+                        fastWithdrawal.token.tid,
                         fastWithdrawal.amount,
-                        fastWithdrawal.feeToken,
+                        fastWithdrawal.feeToken.addr,
+                        fastWithdrawal.feeToken.tid,
                         fastWithdrawal.fee,
                         fastWithdrawal.nonce,
                         fastWithdrawal.validUntil
@@ -165,16 +167,18 @@ contract FastWithdrawalAgent is ReentrancyGuard
     function transfer(
         address from,
         address to,
-        address token,
+        ExchangeData.Token memory token,
         uint    amount
         )
         internal
     {
+        require(token.tid == 0, "ERC20_ONLY");
+
         if (amount > 0) {
-            if (token == address(0)) {
+            if (token.addr == address(0)) {
                 to.sendETHAndVerify(amount, gasleft()); // ETH
             } else {
-                token.safeTransferFromAndVerify(from, to, amount);  // ERC20 token
+                token.addr.safeTransferFromAndVerify(from, to, amount);  // ERC20 token
             }
         }
     }

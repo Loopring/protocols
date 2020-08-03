@@ -43,7 +43,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     }
 
     event CheckBalance(
-        address indexed token,
+        address indexed tokenAddr,
         bool            checkBalance
     );
 
@@ -61,21 +61,22 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     }
 
     function setCheckBalance(
-        address token,
+        address tokenAddr,
         bool    checkBalance
         )
         external
         onlyOwner
     {
-        require(needCheckBalance[token] != checkBalance, "INVALID_VALUE");
+        require(needCheckBalance[tokenAddr] != checkBalance, "INVALID_VALUE");
 
-        needCheckBalance[token] = checkBalance;
-        emit CheckBalance(token, checkBalance);
+        needCheckBalance[tokenAddr] = checkBalance;
+        emit CheckBalance(tokenAddr, checkBalance);
     }
 
     function deposit(
         address from,
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint96  amount,
         bytes   calldata /*auxiliaryData*/
         )
@@ -87,18 +88,20 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         ifNotZero(amount)
         returns (uint96 amountReceived)
     {
-        if (isETHInternal(token)) {
+        require(tokenTid == 0, "ERC20_ONLY");
+
+        if (isETHInternal(tokenAddr)) {
             require(msg.value == amount, "INVALID_ETH_DEPOSIT");
             amountReceived = amount;
         } else {
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
 
-            bool checkBalance = needCheckBalance[token];
-            uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
+            bool checkBalance = needCheckBalance[tokenAddr];
+            uint balanceBefore = checkBalance ? ERC20(tokenAddr).balanceOf(address(this)) : 0;
 
-            token.safeTransferFromAndVerify(from, address(this), uint(amount));
+            tokenAddr.safeTransferFromAndVerify(from, address(this), uint(amount));
 
-            uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
+            uint balanceAfter = checkBalance ? ERC20(tokenAddr).balanceOf(address(this)) : amount;
             uint diff = balanceAfter.sub(balanceBefore);
             amountReceived = uint96(diff);
             require(uint(amountReceived) == diff, "OUT_OF_RANGE");
@@ -108,7 +111,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     function withdraw(
         address /*from*/,
         address to,
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint    amount,
         bytes   calldata /*auxiliaryData*/
         )
@@ -119,13 +123,15 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         //nonReentrant
         ifNotZero(amount)
     {
-        if (isETHInternal(token)) {
+        require(tokenTid == 0, "ERC20_ONLY");
+
+        if (isETHInternal(tokenAddr)) {
             to.sendETHAndVerify(amount, gasleft());
         } else {
-            if(!token.safeTransfer(to, amount)){
-                uint amountPaid = ERC20(token).balanceOf(address(this));
+            if(!tokenAddr.safeTransfer(to, amount)){
+                uint amountPaid = ERC20(tokenAddr).balanceOf(address(this));
                 require(amountPaid < amount, "UNEXPECTED");
-                token.safeTransferAndVerify(to, amountPaid);
+                tokenAddr.safeTransferAndVerify(to, amountPaid);
             }
         }
     }
@@ -133,7 +139,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     function transfer(
         address from,
         address to,
-        address token,
+        address tokenAddr,
+        uint    tokenTid,
         uint    amount
         )
         external
@@ -143,25 +150,27 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         //nonReentrant
         ifNotZero(amount)
     {
-        token.safeTransferFromAndVerify(from, to, amount);
+        require(tokenTid == 0, "ERC20_ONLY");
+
+        tokenAddr.safeTransferFromAndVerify(from, to, amount);
     }
 
-    function isETH(address addr)
+    function isETH(address tokenAddr)
         external
         override
         pure
         returns (bool)
     {
-        return isETHInternal(addr);
+        return isETHInternal(tokenAddr);
     }
 
     // -- Internal --
 
-    function isETHInternal(address addr)
+    function isETHInternal(address tokenAddr)
         internal
         pure
         returns (bool)
     {
-        return addr == address(0);
+        return tokenAddr == address(0);
     }
 }

@@ -176,7 +176,7 @@ contract ExchangeV3 is IExchangeV3
     // -- Tokens --
 
     function registerToken(
-        address tokenAddress
+        ExchangeData.Token calldata token
         )
         external
         override
@@ -184,29 +184,29 @@ contract ExchangeV3 is IExchangeV3
         onlyOwner
         returns (uint16)
     {
-        return state.registerToken(tokenAddress);
+        return state.registerToken(token);
     }
 
     function getTokenID(
-        address tokenAddress
+        ExchangeData.Token calldata token
         )
         external
         override
         view
         returns (uint16)
     {
-        return state.getTokenID(tokenAddress);
+        return state.getTokenID(token);
     }
 
-    function getTokenAddress(
+    function getToken(
         uint16 tokenID
         )
         external
         override
         view
-        returns (address)
+        returns (ExchangeData.Token memory)
     {
-        return state.getTokenAddress(tokenID);
+        return state.getToken(tokenID);
     }
 
     // -- Stakes --
@@ -233,7 +233,7 @@ contract ExchangeV3 is IExchangeV3
 
     function withdrawProtocolFeeStake(
         address recipient,
-        uint amount
+        uint    amount
         )
         external
         override
@@ -244,14 +244,14 @@ contract ExchangeV3 is IExchangeV3
     }
 
     function getProtocolFeeLastWithdrawnTime(
-        address tokenAddress
+        ExchangeData.Token calldata token
         )
         external
         override
         view
         returns (uint)
     {
-        return state.protocolFeeLastWithdrawnTime[tokenAddress];
+        return state.protocolFeeLastWithdrawnTime[token.addr][token.tid];
     }
 
     function burnExchangeStake()
@@ -324,7 +324,7 @@ contract ExchangeV3 is IExchangeV3
     function deposit(
         address from,
         address to,
-        address tokenAddress,
+        ExchangeData.Token calldata token,
         uint96  amount,
         bytes   calldata auxiliaryData
         )
@@ -334,14 +334,14 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        state.deposit(from, to, tokenAddress, amount, auxiliaryData);
+        state.deposit(from, to, token, amount, auxiliaryData);
     }
 
     // -- Withdrawals --
 
     function forceWithdraw(
         address owner,
-        address token,
+        ExchangeData.Token calldata token,
         uint32  accountID
         )
         external
@@ -354,7 +354,7 @@ contract ExchangeV3 is IExchangeV3
     }
 
     function withdrawProtocolFees(
-        address token
+        ExchangeData.Token calldata token
         )
         external
         override
@@ -377,7 +377,7 @@ contract ExchangeV3 is IExchangeV3
 
     function withdrawFromDepositRequest(
         address owner,
-        address token
+        ExchangeData.Token calldata token
         )
         external
         override
@@ -391,7 +391,7 @@ contract ExchangeV3 is IExchangeV3
 
     function withdrawFromApprovedWithdrawals(
         address[] calldata owners,
-        address[] calldata tokens
+        ExchangeData.Token[] calldata tokens
         )
         external
         override
@@ -405,7 +405,7 @@ contract ExchangeV3 is IExchangeV3
 
     function getAmountWithdrawable(
         address owner,
-        address token
+        ExchangeData.Token calldata token
         )
         external
         override
@@ -418,7 +418,7 @@ contract ExchangeV3 is IExchangeV3
 
     function notifyForcedRequestTooOld(
         uint32  accountID,
-        address token
+        ExchangeData.Token calldata token
         )
         external
         override
@@ -440,9 +440,9 @@ contract ExchangeV3 is IExchangeV3
     function approveOffchainTransfer(
         address from,
         address to,
-        address token,
+        ExchangeData.Token calldata token,
         uint96  amount,
-        address feeToken,
+        ExchangeData.Token calldata feeToken,
         uint96  fee,
         uint    data,
         uint32  validUntil,
@@ -474,7 +474,7 @@ contract ExchangeV3 is IExchangeV3
     function setWithdrawalRecipient(
         address from,
         address to,
-        address token,
+        ExchangeData.Token calldata token,
         uint96  amount,
         uint32  nonce,
         address newRecipient
@@ -492,7 +492,7 @@ contract ExchangeV3 is IExchangeV3
     function onchainTransferFrom(
         address from,
         address to,
-        address token,
+        ExchangeData.Token calldata token,
         uint    amount
         )
         external
@@ -500,7 +500,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        state.depositContract.transfer(from, to, token, amount);
+        state.depositContract.transfer(from, to, token.addr, token.tid, amount);
     }
 
     function approveTransaction(
