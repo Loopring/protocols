@@ -109,7 +109,7 @@ static auto dummySignature = R"({
     "Ry": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
     "s": "2049853744288428596543952232796911341686225132653835991176529722328469628710"
 })"_json;
- // TODO(daniel): how `s` is calculated in "dummySignature"?
+// TODO(daniel): how `s` is calculated in "dummySignature"?
 
 enum class TransactionType {
   Noop = 0,
@@ -325,8 +325,8 @@ static void from_json(const json &j, Deposit &deposit) {
   deposit.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
 }
 
-// There is no `owner` field as for a withdrawal the owner is always the owner as
-// set in the account leaf the withdrawal is done for.
+// There is no `owner` field as for a withdrawal the owner is always the owner
+// as set in the account leaf the withdrawal is done for.
 class Withdrawal {
 public:
   ethsnarks::FieldT accountID;

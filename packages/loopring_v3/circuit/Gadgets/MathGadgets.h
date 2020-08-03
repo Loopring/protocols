@@ -1475,11 +1475,14 @@ public:
                    const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        newOwner_equal_currentOwner(pb, newOwner, currentOwner,
-                                FMT(prefix, ".newOwner_equal_currentOwner")),
-        no_currentOwner(pb, currentOwner, constants._0, FMT(prefix, ".no_currentOwner")),
+        newOwner_equal_currentOwner(
+            pb, newOwner, currentOwner,
+            FMT(prefix, ".newOwner_equal_currentOwner")),
+        no_currentOwner(pb, currentOwner, constants._0,
+                        FMT(prefix, ".no_currentOwner")),
         equal_owner_or_no_owner(
-            pb, {newOwner_equal_currentOwner.result(), no_currentOwner.result()},
+            pb,
+            {newOwner_equal_currentOwner.result(), no_currentOwner.result()},
             FMT(prefix, ".equal_owner_or_no_owner")),
         require_equal_owner_or_no_owner_is_true(
             pb, equal_owner_or_no_owner.result(), constants._1,
