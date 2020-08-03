@@ -10,18 +10,18 @@ import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
 
 
-/// @title ForwarderModule_
+/// @title ForwarderModule
 /// @dev A module to support wallet meta-transactions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract ForwarderModule_ is BaseModule
+abstract contract ForwarderModule is BaseModule
 {
     using BytesUtil     for bytes;
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
     uint    public constant GAS_OVERHEAD = 100000;
-    bytes32 public DOMAIN_SEPARATOR;
+    bytes32 public FORWARDER_DOMAIN_SEPARATOR;
 
     event MetaTxExecuted(
         address relayer,
@@ -96,7 +96,7 @@ abstract contract ForwarderModule_ is BaseModule
             keccak256(data_)
         );
 
-        bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
+        bytes32 metaTxHash = EIP712.hashPacked(FORWARDER_DOMAIN_SEPARATOR, encoded);
         require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
     }
 
@@ -170,39 +170,5 @@ abstract contract ForwarderModule_ is BaseModule
             );
         }
 
-    }
-}
-
-/// @title ForwarderModule
-/// @dev A module to support wallet meta-transactions.
-///
-/// @author Daniel Wang - <daniel@loopring.org>
-contract ForwarderModule is ForwarderModule_
-{
-    ControllerImpl private controller_;
-
-    constructor(ControllerImpl _controller)
-    {
-        DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("ForwarderModule", "1.1.0", address(this))
-        );
-        controller_ = _controller;
-    }
-
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
     }
 }

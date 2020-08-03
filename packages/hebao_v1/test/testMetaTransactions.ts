@@ -48,7 +48,7 @@ contract("ForwarderModule", () => {
       transferFrom(
         ctx,
         ctx.owners[0],
-        ctx.forwarderModule.address,
+        ctx.finalCoreModule.address,
         "ETH",
         new BN("1000000000000000000")
       ),
@@ -69,7 +69,7 @@ contract("ForwarderModule", () => {
     for (let i = 0; i < tests.length; i++) {
       await expectThrow(
         executeTransaction(
-          ctx.inheritanceModule.contract.methods.setInheritor(
+          ctx.finalSecurityModule.contract.methods.setInheritor(
             wallet,
             ctx.miscAddresses[0]
           ),
@@ -105,10 +105,14 @@ contract("ForwarderModule", () => {
       validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
       wallet
     };
-    signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+    signAddToWhitelistImmediately(
+      request,
+      addr,
+      ctx.finalSecurityModule.address
+    );
 
     await executeTransaction(
-      ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+      ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
         request,
         addr
       ),
@@ -135,10 +139,14 @@ contract("ForwarderModule", () => {
       validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
       wallet
     };
-    signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+    signAddToWhitelistImmediately(
+      request,
+      addr,
+      ctx.finalSecurityModule.address
+    );
 
     await executeTransaction(
-      ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+      ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
         request,
         ctx.miscAddresses[0]
       ),
@@ -165,7 +173,7 @@ contract("ForwarderModule", () => {
   //     signatureTypes = signatureTypes.reverse();
   //   }
   //   await executeTransaction(
-  //     ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+  //     ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
   //       walletA,
   //       ctx.miscAddresses[0]
   //     ),
@@ -189,12 +197,16 @@ contract("ForwarderModule", () => {
       validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
       wallet
     };
-    signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+    signAddToWhitelistImmediately(
+      request,
+      addr,
+      ctx.finalSecurityModule.address
+    );
 
     // The current nonce
     const nonce = new Date().getTime();
     await executeTransaction(
-      ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+      ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
         request,
         ctx.miscAddresses[0]
       ),
@@ -206,7 +218,7 @@ contract("ForwarderModule", () => {
     );
     await expectThrow(
       executeTransaction(
-        ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+        ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
           request,
           ctx.miscAddresses[0]
         ),
@@ -232,11 +244,15 @@ contract("ForwarderModule", () => {
       validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
       wallet
     };
-    signAddToWhitelistImmediately(request, addr, ctx.whitelistModule.address);
+    signAddToWhitelistImmediately(
+      request,
+      addr,
+      ctx.finalSecurityModule.address
+    );
 
     await expectThrow(
       executeTransaction(
-        ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+        ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
           request,
           ctx.miscAddresses[0]
         ),
@@ -256,7 +272,7 @@ contract("ForwarderModule", () => {
   //   const signers = [owner, ...guardians].sort();
   //   await expectThrow(
   //     executeTransaction(
-  //       ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+  //       ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
   //         wallet,
   //         ctx.miscAddresses[0]
   //       ),
@@ -311,11 +327,11 @@ contract("ForwarderModule", () => {
         signAddToWhitelistImmediately(
           request,
           addr,
-          ctx.whitelistModule.address
+          ctx.finalSecurityModule.address
         );
 
         const tx = await executeTransaction(
-          ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+          ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
             request,
             addr
           ),
@@ -334,7 +350,7 @@ contract("ForwarderModule", () => {
           }
         );
         const event = await assertEventEmitted(
-          ctx.forwarderModule,
+          ctx.finalCoreModule,
           "MetaTxExecuted"
         );
 

@@ -6,13 +6,16 @@ pragma experimental ABIEncoderV2;
 import "../../lib/MathUint.sol";
 import "./SecurityModule.sol";
 
-/// @title WhitelistModule_
+
+/// @title WhitelistModule
 /// @dev Manages whitelisted addresses.
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract WhitelistModule_ is SecurityModule
+abstract contract WhitelistModule is SecurityModule
 {
     using MathUint      for uint;
     using SignedRequest for ControllerImpl;
+
+    bytes32 public WHITELIST_DOMAIN_SEPERATOR;
 
     bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH = keccak256(
         "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
@@ -24,7 +27,7 @@ abstract contract WhitelistModule_ is SecurityModule
     {
         require(_whitelistDelayPeriod > 0, "INVALID_DELAY");
 
-        DOMAIN_SEPERATOR = EIP712.hash(
+        WHITELIST_DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("WhitelistModule", "1.1.0", address(this))
         );
         whitelistDelayPeriod = _whitelistDelayPeriod;
@@ -51,7 +54,7 @@ abstract contract WhitelistModule_ is SecurityModule
         onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
-            DOMAIN_SEPERATOR,
+            WHITELIST_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
@@ -100,38 +103,5 @@ abstract contract WhitelistModule_ is SecurityModule
         )
     {
         return controller().whitelistStore().isWhitelisted(wallet, addr);
-    }
-}
-
-contract WhitelistModule is WhitelistModule_
-{
-    ControllerImpl private controller_;
-
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _whitelistDelayPeriod
-        )
-        SecurityModule(_trustedForwarder)
-        WhitelistModule_(_whitelistDelayPeriod)
-    {
-        controller_ = _controller;
-    }
-
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
     }
 }

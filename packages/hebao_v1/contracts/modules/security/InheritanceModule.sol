@@ -6,10 +6,10 @@ pragma experimental ABIEncoderV2;
 import "./SecurityModule.sol";
 
 
-/// @title InheritanceModule_
+/// @title InheritanceModule
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract InheritanceModule_ is SecurityModule
+abstract contract InheritanceModule is SecurityModule
 {
     using AddressUtil   for address;
     using SignatureUtil for bytes32;
@@ -31,9 +31,6 @@ abstract contract InheritanceModule_ is SecurityModule
     {
         require(_inheritWaitingPeriod > 0, "INVALID_DELAY");
 
-        DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("InheritanceModule", "1.1.0", address(this))
-        );
         inheritWaitingPeriod = _inheritWaitingPeriod;
     }
 
@@ -88,38 +85,5 @@ abstract contract InheritanceModule_ is SecurityModule
 
         controller().securityStore().setInheritor(wallet, _inheritor);
         emit InheritorChanged(wallet, _inheritor);
-    }
-}
-
-contract InheritanceModule is InheritanceModule_
-{
-    ControllerImpl private controller_;
-
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _inheritWaitingPeriod
-        )
-        SecurityModule(_trustedForwarder)
-        InheritanceModule_(_inheritWaitingPeriod)
-    {
-        controller_ = _controller;
-    }
-
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
     }
 }

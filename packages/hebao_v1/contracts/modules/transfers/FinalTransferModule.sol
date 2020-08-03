@@ -3,33 +3,24 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./GuardianModule.sol";
-import "./InheritanceModule.sol";
-import "./WhitelistModule.sol";
+import "./TransferModule.sol";
 
 
-/// @title PackedSecurityModule
+/// @title FinalTransferModule
 /// @dev This module combines multiple small modules to
 ///      minimize the number of modules to reduce gas used
 ///      by wallet creation.
-contract PackedSecurityModule is
-    GuardianModule_,
-    InheritanceModule_,
-    WhitelistModule_
+contract FinalTransferModule is TransferModule
 {
     ControllerImpl private controller_;
 
     constructor(
         ControllerImpl _controller,
         address        _trustedForwarder,
-        uint           _recoveryPendingPeriod,
-        uint           _inheritWaitingPeriod,
-        uint           _whitelistDelayPeriod
+        uint           _transferDelayPeriod
         )
         SecurityModule(_trustedForwarder)
-        GuardianModule_(_recoveryPendingPeriod)
-        InheritanceModule_(_inheritWaitingPeriod)
-        WhitelistModule_(_whitelistDelayPeriod)
+        TransferModule(_transferDelayPeriod)
     {
         controller_ = _controller;
     }
@@ -51,3 +42,4 @@ contract PackedSecurityModule is
     {
     }
 }
+

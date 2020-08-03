@@ -9,13 +9,15 @@ import "../security/SignedRequest.sol";
 import "./BaseTransferModule.sol";
 
 
-/// @title TransferModule_
+/// @title TransferModule
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract TransferModule_ is BaseTransferModule
+abstract contract TransferModule is BaseTransferModule
 {
     using MathUint      for uint;
     using SignedRequest for ControllerImpl;
+
+    bytes32 public TRANSFER_DOMAIN_SEPERATOR;
 
     bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = keccak256(
         "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
@@ -43,7 +45,7 @@ abstract contract TransferModule_ is BaseTransferModule
     {
         require(_transferDelayPeriod > 0, "INVALID_DELAY");
 
-        DOMAIN_SEPERATOR = EIP712.hash(
+        TRANSFER_DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("TransferModule", "1.1.0", address(this))
         );
         transferDelayPeriod = _transferDelayPeriod;
@@ -78,7 +80,7 @@ abstract contract TransferModule_ is BaseTransferModule
         onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
-            DOMAIN_SEPERATOR,
+            TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
@@ -199,7 +201,7 @@ abstract contract TransferModule_ is BaseTransferModule
         onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
-            DOMAIN_SEPERATOR,
+            TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
@@ -228,7 +230,7 @@ abstract contract TransferModule_ is BaseTransferModule
         onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
-            DOMAIN_SEPERATOR,
+            TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
@@ -257,7 +259,7 @@ abstract contract TransferModule_ is BaseTransferModule
         returns (bytes memory returnData)
     {
         controller().verifyRequest(
-            DOMAIN_SEPERATOR,
+            TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
@@ -299,7 +301,7 @@ abstract contract TransferModule_ is BaseTransferModule
         );
 
         controller().verifyRequest(
-            DOMAIN_SEPERATOR,
+            TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
@@ -310,37 +312,3 @@ abstract contract TransferModule_ is BaseTransferModule
         return callContractInternal(request.wallet, to, value, data);
     }
 }
-
-contract TransferModule is TransferModule_
-{
-    ControllerImpl private controller_;
-
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _transferDelayPeriod
-        )
-        SecurityModule(_trustedForwarder)
-        TransferModule_(_transferDelayPeriod)
-    {
-        controller_ = _controller;
-    }
-
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-    }
-}
-

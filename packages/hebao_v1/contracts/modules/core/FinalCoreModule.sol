@@ -7,18 +7,22 @@ import "./ERC1271Module.sol";
 import "./ForwarderModule.sol";
 
 
-/// @title PackedCoreModule
+/// @title FinalCoreModule
 /// @dev This module combines multiple small modules to
 ///      minimize the number of modules to reduce gas used
 ///      by wallet creation.
-contract PackedCoreModule is
-    ERC1271Module_,
-    ForwarderModule_
+contract FinalCoreModule is
+    ERC1271Module,
+    ForwarderModule
 {
     ControllerImpl private controller_;
 
     constructor(ControllerImpl _controller)
     {
+        FORWARDER_DOMAIN_SEPARATOR = EIP712.hash(
+            EIP712.Domain("ForwarderModule", "1.1.0", address(this))
+        );
+
         controller_ = _controller;
     }
 
@@ -35,8 +39,8 @@ contract PackedCoreModule is
         public
         pure
         override
-        returns (bytes4[] memory methods)
+        returns (bytes4[] memory)
     {
-        return bindableMethods_();
+        return bindableMethodsForERC1271();
     }
 }

@@ -7,14 +7,16 @@ import "./SecurityModule.sol";
 import "./SignedRequest.sol";
 
 
-/// @title GuardianModule_
+/// @title GuardianModule
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract GuardianModule_ is SecurityModule
+abstract contract GuardianModule is SecurityModule
 {
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
     using SignedRequest for ControllerImpl;
+
+    bytes32 public GUARDIAN_DOMAIN_SEPERATOR;
 
     uint constant public MAX_GUARDIANS = 20;
     uint public recoveryPendingPeriod;
@@ -35,7 +37,7 @@ abstract contract GuardianModule_ is SecurityModule
 
     constructor(uint _recoveryPendingPeriod)
     {
-        DOMAIN_SEPERATOR = EIP712.hash(
+        GUARDIAN_DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("GuardianModule", "1.1.0", address(this))
         );
         require(_recoveryPendingPeriod > 0, "INVALID_DELAY");
@@ -141,7 +143,7 @@ abstract contract GuardianModule_ is SecurityModule
         onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
-            DOMAIN_SEPERATOR,
+            GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerNotAllowed,
             request,
@@ -180,38 +182,5 @@ abstract contract GuardianModule_ is SecurityModule
         returns (bool)
     {
         return isWalletLocked(wallet);
-    }
-}
-
-contract GuardianModule is GuardianModule_
-{
-    ControllerImpl private controller_;
-
-    constructor(
-        ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _recoveryPendingPeriod
-        )
-        SecurityModule(_trustedForwarder)
-        GuardianModule_(_recoveryPendingPeriod)
-    {
-        controller_ = _controller;
-    }
-
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
     }
 }

@@ -17,7 +17,7 @@ export async function addGuardian(
   useMetaTx: boolean = true
 ) {
   const pendingPeriod = (
-    await ctx.guardianModule.recoveryPendingPeriod()
+    await ctx.finalSecurityModule.recoveryPendingPeriod()
   ).toNumber();
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);
@@ -38,7 +38,11 @@ export async function addGuardian(
 
   // Start adding the guardian
   await executeTransaction(
-    ctx.guardianModule.contract.methods.addGuardian(wallet, guardian, group),
+    ctx.finalSecurityModule.contract.methods.addGuardian(
+      wallet,
+      guardian,
+      group
+    ),
     ctx,
     useMetaTx,
     wallet,
@@ -47,7 +51,7 @@ export async function addGuardian(
   );
 
   await assertEventEmitted(
-    ctx.guardianModule,
+    ctx.finalSecurityModule,
     "GuardianAdded",
     (event: any) => {
       return (
@@ -116,7 +120,7 @@ export async function removeGuardian(
   useMetaTx: boolean = true
 ) {
   const pendingPeriod = (
-    await ctx.guardianModule.recoveryPendingPeriod()
+    await ctx.finalSecurityModule.recoveryPendingPeriod()
   ).toNumber();
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);
@@ -127,7 +131,7 @@ export async function removeGuardian(
 
   // Start removing the guardian
   await executeTransaction(
-    ctx.guardianModule.contract.methods.removeGuardian(wallet, guardian),
+    ctx.finalSecurityModule.contract.methods.removeGuardian(wallet, guardian),
     ctx,
     useMetaTx,
     wallet,
@@ -137,7 +141,7 @@ export async function removeGuardian(
 
   const blockNumber = await web3.eth.getBlockNumber();
 
-  // const allEvents = await ctx.guardianModule.getPastEvents(
+  // const allEvents = await ctx.finalSecurityModule.getPastEvents(
   //   "allEvents",
   //   {
   //     fromBlock: blockNumber - 3,
@@ -148,7 +152,7 @@ export async function removeGuardian(
   // console.log(`allEvents: ${util.inspect(allEvents)}`);
 
   await assertEventEmitted(
-    ctx.guardianModule,
+    ctx.finalSecurityModule,
     "GuardianRemoved",
     (event: any) => {
       // console.log(`event: ${event}`);
