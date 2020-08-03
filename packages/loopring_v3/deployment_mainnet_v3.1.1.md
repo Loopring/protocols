@@ -24,7 +24,6 @@
 ### price-providers
 
 - ChainlinkTokenPriceProvider: 0x3B740FeE3ED82FA676286938E124A8Bb74553f93
-- MovingAveragePriceProvider: 0x388110217e4d194d501BB52c3AB28dC709EB450d
 
 ### owners
 
