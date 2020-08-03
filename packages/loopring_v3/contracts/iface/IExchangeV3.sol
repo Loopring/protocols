@@ -196,7 +196,7 @@ abstract contract IExchangeV3 is IExchange
     ///
     ///      This function is only callable by the exchange owner.
     ///
-    /// @param  token The token's address
+    /// @param  token The token's address and tid
     /// @return tokenID The token's ID in this exchanges.
     function registerToken(
         ExchangeData.Token calldata token
@@ -206,7 +206,7 @@ abstract contract IExchangeV3 is IExchange
         returns (uint16 tokenID);
 
     /// @dev Returns the id of a registered token.
-    /// @param  token The token's address
+    /// @param  token The token's address and tid
     /// @return tokenID The token's ID in this exchanges.
     function getTokenID(
         ExchangeData.Token calldata token

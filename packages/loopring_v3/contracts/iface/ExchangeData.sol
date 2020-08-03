@@ -180,7 +180,7 @@ library ExchangeData
         // List of all tokens
         Token[] tokens;
 
-        // A map from a token to its tokenID + 1
+        // A map from a token (address, tid) to its tokenID + 1
         mapping (address => mapping (uint => uint16)) tokenToTokenId;
 
         // A map from an accountID to a tokenID to if the balance is withdrawn
@@ -215,7 +215,7 @@ library ExchangeData
         // Time when the exchange has entered withdrawal mode
         uint withdrawalModeStartTime;
 
-        // Last time the protocol fee was withdrawn for a specific token
+        // Last time the protocol fee (address, tid) was withdrawn for a specific token
         mapping (address => mapping(uint => uint)) protocolFeeLastWithdrawnTime;
     }
 }
