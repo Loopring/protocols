@@ -1362,7 +1362,6 @@ struct SelectorGadget : public GadgetT {
     assert(maxBits <= constants.values.size());
     bits.reserve(maxBits);
     sum.reserve(maxBits);
-
     for (unsigned int i = 0; i < maxBits; i++) {
       bits.emplace_back(pb, type, constants.values[i],
                         FMT(annotation_prefix, ".bits"));
@@ -1439,7 +1438,6 @@ public:
       : GadgetT(pb, prefix) {
     assert(values.size() == selector.size());
     results.reserve(values.size());
-
     for (unsigned int i = 0; i < values.size(); i++) {
       results.emplace_back(
           ArrayTernaryGadget(pb, selector[i], values[i],
@@ -1459,7 +1457,6 @@ public:
       results[i].generate_r1cs_constraints();
     }
   }
-
   const VariableArrayT &result() const { return results.back().result(); }
 };
 
