@@ -15,7 +15,7 @@ import util = require("util");
 contract("GuardianModule - Lock", (accounts: string[]) => {
   let defaultCtx: Context;
   let ctx: Context;
-  let packedSecurityModule2: any;
+  let finalSecurityModule2: any;
 
   let defaultLockPeriod: number;
 
@@ -27,7 +27,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
   let fakeGuardianWallet: any;
 
   const isLocked = async (wallet: string) => {
-    return ctx.packedSecurityModule.isLocked(wallet);
+    return ctx.finalSecurityModule.isLocked(wallet);
   };
 
   const lockChecked = async (
@@ -44,7 +44,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     const blockNumberBefore = await web3.eth.getBlockNumber();
     // Lock the wallet
     const tx = await executeTransaction(
-      ctx.packedSecurityModule.contract.methods.lock(wallet),
+      ctx.finalSecurityModule.contract.methods.lock(wallet),
       ctx,
       useMetaTx,
       wallet,
@@ -53,22 +53,22 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     );
 
     await assertEventEmitted(
-      ctx.packedSecurityModule,
+      ctx.finalSecurityModule,
       "WalletLock",
       (event: any) => {
         return event.wallet == wallet;
       }
     );
 
-    const getWalletLock = await ctx.packedSecurityModule.getLock(wallet);
+    const getWalletLock = await ctx.finalSecurityModule.getLock(wallet);
     const blockTime = await getBlockTime(tx.blockNumber);
 
     assert(await isLocked(wallet), "wallet needs to be locked");
     // Check the lock data
-    const lockData = await ctx.packedSecurityModule.getLock(wallet);
+    const lockData = await ctx.finalSecurityModule.getLock(wallet);
     assert.equal(
       lockData._lockedBy,
-      ctx.packedSecurityModule.address,
+      ctx.finalSecurityModule.address,
       "wallet locker unexpected"
     );
   };
@@ -78,7 +78,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     guardian: string,
     from?: string,
     guardianWallet?: any,
-    packedSecurityModule: any = ctx.packedSecurityModule
+    finalSecurityModule: any = ctx.finalSecurityModule
   ) => {
     const opt = useMetaTx
       ? { owner: guardian, wallet: guardianWallet, from }
@@ -87,7 +87,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     const wasLocked = await isLocked(wallet);
     // Unlock the wallet
     await executeTransaction(
-      packedSecurityModule.contract.methods.unlock(wallet),
+      finalSecurityModule.contract.methods.unlock(wallet),
       ctx,
       useMetaTx,
       wallet,
@@ -96,7 +96,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     );
     if (wasLocked && useMetaTx) {
       await assertEventEmitted(
-        packedSecurityModule,
+        finalSecurityModule,
         "WalletLock",
         (event: any) => {
           return event.wallet == wallet && event.lock == 0;
@@ -114,15 +114,15 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     // Create another lock module for testing
     defaultCtx = await getContext();
     ctx = await createContext(defaultCtx);
-    packedSecurityModule2 = await defaultCtx.contracts.FinalSecurityModule.new(
+    finalSecurityModule2 = await defaultCtx.contracts.FinalSecurityModule.new(
       defaultCtx.controllerImpl.address,
-      defaultCtx.packedCoreModule.address,
+      defaultCtx.finalCoreModule.address,
       3600 * 24,
       3600 * 24 * 365,
       3600 * 24
     );
     await defaultCtx.moduleRegistryImpl.registerModule(
-      packedSecurityModule2.address
+      finalSecurityModule2.address
     );
 
     fakeGuardianWallet = (await createWallet(ctx, ctx.miscAddresses[0])).wallet;
@@ -239,7 +239,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
               guardians[1],
               undefined,
               undefined,
-              packedSecurityModule2
+              finalSecurityModule2
             ),
             "UNABLE_TO_UNLOCK"
           );

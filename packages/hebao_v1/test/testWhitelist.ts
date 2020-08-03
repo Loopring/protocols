@@ -94,11 +94,11 @@ contract("WhitelistModule", (accounts: string[]) => {
       signAddToWhitelistImmediately(
         request,
         addr,
-        ctx.packedSecurityModule.address
+        ctx.finalSecurityModule.address
       );
 
       const tx = await executeTransaction(
-        ctx.packedSecurityModule.contract.methods.addToWhitelistImmediately(
+        ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
           request,
           addr
         ),

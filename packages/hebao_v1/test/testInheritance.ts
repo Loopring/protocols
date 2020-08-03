@@ -17,12 +17,12 @@ contract("InheritanceModule", (accounts: string[]) => {
   let inheritWaitingPeriod: number;
 
   const getInheritor = async (wallet: string) => {
-    const inheritorData = await ctx.packedSecurityModule.inheritor(wallet);
+    const inheritorData = await ctx.finalSecurityModule.inheritor(wallet);
     return inheritorData._inheritor;
   };
 
   const getLastActiveTime = async (wallet: string) => {
-    const inheritorData = await ctx.packedSecurityModule.inheritor(wallet);
+    const inheritorData = await ctx.finalSecurityModule.inheritor(wallet);
     return Number(inheritorData.lastActive);
   };
 
@@ -33,7 +33,7 @@ contract("InheritanceModule", (accounts: string[]) => {
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
     inheritWaitingPeriod = (
-      await ctx.packedSecurityModule.inheritWaitingPeriod()
+      await ctx.finalSecurityModule.inheritWaitingPeriod()
     ).toNumber();
   });
 
@@ -61,7 +61,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         if (!useMetaTx) {
           await expectThrow(
             executeTransaction(
-              ctx.packedSecurityModule.contract.methods.inherit(
+              ctx.finalSecurityModule.contract.methods.inherit(
                 wallet,
                 newOwner
               ),
@@ -77,7 +77,7 @@ contract("InheritanceModule", (accounts: string[]) => {
 
         // Set the inheritor
         await executeTransaction(
-          ctx.packedSecurityModule.contract.methods.setInheritor(
+          ctx.finalSecurityModule.contract.methods.setInheritor(
             wallet,
             inheritor
           ),
@@ -98,7 +98,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         //   // Try to inherit too soon
         //   try{
         //     executeTransaction(
-        //       ctx.packedSecurityModule.contract.methods.inherit(wallet, ctx.miscAddresses[1]),
+        //       ctx.finalSecurityModule.contract.methods.inherit(wallet, ctx.miscAddresses[1]),
         //       ctx,
         //       true,
         //       wallet,
@@ -119,7 +119,7 @@ contract("InheritanceModule", (accounts: string[]) => {
 
         // Now inherit
         await executeTransaction(
-          ctx.packedSecurityModule.contract.methods.inherit(wallet, newOwner),
+          ctx.finalSecurityModule.contract.methods.inherit(wallet, newOwner),
           ctx,
           true,
           wallet,
@@ -140,7 +140,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         // Try to inherit again
         const newOwner2 = ctx.miscAddresses[2];
         executeTransaction(
-          ctx.packedSecurityModule.contract.methods.inherit(wallet, newOwner2),
+          ctx.finalSecurityModule.contract.methods.inherit(wallet, newOwner2),
           ctx,
           true,
           wallet,
@@ -169,7 +169,7 @@ contract("InheritanceModule", (accounts: string[]) => {
 
         // All functions that should update the last active time
         const activityFunctions = [
-          ctx.packedSecurityModule.contract.methods.setInheritor(
+          ctx.finalSecurityModule.contract.methods.setInheritor(
             wallet,
             inheritor
           )
@@ -183,7 +183,7 @@ contract("InheritanceModule", (accounts: string[]) => {
 
         // Use the function updating the last active time
         const tx = await executeTransaction(
-          ctx.packedSecurityModule.contract.methods.setInheritor(
+          ctx.finalSecurityModule.contract.methods.setInheritor(
             wallet,
             inheritor
           ),
@@ -205,7 +205,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         //   await advanceTimeAndBlockAsync(inheritWaitingPeriod - 100);
 
         //   executeTransaction(
-        //     ctx.packedSecurityModule.contract.methods.inherit(wallet, newOwner),
+        //     ctx.finalSecurityModule.contract.methods.inherit(wallet, newOwner),
         //     ctx,
         //     true,
         //     wallet,
@@ -237,7 +237,7 @@ contract("InheritanceModule", (accounts: string[]) => {
 
         // Inherit
         const tx2 = await executeTransaction(
-          ctx.packedSecurityModule.contract.methods.inherit(wallet, newOwner),
+          ctx.finalSecurityModule.contract.methods.inherit(wallet, newOwner),
           ctx,
           true,
           wallet,

@@ -189,12 +189,12 @@ contract("GuardianUtils", (accounts: string[]) => {
     signAddToWhitelistImmediately(
       request,
       addr,
-      ctx.packedSecurityModule.address
+      ctx.finalSecurityModule.address
     );
 
     await expectThrow(
       executeTransaction(
-        ctx.packedSecurityModule.contract.methods.addToWhitelistImmediately(
+        ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
           request,
           addr
         ),
@@ -232,11 +232,11 @@ contract("GuardianUtils", (accounts: string[]) => {
       signAddToWhitelistImmediately(
         request,
         addr,
-        ctx.packedSecurityModule.address
+        ctx.finalSecurityModule.address
       );
 
       const transaction = executeTransaction(
-        ctx.packedSecurityModule.contract.methods.addToWhitelistImmediately(
+        ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
           request,
           ctx.miscAddresses[0]
         ),

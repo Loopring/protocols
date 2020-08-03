@@ -71,13 +71,10 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
             validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
             wallet
           };
-          signRecover(request, newOwner, ctx.packedSecurityModule.address);
+          signRecover(request, newOwner, ctx.finalSecurityModule.address);
 
           const transaction = executeTransaction(
-            ctx.packedSecurityModule.contract.methods.recover(
-              request,
-              newOwner
-            ),
+            ctx.finalSecurityModule.contract.methods.recover(request, newOwner),
             ctx,
             useMetaTx,
             wallet,
@@ -93,7 +90,7 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
           if (signers.length >= numSignersRequired) {
             await transaction;
             await assertEventEmitted(
-              ctx.packedSecurityModule,
+              ctx.finalSecurityModule,
               "Recovered",
               (event: any) => {
                 return event.wallet === wallet && event.newOwner === newOwner;

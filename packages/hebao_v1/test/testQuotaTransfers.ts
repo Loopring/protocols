@@ -119,7 +119,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     //   );
     // } else {
     await executeTransaction(
-      ctx.packedTransferModule.contract.methods.transferToken(
+      ctx.finalTransferModule.contract.methods.transferToken(
         wallet,
         token,
         to,
@@ -135,7 +135,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     //  }
 
     await assertEventEmitted(
-      approved ? ctx.packedTransferModule : ctx.packedTransferModule,
+      approved ? ctx.finalTransferModule : ctx.finalTransferModule,
       "Transfered",
       (event: any) => {
         return (
@@ -216,12 +216,12 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       to,
       amount,
       logdata,
-      ctx.packedTransferModule.address
+      ctx.finalTransferModule.address
     );
 
     // Transfer the tokens
     await executeTransaction(
-      ctx.packedTransferModule.contract.methods.transferTokenWithApproval(
+      ctx.finalTransferModule.contract.methods.transferTokenWithApproval(
         request,
         token,
         to,
@@ -236,7 +236,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     );
 
     await assertEventEmitted(
-      ctx.packedTransferModule,
+      ctx.finalTransferModule,
       "Transfered",
       (event: any) => {
         return (
@@ -304,7 +304,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     // Call the contract
     if (approved) {
       await executeTransaction(
-        ctx.packedTransferModule.contract.methods.callContract(
+        ctx.finalTransferModule.contract.methods.callContract(
           wallet,
           to,
           value.toString(10),
@@ -318,7 +318,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       );
     } else {
       await executeTransaction(
-        ctx.packedTransferModule.contract.methods.callContract(
+        ctx.finalTransferModule.contract.methods.callContract(
           wallet,
           to,
           value.toString(10),
@@ -333,7 +333,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     }
 
     await assertEventEmitted(
-      approved ? ctx.packedTransferModule : ctx.packedTransferModule,
+      approved ? ctx.finalTransferModule : ctx.finalTransferModule,
       "ContractCalled",
       (event: any) => {
         return (
@@ -419,11 +419,11 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       to,
       value,
       data,
-      ctx.packedTransferModule.address
+      ctx.finalTransferModule.address
     );
 
     await executeTransaction(
-      ctx.packedTransferModule.contract.methods.callContractWithApproval(
+      ctx.finalTransferModule.contract.methods.callContractWithApproval(
         request,
         to,
         value.toString(10),
@@ -437,7 +437,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     );
 
     await assertEventEmitted(
-      ctx.packedTransferModule,
+      ctx.finalTransferModule,
       "ContractCalled",
       (event: any) => {
         return (
@@ -511,7 +511,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     // Approve the tokens
     if (approved) {
       await executeTransaction(
-        ctx.packedTransferModule.contract.methods.approveToken(
+        ctx.finalTransferModule.contract.methods.approveToken(
           wallet,
           token,
           to,
@@ -525,7 +525,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       );
     } else {
       await executeTransaction(
-        ctx.packedTransferModule.contract.methods.approveToken(
+        ctx.finalTransferModule.contract.methods.approveToken(
           wallet,
           token,
           to,
@@ -539,7 +539,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       );
     }
     await assertEventEmitted(
-      approved ? ctx.packedTransferModule : ctx.packedTransferModule,
+      approved ? ctx.finalTransferModule : ctx.finalTransferModule,
       "Approved",
       (event: any) => {
         return (
@@ -601,12 +601,12 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       token,
       to,
       amount,
-      ctx.packedTransferModule.address
+      ctx.finalTransferModule.address
     );
 
     // Approve the tokens
     await executeTransaction(
-      ctx.packedTransferModule.contract.methods.approveTokenWithApproval(
+      ctx.finalTransferModule.contract.methods.approveTokenWithApproval(
         request,
         token,
         to,
@@ -620,7 +620,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     );
 
     await assertEventEmitted(
-      ctx.packedTransferModule,
+      ctx.finalTransferModule,
       "Approved",
       (event: any) => {
         return (
@@ -683,7 +683,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     // Approve the tokens and call the contract
     if (approved) {
       await executeTransaction(
-        ctx.packedTransferModule.contract.methods.approveThenCallContract(
+        ctx.finalTransferModule.contract.methods.approveThenCallContract(
           wallet,
           token,
           to,
@@ -699,7 +699,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       );
     } else {
       await executeTransaction(
-        ctx.packedTransferModule.contract.methods.approveThenCallContract(
+        ctx.finalTransferModule.contract.methods.approveThenCallContract(
           wallet,
           token,
           to,
@@ -715,7 +715,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       );
     }
     await assertEventEmitted(
-      approved ? ctx.packedTransferModule : ctx.packedTransferModule,
+      approved ? ctx.finalTransferModule : ctx.finalTransferModule,
       "Approved",
       (event: any) => {
         return (
@@ -727,7 +727,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       }
     );
     await assertEventEmitted(
-      approved ? ctx.packedTransferModule : ctx.packedTransferModule,
+      approved ? ctx.finalTransferModule : ctx.finalTransferModule,
       "ContractCalled",
       (event: any) => {
         return (
@@ -792,12 +792,12 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       amount,
       value,
       data,
-      ctx.packedTransferModule.address
+      ctx.finalTransferModule.address
     );
 
     // Approve the tokens and call the contract
     await executeTransaction(
-      ctx.packedTransferModule.contract.methods.approveThenCallContractWithApproval(
+      ctx.finalTransferModule.contract.methods.approveThenCallContractWithApproval(
         request,
         token,
         to,
@@ -812,7 +812,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       { wallet, owner }
     );
     await assertEventEmitted(
-      ctx.packedTransferModule,
+      ctx.finalTransferModule,
       "Approved",
       (event: any) => {
         return (
@@ -824,7 +824,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       }
     );
     await assertEventEmitted(
-      ctx.packedTransferModule,
+      ctx.finalTransferModule,
       "ContractCalled",
       (event: any) => {
         return (
@@ -854,7 +854,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     ctx = await createContext(defaultCtx);
     targetContract = await TestTargetContract.new();
     quotaPeriod = (
-      await ctx.packedTransferModule.transferDelayPeriod()
+      await ctx.finalTransferModule.transferDelayPeriod()
     ).toNumber();
     defaultQuota = await ctx.quotaStore.defaultQuota();
   });

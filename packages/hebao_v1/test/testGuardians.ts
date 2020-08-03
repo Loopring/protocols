@@ -45,10 +45,10 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
     defaultCtx = await getContext();
 
     MAX_GUARDIANS = (
-      await defaultCtx.packedSecurityModule.MAX_GUARDIANS()
+      await defaultCtx.finalSecurityModule.MAX_GUARDIANS()
     ).toNumber();
     recoveryPendingPeriod = (
-      await defaultCtx.packedSecurityModule.recoveryPendingPeriod()
+      await defaultCtx.finalSecurityModule.recoveryPendingPeriod()
     ).toNumber();
   });
 
@@ -115,7 +115,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
         if (!useMetaTx) {
           await expectThrow(
             executeTransaction(
-              ctx.packedSecurityModule.contract.methods.cancelGuardianAddition(
+              ctx.finalSecurityModule.contract.methods.cancelGuardianAddition(
                 wallet,
                 ctx.guardians[0]
               ),
@@ -131,7 +131,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
           // Try to cancel the second guardian
           await expectThrow(
             executeTransaction(
-              ctx.packedSecurityModule.contract.methods.cancelGuardianAddition(
+              ctx.finalSecurityModule.contract.methods.cancelGuardianAddition(
                 wallet,
                 ctx.guardians[1]
               ),
@@ -147,7 +147,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
 
         // Add the third guardian which is added after a delay
         await executeTransaction(
-          ctx.packedSecurityModule.contract.methods.addGuardian(
+          ctx.finalSecurityModule.contract.methods.addGuardian(
             wallet,
             ctx.guardians[2],
             group
@@ -161,7 +161,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
 
         // Now cancel
         await executeTransaction(
-          ctx.packedSecurityModule.contract.methods.cancelGuardianAddition(
+          ctx.finalSecurityModule.contract.methods.cancelGuardianAddition(
             wallet,
             ctx.guardians[2]
           ),
@@ -173,7 +173,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
         );
 
         await assertEventEmitted(
-          ctx.packedSecurityModule,
+          ctx.finalSecurityModule,
           "GuardianAdditionCancelled",
           (event: any) => {
             return event.wallet == wallet && event.guardian == ctx.guardians[2];
@@ -184,7 +184,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
           // Try to cancel again
           await expectThrow(
             executeTransaction(
-              ctx.packedSecurityModule.contract.methods.cancelGuardianAddition(
+              ctx.finalSecurityModule.contract.methods.cancelGuardianAddition(
                 wallet,
                 ctx.guardians[2]
               ),
@@ -227,7 +227,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
 
         // Remove the first guardian
         await executeTransaction(
-          ctx.packedSecurityModule.contract.methods.removeGuardian(
+          ctx.finalSecurityModule.contract.methods.removeGuardian(
             wallet,
             ctx.guardians[0]
           ),
@@ -240,7 +240,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
 
         // Now cancel
         await executeTransaction(
-          ctx.packedSecurityModule.contract.methods.cancelGuardianRemoval(
+          ctx.finalSecurityModule.contract.methods.cancelGuardianRemoval(
             wallet,
             ctx.guardians[0]
           ),
@@ -251,7 +251,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
           opt
         );
         await assertEventEmitted(
-          ctx.packedSecurityModule,
+          ctx.finalSecurityModule,
           "GuardianRemovalCancelled",
           (event: any) => {
             return event.wallet == wallet && event.guardian == ctx.guardians[0];
@@ -262,7 +262,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
         if (!useMetaTx) {
           await expectThrow(
             executeTransaction(
-              ctx.packedSecurityModule.contract.methods.cancelGuardianRemoval(
+              ctx.finalSecurityModule.contract.methods.cancelGuardianRemoval(
                 wallet,
                 ctx.guardians[0]
               ),

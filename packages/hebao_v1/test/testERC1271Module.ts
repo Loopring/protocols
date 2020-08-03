@@ -52,13 +52,13 @@ contract("ERC1271Module", () => {
       const walletContract = await ctx.contracts.FinalCoreModule.at(wallet);
 
       // lock wallet:
-      await ctx.packedSecurityModule.contract.methods.lock(wallet).send({
+      await ctx.finalSecurityModule.contract.methods.lock(wallet).send({
         from: guardians[0],
         gas: 1000000,
         gasPrice: 10e9
       });
       assert(
-        await ctx.packedSecurityModule.isLocked(wallet),
+        await ctx.finalSecurityModule.isLocked(wallet),
         "wallet needs to be locked"
       );
       const isValidBefore = await walletContract.contract.methods

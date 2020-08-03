@@ -90,7 +90,7 @@ contract("UpgraderModule", () => {
     //     const owner = ctx.owners[0];
     //     const { wallet } = await createWallet(ctx, owner, 0, [
     //       ctx.guardianModule.address,
-    //       ctx.packedCoreModule.address,
+    //       ctx.finalCoreModule.address,
     //       ctx.forwarderModule.address
     //     ]);
     //     const walletContract = await ctx.contracts.SimpleProxy.at(wallet);
@@ -137,7 +137,7 @@ contract("UpgraderModule", () => {
     //     );
 
     //     assert(
-    //       await walletImpl.hasModule(ctx.packedCoreModule.address),
+    //       await walletImpl.hasModule(ctx.finalCoreModule.address),
     //       "wallet should still has erc1271 module"
     //     );
 
@@ -148,7 +148,7 @@ contract("UpgraderModule", () => {
 
     //     // Make sure the wallet is still fully functional
     //     await executeTransaction(
-    //       walletImpl.contract.methods.addModule(ctx.packedSecurityModule.address),
+    //       walletImpl.contract.methods.addModule(ctx.finalSecurityModule.address),
     //       ctx,
     //       useMetaTx,
     //       wallet,
@@ -167,7 +167,7 @@ contract("UpgraderModule", () => {
     //     useMetaTx = metaTx;
     //     const owner = ctx.owners[0];
     //     const { wallet } = await createWallet(ctx, owner, 0, [
-    //       ctx.packedCoreModule.address,
+    //       ctx.finalCoreModule.address,
     //       ctx.forwarderModule.address
     //     ]);
     //     const walletContract = await ctx.contracts.WalletImpl.at(wallet);
@@ -212,11 +212,11 @@ contract("UpgraderModule", () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
         const { wallet } = await createWallet(ctx, owner, 0, [
-          ctx.packedCoreModule.address
+          ctx.finalCoreModule.address
         ]);
 
         const modules = getAllModuleAddresses(ctx).filter(
-          addr => addr !== ctx.packedCoreModule.address
+          addr => addr !== ctx.finalCoreModule.address
         );
 
         await addAndRemoveModulesChecked(owner, wallet, [modules[0]], []);

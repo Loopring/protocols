@@ -113,10 +113,10 @@ export async function executeMetaTx(
   };
 
   // Sign the meta transaction
-  const hash: Buffer = getMetaTxHash(metaTx, ctx.packedCoreModule.address);
+  const hash: Buffer = getMetaTxHash(metaTx, ctx.finalCoreModule.address);
   const signature = sign(options.owner, hash);
 
-  const tx = await ctx.packedCoreModule.executeMetaTx(metaTx, signature, {
+  const tx = await ctx.finalCoreModule.executeMetaTx(metaTx, signature, {
     from,
     gas,
     gasPrice: gasPrice.toString()

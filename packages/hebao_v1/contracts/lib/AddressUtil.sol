@@ -52,7 +52,7 @@ library AddressUtil
         }
         address payable recipient = to.toPayable();
         /* solium-disable-next-line */
-        (success, ) = recipient.call{value: amount, gas: gasLimit}("");
+        (success,) = recipient.call{value: amount, gas: gasLimit}("");
     }
 
     // Works like address.transfer but with a customizable gas limit

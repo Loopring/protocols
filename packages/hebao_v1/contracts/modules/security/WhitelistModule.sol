@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../../lib/MathUint.sol";
 import "./SecurityModule.sol";
 
+
 /// @title WhitelistModule
 /// @dev Manages whitelisted addresses.
 /// @author Daniel Wang - <daniel@loopring.org>

@@ -22,9 +22,9 @@ export interface Context {
   moduleRegistryImpl: any;
   baseENSManager: any;
 
-  packedSecurityModule: any;
-  packedTransferModule: any;
-  packedCoreModule: any;
+  finalSecurityModule: any;
+  finalTransferModule: any;
+  finalCoreModule: any;
 
   walletImpl: any;
 
@@ -54,9 +54,9 @@ export async function getContext() {
     moduleRegistryImpl: await contracts.ModuleRegistryImpl.deployed(),
     baseENSManager: await contracts.BaseENSManager.deployed(),
 
-    packedCoreModule: await contracts.FinalCoreModule.deployed(),
-    packedSecurityModule: await contracts.FinalSecurityModule.deployed(),
-    packedTransferModule: await contracts.FinalTransferModule.deployed(),
+    finalCoreModule: await contracts.FinalCoreModule.deployed(),
+    finalSecurityModule: await contracts.FinalSecurityModule.deployed(),
+    finalTransferModule: await contracts.FinalTransferModule.deployed(),
 
     walletImpl: await contracts.WalletImpl.deployed(),
     securityStore: await contracts.SecurityStore.deployed(),
@@ -89,9 +89,9 @@ export async function createContext(context?: Context) {
 
 export function getAllModuleAddresses(ctx: Context) {
   return [
-    ctx.packedCoreModule.address,
-    ctx.packedSecurityModule.address,
-    ctx.packedTransferModule.address
+    ctx.finalCoreModule.address,
+    ctx.finalSecurityModule.address,
+    ctx.finalTransferModule.address
   ];
 }
 
@@ -190,7 +190,7 @@ export async function executeTransaction(
     );
 
     const event = await assertEventEmitted(
-      ctx.packedCoreModule,
+      ctx.finalCoreModule,
       "MetaTxExecuted"
     );
     assert.equal(event.from, options.wallet, "MetaTx from not match");

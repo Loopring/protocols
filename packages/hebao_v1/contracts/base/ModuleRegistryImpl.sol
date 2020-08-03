@@ -29,7 +29,7 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
         addAddressToSet(ENABLED_MODULE, module, true);
 
         if (!isAddressInSet(ALL_MODULE, module)) {
-             addAddressToSet(ALL_MODULE, module, false);
+            addAddressToSet(ALL_MODULE, module, false);
         }
         emit ModuleRegistered(module);
     }
