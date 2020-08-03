@@ -516,7 +516,7 @@ public:
     // need
     if (inputs.size() > 3) {
       std::cout << "[AndGadget] unexpected input length " << inputs.size()
-                << endl;
+                << std::endl;
     }
     pb.add_r1cs_constraint(ConstraintT(inputs[0], inputs[1], results[0]),
                            FMT(annotation_prefix, ".A && B"));
@@ -565,8 +565,8 @@ public:
     // This can be done more efficiently but we never have any long inputs so no
     // need
     if (inputs.size() > 3) {
-      std::cout << "[AndGadget] unexpected input length " << inputs.size()
-                << endl;
+      std::cout << "[OrGadget] unexpected input length " << inputs.size()
+                << std::endl;
     }
     pb.add_r1cs_constraint(ConstraintT(FieldT::one() - inputs[0],
                                        FieldT::one() - inputs[1],
