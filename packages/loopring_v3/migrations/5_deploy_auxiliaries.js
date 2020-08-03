@@ -1,9 +1,9 @@
 // Deploy all auxiliary contracts used by either Exchange, LoopringV3,
 // or UniversalRegistry.
 
-const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault.sol");
+const ProtocolFeeVault = artifacts.require("ProtocolFeeVault");
 
-var UniswapTokenSeller = artifacts.require("./impl/UniswapTokenSeller.sol");
+var UniswapTokenSeller = artifacts.require("UniswapTokenSeller");
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
 var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 var userStakingPoolAddress = "[undeployed]";
@@ -26,7 +26,7 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        const UserStakingPool = artifacts.require("./impl/UserStakingPool.sol");
+        const UserStakingPool = artifacts.require("UserStakingPool");
         return Promise.all([
           deployer.deploy(UserStakingPool, lrcAddress).then(c => {
             userStakingPoolAddress = c.address;
@@ -59,8 +59,8 @@ module.exports = function(deployer, network, accounts) {
     });
   }
 
-  const BatchVerifier = artifacts.require("./thirdparty/BatchVerifier.sol");
-  const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
+  const BatchVerifier = artifacts.require("BatchVerifier");
+  const BlockVerifier = artifacts.require("BlockVerifier");
 
   deployer_
     .then(() => {

@@ -2,28 +2,13 @@
 // gas usage. We need to deploy most libraries linked from it as stand-alone
 // libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
 
-const ExchangeAdmins = artifacts.require(
-  "./impl/libexchange/ExchangeAdmins.sol"
-);
-const ExchangeBalances = artifacts.require(
-  "./impl/libexchange/ExchangeBalances.sol"
-);
-const ExchangeBlocks = artifacts.require(
-  "./impl/libexchange/ExchangeBlocks.sol"
-);
-const ExchangeDeposits = artifacts.require(
-  "./impl/libexchange/ExchangeDeposits.sol"
-);
-const ExchangeGenesis = artifacts.require(
-  "./impl/libexchange/ExchangeGenesis.sol"
-);
-const ExchangeTokens = artifacts.require(
-  "./impl/libexchange/ExchangeTokens.sol"
-);
-const ExchangeWithdrawals = artifacts.require(
-  "./impl/libexchange/ExchangeWithdrawals.sol"
-);
-const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
+const ExchangeAdmins = artifacts.require("ExchangeAdmins");
+const ExchangeBalances = artifacts.require("ExchangeBalances");
+const ExchangeBlocks = artifacts.require("ExchangeBlocks");
+const ExchangeDeposits = artifacts.require("ExchangeDeposits");
+const ExchangeGenesis = artifacts.require("ExchangeGenesis");
+const ExchangeTokens = artifacts.require("ExchangeTokens");
+const ExchangeWithdrawals = artifacts.require("ExchangeWithdrawals");
 
 module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);

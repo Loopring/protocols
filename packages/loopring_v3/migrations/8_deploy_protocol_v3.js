@@ -11,7 +11,7 @@ module.exports = function(deployer, network, accounts) {
   if (network != "live" && network != "live-fork") {
     const LRCToken = artifacts.require("./test/tokens/LRC.sol");
     const WETHToken = artifacts.require("./test/tokens/WETH.sol");
-    const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault.sol");
+    const ProtocolFeeVault = artifacts.require("ProtocolFeeVault");
     deployer_ = deployer_.then(() => {
       return Promise.all([
         LRCToken.deployed().then(c => {
@@ -26,10 +26,10 @@ module.exports = function(deployer, network, accounts) {
 
   // common deployment
 
-  const UniversalRegistry = artifacts.require("./impl/UniversalRegistry.sol");
-  const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-  const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
-  const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
+  const UniversalRegistry = artifacts.require("UniversalRegistry");
+  const BlockVerifier = artifacts.require("BlockVerifier");
+  const ExchangeV3 = artifacts.require("ExchangeV3");
+  const LoopringV3 = artifacts.require("LoopringV3");
 
   deployer_
     .then(() => {
