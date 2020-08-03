@@ -54,9 +54,9 @@ export async function getContext() {
     moduleRegistryImpl: await contracts.ModuleRegistryImpl.deployed(),
     baseENSManager: await contracts.BaseENSManager.deployed(),
 
-    packedCoreModule: await contracts.PackedCoreModule.deployed(),
-    packedSecurityModule: await contracts.PackedSecurityModule.deployed(),
-    packedTransferModule: await contracts.PackedTransferModule.deployed(),
+    packedCoreModule: await contracts.FinalCoreModule.deployed(),
+    packedSecurityModule: await contracts.FinalSecurityModule.deployed(),
+    packedTransferModule: await contracts.FinalTransferModule.deployed(),
 
     walletImpl: await contracts.WalletImpl.deployed(),
     securityStore: await contracts.SecurityStore.deployed(),

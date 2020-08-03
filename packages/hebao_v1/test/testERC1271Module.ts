@@ -32,7 +32,7 @@ contract("ERC1271Module", () => {
       const sig = sign(owner, hash);
 
       // convert wallet to a ERC1271 module then it can invoke the isValidSignature method
-      const walletContract = await ctx.contracts.PackedCoreModule.at(wallet);
+      const walletContract = await ctx.contracts.FinalCoreModule.at(wallet);
       const isValid = await walletContract.contract.methods
         .isValidSignature(hash, sig)
         .call();
@@ -49,7 +49,7 @@ contract("ERC1271Module", () => {
         await ctx.controllerImpl.defaultLockPeriod()
       ).toNumber();
 
-      const walletContract = await ctx.contracts.PackedCoreModule.at(wallet);
+      const walletContract = await ctx.contracts.FinalCoreModule.at(wallet);
 
       // lock wallet:
       await ctx.packedSecurityModule.contract.methods.lock(wallet).send({

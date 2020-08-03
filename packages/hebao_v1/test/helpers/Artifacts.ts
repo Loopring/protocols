@@ -20,9 +20,9 @@ export class Artifacts {
   public BaseENSManager: any;
   public ENSRegistryImpl: any;
 
-  public PackedCoreModule: any;
-  public PackedSecurityModule: any;
-  public PackedTransferModule: any;
+  public FinalCoreModule: any;
+  public FinalSecurityModule: any;
+  public FinalTransferModule: any;
 
   public SecurityStore: any;
   public WhitelistStore: any;
@@ -57,9 +57,9 @@ export class Artifacts {
     this.BaseENSManager = artifacts.require("BaseENSManager.sol");
     this.ENSRegistryImpl = artifacts.require("ENSRegistryImpl.sol");
 
-    this.PackedCoreModule = artifacts.require("PackedCoreModule");
-    this.PackedSecurityModule = artifacts.require("PackedSecurityModule");
-    this.PackedTransferModule = artifacts.require("PackedTransferModule");
+    this.FinalCoreModule = artifacts.require("FinalCoreModule");
+    this.FinalSecurityModule = artifacts.require("FinalSecurityModule");
+    this.FinalTransferModule = artifacts.require("FinalTransferModule");
 
     this.SecurityStore = artifacts.require("SecurityStore");
     this.WhitelistStore = artifacts.require("WhitelistStore");

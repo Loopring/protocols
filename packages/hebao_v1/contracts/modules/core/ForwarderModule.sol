@@ -10,11 +10,11 @@ import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
 
 
-/// @title ForwarderModule_
+/// @title ForwarderModule
 /// @dev A module to support wallet meta-transactions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract ForwarderModule_ is BaseModule
+abstract contract ForwarderModule is BaseModule
 {
     using BytesUtil     for bytes;
     using MathUint      for uint;

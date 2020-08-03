@@ -6,11 +6,11 @@ pragma experimental ABIEncoderV2;
 import "./TransferModule.sol";
 
 
-/// @title PackedTransferModule
+/// @title FinalTransferModule
 /// @dev This module combines multiple small modules to
 ///      minimize the number of modules to reduce gas used
 ///      by wallet creation.
-contract PackedTransferModule is TransferModule
+contract FinalTransferModule is TransferModule
 {
     ControllerImpl private controller_;
 

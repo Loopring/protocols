@@ -114,7 +114,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     // Create another lock module for testing
     defaultCtx = await getContext();
     ctx = await createContext(defaultCtx);
-    packedSecurityModule2 = await defaultCtx.contracts.PackedSecurityModule.new(
+    packedSecurityModule2 = await defaultCtx.contracts.FinalSecurityModule.new(
       defaultCtx.controllerImpl.address,
       defaultCtx.packedCoreModule.address,
       3600 * 24,

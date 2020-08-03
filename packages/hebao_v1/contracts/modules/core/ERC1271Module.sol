@@ -11,17 +11,17 @@ import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
 
 
-/// @title ERC1271Module_
+/// @title ERC1271Module
 /// @dev This module enables our smart wallets to message signers.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract ERC1271Module_ is ERC1271, BaseModule
+abstract contract ERC1271Module is ERC1271, BaseModule
 {
     using SignatureUtil for bytes;
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
-    function bindableMethods_()
+    function bindableMethodsForERC1271()
         internal
         pure
         returns (bytes4[] memory methods)

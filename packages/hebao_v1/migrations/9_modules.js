@@ -8,9 +8,9 @@ const ControllerImpl = artifacts.require("ControllerImpl");
 const WalletImpl = artifacts.require("WalletImpl");
 
 const WalletFactory = artifacts.require("WalletFactory");
-const PackedCoreModule = artifacts.require("PackedCoreModule");
-const PackedSecurityModule = artifacts.require("PackedSecurityModule");
-const PackedTransferModule = artifacts.require("PackedTransferModule");
+const FinalCoreModule = artifacts.require("FinalCoreModule");
+const FinalSecurityModule = artifacts.require("FinalSecurityModule");
+const FinalTransferModule = artifacts.require("FinalTransferModule");
 
 module.exports = function(deployer, network, accounts) {
   const guardianPendingPeriod =
@@ -26,28 +26,28 @@ module.exports = function(deployer, network, accounts) {
 
   deployer
     .then(() => {
-      let dest = [PackedCoreModule, PackedSecurityModule, PackedTransferModule];
+      let dest = [FinalCoreModule, FinalSecurityModule, FinalTransferModule];
       return Promise.all([deployer.link(SignedRequest, dest)]);
     })
     .then(() => {
       return Promise.all([
-        deployer.deploy(PackedCoreModule, ControllerImpl.address)
+        deployer.deploy(FinalCoreModule, ControllerImpl.address)
       ]);
     })
     .then(() => {
       return Promise.all([
         deployer.deploy(
-          PackedSecurityModule,
+          FinalSecurityModule,
           ControllerImpl.address,
-          PackedCoreModule.address,
+          FinalCoreModule.address,
           guardianPendingPeriod,
           inheritanceWaitingPeriod,
           whitelistDelayPeriod
         ),
         deployer.deploy(
-          PackedTransferModule,
+          FinalTransferModule,
           ControllerImpl.address,
-          PackedCoreModule.address,
+          FinalCoreModule.address,
           quotaDelayPeriod
         )
       ]);
@@ -56,9 +56,9 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         ModuleRegistryImpl.deployed().then(moduleRegistry => {
           return Promise.all([
-            moduleRegistry.registerModule(PackedCoreModule.address),
-            moduleRegistry.registerModule(PackedSecurityModule.address),
-            moduleRegistry.registerModule(PackedTransferModule.address)
+            moduleRegistry.registerModule(FinalCoreModule.address),
+            moduleRegistry.registerModule(FinalSecurityModule.address),
+            moduleRegistry.registerModule(FinalTransferModule.address)
           ]);
         })
       ]);

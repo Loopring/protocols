@@ -8,9 +8,9 @@ const ControllerImpl = artifacts.require("ControllerImpl");
 const WalletImpl = artifacts.require("WalletImpl");
 const WalletFactory = artifacts.require("WalletFactory");
 
-const PackedCoreModule = artifacts.require("PackedCoreModule");
-const PackedSecurityModule = artifacts.require("PackedSecurityModule");
-const PackedTransferModule = artifacts.require("PackedTransferModule");
+const FinalCoreModule = artifacts.require("FinalCoreModule");
+const FinalSecurityModule = artifacts.require("FinalSecurityModule");
+const FinalTransferModule = artifacts.require("FinalTransferModule");
 
 const DappAddressStore = artifacts.require("DappAddressStore");
 const HashStore = artifacts.require("HashStore");
@@ -23,12 +23,12 @@ module.exports = function(deployer, network, accounts) {
   console.log("SignedRequest", SignedRequest.address);
   console.log("WalletRegistryImpl", WalletRegistryImpl.address);
   console.log("ModuleRegistryImpl", ModuleRegistryImpl.address);
-  console.log("PackedCoreModule", PackedCoreModule.address);
+  console.log("FinalCoreModule", FinalCoreModule.address);
   console.log("ControllerImpl", ControllerImpl.address);
   console.log("WalletImpl", WalletImpl.address);
   console.log("WalletFactory", WalletFactory.address);
-  console.log("PackedSecurityModule", PackedSecurityModule.address);
-  console.log("PackedTransferModule", PackedTransferModule.address);
+  console.log("FinalSecurityModule", FinalSecurityModule.address);
+  console.log("FinalTransferModule", FinalTransferModule.address);
   console.log("DappAddressStore", DappAddressStore.address);
   console.log("HashStore", HashStore.address);
   console.log("NonceStore", NonceStore.address);

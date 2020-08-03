@@ -3,26 +3,34 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./ERC1271Module.sol";
-import "./ForwarderModule.sol";
+import "./GuardianModule.sol";
+import "./InheritanceModule.sol";
+import "./WhitelistModule.sol";
 
 
-/// @title PackedCoreModule
+/// @title FinalSecurityModule
 /// @dev This module combines multiple small modules to
 ///      minimize the number of modules to reduce gas used
 ///      by wallet creation.
-contract PackedCoreModule is
-    ERC1271Module_,
-    ForwarderModule_
+contract FinalSecurityModule is
+    GuardianModule,
+    InheritanceModule,
+    WhitelistModule
 {
     ControllerImpl private controller_;
 
-    constructor(ControllerImpl _controller)
+    constructor(
+        ControllerImpl _controller,
+        address        _trustedForwarder,
+        uint           _recoveryPendingPeriod,
+        uint           _inheritWaitingPeriod,
+        uint           _whitelistDelayPeriod
+        )
+        SecurityModule(_trustedForwarder)
+        GuardianModule(_recoveryPendingPeriod)
+        InheritanceModule(_inheritWaitingPeriod)
+        WhitelistModule(_whitelistDelayPeriod)
     {
-        FORWARDER_DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("ForwarderModule", "1.1.0", address(this))
-        );
-
         controller_ = _controller;
     }
 
@@ -41,6 +49,5 @@ contract PackedCoreModule is
         override
         returns (bytes4[] memory methods)
     {
-        return bindableMethods_();
     }
 }
