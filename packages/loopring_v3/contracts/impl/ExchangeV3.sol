@@ -64,7 +64,7 @@ contract ExchangeV3 is IExchangeV3
     function version()
         public
         override
-        view
+        pure
         returns (string memory)
     {
         return "3.6.0";
@@ -176,7 +176,8 @@ contract ExchangeV3 is IExchangeV3
     // -- Tokens --
 
     function registerToken(
-        address tokenAddress
+        address tokenAddress,
+        uint    tid
         )
         external
         override
@@ -184,18 +185,19 @@ contract ExchangeV3 is IExchangeV3
         onlyOwner
         returns (uint16)
     {
-        return state.registerToken(tokenAddress);
+        return state.registerToken(tokenAddress, tid);
     }
 
     function getTokenID(
-        address tokenAddress
+        address tokenAddress,
+        uint    tid
         )
         external
         override
         view
         returns (uint16)
     {
-        return state.getTokenID(tokenAddress);
+        return state.getTokenID(tokenAddress, tid);
     }
 
     function getTokenAddress(
@@ -204,7 +206,7 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         view
-        returns (address)
+        returns (address, uint)
     {
         return state.getTokenAddress(tokenID);
     }
@@ -244,14 +246,15 @@ contract ExchangeV3 is IExchangeV3
     }
 
     function getProtocolFeeLastWithdrawnTime(
-        address tokenAddress
+        address tokenAddress,
+        uint    tid
         )
         external
         override
         view
         returns (uint)
     {
-        return state.protocolFeeLastWithdrawnTime[tokenAddress];
+        return state.protocolFeeLastWithdrawnTime[tokenAddress][tid];
     }
 
     function burnExchangeStake()
@@ -325,6 +328,7 @@ contract ExchangeV3 is IExchangeV3
         address from,
         address to,
         address tokenAddress,
+        uint    tid,
         uint96  amount,
         bytes   calldata auxiliaryData
         )
@@ -334,7 +338,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        state.deposit(from, to, tokenAddress, amount, auxiliaryData);
+        state.deposit(from, to, tokenAddress, tid, amount, auxiliaryData);
     }
 
     // -- Withdrawals --
@@ -342,6 +346,7 @@ contract ExchangeV3 is IExchangeV3
     function forceWithdraw(
         address owner,
         address token,
+        uint    tid,
         uint32  accountID
         )
         external
@@ -350,18 +355,19 @@ contract ExchangeV3 is IExchangeV3
         payable
         onlyFromUserOrAgent(owner)
     {
-        state.forceWithdraw(owner, token, accountID);
+        state.forceWithdraw(owner, token, tid, accountID);
     }
 
     function withdrawProtocolFees(
-        address token
+        address token,
+        uint    tid
         )
         external
         override
         nonReentrant
         payable
     {
-        state.forceWithdraw(address(0), token, ExchangeData.ACCOUNTID_PROTOCOLFEE());
+        state.forceWithdraw(address(0), token, tid, ExchangeData.ACCOUNTID_PROTOCOLFEE());
     }
 
     // We still alow anyone to withdraw these funds for the account owner
@@ -377,7 +383,8 @@ contract ExchangeV3 is IExchangeV3
 
     function withdrawFromDepositRequest(
         address owner,
-        address token
+        address token,
+        uint    tid
         )
         external
         override
@@ -385,13 +392,15 @@ contract ExchangeV3 is IExchangeV3
     {
         state.withdrawFromDepositRequest(
             owner,
-            token
+            token,
+            tid
         );
     }
 
     function withdrawFromApprovedWithdrawals(
         address[] calldata owners,
-        address[] calldata tokens
+        address[] calldata tokens,
+        uint[]    calldata tids
         )
         external
         override
@@ -399,32 +408,35 @@ contract ExchangeV3 is IExchangeV3
     {
         state.withdrawFromApprovedWithdrawals(
             owners,
-            tokens
+            tokens,
+            tids
         );
     }
 
     function getAmountWithdrawable(
         address owner,
-        address token
+        address token,
+        uint    tid
         )
         external
         override
         view
         returns (uint)
     {
-        uint16 tokenID = state.getTokenID(token);
+        uint16 tokenID = state.getTokenID(token, tid);
         return state.amountWithdrawable[owner][tokenID];
     }
 
     function notifyForcedRequestTooOld(
         uint32  accountID,
-        address token
+        address token,
+        uint    tid
         )
         external
         override
         nonReentrant
     {
-        uint16 tokenID = state.getTokenID(token);
+        uint16 tokenID = state.getTokenID(token, tid);
         ExchangeData.ForcedWithdrawal storage withdrawal = state.pendingForcedWithdrawals[accountID][tokenID];
         require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
 
@@ -441,8 +453,10 @@ contract ExchangeV3 is IExchangeV3
         address from,
         address to,
         address token,
+        uint    tid,
         uint96  amount,
         address feeToken,
+        uint    feeTid,
         uint96  fee,
         uint    data,
         uint32  validUntil,
@@ -453,28 +467,29 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        uint16 tokenID = state.getTokenID(token);
-        uint16 feeTokenID = state.getTokenID(feeToken);
-        TransferTransaction.Transfer memory transfer = TransferTransaction.Transfer({
-            from: from,
-            to: to,
-            tokenID: tokenID,
-            amount: amount,
-            feeTokenID: feeTokenID,
-            fee: fee,
-            data: data,
-            validUntil: validUntil,
-            storageID: storageID
-        });
-        bytes32 txHash = TransferTransaction.hash(state.DOMAIN_SEPARATOR, transfer);
-        state.approvedTx[transfer.from][txHash] = true;
-        emit TransactionApproved(transfer.from, txHash);
+        // uint16 tokenID = state.getTokenID(token, tid);
+        // uint16 feeTokenID = state.getTokenID(feeToken, feeTid);
+        // TransferTransaction.Transfer memory transfer = TransferTransaction.Transfer({
+        //     from: from,
+        //     to: to,
+        //     tokenID: tokenID,
+        //     amount: amount,
+        //     feeTokenID: feeTokenID,
+        //     fee: fee,
+        //     data: data,
+        //     validUntil: validUntil,
+        //     storageID: storageID
+        // });
+        // bytes32 txHash = TransferTransaction.hash(state.DOMAIN_SEPARATOR, transfer);
+        // state.approvedTx[transfer.from][txHash] = true;
+        // emit TransactionApproved(transfer.from, txHash);
     }
 
     function setWithdrawalRecipient(
         address from,
         address to,
         address token,
+        uint    tid,
         uint96  amount,
         uint32  nonce,
         address newRecipient
@@ -484,7 +499,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        uint16 tokenID = state.getTokenID(token);
+        uint16 tokenID = state.getTokenID(token, tid);
         require(state.withdrawalRecipient[from][to][tokenID][amount][nonce] == address(0), "CANNOT_OVERRIDE_RECIPIENT_ADDRESS");
         state.withdrawalRecipient[from][to][tokenID][amount][nonce] = newRecipient;
     }
@@ -493,6 +508,7 @@ contract ExchangeV3 is IExchangeV3
         address from,
         address to,
         address token,
+        uint    tid,
         uint    amount
         )
         external
@@ -500,7 +516,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        state.depositContract.transfer(from, to, token, amount);
+        state.depositContract.transfer(from, to, token, tid, amount);
     }
 
     function approveTransaction(

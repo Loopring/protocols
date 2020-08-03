@@ -76,6 +76,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     function deposit(
         address from,
         address token,
+        uint    tid,
         uint96  amount,
         bytes   calldata /*auxiliaryData*/
         )
@@ -87,6 +88,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         ifNotZero(amount)
         returns (uint96 amountReceived)
     {
+        require(tid == 0, "ERC20_ONLY");
+
         if (isETHInternal(token)) {
             require(msg.value == amount, "INVALID_ETH_DEPOSIT");
             amountReceived = amount;
@@ -109,6 +112,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         address /*from*/,
         address to,
         address token,
+        uint    tid,
         uint    amount,
         bytes   calldata /*auxiliaryData*/
         )
@@ -119,6 +123,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         //nonReentrant
         ifNotZero(amount)
     {
+        require(tid == 0, "ERC20_ONLY");
         if (isETHInternal(token)) {
             to.sendETHAndVerify(amount, gasleft());
         } else {
@@ -134,6 +139,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         address from,
         address to,
         address token,
+        uint    tid,
         uint    amount
         )
         external
@@ -143,13 +149,14 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         //nonReentrant
         ifNotZero(amount)
     {
+        require(tid == 0, "ERC20_ONLY");
         token.safeTransferFromAndVerify(from, to, amount);
     }
 
     function isETH(address addr)
         external
         override
-        view
+        pure
         returns (bool)
     {
         return isETHInternal(addr);

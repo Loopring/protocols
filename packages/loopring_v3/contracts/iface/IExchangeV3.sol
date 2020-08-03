@@ -24,6 +24,7 @@ abstract contract IExchangeV3 is IExchange
 
     event TokenRegistered(
         address token,
+        uint    tid,
         uint16  tokenId
     );
 
@@ -51,6 +52,7 @@ abstract contract IExchangeV3 is IExchange
     event DepositRequested(
         address owner,
         address token,
+        uint    tid,
         uint96  amount,
         uint    fee
     );
@@ -58,6 +60,7 @@ abstract contract IExchangeV3 is IExchange
     event ForcedWithdrawalRequested(
         address owner,
         address token,
+        uint    tid,
         uint32  accountID
     );
 
@@ -65,6 +68,7 @@ abstract contract IExchangeV3 is IExchange
         address from,
         address to,
         address token,
+        uint    tid,
         uint96  amount
     );
 
@@ -72,6 +76,7 @@ abstract contract IExchangeV3 is IExchange
         address from,
         address to,
         address token,
+        uint    tid,
         uint96  amount
     );
 
@@ -204,9 +209,11 @@ abstract contract IExchangeV3 is IExchange
     ///      This function is only callable by the exchange owner.
     ///
     /// @param  tokenAddress The token's address
+    /// @param tid ERC-1155 token ID, for ERC20, this value must be 0.
     /// @return tokenID The token's ID in this exchanges.
     function registerToken(
-        address tokenAddress
+        address tokenAddress,
+        uint    tid
         )
         external
         virtual
@@ -214,9 +221,11 @@ abstract contract IExchangeV3 is IExchange
 
     /// @dev Returns the id of a registered token.
     /// @param  tokenAddress The token's address
+    /// @param tid ERC-1155 token ID, for ERC20, this value must be 0.
     /// @return tokenID The token's ID in this exchanges.
     function getTokenID(
-        address tokenAddress
+        address tokenAddress,
+        uint    tid
         )
         external
         virtual
@@ -226,13 +235,14 @@ abstract contract IExchangeV3 is IExchange
     /// @dev Returns the address of a registered token.
     /// @param  tokenID The token's ID in this exchanges.
     /// @return tokenAddress The token's address
+    /// @return tid ERC-1155 token ID, for ERC20, this value must be 0.
     function getTokenAddress(
         uint16 tokenID
         )
         external
         virtual
         view
-        returns (address tokenAddress);
+        returns (address tokenAddress, uint tid);
 
     // -- Stakes --
     /// @dev Gets the amount of LRC the owner has staked onchain for this exchange.
@@ -359,6 +369,7 @@ abstract contract IExchangeV3 is IExchange
         address from,
         address to,
         address tokenAddress,
+        uint    tid,
         uint96  amount,
         bytes   calldata auxiliaryData
         )
@@ -381,10 +392,12 @@ abstract contract IExchangeV3 is IExchange
     ///
     /// @param owner The expected owner of the account
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    /// @param tid ERC-1155 token ID, for ERC20, this value must be 0.
     /// @param accountID The address the account in the Merkle tree.
     function forceWithdraw(
         address owner,
         address tokenAddress,
+        uint    tid,
         uint32  accountID
         )
         external
@@ -402,7 +415,8 @@ abstract contract IExchangeV3 is IExchange
     ///
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     function withdrawProtocolFees(
-        address tokenAddress
+        address tokenAddress,
+        uint    tid
         )
         external
         virtual
@@ -412,7 +426,8 @@ abstract contract IExchangeV3 is IExchange
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @return The time the protocol fee was last withdrawn.
     function getProtocolFeeLastWithdrawnTime(
-        address tokenAddress
+        address tokenAddress,
+        uint    tid
         )
         external
         virtual
@@ -446,7 +461,8 @@ abstract contract IExchangeV3 is IExchange
     /// @param  token The token address
     function withdrawFromDepositRequest(
         address owner,
-        address token
+        address token,
+        uint    tid
         )
         external
         virtual;
@@ -468,7 +484,8 @@ abstract contract IExchangeV3 is IExchange
     /// @param  tokens The token addresses
     function withdrawFromApprovedWithdrawals(
         address[] calldata owners,
-        address[] calldata tokens
+        address[] calldata tokens,
+        uint[]    calldata tids
         )
         external
         virtual;
@@ -479,7 +496,8 @@ abstract contract IExchangeV3 is IExchange
     /// @return The amount withdrawable
     function getAmountWithdrawable(
         address owner,
-        address token
+        address token,
+        uint    tid
         )
         external
         virtual
@@ -495,7 +513,8 @@ abstract contract IExchangeV3 is IExchange
     /// @param  token The token address of the the forced request
     function notifyForcedRequestTooOld(
         uint32  accountID,
-        address token
+        address token,
+        uint    tid
         )
         external
         virtual;
@@ -518,8 +537,10 @@ abstract contract IExchangeV3 is IExchange
         address from,
         address to,
         address token,
+        uint    tid,
         uint96  amount,
         address feeToken,
+        uint    feeTid,
         uint96  fee,
         uint    data,
         uint32  validUntil,
@@ -544,6 +565,7 @@ abstract contract IExchangeV3 is IExchange
         address from,
         address to,
         address token,
+        uint    tid,
         uint96  amount,
         uint32  nonce,
         address newRecipient
@@ -565,6 +587,7 @@ abstract contract IExchangeV3 is IExchange
         address from,
         address to,
         address token,
+        uint    tid,
         uint    amount
         )
         external

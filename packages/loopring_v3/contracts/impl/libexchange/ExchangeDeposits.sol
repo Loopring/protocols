@@ -26,6 +26,7 @@ library ExchangeDeposits
     event DepositRequested(
         address owner,
         address token,
+        uint    tid,
         uint96  amount,
         uint    fee
     );
@@ -35,6 +36,7 @@ library ExchangeDeposits
         address from,
         address to,
         address tokenAddress,
+        uint    tid,
         uint96  amount,                 // can be zero
         bytes   memory auxiliaryData
         )
@@ -46,13 +48,14 @@ library ExchangeDeposits
         // This is fine because the user can easily withdraw the deposited amounts again.
         // We don't want to make all deposits more expensive just to stop that from happening.
 
-        uint16 tokenID = S.getTokenID(tokenAddress);
+        uint16 tokenID = S.getTokenID(tokenAddress, tid);
 
         // Transfer the tokens to this contract
         (uint96 amountDeposited, uint64 fee) = transferDeposit(
             S,
             from,
             tokenAddress,
+            tid,
             amount,
             auxiliaryData
         );
@@ -67,6 +70,7 @@ library ExchangeDeposits
         emit DepositRequested(
             to,
             tokenAddress,
+            tid,
             uint96(amountDeposited),
             fee
         );
@@ -76,6 +80,7 @@ library ExchangeDeposits
         ExchangeData.State storage S,
         address from,
         address tokenAddress,
+        uint    tid,
         uint96  amount,
         bytes   memory auxiliaryData
         )
@@ -98,6 +103,7 @@ library ExchangeDeposits
         amountDeposited = depositContract.deposit{value: depositValueETH}(
             from,
             tokenAddress,
+            tid,
             amount,
             auxiliaryData
         );

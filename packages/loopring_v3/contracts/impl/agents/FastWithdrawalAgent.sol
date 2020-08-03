@@ -59,18 +59,19 @@ contract FastWithdrawalAgent is ReentrancyGuard
         address from;                   // The owner of the account
         address to;                     // The address that will receive the tokens withdrawn
         address token;
+        uint    tid;
         uint96  amount;
         address feeToken;
+        uint    feeTid;
         uint96  fee;
         uint32  nonce;
         uint32  validUntil;
-
         bytes   signature;
     }
 
     // EIP712
     bytes32 constant public FASTWITHDRAWAL_TYPEHASH = keccak256(
-        "FastWithdrawal(address exchange,address from,address to,address token,uint96 amount,address feeToken,uint96 fee,uint32 nonce,uint32 validUntil)"
+        "FastWithdrawal(address exchange,address from,address to,address token,uint tid,uint96 amount,address feeToken,uint feeTid,uint96 fee,uint32 nonce,uint32 validUntil)"
     );
     bytes32 public DOMAIN_SEPARATOR;
 
@@ -113,8 +114,10 @@ contract FastWithdrawalAgent is ReentrancyGuard
                         fastWithdrawal.from,
                         fastWithdrawal.to,
                         fastWithdrawal.token,
+                        fastWithdrawal.tid,
                         fastWithdrawal.amount,
                         fastWithdrawal.feeToken,
+                        fastWithdrawal.feeTid,
                         fastWithdrawal.fee,
                         fastWithdrawal.nonce,
                         fastWithdrawal.validUntil
@@ -133,8 +136,10 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 fastWithdrawal.from,
                 liquidityProvider,
                 fastWithdrawal.token,
+                fastWithdrawal.tid,
                 fastWithdrawal.amount,
                 fastWithdrawal.feeToken,
+                fastWithdrawal.feeTid,
                 fastWithdrawal.fee,
                 0,
                 fastWithdrawal.validUntil,
@@ -146,6 +151,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 fastWithdrawal.from,
                 fastWithdrawal.to,
                 fastWithdrawal.token,
+                fastWithdrawal.tid,
                 fastWithdrawal.amount,
                 fastWithdrawal.nonce,
                 liquidityProvider

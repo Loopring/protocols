@@ -70,7 +70,7 @@ abstract contract ILoopringV3 is ILoopring
     function version()
         public
         override
-        view
+        pure
         returns (string memory)
     {
         return "3.6";

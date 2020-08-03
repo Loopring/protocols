@@ -36,6 +36,7 @@ library ExchangeWithdrawals
         address from,
         address to,
         address token,
+        uint    tid,
         uint96  amount
     );
 
@@ -43,6 +44,7 @@ library ExchangeWithdrawals
         address from,
         address to,
         address token,
+        uint    tid,
         uint96  amount
     );
 
@@ -50,6 +52,7 @@ library ExchangeWithdrawals
         ExchangeData.State storage S,
         address owner,
         address token,
+        uint    tid,
         uint32  accountID
         )
         external
@@ -58,7 +61,7 @@ library ExchangeWithdrawals
         require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
         require(accountID < ExchangeData.MAX_NUM_ACCOUNTS(), "INVALID_ACCOUNTID");
 
-        uint16 tokenID = S.getTokenID(token);
+        uint16 tokenID = S.getTokenID(token, tid);
 
         uint withdrawalFeeETH = S.loopring.forcedWithdrawalFee();
 
@@ -126,11 +129,12 @@ library ExchangeWithdrawals
     function withdrawFromDepositRequest(
         ExchangeData.State storage S,
         address owner,
-        address token
+        address token,
+        uint    tid
         )
         external
     {
-        uint16 tokenID = S.getTokenID(token);
+        uint16 tokenID = S.getTokenID(token, tid);
         ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID];
         require(deposit.timestamp != 0, "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
@@ -166,14 +170,17 @@ library ExchangeWithdrawals
     function withdrawFromApprovedWithdrawals(
         ExchangeData.State storage S,
         address[] memory owners,
-        address[] memory tokens
+        address[] memory tokens,
+        uint[]    memory tids
         )
         public
     {
         require(owners.length == tokens.length, "INVALID_INPUT_DATA");
+        require(owners.length == tids.length, "INVALID_INPUT_DATA");
+
         for (uint i = 0; i < owners.length; i++) {
             address owner = owners[i];
-            uint16 tokenID = S.getTokenID(tokens[i]);
+            uint16 tokenID = S.getTokenID(tokens[i], tids[i]);
             uint amount = S.amountWithdrawable[owner][tokenID];
 
             // Make sure this amount can't be withdrawn again
@@ -244,11 +251,11 @@ library ExchangeWithdrawals
         if (to == address(0)) {
             to = S.loopring.protocolFeeVault();
         }
-        address token = S.getTokenAddress(tokenID);
+        (address token, uint tid) = S.getTokenAddress(tokenID);
 
         // Transfer the tokens from the deposit contract to the owner
         if (gasLimit > 0) {
-            try S.depositContract.withdraw{gas: gasLimit}(from, to, token, amount, auxiliaryData) {
+            try S.depositContract.withdraw{gas: gasLimit}(from, to, token, tid, amount, auxiliaryData) {
                 success = true;
             } catch {
                 success = false;
@@ -264,16 +271,18 @@ library ExchangeWithdrawals
                 from,
                 to,
                 token,
+                tid,
                 uint96(amount)
             );
             if (from == address(0)) {
-                S.protocolFeeLastWithdrawnTime[token] = block.timestamp;
+                S.protocolFeeLastWithdrawnTime[token][tid] = block.timestamp;
             }
         } else {
             emit WithdrawalFailed(
                 from,
                 to,
                 token,
+                tid,
                 uint96(amount)
             );
         }

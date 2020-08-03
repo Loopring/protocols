@@ -20,12 +20,14 @@ interface IDepositContract
     ///
     /// @param from The address of the account that sends the tokens.
     /// @param token The address of the token to transfer (`0x0` for ETH).
+    /// @param tid ERC-1155 token ID, for ERC20, this value must be 0.
     /// @param amount The amount of tokens to transfer.
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the deposit
     /// @return amountReceived The amount to deposit to the user's account in the Merkle tree
     function deposit(
         address from,
         address token,
+        uint    tid,
         uint96  amount,
         bytes   calldata auxiliaryData
         )
@@ -48,12 +50,14 @@ interface IDepositContract
     /// @param from The address from which 'amount' tokens are transferred.
     /// @param to The address to which 'amount' tokens are transferred.
     /// @param token The address of the token to transfer (`0x0` for ETH).
+    /// @param tid ERC-1155 token ID, for ERC20, this value must be 0.
     /// @param amount The amount of tokens transferred.
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the withdrawal
     function withdraw(
         address from,
         address to,
         address token,
+        uint    tid,
         uint    amount,
         bytes   calldata auxiliaryData
         )
@@ -75,11 +79,13 @@ interface IDepositContract
     /// @param from The address of the account that sends the tokens.
     /// @param to The address to which 'amount' tokens are transferred.
     /// @param token The address of the token to transfer (ETH is and cannot be suppported).
+    /// @param tid ERC-1155 token ID, for ERC20, this value must be 0.
     /// @param amount The amount of tokens transferred.
     function transfer(
         address from,
         address to,
         address token,
+        uint    tid,
         uint    amount
         )
         external
