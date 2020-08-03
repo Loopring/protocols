@@ -22,7 +22,7 @@ static auto dummySpotTrade = R"({
     "orderA": {
         "accountID": 0,
         "allOrNone": false,
-        "amountB": "79228162514264337593543950335",
+        "amountB": "79228162514264337593543950335", // max uint96
         "amountS": "79228162514264337593543950335",
         "buy": true,
         "feeBips": 0,
@@ -32,7 +32,7 @@ static auto dummySpotTrade = R"({
         "tokenS": 0,
         "tokenB": 1,
         "validSince": 0,
-        "validUntil": 4294967295,
+        "validUntil": 4294967295, / max unit32
         "taker": "0"
     },
     "orderB": {
@@ -92,7 +92,7 @@ static auto dummyAccountUpdate = R"({
     "owner": "0",
     "accountID": 0,
     "validUntil": 4294967295,
-    "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
+    "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866", a randomly-chosen valid EdDSA pubkey
     "publicKeyY": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
     "feeTokenID": 0,
     "fee": "0",
@@ -343,6 +343,8 @@ static void from_json(const json& j, Deposit& deposit)
     deposit.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
 }
 
+// There is no `owner` field as for a withdrawal the owner is always the owner as
+// set in the account leaf the withdrawal is done for.
 class Withdrawal
 {
 public:

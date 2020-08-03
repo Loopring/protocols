@@ -375,6 +375,10 @@ public:
 };
 
 // A + B = sum with A, B and sum < 2^n
+//
+// This gadgent is not designed to handle inputs of more than a couple of
+// variables. Threfore, we are have not optimized the constraints as suggested
+// in https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 class AddGadget : public GadgetT
 {
 public:
@@ -474,8 +478,8 @@ public:
         sub(pb, from.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".sub")),
         add(pb, to.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".add"))
     {
-        from.add(sub.result());
-        to.add(add.result());
+        from.add(sub.result()); // X = from - value
+        to.add(add.result());   // Y = to + value
     }
 
     void generate_r1cs_witness()
@@ -609,6 +613,7 @@ public:
         inputs(_inputs)
     {
         assert(inputs.size() > 1);
+        results.reserve(inputs.size());
         for (unsigned int i = 1; i < inputs.size(); i++)
         {
             results.emplace_back(make_variable(pb, FMT(prefix, ".results")));
@@ -632,6 +637,10 @@ public:
     void generate_r1cs_constraints()
     {
         // This can be done more efficiently but we never have any long inputs so no need
+        if (inputs.size() > 3)
+        {
+            std::cout << "[AndGadget] unexpected input length " << inputs.size() << endl;
+        }
         pb.add_r1cs_constraint(ConstraintT(inputs[0], inputs[1], results[0]), FMT(annotation_prefix, ".A && B"));
         for (unsigned int i = 2; i < inputs.size(); i++)
         {
@@ -641,6 +650,10 @@ public:
 };
 
 // (input[0] || input[1] || ...) (all inputs need to be boolean)
+//
+// This gadgent is not designed to handle inputs of more than a couple of
+// variables. Threfore, we are have not optimized the constraints as suggested
+// in https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 class OrGadget : public GadgetT
 {
 public:
@@ -656,6 +669,7 @@ public:
         inputs(_inputs)
     {
         assert(inputs.size() > 1);
+        results.reserve(inputs.size());
         for (unsigned int i = 1; i < inputs.size(); i++)
         {
             results.emplace_back(make_variable(pb, FMT(prefix, ".results")));
@@ -678,6 +692,11 @@ public:
 
     void generate_r1cs_constraints()
     {
+        // This can be done more efficiently but we never have any long inputs so no need
+        if (inputs.size() > 3)
+        {
+            std::cout << "[AndGadget] unexpected input length " << inputs.size() << endl;
+        }
         pb.add_r1cs_constraint(ConstraintT(FieldT::one() - inputs[0], FieldT::one() - inputs[1], FieldT::one() - results[0]), FMT(annotation_prefix, ".A || B == _or"));
         for (unsigned int i = 2; i < inputs.size(); i++)
         {
@@ -1227,7 +1246,8 @@ public:
     }
 };
 
-// if (C) then require(A)
+// if (C) then require(A), i.e.,
+// require(!C || A)
 class IfThenRequireGadget : public GadgetT
 {
 public:
@@ -1262,7 +1282,8 @@ public:
     }
 };
 
-// if (C) then require(A == B)
+// if (C) then require(A == B), i.e.,
+// require(!C || A == B)
 class IfThenRequireEqualGadget : public GadgetT
 {
 public:
@@ -1297,7 +1318,8 @@ public:
     }
 };
 
-// if (C) then require(A != B)
+// if (C) then require(A != B), i.e.,
+// require(!C || A != B)
 class IfThenRequireNotEqualGadget : public GadgetT
 {
 public:
@@ -1336,7 +1358,7 @@ public:
     }
 };
 
-// (value * numerator) = product
+// (value * numerator) = product = denominator * quotient + remainder
 // product / denominator = quotient
 // product % denominator = remainder
 class MulDivGadget : public GadgetT
@@ -1572,6 +1594,10 @@ public:
 
         f(make_var_array(pb, floatEncoding.numBitsExponent + floatEncoding.numBitsMantissa, FMT(prefix, ".f")))
     {
+        values.reserve(f.size());
+        baseMultipliers.reserve(floatEncoding.numBitsExponent);
+        multipliers.reserve(floatEncoding.numBitsExponent);
+
         for (unsigned int i = 0; i < f.size(); i++)
         {
             values.emplace_back(make_variable(pb, FMT(prefix, ".FloatToUintGadgetVariable")));
@@ -1661,6 +1687,7 @@ public:
     }
 };
 
+// check 'type' is one of Constants.values - [0 - 10]
 struct SelectorGadget : public GadgetT
 {
     const Constants& constants;
@@ -1681,6 +1708,9 @@ struct SelectorGadget : public GadgetT
         constants(_constants)
     {
         assert(maxBits <= constants.values.size());
+        bits.reserve(maxBits);
+        sum.reserve(maxBits);
+
         for (unsigned int i = 0; i < maxBits; i++)
         {
             bits.emplace_back(pb, type, constants.values[i], FMT(annotation_prefix, ".bits"));
@@ -1715,6 +1745,11 @@ struct SelectorGadget : public GadgetT
     }
 };
 
+// if selector=[1,0,0] and values = [a,b,c], return a
+// if selector=[0,1,0] and values = [a,b,c], return b
+// if selector=[0,0,1] and values = [a,b,c], return c
+// special case,
+// if selector=[0,0,0] and values = [a,b,c], return a
 class SelectGadget : public GadgetT
 {
 public:
@@ -1729,6 +1764,7 @@ public:
     ) :
         GadgetT(pb, prefix)
     {
+        results.reserve(values.size());
         assert(values.size() == selector.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
@@ -1773,6 +1809,8 @@ public:
         GadgetT(pb, prefix)
     {
         assert(values.size() == selector.size());
+        results.reserve(values.size());
+
         for (unsigned int i = 0; i < values.size(); i++)
         {
             results.emplace_back(ArrayTernaryGadget(pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
