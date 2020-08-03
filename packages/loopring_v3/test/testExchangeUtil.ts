@@ -416,8 +416,6 @@ export class ExchangeTestUtil {
   public protocolFeeVaultContract: any;
   public universalRegistry: any;
 
-  public statelessWallet: any;
-
   public blocks: Block[][] = [];
   public accounts: Account[][] = [];
 
@@ -459,8 +457,6 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-
-    this.statelessWallet = await this.contracts.StatelessWallet.new();
 
     this.explorer = new Explorer();
     await this.explorer.initialize(web3, this.universalRegistry.address);
@@ -633,8 +629,12 @@ export class ExchangeTestUtil {
     const transferToNew =
       options.transferToNew !== undefined ? options.transferToNew : false;
     const signer = options.signer !== undefined ? options.signer : from;
-    const validUntil = options.validUntil !== undefined ? options.validUntil : 0xffffffff;
-    const storageID = options.storageID !== undefined ? options.storageID : this.storageIDGenerator++;
+    const validUntil =
+      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+    const storageID =
+      options.storageID !== undefined
+        ? options.storageID
+        : this.storageIDGenerator++;
 
     // From
     await this.deposit(from, from, token, amountToDeposit);
@@ -732,7 +732,7 @@ export class ExchangeTestUtil {
       const txHash = TransferUtils.getHash(transfer, this.exchange.address);
 
       // Randomly approve using approveOffchainTransfer/approveTransaction
-      const toggle = (transfer.from == signer) ? this.getRandomBool() : false;
+      const toggle = transfer.from == signer ? this.getRandomBool() : false;
       if (toggle) {
         await this.exchange.approveOffchainTransfer(
           signer,
@@ -830,7 +830,8 @@ export class ExchangeTestUtil {
 
     order.buy = order.buy !== undefined ? order.buy : true;
 
-    order.taker = order.taker !== undefined ? order.taker : Constants.zeroAddress;
+    order.taker =
+      order.taker !== undefined ? order.taker : Constants.zeroAddress;
 
     order.maxFeeBips = order.maxFeeBips !== undefined ? order.maxFeeBips : 20;
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
@@ -1028,23 +1029,30 @@ export class ExchangeTestUtil {
     amount: BN,
     options: DepositOptions = {}
   ) {
-
     // Fill in defaults
     const fee = options.fee !== undefined ? options.fee : this.getRandomFee();
-    const autoSetKeys = options.autoSetKeys !== undefined ? options.autoSetKeys : true;
-    const contract = options.accountContract !== undefined ? options.accountContract : this.exchange;
-    const amountDepositedCanDiffer = options.amountDepositedCanDiffer !== undefined ? options.amountDepositedCanDiffer : this.exchange;
+    const autoSetKeys =
+      options.autoSetKeys !== undefined ? options.autoSetKeys : true;
+    const contract =
+      options.accountContract !== undefined
+        ? options.accountContract
+        : this.exchange;
+    const amountDepositedCanDiffer =
+      options.amountDepositedCanDiffer !== undefined
+        ? options.amountDepositedCanDiffer
+        : this.exchange;
 
     console.log("token:" + token);
     console.log("amount:" + amount.toString(10));
-
 
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
     const tokenID = await this.getTokenID(token);
 
-    const caller = options.accountContract ? this.testContext.orderOwners[0] : from;
+    const caller = options.accountContract
+      ? this.testContext.orderOwners[0]
+      : from;
 
     let accountID = await this.getAccountID(to);
     let accountNewCreated = false;
@@ -1123,13 +1131,9 @@ export class ExchangeTestUtil {
 
     if (accountNewCreated && autoSetKeys) {
       let keyPair = this.getKeyPairEDDSA();
-      await this.requestAccountUpdate(
-        to,
-        token,
-        new BN(0),
-        keyPair,
-        { authMethod: AuthMethod.ECDSA }
-      );
+      await this.requestAccountUpdate(to, token, new BN(0), keyPair, {
+        authMethod: AuthMethod.ECDSA
+      });
     }
 
     return deposit;
@@ -1156,7 +1160,8 @@ export class ExchangeTestUtil {
       options.gas !== undefined ? options.gas : minGas > 0 ? minGas : 100000;
     const signer = options.signer !== undefined ? options.signer : owner;
     const data = options.data !== undefined ? options.data : "0x";
-    const validUntil = options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+    const validUntil =
+      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
     let type = 0;
     if (authMethod === AuthMethod.ECDSA || authMethod === AuthMethod.APPROVE) {
@@ -1265,7 +1270,8 @@ export class ExchangeTestUtil {
     // Fill in defaults
     const authMethod =
       options.authMethod !== undefined ? options.authMethod : AuthMethod.EDDSA;
-    const validUntil = options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+    const validUntil =
+      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
     // Type
     let type = 0;
@@ -1656,7 +1662,7 @@ export class ExchangeTestUtil {
     const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
 
     // Submit the blocks onchain
-    const operatorContract = /*this.operator ? this.operator : */this.exchange;
+    const operatorContract = /*this.operator ? this.operator : */ this.exchange;
 
     // Compress the data
     const txData = operatorContract.contract.methods
@@ -1700,7 +1706,11 @@ export class ExchangeTestUtil {
       for (const [i, event] of events.entries()) {
         const blockIdx = event.blockIdx.toNumber();
         assert.equal(blockIdx, blocks[i].blockIdx, "unexpected block idx");
-        assert.equal(event.merkleRoot, blocks[i].merkleRoot, "unexpected Merkle root");
+        assert.equal(
+          event.merkleRoot,
+          blocks[i].merkleRoot,
+          "unexpected Merkle root"
+        );
         assert.equal(
           event.publicDataHash,
           blocks[i].publicDataHash,
@@ -1725,7 +1735,7 @@ export class ExchangeTestUtil {
     for (const [i, block] of blocks.entries()) {
       const blockInfo = await this.exchange.getBlockInfo(block.blockIdx);
       const expectedHash = onchainBlocks[i].storeBlockInfoOnchain
-        ? block.publicDataHash.slice(0, 2 + 28*2)
+        ? block.publicDataHash.slice(0, 2 + 28 * 2)
         : "0x" + "00".repeat(28);
       assert.equal(
         blockInfo.blockDataHash,
@@ -1734,7 +1744,7 @@ export class ExchangeTestUtil {
       );
       const expectedTimestamp = onchainBlocks[i].storeBlockInfoOnchain
         ? Number(ethBlock.timestamp)
-        : 0
+        : 0;
       assert.equal(
         blockInfo.timestamp,
         expectedTimestamp,
@@ -2149,10 +2159,7 @@ export class ExchangeTestUtil {
     return undefined;
   }
 
-  public async createExchange(
-    owner: string,
-    bSetupTestState: boolean = true
-  ) {
+  public async createExchange(owner: string, bSetupTestState: boolean = true) {
     const operator = this.testContext.operators[0];
     const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
 
@@ -2202,9 +2209,7 @@ export class ExchangeTestUtil {
       depositContractProxy.address
     );
     // Initialize the deposit contract
-    await this.depositContract.initialize(
-      this.exchange.address
-    );
+    await this.depositContract.initialize(this.exchange.address);
 
     // Set the deposit contract on the exchange
     await this.exchange.setDepositContract(this.depositContract.address, {
@@ -2219,7 +2224,7 @@ export class ExchangeTestUtil {
     );
 
     this.exchangeOwner = owner;
-    this.exchangeOperator = /*operator*/owner;
+    this.exchangeOperator = /*operator*/ owner;
     this.exchangeId = exchangeId;
     this.activeOperator = undefined;
 
@@ -2234,7 +2239,8 @@ export class ExchangeTestUtil {
     });
     await this.setOperatorContract(operatorContract);
 
-    const exchangeCreationTimestamp = (await this.exchange.getBlockInfo(0)).timestamp;
+    const exchangeCreationTimestamp = (await this.exchange.getBlockInfo(0))
+      .timestamp;
     this.GENESIS_MERKLE_ROOT = new BN(
       (await this.exchange.genesisMerkleRoot()).slice(2),
       16
@@ -2451,14 +2457,14 @@ export class ExchangeTestUtil {
     desc: string
   ) {
     let accountID: number;
-    if( typeof account === "number") {
+    if (typeof account === "number") {
       accountID = account;
     } else {
       accountID = this.findAccount(account).accountID;
     }
 
     let tokenID: number;
-    if( typeof token === "number") {
+    if (typeof token === "number") {
       tokenID = token;
     } else {
       tokenID = await this.getTokenID(token);
