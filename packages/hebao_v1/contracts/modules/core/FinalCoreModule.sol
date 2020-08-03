@@ -39,7 +39,7 @@ contract FinalCoreModule is
         public
         pure
         override
-        returns (bytes4[] memory methods)
+        returns (bytes4[] memory)
     {
         return bindableMethodsForERC1271();
     }
