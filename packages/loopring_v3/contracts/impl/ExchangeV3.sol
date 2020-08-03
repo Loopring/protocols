@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./libexchange/ExchangeAdmins.sol";
@@ -11,6 +11,7 @@ import "./libexchange/ExchangeGenesis.sol";
 import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
+import "./libtransactions/TransferTransaction.sol";
 
 import "../lib/EIP712.sol";
 import "../lib/MathUint.sol";
@@ -26,7 +27,7 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    bytes32 constant public genesisMerkleRoot = 0x1dacdc3f6863d9db1d903e7285ebf74b61f02d585ccb52ecaeaf97dbb773becf;
+    bytes32 constant public genesisMerkleRoot = 0x160ca280c25b71c85d58fc0dd7b9eb42268c73c8812333da3cc2bdc8af3ee7b7;
 
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
@@ -58,12 +59,12 @@ contract ExchangeV3 is IExchangeV3
     }
 
     /// @dev The constructor must do NOTHING to support proxy.
-    constructor() public {}
+    constructor() {}
 
     function version()
         public
         override
-        view
+        pure
         returns (string memory)
     {
         return "3.6.0";
@@ -73,8 +74,7 @@ contract ExchangeV3 is IExchangeV3
     function initialize(
         address _loopring,
         address _owner,
-        uint    _id,
-        bool    _rollupMode
+        uint    _id
         )
         external
         override
@@ -87,7 +87,6 @@ contract ExchangeV3 is IExchangeV3
         state.initializeGenesisBlock(
             _id,
             _loopring,
-            _rollupMode,
             genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );
@@ -343,7 +342,7 @@ contract ExchangeV3 is IExchangeV3
     function forceWithdraw(
         address owner,
         address token,
-        uint24  accountID
+        uint32  accountID
         )
         external
         override
@@ -362,7 +361,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         payable
     {
-        state.forceWithdraw(address(0), token, 0);
+        state.forceWithdraw(address(0), token, ExchangeData.ACCOUNTID_PROTOCOLFEE());
     }
 
     // We still alow anyone to withdraw these funds for the account owner
@@ -378,8 +377,7 @@ contract ExchangeV3 is IExchangeV3
 
     function withdrawFromDepositRequest(
         address owner,
-        address token,
-        uint    index
+        address token
         )
         external
         override
@@ -387,8 +385,7 @@ contract ExchangeV3 is IExchangeV3
     {
         state.withdrawFromDepositRequest(
             owner,
-            token,
-            index
+            token
         );
     }
 
@@ -420,7 +417,7 @@ contract ExchangeV3 is IExchangeV3
     }
 
     function notifyForcedRequestTooOld(
-        uint24  accountID,
+        uint32  accountID,
         address token
         )
         external
@@ -432,10 +429,10 @@ contract ExchangeV3 is IExchangeV3
         require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
 
         // Check if the withdrawal has indeed exceeded the time limit
-        require(now >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE(), "WITHDRAWAL_NOT_TOO_OLD");
+        require(block.timestamp >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE(), "WITHDRAWAL_NOT_TOO_OLD");
 
         // Enter withdrawal mode
-        state.withdrawalModeStartTime = now;
+        state.withdrawalModeStartTime = block.timestamp;
 
         emit WithdrawalModeActivated(state.withdrawalModeStartTime);
     }
@@ -448,7 +445,8 @@ contract ExchangeV3 is IExchangeV3
         address feeToken,
         uint96  fee,
         uint    data,
-        uint32  nonce
+        uint32  validUntil,
+        uint32  storageID
         )
         external
         override
@@ -457,19 +455,38 @@ contract ExchangeV3 is IExchangeV3
     {
         uint16 tokenID = state.getTokenID(token);
         uint16 feeTokenID = state.getTokenID(feeToken);
-        bytes32 transactionHash = TransferTransaction.hash(
-            state.DOMAIN_SEPARATOR,
-            from,
-            to,
-            tokenID,
-            amount,
-            feeTokenID,
-            fee,
-            data,
-            nonce
-        );
-        state.approvedTx[from][transactionHash] = true;
-        emit TransactionApproved(from, transactionHash);
+        TransferTransaction.Transfer memory transfer = TransferTransaction.Transfer({
+            from: from,
+            to: to,
+            tokenID: tokenID,
+            amount: amount,
+            feeTokenID: feeTokenID,
+            fee: fee,
+            data: data,
+            validUntil: validUntil,
+            storageID: storageID
+        });
+        bytes32 txHash = TransferTransaction.hash(state.DOMAIN_SEPARATOR, transfer);
+        state.approvedTx[transfer.from][txHash] = true;
+        emit TransactionApproved(transfer.from, txHash);
+    }
+
+    function setWithdrawalRecipient(
+        address from,
+        address to,
+        address token,
+        uint96  amount,
+        uint32  nonce,
+        address newRecipient
+        )
+        external
+        override
+        nonReentrant
+        onlyFromUserOrAgent(from)
+    {
+        uint16 tokenID = state.getTokenID(token);
+        require(state.withdrawalRecipient[from][to][tokenID][amount][nonce] == address(0), "CANNOT_OVERRIDE_RECIPIENT_ADDRESS");
+        state.withdrawalRecipient[from][to][tokenID][amount][nonce] = newRecipient;
     }
 
     function onchainTransferFrom(
@@ -517,6 +534,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         override
+        nonReentrant
         onlyOwner
         returns (uint32)
     {
@@ -532,15 +550,6 @@ contract ExchangeV3 is IExchangeV3
         return state.maxAgeDepositUntilWithdrawable;
     }
 
-    function getExchangeCreationTimestamp()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.exchangeCreationTimestamp;
-    }
-
     function shutdown()
         external
         override
@@ -550,7 +559,7 @@ contract ExchangeV3 is IExchangeV3
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
         require(!state.isShutdown(), "ALREADY_SHUTDOWN");
-        state.shutdownModeStartTime = now;
+        state.shutdownModeStartTime = block.timestamp;
         emit Shutdown(state.shutdownModeStartTime);
         return true;
     }

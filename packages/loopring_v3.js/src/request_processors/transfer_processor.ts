@@ -11,7 +11,9 @@ interface Transfer {
   amount?: BN;
   feeTokenID?: number;
   fee?: BN;
-  nonce?: number;
+  shortStorageID?: number;
+  validUntil?: number;
+  storageID?: number;
   from?: string;
   to?: string;
   data?: string;
@@ -24,23 +26,32 @@ export class TransferProcessor {
   public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
     const transfer = this.extractData(txData);
 
-    const index = state.getAccount(1);
-
     const from = state.getAccount(transfer.accountFromID);
     const to = state.getAccount(transfer.accountToID);
     if (transfer.to !== Constants.zeroAddress) {
       to.owner = transfer.to;
     }
 
-    from.getBalance(transfer.tokenID, index).balance.isub(transfer.amount);
-    to.getBalance(transfer.tokenID, index).balance.iadd(transfer.amount);
+    from.getBalance(transfer.tokenID).balance.isub(transfer.amount);
+    to.getBalance(transfer.tokenID).balance.iadd(transfer.amount);
 
-    from.getBalance(transfer.feeTokenID, index).balance.isub(transfer.fee);
+    from.getBalance(transfer.feeTokenID).balance.isub(transfer.fee);
 
-    from.nonce++;
+    // Nonce
+    const storageSlot = transfer.shortStorageID & 0b0011111111111111;
+    const overwriteSlot = (transfer.shortStorageID & 0b0100000000000000) !== 0;
+    const storage = from.getBalance(transfer.tokenID).getStorage(storageSlot);
+    if (storage.storageID === 0) {
+      storage.storageID = storageSlot;
+    }
+    if (overwriteSlot) {
+      storage.storageID += Constants.NUM_STORAGE_SLOTS;
+      storage.data = new BN(0);
+    }
+    storage.data = new BN(1);
 
     const operator = state.getAccount(block.operatorAccountID);
-    operator.getBalance(transfer.feeTokenID, index).balance.iadd(transfer.fee);
+    operator.getBalance(transfer.feeTokenID).balance.iadd(transfer.fee);
 
     return transfer;
   }
@@ -53,19 +64,23 @@ export class TransferProcessor {
     const transferType = data.extractUint8(offset);
     offset += 1;
 
-    transfer.accountFromID = data.extractUint24(offset);
-    offset += 3;
-    transfer.accountToID = data.extractUint24(offset);
-    offset += 3;
+    transfer.accountFromID = data.extractUint32(offset);
+    offset += 4;
+    transfer.accountToID = data.extractUint32(offset);
+    offset += 4;
     const tokenIDs = data.extractUint24(offset);
     offset += 3;
     transfer.amount = fromFloat(data.extractUint24(offset), Constants.Float24Encoding);
     offset += 3;
     transfer.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
     offset += 2;
+    transfer.shortStorageID = data.extractUint16(offset);
+    offset += 2;
     transfer.to = data.extractAddress(offset);
     offset += 20;
-    transfer.nonce = data.extractUint32(offset);
+    transfer.validUntil = data.extractUint32(offset);
+    offset += 4;
+    transfer.storageID = data.extractUint32(offset);
     offset += 4;
     transfer.from = data.extractAddress(offset);
     offset += 20;

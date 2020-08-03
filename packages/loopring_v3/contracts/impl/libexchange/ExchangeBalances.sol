@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
@@ -40,8 +40,7 @@ library ExchangeBalances
         uint calculatedRoot = getBalancesRoot(
             merkleProof.balanceLeaf.tokenID,
             merkleProof.balanceLeaf.balance,
-            merkleProof.balanceLeaf.index,
-            merkleProof.balanceLeaf.tradeHistoryRoot,
+            merkleProof.balanceLeaf.storageRoot,
             merkleProof.balanceMerkleProof
         );
         calculatedRoot = getAccountInternalsRoot(
@@ -50,7 +49,6 @@ library ExchangeBalances
             merkleProof.accountLeaf.pubKeyX,
             merkleProof.accountLeaf.pubKeyY,
             merkleProof.accountLeaf.nonce,
-            merkleProof.accountLeaf.walletHash,
             calculatedRoot,
             merkleProof.accountMerkleProof
         );
@@ -60,15 +58,14 @@ library ExchangeBalances
     function getBalancesRoot(
         uint16   tokenID,
         uint     balance,
-        uint     index,
-        uint     tradeHistoryRoot,
+        uint     storageRoot,
         uint[18] memory balanceMerkleProof
         )
         private
         pure
         returns (uint)
     {
-        uint balanceItem = hashImpl(balance, index, tradeHistoryRoot, 0);
+        uint balanceItem = hashImpl(balance, storageRoot, 0, 0);
         uint _id = tokenID;
         for (uint depth = 0; depth < 6; depth++) {
             uint base = depth * 3;
@@ -107,22 +104,21 @@ library ExchangeBalances
     }
 
     function getAccountInternalsRoot(
-        uint24   accountID,
+        uint32   accountID,
         address  owner,
         uint     pubKeyX,
         uint     pubKeyY,
         uint     nonce,
-        uint     walletHash,
         uint     balancesRoot,
-        uint[36] memory accountMerkleProof
+        uint[48] memory accountMerkleProof
         )
         private
         pure
         returns (uint)
     {
-        uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, walletHash, balancesRoot);
+        uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, balancesRoot);
         uint _id = accountID;
-        for (uint depth = 0; depth < 12; depth++) {
+        for (uint depth = 0; depth < 16; depth++) {
             uint base = depth * 3;
             if (_id & 3 == 0) {
                 accountItem = hashImpl(
@@ -163,15 +159,14 @@ library ExchangeBalances
         uint t1,
         uint t2,
         uint t3,
-        uint t4,
-        uint t5
+        uint t4
         )
         public
         pure
         returns (uint)
     {
-        Poseidon.HashInputs7 memory inputs = Poseidon.HashInputs7(t0, t1, t2, t3, t4, t5, 0);
-        return Poseidon.hash_t7f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
+        Poseidon.HashInputs6 memory inputs = Poseidon.HashInputs6(t0, t1, t2, t3, t4, 0);
+        return Poseidon.hash_t6f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
     }
 
     function hashImpl(

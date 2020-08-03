@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../iface/IExchange.sol";
@@ -43,6 +43,7 @@ abstract contract IExchangeV3 is IExchange
 
     event BlockSubmitted(
         uint    indexed blockIdx,
+        bytes32         merkleRoot,
         bytes32         publicDataHash,
         uint            blockFee
     );
@@ -51,14 +52,13 @@ abstract contract IExchangeV3 is IExchange
         address owner,
         address token,
         uint96  amount,
-        uint96  index,
         uint    fee
     );
 
     event ForcedWithdrawalRequested(
         address owner,
         address token,
-        uint24  accountID
+        uint32  accountID
     );
 
     event WithdrawalCompleted(
@@ -88,19 +88,19 @@ abstract contract IExchangeV3 is IExchange
     );
 
     // events from libraries
-    event DepositProcessed(
+    /*event DepositProcessed(
         address owner,
-        uint24  accountId,
+        uint32  accountId,
         uint16  token,
         uint    amount,
         uint    index
-    );
+    );*/
 
-    event ForcedWithdrawalProcessed(
-        uint24 accountID,
+    /*event ForcedWithdrawalProcessed(
+        uint32 accountID,
         uint16 tokenID,
         uint   amount
-    );
+    );*/
 
     /*event ConditionalTransferProcessed(
         address from,
@@ -109,36 +109,20 @@ abstract contract IExchangeV3 is IExchange
         uint    amount
     );*/
 
-    /*event AccountCreated(
-        address owner,
-        uint    publicKey,
-        uint    walletHash
-    );*/
-
     /*event AccountUpdated(
-        uint24 owner,
+        uint32 owner,
         uint   publicKey
     );*/
-
-
-    /*event AccountTransfered(
-        address owner,
-        address newOwner
-    );*/
-
 
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.
     /// @param  owner The owner of this exchange.
     /// @param  exchangeId The id of this exchange.
     /// @param  loopring The corresponding ILoopring contract address.
-    /// @param  rollupMode True to run in 100% zkRollup mode, false to run in Validium mode.
-    ///         exchange. Note that this value can not be changed once the exchange is initialized.
     function initialize(
         address loopring,
         address owner,
-        uint    exchangeId,
-        bool    rollupMode
+        uint    exchangeId
         )
         external
         virtual;
@@ -259,13 +243,13 @@ abstract contract IExchangeV3 is IExchange
     ///
     ///      Can only be called by the exchange owner.
     ///
-    /// @return The amount of LRC withdrawn
+    /// @return amountLRC The amount of LRC withdrawn
     function withdrawExchangeStake(
         address recipient
         )
         external
         virtual
-        returns (uint);
+        returns (uint amountLRC);
 
     /// @dev Withdraws the amount staked for this exchange.
     ///      This can always be called.
@@ -308,7 +292,7 @@ abstract contract IExchangeV3 is IExchange
         returns (uint);
 
     /// @dev Gets some minimal info of a previously submitted block that's kept onchain.
-    /// @return blockIdx The block index.
+    /// @param blockIdx The block index.
     function getBlockInfo(uint blockIdx)
         external
         virtual
@@ -324,7 +308,7 @@ abstract contract IExchangeV3 is IExchange
     ///      - blockSize: The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
     ///      - blockVersion: The circuit version to use for verifying the block
-    ///      - storeDataHashOnchain: If the block data hash needs to be stored onchain
+    ///      - storeBlockInfoOnchain: If the block info for this block needs to be stored on-chain
     ///      - data: The data for this block
     ///      - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
@@ -389,7 +373,7 @@ abstract contract IExchangeV3 is IExchange
     function forceWithdraw(
         address owner,
         address tokenAddress,
-        uint24  accountID
+        uint32  accountID
         )
         external
         virtual
@@ -448,11 +432,9 @@ abstract contract IExchangeV3 is IExchange
     ///
     /// @param  owner The address of the account the withdrawal was done for.
     /// @param  token The token address
-    /// @param  index The token index at the time of deposit
     function withdrawFromDepositRequest(
         address owner,
-        address token,
-        uint    index
+        address token
         )
         external
         virtual;
@@ -500,7 +482,7 @@ abstract contract IExchangeV3 is IExchange
     /// @param  accountID The accountID the forced request was made for
     /// @param  token The token address of the the forced request
     function notifyForcedRequestTooOld(
-        uint24  accountID,
+        uint32  accountID,
         address token
         )
         external
@@ -519,7 +501,7 @@ abstract contract IExchangeV3 is IExchange
     /// @param feeToken The address of the token used for the fee ('0x0' for ETH).
     /// @param fee The fee for the transfer.
     /// @param data Custom data for the transfer.
-    /// @param nonce The nonce.
+    /// @param storageID The storageID.
     function approveOffchainTransfer(
         address from,
         address to,
@@ -528,7 +510,31 @@ abstract contract IExchangeV3 is IExchange
         address feeToken,
         uint96  fee,
         uint    data,
-        uint32  nonce
+        uint32  validUntil,
+        uint32  storageID
+        )
+        external
+        virtual;
+
+    /// @dev Allows a withdrawal to be done to an adddresss that is different
+    ///      than initialy specified in the withdrawal request. This can be used to
+    ///      implement functionality like fast withdrawals.
+    ///
+    ///      This function can only be called by an agent.
+    ///
+    /// @param from The address of the account that does the withdrawal.
+    /// @param to The address to which 'amount' tokens were going to be withdrawn.
+    /// @param token The address of the token that is withdrawn ('0x0' for ETH).
+    /// @param amount The amount of tokens that are going to be withdrawn.
+    /// @param nonce The nonce of the withdrawal request.
+    /// @param newRecipient The new recipient address of the withdrawal.
+    function setWithdrawalRecipient(
+        address from,
+        address to,
+        address token,
+        uint96  amount,
+        uint32  nonce,
+        address newRecipient
         )
         external
         virtual;
@@ -598,14 +604,6 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (uint32);
 
-    /// @dev Gets the time the exchange was created.
-    /// @return timestamp The time the exchange was created.
-    function getExchangeCreationTimestamp()
-        external
-        virtual
-        view
-        returns (uint timestamp);
-
     /// @dev Shuts down the exchange.
     ///      Once the exchange is shutdown all onchain requests are permanently disabled.
     ///      When all requirements are fulfilled the exchange owner can withdraw
@@ -625,7 +623,7 @@ abstract contract IExchangeV3 is IExchange
         returns (bool success);
 
     /// @dev Gets the protocol fees for this exchange.
-    /// @return timestamp The timestamp the protocol fees were last updated
+    /// @return syncedAt The timestamp the protocol fees were last updated
     /// @return takerFeeBips The protocol taker fee
     /// @return makerFeeBips The protocol maker fee
     /// @return previousTakerFeeBips The previous protocol taker fee
@@ -635,7 +633,7 @@ abstract contract IExchangeV3 is IExchange
         virtual
         view
         returns (
-            uint32 timestamp,
+            uint32 syncedAt,
             uint8 takerFeeBips,
             uint8 makerFeeBips,
             uint8 previousTakerFeeBips,

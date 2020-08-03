@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 /// @title IDepositContract.
 ///        Contract storing and transferring funds for an exchange.
@@ -22,8 +22,7 @@ interface IDepositContract
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens to transfer.
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the deposit
-    /// @return amountReceived The amount deposited to the user's account in the Merkle tree
-    /// @return tokenIndex The current index for the token being deposited
+    /// @return amountReceived The amount to deposit to the user's account in the Merkle tree
     function deposit(
         address from,
         address token,
@@ -32,8 +31,7 @@ interface IDepositContract
         )
         external
         payable
-        returns (uint96 amountReceived, uint tokenIndex);
-
+        returns (uint96 amountReceived);
     /// @dev Transfers tokens from the exchange to a user. This function will
     ///      be called when a withdrawal is done for a user on the exchange.
     ///      In the simplest implementation the funds are simply stored inside the
@@ -47,11 +45,13 @@ interface IDepositContract
     ///
     ///      This function can only be called by the exchange.
     ///
+    /// @param from The address from which 'amount' tokens are transferred.
     /// @param to The address to which 'amount' tokens are transferred.
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens transferred.
     /// @param auxiliaryData Opaque data that can be used by the contract to handle the withdrawal
     function withdraw(
+        address from,
         address to,
         address token,
         uint    amount,

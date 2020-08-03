@@ -18,9 +18,7 @@ export enum TransactionType {
   WITHDRAWAL,
   TRANSFER,
   SPOT_TRADE,
-  ACCOUNT_NEW,
-  ACCOUNT_UPDATE,
-  ACCOUNT_TRANSFER
+  ACCOUNT_UPDATE
 }
 
 /**
@@ -111,8 +109,6 @@ export interface Deposit {
   token: number;
   /** The amount that was deposited. */
   amount: BN;
-  /** The index at the time of deposit. */
-  index: BN;
   /** The fee paid for the deposit. */
   fee: BN;
 
@@ -271,11 +267,11 @@ export interface InternalTransfer {
 /**
  * Trade history data.
  */
-export interface TradeHistory {
-  /** How much the order is filled. */
-  filled: BN;
-  /** The orderID of the order the trade history is currently stored for. */
-  orderID: number;
+export interface Storage {
+  /** The data field. */
+  data: BN;
+  /** The storageID of the data that is currently stored for. */
+  storageID: number;
 }
 
 /**
@@ -284,12 +280,10 @@ export interface TradeHistory {
 export interface Balance {
   /** How amount of tokens the account owner has for a token. */
   balance: BN;
-  /** The index when the balance was last accessed. */
-  index: BN;
-  /** The trade history data. */
-  tradeHistory: { [key: number]: TradeHistory };
+  /** The storage. */
+  storage: { [key: number]: Storage };
 
-  tradeHistoryTree?: SparseMerkleTree;
+  storageTree?: SparseMerkleTree;
 }
 
 /**
@@ -309,8 +303,6 @@ export interface Account {
   publicKeyY: string;
   /** The nonce value of the account. */
   nonce: number;
-  /** The wallet hash. */
-  walletHash: string;
 
   balancesMerkleTree?: SparseMerkleTree;
 }
@@ -346,18 +338,14 @@ export interface OnchainAccountLeaf {
   pubKeyY: string;
   /** The current nonce value of the account. */
   nonce: number;
-  /** The wallet hash of the account. */
-  walletHash: string;
 }
 export interface OnchainBalanceLeaf {
   /** The ID of the token. */
   tokenID: number;
   /** The current balance the account has for the requested token. */
   balance: string;
-  /** The current index the account has for the requested token. */
-  index: string;
-  /** The trade history root of the balance leaf. */
-  tradeHistoryRoot: string;
+  /** The storage root of the balance leaf. */
+  storageRoot: string;
 }
 export interface WithdrawFromMerkleTreeData {
   /** The account leaf. */
@@ -393,75 +381,41 @@ export interface Signature {
 
 /// Private
 
-export function power10(x1: BN) {
-  const c0 = new BN("10000000000000000000");
-  const c1 = new BN("23025850929940459520");
-  const c2 = new BN("26509490552391999488");
-  const c3 = new BN("20346785922934771712");
-
-  const x2 = x1.mul(x1).div(Constants.INDEX_BASE);
-  const x3 = x2.mul(x1).div(Constants.INDEX_BASE);
-
-  const t1 = x1.mul(c1);
-  const t2 = x2.mul(c2);
-  const t3 = x3.mul(c3);
-  return c0.add(
-    t1
-      .add(t2)
-      .add(t3)
-      .div(Constants.INDEX_BASE)
-  );
-}
-
-export function applyInterest(balance: BN, oldIndex: BN, newIndex: BN) {
-  assert(newIndex.gte(oldIndex), "Invalid balance state");
-  const indexDiff = newIndex.sub(oldIndex);
-  const multiplier = power10(indexDiff);
-  const newBalance = balance
-    .mul(multiplier)
-    .div(Constants.INDEX_BASE.mul(new BN(10)));
-  return newBalance;
-}
-
-export class TradeHistoryLeaf implements TradeHistory {
-  filled: BN;
-  orderID: number;
+export class StorageLeaf implements Storage {
+  data: BN;
+  storageID: number;
 
   constructor() {
-    this.filled = new BN(0);
-    this.orderID = 0;
+    this.data = new BN(0);
+    this.storageID = 0;
   }
 }
 
 export class BalanceLeaf implements Balance {
   balance: BN;
-  index: BN;
-  tradeHistory: { [key: number]: TradeHistoryLeaf };
+  storage: { [key: number]: StorageLeaf };
 
-  tradeHistoryTree?: SparseMerkleTree;
+  storageTree?: SparseMerkleTree;
 
   constructor() {
     this.balance = new BN(0);
-    this.index = Constants.INDEX_BASE;
-    this.tradeHistory = {};
+    this.storage = {};
   }
 
   public init(
     balance: BN,
-    index: BN,
-    tradeHistory: { [key: number]: TradeHistoryLeaf }
+    storage: { [key: number]: StorageLeaf }
   ) {
     this.balance = new BN(balance.toString(10));
-    this.index = new BN(index.toString(10));
-    this.tradeHistory = tradeHistory;
+    this.storage = storage;
   }
 
-  public getTradeHistory(orderID: number) {
-    const address = orderID % 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
-    if (this.tradeHistory[address] === undefined) {
-      this.tradeHistory[address] = new TradeHistoryLeaf();
+  public getStorage(storageID: number) {
+    const address = storageID % 2 ** Constants.BINARY_TREE_DEPTH_STORAGE;
+    if (this.storage[address] === undefined) {
+      this.storage[address] = new StorageLeaf();
     }
-    return this.tradeHistory[address];
+    return this.storage[address];
   }
 }
 
@@ -473,7 +427,6 @@ export class AccountLeaf implements Account {
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
-  walletHash: string;
   balances: { [key: number]: BalanceLeaf };
 
   balancesMerkleTree?: SparseMerkleTree;
@@ -485,7 +438,6 @@ export class AccountLeaf implements Account {
     this.publicKeyX = "0";
     this.publicKeyY = "0";
     this.nonce = 0;
-    this.walletHash = "0";
     this.balances = {};
   }
 
@@ -494,7 +446,6 @@ export class AccountLeaf implements Account {
     publicKeyX: string,
     publicKeyY: string,
     nonce: number,
-    walletHash: string,
     balances: { [key: number]: BalanceLeaf } = {}
   ) {
     this.exchangeId = 0;
@@ -503,28 +454,13 @@ export class AccountLeaf implements Account {
     this.publicKeyX = publicKeyX;
     this.publicKeyY = publicKeyY;
     this.nonce = nonce;
-    this.walletHash = walletHash;
     this.balances = balances;
   }
 
-  public getBalanceRaw(tokenID: number) {
+  public getBalance(tokenID: number) {
     if (this.balances[tokenID] === undefined) {
       this.balances[tokenID] = new BalanceLeaf();
     }
-    return this.balances[tokenID];
-  }
-
-  public getBalance(tokenID: number, index: AccountLeaf) {
-    if (this.balances[tokenID] === undefined) {
-      this.balances[tokenID] = new BalanceLeaf();
-    }
-    const newIndex = index.getBalanceRaw(tokenID).index;
-    this.balances[tokenID].balance = applyInterest(
-      this.balances[tokenID].balance,
-      this.balances[tokenID].index,
-      newIndex
-    );
-    this.balances[tokenID].index = newIndex;
     return this.balances[tokenID];
   }
 }
@@ -535,7 +471,6 @@ export class ExchangeState {
 
   constructor(exchangeId: number, accounts: AccountLeaf[] = []) {
     this.exchangeId = exchangeId;
-    this.onchainDataAvailability = true;
 
     this.accounts = accounts;
 
@@ -547,8 +482,8 @@ export class ExchangeState {
 
     this.processedRequests = [];
 
-    // Create the protocol and index accounts
-    this.getAccount(1);
+    // Create the protocol fee pool accounts
+    this.getAccount(0);
   }
 
   public getAccount(accountID: number) {
@@ -565,8 +500,6 @@ export class ExchangeState {
   onchainWithdrawals: OnchainWithdrawal[];
 
   processedRequests: any[];
-
-  onchainDataAvailability: boolean;
 }
 
 export interface BlockContext {

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
@@ -30,7 +30,6 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     constructor(address _lrcAddress)
         Claimable()
-        public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
         lrcAddress = _lrcAddress;
@@ -95,13 +94,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         user.depositedAt = uint64(
             user.balance
                 .mul(user.depositedAt)
-                .add(amount.mul(now)) / balance
+                .add(amount.mul(block.timestamp)) / balance
         );
 
         user.claimedAt = uint64(
             user.balance
                 .mul(user.claimedAt)
-                .add(amount.mul(now)) / balance
+                .add(amount.mul(block.timestamp)) / balance
         );
 
         user.balance = balance;
@@ -112,7 +111,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         total.claimedAt = uint64(
             total.balance
                 .mul(total.claimedAt)
-                .add(amount.mul(now)) / balance
+                .add(amount.mul(block.timestamp)) / balance
         );
 
         total.balance = balance;
@@ -181,12 +180,12 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             total.balance = total.balance.add(claimedAmount);
 
             total.claimedAt = uint64(
-                now.sub(totalPoints.sub(userPoints) / total.balance)
+                block.timestamp.sub(totalPoints.sub(userPoints) / total.balance)
             );
 
             Staking storage user = stakings[msg.sender];
             user.balance = user.balance.add(claimedAmount);
-            user.claimedAt = uint64(now);
+            user.claimedAt = uint64(block.timestamp);
         }
         emit LRCRewarded(msg.sender, claimedAmount);
     }
@@ -201,7 +200,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             return MIN_WITHDRAW_DELAY;
         } else {
             uint time = depositedAt + MIN_WITHDRAW_DELAY;
-            return (time <= now) ? 0 : time.sub(now);
+            return (time <= block.timestamp) ? 0 : time.sub(block.timestamp);
         }
     }
 
@@ -215,7 +214,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             return MIN_CLAIM_DELAY;
         } else {
             uint time = stakings[user].claimedAt + MIN_CLAIM_DELAY;
-            return (time <= now) ? 0 : time.sub(now);
+            return (time <= block.timestamp) ? 0 : time.sub(block.timestamp);
         }
     }
 
@@ -231,8 +230,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         Staking storage staking = stakings[user];
 
         // We add 1 to the time to make totalPoints slightly bigger
-        totalPoints = total.balance.mul(now.sub(total.claimedAt).add(1));
-        userPoints = staking.balance.mul(now.sub(staking.claimedAt));
+        totalPoints = total.balance.mul(block.timestamp.sub(total.claimedAt).add(1));
+        userPoints = staking.balance.mul(block.timestamp.sub(staking.claimedAt));
 
         // Because of the math calculation, this is possible.
         if (totalPoints < userPoints) {

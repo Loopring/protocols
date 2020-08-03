@@ -45,19 +45,13 @@ public:
     const VariableT _1001;
     const VariableT _10000;
     const VariableT _100000;
-    const VariableT indexBase;
-    const VariableT emptyTradeHistory;
+    const VariableT emptyStorage;
     const VariableT maxAmount;
-    const VariableT maxConcurrentOrderIDs;
+    const VariableT numStorageSlots;
     const VariableT dummyPublicKeyX;
     const VariableT dummyPublicKeyY;
+    const VariableT txTypeSpotTrade;
     const VariableT txTypeTransfer;
-    const VariableT txTypeNewAccount;
-
-    const VariableT pow10_c0;
-    const VariableT pow10_c1;
-    const VariableT pow10_c2;
-    const VariableT pow10_c3;
 
     const VariableArrayT zeroAccount;
 
@@ -84,19 +78,13 @@ public:
         _1001(make_variable(pb, ethsnarks::FieldT(1001), FMT(prefix, "._1001"))),
         _10000(make_variable(pb, ethsnarks::FieldT(10000), FMT(prefix, "._10000"))),
         _100000(make_variable(pb, ethsnarks::FieldT(100000), FMT(prefix, "._100000"))),
-        indexBase(make_variable(pb, ethsnarks::FieldT(INDEX_BASE), FMT(prefix, ".indexBase"))),
-        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyTradeHistory"))),
+        emptyStorage(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyStorage"))),
         maxAmount(make_variable(pb, ethsnarks::FieldT(MAX_AMOUNT), FMT(prefix, ".maxAmount"))),
-        maxConcurrentOrderIDs(make_variable(pb, ethsnarks::FieldT(MAX_CONCURRENT_ORDERIDS), FMT(prefix, ".maxConcurrentOrderIDs"))),
+        numStorageSlots(make_variable(pb, ethsnarks::FieldT(NUM_STORAGE_SLOTS), FMT(prefix, ".numStorageSlots"))),
         dummyPublicKeyX(make_variable(pb, ethsnarks::FieldT("132404916167441185773716937639098950030214269269071041759116060313694190797"), FMT(prefix, ".dummyPublicKeyX"))),
         dummyPublicKeyY(make_variable(pb, ethsnarks::FieldT("6933274320914065805670637410453081675154127044926882796951068647148079547843"), FMT(prefix, ".dummyPublicKeyY"))),
+        txTypeSpotTrade(make_variable(pb, ethsnarks::FieldT(int(TransactionType::SpotTrade)), FMT(prefix, ".txTypeSpotTrade"))),
         txTypeTransfer(make_variable(pb, ethsnarks::FieldT(int(TransactionType::Transfer)), FMT(prefix, ".txTypeTransfer"))),
-        txTypeNewAccount(make_variable(pb, ethsnarks::FieldT(int(TransactionType::AccountNew)), FMT(prefix, ".txTypeNewAccount"))),
-
-        pow10_c0(make_variable(pb, ethsnarks::FieldT(POW10_C0), FMT(prefix, ".pow10_c0"))),
-        pow10_c1(make_variable(pb, ethsnarks::FieldT(POW10_C1), FMT(prefix, ".pow10_c1"))),
-        pow10_c2(make_variable(pb, ethsnarks::FieldT(POW10_C2), FMT(prefix, ".pow10_c2"))),
-        pow10_c3(make_variable(pb, ethsnarks::FieldT(POW10_C3), FMT(prefix, ".pow10_c3"))),
 
         zeroAccount(NUM_BITS_ACCOUNT, _0)
     {
@@ -139,19 +127,13 @@ public:
         pb.add_r1cs_constraint(ConstraintT(_1001, FieldT::one(), ethsnarks::FieldT(1001)), "._1001");
         pb.add_r1cs_constraint(ConstraintT(_10000, FieldT::one(), ethsnarks::FieldT(10000)), "._10000");
         pb.add_r1cs_constraint(ConstraintT(_100000, FieldT::one(), ethsnarks::FieldT(100000)), "._100000");
-        pb.add_r1cs_constraint(ConstraintT(indexBase, FieldT::one(), ethsnarks::FieldT(INDEX_BASE)), ".indexBase");
-        pb.add_r1cs_constraint(ConstraintT(emptyTradeHistory, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyTradeHistory");
+        pb.add_r1cs_constraint(ConstraintT(emptyStorage, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyStorage");
         pb.add_r1cs_constraint(ConstraintT(maxAmount, FieldT::one(), ethsnarks::FieldT(MAX_AMOUNT)), ".maxAmount");
-        pb.add_r1cs_constraint(ConstraintT(maxConcurrentOrderIDs, FieldT::one(), ethsnarks::FieldT(MAX_CONCURRENT_ORDERIDS)), ".maxConcurrentOrderIDs");
+        pb.add_r1cs_constraint(ConstraintT(numStorageSlots, FieldT::one(), ethsnarks::FieldT(NUM_STORAGE_SLOTS)), ".numStorageSlots");
         pb.add_r1cs_constraint(ConstraintT(dummyPublicKeyX, FieldT::one(), ethsnarks::FieldT("132404916167441185773716937639098950030214269269071041759116060313694190797")), ".dummyPublicKeyX");
         pb.add_r1cs_constraint(ConstraintT(dummyPublicKeyY, FieldT::one(), ethsnarks::FieldT("6933274320914065805670637410453081675154127044926882796951068647148079547843")), ".dummyPublicKeyY");
+        pb.add_r1cs_constraint(ConstraintT(txTypeSpotTrade, FieldT::one(), ethsnarks::FieldT(int(TransactionType::SpotTrade))), ".txTypeSpotTrade");
         pb.add_r1cs_constraint(ConstraintT(txTypeTransfer, FieldT::one(), ethsnarks::FieldT(int(TransactionType::Transfer))), ".txTypeTransfer");
-        pb.add_r1cs_constraint(ConstraintT(txTypeNewAccount, FieldT::one(), ethsnarks::FieldT(int(TransactionType::AccountNew))), ".txTypeNewAccount");
-
-        pb.add_r1cs_constraint(ConstraintT(pow10_c0, FieldT::one(), ethsnarks::FieldT(POW10_C0)), ".pow10_c0");
-        pb.add_r1cs_constraint(ConstraintT(pow10_c1, FieldT::one(), ethsnarks::FieldT(POW10_C1)), ".pow10_c1");
-        pb.add_r1cs_constraint(ConstraintT(pow10_c2, FieldT::one(), ethsnarks::FieldT(POW10_C2)), ".pow10_c2");
-        pb.add_r1cs_constraint(ConstraintT(pow10_c3, FieldT::one(), ethsnarks::FieldT(POW10_C3)), ".pow10_c3");
     }
 };
 
@@ -206,12 +188,14 @@ public:
 
     void generate_r1cs_witness(ProtoboardT& pb, const FieldT& value)
     {
+        assert(!fromPacked && !fromBits);
         pb.val(packed) = value;
         generate_r1cs_witness_from_packed();
     }
 
     void generate_r1cs_witness(ProtoboardT& pb, const LimbT& value)
     {
+        assert(!fromPacked && !fromBits);
         assert(value.max_bits() == 256);
         for (unsigned int i = 0; i < 256; i++)
         {
@@ -273,37 +257,6 @@ public:
     {
         assert(allowGeneratingWitness);
         pb.val(variables.front()) = value;
-    }
-};
-
-// Helper function for subadd to do transfers
-class TransferGadget : public GadgetT
-{
-public:
-    subadd_gadget subadd;
-
-    TransferGadget(
-        ProtoboardT& pb,
-        DynamicVariableGadget& from,
-        DynamicVariableGadget& to,
-        const VariableT& value,
-        const std::string& prefix
-    ) :
-        GadgetT(pb, prefix),
-        subadd(pb, NUM_BITS_AMOUNT, from.back(), to.back(), value, FMT(prefix, ".subadd"))
-    {
-        from.add(subadd.X);
-        to.add(subadd.Y);
-    }
-
-    void generate_r1cs_witness()
-    {
-        subadd.generate_r1cs_witness();
-    }
-
-    void generate_r1cs_constraints()
-    {
-        subadd.generate_r1cs_constraints();
     }
 };
 
@@ -501,6 +454,43 @@ public:
     }
 };
 
+// Helper function to do transfers
+class TransferGadget : public GadgetT
+{
+public:
+
+    SubGadget sub;
+    AddGadget add;
+
+    TransferGadget(
+        ProtoboardT& pb,
+        DynamicVariableGadget& from,
+        DynamicVariableGadget& to,
+        const VariableT& value,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        sub(pb, from.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".sub")),
+        add(pb, to.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".add"))
+    {
+        from.add(sub.result());
+        to.add(add.result());
+    }
+
+    void generate_r1cs_witness()
+    {
+        sub.generate_r1cs_witness();
+        add.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        sub.generate_r1cs_constraints();
+        add.generate_r1cs_constraints();
+    }
+};
+
 // b ? A : B
 class TernaryGadget : public GadgetT
 {
@@ -554,17 +544,19 @@ class ArrayTernaryGadget : public GadgetT
 {
 public:
 
+    VariableT b;
     std::vector<TernaryGadget> results;
     VariableArrayT res;
 
     ArrayTernaryGadget(
         ProtoboardT& pb,
-        const VariableT& b,
+        const VariableT& _b,
         const VariableArrayT& x,
         const VariableArrayT& y,
         const std::string& prefix
     ) :
-        GadgetT(pb, prefix)
+        GadgetT(pb, prefix),
+        b(_b)
     {
         assert(x.size() == y.size());
         results.reserve(x.size());
@@ -583,8 +575,12 @@ public:
         }
     }
 
-    void generate_r1cs_constraints()
+    void generate_r1cs_constraints(bool enforceBitness = true)
     {
+        if (enforceBitness)
+        {
+            libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, b, FMT(annotation_prefix, ".bitness"));
+        }
         for (unsigned int i = 0; i < results.size(); i++)
         {
             results[i].generate_r1cs_constraints(false);
@@ -1684,7 +1680,7 @@ struct SelectorGadget : public GadgetT
         GadgetT(pb, prefix),
         constants(_constants)
     {
-        assert(maxBits < constants.values.size());
+        assert(maxBits <= constants.values.size());
         for (unsigned int i = 0; i < maxBits; i++)
         {
             bits.emplace_back(pb, type, constants.values[i], FMT(annotation_prefix, ".bits"));
@@ -1850,83 +1846,6 @@ public:
     const VariableT& isNewAccount() const
     {
         return no_oldOwner.result();
-    }
-};
-
-// Calculates 10**(1+x) for a value [0, delta] with delta close to 0 for the highest accuracy.
-// Assumes the result cannot overflow because the sum of all balances stored inside the merkle tree can never exceed 2**96
-// (and this is checked onchain).
-class PowerGadget : public GadgetT
-{
-public:
-
-    MulDivGadget x2;
-    MulDivGadget x3;
-
-    UnsafeMulGadget t1;
-    UnsafeMulGadget t2;
-    UnsafeMulGadget t3;
-
-    UnsafeAddGadget t1_add_t2;
-    UnsafeAddGadget t12_add_t3;
-    MulDivGadget res_part;
-    UnsafeAddGadget res;
-
-    PowerGadget(
-        ProtoboardT& pb,
-        const Constants& constants,
-        const VariableT& x1,
-        const std::string& prefix
-    ) :
-        GadgetT(pb, prefix),
-
-        x2(pb, constants, x1, x1, constants.indexBase, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 60, FMT(prefix, ".x2")),
-        x3(pb, constants, x2.result(), x1, constants.indexBase, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 60, FMT(prefix, ".x3")),
-
-        t1(pb, x1, constants.pow10_c1, FMT(prefix, ".t1")),
-        t2(pb, x2.result(), constants.pow10_c2, FMT(prefix, ".t2")),
-        t3(pb, x3.result(), constants.pow10_c3, FMT(prefix, ".t3")),
-
-        t1_add_t2(pb, t1.result(), t2.result(), FMT(prefix, ".t1_add_t2")),
-        t12_add_t3(pb, t1_add_t2.result(), t3.result(), FMT(prefix, ".t12_add_t3")),
-        res_part(pb, constants, t12_add_t3.result(), constants._1, constants.indexBase, NUM_BITS_AMOUNT*2, 1, 60, FMT(prefix, ".res_part")),
-        res(pb, constants.pow10_c0, res_part.result(), FMT(prefix, ".res"))
-    {
-    }
-
-    void generate_r1cs_witness()
-    {
-        x2.generate_r1cs_witness();
-        x3.generate_r1cs_witness();
-
-        t1.generate_r1cs_witness();
-        t2.generate_r1cs_witness();
-        t3.generate_r1cs_witness();
-
-        t1_add_t2.generate_r1cs_witness();
-        t12_add_t3.generate_r1cs_witness();
-        res_part.generate_r1cs_witness();
-        res.generate_r1cs_witness();
-    }
-
-    void generate_r1cs_constraints()
-    {
-        x2.generate_r1cs_constraints();
-        x3.generate_r1cs_constraints();
-
-        t1.generate_r1cs_constraints();
-        t2.generate_r1cs_constraints();
-        t3.generate_r1cs_constraints();
-
-        t1_add_t2.generate_r1cs_constraints();
-        t12_add_t3.generate_r1cs_constraints();
-        res_part.generate_r1cs_constraints();
-        res.generate_r1cs_constraints();
-    }
-
-    const VariableT& result() const
-    {
-        return res.result();
     }
 };
 

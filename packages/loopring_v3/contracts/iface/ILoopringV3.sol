@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./ILoopring.sol";
 
@@ -56,8 +56,7 @@ abstract contract ILoopringV3 is ILoopring
     uint    public forcedWithdrawalFee;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
-    uint    public minExchangeStakeRollup;
-    uint    public minExchangeStakeValidium;
+    uint    public minExchangeStake;
     uint8   public minProtocolTakerFeeBips;
     uint8   public maxProtocolTakerFeeBips;
     uint8   public minProtocolMakerFeeBips;
@@ -71,7 +70,7 @@ abstract contract ILoopringV3 is ILoopring
     function version()
         public
         override
-        view
+        pure
         returns (string memory)
     {
         return "3.6";
@@ -87,8 +86,7 @@ abstract contract ILoopringV3 is ILoopring
         address _blockVerifierAddress,       // address(0) not allowed
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStakeRollup,
-        uint    _minExchangeStakeValidium
+        uint    _minExchangeStake
         )
         external
         virtual;
@@ -111,16 +109,11 @@ abstract contract ILoopringV3 is ILoopring
 
     /// @dev Returns whether the Exchange has staked enough to submit blocks
     ///      Exchanges with on-chain data-availaiblity need to stake at least
-    ///      minExchangeStakeRollup, exchanges without
-    ///      data-availability need to stake at least
-    ///      minExchangeStakeValidium.
+    ///      minExchangeStake.
     /// @param exchangeId The id of the exchange
-    /// @param rollupMode True if the exchange has on-chain
-    ///        data-availability, else false
     /// @return True if the exchange has staked enough, else false
     function canExchangeSubmitBlocks(
-        uint exchangeId,
-        bool rollupMode
+        uint exchangeId
         )
         external
         virtual
@@ -168,7 +161,7 @@ abstract contract ILoopringV3 is ILoopring
     /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
     /// @param  requestedAmount The amount of LRC to withdraw
-    /// @return amount The amount of LRC withdrawn
+    /// @return amountLRC The amount of LRC withdrawn
     function withdrawExchangeStake(
         uint    exchangeId,
         address recipient,
@@ -176,7 +169,7 @@ abstract contract ILoopringV3 is ILoopring
         )
         external
         virtual
-        returns (uint amount);
+        returns (uint amountLRC);
 
     /// @dev Stakes more LRC for an exchange.
     /// @param  exchangeId The id of the exchange
@@ -205,13 +198,10 @@ abstract contract ILoopringV3 is ILoopring
 
     /// @dev Gets the protocol fee values for an exchange.
     /// @param exchangeId The id of the exchange
-    /// @param rollupMode True if the exchange has on-chain
-    ///        data-availability, else false
     /// @return takerFeeBips The protocol taker fee
     /// @return makerFeeBips The protocol maker fee
     function getProtocolFeeValues(
-        uint exchangeId,
-        bool rollupMode
+        uint exchangeId
         )
         external
         virtual

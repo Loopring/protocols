@@ -2,6 +2,7 @@ import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { AuthMethod } from "./types";
+import { Constants } from "loopringV3.js";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -446,5 +447,96 @@ contract("Exchange", (accounts: string[]) => {
         "invalid block"
       );
     });
+
+    it("transfer (parallel transfers)", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("1", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+
+      let storageID = 123;
+
+      // Do some transfers transfer
+      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, feeToken, fee, {storageID: storageID++});
+      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {storageID: storageID++});
+      await exchangeTestUtil.transfer(ownerA, ownerC, token, amount, token, fee, {storageID: storageID++});
+      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, token, fee, {storageID: storageID++});
+
+      // Verify the block
+      await exchangeTestUtil.submitTransactions();
+      await exchangeTestUtil.submitPendingBlocks();
+    });
+
+    it("transfer (sequential transfers)", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("1", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+
+      let storageID = 123;
+
+      // Do some transfers transfer
+      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, feeToken, fee, {storageID});
+      storageID += Constants.NUM_STORAGE_SLOTS;
+      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {storageID});
+      storageID += Constants.NUM_STORAGE_SLOTS;
+      await exchangeTestUtil.transfer(ownerA, ownerC, token, amount, token, fee, {storageID});
+      storageID += Constants.NUM_STORAGE_SLOTS;
+      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, token, fee, {storageID});
+
+      // Verify the block
+      await exchangeTestUtil.submitTransactions();
+      await exchangeTestUtil.submitPendingBlocks();
+    });
+
+    it("transfer (reuse storageID)", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("1", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+
+      let storageID = 123;
+
+      // Do some transfers transfers with the same storageID
+      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {storageID});
+      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, token, fee, {storageID});
+
+      // Commit the transfers
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
+    });
+
+    it("transfer (reuse old storageID)", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("1", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+
+      let storageID = 123;
+
+      // Do some transfers transfers with the same storageID
+      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {storageID});
+      storageID += Constants.NUM_STORAGE_SLOTS;
+      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, token, fee, {storageID});
+      storageID -= Constants.NUM_STORAGE_SLOTS;
+      await exchangeTestUtil.transfer(ownerA, ownerC, token, amount, token, fee, {storageID});
+
+      // Commit the transfers
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
+    });
+
   });
 });

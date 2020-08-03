@@ -28,6 +28,7 @@ public:
     DualVariableGadget amount;
     DualVariableGadget feeTokenID;
     DualVariableGadget fee;
+    DualVariableGadget validUntil;
     DualVariableGadget to;
     DualVariableGadget dataHash;
     DualVariableGadget minGas;
@@ -41,7 +42,10 @@ public:
     DualVariableGadget nonce;
 
     // Signature
-    Poseidon_gadget_T<11, 1, 6, 53, 10, 1> hash;
+    Poseidon_gadget_T<12, 1, 6, 53, 11, 1> hash;
+
+    // Validate
+    RequireLtGadget requireValidUntil;
 
     // Type
     IsNonZero isConditional;
@@ -97,6 +101,7 @@ public:
         amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
         feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
         fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
+        validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
         to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".to")),
         dataHash(pb, NUM_BITS_HASH, FMT(prefix, ".dataHash")),
         minGas(pb, NUM_BITS_GAS, FMT(prefix, ".minGas")),
@@ -120,16 +125,20 @@ public:
             to.packed,
             dataHash.packed,
             minGas.packed,
+            validUntil.packed,
             state.accountA.account.nonce
         }), FMT(this->annotation_prefix, ".hash")),
+
+        // Validate
+        requireValidUntil(pb, state.timestamp, validUntil.packed, NUM_BITS_TIMESTAMP, FMT(prefix, ".requireValidUntil")),
 
         // Type
         isConditional(pb, type.packed, FMT(prefix, ".isConditional")),
         needsSignature(pb, isConditional.result(), FMT(prefix, ".needsSignature")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS, state.index.balanceB, FMT(prefix, ".balanceS_A")),
-        balanceB_P(pb, state.constants, state.pool.balanceB, state.index.balanceB, FMT(prefix, ".balanceB_P")),
+        balanceS_A(pb, state.constants, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_P(pb, state.constants, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
 
         // Check how much should be withdrawn
         fullBalance(pb, isProtocolFeeWithdrawal.result(), balanceB_P.balance(), balanceS_A.balance(), FMT(prefix, ".fullBalance")),
@@ -141,8 +150,8 @@ public:
         checkInvalidFullWithdrawal(pb, invalidFullWithdrawalType.result(), amountIsZero.result(), FMT(prefix, ".checkInvalidFullWithdrawal")),
 
         // Fee balances
-        balanceB_A(pb, state.constants, state.accountA.balanceB, state.index.balanceA, FMT(prefix, ".balanceB_A")),
-        balanceA_O(pb, state.constants, state.oper.balanceA, state.index.balanceA, FMT(prefix, ".balanceA_O")),
+        balanceB_A(pb, state.constants, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+        balanceA_O(pb, state.constants, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
         requireAccuracyFee(pb, fFee.value(), fee.packed, Float16Accuracy, NUM_BITS_AMOUNT, FMT(prefix, ".requireAccuracyFee")),
@@ -171,18 +180,14 @@ public:
         // Update the account balances (withdrawal + fee)
         setArrayOutput(balanceA_S_Address, tokenID.bits);
         setOutput(balanceA_S_Balance, balanceA_after.result());
-        setOutput(balanceA_S_Index, balanceS_A.index());
         setArrayOutput(balanceB_S_Address, feeTokenID.bits);
         setOutput(balanceA_B_Balance, balanceB_A.balance());
-        setOutput(balanceA_B_Index, balanceB_A.index());
 
         // Update the protocol fee pool balance when withdrawing from the protocol pool
         setOutput(balanceP_B_Balance, balanceP_after.result());
-        setOutput(balanceP_B_Index, balanceB_P.index());
 
         // Update the operator balance for the fee payment
         setOutput(balanceO_A_Balance, balanceA_O.balance());
-        setOutput(balanceO_A_Index, balanceA_O.index());
 
         // Verify a single signature of the account owner (if not conditional)
         setOutput(hash_A, hash.result());
@@ -201,6 +206,7 @@ public:
         amount.generate_r1cs_witness(pb, withdrawal.amount);
         feeTokenID.generate_r1cs_witness(pb, withdrawal.feeTokenID);
         fee.generate_r1cs_witness(pb, withdrawal.fee);
+        validUntil.generate_r1cs_witness(pb, withdrawal.validUntil);
         to.generate_r1cs_witness(pb, withdrawal.to);
         dataHash.generate_r1cs_witness(pb, withdrawal.dataHash);
         minGas.generate_r1cs_witness(pb, withdrawal.minGas);
@@ -215,6 +221,9 @@ public:
 
         // Signature
         hash.generate_r1cs_witness();
+
+        // Validate
+        requireValidUntil.generate_r1cs_witness();
 
         // Type
         isConditional.generate_r1cs_witness();
@@ -266,6 +275,7 @@ public:
         amount.generate_r1cs_constraints(true);
         feeTokenID.generate_r1cs_constraints(true);
         fee.generate_r1cs_constraints(true);
+        validUntil.generate_r1cs_constraints(true);
         to.generate_r1cs_constraints(true);
         dataHash.generate_r1cs_constraints(true);
         minGas.generate_r1cs_constraints(true);
@@ -280,6 +290,9 @@ public:
 
         // Signature
         hash.generate_r1cs_constraints();
+
+        // Validate
+        requireValidUntil.generate_r1cs_constraints();
 
         // Type
         isConditional.generate_r1cs_constraints();
@@ -329,18 +342,18 @@ public:
             type.bits,
             owner.bits,
             accountID.bits,
-            nonce.bits,
             tokenID.bits,
             feeTokenID.bits,
             amount.bits,
             fFee.bits(),
             to.bits,
             dataHash.bits,
-            minGas.bits
+            minGas.bits,
+            validUntil.bits,
+            nonce.bits
         });
     }
 };
-
 
 }
 

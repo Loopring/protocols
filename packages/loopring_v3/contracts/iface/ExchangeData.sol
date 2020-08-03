@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./IAgentRegistry.sol";
@@ -23,9 +23,7 @@ library ExchangeData
         WITHDRAWAL,
         TRANSFER,
         SPOT_TRADE,
-        ACCOUNT_NEW,
-        ACCOUNT_UPDATE,
-        ACCOUNT_TRANSFER
+        ACCOUNT_UPDATE
     }
 
     // -- Structs --
@@ -60,12 +58,12 @@ library ExchangeData
         bytes      data;
         uint256[8] proof;
 
-        // Whether we should store the sha256 hash of the `data` on-chain.
-        bool  storeDataHashOnchain;
+        // Whether we should store the @BlockInfo for this block on-chain.
+        bool storeBlockInfoOnchain;
 
         // Block specific data that is only used to help process the block on-chain.
         // It is not used as input for the circuits and it is not necessary for data-availability.
-        bytes auxiliaryData;
+        AuxiliaryData[] auxiliaryData;
 
         // Arbitrary data, mainly for off-chain data-availability, i.e.,
         // the multihash of the IPFS file that contains the block data.
@@ -74,7 +72,10 @@ library ExchangeData
 
     struct BlockInfo
     {
-        bytes32 blockDataHash;
+        // The time the block was submitted on-chain.
+        uint32  timestamp;
+        // The public data hash of the block (the 28 most significant bytes).
+        bytes28 blockDataHash;
     }
 
     // Represents an onchain deposit request.
@@ -116,37 +117,37 @@ library ExchangeData
     function MAX_OPEN_FORCED_REQUESTS() internal pure returns (uint16) { return 4096; }
     function MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 15 days; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 7 days; }
-    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 24; }
+    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 32; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
-    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 104; }
+    // The amount of bytes each rollup transaction uses in the block data for data-availability.
+    // This is the maximum amount of bytes of all different transaction types.
+    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 106; }
     function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 14 days; }
-
+    function ACCOUNTID_PROTOCOLFEE() internal pure returns (uint32) { return 0; }
 
     struct AccountLeaf
     {
-        uint24   accountID;
+        uint32   accountID;
         address  owner;
         uint     pubKeyX;
         uint     pubKeyY;
         uint32   nonce;
-        uint     walletHash;
     }
 
     struct BalanceLeaf
     {
         uint16   tokenID;
         uint96   balance;
-        uint96   index;
-        uint     tradeHistoryRoot;
+        uint     storageRoot;
     }
 
     struct MerkleProof
     {
         ExchangeData.AccountLeaf accountLeaf;
         ExchangeData.BalanceLeaf balanceLeaf;
-        uint[36]                 accountMerkleProof;
+        uint[48]                 accountMerkleProof;
         uint[18]                 balanceMerkleProof;
     }
 
@@ -159,10 +160,7 @@ library ExchangeData
     struct State
     {
         uint    id;
-        uint    exchangeCreationTimestamp;
-        bool    rollupMode;
         uint32  maxAgeDepositUntilWithdrawable;
-        bytes32 genesisMerkleRoot;
         bytes32 DOMAIN_SEPARATOR;
 
         ILoopringV3      loopring;
@@ -171,42 +169,38 @@ library ExchangeData
         IDepositContract depositContract;
 
 
-
-        // List of all tokens
-        Token[] tokens;
-
-        // List of all blocks
-        BlockInfo[] blocks;
-
-        // A map from a token to its tokenID + 1
-        mapping (address => uint16) tokenToTokenId;
-
         // The merkle root of the offchain data stored in a Merkle tree. The Merkle tree
         // stores balances for users using an account model.
         bytes32 merkleRoot;
 
+        // List of all blocks
+        BlockInfo[] blocks;
+
+        // List of all tokens
+        Token[] tokens;
+
+        // A map from a token to its tokenID + 1
+        mapping (address => uint16) tokenToTokenId;
+
         // A map from an accountID to a tokenID to if the balance is withdrawn
-        mapping (uint24 => mapping (uint16 => bool)) withdrawnInWithdrawMode;
+        mapping (uint32 => mapping (uint16 => bool)) withdrawnInWithdrawMode;
 
         // A map from an account to a token to the amount withdrawable for that account.
         // This is only used when the automatic distribution of the withdrawal failed.
         mapping (address => mapping (uint16 => uint)) amountWithdrawable;
 
         // A map from an account to a token to the forced withdrawal (always full balance)
-        mapping (uint24 => mapping (uint16 => ForcedWithdrawal)) pendingForcedWithdrawals;
+        mapping (uint32 => mapping (uint16 => ForcedWithdrawal)) pendingForcedWithdrawals;
 
-        // A map from an address to a token to an index to a deposit
-        mapping (address => mapping (uint16 => mapping (uint => Deposit))) pendingDeposits;
+        // A map from an address to a token to a deposit
+        mapping (address => mapping (uint16 => Deposit)) pendingDeposits;
 
         // A map from an account owner to an approved transaction hash to if the transaction is approved or not
         mapping (address => mapping (bytes32 => bool)) approvedTx;
 
-        // Whitelisted agents
-        mapping (address => bool) whitelistedAgent;
+        // A map from an account owner to a destination address to a tokenID to an amount to a nonce to a new recipient address
+        mapping (address => mapping (address => mapping (uint16 => mapping (uint => mapping (uint32 => address))))) withdrawalRecipient;
 
-        // Agents - A map from an account owner to an agent to a boolean that is true/false depending
-        // on if the agent can be used for the account.
-        mapping (address => mapping (address => bool)) agent;
 
         // Counter to keep track of how many of forced requests are open so we can limit the work that needs to be done by the owner
         uint32 numPendingForcedTransactions;

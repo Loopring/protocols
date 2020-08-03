@@ -14,7 +14,7 @@ import {
   Block,
   Deposit,
   OnchainWithdrawal,
-  TradeHistory,
+  Storage,
   Token,
   Balance,
   Account,
@@ -29,8 +29,6 @@ import { AccountUpdateProcessor } from "./request_processors/account_update_proc
 import { SpotTradeProcessor } from "./request_processors/spot_trade_processor";
 import { TransferProcessor } from "./request_processors/transfer_processor";
 import { WithdrawalProcessor } from "./request_processors/withdrawal_processor";
-import { NewAccountProcessor } from "./request_processors/new_account_processor";
-import { OwnerChangeProcessor } from "./request_processors/owner_change_processor";
 import * as log from "./logs";
 
 /**
@@ -45,7 +43,6 @@ export class ExchangeV3 {
   private forgeMode: ForgeMode;
   private protocol: ProtocolV3;
   private implementationAddress: string;
-  private exchangeCreationTimestamp: number;
 
   private syncedToEthereumBlockIdx: number;
 
@@ -65,9 +62,9 @@ export class ExchangeV3 {
 
   private merkleTree: SparseMerkleTree;
 
-  // decimal representation of `0x1dacdc3f6863d9db1d903e7285ebf74b61f02d585ccb52ecaeaf97dbb773becf`
+  // decimal representation of `0x160ca280c25b71c85d58fc0dd7b9eb42268c73c8812333da3cc2bdc8af3ee7b7`
   private genesisMerkleRoot =
-    "13422490397723095974327695797813848518088539216215104429864410479629968850639";
+    "9973206387858757276870965637020996982330817360942098161585584652959352809399";
 
   private protocolFees: ProtocolFees;
 
@@ -77,7 +74,6 @@ export class ExchangeV3 {
    * @param   exchangeAddress           The address of the exchange
    * @param   exchangeId                The exchange ID
    * @param   owner                     The owner of the exchange
-   * @param   onchainDataAvailability   The availability of on-chain data
    * @param   forgeMode                 The forge mode the exchange was created with
    * @param   protocol                  The protocol of the exchange
    * @param   implementationAddress     The address of the implementation
@@ -87,7 +83,6 @@ export class ExchangeV3 {
     exchangeAddress: string,
     exchangeId: number,
     owner: string,
-    onchainDataAvailability: boolean,
     forgeMode: ForgeMode,
     protocol: ProtocolV3,
     implementationAddress: string
@@ -108,9 +103,9 @@ export class ExchangeV3 {
     this.exchange = new web3.eth.Contract(JSON.parse(this.exchangeV3Abi));
     this.exchange.options.address = this.exchangeAddress;
 
-    this.exchangeCreationTimestamp = await this.exchange.methods
-      .getExchangeCreationTimestamp()
-      .call();
+    const exchangeCreationTimestamp = (await this.exchange.methods
+      .getBlockInfo(0)
+      .call()).timestamp;
 
     this.shutdown = false;
     this.shutdownStartTime = 0;
@@ -137,7 +132,7 @@ export class ExchangeV3 {
       blockFee: new BN(0),
 
       merkleRoot: this.genesisMerkleRoot,
-      timestamp: this.exchangeCreationTimestamp,
+      timestamp: exchangeCreationTimestamp,
 
       numRequestsProcessed: 0,
       totalNumRequestsProcessed: 0,
@@ -221,33 +216,28 @@ export class ExchangeV3 {
    * Builds the Merkle tree on the current state
    */
   public buildMerkleTree() {
-    if (!this.state.onchainDataAvailability) {
-      // We cannot build the Merkle tree without on-chain data-availability
-      return;
-    }
     const hasher = poseidon.createHash(5, 6, 52);
-    const accountHasher = poseidon.createHash(7, 6, 52);
+    const accountHasher = poseidon.createHash(6, 6, 52);
 
     // Make empty trees so we have all necessary default values
-    const tradeHistoryMerkleTree = new SparseMerkleTree(
-      Constants.BINARY_TREE_DEPTH_TRADING_HISTORY / 2
+    const storageMerkleTree = new SparseMerkleTree(
+      Constants.BINARY_TREE_DEPTH_STORAGE / 2
     );
-    tradeHistoryMerkleTree.newTree(hasher([0, 0]).toString(10));
+    storageMerkleTree.newTree(hasher([0, 0]).toString(10));
     const balancesMerkleTree = new SparseMerkleTree(
       Constants.BINARY_TREE_DEPTH_TOKENS / 2
     );
     balancesMerkleTree.newTree(
       hasher([
         0,
-        Constants.INDEX_BASE,
-        tradeHistoryMerkleTree.getRoot()
+        storageMerkleTree.getRoot()
       ]).toString(10)
     );
     this.merkleTree = new SparseMerkleTree(
       Constants.BINARY_TREE_DEPTH_ACCOUNTS / 2
     );
     this.merkleTree.newTree(
-      accountHasher([0, 0, 0, 0, 0, balancesMerkleTree.getRoot()]).toString(10)
+      accountHasher([0, 0, 0, 0, balancesMerkleTree.getRoot()]).toString(10)
     );
 
     assert.equal(
@@ -264,23 +254,22 @@ export class ExchangeV3 {
       account.balancesMerkleTree.newTree(
         hasher([
           0,
-          Constants.INDEX_BASE,
-          tradeHistoryMerkleTree.getRoot()
+          storageMerkleTree.getRoot()
         ]).toString(10)
       );
       for (const tokenID of Object.keys(account.balances)) {
         const balanceValue = account.balances[Number(tokenID)];
-        balanceValue.tradeHistoryTree = new SparseMerkleTree(
-          Constants.BINARY_TREE_DEPTH_TRADING_HISTORY / 2
+        balanceValue.storageTree = new SparseMerkleTree(
+          Constants.BINARY_TREE_DEPTH_STORAGE / 2
         );
-        balanceValue.tradeHistoryTree.newTree(hasher([0, 0]).toString(10));
-        for (const orderID of Object.keys(balanceValue.tradeHistory)) {
-          const tradeHistoryValue = balanceValue.tradeHistory[Number(orderID)];
-          balanceValue.tradeHistoryTree.update(
+        balanceValue.storageTree.newTree(hasher([0, 0]).toString(10));
+        for (const orderID of Object.keys(balanceValue.storage)) {
+          const storageValue = balanceValue.storage[Number(orderID)];
+          balanceValue.storageTree.update(
             Number(orderID),
             hasher([
-              tradeHistoryValue.filled,
-              tradeHistoryValue.orderID
+              storageValue.data,
+              storageValue.storageID
             ]).toString(10)
           );
         }
@@ -288,8 +277,7 @@ export class ExchangeV3 {
           Number(tokenID),
           hasher([
             balanceValue.balance,
-            balanceValue.index,
-            balanceValue.tradeHistoryTree.getRoot()
+            balanceValue.storageTree.getRoot()
           ]).toString(10)
         );
       }
@@ -300,7 +288,6 @@ export class ExchangeV3 {
           account.publicKeyX,
           account.publicKeyY,
           account.nonce,
-          account.walletHash,
           account.balancesMerkleTree.getRoot()
         ]).toString(10)
       );
@@ -329,10 +316,6 @@ export class ExchangeV3 {
    * @return  The necessary data for withdrawFromMerkleTree(for)
    */
   public getWithdrawFromMerkleTreeData(accountID: number, tokenID: number) {
-    assert(
-      this.state.onchainDataAvailability,
-      "cannot create the Merkle proofs for an exchange without on-chain data-availability"
-    );
     assert(accountID < this.state.accounts.length, "invalid account ID");
     assert(tokenID < this.tokens.length, "invalid token ID");
 
@@ -341,27 +324,25 @@ export class ExchangeV3 {
     const balanceMerkleProof = account.balancesMerkleTree.createProof(tokenID);
 
     const hasher = poseidon.createHash(5, 6, 52);
-    const tradeHistoryTree = new SparseMerkleTree(
-      Constants.BINARY_TREE_DEPTH_TRADING_HISTORY / 2
+    const storageTree = new SparseMerkleTree(
+      Constants.BINARY_TREE_DEPTH_STORAGE / 2
     );
-    tradeHistoryTree.newTree(hasher([0, 0]).toString(10));
+    storageTree.newTree(hasher([0, 0]).toString(10));
 
     const accountLeaf: OnchainAccountLeaf = {
       accountID: account.accountId,
       owner: account.owner,
       pubKeyX: account.publicKeyX,
       pubKeyY: account.publicKeyY,
-      nonce: account.nonce,
-      walletHash: account.walletHash
+      nonce: account.nonce
     };
     const balanceLeaf: OnchainBalanceLeaf = {
       tokenID,
-      balance: account.getBalanceRaw(tokenID).balance.toString(10),
-      index: account.getBalanceRaw(tokenID).index.toString(10),
-      tradeHistoryRoot:
-        account.getBalanceRaw(tokenID).tradeHistoryTree !== undefined
-          ? account.getBalanceRaw(tokenID).tradeHistoryTree.getRoot()
-          : tradeHistoryTree.getRoot()
+      balance: account.getBalance(tokenID).balance.toString(10),
+      storageRoot:
+        account.getBalance(tokenID).storageTree !== undefined
+          ? account.getBalance(tokenID).storageTree.getRoot()
+          : storageTree.getRoot()
     };
     const withdrawFromMerkleTreeData: WithdrawFromMerkleTreeData = {
       accountLeaf,
@@ -611,14 +592,6 @@ export class ExchangeV3 {
   }
 
   /**
-   * Returns if this exchange has on-chain data-availability or not
-   * @return  True if the exchange has on-chain data-availability, else false
-   */
-  public hasOnchainDataAvailability() {
-    return this.state.onchainDataAvailability;
-  }
-
-  /**
    * Gets the forge mode of the exchange
    * @return  The forge mode of the exchange
    */
@@ -640,14 +613,6 @@ export class ExchangeV3 {
    */
   public getImplementationAddress() {
     return this.implementationAddress;
-  }
-
-  /**
-   * Gets the time the exchange was created
-   * @return  The exchange creation timestamp
-   */
-  public getExchangeCreationTimestamp() {
-    return this.exchangeCreationTimestamp;
   }
 
   /**
@@ -717,19 +682,19 @@ export class ExchangeV3 {
     const timestamp = Number(ethereumBlock.timestamp);
 
     // Get the block data from the transaction data
-    //const submitBlocksFunctionSignature = "0x65f573a8";
-    const submitBlocksFunctionSignature = "0x14867212";
+    const submitBlocksFunctionSignature = "0xde6fd7d0";
+    //const submitBlocksFunctionSignature = "0x14867212";
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
     );
     //console.log(transaction.input);
     if (transaction.input.startsWith(submitBlocksFunctionSignature)) {
-      const decodedCompressedInput = this.web3.eth.abi.decodeParameters(
+      /*const decodedCompressedInput = this.web3.eth.abi.decodeParameters(
         ["bytes"],
         "0x" + transaction.input.slice(2 + 4 * 2)
       );
-      const data = decompressLZ(decodedCompressedInput[0]);
+      const data = decompressLZ(decodedCompressedInput[0]);*/
       // Get the inputs to commitBlock
       // Note: this will not work if an operator contract is used with a different function signature
       const decodedInputs = this.web3.eth.abi.decodeParameters(
@@ -748,7 +713,7 @@ export class ExchangeV3 {
           },
           "address"
         ],
-        "0x" + data.slice(2 + 4 * 2)
+        "0x" + transaction.input.slice(2 + 4 * 2)
       );
       //console.log(decodedInputs);
       const numBlocks = decodedInputs[0].length;
@@ -804,11 +769,9 @@ export class ExchangeV3 {
         this.processBlock(newBlock);
 
         // TODO: remove (Only done here for debugging)
-        if (this.state.onchainDataAvailability) {
-          this.buildMerkleTree();
-          for (let a = 0; a < this.state.accounts.length; a++) {
-            this.merkleTree.createProof(a);
-          }
+        this.buildMerkleTree();
+        for (let a = 0; a < this.state.accounts.length; a++) {
+          this.merkleTree.createProof(a);
         }
       }
     } else {
@@ -833,7 +796,6 @@ export class ExchangeV3 {
       owner: event.returnValues.owner,
       token: event.returnValues.token,
       amount: new BN(event.returnValues.amount, 10),
-      index: new BN(event.returnValues.index, 10),
       fee: new BN(event.returnValues.fee, 10),
 
       transactionHash: event.transactionHash
@@ -927,8 +889,8 @@ export class ExchangeV3 {
     offset += 1;
     const numConditionalTransactions = data.extractUint32(offset);
     offset += 4;
-    const operatorAccountID = data.extractUint24(offset);
-    offset += 3;
+    const operatorAccountID = data.extractUint32(offset);
+    offset += 4;
 
     const ctx: BlockContext = {
       protocolFeeTakerBips,
@@ -953,12 +915,8 @@ export class ExchangeV3 {
         request = TransferProcessor.process(this.state, ctx, txData);
       } else if (txType === TransactionType.WITHDRAWAL) {
         request = WithdrawalProcessor.process(this.state, ctx, txData);
-      } else if (txType === TransactionType.ACCOUNT_NEW) {
-        request = NewAccountProcessor.process(this.state, ctx, txData);
       } else if (txType === TransactionType.ACCOUNT_UPDATE) {
         request = AccountUpdateProcessor.process(this.state, ctx, txData);
-      } else if (txType === TransactionType.ACCOUNT_TRANSFER) {
-        request = OwnerChangeProcessor.process(this.state, ctx, txData);
       } else {
         assert(false, "unknown transaction type: " + txType);
       }

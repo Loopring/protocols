@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../../iface/ITokenPriceProvider.sol";
 
@@ -21,7 +21,6 @@ contract ChainlinkTokenPriceProvider is ITokenPriceProvider
         AggregatorInterface _Eth2Usd,
         AggregatorInterface _Lrc2Eth
         )
-        public
     {
         Eth2Usd = _Eth2Usd;
         Lrc2Eth = _Lrc2Eth;

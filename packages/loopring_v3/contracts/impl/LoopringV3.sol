@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -28,7 +28,6 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress
         )
         Claimable()
-        public
     {
         require(address(0) != _universalRegistry, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
@@ -39,7 +38,7 @@ contract LoopringV3 is ILoopringV3
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            0, 0, 0, 0
+            0, 0, 0
         );
     }
 
@@ -54,9 +53,7 @@ contract LoopringV3 is ILoopringV3
     function initializeExchange(
         address exchangeAddress,
         uint    exchangeId,
-        address owner,
-        address payable operator,
-        bool    rollupMode
+        address owner
         )
         external
         override
@@ -66,7 +63,6 @@ contract LoopringV3 is ILoopringV3
         require(exchangeId != 0, "ZERO_ID");
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
         require(owner != address(0), "ZERO_ADDRESS");
-        require(operator != address(0), "ZERO_ADDRESS");
         require(exchanges[exchangeId].exchangeAddress == address(0), "ID_USED_ALREADY");
 
         IExchangeV3 exchange = IExchangeV3(exchangeAddress);
@@ -75,8 +71,7 @@ contract LoopringV3 is ILoopringV3
         exchange.initialize(
             address(this),
             owner,
-            exchangeId,
-            rollupMode
+            exchangeId
         );
 
         exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);
@@ -84,8 +79,7 @@ contract LoopringV3 is ILoopringV3
         emit ExchangeInitialized(
             exchangeId,
             exchangeAddress,
-            owner,
-            rollupMode
+            owner
         );
     }
 
@@ -95,8 +89,7 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStakeRollup,
-        uint    _minExchangeStakeValidium
+        uint    _minExchangeStake
         )
         external
         override
@@ -108,8 +101,7 @@ contract LoopringV3 is ILoopringV3
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _forcedWithdrawalFee,
-            _minExchangeStakeRollup,
-            _minExchangeStakeValidium
+            _minExchangeStake
         );
     }
 
@@ -133,12 +125,11 @@ contract LoopringV3 is ILoopringV3
         targetProtocolTakerFeeStake = _targetProtocolTakerFeeStake;
         targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
 
-        emit SettingsUpdated(now);
+        emit SettingsUpdated(block.timestamp);
     }
 
     function canExchangeSubmitBlocks(
-        uint exchangeId,
-        bool rollupMode
+        uint exchangeId
         )
         external
         override
@@ -146,11 +137,7 @@ contract LoopringV3 is ILoopringV3
         returns (bool)
     {
         uint amountStaked = getExchangeStake(exchangeId);
-        if (rollupMode) {
-            return amountStaked >= minExchangeStakeRollup;
-        } else {
-            return amountStaked >= minExchangeStakeValidium;
-        }
+        return amountStaked >= minExchangeStake;
     }
 
     function getExchangeStake(
@@ -289,8 +276,7 @@ contract LoopringV3 is ILoopringV3
     }
 
     function getProtocolFeeValues(
-        uint exchangeId,
-        bool rollupMode
+        uint exchangeId
         )
         external
         override
@@ -304,12 +290,7 @@ contract LoopringV3 is ILoopringV3
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
-        uint stake = 0;
-        if (rollupMode && exchange.exchangeStake > minExchangeStakeRollup) {
-            stake = exchange.exchangeStake - minExchangeStakeRollup;
-        } else if (!rollupMode && exchange.exchangeStake > minExchangeStakeValidium) {
-            stake = exchange.exchangeStake - minExchangeStakeValidium;
-        }
+        uint stake = exchange.exchangeStake - minExchangeStake;
 
         // The total stake used here is the exchange stake + the protocol fee stake, but
         // the protocol fee stake has a reduced weight of 50%.
@@ -342,8 +323,7 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStakeRollup,
-        uint    _minExchangeStakeValidium
+        uint    _minExchangeStake
         )
         private
     {
@@ -354,10 +334,9 @@ contract LoopringV3 is ILoopringV3
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         forcedWithdrawalFee = _forcedWithdrawalFee;
-        minExchangeStakeRollup = _minExchangeStakeRollup;
-        minExchangeStakeValidium = _minExchangeStakeValidium;
+        minExchangeStake = _minExchangeStake;
 
-        emit SettingsUpdated(now);
+        emit SettingsUpdated(block.timestamp);
     }
 
     function calculateProtocolFee(

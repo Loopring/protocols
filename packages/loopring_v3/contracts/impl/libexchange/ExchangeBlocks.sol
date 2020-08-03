@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
@@ -18,8 +18,6 @@ import "../libtransactions/TransferTransaction.sol";
 import "../libtransactions/AccountUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
 import "../libtransactions/WithdrawTransaction.sol";
-import "../libtransactions/OwnerChangeTransaction.sol";
-import "../libtransactions/NewAccountTransaction.sol";
 
 
 /// @title ExchangeBlocks.
@@ -37,6 +35,7 @@ library ExchangeBlocks
 
     event BlockSubmitted(
         uint    indexed blockIdx,
+        bytes32         merkleRoot,
         bytes32         publicDataHash,
         uint            blockFee
     );
@@ -60,7 +59,7 @@ library ExchangeBlocks
 
         // Check if this exchange has a minimal amount of LRC staked
         require(
-            S.loopring.canExchangeSubmitBlocks(S.id, S.rollupMode),
+            S.loopring.canExchangeSubmitBlocks(S.id),
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 
@@ -108,17 +107,17 @@ library ExchangeBlocks
         offset += 32;
         require(merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
 
-        S.merkleRoot = _block.data.toBytes32(offset);
+        bytes32 merkleRootAfter = _block.data.toBytes32(offset);
         offset += 32;
-        require(S.merkleRoot != merkleRootBefore, "EMPTY_BLOCK_DISABLED");
-        require(uint(S.merkleRoot) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
+        require(merkleRootAfter != merkleRootBefore, "EMPTY_BLOCK_DISABLED");
+        require(uint(merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
         // Validate timestamp
         uint32 inputTimestamp = _block.data.toUint32(offset);
         offset += 4;
         require(
-            inputTimestamp > now - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
-            inputTimestamp < now + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
+            inputTimestamp > block.timestamp - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
+            inputTimestamp < block.timestamp + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
             "INVALID_TIMESTAMP"
         );
 
@@ -144,12 +143,13 @@ library ExchangeBlocks
         _feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
 
         // Emit an event
-        emit BlockSubmitted(S.blocks.length, _publicDataHash, blockFeeETH);
+        emit BlockSubmitted(S.blocks.length, merkleRootAfter, _publicDataHash, blockFeeETH);
 
+        S.merkleRoot = merkleRootAfter;
         S.blocks.push(
-            ExchangeData.BlockInfo(
-                _block.storeDataHashOnchain ? _publicDataHash : bytes32(0)
-            )
+            _block.storeBlockInfoOnchain ?
+                ExchangeData.BlockInfo(uint32(block.timestamp), bytes28(_publicDataHash)) :
+                ExchangeData.BlockInfo(uint32(0), bytes28(0))
         );
     }
 
@@ -161,6 +161,7 @@ library ExchangeBlocks
         private
         view
     {
+        IBlockVerifier blockVerifier = S.blockVerifier;
         uint numBlocksVerified = 0;
         bool[] memory blockVerified = new bool[](blocks.length);
         ExchangeData.Block memory firstBlock;
@@ -205,9 +206,8 @@ library ExchangeBlocks
 
             // Verify the proofs
             require(
-                S.blockVerifier.verifyProofs(
+                blockVerifier.verifyProofs(
                     uint8(firstBlock.blockType),
-                    S.rollupMode,
                     firstBlock.blockSize,
                     firstBlock.blockVersion,
                     publicInputs,
@@ -221,36 +221,31 @@ library ExchangeBlocks
     }
 
     function processConditionalTransactions(
-        ExchangeData.State storage S,
-        uint          offset,
-        bytes  memory data,
-        bytes  memory auxiliaryData
+        ExchangeData.State          storage S,
+        uint                                offset,
+        bytes                        memory data,
+        ExchangeData.AuxiliaryData[] memory txAuxiliaryData
         )
         private
         returns (uint blockFeeETH)
     {
-        // The length of the auxiliary data needs to match the number of conditional transfers
+        // The length of the auxiliary data needs to match the number of conditional transactions
         uint numConditionalTransactions = data.toUint32(offset);
         offset += 4;
 
         if (numConditionalTransactions > 0) {
-            require(S.rollupMode, "AVAILABLE_ONLY_IN_ROLLUP_MODE");
-
             // Cache the domain seperator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
                 DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR
             });
 
-            ExchangeData.AuxiliaryData[] memory txAuxiliaryData = abi.decode(
-                auxiliaryData, (ExchangeData.AuxiliaryData[])
-            );
             require(
                 txAuxiliaryData.length == numConditionalTransactions,
                 "AUXILIARYDATA_INVALID_LENGTH"
             );
 
-            // uint24 operatorAccountID = data.toUint24(offset);
-            offset += 3;
+            // uint32 operatorAccountID = data.toUint32(offset);
+            offset += 4;
 
             // Run over all conditional transactions
             uint prevTxDataOffset = 0;
@@ -261,58 +256,43 @@ library ExchangeBlocks
 
                 require(txDataOffset > prevTxDataOffset, "AUXILIARYDATA_INVALID_ORDER");
 
-                // Get the transaction data
-                bytes memory txData = data.slice(
-                    txDataOffset,
-                    ExchangeData.TX_DATA_AVAILABILITY_SIZE()
-                );
-
                 // Process the transaction
-                uint txFeeETH = 0;
                 ExchangeData.TransactionType txType = ExchangeData.TransactionType(
-                    txData.toUint8(0)
+                    data.toUint8(txDataOffset)
                 );
+                txDataOffset += 1;
 
+                uint txFeeETH = 0;
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
                     txFeeETH = DepositTransaction.process(
                         S,
                         ctx,
-                        txData,
+                        data,
+                        txDataOffset,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
                     txFeeETH = WithdrawTransaction.process(
                         S,
                         ctx,
-                        txData,
+                        data,
+                        txDataOffset,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.TRANSFER) {
                     txFeeETH = TransferTransaction.process(
                         S,
                         ctx,
-                        txData,
-                        txAuxiliaryData[i].data
-                    );
-                } else if (txType == ExchangeData.TransactionType.ACCOUNT_NEW) {
-                    txFeeETH = NewAccountTransaction.process(
-                        S,
-                        ctx,
-                        txData,
+                        data,
+                        txDataOffset,
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
                     txFeeETH = AccountUpdateTransaction.process(
                         S,
                         ctx,
-                        txData,
-                        txAuxiliaryData[i].data
-                    );
-                } else if (txType == ExchangeData.TransactionType.ACCOUNT_TRANSFER) {
-                    txFeeETH = OwnerChangeTransaction.process(
-                        S,
-                        ctx,
-                        txData,
+                        data,
+                        txDataOffset,
                         txAuxiliaryData[i].data
                     );
                 } else {
@@ -336,17 +316,16 @@ library ExchangeBlocks
         private
         returns (bool)
     {
-        ExchangeData.ProtocolFeeData storage data = S.protocolFeeData;
-        if (now > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
+        ExchangeData.ProtocolFeeData memory data = S.protocolFeeData;
+        if (block.timestamp > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
             // Store the current protocol fees in the previous protocol fees
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;
             // Get the latest protocol fees for this exchange
             (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues(
-                S.id,
-                S.rollupMode
+                S.id
             );
-            data.syncedAt = uint32(now);
+            data.syncedAt = uint32(block.timestamp);
 
             if (data.takerFeeBips != data.previousTakerFeeBips ||
                 data.makerFeeBips != data.previousMakerFeeBips) {
@@ -357,6 +336,9 @@ library ExchangeBlocks
                     data.previousMakerFeeBips
                 );
             }
+
+            // Update the data in storage
+            S.protocolFeeData = data;
         }
         // The given fee values are valid if they are the current or previous protocol fee values
         return (takerFeeBips == data.takerFeeBips && makerFeeBips == data.makerFeeBips) ||

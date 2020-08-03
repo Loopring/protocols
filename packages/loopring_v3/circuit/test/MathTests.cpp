@@ -1279,96 +1279,94 @@ TEST_CASE("Sub", "[SubGadget]")
     }}
 }
 
-TEST_CASE("subadd", "[subadd_gadget]")
+TEST_CASE("transfer", "[TransferGadget]")
 {
-    unsigned int maxLength = 252;
-    for (unsigned int n = 1; n <= maxLength; n++) {
-        DYNAMIC_SECTION("Bit-length: " << n)
+    auto transferChecked = [](const FieldT& _from, const FieldT& _to, const FieldT& _amount,
+                              bool expectedSatisfied, const FieldT& expectedFromAfter = 0, const FieldT& expectedToAfter = 0)
     {
-        auto subaddChecked = [n](const FieldT& _from, const FieldT& _to, const FieldT& _amount,
-                                 bool expectedSatisfied, const FieldT& expectedFromAfter = 0, const FieldT& expectedToAfter = 0)
+        protoboard<FieldT> pb;
+
+        pb_variable<FieldT> from = make_variable(pb, _from, "from");
+        pb_variable<FieldT> to = make_variable(pb, _to, "to");
+        pb_variable<FieldT> amount = make_variable(pb, _amount, "amount");
+
+        DynamicVariableGadget dFrom(pb, from, ".dFrom");
+        DynamicVariableGadget dTo(pb, to, ".ddToFrom");
+
+        TransferGadget transferGadget(pb, dFrom, dTo, amount, "transferGadget");
+        transferGadget.generate_r1cs_constraints();
+        transferGadget.generate_r1cs_witness();
+
+        REQUIRE(pb.is_satisfied() == expectedSatisfied);
+        if (expectedSatisfied)
         {
-            protoboard<FieldT> pb;
-
-            pb_variable<FieldT> from = make_variable(pb, _from, "from");
-            pb_variable<FieldT> to = make_variable(pb, _to, "to");
-            pb_variable<FieldT> amount = make_variable(pb, _amount, "amount");
-
-            subadd_gadget subAddGadget(pb, n, from, to, amount, "subAddGadget");
-            subAddGadget.generate_r1cs_constraints();
-            subAddGadget.generate_r1cs_witness();
-
-            REQUIRE(pb.is_satisfied() == expectedSatisfied);
-            if (expectedSatisfied)
-            {
-                REQUIRE(((pb.val(subAddGadget.X)) == expectedFromAfter));
-                REQUIRE(((pb.val(subAddGadget.Y)) == expectedToAfter));
-            }
-        };
-
-        FieldT max = getMaxFieldElement(n);
-        FieldT halfMax = getMaxFieldElement(n - 1);
-
-        SECTION("(0, 0) -+ 0")
-        {
-            subaddChecked(0, 0, 0, true, 0, 0);
+            REQUIRE(((pb.val(dFrom.back())) == expectedFromAfter));
+            REQUIRE(((pb.val(dTo.back())) == expectedToAfter));
         }
+    };
 
-        SECTION("(1, 0) -+ 1")
-        {
-            subaddChecked(1, 0, 1, true, 0, 1);
-        }
+    FieldT max = getMaxFieldElement(NUM_BITS_AMOUNT);
+    FieldT halfMax = getMaxFieldElement(NUM_BITS_AMOUNT - 1);
 
-        SECTION("(max, 0) -+ 0")
-        {
-            subaddChecked(max, 0, 0, true, max, 0);
-        }
+    SECTION("(0, 0) -+ 0")
+    {
+        transferChecked(0, 0, 0, true, 0, 0);
+    }
 
-        SECTION("(max, 0) -+ max")
-        {
-            subaddChecked(max, 0, max, true, 0, max);
-        }
+    SECTION("(1, 0) -+ 1")
+    {
+        transferChecked(1, 0, 1, true, 0, 1);
+    }
 
-        SECTION("(halfMax, halfMax + 1) -+ halfMax")
-        {
-            subaddChecked(halfMax, halfMax + 1, halfMax, true, 0, max);
-        }
+    SECTION("(max, 0) -+ 0")
+    {
+        transferChecked(max, 0, 0, true, max, 0);
+    }
 
-        SECTION("(max, max) -+ max  (overflow)")
-        {
-            subaddChecked(max, max, max, false);
-        }
+    SECTION("(max, 0) -+ max")
+    {
+        transferChecked(max, 0, max, true, 0, max);
+    }
 
-        SECTION("(halfMax, halfMax + 2) -+ halfMax  (overflow)")
-        {
-            subaddChecked(halfMax, halfMax + 2, halfMax, false);
-        }
+    SECTION("(halfMax, halfMax + 1) -+ halfMax")
+    {
+        transferChecked(halfMax, halfMax + 1, halfMax, true, 0, max);
+    }
 
-        SECTION("(halfMax - 1, halfMax + 1) -+ halfMax (underflow)")
-        {
-            subaddChecked(halfMax - 1, halfMax + 1, halfMax, false);
-        }
+    SECTION("(max, max) -+ max  (overflow)")
+    {
+        transferChecked(max, max, max, false);
+    }
 
-        SECTION("(0, 0) -+ 1 (underflow)")
-        {
-            subaddChecked(0, 0, 1, false);
-        }
+    SECTION("(halfMax, halfMax + 2) -+ halfMax  (overflow)")
+    {
+        transferChecked(halfMax, halfMax + 2, halfMax, false);
+    }
 
-        SECTION("(0, 0) -+ max (underflow)")
-        {
-            subaddChecked(0, 0, max, false);
-        }
+    SECTION("(halfMax - 1, halfMax + 1) -+ halfMax (underflow)")
+    {
+        transferChecked(halfMax - 1, halfMax + 1, halfMax, false);
+    }
 
-        SECTION("(max - 1, 0) -+ max  (underflow)")
-        {
-            subaddChecked(max - 1, 0, max, false);
-        }
+    SECTION("(0, 0) -+ 1 (underflow)")
+    {
+        transferChecked(0, 0, 1, false);
+    }
 
-        SECTION("(max, 1) -+ max  (overflow)")
-        {
-            subaddChecked(max, 1, max, false);
-        }
-    }}
+    SECTION("(0, 0) -+ max (underflow)")
+    {
+        transferChecked(0, 0, max, false);
+    }
+
+    SECTION("(max - 1, 0) -+ max  (underflow)")
+    {
+        transferChecked(max - 1, 0, max, false);
+    }
+
+    SECTION("(max, 1) -+ max  (overflow)")
+    {
+        transferChecked(max, 1, max, false);
+    }
 }
 
 TEST_CASE("Range limit", "[dual_variable_gadget]")
@@ -1447,84 +1445,6 @@ TEST_CASE("Range limit", "[dual_variable_gadget]")
             }
         }
     }}
-}
-
-FieldT power10(const FieldT& _x1)
-{
-    BigInt BASE(INDEX_BASE);
-    BigInt c0("10000000000000000000");
-    BigInt c1("23025850929940459520");
-    BigInt c2("26509490552391999488");
-    BigInt c3("20346785922934771712");
-
-    BigInt x1 = toBigInt(_x1);
-    BigInt x2 = (x1 * x1) / BASE;
-    BigInt x3 = (x2 * x1) / BASE;
-
-    return toFieldElement(c0 + (x1*c1 + x2*c2 + x3*c3)/BASE);
-}
-
-FieldT applyInterest(const FieldT& balance, const FieldT& oldIndex, const FieldT& newIndex)
-{
-    FieldT indexDiff = newIndex - oldIndex;
-    FieldT multiplier = power10(indexDiff);
-    FieldT newBalance = toFieldElement(toBigInt(balance) * toBigInt(power10(indexDiff)) / (BigInt(INDEX_BASE) * 10));
-    return newBalance;
-}
-
-TEST_CASE("Apply Interest", "[ApplyInterestGadget]")
-{
-    auto applyInterestChecked = [](const FieldT& _balance, const FieldT& _oldIndex, const FieldT& _newIndex)
-    {
-        protoboard<FieldT> pb;
-        Constants constants(pb, "constants");
-
-        VariableT balance = make_variable(pb, _balance, "balance");
-        VariableT oldIndex = make_variable(pb, _oldIndex, "oldIndex");
-        VariableT newIndex = make_variable(pb, _newIndex, "newIndex");
-        ApplyInterestGadget applyInterestGadget(pb, constants, balance, oldIndex, newIndex, "applyInterest");
-        applyInterestGadget.generate_r1cs_witness();
-        applyInterestGadget.generate_r1cs_constraints();
-
-        FieldT expectedResult;
-
-        bool expectedSatisfied = toBigInt(_newIndex) >= toBigInt(_oldIndex);
-        if (expectedSatisfied)
-        {
-            expectedResult = applyInterest(_balance, _oldIndex, _newIndex);
-        }
-        expectedSatisfied = expectedSatisfied && (toBigInt(expectedResult) <= toBigInt(getMaxFieldElement(NUM_BITS_AMOUNT)));
-        REQUIRE(pb.is_satisfied() == expectedSatisfied);
-        if (expectedSatisfied)
-        {
-            REQUIRE((pb.val(applyInterestGadget.result()) == expectedResult));
-        }
-    };
-
-    unsigned int numIterations = 1024;
-    unsigned int n = NUM_BITS_AMOUNT;
-    FieldT indexBase = FieldT(INDEX_BASE);
-    FieldT max = getMaxFieldElement(n);
-
-    SECTION("0")
-    {
-        applyInterestChecked(0, indexBase, indexBase);
-    }
-
-    SECTION("max")
-    {
-        applyInterestChecked(max, indexBase, indexBase);
-    }
-
-    SECTION("random value")
-    {
-        for (unsigned int j = 0; j < numIterations; j++)
-        {
-            FieldT oldIndex = indexBase + getRandomFieldElement(64);
-            FieldT newIndex = indexBase + getRandomFieldElement(64);
-            applyInterestChecked(getRandomFieldElement(n-10), oldIndex, newIndex);
-        }
-    }
 }
 
 TEST_CASE("LtField", "[LtFieldGadget]")

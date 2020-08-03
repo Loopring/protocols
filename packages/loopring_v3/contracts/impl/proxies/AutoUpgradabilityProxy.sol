@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../../iface/IExchangeProxy.sol";
 import "../../iface/IImplementationManager.sol";
@@ -12,7 +12,7 @@ import "../../iface/IUniversalRegistry.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract AutoUpgradabilityProxy is IExchangeProxy
 {
-    constructor(address _registry) public IExchangeProxy(_registry) {}
+    constructor(address _registry) IExchangeProxy(_registry) {}
 
     function implementation()
         public

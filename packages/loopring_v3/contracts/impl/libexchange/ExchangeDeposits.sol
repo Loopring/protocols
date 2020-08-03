@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
@@ -27,7 +27,6 @@ library ExchangeDeposits
         address owner,
         address token,
         uint96  amount,
-        uint96  index,
         uint    fee
     );
 
@@ -42,12 +41,15 @@ library ExchangeDeposits
         internal  // inline call
     {
         require(to != address(0), "ZERO_ADDRESS");
-        require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
+
+        // Deposits are still possible when the exchange is being shutdown, or even in withdrawal mode.
+        // This is fine because the user can easily withdraw the deposited amounts again.
+        // We don't want to make all deposits more expensive just to stop that from happening.
 
         uint16 tokenID = S.getTokenID(tokenAddress);
 
         // Transfer the tokens to this contract
-        (uint96 amountDeposited, uint tokenIndex, uint64 fee) = transferDeposit(
+        (uint96 amountDeposited, uint64 fee) = transferDeposit(
             S,
             from,
             tokenAddress,
@@ -55,20 +57,17 @@ library ExchangeDeposits
             auxiliaryData
         );
 
-        // Add the amount to the deposit request and reset the time the owner has to process it
-        S.pendingDeposits[to][tokenID][tokenIndex].timestamp = uint32(now);
-
-        S.pendingDeposits[to][tokenID][tokenIndex].amount =
-            S.pendingDeposits[to][tokenID][tokenIndex].amount.add96(amountDeposited);
-
-        S.pendingDeposits[to][tokenID][tokenIndex].fee =
-            S.pendingDeposits[to][tokenID][tokenIndex].fee.add64(fee);
+        // Add the amount to the deposit request and reset the time the operator has to process it
+        ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
+        _deposit.timestamp = uint32(block.timestamp);
+        _deposit.amount = _deposit.amount.add96(amountDeposited);
+        _deposit.fee = _deposit.fee.add64(fee);
+        S.pendingDeposits[to][tokenID] = _deposit;
 
         emit DepositRequested(
             to,
             tokenAddress,
             uint96(amountDeposited),
-            uint96(tokenIndex),
             fee
         );
     }
@@ -83,12 +82,12 @@ library ExchangeDeposits
         private
         returns (
             uint96 amountDeposited,
-            uint   tokenIndex,
             uint64 fee
         )
     {
+        IDepositContract depositContract = S.depositContract;
         uint depositValueETH = 0;
-        if (S.depositContract.isETH(tokenAddress)) {
+        if (msg.value > 0 && (tokenAddress == address(0) || depositContract.isETH(tokenAddress))) {
             depositValueETH = amount;
             fee = uint64(msg.value.sub(amount));
         } else {
@@ -96,7 +95,7 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        (amountDeposited, tokenIndex) = S.depositContract.deposit{value: depositValueETH}(
+        amountDeposited = depositContract.deposit{value: depositValueETH}(
             from,
             tokenAddress,
             amount,

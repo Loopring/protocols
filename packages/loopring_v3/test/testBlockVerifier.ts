@@ -49,7 +49,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
   const registerCircuitChecked = async (
     blockType: number,
-    rollupMode: boolean,
     blockSize: number,
     blockVersion: number,
     verificationKey: string[],
@@ -57,13 +56,11 @@ contract("BlockVerifier", (accounts: string[]) => {
   ) => {
     const isRegisteredBefore = await blockVerifier.isCircuitRegistered(
       blockType,
-      rollupMode,
       blockSize,
       blockVersion
     );
     const isEnabledBefore = await blockVerifier.isCircuitEnabled(
       blockType,
-      rollupMode,
       blockSize,
       blockVersion
     );
@@ -80,7 +77,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     await blockVerifier.registerCircuit(
       blockType,
-      rollupMode,
       blockSize,
       blockVersion,
       verificationKey,
@@ -89,13 +85,11 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     const isRegisteredAfter = await blockVerifier.isCircuitRegistered(
       blockType,
-      rollupMode,
       blockSize,
       blockVersion
     );
     const isEnabledAfter = await blockVerifier.isCircuitEnabled(
       blockType,
-      rollupMode,
       blockSize,
       blockVersion
     );
@@ -108,27 +102,23 @@ contract("BlockVerifier", (accounts: string[]) => {
       "CircuitRegistered"
     );
     assert.equal(event.blockType, blockType, "blockType should match");
-    assert.equal(event.rollupMode, rollupMode, "rollupMode should match");
     assert.equal(event.blockSize, blockSize, "blockSize should match");
     assert.equal(event.blockVersion, blockVersion, "blockVersion should match");
   };
 
   const disableCircuitChecked = async (
     blockType: number,
-    rollupMode: boolean,
     blockSize: number,
     blockVersion: number,
     owner: string
   ) => {
     const isRegisteredBefore = await blockVerifier.isCircuitRegistered(
       blockType,
-      rollupMode,
       blockSize,
       blockVersion
     );
     const isEnabledBefore = await blockVerifier.isCircuitEnabled(
       blockType,
-      rollupMode,
       blockSize,
       blockVersion
     );
@@ -141,7 +131,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     await blockVerifier.disableCircuit(
       blockType,
-      rollupMode,
       blockSize,
       blockVersion,
       { from: owner }
@@ -149,13 +138,11 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     const isRegisteredAfter = await blockVerifier.isCircuitRegistered(
       blockType,
-      rollupMode,
       blockSize,
       blockVersion
     );
     const isEnabledAfter = await blockVerifier.isCircuitEnabled(
       blockType,
-      rollupMode,
       blockSize,
       blockVersion
     );
@@ -168,7 +155,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       "CircuitDisabled"
     );
     assert.equal(event.blockType, blockType, "blockType should match");
-    assert.equal(event.rollupMode, rollupMode, "rollupMode should match");
     assert.equal(event.blockSize, blockSize, "blockSize should match");
     assert.equal(event.blockVersion, blockVersion, "blockVersion should match");
   };
@@ -189,12 +175,10 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should be able to register a new circuit", async () => {
       const blockType = 0;
-      const rollupMode = false;
       const blockSize = 512;
       const blockVersion = 3;
       await registerCircuitChecked(
         blockType,
-        rollupMode,
         blockSize,
         blockVersion,
         new Array(18).fill("0x123"),
@@ -204,12 +188,10 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to register a circuit twice", async () => {
       const blockType = 0;
-      const rollupMode = false;
       const blockSize = 512;
       const blockVersion = 3;
       await registerCircuitChecked(
         blockType,
-        rollupMode,
         blockSize,
         blockVersion,
         new Array(18).fill("0x123"),
@@ -219,7 +201,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.registerCircuit(
           blockType,
-          rollupMode,
           blockSize,
           blockVersion,
           new Array(18).fill("0x123"),
@@ -231,12 +212,10 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should be able to disable a circuit", async () => {
       const blockType = 1;
-      const rollupMode = false;
       const blockSize = 128;
       const blockVersion = 3;
       await registerCircuitChecked(
         blockType,
-        rollupMode,
         blockSize,
         blockVersion,
         new Array(18).fill("0x123"),
@@ -244,7 +223,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       );
       await disableCircuitChecked(
         blockType,
-        rollupMode,
         blockSize,
         blockVersion,
         owner
@@ -253,13 +231,11 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to disable a circuit that wasn't registered", async () => {
       const blockType = 1;
-      const rollupMode = false;
       const blockSize = 128;
       const blockVersion = 3;
       await expectThrow(
         blockVerifier.disableCircuit(
           blockType,
-          rollupMode,
           blockSize,
           blockVersion,
           { from: owner }
@@ -276,13 +252,11 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to register a new circuit", async () => {
       const blockType = 0;
-      const rollupMode = false;
       const blockSize = 512;
       const blockVersion = 3;
       await expectThrow(
         blockVerifier.registerCircuit(
           blockType,
-          rollupMode,
           blockSize,
           blockVersion,
           new Array(18).fill("0x123"),
@@ -294,12 +268,10 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to disable a circuit", async () => {
       const blockType = 1;
-      const rollupMode = false;
       const blockSize = 128;
       const blockVersion = 3;
       await registerCircuitChecked(
         blockType,
-        rollupMode,
         blockSize,
         blockVersion,
         new Array(18).fill("0x123"),
@@ -308,7 +280,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.disableCircuit(
           blockType,
-          rollupMode,
           blockSize,
           blockVersion,
           { from: anyone }
@@ -325,12 +296,10 @@ contract("BlockVerifier", (accounts: string[]) => {
     const commitBlocksSize2: Block[] = [];
     const settlementBlocksSize1: Block[] = [];
     const settlementBlocksSize2: Block[] = [];
-    let rollupMode: boolean;
 
     before(async () => {
       await createExchange();
       blockVerifier = exchangeTestUtil.blockVerifier;
-      rollupMode = exchangeTestUtil.rollupMode;
 
       // Create some blocks
       for (let i = 0; i < 2; i++) {
@@ -367,7 +336,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       const block = commitBlocksSize1[0];
       const success = await blockVerifier.verifyProofs(
         block.blockType,
-        rollupMode,
         block.blockSize,
         block.blockVersion,
         [block.publicInput],
@@ -380,7 +348,6 @@ contract("BlockVerifier", (accounts: string[]) => {
     it("should not be able to verify a single block with an invalid proof", async () => {
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        rollupMode,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         [commitBlocksSize1[0].publicInput],
@@ -393,7 +360,6 @@ contract("BlockVerifier", (accounts: string[]) => {
     it("should not be able to verify a single block with invalid publicData", async () => {
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        rollupMode,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         [commitBlocksSize1[1].publicInput],
@@ -407,7 +373,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.verifyProofs(
           commitBlocksSize1[0].blockType,
-          rollupMode,
           commitBlocksSize1[0].blockSize,
           commitBlocksSize1[0].blockVersion,
           [Constants.scalarField],
@@ -423,7 +388,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.verifyProofs(
           8,
-          rollupMode,
           block.blockSize,
           block.blockVersion,
           [block.publicInput],
@@ -435,7 +399,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.verifyProofs(
           block.blockType,
-          rollupMode,
           7,
           block.blockVersion,
           [block.publicInput],
@@ -447,7 +410,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.verifyProofs(
           block.blockType,
-          rollupMode,
           block.blockSize,
           1,
           [block.publicInput],
@@ -461,7 +423,6 @@ contract("BlockVerifier", (accounts: string[]) => {
     it("should be able to verify multiple blocks of the same circuit with valid proofs", async () => {
       let success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        rollupMode,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         commitBlocksSize1.map(x => x.publicInput),
@@ -472,7 +433,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
       success = await blockVerifier.verifyProofs(
         settlementBlocksSize2[0].blockType,
-        rollupMode,
         settlementBlocksSize2[0].blockSize,
         settlementBlocksSize2[0].blockVersion,
         settlementBlocksSize2.map(x => x.publicInput),
@@ -489,7 +449,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        rollupMode,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         mixedBlocks.map(x => x.publicInput),
@@ -513,7 +472,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        rollupMode,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         commitBlocksSize1.map(x => x.publicInput),
@@ -537,7 +495,6 @@ contract("BlockVerifier", (accounts: string[]) => {
 
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
-        rollupMode,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         publicInputs,
@@ -559,7 +516,6 @@ contract("BlockVerifier", (accounts: string[]) => {
       await expectThrow(
         blockVerifier.verifyProofs(
           commitBlocksSize1[0].blockType,
-          rollupMode,
           commitBlocksSize1[0].blockSize,
           commitBlocksSize1[0].blockVersion,
           publicInputs,

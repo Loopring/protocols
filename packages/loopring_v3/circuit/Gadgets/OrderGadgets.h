@@ -5,7 +5,7 @@
 
 #include "../Utils/Constants.h"
 #include "../Utils/Data.h"
-#include "TradingHistoryGadgets.h"
+#include "StorageGadgets.h"
 #include "AccountGadgets.h"
 
 #include "ethsnarks.hpp"
@@ -21,7 +21,7 @@ class OrderGadget : public GadgetT
 {
 public:
     // Inputs
-    DualVariableGadget orderID;
+    DualVariableGadget storageID;
     DualVariableGadget accountID;
     DualVariableGadget tokenS;
     DualVariableGadget tokenB;
@@ -32,6 +32,7 @@ public:
     DualVariableGadget validUntil;
     DualVariableGadget maxFeeBips;
     DualVariableGadget buy;
+    VariableT taker;
 
     DualVariableGadget feeBips;
     DualVariableGadget rebateBips;
@@ -49,7 +50,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> feeOrRebateBips;
 
     // Signature
-    Poseidon_gadget_T<13, 1, 6, 53, 12, 1> hash;
+    Poseidon_gadget_T<14, 1, 6, 53, 13, 1> hash;
 
     OrderGadget(
         ProtoboardT& pb,
@@ -60,7 +61,7 @@ public:
         GadgetT(pb, prefix),
 
         // Inputs
-        orderID(pb, NUM_BITS_ORDERID, FMT(prefix, ".orderID")),
+        storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
         accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
         tokenS(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenS")),
         tokenB(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenB")),
@@ -71,6 +72,7 @@ public:
         validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
         maxFeeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".maxFeeBips")),
         buy(pb, 1, FMT(prefix, ".buy")),
+        taker(make_variable(pb, FMT(prefix, ".taker"))),
 
         feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
         rebateBips(pb, NUM_BITS_BIPS, FMT(prefix, ".rebateBips")),
@@ -90,7 +92,7 @@ public:
         // Signature
         hash(pb, var_array({
             blockExchange,
-            orderID.packed,
+            storageID.packed,
             accountID.packed,
             tokenS.packed,
             tokenB.packed,
@@ -100,7 +102,8 @@ public:
             validSince.packed,
             validUntil.packed,
             maxFeeBips.packed,
-            buy.packed
+            buy.packed,
+            taker
         }), FMT(this->annotation_prefix, ".hash"))
     {
 
@@ -109,7 +112,7 @@ public:
     void generate_r1cs_witness(const Order& order)
     {
         // Inputs
-        orderID.generate_r1cs_witness(pb, order.orderID);
+        storageID.generate_r1cs_witness(pb, order.storageID);
         accountID.generate_r1cs_witness(pb, order.accountID);
         tokenS.generate_r1cs_witness(pb, order.tokenS);
         tokenB.generate_r1cs_witness(pb, order.tokenB);
@@ -120,6 +123,7 @@ public:
         validUntil.generate_r1cs_witness(pb, order.validUntil);
         maxFeeBips.generate_r1cs_witness(pb, order.maxFeeBips);
         buy.generate_r1cs_witness(pb, order.buy);
+        pb.val(taker) = order.taker;
 
         feeBips.generate_r1cs_witness(pb, order.feeBips);
         rebateBips.generate_r1cs_witness(pb, order.rebateBips);
@@ -143,7 +147,7 @@ public:
     void generate_r1cs_constraints(bool doSignatureCheck = true)
     {
         // Inputs
-        orderID.generate_r1cs_constraints(true);
+        storageID.generate_r1cs_constraints(true);
         accountID.generate_r1cs_constraints(true);
         tokenS.generate_r1cs_constraints(true);
         tokenB.generate_r1cs_constraints(true);

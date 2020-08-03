@@ -24,13 +24,9 @@ public:
     DualVariableGadget accountID;
     DualVariableGadget tokenID;
     DualVariableGadget amount;
-    DualVariableGadget index;
 
     // Validate
     OwnerValidGadget ownerValid;
-
-    // Calculate the new index
-    MaxGadget newIndex;
 
     // Calculate the new balance
     DynamicBalanceGadget balanceS_A;
@@ -52,17 +48,13 @@ public:
         accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
         tokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenID")),
         amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
-        index(pb, NUM_BITS_AMOUNT, FMT(prefix, ".index")),
 
         // Validate
         ownerValid(pb, state.constants, state.accountA.account.owner, owner.packed, FMT(prefix, ".ownerValid")),
 
-        // Calculate the new index
-        newIndex(pb, index.packed, state.index.balanceB.index, NUM_BITS_AMOUNT, FMT(prefix, ".newIndex")),
-
         // Calculate the new balance
-        balanceS_A(pb, state.constants, state.accountA.balanceS, newIndex.result(), FMT(prefix, ".balanceS_A")),
-        depositedAmount(pb, state.constants, amount.packed, index.packed, newIndex.result(), FMT(prefix, ".depositedAmount")),
+        balanceS_A(pb, state.constants, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        depositedAmount(pb, state.constants, amount.packed, FMT(prefix, ".depositedAmount")),
         balance_after(pb, balanceS_A.balance(), depositedAmount.balance(), NUM_BITS_AMOUNT, FMT(prefix, ".balance_after")),
 
         // Increase the number of conditional transactions
@@ -73,10 +65,6 @@ public:
         setOutput(accountA_Owner, owner.packed);
         setArrayOutput(balanceA_S_Address, tokenID.bits);
         setOutput(balanceA_S_Balance, balance_after.result());
-        setOutput(balanceA_S_Index, newIndex.result());
-
-        // Update the index in the index account
-        setOutput(index_B, newIndex.result());
 
         // No singatures needed
         setOutput(signatureRequired_A, state.constants._0);
@@ -93,13 +81,9 @@ public:
         accountID.generate_r1cs_witness(pb, deposit.accountID);
         tokenID.generate_r1cs_witness(pb, deposit.tokenID);
         amount.generate_r1cs_witness(pb, deposit.amount);
-        index.generate_r1cs_witness(pb, deposit.index);
 
         // Validate
         ownerValid.generate_r1cs_witness();
-
-        // Calculate the new index
-        newIndex.generate_r1cs_witness();
 
         // Calculate the new balance
         balanceS_A.generate_r1cs_witness();
@@ -117,13 +101,9 @@ public:
         accountID.generate_r1cs_constraints(true);
         tokenID.generate_r1cs_constraints(true);
         amount.generate_r1cs_constraints(true);
-        index.generate_r1cs_constraints(true);
 
         // Validate
         ownerValid.generate_r1cs_constraints();
-
-        // Calculate the new index
-        newIndex.generate_r1cs_constraints();
 
         // Calculate the new balance
         balanceS_A.generate_r1cs_constraints();
@@ -140,8 +120,7 @@ public:
             owner.bits,
             accountID.bits,
             VariableArrayT(4, state.constants._0), tokenID.bits,
-            amount.bits,
-            index.bits
+            amount.bits
         });
     }
 };

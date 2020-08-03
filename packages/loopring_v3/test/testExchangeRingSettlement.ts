@@ -803,6 +803,67 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
+    it("Specific taker (correct)", async () => {
+      const ring: SpotTrade = {
+        orderA: {
+          owner: exchangeTestUtil.testContext.orderOwners[0],
+          tokenS: "ETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("10", "ether")),
+          taker: exchangeTestUtil.testContext.orderOwners[1]
+        },
+        orderB: {
+          owner: exchangeTestUtil.testContext.orderOwners[1],
+          tokenS: "GTO",
+          tokenB: "ETH",
+          amountS: new BN(web3.utils.toWei("10", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether"))
+        },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(ring);
+
+      await exchangeTestUtil.submitTransactions();
+
+      await verify();
+    });
+
+    it("Specific taker (incorrect)", async () => {
+      const ring: SpotTrade = {
+        orderA: {
+          owner: exchangeTestUtil.testContext.orderOwners[0],
+          tokenS: "ETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("10", "ether")),
+          taker: exchangeTestUtil.testContext.orderOwners[0]
+        },
+        orderB: {
+          owner: exchangeTestUtil.testContext.orderOwners[1],
+          tokenS: "GTO",
+          tokenB: "ETH",
+          amountS: new BN(web3.utils.toWei("10", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether"))
+        },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(ring);
+
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
+    });
+
     it("No funds available", async () => {
       const ring: SpotTrade = {
         orderA: {
@@ -1412,7 +1473,7 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("Order filled in multiple rings (order.orderID == tradeHistory.orderID)", async () => {
+    it("Order filled in multiple rings (order.storageID == storage.storageID)", async () => {
       const order: OrderInfo = {
         tokenS: "ETH",
         tokenB: "GTO",
@@ -1467,8 +1528,8 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("Reused OrderID (tradeHistory.filled > order.amount)", async () => {
-      const orderID = 79;
+    it("Reused storageID (storage.data > order.amount)", async () => {
+      const storageID = 79;
       const ringA: SpotTrade = {
         orderA: {
           tokenS: "WETH",
@@ -1476,7 +1537,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("1000", "ether")),
           amountB: new BN(web3.utils.toWei("2000", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[0],
-          orderID
+          storageID
         },
         orderB: {
           tokenS: "GTO",
@@ -1497,7 +1558,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[0],
-          orderID: orderID
+          storageID
         },
         orderB: {
           tokenS: "GTO",
@@ -1525,11 +1586,11 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
-    it("Trimmed OrderID (order.orderID > tradeHistory.orderID)", async () => {
+    it("Trimmed storageID (order.storageID > storage.storageID)", async () => {
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
-      const orderIDA = 8;
-      const orderIDB = 0;
+      const storageIDA = 8;
+      const storageIDB = 0;
       const ringA: SpotTrade = {
         orderA: {
           tokenS: "WETH",
@@ -1537,7 +1598,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-          orderID: orderIDA
+          storageID: storageIDA
         },
         orderB: {
           tokenS: "GTO",
@@ -1545,7 +1606,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
-          orderID: orderIDB
+          storageID: storageIDB
         },
         expected: {
           orderA: { filledFraction: 1.0, spread: new BN(0) },
@@ -1559,7 +1620,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-          orderID: orderIDA + 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          storageID: storageIDA + Constants.NUM_STORAGE_SLOTS
         },
         orderB: {
           tokenS: "GTO",
@@ -1567,7 +1628,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
-          orderID: orderIDB
+          storageID: storageIDB
         },
         expected: {
           orderA: { filledFraction: 0.0, spread: new BN(0) },
@@ -1581,7 +1642,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-          orderID: orderIDA + 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          storageID: storageIDA + Constants.NUM_STORAGE_SLOTS
         },
         orderB: {
           tokenS: "GTO",
@@ -1589,7 +1650,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
-          orderID: orderIDB + 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          storageID: storageIDB + Constants.NUM_STORAGE_SLOTS
         },
         expected: {
           orderA: { filledFraction: 1.0, spread: new BN(0) },
@@ -1603,7 +1664,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-          orderID: orderIDA + 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+            storageID: storageIDA + Constants.NUM_STORAGE_SLOTS
         },
         orderB: {
           tokenS: "GTO",
@@ -1611,8 +1672,8 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
-          orderID:
-            orderIDB + 2 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          storageID:
+            storageIDB + 2 * Constants.NUM_STORAGE_SLOTS
         },
         expected: {
           orderA: { filledFraction: 0.0, spread: new BN(0) },
@@ -1626,8 +1687,8 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-          orderID:
-            orderIDA + 2 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          storageID:
+            storageIDA + 2 * Constants.NUM_STORAGE_SLOTS
         },
         orderB: {
           tokenS: "GTO",
@@ -1635,8 +1696,8 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
-          orderID:
-            orderIDB + 3 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          storageID:
+            storageIDB + 3 * Constants.NUM_STORAGE_SLOTS
         },
         expected: {
           orderA: { filledFraction: 1.0, spread: new BN(0) },
@@ -1660,8 +1721,8 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("Invalid OrderID (order.orderID > tradeHistory.orderID)", async () => {
-      const orderID = 8;
+    it("Invalid storageID (order.storageID > storage.storageID)", async () => {
+      const storageID = 8;
       const ringA: SpotTrade = {
         orderA: {
           tokenS: "WETH",
@@ -1669,7 +1730,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[0],
-          orderID
+          storageID
         },
         orderB: {
           tokenS: "GTO",
@@ -1690,8 +1751,8 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[0],
-          orderID:
-            orderID + 2 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          storageID:
+            storageID + 2 * 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
         },
         orderB: {
           tokenS: "GTO",
@@ -1719,8 +1780,8 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
-    it("Cancelled OrderID (order.orderID < tradeHistory.orderID)", async () => {
-      const orderID = 8;
+    it("Cancelled storageID (order.storageID < storage.storageID)", async () => {
+      const storageID = 8;
       const ringA: SpotTrade = {
         orderA: {
           tokenS: "WETH",
@@ -1728,7 +1789,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[0],
-          orderID: orderID + 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          storageID: storageID + 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
         },
         orderB: {
           tokenS: "GTO",
@@ -1749,7 +1810,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[0],
-          orderID
+          storageID
         },
         orderB: {
           tokenS: "GTO",

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
@@ -29,7 +29,7 @@ library ExchangeWithdrawals
     event ForcedWithdrawalRequested(
         address owner,
         address token,
-        uint24   accountID
+        uint32   accountID
     );
 
     event WithdrawalCompleted(
@@ -50,13 +50,13 @@ library ExchangeWithdrawals
         ExchangeData.State storage S,
         address owner,
         address token,
-        uint24  accountID
+        uint32  accountID
         )
         external
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
-        require(accountID != 1 && accountID < ExchangeData.MAX_NUM_ACCOUNTS(), "INVALID_ACCOUNTID");
+        require(accountID < ExchangeData.MAX_NUM_ACCOUNTS(), "INVALID_ACCOUNTID");
 
         uint16 tokenID = S.getTokenID(token);
 
@@ -74,7 +74,7 @@ library ExchangeWithdrawals
         require(S.pendingForcedWithdrawals[accountID][tokenID].timestamp == 0, "WITHDRAWAL_ALREADY_PENDING");
 
         S.pendingForcedWithdrawals[accountID][tokenID].owner = owner;
-        S.pendingForcedWithdrawals[accountID][tokenID].timestamp = uint32(now);
+        S.pendingForcedWithdrawals[accountID][tokenID].timestamp = uint32(block.timestamp);
         S.pendingForcedWithdrawals[accountID][tokenID].fee = uint64(withdrawalFeeETH);
 
         S.numPendingForcedTransactions++;
@@ -96,7 +96,7 @@ library ExchangeWithdrawals
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
         address owner = merkleProof.accountLeaf.owner;
-        uint24 accountID = merkleProof.accountLeaf.accountID;
+        uint32 accountID = merkleProof.accountLeaf.accountID;
         uint16 tokenID = merkleProof.balanceLeaf.tokenID;
         uint96 balance = merkleProof.balanceLeaf.balance;
 
@@ -126,23 +126,26 @@ library ExchangeWithdrawals
     function withdrawFromDepositRequest(
         ExchangeData.State storage S,
         address owner,
-        address token,
-        uint    index
+        address token
         )
         external
     {
         uint16 tokenID = S.getTokenID(token);
-        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID][index];
+        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID];
         require(deposit.timestamp != 0, "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
-        // Check if the deposit has indeed exceeded the time limit
-        require(now >= deposit.timestamp + S.maxAgeDepositUntilWithdrawable, "DEPOSIT_NOT_WITHDRAWABLE_YET");
+        // Check if the deposit has indeed exceeded the time limit of if the exchange is in withdrawal mode
+        require(
+            block.timestamp >= deposit.timestamp + S.maxAgeDepositUntilWithdrawable ||
+            S.isInWithdrawalMode(),
+            "DEPOSIT_NOT_WITHDRAWABLE_YET"
+        );
 
         uint amount = deposit.amount;
         uint fee = deposit.fee;
 
         // Reset the deposit request
-        S.pendingDeposits[owner][tokenID][index] = ExchangeData.Deposit(0, 0, 0);
+        delete S.pendingDeposits[owner][tokenID];
 
         // Transfer the tokens
         transferTokens(
@@ -174,7 +177,7 @@ library ExchangeWithdrawals
             uint amount = S.amountWithdrawable[owner][tokenID];
 
             // Make sure this amount can't be withdrawn again
-            S.amountWithdrawable[owner][tokenID] = 0;
+            delete S.amountWithdrawable[owner][tokenID];
 
             // Transfer the tokens
             transferTokens(
@@ -245,7 +248,7 @@ library ExchangeWithdrawals
 
         // Transfer the tokens from the deposit contract to the owner
         if (gasLimit > 0) {
-            try S.depositContract.withdraw{gas: gasLimit}(to, token, amount, auxiliaryData) {
+            try S.depositContract.withdraw{gas: gasLimit}(from, to, token, amount, auxiliaryData) {
                 success = true;
             } catch {
                 success = false;
@@ -264,7 +267,7 @@ library ExchangeWithdrawals
                 uint96(amount)
             );
             if (from == address(0)) {
-                S.protocolFeeLastWithdrawnTime[token] = now;
+                S.protocolFeeLastWithdrawnTime[token] = block.timestamp;
             }
         } else {
             emit WithdrawalFailed(

@@ -23,7 +23,7 @@ contract("Exchange", (accounts: string[]) => {
       bSetupTestState
     );
     exchange = exchangeTestUtil.exchange;
-    operator = exchangeTestUtil.operator;
+    operator = /*exchangeTestUtil.operator*/exchange;
     loopring = exchangeTestUtil.loopringV3;
   };
 
@@ -104,7 +104,7 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
             proof: [0, 0, 0, 0, 0, 0, 0, 0],
-            storeDataHashOnchain: true,
+            storeBlockInfoOnchain: true,
             offchainData: Constants.emptyBytes,
             auxiliaryData: Constants.emptyBytes
           };
@@ -136,7 +136,7 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
             proof: [0, 0, 0, 0, 0, 0, 0, 0],
-            storeDataHashOnchain: true,
+            storeBlockInfoOnchain: true,
             offchainData: Constants.emptyBytes,
             auxiliaryData: Constants.emptyBytes
           };
@@ -174,7 +174,7 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
             proof: [0, 0, 0, 0, 0, 0, 0, 0],
-            storeDataHashOnchain: true,
+            storeBlockInfoOnchain: true,
             offchainData: Constants.emptyBytes,
             auxiliaryData: Constants.emptyBytes
           };
@@ -214,7 +214,7 @@ contract("Exchange", (accounts: string[]) => {
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
-              storeDataHashOnchain: true,
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
@@ -245,7 +245,7 @@ contract("Exchange", (accounts: string[]) => {
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
-              storeDataHashOnchain: true,
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
@@ -271,8 +271,7 @@ contract("Exchange", (accounts: string[]) => {
             new Array(18).fill(1)
           );
           const protocolFees = await loopring.getProtocolFeeValues(
-            exchangeTestUtil.exchangeId,
-            exchangeTestUtil.rollupMode
+            exchangeTestUtil.exchangeId
           );
           const timestamp = (await web3.eth.getBlock(
             await web3.eth.getBlockNumber()
@@ -292,7 +291,7 @@ contract("Exchange", (accounts: string[]) => {
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
-              storeDataHashOnchain: true,
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
@@ -320,7 +319,7 @@ contract("Exchange", (accounts: string[]) => {
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
               proof: [0, 0, 0, 0, 0, 0, 0, 0],
-              storeDataHashOnchain: true,
+              storeBlockInfoOnchain: true,
               offchainData: Constants.emptyBytes,
               auxiliaryData: Constants.emptyBytes
             };
@@ -402,12 +401,7 @@ contract("Exchange", (accounts: string[]) => {
                   }
                 }
                 auxiliaryData = auxiliaryData.reverse();
-                onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter(
-                    "tuple(uint256,bytes)[]",
-                    auxiliaryData
-                  )
-                );
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
               }
             ),
             "AUXILIARYDATA_INVALID_ORDER"
@@ -436,12 +430,7 @@ contract("Exchange", (accounts: string[]) => {
                   }
                 }
                 auxiliaryData[1][0] = auxiliaryData[0][0];
-                onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter(
-                    "tuple(uint256,bytes)[]",
-                    auxiliaryData
-                  )
-                );
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
               }
             ),
             "AUXILIARYDATA_INVALID_ORDER"
@@ -470,12 +459,7 @@ contract("Exchange", (accounts: string[]) => {
                   }
                 }
                 auxiliaryData.push([99, web3.utils.hexToBytes("0x")]);
-                onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter(
-                    "tuple(uint256,bytes)[]",
-                    auxiliaryData
-                  )
-                );
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
               }
             ),
             "AUXILIARYDATA_INVALID_LENGTH"
@@ -502,12 +486,7 @@ contract("Exchange", (accounts: string[]) => {
                   ]);
                 }
 
-                onchainBlocks[0].auxiliaryData = web3.utils.hexToBytes(
-                  web3.eth.abi.encodeParameter(
-                    "tuple(uint256,bytes)[]",
-                    auxiliaryData
-                  )
-                );
+                onchainBlocks[0].auxiliaryData = auxiliaryData;
               }
             }
           );
@@ -583,7 +562,7 @@ contract("Exchange", (accounts: string[]) => {
           blockVersion: 0,
           data: Constants.emptyBytes,
           proof: [0, 0, 0, 0, 0, 0, 0, 0],
-          storeDataHashOnchain: true,
+          storeBlockInfoOnchain: true,
           offchainData: Constants.emptyBytes,
           auxiliaryData: Constants.emptyBytes
         };

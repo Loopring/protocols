@@ -6,8 +6,7 @@ export enum AuthMethod {
   EDDSA,
   ECDSA,
   APPROVE,
-  FORCE,
-  WALLET
+  FORCE
 }
 
 export interface OrderInfo {
@@ -19,7 +18,7 @@ export interface OrderInfo {
 
   exchange?: string;
   accountID?: number;
-  orderID?: number;
+  storageID?: number;
 
   tokenIdS?: number;
   tokenIdB?: number;
@@ -29,16 +28,10 @@ export interface OrderInfo {
   validUntil?: number;
   maxFeeBips?: number;
   buy?: boolean;
+  taker?: string;
 
   feeBips?: number;
   rebateBips?: number;
-
-  transferAmountTrade?: BN;
-  reduceOnly?: boolean;
-  triggerPrice?: BN;
-
-  transferAmount?: BN;
-  transferFee?: BN;
 
   balanceS?: BN;
   balanceB?: BN;
@@ -83,7 +76,6 @@ export interface Deposit {
   accountID: number;
   tokenID: number;
   amount: BN;
-  index: BN;
 
   fee: BN;
   token: string;
@@ -100,9 +92,10 @@ export interface AccountUpdate {
   owner: string;
   accountID: number;
   nonce: number;
+  validUntil: number;
+
   publicKeyX: string;
   publicKeyY: string;
-  walletHash: string;
   feeTokenID: number;
   fee: BN;
 
@@ -130,15 +123,14 @@ export class Transfer {
 
   data: string;
 
-  validUntil: number;
-
   dualAuthorX: string;
   dualAuthorY: string;
   payerToAccountID: number;
   payerTo: string;
   payeeToAccountID: number;
 
-  nonce: number;
+  storageID: number;
+  validUntil: number;
 
   dualSecretKey?: string;
 
@@ -157,6 +149,7 @@ export interface WithdrawalRequest {
   owner: string;
   accountID: number;
   nonce: number;
+  validUntil: number;
   tokenID: number;
   amount: BN;
 
@@ -180,43 +173,6 @@ export interface WithdrawalRequest {
   transactionHash?: string;
 }
 
-export interface NewAccount {
-  txType?: "NewAccount";
-  exchange: string;
-
-  payerAccountID: number;
-  feeTokenID: number;
-  fee: BN;
-  nonce: number;
-
-  newAccountID: number;
-  newOwner: string;
-  newPublicKeyX: string;
-  newPublicKeyY: string;
-  newWalletHash: string;
-
-  signature?: any;
-  onchainSignature?: any;
-}
-
-export interface OwnerChange {
-  txType?: "OwnerChange";
-
-  owner: string;
-  accountID: number;
-  feeTokenID: number;
-  fee: BN;
-  nonce: number;
-  walletHash: string;
-  newOwner: string;
-  walletAddress: string;
-  walletDataHash: string;
-  walletCalldata: string;
-
-  onchainSignatureOldOwner?: any;
-  onchainSignatureNewOwner?: any;
-}
-
 // Blocks
 
 export interface TxBlock {
@@ -224,7 +180,6 @@ export interface TxBlock {
   protocolTakerFeeBips?: number;
   protocolMakerFeeBips?: number;
 
-  rollupMode?: boolean;
   timestamp?: number;
   exchange?: string;
   operatorAccountID?: number;
@@ -243,7 +198,7 @@ export interface Block {
   operatorId: number;
   merkleRoot: string;
   data: string;
-  auxiliaryData: string;
+  auxiliaryData: any[];
   offchainData: string;
   compressedData: string;
   publicDataHash: string;
@@ -262,25 +217,5 @@ export interface Account {
   publicKeyX: string;
   publicKeyY: string;
   secretKey: string;
-  wallet?: Wallet;
   nonce: number;
-}
-
-// Wallet
-
-export interface Guardian {
-  addr: string;
-  group: number;
-}
-
-export interface Wallet {
-  accountID: number;
-  guardians: Guardian[];
-  inheritor: string;
-  inheritableSince: number;
-}
-
-export interface PermissionData {
-  signers: string[];
-  signatures: string[];
 }

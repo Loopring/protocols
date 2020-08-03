@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/IExchangeV3.sol";
@@ -21,7 +21,6 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     event SubmitBlocksAccessOpened(bool open);
 
     constructor(address _exchange)
-        public
         SelectorBasedAccessManager(_exchange)
     {
     }

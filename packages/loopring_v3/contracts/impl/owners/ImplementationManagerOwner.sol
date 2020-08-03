@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./DelayedOwner.sol";
 import "../../iface/IImplementationManager.sol";
@@ -14,7 +14,6 @@ contract ImplementationManagerOwner is DelayedOwner
         IImplementationManager implementationManager
         )
         DelayedOwner(address(implementationManager), 3 days)
-        public
     {
         setFunctionDelay(implementationManager.transferOwnership.selector, 7 days);
         setFunctionDelay(implementationManager.register.selector, 1 days);

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./DelayedOwner.sol";
 
@@ -17,30 +17,25 @@ contract LoopringV3Owner is DelayedOwner
 
     struct Costs
     {
-        uint minExchangeStakeRollup;
-        uint minExchangeStakeValidium;
+        uint minExchangeStake;
     }
 
     Costs public USD;
 
     event LRCValuesUpdated(
-        uint minExchangeStakeRollupLRC,
-        uint minExchangeStakeValidiumLRC
+        uint minExchangeStakeLRC
     );
 
     constructor(
         ILoopringV3                _loopringV3,
         ITokenPriceProvider        _provider,
-        uint                       _minExchangeStakeRollupUSD,
-        uint                       _minExchangeStakeValidiumUSD
+        uint                       _minExchangeStakeUSD
         )
         DelayedOwner(address(_loopringV3), 3 days)
-        public
     {
         loopringV3 = _loopringV3;
         provider = _provider;
-        USD.minExchangeStakeRollup = _minExchangeStakeRollupUSD;
-        USD.minExchangeStakeValidium = _minExchangeStakeValidiumUSD;
+        USD.minExchangeStake = _minExchangeStakeUSD;
 
         setFunctionDelay(loopringV3.transferOwnership.selector, 7 days);
         setFunctionDelay(loopringV3.updateSettings.selector, 7 days);
@@ -55,8 +50,7 @@ contract LoopringV3Owner is DelayedOwner
     {
         // Get the current costs in LRC
         Costs memory lrcCosts = Costs(
-            provider.usd2lrc(USD.minExchangeStakeRollup),
-            provider.usd2lrc(USD.minExchangeStakeValidium)
+            provider.usd2lrc(USD.minExchangeStake)
         );
 
         // Set the new LRC values on the protocol contract immediately
@@ -65,13 +59,11 @@ contract LoopringV3Owner is DelayedOwner
             loopringV3.blockVerifierAddress(),
             loopringV3.exchangeCreationCostLRC(),
             loopringV3.forcedWithdrawalFee(),
-            lrcCosts.minExchangeStakeRollup,
-            lrcCosts.minExchangeStakeValidium
+            lrcCosts.minExchangeStake
         );
 
         emit LRCValuesUpdated(
-            lrcCosts.minExchangeStakeRollup,
-            lrcCosts.minExchangeStakeValidium
+            lrcCosts.minExchangeStake
         );
     }
 }

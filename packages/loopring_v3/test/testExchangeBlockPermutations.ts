@@ -79,11 +79,10 @@ contract("Exchange", (accounts: string[]) => {
     );
   };
 
-  const createExchange = async (brollupMode: boolean) => {
+  const createExchange = async () => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      true,
-      brollupMode
+      true
     );
   };
 
@@ -107,27 +106,24 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Spot trade", async () => {
-      const brollupModeList = [true];
-      for (const brollupMode of brollupModeList) {
-        await createExchange(brollupMode);
-        const blockSizes = exchangeTestUtil.blockSizes;
-        for (const blockSize of blockSizes) {
-          const rings: SpotTrade[] = [];
-          for (let i = 0; i < blockSize; i++) {
-            rings.push(createRandomRing());
-          }
-          for (const ring of rings) {
-            await exchangeTestUtil.setupRing(ring);
-            await exchangeTestUtil.sendRing(ring);
-          }
-          await exchangeTestUtil.submitTransactions();
+      await createExchange();
+      const blockSizes = exchangeTestUtil.blockSizes;
+      for (const blockSize of blockSizes) {
+        const rings: SpotTrade[] = [];
+        for (let i = 0; i < blockSize; i++) {
+          rings.push(createRandomRing());
         }
-        await verify();
+        for (const ring of rings) {
+          await exchangeTestUtil.setupRing(ring);
+          await exchangeTestUtil.sendRing(ring);
+        }
+        await exchangeTestUtil.submitTransactions();
       }
+      await verify();
     });
 
     it("Deposit", async () => {
-      await createExchange(true);
+      await createExchange();
       const blockSizes = exchangeTestUtil.blockSizes;
       for (const blockSize of blockSizes) {
         for (let i = 0; i < blockSize; i++) {
@@ -139,52 +135,46 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Withdrawal", async () => {
-      const brollupModeList = [true];
-      for (const brollupMode of brollupModeList) {
-        await createExchange(brollupMode);
+      await createExchange();
 
-        const blockSizes = exchangeTestUtil.blockSizes;
-        for (const blockSize of blockSizes) {
-          // Do some deposit
-          const deposits: Deposit[] = [];
-          for (let i = 0; i < blockSize; i++) {
-            deposits.push(await doRandomDeposit());
-          }
-          for (let i = 0; i < blockSize; i++) {
-            await doRandomOffchainWithdrawal(deposits[i]);
-          }
-          await exchangeTestUtil.submitTransactions();
+      const blockSizes = exchangeTestUtil.blockSizes;
+      for (const blockSize of blockSizes) {
+        // Do some deposit
+        const deposits: Deposit[] = [];
+        for (let i = 0; i < blockSize; i++) {
+          deposits.push(await doRandomDeposit());
         }
-        await verify();
+        for (let i = 0; i < blockSize; i++) {
+          await doRandomOffchainWithdrawal(deposits[i]);
+        }
+        await exchangeTestUtil.submitTransactions();
       }
+      await verify();
     });
 
     it("Transfer", async () => {
-      const brollupModeList = [true];
-      for (const brollupMode of brollupModeList) {
-        await createExchange(brollupMode);
+      await createExchange();
 
-        // Do some deposits
-        const numDeposits = 8;
-        const deposits: Deposit[] = [];
-        for (let i = 0; i < numDeposits; i++) {
-          deposits.push(await doRandomDeposit());
+      // Do some deposits
+      const numDeposits = 8;
+      const deposits: Deposit[] = [];
+      for (let i = 0; i < numDeposits; i++) {
+        deposits.push(await doRandomDeposit());
+      }
+      await exchangeTestUtil.submitTransactions();
+
+      const blockSizes = exchangeTestUtil.blockSizes;
+      for (const blockSize of blockSizes) {
+        for (let i = 0; i < blockSize; i++) {
+          const randomDepositA =
+            deposits[exchangeTestUtil.getRandomInt(numDeposits)];
+          const randomDepositB =
+            deposits[exchangeTestUtil.getRandomInt(numDeposits)];
+          await doRandomInternalTransfer(randomDepositA, randomDepositB);
         }
         await exchangeTestUtil.submitTransactions();
-
-        const blockSizes = exchangeTestUtil.blockSizes;
-        for (const blockSize of blockSizes) {
-          for (let i = 0; i < blockSize; i++) {
-            const randomDepositA =
-              deposits[exchangeTestUtil.getRandomInt(numDeposits)];
-            const randomDepositB =
-              deposits[exchangeTestUtil.getRandomInt(numDeposits)];
-            await doRandomInternalTransfer(randomDepositA, randomDepositB);
-          }
-          await exchangeTestUtil.submitTransactions();
-        }
-        await verify();
       }
+      await verify();
     });
 
     it("All transaction types in a single block", async () => {
@@ -259,7 +249,8 @@ contract("Exchange", (accounts: string[]) => {
         token,
         amount,
         feeToken,
-        fee
+        fee,
+        {authMethod: AuthMethod.ECDSA}
       );
 
       // Do a withdrawal
@@ -278,20 +269,6 @@ contract("Exchange", (accounts: string[]) => {
         exchangeTestUtil.getKeyPairEDDSA()
       );
 
-      await exchangeTestUtil.requestNewAccount(
-        ownerB,
-        "ETH",
-        new BN(0),
-        ownerE,
-        exchangeTestUtil.getKeyPairEDDSA()
-      );
-
-      await exchangeTestUtil.requestOwnerChange(
-        ownerE,
-        "ETH",
-        new BN(0),
-        ownerF
-      );
 
       await exchangeTestUtil.submitTransactions(24);
       await verify();

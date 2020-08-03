@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../lib/SimpleProxy.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -42,7 +42,6 @@ contract UniversalRegistry is IUniversalRegistry {
         address _lrcAddress
         )
         Claimable()
-        public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
         lrcAddress = _lrcAddress;
@@ -130,7 +129,6 @@ contract UniversalRegistry is IUniversalRegistry {
 
     function forgeExchange(
         ForgeMode forgeMode,
-        bool      rollupMode,
         address   protocol,
         address   implementation
         )
@@ -168,9 +166,7 @@ contract UniversalRegistry is IUniversalRegistry {
         loopring.initializeExchange(
             exchangeAddress,
             exchangeId,
-            msg.sender,  // owner
-            msg.sender,  // operator
-            rollupMode
+            msg.sender   // owner
         );
 
         emit ExchangeForged(
@@ -179,7 +175,6 @@ contract UniversalRegistry is IUniversalRegistry {
             exchangeAddress,
             msg.sender,
             forgeMode,
-            rollupMode,
             exchangeId,
             exchangeCreationCostLRC
         );

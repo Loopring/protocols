@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../iface/IExchangeV3.sol";
 
@@ -29,7 +29,6 @@ contract TestAccountContract {
     constructor(
         address _exchangeAddress
         )
-        public
     {
         exchange = IExchangeV3(_exchangeAddress);
     }
@@ -37,7 +36,7 @@ contract TestAccountContract {
     function withdraw(
         address token,
         uint96 amount,
-        uint24 accountID
+        uint32 accountID
         )
         external
         payable

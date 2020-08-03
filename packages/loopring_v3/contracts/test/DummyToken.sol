@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./LRCToken.sol";
 
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract DummyToken is LRCToken {
+    using SafeMath for uint;
 
     constructor(
         string memory _name,
@@ -20,7 +21,6 @@ contract DummyToken is LRCToken {
         _totalSupply,
         msg.sender
         )
-        public
     {
     }
 

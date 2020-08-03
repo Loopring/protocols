@@ -67,7 +67,7 @@ def poseidon_EVM_asm(params):
     o = o + "}\n"
     o = o + "\n"
 
-    o = o + "function hash_t7f6p52(" + struct + " memory i, uint q) internal pure returns (uint)\n{\n"
+    o = o + "function hash_t6f6p52(" + struct + " memory i, uint q) internal pure returns (uint)\n{\n"
     o = o + "// validate inputs\n"
     for i in range(params.t):
         o = o + "require(i.t" + str(i) + " < q, \"INVALID_INPUT\");\n"
@@ -89,6 +89,6 @@ def poseidon_EVM_asm(params):
 
     return o
 
-poseidonParamsEVM = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsEVM = poseidon_params(SNARK_SCALAR_FIELD, 6, 6, 52, b'poseidon', 5, security_target=128)
 data = poseidon_EVM_asm(poseidonParamsEVM)
 print(data)

@@ -43,10 +43,10 @@ TEST_CASE("Order", "[OrderGadget]")
 
     SECTION("order data > max allowed values")
     {
-        SECTION("orderID")
+        SECTION("storageID")
         {
             Order _order = order;
-            _order.orderID = getMaxFieldElement(NUM_BITS_ORDERID) + 1;
+            _order.storageID = getMaxFieldElement(NUM_BITS_STORAGEID) + 1;
             orderChecked(exchange, _order, false);
         }
         SECTION("accountID")

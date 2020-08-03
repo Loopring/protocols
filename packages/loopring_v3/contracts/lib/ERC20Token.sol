@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./ERC20.sol";
 import "./MathUint.sol";
@@ -40,7 +40,6 @@ contract ERC20Token is ERC20
         uint          _totalSupply,
         address       _firstHolder
         )
-        public
     {
         require(_totalSupply > 0, "INVALID_VALUE");
         require(_firstHolder != address(0), "ZERO_ADDRESS");

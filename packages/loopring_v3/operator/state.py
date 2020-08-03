@@ -14,17 +14,15 @@ from ethsnarks.merkletree import MerkleTree
 from ethsnarks.poseidon import poseidon, poseidon_params
 from ethsnarks.field import SNARK_SCALAR_FIELD
 
-poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 7, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 6, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
-poseidonParamsTradingHistory = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsStorage = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 
-BINARY_TREE_DEPTH_TRADING_HISTORY = 14
-BINARY_TREE_DEPTH_ACCOUNTS = 24
+BINARY_TREE_DEPTH_STORAGE = 14
+BINARY_TREE_DEPTH_ACCOUNTS = 32
 BINARY_TREE_DEPTH_TOKENS = 12
 
 MAX_AMOUNT = 2 ** 96 - 1
-
-INDEX_BASE = 10 ** 18
 
 class GeneralObject(object):
     pass
@@ -34,9 +32,9 @@ def setValue(value, default):
 
 def copyBalanceInfo(leaf):
     c = copy.deepcopy(leaf)
-    c.tradingHistoryRoot = str(leaf._tradingHistoryTree._root)
-    c._tradingHistoryTree = None
-    c._tradeHistoryLeafs = None
+    c.storageRoot = str(leaf._storageTree._root)
+    c._storageTree = None
+    c._storageLeafs = None
     return c
 
 def copyAccountInfo(account):
@@ -48,26 +46,6 @@ def copyAccountInfo(account):
 
 def getDefaultAccount():
     return Account(0, Point(0, 0))
-
-
-def power10(x1):
-    c0 = floor(10 * INDEX_BASE)
-    c1 = floor(10*log(10) * INDEX_BASE)
-    c2 = floor(10*log(10)*log(10)/2 * INDEX_BASE)
-    c3 = floor(10*log(10)*log(10)*log(10)/6 * INDEX_BASE)
-
-    x2 = (x1*x1) // INDEX_BASE
-    x3 = (x2*x1) // INDEX_BASE
-
-    return c0 + (x1*c1 + x2*c2 + x3*c3) // INDEX_BASE
-
-
-def applyInterest(balance, oldIndex, newIndex):
-    assert(int(newIndex) >= int(oldIndex))
-    indexDiff = int(newIndex) - int(oldIndex)
-    multiplier = power10(indexDiff)
-    newBalance = (int(balance) * multiplier) // (INDEX_BASE * 10)
-    return newBalance
 
 class Fill(object):
     def __init__(self, amountS, amountB):
@@ -94,79 +72,71 @@ class Signature(object):
             self.s = "0"
 
 class BalanceLeaf(object):
-    def __init__(self, balance = 0, index = 10**18):
+    def __init__(self, balance = 0):
         self.balance = str(balance)
-        self.index = str(index)
-        # Trading history
-        self._tradingHistoryTree = SparseMerkleTree(BINARY_TREE_DEPTH_TRADING_HISTORY // 2, 4)
-        self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
-        self._tradeHistoryLeafs = {}
-        # print("Empty trading tree: " + str(self._tradingHistoryTree._root))
+        # Storage
+        self._storageTree = SparseMerkleTree(BINARY_TREE_DEPTH_STORAGE // 2, 4)
+        self._storageTree.newTree(StorageLeaf().hash())
+        self._storageLeafs = {}
+        #print("Empty storage tree: " + str(self._storageTree._root))
 
 
     def hash(self):
         #print("balance: " + self.balance)
-        temp = [int(self.balance), int(self.index), int(self._tradingHistoryTree._root)]
+        temp = [int(self.balance), int(self._storageTree._root)]
         #print(temp)
         return poseidon(temp, poseidonParamsBalance)
 
     def fromJSON(self, jBalance):
         self.balance = jBalance["balance"]
-        self.index = jBalance["index"]
-        # Trading history
-        tradeHistoryLeafsDict = jBalance["_tradeHistoryLeafs"]
-        for key, val in tradeHistoryLeafsDict.items():
-            self._tradeHistoryLeafs[key] = TradeHistoryLeaf(val["filled"], val["orderID"])
-        self._tradingHistoryTree._root = jBalance["_tradingHistoryTree"]["_root"]
-        self._tradingHistoryTree._db.kv = jBalance["_tradingHistoryTree"]["_db"]["kv"]
+        # Storage
+        storageLeafsDict = jBalance["_storageLeafs"]
+        for key, val in storageLeafsDict.items():
+            self._storageLeafs[key] = StorageLeaf(val["data"], val["storageID"])
+        self._storageTree._root = jBalance["_storageTree"]["_root"]
+        self._storageTree._db.kv = jBalance["_storageTree"]["_db"]["kv"]
 
-    def getTradeHistory(self, orderID):
-        address = int(orderID) % (2 ** BINARY_TREE_DEPTH_TRADING_HISTORY)
+    def getStorage(self, storageID):
+        address = int(storageID) % (2 ** BINARY_TREE_DEPTH_STORAGE)
         # Make sure the leaf exist in our map
-        if not(str(address) in self._tradeHistoryLeafs):
-            return TradeHistoryLeaf()
+        if not(str(address) in self._storageLeafs):
+            return StorageLeaf()
         else:
-            return self._tradeHistoryLeafs[str(address)]
+            return self._storageLeafs[str(address)]
 
-    def updateTradeHistory(self, orderID, filled):
-        address = int(orderID) % (2 ** BINARY_TREE_DEPTH_TRADING_HISTORY)
+    def updateStorage(self, storageID, data):
+        address = int(storageID) % (2 ** BINARY_TREE_DEPTH_STORAGE)
         # Make sure the leaf exist in our map
-        if not(str(address) in self._tradeHistoryLeafs):
-            self._tradeHistoryLeafs[str(address)] = TradeHistoryLeaf(0, 0)
+        if not(str(address) in self._storageLeafs):
+            self._storageLeafs[str(address)] = StorageLeaf(0, 0)
 
-        leafBefore = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
-        rootBefore = self._tradingHistoryTree._root
+        leafBefore = copy.deepcopy(self._storageLeafs[str(address)])
+        rootBefore = self._storageTree._root
         #print("leafBefore: " + str(leafBefore))
-        self._tradeHistoryLeafs[str(address)].filled = str(filled)
-        self._tradeHistoryLeafs[str(address)].orderID = str(orderID)
-        leafAfter = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
+        self._storageLeafs[str(address)].data = str(data)
+        self._storageLeafs[str(address)].storageID = str(storageID)
+        leafAfter = copy.deepcopy(self._storageLeafs[str(address)])
         #print("leafAfter: " + str(leafAfter))
-        proof = self._tradingHistoryTree.createProof(address)
-        self._tradingHistoryTree.update(address, leafAfter.hash())
-        rootAfter = self._tradingHistoryTree._root
+        proof = self._storageTree.createProof(address)
+        self._storageTree.update(address, leafAfter.hash())
+        rootAfter = self._storageTree._root
 
-        return TradeHistoryUpdateData(orderID, proof,
-                                      rootBefore, rootAfter,
-                                      leafBefore, leafAfter)
-
-    def resetTradeHistory(self):
-        # Trading history
-        self._tradingHistoryTree = SparseMerkleTree(BINARY_TREE_DEPTH_TRADING_HISTORY // 2, 4)
-        self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
-        self._tradeHistoryLeafs = {}
+        return StorageUpdateData(storageID, proof,
+                                 rootBefore, rootAfter,
+                                 leafBefore, leafAfter)
 
 
-class TradeHistoryLeaf(object):
-    def __init__(self, filled = 0, orderID = 0):
-        self.filled = str(filled)
-        self.orderID = str(orderID)
+class StorageLeaf(object):
+    def __init__(self, data = 0, storageID = 0):
+        self.data = str(data)
+        self.storageID = str(storageID)
 
     def hash(self):
-        return poseidon([int(self.filled), int(self.orderID)], poseidonParamsTradingHistory)
+        return poseidon([int(self.data), int(self.storageID)], poseidonParamsStorage)
 
     def fromJSON(self, jBalance):
-        self.filled = jBalance["filled"]
-        self.orderID = jBalance["orderID"]
+        self.data = jBalance["data"]
+        self.storageID = jBalance["storageID"]
 
 class Account(object):
     def __init__(self, owner, publicKey):
@@ -174,7 +144,6 @@ class Account(object):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
-        self.walletHash = str(0)
         # Balances
         self._balancesTree = SparseMerkleTree(BINARY_TREE_DEPTH_TOKENS // 2, 4)
         self._balancesTree.newTree(BalanceLeaf().hash())
@@ -182,14 +151,13 @@ class Account(object):
         # print("Empty balances tree: " + str(self._balancesTree._root))
 
     def hash(self):
-        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self.walletHash), int(self._balancesTree._root)], poseidonParamsAccount)
+        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], poseidonParamsAccount)
 
     def fromJSON(self, jAccount):
         self.owner = jAccount["owner"]
         self.publicKeyX = jAccount["publicKeyX"]
         self.publicKeyY = jAccount["publicKeyY"]
         self.nonce = int(jAccount["nonce"])
-        self.walletHash = jAccount["walletHash"]
         # Balances
         balancesLeafsDict = jAccount["_balancesLeafs"]
         for key, val in balancesLeafsDict.items():
@@ -209,7 +177,7 @@ class Account(object):
     def getBalance(self, address):
         return self.getBalanceLeaf(address).balance
 
-    def updateBalance(self, tokenID, deltaBalance, set_index, apply_index):
+    def updateBalance(self, tokenID, deltaBalance):
         # Make sure the leaf exists in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -217,12 +185,6 @@ class Account(object):
         balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         rootBefore = self._balancesTree._root
 
-        if apply_index is not None:
-            self._balancesLeafs[str(tokenID)].balance = str(applyInterest(self._balancesLeafs[str(tokenID)].balance, self._balancesLeafs[str(tokenID)].index, apply_index))
-            self._balancesLeafs[str(tokenID)].index = str(apply_index)
-        if set_index is not None:
-            #print("set_index: " + set_index)
-            self._balancesLeafs[str(tokenID)].index = str(set_index)
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(deltaBalance))
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
@@ -234,7 +196,7 @@ class Account(object):
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter)
 
-    def updateBalanceAndTradeHistory(self, tokenID, orderID, filled, delta_balance, set_index, apply_index):
+    def updateBalanceAndStorage(self, tokenID, storageID, filled, delta_balance):
         # Make sure the leaf exist in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -243,17 +205,7 @@ class Account(object):
         rootBefore = self._balancesTree._root
 
         # Update filled amounts
-        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, filled)
-        if apply_index is not None:
-            #print("tokenID: " + str(tokenID))
-            #print("oldIndex: " + self._balancesLeafs[str(tokenID)].index)
-            #print("newIndex: " + apply_index)
-            #print("balance: " + self._balancesLeafs[str(tokenID)].balance)
-            self._balancesLeafs[str(tokenID)].balance = str(applyInterest(self._balancesLeafs[str(tokenID)].balance, self._balancesLeafs[str(tokenID)].index, apply_index))
-            self._balancesLeafs[str(tokenID)].index = str(apply_index)
-            #print("newBalance: " + self._balancesLeafs[str(tokenID)].balance)
-        if set_index is not None:
-            self._balancesLeafs[str(tokenID)].index = str(set_index)
+        storageUpdate = self._balancesLeafs[str(tokenID)].updateStorage(storageID, filled)
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(delta_balance))
 
         #print("str(delta_balance): " + str(delta_balance))
@@ -267,18 +219,18 @@ class Account(object):
         return (BalanceUpdateData(tokenID, proof,
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter),
-                tradeHistoryUpdate)
+                storageUpdate)
 
 def write_proof(proof):
     # return [[str(_) for _ in proof_level] for proof_level in proof]
     return [str(_) for _ in proof]
 
-class TradeHistoryUpdateData(object):
+class StorageUpdateData(object):
     def __init__(self,
-                 orderID, proof,
+                 storageID, proof,
                  rootBefore, rootAfter,
                  before, after):
-        self.orderID = str(orderID)
+        self.storageID = str(storageID)
         self.proof = write_proof(proof)
         self.rootBefore = str(rootBefore)
         self.rootAfter = str(rootAfter)
@@ -327,15 +279,15 @@ class WithdrawProof(object):
 class Order(object):
     def __init__(self,
                  publicKeyX, publicKeyY,
-                 orderID, accountID,
+                 storageID, accountID,
                  tokenS, tokenB,
                  amountS, amountB,
-                 allOrNone, validSince, validUntil, buy,
+                 allOrNone, validSince, validUntil, buy, taker,
                  maxFeeBips, feeBips, rebateBips):
         self.publicKeyX = str(publicKeyX)
         self.publicKeyY = str(publicKeyY)
 
-        self.orderID = str(orderID)
+        self.storageID = str(storageID)
         self.accountID = int(accountID)
 
         self.amountS = str(amountS)
@@ -348,6 +300,7 @@ class Order(object):
         self.validSince = validSince
         self.validUntil = validUntil
         self.buy = bool(buy)
+        self.taker = str(taker)
         self.maxFeeBips = maxFeeBips
 
         self.feeBips = feeBips
@@ -386,12 +339,11 @@ class Witness(object):
     def __init__(self,
                  signatureA, signatureB,
                  accountsMerkleRoot,
-                 tradeHistoryUpdate_A, tradeHistoryUpdate_B,
+                 storageUpdate_A, storageUpdate_B,
                  balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
                  balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
                  balanceUpdateA_O, balanceUpdateB_O, accountUpdate_O,
-                 balanceUpdateA_P, balanceUpdateB_P,
-                 balanceUpdateA_I, balanceUpdateB_I):
+                 balanceUpdateA_P, balanceUpdateB_P):
         if signatureA is not None:
             self.signatureA = signatureA
         if signatureB is not None:
@@ -399,8 +351,8 @@ class Witness(object):
 
         self.accountsMerkleRoot = str(accountsMerkleRoot)
 
-        self.tradeHistoryUpdate_A = tradeHistoryUpdate_A
-        self.tradeHistoryUpdate_B = tradeHistoryUpdate_B
+        self.storageUpdate_A = storageUpdate_A
+        self.storageUpdate_B = storageUpdate_B
 
         self.balanceUpdateS_A = balanceUpdateS_A
         self.balanceUpdateB_A = balanceUpdateB_A
@@ -417,9 +369,6 @@ class Witness(object):
         self.balanceUpdateA_P = balanceUpdateA_P
         self.balanceUpdateB_P = balanceUpdateB_P
 
-        self.balanceUpdateA_I = balanceUpdateA_I
-        self.balanceUpdateB_I = balanceUpdateB_I
-
 
 class State(object):
     def __init__(self, exchangeID):
@@ -430,7 +379,7 @@ class State(object):
         self._accounts = {}
         self._accounts[str(0)] = getDefaultAccount()
         self._accounts[str(1)] = getDefaultAccount()
-        # print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
+        print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
 
     def load(self, filename):
         with open(filename) as f:
@@ -461,15 +410,15 @@ class State(object):
         rebate = (amountB * rebateBips) // 10000
         return (fee, protocolFee, rebate)
 
-    def getFilled(self, order):
-        account = self.getAccount(order.accountID)
-        tradeHistory = account.getBalanceLeaf(order.tokenS).getTradeHistory(int(order.orderID))
+    def getData(self, accountID, tokenID, storageID):
+        account = self.getAccount(accountID)
+        storage = account.getBalanceLeaf(tokenID).getStorage(int(storageID))
 
-        # Trade history trimming
-        numSlots = (2 ** BINARY_TREE_DEPTH_TRADING_HISTORY)
-        tradeHistoryOrderId = tradeHistory.orderID if int(tradeHistory.orderID) > 0 else int(order.orderID) % numSlots
-        filled = int(tradeHistory.filled) if (int(order.orderID) == int(tradeHistoryOrderId)) else 0
-        overwrite = 1 if (int(order.orderID) == int(tradeHistoryOrderId) + numSlots) else 0
+        # Storage trimming
+        numSlots = (2 ** BINARY_TREE_DEPTH_STORAGE)
+        leafStorageID = storage.storageID if int(storage.storageID) > 0 else int(storageID) % numSlots
+        filled = int(storage.data) if (int(storageID) == int(leafStorageID)) else 0
+        overwrite = 1 if (int(storageID) == int(leafStorageID) + numSlots) else 0
 
         return (filled, overwrite)
 
@@ -513,46 +462,31 @@ class State(object):
         newState.accountA_Owner = None
         newState.accountA_PublicKeyX = None
         newState.accountA_PublicKeyY = None
-        newState.accountA_WalletHash = None
         newState.accountA_Nonce = None
         newState.balanceA_S_Address = None
         newState.balanceA_S_Balance = None
-        newState.balanceA_S_Index = None
-        newState.balanceA_S_AutoApplyIndex = False
         newState.balanceA_B_Balance = None
-        newState.balanceA_B_Index = None
-        newState.balanceA_B_AutoApplyIndex = False
-        newState.tradeHistoryA_Address = None
-        newState.tradeHistoryA_Filled = None
-        newState.tradeHistoryA_OrderId = None
+        newState.storageA_Address = None
+        newState.storageA_Data = None
+        newState.storageA_StorageId = None
         # B
         newState.accountB_Address = None
         newState.accountB_Owner = None
         newState.accountB_PublicKeyX = None
         newState.accountB_PublicKeyY = None
-        newState.accountB_WalletHash = None
         newState.accountB_Nonce = None
         newState.balanceB_S_Address = None
         newState.balanceB_S_Balance = None
-        newState.balanceB_S_AutoApplyIndex = False
         newState.balanceB_B_Balance = None
-        newState.balanceB_B_AutoApplyIndex = False
-        newState.tradeHistoryB_Address = None
-        newState.tradeHistoryB_Filled = None
-        newState.tradeHistoryB_OrderId = None
+        newState.storageB_Address = None
+        newState.storageB_Data = None
+        newState.storageB_StorageId = None
         # Operator
         newState.balanceDeltaA_O = None
-        newState.balanceA_O_AutoApplyIndex = False
         newState.balanceDeltaB_O = None
-        newState.balanceB_O_AutoApplyIndex = False
         # Protocol fees
         newState.balanceDeltaA_P = None
-        newState.balanceA_P_AutoApplyIndex = False
         newState.balanceDeltaB_P = None
-        newState.balanceB_P_AutoApplyIndex = False
-        # Index
-        newState.indexA_I = None
-        newState.indexB_I = None
 
         if txInput.txType == "Noop":
 
@@ -564,8 +498,8 @@ class State(object):
             ring = txInput
 
             # Amount filled in the trade history
-            (filled_A, overwriteTradeHistorySlotA) = self.getFilled(ring.orderA)
-            (filled_B, overwriteTradeHistorySlotB) = self.getFilled(ring.orderB)
+            (filled_A, overwriteDataSlotA) = self.getData(ring.orderA.accountID, ring.orderA.tokenS, ring.orderA.storageID)
+            (filled_B, overwriteDataSlotB) = self.getData(ring.orderB.accountID, ring.orderB.tokenS, ring.orderB.storageID)
 
             # Simple matching logic
             fillA = self.getMaxFill(ring.orderA, filled_A, True)
@@ -600,8 +534,8 @@ class State(object):
             # Saved in ring for tests
             ring.fFillS_A = toFloat(fillA.S, Float24Encoding)
             ring.fFillS_B = toFloat(fillB.S, Float24Encoding)
-            ring.overwriteTradeHistorySlotA = overwriteTradeHistorySlotA
-            ring.overwriteTradeHistorySlotB = overwriteTradeHistorySlotB
+            ring.overwriteDataSlotA = overwriteDataSlotA
+            ring.overwriteDataSlotB = overwriteDataSlotB
 
             fillA.S = roundToFloatValue(fillA.S, Float24Encoding)
             fillB.S = roundToFloatValue(fillB.S, Float24Encoding)
@@ -648,15 +582,13 @@ class State(object):
 
             newState.balanceA_S_Address = ring.orderA.tokenS
             newState.balanceA_S_Balance = -fillA.S
-            newState.balanceA_S_AutoApplyIndex = True
 
             newState.balanceB_S_Address = ring.orderA.tokenB
             newState.balanceA_B_Balance = fillA.B - fee_A + rebate_A
-            newState.balanceA_B_AutoApplyIndex = True
 
-            newState.tradeHistoryA_Address = ring.orderA.orderID
-            newState.tradeHistoryA_Filled = filled_A + (fillA.B if ring.orderA.buy else fillA.S)
-            newState.tradeHistoryA_OrderId = ring.orderA.orderID
+            newState.storageA_Address = ring.orderA.storageID
+            newState.storageA_Data = filled_A + (fillA.B if ring.orderA.buy else fillA.S)
+            newState.storageA_StorageId = ring.orderA.storageID
 
 
             newState.accountB_Address = ring.orderB.accountID
@@ -664,27 +596,23 @@ class State(object):
 
             newState.balanceB_S_Address = ring.orderB.tokenS
             newState.balanceB_S_Balance = -fillB.S
-            newState.balanceB_S_AutoApplyIndex = True
 
             newState.balanceA_S_Address = ring.orderB.tokenB
             newState.balanceB_B_Balance = fillB.B - fee_B + rebate_B
-            newState.balanceB_B_AutoApplyIndex = True
 
-            newState.tradeHistoryB_Address = ring.orderB.orderID
-            newState.tradeHistoryB_Filled = filled_B + (fillB.B if ring.orderB.buy else fillB.S)
-            newState.tradeHistoryB_OrderId = ring.orderB.orderID
+            newState.storageB_Address = ring.orderB.storageID
+            newState.storageB_Data = filled_B + (fillB.B if ring.orderB.buy else fillB.S)
+            newState.storageB_StorageId = ring.orderB.storageID
 
             newState.balanceDeltaA_O = fee_A - protocolFee_A - rebate_A
             newState.balanceDeltaB_O = fee_B - protocolFee_B - rebate_B
-            newState.balanceA_O_AutoApplyIndex = True
-            newState.balanceB_O_AutoApplyIndex = True
 
             newState.balanceDeltaA_P = protocolFee_A
             newState.balanceDeltaB_P = protocolFee_B
-            newState.balanceA_P_AutoApplyIndex = True
-            newState.balanceB_P_AutoApplyIndex = True
 
         elif txInput.txType == "Transfer":
+
+            (storageData, overwriteDataSlot) = self.getData(txInput.fromAccountID, txInput.tokenID, txInput.storageID)
 
             transferAmount = roundToFloatValue(int(txInput.amount), Float24Encoding)
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
@@ -697,11 +625,9 @@ class State(object):
 
             newState.balanceA_S_Address = txInput.tokenID
             newState.balanceA_S_Balance = -transferAmount
-            newState.balanceA_S_AutoApplyIndex = True
 
             newState.balanceB_S_Address = txInput.feeTokenID
             newState.balanceA_B_Balance = -feeValue
-            newState.balanceA_B_AutoApplyIndex = True
 
             newState.accountB_Address = txInput.toAccountID
             accountB = self.getAccount(newState.accountB_Address)
@@ -709,18 +635,19 @@ class State(object):
 
             newState.balanceA_S_Address = txInput.tokenID
             newState.balanceB_B_Balance = transferAmount
-            newState.balanceB_B_AutoApplyIndex = True
 
-            newState.accountA_Nonce = 1
+            newState.storageA_Address = txInput.storageID
+            newState.storageA_Data = 1
+            newState.storageA_StorageId = txInput.storageID
 
             if txInput.type != 0:
                 context.numConditionalTransactions = context.numConditionalTransactions + 1
 
             newState.balanceDeltaA_O = feeValue
-            newState.balanceA_O_AutoApplyIndex = True
 
             # For tests (used to set the DA data)
             txInput.toNewAccount = True if accountB.owner == str(0) else False
+            txInput.overwriteDataSlot = overwriteDataSlot
 
         elif txInput.txType == "Withdraw":
 
@@ -728,9 +655,8 @@ class State(object):
             account = self.getAccount(txInput.accountID)
             if int(txInput.type) == 2:
                 # Full balance with intrest
-                newIndex = self.getAccount(1).getBalanceLeaf(txInput.tokenID).index
                 balanceLeaf = account.getBalanceLeaf(txInput.tokenID)
-                txInput.amount = str(applyInterest(balanceLeaf.balance, balanceLeaf.index, newIndex))
+                txInput.amount = str(balanceLeaf.balance)
             elif int(txInput.type) == 3:
                 txInput.amount = str(0)
 
@@ -748,47 +674,26 @@ class State(object):
 
             newState.balanceA_S_Address = txInput.tokenID
             newState.balanceA_S_Balance = 0 if isProtocolfeeWithdrawal else -int(txInput.amount)
-            newState.balanceA_S_AutoApplyIndex = True
 
             newState.balanceB_S_Address = txInput.feeTokenID
             newState.balanceA_B_Balance = -feeValue
-            newState.balanceA_B_AutoApplyIndex = True
 
             if int(txInput.type) == 0 or int(txInput.type) == 1:
                 newState.accountA_Nonce = 1
 
             newState.balanceDeltaA_O = feeValue
-            newState.balanceA_O_AutoApplyIndex = True
 
             newState.balanceDeltaB_P = -int(txInput.amount) if isProtocolfeeWithdrawal else 0
-            newState.balanceB_P_AutoApplyIndex = True
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 
         elif txInput.txType == "Deposit":
 
-            # Update the index if needed
-            accountIndex = self.getAccount(1)
-            newIndex = max(int(txInput.index), int(accountIndex.getBalanceLeaf(txInput.tokenID).index))
-
-            #print("Token: " + str(txInput.tokenID))
-            #print("current index: " + accountIndex.getBalanceLeaf(txInput.tokenID).index)
-            #print("deposit index: " + txInput.index)
-            #print("newIndex     : " + str(newIndex))
-
-            # Apply interest on the existing balance and the deposited amount
-            balanceLeaf = self.getAccount(txInput.accountID).getBalanceLeaf(txInput.tokenID)
-            updatedBalance = applyInterest(balanceLeaf.balance, balanceLeaf.index, newIndex)
-            depositedAmount = applyInterest(txInput.amount, txInput.index, newIndex)
-
             newState.accountA_Address = txInput.accountID
             newState.accountA_Owner = txInput.owner
 
             newState.balanceA_S_Address = txInput.tokenID
-            newState.balanceA_S_Balance = (updatedBalance + depositedAmount) - int(balanceLeaf.balance)
-            newState.balanceA_S_Index = str(newIndex)
-
-            newState.indexB_I = str(newIndex)
+            newState.balanceA_S_Balance = txInput.amount
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 
@@ -801,112 +706,48 @@ class State(object):
 
             newState.accountA_PublicKeyX = txInput.publicKeyX
             newState.accountA_PublicKeyY = txInput.publicKeyY
-            newState.accountA_WalletHash = txInput.walletHash
             newState.accountA_Nonce = 1
 
             newState.balanceA_S_Address = txInput.feeTokenID
             newState.balanceA_S_Balance = -feeValue
-            newState.balanceA_S_AutoApplyIndex = True
 
             newState.balanceDeltaB_O = feeValue
-            newState.balanceB_O_AutoApplyIndex = True
 
             newState.signatureA = txInput.signature
 
             if txInput.type != 0:
                 context.numConditionalTransactions = context.numConditionalTransactions + 1
 
-        elif txInput.txType == "NewAccount":
-
-            feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
-
-            newState.accountA_Address = txInput.payerAccountID
-            accountA = self.getAccount(newState.accountA_Address)
-
-            newState.accountB_Address = txInput.newAccountID
-            newState.accountB_Owner = txInput.newOwner
-            newState.accountB_PublicKeyX = txInput.newPublicKeyX
-            newState.accountB_PublicKeyY = txInput.newPublicKeyY
-            newState.accountB_WalletHash = txInput.newWalletHash
-            newState.accountA_Nonce = 1
-
-            newState.balanceA_S_Address = txInput.feeTokenID
-            newState.balanceA_S_Balance = -feeValue
-            newState.balanceA_S_AutoApplyIndex = True
-
-            newState.balanceDeltaB_O = feeValue
-            newState.balanceB_O_AutoApplyIndex = True
-
-            newState.signatureA = txInput.signature
-
-            context.numConditionalTransactions = context.numConditionalTransactions + 1
-
-        elif txInput.txType == "OwnerChange":
-
-            feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
-
-            newState.accountA_Address = txInput.accountID
-            newState.accountA_Owner = txInput.newOwner
-            accountA = self.getAccount(newState.accountA_Address)
-            newState.accountA_Nonce = 1
-
-            newState.balanceA_S_Address = txInput.feeTokenID
-            newState.balanceA_S_Balance = -feeValue
-            newState.balanceA_S_AutoApplyIndex = True
-
-            newState.balanceDeltaB_O = feeValue
-            newState.balanceB_O_AutoApplyIndex = True
-
-            context.numConditionalTransactions = context.numConditionalTransactions + 1
-
 
         # Tokens default values
         newState.balanceA_S_Address = setValue(newState.balanceA_S_Address, 0)
         newState.balanceB_S_Address = setValue(newState.balanceB_S_Address, 0)
 
-        # Set new index values
-        balanceUpdateB_I = self.getAccount(1).updateBalance(newState.balanceA_S_Address, 0, newState.indexB_I, None)
-        balanceUpdateA_I = self.getAccount(1).updateBalance(newState.balanceB_S_Address, 0, newState.indexA_I, None)
-
-        # Index default values
-        accountIndex = self.getAccount(1)
-        newState.indexB_I = accountIndex.getBalanceLeaf(newState.balanceA_S_Address).index
-        newState.indexA_I = accountIndex.getBalanceLeaf(newState.balanceB_S_Address).index
-
         # A default values
-        newState.accountA_Address = setValue(newState.accountA_Address, 2)
+        newState.accountA_Address = setValue(newState.accountA_Address, 1)
         accountA = self.getAccount(newState.accountA_Address)
         newState.accountA_Owner = setValue(newState.accountA_Owner, accountA.owner)
         newState.accountA_PublicKeyX = setValue(newState.accountA_PublicKeyX, accountA.publicKeyX)
         newState.accountA_PublicKeyY = setValue(newState.accountA_PublicKeyY, accountA.publicKeyY)
         newState.accountA_Nonce = setValue(newState.accountA_Nonce, 0)
-        newState.accountA_WalletHash = setValue(newState.accountA_WalletHash, accountA.walletHash)
 
         balanceLeafA_S = accountA.getBalanceLeaf(newState.balanceA_S_Address)
         newState.balanceA_S_Balance = setValue(newState.balanceA_S_Balance, 0)
-        newState.balanceA_S_Index = setValue(newState.balanceA_S_Index, None)
-        newState.balanceA_S_AutoApplyIndex = newState.indexB_I if newState.balanceA_S_AutoApplyIndex else None
 
         newState.balanceA_B_Balance = setValue(newState.balanceA_B_Balance, 0)
-        newState.balanceA_B_Index = setValue(newState.balanceA_B_Index, None)
-        newState.balanceA_B_AutoApplyIndex = newState.indexA_I if newState.balanceA_B_AutoApplyIndex else None
 
-        newState.tradeHistoryA_Address = setValue(newState.tradeHistoryA_Address, 0)
-        tradeHistoryA = balanceLeafA_S.getTradeHistory(newState.tradeHistoryA_Address)
-        newState.tradeHistoryA_Filled = setValue(newState.tradeHistoryA_Filled, tradeHistoryA.filled)
-        newState.tradeHistoryA_OrderId = setValue(newState.tradeHistoryA_OrderId, tradeHistoryA.orderID)
+        newState.storageA_Address = setValue(newState.storageA_Address, 0)
+        storageA = balanceLeafA_S.getStorage(newState.storageA_Address)
+        newState.storageA_Data = setValue(newState.storageA_Data, storageA.data)
+        newState.storageA_StorageId = setValue(newState.storageA_StorageId, storageA.storageID)
 
         # Operator default values
         newState.balanceDeltaA_O = setValue(newState.balanceDeltaA_O, 0)
         newState.balanceDeltaB_O = setValue(newState.balanceDeltaB_O, 0)
-        newState.balanceA_O_AutoApplyIndex = newState.indexA_I if newState.balanceA_O_AutoApplyIndex else None
-        newState.balanceB_O_AutoApplyIndex = newState.indexB_I if newState.balanceB_O_AutoApplyIndex else None
 
         # Protocol fees default values
         newState.balanceDeltaA_P = setValue(newState.balanceDeltaA_P, 0)
         newState.balanceDeltaB_P = setValue(newState.balanceDeltaB_P, 0)
-        newState.balanceA_P_AutoApplyIndex = newState.indexA_I if newState.balanceA_P_AutoApplyIndex else None
-        newState.balanceB_P_AutoApplyIndex = newState.indexB_I if newState.balanceB_P_AutoApplyIndex else None
 
 
         # Copy the initial merkle root
@@ -919,26 +760,21 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(newState.accountA_Address))
         proof = self._accountsTree.createProof(newState.accountA_Address)
 
-        (balanceUpdateS_A, tradeHistoryUpdate_A) = accountA.updateBalanceAndTradeHistory(
+        (balanceUpdateS_A, storageUpdate_A) = accountA.updateBalanceAndStorage(
             newState.balanceA_S_Address,
-            newState.tradeHistoryA_OrderId,
-            newState.tradeHistoryA_Filled,
-            newState.balanceA_S_Balance,
-            newState.balanceA_S_Index,
-            newState.balanceA_S_AutoApplyIndex
+            newState.storageA_StorageId,
+            newState.storageA_Data,
+            newState.balanceA_S_Balance
         )
         balanceUpdateB_A = accountA.updateBalance(
             newState.balanceB_S_Address,
-            newState.balanceA_B_Balance,
-            newState.balanceA_B_Index,
-            newState.balanceA_B_AutoApplyIndex
+            newState.balanceA_B_Balance
         )
 
         accountA.owner = newState.accountA_Owner
         accountA.publicKeyX = newState.accountA_PublicKeyX
         accountA.publicKeyY = newState.accountA_PublicKeyY
         accountA.nonce = accountA.nonce + newState.accountA_Nonce
-        accountA.walletHash = newState.accountA_WalletHash
 
         self.updateAccountTree(newState.accountA_Address)
         accountAfter = copyAccountInfo(self.getAccount(newState.accountA_Address))
@@ -947,25 +783,22 @@ class State(object):
         ###
 
         # B default values
-        newState.accountB_Address = setValue(newState.accountB_Address, 2)
+        newState.accountB_Address = setValue(newState.accountB_Address, 1)
         accountB = self.getAccount(newState.accountB_Address)
         newState.accountB_Owner = setValue(newState.accountB_Owner, accountB.owner)
         newState.accountB_PublicKeyX = setValue(newState.accountB_PublicKeyX, accountB.publicKeyX)
         newState.accountB_PublicKeyY = setValue(newState.accountB_PublicKeyY, accountB.publicKeyY)
         newState.accountB_Nonce = setValue(newState.accountB_Nonce, 0)
-        newState.accountB_WalletHash = setValue(newState.accountB_WalletHash, accountB.walletHash)
 
         balanceLeafB_S = accountB.getBalanceLeaf(newState.balanceB_S_Address)
         newState.balanceB_S_Balance = setValue(newState.balanceB_S_Balance, 0)
-        newState.balanceB_S_AutoApplyIndex = newState.indexA_I if newState.balanceB_S_AutoApplyIndex else None
 
         newState.balanceB_B_Balance = setValue(newState.balanceB_B_Balance, 0)
-        newState.balanceB_B_AutoApplyIndex = newState.indexB_I if newState.balanceB_B_AutoApplyIndex else None
 
-        newState.tradeHistoryB_Address = setValue(newState.tradeHistoryB_Address, 0)
-        tradeHistoryB = balanceLeafB_S.getTradeHistory(newState.tradeHistoryB_Address)
-        newState.tradeHistoryB_Filled = setValue(newState.tradeHistoryB_Filled, tradeHistoryB.filled)
-        newState.tradeHistoryB_OrderId = setValue(newState.tradeHistoryB_OrderId, tradeHistoryB.orderID)
+        newState.storageB_Address = setValue(newState.storageB_Address, 0)
+        storageB = balanceLeafB_S.getStorage(newState.storageB_Address)
+        newState.storageB_Data = setValue(newState.storageB_Data, storageB.data)
+        newState.storageB_StorageId = setValue(newState.storageB_StorageId, storageB.storageID)
 
         # Update B
         accountB = self.getAccount(newState.accountB_Address)
@@ -974,26 +807,21 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(newState.accountB_Address))
         proof = self._accountsTree.createProof(newState.accountB_Address)
 
-        (balanceUpdateS_B, tradeHistoryUpdate_B) = accountB.updateBalanceAndTradeHistory(
+        (balanceUpdateS_B, storageUpdate_B) = accountB.updateBalanceAndStorage(
             newState.balanceB_S_Address,
-            newState.tradeHistoryB_OrderId,
-            newState.tradeHistoryB_Filled,
-            newState.balanceB_S_Balance,
-            None,
-            newState.balanceB_S_AutoApplyIndex
+            newState.storageB_StorageId,
+            newState.storageB_Data,
+            newState.balanceB_S_Balance
         )
         balanceUpdateB_B = accountB.updateBalance(
             newState.balanceA_S_Address,
-            newState.balanceB_B_Balance,
-            None,
-            newState.balanceB_B_AutoApplyIndex
+            newState.balanceB_B_Balance
         )
 
         accountB.owner = newState.accountB_Owner
         accountB.publicKeyX = newState.accountB_PublicKeyX
         accountB.publicKeyY = newState.accountB_PublicKeyY
         accountB.nonce = accountB.nonce + newState.accountB_Nonce
-        accountB.walletHash = newState.accountB_WalletHash
 
         self.updateAccountTree(newState.accountB_Address)
         accountAfter = copyAccountInfo(self.getAccount(newState.accountB_Address))
@@ -1010,15 +838,11 @@ class State(object):
 
         balanceUpdateB_O = accountO.updateBalance(
             newState.balanceA_S_Address,
-            newState.balanceDeltaB_O,
-            None,
-            newState.balanceB_O_AutoApplyIndex
+            newState.balanceDeltaB_O
         )
         balanceUpdateA_O = accountO.updateBalance(
             newState.balanceB_S_Address,
-            newState.balanceDeltaA_O,
-            None,
-            newState.balanceA_O_AutoApplyIndex
+            newState.balanceDeltaA_O
         )
 
         self.updateAccountTree(context.operatorAccountID)
@@ -1028,18 +852,17 @@ class State(object):
         ###
 
         # Protocol fee payment
-        balanceUpdateB_P = self.getAccount(0).updateBalance(newState.balanceA_S_Address, newState.balanceDeltaB_P, None, newState.balanceB_P_AutoApplyIndex)
-        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.balanceB_S_Address, newState.balanceDeltaA_P, None, newState.balanceA_P_AutoApplyIndex)
+        balanceUpdateB_P = self.getAccount(0).updateBalance(newState.balanceA_S_Address, newState.balanceDeltaB_P)
+        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.balanceB_S_Address, newState.balanceDeltaA_P)
         ###
 
         witness = Witness(newState.signatureA, newState.signatureB,
                           accountsMerkleRoot,
-                          tradeHistoryUpdate_A, tradeHistoryUpdate_B,
+                          storageUpdate_A, storageUpdate_B,
                           balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
                           balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
                           balanceUpdateA_O, balanceUpdateB_O, accountUpdate_O,
-                          balanceUpdateA_P, balanceUpdateB_P,
-                          balanceUpdateA_I, balanceUpdateB_I)
+                          balanceUpdateA_P, balanceUpdateB_P)
 
         return TxWitness(witness, txInput)
 

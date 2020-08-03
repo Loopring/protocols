@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../iface/IDepositContract.sol";
 
@@ -51,12 +51,12 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         address _exchange
         )
         external
-        onlyOwner
     {
         require(
             exchange == address(0) && _exchange != address(0),
             "INVALID_EXCHANGE"
         );
+        owner = msg.sender;
         exchange = _exchange;
     }
 
@@ -69,7 +69,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     {
         require(needCheckBalance[token] != checkBalance, "INVALID_VALUE");
 
-        needCheckBalance[token] == checkBalance;
+        needCheckBalance[token] = checkBalance;
         emit CheckBalance(token, checkBalance);
     }
 
@@ -83,9 +83,9 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
-        nonReentrant
+        //nonReentrant
         ifNotZero(amount)
-        returns (uint96 amountReceived, uint /*tokenIndex*/)
+        returns (uint96 amountReceived)
     {
         if (isETHInternal(token)) {
             require(msg.value == amount, "INVALID_ETH_DEPOSIT");
@@ -106,6 +106,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     }
 
     function withdraw(
+        address /*from*/,
         address to,
         address token,
         uint    amount,
@@ -115,7 +116,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
-        nonReentrant
+        //nonReentrant
         ifNotZero(amount)
     {
         if (isETHInternal(token)) {
@@ -123,7 +124,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         } else {
             if(!token.safeTransfer(to, amount)){
                 uint amountPaid = ERC20(token).balanceOf(address(this));
-                require(amountPaid < amount, "UNEXCPECTED");
+                require(amountPaid < amount, "UNEXPECTED");
                 token.safeTransferAndVerify(to, amountPaid);
             }
         }
@@ -139,7 +140,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
-        nonReentrant
+        //nonReentrant
         ifNotZero(amount)
     {
         token.safeTransferFromAndVerify(from, to, amount);
@@ -148,7 +149,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard, Claimable
     function isETH(address addr)
         external
         override
-        view
+        pure
         returns (bool)
     {
         return isETHInternal(addr);

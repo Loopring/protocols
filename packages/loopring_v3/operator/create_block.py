@@ -25,7 +25,7 @@ class GeneralObject(object):
 
 
 def orderFromJSON(jOrder, state):
-    orderID = int(jOrder["orderID"])
+    storageID = int(jOrder["storageID"])
     accountID = int(jOrder["accountID"])
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
@@ -35,6 +35,7 @@ def orderFromJSON(jOrder, state):
     validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
     buy = int(jOrder["buy"])
+    taker = str(jOrder["taker"])
     maxFeeBips = int(jOrder["maxFeeBips"])
 
     feeBips = int(jOrder["feeBips"])
@@ -43,10 +44,10 @@ def orderFromJSON(jOrder, state):
     account = state.getAccount(accountID)
 
     order = Order(account.publicKeyX, account.publicKeyY,
-                  orderID, accountID,
+                  storageID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,
-                  allOrNone, validSince, validUntil, buy,
+                  allOrNone, validSince, validUntil, buy, taker,
                   maxFeeBips, feeBips, rebateBips)
 
     order.signature = jOrder["signature"]
@@ -62,7 +63,7 @@ def transferFromJSON(jTransfer):
     transfer.feeTokenID = int(jTransfer["feeTokenID"])
     transfer.fee = str(jTransfer["fee"])
     transfer.type = int(jTransfer["type"])
-    transfer.nonce = int(jTransfer["nonce"])
+    transfer.storageID = str(jTransfer["storageID"])
     transfer.from_ = str(jTransfer["from"])
     transfer.to = str(jTransfer["to"])
     transfer.validUntil = int(jTransfer["validUntil"])
@@ -94,6 +95,7 @@ def withdrawFromJSON(jWithdraw):
     withdraw.dataHash = str(jWithdraw["dataHash"])
     withdraw.minGas = int(jWithdraw["minGas"])
     withdraw.type = int(jWithdraw["type"])
+    withdraw.validUntil = int(jWithdraw["validUntil"])
     withdraw.signature = None
     if "signature" in jWithdraw:
         withdraw.signature = jWithdraw["signature"]
@@ -105,7 +107,6 @@ def depositFromJSON(jDeposit):
     deposit.accountID = int(jDeposit["accountID"])
     deposit.tokenID = int(jDeposit["tokenID"])
     deposit.amount = str(jDeposit["amount"])
-    deposit.index = str(jDeposit["index"])
     return deposit
 
 
@@ -114,9 +115,9 @@ def accountUpdateFromJSON(jUpdate):
     update.owner = str(jUpdate["owner"])
     update.accountID = int(jUpdate["accountID"])
     update.nonce = str(jUpdate["nonce"])
+    update.validUntil = int(jUpdate["validUntil"])
     update.publicKeyX = str(jUpdate["publicKeyX"])
     update.publicKeyY = str(jUpdate["publicKeyY"])
-    update.walletHash = str(jUpdate["walletHash"])
     update.feeTokenID = int(jUpdate["feeTokenID"])
     update.fee = str(jUpdate["fee"])
     update.type = int(jUpdate["type"])
@@ -124,31 +125,6 @@ def accountUpdateFromJSON(jUpdate):
     if "signature" in jUpdate:
         update.signature = jUpdate["signature"]
     return update
-
-def accountNewFromJSON(jCreate):
-    create = GeneralObject()
-    create.payerAccountID = int(jCreate["payerAccountID"])
-    create.feeTokenID = int(jCreate["feeTokenID"])
-    create.fee = str(jCreate["fee"])
-    create.nonce = str(jCreate["nonce"])
-    create.newAccountID = int(jCreate["newAccountID"])
-    create.newOwner = str(jCreate["newOwner"])
-    create.newPublicKeyX = str(jCreate["newPublicKeyX"])
-    create.newPublicKeyY = str(jCreate["newPublicKeyY"])
-    create.newWalletHash = str(jCreate["newWalletHash"])
-    create.signature = jCreate["signature"]
-    return create
-
-def accountTransferFromJSON(jChange):
-    change = GeneralObject()
-    change.owner = str(jChange["owner"])
-    change.accountID = int(jChange["accountID"])
-    change.feeTokenID = int(jChange["feeTokenID"])
-    change.fee = str(jChange["fee"])
-    change.nonce = int(jChange["nonce"])
-    change.newOwner = str(jChange["newOwner"])
-    change.walletHash = str(jChange["walletHash"])
-    return change
 
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
@@ -160,7 +136,6 @@ def ringFromJSON(jRing, state):
 
 def createBlock(state, data):
     block = Block()
-    block.rollupMode = data["rollupMode"]
     block.exchange = str(data["exchange"])
     block.merkleRootBefore = str(state.getRoot())
     block.timestamp = int(data["timestamp"])
@@ -188,10 +163,6 @@ def createBlock(state, data):
             transaction = depositFromJSON(transactionInfo)
         if txType == "AccountUpdate":
             transaction = accountUpdateFromJSON(transactionInfo)
-        if txType == "NewAccount":
-            transaction = accountNewFromJSON(transactionInfo)
-        if txType == "OwnerChange":
-            transaction = accountTransferFromJSON(transactionInfo)
 
         transaction.txType = txType
         tx = state.executeTransaction(context, transaction)
@@ -209,10 +180,6 @@ def createBlock(state, data):
             txWitness.deposit = tx.input
         if txType == "AccountUpdate":
             txWitness.accountUpdate = tx.input
-        if txType == "NewAccount":
-            txWitness.accountNew = tx.input
-        if txType == "OwnerChange":
-            txWitness.accountTransfer = tx.input
         txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
         block.transactions.append(txWitness)
 

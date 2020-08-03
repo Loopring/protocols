@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../thirdparty/Verifier.sol";
 import "../thirdparty/BatchVerifier.sol";
@@ -22,13 +22,12 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         uint[18] verificationKey;
     }
 
-    mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit)))) public circuits;
+    mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit))) public circuits;
 
-    constructor() Claimable() public {}
+    constructor() Claimable() {}
 
     function registerCircuit(
         uint8    blockType,
-        bool     rollupMode,
         uint16   blockSize,
         uint8    blockVersion,
         uint[18] calldata vk
@@ -38,7 +37,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         nonReentrant
         onlyOwner
     {
-        Circuit storage circuit = circuits[rollupMode][blockType][blockSize][blockVersion];
+        Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
         require(circuit.registered == false, "ALREADY_REGISTERED");
 
         for (uint i = 0; i < 18; i++) {
@@ -49,7 +48,6 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
         emit CircuitRegistered(
             blockType,
-            rollupMode,
             blockSize,
             blockVersion
         );
@@ -57,7 +55,6 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
     function disableCircuit(
         uint8  blockType,
-        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion
         )
@@ -66,7 +63,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         nonReentrant
         onlyOwner
     {
-        Circuit storage circuit = circuits[rollupMode][blockType][blockSize][blockVersion];
+        Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");
         require(circuit.enabled == true, "ALREADY_DISABLED");
 
@@ -74,7 +71,6 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
         emit CircuitDisabled(
             blockType,
-            rollupMode,
             blockSize,
             blockVersion
         );
@@ -82,7 +78,6 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
     function verifyProofs(
         uint8  blockType,
-        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion,
         uint[] calldata publicInputs,
@@ -93,7 +88,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         view
         returns (bool)
     {
-        Circuit storage circuit = circuits[rollupMode][blockType][blockSize][blockVersion];
+        Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");
 
         uint[18] storage vk = circuit.verificationKey;
@@ -118,7 +113,6 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
     function isCircuitRegistered(
         uint8  blockType,
-        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion
         )
@@ -127,12 +121,11 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         view
         returns (bool)
     {
-        return circuits[rollupMode][blockType][blockSize][blockVersion].registered;
+        return circuits[blockType][blockSize][blockVersion].registered;
     }
 
     function isCircuitEnabled(
         uint8  blockType,
-        bool   rollupMode,
         uint16 blockSize,
         uint8  blockVersion
         )
@@ -141,6 +134,6 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         view
         returns (bool)
     {
-        return circuits[rollupMode][blockType][blockSize][blockVersion].enabled;
+        return circuits[blockType][blockSize][blockVersion].enabled;
     }
 }

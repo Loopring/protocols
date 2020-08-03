@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "../../iface/ITokenPriceProvider.sol";
 
@@ -36,7 +36,6 @@ contract MovingAveragePriceProvider is ITokenPriceProvider
         uint                _numMovingAverageDataPoints,
         uint                _defaultValue
         )
-        public
     {
         require(_movingAverageTimePeriod > 0, "INVALID_INPUT");
         require(_numMovingAverageDataPoints > 0, "INVALID_INPUT");
@@ -53,7 +52,7 @@ contract MovingAveragePriceProvider is ITokenPriceProvider
             history.push(currentConversion);
         }
         movingAverage = currentConversion;
-        lastUpdateTime = now;
+        lastUpdateTime = block.timestamp;
     }
 
     function usd2lrc(uint usd)
@@ -71,7 +70,7 @@ contract MovingAveragePriceProvider is ITokenPriceProvider
         external
     {
         // Allow the costs to be updated every time span
-        require(now >= lastUpdateTime.add(movingAverageTimePeriod), "TOO_SOON");
+        require(block.timestamp >= lastUpdateTime.add(movingAverageTimePeriod), "TOO_SOON");
 
         // Get the current price. Use the history array as a circular buffer
         history[updateIndex] = provider.usd2lrc(defaultValue);
@@ -84,8 +83,8 @@ contract MovingAveragePriceProvider is ITokenPriceProvider
         }
         movingAverage = newMovingAverage / numMovingAverageDataPoints;
 
-        lastUpdateTime = now;
+        lastUpdateTime = block.timestamp;
 
-        emit MovingAverageUpdated(now, defaultValue, movingAverage);
+        emit MovingAverageUpdated(block.timestamp, defaultValue, movingAverage);
     }
 }

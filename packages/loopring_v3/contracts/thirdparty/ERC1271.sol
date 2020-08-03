@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 abstract contract ERC1271 {
     // bytes4(keccak256("isValidSignature(bytes,bytes)")

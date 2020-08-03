@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 
 import "./AddressSet.sol";
 import "./Claimable.sol";
@@ -25,7 +25,7 @@ contract OwnerManagable is Claimable, AddressSet
         _;
     }
 
-    constructor() public Claimable() {}
+    constructor() Claimable() {}
 
     /// @dev Gets the managers.
     /// @return The list of managers.

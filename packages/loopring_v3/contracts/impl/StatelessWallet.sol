@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.6.10;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../lib/EIP712.sol";
@@ -21,11 +21,11 @@ contract StatelessWallet
     );
 
     bytes32 constant public STATELESSWALLET_TYPEHASH = keccak256(
-        "StatelessWallet(uint24 accountID,Guardian[] guardians,address inheritor,uint256 inheritableSince)Guardian(address addr,uint256 group)"
+        "StatelessWallet(uint32 accountID,Guardian[] guardians,address inheritor,uint256 inheritableSince)Guardian(address addr,uint256 group)"
     );
 
     bytes32 constant public SOCIALRECOVERY_TYPEHASH = keccak256(
-        "SocialRecovery(uint24 accountID,address oldOwner,address newOwner,uint32 nonce)"
+        "SocialRecovery(uint32 accountID,address oldOwner,address newOwner,uint32 nonce)"
     );
 
     struct Guardian
@@ -36,7 +36,7 @@ contract StatelessWallet
 
     struct Wallet
     {
-        uint24     accountID;
+        uint32     accountID;
         Guardian[] guardians;
         address    inheritor;
         uint       inheritableSince;
@@ -53,7 +53,7 @@ contract StatelessWallet
     modifier validateWallet(
         Wallet memory wallet,
         bytes32       walletDataHash,
-        uint24        accountID
+        uint32        accountID
         )
     {
         require(wallet.accountID == accountID, "INVALID_WALLET_ACCOUNT");
@@ -62,7 +62,6 @@ contract StatelessWallet
     }
 
     constructor()
-        public
     {
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("Loopring Stateless Wallet", "1.0", address(this))
@@ -70,7 +69,7 @@ contract StatelessWallet
     }
 
     function recover(
-        uint24                accountID,
+        uint32                accountID,
         uint32                nonce,
         address               oldOwner,
         address               newOwner,
@@ -106,7 +105,7 @@ contract StatelessWallet
     }
 
     function inherit(
-        uint24  accountID,
+        uint32  accountID,
         uint32  /*nonce*/,
         address /*oldOwner*/,
         address newOwner,
@@ -118,7 +117,7 @@ contract StatelessWallet
         validateWallet(wallet, walletDataHash, accountID)
         returns (bytes4)
     {
-        require(now >= wallet.inheritableSince, "TOO_SOON_TO_INHERIT");
+        require(block.timestamp >= wallet.inheritableSince, "TOO_SOON_TO_INHERIT");
         require(wallet.inheritor == newOwner, "WRONG_INHERITOR");
         return RECOVERY_MAGICVALUE;
     }
@@ -130,7 +129,7 @@ contract StatelessWallet
         view
         returns (bytes32)
     {
-       bytes32[] memory guardianHashes = new bytes32[](wallet.guardians.length);
+        bytes32[] memory guardianHashes = new bytes32[](wallet.guardians.length);
         for (uint i = 0; i < wallet.guardians.length; i++) {
             guardianHashes[i] = keccak256(
                 abi.encode(
@@ -157,7 +156,7 @@ contract StatelessWallet
     // -- Internal --
 
     function hashRecovery(
-        uint24  accountID,
+        uint32  accountID,
         address oldOwner,
         address newOwner,
         uint32  nonce
