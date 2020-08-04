@@ -39,7 +39,7 @@ library SignatureUtil
     );
 
     function verifySignatures(
-        bytes32          signHash,
+        bytes32   signHash,
         address[] memory signers,
         bytes[]   memory signatures
         )
@@ -72,8 +72,20 @@ library SignatureUtil
     }
 
     function verifySignature(
+        bytes32 signHash,
+        address signer,
+        bytes   memory signature
+        )
+        internal
+        view
+        returns (bool)
+    {
+        return verifySignature(abi.encodePacked(signHash), signer, signature);
+    }
+
+    function verifySignature(
         bytes   memory data,
-        address        signer,
+        address signer,
         bytes   memory signature
         )
         internal
@@ -83,18 +95,6 @@ library SignatureUtil
         return signer.isContract() ?
             verifyERC1271Signature(data, signer, signature) :
             verifyEOASignature(data, signer, signature);
-    }
-
-    function verifySignature(
-        bytes32        signHash,
-        address        signer,
-        bytes   memory signature
-        )
-        internal
-        view
-        returns (bool)
-    {
-        return verifySignature(abi.encodePacked(signHash), signer, signature);
     }
 
     function recoverECDSASigner(
@@ -137,17 +137,14 @@ library SignatureUtil
         )
         internal
         pure
-        returns (address addr1, address addr2)
+        returns (address)
     {
-        if (data.length == 32) {
-            addr1 = recoverECDSASigner(data.toBytes32(0), signature);
-        }
-        addr2 = recoverECDSASigner(keccak256(data), signature);
+        return recoverECDSASigner(getDataHash(data), signature);
     }
 
     function verifyEOASignature(
         bytes   memory data,
-        address        signer,
+        address signer,
         bytes   memory signature
         )
         private
@@ -158,24 +155,15 @@ library SignatureUtil
         SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
 
         bytes memory stripped = signature.slice(0, signatureTypeOffset);
+        bytes32 hash = getDataHash(data);
 
         if (signatureType == SignatureType.EIP_712) {
-            (address addr1, address addr2) = recoverECDSASigner(data, stripped);
-            return addr1 == signer || addr2 == signer;
+            return recoverECDSASigner(hash, stripped) == signer;
         } else if (signatureType == SignatureType.ETH_SIGN) {
-            if (data.length == 32) {
-                bytes32 hash = keccak256(
-                    abi.encodePacked("\x19Ethereum Signed Message:\n32", data.toBytes32(0))
-                );
-                if (recoverECDSASigner(hash, stripped) == signer) {
-                    return true;
-                }
-            } else {
-                bytes32 hash = keccak256(
-                    abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(data))
-                );
-                return recoverECDSASigner(hash, stripped) == signer;
-            }
+            hash = keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
+            );
+            return recoverECDSASigner(hash, stripped) == signer;
         } else {
             return false;
         }
@@ -190,9 +178,8 @@ library SignatureUtil
         view
         returns (bool)
     {
-        return data.length == 32 &&
-            verifyERC1271WithBytes32(data.toBytes32(0), signer, signature) ||
-            verifyERC1271WithBytes(data, signer, signature);
+        return verifyERC1271WithBytes(data, signer, signature) ||
+            verifyERC1271WithBytes32(getDataHash(data), signer, signature);
     }
 
     function verifyERC1271WithBytes(
@@ -237,5 +224,13 @@ library SignatureUtil
             result.length == 32 &&
             result.toBytes4(0) == ERC1271_MAGICVALUE
         );
+    }
+
+    function getDataHash(bytes memory data)
+        private
+        pure
+        returns (bytes32)
+    {
+        return (data.length == 32) ? BytesUtil.toBytes32(data, 0) : keccak256(data);
     }
 }
