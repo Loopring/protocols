@@ -118,10 +118,12 @@ abstract contract IExchangeV3 is IExchange
     /// @param  owner The owner of this exchange.
     /// @param  exchangeId The id of this exchange.
     /// @param  loopring The corresponding ILoopring contract address.
+    /// @param  genesisMerkleRoot The initial Merkle tree state.
     function initialize(
         address loopring,
         address owner,
-        uint    exchangeId
+        uint    exchangeId,
+        bytes32 genesisMerkleRoot
         )
         external
         virtual;

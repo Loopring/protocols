@@ -25,8 +25,6 @@ import "./libtransactions/TransferTransaction.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    bytes32 constant public genesisMerkleRoot = 0x160ca280c25b71c85d58fc0dd7b9eb42268c73c8812333da3cc2bdc8af3ee7b7;
-
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeBalances      for ExchangeData.State;
@@ -72,7 +70,8 @@ contract ExchangeV3 is IExchangeV3
     function initialize(
         address _loopring,
         address _owner,
-        uint    _id
+        uint    _id,
+        bytes32 _genesisMerkleRoot
         )
         external
         override
@@ -85,7 +84,7 @@ contract ExchangeV3 is IExchangeV3
         state.initializeGenesisBlock(
             _id,
             _loopring,
-            genesisMerkleRoot,
+            _genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );
     }

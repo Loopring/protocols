@@ -46,6 +46,7 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         address indexed implementation,
         address indexed exchangeAddress,
         address         owner,
+        bytes32         genesisMerkleRoot,
         ForgeMode       forgeMode,
         uint            exchangeId,
         uint            amountLRCBurned
@@ -103,12 +104,14 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
     /// @param forgeMode The forge mode.
     /// @param protocol The protocol address, use 0x0 for default.
     /// @param implementation The implementation to use, use 0x0 for default.
+    /// @param genesisMerkleRoot The initial Merkle tree state.
     /// @return exchangeAddress The new exchange's address
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
         ForgeMode forgeMode,
         address   protocol,
-        address   implementation
+        address   implementation,
+        bytes32   genesisMerkleRoot
         )
         external
         virtual

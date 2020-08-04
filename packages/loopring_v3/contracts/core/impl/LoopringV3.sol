@@ -52,7 +52,8 @@ contract LoopringV3 is ILoopringV3
     function initializeExchange(
         address exchangeAddress,
         uint    exchangeId,
-        address owner
+        address owner,
+        bytes32 genesisMerkleRoot
         )
         external
         override
@@ -70,7 +71,8 @@ contract LoopringV3 is ILoopringV3
         exchange.initialize(
             address(this),
             owner,
-            exchangeId
+            exchangeId,
+            genesisMerkleRoot
         );
 
         exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);
@@ -78,7 +80,8 @@ contract LoopringV3 is ILoopringV3
         emit ExchangeInitialized(
             exchangeId,
             exchangeAddress,
-            owner
+            owner,
+            genesisMerkleRoot
         );
     }
 

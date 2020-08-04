@@ -454,6 +454,8 @@ export class ExchangeTestUtil {
   private proverPorts = new Map<number, number>();
   private portGenerator = 1234;
 
+  private emptyMerkleRoot = "0x160ca280c25b71c85d58fc0dd7b9eb42268c73c8812333da3cc2bdc8af3ee7b7";
+
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
@@ -2190,6 +2192,7 @@ export class ExchangeTestUtil {
       forgeMode,
       Constants.zeroAddress,
       Constants.zeroAddress,
+      this.emptyMerkleRoot,
       { from: owner }
     );
 
@@ -2254,7 +2257,7 @@ export class ExchangeTestUtil {
     const exchangeCreationTimestamp = (await this.exchange.getBlockInfo(0))
       .timestamp;
     this.GENESIS_MERKLE_ROOT = new BN(
-      (await this.exchange.genesisMerkleRoot()).slice(2),
+      (await this.exchange.getMerkleRoot()).slice(2),
       16
     );
 
