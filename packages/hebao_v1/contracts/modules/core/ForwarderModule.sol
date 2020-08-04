@@ -8,7 +8,7 @@ import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
-
+import "./walletFactory.sol";
 
 /// @title ForwarderModule
 /// @dev A module to support wallet meta-transactions.
@@ -72,6 +72,7 @@ abstract contract ForwarderModule is BaseModule
             (to == from) &&
             data.toBytes4(0) == Wallet.addModule.selector &&
             controller().walletRegistry().isWalletRegistered(from) ||
+
             to == controller().walletFactory(),
             "INVALID_DESTINATION_OR_METHOD"
         );
@@ -167,6 +168,7 @@ abstract contract ForwarderModule is BaseModule
             // private keyis leaked, the hacker won't be able to deplete ether/tokens
             // as high meta-tx fees.
             bool skipQuota = metaTx.txAwareHash != 0 ||
+                metaTx.data.toBytes4(0) == WalletFactory.createWallet.selector &&
                 metaTx.to == controller().walletFactory();
 
             reimburseGasFee(
