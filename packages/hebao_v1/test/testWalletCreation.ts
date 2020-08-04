@@ -58,7 +58,8 @@ contract("WalletFactory", () => {
         walletName,
         ensApproval,
         modules,
-        txSignature
+        txSignature,
+        true
       ),
       ctx,
       useMetaTx,
@@ -101,7 +102,8 @@ contract("WalletFactory", () => {
             walletName,
             ensApproval,
             modules,
-            txSignature
+            txSignature,
+            true
           ),
           ctx,
           useMetaTx,
@@ -128,7 +130,8 @@ contract("WalletFactory", () => {
       ctx.walletFactory.contract.methods.registerENS(
         wallet,
         walletName,
-        ensApproval
+        ensApproval,
+        true
       ),
       ctx,
       useMetaTx,

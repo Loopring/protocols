@@ -76,12 +76,14 @@ contract WalletFactory is ReentrancyGuard
     /// @param _labelApproval The signature for ENS subdomain approval.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
+    /// @param _doReverseRegistry Do reverse ENS registry or not
     function createWallet(
         address            _owner,
         string    calldata _label,
         bytes     calldata _labelApproval,
         address[] calldata _modules,
-        bytes     calldata _signature
+        bytes     calldata _signature,
+        bool               _doReverseRegistry
         )
         external
         payable
@@ -108,38 +110,61 @@ contract WalletFactory is ReentrancyGuard
             w.addModule(_modules[i]);
         }
 
-        // register ENS
-        registerENS(_wallet, _label, _labelApproval);
+        if (bytes(_label).length > 0) {
+            // register ENS
+            registerENS(
+                _wallet,
+                _label,
+                _labelApproval,
+                _doReverseRegistry
+            );
+        } else {
+            require(allowEmptyENS, "INVALID_ENS_LABEL");
+        }
     }
 
     function registerENS(
         address        wallet,
         string memory  label,
-        bytes  memory  labelApproval
+        bytes  memory  labelApproval,
+        bool           doReverseRegistry
+        )
+        public
+    {
+        require(
+            bytes(label).length > 0 &&
+            bytes(labelApproval).length > 0,
+            "INVALID_LABEL_OR_SIG"
+        );
+
+        BaseENSManager ensManager = controller.ensManager();
+        if (address(ensManager) != address(0)) {
+            ensManager.register(wallet, label, labelApproval);
+        }
+
+        if (doReverseRegistry) {
+            registerENSReverse(wallet);
+        }
+    }
+
+    function registerENSReverse(
+        address wallet
         )
         public
     {
         BaseENSManager ensManager = controller.ensManager();
-        if (address(ensManager) != address(0)) {
-            if (bytes(label).length > 0) {
-                ensManager.register(wallet, label, labelApproval);
+        bytes memory data = abi.encodeWithSelector(
+            ENSReverseRegistrar.claimWithResolver.selector,
+            address(0), // the owner of the reverse record
+            ensManager.ensResolver()
+        );
 
-                bytes memory data = abi.encodeWithSelector(
-                    ENSReverseRegistrar.claimWithResolver.selector,
-                    address(0), // the owner of the reverse record
-                    ensManager.ensResolver()
-                );
-
-                Wallet(wallet).transact(
-                    uint8(1),
-                    address(ensManager.getENSReverseRegistrar()),
-                    0, // value
-                    data
-                );
-            } else {
-                require(allowEmptyENS, "INVALID_ENS_LABEL");
-            }
-        }
+        Wallet(wallet).transact(
+            uint8(1),
+            address(ensManager.getENSReverseRegistrar()),
+            0, // value
+            data
+        );
     }
 
     function createWalletInternal(

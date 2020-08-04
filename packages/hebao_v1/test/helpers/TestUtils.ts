@@ -120,6 +120,7 @@ export async function createWallet(
     ensApproval,
     modules,
     txSignature,
+    true,
     {
       from: owner
     }
@@ -158,6 +159,7 @@ export async function createWallet2(
     ensApproval,
     modules,
     txSignature,
+    true,
     {
       from: owner
     }

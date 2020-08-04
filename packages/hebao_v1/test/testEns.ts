@@ -50,7 +50,8 @@ contract("BaseENSManager", () => {
             walletName,
             ensApproval,
             modules,
-            txSignature
+            txSignature,
+            true
           ),
           ctx,
           false,
@@ -77,7 +78,8 @@ contract("BaseENSManager", () => {
           walletName,
           ensApproval,
           modules,
-          txSignature
+          txSignature,
+          true
         ),
         ctx,
         false,
@@ -112,7 +114,8 @@ contract("BaseENSManager", () => {
           walletName,
           ensApproval,
           modules,
-          txSignature
+          txSignature,
+          true
         ),
         ctx,
         false,
