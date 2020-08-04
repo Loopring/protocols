@@ -152,7 +152,7 @@ contract WalletFactory is ReentrancyGuard
     function registerReverseENSInternal(
         address wallet
         )
-        private
+        internal
     {
         BaseENSManager ensManager = controller.ensManager();
         require(address(ensManager) != address(0), "NO_EMS_MANAGER");
