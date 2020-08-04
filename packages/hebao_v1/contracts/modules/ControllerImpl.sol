@@ -123,7 +123,7 @@ contract ControllerImpl is Claimable, Controller
         emit AddressChanged("CollectTo", collectTo);
     }
 
-    function setmetaTxFeeAccoutingThreshold(uint _metaTxFeeAccoutingThreshold)
+    function setMetaTxFeeAccoutingThreshold(uint _metaTxFeeAccoutingThreshold)
         external
         onlyOwner
     {
