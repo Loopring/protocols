@@ -40,7 +40,7 @@ contract WalletFactory is ReentrancyGuard
 
     bytes32 public DOMAIN_SEPERATOR;
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,string label,bytes labelApproval,address[] modules)"
+        "createWallet(address owner,string ensLabel,bytes ensApproval,bool ensRegisterReverse,address[] modules)"
     );
 
     constructor(
@@ -72,14 +72,16 @@ contract WalletFactory is ReentrancyGuard
 
     /// @dev Create a new wallet by deploying a proxy.
     /// @param _owner The wallet's owner.
-    /// @param _label The ENS subdomain to register, use "" to skip.
-    /// @param _labelApproval The signature for ENS subdomain approval.
+    /// @param _ensLabel The ENS subdomain to register, use "" to skip.
+    /// @param _ensApproval The signature for ENS subdomain approval.
+    /// @param _ensRegisterReverse True to register reverse ENS.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
     function createWallet(
         address            _owner,
-        string    calldata _label,
-        bytes     calldata _labelApproval,
+        string    calldata _ensLabel,
+        bytes     calldata _ensApproval,
+        bool               _ensRegisterReverse,
         address[] calldata _modules,
         bytes     calldata _signature
         )
@@ -93,8 +95,9 @@ contract WalletFactory is ReentrancyGuard
         bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
-            keccak256(bytes(_label)),
-            keccak256(_labelApproval),
+            keccak256(bytes(_ensLabel)),
+            keccak256(_ensApproval),
+            _ensRegisterReverse,
             keccak256(abi.encode(_modules))
         );
 
@@ -108,32 +111,51 @@ contract WalletFactory is ReentrancyGuard
             w.addModule(_modules[i]);
         }
 
-        // register ENS
-        address ensManager = controller.ensManagerAddress();
+        if (bytes(_ensLabel).length > 0) {
+            registerENS(_wallet, _ensLabel, _ensApproval);
 
-        if (ensManager != address(0)) {
-            if (bytes(_label).length > 0) {
-                registerENS(
-                    _wallet,
-                    BaseENSManager(ensManager),
-                    _label,
-                    _labelApproval
-                );
-            } else {
-                require(allowEmptyENS, "INVALID_ENS_LABEL");
+            if (_ensRegisterReverse) {
+                registerReverseENSInternal(_wallet);
             }
+        } else {
+            require(allowEmptyENS, "INVALID_ENS_LABEL");
         }
     }
 
     function registerENS(
         address        wallet,
-        BaseENSManager ensManager,
         string memory  label,
         bytes  memory  labelApproval
         )
+        public
+    {
+        require(
+            bytes(label).length > 0 &&
+            bytes(labelApproval).length > 0,
+            "INVALID_LABEL_OR_SIG"
+        );
+
+        BaseENSManager ensManager = controller.ensManager();
+        require(address(ensManager) != address(0), "NO_EMS_MANAGER");
+
+        ensManager.register(wallet, label, labelApproval);
+    }
+
+    function registerReverseENS()
+        public
+    {
+        registerReverseENSInternal(msg.sender);
+    }
+
+    // ---- internal functions ---
+
+    function registerReverseENSInternal(
+        address wallet
+        )
         internal
     {
-        ensManager.register(wallet, label, labelApproval);
+        BaseENSManager ensManager = controller.ensManager();
+        require(address(ensManager) != address(0), "NO_EMS_MANAGER");
 
         bytes memory data = abi.encodeWithSelector(
             ENSReverseRegistrar.claimWithResolver.selector,

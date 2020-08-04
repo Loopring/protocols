@@ -40,6 +40,7 @@ contract("BaseENSManager", () => {
         owner,
         walletName,
         ensApproval,
+        true,
         modules
       );
 
@@ -49,6 +50,7 @@ contract("BaseENSManager", () => {
             owner,
             walletName,
             ensApproval,
+            true,
             modules,
             txSignature
           ),
@@ -68,6 +70,7 @@ contract("BaseENSManager", () => {
         owner,
         walletName,
         ensApproval,
+        true,
         modules
       );
 
@@ -76,6 +79,7 @@ contract("BaseENSManager", () => {
           owner,
           walletName,
           ensApproval,
+          true,
           modules,
           txSignature
         ),
@@ -103,6 +107,7 @@ contract("BaseENSManager", () => {
         owner,
         walletName,
         ensApproval,
+        true,
         modules
       );
 
@@ -111,6 +116,7 @@ contract("BaseENSManager", () => {
           owner,
           walletName,
           ensApproval,
+          true,
           modules,
           txSignature
         ),

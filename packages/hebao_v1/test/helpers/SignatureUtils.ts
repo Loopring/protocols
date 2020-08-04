@@ -17,12 +17,13 @@ export function signCreateWallet(
   owner: string,
   label: string,
   labelApproval: string,
+  ensRegisterReverse: boolean,
   modules: string[]
 ) {
   const domainSeprator = eip712.hash("WalletFactory", "1.1.0", moduleAddress);
 
   const TYPE_STR =
-    "createWallet(address owner,string label,bytes labelApproval,address[] modules)";
+    "createWallet(address owner,string ensLabel,bytes ensApproval,bool ensRegisterReverse,address[] modules)";
   const CREATE_WALLET_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
   const encodedLabel = ethUtil.keccak(Buffer.from(label, "utf8"));
@@ -32,12 +33,13 @@ export function signCreateWallet(
   );
 
   const encodedRequest = web3.eth.abi.encodeParameters(
-    ["bytes32", "address", "bytes32", "bytes32", "bytes32"],
+    ["bytes32", "address", "bytes32", "bytes32", "bool", "bytes32"],
     [
       CREATE_WALLET_TYPEHASH,
       owner,
       encodedLabel,
       encodedApproval,
+      ensRegisterReverse,
       encodedModules
     ]
   );

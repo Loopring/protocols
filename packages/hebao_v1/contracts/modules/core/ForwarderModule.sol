@@ -72,7 +72,6 @@ abstract contract ForwarderModule is BaseModule
             (to == from) &&
             data.toBytes4(0) == Wallet.addModule.selector &&
             controller().walletRegistry().isWalletRegistered(from) ||
-
             to == controller().walletFactory(),
             "INVALID_DESTINATION_OR_METHOD"
         );

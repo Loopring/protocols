@@ -23,7 +23,8 @@ contract("WalletFactory", () => {
 
   const createWalletChecked = async (
     owner: string,
-    walletName: string = ""
+    walletName: string = "",
+    ensRegisterReverse: boolean = true
   ) => {
     const wallet = await ctx.walletFactory.computeWalletAddress(owner);
 
@@ -45,6 +46,7 @@ contract("WalletFactory", () => {
       owner,
       walletName,
       ensApproval,
+      ensRegisterReverse,
       modules
     );
 
@@ -57,6 +59,7 @@ contract("WalletFactory", () => {
         owner,
         walletName,
         ensApproval,
+        ensRegisterReverse,
         modules,
         txSignature
       ),
@@ -100,6 +103,7 @@ contract("WalletFactory", () => {
             owner,
             walletName,
             ensApproval,
+            ensRegisterReverse,
             modules,
             txSignature
           ),
@@ -111,6 +115,42 @@ contract("WalletFactory", () => {
         ),
         useMetaTx ? "UNAUTHORIZED" : "CREATE2_FAILED"
       );
+    }
+  };
+
+  const registerENSChecked = async (owner: string, walletName: string = "") => {
+    const wallet = await ctx.walletFactory.computeWalletAddress(owner);
+
+    const signer = ctx.owners[0];
+    const ensApproval = await getEnsApproval(wallet, walletName, signer);
+
+    const opt = { owner, wallet, gasPrice: new BN(1) };
+
+    const tx = await executeTransaction(
+      ctx.walletFactory.contract.methods.registerENS(
+        wallet,
+        walletName,
+        ensApproval
+      ),
+      ctx,
+      useMetaTx,
+      wallet,
+      [],
+      opt
+    );
+
+    if (walletName !== "") {
+      await assertEventEmitted(
+        ctx.baseENSManager,
+        "Registered",
+        (event: any) => {
+          return (
+            event._ens === walletName + walletDomain && event._owner === wallet
+          );
+        }
+      );
+    } else {
+      await assertNoEventEmitted(ctx.baseENSManager, "Registered");
     }
   };
 
@@ -132,6 +172,10 @@ contract("WalletFactory", () => {
       async () => {
         useMetaTx = metaTx;
         await createWalletChecked(ctx.owners[0]);
+        await registerENSChecked(
+          ctx.owners[0],
+          "testwallet" + new Date().getTime()
+        );
       }
     );
 
