@@ -23,7 +23,7 @@ contract OfficialGuardian is OwnerManagable, ERC1271
         override
         returns (bytes4)
     {
-        address signer = _data.recoverECDSASigner(_signature);
-        return isManager(signer) ?  ERC1271_MAGICVALUE : bytes4(0);
+        (address addr1, address addr2) = _data.recoverECDSASigner(_signature);
+        return isManager(addr1) || isManager(addr2) ?  ERC1271_MAGICVALUE : bytes4(0);
     }
 }
