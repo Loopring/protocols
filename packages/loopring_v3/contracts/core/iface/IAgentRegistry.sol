@@ -2,6 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+
 interface IAgentRegistry
 {
     /// @dev Returns whether an agent address is an agent of an account owner

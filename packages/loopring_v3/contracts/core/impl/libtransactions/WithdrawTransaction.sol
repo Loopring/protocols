@@ -3,13 +3,12 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/ExchangeData.sol";
-import "../../../thirdparty/BytesUtil.sol";
 import "../../../lib/EIP712.sol";
 import "../../../lib/FloatUtil.sol";
 import "../../../lib/MathUint.sol";
 import "../../../lib/SignatureUtil.sol";
-
+import "../../../thirdparty/BytesUtil.sol";
+import "../../iface/ExchangeData.sol";
 import "../libexchange/ExchangeMode.sol";
 import "../libexchange/ExchangeSignatures.sol";
 import "../libexchange/ExchangeWithdrawals.sol";

@@ -2,9 +2,9 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "./IExchangeProxy.sol";
 import "../../iface/IImplementationManager.sol";
 import "../../iface/IUniversalRegistry.sol";
+import "./IExchangeProxy.sol";
 
 
 /// @title AutoUpgradabilityProxy

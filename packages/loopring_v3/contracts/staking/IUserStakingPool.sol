@@ -2,6 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+
 /// @title IUserStakingPool
 /// @dev This contract manages staked LRC tokens and their rewards.
 ///      WARNING: sending tokens directly to this contract will result in all

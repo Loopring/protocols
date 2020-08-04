@@ -3,11 +3,11 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/ExchangeData.sol";
-import "../../../thirdparty/BytesUtil.sol";
 import "../../../lib/EIP712.sol";
 import "../../../lib/MathUint.sol";
 import "../../../lib/SignatureUtil.sol";
+import "../../../thirdparty/BytesUtil.sol";
+import "../../iface/ExchangeData.sol";
 
 
 /// @title DepositTransaction

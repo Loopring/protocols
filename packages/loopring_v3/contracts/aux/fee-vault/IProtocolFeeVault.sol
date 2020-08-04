@@ -2,6 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+
 /// @title IProtocolFeeVault
 /// @dev This smart contract manages the distribution of protocol fees.
 ///     Tokens other than LRC will be sold by TokenSeller,

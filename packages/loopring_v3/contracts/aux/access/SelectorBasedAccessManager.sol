@@ -2,11 +2,10 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+import "../../core/iface/IExchangeV3.sol";
 import "../../lib/Claimable.sol";
-
 import "../../thirdparty/BytesUtil.sol";
 
-import "../../core/iface/IExchangeV3.sol";
 
 /// @title  SelectorBasedAccessManager
 /// @author Daniel Wang - <daniel@loopring.org>

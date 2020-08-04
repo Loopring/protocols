@@ -3,8 +3,8 @@
 pragma solidity ^0.7.0;
 
 import "../iface/IExchange.sol";
-import "../iface/ILoopring.sol";
 import "../iface/IImplementationManager.sol";
+import "../iface/ILoopring.sol";
 
 
 /// @title An Implementation of IImplementationManager.

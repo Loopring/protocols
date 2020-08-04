@@ -3,7 +3,6 @@
 pragma solidity ^0.7.0;
 
 import "../../../thirdparty/proxies/Proxy.sol";
-
 import "../../iface/IImplementationManager.sol";
 import "../../iface/IUniversalRegistry.sol";
 

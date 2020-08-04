@@ -2,13 +2,12 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+import "../aux/fee-vault/IProtocolFeeVault.sol";
 import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
-
-import "../aux/fee-vault/IProtocolFeeVault.sol";
 import "./IUserStakingPool.sol";
 
 

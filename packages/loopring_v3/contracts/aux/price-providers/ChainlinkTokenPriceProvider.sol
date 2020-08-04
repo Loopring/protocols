@@ -2,11 +2,9 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "./ITokenPriceProvider.sol";
-
-import "../../thirdparty/chainlink/AggregatorInterface.sol";
-
 import "../../lib/MathUint.sol";
+import "../../thirdparty/chainlink/AggregatorInterface.sol";
+import "./ITokenPriceProvider.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>

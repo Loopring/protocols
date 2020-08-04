@@ -2,10 +2,9 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "./DelayedOwner.sol";
-
-import "../../core/iface/ILoopringV3.sol";
 import "../../aux/price-providers/ITokenPriceProvider.sol";
+import "../../core/iface/ILoopringV3.sol";
+import "./DelayedOwner.sol";
 
 
 /// @title LoopringV3Owner

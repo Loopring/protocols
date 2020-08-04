@@ -3,13 +3,11 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../core/iface/IExchangeV3.sol";
-
 import "../../aux/compression/LzDecompressor.sol";
-
+import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
-
 import "./SelectorBasedAccessManager.sol";
+
 
 contract LoopringIOExchangeOwner is SelectorBasedAccessManager
 {

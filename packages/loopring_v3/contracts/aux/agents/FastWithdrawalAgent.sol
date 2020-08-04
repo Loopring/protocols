@@ -4,13 +4,12 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../core/iface/IExchangeV3.sol";
-
 import "../../lib/Claimable.sol";
+import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/SignatureUtil.sol";
-import "../../lib/EIP712.sol";
 
 
 /// @title Fast withdrawal agent implementation. The fast withdrawal request reduces to

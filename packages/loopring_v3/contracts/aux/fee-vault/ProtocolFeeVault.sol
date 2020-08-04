@@ -9,9 +9,9 @@ import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
-
-import "./IProtocolFeeVault.sol";
 import "../token-sellers/ITokenSeller.sol";
+import "./IProtocolFeeVault.sol";
+
 
 /// @title An Implementation of IProtocolFeeVault.
 /// @author Daniel Wang - <daniel@loopring.org>

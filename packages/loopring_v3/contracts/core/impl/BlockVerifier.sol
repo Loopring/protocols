@@ -2,13 +2,11 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../../thirdparty/verifiers/Verifier.sol";
-import "../../thirdparty/verifiers/BatchVerifier.sol";
-
 import "../../lib/ReentrancyGuard.sol";
-
-import "../iface/IBlockVerifier.sol";
+import "../../thirdparty/verifiers/BatchVerifier.sol";
+import "../../thirdparty/verifiers/Verifier.sol";
 import "../iface/ExchangeData.sol";
+import "../iface/IBlockVerifier.sol";
 
 
 /// @title An Implementation of IBlockVerifier.

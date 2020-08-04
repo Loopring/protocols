@@ -2,12 +2,11 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "./IDelayedTransaction.sol";
-
 import "../../lib/AddressUtil.sol";
-import "../../thirdparty/BytesUtil.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
+import "../../thirdparty/BytesUtil.sol";
+import "./IDelayedTransaction.sol";
 
 
 /// @title DelayedOwner

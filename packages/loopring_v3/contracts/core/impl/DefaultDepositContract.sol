@@ -2,14 +2,13 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../iface/IDepositContract.sol";
-
 import "../../lib/AddressUtil.sol";
 import "../../lib/Claimable.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
+import "../iface/IDepositContract.sol";
 
 
 /// @title DefaultDepositContract

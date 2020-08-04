@@ -2,6 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+
 /// @title ITokenSeller
 /// @dev Use this contract to sell tokenS for as many tokenB.
 /// @author Daniel Wang  - <daniel@loopring.org>

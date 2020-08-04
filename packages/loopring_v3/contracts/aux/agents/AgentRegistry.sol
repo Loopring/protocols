@@ -4,7 +4,6 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../core/iface/IAgentRegistry.sol";
-
 import "../../lib/AddressSet.sol";
 import "../../lib/Claimable.sol";
 

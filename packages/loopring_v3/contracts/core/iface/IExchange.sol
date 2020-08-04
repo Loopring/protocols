@@ -3,10 +3,9 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../thirdparty/Cloneable.sol";
-
 import "../../lib/Claimable.sol";
 import "../../lib/ReentrancyGuard.sol";
+import "../../thirdparty/Cloneable.sol";
 
 
 /// @title IExchange

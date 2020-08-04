@@ -2,18 +2,16 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../../lib/SimpleProxy.sol";
 import "../../lib/ERC20SafeTransfer.sol";
-
+import "../../lib/SimpleProxy.sol";
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
 import "../iface/ILoopringV3.sol";
 import "../iface/IUniversalRegistry.sol";
-
+import "./ImplementationManager.sol";
 import "./proxies/AutoUpgradabilityProxy.sol";
 import "./proxies/ManualUpgradabilityProxy.sol";
 
-import "./ImplementationManager.sol";
 
 /// @title An Implementation of IUniversalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>

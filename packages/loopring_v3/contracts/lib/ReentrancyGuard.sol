@@ -2,6 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+
 /// @title ReentrancyGuard
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Exposes a modifier that guards a function against reentrancy

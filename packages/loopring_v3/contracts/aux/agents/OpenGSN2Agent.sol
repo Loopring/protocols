@@ -3,10 +3,10 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../core/iface/ExchangeData.sol";
 import "../../thirdparty/opengsn2/BaseRelayRecipient.sol";
 import "../../thirdparty/opengsn2/IKnowForwarderAddress.sol";
 
-import "../../core/iface/ExchangeData.sol";
 
 contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress
 {

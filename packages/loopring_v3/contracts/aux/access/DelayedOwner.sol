@@ -3,7 +3,6 @@
 pragma solidity ^0.7.0;
 
 import "../../lib/Claimable.sol";
-
 import "./DelayedTransaction.sol";
 
 

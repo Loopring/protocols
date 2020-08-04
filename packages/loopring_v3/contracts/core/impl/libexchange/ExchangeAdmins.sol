@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "../../../lib/ERC20.sol";
 import "../../../lib/ERC20SafeTransfer.sol";
 import "../../../lib/MathUint.sol";
-
 import "../../iface/ExchangeData.sol";
 import "./ExchangeMode.sol";
 

@@ -2,8 +2,8 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "./DelayedOwner.sol";
 import "../../core/iface/IBlockVerifier.sol";
+import "./DelayedOwner.sol";
 
 
 /// @title  BlockVerifierOwner

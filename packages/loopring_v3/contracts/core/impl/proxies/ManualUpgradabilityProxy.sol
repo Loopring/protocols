@@ -3,9 +3,8 @@
 pragma solidity ^0.7.0;
 
 import "../../../lib/Ownable.sol";
-
-import "./IExchangeProxy.sol";
 import "../../iface/IUniversalRegistry.sol";
+import "./IExchangeProxy.sol";
 
 
 /// @title ManualUpgradabilityProxy

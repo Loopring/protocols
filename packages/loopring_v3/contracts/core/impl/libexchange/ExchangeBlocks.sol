@@ -5,19 +5,15 @@ pragma experimental ABIEncoderV2;
 
 import "../../../lib/AddressUtil.sol";
 import "../../../lib/MathUint.sol";
-
 import "../../../thirdparty/BytesUtil.sol";
-
-import "../../iface/IBlockVerifier.sol";
 import "../../iface/ExchangeData.sol";
-
-import "./ExchangeMode.sol";
-import "./ExchangeWithdrawals.sol";
-
-import "../libtransactions/TransferTransaction.sol";
+import "../../iface/IBlockVerifier.sol";
 import "../libtransactions/AccountUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
+import "../libtransactions/TransferTransaction.sol";
 import "../libtransactions/WithdrawTransaction.sol";
+import "./ExchangeMode.sol";
+import "./ExchangeWithdrawals.sol";
 
 
 /// @title ExchangeBlocks.

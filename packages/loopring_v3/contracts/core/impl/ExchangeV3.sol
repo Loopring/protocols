@@ -3,6 +3,10 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/EIP712.sol";
+import "../../lib/MathUint.sol";
+import "../iface/IAgentRegistry.sol";
+import "../iface/IExchangeV3.sol";
 import "./libexchange/ExchangeAdmins.sol";
 import "./libexchange/ExchangeBalances.sol";
 import "./libexchange/ExchangeBlocks.sol";
@@ -12,12 +16,6 @@ import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
 import "./libtransactions/TransferTransaction.sol";
-
-import "../../lib/EIP712.sol";
-import "../../lib/MathUint.sol";
-
-import "../iface/IAgentRegistry.sol";
-import "../iface/IExchangeV3.sol";
 
 
 /// @title An Implementation of IExchangeV3.

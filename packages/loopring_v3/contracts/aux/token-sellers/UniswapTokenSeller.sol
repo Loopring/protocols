@@ -2,14 +2,12 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "./ITokenSeller.sol";
-
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
-
 import "../../thirdparty/uniswap/UniswapExchangeInterface.sol";
 import "../../thirdparty/uniswap/UniswapFactoryInterface.sol";
+import "./ITokenSeller.sol";
 
 
 /// @title An ITokenSeller that sells token on Uniswap.
