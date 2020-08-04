@@ -114,6 +114,44 @@ contract("WalletFactory", () => {
     }
   };
 
+  const registerENSChecked = async (owner: string, walletName: string = "") => {
+    const wallet = await ctx.walletFactory.computeWalletAddress(owner);
+
+    const signer = ctx.owners[0];
+    const ensApproval = await getEnsApproval(wallet, walletName, signer);
+
+    const opt = useMetaTx
+      ? { owner, wallet, gasPrice: new BN(1) }
+      : { from: owner };
+
+    const tx = await executeTransaction(
+      ctx.walletFactory.contract.methods.registerENS(
+        wallet,
+        walletName,
+        ensApproval
+      ),
+      ctx,
+      useMetaTx,
+      wallet,
+      [],
+      opt
+    );
+
+    if (walletName !== "") {
+      await assertEventEmitted(
+        ctx.baseENSManager,
+        "Registered",
+        (event: any) => {
+          return (
+            event._ens === walletName + walletDomain && event._owner === wallet
+          );
+        }
+      );
+    } else {
+      await assertNoEventEmitted(ctx.baseENSManager, "Registered");
+    }
+  };
+
   const description = (descr: string, metaTx: boolean = useMetaTx) => {
     return descr + (metaTx ? " (meta tx)" : "");
   };
@@ -127,11 +165,15 @@ contract("WalletFactory", () => {
   });
 
   [false, true].forEach(function(metaTx) {
-    it(
+    it.only(
       description("user should be able to create a wallet without ENS", metaTx),
       async () => {
         useMetaTx = metaTx;
         await createWalletChecked(ctx.owners[0]);
+        await registerENSChecked(
+          ctx.owners[0],
+          "testwallet" + new Date().getTime()
+        );
       }
     );
 

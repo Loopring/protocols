@@ -109,44 +109,37 @@ contract WalletFactory is ReentrancyGuard
         }
 
         // register ENS
-        address ensManager = controller.ensManagerAddress();
+        registerENS(_wallet, _label, _labelApproval);
+    }
 
-        if (ensManager != address(0)) {
-            if (bytes(_label).length > 0) {
-                registerENS(
-                    _wallet,
-                    BaseENSManager(ensManager),
-                    _label,
-                    _labelApproval
+    function registerENS(
+        address        wallet,
+        string memory  label,
+        bytes  memory  labelApproval
+        )
+        public
+    {
+        BaseENSManager ensManager = controller.ensManager();
+        if (address(ensManager) != address(0)) {
+            if (bytes(label).length > 0) {
+                ensManager.register(wallet, label, labelApproval);
+
+                bytes memory data = abi.encodeWithSelector(
+                    ENSReverseRegistrar.claimWithResolver.selector,
+                    address(0), // the owner of the reverse record
+                    ensManager.ensResolver()
+                );
+
+                Wallet(wallet).transact(
+                    uint8(1),
+                    address(ensManager.getENSReverseRegistrar()),
+                    0, // value
+                    data
                 );
             } else {
                 require(allowEmptyENS, "INVALID_ENS_LABEL");
             }
         }
-    }
-
-    function registerENS(
-        address        wallet,
-        BaseENSManager ensManager,
-        string memory  label,
-        bytes  memory  labelApproval
-        )
-        internal
-    {
-        ensManager.register(wallet, label, labelApproval);
-
-        bytes memory data = abi.encodeWithSelector(
-            ENSReverseRegistrar.claimWithResolver.selector,
-            address(0), // the owner of the reverse record
-            ensManager.ensResolver()
-        );
-
-        Wallet(wallet).transact(
-            uint8(1),
-            address(ensManager.getENSReverseRegistrar()),
-            0, // value
-            data
-        );
     }
 
     function createWalletInternal(
