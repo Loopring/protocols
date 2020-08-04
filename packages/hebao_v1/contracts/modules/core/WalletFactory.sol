@@ -76,14 +76,14 @@ contract WalletFactory is ReentrancyGuard
     /// @param _labelApproval The signature for ENS subdomain approval.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
-    /// @param _doReverseRegistry Do reverse ENS registry or not
+    /// @param _registerReverse Do reverse ENS registry or not
     function createWallet(
         address            _owner,
         string    calldata _label,
         bytes     calldata _labelApproval,
         address[] calldata _modules,
         bytes     calldata _signature,
-        bool               _doReverseRegistry
+        bool               _registerReverse
         )
         external
         payable
@@ -111,25 +111,39 @@ contract WalletFactory is ReentrancyGuard
         }
 
         if (bytes(_label).length > 0) {
-            // register ENS
-            registerENS(
-                _wallet,
-                _label,
-                _labelApproval,
-                _doReverseRegistry
-            );
+            registerENSInternal(_wallet, _label, _labelApproval);
+
+            if (_registerReverse) {
+                registerReverseENSInternal(_wallet);
+            }
         } else {
             require(allowEmptyENS, "INVALID_ENS_LABEL");
         }
     }
 
     function registerENS(
-        address        wallet,
         string memory  label,
-        bytes  memory  labelApproval,
-        bool           doReverseRegistry
+        bytes  memory  labelApproval
         )
         public
+    {
+        registerENSInternal(msg.sender, label, labelApproval);
+    }
+
+    function registerReverseENS()
+        public
+    {
+        registerReverseENSInternal(msg.sender);
+    }
+
+    // ---- internal functions ---
+
+    function registerENSInternal(
+        address        wallet,
+        string memory  label,
+        bytes  memory  labelApproval
+        )
+        private
     {
         require(
             bytes(label).length > 0 &&
@@ -138,21 +152,19 @@ contract WalletFactory is ReentrancyGuard
         );
 
         BaseENSManager ensManager = controller.ensManager();
-        if (address(ensManager) != address(0)) {
-            ensManager.register(wallet, label, labelApproval);
-        }
+        require(address(ensManager) != address(0), "NO_EMS_MANAGER");
 
-        if (doReverseRegistry) {
-            registerENSReverse(wallet);
-        }
+        ensManager.register(wallet, label, labelApproval);
     }
 
-    function registerENSReverse(
+    function registerReverseENSInternal(
         address wallet
         )
-        public
+        private
     {
         BaseENSManager ensManager = controller.ensManager();
+        require(address(ensManager) != address(0), "NO_EMS_MANAGER");
+
         bytes memory data = abi.encodeWithSelector(
             ENSReverseRegistrar.claimWithResolver.selector,
             address(0), // the owner of the reverse record
