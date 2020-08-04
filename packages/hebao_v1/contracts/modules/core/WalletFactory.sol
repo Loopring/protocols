@@ -40,7 +40,7 @@ contract WalletFactory is ReentrancyGuard
 
     bytes32 public DOMAIN_SEPERATOR;
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,string label,bytes labelApproval,bool registerReverse,address[] modules)"
+        "createWallet(address owner,string ensLabel,bytes ensLabelApproval,bool ensRegisterReverse,address[] modules)"
     );
 
     constructor(
@@ -72,16 +72,16 @@ contract WalletFactory is ReentrancyGuard
 
     /// @dev Create a new wallet by deploying a proxy.
     /// @param _owner The wallet's owner.
-    /// @param _label The ENS subdomain to register, use "" to skip.
-    /// @param _labelApproval The signature for ENS subdomain approval.
-    /// @param _registerReverse True to register reverse ENS.
+    /// @param _ensLabel The ENS subdomain to register, use "" to skip.
+    /// @param _ensLabelApproval The signature for ENS subdomain approval.
+    /// @param _ensRegisterReverse True to register reverse ENS.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
     function createWallet(
         address            _owner,
-        string    calldata _label,
-        bytes     calldata _labelApproval,
-        bool               _registerReverse,
+        string    calldata _ensLabel,
+        bytes     calldata _ensLabelApproval,
+        bool               _ensRegisterReverse,
         address[] calldata _modules,
         bytes     calldata _signature
         )
@@ -95,9 +95,9 @@ contract WalletFactory is ReentrancyGuard
         bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
-            keccak256(bytes(_label)),
-            keccak256(_labelApproval),
-            _registerReverse,
+            keccak256(bytes(_ensLabel)),
+            keccak256(_ensLabelApproval),
+            _ensRegisterReverse,
             keccak256(abi.encode(_modules))
         );
 
@@ -111,10 +111,10 @@ contract WalletFactory is ReentrancyGuard
             w.addModule(_modules[i]);
         }
 
-        if (bytes(_label).length > 0) {
-            registerENSInternal(_wallet, _label, _labelApproval);
+        if (bytes(_ensLabel).length > 0) {
+            registerENSInternal(_wallet, _ensLabel, _ensLabelApproval);
 
-            if (_registerReverse) {
+            if (_ensRegisterReverse) {
                 registerReverseENSInternal(_wallet);
             }
         } else {
