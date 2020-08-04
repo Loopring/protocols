@@ -162,7 +162,10 @@ abstract contract ForwarderModule is BaseModule
             uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 
             // Do not consume quota if the target address is the factory
-            bool skipQuota = metaTx.to == controller().walletFactory();
+            // or the meta-tx's txAwareHash is not zero which means it will
+            // be signed by at least a guardian
+            bool skipQuota = metaTx.txAwareHash != 0 ||
+                metaTx.to == controller().walletFactory();
 
             reimburseGasFee(
                 metaTx.from,

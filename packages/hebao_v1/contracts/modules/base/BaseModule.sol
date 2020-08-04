@@ -217,7 +217,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
 
         if (!skipQuota) {
             uint value = controller().priceOracle().tokenValue(gasToken, gasCost);
-            if (value > controller().metaTxFeeAccoutingThreshold()) {
+            if (value > 0) {
               controller().quotaStore().checkAndAddToSpent(wallet, value);
             }
         }
