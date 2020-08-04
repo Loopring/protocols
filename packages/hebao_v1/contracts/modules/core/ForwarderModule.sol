@@ -162,6 +162,8 @@ abstract contract ForwarderModule is BaseModule
             uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
             uint gasTokenAmount = gasAmount.add(GAS_OVERHEAD).mul(metaTx.gasPrice);
 
+            // MetaTx fees do not consume wallet's daily quota for the sake of
+            // reducing meta-transactions cost.
             transactTokenTransfer(
                 metaTx.from,
                 metaTx.gasToken,
