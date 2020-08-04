@@ -36,6 +36,8 @@ contract ControllerImpl is Claimable, Controller
     // https://github.com/trufflesuite/ganache/issues/1643
     bool public allowChangingWalletFactory;
 
+    // Meta-transaction fees will not be deducted from user's daily quota
+    // if the actual fee value is smaller than or equal to this value.
     uint public metaTxFeeAccoutingThreshold;
 
     event AddressChanged(
