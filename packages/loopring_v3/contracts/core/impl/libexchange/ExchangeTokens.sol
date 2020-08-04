@@ -46,6 +46,11 @@ library ExchangeTokens
         require(S.tokenToTokenId[tokenAddress] == 0, "TOKEN_ALREADY_EXIST");
         require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS(), "TOKEN_REGISTRY_FULL");
 
+        require(
+            S.depositContract.isTokenSupported(tokenAddress),
+            "UNSUPPORTED_TOKEN"
+        );
+
         ExchangeData.Token memory token = ExchangeData.Token(
             tokenAddress
         );

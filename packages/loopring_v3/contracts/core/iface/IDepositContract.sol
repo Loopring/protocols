@@ -4,10 +4,21 @@ pragma solidity ^0.7.0;
 
 
 /// @title IDepositContract.
-///        Contract storing and transferring funds for an exchange.
+/// @dev   Contract storing and transferring funds for an exchange.
+///
+///        ERC1155 tokens can be supported by registering pseudo token addresses calculated
+///        as `address(keccak256(real_token_address, token_params))`. Then the custom
+///        deposit contract can look up the real token address and paramsters with the
+///        pseudo token address before doing the transfers.
 /// @author Brecht Devos - <brecht@loopring.org>
 interface IDepositContract
 {
+    /// @dev Returns if a token is suppoprted by this contract.
+    function isTokenSupported(address token)
+        external
+        view
+        returns (bool);
+
     /// @dev Transfers tokens from a user to the exchange. This function will
     ///      be called when a user deposits funds to the exchange.
     ///      In a simple implementation the funds are simply stored inside the

@@ -7,7 +7,6 @@ import "../../lib/Claimable.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/ReentrancyGuard.sol";
 import "../iface/IDepositContract.sol";
 
 
@@ -20,7 +19,7 @@ import "../iface/IDepositContract.sol";
 ///        when necessary.
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
-contract DefaultDepositContract is IDepositContract, ReentrancyGuard, Claimable
+contract DefaultDepositContract is IDepositContract, Claimable
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
@@ -73,6 +72,15 @@ contract DefaultDepositContract is IDepositContract, ReentrancyGuard, Claimable
         emit CheckBalance(token, checkBalance);
     }
 
+    function isTokenSupported(address /*token*/)
+        external
+        override
+        pure
+        returns (bool)
+    {
+        return true;
+    }
+
     function deposit(
         address from,
         address token,
@@ -83,7 +91,6 @@ contract DefaultDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
-        //nonReentrant
         ifNotZero(amount)
         returns (uint96 amountReceived)
     {
@@ -116,7 +123,6 @@ contract DefaultDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
-        //nonReentrant
         ifNotZero(amount)
     {
         if (isETHInternal(token)) {
@@ -140,7 +146,6 @@ contract DefaultDepositContract is IDepositContract, ReentrancyGuard, Claimable
         override
         payable
         onlyExchange
-        //nonReentrant
         ifNotZero(amount)
     {
         token.safeTransferFromAndVerify(from, to, amount);
