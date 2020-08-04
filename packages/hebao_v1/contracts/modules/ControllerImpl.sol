@@ -11,6 +11,7 @@ import "../stores/NonceStore.sol";
 import "../stores/QuotaStore.sol";
 import "../stores/SecurityStore.sol";
 import "../stores/WhitelistStore.sol";
+import "../thirdparty/ens/BaseENSManager.sol";
 
 
 /// @title ControllerImpl
@@ -21,7 +22,7 @@ contract ControllerImpl is Claimable, Controller
 {
     address             public collectTo;
     uint                public defaultLockPeriod;
-    address             public ensManagerAddress;
+    BaseENSManager      public ensManager;
     PriceOracle         public priceOracle;
     DappAddressStore    public dappAddressStore;
     HashStore           public hashStore;
@@ -45,7 +46,7 @@ contract ControllerImpl is Claimable, Controller
         WalletRegistry    _walletRegistry,
         uint              _defaultLockPeriod,
         address           _collectTo,
-        address           _ensManagerAddress,
+        BaseENSManager    _ensManager,
         PriceOracle       _priceOracle,
         bool              _allowChangingWalletFactory
         )
@@ -58,7 +59,7 @@ contract ControllerImpl is Claimable, Controller
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;
 
-        ensManagerAddress = _ensManagerAddress;
+        ensManager = _ensManager;
         priceOracle = _priceOracle;
         allowChangingWalletFactory = _allowChangingWalletFactory;
     }
