@@ -17,6 +17,7 @@ export function signCreateWallet(
   owner: string,
   label: string,
   labelApproval: string,
+  ensRegisterReverse: boolean,
   modules: string[]
 ) {
   const domainSeprator = eip712.hash("WalletFactory", "1.1.0", moduleAddress);
@@ -32,12 +33,13 @@ export function signCreateWallet(
   );
 
   const encodedRequest = web3.eth.abi.encodeParameters(
-    ["bytes32", "address", "bytes32", "bytes32", "bytes32"],
+    ["bytes32", "address", "bytes32", "bytes32", "bool", "bytes32"],
     [
       CREATE_WALLET_TYPEHASH,
       owner,
       encodedLabel,
       encodedApproval,
+      ensRegisterReverse,
       encodedModules
     ]
   );

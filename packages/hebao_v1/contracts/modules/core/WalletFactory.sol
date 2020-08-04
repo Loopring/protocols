@@ -112,7 +112,7 @@ contract WalletFactory is ReentrancyGuard
         }
 
         if (bytes(_ensLabel).length > 0) {
-            registerENSInternal(_wallet, _ensLabel, _ensApproval);
+            registerENS(_wallet, _ensLabel, _ensApproval);
 
             if (_ensRegisterReverse) {
                 registerReverseENSInternal(_wallet);
@@ -123,28 +123,11 @@ contract WalletFactory is ReentrancyGuard
     }
 
     function registerENS(
-        string memory  label,
-        bytes  memory  labelApproval
-        )
-        public
-    {
-        registerENSInternal(msg.sender, label, labelApproval);
-    }
-
-    function registerReverseENS()
-        public
-    {
-        registerReverseENSInternal(msg.sender);
-    }
-
-    // ---- internal functions ---
-
-    function registerENSInternal(
         address        wallet,
         string memory  label,
         bytes  memory  labelApproval
         )
-        private
+        public
     {
         require(
             bytes(label).length > 0 &&
@@ -157,6 +140,14 @@ contract WalletFactory is ReentrancyGuard
 
         ensManager.register(wallet, label, labelApproval);
     }
+
+    function registerReverseENS()
+        public
+    {
+        registerReverseENSInternal(msg.sender);
+    }
+
+    // ---- internal functions ---
 
     function registerReverseENSInternal(
         address wallet

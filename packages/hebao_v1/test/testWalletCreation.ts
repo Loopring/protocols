@@ -23,7 +23,8 @@ contract("WalletFactory", () => {
 
   const createWalletChecked = async (
     owner: string,
-    walletName: string = ""
+    walletName: string = "",
+    ensRegisterReverse: boolean = true
   ) => {
     const wallet = await ctx.walletFactory.computeWalletAddress(owner);
 
@@ -45,6 +46,7 @@ contract("WalletFactory", () => {
       owner,
       walletName,
       ensApproval,
+      ensRegisterReverse,
       modules
     );
 
@@ -57,9 +59,9 @@ contract("WalletFactory", () => {
         owner,
         walletName,
         ensApproval,
+        ensRegisterReverse,
         modules,
-        txSignature,
-        true
+        txSignature
       ),
       ctx,
       useMetaTx,
@@ -101,9 +103,9 @@ contract("WalletFactory", () => {
             owner,
             walletName,
             ensApproval,
+            ensRegisterReverse,
             modules,
-            txSignature,
-            true
+            txSignature
           ),
           ctx,
           useMetaTx,
@@ -122,16 +124,13 @@ contract("WalletFactory", () => {
     const signer = ctx.owners[0];
     const ensApproval = await getEnsApproval(wallet, walletName, signer);
 
-    const opt = useMetaTx
-      ? { owner, wallet, gasPrice: new BN(1) }
-      : { from: owner };
+    const opt = { owner, wallet, gasPrice: new BN(1) };
 
     const tx = await executeTransaction(
       ctx.walletFactory.contract.methods.registerENS(
         wallet,
         walletName,
-        ensApproval,
-        true
+        ensApproval
       ),
       ctx,
       useMetaTx,
@@ -168,7 +167,7 @@ contract("WalletFactory", () => {
   });
 
   [false, true].forEach(function(metaTx) {
-    it.only(
+    it(
       description("user should be able to create a wallet without ENS", metaTx),
       async () => {
         useMetaTx = metaTx;
