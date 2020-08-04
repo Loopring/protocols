@@ -306,7 +306,7 @@ contract("MetaTxmodule", () => {
 
   ["ETH", "LRC"].forEach(function(gasToken) {
     it(
-      "should be able to pay (using the daily quota) for a meta tx (" +
+      "should be able to pay (without using the daily quota) for a meta tx (" +
         gasToken +
         ")",
       async () => {
@@ -375,10 +375,7 @@ contract("MetaTxmodule", () => {
         );
         // Quota
         const newSpentQuota = await ctx.quotaStore.spentQuota(wallet);
-        assert(
-          newSpentQuota.eq(oldSpentQuota.add(assetValue)),
-          "incorrect spent quota"
-        );
+        assert(newSpentQuota.eq(oldSpentQuota), "incorrect spent quota");
       }
     );
   });
