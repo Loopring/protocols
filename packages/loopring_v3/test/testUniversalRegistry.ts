@@ -28,6 +28,8 @@ contract("UniversalRegistry", (accounts: string[]) => {
   const protocol2VersionStr = "2";
   const implVersionStr = "123";
 
+  const genesisMerkleRoot = "0x0123456789abcdef000000000000000000000000000000000000000000000000";
+
   before(async () => {
     contracts = new Artifacts(artifacts);
     MockContract = contracts.MockContract;
@@ -212,13 +214,14 @@ contract("UniversalRegistry", (accounts: string[]) => {
         const auto_mode = ForgeMode.AUTO_UPGRADABLE;
         const tx = await universalRegistry.forgeExchange(
           auto_mode,
-          true,
           mockProtocol2.address,
-          mockImplementation.address
+          mockImplementation.address,
+          genesisMerkleRoot
         );
         truffleAssert.eventEmitted(tx, "ExchangeForged", (evt: any) => {
           exchangeAddress = evt.exchangeAddress;
-          return evt.forgeMode == auto_mode;
+          return evt.forgeMode == auto_mode &&
+            evt.genesisMerkleRoot == genesisMerkleRoot;
         });
       });
 
@@ -226,13 +229,14 @@ contract("UniversalRegistry", (accounts: string[]) => {
         const manual_mode = ForgeMode.MANUAL_UPGRADABLE;
         const tx = await universalRegistry.forgeExchange(
           manual_mode,
-          true,
           mockProtocol2.address,
-          mockImplementation.address
+          mockImplementation.address,
+          genesisMerkleRoot
         );
         truffleAssert.eventEmitted(tx, "ExchangeForged", (evt: any) => {
           exchangeAddress = evt.exchangeAddress;
-          return evt.forgeMode == manual_mode;
+          return evt.forgeMode == manual_mode &&
+            evt.genesisMerkleRoot == genesisMerkleRoot;
         });
       });
 
@@ -240,13 +244,14 @@ contract("UniversalRegistry", (accounts: string[]) => {
         const proxied_mode = ForgeMode.PROXIED;
         const tx = await universalRegistry.forgeExchange(
           proxied_mode,
-          true,
           mockProtocol2.address,
-          mockImplementation.address
+          mockImplementation.address,
+          genesisMerkleRoot
         );
         truffleAssert.eventEmitted(tx, "ExchangeForged", (evt: any) => {
           exchangeAddress = evt.exchangeAddress;
-          return evt.forgeMode == proxied_mode;
+          return evt.forgeMode == proxied_mode &&
+            evt.genesisMerkleRoot == genesisMerkleRoot;
         });
       });
 
@@ -260,13 +265,14 @@ contract("UniversalRegistry", (accounts: string[]) => {
         );
         const tx = await universalRegistry.forgeExchange(
           native_mode,
-          true,
           mockProtocol2.address,
-          mockImplementation.address
+          mockImplementation.address,
+          genesisMerkleRoot
         );
         truffleAssert.eventEmitted(tx, "ExchangeForged", (evt: any) => {
           exchangeAddress = evt.exchangeAddress;
-          return evt.forgeMode == native_mode;
+          return evt.forgeMode == native_mode &&
+            evt.genesisMerkleRoot == genesisMerkleRoot;
         });
       });
 
@@ -275,9 +281,9 @@ contract("UniversalRegistry", (accounts: string[]) => {
         await expectThrow(
           universalRegistry.forgeExchange(
             mode,
-            true,
             mockProtocol2.address,
-            mockImplementation.address
+            mockImplementation.address,
+            genesisMerkleRoot
           ),
           "VM Exception while processing transaction"
         );

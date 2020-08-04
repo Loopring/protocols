@@ -17,7 +17,8 @@ abstract contract ILoopring is Claimable, ReentrancyGuard
     event ExchangeInitialized(
         uint    indexed exchangeId,
         address indexed exchangeAddress,
-        address indexed owner
+        address indexed owner,
+        bytes32         genesisMerkleRoot
     );
 
     /// @dev Returns the exchange version
@@ -34,10 +35,12 @@ abstract contract ILoopring is Claimable, ReentrancyGuard
     /// @param  exchangeAddress The address of the exchange to initialize and register.
     /// @param  exchangeId The unique exchange id.
     /// @param  owner The owner of the exchange.
+    /// @param  genesisMerkleRoot The initial Merkle tree state.
     function initializeExchange(
         address exchangeAddress,
         uint    exchangeId,
-        address owner
+        address owner,
+        bytes32 genesisMerkleRoot
         )
         external
         virtual;

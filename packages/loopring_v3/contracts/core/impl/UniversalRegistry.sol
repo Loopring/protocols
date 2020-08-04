@@ -128,7 +128,8 @@ contract UniversalRegistry is IUniversalRegistry {
     function forgeExchange(
         ForgeMode forgeMode,
         address   protocol,
-        address   implementation
+        address   implementation,
+        bytes32   genesisMerkleRoot
         )
         external
         override
@@ -164,7 +165,8 @@ contract UniversalRegistry is IUniversalRegistry {
         loopring.initializeExchange(
             exchangeAddress,
             exchangeId,
-            msg.sender   // owner
+            msg.sender,   // owner
+            genesisMerkleRoot
         );
 
         emit ExchangeForged(
@@ -172,6 +174,7 @@ contract UniversalRegistry is IUniversalRegistry {
             _implementation,
             exchangeAddress,
             msg.sender,
+            genesisMerkleRoot,
             forgeMode,
             exchangeId,
             exchangeCreationCostLRC
