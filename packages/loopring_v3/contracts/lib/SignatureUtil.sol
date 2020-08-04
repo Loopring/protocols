@@ -170,12 +170,11 @@ library SignatureUtil
                 if (recoverECDSASigner(hash, stripped) == signer) {
                     return true;
                 }
-            } else {
-                bytes32 hash = keccak256(
-                    abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(data))
-                );
-                return recoverECDSASigner(hash, stripped) == signer;
             }
+            bytes32 hash = keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(data))
+            );
+            return recoverECDSASigner(hash, stripped) == signer;
         } else {
             return false;
         }
