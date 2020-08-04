@@ -34,18 +34,11 @@ contract ControllerImpl is Claimable, Controller
     // Make sure this value if false in production env.
     // Ideally we can use chainid(), but there is a bug in truffle so testing is buggy:
     // https://github.com/trufflesuite/ganache/issues/1643
-    bool public allowChangingWalletFactory;
-
-    uint public metaTxFeeAccoutingThreshold;
+    bool                public allowChangingWalletFactory;
 
     event AddressChanged(
         string   name,
         address  addr
-    );
-
-    event ValueChanged(
-        string   name,
-        uint     value
     );
 
     constructor(
@@ -121,18 +114,6 @@ contract ControllerImpl is Claimable, Controller
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;
         emit AddressChanged("CollectTo", collectTo);
-    }
-
-    function setmetaTxFeeAccoutingThreshold(uint _metaTxFeeAccoutingThreshold)
-        external
-        onlyOwner
-    {
-        require(
-            metaTxFeeAccoutingThreshold != _metaTxFeeAccoutingThreshold,
-            "SAME_VALUE"
-        );
-        metaTxFeeAccoutingThreshold = _metaTxFeeAccoutingThreshold;
-        emit ValueChanged("metaTxFeeAccoutingThreshold", metaTxFeeAccoutingThreshold);
     }
 
     function setPriceOracle(PriceOracle _priceOracle)

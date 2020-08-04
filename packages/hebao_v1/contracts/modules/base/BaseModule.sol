@@ -214,6 +214,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         internal
     {
         uint gasCost = gasAmount.mul(gasPrice);
+
         if (!skipQuota) {
             uint value = controller().priceOracle().tokenValue(gasToken, gasCost);
             if (value > controller().metaTxFeeAccoutingThreshold()) {
