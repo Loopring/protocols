@@ -76,7 +76,7 @@ contract WalletFactory is ReentrancyGuard
     /// @param _labelApproval The signature for ENS subdomain approval.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
-    /// @param _registerReverse Do reverse ENS registry or not
+    /// @param _registerReverse True to register reverse ENS.
     function createWallet(
         address            _owner,
         string    calldata _label,
