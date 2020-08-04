@@ -257,6 +257,14 @@ contract SecurityStore is DataStore
         wallets[wallet].lockedBy = msg.sender;
     }
 
+    function lastActive(address wallet)
+        public
+        view
+        returns (uint128)
+    {
+        return wallets[wallet].lastActive;
+    }
+
     function touchLastActive(address wallet)
         public
         onlyWalletModule(wallet)
@@ -268,12 +276,12 @@ contract SecurityStore is DataStore
         public
         view
         returns (
-            address who,
-            uint    lastActive
+            address _who,
+            uint    _lastActive
         )
     {
-        who = wallets[wallet].inheritor;
-        lastActive = uint(wallets[wallet].lastActive);
+        _who = wallets[wallet].inheritor;
+        _lastActive = uint(wallets[wallet].lastActive);
     }
 
     function setInheritor(address wallet, address who)
