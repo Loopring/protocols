@@ -160,12 +160,13 @@ abstract contract ForwarderModule is BaseModule
         // wallet funds.
         if (metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success)) {
             uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
-            reimburseGasFee(
+            uint gasTokenAmount = gasAmount.add(GAS_OVERHEAD).mul(metaTx.gasPrice);
+
+            transactTokenTransfer(
                 metaTx.from,
-                controller().collectTo(),
                 metaTx.gasToken,
-                metaTx.gasPrice,
-                gasAmount.add(GAS_OVERHEAD)
+                controller().collectTo(),
+                gasTokenAmount
             );
         }
 

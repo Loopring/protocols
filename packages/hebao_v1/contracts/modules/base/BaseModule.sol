@@ -202,17 +202,4 @@ abstract contract BaseModule is ReentrancyGuard, Module
     {
         return Wallet(wallet).transact(uint8(3), to, 0, data);
     }
-
-    function reimburseGasFee(
-        address     wallet,
-        address     recipient,
-        address     gasToken,
-        uint        gasPrice,
-        uint        gasAmount
-        )
-        internal
-    {
-        uint gasCost = gasAmount.mul(gasPrice);
-        transactTokenTransfer(wallet, gasToken, recipient, gasCost);
-    }
 }
