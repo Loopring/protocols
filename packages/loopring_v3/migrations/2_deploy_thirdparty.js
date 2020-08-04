@@ -1,5 +1,5 @@
-const Cloneable = artifacts.require("./thirdparty/Cloneable.sol");
-const BatchVerifier = artifacts.require("./thirdparty/BatchVerifier.sol");
+const Cloneable = artifacts.require("Cloneable");
+const BatchVerifier = artifacts.require("BatchVerifier");
 
 module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);

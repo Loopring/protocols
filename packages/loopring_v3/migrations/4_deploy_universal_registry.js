@@ -21,7 +21,7 @@ module.exports = function(deployer, network, accounts) {
 
   // common deployment
 
-  const UniversalRegistry = artifacts.require("./impl/UniversalRegistry.sol");
+  const UniversalRegistry = artifacts.require("UniversalRegistry");
 
   deployer_
     .then(() => {

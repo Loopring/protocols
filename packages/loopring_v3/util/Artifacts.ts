@@ -25,16 +25,16 @@ export class Artifacts {
   public AddressWhitelist: any;
   public DelayedOwnerContract: any;
   public DelayedTargetContract: any;
-  public BasicDepositContract: any;
+  public DefaultDepositContract: any;
   public OwnedUpgradeabilityProxy: any;
 
   constructor(artifacts: any) {
-    this.MockContract = artifacts.require("thirdparty/MockContract.sol");
-    this.UniversalRegistry = artifacts.require("impl/UniversalRegistry");
-    this.LoopringV3 = artifacts.require("impl/LoopringV3");
-    this.ExchangeV3 = artifacts.require("impl/ExchangeV3");
-    this.BlockVerifier = artifacts.require("impl/BlockVerifier");
-    this.Operator = artifacts.require("impl/Operator");
+    this.MockContract = artifacts.require("MockContract");
+    this.UniversalRegistry = artifacts.require("UniversalRegistry");
+    this.LoopringV3 = artifacts.require("LoopringV3");
+    this.ExchangeV3 = artifacts.require("ExchangeV3");
+    this.BlockVerifier = artifacts.require("BlockVerifier");
+    this.Operator = artifacts.require("Operator");
 
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");
@@ -45,24 +45,18 @@ export class Artifacts {
     this.INDAToken = artifacts.require("test/tokens/INDA");
     this.INDBToken = artifacts.require("test/tokens/INDB");
     this.TESTToken = artifacts.require("test/tokens/TEST");
-    this.TestAccountContract = artifacts.require("test/TestAccountContract");
-    this.LzDecompressor = artifacts.require("test/LzDecompressor");
-    this.TransferContract = artifacts.require("test/TransferContract");
-    this.PoseidonContract = artifacts.require("test/PoseidonContract");
-    this.LzDecompressorContract = artifacts.require(
-      "test/LzDecompressorContract"
-    );
-    this.UserStakingPool = artifacts.require("impl/UserStakingPool");
-    this.ProtocolFeeVault = artifacts.require("impl/ProtocolFeeVault");
-    this.DelayedOwnerContract = artifacts.require("test/DelayedOwnerContract");
-    this.DelayedTargetContract = artifacts.require(
-      "test/DelayedTargetContract"
-    );
-    this.BasicDepositContract = artifacts.require(
-      "./impl/BasicDepositContract"
-    );
+    this.TestAccountContract = artifacts.require("TestAccountContract");
+    this.LzDecompressor = artifacts.require("LzDecompressor");
+    this.TransferContract = artifacts.require("TransferContract");
+    this.PoseidonContract = artifacts.require("PoseidonContract");
+    this.LzDecompressorContract = artifacts.require("LzDecompressorContract");
+    this.UserStakingPool = artifacts.require("UserStakingPool");
+    this.ProtocolFeeVault = artifacts.require("ProtocolFeeVault");
+    this.DelayedOwnerContract = artifacts.require("DelayedOwnerContract");
+    this.DelayedTargetContract = artifacts.require("DelayedTargetContract");
+    this.DefaultDepositContract = artifacts.require("DefaultDepositContract");
     this.OwnedUpgradeabilityProxy = artifacts.require(
-      "./impl/OwnedUpgradeabilityProxy"
+      "OwnedUpgradeabilityProxy"
     );
   }
 }

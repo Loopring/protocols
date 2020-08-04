@@ -4,7 +4,7 @@ import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import BN = require("bn.js");
 
-contract("BasicDepositContract", (accounts: string[]) => {
+contract("DefaultDepositContract", (accounts: string[]) => {
   let contracts: Artifacts;
 
   const exchange1 = accounts[0];
@@ -21,10 +21,7 @@ contract("BasicDepositContract", (accounts: string[]) => {
   let exchange: any;
 
   const createExchange = async (bSetupTestState: boolean = true) => {
-    await ctx.createExchange(
-      ctx.testContext.stateOwners[0],
-      true
-    );
+    await ctx.createExchange(ctx.testContext.stateOwners[0], true);
     exchange = ctx.exchange;
   };
 
@@ -35,7 +32,7 @@ contract("BasicDepositContract", (accounts: string[]) => {
   });
 
   beforeEach(async () => {
-    depositContract = await contracts.BasicDepositContract.new();
+    depositContract = await contracts.DefaultDepositContract.new();
     token = await contracts.LRCToken.new({ from: owner1 });
   });
 
@@ -47,9 +44,16 @@ contract("BasicDepositContract", (accounts: string[]) => {
       await depositContract.deposit(owner1, token.address, new BN(0), "0x", {
         from: exchange
       });
-      await depositContract.withdraw(owner1, owner1, token.address, new BN(0), "0x", {
-        from: exchange
-      });
+      await depositContract.withdraw(
+        owner1,
+        owner1,
+        token.address,
+        new BN(0),
+        "0x",
+        {
+          from: exchange
+        }
+      );
       await depositContract.transfer(owner1, owner2, token.address, new BN(0), {
         from: exchange
       });
@@ -60,10 +64,16 @@ contract("BasicDepositContract", (accounts: string[]) => {
       await depositContract.initialize(exchange1);
 
       await expectThrow(
-        depositContract.deposit(owner1, Constants.zeroAddress, new BN(2), "0x", {
-          from: exchange,
-          value: new BN(1)
-        }),
+        depositContract.deposit(
+          owner1,
+          Constants.zeroAddress,
+          new BN(2),
+          "0x",
+          {
+            from: exchange,
+            value: new BN(1)
+          }
+        ),
         "INVALID_ETH_DEPOSIT"
       );
       await expectThrow(
@@ -102,9 +112,16 @@ contract("BasicDepositContract", (accounts: string[]) => {
         "UNAUTHORIZED"
       );
       await expectThrow(
-        depositContract.withdraw(owner1, owner1, token.address, new BN(0), "0x", {
-          from: exchange2
-        }),
+        depositContract.withdraw(
+          owner1,
+          owner1,
+          token.address,
+          new BN(0),
+          "0x",
+          {
+            from: exchange2
+          }
+        ),
         "UNAUTHORIZED"
       );
       await expectThrow(
@@ -125,39 +142,39 @@ contract("BasicDepositContract", (accounts: string[]) => {
 
       // Enable transfer mode that will transfer less than expected
       const testTokenAddress = await ctx.getTokenAddress("TEST");
-      const TestToken = await ctx.contracts.TESTToken.at(
-        testTokenAddress
+      const TestToken = await ctx.contracts.TESTToken.at(testTokenAddress);
+      await TestToken.setTestCase(
+        await TestToken.TEST_DIFFERENT_TRANSFER_AMOUNT()
       );
-      await TestToken.setTestCase(await TestToken.TEST_DIFFERENT_TRANSFER_AMOUNT());
 
       // Deposit without checking the balance change, the amount deposited is wrong
       {
-        await ctx.deposit(
-          owner1,
-          owner1,
-          "TEST",
-          amount
+        await ctx.deposit(owner1, owner1, "TEST", amount);
+        const event = await ctx.assertEventEmitted(
+          ctx.exchange,
+          "DepositRequested"
         );
-        const event = await ctx.assertEventEmitted(ctx.exchange, "DepositRequested");
         assert(event.amount.eq(amount), "unexpected amount");
       }
 
       // Enable balance checking
       await ctx.depositContract.setCheckBalance(testTokenAddress, true);
-      const event = await ctx.assertEventEmitted(ctx.depositContract, "CheckBalance");
+      const event = await ctx.assertEventEmitted(
+        ctx.depositContract,
+        "CheckBalance"
+      );
       assert.equal(event.token, testTokenAddress, "unexpected token address");
       assert.equal(event.checkBalance, true, "unexpected checkBalance");
 
       // Deposit again, but with checking the balance change, the amount deposited is correct
       {
-        await ctx.deposit(
-          owner2,
-          owner2,
-          "TEST",
-          amount,
-          {amountDepositedCanDiffer: true}
+        await ctx.deposit(owner2, owner2, "TEST", amount, {
+          amountDepositedCanDiffer: true
+        });
+        const event = await ctx.assertEventEmitted(
+          ctx.exchange,
+          "DepositRequested"
         );
-        const event = await ctx.assertEventEmitted(ctx.exchange, "DepositRequested");
         assert(event.amount.eq(amountTransfered), "unexpected amount");
       }
 
@@ -166,8 +183,18 @@ contract("BasicDepositContract", (accounts: string[]) => {
       await ctx.submitPendingBlocks();
 
       // Check balances inside the Merkle tree
-      await ctx.checkOffchainBalance(owner1, "TEST", amount, "unexpected balance");
-      await ctx.checkOffchainBalance(owner2, "TEST", amountTransfered, "unexpected balance");
+      await ctx.checkOffchainBalance(
+        owner1,
+        "TEST",
+        amount,
+        "unexpected balance"
+      );
+      await ctx.checkOffchainBalance(
+        owner2,
+        "TEST",
+        amountTransfered,
+        "unexpected balance"
+      );
     });
   });
 });

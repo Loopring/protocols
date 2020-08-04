@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 
 import "../lib/Poseidon.sol";
-import "../iface/ExchangeData.sol";
+import "../core/iface/ExchangeData.sol";
 
 
 contract PoseidonContract {

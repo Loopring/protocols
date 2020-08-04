@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../lib/LzDecompressor.sol";
+import "../aux/compression/LzDecompressor.sol";
 
 contract LzDecompressorContract {
     function decompress(
