@@ -160,12 +160,17 @@ abstract contract ForwarderModule is BaseModule
         // wallet funds.
         if (metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success)) {
             uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
+
+            // Do not consume quota if the target address is the factory
+            bool skipQuota = metaTx.to == controller().walletFactory();
+
             reimburseGasFee(
                 metaTx.from,
                 controller().collectTo(),
                 metaTx.gasToken,
                 metaTx.gasPrice,
-                gasAmount.add(GAS_OVERHEAD)
+                gasAmount.add(GAS_OVERHEAD),
+                skipQuota
             );
         }
 
