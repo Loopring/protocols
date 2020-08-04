@@ -25,7 +25,7 @@ export class Artifacts {
   public AddressWhitelist: any;
   public DelayedOwnerContract: any;
   public DelayedTargetContract: any;
-  public BasicDepositContract: any;
+  public DefaultDepositContract: any;
   public OwnedUpgradeabilityProxy: any;
 
   constructor(artifacts: any) {
@@ -49,18 +49,12 @@ export class Artifacts {
     this.LzDecompressor = artifacts.require("LzDecompressor");
     this.TransferContract = artifacts.require("TransferContract");
     this.PoseidonContract = artifacts.require("PoseidonContract");
-    this.LzDecompressorContract = artifacts.require(
-      "LzDecompressorContract"
-    );
+    this.LzDecompressorContract = artifacts.require("LzDecompressorContract");
     this.UserStakingPool = artifacts.require("UserStakingPool");
     this.ProtocolFeeVault = artifacts.require("ProtocolFeeVault");
     this.DelayedOwnerContract = artifacts.require("DelayedOwnerContract");
-    this.DelayedTargetContract = artifacts.require(
-      "DelayedTargetContract"
-    );
-    this.BasicDepositContract = artifacts.require(
-      "BasicDepositContract"
-    );
+    this.DelayedTargetContract = artifacts.require("DelayedTargetContract");
+    this.DefaultDepositContract = artifacts.require("DefaultDepositContract");
     this.OwnedUpgradeabilityProxy = artifacts.require(
       "OwnedUpgradeabilityProxy"
     );
