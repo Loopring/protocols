@@ -163,7 +163,9 @@ abstract contract ForwarderModule is BaseModule
 
             // Do not consume quota if the target address is the factory
             // or the meta-tx's txAwareHash is not zero which means it will
-            // be signed by at least a guardian
+            // be signed by at least a guardian, therefor, even if the owner's
+            // private keyis leaked, the hacker won't be able to deplete ether/tokens
+            // as high meta-tx fees.
             bool skipQuota = metaTx.txAwareHash != 0 ||
                 metaTx.to == controller().walletFactory();
 
