@@ -22,7 +22,7 @@ export function signCreateWallet(
   const domainSeprator = eip712.hash("WalletFactory", "1.1.0", moduleAddress);
 
   const TYPE_STR =
-    "createWallet(address owner,string label,bytes labelApproval,address[] modules)";
+    "createWallet(address owner,string ensLabel,bytes ensApproval,bool ensRegisterReverse,address[] modules)";
   const CREATE_WALLET_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
   const encodedLabel = ethUtil.keccak(Buffer.from(label, "utf8"));

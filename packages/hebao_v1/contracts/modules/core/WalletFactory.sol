@@ -40,7 +40,7 @@ contract WalletFactory is ReentrancyGuard
 
     bytes32 public DOMAIN_SEPERATOR;
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,string ensLabel,bytes ensLabelApproval,bool ensRegisterReverse,address[] modules)"
+        "createWallet(address owner,string ensLabel,bytes ensApproval,bool ensRegisterReverse,address[] modules)"
     );
 
     constructor(
@@ -73,14 +73,14 @@ contract WalletFactory is ReentrancyGuard
     /// @dev Create a new wallet by deploying a proxy.
     /// @param _owner The wallet's owner.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
-    /// @param _ensLabelApproval The signature for ENS subdomain approval.
+    /// @param _ensApproval The signature for ENS subdomain approval.
     /// @param _ensRegisterReverse True to register reverse ENS.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
     function createWallet(
         address            _owner,
         string    calldata _ensLabel,
-        bytes     calldata _ensLabelApproval,
+        bytes     calldata _ensApproval,
         bool               _ensRegisterReverse,
         address[] calldata _modules,
         bytes     calldata _signature
@@ -96,7 +96,7 @@ contract WalletFactory is ReentrancyGuard
             CREATE_WALLET_TYPEHASH,
             _owner,
             keccak256(bytes(_ensLabel)),
-            keccak256(_ensLabelApproval),
+            keccak256(_ensApproval),
             _ensRegisterReverse,
             keccak256(abi.encode(_modules))
         );
@@ -112,7 +112,7 @@ contract WalletFactory is ReentrancyGuard
         }
 
         if (bytes(_ensLabel).length > 0) {
-            registerENSInternal(_wallet, _ensLabel, _ensLabelApproval);
+            registerENSInternal(_wallet, _ensLabel, _ensApproval);
 
             if (_ensRegisterReverse) {
                 registerReverseENSInternal(_wallet);
