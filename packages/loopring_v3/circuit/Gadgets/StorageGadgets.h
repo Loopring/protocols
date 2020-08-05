@@ -64,7 +64,7 @@ public:
   UpdateStorageGadget(ProtoboardT &pb, const VariableT &_rootBefore,
                       const VariableArrayT &_addressBits,
                       const StorageState &_leafBefore,
-                      const StorageState &_leafAfter, // RENAME:
+                      const StorageState &_leafAfter,
                       const std::string &_prefix)
       : GadgetT(pb, _prefix),
 

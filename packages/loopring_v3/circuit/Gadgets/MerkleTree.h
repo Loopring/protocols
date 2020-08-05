@@ -77,12 +77,12 @@ public:
   }
 };
 
-template <typename HashT> class merkle_path_compute_4 : public GadgetT {
+template <typename HashT> class merkle_root_updater : public GadgetT {
 public:
   std::vector<merkle_path_selector_4> m_selectors;
   std::vector<HashT> m_hashers;
 
-  merkle_path_compute_4(
+  merkle_root_updater(
       ProtoboardT &in_pb,
       const size_t in_tree_depth, // RENAME: in_tree_depth
       const VariableArrayT &in_address_bits,
@@ -131,17 +131,17 @@ public:
  * Merkle path authenticator, verifies computed root matches expected result
  */
 template <typename HashT>
-class merkle_path_authenticator_4 : public merkle_path_compute_4<HashT> {
+class merkle_root_verifier : public merkle_root_updater<HashT> {
 public:
   const VariableT m_expected_root;
 
-  merkle_path_authenticator_4(ProtoboardT &in_pb, const size_t in_tree_depth,
+  merkle_root_verifier(ProtoboardT &in_pb, const size_t in_tree_depth,
                               const VariableArrayT in_address_bits,
                               const VariableT in_leaf_hash,
                               const VariableT in_expected_root,
                               const VariableArrayT in_proof,
                               const std::string &in_annotation_prefix)
-      : merkle_path_compute_4<HashT>::merkle_path_compute_4(
+      : merkle_root_updater<HashT>::merkle_root_updater(
             in_pb, in_tree_depth, in_address_bits, in_leaf_hash, in_proof,
             in_annotation_prefix),
         m_expected_root(in_expected_root) {}
@@ -151,7 +151,7 @@ public:
   }
 
   void generate_r1cs_constraints() {
-    merkle_path_compute_4<HashT>::generate_r1cs_constraints();
+    merkle_root_updater<HashT>::generate_r1cs_constraints();
 
     // Ensure root matches calculated path hash
     this->pb.add_r1cs_constraint(
@@ -166,10 +166,10 @@ using HashAccountLeaf = Poseidon_gadget_T<6, 1, 6, 52, 5, 1>;
 using HashBalanceLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
 using HashStorageLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
 
-using MerklePathCheckT =
-    merkle_path_authenticator_4<HashMerkleTree>; // RENAME: VerifyTreeRoot
-using MerklePathT =
-    merkle_path_compute_4<HashMerkleTree>; // RENAME: UpdateTreeRoot
+using VerifyTreeRoot =
+    merkle_root_verifier<HashMerkleTree>;
+using UpdateTreeRoot =
+    merkle_root_updater<HashMerkleTree>;
 
 } // namespace Loopring
 
