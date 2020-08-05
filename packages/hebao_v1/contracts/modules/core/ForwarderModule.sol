@@ -167,9 +167,11 @@ abstract contract ForwarderModule is BaseModule
             // be signed by at least a guardian). Therefor, even if the owner's
             // private key is leaked, the hacker won't be able to deplete ether/tokens
             // as high meta-tx fees.
-            bool skipQuota = metaTx.txAwareHash != 0 && success ||
+            bool skipQuota = success && (
+                metaTx.txAwareHash != 0 ||
                 metaTx.data.toBytes4(0) == WalletFactory.createWallet.selector &&
-                metaTx.to == controller().walletFactory();
+                metaTx.to == controller().walletFactory()
+            );
 
             reimburseGasFee(
                 metaTx.from,
