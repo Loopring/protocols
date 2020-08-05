@@ -3,7 +3,7 @@
 
 #include "../Gadgets/StorageGadgets.h"
 
-TEST_CASE("StorageReader", "[StorageReaderGadget]") {
+TEST_CASE("StorageReader", "[ReadStorageGadget]") {
   auto storageReaderChecked =
       [](const StorageLeaf &storageLeaf, const FieldT &_storageID, bool _verify,
          bool expectedSatisfied, const FieldT &expectedFilled = FieldT::zero(),
@@ -20,7 +20,7 @@ TEST_CASE("StorageReader", "[StorageReaderGadget]") {
         storageID.generate_r1cs_witness(pb, _storageID);
 
         Constants constants(pb, "constants");
-        StorageReaderGadget storageReaderGadget(
+        ReadStorageGadget storageReaderGadget(
             pb, constants, storage, storageID, verify, "storageReaderGadget");
         storageReaderGadget.generate_r1cs_witness();
         storageReaderGadget.generate_r1cs_constraints();

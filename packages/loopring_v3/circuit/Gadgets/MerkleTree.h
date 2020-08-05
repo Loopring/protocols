@@ -155,7 +155,7 @@ public:
     // Ensure root matches calculated path hash
     this->pb.add_r1cs_constraint(
         ConstraintT(this->result(), 1, m_expected_root),
-        FMT(this->annotation_prefix, ".expected_root authenticator"));
+        FMT(this->annotation_prefix, ".expected_root verifier"));
   }
 };
 

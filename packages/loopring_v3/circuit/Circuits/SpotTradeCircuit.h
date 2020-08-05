@@ -36,8 +36,8 @@ public:
 
   // Trade history
   EqualGadget isSpotTradeTx;
-  StorageReaderGadget tradeHistory_A;
-  StorageReaderGadget tradeHistory_B;
+  ReadStorageGadget tradeHistory_A;
+  ReadStorageGadget tradeHistory_B;
 
   // Match orders
   OrderMatchingGadget orderMatching;

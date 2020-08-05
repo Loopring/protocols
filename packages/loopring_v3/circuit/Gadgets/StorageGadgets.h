@@ -113,15 +113,20 @@ public:
   const VariableT &result() const { return rootAfter.result(); }
 };
 
-class StorageReaderGadget : public GadgetT {
+// Given the current storage leaf content and a storageID:
+// - Verifies storageId == storage.storageID OR
+//            storageId == storage.storageID + numStorageSlots
+// - Returns the storage.data
+// - Returns if the previous storage is overwritten.
+class ReadStorageGadget : public GadgetT {
   VariableT address;
   libsnark::packing_gadget<FieldT> packAddress;
-  IsNonZero isNonZeroStorageLeadStorageID;
-  TernaryGadget leafStorageID;
+  IsNonZero isCurrentStorageIDNonZero;
+  TernaryGadget currentStorageID;
 
   UnsafeAddGadget nextStorageID;
 
-  EqualGadget storageID_eq_leafStorageID;
+  EqualGadget storageID_eq_storageID;
   EqualGadget storageID_eq_nextStorageID;
 
   OrGadget isValidStorageID;
@@ -130,49 +135,55 @@ class StorageReaderGadget : public GadgetT {
   TernaryGadget data;
 
 public:
-  StorageReaderGadget(ProtoboardT &pb, const Constants &constants,
-                      const StorageGadget &storage,
-                      const DualVariableGadget &storageID,
-                      const VariableT &verify, const std::string &_prefix)
+  ReadStorageGadget(ProtoboardT &pb, const Constants &_constants,
+                    const StorageGadget &_currentStorage,
+                    const DualVariableGadget &_storageID,
+                    const VariableT &_verify, const std::string &_prefix)
       : GadgetT(pb, _prefix),
 
         address(make_variable(pb, FMT(_prefix, ".address"))),
-        packAddress(pb, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
+
+        packAddress(pb, subArray(_storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
                     address, FMT(_prefix, ".packAddress")),
 
-        isNonZeroStorageLeadStorageID(
-            pb, storage.storageID,
-            FMT(_prefix, ".isNonZeroStorageLeadStorageID")),
-        leafStorageID(pb, isNonZeroStorageLeadStorageID.result(),
-                      storage.storageID, address,
-                      FMT(_prefix, ".leafStorageID")),
+        isCurrentStorageIDNonZero(pb, _currentStorage.storageID,
+                                  FMT(_prefix, ".isCurrentStorageIDNonZero")),
 
-        nextStorageID(pb, leafStorageID.result(), constants.numStorageSlots,
+        currentStorageID(pb, isCurrentStorageIDNonZero.result(),
+                         _currentStorage.storageID,
+                         address, // Value = 0
+                         FMT(_prefix, ".currentStorageID")),
+
+        nextStorageID(pb, currentStorageID.result(), _constants.numStorageSlots,
                       FMT(_prefix, ".nextStorageID")),
 
-        storageID_eq_leafStorageID(pb, storageID.packed, leafStorageID.result(),
-                                   FMT(_prefix, ".storageID_eq_leafStorageID")),
-        storageID_eq_nextStorageID(pb, storageID.packed, nextStorageID.result(),
+        storageID_eq_storageID(pb, _storageID.packed, currentStorageID.result(),
+                               FMT(_prefix, ".storageID_eq_storageID")),
+
+        storageID_eq_nextStorageID(pb, _storageID.packed,
+                                   nextStorageID.result(),
                                    FMT(_prefix, ".storageID_eq_nextStorageID")),
+
         isValidStorageID(pb,
-                         {storageID_eq_leafStorageID.result(),
+                         {storageID_eq_storageID.result(),
                           storageID_eq_nextStorageID.result()},
                          FMT(_prefix, ".isValidStorageID")),
-        requireValidStorageID(pb, verify, isValidStorageID.result(),
-                              constants._1,
+
+        requireValidStorageID(pb, _verify, isValidStorageID.result(),
+                              _constants._1,
                               FMT(_prefix, ".requireValidStorageID")),
 
-        data(pb, storageID_eq_leafStorageID.result(), storage.data,
-             constants._0, FMT(_prefix, ".data")) {}
+        data(pb, storageID_eq_storageID.result(), _currentStorage.data,
+             _constants._0, FMT(_prefix, ".data")) {}
 
   void generate_r1cs_witness() {
     packAddress.generate_r1cs_witness_from_bits();
-    isNonZeroStorageLeadStorageID.generate_r1cs_witness();
-    leafStorageID.generate_r1cs_witness();
+    isCurrentStorageIDNonZero.generate_r1cs_witness();
+    currentStorageID.generate_r1cs_witness();
 
     nextStorageID.generate_r1cs_witness();
 
-    storageID_eq_leafStorageID.generate_r1cs_witness();
+    storageID_eq_storageID.generate_r1cs_witness();
     storageID_eq_nextStorageID.generate_r1cs_witness();
     isValidStorageID.generate_r1cs_witness();
     requireValidStorageID.generate_r1cs_witness();
@@ -182,12 +193,12 @@ public:
 
   void generate_r1cs_constraints() {
     packAddress.generate_r1cs_constraints(false);
-    isNonZeroStorageLeadStorageID.generate_r1cs_constraints();
-    leafStorageID.generate_r1cs_constraints();
+    isCurrentStorageIDNonZero.generate_r1cs_constraints();
+    currentStorageID.generate_r1cs_constraints();
 
     nextStorageID.generate_r1cs_constraints();
 
-    storageID_eq_leafStorageID.generate_r1cs_constraints();
+    storageID_eq_storageID.generate_r1cs_constraints();
     storageID_eq_nextStorageID.generate_r1cs_constraints();
     isValidStorageID.generate_r1cs_constraints();
     requireValidStorageID.generate_r1cs_constraints();
@@ -206,29 +217,30 @@ class NonceGadget : public GadgetT {
   const Constants &constants;
   const DualVariableGadget &storageID;
 
-  StorageReaderGadget storageReader;
+  ReadStorageGadget readStorage;
   IfThenRequireEqualGadget requireDataZero;
 
 public:
   NonceGadget(ProtoboardT &pb, const Constants &_constants,
-              const StorageGadget &_storage,
+              const StorageGadget &_currentStorage,
               const DualVariableGadget &_storageID, const VariableT &_verify,
               const std::string &_prefix)
       : GadgetT(pb, _prefix),
 
-        constants(_constants), storageID(_storageID),
-        storageReader(pb, constants, _storage, storageID, _verify,
-                      FMT(_prefix, ".storageReader")),
-        requireDataZero(pb, _verify, storageReader.getData(), constants._0,
+        constants(_constants),
+        storageID(_storageID),
+        readStorage(pb, constants, _currentStorage, storageID, _verify,
+                      FMT(_prefix, ".readStorage")),
+        requireDataZero(pb, _verify, readStorage.getData(), _constants._0,
                         FMT(_prefix, ".requireDataZero")) {}
 
   void generate_r1cs_witness() {
-    storageReader.generate_r1cs_witness();
+    readStorage.generate_r1cs_witness();
     requireDataZero.generate_r1cs_witness();
   }
 
   void generate_r1cs_constraints() {
-    storageReader.generate_r1cs_constraints();
+    readStorage.generate_r1cs_constraints();
     requireDataZero.generate_r1cs_constraints();
   }
 
@@ -237,11 +249,11 @@ public:
   const VariableArrayT getShortStorageID() const {
     return reverse(flattenReverse(
         {VariableArrayT(1, constants._0),
-         VariableArrayT(1, storageReader.getOverwrite()),
+         VariableArrayT(1, readStorage.getOverwrite()),
          subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS)}));
   }
 
-  const VariableT &getOverwrite() const { return storageReader.getOverwrite(); }
+  const VariableT &getOverwrite() const { return readStorage.getOverwrite(); }
 };
 
 } // namespace Loopring
