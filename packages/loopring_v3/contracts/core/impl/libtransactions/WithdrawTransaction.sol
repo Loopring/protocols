@@ -82,7 +82,7 @@ library WithdrawTransaction
         internal
         returns (uint feeETH)
     {
-        Withdrawal memory withdrawal = readWithdrawal(data, offset);
+        Withdrawal memory withdrawal = readTx(data, offset);
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
 
         // Validate the withdrawal data not directly part of the DA
@@ -110,7 +110,7 @@ library WithdrawTransaction
             require(block.timestamp < withdrawal.validUntil, "WITHDRAWAL_EXPIRED");
             // Check appproval onchain
             // Calculate the tx hash
-            bytes32 txHash = hash(ctx.DOMAIN_SEPARATOR, withdrawal);
+            bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, withdrawal);
             // Check onchain authorization
             S.requireAuthorizedTx(withdrawal.owner, auxData.signature, txHash);
         } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
@@ -189,7 +189,7 @@ library WithdrawTransaction
         );
     }
 
-    function readWithdrawal(
+    function readTx(
         bytes memory data,
         uint         offset
         )
@@ -220,7 +220,7 @@ library WithdrawTransaction
         offset += 4;
     }
 
-    function hash(
+    function hashTx(
         bytes32 DOMAIN_SEPARATOR,
         Withdrawal memory withdrawal
         )

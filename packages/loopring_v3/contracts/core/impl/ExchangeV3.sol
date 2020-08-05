@@ -461,7 +461,7 @@ contract ExchangeV3 is IExchangeV3
             validUntil: validUntil,
             storageID: storageID
         });
-        bytes32 txHash = TransferTransaction.hash(state.DOMAIN_SEPARATOR, transfer);
+        bytes32 txHash = TransferTransaction.hashTx(state.DOMAIN_SEPARATOR, transfer);
         state.approvedTx[transfer.from][txHash] = true;
         emit TransactionApproved(transfer.from, txHash);
     }

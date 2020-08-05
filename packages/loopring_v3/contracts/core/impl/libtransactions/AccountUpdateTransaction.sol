@@ -56,7 +56,7 @@ library AccountUpdateTransaction
         returns (uint /*feeETH*/)
     {
         // Read the account update
-        AccountUpdate memory accountUpdate = readAccountUpdate(data, offset);
+        AccountUpdate memory accountUpdate = readTx(data, offset);
         AccountUpdateAuxiliaryData memory auxData = abi.decode(auxiliaryData, (AccountUpdateAuxiliaryData));
 
         // Check validUntil
@@ -64,7 +64,7 @@ library AccountUpdateTransaction
         accountUpdate.validUntil = auxData.validUntil;
 
         // Calculate the tx hash
-        bytes32 txHash = hash(ctx.DOMAIN_SEPARATOR, accountUpdate);
+        bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, accountUpdate);
 
         // Check onchain authorization
         S.requireAuthorizedTx(accountUpdate.owner, auxData.signature, txHash);
@@ -72,7 +72,7 @@ library AccountUpdateTransaction
         //emit AccountUpdated(accountID, publicKey);
     }
 
-    function readAccountUpdate(
+    function readTx(
         bytes memory data,
         uint         offset
         )
@@ -102,7 +102,7 @@ library AccountUpdateTransaction
         offset += 4;
     }
 
-    function hash(
+    function hashTx(
         bytes32 DOMAIN_SEPARATOR,
         AccountUpdate memory accountUpdate
         )

@@ -61,7 +61,7 @@ library TransferTransaction
         returns (uint /*feeETH*/)
     {
         // Read the transfer
-        Transfer memory transfer = readTransfer(data, offset);
+        Transfer memory transfer = readTx(data, offset);
         TransferAuxiliaryData memory auxData = abi.decode(auxiliaryData, (TransferAuxiliaryData));
 
         // Check validUntil
@@ -69,7 +69,7 @@ library TransferTransaction
         transfer.validUntil = auxData.validUntil;
 
         // Calculate the tx hash
-        bytes32 txHash = hash(ctx.DOMAIN_SEPARATOR, transfer);
+        bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, transfer);
 
         // Check the on-chain authorization
         S.requireAuthorizedTx(transfer.from, auxData.signature, txHash);
@@ -77,7 +77,7 @@ library TransferTransaction
         //emit ConditionalTransferProcessed(from, to, tokenID, amount);
     }
 
-    function readTransfer(
+    function readTx(
         bytes memory data,
         uint         offset
         )
@@ -114,7 +114,7 @@ library TransferTransaction
         offset += 20;
     }
 
-    function hash(
+    function hashTx(
         bytes32 DOMAIN_SEPARATOR,
         Transfer memory transfer
         )
