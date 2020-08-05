@@ -197,7 +197,7 @@ library ExchangeWithdrawals
         address to,
         uint16  tokenID,
         uint    amount,
-        bytes   memory auxiliaryData,
+        bytes   memory extraData,
         uint    gasLimit
         )
         public
@@ -209,7 +209,7 @@ library ExchangeWithdrawals
             to,
             tokenID,
             amount,
-            auxiliaryData,
+            extraData,
             gasLimit,
             true
         );
@@ -232,7 +232,7 @@ library ExchangeWithdrawals
         address to,
         uint16  tokenID,
         uint    amount,
-        bytes   memory auxiliaryData,
+        bytes   memory extraData,
         uint    gasLimit,
         bool    allowFailure
         )
@@ -246,7 +246,7 @@ library ExchangeWithdrawals
 
         // Transfer the tokens from the deposit contract to the owner
         if (gasLimit > 0) {
-            try S.depositContract.withdraw{gas: gasLimit}(from, to, token, amount, auxiliaryData) {
+            try S.depositContract.withdraw{gas: gasLimit}(from, to, token, amount, extraData) {
                 success = true;
             } catch {
                 success = false;
