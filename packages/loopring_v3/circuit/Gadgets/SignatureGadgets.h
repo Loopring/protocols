@@ -207,6 +207,8 @@ public:
   const VariableArrayT &result() { return hash.bits; }
 };
 
+
+// Returns `B * s == R + A * H(R, A, M)`
 class EdDSA_Poseidon : public GadgetT {
 public:
   PointValidator m_validator_R;             // IsValid(R)
