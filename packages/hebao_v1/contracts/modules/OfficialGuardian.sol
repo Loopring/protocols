@@ -28,14 +28,13 @@ contract OfficialGuardian is OwnerManagable, ERC1271
         return isManager(addr1) || isManager(addr2) ?  ERC1271_MAGICVALUE : bytes4(0);
     }
 
-    function addWhitelist(address target)
+    function addWhitelist(address target, bool toAdd)
         external
         onlyOwner
     {
         require(target != address(0), "ZERO_ADDRESS");
-        require(whitelist[target] == false, "ADDRESS_EXIST");
-
-        whitelist[target] = true;
+        require(whitelist[target] != toAdd, "SAME_VALUE");
+        whitelist[target] = toAdd;
     }
 
     function transact(
