@@ -13,7 +13,7 @@ import "../thirdparty/BytesUtil.sol";
 contract OfficialGuardian is OwnerManagable, ERC1271
 {
     using SignatureUtil for bytes;
-    mapping (address => bool) private modules;
+    mapping (address => bool) private whitelist;
 
     function isValidSignature(
         bytes memory _data,
@@ -28,22 +28,31 @@ contract OfficialGuardian is OwnerManagable, ERC1271
         return isManager(addr1) || isManager(addr2) ?  ERC1271_MAGICVALUE : bytes4(0);
     }
 
-    function addModule(address _module)
+    function addWhitelist(address target)
         external
         onlyOwner
     {
-        require(_module != address(0), "NULL_MODULE");
-        require(modules[_module] == false, "MODULE_EXISTS");
+        require(target != address(0), "ZERO_ADDRESS");
+        require(whitelist[target] == false, "ADDRESS_EXIST");
 
-        modules[_module] = true;
+        whitelist[target] = true;
     }
 
-    function hasModule(address _module)
+
+    function transact(
+        address  target,
+        uint     value,
+        bytes    calldata data
+        )
         external
-        view
-        returns (bool)
+        onlyManager
+        returns (
+            bool success,
+            bytes memory returnData
+        )
     {
-        return modules[_module];
+        require(whitelist[target], "INVALID_TARGET");
+        // solium-disable-next-line security/no-call-value
+        (success, returnData) = target.call{value: value}(data);
     }
-
 }
