@@ -13,6 +13,7 @@ import "../thirdparty/BytesUtil.sol";
 contract OfficialGuardian is OwnerManagable, ERC1271
 {
     using SignatureUtil for bytes;
+    mapping (address => bool) private modules;
 
     function isValidSignature(
         bytes memory _data,
@@ -26,4 +27,23 @@ contract OfficialGuardian is OwnerManagable, ERC1271
         (address addr1, address addr2) = _data.recoverECDSASigner(_signature);
         return isManager(addr1) || isManager(addr2) ?  ERC1271_MAGICVALUE : bytes4(0);
     }
+
+    function addModule(address _module)
+        external
+        onlyOwner
+    {
+        require(_module != address(0), "NULL_MODULE");
+        require(modules[_module] == false, "MODULE_EXISTS");
+
+        modules[_module] = true;
+    }
+
+    function hasModule(address _module)
+        external
+        view
+        returns (bool)
+    {
+        return modules[_module];
+    }
+
 }
