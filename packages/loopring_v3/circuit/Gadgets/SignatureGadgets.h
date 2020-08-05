@@ -17,6 +17,7 @@ using namespace jubjub;
 
 namespace Loopring {
 
+// x = sqrt((y * y - 1)) * 1/(d * y * y  - a)))
 class RequireValidPublicKey : public GadgetT {
 public:
   const Params &params;
@@ -78,6 +79,10 @@ public:
   }
 };
 
+// QUESTION(daniel): seems no output, so the compression is just check if we can
+// drop publickKeyX or publicKeyY entirely?
+
+// TODO(daniel): add comment for auditors.
 class CompressPublicKey : public GadgetT {
 public:
   const Params &params;
@@ -120,10 +125,15 @@ public:
                               FMT(prefix, ".requireValidPublicKey")),
 
         // Point compression
+
+        // QUESTION(daniel): are we actually just checking publicKeyX > 0 below?
+        // if so, why not use `LtFieldGadget(0, publicKeyX)`?
         negPublicKeyX(pb, constants._0, publicKeyX,
                       FMT(prefix, ".negPublicKeyX")),
         isNegativeX(pb, negPublicKeyX.result(), publicKeyX,
                     FMT(prefix, ".isNegativeX")),
+
+        // convert field to bits with field modulus validation.
         publicKeyYBits(pb, publicKeyY, FMT(prefix, ".publicKeyYBits")) {}
 
   void generate_r1cs_witness() {
