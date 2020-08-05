@@ -400,7 +400,8 @@ void runServer(Loopring::Circuit *circuit,
     // Some checks to see if this block is compatible with the loaded circuit
     int iBlockType = input["blockType"].get<int>();
     unsigned int blockSize = input["blockSize"].get<int>();
-    if (/*iBlockType & circuit->getBlockType() != 1 || */ blockSize !=
+    if (
+        /*iBlockType & circuit->getBlockType() != 1 || */ blockSize !=
         circuit->getBlockSize()) {
       res.set_content("Error: Incompatible block requested! Use /info to check "
                       "which blocks can be proven.\n",

@@ -82,20 +82,23 @@ public:
   std::vector<merkle_path_selector_4> m_selectors;
   std::vector<HashT> m_hashers;
 
-  merkle_path_compute_4(ProtoboardT &in_pb, const size_t in_depth,
-                        const VariableArrayT &in_address_bits,
-                        const VariableT in_leaf, const VariableArrayT &in_path,
-                        const std::string &in_annotation_prefix)
+  merkle_path_compute_4(
+      ProtoboardT &in_pb,
+      const size_t in_tree_depth, // RENAME: in_tree_depth
+      const VariableArrayT &in_address_bits,
+      const VariableT in_leaf_hash,   // RENAME:in_leaf_hash_hash
+      const VariableArrayT &in_proof, // RENAME: in_proof
+      const std::string &in_annotation_prefix)
       : GadgetT(in_pb, in_annotation_prefix) {
-    assert(in_depth > 0);
-    assert(in_address_bits.size() == in_depth * 2);
+    assert(in_tree_depth > 0);
+    assert(in_address_bits.size() == in_tree_depth * 2);
 
-    m_selectors.reserve(in_depth);
-    m_hashers.reserve(in_depth);
-    for (size_t i = 0; i < in_depth; i++) {
+    m_selectors.reserve(in_tree_depth);
+    m_hashers.reserve(in_tree_depth);
+    for (size_t i = 0; i < in_tree_depth; i++) {
       m_selectors.push_back(merkle_path_selector_4(
-          in_pb, (i == 0) ? in_leaf : m_hashers[i - 1].result(),
-          {in_path[i * 3 + 0], in_path[i * 3 + 1], in_path[i * 3 + 2]},
+          in_pb, (i == 0) ? in_leaf_hash : m_hashers[i - 1].result(),
+          {in_proof[i * 3 + 0], in_proof[i * 3 + 1], in_proof[i * 3 + 2]},
           in_address_bits[i * 2 + 0], in_address_bits[i * 2 + 1],
           FMT(this->annotation_prefix, ".selector[%zu]", i)));
 
@@ -132,14 +135,14 @@ class merkle_path_authenticator_4 : public merkle_path_compute_4<HashT> {
 public:
   const VariableT m_expected_root;
 
-  merkle_path_authenticator_4(ProtoboardT &in_pb, const size_t in_depth,
+  merkle_path_authenticator_4(ProtoboardT &in_pb, const size_t in_tree_depth,
                               const VariableArrayT in_address_bits,
-                              const VariableT in_leaf,
+                              const VariableT in_leaf_hash,
                               const VariableT in_expected_root,
-                              const VariableArrayT in_path,
+                              const VariableArrayT in_proof,
                               const std::string &in_annotation_prefix)
       : merkle_path_compute_4<HashT>::merkle_path_compute_4(
-            in_pb, in_depth, in_address_bits, in_leaf, in_path,
+            in_pb, in_tree_depth, in_address_bits, in_leaf_hash, in_proof,
             in_annotation_prefix),
         m_expected_root(in_expected_root) {}
 
@@ -163,8 +166,10 @@ using HashAccountLeaf = Poseidon_gadget_T<6, 1, 6, 52, 5, 1>;
 using HashBalanceLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
 using HashStorageLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
 
-using MerklePathCheckT = merkle_path_authenticator_4<HashMerkleTree>;
-using MerklePathT = merkle_path_compute_4<HashMerkleTree>;
+using MerklePathCheckT =
+    merkle_path_authenticator_4<HashMerkleTree>; // RENAME: VerifyTreeRoot
+using MerklePathT =
+    merkle_path_compute_4<HashMerkleTree>; // RENAME: UpdateTreeRoot
 
 } // namespace Loopring
 

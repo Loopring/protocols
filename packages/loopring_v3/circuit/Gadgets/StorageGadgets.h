@@ -47,67 +47,70 @@ public:
   }
 };
 
+// Changes a storage leaf from its current value to a new value and
+// calculates the new sub-tree root.
 class UpdateStorageGadget : public GadgetT {
 public:
-  HashStorageLeaf leafBefore;
-  HashStorageLeaf leafAfter;
+  HashStorageLeaf leafHashBefore;
+  HashStorageLeaf leafHashAfter;
 
-  StorageState valuesBefore;
-  StorageState valuesAfter;
+  StorageState leafBefore;
+  StorageState leafAfter;
 
   const VariableArrayT proof;
-  MerklePathCheckT proofVerifierBefore;
-  MerklePathT rootCalculatorAfter;
+  MerklePathCheckT rootBeforeVerifier;
+  MerklePathT rootAfter;
 
-  UpdateStorageGadget(ProtoboardT &pb, const VariableT &merkleRoot,
-                      const VariableArrayT &address, const StorageState &before,
-                      const StorageState &after, const std::string &prefix)
-      : GadgetT(pb, prefix),
+  UpdateStorageGadget(ProtoboardT &pb, const VariableT &_rootBefore,
+                      const VariableArrayT &_addressBits,
+                      const StorageState &_leafBefore,
+                      const StorageState &_leafAfter, // RENAME:
+                      const std::string &_prefix)
+      : GadgetT(pb, _prefix),
 
-        valuesBefore(before), valuesAfter(after),
+        leafBefore(_leafBefore), leafAfter(_leafAfter),
 
-        leafBefore(pb, var_array({before.data, before.storageID}),
-                   FMT(prefix, ".leafBefore")),
-        leafAfter(pb, var_array({after.data, after.storageID}),
-                  FMT(prefix, ".leafAfter")),
+        leafHashBefore(pb, var_array({_leafBefore.data, _leafBefore.storageID}),
+                       FMT(_prefix, ".leafHashBefore")),
+        leafHashAfter(pb, var_array({_leafAfter.data, _leafAfter.storageID}),
+                      FMT(_prefix, ".leafHashAfter")),
 
         proof(
-            make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(prefix, ".proof"))),
-        proofVerifierBefore(pb, TREE_DEPTH_STORAGE, address,
-                            leafBefore.result(), merkleRoot, proof,
-                            FMT(prefix, ".pathBefore")),
-        rootCalculatorAfter(pb, TREE_DEPTH_STORAGE, address, leafAfter.result(),
-                            proof, FMT(prefix, ".pathAfter")) {}
+            make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(_prefix, ".proof"))),
+        rootBeforeVerifier(pb, TREE_DEPTH_STORAGE, _addressBits,
+                           leafHashBefore.result(), _rootBefore, proof,
+                           FMT(_prefix, ".rootBeforeVerifier")),
+        rootAfter(pb, TREE_DEPTH_STORAGE, _addressBits, leafHashAfter.result(),
+                  proof, FMT(_prefix, ".rootAfter")) {}
 
   void generate_r1cs_witness(const StorageUpdate &update) {
-    leafBefore.generate_r1cs_witness();
-    leafAfter.generate_r1cs_witness();
+    leafHashBefore.generate_r1cs_witness();
+    leafHashAfter.generate_r1cs_witness();
 
     proof.fill_with_field_elements(pb, update.proof.data);
-    proofVerifierBefore.generate_r1cs_witness();
-    rootCalculatorAfter.generate_r1cs_witness();
+    rootBeforeVerifier.generate_r1cs_witness();
+    rootAfter.generate_r1cs_witness();
 
-    ASSERT(pb.val(proofVerifierBefore.m_expected_root) == update.rootBefore,
+    ASSERT(pb.val(rootBeforeVerifier.m_expected_root) == update.rootBefore,
            annotation_prefix);
-    if (pb.val(rootCalculatorAfter.result()) != update.rootAfter) {
-      std::cout << "Before:" << std::endl;
-      printStorage(pb, valuesBefore);
-      std::cout << "After:" << std::endl;
-      printStorage(pb, valuesAfter);
-      ASSERT(pb.val(rootCalculatorAfter.result()) == update.rootAfter,
-             annotation_prefix);
+    if (pb.val(rootAfter.result()) != update.rootAfter) {
+      std::cout << "leafBefore:" << std::endl;
+      printStorage(pb, leafBefore);
+      std::cout << "leafAfter:" << std::endl;
+      printStorage(pb, leafAfter);
+      ASSERT(pb.val(rootAfter.result()) == update.rootAfter, annotation_prefix);
     }
   }
 
   void generate_r1cs_constraints() {
-    leafBefore.generate_r1cs_constraints();
-    leafAfter.generate_r1cs_constraints();
+    leafHashBefore.generate_r1cs_constraints();
+    leafHashAfter.generate_r1cs_constraints();
 
-    proofVerifierBefore.generate_r1cs_constraints();
-    rootCalculatorAfter.generate_r1cs_constraints();
+    rootBeforeVerifier.generate_r1cs_constraints();
+    rootAfter.generate_r1cs_constraints();
   }
 
-  const VariableT &result() const { return rootCalculatorAfter.result(); }
+  const VariableT &result() const { return rootAfter.result(); }
 };
 
 class StorageReaderGadget : public GadgetT {
