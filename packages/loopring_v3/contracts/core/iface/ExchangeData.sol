@@ -155,6 +155,7 @@ library ExchangeData
     struct BlockContext
     {
         bytes32 DOMAIN_SEPARATOR;
+        uint32  timestamp;
     }
 
     // Represents the entire exchange state except the owner of the exchange.

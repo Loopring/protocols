@@ -13,7 +13,7 @@ interface Withdrawal {
   feeTokenID?: number;
   fee?: BN;
   to?: string;
-  dataHash?: string;
+  onchainDataHash?: string;
   minGas?: number;
   validUntil?: number;
   nonce?: number;
@@ -72,10 +72,10 @@ export class WithdrawalProcessor {
     offset += 2;
     withdrawal.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
     offset += 2;
-    withdrawal.dataHash = data.extractData(offset, 20);
-    offset += 20;
     withdrawal.nonce = data.extractUint32(offset);
     offset += 4;
+    withdrawal.onchainDataHash = data.extractData(offset, 20);
+    offset += 20;
 
     return withdrawal;
   }

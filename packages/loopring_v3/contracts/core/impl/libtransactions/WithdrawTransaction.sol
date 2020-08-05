@@ -45,13 +45,12 @@ library WithdrawTransaction
         uint    amount;
         uint16  feeTokenID;
         uint    fee;
-        bytes20 dataHash;
-        uint32  nonce;
-
-        uint    minGas;
         address to;
         bytes   extraData;
+        uint    minGas;
         uint32  validUntil;
+        uint32  nonce;
+        bytes20 onchainDataHash;
     }
 
     // Auxiliary data for each withdrawal
@@ -86,7 +85,7 @@ library WithdrawTransaction
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
 
         // Validate the withdrawal data not directly part of the DA
-        bytes32 dataHash = keccak256(
+        bytes32 onchainDataHash = keccak256(
             abi.encodePacked(
                 auxData.minGas,
                 auxData.to,
@@ -95,7 +94,7 @@ library WithdrawTransaction
         );
         // Only the 20 MSB are used, which is still 80-bit of security, which is more
         // than enough, especially when combined with validUntil.
-        require(withdrawal.dataHash == bytes20(dataHash), "INVALID_WITHDRAWAL_DATA");
+        require(withdrawal.onchainDataHash == bytes20(onchainDataHash), "INVALID_WITHDRAWAL_DATA");
 
         // Fill in withdrawal data missing from DA
         withdrawal.to = auxData.to;
@@ -107,7 +106,7 @@ library WithdrawTransaction
             // Signature checked offchain, nothing to do
         } else if (withdrawal.withdrawalType == 1) {
             // Check validUntil
-            require(block.timestamp < withdrawal.validUntil, "WITHDRAWAL_EXPIRED");
+            require(ctx.timestamp < withdrawal.validUntil, "WITHDRAWAL_EXPIRED");
             // Check appproval onchain
             // Calculate the tx hash
             bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, withdrawal);
@@ -214,10 +213,10 @@ library WithdrawTransaction
         offset += 2;
         withdrawal.fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        withdrawal.dataHash = data.toBytes20(offset);
-        offset += 20;
         withdrawal.nonce = data.toUint32(offset);
         offset += 4;
+        withdrawal.onchainDataHash = data.toBytes20(offset);
+        offset += 20;
     }
 
     function hashTx(

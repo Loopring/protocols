@@ -60,7 +60,7 @@ library AccountUpdateTransaction
         AccountUpdateAuxiliaryData memory auxData = abi.decode(auxiliaryData, (AccountUpdateAuxiliaryData));
 
         // Check validUntil
-        require(block.timestamp < auxData.validUntil, "WITHDRAWAL_EXPIRED");
+        require(ctx.timestamp < auxData.validUntil, "WITHDRAWAL_EXPIRED");
         accountUpdate.validUntil = auxData.validUntil;
 
         // Calculate the tx hash

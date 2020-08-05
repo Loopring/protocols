@@ -26,7 +26,7 @@ public:
   DualVariableGadget feeTokenID;
   DualVariableGadget fee;
   DualVariableGadget validUntil;
-  DualVariableGadget dataHash;
+  DualVariableGadget onchainDataHash;
   DualVariableGadget type;
 
   // Special case protocol fee withdrawal
@@ -94,7 +94,7 @@ public:
         feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
         fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
         validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
-        dataHash(pb, NUM_BITS_HASH, FMT(prefix, ".data")),
+        onchainDataHash(pb, NUM_BITS_HASH, FMT(prefix, ".onchainDataHash")),
         type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
 
         // Special case protocol fee withdrawal
@@ -111,7 +111,7 @@ public:
         hash(pb,
              var_array({state.exchange, accountID.packed, tokenID.packed,
                         amount.packed, feeTokenID.packed, fee.packed,
-                        dataHash.packed, validUntil.packed,
+                        onchainDataHash.packed, validUntil.packed,
                         state.accountA.account.nonce}),
              FMT(this->annotation_prefix, ".hash")),
 
@@ -227,7 +227,7 @@ public:
     feeTokenID.generate_r1cs_witness(pb, withdrawal.feeTokenID);
     fee.generate_r1cs_witness(pb, withdrawal.fee);
     validUntil.generate_r1cs_witness(pb, withdrawal.validUntil);
-    dataHash.generate_r1cs_witness(pb, withdrawal.dataHash);
+    onchainDataHash.generate_r1cs_witness(pb, withdrawal.onchainDataHash);
     type.generate_r1cs_witness(pb, withdrawal.type);
 
     // Special case protocol fee withdrawal
@@ -293,7 +293,7 @@ public:
     feeTokenID.generate_r1cs_constraints(true);
     fee.generate_r1cs_constraints(true);
     validUntil.generate_r1cs_constraints(true);
-    dataHash.generate_r1cs_constraints(true);
+    onchainDataHash.generate_r1cs_constraints(true);
     type.generate_r1cs_constraints(true);
 
     // Special case protocol fee withdrawal
@@ -354,7 +354,7 @@ public:
   const VariableArrayT getPublicData() const {
     return flattenReverse({type.bits, owner.bits, accountID.bits, tokenID.bits,
                            amount.bits, feeTokenID.bits, fFee.bits(),
-                           dataHash.bits, nonce.bits});
+                           nonce.bits, onchainDataHash.bits});
   }
 };
 

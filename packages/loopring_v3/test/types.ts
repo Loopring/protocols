@@ -158,9 +158,9 @@ export interface WithdrawalRequest {
   gas?: number;
 
   to?: string;
-  data?: string;
+  extraData?: string;
 
-  dataHash?: string;
+  onchainDataHash?: string;
 
   withdrawalFee?: BN;
 

@@ -132,7 +132,8 @@ library ExchangeBlocks
             S,
             offset,
             _block.data,
-            _block.auxiliaryData
+            _block.auxiliaryData,
+            inputTimestamp
         );
 
         // Transfer the onchain block fee to the operator
@@ -220,7 +221,8 @@ library ExchangeBlocks
         ExchangeData.State          storage S,
         uint                                offset,
         bytes                        memory data,
-        ExchangeData.AuxiliaryData[] memory txAuxiliaryData
+        ExchangeData.AuxiliaryData[] memory txAuxiliaryData,
+        uint32                              timestamp
         )
         private
         returns (uint blockFeeETH)
@@ -232,7 +234,8 @@ library ExchangeBlocks
         if (numConditionalTransactions > 0) {
             // Cache the domain seperator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
-                DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR
+                DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR,
+                timestamp: timestamp
             });
 
             require(

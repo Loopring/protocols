@@ -90,7 +90,7 @@ def withdrawFromJSON(jWithdraw):
     withdraw.amount = str(jWithdraw["amount"])
     withdraw.feeTokenID = int(jWithdraw["feeTokenID"])
     withdraw.fee = str(jWithdraw["fee"])
-    withdraw.dataHash = str(jWithdraw["dataHash"])
+    withdraw.onchainDataHash = str(jWithdraw["onchainDataHash"])
     withdraw.type = int(jWithdraw["type"])
     withdraw.validUntil = int(jWithdraw["validUntil"])
     withdraw.signature = None

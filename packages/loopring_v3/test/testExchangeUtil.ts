@@ -82,7 +82,7 @@ function replacer(name: any, val: any) {
     name === "to" ||
     name === "exchange" ||
     name === "taker" ||
-    name === "dataHash"
+    name === "onchainDataHash"
   ) {
     return new BN(val.slice(2), 16).toString(10);
   } else {
@@ -114,7 +114,7 @@ export interface WithdrawOptions {
   to?: string;
   minGas?: number;
   gas?: number;
-  data?: string;
+  extraData?: string;
   signer?: string;
   validUntil?: number;
 }
@@ -238,7 +238,7 @@ export namespace WithdrawalUtils {
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" },
           { name: "to", type: "address" },
-          { name: "data", type: "bytes" },
+          { name: "extraData", type: "bytes" },
           { name: "minGas", type: "uint" },
           { name: "validUntil", type: "uint32" },
           { name: "nonce", type: "uint32" }
@@ -259,7 +259,7 @@ export namespace WithdrawalUtils {
         feeTokenID: withdrawal.feeTokenID,
         fee: withdrawal.fee,
         to: withdrawal.to,
-        data: withdrawal.data,
+        extraData: withdrawal.extraData,
         minGas: withdrawal.minGas,
         validUntil: withdrawal.validUntil,
         nonce: withdrawal.nonce
@@ -286,7 +286,7 @@ export namespace WithdrawalUtils {
       withdrawal.amount,
       withdrawal.feeTokenID,
       withdrawal.fee,
-      withdrawal.dataHash,
+      withdrawal.onchainDataHash,
       withdrawal.validUntil,
       withdrawal.nonce
     ];
@@ -1156,7 +1156,7 @@ export class ExchangeTestUtil {
     const gas =
       options.gas !== undefined ? options.gas : minGas > 0 ? minGas : 100000;
     const signer = options.signer !== undefined ? options.signer : owner;
-    const data = options.data !== undefined ? options.data : "0x";
+    const extraData = options.extraData !== undefined ? options.extraData : "0x";
     const validUntil =
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
@@ -1210,12 +1210,12 @@ export class ExchangeTestUtil {
     }
 
     // Calculate the data hash
-    const dataHashData = new Bitstream();
-    dataHashData.addNumber(minGas, 32);
-    dataHashData.addAddress(to);
-    dataHashData.addHex(data);
-    const dataHash = "0x" + ethUtil.keccak(
-      Buffer.from(dataHashData.getData().slice(2), "hex")
+    const onchainData = new Bitstream();
+    onchainData.addNumber(minGas, 32);
+    onchainData.addAddress(to);
+    onchainData.addHex(extraData);
+    const onchainDataHash = "0x" + ethUtil.keccak(
+      Buffer.from(onchainData.getData().slice(2), "hex")
     ).toString("hex").slice(0, 40);
 
     const account = this.accounts[this.exchangeId][accountID];
@@ -1233,11 +1233,11 @@ export class ExchangeTestUtil {
       feeTokenID,
       fee,
       to,
-      data,
+      extraData,
       withdrawalFee: await this.loopringV3.forcedWithdrawalFee(),
       minGas,
       gas,
-      dataHash
+      onchainDataHash
     };
 
     if (authMethod === AuthMethod.EDDSA) {
@@ -1853,8 +1853,8 @@ export class ExchangeTestUtil {
         ),
         withdrawal.minGas,
         withdrawal.to,
-        withdrawal.data
-          ? web3.utils.hexToBytes(withdrawal.data)
+        withdrawal.extraData
+          ? web3.utils.hexToBytes(withdrawal.extraData)
           : web3.utils.hexToBytes("0x"),
           withdrawal.validUntil
       ]
@@ -2060,8 +2060,8 @@ export class ExchangeTestUtil {
             toFloat(new BN(withdraw.fee), Constants.Float16Encoding),
             2
           );
-          da.addBN(new BN(withdraw.dataHash), 20);
           da.addNumber(withdraw.nonce, 4);
+          da.addBN(new BN(withdraw.onchainDataHash), 20);
         } else if (tx.deposit) {
           const deposit = tx.deposit;
           da.addNumber(TransactionType.DEPOSIT, 1);
