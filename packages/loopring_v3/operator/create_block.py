@@ -69,7 +69,6 @@ def transferFromJSON(jTransfer):
     transfer.validUntil = int(jTransfer["validUntil"])
     transfer.dualAuthorX = str(jTransfer["dualAuthorX"])
     transfer.dualAuthorY = str(jTransfer["dualAuthorY"])
-    transfer.data = str(jTransfer["data"])
     transfer.payerToAccountID = int(jTransfer["payerToAccountID"])
     transfer.payerTo = str(jTransfer["payerTo"])
     transfer.payeeToAccountID = int(jTransfer["payeeToAccountID"])
@@ -91,9 +90,7 @@ def withdrawFromJSON(jWithdraw):
     withdraw.amount = str(jWithdraw["amount"])
     withdraw.feeTokenID = int(jWithdraw["feeTokenID"])
     withdraw.fee = str(jWithdraw["fee"])
-    withdraw.to = str(jWithdraw["to"])
     withdraw.dataHash = str(jWithdraw["dataHash"])
-    withdraw.minGas = int(jWithdraw["minGas"])
     withdraw.type = int(jWithdraw["type"])
     withdraw.validUntil = int(jWithdraw["validUntil"])
     withdraw.signature = None

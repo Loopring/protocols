@@ -20,7 +20,7 @@ poseidonParamsStorage = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon
 
 BINARY_TREE_DEPTH_STORAGE = 14
 BINARY_TREE_DEPTH_ACCOUNTS = 32
-BINARY_TREE_DEPTH_TOKENS = 12
+BINARY_TREE_DEPTH_TOKENS = 16
 
 MAX_AMOUNT = 2 ** 96 - 1
 
@@ -379,7 +379,7 @@ class State(object):
         self._accounts = {}
         self._accounts[str(0)] = getDefaultAccount()
         self._accounts[str(1)] = getDefaultAccount()
-        print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
+        # print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
 
     def load(self, filename):
         with open(filename) as f:
@@ -669,7 +669,7 @@ class State(object):
 
             newState.signatureA = txInput.signature
 
-            newState.accountA_Address = 2 if isProtocolfeeWithdrawal else txInput.accountID
+            newState.accountA_Address = 1 if isProtocolfeeWithdrawal else txInput.accountID
             accountA = self.getAccount(newState.accountA_Address)
 
             newState.balanceA_S_Address = txInput.tokenID

@@ -38,10 +38,10 @@ export class SpotTradeProcessor {
     offset += 4;
 
     // Tokens
-    const tokenIds = data.extractUint24(offset);
-    offset += 3;
-    const tokenA = tokenIds >> 12;
-    const tokenB = tokenIds & 0xfff;
+    const tokenA = data.extractUint16(offset);
+    offset += 2;
+    const tokenB = data.extractUint16(offset);
+    offset += 2;
 
     // Fills
     const fFillSA = data.extractUint24(offset);

@@ -80,9 +80,7 @@ static auto dummyWithdraw = R"({
     "feeTokenID": 0,
     "fee": "0",
     "validUntil": 4294967295,
-    "to": "0",
     "dataHash": "0",
-    "minGas": 0,
     "type": 0
 })"_json;
 
@@ -331,9 +329,7 @@ public:
   ethsnarks::FieldT amount;
   ethsnarks::FieldT feeTokenID;
   ethsnarks::FieldT fee;
-  ethsnarks::FieldT to;
   ethsnarks::FieldT dataHash;
-  ethsnarks::FieldT minGas;
   ethsnarks::FieldT validUntil;
   ethsnarks::FieldT type;
 };
@@ -344,10 +340,7 @@ static void from_json(const json &j, Withdrawal &withdrawal) {
   withdrawal.amount = ethsnarks::FieldT(j["amount"].get<std::string>().c_str());
   withdrawal.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
   withdrawal.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
-  withdrawal.to = ethsnarks::FieldT(j["to"].get<std::string>().c_str());
-  withdrawal.dataHash =
-      ethsnarks::FieldT(j["dataHash"].get<std::string>().c_str());
-  withdrawal.minGas = ethsnarks::FieldT(j.at("minGas"));
+  withdrawal.dataHash = ethsnarks::FieldT(j["dataHash"].get<std::string>().c_str());
   withdrawal.validUntil = ethsnarks::FieldT(j.at("validUntil"));
   withdrawal.type = ethsnarks::FieldT(j.at("type"));
 }
@@ -387,7 +380,6 @@ public:
   ethsnarks::FieldT to;
   ethsnarks::FieldT dualAuthorX;
   ethsnarks::FieldT dualAuthorY;
-  ethsnarks::FieldT data;
   ethsnarks::FieldT storageID;
   ethsnarks::FieldT payerToAccountID;
   ethsnarks::FieldT payerTo;
@@ -408,7 +400,6 @@ static void from_json(const json &j, Transfer &transfer) {
       ethsnarks::FieldT(j["dualAuthorX"].get<std::string>().c_str());
   transfer.dualAuthorY =
       ethsnarks::FieldT(j["dualAuthorY"].get<std::string>().c_str());
-  transfer.data = ethsnarks::FieldT(j["data"].get<std::string>().c_str());
   transfer.storageID =
       ethsnarks::FieldT(j["storageID"].get<std::string>().c_str());
   transfer.payerToAccountID = ethsnarks::FieldT(j.at("payerToAccountID"));

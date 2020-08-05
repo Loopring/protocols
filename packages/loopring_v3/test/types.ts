@@ -121,8 +121,6 @@ export class Transfer {
   from: string;
   to: string;
 
-  data: string;
-
   dualAuthorX: string;
   dualAuthorY: string;
   payerToAccountID: number;
@@ -156,18 +154,18 @@ export interface WithdrawalRequest {
   feeTokenID?: number;
   fee?: BN;
 
-  to: string;
-
-  dataHash: string;
   minGas: number;
-
   gas?: number;
+
+  to?: string;
+  data?: string;
+
+  dataHash?: string;
 
   withdrawalFee?: BN;
 
   signature?: Signature;
   onchainSignature?: any;
-  data?: string;
 
   timestamp?: number;
   transactionHash?: string;

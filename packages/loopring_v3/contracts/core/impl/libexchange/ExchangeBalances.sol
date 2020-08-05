@@ -59,7 +59,7 @@ library ExchangeBalances
         uint16   tokenID,
         uint     balance,
         uint     storageRoot,
-        uint[18] memory balanceMerkleProof
+        uint[24] memory balanceMerkleProof
         )
         private
         pure
@@ -67,7 +67,7 @@ library ExchangeBalances
     {
         uint balanceItem = hashImpl(balance, storageRoot, 0, 0);
         uint _id = tokenID;
-        for (uint depth = 0; depth < 6; depth++) {
+        for (uint depth = 0; depth < 8; depth++) {
             uint base = depth * 3;
             if (_id & 3 == 0) {
                 balanceItem = hashImpl(

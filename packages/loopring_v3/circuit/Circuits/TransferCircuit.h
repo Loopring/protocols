@@ -48,7 +48,6 @@ public:
   DualVariableGadget storageID;
   VariableT dualAuthorX;
   VariableT dualAuthorY;
-  DualVariableGadget data;
   DualVariableGadget payer_toAccountID;
   DualVariableGadget payer_to;
   DualVariableGadget payee_toAccountID;
@@ -71,8 +70,8 @@ public:
   TernaryGadget resolvedDualAuthorY;
 
   // Signature
-  Poseidon_gadget_T<14, 1, 6, 53, 13, 1> hashPayer;
-  Poseidon_gadget_T<14, 1, 6, 53, 13, 1> hashDual;
+  Poseidon_gadget_T<13, 1, 6, 53, 12, 1> hashPayer;
+  Poseidon_gadget_T<13, 1, 6, 53, 12, 1> hashDual;
 
   // Balances
   DynamicBalanceGadget balanceS_A;
@@ -92,7 +91,6 @@ public:
   ArrayTernaryGadget da_To;
   ArrayTernaryGadget da_From;
   ArrayTernaryGadget da_StorageID;
-  ArrayTernaryGadget da_ValidUntil;
 
   // Fee as float
   FloatGadget fFee;
@@ -129,7 +127,6 @@ public:
         storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
         dualAuthorX(make_variable(pb, FMT(prefix, ".dualAuthorX"))),
         dualAuthorY(make_variable(pb, FMT(prefix, ".dualAuthorY"))),
-        data(pb, NUM_BITS_FIELD_CAPACITY, FMT(prefix, ".data")),
         payer_toAccountID(pb, NUM_BITS_ADDRESS,
                           FMT(prefix, ".payer_toAccountID")),
         payer_to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_to")),
@@ -184,13 +181,13 @@ public:
                              payer_toAccountID.packed, tokenID.packed,
                              amount.packed, feeTokenID.packed, fee.packed,
                              payer_to.packed, dualAuthorX, dualAuthorY,
-                             data.packed, validUntil.packed, storageID.packed}),
+                             validUntil.packed, storageID.packed}),
                   FMT(this->annotation_prefix, ".hashPayer")),
         hashDual(pb,
                  var_array({state.exchange, fromAccountID.packed,
                             payee_toAccountID.packed, tokenID.packed,
                             amount.packed, feeTokenID.packed, fee.packed,
-                            to.packed, dualAuthorX, dualAuthorY, data.packed,
+                            to.packed, dualAuthorX, dualAuthorY,
                             validUntil.packed, storageID.packed}),
                  FMT(this->annotation_prefix, ".hashDual")),
 
@@ -225,9 +222,6 @@ public:
         da_StorageID(pb, isConditional.result(), storageID.bits,
                      VariableArrayT(NUM_BITS_STORAGEID, state.constants._0),
                      FMT(prefix, ".da_StorageID")),
-        da_ValidUntil(pb, isConditional.result(), validUntil.bits,
-                      VariableArrayT(NUM_BITS_TIMESTAMP, state.constants._0),
-                      FMT(prefix, ".da_ValidUntil")),
 
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
@@ -307,7 +301,6 @@ public:
     storageID.generate_r1cs_witness(pb, transfer.storageID);
     pb.val(dualAuthorX) = transfer.dualAuthorX;
     pb.val(dualAuthorY) = transfer.dualAuthorY;
-    data.generate_r1cs_witness(pb, transfer.data);
     payer_toAccountID.generate_r1cs_witness(pb, transfer.payerToAccountID);
     payer_to.generate_r1cs_witness(pb, transfer.payerTo);
     payee_toAccountID.generate_r1cs_witness(pb, transfer.payeeToAccountID);
@@ -351,7 +344,6 @@ public:
     da_To.generate_r1cs_witness();
     da_From.generate_r1cs_witness();
     da_StorageID.generate_r1cs_witness();
-    da_ValidUntil.generate_r1cs_witness();
 
     // Fee as float
     fFee.generate_r1cs_witness(toFloat(transfer.fee, Float16Encoding));
@@ -383,7 +375,6 @@ public:
     from.generate_r1cs_constraints(true);
     to.generate_r1cs_constraints(true);
     storageID.generate_r1cs_constraints(true);
-    data.generate_r1cs_constraints(true);
     payer_toAccountID.generate_r1cs_constraints(true);
     payer_to.generate_r1cs_constraints(true);
     payee_toAccountID.generate_r1cs_constraints(true);
@@ -428,7 +419,6 @@ public:
     da_To.generate_r1cs_constraints();
     da_From.generate_r1cs_constraints();
     da_StorageID.generate_r1cs_constraints();
-    da_ValidUntil.generate_r1cs_constraints();
 
     // Fee as float
     fFee.generate_r1cs_constraints();
@@ -450,11 +440,9 @@ public:
   const VariableArrayT getPublicData() const {
     return flattenReverse(
         {type.bits, fromAccountID.bits, toAccountID.bits, tokenID.bits,
-         feeTokenID.bits, fAmount.bits(), fFee.bits(),
-         nonce.getShortStorageID(), da_To.result(), da_ValidUntil.result(),
-         da_StorageID.result(), da_From.result(),
-         VariableArrayT(256 - NUM_BITS_FIELD_CAPACITY, state.constants._0),
-         data.bits});
+         fAmount.bits(), feeTokenID.bits, fFee.bits(),
+         nonce.getShortStorageID(), da_To.result(),
+         da_StorageID.result(), da_From.result()});
   }
 };
 

@@ -1,5 +1,6 @@
 import BN = require("bn.js");
 import childProcess = require("child_process");
+import ethUtil = require("ethereumjs-util");
 import fs = require("fs");
 import path = require("path");
 import http = require("http");
@@ -80,7 +81,8 @@ function replacer(name: any, val: any) {
     name === "payerTo" ||
     name === "to" ||
     name === "exchange" ||
-    name === "taker"
+    name === "taker" ||
+    name === "dataHash"
   ) {
     return new BN(val.slice(2), 16).toString(10);
   } else {
@@ -236,8 +238,8 @@ export namespace WithdrawalUtils {
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" },
           { name: "to", type: "address" },
-          { name: "dataHash", type: "bytes32" },
-          { name: "minGas", type: "uint24" },
+          { name: "data", type: "bytes" },
+          { name: "minGas", type: "uint" },
           { name: "validUntil", type: "uint32" },
           { name: "nonce", type: "uint32" }
         ]
@@ -257,10 +259,10 @@ export namespace WithdrawalUtils {
         feeTokenID: withdrawal.feeTokenID,
         fee: withdrawal.fee,
         to: withdrawal.to,
-        dataHash: "0x" + new BN(withdrawal.dataHash).toString(16),
+        data: withdrawal.data,
         minGas: withdrawal.minGas,
-        nonce: withdrawal.nonce,
-        validUntil: withdrawal.validUntil
+        validUntil: withdrawal.validUntil,
+        nonce: withdrawal.nonce
       }
     };
     return typedData;
@@ -276,7 +278,7 @@ export namespace WithdrawalUtils {
 
   export function sign(keyPair: any, withdrawal: WithdrawalRequest) {
     // Calculate hash
-    const hasher = Poseidon.createHash(12, 6, 53);
+    const hasher = Poseidon.createHash(10, 6, 53);
     const inputs = [
       withdrawal.exchange,
       withdrawal.accountID,
@@ -284,9 +286,7 @@ export namespace WithdrawalUtils {
       withdrawal.amount,
       withdrawal.feeTokenID,
       withdrawal.fee,
-      withdrawal.to,
       withdrawal.dataHash,
-      withdrawal.minGas,
       withdrawal.validUntil,
       withdrawal.nonce
     ];
@@ -321,7 +321,6 @@ export namespace TransferUtils {
           { name: "amount", type: "uint256" },
           { name: "feeTokenID", type: "uint16" },
           { name: "fee", type: "uint256" },
-          { name: "data", type: "uint256" },
           { name: "validUntil", type: "uint32" },
           { name: "storageID", type: "uint32" }
         ]
@@ -340,7 +339,6 @@ export namespace TransferUtils {
         amount: transfer.amount,
         feeTokenID: transfer.feeTokenID,
         fee: transfer.fee,
-        data: transfer.data,
         validUntil: transfer.validUntil,
         storageID: transfer.storageID
       }
@@ -355,7 +353,7 @@ export namespace TransferUtils {
 
   export function sign(keyPair: any, transfer: Transfer, payer: boolean) {
     // Calculate hash
-    const hasher = Poseidon.createHash(14, 6, 53);
+    const hasher = Poseidon.createHash(13, 6, 53);
     const inputs = [
       transfer.exchange,
       transfer.fromAccountID,
@@ -367,7 +365,6 @@ export namespace TransferUtils {
       payer ? transfer.payerTo : transfer.to,
       transfer.dualAuthorX,
       transfer.dualAuthorY,
-      transfer.data,
       transfer.validUntil,
       transfer.storageID
     ];
@@ -454,7 +451,7 @@ export class ExchangeTestUtil {
   private proverPorts = new Map<number, number>();
   private portGenerator = 1234;
 
-  private emptyMerkleRoot = "0x160ca280c25b71c85d58fc0dd7b9eb42268c73c8812333da3cc2bdc8af3ee7b7";
+  private emptyMerkleRoot = "0x2db90e056916400d3a29cf8e04b3963b5b92385d8b4d470b50e298872c3b64c5";
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -697,7 +694,6 @@ export class ExchangeTestUtil {
       fee,
       from,
       to,
-      data: this.getRandomMemo(),
       type: authMethod === AuthMethod.EDDSA ? 0 : 1,
       validUntil,
       dualAuthorX,
@@ -743,7 +739,6 @@ export class ExchangeTestUtil {
           transfer.amount,
           feeToken,
           transfer.fee,
-          transfer.data,
           transfer.validUntil,
           transfer.storageID,
           { from: signer }
@@ -1214,6 +1209,15 @@ export class ExchangeTestUtil {
       //withdrawalRequest.transactionHash = tx.receipt.transactionHash;
     }
 
+    // Calculate the data hash
+    const dataHashData = new Bitstream();
+    dataHashData.addNumber(minGas, 32);
+    dataHashData.addAddress(to);
+    dataHashData.addHex(data);
+    const dataHash = "0x" + ethUtil.keccak(
+      Buffer.from(dataHashData.getData().slice(2), "hex")
+    ).toString("hex").slice(0, 40);
+
     const account = this.accounts[this.exchangeId][accountID];
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
     const withdrawalRequest: WithdrawalRequest = {
@@ -1229,10 +1233,11 @@ export class ExchangeTestUtil {
       feeTokenID,
       fee,
       to,
+      data,
       withdrawalFee: await this.loopringV3.forcedWithdrawalFee(),
       minGas,
       gas,
-      dataHash: this.hashToFieldElement("0x" + "00".repeat(32))
+      dataHash
     };
 
     if (authMethod === AuthMethod.EDDSA) {
@@ -1808,6 +1813,54 @@ export class ExchangeTestUtil {
     this.activeOperator = operator;
   }
 
+  public getTransferAuxData(transfer: Transfer) {
+    return web3.eth.abi.encodeParameter(
+      "tuple(bytes,uint32)",
+      [
+        web3.utils.hexToBytes(
+          transfer.onchainSignature
+            ? transfer.onchainSignature
+            : "0x"
+        ),
+        transfer.validUntil
+      ]
+    );
+  }
+
+  public getAccountUpdateAuxData(accountUpdate: AccountUpdate) {
+    return web3.eth.abi.encodeParameter(
+      "tuple(bytes,uint32)",
+      [
+        web3.utils.hexToBytes(
+          accountUpdate.onchainSignature
+            ? accountUpdate.onchainSignature
+            : "0x"
+        ),
+        accountUpdate.validUntil
+      ]
+    );
+  }
+
+  public getWithdrawalAuxData(withdrawal: WithdrawalRequest) {
+    return web3.eth.abi.encodeParameter(
+      "tuple(uint256,bytes,uint256,address,bytes,uint32)",
+      [
+        withdrawal.gas,
+        web3.utils.hexToBytes(
+          withdrawal.onchainSignature
+            ? withdrawal.onchainSignature
+            : "0x"
+        ),
+        withdrawal.minGas,
+        withdrawal.to,
+        withdrawal.data
+          ? web3.utils.hexToBytes(withdrawal.data)
+          : web3.utils.hexToBytes("0x"),
+          withdrawal.validUntil
+      ]
+    );
+  }
+
   public async submitTransactions(forcedBlockSize?: number) {
     const exchangeID = this.exchangeId;
     const pendingTransactions = this.pendingTransactions[exchangeID];
@@ -1854,29 +1907,12 @@ export class ExchangeTestUtil {
         if (transaction.txType === "Transfer") {
           if (transaction.type > 0) {
             numConditionalTransactions++;
-            auxiliaryData.push([
-              i,
-              web3.utils.hexToBytes(
-                transaction.onchainSignature
-                  ? transaction.onchainSignature
-                  : "0x"
-              )
-            ]);
+            const encodedTransferData = this.getTransferAuxData(transaction);
+            auxiliaryData.push([i, web3.utils.hexToBytes(encodedTransferData)]);
           }
         } else if (transaction.txType === "Withdraw") {
           numConditionalTransactions++;
-          const encodedWithdrawalData = web3.eth.abi.encodeParameter(
-            "tuple(uint256,bytes,bytes)",
-            [
-              transaction.gas,
-              web3.utils.hexToBytes(
-                transaction.onchainSignature
-                  ? transaction.onchainSignature
-                  : "0x"
-              ),
-              web3.utils.hexToBytes("0x")
-            ]
-          );
+          const encodedWithdrawalData = this.getWithdrawalAuxData(transaction);
           auxiliaryData.push([i, web3.utils.hexToBytes(encodedWithdrawalData)]);
         } else if (transaction.txType === "Deposit") {
           numConditionalTransactions++;
@@ -1884,14 +1920,8 @@ export class ExchangeTestUtil {
         } else if (transaction.txType === "AccountUpdate") {
           if (transaction.type > 0) {
             numConditionalTransactions++;
-            auxiliaryData.push([
-              i,
-              web3.utils.hexToBytes(
-                transaction.onchainSignature
-                  ? transaction.onchainSignature
-                  : "0x"
-              )
-            ]);
+            const encodedAccountUpdateData = this.getAccountUpdateAuxData(transaction);
+            auxiliaryData.push([i, web3.utils.hexToBytes(encodedAccountUpdateData)]);
           }
         }
       }
@@ -1949,7 +1979,7 @@ export class ExchangeTestUtil {
         //console.log(tx);
         const da = new Bitstream();
         if (tx.noop) {
-          // Do nothing
+          da.addNumber(TransactionType.NOOP, 1);
         } else if (tx.spotTrade) {
           const spotTrade = tx.spotTrade;
           const orderA = spotTrade.orderA;
@@ -1969,7 +1999,8 @@ export class ExchangeTestUtil {
           );
           da.addNumber(orderA.accountID, 4);
           da.addNumber(orderB.accountID, 4);
-          da.addNumber(orderA.tokenS * 2 ** 12 + orderB.tokenS, 3);
+          da.addNumber(orderA.tokenS, 2);
+          da.addNumber(orderB.tokenS, 2);
           da.addNumber(spotTrade.fFillS_A, 3);
           da.addNumber(spotTrade.fFillS_B, 3);
 
@@ -1992,11 +2023,12 @@ export class ExchangeTestUtil {
           da.addNumber(transfer.type, 1);
           da.addNumber(transfer.fromAccountID, 4);
           da.addNumber(transfer.toAccountID, 4);
-          da.addNumber(transfer.tokenID * 2 ** 12 + transfer.feeTokenID, 3);
+          da.addNumber(transfer.tokenID, 2);
           da.addNumber(
             toFloat(new BN(transfer.amount), Constants.Float24Encoding),
             3
           );
+          da.addNumber(transfer.feeTokenID, 2);
           da.addNumber(
             toFloat(new BN(transfer.fee), Constants.Float16Encoding),
             2
@@ -2012,26 +2044,23 @@ export class ExchangeTestUtil {
             ),
             20
           );
-          da.addNumber(transfer.type > 0 ? transfer.validUntil : 0, 4);
           da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 4);
           da.addBN(new BN(transfer.type > 0 ? transfer.from : "0"), 20);
-          da.addBN(new BN(transfer.data), 32);
+          da.addBN(new BN(transfer.data), 2);
         } else if (tx.withdraw) {
           const withdraw = tx.withdraw;
           da.addNumber(TransactionType.WITHDRAWAL, 1);
           da.addNumber(withdraw.type, 1);
           da.addBN(new BN(withdraw.owner), 20);
           da.addNumber(withdraw.accountID, 4);
-          da.addNumber(withdraw.tokenID * 2 ** 12 + withdraw.feeTokenID, 3);
+          da.addNumber(withdraw.tokenID, 2);
           da.addBN(new BN(withdraw.amount), 12);
+          da.addNumber(withdraw.feeTokenID, 2);
           da.addNumber(
             toFloat(new BN(withdraw.fee), Constants.Float16Encoding),
             2
           );
-          da.addBN(new BN(withdraw.to), 20);
-          da.addBN(new BN(withdraw.dataHash), 32);
-          da.addNumber(withdraw.minGas, 3);
-          da.addNumber(withdraw.validUntil, 4);
+          da.addBN(new BN(withdraw.dataHash), 20);
           da.addNumber(withdraw.nonce, 4);
         } else if (tx.deposit) {
           const deposit = tx.deposit;
@@ -2055,9 +2084,10 @@ export class ExchangeTestUtil {
             new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
             32
           );
-          da.addNumber(update.validUntil, 4);
           da.addNumber(update.nonce, 4);
         }
+        // console.log("type: " + da.extractUint8(0));
+        // console.log("da.length(): " + da.length());
         assert(
           da.length() <= Constants.TX_DATA_AVAILABILITY_SIZE,
           "tx uses too much da"
@@ -2244,7 +2274,7 @@ export class ExchangeTestUtil {
     this.activeOperator = undefined;
 
     // Set the operator
-    const operatorContract = await this.contracts.Operator.new(
+    /*const operatorContract = await this.contracts.Operator.new(
       this.exchange.address,
       { from: this.exchangeOperator }
     );
@@ -2252,7 +2282,7 @@ export class ExchangeTestUtil {
     await operatorContract.addManager(this.exchangeOperator, {
       from: this.exchangeOperator
     });
-    await this.setOperatorContract(operatorContract);
+    await this.setOperatorContract(operatorContract);*/
 
     const exchangeCreationTimestamp = (await this.exchange.getBlockInfo(0))
       .timestamp;
@@ -2743,22 +2773,6 @@ export class ExchangeTestUtil {
 
   public getRandomBool() {
     return this.getRandomInt(1000) >= 500;
-  }
-
-  public getRandomMemo() {
-    const toggle = this.getRandomBool();
-    if (toggle) {
-      return "0";
-    } else {
-      return new BN(
-        SHA256(Buffer.from("" + this.getRandomInt(1000)), "hex").toString(
-          "hex"
-        ),
-        16
-      )
-        .shrn(3)
-        .toString(10);
-    }
   }
 
   public getRandomAmount() {

@@ -34,7 +34,6 @@ export class Artifacts {
     this.LoopringV3 = artifacts.require("LoopringV3");
     this.ExchangeV3 = artifacts.require("ExchangeV3");
     this.BlockVerifier = artifacts.require("BlockVerifier");
-    this.Operator = artifacts.require("Operator");
 
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");

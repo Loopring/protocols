@@ -441,7 +441,6 @@ contract ExchangeV3 is IExchangeV3
         uint96  amount,
         address feeToken,
         uint96  fee,
-        uint    data,
         uint32  validUntil,
         uint32  storageID
         )
@@ -459,7 +458,6 @@ contract ExchangeV3 is IExchangeV3
             amount: amount,
             feeTokenID: feeTokenID,
             fee: fee,
-            data: data,
             validUntil: validUntil,
             storageID: storageID
         });

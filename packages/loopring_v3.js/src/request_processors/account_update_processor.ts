@@ -56,8 +56,6 @@ export class AccountUpdateProcessor {
     offset += 2;
     const publicKey = data.extractData(offset, 32);
     offset += 32;
-    update.validUntil = data.extractUint32(offset);
-    offset += 4;
     update.nonce = data.extractUint32(offset);
     offset += 4;
 

@@ -21,7 +21,7 @@ library TransferTransaction
     using ExchangeSignatures   for ExchangeData.State;
 
     bytes32 constant public TRANSFER_TYPEHASH = keccak256(
-        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint256 data,uint32 validUntil,uint32 storageID)"
+        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint32 validUntil,uint32 storageID)"
     );
 
     struct Transfer
@@ -32,9 +32,15 @@ library TransferTransaction
         uint    amount;
         uint16  feeTokenID;
         uint    fee;
-        uint    data;
         uint32  validUntil;
         uint32  storageID;
+    }
+
+    // Auxiliary data for each transfer
+    struct TransferAuxiliaryData
+    {
+        bytes  signature;
+        uint32 validUntil;
     }
 
     /*event ConditionalTransferProcessed(
@@ -56,12 +62,17 @@ library TransferTransaction
     {
         // Read the transfer
         Transfer memory transfer = readTransfer(data, offset);
+        TransferAuxiliaryData memory auxData = abi.decode(auxiliaryData, (TransferAuxiliaryData));
+
+        // Check validUntil
+        require(block.timestamp < auxData.validUntil, "WITHDRAWAL_EXPIRED");
+        transfer.validUntil = auxData.validUntil;
 
         // Calculate the tx hash
         bytes32 txHash = hash(ctx.DOMAIN_SEPARATOR, transfer);
 
         // Check the on-chain authorization
-        S.requireAuthorizedTx(transfer.from, auxiliaryData, txHash);
+        S.requireAuthorizedTx(transfer.from, auxData.signature, txHash);
 
         //emit ConditionalTransferProcessed(from, to, tokenID, amount);
     }
@@ -85,25 +96,22 @@ library TransferTransaction
         offset += 4;
         //transfer.toAccountID = data.toUint32(offset);
         offset += 4;
-        transfer.tokenID = data.toUint16(offset) >> 4;
-        transfer.feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
-        offset += 3;
+        transfer.tokenID = data.toUint16(offset);
+        offset += 2;
         transfer.amount = uint(data.toUint24(offset)).decodeFloat(24);
         offset += 3;
+        transfer.feeTokenID = data.toUint16(offset);
+        offset += 2;
         transfer.fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
         //uint16 shortStorageID = data.toUint16(offset);
         offset += 2;
         transfer.to = data.toAddress(offset);
         offset += 20;
-        transfer.validUntil = data.toUint32(offset);
-        offset += 4;
         transfer.storageID = data.toUint32(offset);
         offset += 4;
         transfer.from = data.toAddress(offset);
         offset += 20;
-        transfer.data = data.toUint(offset);
-        offset += 32;
     }
 
     function hash(
@@ -125,7 +133,6 @@ library TransferTransaction
                     transfer.amount,
                     transfer.feeTokenID,
                     transfer.fee,
-                    transfer.data,
                     transfer.validUntil,
                     transfer.storageID
                 )

@@ -37,9 +37,8 @@ export class WithdrawalProcessor {
     account.getBalance(withdrawal.feeTokenID).balance.isub(withdrawal.fee);
 
     // Special cases when withdrawing from the protocol fee pool.
-    // These account balances will have interest accrued.
     if (withdrawal.accountID === 0) {
-      state.getAccount(2).getBalance(withdrawal.tokenID);
+      state.getAccount(1).getBalance(withdrawal.tokenID);
     } else {
       state.getAccount(0).getBalance(withdrawal.tokenID);
     }
@@ -65,25 +64,18 @@ export class WithdrawalProcessor {
     offset += 20;
     withdrawal.accountID = data.extractUint32(offset);
     offset += 4;
-    const tokenIDs = data.extractUint24(offset);
-    offset += 3;
+    withdrawal.tokenID = data.extractUint16(offset);
+    offset += 2;
     withdrawal.amount = data.extractUint96(offset);
     offset += 12;
+    withdrawal.feeTokenID = data.extractUint16(offset);
+    offset += 2;
     withdrawal.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
     offset += 2;
-    withdrawal.to = data.extractAddress(offset);
+    withdrawal.dataHash = data.extractData(offset, 20);
     offset += 20;
-    withdrawal.dataHash = data.extractData(offset, 32);
-    offset += 32;
-    withdrawal.minGas = data.extractUint24(offset);
-    offset += 3;
-    withdrawal.validUntil = data.extractUint32(offset);
-    offset += 4;
     withdrawal.nonce = data.extractUint32(offset);
     offset += 4;
-
-    withdrawal.tokenID = tokenIDs >> 12;
-    withdrawal.feeTokenID = tokenIDs & 0b1111111111;
 
     return withdrawal;
   }

@@ -26,9 +26,7 @@ public:
   DualVariableGadget feeTokenID;
   DualVariableGadget fee;
   DualVariableGadget validUntil;
-  DualVariableGadget to;
   DualVariableGadget dataHash;
-  DualVariableGadget minGas;
   DualVariableGadget type;
 
   // Special case protocol fee withdrawal
@@ -39,7 +37,7 @@ public:
   DualVariableGadget nonce;
 
   // Signature
-  Poseidon_gadget_T<12, 1, 6, 53, 11, 1> hash;
+  Poseidon_gadget_T<10, 1, 6, 53, 9, 1> hash;
 
   // Validate
   RequireLtGadget requireValidUntil;
@@ -96,9 +94,7 @@ public:
         feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
         fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
         validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
-        to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".to")),
-        dataHash(pb, NUM_BITS_HASH, FMT(prefix, ".dataHash")),
-        minGas(pb, NUM_BITS_GAS, FMT(prefix, ".minGas")),
+        dataHash(pb, NUM_BITS_HASH, FMT(prefix, ".data")),
         type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
 
         // Special case protocol fee withdrawal
@@ -114,8 +110,8 @@ public:
         // Signature
         hash(pb,
              var_array({state.exchange, accountID.packed, tokenID.packed,
-                        amount.packed, feeTokenID.packed, fee.packed, to.packed,
-                        dataHash.packed, minGas.packed, validUntil.packed,
+                        amount.packed, feeTokenID.packed, fee.packed,
+                        dataHash.packed, validUntil.packed,
                         state.accountA.account.nonce}),
              FMT(this->annotation_prefix, ".hash")),
 
@@ -177,9 +173,8 @@ public:
                        NUM_BITS_AMOUNT, FMT(prefix, ".balanceP_after")),
         merkleTreeAccountA(
             pb, isProtocolFeeWithdrawal.result(),
-            flatten({VariableArrayT(1, state.constants._0),
-                     VariableArrayT(1, state.constants._1),
-                     VariableArrayT(NUM_BITS_ACCOUNT - 2, state.constants._0)}),
+            flatten({VariableArrayT(1, state.constants._1),
+                     VariableArrayT(NUM_BITS_ACCOUNT - 1, state.constants._0)}),
             accountID.bits, FMT(prefix, ".merkleTreeAccountA")),
 
         // Increase the nonce by 1 (unless it's a forced withdrawal)
@@ -232,9 +227,7 @@ public:
     feeTokenID.generate_r1cs_witness(pb, withdrawal.feeTokenID);
     fee.generate_r1cs_witness(pb, withdrawal.fee);
     validUntil.generate_r1cs_witness(pb, withdrawal.validUntil);
-    to.generate_r1cs_witness(pb, withdrawal.to);
     dataHash.generate_r1cs_witness(pb, withdrawal.dataHash);
-    minGas.generate_r1cs_witness(pb, withdrawal.minGas);
     type.generate_r1cs_witness(pb, withdrawal.type);
 
     // Special case protocol fee withdrawal
@@ -300,9 +293,7 @@ public:
     feeTokenID.generate_r1cs_constraints(true);
     fee.generate_r1cs_constraints(true);
     validUntil.generate_r1cs_constraints(true);
-    to.generate_r1cs_constraints(true);
     dataHash.generate_r1cs_constraints(true);
-    minGas.generate_r1cs_constraints(true);
     type.generate_r1cs_constraints(true);
 
     // Special case protocol fee withdrawal
@@ -362,9 +353,8 @@ public:
 
   const VariableArrayT getPublicData() const {
     return flattenReverse({type.bits, owner.bits, accountID.bits, tokenID.bits,
-                           feeTokenID.bits, amount.bits, fFee.bits(), to.bits,
-                           dataHash.bits, minGas.bits, validUntil.bits,
-                           nonce.bits});
+                           amount.bits, feeTokenID.bits, fFee.bits(),
+                           dataHash.bits, nonce.bits});
   }
 };
 
