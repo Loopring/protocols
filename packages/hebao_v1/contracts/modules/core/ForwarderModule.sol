@@ -162,10 +162,10 @@ abstract contract ForwarderModule is BaseModule
         if (metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success)) {
             uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 
-            // Do not consume quota if the target address is the factory
-            // or the meta-tx's txAwareHash is not zero which means it will
-            // be signed by at least a guardian, therefor, even if the owner's
-            // private keyis leaked, the hacker won't be able to deplete ether/tokens
+            // Do not consume quota when call factory's createWallet function or
+            // when a successful meta-tx's txAwareHash is non-zero (which means it will
+            // be signed by at least a guardian). Therefor, even if the owner's
+            // private key is leaked, the hacker won't be able to deplete ether/tokens
             // as high meta-tx fees.
             bool skipQuota = metaTx.txAwareHash != 0 && success ||
                 metaTx.data.toBytes4(0) == WalletFactory.createWallet.selector &&
