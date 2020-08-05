@@ -8,7 +8,7 @@ import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
-import "./walletFactory.sol";
+import "./WalletFactory.sol";
 
 /// @title ForwarderModule
 /// @dev A module to support wallet meta-transactions.
