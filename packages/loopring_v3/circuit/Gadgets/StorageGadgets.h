@@ -58,8 +58,8 @@ public:
   StorageState leafAfter;
 
   const VariableArrayT proof;
-  MerklePathCheckT rootBeforeVerifier;
-  MerklePathT rootAfter;
+  VerifyTreeRoot rootBeforeVerifier;
+  UpdateTreeRoot rootAfter;
 
   UpdateStorageGadget(ProtoboardT &pb, const VariableT &_rootBefore,
                       const VariableArrayT &_addressBits,

@@ -217,12 +217,12 @@ public:
    using HashTradingHistoryLeaf = Poseidon_gadget_T<5, 1, 6, 52, 3, 1>;
    ```
 
-5. merkle_path_selector_4
+5. merkle_path_selector
 
    这个是验证 poseidon hash merkle tree 的电路的一部分，有一点值得注意的地方就是下面这个真值表的计算。
 
    ```c++
-   class merkle_path_selector_4 : public GadgetT
+   class merkle_path_selector : public GadgetT
    {
    public:
        OrGadget bit0_or_bit1;
@@ -242,7 +242,7 @@ public:
        // 01   y0 x   y1 y2
        // 10   y0 y1   x y2
        // 11   y0 y1  y2  x
-       merkle_path_selector_4(...)
+       merkle_path_selector(...)
        ...
    }
    ```

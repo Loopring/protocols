@@ -9,7 +9,7 @@
 
 namespace Loopring {
 
-class merkle_path_selector_4 : public GadgetT {
+class merkle_path_selector : public GadgetT {
 public:
   OrGadget bit0_or_bit1;
   AndGadget bit0_and_bit1;
@@ -26,7 +26,7 @@ public:
   // 0 1         y0        x           y1      y2
   // 1 0         y0        y1          x       y2
   // 1 1         y0        y1          y2      x
-  merkle_path_selector_4(ProtoboardT &pb, const VariableT &input /* x */,
+  merkle_path_selector(ProtoboardT &pb, const VariableT &input /* x */,
                          std::vector<VariableT> sideNodes /* y */,
                          const VariableT &bit0, const VariableT &bit1,
                          const std::string &prefix)
@@ -79,7 +79,7 @@ public:
 
 template <typename HashT> class merkle_root_updater : public GadgetT {
 public:
-  std::vector<merkle_path_selector_4> m_selectors;
+  std::vector<merkle_path_selector> m_selectors;
   std::vector<HashT> m_hashers;
 
   merkle_root_updater(
@@ -96,7 +96,7 @@ public:
     m_selectors.reserve(in_tree_depth);
     m_hashers.reserve(in_tree_depth);
     for (size_t i = 0; i < in_tree_depth; i++) {
-      m_selectors.push_back(merkle_path_selector_4(
+      m_selectors.push_back(merkle_path_selector(
           in_pb, (i == 0) ? in_leaf_hash : m_hashers[i - 1].result(),
           {in_proof[i * 3 + 0], in_proof[i * 3 + 1], in_proof[i * 3 + 2]},
           in_address_bits[i * 2 + 0], in_address_bits[i * 2 + 1],
@@ -166,10 +166,8 @@ using HashAccountLeaf = Poseidon_gadget_T<6, 1, 6, 52, 5, 1>;
 using HashBalanceLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
 using HashStorageLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
 
-using VerifyTreeRoot =
-    merkle_root_verifier<HashMerkleTree>;
-using UpdateTreeRoot =
-    merkle_root_updater<HashMerkleTree>;
+using VerifyTreeRoot = merkle_root_verifier<HashMerkleTree>;
+using UpdateTreeRoot = merkle_root_updater<HashMerkleTree>;
 
 } // namespace Loopring
 

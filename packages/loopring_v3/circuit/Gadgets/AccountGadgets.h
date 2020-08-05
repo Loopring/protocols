@@ -66,8 +66,8 @@ public:
   AccountState valuesAfter;
 
   const VariableArrayT proof;
-  MerklePathCheckT proofVerifierBefore;
-  MerklePathT rootCalculatorAfter;
+  VerifyTreeRoot proofVerifierBefore;
+  UpdateTreeRoot rootAfter;
 
   UpdateAccountGadget(ProtoboardT &pb, const VariableT &merkleRoot,
                       const VariableArrayT &address, const AccountState &before,
@@ -91,7 +91,7 @@ public:
         proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address,
                             leafBefore.result(), merkleRoot, proof,
                             FMT(prefix, ".pathBefore")),
-        rootCalculatorAfter(pb, TREE_DEPTH_ACCOUNTS, address,
+        rootAfter(pb, TREE_DEPTH_ACCOUNTS, address,
                             leafAfter.result(), proof,
                             FMT(prefix, ".pathAfter")) {}
 
@@ -101,16 +101,16 @@ public:
 
     proof.fill_with_field_elements(pb, update.proof.data);
     proofVerifierBefore.generate_r1cs_witness();
-    rootCalculatorAfter.generate_r1cs_witness();
+    rootAfter.generate_r1cs_witness();
 
     // ASSERT(pb.val(proofVerifierBefore.m_expected_root) == update.rootBefore,
     // annotation_prefix);
-    if (pb.val(rootCalculatorAfter.result()) != update.rootAfter) {
+    if (pb.val(rootAfter.result()) != update.rootAfter) {
       std::cout << "Before:" << std::endl;
       printAccount(pb, valuesBefore);
       std::cout << "After:" << std::endl;
       printAccount(pb, valuesAfter);
-      ASSERT(pb.val(rootCalculatorAfter.result()) == update.rootAfter,
+      ASSERT(pb.val(rootAfter.result()) == update.rootAfter,
              annotation_prefix);
     }
   }
@@ -120,10 +120,10 @@ public:
     leafAfter.generate_r1cs_constraints();
 
     proofVerifierBefore.generate_r1cs_constraints();
-    rootCalculatorAfter.generate_r1cs_constraints();
+    rootAfter.generate_r1cs_constraints();
   }
 
-  const VariableT &result() const { return rootCalculatorAfter.result(); }
+  const VariableT &result() const { return rootAfter.result(); }
 };
 
 struct BalanceState {
@@ -162,8 +162,8 @@ public:
   BalanceState valuesAfter;
 
   const VariableArrayT proof;
-  MerklePathCheckT proofVerifierBefore;
-  MerklePathT rootCalculatorAfter;
+  VerifyTreeRoot proofVerifierBefore;
+  UpdateTreeRoot rootAfter;
 
   UpdateBalanceGadget(ProtoboardT &pb, const VariableT &merkleRoot,
                       const VariableArrayT &tokenID, const BalanceState before,
@@ -180,7 +180,7 @@ public:
         proof(make_var_array(pb, TREE_DEPTH_TOKENS * 3, FMT(prefix, ".proof"))),
         proofVerifierBefore(pb, TREE_DEPTH_TOKENS, tokenID, leafBefore.result(),
                             merkleRoot, proof, FMT(prefix, ".pathBefore")),
-        rootCalculatorAfter(pb, TREE_DEPTH_TOKENS, tokenID, leafAfter.result(),
+        rootAfter(pb, TREE_DEPTH_TOKENS, tokenID, leafAfter.result(),
                             proof, FMT(prefix, ".pathAfter")) {}
 
   void generate_r1cs_witness(const BalanceUpdate &update) {
@@ -189,16 +189,16 @@ public:
 
     proof.fill_with_field_elements(pb, update.proof.data);
     proofVerifierBefore.generate_r1cs_witness();
-    rootCalculatorAfter.generate_r1cs_witness();
+    rootAfter.generate_r1cs_witness();
 
     // ASSERT(pb.val(proofVerifierBefore.m_expected_root) == update.rootBefore,
     // annotation_prefix);
-    if (pb.val(rootCalculatorAfter.result()) != update.rootAfter) {
+    if (pb.val(rootAfter.result()) != update.rootAfter) {
       std::cout << "Before:" << std::endl;
       printBalance(pb, valuesBefore);
       std::cout << "After:" << std::endl;
       printBalance(pb, valuesAfter);
-      ASSERT(pb.val(rootCalculatorAfter.result()) == update.rootAfter,
+      ASSERT(pb.val(rootAfter.result()) == update.rootAfter,
              annotation_prefix);
     }
   }
@@ -208,10 +208,10 @@ public:
     leafAfter.generate_r1cs_constraints();
 
     proofVerifierBefore.generate_r1cs_constraints();
-    rootCalculatorAfter.generate_r1cs_constraints();
+    rootAfter.generate_r1cs_constraints();
   }
 
-  const VariableT &result() const { return rootCalculatorAfter.result(); }
+  const VariableT &result() const { return rootAfter.result(); }
 };
 
 // Calculcates the state of a user's open position
