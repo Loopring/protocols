@@ -12,9 +12,11 @@
 
 using namespace ethsnarks;
 
-namespace Loopring {
+namespace Loopring
+{
 
-class SpotTradeCircuit : public BaseTransactionCircuit {
+class SpotTradeCircuit : public BaseTransactionCircuit
+{
 public:
   // Orders
   OrderGadget orderA;
@@ -60,8 +62,7 @@ public:
   TransferGadget protocolFeeA_from_balanceAO_to_balanceAP;
   TransferGadget protocolFeeB_from_balanceBO_to_balanceBP;
 
-  SpotTradeCircuit(ProtoboardT &pb, const TransactionState &state,
-                   const std::string &prefix)
+  SpotTradeCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
       : BaseTransactionCircuit(pb, state, prefix),
 
         // Orders
@@ -69,86 +70,129 @@ public:
         orderB(pb, state.constants, state.exchange, FMT(prefix, ".orderB")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS,
-                   FMT(prefix, ".balanceS_A")),
-        balanceB_A(pb, state.constants, state.accountA.balanceB,
-                   FMT(prefix, ".balanceB_A")),
-        balanceS_B(pb, state.constants, state.accountB.balanceS,
-                   FMT(prefix, ".balanceS_B")),
-        balanceB_B(pb, state.constants, state.accountB.balanceB,
-                   FMT(prefix, ".balanceB_B")),
-        balanceA_P(pb, state.constants, state.pool.balanceA,
-                   FMT(prefix, ".balanceA_P")),
-        balanceB_P(pb, state.constants, state.pool.balanceB,
-                   FMT(prefix, ".balanceB_P")),
-        balanceA_O(pb, state.constants, state.oper.balanceA,
-                   FMT(prefix, ".balanceA_O")),
-        balanceB_O(pb, state.constants, state.oper.balanceB,
-                   FMT(prefix, ".balanceB_O")),
+        balanceS_A(pb, state.constants, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_A(pb, state.constants, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+        balanceS_B(pb, state.constants, state.accountB.balanceS, FMT(prefix, ".balanceS_B")),
+        balanceB_B(pb, state.constants, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
+        balanceA_P(pb, state.constants, state.pool.balanceA, FMT(prefix, ".balanceA_P")),
+        balanceB_P(pb, state.constants, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
+        balanceA_O(pb, state.constants, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
+        balanceB_O(pb, state.constants, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
 
         // Order fills
         fillS_A(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_A")),
         fillS_B(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_B")),
 
         // Trade history
-        isSpotTradeTx(pb, state.type, state.constants.txTypeSpotTrade,
-                      FMT(prefix, ".isSpotTradeTx")),
-        tradeHistory_A(pb, state.constants, state.accountA.storage,
-                       orderA.storageID, isSpotTradeTx.result(),
-                       FMT(prefix, ".tradeHistoryA")),
-        tradeHistory_B(pb, state.constants, state.accountB.storage,
-                       orderB.storageID, isSpotTradeTx.result(),
-                       FMT(prefix, ".tradeHistoryB")),
+        isSpotTradeTx(
+          pb,
+          state.type,
+          state.constants.txTypeSpotTrade,
+          FMT(prefix, ".isSpotTradeTx")),
+        tradeHistory_A(
+          pb,
+          state.constants,
+          state.accountA.storage,
+          orderA.storageID,
+          isSpotTradeTx.result(),
+          FMT(prefix, ".tradeHistoryA")),
+        tradeHistory_B(
+          pb,
+          state.constants,
+          state.accountB.storage,
+          orderB.storageID,
+          isSpotTradeTx.result(),
+          FMT(prefix, ".tradeHistoryB")),
 
         // Match orders
-        orderMatching(pb, state.constants, state.timestamp, orderA, orderB,
-                      state.accountA.account.owner,
-                      state.accountB.account.owner, tradeHistory_A.getData(),
-                      tradeHistory_B.getData(), fillS_A.value(),
-                      fillS_B.value(), FMT(prefix, ".orderMatching")),
+        orderMatching(
+          pb,
+          state.constants,
+          state.timestamp,
+          orderA,
+          orderB,
+          state.accountA.account.owner,
+          state.accountB.account.owner,
+          tradeHistory_A.getData(),
+          tradeHistory_B.getData(),
+          fillS_A.value(),
+          fillS_B.value(),
+          FMT(prefix, ".orderMatching")),
 
         // Calculate fees
-        feeCalculatorA(pb, state.constants, fillS_B.value(),
-                       state.protocolTakerFeeBips, orderA.feeBips.packed,
-                       orderA.rebateBips.packed,
-                       FMT(prefix, ".feeCalculatorA")),
-        feeCalculatorB(pb, state.constants, fillS_A.value(),
-                       state.protocolMakerFeeBips, orderB.feeBips.packed,
-                       orderB.rebateBips.packed,
-                       FMT(prefix, ".feeCalculatorB")),
+        feeCalculatorA(
+          pb,
+          state.constants,
+          fillS_B.value(),
+          state.protocolTakerFeeBips,
+          orderA.feeBips.packed,
+          orderA.rebateBips.packed,
+          FMT(prefix, ".feeCalculatorA")),
+        feeCalculatorB(
+          pb,
+          state.constants,
+          fillS_A.value(),
+          state.protocolMakerFeeBips,
+          orderB.feeBips.packed,
+          orderB.rebateBips.packed,
+          FMT(prefix, ".feeCalculatorB")),
 
         /* Token Transfers */
         // Actual trade
         fillSA_from_balanceSA_to_balanceBB(
-            pb, balanceS_A, balanceB_B, fillS_A.value(),
-            FMT(prefix, ".fillBB_from_balanceSA_to_balanceBB")),
+          pb,
+          balanceS_A,
+          balanceB_B,
+          fillS_A.value(),
+          FMT(prefix, ".fillBB_from_balanceSA_to_balanceBB")),
         fillSB_from_balanceSB_to_balanceBA(
-            pb, balanceS_B, balanceB_A, fillS_B.value(),
-            FMT(prefix, ".fillSB_from_balanceSB_to_balanceBA")),
+          pb,
+          balanceS_B,
+          balanceB_A,
+          fillS_B.value(),
+          FMT(prefix, ".fillSB_from_balanceSB_to_balanceBA")),
         // Fees
         feeA_from_balanceBA_to_balanceAO(
-            pb, balanceB_A, balanceA_O, feeCalculatorA.getFee(),
-            FMT(prefix, ".feeA_from_balanceBA_to_balanceAO")),
+          pb,
+          balanceB_A,
+          balanceA_O,
+          feeCalculatorA.getFee(),
+          FMT(prefix, ".feeA_from_balanceBA_to_balanceAO")),
         feeB_from_balanceBB_to_balanceBO(
-            pb, balanceB_B, balanceB_O, feeCalculatorB.getFee(),
-            FMT(prefix, ".feeB_from_balanceBB_to_balanceBO")),
+          pb,
+          balanceB_B,
+          balanceB_O,
+          feeCalculatorB.getFee(),
+          FMT(prefix, ".feeB_from_balanceBB_to_balanceBO")),
         // Rebates
         rebateA_from_balanceAO_to_balanceBA(
-            pb, balanceA_O, balanceB_A, feeCalculatorA.getRebate(),
-            FMT(prefix, ".rebateA_from_balanceAO_to_balanceBA")),
+          pb,
+          balanceA_O,
+          balanceB_A,
+          feeCalculatorA.getRebate(),
+          FMT(prefix, ".rebateA_from_balanceAO_to_balanceBA")),
         rebateB_from_balanceBO_to_balanceBB(
-            pb, balanceB_O, balanceB_B, feeCalculatorB.getRebate(),
-            FMT(prefix, ".rebateB_from_balanceBO_to_balanceBB")),
+          pb,
+          balanceB_O,
+          balanceB_B,
+          feeCalculatorB.getRebate(),
+          FMT(prefix, ".rebateB_from_balanceBO_to_balanceBB")),
         // Protocol fees
         protocolFeeA_from_balanceAO_to_balanceAP(
-            pb, balanceA_O, balanceA_P, feeCalculatorA.getProtocolFee(),
-            FMT(prefix, ".protocolFeeA_from_balanceAO_to_balanceAP")),
+          pb,
+          balanceA_O,
+          balanceA_P,
+          feeCalculatorA.getProtocolFee(),
+          FMT(prefix, ".protocolFeeA_from_balanceAO_to_balanceAP")),
         protocolFeeB_from_balanceBO_to_balanceBP(
-            pb, balanceB_O, balanceB_P, feeCalculatorB.getProtocolFee(),
-            FMT(prefix, ".protocolFeeB_from_balanceBO_to_balanceBP")) {
+          pb,
+          balanceB_O,
+          balanceB_P,
+          feeCalculatorB.getProtocolFee(),
+          FMT(prefix, ".protocolFeeB_from_balanceBO_to_balanceBP"))
+  {
     // Update account A
-    setArrayOutput(storageA_Address, subArray(orderA.storageID.bits, 0,
-                                              NUM_BITS_STORAGE_ADDRESS));
+    setArrayOutput(storageA_Address, subArray(orderA.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
     setOutput(storageA_Data, orderMatching.getFilledAfter_A());
     setOutput(storageA_StorageId, orderA.storageID.packed);
     setArrayOutput(balanceA_S_Address, orderA.tokenS.bits);
@@ -158,8 +202,7 @@ public:
     setArrayOutput(accountA_Address, orderA.accountID.bits);
 
     // Update account B
-    setArrayOutput(storageB_Address, subArray(orderB.storageID.bits, 0,
-                                              NUM_BITS_STORAGE_ADDRESS));
+    setArrayOutput(storageB_Address, subArray(orderB.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
     setOutput(storageB_Data, orderMatching.getFilledAfter_B());
     setOutput(storageB_StorageId, orderB.storageID.packed);
     setArrayOutput(balanceB_S_Address, orderB.tokenS.bits);
@@ -180,7 +223,8 @@ public:
     setOutput(hash_B, orderB.hash.result());
   }
 
-  void generate_r1cs_witness(const SpotTrade &spotTrade) {
+  void generate_r1cs_witness(const SpotTrade &spotTrade)
+  {
     // Orders
     orderA.generate_r1cs_witness(spotTrade.orderA);
     orderB.generate_r1cs_witness(spotTrade.orderB);
@@ -226,7 +270,8 @@ public:
     protocolFeeB_from_balanceBO_to_balanceBP.generate_r1cs_witness();
   }
 
-  void generate_r1cs_constraints() {
+  void generate_r1cs_constraints()
+  {
     // Orders
     orderA.generate_r1cs_constraints();
     orderB.generate_r1cs_constraints();
@@ -272,30 +317,31 @@ public:
     protocolFeeB_from_balanceBO_to_balanceBP.generate_r1cs_constraints();
   }
 
-  const VariableArrayT getPublicData() const {
+  const VariableArrayT getPublicData() const
+  {
     return flattenReverse({
-        VariableArrayT(1, state.constants._0),
-        VariableArrayT(1, tradeHistory_A.getOverwrite()),
-        subArray(orderA.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
-        VariableArrayT(1, state.constants._0),
-        VariableArrayT(1, tradeHistory_B.getOverwrite()),
-        subArray(orderB.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
+      VariableArrayT(1, state.constants._0),
+      VariableArrayT(1, tradeHistory_A.getOverwrite()),
+      subArray(orderA.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
+      VariableArrayT(1, state.constants._0),
+      VariableArrayT(1, tradeHistory_B.getOverwrite()),
+      subArray(orderB.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
 
-        orderA.accountID.bits,
-        orderB.accountID.bits,
+      orderA.accountID.bits,
+      orderB.accountID.bits,
 
-        orderA.tokenS.bits,
-        orderB.tokenS.bits,
+      orderA.tokenS.bits,
+      orderB.tokenS.bits,
 
-        fillS_A.bits(),
-        fillS_B.bits(),
+      fillS_A.bits(),
+      fillS_B.bits(),
 
-        orderA.buy.bits,
-        VariableArrayT(1, orderA.hasRebate()),
-        orderA.feeOrRebateBips.bits,
-        orderB.buy.bits,
-        VariableArrayT(1, orderB.hasRebate()),
-        orderB.feeOrRebateBips.bits,
+      orderA.buy.bits,
+      VariableArrayT(1, orderA.hasRebate()),
+      orderA.feeOrRebateBips.bits,
+      orderB.buy.bits,
+      VariableArrayT(1, orderB.hasRebate()),
+      orderB.feeOrRebateBips.bits,
     });
   }
 };

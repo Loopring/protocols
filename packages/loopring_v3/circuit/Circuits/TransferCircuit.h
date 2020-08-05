@@ -12,7 +12,8 @@
 #include "utils.hpp"
 
 using namespace ethsnarks;
-namespace Loopring {
+namespace Loopring
+{
 
 /*
     Default: to != 0 and toAccountID != 0
@@ -32,7 +33,8 @@ namespace Loopring {
     require (to != 0);
     require (toAccountID > 1);
 */
-class TransferCircuit : public BaseTransactionCircuit {
+class TransferCircuit : public BaseTransactionCircuit
+{
 public:
   // Inputs
   DualVariableGadget fromAccountID;
@@ -110,8 +112,7 @@ public:
   // Increase the number of conditional transactions (if conditional)
   UnsafeAddGadget numConditionalTransactionsAfter;
 
-  TransferCircuit(ProtoboardT &pb, const TransactionState &state,
-                  const std::string &prefix)
+  TransferCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
       : BaseTransactionCircuit(pb, state, prefix),
 
         // Inputs
@@ -123,90 +124,123 @@ public:
         fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
         validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
         type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
-        from(pb, state.accountA.account.owner, NUM_BITS_ADDRESS,
-             FMT(prefix, ".from")),
+        from(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".from")),
         to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".to")),
         storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
         dualAuthorX(make_variable(pb, FMT(prefix, ".dualAuthorX"))),
         dualAuthorY(make_variable(pb, FMT(prefix, ".dualAuthorY"))),
         data(pb, NUM_BITS_FIELD_CAPACITY, FMT(prefix, ".data")),
-        payer_toAccountID(pb, NUM_BITS_ADDRESS,
-                          FMT(prefix, ".payer_toAccountID")),
+        payer_toAccountID(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_toAccountID")),
         payer_to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_to")),
-        payee_toAccountID(pb, NUM_BITS_ADDRESS,
-                          FMT(prefix, ".payee_toAccountID")),
+        payee_toAccountID(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payee_toAccountID")),
 
         // Check if the inputs are valid
-        isTransferTx(pb, state.type, state.constants.txTypeTransfer,
-                     FMT(prefix, ".isTransferTx")),
-        isNonZero_payer_to(pb, payer_to.packed,
-                           FMT(prefix, ".isNonZero_payer_to")),
-        ifrequire_payer_to_eq_to(pb, isNonZero_payer_to.result(),
-                                 payer_to.packed, to.packed,
-                                 FMT(prefix, ".ifrequire_payer_to_eq_to")),
+        isTransferTx(pb, state.type, state.constants.txTypeTransfer, FMT(prefix, ".isTransferTx")),
+        isNonZero_payer_to(pb, payer_to.packed, FMT(prefix, ".isNonZero_payer_to")),
+        ifrequire_payer_to_eq_to(
+          pb,
+          isNonZero_payer_to.result(),
+          payer_to.packed,
+          to.packed,
+          FMT(prefix, ".ifrequire_payer_to_eq_to")),
         ifrequire_payer_toAccountID_eq_payee_toAccountID(
-            pb, isNonZero_payer_to.result(), payer_toAccountID.packed,
-            toAccountID.packed,
-            FMT(prefix, ".ifrequire_payer_toAccountID_eq_payee_toAccountID")),
+          pb,
+          isNonZero_payer_to.result(),
+          payer_toAccountID.packed,
+          toAccountID.packed,
+          FMT(prefix, ".ifrequire_payer_toAccountID_eq_payee_toAccountID")),
         isNonZero_payee_toAccountID(
-            pb, payee_toAccountID.packed,
-            FMT(prefix, ".isNonZero_payee_toAccountID")),
+          pb,
+          payee_toAccountID.packed,
+          FMT(prefix, ".isNonZero_payee_toAccountID")),
         ifrequire_payee_toAccountID_eq_toAccountID(
-            pb, isNonZero_payee_toAccountID.result(), payee_toAccountID.packed,
-            toAccountID.packed,
-            FMT(prefix, ".ifrequire_payee_toAccountID_eq_toAccountID")),
-        ifrequire_NotZero_to(pb, isTransferTx.result(), to.packed,
-                             state.constants._0,
-                             FMT(prefix, ".ifrequire_NotZero_to")),
-        requireValidUntil(pb, state.timestamp, validUntil.packed,
-                          NUM_BITS_TIMESTAMP,
-                          FMT(prefix, ".requireValidUntil")),
+          pb,
+          isNonZero_payee_toAccountID.result(),
+          payee_toAccountID.packed,
+          toAccountID.packed,
+          FMT(prefix, ".ifrequire_payee_toAccountID_eq_toAccountID")),
+        ifrequire_NotZero_to(
+          pb,
+          isTransferTx.result(),
+          to.packed,
+          state.constants._0,
+          FMT(prefix, ".ifrequire_NotZero_to")),
+        requireValidUntil(
+          pb,
+          state.timestamp,
+          validUntil.packed,
+          NUM_BITS_TIMESTAMP,
+          FMT(prefix, ".requireValidUntil")),
 
         // Fill in standard dual author key if none is given
-        isNonZero_dualAuthorX(pb, dualAuthorX,
-                              FMT(prefix, ".isNonZero_dualAuthorX")),
-        isNonZero_dualAuthorY(pb, dualAuthorY,
-                              FMT(prefix, ".isNonZero_dualAuthorY")),
+        isNonZero_dualAuthorX(pb, dualAuthorX, FMT(prefix, ".isNonZero_dualAuthorX")),
+        isNonZero_dualAuthorY(pb, dualAuthorY, FMT(prefix, ".isNonZero_dualAuthorY")),
         isNonZero_dualAuthor(
-            pb,
-            {isNonZero_dualAuthorX.result(), isNonZero_dualAuthorY.result()},
-            FMT(prefix, ".isNonZero_dualAuthor")),
-        resolvedDualAuthorX(pb, isNonZero_dualAuthor.result(), dualAuthorX,
-                            state.accountA.account.publicKey.x,
-                            FMT(prefix, ".resolvedDualAuthorX")),
-        resolvedDualAuthorY(pb, isNonZero_dualAuthor.result(), dualAuthorY,
-                            state.accountA.account.publicKey.y,
-                            FMT(prefix, ".resolvedDualAuthorY")),
+          pb,
+          {isNonZero_dualAuthorX.result(), isNonZero_dualAuthorY.result()},
+          FMT(prefix, ".isNonZero_dualAuthor")),
+        resolvedDualAuthorX(
+          pb,
+          isNonZero_dualAuthor.result(),
+          dualAuthorX,
+          state.accountA.account.publicKey.x,
+          FMT(prefix, ".resolvedDualAuthorX")),
+        resolvedDualAuthorY(
+          pb,
+          isNonZero_dualAuthor.result(),
+          dualAuthorY,
+          state.accountA.account.publicKey.y,
+          FMT(prefix, ".resolvedDualAuthorY")),
 
         // Signature
-        hashPayer(pb,
-                  var_array({state.exchange, fromAccountID.packed,
-                             payer_toAccountID.packed, tokenID.packed,
-                             amount.packed, feeTokenID.packed, fee.packed,
-                             payer_to.packed, dualAuthorX, dualAuthorY,
-                             data.packed, validUntil.packed, storageID.packed}),
-                  FMT(this->annotation_prefix, ".hashPayer")),
-        hashDual(pb,
-                 var_array({state.exchange, fromAccountID.packed,
-                            payee_toAccountID.packed, tokenID.packed,
-                            amount.packed, feeTokenID.packed, fee.packed,
-                            to.packed, dualAuthorX, dualAuthorY, data.packed,
-                            validUntil.packed, storageID.packed}),
-                 FMT(this->annotation_prefix, ".hashDual")),
+        hashPayer(
+          pb,
+          var_array(
+            {state.exchange,
+             fromAccountID.packed,
+             payer_toAccountID.packed,
+             tokenID.packed,
+             amount.packed,
+             feeTokenID.packed,
+             fee.packed,
+             payer_to.packed,
+             dualAuthorX,
+             dualAuthorY,
+             data.packed,
+             validUntil.packed,
+             storageID.packed}),
+          FMT(this->annotation_prefix, ".hashPayer")),
+        hashDual(
+          pb,
+          var_array(
+            {state.exchange,
+             fromAccountID.packed,
+             payee_toAccountID.packed,
+             tokenID.packed,
+             amount.packed,
+             feeTokenID.packed,
+             fee.packed,
+             to.packed,
+             dualAuthorX,
+             dualAuthorY,
+             data.packed,
+             validUntil.packed,
+             storageID.packed}),
+          FMT(this->annotation_prefix, ".hashDual")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS,
-                   FMT(prefix, ".balanceS_A")),
-        balanceB_A(pb, state.constants, state.accountA.balanceB,
-                   FMT(prefix, ".balanceB_A")),
-        balanceB_B(pb, state.constants, state.accountB.balanceB,
-                   FMT(prefix, ".balanceB_B")),
-        balanceA_O(pb, state.constants, state.oper.balanceA,
-                   FMT(prefix, ".balanceA_O")),
+        balanceS_A(pb, state.constants, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_A(pb, state.constants, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+        balanceB_B(pb, state.constants, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
+        balanceA_O(pb, state.constants, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
 
         // Validation
-        toAccountValid(pb, state.constants, state.accountB.account.owner,
-                       to.packed, FMT(prefix, ".ownerValid")),
+        toAccountValid(
+          pb,
+          state.constants,
+          state.accountB.account.owner,
+          to.packed,
+          FMT(prefix, ".ownerValid")),
 
         // Type
         isConditional(pb, type.packed, ".isConditional"),
@@ -214,44 +248,77 @@ public:
 
         // DA optimization
         da_NeedsToAddress(
-            pb, {toAccountValid.isNewAccount(), isConditional.result()},
-            FMT(prefix, ".da_NeedsToAddress")),
-        da_To(pb, da_NeedsToAddress.result(), to.bits,
-              VariableArrayT(NUM_BITS_ADDRESS, state.constants._0),
-              FMT(prefix, ".da_To")),
-        da_From(pb, isConditional.result(), from.bits,
-                VariableArrayT(NUM_BITS_ADDRESS, state.constants._0),
-                FMT(prefix, ".da_From")),
-        da_StorageID(pb, isConditional.result(), storageID.bits,
-                     VariableArrayT(NUM_BITS_STORAGEID, state.constants._0),
-                     FMT(prefix, ".da_StorageID")),
-        da_ValidUntil(pb, isConditional.result(), validUntil.bits,
-                      VariableArrayT(NUM_BITS_TIMESTAMP, state.constants._0),
-                      FMT(prefix, ".da_ValidUntil")),
+          pb,
+          {toAccountValid.isNewAccount(), isConditional.result()},
+          FMT(prefix, ".da_NeedsToAddress")),
+        da_To(
+          pb,
+          da_NeedsToAddress.result(),
+          to.bits,
+          VariableArrayT(NUM_BITS_ADDRESS, state.constants._0),
+          FMT(prefix, ".da_To")),
+        da_From(
+          pb,
+          isConditional.result(),
+          from.bits,
+          VariableArrayT(NUM_BITS_ADDRESS, state.constants._0),
+          FMT(prefix, ".da_From")),
+        da_StorageID(
+          pb,
+          isConditional.result(),
+          storageID.bits,
+          VariableArrayT(NUM_BITS_STORAGEID, state.constants._0),
+          FMT(prefix, ".da_StorageID")),
+        da_ValidUntil(
+          pb,
+          isConditional.result(),
+          validUntil.bits,
+          VariableArrayT(NUM_BITS_TIMESTAMP, state.constants._0),
+          FMT(prefix, ".da_ValidUntil")),
 
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
-        requireAccuracyFee(pb, fFee.value(), fee.packed, Float16Accuracy,
-                           NUM_BITS_AMOUNT, FMT(prefix, ".requireAccuracyFee")),
+        requireAccuracyFee(
+          pb,
+          fFee.value(),
+          fee.packed,
+          Float16Accuracy,
+          NUM_BITS_AMOUNT,
+          FMT(prefix, ".requireAccuracyFee")),
         // Amount as float
         fAmount(pb, state.constants, Float24Encoding, FMT(prefix, ".fAmount")),
-        requireAccuracyAmount(pb, fAmount.value(), amount.packed,
-                              Float24Accuracy, NUM_BITS_AMOUNT,
-                              FMT(prefix, ".requireAccuracyAmount")),
+        requireAccuracyAmount(
+          pb,
+          fAmount.value(),
+          amount.packed,
+          Float24Accuracy,
+          NUM_BITS_AMOUNT,
+          FMT(prefix, ".requireAccuracyAmount")),
         // Fee payment from From to the operator
-        feePayment(pb, balanceB_A, balanceA_O, fFee.value(),
-                   FMT(prefix, ".feePayment")),
+        feePayment(pb, balanceB_A, balanceA_O, fFee.value(), FMT(prefix, ".feePayment")),
         // Transfer from From to To
-        transferPayment(pb, balanceS_A, balanceB_B, fAmount.value(),
-                        FMT(prefix, ".transferPayment")),
+        transferPayment(
+          pb,
+          balanceS_A,
+          balanceB_B,
+          fAmount.value(),
+          FMT(prefix, ".transferPayment")),
 
         // Nonce
-        nonce(pb, state.constants, state.accountA.storage, storageID,
-              isTransferTx.result(), FMT(prefix, ".nonce")),
+        nonce(
+          pb,
+          state.constants,
+          state.accountA.storage,
+          storageID,
+          isTransferTx.result(),
+          FMT(prefix, ".nonce")),
         // Increase the number of conditional transactions (if conditional)
         numConditionalTransactionsAfter(
-            pb, state.numConditionalTransactions, isConditional.result(),
-            FMT(prefix, ".numConditionalTransactionsAfter")) {
+          pb,
+          state.numConditionalTransactions,
+          isConditional.result(),
+          FMT(prefix, ".numConditionalTransactionsAfter"))
+  {
     // Update the From account
     setArrayOutput(accountA_Address, fromAccountID.bits);
 
@@ -282,17 +349,16 @@ public:
     setOutput(signatureRequired_B, needsSignature.result());
 
     // Increase the number of conditional transactions (if conditional)
-    setOutput(misc_NumConditionalTransactions,
-              numConditionalTransactionsAfter.result());
+    setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
 
     // Nonce
-    setArrayOutput(storageA_Address,
-                   subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
+    setArrayOutput(storageA_Address, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
     setOutput(storageA_Data, nonce.getData());
     setOutput(storageA_StorageId, storageID.packed);
   }
 
-  void generate_r1cs_witness(const Transfer &transfer) {
+  void generate_r1cs_witness(const Transfer &transfer)
+  {
     // Inputs
     fromAccountID.generate_r1cs_witness(pb, transfer.fromAccountID);
     toAccountID.generate_r1cs_witness(pb, transfer.toAccountID);
@@ -370,7 +436,8 @@ public:
     numConditionalTransactionsAfter.generate_r1cs_witness();
   }
 
-  void generate_r1cs_constraints() {
+  void generate_r1cs_constraints()
+  {
     // Inputs
     fromAccountID.generate_r1cs_constraints(true);
     toAccountID.generate_r1cs_constraints(true);
@@ -392,8 +459,7 @@ public:
     isTransferTx.generate_r1cs_constraints();
     isNonZero_payer_to.generate_r1cs_constraints();
     ifrequire_payer_to_eq_to.generate_r1cs_constraints();
-    ifrequire_payer_toAccountID_eq_payee_toAccountID
-        .generate_r1cs_constraints();
+    ifrequire_payer_toAccountID_eq_payee_toAccountID.generate_r1cs_constraints();
     isNonZero_payee_toAccountID.generate_r1cs_constraints();
     ifrequire_payee_toAccountID_eq_toAccountID.generate_r1cs_constraints();
     ifrequire_NotZero_to.generate_r1cs_constraints();
@@ -447,14 +513,23 @@ public:
     numConditionalTransactionsAfter.generate_r1cs_constraints();
   }
 
-  const VariableArrayT getPublicData() const {
+  const VariableArrayT getPublicData() const
+  {
     return flattenReverse(
-        {type.bits, fromAccountID.bits, toAccountID.bits, tokenID.bits,
-         feeTokenID.bits, fAmount.bits(), fFee.bits(),
-         nonce.getShortStorageID(), da_To.result(), da_ValidUntil.result(),
-         da_StorageID.result(), da_From.result(),
-         VariableArrayT(256 - NUM_BITS_FIELD_CAPACITY, state.constants._0),
-         data.bits});
+      {type.bits,
+       fromAccountID.bits,
+       toAccountID.bits,
+       tokenID.bits,
+       feeTokenID.bits,
+       fAmount.bits(),
+       fFee.bits(),
+       nonce.getShortStorageID(),
+       da_To.result(),
+       da_ValidUntil.result(),
+       da_StorageID.result(),
+       da_From.result(),
+       VariableArrayT(256 - NUM_BITS_FIELD_CAPACITY, state.constants._0),
+       data.bits});
   }
 };
 
