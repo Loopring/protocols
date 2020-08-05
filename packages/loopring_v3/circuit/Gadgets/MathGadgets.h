@@ -326,6 +326,10 @@ public:
 };
 
 // A + B = sum with A, B and sum < 2^n
+//
+// This gadgent is not designed to handle inputs of more than a couple of
+// variables. Threfore, we are have not optimized the constraints as suggested
+// in https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 class AddGadget : public GadgetT {
 public:
   UnsafeAddGadget unsafeAdd;
@@ -394,8 +398,8 @@ public:
 
         sub(pb, from.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".sub")),
         add(pb, to.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".add")) {
-    from.add(sub.result());
-    to.add(add.result());
+    from.add(sub.result()); // X = from - value
+    to.add(add.result());   // Y = to + value
   }
 
   void generate_r1cs_witness() {
@@ -443,7 +447,7 @@ public:
   }
 };
 
-// b ? A : B
+// b ? A[] : B[]
 class ArrayTernaryGadget : public GadgetT {
 public:
   VariableT b;
@@ -509,6 +513,10 @@ public:
   void generate_r1cs_constraints() {
     // This can be done more efficiently but we never have any long inputs so no
     // need
+    if (inputs.size() > 3) {
+      std::cout << "[AndGadget] unexpected input length " << inputs.size()
+                << std::endl;
+    }
     pb.add_r1cs_constraint(ConstraintT(inputs[0], inputs[1], results[0]),
                            FMT(annotation_prefix, ".A && B"));
     for (unsigned int i = 2; i < inputs.size(); i++) {
@@ -520,6 +528,10 @@ public:
 };
 
 // (input[0] || input[1] || ...) (all inputs need to be boolean)
+//
+// This gadgent is not designed to handle inputs of more than a couple of
+// variables. Threfore, we are have not optimized the constraints as suggested
+// in https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 class OrGadget : public GadgetT {
 public:
   std::vector<VariableT> inputs;
@@ -548,6 +560,12 @@ public:
   }
 
   void generate_r1cs_constraints() {
+    // This can be done more efficiently but we never have any long inputs so no
+    // need
+    if (inputs.size() > 3) {
+      std::cout << "[OrGadget] unexpected input length " << inputs.size()
+                << std::endl;
+    }
     pb.add_r1cs_constraint(ConstraintT(FieldT::one() - inputs[0],
                                        FieldT::one() - inputs[1],
                                        FieldT::one() - results[0]),
@@ -934,7 +952,8 @@ public:
   }
 };
 
-// if (C) then require(A)
+// if (C) then require(A), i.e.,
+// require(!C || A)
 class IfThenRequireGadget : public GadgetT {
 public:
   NotGadget notC;
@@ -961,7 +980,8 @@ public:
   }
 };
 
-// if (C) then require(A == B)
+// if (C) then require(A == B), i.e.,
+// require(!C || A == B)
 class IfThenRequireEqualGadget : public GadgetT {
 public:
   EqualGadget eq;
@@ -986,7 +1006,8 @@ public:
   }
 };
 
-// if (C) then require(A != B)
+// if (C) then require(A != B), i.e.,
+// require(!C || A != B)
 class IfThenRequireNotEqualGadget : public GadgetT {
 public:
   EqualGadget eq;
@@ -1015,7 +1036,7 @@ public:
   }
 };
 
-// (value * numerator) = product
+// (value * numerator) = product = denominator * quotient + remainder
 // product / denominator = quotient
 // product % denominator = remainder
 class MulDivGadget : public GadgetT {
@@ -1319,6 +1340,7 @@ public:
   const VariableArrayT &bits() const { return f; }
 };
 
+// Checks 'type' is one of Constants.values - [0 - 10]
 struct SelectorGadget : public GadgetT {
   const Constants &constants;
 
@@ -1361,6 +1383,11 @@ struct SelectorGadget : public GadgetT {
   const VariableArrayT &result() const { return res; }
 };
 
+// if selector=[1,0,0] and values = [a,b,c], return a
+// if selector=[0,1,0] and values = [a,b,c], return b
+// if selector=[0,0,1] and values = [a,b,c], return c
+// special case,
+// if selector=[0,0,0] and values = [a,b,c], return c
 class SelectGadget : public GadgetT {
 public:
   std::vector<TernaryGadget> results;
@@ -1392,6 +1419,8 @@ public:
   const VariableT &result() const { return results.back().result(); }
 };
 
+// Select one out of many arrays based on mutiple boolean selector values.
+// If all the selector values are false, then the last array is selected.
 class ArraySelectGadget : public GadgetT {
 public:
   std::vector<ArrayTernaryGadget> results;
@@ -1424,6 +1453,7 @@ public:
   const VariableArrayT &result() const { return results.back().result(); }
 };
 
+// Checks that the new ower equals the current onwer or the current ower is 0.
 class OwnerValidGadget : public GadgetT {
 public:
   EqualGadget newOwner_equal_oldOwner;
