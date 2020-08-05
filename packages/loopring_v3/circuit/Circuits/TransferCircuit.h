@@ -143,7 +143,7 @@ public:
                                  FMT(prefix, ".ifrequire_payer_to_eq_to")),
         ifrequire_payer_toAccountID_eq_payee_toAccountID(
             pb, isNonZero_payer_to.result(), payer_toAccountID.packed,
-            toAccountID.packed,
+            payee_toAccountID.packed,
             FMT(prefix, ".ifrequire_payer_toAccountID_eq_payee_toAccountID")),
         isNonZero_payee_toAccountID(
             pb, payee_toAccountID.packed,
