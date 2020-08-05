@@ -14,11 +14,9 @@
 
 using namespace ethsnarks;
 
-namespace Loopring
-{
+namespace Loopring {
 
-class AccountUpdateCircuit : public BaseTransactionCircuit
-{
+class AccountUpdateCircuit : public BaseTransactionCircuit {
 public:
   // Inputs
   DualVariableGadget owner;
@@ -58,14 +56,17 @@ public:
   // Increase the number of conditional transactions (if conditional)
   UnsafeAddGadget numConditionalTransactionsAfter;
 
-  AccountUpdateCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
+  AccountUpdateCircuit(ProtoboardT &pb, const TransactionState &state,
+                       const std::string &prefix)
       : BaseTransactionCircuit(pb, state, prefix),
 
         // Inputs
-        owner(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
+        owner(pb, state.accountA.account.owner, NUM_BITS_ADDRESS,
+              FMT(prefix, ".owner")),
         accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
         validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
-        nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
+        nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE,
+              FMT(prefix, ".nonce")),
         publicKeyX(make_variable(pb, FMT(prefix, ".publicKeyX"))),
         publicKeyY(make_variable(pb, FMT(prefix, ".publicKeyY"))),
         feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
@@ -73,69 +74,46 @@ public:
         type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
 
         // Signature
-        hash(
-          pb,
-          var_array(
-            {state.exchange,
-             accountID.packed,
-             feeTokenID.packed,
-             fee.packed,
-             publicKeyX,
-             publicKeyY,
-             validUntil.packed,
-             nonce.packed}),
-          FMT(this->annotation_prefix, ".hash")),
+        hash(pb,
+             var_array({state.exchange, accountID.packed, feeTokenID.packed,
+                        fee.packed, publicKeyX, publicKeyY, validUntil.packed,
+                        nonce.packed}),
+             FMT(this->annotation_prefix, ".hash")),
 
         // Validate
-        requireValidUntil(
-          pb,
-          state.timestamp,
-          validUntil.packed,
-          NUM_BITS_TIMESTAMP,
-          FMT(prefix, ".requireValidUntil")),
+        requireValidUntil(pb, state.timestamp, validUntil.packed,
+                          NUM_BITS_TIMESTAMP,
+                          FMT(prefix, ".requireValidUntil")),
 
         // Type
         isConditional(pb, type.packed, ".isConditional"),
         needsSignature(pb, isConditional.result(), ".needsSignature"),
 
         // Compress the public key
-        compressPublicKey(
-          pb,
-          state.params,
-          state.constants,
-          publicKeyX,
-          publicKeyY,
-          FMT(this->annotation_prefix, ".compressPublicKey")),
+        compressPublicKey(pb, state.params, state.constants, publicKeyX,
+                          publicKeyY,
+                          FMT(this->annotation_prefix, ".compressPublicKey")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
-        balanceB_O(pb, state.constants, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
+        balanceS_A(pb, state.constants, state.accountA.balanceS,
+                   FMT(prefix, ".balanceS_A")),
+        balanceB_O(pb, state.constants, state.oper.balanceB,
+                   FMT(prefix, ".balanceB_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
-        requireAccuracyFee(
-          pb,
-          fFee.value(),
-          fee.packed,
-          Float16Accuracy,
-          NUM_BITS_AMOUNT,
-          FMT(prefix, ".requireAccuracyFee")),
+        requireAccuracyFee(pb, fFee.value(), fee.packed, Float16Accuracy,
+                           NUM_BITS_AMOUNT, FMT(prefix, ".requireAccuracyFee")),
         // Fee payment from to the operator
-        feePayment(pb, balanceS_A, balanceB_O, fFee.value(), FMT(prefix, ".feePayment")),
+        feePayment(pb, balanceS_A, balanceB_O, fFee.value(),
+                   FMT(prefix, ".feePayment")),
 
         // Increase the nonce
-        nonce_after(
-          pb,
-          state.accountA.account.nonce,
-          state.constants._1,
-          NUM_BITS_NONCE,
-          FMT(prefix, ".nonce_after")),
+        nonce_after(pb, state.accountA.account.nonce, state.constants._1,
+                    NUM_BITS_NONCE, FMT(prefix, ".nonce_after")),
         // Increase the number of conditional transactions (if conditional)
         numConditionalTransactionsAfter(
-          pb,
-          state.numConditionalTransactions,
-          isConditional.result(),
-          FMT(prefix, ".numConditionalTransactionsAfter"))
-  {
+            pb, state.numConditionalTransactions, isConditional.result(),
+            FMT(prefix, ".numConditionalTransactionsAfter")) {
     // Update the account data
     setArrayOutput(accountA_Address, accountID.bits);
     setOutput(accountA_PublicKeyX, publicKeyX);
@@ -155,11 +133,11 @@ public:
     setOutput(signatureRequired_B, state.constants._0);
 
     // Increase the number of conditional transactions (if conditional)
-    setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
+    setOutput(misc_NumConditionalTransactions,
+              numConditionalTransactionsAfter.result());
   }
 
-  void generate_r1cs_witness(const AccountUpdateTx &update)
-  {
+  void generate_r1cs_witness(const AccountUpdateTx &update) {
     // Inputs
     owner.generate_r1cs_witness();
     accountID.generate_r1cs_witness(pb, update.accountID);
@@ -199,8 +177,7 @@ public:
     numConditionalTransactionsAfter.generate_r1cs_witness();
   }
 
-  void generate_r1cs_constraints()
-  {
+  void generate_r1cs_constraints() {
     // Inputs
     owner.generate_r1cs_constraints();
     accountID.generate_r1cs_constraints(true);
@@ -238,18 +215,11 @@ public:
     numConditionalTransactionsAfter.generate_r1cs_constraints();
   }
 
-  const VariableArrayT getPublicData() const
-  {
+  const VariableArrayT getPublicData() const {
     return flattenReverse(
-      {type.bits,
-       owner.bits,
-       accountID.bits,
-       VariableArrayT(4, state.constants._0),
-       feeTokenID.bits,
-       fFee.bits(),
-       compressPublicKey.result(),
-       validUntil.bits,
-       nonce.bits});
+        {type.bits, owner.bits, accountID.bits,
+         VariableArrayT(4, state.constants._0), feeTokenID.bits, fFee.bits(),
+         compressPublicKey.result(), validUntil.bits, nonce.bits});
   }
 };
 

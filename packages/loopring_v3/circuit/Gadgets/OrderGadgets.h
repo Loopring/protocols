@@ -14,11 +14,9 @@
 
 using namespace ethsnarks;
 
-namespace Loopring
-{
+namespace Loopring {
 
-class OrderGadget : public GadgetT
-{
+class OrderGadget : public GadgetT {
 public:
   // Inputs
   DualVariableGadget storageID;
@@ -52,11 +50,8 @@ public:
   // Signature
   Poseidon_gadget_T<14, 1, 6, 53, 13, 1> hash;
 
-  OrderGadget(
-    ProtoboardT &pb,
-    const Constants &constants,
-    const VariableT &blockExchange,
-    const std::string &prefix)
+  OrderGadget(ProtoboardT &pb, const Constants &constants,
+              const VariableT &blockExchange, const std::string &prefix)
       : GadgetT(pb, prefix),
 
         // Inputs
@@ -69,56 +64,41 @@ public:
         allOrNone(pb, 1, FMT(prefix, ".allOrNone")),
         validSince(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validSince")),
         validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
-        maxFeeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".maxFeeBips")), buy(pb, 1, FMT(prefix, ".buy")),
+        maxFeeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".maxFeeBips")),
+        buy(pb, 1, FMT(prefix, ".buy")),
         taker(make_variable(pb, FMT(prefix, ".taker"))),
 
         feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
         rebateBips(pb, NUM_BITS_BIPS, FMT(prefix, ".rebateBips")),
 
         // Checks
-        feeOrRebateZero(pb, feeBips.packed, rebateBips.packed, FMT(prefix, ".feeOrRebateZero")),
-        feeBips_leq_maxFeeBips(
-          pb,
-          feeBips.packed,
-          maxFeeBips.packed,
-          NUM_BITS_BIPS,
-          FMT(prefix, ".feeBips <= maxFeeBips")),
-        tokenS_neq_tokenB(pb, tokenS.packed, tokenB.packed, FMT(prefix, ".tokenS != tokenB")),
+        feeOrRebateZero(pb, feeBips.packed, rebateBips.packed,
+                        FMT(prefix, ".feeOrRebateZero")),
+        feeBips_leq_maxFeeBips(pb, feeBips.packed, maxFeeBips.packed,
+                               NUM_BITS_BIPS,
+                               FMT(prefix, ".feeBips <= maxFeeBips")),
+        tokenS_neq_tokenB(pb, tokenS.packed, tokenB.packed,
+                          FMT(prefix, ".tokenS != tokenB")),
         amountS_notZero(pb, amountS.packed, FMT(prefix, ".amountS != 0")),
         amountB_notZero(pb, amountB.packed, FMT(prefix, ".amountB != 0")),
 
         // FeeOrRebate public input
-        fee_plus_rebate(pb, feeBips.packed, rebateBips.packed, FMT(prefix, ".fee_plus_rebate")),
-        feeOrRebateBips(
-          pb,
-          fee_plus_rebate.result(),
-          NUM_BITS_BIPS,
-          FMT(prefix, ".feeOrRebateBips")),
+        fee_plus_rebate(pb, feeBips.packed, rebateBips.packed,
+                        FMT(prefix, ".fee_plus_rebate")),
+        feeOrRebateBips(pb, fee_plus_rebate.result(), NUM_BITS_BIPS,
+                        FMT(prefix, ".feeOrRebateBips")),
         bRebateNonZero(pb, rebateBips.packed, FMT(prefix, ".bRebateNonZero")),
 
         // Signature
-        hash(
-          pb,
-          var_array(
-            {blockExchange,
-             storageID.packed,
-             accountID.packed,
-             tokenS.packed,
-             tokenB.packed,
-             amountS.packed,
-             amountB.packed,
-             allOrNone.packed,
-             validSince.packed,
-             validUntil.packed,
-             maxFeeBips.packed,
-             buy.packed,
-             taker}),
-          FMT(this->annotation_prefix, ".hash"))
-  {
-  }
+        hash(pb,
+             var_array({blockExchange, storageID.packed, accountID.packed,
+                        tokenS.packed, tokenB.packed, amountS.packed,
+                        amountB.packed, allOrNone.packed, validSince.packed,
+                        validUntil.packed, maxFeeBips.packed, buy.packed,
+                        taker}),
+             FMT(this->annotation_prefix, ".hash")) {}
 
-  void generate_r1cs_witness(const Order &order)
-  {
+  void generate_r1cs_witness(const Order &order) {
     // Inputs
     storageID.generate_r1cs_witness(pb, order.storageID);
     accountID.generate_r1cs_witness(pb, order.accountID);
@@ -152,8 +132,7 @@ public:
     hash.generate_r1cs_witness();
   }
 
-  void generate_r1cs_constraints(bool doSignatureCheck = true)
-  {
+  void generate_r1cs_constraints(bool doSignatureCheck = true) {
     // Inputs
     storageID.generate_r1cs_constraints(true);
     accountID.generate_r1cs_constraints(true);

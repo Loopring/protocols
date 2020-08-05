@@ -15,12 +15,10 @@
 using namespace ethsnarks;
 using namespace jubjub;
 
-namespace Loopring
-{
+namespace Loopring {
 
 // x = sqrt((y * y - 1)) * 1/(d * y * y  - a)))
-class RequireValidPublicKey : public GadgetT
-{
+class RequireValidPublicKey : public GadgetT {
 public:
   const Params &params;
 
@@ -36,27 +34,24 @@ public:
   VariableT xx;
   VariableT x;
 
-  RequireValidPublicKey(
-    ProtoboardT &pb,
-    const Params &_params,
-    const VariableT &_x,
-    const VariableT &_y,
-    const std::string &prefix)
+  RequireValidPublicKey(ProtoboardT &pb, const Params &_params,
+                        const VariableT &_x, const VariableT &_y,
+                        const std::string &prefix)
       : GadgetT(pb, prefix),
 
         params(_params),
 
-        requireValidPoint(pb, params, _x, _y, FMT(prefix, ".requireValidPoint")),
+        requireValidPoint(pb, params, _x, _y,
+                          FMT(prefix, ".requireValidPoint")),
 
         y(_y), yy(make_variable(pb, FMT(prefix, ".yy"))),
-        lhs(make_variable(pb, FMT(prefix, ".lhs"))), rhs(make_variable(pb, FMT(prefix, ".rhs"))),
-        irhs(make_variable(pb, FMT(prefix, ".irhs"))), xx(make_variable(pb, FMT(prefix, ".xx"))),
-        x(make_variable(pb, FMT(prefix, ".x")))
-  {
-  }
+        lhs(make_variable(pb, FMT(prefix, ".lhs"))),
+        rhs(make_variable(pb, FMT(prefix, ".rhs"))),
+        irhs(make_variable(pb, FMT(prefix, ".irhs"))),
+        xx(make_variable(pb, FMT(prefix, ".xx"))),
+        x(make_variable(pb, FMT(prefix, ".x"))) {}
 
-  void generate_r1cs_witness()
-  {
+  void generate_r1cs_witness() {
     requireValidPoint.generate_r1cs_witness();
 
     pb.val(yy) = pb.val(y).squared();
@@ -67,16 +62,19 @@ public:
     pb.val(x) = pb.val(xx).sqrt();
   }
 
-  void generate_r1cs_constraints()
-  {
+  void generate_r1cs_constraints() {
     requireValidPoint.generate_r1cs_constraints();
 
-    pb.add_r1cs_constraint(ConstraintT(y, y, yy), FMT(annotation_prefix, ".yy"));
-    pb.add_r1cs_constraint(ConstraintT(yy - 1, 1, lhs), FMT(annotation_prefix, ".lhs"));
-    pb.add_r1cs_constraint(
-      ConstraintT((params.d * yy) - params.a, 1, rhs), FMT(annotation_prefix, ".rhs"));
-    pb.add_r1cs_constraint(ConstraintT(rhs, irhs, 1), FMT(annotation_prefix, ".irhs"));
-    pb.add_r1cs_constraint(ConstraintT(lhs, irhs, xx), FMT(annotation_prefix, ".xx"));
+    pb.add_r1cs_constraint(ConstraintT(y, y, yy),
+                           FMT(annotation_prefix, ".yy"));
+    pb.add_r1cs_constraint(ConstraintT(yy - 1, 1, lhs),
+                           FMT(annotation_prefix, ".lhs"));
+    pb.add_r1cs_constraint(ConstraintT((params.d * yy) - params.a, 1, rhs),
+                           FMT(annotation_prefix, ".rhs"));
+    pb.add_r1cs_constraint(ConstraintT(rhs, irhs, 1),
+                           FMT(annotation_prefix, ".irhs"));
+    pb.add_r1cs_constraint(ConstraintT(lhs, irhs, xx),
+                           FMT(annotation_prefix, ".xx"));
     pb.add_r1cs_constraint(ConstraintT(x, x, xx), FMT(annotation_prefix, ".x"));
   }
 };
@@ -85,8 +83,7 @@ public:
 // drop publickKeyX or publicKeyY entirely?
 
 // TODO(daniel): add comment for auditors.
-class CompressPublicKey : public GadgetT
-{
+class CompressPublicKey : public GadgetT {
 public:
   const Params &params;
   const Constants &constants;
@@ -106,13 +103,9 @@ public:
   LtFieldGadget isNegativeX;
   field2bits_strict publicKeyYBits;
 
-  CompressPublicKey(
-    ProtoboardT &pb,
-    const Params &_params,
-    const Constants &_constants,
-    const VariableT &publicKeyX,
-    const VariableT &publicKeyY,
-    const std::string &prefix)
+  CompressPublicKey(ProtoboardT &pb, const Params &_params,
+                    const Constants &_constants, const VariableT &publicKeyX,
+                    const VariableT &publicKeyY, const std::string &prefix)
       : GadgetT(pb, prefix),
 
         params(_params), constants(_constants),
@@ -120,32 +113,30 @@ public:
         // Special case to allow the public key to be 0
         isZeroX(pb, publicKeyX, constants._0, FMT(prefix, ".isZeroX")),
         isZeroY(pb, publicKeyY, constants._0, FMT(prefix, ".isZeroY")),
-        isZero(pb, {isZeroX.result(), isZeroY.result()}, FMT(prefix, ".isZero")),
-        valueX(pb, isZero.result(), constants.dummyPublicKeyX, publicKeyX, FMT(prefix, ".valueX")),
-        valueY(pb, isZero.result(), constants.dummyPublicKeyY, publicKeyY, FMT(prefix, ".valueY")),
+        isZero(pb, {isZeroX.result(), isZeroY.result()},
+               FMT(prefix, ".isZero")),
+        valueX(pb, isZero.result(), constants.dummyPublicKeyX, publicKeyX,
+               FMT(prefix, ".valueX")),
+        valueY(pb, isZero.result(), constants.dummyPublicKeyY, publicKeyY,
+               FMT(prefix, ".valueY")),
 
         // Check if the public key is valid
-        requireValidPublicKey(
-          pb,
-          params,
-          valueX.result(),
-          valueY.result(),
-          FMT(prefix, ".requireValidPublicKey")),
+        requireValidPublicKey(pb, params, valueX.result(), valueY.result(),
+                              FMT(prefix, ".requireValidPublicKey")),
 
         // Point compression
 
         // QUESTION(daniel): are we actually just checking publicKeyX > 0 below?
         // if so, why not use `LtFieldGadget(0, publicKeyX)`?
-        negPublicKeyX(pb, constants._0, publicKeyX, FMT(prefix, ".negPublicKeyX")),
-        isNegativeX(pb, negPublicKeyX.result(), publicKeyX, FMT(prefix, ".isNegativeX")),
+        negPublicKeyX(pb, constants._0, publicKeyX,
+                      FMT(prefix, ".negPublicKeyX")),
+        isNegativeX(pb, negPublicKeyX.result(), publicKeyX,
+                    FMT(prefix, ".isNegativeX")),
 
         // convert field to bits with field modulus validation.
-        publicKeyYBits(pb, publicKeyY, FMT(prefix, ".publicKeyYBits"))
-  {
-  }
+        publicKeyYBits(pb, publicKeyY, FMT(prefix, ".publicKeyYBits")) {}
 
-  void generate_r1cs_witness()
-  {
+  void generate_r1cs_witness() {
     // Special case to allow the public key to be 0
     isZeroX.generate_r1cs_witness();
     isZeroY.generate_r1cs_witness();
@@ -162,8 +153,7 @@ public:
     publicKeyYBits.generate_r1cs_witness();
   }
 
-  void generate_r1cs_constraints()
-  {
+  void generate_r1cs_constraints() {
     // Special case to allow the public key to be 0
     isZeroX.generate_r1cs_constraints();
     isZeroY.generate_r1cs_constraints();
@@ -180,46 +170,35 @@ public:
     publicKeyYBits.generate_r1cs_constraints();
   }
 
-  VariableArrayT result() const
-  {
-    return reverse(flattenReverse(
-      {VariableArrayT(1, isNegativeX.lt()),
-       VariableArrayT(1, constants._0),
-       publicKeyYBits.result()}));
+  VariableArrayT result() const {
+    return reverse(flattenReverse({VariableArrayT(1, isNegativeX.lt()),
+                                   VariableArrayT(1, constants._0),
+                                   publicKeyYBits.result()}));
   }
 };
 
-class EdDSA_HashRAM_Poseidon_gadget : public GadgetT
-{
+class EdDSA_HashRAM_Poseidon_gadget : public GadgetT {
 public:
   Poseidon_gadget_T<6, 1, 6, 52, 5, 1> m_hash_RAM; // hash_RAM = H(R, A, M)
   libsnark::dual_variable_gadget<FieldT> hash;
 
-  EdDSA_HashRAM_Poseidon_gadget(
-    ProtoboardT &in_pb,
-    const Params &in_params,
-    const VariablePointT &in_R,
-    const VariablePointT &in_A,
-    const VariableT &in_M,
-    const std::string &annotation_prefix)
+  EdDSA_HashRAM_Poseidon_gadget(ProtoboardT &in_pb, const Params &in_params,
+                                const VariablePointT &in_R,
+                                const VariablePointT &in_A,
+                                const VariableT &in_M,
+                                const std::string &annotation_prefix)
       : GadgetT(in_pb, annotation_prefix),
         // Prefix the message with R and A.
-        m_hash_RAM(
-          in_pb,
-          var_array({in_R.x, in_R.y, in_A.x, in_A.y, in_M}),
-          FMT(annotation_prefix, ".hash_RAM")),
-        hash(pb, NUM_BITS_MAX_VALUE, FMT(annotation_prefix, ".hash"))
-  {
-  }
+        m_hash_RAM(in_pb, var_array({in_R.x, in_R.y, in_A.x, in_A.y, in_M}),
+                   FMT(annotation_prefix, ".hash_RAM")),
+        hash(pb, NUM_BITS_MAX_VALUE, FMT(annotation_prefix, ".hash")) {}
 
-  void generate_r1cs_constraints()
-  {
+  void generate_r1cs_constraints() {
     m_hash_RAM.generate_r1cs_constraints();
     hash.generate_r1cs_constraints(true);
   }
 
-  void generate_r1cs_witness()
-  {
+  void generate_r1cs_witness() {
     m_hash_RAM.generate_r1cs_witness();
     hash.bits.fill_with_bits_of_field_element(pb, pb.val(m_hash_RAM.result()));
     hash.generate_r1cs_witness_from_bits();
@@ -229,8 +208,7 @@ public:
 };
 
 // Returns `B * s == R + A * H(R, A, M)`
-class EdDSA_Poseidon : public GadgetT
-{
+class EdDSA_Poseidon : public GadgetT {
 public:
   PointValidator m_validator_R;             // IsValid(R)
   fixed_base_mul m_lhs;                     // lhs = B*s
@@ -242,58 +220,40 @@ public:
   EqualGadget equalY;
   AndGadget valid;
 
-  EdDSA_Poseidon(
-    ProtoboardT &in_pb,
-    const Params &in_params,
-    const EdwardsPoint &in_base, // B
-    const VariablePointT &in_A,  // A
-    const VariablePointT &in_R,  // R
-    const VariableArrayT &in_s,  // s
-    const VariableT &in_msg,     // m
-    const std::string &annotation_prefix)
+  EdDSA_Poseidon(ProtoboardT &in_pb, const Params &in_params,
+                 const EdwardsPoint &in_base, // B
+                 const VariablePointT &in_A,  // A
+                 const VariablePointT &in_R,  // R
+                 const VariableArrayT &in_s,  // s
+                 const VariableT &in_msg,     // m
+                 const std::string &annotation_prefix)
       : GadgetT(in_pb, annotation_prefix),
         // IsValid(R)
-        m_validator_R(
-          in_pb,
-          in_params,
-          in_R.x,
-          in_R.y,
-          FMT(this->annotation_prefix, ".validator_R")),
+        m_validator_R(in_pb, in_params, in_R.x, in_R.y,
+                      FMT(this->annotation_prefix, ".validator_R")),
 
         // lhs = ScalarMult(B, s)
-        m_lhs(in_pb, in_params, in_base.x, in_base.y, in_s, FMT(this->annotation_prefix, ".lhs")),
+        m_lhs(in_pb, in_params, in_base.x, in_base.y, in_s,
+              FMT(this->annotation_prefix, ".lhs")),
 
         // hash_RAM = H(R, A, M)
-        m_hash_RAM(in_pb, in_params, in_R, in_A, in_msg, FMT(this->annotation_prefix, ".hash_RAM")),
+        m_hash_RAM(in_pb, in_params, in_R, in_A, in_msg,
+                   FMT(this->annotation_prefix, ".hash_RAM")),
 
         // At = ScalarMult(A,hash_RAM)
-        m_At(
-          in_pb,
-          in_params,
-          in_A.x,
-          in_A.y,
-          m_hash_RAM.result(),
-          FMT(this->annotation_prefix, ".At = A * hash_RAM")),
+        m_At(in_pb, in_params, in_A.x, in_A.y, m_hash_RAM.result(),
+             FMT(this->annotation_prefix, ".At = A * hash_RAM")),
 
         // rhs = PointAdd(R, At)
-        m_rhs(
-          in_pb,
-          in_params,
-          in_R.x,
-          in_R.y,
-          m_At.result_x(),
-          m_At.result_y(),
-          FMT(this->annotation_prefix, ".rhs")),
+        m_rhs(in_pb, in_params, in_R.x, in_R.y, m_At.result_x(),
+              m_At.result_y(), FMT(this->annotation_prefix, ".rhs")),
 
         // Verify the two points are equal
         equalX(in_pb, m_lhs.result_x(), m_rhs.result_x(), ".equalX"),
         equalY(in_pb, m_lhs.result_y(), m_rhs.result_y(), ".equalY"),
-        valid(in_pb, {equalX.result(), equalY.result()}, ".valid")
-  {
-  }
+        valid(in_pb, {equalX.result(), equalY.result()}, ".valid") {}
 
-  void generate_r1cs_constraints()
-  {
+  void generate_r1cs_constraints() {
     m_validator_R.generate_r1cs_constraints();
     m_lhs.generate_r1cs_constraints();
     m_hash_RAM.generate_r1cs_constraints();
@@ -306,8 +266,7 @@ public:
     valid.generate_r1cs_constraints();
   }
 
-  void generate_r1cs_witness()
-  {
+  void generate_r1cs_witness() {
     m_validator_R.generate_r1cs_witness();
     m_lhs.generate_r1cs_witness();
     m_hash_RAM.generate_r1cs_witness();
@@ -324,8 +283,7 @@ public:
 };
 
 // Verifies a signature hashed with Poseidon
-class SignatureVerifier : public GadgetT
-{
+class SignatureVerifier : public GadgetT {
 public:
   const Constants &constants;
   const jubjub::VariablePointT sig_R;
@@ -334,33 +292,22 @@ public:
 
   IfThenRequireGadget valid;
 
-  SignatureVerifier(
-    ProtoboardT &pb,
-    const jubjub::Params &params,
-    const Constants &_constants,
-    const jubjub::VariablePointT &publicKey,
-    const VariableT &message,
-    const VariableT &required,
-    const std::string &prefix)
+  SignatureVerifier(ProtoboardT &pb, const jubjub::Params &params,
+                    const Constants &_constants,
+                    const jubjub::VariablePointT &publicKey,
+                    const VariableT &message, const VariableT &required,
+                    const std::string &prefix)
       : GadgetT(pb, prefix),
 
         constants(_constants), sig_R(pb, FMT(prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
         signatureVerifier(
-          pb,
-          params,
-          jubjub::EdwardsPoint(params.Gx, params.Gy),
-          publicKey,
-          sig_R,
-          sig_s,
-          message,
-          FMT(prefix, ".signatureVerifier")),
-        valid(pb, required, signatureVerifier.result(), FMT(prefix, ".valid"))
-  {
+            pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey,
+            sig_R, sig_s, message, FMT(prefix, ".signatureVerifier")),
+        valid(pb, required, signatureVerifier.result(), FMT(prefix, ".valid")) {
   }
 
-  void generate_r1cs_witness(Signature sig)
-  {
+  void generate_r1cs_witness(Signature sig) {
     pb.val(sig_R.x) = sig.R.x;
     pb.val(sig_R.y) = sig.R.y;
     sig_s.fill_with_bits_of_field_element(pb, sig.s);
@@ -368,8 +315,7 @@ public:
     valid.generate_r1cs_witness();
   }
 
-  void generate_r1cs_constraints()
-  {
+  void generate_r1cs_constraints() {
     signatureVerifier.generate_r1cs_constraints();
     valid.generate_r1cs_constraints();
   }
