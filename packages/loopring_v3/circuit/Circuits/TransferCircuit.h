@@ -106,7 +106,7 @@ public:
   TransferGadget transferPayment;
 
   // Nonce
-  NonceGadget nonce;
+  ReadNonceGadget nonce;
   // Increase the number of conditional transactions (if conditional)
   UnsafeAddGadget numConditionalTransactionsAfter;
 

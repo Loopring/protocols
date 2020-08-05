@@ -218,7 +218,7 @@ public:
 //
 // Maybe we should move this to `AccountGadgets.h' as this is on the account
 // level?
-class NonceGadget : public GadgetT {
+class ReadNonceGadget : public GadgetT {
   const Constants &constants;
   const DualVariableGadget &storageID;
 
@@ -226,7 +226,7 @@ class NonceGadget : public GadgetT {
   IfThenRequireEqualGadget requireDataZero;
 
 public:
-  NonceGadget(ProtoboardT &pb, const Constants &_constants,
+  ReadNonceGadget(ProtoboardT &pb, const Constants &_constants,
               const StorageGadget &_currentStorage,
               const DualVariableGadget &_storageID, const VariableT &_verify,
               const std::string &_prefix)

@@ -92,7 +92,7 @@ TEST_CASE("StorageReader", "[ReadStorageGadget]") {
   }
 }
 
-TEST_CASE("Nonce", "[NonceGadget]") {
+TEST_CASE("Nonce", "[ReadNonceGadget]") {
   auto nonceChecked = [](const StorageLeaf &storageLeaf,
                          const FieldT &_storageID, bool _verify,
                          bool expectedSatisfied,
@@ -110,7 +110,7 @@ TEST_CASE("Nonce", "[NonceGadget]") {
 
     jubjub::Params params;
     Constants constants(pb, "constants");
-    NonceGadget nonceGadget(pb, constants, storage, storageID, verify,
+    ReadNonceGadget nonceGadget(pb, constants, storage, storageID, verify,
                             "nonceGadget");
     nonceGadget.generate_r1cs_witness();
     nonceGadget.generate_r1cs_constraints();
