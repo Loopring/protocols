@@ -323,7 +323,7 @@ contract ExchangeV3 is IExchangeV3
         address to,
         address tokenAddress,
         uint96  amount,
-        bytes   calldata auxiliaryData
+        bytes   calldata extraData
         )
         external
         payable
@@ -331,7 +331,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        state.deposit(from, to, tokenAddress, amount, auxiliaryData);
+        state.deposit(from, to, tokenAddress, amount, extraData);
     }
 
     // -- Withdrawals --

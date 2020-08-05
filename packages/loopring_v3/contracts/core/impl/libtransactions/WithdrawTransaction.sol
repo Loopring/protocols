@@ -33,7 +33,7 @@ library WithdrawTransaction
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
-        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes data,uint minGas,uint32 validUntil,uint32 nonce)"
+        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes extraData,uint minGas,uint32 validUntil,uint32 nonce)"
     );
 
     struct Withdrawal
@@ -50,7 +50,7 @@ library WithdrawTransaction
 
         uint    minGas;
         address to;
-        bytes   data;
+        bytes   extraData;
         uint32  validUntil;
     }
 
@@ -62,7 +62,7 @@ library WithdrawTransaction
 
         uint    minGas;
         address to;
-        bytes   data;
+        bytes   extraData;
         uint32  validUntil;
     }
 
@@ -90,7 +90,7 @@ library WithdrawTransaction
             abi.encodePacked(
                 auxData.minGas,
                 auxData.to,
-                auxData.data
+                auxData.extraData
             )
         );
         // Only the 20 MSB are used, which is still 80-bit of security, which is more
@@ -100,7 +100,7 @@ library WithdrawTransaction
         // Fill in withdrawal data missing from DA
         withdrawal.to = auxData.to;
         withdrawal.minGas = auxData.minGas;
-        withdrawal.data = auxData.data;
+        withdrawal.extraData = auxData.extraData;
         withdrawal.validUntil = auxData.validUntil;
 
         if (withdrawal.withdrawalType == 0) {
@@ -122,7 +122,7 @@ library WithdrawTransaction
             // Forced withdrawal fees are charged when the request is submitted.
             require(withdrawal.fee == 0, "FEE_NOT_ZERO");
 
-            require(withdrawal.data.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
+            require(withdrawal.extraData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
 
             ExchangeData.ForcedWithdrawal memory forcedWithdrawal =
                 S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
@@ -165,7 +165,7 @@ library WithdrawTransaction
         address recipient = S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.nonce];
         if (recipient != address(0)) {
             // Auxiliary data is not supported
-            require (withdrawal.data.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
+            require (withdrawal.extraData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
 
             // Set the new recipient address
             withdrawal.to = recipient;
@@ -184,7 +184,7 @@ library WithdrawTransaction
             withdrawal.to,
             withdrawal.tokenID,
             withdrawal.amount,
-            withdrawal.data,
+            withdrawal.extraData,
             auxData.gasLimit
         );
     }
@@ -240,7 +240,7 @@ library WithdrawTransaction
                     withdrawal.feeTokenID,
                     withdrawal.fee,
                     withdrawal.to,
-                    keccak256(withdrawal.data),
+                    keccak256(withdrawal.extraData),
                     withdrawal.minGas,
                     withdrawal.validUntil,
                     withdrawal.nonce
