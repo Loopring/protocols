@@ -141,7 +141,6 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("100", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 30,
-        rebateBips: 0,
         buy: true
       };
       await exchangeTestUtil.setupOrder(order, 0);
@@ -156,7 +155,6 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          rebateBips: 20,
           buy: false
         },
         expected: {
@@ -208,7 +206,6 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("100", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 25,
-        rebateBips: 0,
         buy: true
       };
       await exchangeTestUtil.setupOrder(order, 0);
@@ -223,7 +220,6 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          rebateBips: 20,
           buy: false
         },
         expected: {
@@ -240,7 +236,6 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("220", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[2],
           maxFeeBips: 0,
-          rebateBips: 10,
           buy: false
         },
         expected: {
@@ -304,7 +299,6 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("99", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 30,
-        rebateBips: 0,
         buy: false
       };
       await exchangeTestUtil.setupOrder(order, 0);
@@ -319,7 +313,6 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("2000", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          rebateBips: 20,
           buy: false
         },
         expected: {
@@ -372,7 +365,6 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("900", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 25,
-        rebateBips: 0,
         buy: false
       };
       await exchangeTestUtil.setupOrder(order, 0);
@@ -387,7 +379,6 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          rebateBips: 20,
           buy: true
         },
         expected: {
@@ -404,7 +395,6 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[2],
           maxFeeBips: 0,
-          rebateBips: 10,
           buy: true
         },
         expected: {
@@ -468,7 +458,6 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("100", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 25,
-        rebateBips: 0,
         buy: true
       };
       await exchangeTestUtil.setupOrder(order, 0);
@@ -483,7 +472,6 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          rebateBips: 20,
           buy: false
         },
         expected: {
@@ -563,7 +551,6 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("90", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 25,
-        rebateBips: 0,
         buy: false
       };
       await exchangeTestUtil.setupOrder(order, 0);
@@ -578,7 +565,6 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          rebateBips: 20,
           buy: true
         },
         expected: {
@@ -672,97 +658,6 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(ring);
-
-      await exchangeTestUtil.submitTransactions();
-
-      await verify();
-    });
-
-    it("Rebate (single order)", async () => {
-      const ring: SpotTrade = {
-        orderA: {
-          tokenS: "LRC",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("100", "ether")),
-          amountB: new BN(web3.utils.toWei("10", "ether"))
-        },
-        orderB: {
-          tokenS: "GTO",
-          tokenB: "LRC",
-          amountS: new BN(web3.utils.toWei("20", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether")),
-          maxFeeBips: 0,
-          rebateBips: 10
-        },
-        expected: {
-          orderA: {
-            filledFraction: 1.0,
-            spread: new BN(web3.utils.toWei("0", "ether"))
-          },
-          orderB: { filledFraction: 0.5 }
-        }
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-
-      await exchangeTestUtil.deposit(
-        exchangeTestUtil.exchangeOperator,
-        exchangeTestUtil.exchangeOperator,
-        ring.orderB.tokenB,
-        ring.orderB.amountB
-      );
-
-      await exchangeTestUtil.sendRing(ring);
-
-      await exchangeTestUtil.submitTransactions();
-
-      await verify();
-    });
-
-    it("Rebate (both orders, rebate token == operator fee token)", async () => {
-      const ring: SpotTrade = {
-        orderA: {
-          tokenS: "LRC",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("100", "ether")),
-          amountB: new BN(web3.utils.toWei("10", "ether")),
-          maxFeeBips: 0,
-          rebateBips: 10
-        },
-        orderB: {
-          tokenS: "GTO",
-          tokenB: "LRC",
-          amountS: new BN(web3.utils.toWei("20", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether")),
-          maxFeeBips: 0,
-          rebateBips: 20
-        },
-        tokenID: await exchangeTestUtil.getTokenIdFromNameOrAddress("LRC"),
-        expected: {
-          orderA: {
-            filledFraction: 1.0,
-            spread: new BN(web3.utils.toWei("0", "ether"))
-          },
-          orderB: { filledFraction: 0.5 }
-        }
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-
-      await exchangeTestUtil.deposit(
-        exchangeTestUtil.exchangeOperator,
-        exchangeTestUtil.exchangeOperator,
-        ring.orderA.tokenB,
-        ring.orderA.amountB
-      );
-      await exchangeTestUtil.deposit(
-        exchangeTestUtil.exchangeOperator,
-        exchangeTestUtil.exchangeOperator,
-        ring.orderB.tokenB,
-        ring.orderB.amountB
-      );
-
       await exchangeTestUtil.sendRing(ring);
 
       await exchangeTestUtil.submitTransactions();
@@ -1363,36 +1258,6 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           validUntil: 1
-        },
-        orderB: {
-          tokenS: "GTO",
-          tokenB: "WETH",
-          amountS: new BN(web3.utils.toWei("200", "ether")),
-          amountB: new BN(web3.utils.toWei("100", "ether"))
-        },
-        expected: {
-          orderA: { filledFraction: 0.0, spread: new BN(0) },
-          orderB: { filledFraction: 0.0 }
-        }
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(ring);
-
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
-    });
-
-    it("validSince > now", async () => {
-      const ring: SpotTrade = {
-        orderA: {
-          tokenS: "WETH",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("100", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether")),
-          validSince: 0xffffffff
         },
         orderB: {
           tokenS: "GTO",

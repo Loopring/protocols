@@ -60,8 +60,7 @@ public:
                   n * 2 + 10 /*=ceil(log2(1000))*/, FMT(prefix, ".validRate")),
 
         // Also enforce that either both fill amounts are zero or both are
-        // non-zero. This check is also important to make sure no token
-        // transfers can happen to unregistered token IDs.
+        // non-zero.
         isNonZeroFillAmountS(pb, fillAmountS,
                              FMT(prefix, "isNonZeroFillAmountS")),
         isNonZeroFillAmountB(pb, fillAmountB,
@@ -116,110 +115,38 @@ public:
 };
 
 // Check if an order is filled correctly
-class CheckValidGadget : public GadgetT {
+class RequireValidOrderGadget : public GadgetT {
 public:
-  LeqGadget fillAmountS_lt_amountS;
-  LeqGadget fillAmountB_lt_amountB;
-  NotGadget order_sell;
-  AndGadget notValidAllOrNoneSell;
-  AndGadget notValidAllOrNoneBuy;
+  RequireLtGadget requireValidUntil;
 
-  LeqGadget validSince_leq_timestamp;
-  LeqGadget timestamp_leq_validUntil;
-
-  NotGadget validAllOrNoneSell;
-  NotGadget validAllOrNoneBuy;
-
-  AndGadget valid;
-
-  CheckValidGadget(ProtoboardT &pb, const Constants &constants,
+  RequireValidOrderGadget(ProtoboardT &pb, const Constants &constants,
                    const VariableT &timestamp, const OrderGadget &order,
-                   const VariableT &fillAmountS, const VariableT &fillAmountB,
                    const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        // This can be combined in a single comparison (buy/sell order)
-        fillAmountS_lt_amountS(pb, fillAmountS, order.amountS.packed,
-                               NUM_BITS_AMOUNT,
-                               FMT(prefix, ".fillAmountS_lt_amountS")),
-        fillAmountB_lt_amountB(pb, fillAmountB, order.amountB.packed,
-                               NUM_BITS_AMOUNT,
-                               FMT(prefix, ".fillAmountB_lt_amountB")),
-        order_sell(pb, order.buy.packed, FMT(prefix, ".order_sell")),
-        notValidAllOrNoneSell(pb,
-                              {order.allOrNone.packed, order_sell.result(),
-                               fillAmountS_lt_amountS.lt()},
-                              FMT(prefix, ".notValidAllOrNoneSell")),
-        notValidAllOrNoneBuy(pb,
-                             {order.allOrNone.packed, order.buy.packed,
-                              fillAmountB_lt_amountB.lt()},
-                             FMT(prefix, ".notValidAllOrNoneBuy")),
-
-        validSince_leq_timestamp(pb, order.validSince.packed, timestamp,
-                                 NUM_BITS_TIMESTAMP,
-                                 FMT(prefix, "validSince <= timestamp")),
-        timestamp_leq_validUntil(pb, timestamp, order.validUntil.packed,
-                                 NUM_BITS_TIMESTAMP,
-                                 FMT(prefix, "timestamp <= validUntil")),
-
-        validAllOrNoneSell(pb, notValidAllOrNoneSell.result(),
-                           FMT(prefix, "validAllOrNoneSell")),
-        validAllOrNoneBuy(pb, notValidAllOrNoneBuy.result(),
-                          FMT(prefix, "validAllOrNoneBuy")),
-
-        valid(pb,
-              {validSince_leq_timestamp.leq(), timestamp_leq_validUntil.leq(),
-               validAllOrNoneSell.result(), validAllOrNoneBuy.result()},
-              FMT(prefix, ".valid")) {}
+        requireValidUntil(pb, timestamp, order.validUntil.packed,
+                          NUM_BITS_TIMESTAMP,
+                          FMT(prefix, ".requireValidUntil")) {}
 
   void generate_r1cs_witness() {
-    fillAmountS_lt_amountS.generate_r1cs_witness();
-    fillAmountB_lt_amountB.generate_r1cs_witness();
-    order_sell.generate_r1cs_witness();
-    notValidAllOrNoneSell.generate_r1cs_witness();
-    notValidAllOrNoneBuy.generate_r1cs_witness();
-
-    validSince_leq_timestamp.generate_r1cs_witness();
-    timestamp_leq_validUntil.generate_r1cs_witness();
-
-    validAllOrNoneSell.generate_r1cs_witness();
-    validAllOrNoneBuy.generate_r1cs_witness();
-
-    valid.generate_r1cs_witness();
+    requireValidUntil.generate_r1cs_witness();
   }
 
   void generate_r1cs_constraints() {
-    fillAmountS_lt_amountS.generate_r1cs_constraints();
-    fillAmountB_lt_amountB.generate_r1cs_constraints();
-    order_sell.generate_r1cs_constraints();
-    notValidAllOrNoneSell.generate_r1cs_constraints();
-    notValidAllOrNoneBuy.generate_r1cs_constraints();
-
-    validSince_leq_timestamp.generate_r1cs_constraints();
-    timestamp_leq_validUntil.generate_r1cs_constraints();
-
-    validAllOrNoneSell.generate_r1cs_constraints();
-    validAllOrNoneBuy.generate_r1cs_constraints();
-
-    valid.generate_r1cs_constraints();
+    requireValidUntil.generate_r1cs_constraints();
   }
-
-  const VariableT &isValid() const { return valid.result(); }
 };
 
 // Calculates the fees for an order
 class FeeCalculatorGadget : public GadgetT {
 public:
-  // We could combine the fee and rebate calculations here, saving a MulDiv, but
-  // the MulDiv is cheap here, so let's keep things simple.
   MulDivGadget protocolFee;
   MulDivGadget fee;
-  MulDivGadget rebate;
 
   FeeCalculatorGadget(ProtoboardT &pb, const Constants &constants,
                       const VariableT &amountB,
                       const VariableT &protocolFeeBips,
-                      const VariableT &feeBips, const VariableT &rebateBips,
+                      const VariableT &feeBips,
                       const std::string &prefix)
       : GadgetT(pb, prefix),
 
@@ -227,28 +154,21 @@ public:
                     NUM_BITS_AMOUNT, NUM_BITS_PROTOCOL_FEE_BIPS,
                     17 /*=ceil(log2(100000))*/, FMT(prefix, ".protocolFee")),
         fee(pb, constants, amountB, feeBips, constants._10000, NUM_BITS_AMOUNT,
-            NUM_BITS_BIPS, 14 /*=ceil(log2(10000))*/, FMT(prefix, ".fee")),
-        rebate(pb, constants, amountB, rebateBips, constants._10000,
-               NUM_BITS_AMOUNT, NUM_BITS_BIPS, 14 /*=ceil(log2(10000))*/,
-               FMT(prefix, ".rebate")) {}
+            NUM_BITS_BIPS, 14 /*=ceil(log2(10000))*/, FMT(prefix, ".fee")) {}
 
   void generate_r1cs_witness() {
     protocolFee.generate_r1cs_witness();
     fee.generate_r1cs_witness();
-    rebate.generate_r1cs_witness();
   }
 
   void generate_r1cs_constraints() {
     protocolFee.generate_r1cs_constraints();
     fee.generate_r1cs_constraints();
-    rebate.generate_r1cs_constraints();
   }
 
   const VariableT &getProtocolFee() const { return protocolFee.result(); }
 
   const VariableT &getFee() const { return fee.result(); }
-
-  const VariableT &getRebate() const { return rebate.result(); }
 };
 
 // Checks if the order isn't filled too much
@@ -383,11 +303,9 @@ public:
   RequireValidTakerGadget validateTakerA;
   RequireValidTakerGadget validateTakerB;
 
-  // Check if the orders in the settlement are correctly filled
-  CheckValidGadget checkValidA;
-  CheckValidGadget checkValidB;
-  AndGadget valid;
-  RequireEqualGadget requireValid;
+  // Check if the orders are valid
+  RequireValidOrderGadget requireValidA;
+  RequireValidOrderGadget requireValidB;
 
   OrderMatchingGadget(ProtoboardT &pb, const Constants &constants,
                       const VariableT &timestamp, const OrderGadget &orderA,
@@ -418,14 +336,10 @@ public:
                        FMT(prefix, ".validateTakerB")),
 
         // Check if the orders in the settlement are correctly filled
-        checkValidA(pb, constants, timestamp, orderA, fillS_A, fillS_B,
+        requireValidA(pb, constants, timestamp, orderA,
                     FMT(prefix, ".checkValidA")),
-        checkValidB(pb, constants, timestamp, orderB, fillS_B, fillS_A,
-                    FMT(prefix, ".checkValidB")),
-        valid(pb, {checkValidA.isValid(), checkValidB.isValid()},
-              FMT(prefix, ".valid")),
-        requireValid(pb, valid.result(), constants._1,
-                     FMT(prefix, ".requireValid")) {}
+        requireValidB(pb, constants, timestamp, orderB,
+                    FMT(prefix, ".checkValidB")) {}
 
   void generate_r1cs_witness() {
     // Check if the fills are valid for the orders
@@ -441,10 +355,8 @@ public:
     validateTakerB.generate_r1cs_witness();
 
     // Check if the orders in the settlement are correctly filled
-    checkValidA.generate_r1cs_witness();
-    checkValidB.generate_r1cs_witness();
-    valid.generate_r1cs_witness();
-    requireValid.generate_r1cs_witness();
+    requireValidA.generate_r1cs_witness();
+    requireValidB.generate_r1cs_witness();
   }
 
   void generate_r1cs_constraints() {
@@ -461,10 +373,8 @@ public:
     validateTakerB.generate_r1cs_constraints();
 
     // Check if the orders in the settlement are correctly filled
-    checkValidA.generate_r1cs_constraints();
-    checkValidB.generate_r1cs_constraints();
-    valid.generate_r1cs_constraints();
-    requireValid.generate_r1cs_constraints();
+    requireValidA.generate_r1cs_constraints();
+    requireValidB.generate_r1cs_constraints();
   }
 
   const VariableT &getFilledAfter_A() const {

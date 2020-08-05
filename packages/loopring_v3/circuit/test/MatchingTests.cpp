@@ -14,13 +14,12 @@ struct OrderState {
 OrderState setOrderState(const OrderState &orderState, const FieldT &storageID,
                          const FieldT &amountS, const FieldT &amountB, bool buy,
                          const FieldT &balanceS, const FieldT &filled,
-                         const FieldT &leafStorageID, bool allOrNone = false) {
+                         const FieldT &leafStorageID) {
   OrderState newOrderState(orderState);
   newOrderState.order.storageID = storageID;
   newOrderState.order.amountS = amountS;
   newOrderState.order.amountB = amountB;
   newOrderState.order.buy = buy ? 1 : 0;
-  newOrderState.order.allOrNone = allOrNone ? 1 : 0;
   newOrderState.balanceLeafS.balance = balanceS;
   newOrderState.balanceLeafB.balance = 0;
   newOrderState.storageLeaf.data = filled;
@@ -364,34 +363,29 @@ TEST_CASE("FeeCalculator", "[FeeCalculatorGadget]") {
 
   auto feeCalculatorChecked = [](const BigInt &_fillB,
                                  unsigned int _protocolFeeBips,
-                                 unsigned int _feeBips,
-                                 unsigned int _rebateBips) {
+                                 unsigned int _feeBips) {
     protoboard<FieldT> pb;
 
     VariableT fillB = make_variable(pb, toFieldElement(_fillB), "fillB");
     VariableT protocolFeeBips =
         make_variable(pb, toFieldElement(_protocolFeeBips), "protocolFeeBips");
     VariableT feeBips = make_variable(pb, toFieldElement(_feeBips), "feeBips");
-    VariableT rebateBips =
-        make_variable(pb, toFieldElement(_rebateBips), "rebateBips");
 
     Constants constants(pb, "constants");
     FeeCalculatorGadget feeCalculatorGadget(pb, constants, fillB,
                                             protocolFeeBips, feeBips,
-                                            rebateBips, "feeCalculatorGadget");
+                                            "feeCalculatorGadget");
     feeCalculatorGadget.generate_r1cs_constraints();
     feeCalculatorGadget.generate_r1cs_witness();
 
     FieldT expectedProtocolFee =
         toFieldElement(_fillB * _protocolFeeBips / 100000);
     FieldT expectedFee = toFieldElement(_fillB * _feeBips / 10000);
-    FieldT expectedRebate = toFieldElement(_fillB * _rebateBips / 10000);
 
     REQUIRE(pb.is_satisfied());
     REQUIRE(
         (pb.val(feeCalculatorGadget.getProtocolFee()) == expectedProtocolFee));
     REQUIRE((pb.val(feeCalculatorGadget.getFee()) == expectedFee));
-    REQUIRE((pb.val(feeCalculatorGadget.getRebate()) == expectedRebate));
   };
 
   BigInt maxAmount = getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT);
@@ -416,16 +410,6 @@ TEST_CASE("FeeCalculator", "[FeeCalculatorGadget]") {
     }
   }
 
-  SECTION("Rebate") {
-    for (unsigned int i = 0; i < pow(2, NUM_BITS_BIPS); i++) {
-      feeCalculatorChecked(0, 0, 0, i);
-    }
-
-    for (unsigned int i = 0; i < pow(2, NUM_BITS_BIPS); i++) {
-      feeCalculatorChecked(maxAmount, 0, 0, i);
-    }
-  }
-
   SECTION("Random") {
     unsigned int numIterations = 1024;
     for (unsigned int i = 0; i < numIterations; i++) {
@@ -433,8 +417,7 @@ TEST_CASE("FeeCalculator", "[FeeCalculatorGadget]") {
       unsigned int protocolFeeBips =
           rand() % int(pow(2, NUM_BITS_PROTOCOL_FEE_BIPS));
       unsigned int feeBips = rand() % int(pow(2, NUM_BITS_BIPS));
-      unsigned int rebateBips = rand() % int(pow(2, NUM_BITS_BIPS));
-      feeCalculatorChecked(fillB, protocolFeeBips, feeBips, rebateBips);
+      feeCalculatorChecked(fillB, protocolFeeBips, feeBips);
     }
   }
 }
@@ -510,14 +493,7 @@ bool checkFillRate(const FieldT &amountS, const FieldT &amountB,
 bool checkValid(const Order &order, const FieldT &fillAmountS,
                 const FieldT &fillAmountB, const FieldT &timestamp) {
   bool valid = true;
-  valid = valid && lte(order.validSince, timestamp);
   valid = valid && lte(timestamp, order.validUntil);
-  valid = valid && !((order.buy == FieldT::zero()) &&
-                     (order.allOrNone == FieldT::one()) &&
-                     lt(fillAmountS, order.amountS));
-  valid = valid && !((order.buy == FieldT::one()) &&
-                     (order.allOrNone == FieldT::one()) &&
-                     lt(fillAmountB, order.amountB));
   valid = valid &&
           checkFillRate(order.amountS, order.amountB, fillAmountS, fillAmountB);
   valid = valid &&
@@ -709,13 +685,6 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]") {
                          ExpectedSatisfied::NotSatisfied);
   }
 
-  SECTION("timestamp too early") {
-    FieldT timestamp_mod = A_order.validSince - 1;
-    orderMatchingChecked(exchange, timestamp_mod, orderStateA, orderStateB,
-                         ExpectedSatisfied::Satisfied, ExpectedValid::Invalid,
-                         ExpectedFill::Manual, expectFillS_A, expectFillS_B);
-  }
-
   SECTION("timestamp too late") {
     FieldT timestamp_mod = B_order.validUntil + 1;
     orderMatchingChecked(exchange, timestamp_mod, orderStateA, orderStateB,
@@ -874,43 +843,6 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]") {
                            orderStateB_mod, ExpectedSatisfied::Satisfied,
                            ExpectedValid::Valid, ExpectedFill::Manual,
                            maxAmount, maxAmount);
-    }
-  }
-
-  SECTION("allOrNone (buy)") {
-    for (unsigned int i = 0; i < 200; i++) {
-      OrderState orderStateA_mod =
-          setOrderState(orderStateA, A_storageID, 200, 100, true, 2 * i, 0,
-                        A_storageID, true);
-      OrderState orderStateB_mod =
-          setOrderState(orderStateB, B_storageID, 100, 100, bool(rand() % 2),
-                        maxAmount, 0, B_storageID);
-
-      ExpectedValid expectedValid =
-          (i >= 50) ? ExpectedValid::Valid : ExpectedValid::Invalid;
-      FieldT expectedFill = (2 * i >= 100) ? 100 : 2 * i;
-      orderMatchingChecked(exchange, timestamp, orderStateA_mod,
-                           orderStateB_mod, ExpectedSatisfied::Satisfied,
-                           expectedValid, ExpectedFill::Manual, expectedFill,
-                           expectedFill);
-    }
-  }
-
-  SECTION("allOrNone (sell)") {
-    for (unsigned int i = 0; i < 400; i += 2) {
-      OrderState orderStateA_mod = setOrderState(
-          orderStateA, A_storageID, 200, 100, false, i, 0, A_storageID, true);
-      OrderState orderStateB_mod =
-          setOrderState(orderStateB, B_storageID, 400, 400, bool(rand() % 2),
-                        maxAmount, 0, B_storageID);
-
-      ExpectedValid expectedValid =
-          (i >= 200) ? ExpectedValid::Valid : ExpectedValid::Invalid;
-      FieldT expectedFill = (i >= 200) ? 200 : i;
-      orderMatchingChecked(exchange, timestamp, orderStateA_mod,
-                           orderStateB_mod, ExpectedSatisfied::Satisfied,
-                           expectedValid, ExpectedFill::Manual, expectedFill,
-                           expectedFill);
     }
   }
 

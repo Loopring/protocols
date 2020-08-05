@@ -809,12 +809,6 @@ export class ExchangeTestUtil {
     if (!order.tokenB.startsWith("0x")) {
       order.tokenB = this.testContext.tokenSymbolAddrMap.get(order.tokenB);
     }
-    if (!order.validSince) {
-      // Set the order validSince time to a bit before the current timestamp;
-      const blockNumber = await web3.eth.getBlockNumber();
-      order.validSince =
-        (await web3.eth.getBlock(blockNumber)).timestamp - 10000;
-    }
     if (!order.validUntil) {
       // Set the order validUntil time to a bit after the current timestamp;
       const blockNumber = await web3.eth.getBlockNumber();
@@ -831,11 +825,9 @@ export class ExchangeTestUtil {
       order.taker !== undefined ? order.taker : Constants.zeroAddress;
 
     order.maxFeeBips = order.maxFeeBips !== undefined ? order.maxFeeBips : 20;
-    order.allOrNone = order.allOrNone ? order.allOrNone : false;
 
     order.feeBips =
       order.feeBips !== undefined ? order.feeBips : order.maxFeeBips;
-    order.rebateBips = order.rebateBips !== undefined ? order.rebateBips : 0;
 
     order.storageID = order.storageID !== undefined ? order.storageID : index;
 
@@ -844,7 +836,6 @@ export class ExchangeTestUtil {
 
     assert(order.maxFeeBips < 64, "maxFeeBips >= 64");
     assert(order.feeBips < 64, "feeBips >= 64");
-    assert(order.rebateBips < 64, "rebateBips >= 64");
 
     // setup initial balances:
     await this.setOrderBalances(order);
@@ -860,7 +851,7 @@ export class ExchangeTestUtil {
     const account = this.accounts[this.exchangeId][order.accountID];
 
     // Calculate hash
-    const hasher = Poseidon.createHash(14, 6, 53);
+    const hasher = Poseidon.createHash(12, 6, 53);
     const inputs = [
       order.exchange,
       order.storageID,
@@ -869,8 +860,6 @@ export class ExchangeTestUtil {
       order.tokenIdB,
       order.amountS,
       order.amountB,
-      order.allOrNone ? 1 : 0,
-      order.validSince,
       order.validUntil,
       order.maxFeeBips,
       order.buy ? 1 : 0,
@@ -2005,18 +1994,10 @@ export class ExchangeTestUtil {
           da.addNumber(spotTrade.fFillS_B, 3);
 
           let buyMask = orderA.buy ? 0b10000000 : 0;
-          let rebateMask = orderA.rebateBips > 0 ? 0b01000000 : 0;
-          da.addNumber(
-            buyMask + rebateMask + orderA.feeBips + orderA.rebateBips,
-            1
-          );
+          da.addNumber(buyMask + orderA.feeBips, 1);
 
           buyMask = orderB.buy ? 0b10000000 : 0;
-          rebateMask = orderB.rebateBips > 0 ? 0b01000000 : 0;
-          da.addNumber(
-            buyMask + rebateMask + orderB.feeBips + orderB.rebateBips,
-            1
-          );
+          da.addNumber(buyMask + orderB.feeBips, 1);
         } else if (tx.transfer) {
           const transfer = tx.transfer;
           da.addNumber(TransactionType.TRANSFER, 1);
