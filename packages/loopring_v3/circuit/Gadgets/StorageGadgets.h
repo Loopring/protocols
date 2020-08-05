@@ -213,6 +213,11 @@ public:
   }
 };
 
+// QUESTION(daniel): it seems this gadget is the same as ReadStorageGadget
+// except that it requires data to be 0.
+//
+// Maybe we should move this to `AccountGadgets.h' as this is on the account
+// level?
 class NonceGadget : public GadgetT {
   const Constants &constants;
   const DualVariableGadget &storageID;
@@ -227,10 +232,11 @@ public:
               const std::string &_prefix)
       : GadgetT(pb, _prefix),
 
-        constants(_constants),
-        storageID(_storageID),
+        constants(_constants), // QUESTION(daniel): can we not have the local
+                               // variables and
+        storageID(_storageID), // use _constant/_storageID directly?
         readStorage(pb, constants, _currentStorage, storageID, _verify,
-                      FMT(_prefix, ".readStorage")),
+                    FMT(_prefix, ".readStorage")),
         requireDataZero(pb, _verify, readStorage.getData(), _constants._0,
                         FMT(_prefix, ".requireDataZero")) {}
 
@@ -246,6 +252,7 @@ public:
 
   const VariableT &getData() const { return constants._1; }
 
+  // QUESTION(daniel): need some hint to understand.
   const VariableArrayT getShortStorageID() const {
     return reverse(flattenReverse(
         {VariableArrayT(1, constants._0),
