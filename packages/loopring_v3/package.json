@@ -43,6 +43,7 @@
     "truffle": "truffle",
     "solium": "solium -d contracts/",
     "formatc": "clang-format -i --style=LLVM --sort-includes=false circuit/Gadgets/* circuit/Utils/* circuit/Circuits/* circuit/main.cpp",
+    "formatc2": "clang-format -i circuit/Gadgets/* circuit/Utils/* circuit/Circuits/* circuit/main.cpp",
     "clean": "rm -rf build blocks keys transpiled",
     "format-circuits": "git-clang-format",
     "v": "node -v",
