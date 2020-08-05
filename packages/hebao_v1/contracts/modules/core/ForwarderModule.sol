@@ -8,7 +8,7 @@ import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
-
+import "./walletFactory.sol";
 
 /// @title ForwarderModule
 /// @dev A module to support wallet meta-transactions.
@@ -72,6 +72,7 @@ abstract contract ForwarderModule is BaseModule
             (to == from) &&
             data.toBytes4(0) == Wallet.addModule.selector &&
             controller().walletRegistry().isWalletRegistered(from) ||
+
             to == controller().walletFactory(),
             "INVALID_DESTINATION_OR_METHOD"
         );
@@ -160,12 +161,25 @@ abstract contract ForwarderModule is BaseModule
         // wallet funds.
         if (metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success)) {
             uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
+
+            // Do not consume quota when call factory's createWallet function or
+            // when a successful meta-tx's txAwareHash is non-zero (which means it will
+            // be signed by at least a guardian). Therefor, even if the owner's
+            // private key is leaked, the hacker won't be able to deplete ether/tokens
+            // as high meta-tx fees.
+            bool skipQuota = success && (
+                metaTx.txAwareHash != 0 ||
+                metaTx.data.toBytes4(0) == WalletFactory.createWallet.selector &&
+                metaTx.to == controller().walletFactory()
+            );
+
             reimburseGasFee(
                 metaTx.from,
                 controller().collectTo(),
                 metaTx.gasToken,
                 metaTx.gasPrice,
-                gasAmount.add(GAS_OVERHEAD)
+                gasAmount.add(GAS_OVERHEAD),
+                skipQuota
             );
         }
 
