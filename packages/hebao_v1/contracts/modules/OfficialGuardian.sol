@@ -13,7 +13,7 @@ import "../thirdparty/BytesUtil.sol";
 contract OfficialGuardian is OwnerManagable, ERC1271
 {
     using SignatureUtil for bytes;
-    mapping (address => bool) private whitelist;
+    mapping (address => bool) public whitelist;
 
     function isValidSignature(
         bytes memory _data,
@@ -37,7 +37,6 @@ contract OfficialGuardian is OwnerManagable, ERC1271
 
         whitelist[target] = true;
     }
-
 
     function transact(
         address  target,
