@@ -217,9 +217,6 @@ public:
 
 // QUESTION(daniel): it seems this gadget is the same as ReadStorageGadget
 // except that it requires data to be 0.
-//
-// Maybe we should move this to `AccountGadgets.h' as this is on the account
-// level?
 class ReadNonceGadget : public GadgetT {
   const Constants &constants;
   const DualVariableGadget &storageID;
