@@ -38,8 +38,8 @@ contract("BaseENSManager", () => {
       let txSignature = signCreateWallet(
         ctx.walletFactory.address,
         owner,
-        walletName,
         0,
+        walletName,
         ensApproval,
         true,
         modules
@@ -49,8 +49,8 @@ contract("BaseENSManager", () => {
         executeTransaction(
           ctx.walletFactory.contract.methods.createWallet(
             owner,
-            walletName,
             0,
+            walletName,
             ensApproval,
             true,
             modules,
@@ -70,8 +70,8 @@ contract("BaseENSManager", () => {
       txSignature = signCreateWallet(
         ctx.walletFactory.address,
         owner,
-        walletName,
         0,
+        walletName,
         ensApproval,
         true,
         modules
@@ -80,8 +80,8 @@ contract("BaseENSManager", () => {
       await executeTransaction(
         ctx.walletFactory.contract.methods.createWallet(
           owner,
-          walletName,
           0,
+          walletName,
           ensApproval,
           true,
           modules,
@@ -109,8 +109,8 @@ contract("BaseENSManager", () => {
       const txSignature = signCreateWallet(
         ctx.walletFactory.address,
         owner,
-        walletName,
         0,
+        walletName,
         ensApproval,
         true,
         modules
@@ -119,8 +119,8 @@ contract("BaseENSManager", () => {
       await executeTransaction(
         ctx.walletFactory.contract.methods.createWallet(
           owner,
-          walletName,
           0,
+          walletName,
           ensApproval,
           true,
           modules,

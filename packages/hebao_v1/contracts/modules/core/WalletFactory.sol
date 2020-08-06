@@ -40,7 +40,7 @@ contract WalletFactory is ReentrancyGuard
 
     bytes32 public DOMAIN_SEPERATOR;
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,string ensLabel,uint256 salt,bytes ensApproval,bool ensRegisterReverse,address[] modules)"
+        "createWallet(address owner,uint256 salt,string ensLabel,bytes ensApproval,bool ensRegisterReverse,address[] modules)"
     );
 
     constructor(
@@ -80,8 +80,8 @@ contract WalletFactory is ReentrancyGuard
     /// @param _signature The wallet owner's signature.
     function createWallet(
         address            _owner,
-        string    calldata _ensLabel,
         uint               _salt,
+        string    calldata _ensLabel,
         bytes     calldata _ensApproval,
         bool               _ensRegisterReverse,
         address[] calldata _modules,
@@ -97,8 +97,8 @@ contract WalletFactory is ReentrancyGuard
         bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
-            keccak256(bytes(_ensLabel)),
             _salt,
+            keccak256(bytes(_ensLabel)),
             keccak256(_ensApproval),
             _ensRegisterReverse,
             keccak256(abi.encode(_modules))

@@ -109,8 +109,8 @@ export async function createWallet(
   const txSignature = signCreateWallet(
     ctx.walletFactory.address,
     owner,
-    walletName,
     0,
+    walletName,
     ensApproval,
     true,
     modules
@@ -118,8 +118,8 @@ export async function createWallet(
 
   await ctx.walletFactory.createWallet(
     owner,
-    walletName,
     0,
+    walletName,
     ensApproval,
     true,
     modules,
@@ -151,8 +151,8 @@ export async function createWallet2(
   const txSignature = signCreateWallet(
     ctx.walletFactory.address,
     owner,
-    walletName,
     0,
+    walletName,
     ensApproval,
     true,
     modules
@@ -160,8 +160,8 @@ export async function createWallet2(
 
   await ctx.walletFactory.createWallet(
     owner,
-    walletName,
     0,
+    walletName,
     ensApproval,
     true,
     modules,
