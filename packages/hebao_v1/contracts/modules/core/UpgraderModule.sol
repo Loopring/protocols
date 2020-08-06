@@ -7,6 +7,7 @@ import "../../base/BaseWallet.sol";
 import "../../thirdparty/proxy/OwnedUpgradeabilityProxy.sol";
 import "../base/BaseModule.sol";
 
+
 /// @title UpgraderModule
 /// @dev This module removes obsoleted modules and add new modules, then
 ///      removes itself.
