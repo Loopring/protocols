@@ -107,8 +107,8 @@ contract WalletFactory is ReentrancyGuard
         require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
 
         _wallet = createWalletInternal(walletImplementation, _owner, _salt);
-
         Wallet w = Wallet(_wallet);
+
         for(uint i = 0; i < _modules.length; i++) {
             w.addModule(_modules[i]);
         }
