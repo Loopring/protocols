@@ -33,7 +33,10 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
       async () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
-        const walletAddr = await ctx.walletFactory.computeWalletAddress(owner);
+        const walletAddr = await ctx.walletFactory.computeWalletAddress(
+          owner,
+          0
+        );
         const { wallet } = await createWallet(ctx, owner);
 
         const newOwner = ctx.owners[1];
