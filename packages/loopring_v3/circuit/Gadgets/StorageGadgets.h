@@ -227,9 +227,9 @@ class ReadNonceGadget : public GadgetT {
 
 public:
   ReadNonceGadget(ProtoboardT &pb, const Constants &_constants,
-              const StorageGadget &_currentStorage,
-              const DualVariableGadget &_storageID, const VariableT &_verify,
-              const std::string &_prefix)
+                  const StorageGadget &_currentStorage,
+                  const DualVariableGadget &_storageID,
+                  const VariableT &_verify, const std::string &_prefix)
       : GadgetT(pb, _prefix),
 
         constants(_constants), // QUESTION(daniel): can we not have the local

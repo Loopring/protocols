@@ -294,7 +294,6 @@ public:
             pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey,
             sig_R, sig_s, message, FMT(prefix, ".signatureVerifier")),
         valid(pb, required, signatureVerifier.result(), FMT(prefix, ".valid")) {
-
   }
 
   void generate_r1cs_witness(Signature sig) {
