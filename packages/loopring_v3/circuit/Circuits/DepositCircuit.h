@@ -48,9 +48,9 @@ public:
                    owner.packed, FMT(prefix, ".ownerValid")),
 
         // Calculate the new balance
-        balanceS_A(pb, state.constants, state.accountA.balanceS,
+        balanceS_A(pb, state.accountA.balanceS,
                    FMT(prefix, ".balanceS_A")),
-        depositedAmount(pb, state.constants, amount.packed,
+        depositedAmount(pb, amount.packed,
                         FMT(prefix, ".depositedAmount")),
         balance_after(pb, balanceS_A.balance(), depositedAmount.balance(),
                       NUM_BITS_AMOUNT, FMT(prefix, ".balance_after")),

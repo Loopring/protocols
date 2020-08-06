@@ -126,9 +126,9 @@ public:
                        FMT(prefix, ".needsSignature")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS,
+        balanceS_A(pb, state.accountA.balanceS,
                    FMT(prefix, ".balanceS_A")),
-        balanceB_P(pb, state.constants, state.pool.balanceB,
+        balanceB_P(pb, state.pool.balanceB,
                    FMT(prefix, ".balanceB_P")),
 
         // Check how much should be withdrawn
@@ -150,9 +150,9 @@ public:
                                    FMT(prefix, ".checkInvalidFullWithdrawal")),
 
         // Fee balances
-        balanceB_A(pb, state.constants, state.accountA.balanceB,
+        balanceB_A(pb, state.accountA.balanceB,
                    FMT(prefix, ".balanceB_A")),
-        balanceA_O(pb, state.constants, state.oper.balanceA,
+        balanceA_O(pb, state.oper.balanceA,
                    FMT(prefix, ".balanceA_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),

@@ -66,21 +66,21 @@ public:
         orderB(pb, state.constants, state.exchange, FMT(prefix, ".orderB")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS,
+        balanceS_A(pb, state.accountA.balanceS,
                    FMT(prefix, ".balanceS_A")),
-        balanceB_A(pb, state.constants, state.accountA.balanceB,
+        balanceB_A(pb, state.accountA.balanceB,
                    FMT(prefix, ".balanceB_A")),
-        balanceS_B(pb, state.constants, state.accountB.balanceS,
+        balanceS_B(pb, state.accountB.balanceS,
                    FMT(prefix, ".balanceS_B")),
-        balanceB_B(pb, state.constants, state.accountB.balanceB,
+        balanceB_B(pb, state.accountB.balanceB,
                    FMT(prefix, ".balanceB_B")),
-        balanceA_P(pb, state.constants, state.pool.balanceA,
+        balanceA_P(pb, state.pool.balanceA,
                    FMT(prefix, ".balanceA_P")),
-        balanceB_P(pb, state.constants, state.pool.balanceB,
+        balanceB_P(pb, state.pool.balanceB,
                    FMT(prefix, ".balanceB_P")),
-        balanceA_O(pb, state.constants, state.oper.balanceA,
+        balanceA_O(pb, state.oper.balanceA,
                    FMT(prefix, ".balanceA_O")),
-        balanceB_O(pb, state.constants, state.oper.balanceB,
+        balanceB_O(pb, state.oper.balanceB,
                    FMT(prefix, ".balanceB_O")),
 
         // Order fills
@@ -116,7 +116,7 @@ public:
         // Actual trade
         fillSA_from_balanceSA_to_balanceBB(
             pb, balanceS_A, balanceB_B, fillS_A.value(),
-            FMT(prefix, ".fillBB_from_balanceSA_to_balanceBB")),
+            FMT(prefix, ".fillSA_from_balanceSA_to_balanceBB")),
         fillSB_from_balanceSB_to_balanceBA(
             pb, balanceS_B, balanceB_A, fillS_B.value(),
             FMT(prefix, ".fillSB_from_balanceSB_to_balanceBA")),
@@ -134,14 +134,16 @@ public:
         protocolFeeB_from_balanceBO_to_balanceBP(
             pb, balanceB_O, balanceB_P, feeCalculatorB.getProtocolFee(),
             FMT(prefix, ".protocolFeeB_from_balanceBO_to_balanceBP")) {
+    // Set tokens
+    setArrayOutput(balanceA_S_Address, orderA.tokenS.bits);
+    setArrayOutput(balanceB_S_Address, orderB.tokenS.bits);
+
     // Update account A
     setArrayOutput(storageA_Address, subArray(orderA.storageID.bits, 0,
                                               NUM_BITS_STORAGE_ADDRESS));
     setOutput(storageA_Data, orderMatching.getFilledAfter_A());
     setOutput(storageA_StorageId, orderA.storageID.packed);
-    setArrayOutput(balanceA_S_Address, orderA.tokenS.bits);
     setOutput(balanceA_S_Balance, balanceS_A.balance());
-    setArrayOutput(balanceB_S_Address, orderA.tokenB.bits);
     setOutput(balanceA_B_Balance, balanceB_A.balance());
     setArrayOutput(accountA_Address, orderA.accountID.bits);
 
@@ -150,7 +152,6 @@ public:
                                               NUM_BITS_STORAGE_ADDRESS));
     setOutput(storageB_Data, orderMatching.getFilledAfter_B());
     setOutput(storageB_StorageId, orderB.storageID.packed);
-    setArrayOutput(balanceB_S_Address, orderB.tokenS.bits);
     setOutput(balanceB_S_Balance, balanceS_B.balance());
     setOutput(balanceB_B_Balance, balanceB_B.balance());
     setArrayOutput(accountB_Address, orderB.accountID.bits);

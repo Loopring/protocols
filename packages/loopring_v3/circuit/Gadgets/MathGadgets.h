@@ -275,7 +275,7 @@ public:
 
   void generate_r1cs_constraints() {
     pb.add_r1cs_constraint(ConstraintT(value - sub, FieldT::one(), sum),
-                           ".value - sub = sum");
+                           FMT(annotation_prefix, ".value - sub = sum"));
   }
 };
 

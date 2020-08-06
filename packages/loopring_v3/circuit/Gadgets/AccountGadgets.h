@@ -217,16 +217,16 @@ public:
 // Calculcates the state of a user's open position
 class DynamicBalanceGadget : public DynamicVariableGadget {
 public:
-  DynamicBalanceGadget(ProtoboardT &pb, const Constants &constants,
+  DynamicBalanceGadget(ProtoboardT &pb,
                        const VariableT &balance, const std::string &prefix)
       : DynamicVariableGadget(pb, prefix) {
     add(balance);
     allowGeneratingWitness = false;
   }
 
-  DynamicBalanceGadget(ProtoboardT &pb, const Constants &constants,
+  DynamicBalanceGadget(ProtoboardT &pb,
                        const BalanceGadget &balance, const std::string &prefix)
-      : DynamicBalanceGadget(pb, constants, balance.balance, prefix) {}
+      : DynamicBalanceGadget(pb, balance.balance, prefix) {}
 
   void generate_r1cs_witness() {}
 
