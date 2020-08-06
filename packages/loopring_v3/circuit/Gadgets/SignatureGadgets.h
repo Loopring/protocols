@@ -26,7 +26,7 @@ public:
   const Constants &constants;
   const VariableT &y;
 
-  // Reconstruct sqrt(x)
+  // Reconstruct sqrt(xx)
   VariableT yy;
   VariableT lhs;
   VariableT rhs;
@@ -35,8 +35,8 @@ public:
   VariableT rootX;
 
   // Reconstruct x
-  UnsafeSubGadget negX;
-  LtFieldGadget isSmallest;
+  UnsafeSubGadget negRootX;
+  LtFieldGadget isSmallestRoot;
   TernaryGadget absX;
   UnsafeSubGadget negAbsX;
   EqualGadget isNegativeX;
@@ -44,7 +44,7 @@ public:
 
   // Special case 0
   EqualGadget isZeroY;
-  TernaryGadget reconstructed;
+  TernaryGadget x;
 
   // Make sure the reconstructed x matches the original x
   RequireEqualGadget valid;
@@ -59,7 +59,7 @@ public:
 
         params(_params), constants(_constants), y(_y),
 
-        // Reconstruct sqrt(x)
+        // Reconstruct sqrt(xx)
         yy(make_variable(pb, FMT(prefix, ".yy"))),
         lhs(make_variable(pb, FMT(prefix, ".lhs"))),
         rhs(make_variable(pb, FMT(prefix, ".rhs"))),
@@ -70,9 +70,11 @@ public:
         // Reconstruct x
         // Pick the smallest root (the "positive" one) to make sqrt
         // deterministic
-        negX(pb, _constants._0, rootX, FMT(prefix, ".negX")),
-        isSmallest(pb, negX.result(), rootX, FMT(prefix, ".isNegativeX")),
-        absX(pb, isSmallest.lt(), negX.result(), rootX, FMT(prefix, ".absX")),
+        negRootX(pb, _constants._0, rootX, FMT(prefix, ".negRootX")),
+        isSmallestRoot(pb, rootX, negRootX.result(),
+                       FMT(prefix, ".isSmallestRoot")),
+        absX(pb, isSmallestRoot.lt(), rootX, negRootX.result(),
+             FMT(prefix, ".absX")),
         // Check if x is the negative root or the positive root
         negAbsX(pb, _constants._0, absX.result(), FMT(prefix, ".negAbsX")),
         isNegativeX(pb, negAbsX.result(), _x, FMT(prefix, ".isNegativeX")),
@@ -81,17 +83,17 @@ public:
 
         // Special case 0
         isZeroY(pb, y, constants._0, FMT(prefix, ".isZeroY")),
-        reconstructed(pb, isZeroY.result(), constants._0,
-                      reconstructedX.result(), FMT(prefix, ".reconstructed")),
+        x(pb, isZeroY.result(), constants._0, reconstructedX.result(),
+          FMT(prefix, ".x")),
 
         // Make sure the reconstructed x matches the original x
-        valid(pb, _x, reconstructed.result(), FMT(prefix, ".valid")),
+        valid(pb, _x, x.result(), FMT(prefix, ".valid")),
 
         // Get the bits of y
         yBits(pb, _y, FMT(prefix, ".yBits")) {}
 
   void generate_r1cs_witness() {
-    // Reconstruct sqrt(x)
+    // Reconstruct sqrt(xx)
     pb.val(yy) = pb.val(y).squared();
     pb.val(lhs) = pb.val(yy) - 1;
     pb.val(rhs) = params.d * pb.val(yy) - params.a;
@@ -100,8 +102,8 @@ public:
     pb.val(rootX) = pb.val(xx).sqrt();
 
     // Reconstruct x
-    negX.generate_r1cs_witness();
-    isSmallest.generate_r1cs_witness();
+    negRootX.generate_r1cs_witness();
+    isSmallestRoot.generate_r1cs_witness();
     absX.generate_r1cs_witness();
     negAbsX.generate_r1cs_witness();
     isNegativeX.generate_r1cs_witness();
@@ -109,7 +111,7 @@ public:
 
     // Special case 0
     isZeroY.generate_r1cs_witness();
-    reconstructed.generate_r1cs_witness();
+    x.generate_r1cs_witness();
 
     // Make sure the reconstructed x matches the original x
     valid.generate_r1cs_witness();
@@ -119,7 +121,7 @@ public:
   }
 
   void generate_r1cs_constraints() {
-    // Reconstruct sqrt(x)
+    // Reconstruct sqrt(xx)
     pb.add_r1cs_constraint(ConstraintT(y, y, yy),
                            FMT(annotation_prefix, ".yy"));
     pb.add_r1cs_constraint(ConstraintT(yy - 1, 1, lhs),
@@ -134,8 +136,8 @@ public:
                            FMT(annotation_prefix, ".rootX"));
 
     // Reconstruct x
-    negX.generate_r1cs_constraints();
-    isSmallest.generate_r1cs_constraints();
+    negRootX.generate_r1cs_constraints();
+    isSmallestRoot.generate_r1cs_constraints();
     absX.generate_r1cs_constraints();
     negAbsX.generate_r1cs_constraints();
     isNegativeX.generate_r1cs_constraints();
@@ -143,7 +145,7 @@ public:
 
     // Special case 0
     isZeroY.generate_r1cs_constraints();
-    reconstructed.generate_r1cs_constraints();
+    x.generate_r1cs_constraints();
 
     // Make sure the reconstructed x matches the original x
     valid.generate_r1cs_constraints();
