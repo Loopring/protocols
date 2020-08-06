@@ -7,5 +7,11 @@ import "../base/BaseWallet.sol";
 
 /// @title WalletImpl
 contract WalletImpl is BaseWallet {
-    string public constant VERSION = "1.1.0";
+    function version()
+        public
+        pure
+        returns (string memory)
+    {
+        return "1.1.5";
+    }
 }

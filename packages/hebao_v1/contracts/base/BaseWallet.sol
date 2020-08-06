@@ -18,8 +18,8 @@ import "./Controller.sol";
 /// https://github.com/argentlabs/argent-contracts
 abstract contract BaseWallet is ReentrancyGuard, Wallet
 {
-    /// WARNING: do not delete wallet state data to make this implementation
-    /// compatible with early versions.
+    // WARNING: do not delete wallet state data to make this implementation
+    // compatible with early versions.
     //
     //  ----- DATA LAYOUT BEGINS -----
     address internal _owner;
