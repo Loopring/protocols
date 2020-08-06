@@ -3,8 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../base/BaseWallet.sol";
 import "../base/BaseModule.sol";
-
 
 /// @title UpgraderModule
 /// @dev This module removes obsoleted modules and add new modules, then
@@ -53,8 +53,13 @@ contract UpgraderModule is BaseModule {
         override
     {
         address payable wallet = msg.sender;
+        BaseWallet w = BaseWallet(wallet);
 
-        Wallet w = Wallet(wallet);
+        // Upgrade the controller if different
+        if (w.controller() != controller_) {
+            w.setController(controller_);
+        }
+
         for(uint i = 0; i < modulesToAdd.length; i++) {
             if (!w.hasModule(modulesToAdd[i])) {
                 w.addModule(modulesToAdd[i]);

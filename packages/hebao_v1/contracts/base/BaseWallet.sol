@@ -27,11 +27,13 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     mapping (bytes4  => address) internal methodToModule;
 
     event OwnerChanged          (address newOwner);
+    event ControllerChanged     (address newController);
     event ModuleAdded           (address module);
     event ModuleRemoved         (address module);
     event MethodBound           (bytes4  method, address module);
 
     event WalletSetup(address owner);
+
 
     event Transacted(
         address module,
@@ -77,6 +79,17 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         require(newOwner != _owner, "SAME_ADDRESS");
         _owner = newOwner;
         emit OwnerChanged(newOwner);
+    }
+
+    function setController(Controller newController)
+        external
+        nonReentrant
+        onlyFromModule
+    {
+        require(newController != controller, "SAME_CONTROLLER");
+        require(newController != Controller(0), "INVALID_CONTROLLER");
+        controller = newController;
+        emit ControllerChanged(address(newController));
     }
 
     function setup(
