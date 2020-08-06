@@ -273,7 +273,8 @@ static void from_json(const json &j, Order &order) {
   order.amountB = ethsnarks::FieldT(j.at("amountB").get<std::string>().c_str());
   order.validUntil = ethsnarks::FieldT(j.at("validUntil"));
   order.maxFeeBips = ethsnarks::FieldT(j.at("maxFeeBips"));
-  order.fillAmountBorS = ethsnarks::FieldT(j.at("fillAmountBorS").get<bool>() ? 1 : 0);
+  order.fillAmountBorS =
+      ethsnarks::FieldT(j.at("fillAmountBorS").get<bool>() ? 1 : 0);
   order.taker = ethsnarks::FieldT(j.at("taker").get<std::string>().c_str());
 
   order.feeBips = ethsnarks::FieldT(j.at("feeBips"));
@@ -327,7 +328,8 @@ static void from_json(const json &j, Withdrawal &withdrawal) {
   withdrawal.amount = ethsnarks::FieldT(j["amount"].get<std::string>().c_str());
   withdrawal.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
   withdrawal.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
-  withdrawal.onchainDataHash = ethsnarks::FieldT(j["onchainDataHash"].get<std::string>().c_str());
+  withdrawal.onchainDataHash =
+      ethsnarks::FieldT(j["onchainDataHash"].get<std::string>().c_str());
   withdrawal.validUntil = ethsnarks::FieldT(j.at("validUntil"));
   withdrawal.type = ethsnarks::FieldT(j.at("type"));
 }

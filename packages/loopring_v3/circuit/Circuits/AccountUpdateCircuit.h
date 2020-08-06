@@ -95,10 +95,8 @@ public:
                           FMT(this->annotation_prefix, ".compressPublicKey")),
 
         // Balances
-        balanceS_A(pb, state.accountA.balanceS,
-                   FMT(prefix, ".balanceS_A")),
-        balanceB_O(pb, state.oper.balanceB,
-                   FMT(prefix, ".balanceB_O")),
+        balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_O(pb, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
         requireAccuracyFee(pb, fFee.value(), fee.packed, Float16Accuracy,
@@ -216,10 +214,9 @@ public:
   }
 
   const VariableArrayT getPublicData() const {
-    return flattenReverse(
-        {type.bits, owner.bits, accountID.bits,
-         feeTokenID.bits, fFee.bits(),
-         compressPublicKey.result(), nonce.bits});
+    return flattenReverse({type.bits, owner.bits, accountID.bits,
+                           feeTokenID.bits, fFee.bits(),
+                           compressPublicKey.result(), nonce.bits});
   }
 };
 

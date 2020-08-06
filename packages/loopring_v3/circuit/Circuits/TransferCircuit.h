@@ -183,23 +183,19 @@ public:
                              payer_to.packed, dualAuthorX, dualAuthorY,
                              validUntil.packed, storageID.packed}),
                   FMT(this->annotation_prefix, ".hashPayer")),
-        hashDual(pb,
-                 var_array({state.exchange, fromAccountID.packed,
-                            payee_toAccountID.packed, tokenID.packed,
-                            amount.packed, feeTokenID.packed, fee.packed,
-                            to.packed, dualAuthorX, dualAuthorY,
-                            validUntil.packed, storageID.packed}),
-                 FMT(this->annotation_prefix, ".hashDual")),
+        hashDual(
+            pb,
+            var_array({state.exchange, fromAccountID.packed,
+                       payee_toAccountID.packed, tokenID.packed, amount.packed,
+                       feeTokenID.packed, fee.packed, to.packed, dualAuthorX,
+                       dualAuthorY, validUntil.packed, storageID.packed}),
+            FMT(this->annotation_prefix, ".hashDual")),
 
         // Balances
-        balanceS_A(pb, state.accountA.balanceS,
-                   FMT(prefix, ".balanceS_A")),
-        balanceB_A(pb, state.accountA.balanceB,
-                   FMT(prefix, ".balanceB_A")),
-        balanceB_B(pb, state.accountB.balanceB,
-                   FMT(prefix, ".balanceB_B")),
-        balanceA_O(pb, state.oper.balanceA,
-                   FMT(prefix, ".balanceA_O")),
+        balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+        balanceB_B(pb, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
+        balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
 
         // Validation
         toAccountValid(pb, state.constants, state.accountB.account.owner,
@@ -438,11 +434,11 @@ public:
   }
 
   const VariableArrayT getPublicData() const {
-    return flattenReverse(
-        {type.bits, fromAccountID.bits, toAccountID.bits, tokenID.bits,
-         fAmount.bits(), feeTokenID.bits, fFee.bits(),
-         nonce.getShortStorageID(), da_To.result(),
-         da_StorageID.result(), da_From.result()});
+    return flattenReverse({type.bits, fromAccountID.bits, toAccountID.bits,
+                           tokenID.bits, fAmount.bits(), feeTokenID.bits,
+                           fFee.bits(), nonce.getShortStorageID(),
+                           da_To.result(), da_StorageID.result(),
+                           da_From.result()});
   }
 };
 

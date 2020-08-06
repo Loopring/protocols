@@ -57,8 +57,7 @@ public:
                     const VariableT &_y, const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        params(_params), constants(_constants),
-        y(_y),
+        params(_params), constants(_constants), y(_y),
 
         // Reconstruct sqrt(x)
         yy(make_variable(pb, FMT(prefix, ".yy"))),
@@ -69,22 +68,21 @@ public:
         rootX(make_variable(pb, FMT(prefix, ".rootX"))),
 
         // Reconstruct x
-        // Pick the smallest root (the "positive" one) to make sqrt deterministic
-        negX(pb, _constants._0, rootX,
-                      FMT(prefix, ".negX")),
-        isSmallest(pb, negX.result(), rootX,
-                    FMT(prefix, ".isNegativeX")),
+        // Pick the smallest root (the "positive" one) to make sqrt
+        // deterministic
+        negX(pb, _constants._0, rootX, FMT(prefix, ".negX")),
+        isSmallest(pb, negX.result(), rootX, FMT(prefix, ".isNegativeX")),
         absX(pb, isSmallest.lt(), negX.result(), rootX, FMT(prefix, ".absX")),
         // Check if x is the negative root or the positive root
-        negAbsX(pb, _constants._0, absX.result(),
-                      FMT(prefix, ".negAbsX")),
-        isNegativeX(pb, negAbsX.result(), _x,
-                    FMT(prefix, ".isNegativeX")),
-        reconstructedX(pb, isNegativeX.result(), negAbsX.result(), absX.result(), FMT(prefix, ".reconstructedX")),
+        negAbsX(pb, _constants._0, absX.result(), FMT(prefix, ".negAbsX")),
+        isNegativeX(pb, negAbsX.result(), _x, FMT(prefix, ".isNegativeX")),
+        reconstructedX(pb, isNegativeX.result(), negAbsX.result(),
+                       absX.result(), FMT(prefix, ".reconstructedX")),
 
         // Special case 0
         isZeroY(pb, y, constants._0, FMT(prefix, ".isZeroY")),
-        reconstructed(pb, isZeroY.result(), constants._0, reconstructedX.result(), FMT(prefix, ".reconstructed")),
+        reconstructed(pb, isZeroY.result(), constants._0,
+                      reconstructedX.result(), FMT(prefix, ".reconstructed")),
 
         // Make sure the reconstructed x matches the original x
         valid(pb, _x, reconstructed.result(), FMT(prefix, ".valid")),
@@ -132,7 +130,8 @@ public:
                            FMT(annotation_prefix, ".irhs"));
     pb.add_r1cs_constraint(ConstraintT(lhs, irhs, xx),
                            FMT(annotation_prefix, ".xx"));
-    pb.add_r1cs_constraint(ConstraintT(rootX, rootX, xx), FMT(annotation_prefix, ".rootX"));
+    pb.add_r1cs_constraint(ConstraintT(rootX, rootX, xx),
+                           FMT(annotation_prefix, ".rootX"));
 
     // Reconstruct x
     negX.generate_r1cs_constraints();
@@ -154,9 +153,9 @@ public:
   }
 
   VariableArrayT result() const {
-    return reverse(flattenReverse({VariableArrayT(1, isNegativeX.result()),
-                                   VariableArrayT(1, constants._0),
-                                   yBits.result()}));
+    return reverse(
+        flattenReverse({VariableArrayT(1, isNegativeX.result()),
+                        VariableArrayT(1, constants._0), yBits.result()}));
   }
 };
 
@@ -174,7 +173,8 @@ public:
         // Prefix the message with R and A.
         m_hash_RAM(in_pb, var_array({in_R.x, in_R.y, in_A.x, in_A.y, in_M}),
                    FMT(annotation_prefix, ".hash_RAM")),
-        hash(pb, m_hash_RAM.result(), NUM_BITS_MAX_VALUE, FMT(annotation_prefix, ".hash")) {}
+        hash(pb, m_hash_RAM.result(), NUM_BITS_MAX_VALUE,
+             FMT(annotation_prefix, ".hash")) {}
 
   void generate_r1cs_constraints() {
     m_hash_RAM.generate_r1cs_constraints();

@@ -126,10 +126,8 @@ public:
                        FMT(prefix, ".needsSignature")),
 
         // Balances
-        balanceS_A(pb, state.accountA.balanceS,
-                   FMT(prefix, ".balanceS_A")),
-        balanceB_P(pb, state.pool.balanceB,
-                   FMT(prefix, ".balanceB_P")),
+        balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_P(pb, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
 
         // Check how much should be withdrawn
         fullBalance(pb, isProtocolFeeWithdrawal.result(), balanceB_P.balance(),
@@ -150,10 +148,8 @@ public:
                                    FMT(prefix, ".checkInvalidFullWithdrawal")),
 
         // Fee balances
-        balanceB_A(pb, state.accountA.balanceB,
-                   FMT(prefix, ".balanceB_A")),
-        balanceA_O(pb, state.oper.balanceA,
-                   FMT(prefix, ".balanceA_O")),
+        balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+        balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
         requireAccuracyFee(pb, fFee.value(), fee.packed, Float16Accuracy,

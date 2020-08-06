@@ -48,10 +48,8 @@ public:
                    owner.packed, FMT(prefix, ".ownerValid")),
 
         // Calculate the new balance
-        balanceS_A(pb, state.accountA.balanceS,
-                   FMT(prefix, ".balanceS_A")),
-        depositedAmount(pb, amount.packed,
-                        FMT(prefix, ".depositedAmount")),
+        balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        depositedAmount(pb, amount.packed, FMT(prefix, ".depositedAmount")),
         balance_after(pb, balanceS_A.balance(), depositedAmount.balance(),
                       NUM_BITS_AMOUNT, FMT(prefix, ".balance_after")),
 
@@ -113,9 +111,8 @@ public:
   }
 
   const VariableArrayT getPublicData() const {
-    return flattenReverse({owner.bits, accountID.bits,
-                           tokenID.bits,
-                           amount.bits});
+    return flattenReverse(
+        {owner.bits, accountID.bits, tokenID.bits, amount.bits});
   }
 };
 
