@@ -58,6 +58,7 @@ public:
   StorageState leafAfter;
 
   const VariableArrayT proof;
+
   VerifyTreeRoot rootBeforeVerifier;
   UpdateTreeRoot rootAfter;
 
@@ -88,6 +89,7 @@ public:
     leafHashAfter.generate_r1cs_witness();
 
     proof.fill_with_field_elements(pb, update.proof.data);
+
     rootBeforeVerifier.generate_r1cs_witness();
     rootAfter.generate_r1cs_witness();
 

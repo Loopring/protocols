@@ -27,12 +27,12 @@ struct AccountState {
   VariableT balancesRoot;
 };
 
-static void printAccount(const ProtoboardT &pb, const AccountState &state) {
-  std::cout << "- owner: " << pb.val(state.owner) << std::endl;
-  std::cout << "- publicKeyX: " << pb.val(state.publicKeyX) << std::endl;
-  std::cout << "- publicKeyY: " << pb.val(state.publicKeyY) << std::endl;
-  std::cout << "- nonce: " << pb.val(state.nonce) << std::endl;
-  std::cout << "- balancesRoot: " << pb.val(state.balancesRoot) << std::endl;
+static void printAccount(const ProtoboardT &pb, const AccountState &_state) {
+  std::cout << "- owner: " << pb.val(_state.owner) << std::endl;
+  std::cout << "- publicKeyX: " << pb.val(_state.publicKeyX) << std::endl;
+  std::cout << "- publicKeyY: " << pb.val(_state.publicKeyY) << std::endl;
+  std::cout << "- nonce: " << pb.val(_state.nonce) << std::endl;
+  std::cout << "- balancesRoot: " << pb.val(_state.balancesRoot) << std::endl;
 }
 
 class AccountGadget : public GadgetT {
@@ -50,12 +50,14 @@ public:
         nonce(make_variable(pb, FMT(_prefix, ".nonce"))),
         balancesRoot(make_variable(pb, FMT(_prefix, ".balancesRoot"))) {}
 
-  void generate_r1cs_witness(const Account &account) {
-    pb.val(owner) = account.owner;
-    pb.val(publicKey.x) = account.publicKey.x;
-    pb.val(publicKey.y) = account.publicKey.y;
-    pb.val(nonce) = account.nonce;
-    pb.val(balancesRoot) = account.balancesRoot;
+  // QUESTION: in StorageGadgets, we pass in a XxxxLeaf,
+  // below in BalanceGadget, we also pass in BalanceLeaf.
+  void generate_r1cs_witness(const Account &_account) {
+    pb.val(owner) = _account.owner;
+    pb.val(publicKey.x) = _account.publicKey.x;
+    pb.val(publicKey.y) = _account.publicKey.y;
+    pb.val(nonce) = _account.nonce;
+    pb.val(balancesRoot) = _account.balancesRoot;
   }
 };
 
@@ -68,6 +70,7 @@ public:
   AccountState leafAfter;
 
   const VariableArrayT proof;
+
   VerifyTreeRoot rootBeforeVerifier;
   UpdateTreeRoot rootAfter;
 
@@ -104,6 +107,7 @@ public:
     leafHashAfter.generate_r1cs_witness();
 
     proof.fill_with_field_elements(pb, update.proof.data);
+
     rootBeforeVerifier.generate_r1cs_witness();
     rootAfter.generate_r1cs_witness();
 
@@ -168,6 +172,7 @@ public:
   BalanceState leafAfter;
 
   const VariableArrayT proof;
+
   VerifyTreeRoot rootBeforeVerifier;
   UpdateTreeRoot rootAfter;
 
