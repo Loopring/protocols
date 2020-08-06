@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../base/BaseWallet.sol";
 import "../base/BaseModule.sol";
+import "../../thirdparty/proxy/OwnedUpgradeabilityProxy.sol";
 
 /// @title UpgraderModule
 /// @dev This module removes obsoleted modules and add new modules, then
@@ -17,16 +18,19 @@ import "../base/BaseModule.sol";
 contract UpgraderModule is BaseModule {
     ControllerImpl private controller_;
 
+    address    public walletImplementation;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
     constructor(
         ControllerImpl   _controller,
+        address          _walletImplementation,
         address[] memory _modulesToAdd,
         address[] memory _modulesToRemove
         )
     {
         controller_ = _controller;
+        walletImplementation = _walletImplementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
     }
@@ -48,11 +52,30 @@ contract UpgraderModule is BaseModule {
     {
     }
 
+    function upgradeWalletImplementation(address wallet)
+        external
+    {
+        require(msg.sender == address(this), "PROHIBITED");
+
+        if (walletImplementation != OwnedUpgradeabilityProxy(msg.sender).implementation()) {
+            bytes memory txData = abi.encodeWithSelector(
+                OwnedUpgradeabilityProxy.upgradeTo.selector,
+                walletImplementation
+            );
+            transactCall(wallet, wallet, 0, txData);
+        }
+    }
+
     function activate()
         external
         override
     {
         address payable wallet = msg.sender;
+
+        if (walletImplementation != address(0)) {
+            try UpgraderModule(address(this)).upgradeWalletImplementation(wallet) {} catch {}
+        }
+
         BaseWallet w = BaseWallet(wallet);
 
         // Upgrade the controller if different
@@ -74,4 +97,5 @@ contract UpgraderModule is BaseModule {
         emit Activated(wallet);
         w.removeModule(address(this));
     }
+
 }
