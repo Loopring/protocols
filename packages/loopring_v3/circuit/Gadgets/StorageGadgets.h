@@ -41,9 +41,9 @@ public:
 
         data(_data), storageID(_storageID) {}
 
-  void generate_r1cs_witness(const StorageLeaf &storageLeaf) {
-    pb.val(data) = storageLeaf.data;
-    pb.val(storageID) = storageLeaf.storageID;
+  void generate_r1cs_witness(const StorageLeaf &_storageLeaf) {
+    pb.val(data) = _storageLeaf.data;
+    pb.val(storageID) = _storageLeaf.storageID;
   }
 };
 
@@ -232,8 +232,7 @@ public:
                   const VariableT &_verify, const std::string &_prefix)
       : GadgetT(pb, _prefix),
 
-        constants(_constants),
-        storageID(_storageID),
+        constants(_constants), storageID(_storageID),
         readStorage(pb, constants, _currentStorage, storageID, _verify,
                     FMT(_prefix, ".readStorage")),
         requireDataZero(pb, _verify, readStorage.getData(), _constants._0,

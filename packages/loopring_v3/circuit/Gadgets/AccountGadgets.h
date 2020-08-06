@@ -17,6 +17,8 @@ using namespace ethsnarks;
 
 namespace Loopring {
 
+// ---------------- accounts ------------------------
+
 struct AccountState {
   VariableT owner;
   VariableT publicKeyX;
@@ -128,14 +130,16 @@ public:
   const VariableT &result() const { return rootAfter.result(); }
 };
 
+// ---------------- balances ------------------------
+
 struct BalanceState {
   VariableT balance;
   VariableT storage;
 };
 
-static void printBalance(const ProtoboardT &pb, const BalanceState &state) {
-  std::cout << "- balance: " << pb.val(state.balance) << std::endl;
-  std::cout << "- storage: " << pb.val(state.storage) << std::endl;
+static void printBalance(const ProtoboardT &pb, const BalanceState &_state) {
+  std::cout << "- balance: " << pb.val(_state.balance) << std::endl;
+  std::cout << "- storage: " << pb.val(_state.storage) << std::endl;
 }
 
 class BalanceGadget : public GadgetT {
@@ -149,9 +153,9 @@ public:
         balance(make_variable(pb, FMT(_prefix, ".balance"))),
         storage(make_variable(pb, FMT(_prefix, ".storage"))) {}
 
-  void generate_r1cs_witness(const BalanceLeaf &balanceLeaf) {
-    pb.val(balance) = balanceLeaf.balance;
-    pb.val(storage) = balanceLeaf.storageRoot;
+  void generate_r1cs_witness(const BalanceLeaf &_balanceLeaf) {
+    pb.val(balance) = _balanceLeaf.balance;
+    pb.val(storage) = _balanceLeaf.storageRoot;
   }
 };
 
@@ -194,6 +198,7 @@ public:
     leafHashAfter.generate_r1cs_witness();
 
     proof.fill_with_field_elements(pb, update.proof.data);
+
     rootBeforeVerifier.generate_r1cs_witness();
     rootAfter.generate_r1cs_witness();
 
@@ -223,10 +228,10 @@ public:
 // Calculcates the state of a user's open position
 class DynamicBalanceGadget : public DynamicVariableGadget {
 public:
-  DynamicBalanceGadget(ProtoboardT &pb, const Constants &_balance,
-                       const VariableT &balance, const std::string &_prefix)
+  DynamicBalanceGadget(ProtoboardT &pb, const Constants &_constants,
+                       const VariableT &_balance, const std::string &_prefix)
       : DynamicVariableGadget(pb, _prefix) {
-    add(balance);
+    add(_balance);
     allowGeneratingWitness = false;
   }
 
