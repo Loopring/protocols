@@ -828,10 +828,10 @@ public:
   void generate_r1cs_constraints() {
     Abits.generate_r1cs_constraints();
     Bbits.generate_r1cs_constraints();
-    Alo.generate_r1cs_constraints();
-    Ahi.generate_r1cs_constraints();
-    Blo.generate_r1cs_constraints();
-    Bhi.generate_r1cs_constraints();
+    Alo.generate_r1cs_constraints(false);
+    Ahi.generate_r1cs_constraints(false);
+    Blo.generate_r1cs_constraints(false);
+    Bhi.generate_r1cs_constraints(false);
     partLo.generate_r1cs_constraints();
     partHi.generate_r1cs_constraints();
     res.generate_r1cs_constraints();

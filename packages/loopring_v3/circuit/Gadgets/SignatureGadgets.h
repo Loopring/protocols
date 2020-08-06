@@ -17,12 +17,16 @@ using namespace jubjub;
 
 namespace Loopring {
 
-class ReconstructPublicKeyX : public GadgetT {
+// Compressed the public key to 32 bytes.
+// See https://ed25519.cr.yp.to/eddsa-20150704.pdf
+// If y == 0 we force x == 0.
+class CompressPublicKey : public GadgetT {
 public:
   const Params &params;
-
-  // Reconstruct rootX
+  const Constants &constants;
   const VariableT &y;
+
+  // Reconstruct sqrt(x)
   VariableT yy;
   VariableT lhs;
   VariableT rhs;
@@ -36,19 +40,28 @@ public:
   TernaryGadget absX;
   UnsafeSubGadget negAbsX;
   EqualGadget isNegativeX;
-  EqualGadget isPositiveX;
   TernaryGadget reconstructedX;
-  EqualGadget valid;
 
-  ReconstructPublicKeyX(ProtoboardT &pb, const Params &_params, const Constants &_constants,
-                        const VariableT &_x, const VariableT &_y,
-                        const std::string &prefix)
+  // Special case 0
+  EqualGadget isZeroY;
+  TernaryGadget reconstructed;
+
+  // Make sure the reconstructed x matches the original x
+  RequireEqualGadget valid;
+
+  // Get the bits of y
+  field2bits_strict yBits;
+
+  CompressPublicKey(ProtoboardT &pb, const Params &_params,
+                    const Constants &_constants, const VariableT &_x,
+                    const VariableT &_y, const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        params(_params),
+        params(_params), constants(_constants),
+        y(_y),
 
-        // Reconstruct rootX
-        y(_y), yy(make_variable(pb, FMT(prefix, ".yy"))),
+        // Reconstruct sqrt(x)
+        yy(make_variable(pb, FMT(prefix, ".yy"))),
         lhs(make_variable(pb, FMT(prefix, ".lhs"))),
         rhs(make_variable(pb, FMT(prefix, ".rhs"))),
         irhs(make_variable(pb, FMT(prefix, ".irhs"))),
@@ -56,7 +69,7 @@ public:
         rootX(make_variable(pb, FMT(prefix, ".rootX"))),
 
         // Reconstruct x
-        // Pick the smallest root to make sqrt deterministic
+        // Pick the smallest root (the "positive" one) to make sqrt deterministic
         negX(pb, _constants._0, rootX,
                       FMT(prefix, ".negX")),
         isSmallest(pb, negX.result(), rootX,
@@ -67,13 +80,20 @@ public:
                       FMT(prefix, ".negAbsX")),
         isNegativeX(pb, negAbsX.result(), _x,
                     FMT(prefix, ".isNegativeX")),
-        isPositiveX(pb, absX.result(), _x,
-                    FMT(prefix, ".isPositiveX")),
         reconstructedX(pb, isNegativeX.result(), negAbsX.result(), absX.result(), FMT(prefix, ".reconstructedX")),
-        valid(pb, _x, reconstructedX.result(), FMT(prefix, ".valid")) {}
+
+        // Special case 0
+        isZeroY(pb, y, constants._0, FMT(prefix, ".isZeroY")),
+        reconstructed(pb, isZeroY.result(), constants._0, reconstructedX.result(), FMT(prefix, ".reconstructed")),
+
+        // Make sure the reconstructed x matches the original x
+        valid(pb, _x, reconstructed.result(), FMT(prefix, ".valid")),
+
+        // Get the bits of y
+        yBits(pb, _y, FMT(prefix, ".yBits")) {}
 
   void generate_r1cs_witness() {
-    // Reconstruct rootX
+    // Reconstruct sqrt(x)
     pb.val(yy) = pb.val(y).squared();
     pb.val(lhs) = pb.val(yy) - 1;
     pb.val(rhs) = params.d * pb.val(yy) - params.a;
@@ -87,13 +107,21 @@ public:
     absX.generate_r1cs_witness();
     negAbsX.generate_r1cs_witness();
     isNegativeX.generate_r1cs_witness();
-    isPositiveX.generate_r1cs_witness();
     reconstructedX.generate_r1cs_witness();
+
+    // Special case 0
+    isZeroY.generate_r1cs_witness();
+    reconstructed.generate_r1cs_witness();
+
+    // Make sure the reconstructed x matches the original x
     valid.generate_r1cs_witness();
+
+    // Get the bits of y
+    yBits.generate_r1cs_witness();
   }
 
   void generate_r1cs_constraints() {
-    // Reconstruct rootX
+    // Reconstruct sqrt(x)
     pb.add_r1cs_constraint(ConstraintT(y, y, yy),
                            FMT(annotation_prefix, ".yy"));
     pb.add_r1cs_constraint(ConstraintT(yy - 1, 1, lhs),
@@ -112,52 +140,23 @@ public:
     absX.generate_r1cs_constraints();
     negAbsX.generate_r1cs_constraints();
     isNegativeX.generate_r1cs_constraints();
-    isPositiveX.generate_r1cs_constraints();
     reconstructedX.generate_r1cs_constraints();
+
+    // Special case 0
+    isZeroY.generate_r1cs_constraints();
+    reconstructed.generate_r1cs_constraints();
+
+    // Make sure the reconstructed x matches the original x
     valid.generate_r1cs_constraints();
-  }
 
-  const VariableT& result() const {
-    return isNegativeX.result();
-  }
-};
-
-class CompressPublicKey : public GadgetT {
-public:
-  const Params &params;
-  const Constants &constants;
-
-  // Point needs to be compressable
-  ReconstructPublicKeyX reconstructPublicKeyX;
-  field2bits_strict publicKeyYBits;
-
-  CompressPublicKey(ProtoboardT &pb, const Params &_params,
-                    const Constants &_constants, const VariableT &publicKeyX,
-                    const VariableT &publicKeyY, const std::string &prefix)
-      : GadgetT(pb, prefix),
-
-        params(_params), constants(_constants),
-
-        // Point compression
-        reconstructPublicKeyX(pb, params, constants, publicKeyX, publicKeyY, FMT(prefix, ".reconstructPublicKeyX")),
-        publicKeyYBits(pb, publicKeyY, FMT(prefix, ".publicKeyYBits")) {}
-
-  void generate_r1cs_witness() {
-    // Point compression
-    reconstructPublicKeyX.generate_r1cs_witness();
-    publicKeyYBits.generate_r1cs_witness();
-  }
-
-  void generate_r1cs_constraints() {
-    // Point compression
-    reconstructPublicKeyX.generate_r1cs_constraints();
-    publicKeyYBits.generate_r1cs_constraints();
+    // Get the bits of y
+    yBits.generate_r1cs_constraints();
   }
 
   VariableArrayT result() const {
-    return reverse(flattenReverse({VariableArrayT(1, reconstructPublicKeyX.result()),
+    return reverse(flattenReverse({VariableArrayT(1, isNegativeX.result()),
                                    VariableArrayT(1, constants._0),
-                                   publicKeyYBits.result()}));
+                                   yBits.result()}));
   }
 };
 
