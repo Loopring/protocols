@@ -16,6 +16,8 @@ pragma solidity ^0.7.0;
 /// https://github.com/argentlabs/argent-contracts
 interface Wallet
 {
+    function version() external pure returns (string memory);
+
     function owner() external view returns (address);
 
     /// @dev Set a new owner.

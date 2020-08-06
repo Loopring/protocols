@@ -8,7 +8,8 @@ import "../base/BaseWallet.sol";
 /// @title WalletImpl
 contract WalletImpl is BaseWallet {
     function version()
-        public
+        external
+        override
         pure
         returns (string memory)
     {
