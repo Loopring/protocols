@@ -40,7 +40,7 @@ contract WalletFactory is ReentrancyGuard
 
     bytes32 public DOMAIN_SEPERATOR;
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,string ensLabel,bytes ensApproval,bool ensRegisterReverse,address[] modules)"
+        "createWallet(address owner,uint256 salt,string ensLabel,bytes ensApproval,bool ensRegisterReverse,address[] modules)"
     );
 
     constructor(
@@ -58,14 +58,15 @@ contract WalletFactory is ReentrancyGuard
     }
 
     function computeWalletAddress(
-        address owner
+        address owner,
+        uint    salt
         )
         public
         view
         returns (address)
     {
         return Create2.computeAddress(
-            getSalt(owner),
+            getSalt(owner, salt),
             getWalletCode()
         );
     }
@@ -79,6 +80,7 @@ contract WalletFactory is ReentrancyGuard
     /// @param _signature The wallet owner's signature.
     function createWallet(
         address            _owner,
+        uint               _salt,
         string    calldata _ensLabel,
         bytes     calldata _ensApproval,
         bool               _ensRegisterReverse,
@@ -95,6 +97,7 @@ contract WalletFactory is ReentrancyGuard
         bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
+            _salt,
             keccak256(bytes(_ensLabel)),
             keccak256(_ensApproval),
             _ensRegisterReverse,
@@ -104,7 +107,7 @@ contract WalletFactory is ReentrancyGuard
         bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
         require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
 
-        _wallet = createWalletInternal(walletImplementation, _owner);
+        _wallet = createWalletInternal(walletImplementation, _owner, _salt);
 
         Wallet w = Wallet(_wallet);
         for(uint i = 0; i < _modules.length; i++) {
@@ -173,12 +176,13 @@ contract WalletFactory is ReentrancyGuard
 
     function createWalletInternal(
         address    _implementation,
-        address    _owner
+        address    _owner,
+        uint       _salt
         )
         internal
         returns (address payable _wallet)
     {
-        _wallet = Create2.deploy(getSalt(_owner), getWalletCode());
+        _wallet = Create2.deploy(getSalt(_owner, _salt), getWalletCode());
 
         SimpleProxy(_wallet).setImplementation(_implementation);
         Wallet(_wallet).setup(address(controller), _owner);
@@ -189,13 +193,14 @@ contract WalletFactory is ReentrancyGuard
     }
 
     function getSalt(
-        address owner
+        address owner,
+        uint    salt
         )
         internal
         pure
-        returns (bytes32 salt)
+        returns (bytes32)
     {
-        return keccak256(abi.encodePacked("WALLET_CREATION", owner));
+        return keccak256(abi.encodePacked("WALLET_CREATION", owner, salt));
     }
 
     function getWalletCode()
