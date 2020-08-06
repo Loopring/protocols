@@ -117,6 +117,7 @@ export async function createWallet(
 
   await ctx.walletFactory.createWallet(
     owner,
+    0,
     walletName,
     ensApproval,
     true,
@@ -157,6 +158,7 @@ export async function createWallet2(
 
   await ctx.walletFactory.createWallet(
     owner,
+    0,
     walletName,
     ensApproval,
     true,
