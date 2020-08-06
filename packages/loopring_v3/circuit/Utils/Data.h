@@ -104,7 +104,7 @@ static auto dummyDeposit = R"({
     "amount": "0"
 })"_json;
 
-// TODO(daniel): how `s` is calculated in "dummySignature"?
+// QUESTION(daniel): how `s` is calculated in "dummySignature"?
 static auto dummySignature = R"({
     "Rx": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
     "Ry": "4915883150652842217472446614681036440072632592629277920562695676195366802174",

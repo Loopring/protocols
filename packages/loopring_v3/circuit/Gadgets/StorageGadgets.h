@@ -232,9 +232,8 @@ public:
                   const VariableT &_verify, const std::string &_prefix)
       : GadgetT(pb, _prefix),
 
-        constants(_constants), // QUESTION(daniel): can we not have the local
-                               // variables and
-        storageID(_storageID), // use _constant/_storageID directly?
+        constants(_constants),
+        storageID(_storageID),
         readStorage(pb, constants, _currentStorage, storageID, _verify,
                     FMT(_prefix, ".readStorage")),
         requireDataZero(pb, _verify, readStorage.getData(), _constants._0,
