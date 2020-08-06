@@ -23,15 +23,12 @@ export interface OrderInfo {
   tokenIdS?: number;
   tokenIdB?: number;
 
-  allOrNone?: boolean;
-  validSince?: number;
   validUntil?: number;
   maxFeeBips?: number;
   buy?: boolean;
   taker?: string;
 
   feeBips?: number;
-  rebateBips?: number;
 
   balanceS?: BN;
   balanceB?: BN;

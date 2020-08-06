@@ -31,15 +31,12 @@ def orderFromJSON(jOrder, state):
     tokenB = int(jOrder["tokenIdB"])
     amountS = int(jOrder["amountS"])
     amountB = int(jOrder["amountB"])
-    allOrNone = int(jOrder["allOrNone"])
-    validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
     buy = int(jOrder["buy"])
     taker = str(jOrder["taker"])
     maxFeeBips = int(jOrder["maxFeeBips"])
 
     feeBips = int(jOrder["feeBips"])
-    rebateBips = int(jOrder["rebateBips"])
 
     account = state.getAccount(accountID)
 
@@ -47,8 +44,8 @@ def orderFromJSON(jOrder, state):
                   storageID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,
-                  allOrNone, validSince, validUntil, buy, taker,
-                  maxFeeBips, feeBips, rebateBips)
+                  validUntil, buy, taker,
+                  maxFeeBips, feeBips)
 
     order.signature = jOrder["signature"]
 

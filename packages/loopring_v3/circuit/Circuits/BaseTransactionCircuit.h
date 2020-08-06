@@ -29,7 +29,7 @@ struct TransactionAccountState : public GadgetT {
         balanceB(pb, FMT(prefix, ".balanceB")),
         account(pb, FMT(prefix, ".account")) {}
 
-  void generate_r1cs_witness(const Account &accountLeaf,
+  void generate_r1cs_witness(const AccountLeaf &accountLeaf,
                              const BalanceLeaf &balanceLeafS,
                              const BalanceLeaf &balanceLeafB,
                              const StorageLeaf &storageLeaf) {
@@ -52,7 +52,7 @@ struct TransactionAccountOperatorState : public GadgetT {
         balanceB(pb, FMT(prefix, ".balanceB")),
         account(pb, FMT(prefix, ".account")) {}
 
-  void generate_r1cs_witness(const Account &accountLeaf,
+  void generate_r1cs_witness(const AccountLeaf &accountLeaf,
                              const BalanceLeaf &balanceLeafS,
                              const BalanceLeaf &balanceLeafB) {
     balanceA.generate_r1cs_witness(balanceLeafS);
@@ -118,11 +118,11 @@ struct TransactionState : public GadgetT {
         pool(pb, FMT(prefix, ".pool")) {}
 
   void generate_r1cs_witness(
-      const Account &account_A, const BalanceLeaf &balanceLeafS_A,
+      const AccountLeaf &account_A, const BalanceLeaf &balanceLeafS_A,
       const BalanceLeaf &balanceLeafB_A, const StorageLeaf &storageLeaf_A,
-      const Account &account_B, const BalanceLeaf &balanceLeafS_B,
+      const AccountLeaf &account_B, const BalanceLeaf &balanceLeafS_B,
       const BalanceLeaf &balanceLeafB_B, const StorageLeaf &storageLeaf_B,
-      const Account &account_O, const BalanceLeaf &balanceLeafA_O,
+      const AccountLeaf &account_O, const BalanceLeaf &balanceLeafA_O,
       const BalanceLeaf &balanceLeafB_O, const BalanceLeaf &balanceLeafS_P,
       const BalanceLeaf &balanceLeafB_P) {
     accountA.generate_r1cs_witness(account_A, balanceLeafS_A, balanceLeafB_A,
