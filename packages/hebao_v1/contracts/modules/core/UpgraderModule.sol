@@ -97,5 +97,4 @@ contract UpgraderModule is BaseModule {
         emit Activated(wallet);
         w.removeModule(address(this));
     }
-
 }
