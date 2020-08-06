@@ -13,6 +13,7 @@ contract WalletImpl is BaseWallet {
         pure
         returns (string memory)
     {
-        return "1.1.5";
+        // 使用中国省会作为别名
+        return "1.1.5 (shenyang)";
     }
 }
