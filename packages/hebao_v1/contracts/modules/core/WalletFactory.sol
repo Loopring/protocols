@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../base/BaseWallet.sol";
 import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
 import "../../lib/OwnerManagable.sol";
@@ -185,7 +186,7 @@ contract WalletFactory is ReentrancyGuard
         _wallet = Create2.deploy(getSalt(_owner, _salt), getWalletCode());
 
         SimpleProxy(_wallet).setImplementation(_implementation);
-        Wallet(_wallet).setup(address(controller), _owner);
+        BaseWallet(_wallet).setup(address(controller), _owner);
 
         controller.walletRegistry().registerWallet(_wallet);
 

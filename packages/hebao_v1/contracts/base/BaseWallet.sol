@@ -18,6 +18,10 @@ import "./Controller.sol";
 /// https://github.com/argentlabs/argent-contracts
 abstract contract BaseWallet is ReentrancyGuard, Wallet
 {
+    // WARNING: do not delete wallet state data to make this implementation
+    // compatible with early versions.
+    //
+    //  ----- DATA LAYOUT BEGINS -----
     address internal _owner;
 
     mapping (address => bool) private modules;
@@ -25,13 +29,14 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     Controller public controller;
 
     mapping (bytes4  => address) internal methodToModule;
+    //  ----- DATA LAYOUT ENDS -----
 
     event OwnerChanged          (address newOwner);
+    event ControllerChanged     (address newController);
     event ModuleAdded           (address module);
     event ModuleRemoved         (address module);
     event MethodBound           (bytes4  method, address module);
-
-    event WalletSetup(address owner);
+    event WalletSetup           (address owner);
 
     event Transacted(
         address module,
@@ -57,6 +62,28 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
+    /// @dev Set up this wallet by assigning an original owner and controller.
+    ///
+    ///      Note that calling this method more than once will throw.
+    ///
+    /// @param _controller The Controller instance.
+    /// @param _initialOwner The owner of this wallet, must not be address(0).
+    function setup(
+        address _controller,
+        address _initialOwner
+        )
+        external
+        nonReentrant
+    {
+        require(_owner == address(0), "INITIALIZED_ALREADY");
+        require(_initialOwner != address(0), "ZERO_ADDRESS");
+
+        controller = Controller(_controller);
+        _owner = _initialOwner;
+
+        emit WalletSetup(_initialOwner);
+    }
+
     function owner()
         override
         external
@@ -79,21 +106,15 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         emit OwnerChanged(newOwner);
     }
 
-    function setup(
-        address _controller,
-        address initialOwner
-        )
+    function setController(Controller newController)
         external
-        override
         nonReentrant
+        onlyFromModule
     {
-        require(_owner == address(0), "INITIALIZED_ALREADY");
-        require(initialOwner != address(0), "ZERO_ADDRESS");
-
-        controller = Controller(_controller);
-        _owner = initialOwner;
-
-        emit WalletSetup(_owner);
+        require(newController != controller, "SAME_CONTROLLER");
+        require(newController != Controller(0), "INVALID_CONTROLLER");
+        controller = newController;
+        emit ControllerChanged(address(newController));
     }
 
     function addModule(address _module)
