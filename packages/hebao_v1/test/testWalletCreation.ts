@@ -26,7 +26,7 @@ contract("WalletFactory", () => {
     walletName: string = "",
     ensRegisterReverse: boolean = true
   ) => {
-    const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
+    const wallet = await ctx.walletFactory.computeWalletAddress(owner);
 
     if (useMetaTx) {
       // Transfer 0.1 ETH to the wallet to pay for the wallet creation
@@ -119,7 +119,7 @@ contract("WalletFactory", () => {
   };
 
   const registerENSChecked = async (owner: string, walletName: string = "") => {
-    const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
+    const wallet = await ctx.walletFactory.computeWalletAddress(owner);
 
     const signer = ctx.owners[0];
     const ensApproval = await getEnsApproval(wallet, walletName, signer);
