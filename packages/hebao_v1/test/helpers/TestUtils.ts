@@ -103,13 +103,14 @@ export async function createWallet(
 ) {
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
 
-  const wallet = await ctx.walletFactory.computeWalletAddress(owner);
+  const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
   const walletName = "mywalleta" + new Date().getTime();
   const ensApproval = await getEnsApproval(wallet, walletName, ctx.owners[0]);
   const txSignature = signCreateWallet(
     ctx.walletFactory.address,
     owner,
     walletName,
+    0,
     ensApproval,
     true,
     modules
@@ -118,6 +119,7 @@ export async function createWallet(
   await ctx.walletFactory.createWallet(
     owner,
     walletName,
+    0,
     ensApproval,
     true,
     modules,
@@ -143,13 +145,14 @@ export async function createWallet2(
 ) {
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
 
-  const wallet = await ctx.walletFactory.computeWalletAddress(owner);
+  const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
   const walletName = "mywalleta" + new Date().getTime();
   const ensApproval = await getEnsApproval(wallet, walletName, ctx.owners[0]);
   const txSignature = signCreateWallet(
     ctx.walletFactory.address,
     owner,
     walletName,
+    0,
     ensApproval,
     true,
     modules
@@ -158,6 +161,7 @@ export async function createWallet2(
   await ctx.walletFactory.createWallet(
     owner,
     walletName,
+    0,
     ensApproval,
     true,
     modules,

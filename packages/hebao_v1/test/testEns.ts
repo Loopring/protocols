@@ -28,7 +28,7 @@ contract("BaseENSManager", () => {
   describe("BaseENSManager", () => {
     it("should only be able to register ENS by manager", async () => {
       const owner = ctx.miscAddresses[0];
-      const wallet = await ctx.walletFactory.computeWalletAddress(owner);
+      const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
       const walletName = "mywalleta" + new Date().getTime();
       const modules: string[] = [ctx.finalSecurityModule.address];
 
@@ -39,6 +39,7 @@ contract("BaseENSManager", () => {
         ctx.walletFactory.address,
         owner,
         walletName,
+        0,
         ensApproval,
         true,
         modules
@@ -49,6 +50,7 @@ contract("BaseENSManager", () => {
           ctx.walletFactory.contract.methods.createWallet(
             owner,
             walletName,
+            0,
             ensApproval,
             true,
             modules,
@@ -69,6 +71,7 @@ contract("BaseENSManager", () => {
         ctx.walletFactory.address,
         owner,
         walletName,
+        0,
         ensApproval,
         true,
         modules
@@ -78,6 +81,7 @@ contract("BaseENSManager", () => {
         ctx.walletFactory.contract.methods.createWallet(
           owner,
           walletName,
+          0,
           ensApproval,
           true,
           modules,
@@ -96,7 +100,7 @@ contract("BaseENSManager", () => {
       // so only there characters are allowed in our walletName.
       // see https://docs.ethers.io/ethers.js/html/api-utils.html#namehash
       const owner = ctx.miscAddresses[1];
-      const wallet = await ctx.walletFactory.computeWalletAddress(owner);
+      const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
       const walletName = "mywalleta" + new Date().getTime();
       const modules: string[] = [ctx.finalSecurityModule.address];
 
@@ -106,6 +110,7 @@ contract("BaseENSManager", () => {
         ctx.walletFactory.address,
         owner,
         walletName,
+        0,
         ensApproval,
         true,
         modules
@@ -115,6 +120,7 @@ contract("BaseENSManager", () => {
         ctx.walletFactory.contract.methods.createWallet(
           owner,
           walletName,
+          0,
           ensApproval,
           true,
           modules,
