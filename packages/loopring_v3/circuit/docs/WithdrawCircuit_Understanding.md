@@ -68,8 +68,8 @@ public:
     Proof proof;
     ethsnarks::FieldT rootBefore;
     ethsnarks::FieldT rootAfter;
-    Account before;
-    Account after;
+    AccountLeaf before;
+    AccountLeaf after;
 };
 
 class Account

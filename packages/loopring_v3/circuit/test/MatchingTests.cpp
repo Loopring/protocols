@@ -5,7 +5,7 @@
 
 struct OrderState {
   Order order;
-  Account account;
+  AccountLeaf account;
   BalanceLeaf balanceLeafS;
   BalanceLeaf balanceLeafB;
   StorageLeaf storageLeaf;
@@ -198,7 +198,7 @@ TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]") {
   const UniversalTransaction &tx = getSpotTrade(block);
 
   const Order &order = tx.spotTrade.orderA;
-  const Account &account = tx.witness.accountUpdate_A.before;
+  const AccountLeaf &account = tx.witness.accountUpdate_A.before;
   const BalanceLeaf &balanceLeafS = tx.witness.balanceUpdateS_A.before;
   const BalanceLeaf &balanceLeafB = tx.witness.balanceUpdateB_A.before;
   const StorageLeaf &storageLeaf = tx.witness.storageUpdate_A.before;
@@ -392,21 +392,21 @@ TEST_CASE("FeeCalculator", "[FeeCalculatorGadget]") {
 
   SECTION("Protocol fee") {
     for (unsigned int i = 0; i < pow(2, NUM_BITS_PROTOCOL_FEE_BIPS); i++) {
-      feeCalculatorChecked(0, i, 0, 0);
+      feeCalculatorChecked(0, i, 0);
     }
 
     for (unsigned int i = 0; i < pow(2, NUM_BITS_PROTOCOL_FEE_BIPS); i++) {
-      feeCalculatorChecked(maxAmount, i, 0, 0);
+      feeCalculatorChecked(maxAmount, i, 0);
     }
   }
 
   SECTION("Fee") {
     for (unsigned int i = 0; i < pow(2, NUM_BITS_BIPS); i++) {
-      feeCalculatorChecked(0, 0, i, 0);
+      feeCalculatorChecked(0, 0, i);
     }
 
     for (unsigned int i = 0; i < pow(2, NUM_BITS_BIPS); i++) {
-      feeCalculatorChecked(maxAmount, 0, i, 0);
+      feeCalculatorChecked(maxAmount, 0, i);
     }
   }
 
@@ -635,7 +635,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]") {
   const FieldT &timestamp = block.timestamp;
 
   const Order &A_order = tx.spotTrade.orderA;
-  const Account &A_account = tx.witness.accountUpdate_A.before;
+  const AccountLeaf &A_account = tx.witness.accountUpdate_A.before;
   const BalanceLeaf &A_balanceLeafS = tx.witness.balanceUpdateS_A.before;
   const BalanceLeaf &A_balanceLeafB = tx.witness.balanceUpdateB_A.before;
   const StorageLeaf &A_storageLeaf = tx.witness.storageUpdate_A.before;
@@ -647,7 +647,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]") {
           .c_str());
 
   const Order &B_order = tx.spotTrade.orderB;
-  const Account &B_account = tx.witness.accountUpdate_B.before;
+  const AccountLeaf &B_account = tx.witness.accountUpdate_B.before;
   const BalanceLeaf &B_balanceLeafS = tx.witness.balanceUpdateS_B.before;
   const BalanceLeaf &B_balanceLeafB = tx.witness.balanceUpdateB_B.before;
   const StorageLeaf &B_storageLeaf = tx.witness.storageUpdate_B.before;

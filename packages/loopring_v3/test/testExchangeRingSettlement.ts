@@ -671,8 +671,7 @@ contract("Exchange", (accounts: string[]) => {
           tokenS: "WETH",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("90", "ether")),
-          amountB: new BN(web3.utils.toWei("100", "ether")),
-          allOrNone: true
+          amountB: new BN(web3.utils.toWei("100", "ether"))
         },
         orderB: {
           tokenS: "GTO",
@@ -846,137 +845,6 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitTransactions();
 
       await verify();
-    });
-
-    it("allOrNone (Buy, successful)", async () => {
-      const ring: SpotTrade = {
-        orderA: {
-          tokenS: "ETH",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("110", "ether")),
-          amountB: new BN(web3.utils.toWei("10", "ether")),
-          allOrNone: true
-        },
-        orderB: {
-          tokenS: "GTO",
-          tokenB: "ETH",
-          amountS: new BN(web3.utils.toWei("20", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether"))
-        },
-        expected: {
-          orderA: {
-            filledFraction: 1.0,
-            spread: new BN(web3.utils.toWei("10", "ether"))
-          },
-          orderB: { filledFraction: 0.5 }
-        }
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(ring);
-
-      await exchangeTestUtil.submitTransactions();
-
-      await verify();
-    });
-
-    it("allOrNone (Sell, successful)", async () => {
-      const ring: SpotTrade = {
-        orderA: {
-          tokenS: "ETH",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("110", "ether")),
-          amountB: new BN(web3.utils.toWei("10", "ether")),
-          allOrNone: true,
-          buy: false
-        },
-        orderB: {
-          tokenS: "GTO",
-          tokenB: "ETH",
-          amountS: new BN(web3.utils.toWei("20", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether"))
-        },
-        expected: {
-          orderA: {
-            filledFraction: 1.0,
-            spread: new BN(web3.utils.toWei("1", "ether"))
-          },
-          orderB: { filledFraction: 0.55 }
-        }
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(ring);
-
-      await exchangeTestUtil.submitTransactions();
-
-      await verify();
-    });
-
-    it("allOrNone (Buy, unsuccessful)", async () => {
-      const ring: SpotTrade = {
-        orderA: {
-          tokenS: "WETH",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("110", "ether")),
-          amountB: new BN(web3.utils.toWei("10", "ether")),
-          allOrNone: true
-        },
-        orderB: {
-          tokenS: "GTO",
-          tokenB: "WETH",
-          amountS: new BN(web3.utils.toWei("20", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether")),
-          balanceS: new BN(web3.utils.toWei("5", "ether"))
-        },
-        expected: {
-          orderA: {
-            filledFraction: 0.0,
-            spread: new BN(web3.utils.toWei("5", "ether"))
-          },
-          orderB: { filledFraction: 0.0 }
-        }
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(ring);
-
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
-    });
-
-    it("allOrNone (Sell, unsuccessful)", async () => {
-      const ring: SpotTrade = {
-        orderA: {
-          tokenS: "ETH",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("110", "ether")),
-          amountB: new BN(web3.utils.toWei("10", "ether")),
-          allOrNone: true,
-          buy: false
-        },
-        orderB: {
-          tokenS: "GTO",
-          tokenB: "ETH",
-          amountS: new BN(web3.utils.toWei("20", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether")),
-          balanceS: new BN(web3.utils.toWei("5", "ether"))
-        },
-        expected: {
-          orderA: { filledFraction: 0.0 },
-          orderB: { filledFraction: 0.0 }
-        }
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(ring);
-
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
     });
 
     it("Self-trading", async () => {

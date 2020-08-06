@@ -48,7 +48,7 @@ public:
         nonce(make_variable(pb, FMT(prefix, ".nonce"))),
         balancesRoot(make_variable(pb, FMT(prefix, ".balancesRoot"))) {}
 
-  void generate_r1cs_witness(const Account &account) {
+  void generate_r1cs_witness(const AccountLeaf &account) {
     pb.val(owner) = account.owner;
     pb.val(publicKey.x) = account.publicKey.x;
     pb.val(publicKey.y) = account.publicKey.y;
@@ -128,28 +128,28 @@ public:
 
 struct BalanceState {
   VariableT balance;
-  VariableT storage;
+  VariableT storageRoot;
 };
 
 static void printBalance(const ProtoboardT &pb, const BalanceState &state) {
   std::cout << "- balance: " << pb.val(state.balance) << std::endl;
-  std::cout << "- storage: " << pb.val(state.storage) << std::endl;
+  std::cout << "- storageRoot: " << pb.val(state.storageRoot) << std::endl;
 }
 
 class BalanceGadget : public GadgetT {
 public:
   VariableT balance;
-  VariableT storage;
+  VariableT storageRoot;
 
   BalanceGadget(ProtoboardT &pb, const std::string &prefix)
       : GadgetT(pb, prefix),
 
         balance(make_variable(pb, FMT(prefix, ".balance"))),
-        storage(make_variable(pb, FMT(prefix, ".storage"))) {}
+        storageRoot(make_variable(pb, FMT(prefix, ".storageRoot"))) {}
 
   void generate_r1cs_witness(const BalanceLeaf &balanceLeaf) {
     pb.val(balance) = balanceLeaf.balance;
-    pb.val(storage) = balanceLeaf.storageRoot;
+    pb.val(storageRoot) = balanceLeaf.storageRoot;
   }
 };
 
@@ -172,9 +172,9 @@ public:
 
         valuesBefore(before), valuesAfter(after),
 
-        leafBefore(pb, var_array({before.balance, before.storage}),
+        leafBefore(pb, var_array({before.balance, before.storageRoot}),
                    FMT(prefix, ".leafBefore")),
-        leafAfter(pb, var_array({after.balance, after.storage}),
+        leafAfter(pb, var_array({after.balance, after.storageRoot}),
                   FMT(prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_TOKENS * 3, FMT(prefix, ".proof"))),

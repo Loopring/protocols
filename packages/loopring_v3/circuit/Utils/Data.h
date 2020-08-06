@@ -147,7 +147,7 @@ static void from_json(const json &j, BalanceLeaf &leaf) {
       ethsnarks::FieldT(j.at("storageRoot").get<std::string>().c_str());
 }
 
-class Account {
+class AccountLeaf {
 public:
   ethsnarks::FieldT owner;
   ethsnarks::jubjub::EdwardsPoint publicKey;
@@ -155,7 +155,7 @@ public:
   ethsnarks::FieldT balancesRoot;
 };
 
-static void from_json(const json &j, Account &account) {
+static void from_json(const json &j, AccountLeaf &account) {
   account.owner = ethsnarks::FieldT(j.at("owner").get<std::string>().c_str());
   account.publicKey.x =
       ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
@@ -215,8 +215,8 @@ public:
   Proof proof;
   ethsnarks::FieldT rootBefore;
   ethsnarks::FieldT rootAfter;
-  Account before;
-  Account after;
+  AccountLeaf before;
+  AccountLeaf after;
 };
 
 static void from_json(const json &j, AccountUpdate &accountUpdate) {
@@ -226,8 +226,8 @@ static void from_json(const json &j, AccountUpdate &accountUpdate) {
       ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
   accountUpdate.rootAfter =
       ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
-  accountUpdate.before = j.at("before").get<Account>();
-  accountUpdate.after = j.at("after").get<Account>();
+  accountUpdate.before = j.at("before").get<AccountLeaf>();
+  accountUpdate.after = j.at("after").get<AccountLeaf>();
 }
 
 class Signature {

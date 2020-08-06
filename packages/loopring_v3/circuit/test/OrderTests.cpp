@@ -30,7 +30,7 @@ TEST_CASE("Order", "[OrderGadget]") {
   const FieldT &exchange = block.exchange;
   const Order &order = tx.spotTrade.orderA;
 
-  const Account &account2 = tx.witness.accountUpdate_B.before;
+  const AccountLeaf &account2 = tx.witness.accountUpdate_B.before;
 
   SECTION("Valid order") { orderChecked(exchange, order, true); }
 
