@@ -57,16 +57,16 @@ export class SpotTradeProcessor {
     const tradeHistorySlotA = tradeHistoryDataA & 0b0011111111111111;
     const overwriteTradeHistorySlotA =
       (tradeHistoryDataA & 0b0100000000000000) !== 0;
-    const buyMaskA = orderDataA & 0b10000000;
+    const limitMaskA = orderDataA & 0b10000000;
     const feeBipsA = orderDataA & 0b00111111;
-    const buyA = buyMaskA > 0;
+    const fillAmountBorSA = limitMaskA > 0;
 
     const tradeHistorySlotB = tradeHistoryDataB & 0b0011111111111111;
     const overwriteTradeHistorySlotB =
       (tradeHistoryDataB & 0b0100000000000000) !== 0;
-    const buyMaskB = orderDataB & 0b10000000;
+    const limitMaskB = orderDataB & 0b10000000;
     const feeBipsB = orderDataB & 0b00111111;
-    const buyB = buyMaskB > 0;
+    const fillAmountBorSB = limitMaskB > 0;
 
     // Decode the float values
     const fillSA = fromFloat(fFillSA, Constants.Float24Encoding);
@@ -98,7 +98,7 @@ export class SpotTradeProcessor {
         tradeHistoryA.storageID += Constants.NUM_STORAGE_SLOTS;
         tradeHistoryA.data = new BN(0);
       }
-      tradeHistoryA.data.iadd(buyA ? s.fillBA : s.fillSA);
+      tradeHistoryA.data.iadd(fillAmountBorSA ? s.fillBA : s.fillSA);
       orderIdA = tradeHistoryA.storageID;
     }
     // Update accountB
@@ -115,7 +115,7 @@ export class SpotTradeProcessor {
         tradeHistoryB.storageID += Constants.NUM_STORAGE_SLOTS;
         tradeHistoryB.data = new BN(0);
       }
-      tradeHistoryB.data.iadd(buyB ? s.fillBB : s.fillSB);
+      tradeHistoryB.data.iadd(fillAmountBorSB ? s.fillBB : s.fillSB);
       orderIdB = tradeHistoryB.storageID;
     }
 
@@ -138,7 +138,7 @@ export class SpotTradeProcessor {
 
       accountIdA,
       orderIdA,
-      buyA,
+      fillAmountBorSA,
       tokenA,
       fillSA: s.fillSA,
       feeA: s.feeA,
@@ -146,7 +146,7 @@ export class SpotTradeProcessor {
 
       accountIdB,
       orderIdB,
-      buyB,
+      fillAmountBorSB,
       tokenB,
       fillSB: s.fillSB,
       feeB: s.feeB,

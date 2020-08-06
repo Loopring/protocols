@@ -575,7 +575,7 @@ export class Simulator {
     //console.log("MaxFillB.B: " + fillB.B.toString(10));
 
     let matchResult: MatchResult;
-    if (spotTrade.orderA.buy) {
+    if (spotTrade.orderA.fillAmountBorS) {
       matchResult = this.match(
         spotTrade.orderA,
         fillA,
@@ -642,8 +642,8 @@ export class Simulator {
       block.operatorAccountID,
       fillA.S,
       fillB.S,
-      spotTrade.orderA.buy,
-      spotTrade.orderB.buy,
+      spotTrade.orderA.fillAmountBorS,
+      spotTrade.orderB.fillAmountBorS,
       spotTrade.orderA.tokenIdS,
       spotTrade.orderB.tokenIdS,
       spotTrade.orderA.storageID,
@@ -657,7 +657,7 @@ export class Simulator {
     // Check expected
     if (spotTrade.expected) {
       if (spotTrade.expected.orderA) {
-        const filledFraction = spotTrade.orderA.buy
+        const filledFraction = spotTrade.orderA.fillAmountBorS
           ? fillB.S.mul(new BN(10000))
               .div(spotTrade.orderA.amountB)
               .toNumber() / 10000
@@ -681,7 +681,7 @@ export class Simulator {
         }
       }
       if (spotTrade.expected.orderB) {
-        const filledFraction = spotTrade.orderB.buy
+        const filledFraction = spotTrade.orderB.fillAmountBorS
           ? fillA.S.mul(new BN(10000))
               .div(spotTrade.orderB.amountB)
               .toNumber() / 10000
@@ -828,8 +828,8 @@ export class Simulator {
     operatorId: number,
     fillSA: BN,
     fillSB: BN,
-    buyA: boolean,
-    buyB: boolean,
+    fillAmountBorSA: boolean,
+    fillAmountBorSB: boolean,
     tokenA: number,
     tokenB: number,
     storageIdA: number,
@@ -859,7 +859,7 @@ export class Simulator {
 
       const tradeHistoryA = accountA.getBalance(tokenA).getStorage(storageIdA);
       tradeHistoryA.data = storageIdA > tradeHistoryA.storageID ? new BN(0) : tradeHistoryA.data;
-      tradeHistoryA.data.iadd(buyA ? s.fillBA : s.fillSA);
+      tradeHistoryA.data.iadd(fillAmountBorSA ? s.fillBA : s.fillSA);
       tradeHistoryA.storageID = storageIdA;
     }
     // Update accountB
@@ -873,7 +873,7 @@ export class Simulator {
 
       const tradeHistoryB = accountB.getBalance(tokenB).getStorage(storageIdB);
       tradeHistoryB.data = storageIdB > tradeHistoryB.storageID ? new BN(0) : tradeHistoryB.data;
-      tradeHistoryB.data.iadd(buyB ? s.fillBB : s.fillSB);
+      tradeHistoryB.data.iadd(fillAmountBorSB ? s.fillBB : s.fillSB);
       tradeHistoryB.storageID = storageIdB;
     }
 
@@ -975,7 +975,7 @@ export class Simulator {
           "fill rate needs to match or be better than the order rate"
         );
       }
-      if (order.buy) {
+      if (order.fillAmountBorS) {
         assert(
           fillB.lte(order.amountB),
           "can never buy more than specified in the order"
@@ -1035,7 +1035,7 @@ export class Simulator {
     const balanceS = new BN(accountData.balances[order.tokenIdS].balance);
 
     let remainingS = new BN(0);
-    if (order.buy) {
+    if (order.fillAmountBorS) {
       const filled = order.amountB.lt(tradeHistoryFilled)
         ? order.amountB
         : tradeHistoryFilled;
@@ -1293,16 +1293,16 @@ export class Simulator {
       .getStorage(order.storageID);
     const filledBeforePercentage = before.data
       .mul(new BN(100))
-      .div(order.buy ? order.amountB : order.amountS);
+      .div(order.fillAmountBorS ? order.amountB : order.amountS);
     const filledAfterPercentage = after.data
       .mul(new BN(100))
-      .div(order.buy ? order.amountB : order.amountS);
+      .div(order.fillAmountBorS ? order.amountB : order.amountS);
     const filledBeforePretty = this.getPrettyAmount(
-      order.buy ? order.tokenIdB : order.tokenIdS,
+      order.fillAmountBorS ? order.tokenIdB : order.tokenIdS,
       before.data
     );
     const filledAfterPretty = this.getPrettyAmount(
-      order.buy ? order.tokenIdB : order.tokenIdS,
+      order.fillAmountBorS ? order.tokenIdB : order.tokenIdS,
       after.data
     );
     logInfo(

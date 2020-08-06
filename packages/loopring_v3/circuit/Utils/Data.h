@@ -21,7 +21,7 @@ static auto dummySpotTrade = R"({
         "accountID": 0,
         "amountB": "79228162514264337593543950335",
         "amountS": "79228162514264337593543950335",
-        "buy": true,
+        "fillAmountBorS": true,
         "feeBips": 0,
         "maxFeeBips": 0,
         "storageID": "0",
@@ -34,7 +34,7 @@ static auto dummySpotTrade = R"({
         "accountID": 0,
         "amountB": "79228162514264337593543950335",
         "amountS": "79228162514264337593543950335",
-        "buy": true,
+        "fillAmountBorS": true,
         "feeBips": 0,
         "maxFeeBips": 0,
         "storageID": "0",
@@ -257,7 +257,7 @@ public:
   ethsnarks::FieldT amountB;
   ethsnarks::FieldT validUntil;
   ethsnarks::FieldT maxFeeBips;
-  ethsnarks::FieldT buy;
+  ethsnarks::FieldT fillAmountBorS;
   ethsnarks::FieldT taker;
 
   ethsnarks::FieldT feeBips;
@@ -273,7 +273,7 @@ static void from_json(const json &j, Order &order) {
   order.amountB = ethsnarks::FieldT(j.at("amountB").get<std::string>().c_str());
   order.validUntil = ethsnarks::FieldT(j.at("validUntil"));
   order.maxFeeBips = ethsnarks::FieldT(j.at("maxFeeBips"));
-  order.buy = ethsnarks::FieldT(j.at("buy").get<bool>() ? 1 : 0);
+  order.fillAmountBorS = ethsnarks::FieldT(j.at("fillAmountBorS").get<bool>() ? 1 : 0);
   order.taker = ethsnarks::FieldT(j.at("taker").get<std::string>().c_str());
 
   order.feeBips = ethsnarks::FieldT(j.at("feeBips"));

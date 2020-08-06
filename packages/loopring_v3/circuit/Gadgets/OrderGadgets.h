@@ -27,7 +27,7 @@ public:
   DualVariableGadget amountB;
   DualVariableGadget validUntil;
   DualVariableGadget maxFeeBips;
-  DualVariableGadget buy;
+  DualVariableGadget fillAmountBorS;
   VariableT taker;
 
   DualVariableGadget feeBips;
@@ -54,7 +54,7 @@ public:
         amountB(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amountB")),
         validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
         maxFeeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".maxFeeBips")),
-        buy(pb, 1, FMT(prefix, ".buy")),
+        fillAmountBorS(pb, 1, FMT(prefix, ".fillAmountBorS")),
         taker(make_variable(pb, FMT(prefix, ".taker"))),
 
         feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
@@ -72,7 +72,7 @@ public:
         hash(pb,
              var_array({blockExchange, storageID.packed, accountID.packed,
                         tokenS.packed, tokenB.packed, amountS.packed,
-                        amountB.packed, validUntil.packed, maxFeeBips.packed, buy.packed,
+                        amountB.packed, validUntil.packed, maxFeeBips.packed, fillAmountBorS.packed,
                         taker}),
              FMT(this->annotation_prefix, ".hash")) {}
 
@@ -86,7 +86,7 @@ public:
     amountB.generate_r1cs_witness(pb, order.amountB);
     validUntil.generate_r1cs_witness(pb, order.validUntil);
     maxFeeBips.generate_r1cs_witness(pb, order.maxFeeBips);
-    buy.generate_r1cs_witness(pb, order.buy);
+    fillAmountBorS.generate_r1cs_witness(pb, order.fillAmountBorS);
     pb.val(taker) = order.taker;
 
     feeBips.generate_r1cs_witness(pb, order.feeBips);
@@ -111,7 +111,7 @@ public:
     amountB.generate_r1cs_constraints(true);
     validUntil.generate_r1cs_constraints(true);
     maxFeeBips.generate_r1cs_constraints(true);
-    buy.generate_r1cs_constraints(true);
+    fillAmountBorS.generate_r1cs_constraints(true);
 
     feeBips.generate_r1cs_constraints(true);
 

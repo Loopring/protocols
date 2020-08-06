@@ -819,7 +819,7 @@ export class ExchangeTestUtil {
     order.exchange =
       order.exchange !== undefined ? order.exchange : this.exchange.address;
 
-    order.buy = order.buy !== undefined ? order.buy : true;
+    order.fillAmountBorS = order.fillAmountBorS !== undefined ? order.fillAmountBorS : true;
 
     order.taker =
       order.taker !== undefined ? order.taker : Constants.zeroAddress;
@@ -862,7 +862,7 @@ export class ExchangeTestUtil {
       order.amountB,
       order.validUntil,
       order.maxFeeBips,
-      order.buy ? 1 : 0,
+      order.fillAmountBorS ? 1 : 0,
       order.taker
     ];
     order.hash = hasher(inputs).toString(10);
@@ -1993,11 +1993,11 @@ export class ExchangeTestUtil {
           da.addNumber(spotTrade.fFillS_A, 3);
           da.addNumber(spotTrade.fFillS_B, 3);
 
-          let buyMask = orderA.buy ? 0b10000000 : 0;
-          da.addNumber(buyMask + orderA.feeBips, 1);
+          let limitMask = orderA.fillAmountBorS ? 0b10000000 : 0;
+          da.addNumber(limitMask + orderA.feeBips, 1);
 
-          buyMask = orderB.buy ? 0b10000000 : 0;
-          da.addNumber(buyMask + orderB.feeBips, 1);
+          limitMask = orderB.fillAmountBorS ? 0b10000000 : 0;
+          da.addNumber(limitMask + orderB.feeBips, 1);
         } else if (tx.transfer) {
           const transfer = tx.transfer;
           da.addNumber(TransactionType.TRANSFER, 1);

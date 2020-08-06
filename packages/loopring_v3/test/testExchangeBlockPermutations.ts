@@ -17,14 +17,14 @@ contract("Exchange", (accounts: string[]) => {
         tokenB: "GTO",
         amountS: fillA,
         amountB: fillB,
-        buy: exchangeTestUtil.getRandomInt(2) > 0
+        fillAmountBorS: exchangeTestUtil.getRandomInt(2) > 0
       },
       orderB: {
         tokenS: "GTO",
         tokenB: "WETH",
         amountS: fillB,
         amountB: fillA,
-        buy: exchangeTestUtil.getRandomInt(2) > 0
+        fillAmountBorS: exchangeTestUtil.getRandomInt(2) > 0
       }
     };
     return ring;

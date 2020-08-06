@@ -141,7 +141,7 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("100", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 30,
-        buy: true
+        fillAmountBorS: true
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
@@ -155,7 +155,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          buy: false
+          fillAmountBorS: false
         },
         expected: {
           orderA: { filledFraction: 1.0, spread },
@@ -206,7 +206,7 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("100", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 25,
-        buy: true
+        fillAmountBorS: true
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
@@ -220,7 +220,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          buy: false
+          fillAmountBorS: false
         },
         expected: {
           orderA: { filledFraction: 0.5, spread },
@@ -236,7 +236,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("220", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[2],
           maxFeeBips: 0,
-          buy: false
+          fillAmountBorS: false
         },
         expected: {
           orderA: {
@@ -299,7 +299,7 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("99", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 30,
-        buy: false
+        fillAmountBorS: false
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
@@ -313,7 +313,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("2000", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          buy: false
+          fillAmountBorS: false
         },
         expected: {
           orderA: { filledFraction: 1.0, spread },
@@ -365,7 +365,7 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("900", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 25,
-        buy: false
+        fillAmountBorS: false
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
@@ -379,7 +379,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          buy: true
+          fillAmountBorS: true
         },
         expected: {
           orderA: { filledFraction: 0.5, spread },
@@ -395,7 +395,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[2],
           maxFeeBips: 0,
-          buy: true
+          fillAmountBorS: true
         },
         expected: {
           orderA: {
@@ -458,7 +458,7 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("100", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 25,
-        buy: true
+        fillAmountBorS: true
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
@@ -472,7 +472,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          buy: false
+          fillAmountBorS: false
         },
         expected: {
           orderA: { filledFraction: 0.5, spread },
@@ -487,7 +487,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("220", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[2],
           maxFeeBips: 30,
-          buy: false
+          fillAmountBorS: false
         },
         orderB: order,
         expected: {
@@ -551,7 +551,7 @@ contract("Exchange", (accounts: string[]) => {
         amountB: new BN(web3.utils.toWei("90", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 25,
-        buy: false
+        fillAmountBorS: false
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
@@ -565,7 +565,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
           maxFeeBips: 0,
-          buy: true
+          fillAmountBorS: true
         },
         expected: {
           orderA: { filledFraction: 0.5, spread },
@@ -580,7 +580,7 @@ contract("Exchange", (accounts: string[]) => {
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[2],
           maxFeeBips: 15,
-          buy: true
+          fillAmountBorS: true
         },
         orderB: order,
         expected: {
@@ -795,7 +795,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("10", "ether")),
           balanceS: new BN(web3.utils.toWei("40", "ether")),
-          buy: true
+          fillAmountBorS: true
         },
         orderB: {
           tokenS: "GTO",
@@ -825,7 +825,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("10", "ether")),
           balanceS: new BN(web3.utils.toWei("40", "ether")),
-          buy: false
+          fillAmountBorS: false
         },
         orderB: {
           tokenS: "GTO",
@@ -920,7 +920,7 @@ contract("Exchange", (accounts: string[]) => {
           tokenB: "INDB",
           amountS: new BN(200),
           amountB: new BN(2000),
-          buy: true
+          fillAmountBorS: true
         },
         orderB: {
           tokenS: "INDB",
@@ -928,7 +928,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(2000),
           amountB: new BN(200),
           balanceS: new BN(1999),
-          buy: false
+          fillAmountBorS: false
         },
         expected: {
           orderA: { filledFraction: 0.0 },

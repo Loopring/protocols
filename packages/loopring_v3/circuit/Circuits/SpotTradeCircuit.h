@@ -273,10 +273,10 @@ public:
         fillS_A.bits(),
         fillS_B.bits(),
 
-        orderA.buy.bits,
+        orderA.fillAmountBorS.bits,
         VariableArrayT(1, state.constants._0),
         orderA.feeBips.bits,
-        orderB.buy.bits,
+        orderB.fillAmountBorS.bits,
         VariableArrayT(1, state.constants._0),
         orderB.feeBips.bits,
     });
