@@ -17,53 +17,83 @@ using namespace jubjub;
 
 namespace Loopring {
 
-class RequireValidPublicKey : public GadgetT {
+class ReconstructPublicKeyX : public GadgetT {
 public:
   const Params &params;
 
-  // Needs to be a valid point
-  PointValidator requireValidPoint;
-
-  // Point needs to be compressable
+  // Reconstruct rootX
   const VariableT &y;
   VariableT yy;
   VariableT lhs;
   VariableT rhs;
   VariableT irhs;
   VariableT xx;
-  VariableT x;
+  VariableT rootX;
 
-  RequireValidPublicKey(ProtoboardT &pb, const Params &_params,
+  // Reconstruct x
+  UnsafeSubGadget negX;
+  LtFieldGadget isSmallest;
+  TernaryGadget absX;
+  UnsafeSubGadget negAbsX;
+  EqualGadget isNegativeX;
+  EqualGadget isPositiveX;
+  TernaryGadget reconstructedX;
+  EqualGadget valid;
+
+  ReconstructPublicKeyX(ProtoboardT &pb, const Params &_params, const Constants &_constants,
                         const VariableT &_x, const VariableT &_y,
                         const std::string &prefix)
       : GadgetT(pb, prefix),
 
         params(_params),
 
-        requireValidPoint(pb, params, _x, _y,
-                          FMT(prefix, ".requireValidPoint")),
-
+        // Reconstruct rootX
         y(_y), yy(make_variable(pb, FMT(prefix, ".yy"))),
         lhs(make_variable(pb, FMT(prefix, ".lhs"))),
         rhs(make_variable(pb, FMT(prefix, ".rhs"))),
         irhs(make_variable(pb, FMT(prefix, ".irhs"))),
         xx(make_variable(pb, FMT(prefix, ".xx"))),
-        x(make_variable(pb, FMT(prefix, ".x"))) {}
+        rootX(make_variable(pb, FMT(prefix, ".rootX"))),
+
+        // Reconstruct x
+        // Pick the smallest root to make sqrt deterministic
+        negX(pb, _constants._0, rootX,
+                      FMT(prefix, ".negX")),
+        isSmallest(pb, negX.result(), rootX,
+                    FMT(prefix, ".isNegativeX")),
+        absX(pb, isSmallest.lt(), negX.result(), rootX, FMT(prefix, ".absX")),
+        // Check if x is the negative root or the positive root
+        negAbsX(pb, _constants._0, absX.result(),
+                      FMT(prefix, ".negAbsX")),
+        isNegativeX(pb, negAbsX.result(), _x,
+                    FMT(prefix, ".isNegativeX")),
+        isPositiveX(pb, absX.result(), _x,
+                    FMT(prefix, ".isPositiveX")),
+        reconstructedX(pb, isNegativeX.result(), negAbsX.result(), absX.result(), FMT(prefix, ".reconstructedX")),
+        valid(pb, _x, reconstructedX.result(), FMT(prefix, ".valid")) {}
 
   void generate_r1cs_witness() {
-    requireValidPoint.generate_r1cs_witness();
-
+    // Reconstruct rootX
     pb.val(yy) = pb.val(y).squared();
     pb.val(lhs) = pb.val(yy) - 1;
     pb.val(rhs) = params.d * pb.val(yy) - params.a;
     pb.val(irhs) = pb.val(rhs).inverse();
     pb.val(xx) = pb.val(lhs) * pb.val(irhs);
-    pb.val(x) = pb.val(xx).sqrt();
+    pb.val(rootX) = pb.val(xx).sqrt();
+
+    // Reconstruct x
+    negX.generate_r1cs_witness();
+    isSmallest.generate_r1cs_witness();
+    absX.generate_r1cs_witness();
+    negAbsX.generate_r1cs_witness();
+    isNegativeX.generate_r1cs_witness();
+    isPositiveX.generate_r1cs_witness();
+    reconstructedX.generate_r1cs_witness();
+    valid.generate_r1cs_witness();
   }
 
   void generate_r1cs_constraints() {
-    requireValidPoint.generate_r1cs_constraints();
-
+    // Reconstruct rootX
     pb.add_r1cs_constraint(ConstraintT(y, y, yy),
                            FMT(annotation_prefix, ".yy"));
     pb.add_r1cs_constraint(ConstraintT(yy - 1, 1, lhs),
@@ -74,7 +104,21 @@ public:
                            FMT(annotation_prefix, ".irhs"));
     pb.add_r1cs_constraint(ConstraintT(lhs, irhs, xx),
                            FMT(annotation_prefix, ".xx"));
-    pb.add_r1cs_constraint(ConstraintT(x, x, xx), FMT(annotation_prefix, ".x"));
+    pb.add_r1cs_constraint(ConstraintT(rootX, rootX, xx), FMT(annotation_prefix, ".rootX"));
+
+    // Reconstruct x
+    negX.generate_r1cs_constraints();
+    isSmallest.generate_r1cs_constraints();
+    absX.generate_r1cs_constraints();
+    negAbsX.generate_r1cs_constraints();
+    isNegativeX.generate_r1cs_constraints();
+    isPositiveX.generate_r1cs_constraints();
+    reconstructedX.generate_r1cs_constraints();
+    valid.generate_r1cs_constraints();
+  }
+
+  const VariableT& result() const {
+    return isNegativeX.result();
   }
 };
 
@@ -83,19 +127,8 @@ public:
   const Params &params;
   const Constants &constants;
 
-  // Special case to allow the public key to be 0
-  EqualGadget isZeroX;
-  EqualGadget isZeroY;
-  AndGadget isZero;
-  TernaryGadget valueX;
-  TernaryGadget valueY;
-
-  // Check if the public key is valid
-  RequireValidPublicKey requireValidPublicKey;
-
-  // Point compression
-  UnsafeSubGadget negPublicKeyX;
-  LtFieldGadget isNegativeX;
+  // Point needs to be compressable
+  ReconstructPublicKeyX reconstructPublicKeyX;
   field2bits_strict publicKeyYBits;
 
   CompressPublicKey(ProtoboardT &pb, const Params &_params,
@@ -105,63 +138,24 @@ public:
 
         params(_params), constants(_constants),
 
-        // Special case to allow the public key to be 0
-        isZeroX(pb, publicKeyX, constants._0, FMT(prefix, ".isZeroX")),
-        isZeroY(pb, publicKeyY, constants._0, FMT(prefix, ".isZeroY")),
-        isZero(pb, {isZeroX.result(), isZeroY.result()},
-               FMT(prefix, ".isZero")),
-        valueX(pb, isZero.result(), constants.dummyPublicKeyX, publicKeyX,
-               FMT(prefix, ".valueX")),
-        valueY(pb, isZero.result(), constants.dummyPublicKeyY, publicKeyY,
-               FMT(prefix, ".valueY")),
-
-        // Check if the public key is valid
-        requireValidPublicKey(pb, params, valueX.result(), valueY.result(),
-                              FMT(prefix, ".requireValidPublicKey")),
-
         // Point compression
-        negPublicKeyX(pb, constants._0, publicKeyX,
-                      FMT(prefix, ".negPublicKeyX")),
-        isNegativeX(pb, negPublicKeyX.result(), publicKeyX,
-                    FMT(prefix, ".isNegativeX")),
+        reconstructPublicKeyX(pb, params, constants, publicKeyX, publicKeyY, FMT(prefix, ".reconstructPublicKeyX")),
         publicKeyYBits(pb, publicKeyY, FMT(prefix, ".publicKeyYBits")) {}
 
   void generate_r1cs_witness() {
-    // Special case to allow the public key to be 0
-    isZeroX.generate_r1cs_witness();
-    isZeroY.generate_r1cs_witness();
-    isZero.generate_r1cs_witness();
-    valueX.generate_r1cs_witness();
-    valueY.generate_r1cs_witness();
-
-    // Check if the public key is valid
-    requireValidPublicKey.generate_r1cs_witness();
-
     // Point compression
-    negPublicKeyX.generate_r1cs_witness();
-    isNegativeX.generate_r1cs_witness();
+    reconstructPublicKeyX.generate_r1cs_witness();
     publicKeyYBits.generate_r1cs_witness();
   }
 
   void generate_r1cs_constraints() {
-    // Special case to allow the public key to be 0
-    isZeroX.generate_r1cs_constraints();
-    isZeroY.generate_r1cs_constraints();
-    isZero.generate_r1cs_constraints();
-    valueX.generate_r1cs_constraints();
-    valueY.generate_r1cs_constraints();
-
-    // Check if the public key is valid
-    requireValidPublicKey.generate_r1cs_constraints();
-
     // Point compression
-    negPublicKeyX.generate_r1cs_constraints();
-    isNegativeX.generate_r1cs_constraints();
+    reconstructPublicKeyX.generate_r1cs_constraints();
     publicKeyYBits.generate_r1cs_constraints();
   }
 
   VariableArrayT result() const {
-    return reverse(flattenReverse({VariableArrayT(1, isNegativeX.lt()),
+    return reverse(flattenReverse({VariableArrayT(1, reconstructPublicKeyX.result()),
                                    VariableArrayT(1, constants._0),
                                    publicKeyYBits.result()}));
   }
