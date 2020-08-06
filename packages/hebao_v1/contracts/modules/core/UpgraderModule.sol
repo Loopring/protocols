@@ -4,8 +4,8 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../base/BaseWallet.sol";
-import "../base/BaseModule.sol";
 import "../../thirdparty/proxy/OwnedUpgradeabilityProxy.sol";
+import "../base/BaseModule.sol";
 
 /// @title UpgraderModule
 /// @dev This module removes obsoleted modules and add new modules, then
