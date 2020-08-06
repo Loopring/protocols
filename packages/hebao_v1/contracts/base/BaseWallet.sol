@@ -62,9 +62,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
-    /// @dev Set up this wallet by assigning an original owner and a
-    ///      list of initial modules. For each module, its `init` method
-    ///      will be called with `address(this)` as the parameter.
+    /// @dev Set up this wallet by assigning an original owner and controller.
     ///
     ///      Note that calling this method more than once will throw.
     ///
