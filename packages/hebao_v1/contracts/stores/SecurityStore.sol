@@ -266,7 +266,7 @@ contract SecurityStore is DataStore
     function lastActive(address wallet)
         public
         view
-        returns (uint64)
+        returns (uint)
     {
         return wallets[wallet].lastActive;
     }
@@ -275,7 +275,7 @@ contract SecurityStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-        wallets[wallet].lastActive = block.timestamp.toUnit64();
+        wallets[wallet].lastActive = uint64(block.timestamp);
     }
 
     function inheritor(address wallet)
@@ -295,7 +295,7 @@ contract SecurityStore is DataStore
         onlyWalletModule(wallet)
     {
         wallets[wallet].inheritor = who;
-        wallets[wallet].lastActive = block.timestamp.toUint64();
+        wallets[wallet].lastActive = uint64(block.timestamp);
     }
 
     function cleanRemovedGuardians(address wallet)
@@ -351,4 +351,4 @@ contract SecurityStore is DataStore
         return guardian.validUntil > 0 &&
             guardian.validUntil <= block.timestamp;
     }
-
+}
