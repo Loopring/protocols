@@ -3,6 +3,9 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../base/BaseWallet.sol";
+import "../../stores/SecurityStore.sol";
+import "../../thirdparty/proxy/OwnedUpgradeabilityProxy.sol";
 import "../base/BaseModule.sol";
 
 
@@ -17,18 +20,29 @@ import "../base/BaseModule.sol";
 contract UpgraderModule is BaseModule {
     ControllerImpl private controller_;
 
+    address    public walletImplementation;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
+    SecurityStore oldSecurityStore;
+    SecurityStore newSecurityStore;
+
     constructor(
         ControllerImpl   _controller,
+        address          _walletImplementation,
         address[] memory _modulesToAdd,
-        address[] memory _modulesToRemove
+        address[] memory _modulesToRemove,
+        address          _oldSecurityStore,
+        address          _newSecurityStore
         )
     {
         controller_ = _controller;
+        walletImplementation = _walletImplementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
+
+        oldSecurityStore = SecurityStore(_oldSecurityStore);
+        newSecurityStore = SecurityStore(_newSecurityStore);
     }
 
     function controller()
@@ -48,13 +62,61 @@ contract UpgraderModule is BaseModule {
     {
     }
 
+    function upgradeWalletImplementation(address wallet)
+        external
+    {
+        require(msg.sender == address(this), "PROHIBITED");
+
+        if (walletImplementation != OwnedUpgradeabilityProxy(msg.sender).implementation()) {
+            bytes memory txData = abi.encodeWithSelector(
+                OwnedUpgradeabilityProxy.upgradeTo.selector,
+                walletImplementation
+            );
+            transactCall(wallet, wallet, 0, txData);
+        }
+    }
+
+    function migrateSecurityStore(address wallet)
+        internal
+    {
+        if (oldSecurityStore == SecurityStore(0) || newSecurityStore == SecurityStore(0)) {
+            return;
+        }
+
+        Data.Guardian[] memory guardians = oldSecurityStore.guardiansWithPending(wallet);
+
+        for (uint i = 0; i < guardians.length; i++) {
+            newSecurityStore.addGuardian(
+                wallet,
+                guardians[i].addr,
+                guardians[i].group,
+                guardians[i].validSince
+            );
+        }
+
+        (address inheritor,) = oldSecurityStore.inheritor(wallet);
+        if (inheritor != address(0)) {
+            newSecurityStore.setInheritor(wallet, inheritor);
+        }
+    }
+
     function activate()
         external
         override
     {
         address payable wallet = msg.sender;
 
-        Wallet w = Wallet(wallet);
+        if (walletImplementation != address(0)) {
+            try UpgraderModule(address(this)).upgradeWalletImplementation(wallet) {} catch {}
+        }
+
+        BaseWallet w = BaseWallet(wallet);
+
+        // Upgrade the controller if different
+        if (w.controller() != controller_) {
+            w.setController(controller_);
+        }
+
         for(uint i = 0; i < modulesToAdd.length; i++) {
             if (!w.hasModule(modulesToAdd[i])) {
                 w.addModule(modulesToAdd[i]);
@@ -65,6 +127,8 @@ contract UpgraderModule is BaseModule {
                 w.removeModule(modulesToRemove[i]);
             }
         }
+
+        migrateSecurityStore(wallet);
 
         emit Activated(wallet);
         w.removeModule(address(this));

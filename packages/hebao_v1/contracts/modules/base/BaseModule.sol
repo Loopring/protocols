@@ -208,14 +208,18 @@ abstract contract BaseModule is ReentrancyGuard, Module
         address     recipient,
         address     gasToken,
         uint        gasPrice,
-        uint        gasAmount
+        uint        gasAmount,
+        bool        skipQuota
         )
         internal
     {
         uint gasCost = gasAmount.mul(gasPrice);
-        uint value = controller().priceOracle().tokenValue(gasToken, gasCost);
-        if (value > 0) {
-          controller().quotaStore().checkAndAddToSpent(wallet, value);
+
+        if (!skipQuota) {
+            uint value = controller().priceOracle().tokenValue(gasToken, gasCost);
+            if (value > 0) {
+              controller().quotaStore().checkAndAddToSpent(wallet, value);
+            }
         }
 
         transactTokenTransfer(wallet, gasToken, recipient, gasCost);

@@ -16,20 +16,12 @@ pragma solidity ^0.7.0;
 /// https://github.com/argentlabs/argent-contracts
 interface Wallet
 {
+    function version() external pure returns (string memory);
+
     function owner() external view returns (address);
 
     /// @dev Set a new owner.
     function setOwner(address newOwner) external;
-
-    /// @dev Set up this wallet by assigning an original owner and a
-    ///      list of initial modules. For each module, its `init` method
-    ///      will be called with `address(this)` as the parameter.
-    ///
-    ///      Note that calling this method more than once will throw.
-    ///
-    /// @param _controller The Controller instance.
-    /// @param _owner The owner of this wallet, must not be address(0).
-    function setup(address _controller, address _owner) external;
 
     /// @dev Adds a new module. The `init` method of the module
     ///      will be called with `address(this)` as the parameter.
