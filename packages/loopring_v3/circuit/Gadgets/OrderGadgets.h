@@ -72,8 +72,8 @@ public:
         hash(pb,
              var_array({blockExchange, storageID.packed, accountID.packed,
                         tokenS.packed, tokenB.packed, amountS.packed,
-                        amountB.packed, validUntil.packed, maxFeeBips.packed, buy.packed,
-                        taker}),
+                        amountB.packed, validUntil.packed, maxFeeBips.packed,
+                        buy.packed, taker}),
              FMT(this->annotation_prefix, ".hash")) {}
 
   void generate_r1cs_witness(const Order &order) {

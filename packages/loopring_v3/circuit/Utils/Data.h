@@ -327,7 +327,8 @@ static void from_json(const json &j, Withdrawal &withdrawal) {
   withdrawal.amount = ethsnarks::FieldT(j["amount"].get<std::string>().c_str());
   withdrawal.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
   withdrawal.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
-  withdrawal.onchainDataHash = ethsnarks::FieldT(j["onchainDataHash"].get<std::string>().c_str());
+  withdrawal.onchainDataHash =
+      ethsnarks::FieldT(j["onchainDataHash"].get<std::string>().c_str());
   withdrawal.validUntil = ethsnarks::FieldT(j.at("validUntil"));
   withdrawal.type = ethsnarks::FieldT(j.at("type"));
 }

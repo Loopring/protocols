@@ -9,7 +9,7 @@
 #include "ethsnarks.hpp"
 #include "utils.hpp"
 #include "jubjub/point.hpp"
-#include "jubjub/eddsa.hpp" //a
+#include "jubjub/eddsa.hpp"
 #include "gadgets/subadd.hpp"
 #include "gadgets/poseidon.hpp"
 
@@ -19,8 +19,7 @@ using namespace jubjub;
 namespace Loopring {
 
 // require(A == B)
-static void requireEqual(ProtoboardT &pb, const VariableT &A,
-                         const VariableT &B,
+static void requireEqual(ProtoboardT &pb, const VariableT &A, const VariableT &B,
                          const std::string &annotation_prefix) {
   pb.add_r1cs_constraint(ConstraintT(A, FieldT::one(), B),
                          FMT(annotation_prefix, ".requireEqual"));
