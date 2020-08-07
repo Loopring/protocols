@@ -104,7 +104,9 @@ contract("UpgraderModule", () => {
         const upgraderModule = await ctx.contracts.UpgraderModule.new(
           newBaseWallet.address,
           [],
-          []
+          [],
+          Constants.zeroAddress,
+          Constants.zeroAddress
         );
         await ctx.moduleRegistryImpl.registerModule(upgraderModule.address);
 

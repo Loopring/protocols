@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../base/BaseWallet.sol";
+import "../../stores/SecurityStore.sol";
 import "../../thirdparty/proxy/OwnedUpgradeabilityProxy.sol";
 import "../base/BaseModule.sol";
 
@@ -23,17 +24,25 @@ contract UpgraderModule is BaseModule {
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
+    SecurityStore oldSecurityStore;
+    SecurityStore newSecurityStore;
+
     constructor(
         ControllerImpl   _controller,
         address          _walletImplementation,
         address[] memory _modulesToAdd,
-        address[] memory _modulesToRemove
+        address[] memory _modulesToRemove,
+        address          _oldSecurityStore,
+        address          _newSecurityStore
         )
     {
         controller_ = _controller;
         walletImplementation = _walletImplementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
+
+        oldSecurityStore = SecurityStore(_oldSecurityStore);
+        newSecurityStore = SecurityStore(_newSecurityStore);
     }
 
     function controller()
@@ -67,6 +76,30 @@ contract UpgraderModule is BaseModule {
         }
     }
 
+    function migrateSecurityStore(address wallet)
+        internal
+    {
+        if (oldSecurityStore == SecurityStore(0) || newSecurityStore == SecurityStore(0)) {
+            return;
+        }
+
+        Data.Guardian[] memory guardians = oldSecurityStore.guardiansWithPending(wallet);
+
+        for (uint i = 0; i < guardians.length; i++) {
+            newSecurityStore.addGuardian(
+                wallet,
+                guardians[i].addr,
+                guardians[i].group,
+                guardians[i].validSince
+            );
+        }
+
+        (address inheritor,) = oldSecurityStore.inheritor(wallet);
+        if (inheritor != address(0)) {
+            newSecurityStore.setInheritor(wallet, inheritor);
+        }
+    }
+
     function activate()
         external
         override
@@ -94,6 +127,8 @@ contract UpgraderModule is BaseModule {
                 w.removeModule(modulesToRemove[i]);
             }
         }
+
+        migrateSecurityStore(wallet);
 
         emit Activated(wallet);
         w.removeModule(address(this));

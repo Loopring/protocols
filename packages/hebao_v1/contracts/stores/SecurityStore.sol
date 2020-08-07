@@ -153,7 +153,12 @@ contract SecurityStore is DataStore
         require(pos == 0, "GUARDIAN_EXISTS");
 
         // Add the new guardian
-        Data.Guardian memory g = Data.Guardian(guardianAddr, group, validSince, 0);
+        Data.Guardian memory g = Data.Guardian(
+            guardianAddr,
+            group,
+            uint128timestamp(validSince),
+            0
+        );
         w.guardians.push(g);
         w.guardianIdx[guardianAddr] = w.guardians.length;
     }
@@ -198,7 +203,7 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardians[idx - 1].validUntil = validUntil;
+        w.guardians[idx - 1].validUntil = uint128timestamp(validUntil);
     }
 
     function removeAllGuardians(address wallet)
@@ -236,10 +241,10 @@ contract SecurityStore is DataStore
     function getLock(address wallet)
         public
         view
-        returns (uint _lock, address _module)
+        returns (uint _lock, address _lockedBy)
     {
         _lock = uint(wallets[wallet].lock);
-        _module = wallets[wallet].lockedBy;
+        _lockedBy = wallets[wallet].lockedBy;
     }
 
     function setLock(
@@ -250,7 +255,7 @@ contract SecurityStore is DataStore
         onlyWalletModule(wallet)
     {
         require(lock == 0 || lock > block.timestamp, "INVALID_LOCK_TIME");
-        uint128 _lock = uint128(lock);
+        uint128 _lock = uint128timestamp(lock);
         require(uint(_lock) == lock, "LOCK_TOO_LARGE");
 
         wallets[wallet].lock = _lock;
@@ -269,7 +274,7 @@ contract SecurityStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-        wallets[wallet].lastActive = uint128(block.timestamp);
+        wallets[wallet].lastActive = uint128timestamp(block.timestamp);
     }
 
     function inheritor(address wallet)
@@ -289,7 +294,7 @@ contract SecurityStore is DataStore
         onlyWalletModule(wallet)
     {
         wallets[wallet].inheritor = who;
-        wallets[wallet].lastActive = uint128(block.timestamp);
+        wallets[wallet].lastActive = uint128timestamp(block.timestamp);
     }
 
     function cleanRemovedGuardians(address wallet)
@@ -346,4 +351,12 @@ contract SecurityStore is DataStore
             guardian.validUntil <= block.timestamp;
     }
 
+    function uint128timestamp(uint timestamp)
+        private
+        pure
+        returns(uint128)
+    {
+        require((timestamp << 128) >> 128 == timestamp, "TIMESTAMP_TOO_LARGE");
+        return uint128(timestamp);
+    }
 }

@@ -42,7 +42,9 @@ contract("UpgraderModule", () => {
       ctx.controllerImpl.address,
       Constants.zeroAddress,
       modulesToAdd,
-      modulesToRemove
+      modulesToRemove,
+      Constants.zeroAddress,
+      Constants.zeroAddress
     );
     await ctx.moduleRegistryImpl.registerModule(upgraderModule.address);
 
