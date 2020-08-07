@@ -73,7 +73,7 @@ public:
   UpdateTreeRoot rootAfter;
 
   UpdateAccountGadget(ProtoboardT &pb, const VariableT &_rootBefore,
-                      const VariableArrayT &_addressBits,
+                      const VariableArrayT &_slotID,
                       const AccountState &_leafBefore,
                       const AccountState &_leafAfter,
                       const std::string &_prefix)
@@ -94,10 +94,10 @@ public:
 
         proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS * 3,
                              FMT(_prefix, ".proof"))),
-        rootBeforeVerifier(pb, TREE_DEPTH_ACCOUNTS, _addressBits,
+        rootBeforeVerifier(pb, TREE_DEPTH_ACCOUNTS, _slotID,
                            leafHashBefore.result(), _rootBefore, proof,
                            FMT(_prefix, ".pathBefore")),
-        rootAfter(pb, TREE_DEPTH_ACCOUNTS, _addressBits, leafHashAfter.result(),
+        rootAfter(pb, TREE_DEPTH_ACCOUNTS, _slotID, leafHashAfter.result(),
                   proof, FMT(_prefix, ".pathAfter")) {}
 
   void generate_r1cs_witness(const AccountUpdate &update) {
