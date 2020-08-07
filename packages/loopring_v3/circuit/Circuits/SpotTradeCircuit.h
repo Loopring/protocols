@@ -53,9 +53,6 @@ public:
   // Fees
   TransferGadget feeA_from_balanceBA_to_balanceAO;
   TransferGadget feeB_from_balanceBB_to_balanceBO;
-  // Rebates
-  TransferGadget rebateA_from_balanceAO_to_balanceBA;
-  TransferGadget rebateB_from_balanceBO_to_balanceBB;
   // Protocol fees
   TransferGadget protocolFeeA_from_balanceAO_to_balanceAP;
   TransferGadget protocolFeeB_from_balanceBO_to_balanceBP;
@@ -110,11 +107,9 @@ public:
         // Calculate fees
         feeCalculatorA(pb, state.constants, fillS_B.value(),
                        state.protocolTakerFeeBips, orderA.feeBips.packed,
-                       orderA.rebateBips.packed,
                        FMT(prefix, ".feeCalculatorA")),
         feeCalculatorB(pb, state.constants, fillS_A.value(),
                        state.protocolMakerFeeBips, orderB.feeBips.packed,
-                       orderB.rebateBips.packed,
                        FMT(prefix, ".feeCalculatorB")),
 
         /* Token Transfers */
@@ -132,13 +127,6 @@ public:
         feeB_from_balanceBB_to_balanceBO(
             pb, balanceB_B, balanceB_O, feeCalculatorB.getFee(),
             FMT(prefix, ".feeB_from_balanceBB_to_balanceBO")),
-        // Rebates
-        rebateA_from_balanceAO_to_balanceBA(
-            pb, balanceA_O, balanceB_A, feeCalculatorA.getRebate(),
-            FMT(prefix, ".rebateA_from_balanceAO_to_balanceBA")),
-        rebateB_from_balanceBO_to_balanceBB(
-            pb, balanceB_O, balanceB_B, feeCalculatorB.getRebate(),
-            FMT(prefix, ".rebateB_from_balanceBO_to_balanceBB")),
         // Protocol fees
         protocolFeeA_from_balanceAO_to_balanceAP(
             pb, balanceA_O, balanceA_P, feeCalculatorA.getProtocolFee(),
@@ -218,9 +206,6 @@ public:
     // Fees
     feeA_from_balanceBA_to_balanceAO.generate_r1cs_witness();
     feeB_from_balanceBB_to_balanceBO.generate_r1cs_witness();
-    // Rebates
-    rebateA_from_balanceAO_to_balanceBA.generate_r1cs_witness();
-    rebateB_from_balanceBO_to_balanceBB.generate_r1cs_witness();
     // Protocol fees
     protocolFeeA_from_balanceAO_to_balanceAP.generate_r1cs_witness();
     protocolFeeB_from_balanceBO_to_balanceBP.generate_r1cs_witness();
@@ -264,9 +249,6 @@ public:
     // Fees
     feeA_from_balanceBA_to_balanceAO.generate_r1cs_constraints();
     feeB_from_balanceBB_to_balanceBO.generate_r1cs_constraints();
-    // Rebates
-    rebateA_from_balanceAO_to_balanceBA.generate_r1cs_constraints();
-    rebateB_from_balanceBO_to_balanceBB.generate_r1cs_constraints();
     // Protocol fees
     protocolFeeA_from_balanceAO_to_balanceAP.generate_r1cs_constraints();
     protocolFeeB_from_balanceBO_to_balanceBP.generate_r1cs_constraints();
@@ -291,11 +273,11 @@ public:
         fillS_B.bits(),
 
         orderA.buy.bits,
-        VariableArrayT(1, orderA.hasRebate()),
-        orderA.feeOrRebateBips.bits,
+        VariableArrayT(1, state.constants._0),
+        orderA.feeBips.bits,
         orderB.buy.bits,
-        VariableArrayT(1, orderB.hasRebate()),
-        orderB.feeOrRebateBips.bits,
+        VariableArrayT(1, state.constants._0),
+        orderB.feeBips.bits,
     });
   }
 };

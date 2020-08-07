@@ -50,9 +50,7 @@ public:
         nonce(make_variable(pb, FMT(_prefix, ".nonce"))),
         balancesRoot(make_variable(pb, FMT(_prefix, ".balancesRoot"))) {}
 
-  // QUESTION: in StorageGadgets, we pass in a XxxxLeaf,
-  // below in BalanceGadget, we also pass in BalanceLeaf.
-  void generate_r1cs_witness(const Account &_account) {
+  void generate_r1cs_witness(const AccountLeaf &_account) {
     pb.val(owner) = _account.owner;
     pb.val(publicKey.x) = _account.publicKey.x;
     pb.val(publicKey.y) = _account.publicKey.y;
@@ -138,24 +136,24 @@ public:
 
 struct BalanceState {
   VariableT balance;
-  VariableT storage;
+  VariableT storageRoot;
 };
 
 static void printBalance(const ProtoboardT &pb, const BalanceState &_state) {
   std::cout << "- balance: " << pb.val(_state.balance) << std::endl;
-  std::cout << "- storage: " << pb.val(_state.storage) << std::endl;
+  std::cout << "- storageRoot: " << pb.val(_state.storageRoot) << std::endl;
 }
 
 class BalanceGadget : public GadgetT {
 public:
   VariableT balance;
-  VariableT storage;
+  VariableT storageRoot;
 
   BalanceGadget(ProtoboardT &pb, const std::string &_prefix)
       : GadgetT(pb, _prefix),
 
         balance(make_variable(pb, FMT(_prefix, ".balance"))),
-        storage(make_variable(pb, FMT(_prefix, ".storage"))) {}
+        storage(make_variable(pb, FMT(_prefix, ".storageRoot"))) {}
 
   void generate_r1cs_witness(const BalanceLeaf &_balanceLeaf) {
     pb.val(balance) = _balanceLeaf.balance;
@@ -185,9 +183,9 @@ public:
         leafBefore(_leafBefore), leafAfter(_leafAfter),
 
         leafHashBefore(pb,
-                       var_array({_leafBefore.balance, _leafBefore.storage}),
+                       var_array({_leafBefore.balance, _leafBefore.storageRoot}),
                        FMT(_prefix, ".leafHashBefore")),
-        leafHashAfter(pb, var_array({_leafAfter.balance, _leafAfter.storage}),
+        leafHashAfter(pb, var_array({_leafAfter.balance, _leafAfter.storageRoot}),
                       FMT(_prefix, ".leafHashAfter")),
 
         proof(

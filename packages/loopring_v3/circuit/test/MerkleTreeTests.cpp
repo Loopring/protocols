@@ -4,7 +4,7 @@
 #include "../Gadgets/StorageGadgets.h"
 #include "../Gadgets/AccountGadgets.h"
 
-AccountState createAccountState(ProtoboardT &pb, const Account &state) {
+AccountState createAccountState(ProtoboardT &pb, const AccountLeaf &state) {
   AccountState accountState;
   accountState.owner = make_variable(pb, state.owner, ".owner");
   accountState.publicKeyX = make_variable(pb, state.publicKey.x, ".publicKeyX");
@@ -18,7 +18,7 @@ AccountState createAccountState(ProtoboardT &pb, const Account &state) {
 BalanceState createBalanceState(ProtoboardT &pb, const BalanceLeaf &state) {
   BalanceState balanceState;
   balanceState.balance = make_variable(pb, state.balance, ".balance");
-  balanceState.storage = make_variable(pb, state.storageRoot, ".storage");
+  balanceState.storageRoot = make_variable(pb, state.storageRoot, ".storage");
   return balanceState;
 }
 

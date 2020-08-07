@@ -42,7 +42,7 @@ library DepositTransaction
         returns (uint feeETH)
     {
         // Read in the deposit
-        Deposit memory deposit = readDeposit(data, offset);
+        Deposit memory deposit = readTx(data, offset);
 
         // Process the deposit
         ExchangeData.Deposit memory pendingDeposit = S.pendingDeposits[deposit.owner][deposit.tokenID];
@@ -79,7 +79,7 @@ library DepositTransaction
         //emit DepositProcessed(owner, accountID, tokenID, amount);
     }
 
-    function readDeposit(
+    function readTx(
         bytes memory data,
         uint         offset
         )

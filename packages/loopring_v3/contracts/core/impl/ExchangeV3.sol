@@ -323,7 +323,7 @@ contract ExchangeV3 is IExchangeV3
         address to,
         address tokenAddress,
         uint96  amount,
-        bytes   calldata auxiliaryData
+        bytes   calldata extraData
         )
         external
         payable
@@ -331,7 +331,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        state.deposit(from, to, tokenAddress, amount, auxiliaryData);
+        state.deposit(from, to, tokenAddress, amount, extraData);
     }
 
     // -- Withdrawals --
@@ -441,7 +441,6 @@ contract ExchangeV3 is IExchangeV3
         uint96  amount,
         address feeToken,
         uint96  fee,
-        uint    data,
         uint32  validUntil,
         uint32  storageID
         )
@@ -459,11 +458,10 @@ contract ExchangeV3 is IExchangeV3
             amount: amount,
             feeTokenID: feeTokenID,
             fee: fee,
-            data: data,
             validUntil: validUntil,
             storageID: storageID
         });
-        bytes32 txHash = TransferTransaction.hash(state.DOMAIN_SEPARATOR, transfer);
+        bytes32 txHash = TransferTransaction.hashTx(state.DOMAIN_SEPARATOR, transfer);
         state.approvedTx[transfer.from][txHash] = true;
         emit TransactionApproved(transfer.from, txHash);
     }

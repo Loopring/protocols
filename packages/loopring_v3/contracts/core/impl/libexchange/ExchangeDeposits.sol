@@ -34,7 +34,7 @@ library ExchangeDeposits
         address to,
         address tokenAddress,
         uint96  amount,                 // can be zero
-        bytes   memory auxiliaryData
+        bytes   memory extraData
         )
         internal  // inline call
     {
@@ -52,7 +52,7 @@ library ExchangeDeposits
             from,
             tokenAddress,
             amount,
-            auxiliaryData
+            extraData
         );
 
         // Add the amount to the deposit request and reset the time the operator has to process it
@@ -75,7 +75,7 @@ library ExchangeDeposits
         address from,
         address tokenAddress,
         uint96  amount,
-        bytes   memory auxiliaryData
+        bytes   memory extraData
         )
         private
         returns (
@@ -97,7 +97,7 @@ library ExchangeDeposits
             from,
             tokenAddress,
             amount,
-            auxiliaryData
+            extraData
         );
     }
 }

@@ -59,8 +59,15 @@ public:
 
   const VariableArrayT proof;
 
+<<<<<<< HEAD
   VerifyTreeRoot rootBeforeVerifier;
   UpdateTreeRoot rootAfter;
+=======
+  UpdateStorageGadget(ProtoboardT &pb, const VariableT &merkleRoot,
+                      const VariableArrayT &slotID, const StorageState &before,
+                      const StorageState &after, const std::string &prefix)
+      : GadgetT(pb, prefix),
+>>>>>>> 7c7a18261f76935ca5ecbd4af7f5f81cc2f695e4
 
   UpdateStorageGadget(ProtoboardT &pb, const VariableT &_rootBefore,
                       const VariableArrayT &_addressBits,
@@ -77,12 +84,21 @@ public:
                       FMT(_prefix, ".leafHashAfter")),
 
         proof(
+<<<<<<< HEAD
             make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(_prefix, ".proof"))),
         rootBeforeVerifier(pb, TREE_DEPTH_STORAGE, _addressBits,
                            leafHashBefore.result(), _rootBefore, proof,
                            FMT(_prefix, ".rootBeforeVerifier")),
         rootAfter(pb, TREE_DEPTH_STORAGE, _addressBits, leafHashAfter.result(),
                   proof, FMT(_prefix, ".rootAfter")) {}
+=======
+            make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(prefix, ".proof"))),
+        proofVerifierBefore(pb, TREE_DEPTH_STORAGE, slotID,
+                            leafBefore.result(), merkleRoot, proof,
+                            FMT(prefix, ".pathBefore")),
+        rootCalculatorAfter(pb, TREE_DEPTH_STORAGE, slotID, leafAfter.result(),
+                            proof, FMT(prefix, ".pathAfter")) {}
+>>>>>>> 7c7a18261f76935ca5ecbd4af7f5f81cc2f695e4
 
   void generate_r1cs_witness(const StorageUpdate &update) {
     leafHashBefore.generate_r1cs_witness();

@@ -62,9 +62,7 @@ export class ExchangeV3 {
 
   private merkleTree: SparseMerkleTree;
 
-  // decimal representation of `0x160ca280c25b71c85d58fc0dd7b9eb42268c73c8812333da3cc2bdc8af3ee7b7`
-  private genesisMerkleRoot =
-    "9973206387858757276870965637020996982330817360942098161585584652959352809399";
+  private genesisMerkleRoot: string;
 
   private protocolFees: ProtocolFees;
 
@@ -106,6 +104,10 @@ export class ExchangeV3 {
     const exchangeCreationTimestamp = (await this.exchange.methods
       .getBlockInfo(0)
       .call()).timestamp;
+    const genesisMerkleRoot = new BN(
+      (await this.exchange.methods.getMerkleRoot().call()).slice(2),
+      16
+    ).toString(10);
 
     this.shutdown = false;
     this.shutdownStartTime = 0;
@@ -131,7 +133,7 @@ export class ExchangeV3 {
 
       blockFee: new BN(0),
 
-      merkleRoot: this.genesisMerkleRoot,
+      merkleRoot: genesisMerkleRoot,
       timestamp: exchangeCreationTimestamp,
 
       numRequestsProcessed: 0,
@@ -228,10 +230,7 @@ export class ExchangeV3 {
       Constants.BINARY_TREE_DEPTH_TOKENS / 2
     );
     balancesMerkleTree.newTree(
-      hasher([
-        0,
-        storageMerkleTree.getRoot()
-      ]).toString(10)
+      hasher([0, storageMerkleTree.getRoot()]).toString(10)
     );
     this.merkleTree = new SparseMerkleTree(
       Constants.BINARY_TREE_DEPTH_ACCOUNTS / 2
@@ -240,22 +239,13 @@ export class ExchangeV3 {
       accountHasher([0, 0, 0, 0, balancesMerkleTree.getRoot()]).toString(10)
     );
 
-    assert.equal(
-      this.merkleTree.getRoot(),
-      this.genesisMerkleRoot,
-      "Genesis Merkle tree root inconsistent"
-    );
-
     // Run over all account data and build the Merkle tree
     for (const account of this.state.accounts) {
       account.balancesMerkleTree = new SparseMerkleTree(
         Constants.BINARY_TREE_DEPTH_TOKENS / 2
       );
       account.balancesMerkleTree.newTree(
-        hasher([
-          0,
-          storageMerkleTree.getRoot()
-        ]).toString(10)
+        hasher([0, storageMerkleTree.getRoot()]).toString(10)
       );
       for (const tokenID of Object.keys(account.balances)) {
         const balanceValue = account.balances[Number(tokenID)];
@@ -267,10 +257,7 @@ export class ExchangeV3 {
           const storageValue = balanceValue.storage[Number(orderID)];
           balanceValue.storageTree.update(
             Number(orderID),
-            hasher([
-              storageValue.data,
-              storageValue.storageID
-            ]).toString(10)
+            hasher([storageValue.data, storageValue.storageID]).toString(10)
           );
         }
         account.balancesMerkleTree.update(

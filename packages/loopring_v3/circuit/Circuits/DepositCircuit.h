@@ -114,7 +114,7 @@ public:
 
   const VariableArrayT getPublicData() const {
     return flattenReverse({owner.bits, accountID.bits,
-                           VariableArrayT(4, state.constants._0), tokenID.bits,
+                           tokenID.bits,
                            amount.bits});
   }
 };

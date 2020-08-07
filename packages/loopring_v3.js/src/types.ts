@@ -170,8 +170,6 @@ export interface SpotTrade {
   feeA: BN;
   /** The protocol fee that needs to be paid by the operator for the taker. */
   protocolFeeA: BN;
-  /** The amount of tokens (in tokenB) the taker receives as rebate. */
-  rebateA: BN;
 
   /** The account of the maker. */
   accountIdB: number;
@@ -187,8 +185,6 @@ export interface SpotTrade {
   feeB: BN;
   /** The protocol fee that needs to be paid by the operator for the maker. */
   protocolFeeB: BN;
-  /** The amount of tokens (in tokenB) the maker receives as rebate. */
-  rebateB: BN;
 }
 
 /**
@@ -402,10 +398,7 @@ export class BalanceLeaf implements Balance {
     this.storage = {};
   }
 
-  public init(
-    balance: BN,
-    storage: { [key: number]: StorageLeaf }
-  ) {
+  public init(balance: BN, storage: { [key: number]: StorageLeaf }) {
     this.balance = new BN(balance.toString(10));
     this.storage = storage;
   }

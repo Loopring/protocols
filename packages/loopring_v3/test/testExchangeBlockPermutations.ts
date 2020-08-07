@@ -250,7 +250,7 @@ contract("Exchange", (accounts: string[]) => {
         amount,
         feeToken,
         fee,
-        {authMethod: AuthMethod.ECDSA}
+        { authMethod: AuthMethod.ECDSA }
       );
 
       // Do a withdrawal
@@ -262,13 +262,13 @@ contract("Exchange", (accounts: string[]) => {
         new BN(0)
       );
 
+      // Do an account update
       await exchangeTestUtil.requestAccountUpdate(
         ownerB,
         "ETH",
         new BN(0),
         exchangeTestUtil.getKeyPairEDDSA()
       );
-
 
       await exchangeTestUtil.submitTransactions(24);
       await verify();

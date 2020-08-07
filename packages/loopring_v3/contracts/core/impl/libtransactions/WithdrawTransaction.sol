@@ -33,7 +33,7 @@ library WithdrawTransaction
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
-        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes32 dataHash,uint24 minGas,uint32 validUntil,uint32 nonce)"
+        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes extraData,uint minGas,uint32 validUntil,uint32 nonce)"
     );
 
     struct Withdrawal
@@ -46,10 +46,11 @@ library WithdrawTransaction
         uint16  feeTokenID;
         uint    fee;
         address to;
-        bytes32 dataHash;
-        uint24  minGas;
+        bytes   extraData;
+        uint    minGas;
         uint32  validUntil;
         uint32  nonce;
+        bytes20 onchainDataHash;
     }
 
     // Auxiliary data for each withdrawal
@@ -57,7 +58,11 @@ library WithdrawTransaction
     {
         uint  gasLimit;
         bytes signature;
-        bytes auxiliaryData;
+
+        uint    minGas;
+        address to;
+        bytes   extraData;
+        uint32  validUntil;
     }
 
     /*event ForcedWithdrawalProcessed(
@@ -76,26 +81,35 @@ library WithdrawTransaction
         internal
         returns (uint feeETH)
     {
-        Withdrawal memory withdrawal = readWithdrawal(data, offset);
+        Withdrawal memory withdrawal = readTx(data, offset);
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
 
-        // Validate the auxixliary withdrawal data
-        if (withdrawal.dataHash == 0) {
-            require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
-        } else {
-            // Hashes are stored using only 253 bits so the value fits inside a SNARK field element.
-            require(
-                uint(keccak256(auxData.auxiliaryData)) >> 3 == uint(withdrawal.dataHash),
-                "INVALID_WITHDRAWAL_AUX_DATA"
-            );
-        }
+        // Validate the withdrawal data not directly part of the DA
+        bytes32 onchainDataHash = keccak256(
+            abi.encodePacked(
+                auxData.minGas,
+                auxData.to,
+                auxData.extraData
+            )
+        );
+        // Only the 20 MSB are used, which is still 80-bit of security, which is more
+        // than enough, especially when combined with validUntil.
+        require(withdrawal.onchainDataHash == bytes20(onchainDataHash), "INVALID_WITHDRAWAL_DATA");
+
+        // Fill in withdrawal data missing from DA
+        withdrawal.to = auxData.to;
+        withdrawal.minGas = auxData.minGas;
+        withdrawal.extraData = auxData.extraData;
+        withdrawal.validUntil = auxData.validUntil;
 
         if (withdrawal.withdrawalType == 0) {
             // Signature checked offchain, nothing to do
         } else if (withdrawal.withdrawalType == 1) {
+            // Check validUntil
+            require(ctx.timestamp < withdrawal.validUntil, "WITHDRAWAL_EXPIRED");
             // Check appproval onchain
             // Calculate the tx hash
-            bytes32 txHash = hash(ctx.DOMAIN_SEPARATOR, withdrawal);
+            bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, withdrawal);
             // Check onchain authorization
             S.requireAuthorizedTx(withdrawal.owner, auxData.signature, txHash);
         } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
@@ -107,7 +121,7 @@ library WithdrawTransaction
             // Forced withdrawal fees are charged when the request is submitted.
             require(withdrawal.fee == 0, "FEE_NOT_ZERO");
 
-            require(auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
+            require(withdrawal.extraData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
 
             ExchangeData.ForcedWithdrawal memory forcedWithdrawal =
                 S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
@@ -150,7 +164,7 @@ library WithdrawTransaction
         address recipient = S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.nonce];
         if (recipient != address(0)) {
             // Auxiliary data is not supported
-            require (auxData.auxiliaryData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
+            require (withdrawal.extraData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
 
             // Set the new recipient address
             withdrawal.to = recipient;
@@ -169,12 +183,12 @@ library WithdrawTransaction
             withdrawal.to,
             withdrawal.tokenID,
             withdrawal.amount,
-            auxData.auxiliaryData,
+            withdrawal.extraData,
             auxData.gasLimit
         );
     }
 
-    function readWithdrawal(
+    function readTx(
         bytes memory data,
         uint         offset
         )
@@ -191,26 +205,21 @@ library WithdrawTransaction
         offset += 20;
         withdrawal.accountID = data.toUint32(offset);
         offset += 4;
-        withdrawal.tokenID = data.toUint16(offset) >> 4;
-        withdrawal.feeTokenID = uint16(data.toUint16(offset + 1) & 0xFFF);
-        offset += 3;
+        withdrawal.tokenID = data.toUint16(offset);
+        offset += 2;
         withdrawal.amount = data.toUint96(offset);
         offset += 12;
+        withdrawal.feeTokenID = data.toUint16(offset);
+        offset += 2;
         withdrawal.fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        withdrawal.to = data.toAddress(offset);
-        offset += 20;
-        withdrawal.dataHash = data.toBytes32(offset);
-        offset += 32;
-        withdrawal.minGas = data.toUint24(offset);
-        offset += 3;
-        withdrawal.validUntil = data.toUint32(offset);
-        offset += 4;
         withdrawal.nonce = data.toUint32(offset);
         offset += 4;
+        withdrawal.onchainDataHash = data.toBytes20(offset);
+        offset += 20;
     }
 
-    function hash(
+    function hashTx(
         bytes32 DOMAIN_SEPARATOR,
         Withdrawal memory withdrawal
         )
@@ -230,7 +239,7 @@ library WithdrawTransaction
                     withdrawal.feeTokenID,
                     withdrawal.fee,
                     withdrawal.to,
-                    withdrawal.dataHash,
+                    keccak256(withdrawal.extraData),
                     withdrawal.minGas,
                     withdrawal.validUntil,
                     withdrawal.nonce

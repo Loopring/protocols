@@ -224,7 +224,7 @@ public:
 
         // Update UserA
         updateStorage_A(
-            pb, state.accountA.balanceS.storage,
+            pb, state.accountA.balanceS.storageRoot,
             tx.getArrayOutput(storageA_Address),
             {state.accountA.storage.data, state.accountA.storage.storageID},
             {tx.getOutput(storageA_Data), tx.getOutput(storageA_StorageId)},
@@ -232,14 +232,14 @@ public:
         updateBalanceS_A(
             pb, state.accountA.account.balancesRoot,
             tx.getArrayOutput(balanceA_S_Address),
-            {state.accountA.balanceS.balance, state.accountA.balanceS.storage},
+            {state.accountA.balanceS.balance, state.accountA.balanceS.storageRoot},
             {tx.getOutput(balanceA_S_Balance), updateStorage_A.result()},
             FMT(prefix, ".updateBalanceS_A")),
         updateBalanceB_A(
             pb, updateBalanceS_A.result(),
             tx.getArrayOutput(balanceB_S_Address),
-            {state.accountA.balanceB.balance, state.accountA.balanceB.storage},
-            {tx.getOutput(balanceA_B_Balance), state.accountA.balanceB.storage},
+            {state.accountA.balanceB.balance, state.accountA.balanceB.storageRoot},
+            {tx.getOutput(balanceA_B_Balance), state.accountA.balanceB.storageRoot},
             FMT(prefix, ".updateBalanceB_A")),
         updateAccount_A(
             pb, accountsRoot, tx.getArrayOutput(accountA_Address),
@@ -253,7 +253,7 @@ public:
 
         // Update UserB
         updateStorage_B(
-            pb, state.accountB.balanceS.storage,
+            pb, state.accountB.balanceS.storageRoot,
             tx.getArrayOutput(storageB_Address),
             {state.accountB.storage.data, state.accountB.storage.storageID},
             {tx.getOutput(storageB_Data), tx.getOutput(storageB_StorageId)},
@@ -261,14 +261,14 @@ public:
         updateBalanceS_B(
             pb, state.accountB.account.balancesRoot,
             tx.getArrayOutput(balanceB_S_Address),
-            {state.accountB.balanceS.balance, state.accountB.balanceS.storage},
+            {state.accountB.balanceS.balance, state.accountB.balanceS.storageRoot},
             {tx.getOutput(balanceB_S_Balance), updateStorage_B.result()},
             FMT(prefix, ".updateBalanceS_B")),
         updateBalanceB_B(
             pb, updateBalanceS_B.result(),
             tx.getArrayOutput(balanceA_S_Address),
-            {state.accountB.balanceB.balance, state.accountB.balanceB.storage},
-            {tx.getOutput(balanceB_B_Balance), state.accountB.balanceB.storage},
+            {state.accountB.balanceB.balance, state.accountB.balanceB.storageRoot},
+            {tx.getOutput(balanceB_B_Balance), state.accountB.balanceB.storageRoot},
             FMT(prefix, ".updateBalanceB_B")),
         updateAccount_B(
             pb, updateAccount_A.result(), tx.getArrayOutput(accountB_Address),
@@ -284,14 +284,14 @@ public:
         updateBalanceB_O(
             pb, state.oper.account.balancesRoot,
             tx.getArrayOutput(balanceA_S_Address),
-            {state.oper.balanceB.balance, state.oper.balanceB.storage},
-            {tx.getOutput(balanceO_B_Balance), state.oper.balanceB.storage},
+            {state.oper.balanceB.balance, state.oper.balanceB.storageRoot},
+            {tx.getOutput(balanceO_B_Balance), state.oper.balanceB.storageRoot},
             FMT(prefix, ".updateBalanceB_O")),
         updateBalanceA_O(
             pb, updateBalanceB_O.result(),
             tx.getArrayOutput(balanceB_S_Address),
-            {state.oper.balanceA.balance, state.oper.balanceA.storage},
-            {tx.getOutput(balanceO_A_Balance), state.oper.balanceA.storage},
+            {state.oper.balanceA.balance, state.oper.balanceA.storageRoot},
+            {tx.getOutput(balanceO_A_Balance), state.oper.balanceA.storageRoot},
             FMT(prefix, ".updateBalanceA_O")),
         updateAccount_O(
             pb, updateAccount_B.result(), operatorAccountID,

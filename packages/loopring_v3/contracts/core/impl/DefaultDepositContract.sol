@@ -85,7 +85,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
         address from,
         address token,
         uint96  amount,
-        bytes   calldata /*auxiliaryData*/
+        bytes   calldata /*extraData*/
         )
         external
         override
@@ -117,7 +117,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
         address to,
         address token,
         uint    amount,
-        bytes   calldata /*auxiliaryData*/
+        bytes   calldata /*extraData*/
         )
         external
         override

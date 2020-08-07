@@ -7,5 +7,13 @@ import "../base/BaseWallet.sol";
 
 /// @title WalletImpl
 contract WalletImpl is BaseWallet {
-    string public constant VERSION = "1.1.0";
+    function version()
+        external
+        override
+        pure
+        returns (string memory)
+    {
+        // 使用中国省会作为别名
+        return "1.1.5 (shenyang)";
+    }
 }

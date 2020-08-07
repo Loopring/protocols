@@ -18,13 +18,11 @@ interface SettlementValues {
   fillBA: BN;
   feeA: BN;
   protocolFeeA: BN;
-  rebateA: BN;
 
   fillSB: BN;
   fillBB: BN;
   feeB: BN;
   protocolFeeB: BN;
-  rebateB: BN;
 }
 
 interface Fill {
@@ -56,10 +54,7 @@ export class Balance {
     this.storage = {};
   }
 
-  public init(
-    balance: BN,
-    storage: { [key: number]: Storage }
-  ) {
+  public init(balance: BN, storage: { [key: number]: Storage }) {
     this.balance = new BN(balance.toString(10));
     this.storage = storage;
   }
@@ -171,9 +166,7 @@ export class Simulator {
           const jBalance = jAccount._balancesLeafs[balanceKey];
 
           const storage: { [key: number]: Storage } = {};
-          const storageKeys: string[] = Object.keys(
-            jBalance._storageLeafs
-          );
+          const storageKeys: string[] = Object.keys(jBalance._storageLeafs);
           for (const storageKey of storageKeys) {
             const jStorage = jBalance._storageLeafs[storageKey];
             storage[Number(storageKey)] = {
@@ -504,7 +497,9 @@ export class Simulator {
     from.getBalance(transfer.feeTokenID).balance.isub(transfer.fee);
 
     // Nonce
-    const storage = from.getBalance(transfer.tokenID).getStorage(transfer.storageID);
+    const storage = from
+      .getBalance(transfer.tokenID)
+      .getStorage(transfer.storageID);
     storage.data = new BN(1);
     storage.storageID = transfer.storageID;
 
@@ -530,22 +525,18 @@ export class Simulator {
       amount = new BN(0);
     }
     account.getBalance(withdrawal.tokenID).balance.isub(amount);
-    account
-      .getBalance(withdrawal.feeTokenID)
-      .balance.isub(withdrawal.fee);
+    account.getBalance(withdrawal.feeTokenID).balance.isub(withdrawal.fee);
 
     // Special cases when withdrawing from the protocol fee pool.
     // These account balances will have interest accrued.
     if (withdrawal.accountID === 0) {
-      state.getAccount(2).getBalance(withdrawal.tokenID);
+      state.getAccount(1).getBalance(withdrawal.tokenID);
     } else {
       state.getAccount(0).getBalance(withdrawal.tokenID);
     }
 
     const operator = state.getAccount(block.operatorAccountID);
-    operator
-      .getBalance(withdrawal.feeTokenID)
-      .balance.iadd(withdrawal.fee);
+    operator.getBalance(withdrawal.feeTokenID).balance.iadd(withdrawal.fee);
 
     if (withdrawal.type === 0 || withdrawal.type === 1) {
       account.nonce++;
@@ -651,11 +642,9 @@ export class Simulator {
       spotTrade.orderA.storageID,
       spotTrade.orderA.accountID,
       spotTrade.orderA.feeBips,
-      spotTrade.orderA.rebateBips,
       spotTrade.orderB.storageID,
       spotTrade.orderB.accountID,
-      spotTrade.orderB.feeBips,
-      spotTrade.orderB.rebateBips
+      spotTrade.orderB.feeBips
     );
 
     // Check expected
@@ -747,22 +736,6 @@ export class Simulator {
       amount: new BN(0),
       subPayments: []
     };
-    const payRebateA: DetailedTokenTransfer = {
-      description: "RebateA",
-      token: spotTrade.orderA.tokenIdB,
-      from: block.operatorAccountID,
-      to: spotTrade.orderA.accountID,
-      amount: s.rebateA,
-      subPayments: []
-    };
-    const payRebateB: DetailedTokenTransfer = {
-      description: "RebateB",
-      token: spotTrade.orderB.tokenIdB,
-      from: block.operatorAccountID,
-      to: spotTrade.orderB.accountID,
-      amount: s.rebateB,
-      subPayments: []
-    };
     const payProtocolFeeA: DetailedTokenTransfer = {
       description: "ProtocolFeeA",
       token: spotTrade.orderA.tokenIdB,
@@ -779,8 +752,6 @@ export class Simulator {
       amount: s.protocolFeeB,
       subPayments: []
     };
-    paymentsOperator.subPayments.push(payRebateA);
-    paymentsOperator.subPayments.push(payRebateB);
     paymentsOperator.subPayments.push(payProtocolFeeA);
     paymentsOperator.subPayments.push(payProtocolFeeB);
 
@@ -802,9 +773,7 @@ export class Simulator {
     fillSA: BN,
     fillSB: BN,
     feeBipsA: number,
-    feeBipsB: number,
-    rebateBipsA: number,
-    rebateBipsB: number
+    feeBipsB: number
   ) {
     const fillBA = fillSB;
     const fillBB = fillSA;
@@ -815,18 +784,16 @@ export class Simulator {
     console.log("fillSB: " + fillSB.toString(10));
     console.log("fillBB: " + fillBB.toString(10));*/
 
-    const [feeA, protocolFeeA, rebateA] = this.calculateFees(
+    const [feeA, protocolFeeA] = this.calculateFees(
       fillBA,
       protocolFeeTakerBips,
-      feeBipsA,
-      rebateBipsA
+      feeBipsA
     );
 
-    const [feeB, protocolFeeB, rebateB] = this.calculateFees(
+    const [feeB, protocolFeeB] = this.calculateFees(
       fillBB,
       protocolFeeMakerBips,
-      feeBipsB,
-      rebateBipsB
+      feeBipsB
     );
 
     /*console.log("feeA: " + feeA.toString(10));
@@ -839,13 +806,10 @@ export class Simulator {
       fillBA,
       feeA,
       protocolFeeA,
-      rebateA,
-
       fillSB,
       fillBB,
       feeB,
-      protocolFeeB,
-      rebateB
+      protocolFeeB
     };
     return settlementValues;
   }
@@ -864,11 +828,9 @@ export class Simulator {
     storageIdA: number,
     accountIdA: number,
     feeBipsA: number,
-    rebateBipsA: number,
     storageIdB: number,
     accountIdB: number,
-    feeBipsB: number,
-    rebateBipsB: number
+    feeBipsB: number
   ) {
     const s = this.calculateSettlementValues(
       protocolFeeTakerBips,
@@ -876,9 +838,7 @@ export class Simulator {
       fillSA,
       fillSB,
       feeBipsA,
-      feeBipsB,
-      rebateBipsA,
-      rebateBipsB
+      feeBipsB
     );
 
     // Update accountA
@@ -888,11 +848,11 @@ export class Simulator {
       accountA
         .getBalance(tokenB)
         .balance.iadd(s.fillBA)
-        .isub(s.feeA)
-        .iadd(s.rebateA);
+        .isub(s.feeA);
 
       const tradeHistoryA = accountA.getBalance(tokenA).getStorage(storageIdA);
-      tradeHistoryA.data = storageIdA > tradeHistoryA.storageID ? new BN(0) : tradeHistoryA.data;
+      tradeHistoryA.data =
+        storageIdA > tradeHistoryA.storageID ? new BN(0) : tradeHistoryA.data;
       tradeHistoryA.data.iadd(buyA ? s.fillBA : s.fillSA);
       tradeHistoryA.storageID = storageIdA;
     }
@@ -903,11 +863,11 @@ export class Simulator {
       accountB
         .getBalance(tokenA)
         .balance.iadd(s.fillBB)
-        .isub(s.feeB)
-        .iadd(s.rebateB);
+        .isub(s.feeB);
 
       const tradeHistoryB = accountB.getBalance(tokenB).getStorage(storageIdB);
-      tradeHistoryB.data = storageIdB > tradeHistoryB.storageID ? new BN(0) : tradeHistoryB.data;
+      tradeHistoryB.data =
+        storageIdB > tradeHistoryB.storageID ? new BN(0) : tradeHistoryB.data;
       tradeHistoryB.data.iadd(buyB ? s.fillBB : s.fillSB);
       tradeHistoryB.storageID = storageIdB;
     }
@@ -922,13 +882,11 @@ export class Simulator {
     operator
       .getBalance(tokenA)
       .balance.iadd(s.feeB)
-      .isub(s.protocolFeeB)
-      .isub(s.rebateB);
+      .isub(s.protocolFeeB);
     operator
       .getBalance(tokenB)
       .balance.iadd(s.feeA)
-      .isub(s.protocolFeeA)
-      .isub(s.rebateA);
+      .isub(s.protocolFeeA);
 
     return s;
   }
@@ -1062,8 +1020,10 @@ export class Simulator {
       .getBalance(order.tokenIdS)
       .getStorage(order.storageID);
     // Trade history trimming
-    const leafStorageID = tradeHistory.storageID === 0 ? storageSlot : tradeHistory.storageID;
-    const filled = leafStorageID === order.storageID ? tradeHistory.data : new BN(0);
+    const leafStorageID =
+      tradeHistory.storageID === 0 ? storageSlot : tradeHistory.storageID;
+    const filled =
+      leafStorageID === order.storageID ? tradeHistory.data : new BN(0);
     return filled;
   }
 
@@ -1121,13 +1081,11 @@ export class Simulator {
   private static calculateFees(
     fillB: BN,
     protocolFeeBips: number,
-    feeBips: number,
-    rebateBips: number
+    feeBips: number
   ) {
     const protocolFee = fillB.mul(new BN(protocolFeeBips)).div(new BN(100000));
     const fee = fillB.mul(new BN(feeBips)).div(new BN(10000));
-    const rebate = fillB.mul(new BN(rebateBips)).div(new BN(10000));
-    return [fee, protocolFee, rebate];
+    return [fee, protocolFee];
   }
 
   private static checkFillRate(
@@ -1151,22 +1109,7 @@ export class Simulator {
     let valid = true;
 
     valid =
-      valid && this.ensure(order.validSince <= timestamp, "order too early");
-    valid =
       valid && this.ensure(timestamp <= order.validUntil, "order too late");
-
-    valid =
-      valid &&
-      this.ensure(
-        !(!order.buy && order.allOrNone && fillAmountS.lt(order.amountS)),
-        "allOrNone sell"
-      );
-    valid =
-      valid &&
-      this.ensure(
-        !(order.buy && order.allOrNone && fillAmountB.lt(order.amountB)),
-        "allOrNone buy"
-      );
     valid =
       valid &&
       this.ensure(
@@ -1198,10 +1141,7 @@ export class Simulator {
         };
       }
       balances[Number(tokenID)] = new Balance();
-      balances[Number(tokenID)].init(
-        balanceValue.balance,
-        storage
-      );
+      balances[Number(tokenID)].init(balanceValue.balance, storage);
     }
     const accountCopy = new AccountLeaf();
     accountCopy.init(
