@@ -236,15 +236,16 @@ contract SecurityStore is DataStore
     function getLock(address wallet)
         public
         view
-        returns (uint _lock, address _module)
+        returns (uint _lock, address _lockedBy)
     {
         _lock = uint(wallets[wallet].lock);
-        _module = wallets[wallet].lockedBy;
+        _lockedBy = wallets[wallet].lockedBy;
     }
 
     function setLock(
         address wallet,
-        uint    lock
+        uint    lock,
+        address lockedBy
         )
         public
         onlyWalletModule(wallet)
@@ -252,9 +253,10 @@ contract SecurityStore is DataStore
         require(lock == 0 || lock > block.timestamp, "INVALID_LOCK_TIME");
         uint128 _lock = uint128(lock);
         require(uint(_lock) == lock, "LOCK_TOO_LARGE");
+        require(lock != 0 || lockedBy == address(0), "INVALID_LOCKEDBY");
 
         wallets[wallet].lock = _lock;
-        wallets[wallet].lockedBy = msg.sender;
+        wallets[wallet].lockedBy = lockedBy;
     }
 
     function lastActive(address wallet)

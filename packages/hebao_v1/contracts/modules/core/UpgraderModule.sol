@@ -99,6 +99,11 @@ contract UpgraderModule is BaseModule {
         if (inheritor != address(0)) {
             newSecurityStore.setInheritor(wallet, inheritor);
         }
+
+        (uint lock, address lockedBy) = oldSecurityStore.getLock(wallet);
+        if (lock > block.timestamp) {
+            newSecurityStore.setLock(wallet, lock, lockedBy);
+        }
     }
 
     function activate()
