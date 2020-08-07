@@ -113,7 +113,7 @@ abstract contract SecurityModule is MetaTxModule
         // cannot lock the wallet twice by different modules.
         require(_lockPeriod > 0, "ZERO_VALUE");
         uint lock = block.timestamp + _lockPeriod;
-        controller().securityStore().setLock(wallet, lock, address(this));
+        controller().securityStore().setLock(wallet, lock);
         emit WalletLock(wallet, lock);
     }
 
@@ -123,7 +123,7 @@ abstract contract SecurityModule is MetaTxModule
         (uint _lock, address _lockedBy) = controller().securityStore().getLock(wallet);
         if (_lock > block.timestamp) {
             require(forceUnlock || _lockedBy == address(this), "UNABLE_TO_UNLOCK");
-            controller().securityStore().setLock(wallet, 0, address(this));
+            controller().securityStore().setLock(wallet, 0);
         }
         emit WalletLock(wallet, 0);
     }
