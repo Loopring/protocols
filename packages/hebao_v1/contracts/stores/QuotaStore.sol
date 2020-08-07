@@ -44,7 +44,7 @@ contract QuotaStore is DataStore, Claimable
         defaultQuota = _defaultQuota;
     }
 
-    function changeDefaultQuota(uint _defaultQuota)
+    function changeDefaultQuota(uint128 _defaultQuota)
         external
         onlyOwner
     {
@@ -55,7 +55,7 @@ contract QuotaStore is DataStore, Claimable
             "INVALID_DEFAULT_QUOTA"
         );
         emit DefaultQuotaChanged(defaultQuota, _defaultQuota);
-        defaultQuota = _defaultQuota.toUint128();
+        defaultQuota = _defaultQuota;
     }
 
     function changeQuota(

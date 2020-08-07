@@ -288,7 +288,7 @@ contract SecurityStore is DataStore
         )
     {
         _who = wallets[wallet].inheritor;
-        _lastActive = uint(wallets[wallet].lastActive);
+        _lastActive = wallets[wallet].lastActive;
     }
 
     function setInheritor(address wallet, address who)
