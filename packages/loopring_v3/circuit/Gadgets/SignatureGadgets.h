@@ -33,22 +33,22 @@ public:
   VariableT xx;
   VariableT x;
 
-  RequireValidPublicKey(ProtoboardT &pb, const Params &_params,
+  RequireValidPublicKey(ProtoboardT &_pb, const Params &_params,
                         const VariableT &_x, const VariableT &_y,
                         const std::string &prefix)
-      : GadgetT(pb, prefix),
+      : GadgetT(_pb, prefix),
 
         params(_params),
 
-        requireValidPoint(pb, params, _x, _y,
+        requireValidPoint(_pb, params, _x, _y,
                           FMT(prefix, ".requireValidPoint")),
 
-        y(_y), yy(make_variable(pb, FMT(prefix, ".yy"))),
-        lhs(make_variable(pb, FMT(prefix, ".lhs"))),
-        rhs(make_variable(pb, FMT(prefix, ".rhs"))),
-        irhs(make_variable(pb, FMT(prefix, ".irhs"))),
-        xx(make_variable(pb, FMT(prefix, ".xx"))),
-        x(make_variable(pb, FMT(prefix, ".x"))) {}
+        y(_y), yy(make_variable(_pb, FMT(prefix, ".yy"))),
+        lhs(make_variable(_pb, FMT(prefix, ".lhs"))),
+        rhs(make_variable(_pb, FMT(prefix, ".rhs"))),
+        irhs(make_variable(_pb, FMT(prefix, ".irhs"))),
+        xx(make_variable(_pb, FMT(prefix, ".xx"))),
+        x(make_variable(_pb, FMT(prefix, ".x"))) {}
 
   void generate_r1cs_witness() {
     requireValidPoint.generate_r1cs_witness();
@@ -98,33 +98,33 @@ public:
   LtFieldGadget isNegativeX;
   field2bits_strict publicKeyYBits;
 
-  CompressPublicKey(ProtoboardT &pb, const Params &_params,
+  CompressPublicKey(ProtoboardT &_pb, const Params &_params,
                     const Constants &_constants, const VariableT &publicKeyX,
                     const VariableT &publicKeyY, const std::string &prefix)
-      : GadgetT(pb, prefix),
+      : GadgetT(_pb, prefix),
 
         params(_params), constants(_constants),
 
         // Special case to allow the public key to be 0
-        isZeroX(pb, publicKeyX, constants._0, FMT(prefix, ".isZeroX")),
-        isZeroY(pb, publicKeyY, constants._0, FMT(prefix, ".isZeroY")),
-        isZero(pb, {isZeroX.result(), isZeroY.result()},
+        isZeroX(_pb, publicKeyX, constants._0, FMT(prefix, ".isZeroX")),
+        isZeroY(_pb, publicKeyY, constants._0, FMT(prefix, ".isZeroY")),
+        isZero(_pb, {isZeroX.result(), isZeroY.result()},
                FMT(prefix, ".isZero")),
-        valueX(pb, isZero.result(), constants.dummyPublicKeyX, publicKeyX,
+        valueX(_pb, isZero.result(), constants.dummyPublicKeyX, publicKeyX,
                FMT(prefix, ".valueX")),
-        valueY(pb, isZero.result(), constants.dummyPublicKeyY, publicKeyY,
+        valueY(_pb, isZero.result(), constants.dummyPublicKeyY, publicKeyY,
                FMT(prefix, ".valueY")),
 
         // Check if the public key is valid
-        requireValidPublicKey(pb, params, valueX.result(), valueY.result(),
+        requireValidPublicKey(_pb, params, valueX.result(), valueY.result(),
                               FMT(prefix, ".requireValidPublicKey")),
 
         // Point compression
-        negPublicKeyX(pb, constants._0, publicKeyX,
+        negPublicKeyX(_pb, constants._0, publicKeyX,
                       FMT(prefix, ".negPublicKeyX")),
-        isNegativeX(pb, negPublicKeyX.result(), publicKeyX,
+        isNegativeX(_pb, negPublicKeyX.result(), publicKeyX,
                     FMT(prefix, ".isNegativeX")),
-        publicKeyYBits(pb, publicKeyY, FMT(prefix, ".publicKeyYBits")) {}
+        publicKeyYBits(_pb, publicKeyY, FMT(prefix, ".publicKeyYBits")) {}
 
   void generate_r1cs_witness() {
     // Special case to allow the public key to be 0
@@ -181,7 +181,7 @@ public:
         // Prefix the message with R and A.
         m_hash_RAM(in_pb, var_array({in_R.x, in_R.y, in_A.x, in_A.y, in_M}),
                    FMT(annotation_prefix, ".hash_RAM")),
-        hash(pb, m_hash_RAM.result(), NUM_BITS_MAX_VALUE,
+        hash(_pb, m_hash_RAM.result(), NUM_BITS_MAX_VALUE,
              FMT(annotation_prefix, ".hash")) {}
 
   void generate_r1cs_constraints() {
@@ -281,25 +281,25 @@ public:
 
   IfThenRequireGadget valid;
 
-  SignatureVerifier(ProtoboardT &pb, const jubjub::Params &params,
+  SignatureVerifier(ProtoboardT &_pb, const jubjub::Params &params,
                     const Constants &_constants,
                     const jubjub::VariablePointT &publicKey,
                     const VariableT &message, const VariableT &required,
                     const std::string &prefix)
-      : GadgetT(pb, prefix),
+      : GadgetT(_pb, prefix),
 
-        constants(_constants), sig_R(pb, FMT(prefix, ".R")),
-        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
+        constants(_constants), sig_R(_pb, FMT(prefix, ".R")),
+        sig_s(make_var_array(_pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
         signatureVerifier(
             pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey,
             sig_R, sig_s, message, FMT(prefix, ".signatureVerifier")),
-        valid(pb, required, signatureVerifier.result(), FMT(prefix, ".valid")) {
-  }
+        valid(_pb, required, signatureVerifier.result(),
+              FMT(prefix, ".valid")) {}
 
   void generate_r1cs_witness(Signature sig) {
     pb.val(sig_R.x) = sig.R.x;
     pb.val(sig_R.y) = sig.R.y;
-    sig_s.fill_with_bits_of_field_element(pb, sig.s);
+    sig_s.fill_with_bits_of_field_element(_pb, sig.s);
     signatureVerifier.generate_r1cs_witness();
     valid.generate_r1cs_witness();
   }

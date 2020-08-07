@@ -26,20 +26,20 @@ public:
   // 0 1         y0        x           y1      y2
   // 1 0         y0        y1          x       y2
   // 1 1         y0        y1          y2      x
-  merkle_path_selector(ProtoboardT &pb, const VariableT &x,
+  merkle_path_selector(ProtoboardT &_pb, const VariableT &x,
                        std::vector<VariableT> y, const VariableT &bit0,
                        const VariableT &bit1, const std::string &prefix)
-      : GadgetT(pb, prefix),
+      : GadgetT(_pb, prefix),
 
-        bit0_or_bit1(pb, {bit0, bit1}, FMT(prefix, ".bit0_or_bit1")),
-        bit0_and_bit1(pb, {bit0, bit1}, FMT(prefix, ".bit0_and_bit1")),
+        bit0_or_bit1(_pb, {bit0, bit1}, FMT(prefix, ".bit0_or_bit1")),
+        bit0_and_bit1(_pb, {bit0, bit1}, FMT(prefix, ".bit0_and_bit1")),
 
-        child0(pb, bit0_or_bit1.result(), y[0], x, FMT(prefix, ".child0")),
-        child1p(pb, bit0, x, y[0], FMT(prefix, ".child1p")),
-        child1(pb, bit1, y[1], child1p.result(), FMT(prefix, ".child1")),
-        child2p(pb, bit0, y[2], x, FMT(prefix, ".child2p")),
-        child2(pb, bit1, child2p.result(), y[1], FMT(prefix, ".child2")),
-        child3(pb, bit0_and_bit1.result(), x, y[2], FMT(prefix, ".child3")) {
+        child0(_pb, bit0_or_bit1.result(), y[0], x, FMT(prefix, ".child0")),
+        child1p(_pb, bit0, x, y[0], FMT(prefix, ".child1p")),
+        child1(_pb, bit1, y[1], child1p.result(), FMT(prefix, ".child1")),
+        child2p(_pb, bit0, y[2], x, FMT(prefix, ".child2p")),
+        child2(_pb, bit1, child2p.result(), y[1], FMT(prefix, ".child2")),
+        child3(_pb, bit0_and_bit1.result(), x, y[2], FMT(prefix, ".child3")) {
     assert(y.size() == 3);
   }
 

@@ -20,7 +20,7 @@ struct StorageState {
   VariableT storageID;
 };
 
-static void printStorage(const ProtoboardT &pb, const StorageState &state) {
+static void printStorage(const ProtoboardT &_pb, const StorageState &state) {
   std::cout << "- data: " << pb.val(state.data) << std::endl;
   std::cout << "- storageID: " << pb.val(state.storageID) << std::endl;
 }
@@ -30,14 +30,14 @@ public:
   VariableT data;
   VariableT storageID;
 
-  StorageGadget(ProtoboardT &pb, const std::string &_prefix)
-      : GadgetT(pb, _prefix),
+  StorageGadget(ProtoboardT &_pb, const std::string &_prefix)
+      : GadgetT(_pb, _prefix),
 
-        data(make_variable(pb, FMT(_prefix, ".data"))),
-        storageID(make_variable(pb, FMT(_prefix, ".storageID"))) {}
+        data(make_variable(_pb, FMT(_prefix, ".data"))),
+        storageID(make_variable(_pb, FMT(_prefix, ".storageID"))) {}
 
-  StorageGadget(ProtoboardT &pb, VariableT _data, VariableT _storageID)
-      : GadgetT(pb, "storageGadget"),
+  StorageGadget(ProtoboardT &_pb, VariableT _data, VariableT _storageID)
+      : GadgetT(_pb, "storageGadget"),
 
         data(_data), storageID(_storageID) {}
 
@@ -62,33 +62,35 @@ public:
   VerifyTreeRoot rootBeforeVerifier;
   UpdateTreeRoot rootAfter;
 
-  UpdateStorageGadget(ProtoboardT &pb, const VariableT &_rootBefore,
+  UpdateStorageGadget(ProtoboardT &_pb, //
+                      const VariableT &_rootBefore,
                       const VariableArrayT &_slotID,
                       const StorageState &_leafBefore,
                       const StorageState &_leafAfter,
                       const std::string &_prefix)
-      : GadgetT(pb, _prefix),
+      : GadgetT(_pb, _prefix),
 
         leafBefore(_leafBefore), leafAfter(_leafAfter),
 
-        leafHashBefore(pb, var_array({_leafBefore.data, _leafBefore.storageID}),
+        leafHashBefore(_pb,
+                       var_array({_leafBefore.data, _leafBefore.storageID}),
                        FMT(_prefix, ".leafHashBefore")),
-        leafHashAfter(pb, var_array({_leafAfter.data, _leafAfter.storageID}),
+        leafHashAfter(_pb, var_array({_leafAfter.data, _leafAfter.storageID}),
                       FMT(_prefix, ".leafHashAfter")),
 
-        proof(
-            make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(_prefix, ".proof"))),
-        rootBeforeVerifier(pb, TREE_DEPTH_STORAGE, _slotID,
+        proof(make_var_array(_pb, TREE_DEPTH_STORAGE * 3,
+                             FMT(_prefix, ".proof"))),
+        rootBeforeVerifier(_pb, TREE_DEPTH_STORAGE, _slotID,
                            leafHashBefore.result(), _rootBefore, proof,
                            FMT(_prefix, ".rootBeforeVerifier")),
-        rootAfter(pb, TREE_DEPTH_STORAGE, _slotID, leafHashAfter.result(),
+        rootAfter(_pb, TREE_DEPTH_STORAGE, _slotID, leafHashAfter.result(),
                   proof, FMT(_prefix, ".rootAfter")) {}
 
   void generate_r1cs_witness(const StorageUpdate &update) {
     leafHashBefore.generate_r1cs_witness();
     leafHashAfter.generate_r1cs_witness();
 
-    proof.fill_with_field_elements(pb, update.proof.data);
+    proof.fill_with_field_elements(_pb, update.proof.data);
 
     rootBeforeVerifier.generate_r1cs_witness();
     rootAfter.generate_r1cs_witness();
@@ -97,9 +99,9 @@ public:
            annotation_prefix);
     if (pb.val(rootAfter.result()) != update.rootAfter) {
       std::cout << "leafBefore:" << std::endl;
-      printStorage(pb, leafBefore);
+      printStorage(_pb, leafBefore);
       std::cout << "leafAfter:" << std::endl;
-      printStorage(pb, leafAfter);
+      printStorage(_pb, leafAfter);
       ASSERT(pb.val(rootAfter.result()) == update.rootAfter, annotation_prefix);
     }
   }
@@ -137,45 +139,47 @@ class ReadStorageGadget : public GadgetT {
   TernaryGadget data;
 
 public:
-  ReadStorageGadget(ProtoboardT &pb, const Constants &_constants,
+  ReadStorageGadget(ProtoboardT &_pb, const Constants &_constants,
                     const StorageGadget &_currentStorage,
                     const DualVariableGadget &_storageID,
                     const VariableT &_verify, const std::string &_prefix)
-      : GadgetT(pb, _prefix),
+      : GadgetT(_pb, _prefix),
 
-        address(make_variable(pb, FMT(_prefix, ".address"))),
+        address(make_variable(_pb, FMT(_prefix, ".address"))),
 
-        packAddress(pb, subArray(_storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
+        packAddress(_pb, subArray(_storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
                     address, FMT(_prefix, ".packAddress")),
 
-        isCurrentStorageIDNonZero(pb, _currentStorage.storageID,
+        isCurrentStorageIDNonZero(_pb, _currentStorage.storageID,
                                   FMT(_prefix, ".isCurrentStorageIDNonZero")),
 
-        currentStorageID(pb, isCurrentStorageIDNonZero.result(),
+        currentStorageID(_pb, isCurrentStorageIDNonZero.result(),
                          _currentStorage.storageID,
                          address, // Value = 0
                          FMT(_prefix, ".currentStorageID")),
 
-        nextStorageID(pb, currentStorageID.result(), _constants.numStorageSlots,
+        nextStorageID(_pb, currentStorageID.result(),
+                      _constants.numStorageSlots,
                       FMT(_prefix, ".nextStorageID")),
 
-        storageID_eq_storageID(pb, _storageID.packed, currentStorageID.result(),
+        storageID_eq_storageID(_pb, _storageID.packed,
+                               currentStorageID.result(),
                                FMT(_prefix, ".storageID_eq_storageID")),
 
-        storageID_eq_nextStorageID(pb, _storageID.packed,
+        storageID_eq_nextStorageID(_pb, _storageID.packed,
                                    nextStorageID.result(),
                                    FMT(_prefix, ".storageID_eq_nextStorageID")),
 
-        isValidStorageID(pb,
+        isValidStorageID(_pb,
                          {storageID_eq_storageID.result(),
                           storageID_eq_nextStorageID.result()},
                          FMT(_prefix, ".isValidStorageID")),
 
-        requireValidStorageID(pb, _verify, isValidStorageID.result(),
+        requireValidStorageID(_pb, _verify, isValidStorageID.result(),
                               _constants._1,
                               FMT(_prefix, ".requireValidStorageID")),
 
-        data(pb, storageID_eq_storageID.result(), _currentStorage.data,
+        data(_pb, storageID_eq_storageID.result(), _currentStorage.data,
              _constants._0, FMT(_prefix, ".data")) {}
 
   void generate_r1cs_witness() {
@@ -225,16 +229,16 @@ class ReadNonceGadget : public GadgetT {
   IfThenRequireEqualGadget requireDataZero;
 
 public:
-  ReadNonceGadget(ProtoboardT &pb, const Constants &_constants,
+  ReadNonceGadget(ProtoboardT &_pb, const Constants &_constants,
                   const StorageGadget &_currentStorage,
                   const DualVariableGadget &_storageID,
                   const VariableT &_verify, const std::string &_prefix)
-      : GadgetT(pb, _prefix),
+      : GadgetT(_pb, _prefix),
 
         constants(_constants), storageID(_storageID),
-        readStorage(pb, constants, _currentStorage, storageID, _verify,
+        readStorage(_pb, constants, _currentStorage, storageID, _verify,
                     FMT(_prefix, ".readStorage")),
-        requireDataZero(pb, _verify, readStorage.getData(), _constants._0,
+        requireDataZero(_pb, _verify, readStorage.getData(), _constants._0,
                         FMT(_prefix, ".requireDataZero")) {}
 
   void generate_r1cs_witness() {

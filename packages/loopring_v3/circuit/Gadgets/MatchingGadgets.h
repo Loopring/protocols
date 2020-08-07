@@ -38,45 +38,45 @@ public:
   OrGadget fillsValid;
   RequireEqualGadget requireFillsValid;
 
-  RequireFillRateGadget(ProtoboardT &pb, const Constants &constants,
+  RequireFillRateGadget(ProtoboardT &_pb, const Constants &constants,
                         const VariableT &amountS, const VariableT &amountB,
                         const VariableT &fillAmountS,
                         const VariableT &fillAmountB, unsigned int n,
                         const std::string &prefix)
-      : GadgetT(pb, prefix),
+      : GadgetT(_pb, prefix),
 
-        fillAmountS_mul_amountB(pb, fillAmountS, amountB,
+        fillAmountS_mul_amountB(_pb, fillAmountS, amountB,
                                 FMT(prefix, ".fillAmountS_mul_amountB")),
         fillAmountS_mul_amountB_mul_1000(
             pb, fillAmountS_mul_amountB.result(), constants._1000,
             FMT(prefix, ".fillAmountS_mul_amountB_mul_1000")),
-        fillAmountB_mul_amountS(pb, fillAmountB, amountS,
+        fillAmountB_mul_amountS(_pb, fillAmountB, amountS,
                                 FMT(prefix, ".fillAmountB_mul_amountS")),
         fillAmountB_mul_amountS_mul_1001(
             pb, fillAmountB_mul_amountS.result(), constants._1001,
             FMT(prefix, ".fillAmountB_mul_amountS_mul_1001")),
-        validRate(pb, fillAmountS_mul_amountB_mul_1000.result(),
+        validRate(_pb, fillAmountS_mul_amountB_mul_1000.result(),
                   fillAmountB_mul_amountS_mul_1001.result(),
                   n * 2 + 10 /*=ceil(log2(1000))*/, FMT(prefix, ".validRate")),
 
         // Also enforce that either both fill amounts are zero or both are
         // non-zero.
-        isNonZeroFillAmountS(pb, fillAmountS,
+        isNonZeroFillAmountS(_pb, fillAmountS,
                              FMT(prefix, "isNonZeroFillAmountS")),
-        isNonZeroFillAmountB(pb, fillAmountB,
+        isNonZeroFillAmountB(_pb, fillAmountB,
                              FMT(prefix, "isNonZeroFillAmountB")),
         fillsNonZero(
             pb, {isNonZeroFillAmountS.result(), isNonZeroFillAmountB.result()},
             FMT(prefix, "fillsNonZero")),
-        isZeroFillAmountS(pb, isNonZeroFillAmountS.result(),
+        isZeroFillAmountS(_pb, isNonZeroFillAmountS.result(),
                           FMT(prefix, "isZeroFillAmountS")),
-        isZeroFillAmountB(pb, isNonZeroFillAmountB.result(),
+        isZeroFillAmountB(_pb, isNonZeroFillAmountB.result(),
                           FMT(prefix, "isZeroFillAmountB")),
-        fillsZero(pb, {isZeroFillAmountS.result(), isZeroFillAmountB.result()},
+        fillsZero(_pb, {isZeroFillAmountS.result(), isZeroFillAmountB.result()},
                   FMT(prefix, "fillsZero")),
-        fillsValid(pb, {fillsNonZero.result(), fillsZero.result()},
+        fillsValid(_pb, {fillsNonZero.result(), fillsZero.result()},
                    FMT(prefix, "fillsValid")),
-        requireFillsValid(pb, fillsValid.result(), constants._1,
+        requireFillsValid(_pb, fillsValid.result(), constants._1,
                           FMT(prefix, "requireFillsValid")) {}
 
   void generate_r1cs_witness() {
@@ -119,12 +119,12 @@ class RequireValidOrderGadget : public GadgetT {
 public:
   RequireLtGadget requireValidUntil;
 
-  RequireValidOrderGadget(ProtoboardT &pb, const Constants &constants,
+  RequireValidOrderGadget(ProtoboardT &_pb, const Constants &constants,
                           const VariableT &timestamp, const OrderGadget &order,
                           const std::string &prefix)
-      : GadgetT(pb, prefix),
+      : GadgetT(_pb, prefix),
 
-        requireValidUntil(pb, timestamp, order.validUntil.packed,
+        requireValidUntil(_pb, timestamp, order.validUntil.packed,
                           NUM_BITS_TIMESTAMP,
                           FMT(prefix, ".requireValidUntil")) {}
 
@@ -141,16 +141,16 @@ public:
   MulDivGadget protocolFee;
   MulDivGadget fee;
 
-  FeeCalculatorGadget(ProtoboardT &pb, const Constants &constants,
+  FeeCalculatorGadget(ProtoboardT &_pb, const Constants &constants,
                       const VariableT &amountB,
                       const VariableT &protocolFeeBips,
                       const VariableT &feeBips, const std::string &prefix)
-      : GadgetT(pb, prefix),
+      : GadgetT(_pb, prefix),
 
-        protocolFee(pb, constants, amountB, protocolFeeBips, constants._100000,
+        protocolFee(_pb, constants, amountB, protocolFeeBips, constants._100000,
                     NUM_BITS_AMOUNT, NUM_BITS_PROTOCOL_FEE_BIPS,
                     17 /*=ceil(log2(100000))*/, FMT(prefix, ".protocolFee")),
-        fee(pb, constants, amountB, feeBips, constants._10000, NUM_BITS_AMOUNT,
+        fee(_pb, constants, amountB, feeBips, constants._10000, NUM_BITS_AMOUNT,
             NUM_BITS_BIPS, 14 /*=ceil(log2(10000))*/, FMT(prefix, ".fee")) {}
 
   void generate_r1cs_witness() {
@@ -176,19 +176,19 @@ public:
   AddGadget filledAfter;
   RequireLeqGadget filledAfter_leq_fillLimit;
 
-  RequireFillLimitGadget(ProtoboardT &pb, const Constants &constants,
+  RequireFillLimitGadget(ProtoboardT &_pb, const Constants &constants,
                          const OrderGadget &order, const VariableT &filled,
                          const VariableT &fillS, const VariableT &fillB,
                          const std::string &prefix)
-      : GadgetT(pb, prefix),
+      : GadgetT(_pb, prefix),
 
-        fillAmount(pb, order.buy.packed, fillB, fillS,
+        fillAmount(_pb, order.buy.packed, fillB, fillS,
                    FMT(prefix, ".fillAmount")),
-        fillLimit(pb, order.buy.packed, order.amountB.packed,
+        fillLimit(_pb, order.buy.packed, order.amountB.packed,
                   order.amountS.packed, FMT(prefix, ".fillLimit")),
-        filledAfter(pb, filled, fillAmount.result(), NUM_BITS_AMOUNT,
+        filledAfter(_pb, filled, fillAmount.result(), NUM_BITS_AMOUNT,
                     FMT(prefix, ".filledAfter")),
-        filledAfter_leq_fillLimit(pb, filledAfter.result(), fillLimit.result(),
+        filledAfter_leq_fillLimit(_pb, filledAfter.result(), fillLimit.result(),
                                   NUM_BITS_AMOUNT,
                                   FMT(prefix, ".filledAfter_leq_fillLimit")) {}
 
@@ -217,18 +217,18 @@ public:
   // Check fill limit
   RequireFillLimitGadget requireFillLimit;
 
-  RequireOrderFillsGadget(ProtoboardT &pb, const Constants &constants,
+  RequireOrderFillsGadget(ProtoboardT &_pb, const Constants &constants,
                           const OrderGadget &order, const VariableT &filled,
                           const VariableT &fillS, const VariableT &fillB,
                           const std::string &prefix)
-      : GadgetT(pb, prefix),
+      : GadgetT(_pb, prefix),
 
         // Check rate
-        requireFillRate(pb, constants, order.amountS.packed,
+        requireFillRate(_pb, constants, order.amountS.packed,
                         order.amountB.packed, fillS, fillB, NUM_BITS_AMOUNT,
                         FMT(prefix, ".requireFillRate")),
         // Check fill limit
-        requireFillLimit(pb, constants, order, filled, fillS, fillB,
+        requireFillLimit(_pb, constants, order, filled, fillS, fillB,
                          FMT(prefix, ".requireFillLimit")) {}
 
   void generate_r1cs_witness() {
@@ -254,17 +254,17 @@ public:
   OrGadget valid;
   RequireEqualGadget requireValid;
 
-  RequireValidTakerGadget(ProtoboardT &pb, const Constants &constants,
+  RequireValidTakerGadget(ProtoboardT &_pb, const Constants &constants,
                           const VariableT &taker,
                           const VariableT &expectedTaker,
                           const std::string &prefix)
-      : GadgetT(pb, prefix),
+      : GadgetT(_pb, prefix),
 
-        takerMatches(pb, taker, expectedTaker, FMT(prefix, ".takerMatches")),
-        takerOpen(pb, constants._0, expectedTaker, FMT(prefix, ".takerOpen")),
-        valid(pb, {takerMatches.result(), takerOpen.result()},
+        takerMatches(_pb, taker, expectedTaker, FMT(prefix, ".takerMatches")),
+        takerOpen(_pb, constants._0, expectedTaker, FMT(prefix, ".takerOpen")),
+        valid(_pb, {takerMatches.result(), takerOpen.result()},
               FMT(prefix, ".valid")),
-        requireValid(pb, valid.result(), constants._1,
+        requireValid(_pb, valid.result(), constants._1,
                      FMT(prefix, ".requireValid")) {}
 
   void generate_r1cs_witness() {
@@ -304,18 +304,18 @@ public:
   RequireValidOrderGadget requireValidA;
   RequireValidOrderGadget requireValidB;
 
-  OrderMatchingGadget(ProtoboardT &pb, const Constants &constants,
+  OrderMatchingGadget(ProtoboardT &_pb, const Constants &constants,
                       const VariableT &timestamp, const OrderGadget &orderA,
                       const OrderGadget &orderB, const VariableT &ownerA,
                       const VariableT &ownerB, const VariableT &filledA,
                       const VariableT &filledB, const VariableT &_fillS_A,
                       const VariableT &_fillS_B, const std::string &prefix)
-      : GadgetT(pb, prefix), fillS_A(_fillS_A), fillS_B(_fillS_B),
+      : GadgetT(_pb, prefix), fillS_A(_fillS_A), fillS_B(_fillS_B),
 
         // Check if the fills are valid for the orders
-        requireOrderFillsA(pb, constants, orderA, filledA, fillS_A, fillS_B,
+        requireOrderFillsA(_pb, constants, orderA, filledA, fillS_A, fillS_B,
                            FMT(prefix, ".requireOrderFillsA")),
-        requireOrderFillsB(pb, constants, orderB, filledB, fillS_B, fillS_A,
+        requireOrderFillsB(_pb, constants, orderB, filledB, fillS_B, fillS_A,
                            FMT(prefix, ".requireOrderFillsB")),
 
         // Check if tokenS/tokenB match
@@ -327,15 +327,15 @@ public:
             FMT(prefix, ".orderA_tokenB_eq_orderB_tokenS")),
 
         // Check if the takers match
-        validateTakerA(pb, constants, ownerB, orderA.taker,
+        validateTakerA(_pb, constants, ownerB, orderA.taker,
                        FMT(prefix, ".validateTakerA")),
-        validateTakerB(pb, constants, ownerA, orderB.taker,
+        validateTakerB(_pb, constants, ownerA, orderB.taker,
                        FMT(prefix, ".validateTakerB")),
 
         // Check if the orders in the settlement are correctly filled
-        requireValidA(pb, constants, timestamp, orderA,
+        requireValidA(_pb, constants, timestamp, orderA,
                       FMT(prefix, ".checkValidA")),
-        requireValidB(pb, constants, timestamp, orderB,
+        requireValidB(_pb, constants, timestamp, orderB,
                       FMT(prefix, ".checkValidB")) {}
 
   void generate_r1cs_witness() {

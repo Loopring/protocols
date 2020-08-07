@@ -27,7 +27,7 @@ struct AccountState {
   VariableT balancesRoot;
 };
 
-static void printAccount(const ProtoboardT &pb, const AccountState &_state) {
+static void printAccount(const ProtoboardT &_pb, const AccountState &_state) {
   std::cout << "- owner: " << pb.val(_state.owner) << std::endl;
   std::cout << "- publicKeyX: " << pb.val(_state.publicKeyX) << std::endl;
   std::cout << "- publicKeyY: " << pb.val(_state.publicKeyY) << std::endl;
@@ -42,13 +42,13 @@ public:
   VariableT nonce;
   VariableT balancesRoot;
 
-  AccountGadget(ProtoboardT &pb, const std::string &_prefix)
-      : GadgetT(pb, _prefix),
+  AccountGadget(ProtoboardT &_pb, const std::string &_prefix)
+      : GadgetT(_pb, _prefix),
 
-        owner(make_variable(pb, FMT(_prefix, ".owner"))),
-        publicKey(pb, FMT(_prefix, ".publicKey")),
-        nonce(make_variable(pb, FMT(_prefix, ".nonce"))),
-        balancesRoot(make_variable(pb, FMT(_prefix, ".balancesRoot"))) {}
+        owner(make_variable(_pb, FMT(_prefix, ".owner"))),
+        publicKey(_pb, FMT(_prefix, ".publicKey")),
+        nonce(make_variable(_pb, FMT(_prefix, ".nonce"))),
+        balancesRoot(make_variable(_pb, FMT(_prefix, ".balancesRoot"))) {}
 
   void generate_r1cs_witness(const AccountLeaf &_account) {
     pb.val(owner) = _account.owner;
@@ -72,39 +72,39 @@ public:
   VerifyTreeRoot rootBeforeVerifier;
   UpdateTreeRoot rootAfter;
 
-  UpdateAccountGadget(ProtoboardT &pb, const VariableT &_rootBefore,
+  UpdateAccountGadget(ProtoboardT &_pb, const VariableT &_rootBefore,
                       const VariableArrayT &_slotID,
                       const AccountState &_leafBefore,
                       const AccountState &_leafAfter,
                       const std::string &_prefix)
-      : GadgetT(pb, _prefix),
+      : GadgetT(_pb, _prefix),
 
         leafBefore(_leafBefore), leafAfter(_leafAfter),
 
-        leafHashBefore(pb,
+        leafHashBefore(_pb,
                        var_array({_leafBefore.owner, _leafBefore.publicKeyX,
                                   _leafBefore.publicKeyY, _leafBefore.nonce,
                                   _leafBefore.balancesRoot}),
                        FMT(_prefix, ".leafHashBefore")),
-        leafHashAfter(pb,
+        leafHashAfter(_pb,
                       var_array({_leafAfter.owner, _leafAfter.publicKeyX,
                                  _leafAfter.publicKeyY, _leafAfter.nonce,
                                  _leafAfter.balancesRoot}),
                       FMT(_prefix, ".leafHashAfter")),
 
-        proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS * 3,
+        proof(make_var_array(_pb, TREE_DEPTH_ACCOUNTS * 3,
                              FMT(_prefix, ".proof"))),
-        rootBeforeVerifier(pb, TREE_DEPTH_ACCOUNTS, _slotID,
+        rootBeforeVerifier(_pb, TREE_DEPTH_ACCOUNTS, _slotID,
                            leafHashBefore.result(), _rootBefore, proof,
                            FMT(_prefix, ".pathBefore")),
-        rootAfter(pb, TREE_DEPTH_ACCOUNTS, _slotID, leafHashAfter.result(),
+        rootAfter(_pb, TREE_DEPTH_ACCOUNTS, _slotID, leafHashAfter.result(),
                   proof, FMT(_prefix, ".pathAfter")) {}
 
   void generate_r1cs_witness(const AccountUpdate &update) {
     leafHashBefore.generate_r1cs_witness();
     leafHashAfter.generate_r1cs_witness();
 
-    proof.fill_with_field_elements(pb, update.proof.data);
+    proof.fill_with_field_elements(_pb, update.proof.data);
 
     rootBeforeVerifier.generate_r1cs_witness();
     rootAfter.generate_r1cs_witness();
@@ -113,9 +113,9 @@ public:
     // annotation__prefix);
     if (pb.val(rootAfter.result()) != update.rootAfter) {
       std::cout << "leafBefore:" << std::endl;
-      printAccount(pb, leafBefore);
+      printAccount(_pb, leafBefore);
       std::cout << "leafAfter:" << std::endl;
-      printAccount(pb, leafAfter);
+      printAccount(_pb, leafAfter);
       ASSERT(pb.val(rootAfter.result()) == update.rootAfter,
              annotation__prefix);
     }
@@ -139,7 +139,7 @@ struct BalanceState {
   VariableT storageRoot;
 };
 
-static void printBalance(const ProtoboardT &pb, const BalanceState &_state) {
+static void printBalance(const ProtoboardT &_pb, const BalanceState &_state) {
   std::cout << "- balance: " << pb.val(_state.balance) << std::endl;
   std::cout << "- storageRoot: " << pb.val(_state.storageRoot) << std::endl;
 }
@@ -149,11 +149,11 @@ public:
   VariableT balance;
   VariableT storageRoot;
 
-  BalanceGadget(ProtoboardT &pb, const std::string &_prefix)
-      : GadgetT(pb, _prefix),
+  BalanceGadget(ProtoboardT &_pb, const std::string &_prefix)
+      : GadgetT(_pb, _prefix),
 
-        balance(make_variable(pb, FMT(_prefix, ".balance"))),
-        storage(make_variable(pb, FMT(_prefix, ".storageRoot"))) {}
+        balance(make_variable(_pb, FMT(_prefix, ".balance"))),
+        storage(make_variable(_pb, FMT(_prefix, ".storageRoot"))) {}
 
   void generate_r1cs_witness(const BalanceLeaf &_balanceLeaf) {
     pb.val(balance) = _balanceLeaf.balance;
@@ -174,34 +174,34 @@ public:
   VerifyTreeRoot rootBeforeVerifier;
   UpdateTreeRoot rootAfter;
 
-  UpdateBalanceGadget(ProtoboardT &pb, const VariableT &_rootBefore,
+  UpdateBalanceGadget(ProtoboardT &_pb, const VariableT &_rootBefore,
                       const VariableArrayT &_tokenID,
                       const BalanceState _leafBefore,
                       const BalanceState _leafAfter, const std::string &_prefix)
-      : GadgetT(pb, _prefix),
+      : GadgetT(_pb, _prefix),
 
         leafBefore(_leafBefore), leafAfter(_leafAfter),
 
         leafHashBefore(
             pb, var_array({_leafBefore.balance, _leafBefore.storageRoot}),
             FMT(_prefix, ".leafHashBefore")),
-        leafHashAfter(pb,
+        leafHashAfter(_pb,
                       var_array({_leafAfter.balance, _leafAfter.storageRoot}),
                       FMT(_prefix, ".leafHashAfter")),
 
         proof(
-            make_var_array(pb, TREE_DEPTH_TOKENS * 3, FMT(_prefix, ".proof"))),
-        rootBeforeVerifier(pb, TREE_DEPTH_TOKENS, _tokenID,
+            make_var_array(_pb, TREE_DEPTH_TOKENS * 3, FMT(_prefix, ".proof"))),
+        rootBeforeVerifier(_pb, TREE_DEPTH_TOKENS, _tokenID,
                            leafHashBefore.result(), _rootBefore, proof,
                            FMT(_prefix, ".pathBefore")),
-        rootAfter(pb, TREE_DEPTH_TOKENS, _tokenID, leafHashAfter.result(),
+        rootAfter(_pb, TREE_DEPTH_TOKENS, _tokenID, leafHashAfter.result(),
                   proof, FMT(_prefix, ".pathAfter")) {}
 
   void generate_r1cs_witness(const BalanceUpdate &update) {
     leafHashBefore.generate_r1cs_witness();
     leafHashAfter.generate_r1cs_witness();
 
-    proof.fill_with_field_elements(pb, update.proof.data);
+    proof.fill_with_field_elements(_pb, update.proof.data);
 
     rootBeforeVerifier.generate_r1cs_witness();
     rootAfter.generate_r1cs_witness();
@@ -210,9 +210,9 @@ public:
     // annotation__prefix);
     if (pb.val(rootAfter.result()) != update.rootAfter) {
       std::cout << "leafBefore:" << std::endl;
-      printBalance(pb, leafBefore);
+      printBalance(_pb, leafBefore);
       std::cout << "leafAfter:" << std::endl;
-      printBalance(pb, leafAfter);
+      printBalance(_pb, leafAfter);
       ASSERT(pb.val(rootAfter.result()) == update.rootAfter,
              annotation__prefix);
     }
@@ -232,17 +232,17 @@ public:
 // Calculcates the state of a user's open position
 class DynamicBalanceGadget : public DynamicVariableGadget {
 public:
-  DynamicBalanceGadget(ProtoboardT &pb, const Constants &_constants,
+  DynamicBalanceGadget(ProtoboardT &_pb, const Constants &_constants,
                        const VariableT &_balance, const std::string &_prefix)
-      : DynamicVariableGadget(pb, _prefix) {
+      : DynamicVariableGadget(_pb, _prefix) {
     add(_balance);
     allowGeneratingWitness = false;
   }
 
-  DynamicBalanceGadget(ProtoboardT &pb, const Constants &_constants,
+  DynamicBalanceGadget(ProtoboardT &_pb, const Constants &_constants,
                        const BalanceGadget &_balance,
                        const std::string &_prefix)
-      : DynamicBalanceGadget(pb, _constants, _balance.balance, _prefix) {}
+      : DynamicBalanceGadget(_pb, _constants, _balance.balance, _prefix) {}
 
   void generate_r1cs_witness() {}
 
