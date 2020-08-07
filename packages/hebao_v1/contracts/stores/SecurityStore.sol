@@ -54,7 +54,8 @@ contract SecurityStore is DataStore
         returns (bool)
     {
         Data.Guardian memory guardian = getGuardian(wallet, addr);
-        return guardian.addr != address(0) && (isGuardianActive(guardian) || isGuardianPendingAddition(guardian));
+        return guardian.addr != address(0) &&
+            (isGuardianActive(guardian) || isGuardianPendingAddition(guardian));
     }
 
     function getGuardian(
