@@ -18,6 +18,9 @@ contract SecurityStore is DataStore
     struct PackedGuardian
     {
         address  addr;
+        // we use 4 bits for group,
+        //        126 bits for validSince
+        //        126 bits for validUntil
         uint     fields;
     }
 
