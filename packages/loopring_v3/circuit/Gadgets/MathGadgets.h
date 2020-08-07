@@ -9,7 +9,7 @@
 #include "ethsnarks.hpp"
 #include "utils.hpp"
 #include "jubjub/point.hpp"
-#include "jubjub/eddsa.hpp"
+#include "jubjub/eddsa.hpp" //a
 #include "gadgets/subadd.hpp"
 #include "gadgets/poseidon.hpp"
 
