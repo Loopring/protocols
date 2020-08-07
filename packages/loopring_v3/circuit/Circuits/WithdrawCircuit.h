@@ -17,6 +17,13 @@ using namespace ethsnarks;
 
 namespace Loopring {
 
+// When withdrawing from the protocol fee pool account (account 0),
+// account 1 is used as the main account (without side effects),
+// the withdrawing is done using the optimized protocol pool
+// balance update system.
+// This is to ensure this operation does not update the protocol pool
+// account leaf here, that account should only be modified once,
+// and that is done a single time in a block.
 class WithdrawCircuit : public BaseTransactionCircuit {
 public:
   // Inputs

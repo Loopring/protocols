@@ -576,7 +576,11 @@ public:
 
   void generate_r1cs_witness() { pb.val(_not) = FieldT::one() - pb.val(A); }
 
-  void generate_r1cs_constraints() {
+  void generate_r1cs_constraints(bool enforceBitness = true) {
+    if (enforceBitness) {
+      libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(
+          pb, A, FMT(annotation_prefix, ".bitness"));
+    }
     pb.add_r1cs_constraint(ConstraintT(FieldT::one() - A, FieldT::one(), _not),
                            FMT(annotation_prefix, ".!A == _not"));
   }

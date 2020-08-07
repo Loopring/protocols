@@ -493,7 +493,7 @@ bool checkFillRate(const FieldT &amountS, const FieldT &amountB,
 bool checkValid(const Order &order, const FieldT &fillAmountS,
                 const FieldT &fillAmountB, const FieldT &timestamp) {
   bool valid = true;
-  valid = valid && lte(timestamp, order.validUntil);
+  valid = valid && lt(timestamp, order.validUntil);
   valid = valid &&
           checkFillRate(order.amountS, order.amountB, fillAmountS, fillAmountB);
   valid = valid &&
@@ -883,7 +883,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]") {
   }
 
   SECTION("Random") {
-    for (unsigned int i = 0; i < 128; i++) {
+    for (unsigned int i = 0; i < 1024; i++) {
       OrderState orderStateA_mod = setOrderState(
           orderStateA, A_storageID, getRandomFieldElement(NUM_BITS_AMOUNT),
           getRandomFieldElement(NUM_BITS_AMOUNT), bool(rand() % 2),
