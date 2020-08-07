@@ -33,13 +33,13 @@ interface IDepositContract
     /// @param from The address of the account that sends the tokens.
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens to transfer.
-    /// @param auxiliaryData Opaque data that can be used by the contract to handle the deposit
+    /// @param extraData Opaque data that can be used by the contract to handle the deposit
     /// @return amountReceived The amount to deposit to the user's account in the Merkle tree
     function deposit(
         address from,
         address token,
         uint96  amount,
-        bytes   calldata auxiliaryData
+        bytes   calldata extraData
         )
         external
         payable
@@ -62,13 +62,13 @@ interface IDepositContract
     /// @param to The address to which 'amount' tokens are transferred.
     /// @param token The address of the token to transfer (`0x0` for ETH).
     /// @param amount The amount of tokens transferred.
-    /// @param auxiliaryData Opaque data that can be used by the contract to handle the withdrawal
+    /// @param extraData Opaque data that can be used by the contract to handle the withdrawal
     function withdraw(
         address from,
         address to,
         address token,
         uint    amount,
-        bytes   calldata auxiliaryData
+        bytes   calldata extraData
         )
         external
         payable;

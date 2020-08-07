@@ -20,7 +20,7 @@ poseidonParamsStorage = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon
 
 BINARY_TREE_DEPTH_STORAGE = 14
 BINARY_TREE_DEPTH_ACCOUNTS = 32
-BINARY_TREE_DEPTH_TOKENS = 12
+BINARY_TREE_DEPTH_TOKENS = 16
 
 MAX_AMOUNT = 2 ** 96 - 1
 
@@ -282,8 +282,8 @@ class Order(object):
                  storageID, accountID,
                  tokenS, tokenB,
                  amountS, amountB,
-                 allOrNone, validSince, validUntil, buy, taker,
-                 maxFeeBips, feeBips, rebateBips):
+                 validUntil, buy, taker,
+                 maxFeeBips, feeBips):
         self.publicKeyX = str(publicKeyX)
         self.publicKeyY = str(publicKeyY)
 
@@ -296,28 +296,17 @@ class Order(object):
         self.tokenS = tokenS
         self.tokenB = tokenB
 
-        self.allOrNone = bool(allOrNone)
-        self.validSince = validSince
         self.validUntil = validUntil
         self.buy = bool(buy)
         self.taker = str(taker)
         self.maxFeeBips = maxFeeBips
 
         self.feeBips = feeBips
-        self.rebateBips = rebateBips
 
     def checkValid(self, context, order, fillAmountS, fillAmountB):
         valid = True
-
-        valid = valid and (self.validSince <= context.timestamp)
         valid = valid and (context.timestamp <= self.validUntil)
-
         valid = valid and self.checkFillRate(int(order.amountS), int(order.amountB), fillAmountS, fillAmountB)
-
-        valid = valid and not (not self.buy and self.allOrNone and fillAmountS < int(order.amountS))
-        valid = valid and not (self.buy and self.allOrNone and fillAmountB < int(order.amountB))
-        valid = valid and ((fillAmountS == 0 and fillAmountB == 0) or (fillAmountS != 0 and fillAmountB != 0))
-
         self.valid = valid
 
     def checkFillRate(self, amountS, amountB, fillAmountS, fillAmountB):
@@ -379,7 +368,7 @@ class State(object):
         self._accounts = {}
         self._accounts[str(0)] = getDefaultAccount()
         self._accounts[str(1)] = getDefaultAccount()
-        print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
+        # print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
 
     def load(self, filename):
         with open(filename) as f:
@@ -404,11 +393,10 @@ class State(object):
                     "accounts_tree": self._accountsTree._db.kv,
                 }, default=lambda o: o.__dict__, sort_keys=True, indent=4))
 
-    def calculateFees(self, amountB, feeBips, protocolFeeBips, rebateBips):
+    def calculateFees(self, amountB, feeBips, protocolFeeBips):
         protocolFee = (amountB * protocolFeeBips) // 100000
         fee = (amountB * feeBips) // 10000
-        rebate = (amountB * rebateBips) // 10000
-        return (fee, protocolFee, rebate)
+        return (fee, protocolFee)
 
     def getData(self, accountID, tokenID, storageID):
         account = self.getAccount(accountID)
@@ -550,28 +538,24 @@ class State(object):
             print("spread: " + str(spread))
             '''
 
-            (fee_A, protocolFee_A, rebate_A) = self.calculateFees(
+            (fee_A, protocolFee_A) = self.calculateFees(
                 fillA.B,
                 ring.orderA.feeBips,
-                context.protocolTakerFeeBips,
-                ring.orderA.rebateBips
+                context.protocolTakerFeeBips
             )
 
-            (fee_B, protocolFee_B, rebate_B) = self.calculateFees(
+            (fee_B, protocolFee_B) = self.calculateFees(
                 fillB.B,
                 ring.orderB.feeBips,
-                context.protocolMakerFeeBips,
-                ring.orderB.rebateBips
+                context.protocolMakerFeeBips
             )
 
             '''
             print("fee_A: " + str(fee_A))
             print("protocolFee_A: " + str(protocolFee_A))
-            print("rebate_A: " + str(rebate_A))
 
             print("fee_B: " + str(fee_B))
             print("protocolFee_B: " + str(protocolFee_B))
-            print("rebate_B: " + str(rebate_B))
             '''
 
             newState.signatureA = ring.orderA.signature
@@ -584,7 +568,7 @@ class State(object):
             newState.balanceA_S_Balance = -fillA.S
 
             newState.balanceB_S_Address = ring.orderA.tokenB
-            newState.balanceA_B_Balance = fillA.B - fee_A + rebate_A
+            newState.balanceA_B_Balance = fillA.B - fee_A
 
             newState.storageA_Address = ring.orderA.storageID
             newState.storageA_Data = filled_A + (fillA.B if ring.orderA.buy else fillA.S)
@@ -598,14 +582,14 @@ class State(object):
             newState.balanceB_S_Balance = -fillB.S
 
             newState.balanceA_S_Address = ring.orderB.tokenB
-            newState.balanceB_B_Balance = fillB.B - fee_B + rebate_B
+            newState.balanceB_B_Balance = fillB.B - fee_B
 
             newState.storageB_Address = ring.orderB.storageID
             newState.storageB_Data = filled_B + (fillB.B if ring.orderB.buy else fillB.S)
             newState.storageB_StorageId = ring.orderB.storageID
 
-            newState.balanceDeltaA_O = fee_A - protocolFee_A - rebate_A
-            newState.balanceDeltaB_O = fee_B - protocolFee_B - rebate_B
+            newState.balanceDeltaA_O = fee_A - protocolFee_A
+            newState.balanceDeltaB_O = fee_B - protocolFee_B
 
             newState.balanceDeltaA_P = protocolFee_A
             newState.balanceDeltaB_P = protocolFee_B
@@ -669,7 +653,7 @@ class State(object):
 
             newState.signatureA = txInput.signature
 
-            newState.accountA_Address = 2 if isProtocolfeeWithdrawal else txInput.accountID
+            newState.accountA_Address = 1 if isProtocolfeeWithdrawal else txInput.accountID
             accountA = self.getAccount(newState.accountA_Address)
 
             newState.balanceA_S_Address = txInput.tokenID

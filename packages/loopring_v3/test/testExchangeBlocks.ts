@@ -89,7 +89,6 @@ contract("Exchange", (accounts: string[]) => {
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
             0,
-            true,
             2,
             blockVersion,
             new Array(18).fill(1)
@@ -121,7 +120,6 @@ contract("Exchange", (accounts: string[]) => {
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
             0,
-            true,
             2,
             blockVersion,
             new Array(18).fill(1)
@@ -153,7 +151,6 @@ contract("Exchange", (accounts: string[]) => {
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
             0,
-            true,
             2,
             blockVersion,
             new Array(18).fill(1)
@@ -191,7 +188,6 @@ contract("Exchange", (accounts: string[]) => {
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
             0,
-            true,
             2,
             blockVersion,
             new Array(18).fill(1)
@@ -265,7 +261,6 @@ contract("Exchange", (accounts: string[]) => {
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
             0,
-            true,
             2,
             blockVersion,
             new Array(18).fill(1)
@@ -388,15 +383,17 @@ contract("Exchange", (accounts: string[]) => {
                   i,
                   tx
                 ] of blocks[0].internalBlock.transactions.entries()) {
-                  if (
-                    tx.txType === "Deposit" ||
-                    (tx.txType === "Transfer" && tx.type > 0)
-                  ) {
+                  if (tx.txType === "Deposit") {
                     auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+                  } else if (tx.txType === "Transfer" && tx.type > 0) {
+                    auxiliaryData.push([
+                      i,
+                      web3.utils.hexToBytes(exchangeTestUtil.getTransferAuxData(tx))
+                    ]);
                   } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
                     auxiliaryData.push([
                       i,
-                      web3.utils.hexToBytes(tx.onchainSignature)
+                      web3.utils.hexToBytes(exchangeTestUtil.getAccountUpdateAuxData(tx))
                     ]);
                   }
                 }
@@ -417,15 +414,17 @@ contract("Exchange", (accounts: string[]) => {
                   i,
                   tx
                 ] of blocks[0].internalBlock.transactions.entries()) {
-                  if (
-                    tx.txType === "Deposit" ||
-                    (tx.txType === "Transfer" && tx.type > 0)
-                  ) {
+                  if (tx.txType === "Deposit") {
                     auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+                  } else if (tx.txType === "Transfer" && tx.type > 0) {
+                    auxiliaryData.push([
+                      i,
+                      web3.utils.hexToBytes(exchangeTestUtil.getTransferAuxData(tx))
+                    ]);
                   } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
                     auxiliaryData.push([
                       i,
-                      web3.utils.hexToBytes(tx.onchainSignature)
+                      web3.utils.hexToBytes(exchangeTestUtil.getAccountUpdateAuxData(tx))
                     ]);
                   }
                 }
@@ -446,15 +445,17 @@ contract("Exchange", (accounts: string[]) => {
                   i,
                   tx
                 ] of blocks[0].internalBlock.transactions.entries()) {
-                  if (
-                    tx.txType === "Deposit" ||
-                    (tx.txType === "Transfer" && tx.type > 0)
-                  ) {
+                  if (tx.txType === "Deposit") {
                     auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+                  } else if (tx.txType === "Transfer" && tx.type > 0) {
+                    auxiliaryData.push([
+                      i,
+                      web3.utils.hexToBytes(exchangeTestUtil.getTransferAuxData(tx))
+                    ]);
                   } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
                     auxiliaryData.push([
                       i,
-                      web3.utils.hexToBytes(tx.onchainSignature)
+                      web3.utils.hexToBytes(exchangeTestUtil.getAccountUpdateAuxData(tx))
                     ]);
                   }
                 }
@@ -474,15 +475,17 @@ contract("Exchange", (accounts: string[]) => {
                 i,
                 tx
               ] of blocks[0].internalBlock.transactions.entries()) {
-                if (
-                  tx.txType === "Deposit" ||
-                  (tx.txType === "Transfer" && tx.type > 0)
-                ) {
+                if (tx.txType === "Deposit") {
                   auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+                } else if (tx.txType === "Transfer" && tx.type > 0) {
+                  auxiliaryData.push([
+                    i,
+                    web3.utils.hexToBytes(exchangeTestUtil.getTransferAuxData(tx))
+                  ]);
                 } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
                   auxiliaryData.push([
                     i,
-                    web3.utils.hexToBytes(tx.onchainSignature)
+                    web3.utils.hexToBytes(exchangeTestUtil.getAccountUpdateAuxData(tx))
                   ]);
                 }
 

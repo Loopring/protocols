@@ -262,6 +262,7 @@ contract("Exchange", (accounts: string[]) => {
         new BN(0)
       );
 
+      // Do an account update
       await exchangeTestUtil.requestAccountUpdate(
         ownerB,
         "ETH",

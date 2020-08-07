@@ -38,6 +38,13 @@ library AccountUpdateTransaction
         uint32  nonce;
     }
 
+    // Auxiliary data for each account update
+    struct AccountUpdateAuxiliaryData
+    {
+        bytes  signature;
+        uint32 validUntil;
+    }
+
     function process(
         ExchangeData.State        storage S,
         ExchangeData.BlockContext memory  ctx,
@@ -49,18 +56,23 @@ library AccountUpdateTransaction
         returns (uint /*feeETH*/)
     {
         // Read the account update
-        AccountUpdate memory accountUpdate = readAccountUpdate(data, offset);
+        AccountUpdate memory accountUpdate = readTx(data, offset);
+        AccountUpdateAuxiliaryData memory auxData = abi.decode(auxiliaryData, (AccountUpdateAuxiliaryData));
+
+        // Check validUntil
+        require(ctx.timestamp < auxData.validUntil, "WITHDRAWAL_EXPIRED");
+        accountUpdate.validUntil = auxData.validUntil;
 
         // Calculate the tx hash
-        bytes32 txHash = hash(ctx.DOMAIN_SEPARATOR, accountUpdate);
+        bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, accountUpdate);
 
         // Check onchain authorization
-        S.requireAuthorizedTx(accountUpdate.owner, auxiliaryData, txHash);
+        S.requireAuthorizedTx(accountUpdate.owner, auxData.signature, txHash);
 
         //emit AccountUpdated(accountID, publicKey);
     }
 
-    function readAccountUpdate(
+    function readTx(
         bytes memory data,
         uint         offset
         )
@@ -86,13 +98,11 @@ library AccountUpdateTransaction
         offset += 2;
         accountUpdate.publicKey = data.toUint(offset);
         offset += 32;
-        accountUpdate.validUntil = data.toUint32(offset);
-        offset += 4;
         accountUpdate.nonce = data.toUint32(offset);
         offset += 4;
     }
 
-    function hash(
+    function hashTx(
         bytes32 DOMAIN_SEPARATOR,
         AccountUpdate memory accountUpdate
         )

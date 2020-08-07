@@ -9,13 +9,11 @@ interface SettlementValues {
   fillBA: BN;
   feeA: BN;
   protocolFeeA: BN;
-  rebateA: BN;
 
   fillSB: BN;
   fillBB: BN;
   feeB: BN;
   protocolFeeB: BN;
-  rebateB: BN;
 }
 
 /**
@@ -38,10 +36,10 @@ export class SpotTradeProcessor {
     offset += 4;
 
     // Tokens
-    const tokenIds = data.extractUint24(offset);
-    offset += 3;
-    const tokenA = tokenIds >> 12;
-    const tokenB = tokenIds & 0xfff;
+    const tokenA = data.extractUint16(offset);
+    offset += 2;
+    const tokenB = data.extractUint16(offset);
+    offset += 2;
 
     // Fills
     const fFillSA = data.extractUint24(offset);
@@ -60,21 +58,15 @@ export class SpotTradeProcessor {
     const overwriteTradeHistorySlotA =
       (tradeHistoryDataA & 0b0100000000000000) !== 0;
     const buyMaskA = orderDataA & 0b10000000;
-    const rebateMaskA = orderDataA & 0b01000000;
-    const feeOrRebateA = orderDataA & 0b00111111;
+    const feeBipsA = orderDataA & 0b00111111;
     const buyA = buyMaskA > 0;
-    const feeBipsA = rebateMaskA > 0 ? 0 : feeOrRebateA;
-    const rebateBipsA = rebateMaskA > 0 ? feeOrRebateA : 0;
 
     const tradeHistorySlotB = tradeHistoryDataB & 0b0011111111111111;
     const overwriteTradeHistorySlotB =
       (tradeHistoryDataB & 0b0100000000000000) !== 0;
     const buyMaskB = orderDataB & 0b10000000;
-    const rebateMaskB = orderDataB & 0b01000000;
-    const feeOrRebateB = orderDataB & 0b00111111;
+    const feeBipsB = orderDataB & 0b00111111;
     const buyB = buyMaskB > 0;
-    const feeBipsB = rebateMaskB > 0 ? 0 : feeOrRebateB;
-    const rebateBipsB = rebateMaskB > 0 ? feeOrRebateB : 0;
 
     // Decode the float values
     const fillSA = fromFloat(fFillSA, Constants.Float24Encoding);
@@ -89,16 +81,14 @@ export class SpotTradeProcessor {
       fillSA,
       fillSB,
       feeBipsA,
-      feeBipsB,
-      rebateBipsA,
-      rebateBipsB
+      feeBipsB
     );
 
     // Update accountA
     {
       const accountA = state.getAccount(accountIdA);
       accountA.getBalance(tokenA).balance.isub(s.fillSA);
-      accountA.getBalance(tokenB).balance.iadd(s.fillBA).isub(s.feeA).iadd(s.rebateA);
+      accountA.getBalance(tokenB).balance.iadd(s.fillBA).isub(s.feeA);
 
       const tradeHistoryA = accountA.getBalance(tokenA).getStorage(tradeHistorySlotA);
       if (tradeHistoryA.storageID === 0) {
@@ -115,7 +105,7 @@ export class SpotTradeProcessor {
     {
       const accountB = state.getAccount(accountIdB);
       accountB.getBalance(tokenB).balance.isub(s.fillSB);
-      accountB.getBalance(tokenA).balance.iadd(s.fillBB).isub(s.feeB).iadd(s.rebateB);
+      accountB.getBalance(tokenA).balance.iadd(s.fillBB).isub(s.feeB);
 
       const tradeHistoryB = accountB.getBalance(tokenB).getStorage(tradeHistorySlotB);
       if (tradeHistoryB.storageID === 0) {
@@ -136,8 +126,8 @@ export class SpotTradeProcessor {
 
     // Update operator
     const operator = state.getAccount(block.operatorAccountID);
-    operator.getBalance(tokenA).balance.iadd(s.feeB).isub(s.protocolFeeB).isub(s.rebateB);
-    operator.getBalance(tokenB).balance.iadd(s.feeA).isub(s.protocolFeeA).isub(s.rebateA);
+    operator.getBalance(tokenA).balance.iadd(s.feeB).isub(s.protocolFeeB);
+    operator.getBalance(tokenB).balance.iadd(s.feeA).isub(s.protocolFeeA);
 
 
     // Create struct
@@ -153,7 +143,6 @@ export class SpotTradeProcessor {
       fillSA: s.fillSA,
       feeA: s.feeA,
       protocolFeeA: s.protocolFeeA,
-      rebateA: s.rebateA,
 
       accountIdB,
       orderIdB,
@@ -161,8 +150,7 @@ export class SpotTradeProcessor {
       tokenB,
       fillSB: s.fillSB,
       feeB: s.feeB,
-      protocolFeeB: s.protocolFeeB,
-      rebateB: s.rebateB
+      protocolFeeB: s.protocolFeeB
     };
 
     return trade;
@@ -174,24 +162,20 @@ export class SpotTradeProcessor {
     fillSA: BN,
     fillSB: BN,
     feeBipsA: number,
-    feeBipsB: number,
-    rebateBipsA: number,
-    rebateBipsB: number
+    feeBipsB: number
   ) {
     const fillBA = fillSB;
     const fillBB = fillSA;
-    const [feeA, protocolFeeA, rebateA] = this.calculateFees(
+    const [feeA, protocolFeeA] = this.calculateFees(
       fillBA,
       protocolFeeTakerBips,
-      feeBipsA,
-      rebateBipsA
+      feeBipsA
     );
 
-    const [feeB, protocolFeeB, rebateB] = this.calculateFees(
+    const [feeB, protocolFeeB] = this.calculateFees(
       fillBB,
       protocolFeeMakerBips,
-      feeBipsB,
-      rebateBipsB
+      feeBipsB
     );
 
     const settlementValues: SettlementValues = {
@@ -199,13 +183,11 @@ export class SpotTradeProcessor {
       fillBA,
       feeA,
       protocolFeeA,
-      rebateA,
 
       fillSB,
       fillBB,
       feeB,
-      protocolFeeB,
-      rebateB
+      protocolFeeB
     };
     return settlementValues;
   }
@@ -213,12 +195,10 @@ export class SpotTradeProcessor {
   private static calculateFees(
     fillB: BN,
     protocolFeeBips: number,
-    feeBips: number,
-    rebateBips: number
+    feeBips: number
   ) {
     const protocolFee = fillB.mul(new BN(protocolFeeBips)).div(new BN(100000));
     const fee = fillB.mul(new BN(feeBips)).div(new BN(10000));
-    const rebate = fillB.mul(new BN(rebateBips)).div(new BN(10000));
-    return [fee, protocolFee, rebate];
+    return [fee, protocolFee];
   }
 }

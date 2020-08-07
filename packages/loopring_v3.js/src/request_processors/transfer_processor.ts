@@ -68,27 +68,22 @@ export class TransferProcessor {
     offset += 4;
     transfer.accountToID = data.extractUint32(offset);
     offset += 4;
-    const tokenIDs = data.extractUint24(offset);
-    offset += 3;
+    transfer.tokenID = data.extractUint16(offset);
+    offset += 2;
     transfer.amount = fromFloat(data.extractUint24(offset), Constants.Float24Encoding);
     offset += 3;
+    transfer.feeTokenID = data.extractUint16(offset);
+    offset += 2;
     transfer.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
     offset += 2;
     transfer.shortStorageID = data.extractUint16(offset);
     offset += 2;
     transfer.to = data.extractAddress(offset);
     offset += 20;
-    transfer.validUntil = data.extractUint32(offset);
-    offset += 4;
     transfer.storageID = data.extractUint32(offset);
     offset += 4;
     transfer.from = data.extractAddress(offset);
     offset += 20;
-    transfer.data = data.extractData(offset, 32);
-    offset += 32;
-
-    transfer.tokenID = tokenIDs >> 12;
-    transfer.feeTokenID = tokenIDs & 0b1111111111;
 
     return transfer;
   }

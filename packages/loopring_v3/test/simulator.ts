@@ -18,13 +18,11 @@ interface SettlementValues {
   fillBA: BN;
   feeA: BN;
   protocolFeeA: BN;
-  rebateA: BN;
 
   fillSB: BN;
   fillBB: BN;
   feeB: BN;
   protocolFeeB: BN;
-  rebateB: BN;
 }
 
 interface Fill {
@@ -537,7 +535,7 @@ export class Simulator {
     // Special cases when withdrawing from the protocol fee pool.
     // These account balances will have interest accrued.
     if (withdrawal.accountID === 0) {
-      state.getAccount(2).getBalance(withdrawal.tokenID);
+      state.getAccount(1).getBalance(withdrawal.tokenID);
     } else {
       state.getAccount(0).getBalance(withdrawal.tokenID);
     }
@@ -651,11 +649,9 @@ export class Simulator {
       spotTrade.orderA.storageID,
       spotTrade.orderA.accountID,
       spotTrade.orderA.feeBips,
-      spotTrade.orderA.rebateBips,
       spotTrade.orderB.storageID,
       spotTrade.orderB.accountID,
-      spotTrade.orderB.feeBips,
-      spotTrade.orderB.rebateBips
+      spotTrade.orderB.feeBips
     );
 
     // Check expected
@@ -747,22 +743,6 @@ export class Simulator {
       amount: new BN(0),
       subPayments: []
     };
-    const payRebateA: DetailedTokenTransfer = {
-      description: "RebateA",
-      token: spotTrade.orderA.tokenIdB,
-      from: block.operatorAccountID,
-      to: spotTrade.orderA.accountID,
-      amount: s.rebateA,
-      subPayments: []
-    };
-    const payRebateB: DetailedTokenTransfer = {
-      description: "RebateB",
-      token: spotTrade.orderB.tokenIdB,
-      from: block.operatorAccountID,
-      to: spotTrade.orderB.accountID,
-      amount: s.rebateB,
-      subPayments: []
-    };
     const payProtocolFeeA: DetailedTokenTransfer = {
       description: "ProtocolFeeA",
       token: spotTrade.orderA.tokenIdB,
@@ -779,8 +759,6 @@ export class Simulator {
       amount: s.protocolFeeB,
       subPayments: []
     };
-    paymentsOperator.subPayments.push(payRebateA);
-    paymentsOperator.subPayments.push(payRebateB);
     paymentsOperator.subPayments.push(payProtocolFeeA);
     paymentsOperator.subPayments.push(payProtocolFeeB);
 
@@ -802,9 +780,7 @@ export class Simulator {
     fillSA: BN,
     fillSB: BN,
     feeBipsA: number,
-    feeBipsB: number,
-    rebateBipsA: number,
-    rebateBipsB: number
+    feeBipsB: number
   ) {
     const fillBA = fillSB;
     const fillBB = fillSA;
@@ -815,18 +791,16 @@ export class Simulator {
     console.log("fillSB: " + fillSB.toString(10));
     console.log("fillBB: " + fillBB.toString(10));*/
 
-    const [feeA, protocolFeeA, rebateA] = this.calculateFees(
+    const [feeA, protocolFeeA] = this.calculateFees(
       fillBA,
       protocolFeeTakerBips,
-      feeBipsA,
-      rebateBipsA
+      feeBipsA
     );
 
-    const [feeB, protocolFeeB, rebateB] = this.calculateFees(
+    const [feeB, protocolFeeB] = this.calculateFees(
       fillBB,
       protocolFeeMakerBips,
-      feeBipsB,
-      rebateBipsB
+      feeBipsB
     );
 
     /*console.log("feeA: " + feeA.toString(10));
@@ -839,13 +813,10 @@ export class Simulator {
       fillBA,
       feeA,
       protocolFeeA,
-      rebateA,
-
       fillSB,
       fillBB,
       feeB,
-      protocolFeeB,
-      rebateB
+      protocolFeeB
     };
     return settlementValues;
   }
@@ -864,11 +835,9 @@ export class Simulator {
     storageIdA: number,
     accountIdA: number,
     feeBipsA: number,
-    rebateBipsA: number,
     storageIdB: number,
     accountIdB: number,
-    feeBipsB: number,
-    rebateBipsB: number
+    feeBipsB: number
   ) {
     const s = this.calculateSettlementValues(
       protocolFeeTakerBips,
@@ -876,9 +845,7 @@ export class Simulator {
       fillSA,
       fillSB,
       feeBipsA,
-      feeBipsB,
-      rebateBipsA,
-      rebateBipsB
+      feeBipsB
     );
 
     // Update accountA
@@ -888,8 +855,7 @@ export class Simulator {
       accountA
         .getBalance(tokenB)
         .balance.iadd(s.fillBA)
-        .isub(s.feeA)
-        .iadd(s.rebateA);
+        .isub(s.feeA);
 
       const tradeHistoryA = accountA.getBalance(tokenA).getStorage(storageIdA);
       tradeHistoryA.data = storageIdA > tradeHistoryA.storageID ? new BN(0) : tradeHistoryA.data;
@@ -903,8 +869,7 @@ export class Simulator {
       accountB
         .getBalance(tokenA)
         .balance.iadd(s.fillBB)
-        .isub(s.feeB)
-        .iadd(s.rebateB);
+        .isub(s.feeB);
 
       const tradeHistoryB = accountB.getBalance(tokenB).getStorage(storageIdB);
       tradeHistoryB.data = storageIdB > tradeHistoryB.storageID ? new BN(0) : tradeHistoryB.data;
@@ -922,13 +887,11 @@ export class Simulator {
     operator
       .getBalance(tokenA)
       .balance.iadd(s.feeB)
-      .isub(s.protocolFeeB)
-      .isub(s.rebateB);
+      .isub(s.protocolFeeB);
     operator
       .getBalance(tokenB)
       .balance.iadd(s.feeA)
-      .isub(s.protocolFeeA)
-      .isub(s.rebateA);
+      .isub(s.protocolFeeA);
 
     return s;
   }
@@ -1121,13 +1084,11 @@ export class Simulator {
   private static calculateFees(
     fillB: BN,
     protocolFeeBips: number,
-    feeBips: number,
-    rebateBips: number
+    feeBips: number
   ) {
     const protocolFee = fillB.mul(new BN(protocolFeeBips)).div(new BN(100000));
     const fee = fillB.mul(new BN(feeBips)).div(new BN(10000));
-    const rebate = fillB.mul(new BN(rebateBips)).div(new BN(10000));
-    return [fee, protocolFee, rebate];
+    return [fee, protocolFee];
   }
 
   private static checkFillRate(
@@ -1151,22 +1112,7 @@ export class Simulator {
     let valid = true;
 
     valid =
-      valid && this.ensure(order.validSince <= timestamp, "order too early");
-    valid =
       valid && this.ensure(timestamp <= order.validUntil, "order too late");
-
-    valid =
-      valid &&
-      this.ensure(
-        !(!order.buy && order.allOrNone && fillAmountS.lt(order.amountS)),
-        "allOrNone sell"
-      );
-    valid =
-      valid &&
-      this.ensure(
-        !(order.buy && order.allOrNone && fillAmountB.lt(order.amountB)),
-        "allOrNone buy"
-      );
     valid =
       valid &&
       this.ensure(

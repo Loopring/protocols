@@ -5,15 +5,15 @@ import { Balance } from "./types";
 export class Constants {
   static readonly BINARY_TREE_DEPTH_STORAGE = 14;
   static readonly BINARY_TREE_DEPTH_ACCOUNTS = 32;
-  static readonly BINARY_TREE_DEPTH_TOKENS = 12;
+  static readonly BINARY_TREE_DEPTH_TOKENS = 16;
 
-  static readonly TX_DATA_AVAILABILITY_SIZE = 106;
+  static readonly TX_DATA_AVAILABILITY_SIZE = 68;
 
   static readonly NUM_BITS_ACCOUNTID = Constants.BINARY_TREE_DEPTH_ACCOUNTS;
   static readonly NUM_BITS_STORAGEID = 32;
   static readonly NUM_STORAGE_SLOTS = 2 ** Constants.BINARY_TREE_DEPTH_STORAGE;
 
-  static readonly MAX_NUM_TOKENS = 2 ** 12;
+  static readonly MAX_NUM_TOKENS = 2 ** 16;
 
   static readonly MAX_AMOUNT = new BN(2).pow(new BN(96)).sub(new BN(1));
 

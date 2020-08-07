@@ -18,9 +18,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
   let chainlinkTokenPriceOracle: any;
 
   // USD values
-  let minExchangeStakeDA = new BN(web3.utils.toWei("10000", "ether"));
-  let minExchangeStakeWDA = new BN(web3.utils.toWei("25000", "ether"));
-  let revertFine = new BN(web3.utils.toWei("1250", "ether"));
+  let minExchangeStake = new BN(web3.utils.toWei("10000", "ether"));
 
   before(async () => {
     contracts = new Artifacts(artifacts);
@@ -64,7 +62,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     };
     await setConversion(
       mockChainlink,
-      minExchangeStakeDA,
+      minExchangeStake,
       expectedMinExchangeStakeLrc
     );
 
@@ -93,8 +91,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     const loopringV3Owner = await LoopringV3Owner.new(
       loopring.address,
       mockProvider.address,
-      minExchangeStakeDA,
-      minExchangeStakeWDA
+      minExchangeStake
     );
 
     // Set the owner to the newly created LoopringV3Owner
@@ -119,8 +116,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     const loopringV3Owner2 = await LoopringV3Owner.new(
       loopring.address,
       mockProvider.address,
-      minExchangeStakeDA,
-      minExchangeStakeWDA
+      minExchangeStake
     );
 
     // Now transfer the ownership to the new contract (this operation is delayed)

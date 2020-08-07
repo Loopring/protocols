@@ -23,15 +23,12 @@ export interface OrderInfo {
   tokenIdS?: number;
   tokenIdB?: number;
 
-  allOrNone?: boolean;
-  validSince?: number;
   validUntil?: number;
   maxFeeBips?: number;
   buy?: boolean;
   taker?: string;
 
   feeBips?: number;
-  rebateBips?: number;
 
   balanceS?: BN;
   balanceB?: BN;
@@ -121,8 +118,6 @@ export class Transfer {
   from: string;
   to: string;
 
-  data: string;
-
   dualAuthorX: string;
   dualAuthorY: string;
   payerToAccountID: number;
@@ -156,18 +151,18 @@ export interface WithdrawalRequest {
   feeTokenID?: number;
   fee?: BN;
 
-  to: string;
-
-  dataHash: string;
   minGas: number;
-
   gas?: number;
+
+  to?: string;
+  extraData?: string;
+
+  onchainDataHash?: string;
 
   withdrawalFee?: BN;
 
   signature?: Signature;
   onchainSignature?: any;
-  data?: string;
 
   timestamp?: number;
   transactionHash?: string;

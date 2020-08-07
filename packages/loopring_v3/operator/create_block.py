@@ -31,15 +31,12 @@ def orderFromJSON(jOrder, state):
     tokenB = int(jOrder["tokenIdB"])
     amountS = int(jOrder["amountS"])
     amountB = int(jOrder["amountB"])
-    allOrNone = int(jOrder["allOrNone"])
-    validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
     buy = int(jOrder["buy"])
     taker = str(jOrder["taker"])
     maxFeeBips = int(jOrder["maxFeeBips"])
 
     feeBips = int(jOrder["feeBips"])
-    rebateBips = int(jOrder["rebateBips"])
 
     account = state.getAccount(accountID)
 
@@ -47,8 +44,8 @@ def orderFromJSON(jOrder, state):
                   storageID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,
-                  allOrNone, validSince, validUntil, buy, taker,
-                  maxFeeBips, feeBips, rebateBips)
+                  validUntil, buy, taker,
+                  maxFeeBips, feeBips)
 
     order.signature = jOrder["signature"]
 
@@ -69,7 +66,6 @@ def transferFromJSON(jTransfer):
     transfer.validUntil = int(jTransfer["validUntil"])
     transfer.dualAuthorX = str(jTransfer["dualAuthorX"])
     transfer.dualAuthorY = str(jTransfer["dualAuthorY"])
-    transfer.data = str(jTransfer["data"])
     transfer.payerToAccountID = int(jTransfer["payerToAccountID"])
     transfer.payerTo = str(jTransfer["payerTo"])
     transfer.payeeToAccountID = int(jTransfer["payeeToAccountID"])
@@ -91,9 +87,7 @@ def withdrawFromJSON(jWithdraw):
     withdraw.amount = str(jWithdraw["amount"])
     withdraw.feeTokenID = int(jWithdraw["feeTokenID"])
     withdraw.fee = str(jWithdraw["fee"])
-    withdraw.to = str(jWithdraw["to"])
-    withdraw.dataHash = str(jWithdraw["dataHash"])
-    withdraw.minGas = int(jWithdraw["minGas"])
+    withdraw.onchainDataHash = str(jWithdraw["onchainDataHash"])
     withdraw.type = int(jWithdraw["type"])
     withdraw.validUntil = int(jWithdraw["validUntil"])
     withdraw.signature = None

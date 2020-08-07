@@ -178,6 +178,17 @@ library BytesUtil {
         return tempBytes4;
     }
 
+    function toBytes20(bytes memory _bytes, uint _start) internal  pure returns (bytes20) {
+        require(_bytes.length >= (_start + 20));
+        bytes20 tempBytes20;
+
+        assembly {
+            tempBytes20 := mload(add(add(_bytes, 0x20), _start))
+        }
+
+        return tempBytes20;
+    }
+
     function toBytes32(bytes memory _bytes, uint _start) internal  pure returns (bytes32) {
         require(_bytes.length >= (_start + 32));
         bytes32 tempBytes32;

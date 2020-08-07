@@ -60,7 +60,7 @@ public:
   MerklePathT rootCalculatorAfter;
 
   UpdateStorageGadget(ProtoboardT &pb, const VariableT &merkleRoot,
-                      const VariableArrayT &address, const StorageState &before,
+                      const VariableArrayT &slotID, const StorageState &before,
                       const StorageState &after, const std::string &prefix)
       : GadgetT(pb, prefix),
 
@@ -73,10 +73,10 @@ public:
 
         proof(
             make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(prefix, ".proof"))),
-        proofVerifierBefore(pb, TREE_DEPTH_STORAGE, address,
+        proofVerifierBefore(pb, TREE_DEPTH_STORAGE, slotID,
                             leafBefore.result(), merkleRoot, proof,
                             FMT(prefix, ".pathBefore")),
-        rootCalculatorAfter(pb, TREE_DEPTH_STORAGE, address, leafAfter.result(),
+        rootCalculatorAfter(pb, TREE_DEPTH_STORAGE, slotID, leafAfter.result(),
                             proof, FMT(prefix, ".pathAfter")) {}
 
   void generate_r1cs_witness(const StorageUpdate &update) {
@@ -113,7 +113,7 @@ public:
 class StorageReaderGadget : public GadgetT {
   VariableT address;
   libsnark::packing_gadget<FieldT> packAddress;
-  IsNonZero isNonZeroStorageLeadStorageID;
+  IsNonZero isNonZeroStorageLeafStorageID;
   TernaryGadget leafStorageID;
 
   UnsafeAddGadget nextStorageID;
@@ -137,10 +137,10 @@ public:
         packAddress(pb, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
                     address, FMT(prefix, ".packAddress")),
 
-        isNonZeroStorageLeadStorageID(
+        isNonZeroStorageLeafStorageID(
             pb, storage.storageID,
-            FMT(prefix, ".isNonZeroStorageLeadStorageID")),
-        leafStorageID(pb, isNonZeroStorageLeadStorageID.result(),
+            FMT(prefix, ".isNonZeroStorageLeafStorageID")),
+        leafStorageID(pb, isNonZeroStorageLeafStorageID.result(),
                       storage.storageID, address,
                       FMT(prefix, ".leafStorageID")),
 
@@ -164,7 +164,7 @@ public:
 
   void generate_r1cs_witness() {
     packAddress.generate_r1cs_witness_from_bits();
-    isNonZeroStorageLeadStorageID.generate_r1cs_witness();
+    isNonZeroStorageLeafStorageID.generate_r1cs_witness();
     leafStorageID.generate_r1cs_witness();
 
     nextStorageID.generate_r1cs_witness();
@@ -179,7 +179,7 @@ public:
 
   void generate_r1cs_constraints() {
     packAddress.generate_r1cs_constraints(false);
-    isNonZeroStorageLeadStorageID.generate_r1cs_constraints();
+    isNonZeroStorageLeafStorageID.generate_r1cs_constraints();
     leafStorageID.generate_r1cs_constraints();
 
     nextStorageID.generate_r1cs_constraints();

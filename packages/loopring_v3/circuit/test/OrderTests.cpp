@@ -22,8 +22,6 @@ TEST_CASE("Order", "[OrderGadget]") {
     orderGadget.generate_r1cs_constraints(doSignatureCheck);
 
     REQUIRE(pb.is_satisfied() == expectedSatisfied);
-
-    return pb.val(orderGadget.hasRebate());
   };
 
   Block block = getBlock();
@@ -32,7 +30,7 @@ TEST_CASE("Order", "[OrderGadget]") {
   const FieldT &exchange = block.exchange;
   const Order &order = tx.spotTrade.orderA;
 
-  const Account &account2 = tx.witness.accountUpdate_B.before;
+  const AccountLeaf &account2 = tx.witness.accountUpdate_B.before;
 
   SECTION("Valid order") { orderChecked(exchange, order, true); }
 
@@ -67,16 +65,6 @@ TEST_CASE("Order", "[OrderGadget]") {
       _order.amountB = getMaxFieldElement(NUM_BITS_AMOUNT) + 1;
       orderChecked(exchange, _order, false);
     }
-    SECTION("allOrNone") {
-      Order _order = order;
-      _order.allOrNone = 2;
-      orderChecked(exchange, _order, false);
-    }
-    SECTION("validSince") {
-      Order _order = order;
-      _order.validSince = getMaxFieldElement(NUM_BITS_TIMESTAMP) + 1;
-      orderChecked(exchange, _order, false);
-    }
     SECTION("validUntil") {
       Order _order = order;
       _order.validUntil = getMaxFieldElement(NUM_BITS_TIMESTAMP) + 1;
@@ -95,24 +83,11 @@ TEST_CASE("Order", "[OrderGadget]") {
     SECTION("feeBips") {
       Order _order = order;
       _order.feeBips = getMaxFieldElement(NUM_BITS_BIPS) + 1;
-      _order.rebateBips = 0;
-      orderChecked(exchange, _order, false);
-    }
-    SECTION("rebateBips") {
-      Order _order = order;
-      _order.feeBips = 0;
-      _order.rebateBips = getMaxFieldElement(NUM_BITS_BIPS) + 1;
       orderChecked(exchange, _order, false);
     }
   }
 
   SECTION("invalid order data") {
-    SECTION("feeBips != 0 && rebateBips != 0") {
-      Order _order = order;
-      _order.feeBips = 2;
-      _order.rebateBips = 1;
-      orderChecked(exchange, _order, false);
-    }
     SECTION("feeBips > maxFeeBips") {
       Order _order = order;
       for (unsigned int maxFeeBips = 0; maxFeeBips < pow(2, NUM_BITS_BIPS);
@@ -121,7 +96,6 @@ TEST_CASE("Order", "[OrderGadget]") {
              feeBips += 3) {
           _order.maxFeeBips = maxFeeBips;
           _order.feeBips = feeBips;
-          _order.rebateBips = 0;
           bool expectedSatisfied = (feeBips <= maxFeeBips);
           orderChecked(exchange, _order, expectedSatisfied);
         }
@@ -145,22 +119,6 @@ TEST_CASE("Order", "[OrderGadget]") {
       Order _order = order;
       _order.amountB = 0;
       orderChecked(exchange, _order, false);
-    }
-  }
-
-  SECTION("hasRebate") {
-    Order _order = order;
-    {
-      _order.feeBips = 10;
-      _order.rebateBips = 0;
-      auto data = orderChecked(exchange, _order, true);
-      REQUIRE((data == FieldT::zero()));
-    }
-    {
-      _order.feeBips = 0;
-      _order.rebateBips = 10;
-      auto data = orderChecked(exchange, _order, true);
-      REQUIRE((data == FieldT::one()));
     }
   }
 }

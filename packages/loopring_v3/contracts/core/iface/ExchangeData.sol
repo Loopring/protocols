@@ -119,12 +119,12 @@ library ExchangeData
     function MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 15 days; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 7 days; }
     function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 32; }
-    function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
+    function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 16; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
     // The amount of bytes each rollup transaction uses in the block data for data-availability.
     // This is the maximum amount of bytes of all different transaction types.
-    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 106; }
+    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 68; }
     function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 14 days; }
     function ACCOUNTID_PROTOCOLFEE() internal pure returns (uint32) { return 0; }
 
@@ -149,12 +149,13 @@ library ExchangeData
         ExchangeData.AccountLeaf accountLeaf;
         ExchangeData.BalanceLeaf balanceLeaf;
         uint[48]                 accountMerkleProof;
-        uint[18]                 balanceMerkleProof;
+        uint[24]                 balanceMerkleProof;
     }
 
     struct BlockContext
     {
         bytes32 DOMAIN_SEPARATOR;
+        uint32  timestamp;
     }
 
     // Represents the entire exchange state except the owner of the exchange.
