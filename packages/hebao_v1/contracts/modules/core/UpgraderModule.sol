@@ -79,7 +79,6 @@ contract UpgraderModule is BaseModule {
     function migrateSecurityStore(address wallet)
         internal
     {
-
         if (oldSecurityStore == SecurityStore(0) || newSecurityStore == SecurityStore(0)) {
             return;
         }
