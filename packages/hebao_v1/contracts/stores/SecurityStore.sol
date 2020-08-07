@@ -1,24 +1,10 @@
-/*
-
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-pragma solidity ^0.6.6;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
-import "../iface/Data.sol";
+import "../stores/Data.sol";
 
 
 /// @title SecurityStore
@@ -42,7 +28,7 @@ contract SecurityStore is DataStore
 
     mapping (address => Wallet) public wallets;
 
-    constructor() public DataStore() {}
+    constructor() DataStore() {}
 
     function isGuardian(
         address wallet,
@@ -219,11 +205,11 @@ contract SecurityStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-         Wallet storage w = wallets[wallet];
-         for (uint i = 0; i < w.guardians.length; i++) {
+        Wallet storage w = wallets[wallet];
+        for (uint i = 0; i < w.guardians.length; i++) {
             delete w.guardianIdx[w.guardians[i].addr];
-         }
-         delete w.guardians;
+        }
+        delete w.guardians;
     }
 
     function cancelGuardianRemoval(
@@ -242,7 +228,7 @@ contract SecurityStore is DataStore
         require(
             isGuardianPendingRemoval(w.guardians[idx - 1]),
             "NOT_PENDING_REMOVAL"
-         );
+        );
 
         w.guardians[idx - 1].validUntil = 0;
     }
@@ -263,7 +249,7 @@ contract SecurityStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-        require(lock == 0 || lock > now, "INVALID_LOCK_TIME");
+        require(lock == 0 || lock > block.timestamp, "INVALID_LOCK_TIME");
         uint128 _lock = uint128(lock);
         require(uint(_lock) == lock, "LOCK_TOO_LARGE");
 
@@ -271,23 +257,31 @@ contract SecurityStore is DataStore
         wallets[wallet].lockedBy = msg.sender;
     }
 
+    function lastActive(address wallet)
+        public
+        view
+        returns (uint128)
+    {
+        return wallets[wallet].lastActive;
+    }
+
     function touchLastActive(address wallet)
         public
         onlyWalletModule(wallet)
     {
-        wallets[wallet].lastActive = uint128(now);
+        wallets[wallet].lastActive = uint128(block.timestamp);
     }
 
     function inheritor(address wallet)
         public
         view
         returns (
-            address who,
-            uint    lastActive
+            address _who,
+            uint    _lastActive
         )
     {
-        who = wallets[wallet].inheritor;
-        lastActive = uint(wallets[wallet].lastActive);
+        _who = wallets[wallet].inheritor;
+        _lastActive = uint(wallets[wallet].lastActive);
     }
 
     function setInheritor(address wallet, address who)
@@ -295,7 +289,7 @@ contract SecurityStore is DataStore
         onlyWalletModule(wallet)
     {
         wallets[wallet].inheritor = who;
-        wallets[wallet].lastActive = uint128(now);
+        wallets[wallet].lastActive = uint128(block.timestamp);
     }
 
     function cleanRemovedGuardians(address wallet)
@@ -323,7 +317,7 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.validSince > 0 && guardian.validSince <= now &&
+        return guardian.validSince > 0 && guardian.validSince <= block.timestamp &&
             !isGuardianExpired(guardian);
     }
 
@@ -332,7 +326,7 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.validSince > now;
+        return guardian.validSince > block.timestamp;
     }
 
     function isGuardianPendingRemoval(Data.Guardian memory guardian)
@@ -340,7 +334,7 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.validUntil > now;
+        return guardian.validUntil > block.timestamp;
     }
 
     function isGuardianExpired(Data.Guardian memory guardian)
@@ -349,7 +343,7 @@ contract SecurityStore is DataStore
         returns (bool)
     {
         return guardian.validUntil > 0 &&
-            guardian.validUntil <= now;
+            guardian.validUntil <= block.timestamp;
     }
 
 }
