@@ -77,26 +77,26 @@ public:
   std::vector<merkle_path_selector> m_selectors;
   std::vector<HashT> m_hashers;
 
-  merkle_root_updater(ProtoboardT &in_pb,
-                      const size_t in_tree_depth, // RENAME: in_tree_depth
-                      const VariableArrayT &in_address_bits,
-                      const VariableT in_leaf_hash, // RENAME:in_leaf_hash_hash
-                      const VariableArrayT &in_proof, // RENAME: in_proof
-                      const std::string &in_annotation_prefix)
-      : GadgetT(in_pb, in_annotation_prefix) {
-    assert(in_tree_depth > 0);
-    assert(in_address_bits.size() == in_tree_depth * 2);
+  merkle_root_updater(ProtoboardT &_pb,
+                      const size_t _tree_depth, // RENAME: _tree_depth
+                      const VariableArrayT &_address_bits,
+                      const VariableT _leaf_hash,   // RENAME:_leaf_hash_hash
+                      const VariableArrayT &_proof, // RENAME: _proof
+                      const std::string &_annotation_prefix)
+      : GadgetT(_pb, _annotation_prefix) {
+    assert(_tree_depth > 0);
+    assert(_address_bits.size() == _tree_depth * 2);
 
-    m_selectors.reserve(in_tree_depth);
-    m_hashers.reserve(in_tree_depth);
-    for (size_t i = 0; i < in_tree_depth; i++) {
+    m_selectors.reserve(_tree_depth);
+    m_hashers.reserve(_tree_depth);
+    for (size_t i = 0; i < _tree_depth; i++) {
       m_selectors.push_back(merkle_path_selector(
-          in_pb, (i == 0) ? in_leaf_hash : m_hashers[i - 1].result(),
-          {in_proof[i * 3 + 0], in_proof[i * 3 + 1], in_proof[i * 3 + 2]},
-          in_address_bits[i * 2 + 0], in_address_bits[i * 2 + 1],
+          _pb, (i == 0) ? _leaf_hash : m_hashers[i - 1].result(),
+          {_proof[i * 3 + 0], _proof[i * 3 + 1], _proof[i * 3 + 2]},
+          _address_bits[i * 2 + 0], _address_bits[i * 2 + 1],
           FMT(this->annotation_prefix, ".selector[%zu]", i)));
 
-      m_hashers.emplace_back(in_pb, var_array(m_selectors[i].getChildren()),
+      m_hashers.emplace_back(_pb, var_array(m_selectors[i].getChildren()),
                              FMT(this->annotation_prefix, ".hasher[%zu]", i));
     }
   }
@@ -129,16 +129,16 @@ class merkle_root_verifier : public merkle_root_updater<HashT> {
 public:
   const VariableT m_expected_root;
 
-  merkle_root_verifier(ProtoboardT &in_pb, const size_t in_tree_depth,
-                       const VariableArrayT in_address_bits,
-                       const VariableT in_leaf_hash,
-                       const VariableT in_expected_root,
-                       const VariableArrayT in_proof,
-                       const std::string &in_annotation_prefix)
+  merkle_root_verifier(ProtoboardT &_pb, const size_t _tree_depth,
+                       const VariableArrayT _address_bits,
+                       const VariableT _leaf_hash,
+                       const VariableT _expected_root,
+                       const VariableArrayT _proof,
+                       const std::string &_annotation_prefix)
       : merkle_root_updater<HashT>::merkle_root_updater(
-            in_pb, in_tree_depth, in_address_bits, in_leaf_hash, in_proof,
-            in_annotation_prefix),
-        m_expected_root(in_expected_root) {}
+            _pb, _tree_depth, _address_bits, _leaf_hash, _proof,
+            _annotation_prefix),
+        m_expected_root(_expected_root) {}
 
   bool is_valid() const {
     return this->pb.val(this->result()) == this->pb.val(m_expected_root);
