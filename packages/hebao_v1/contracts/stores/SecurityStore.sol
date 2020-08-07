@@ -15,6 +15,12 @@ import "../stores/Data.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract SecurityStore is DataStore
 {
+    struct PackedGuardian
+    {
+        address  addr;
+        uint     fields;
+    }
+
     struct Wallet
     {
         address    inheritor;
@@ -22,7 +28,7 @@ contract SecurityStore is DataStore
         uint128    lock;
         address    lockedBy;   // the module that locked the wallet.
 
-        Data.Guardian[]            guardians;
+        PackedGuardian[]           guardians;
         mapping (address => uint)  guardianIdx;
     }
 
@@ -64,7 +70,7 @@ contract SecurityStore is DataStore
     {
         uint index = wallets[wallet].guardianIdx[guardianAddr];
         if (index > 0) {
-            return wallets[wallet].guardians[index-1];
+            return unpack(wallets[wallet].guardians[index-1]);
         }
     }
 
@@ -78,7 +84,7 @@ contract SecurityStore is DataStore
         _guardians = new Data.Guardian[](w.guardians.length);
         uint index = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
-            Data.Guardian memory g = w.guardians[i];
+            Data.Guardian memory g = unpack(w.guardians[i]);
             if (isGuardianActive(g)) {
                 _guardians[index] = g;
                 index ++;
@@ -95,7 +101,7 @@ contract SecurityStore is DataStore
     {
         Wallet storage w = wallets[wallet];
         for (uint i = 0; i < w.guardians.length; i++) {
-            if (isGuardianActive(w.guardians[i])) {
+            if (isGuardianActive(unpack(w.guardians[i]))) {
                 count ++;
             }
         }
@@ -111,7 +117,7 @@ contract SecurityStore is DataStore
         _guardians = new Data.Guardian[](w.guardians.length);
         uint index = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
-            Data.Guardian memory g = w.guardians[i];
+            Data.Guardian memory g = unpack(w.guardians[i]);
             if (isGuardianActive(g) || isGuardianPendingAddition(g)) {
                 _guardians[index] = g;
                 index ++;
@@ -128,7 +134,7 @@ contract SecurityStore is DataStore
     {
         Wallet storage w = wallets[wallet];
         for (uint i = 0; i < w.guardians.length; i++) {
-            Data.Guardian memory g = w.guardians[i];
+            Data.Guardian memory g = unpack(w.guardians[i]);
             if (isGuardianActive(g) || isGuardianPendingAddition(g)) {
                 count ++;
             }
@@ -156,10 +162,10 @@ contract SecurityStore is DataStore
         Data.Guardian memory g = Data.Guardian(
             guardianAddr,
             group,
-            uint128timestamp(validSince),
+            validSince,
             0
         );
-        w.guardians.push(g);
+        w.guardians.push(pack(g));
         w.guardianIdx[guardianAddr] = w.guardians.length;
     }
 
@@ -176,13 +182,13 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
         require(
-            isGuardianPendingAddition(w.guardians[idx - 1]),
+            isGuardianPendingAddition(unpack(w.guardians[idx - 1])),
             "NOT_PENDING_ADDITION"
         );
 
-        Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
+        Data.Guardian memory lastGuardian = unpack(w.guardians[w.guardians.length - 1]);
         if (guardianAddr != lastGuardian.addr) {
-            w.guardians[idx - 1] = lastGuardian;
+            w.guardians[idx - 1] = pack(lastGuardian);
             w.guardianIdx[lastGuardian.addr] = idx;
         }
         w.guardians.pop();
@@ -203,7 +209,10 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardians[idx - 1].validUntil = uint128timestamp(validUntil);
+        Data.Guardian memory guardian = unpack(w.guardians[idx - 1]);
+        guardian.validUntil = validUntil;
+
+        w.guardians[idx - 1] = pack(guardian);
     }
 
     function removeAllGuardians(address wallet)
@@ -230,12 +239,15 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
+        Data.Guardian memory guardian = unpack(w.guardians[idx - 1]);
         require(
-            isGuardianPendingRemoval(w.guardians[idx - 1]),
+            isGuardianPendingRemoval(guardian),
             "NOT_PENDING_REMOVAL"
         );
 
-        w.guardians[idx - 1].validUntil = 0;
+        guardian.validUntil = 0;
+
+        w.guardians[idx - 1] = pack(guardian);
     }
 
     function getLock(address wallet)
@@ -303,12 +315,12 @@ contract SecurityStore is DataStore
         Wallet storage w = wallets[wallet];
 
         for (int i = int(w.guardians.length) - 1; i >= 0; i--) {
-            Data.Guardian memory g = w.guardians[uint(i)];
+            Data.Guardian memory g = unpack(w.guardians[uint(i)]);
             if (isGuardianExpired(g)) {
-                Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
+                Data.Guardian memory lastGuardian = unpack(w.guardians[w.guardians.length - 1]);
 
                 if (g.addr != lastGuardian.addr) {
-                    w.guardians[uint(i)] = lastGuardian;
+                    w.guardians[uint(i)] = pack(lastGuardian);
                     w.guardianIdx[lastGuardian.addr] = uint(i) + 1;
                 }
                 w.guardians.pop();
@@ -358,5 +370,31 @@ contract SecurityStore is DataStore
     {
         require((timestamp << 128) >> 128 == timestamp, "TIMESTAMP_TOO_LARGE");
         return uint128(timestamp);
+    }
+
+    function pack(Data.Guardian memory guardian)
+        private
+        pure
+        returns(PackedGuardian memory packed)
+    {
+        require((guardian.group << 252) >> 252 == guardian.group, "GROUP_TOO_LARGE");
+        require((guardian.validSince << 130) >> 130 == guardian.validSince, "VALID_SINCE_TOO_LARGE");
+        require((guardian.validUntil << 130) >> 130 == guardian.validUntil, "VALID_UNTIL_TOO_LARGE");
+
+        packed.addr = guardian.addr;
+        packed.fields |= guardian.group << 252;
+        packed.fields |= guardian.validSince << 126; // 256 - 4 - 126;
+        packed.fields |= guardian.validUntil;
+    }
+
+    function unpack(PackedGuardian memory packed)
+        private
+        pure
+        returns(Data.Guardian memory guardian)
+    {
+        guardian.addr = packed.addr;
+        guardian.group = packed.fields >> 252;
+        guardian.validSince = (packed.fields << 4) >> 130;
+        guardian.validUntil = (packed.fields << 130) >> 130;
     }
 }

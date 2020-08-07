@@ -9,7 +9,7 @@ library Data
     {
         address  addr;
         uint     group;
-        uint128  validSince;
-        uint128  validUntil;
+        uint     validSince;
+        uint     validUntil;
     }
 }
