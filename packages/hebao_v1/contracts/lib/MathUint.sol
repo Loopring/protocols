@@ -42,4 +42,13 @@ library MathUint
         c = a + b;
         require(c >= a, "ADD_OVERFLOW");
     }
+
+    function toUint64(uint v)
+        private
+        pure
+        returns(uint64)
+    {
+        require((v << 64) >> 64 == v, "TOO_LARGE");
+        return uint64(v);
+    }
 }

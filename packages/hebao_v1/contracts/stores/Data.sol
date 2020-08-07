@@ -7,9 +7,9 @@ library Data
 {
     struct Guardian
     {
-        address  addr;
-        uint     group;
-        uint128  validSince;
-        uint128  validUntil;
+        address addr;
+        uint64  group;
+        uint64  validSince;
+        uint64  validUntil;
     }
 }

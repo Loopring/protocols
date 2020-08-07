@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
+import "../lib/MathUint.sol";
 import "../stores/Data.sol";
 
 
@@ -15,12 +16,14 @@ import "../stores/Data.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract SecurityStore is DataStore
 {
+    using MathUint for uint;
+
     struct Wallet
     {
         address    inheritor;
-        uint128    lastActive; // the latest timestamp the owner is considered to be active
-        uint128    lock;
         address    lockedBy;   // the module that locked the wallet.
+        uint64     lastActive; // the latest timestamp the owner is considered to be active
+        uint64     lock;
 
         Data.Guardian[]            guardians;
         mapping (address => uint)  guardianIdx;
@@ -155,9 +158,9 @@ contract SecurityStore is DataStore
         // Add the new guardian
         Data.Guardian memory g = Data.Guardian(
             guardianAddr,
-            group,
-            uint128timestamp(validSince),
-            0
+            group.toUint64(),
+            validSince.toUint64(),
+            uint64(0)
         );
         w.guardians.push(g);
         w.guardianIdx[guardianAddr] = w.guardians.length;
@@ -203,7 +206,7 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardians[idx - 1].validUntil = uint128timestamp(validUntil);
+        w.guardians[idx - 1].validUntil = validUntil.toUint64();
     }
 
     function removeAllGuardians(address wallet)
@@ -243,7 +246,7 @@ contract SecurityStore is DataStore
         view
         returns (uint _lock, address _lockedBy)
     {
-        _lock = uint(wallets[wallet].lock);
+        _lock = wallets[wallet].lock;
         _lockedBy = wallets[wallet].lockedBy;
     }
 
@@ -255,17 +258,15 @@ contract SecurityStore is DataStore
         onlyWalletModule(wallet)
     {
         require(lock == 0 || lock > block.timestamp, "INVALID_LOCK_TIME");
-        uint128 _lock = uint128timestamp(lock);
-        require(uint(_lock) == lock, "LOCK_TOO_LARGE");
 
-        wallets[wallet].lock = _lock;
+        wallets[wallet].lock = lock.toUint64();
         wallets[wallet].lockedBy = msg.sender;
     }
 
     function lastActive(address wallet)
         public
         view
-        returns (uint128)
+        returns (uint64)
     {
         return wallets[wallet].lastActive;
     }
@@ -274,7 +275,7 @@ contract SecurityStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-        wallets[wallet].lastActive = uint128timestamp(block.timestamp);
+        wallets[wallet].lastActive = block.timestamp.toUnit64();
     }
 
     function inheritor(address wallet)
@@ -294,7 +295,7 @@ contract SecurityStore is DataStore
         onlyWalletModule(wallet)
     {
         wallets[wallet].inheritor = who;
-        wallets[wallet].lastActive = uint128timestamp(block.timestamp);
+        wallets[wallet].lastActive = block.timestamp.toUint64();
     }
 
     function cleanRemovedGuardians(address wallet)
@@ -351,12 +352,3 @@ contract SecurityStore is DataStore
             guardian.validUntil <= block.timestamp;
     }
 
-    function uint128timestamp(uint timestamp)
-        private
-        pure
-        returns(uint128)
-    {
-        require((timestamp << 128) >> 128 == timestamp, "TIMESTAMP_TOO_LARGE");
-        return uint128(timestamp);
-    }
-}
