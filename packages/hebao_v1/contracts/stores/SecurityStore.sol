@@ -153,7 +153,12 @@ contract SecurityStore is DataStore
         require(pos == 0, "GUARDIAN_EXISTS");
 
         // Add the new guardian
-        Data.Guardian memory g = Data.Guardian(guardianAddr, group, convertTimestamp(validSince), 0);
+        Data.Guardian memory g = Data.Guardian(
+            guardianAddr,
+            group,
+            convertTimestamp(validSince),
+            0
+        );
         w.guardians.push(g);
         w.guardianIdx[guardianAddr] = w.guardians.length;
     }
