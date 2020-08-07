@@ -120,17 +120,15 @@ public:
   RequireLtGadget requireValidUntil;
 
   RequireValidOrderGadget(ProtoboardT &pb, const Constants &constants,
-                   const VariableT &timestamp, const OrderGadget &order,
-                   const std::string &prefix)
+                          const VariableT &timestamp, const OrderGadget &order,
+                          const std::string &prefix)
       : GadgetT(pb, prefix),
 
         requireValidUntil(pb, timestamp, order.validUntil.packed,
                           NUM_BITS_TIMESTAMP,
                           FMT(prefix, ".requireValidUntil")) {}
 
-  void generate_r1cs_witness() {
-    requireValidUntil.generate_r1cs_witness();
-  }
+  void generate_r1cs_witness() { requireValidUntil.generate_r1cs_witness(); }
 
   void generate_r1cs_constraints() {
     requireValidUntil.generate_r1cs_constraints();
@@ -146,8 +144,7 @@ public:
   FeeCalculatorGadget(ProtoboardT &pb, const Constants &constants,
                       const VariableT &amountB,
                       const VariableT &protocolFeeBips,
-                      const VariableT &feeBips,
-                      const std::string &prefix)
+                      const VariableT &feeBips, const std::string &prefix)
       : GadgetT(pb, prefix),
 
         protocolFee(pb, constants, amountB, protocolFeeBips, constants._100000,
@@ -337,9 +334,9 @@ public:
 
         // Check if the orders in the settlement are correctly filled
         requireValidA(pb, constants, timestamp, orderA,
-                    FMT(prefix, ".checkValidA")),
+                      FMT(prefix, ".checkValidA")),
         requireValidB(pb, constants, timestamp, orderB,
-                    FMT(prefix, ".checkValidB")) {}
+                      FMT(prefix, ".checkValidB")) {}
 
   void generate_r1cs_witness() {
     // Check if the fills are valid for the orders

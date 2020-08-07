@@ -182,10 +182,11 @@ public:
 
         leafBefore(_leafBefore), leafAfter(_leafAfter),
 
-        leafHashBefore(pb,
-                       var_array({_leafBefore.balance, _leafBefore.storageRoot}),
-                       FMT(_prefix, ".leafHashBefore")),
-        leafHashAfter(pb, var_array({_leafAfter.balance, _leafAfter.storageRoot}),
+        leafHashBefore(
+            pb, var_array({_leafBefore.balance, _leafBefore.storageRoot}),
+            FMT(_prefix, ".leafHashBefore")),
+        leafHashAfter(pb,
+                      var_array({_leafAfter.balance, _leafAfter.storageRoot}),
                       FMT(_prefix, ".leafHashAfter")),
 
         proof(
