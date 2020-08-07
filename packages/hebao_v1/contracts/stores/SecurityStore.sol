@@ -156,7 +156,7 @@ contract SecurityStore is DataStore
         Data.Guardian memory g = Data.Guardian(
             guardianAddr,
             group,
-            convertTimestamp(validSince),
+            uint128timestamp(validSince),
             0
         );
         w.guardians.push(g);
@@ -203,7 +203,7 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardians[idx - 1].validUntil = convertTimestamp(validUntil);
+        w.guardians[idx - 1].validUntil = uint128timestamp(validUntil);
     }
 
     function removeAllGuardians(address wallet)
@@ -255,7 +255,7 @@ contract SecurityStore is DataStore
         onlyWalletModule(wallet)
     {
         require(lock == 0 || lock > block.timestamp, "INVALID_LOCK_TIME");
-        uint128 _lock = convertTimestamp(lock);
+        uint128 _lock = uint128timestamp(lock);
         require(uint(_lock) == lock, "LOCK_TOO_LARGE");
 
         wallets[wallet].lock = _lock;
@@ -274,7 +274,7 @@ contract SecurityStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-        wallets[wallet].lastActive = convertTimestamp(block.timestamp);
+        wallets[wallet].lastActive = uint128timestamp(block.timestamp);
     }
 
     function inheritor(address wallet)
@@ -294,7 +294,7 @@ contract SecurityStore is DataStore
         onlyWalletModule(wallet)
     {
         wallets[wallet].inheritor = who;
-        wallets[wallet].lastActive = convertTimestamp(block.timestamp);
+        wallets[wallet].lastActive = uint128timestamp(block.timestamp);
     }
 
     function cleanRemovedGuardians(address wallet)
@@ -351,7 +351,7 @@ contract SecurityStore is DataStore
             guardian.validUntil <= block.timestamp;
     }
 
-    function convertTimestamp(uint timestamp)
+    function uint128timestamp(uint timestamp)
         private
         pure
         returns(uint128)
