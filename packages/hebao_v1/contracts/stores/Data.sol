@@ -9,7 +9,7 @@ library Data
     {
         address addr;
         uint64  group;
-        uint64  validSince;
-        uint64  validUntil;
+        int64   timestamp; // If < 0, (0-timestamp) is the validUntil timestamp;
+                           // If > 0, it is the validSince timestamp;
     }
 }
