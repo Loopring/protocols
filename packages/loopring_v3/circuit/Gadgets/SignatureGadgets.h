@@ -181,7 +181,8 @@ public:
         // Prefix the message with R and A.
         m_hash_RAM(in_pb, var_array({in_R.x, in_R.y, in_A.x, in_A.y, in_M}),
                    FMT(annotation_prefix, ".hash_RAM")),
-        hash(pb, m_hash_RAM.result(), NUM_BITS_MAX_VALUE, FMT(annotation_prefix, ".hash")) {}
+        hash(pb, m_hash_RAM.result(), NUM_BITS_MAX_VALUE,
+             FMT(annotation_prefix, ".hash")) {}
 
   void generate_r1cs_constraints() {
     m_hash_RAM.generate_r1cs_constraints();

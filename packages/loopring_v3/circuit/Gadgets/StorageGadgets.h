@@ -73,9 +73,8 @@ public:
 
         proof(
             make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(prefix, ".proof"))),
-        proofVerifierBefore(pb, TREE_DEPTH_STORAGE, slotID,
-                            leafBefore.result(), merkleRoot, proof,
-                            FMT(prefix, ".pathBefore")),
+        proofVerifierBefore(pb, TREE_DEPTH_STORAGE, slotID, leafBefore.result(),
+                            merkleRoot, proof, FMT(prefix, ".pathBefore")),
         rootCalculatorAfter(pb, TREE_DEPTH_STORAGE, slotID, leafAfter.result(),
                             proof, FMT(prefix, ".pathAfter")) {}
 

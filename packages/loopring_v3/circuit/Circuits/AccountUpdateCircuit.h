@@ -216,10 +216,9 @@ public:
   }
 
   const VariableArrayT getPublicData() const {
-    return flattenReverse(
-        {type.bits, owner.bits, accountID.bits,
-         feeTokenID.bits, fFee.bits(),
-         compressPublicKey.result(), nonce.bits});
+    return flattenReverse({type.bits, owner.bits, accountID.bits,
+                           feeTokenID.bits, fFee.bits(),
+                           compressPublicKey.result(), nonce.bits});
   }
 };
 
