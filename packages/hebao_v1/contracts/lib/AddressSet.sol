@@ -18,7 +18,7 @@ contract AddressSet
     function addAddressToSet(
         bytes32 key,
         address addr,
-        bool maintainList
+        bool    maintainList
         ) internal
     {
         Set storage set = sets[key];
