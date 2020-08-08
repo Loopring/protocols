@@ -8,8 +8,8 @@ library Data
     struct Guardian
     {
         address addr;
-        uint64  group;
-        uint64  validSince;
-        uint64  validUntil;
+        uint16  group;
+        uint40  validSince;
+        uint40  validUntil;
     }
 }

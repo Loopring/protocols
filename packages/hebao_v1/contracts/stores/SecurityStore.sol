@@ -23,8 +23,8 @@ contract SecurityStore is DataStore
     struct Wallet
     {
         address    inheritor;
-        address    lockedBy;   // the module that locked the wallet.
         uint64     lastActive; // the latest timestamp the owner is considered to be active
+        address    lockedBy;   // the module that locked the wallet.
         uint64     lock;
 
         Data.Guardian[]            guardians;
@@ -161,9 +161,9 @@ contract SecurityStore is DataStore
         // Add the new guardian
         Data.Guardian memory g = Data.Guardian(
             guardianAddr,
-            group.toUint64(),
-            validSince.toUint64(),
-            uint64(0)
+            group.toUint16(),
+            validSince.toUint40(),
+            uint40(0)
         );
         w.guardians.push(g);
         w.guardianIdx[guardianAddr] = w.guardians.length;
@@ -209,7 +209,7 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardians[idx - 1].validUntil = validUntil.toUint64();
+        w.guardians[idx - 1].validUntil = validUntil.toUint40();
     }
 
     function removeAllGuardians(address wallet)
