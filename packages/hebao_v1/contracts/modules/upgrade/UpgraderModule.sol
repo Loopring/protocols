@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "../../base/BaseWallet.sol";
 import "../../stores/SecurityStore.sol";
 import "../../thirdparty/proxy/OwnedUpgradeabilityProxy.sol";
-import "../../thirdparty/SafeCast.sol";
 import "../base/BaseModule.sol";
 import "./SecurityStore_1_0_2.sol";
 
@@ -20,8 +19,6 @@ import "./SecurityStore_1_0_2.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
-    using SafeCast for uint;
-
     ControllerImpl private controller_;
 
     address    public walletImplementation;
@@ -96,7 +93,7 @@ contract UpgraderModule is BaseModule {
                 wallet,
                 guardians[i].addr,
                 guardians[i].group,
-                guardians[i].validSince.toUint40()
+                guardians[i].validSince
             );
         }
 
