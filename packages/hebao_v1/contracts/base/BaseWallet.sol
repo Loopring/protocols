@@ -153,7 +153,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     {
         require(_method != bytes4(0), "BAD_METHOD");
         if (_module != address(0)) {
-            require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
             require(modules[_module], "MODULE_UNAUTHORIZED");
         }
 
