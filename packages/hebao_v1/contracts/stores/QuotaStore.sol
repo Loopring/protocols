@@ -17,6 +17,7 @@ contract QuotaStore is DataStore, Claimable
 
     uint128 public defaultQuota;
 
+    // Optimized to fit into 64 bytes (2 slots)
     struct Quota
     {
         uint128 currentQuota; // 0 indicates default

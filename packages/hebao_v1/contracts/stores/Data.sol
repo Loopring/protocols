@@ -5,6 +5,7 @@ pragma solidity ^0.7.0;
 
 library Data
 {
+    // Optimized to fit into 32 bytes (1 slot)
     struct Guardian
     {
         address addr;
