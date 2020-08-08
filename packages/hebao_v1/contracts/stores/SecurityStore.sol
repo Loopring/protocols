@@ -357,6 +357,6 @@ contract SecurityStore is DataStore
         returns (bool)
     {
         return guardian.timestamp < int64(0) &&
-            int64(block.timestamp) >= -guardian.timestamp;
+            -guardian.timestamp <= int64(block.timestamp);
     }
 }
