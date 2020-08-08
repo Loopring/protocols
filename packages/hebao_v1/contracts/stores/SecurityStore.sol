@@ -162,7 +162,7 @@ contract SecurityStore is DataStore
         // Add the new guardian
         Data.Guardian memory g = Data.Guardian(
             guardianAddr,
-            group.toUint64(),
+            group.toUint8(),
             validSince.toInt256().toInt64()
         );
         w.guardians.push(g);
