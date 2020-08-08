@@ -326,9 +326,9 @@ contract SecurityStore is DataStore
         returns (bool)
     {
         if (guardian.timestamp > int64(0)) {
-            return int64(block.timestamp) >= guardian.timestamp;
+            return guardian.timestamp <= int64(block.timestamp);
         } else if (guardian.timestamp < int64(0)) {
-            return int64(block.timestamp) < -guardian.timestamp;
+            return -guardian.timestamp > int64(block.timestamp);
         } else {
             return false;
         }
@@ -348,7 +348,7 @@ contract SecurityStore is DataStore
         returns (bool)
     {
         return guardian.timestamp < int64(0) &&
-            int64(block.timestamp) < -guardian.timestamp;
+            -guardian.timestamp > int64(block.timestamp);
     }
 
     function isGuardianExpired(Data.Guardian memory guardian)
