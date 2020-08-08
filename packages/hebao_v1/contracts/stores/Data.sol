@@ -5,11 +5,12 @@ pragma solidity ^0.7.0;
 
 library Data
 {
+    // Optimized to fit into 32 bytes (1 slot)
     struct Guardian
     {
-        address  addr;
-        uint     group;
-        uint128  validSince;
-        uint128  validUntil;
+        address addr;
+        uint16  group;
+        uint40  validSince;
+        uint40  validUntil;
     }
 }

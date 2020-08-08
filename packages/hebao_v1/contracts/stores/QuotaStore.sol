@@ -5,7 +5,7 @@ pragma solidity ^0.7.0;
 import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
 import "../lib/Claimable.sol";
-
+import "../thirdparty/SafeCast.sol";
 
 /// @title QuotaStore
 /// @dev This store maintains daily spending quota for each wallet.
@@ -13,16 +13,18 @@ import "../lib/Claimable.sol";
 contract QuotaStore is DataStore, Claimable
 {
     using MathUint for uint;
+    using SafeCast for uint;
 
-    uint public defaultQuota;
+    uint128 public defaultQuota;
 
+    // Optimized to fit into 64 bytes (2 slots)
     struct Quota
     {
-        uint    currentQuota; // 0 indicates default
-        uint    pendingQuota;
-        uint64  pendingUntil;
+        uint128 currentQuota; // 0 indicates default
+        uint128 pendingQuota;
+        uint128 spentAmount;
         uint64  spentTimestamp;
-        uint    spentAmount;
+        uint64  pendingUntil;
     }
 
     mapping (address => Quota) public quotas;
@@ -38,13 +40,13 @@ contract QuotaStore is DataStore, Claimable
         uint64  pendingUntil
     );
 
-    constructor(uint _defaultQuota)
+    constructor(uint128 _defaultQuota)
         DataStore()
     {
         defaultQuota = _defaultQuota;
     }
 
-    function changeDefaultQuota(uint _defaultQuota)
+    function changeDefaultQuota(uint128 _defaultQuota)
         external
         onlyOwner
     {
@@ -66,9 +68,9 @@ contract QuotaStore is DataStore, Claimable
         public
         onlyWalletModule(wallet)
     {
-        quotas[wallet].currentQuota = currentQuota(wallet);
-        quotas[wallet].pendingQuota = newQuota;
-        quotas[wallet].pendingUntil = uint64(effectiveTime);
+        quotas[wallet].currentQuota = currentQuota(wallet).toUint128();
+        quotas[wallet].pendingQuota = newQuota.toUint128();
+        quotas[wallet].pendingUntil = effectiveTime.toUint64();
 
         emit QuotaScheduled(
             wallet,
@@ -96,7 +98,7 @@ contract QuotaStore is DataStore, Claimable
         onlyWalletModule(wallet)
     {
         Quota storage q = quotas[wallet];
-        q.spentAmount = spentQuota(wallet).add(amount);
+        q.spentAmount = spentQuota(wallet).add(amount).toUint128();
         q.spentTimestamp = uint64(block.timestamp);
     }
 
@@ -135,7 +137,7 @@ contract QuotaStore is DataStore, Claimable
         Quota storage q = quotas[wallet];
         uint timeSinceLastSpent = block.timestamp.sub(q.spentTimestamp);
         if (timeSinceLastSpent < 1 days) {
-            return q.spentAmount.sub(q.spentAmount.mul(timeSinceLastSpent) / 1 days);
+            return uint(q.spentAmount).sub(timeSinceLastSpent.mul(q.spentAmount) / 1 days);
         } else {
             return 0;
         }
