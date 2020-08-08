@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
 import "../stores/Data.sol";
+import "../thirdparty/SafeCast.sol";
 
 
 /// @title SecurityStore
@@ -17,6 +18,7 @@ import "../stores/Data.sol";
 contract SecurityStore is DataStore
 {
     using MathUint for uint;
+    using SafeCast for uint;
 
     struct Wallet
     {
