@@ -6,9 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../../base/BaseWallet.sol";
 import "../../stores/SecurityStore.sol";
 import "../../thirdparty/proxy/OwnedUpgradeabilityProxy.sol";
-import "../../thirdparty/SafeCast.sol";
 import "../base/BaseModule.sol";
-import "./SecurityStore_1_0_2.sol";
 
 
 /// @title UpgraderModule
@@ -20,17 +18,14 @@ import "./SecurityStore_1_0_2.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
-    using SafeCast for uint;
-    using SafeCast for int;
-
     ControllerImpl private controller_;
 
     address    public walletImplementation;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
-    SecurityStore_1_0_2 oldSecurityStore;
-    SecurityStore       newSecurityStore;
+    SecurityStore oldSecurityStore;
+    SecurityStore newSecurityStore;
 
     constructor(
         ControllerImpl   _controller,
@@ -46,7 +41,7 @@ contract UpgraderModule is BaseModule {
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
 
-        oldSecurityStore = SecurityStore_1_0_2(_oldSecurityStore);
+        oldSecurityStore = SecurityStore(_oldSecurityStore);
         newSecurityStore = SecurityStore(_newSecurityStore);
     }
 
@@ -84,13 +79,11 @@ contract UpgraderModule is BaseModule {
     function migrateSecurityStore(address wallet)
         internal
     {
-        if (oldSecurityStore == SecurityStore_1_0_2(0) ||
-            newSecurityStore == SecurityStore(0)) {
+        if (oldSecurityStore == SecurityStore(0) || newSecurityStore == SecurityStore(0)) {
             return;
         }
 
-        SecurityStore_1_0_2.Guardian[] memory guardians =
-            oldSecurityStore.guardiansWithPending(wallet);
+        Data.Guardian[] memory guardians = oldSecurityStore.guardiansWithPending(wallet);
 
         for (uint i = 0; i < guardians.length; i++) {
             newSecurityStore.addGuardian(
