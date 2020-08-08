@@ -4,6 +4,8 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 
+// This contract is created to generate the ABI for
+// interacting with the SecurityStore in the 1.0.2 release.
 abstract contract SecurityStore_1_0_2
 {
     struct Guardian
