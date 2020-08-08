@@ -19,6 +19,7 @@ contract SecurityStore is DataStore
 {
     using MathUint for uint;
     using SafeCast for uint;
+    using SafeCast for int;
 
     struct Wallet
     {
@@ -161,9 +162,8 @@ contract SecurityStore is DataStore
         // Add the new guardian
         Data.Guardian memory g = Data.Guardian(
             guardianAddr,
-            group.toUint64(),
-            validSince.toUint64(),
-            uint64(0)
+            group.toUint8(),
+            validSince.toInt256().toInt64()
         );
         w.guardians.push(g);
         w.guardianIdx[guardianAddr] = w.guardians.length;
@@ -209,7 +209,7 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardians[idx - 1].validUntil = validUntil.toUint64();
+        w.guardians[idx - 1].timestamp = -validUntil.toInt256().toInt64();
     }
 
     function removeAllGuardians(address wallet)
@@ -236,12 +236,11 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        require(
-            isGuardianPendingRemoval(w.guardians[idx - 1]),
-            "NOT_PENDING_REMOVAL"
-        );
+        Data.Guardian memory guardian = w.guardians[idx - 1];
+        require(isGuardianPendingRemoval(guardian), "NOT_PENDING_REMOVAL");
 
-        w.guardians[idx - 1].validUntil = 0;
+        guardian.timestamp = int64(block.timestamp);
+        w.guardians[idx - 1] = guardian;
     }
 
     function getLock(address wallet)
@@ -326,8 +325,13 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.validSince > 0 && guardian.validSince <= block.timestamp &&
-            !isGuardianExpired(guardian);
+        if (guardian.timestamp > int64(0)) {
+            return guardian.timestamp <= int64(block.timestamp);
+        } else if (guardian.timestamp < int64(0)) {
+            return -guardian.timestamp > int64(block.timestamp);
+        } else {
+            return false;
+        }
     }
 
     function isGuardianPendingAddition(Data.Guardian memory guardian)
@@ -335,7 +339,7 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.validSince > block.timestamp;
+        return guardian.timestamp > int64(block.timestamp);
     }
 
     function isGuardianPendingRemoval(Data.Guardian memory guardian)
@@ -343,7 +347,8 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.validUntil > block.timestamp;
+        return guardian.timestamp < int64(0) &&
+            -guardian.timestamp > int64(block.timestamp);
     }
 
     function isGuardianExpired(Data.Guardian memory guardian)
@@ -351,7 +356,7 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.validUntil > 0 &&
-            guardian.validUntil <= block.timestamp;
+        return guardian.timestamp < int64(0) &&
+            -guardian.timestamp <= int64(block.timestamp);
     }
 }
