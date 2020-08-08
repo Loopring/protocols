@@ -209,7 +209,12 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardians[idx - 1].timestamp = int64(0) - validUntil.toInt256().toInt64();
+        Data.Guardian storage g = w.guardians[idx - 1];
+        if (g.timestamp > 0 && g.timestamp <= int64(block.timestamp)) {
+            g.timestamp = -int64(block.timestamp - 1);
+        } else {
+            g.timestamp = -validUntil.toInt256().toInt64();
+        }
     }
 
     function removeAllGuardians(address wallet)
@@ -241,7 +246,7 @@ contract SecurityStore is DataStore
             "NOT_PENDING_REMOVAL"
         );
 
-        w.guardians[idx - 1].timestamp = int64(block.timestamp);
+        g.timestamp = int64(block.timestamp - 1);
     }
 
     function getLock(address wallet)
@@ -327,9 +332,9 @@ contract SecurityStore is DataStore
         returns (bool)
     {
         if (guardian.timestamp > int64(0)) {
-            return guardian.timestamp > int64(block.timestamp);
+            return guardian.timestamp < int64(block.timestamp);
         } else if (guardian.timestamp < int64(0)) {
-            return -guardian.timestamp < int64(block.timestamp);
+            return -guardian.timestamp > int64(block.timestamp);
         } else {
             return false;
         }
