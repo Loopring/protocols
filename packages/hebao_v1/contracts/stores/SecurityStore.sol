@@ -210,7 +210,7 @@ contract SecurityStore is DataStore
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
         Data.Guardian storage g = w.guardians[idx - 1];
-        if (g.timestamp > 0 && g.timestamp <= int64(block.timestamp)) {
+        if (g.timestamp > 0 && g.timestamp < int64(block.timestamp)) {
             g.timestamp = -int64(block.timestamp - 1);
         } else {
             g.timestamp = -validUntil.toInt256().toInt64();
