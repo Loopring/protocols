@@ -19,6 +19,7 @@ contract SecurityStore is DataStore
 {
     using MathUint for uint;
     using SafeCast for uint;
+    using SafeCast for int;
 
     struct Wallet
     {
@@ -162,7 +163,7 @@ contract SecurityStore is DataStore
         Data.Guardian memory g = Data.Guardian(
             guardianAddr,
             group.toUint64(),
-            validSince.toInt64()
+            validSince.toInt256().toInt64()
         );
         w.guardians.push(g);
         w.guardianIdx[guardianAddr] = w.guardians.length;
@@ -208,7 +209,7 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardians[idx - 1].timestamp = 0 - validUntil.toInt64();
+        w.guardians[idx - 1].timestamp = int64(0) - validUntil.toInt256().toInt64();
     }
 
     function removeAllGuardians(address wallet)
@@ -240,7 +241,7 @@ contract SecurityStore is DataStore
             "NOT_PENDING_REMOVAL"
         );
 
-        w.guardians[idx - 1].timestamp = block.timestamp.toInt64();
+        w.guardians[idx - 1].timestamp = int64(block.timestamp);
     }
 
     function getLock(address wallet)
@@ -325,10 +326,10 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        if (guardian.timestamp > 0) {
-            return guardian.timestamp > block.timestamp;
-        } else if (guardian.timestamp < 0) {
-            return -guardian.timestamp < block.timestamp;
+        if (guardian.timestamp > int64(0)) {
+            return guardian.timestamp > int64(block.timestamp);
+        } else if (guardian.timestamp < int64(0)) {
+            return -guardian.timestamp < int64(block.timestamp);
         } else {
             return false;
         }
@@ -339,7 +340,7 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.timestamp > block.timestamp;
+        return guardian.timestamp > int64(block.timestamp);
     }
 
     function isGuardianPendingRemoval(Data.Guardian memory guardian)
@@ -347,8 +348,8 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.timestamp < 0 &&
-            block.timestamp + guardian.timestamp < 0；
+        return guardian.timestamp < int64(0) &&
+            int64(block.timestamp) + guardian.timestamp < int64(0);
     }
 
     function isGuardianExpired(Data.Guardian memory guardian)
@@ -356,7 +357,7 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return guardian.timestamp < 0 &&
-            block.timestamp + guardian.validUntil >= 0;
+        return guardian.timestamp < int64(0) &&
+            int64(block.timestamp) + guardian.timestamp >= int64(0);
     }
 }

@@ -90,7 +90,7 @@ contract UpgraderModule is BaseModule {
                 wallet,
                 guardians[i].addr,
                 guardians[i].group,
-                guardians[i].validSince
+                uint(guardians[i].timestamp)
             );
         }
 
