@@ -21,7 +21,7 @@ static auto dummySpotTrade = R"({
         "accountID": 0,
         "amountB": "79228162514264337593543950335",
         "amountS": "79228162514264337593543950335",
-        "buy": true,
+        "fillAmountBorS": true,
         "feeBips": 0,
         "maxFeeBips": 0,
         "storageID": "0",
@@ -34,7 +34,7 @@ static auto dummySpotTrade = R"({
         "accountID": 0,
         "amountB": "79228162514264337593543950335",
         "amountS": "79228162514264337593543950335",
-        "buy": true,
+        "fillAmountBorS": true,
         "feeBips": 0,
         "maxFeeBips": 0,
         "storageID": "0",
@@ -81,8 +81,8 @@ static auto dummyAccountUpdate = R"({
     "owner": "0",
     "accountID": 0,
     "validUntil": 4294967295,
-    "publicKeyX": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
-    "publicKeyY": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
+    "publicKeyX": "0",
+    "publicKeyY": "0",
     "feeTokenID": 0,
     "fee": "0",
     "type": 0
@@ -95,10 +95,12 @@ static auto dummyDeposit = R"({
     "amount": "0"
 })"_json;
 
+// Baby Jubjub base point.
+// https://github.com/ethereum/EIPs/blob/41569d75e42da2046cb18fdca79609e18968af47/eip-draft_babyjubjub.md#base-point
 static auto dummySignature = R"({
-    "Rx": "13060336632196495412858530687189935300033555341384637843571668213752389743866",
-    "Ry": "4915883150652842217472446614681036440072632592629277920562695676195366802174",
-    "s": "2049853744288428596543952232796911341686225132653835991176529722328469628710"
+    "Rx": "5299619240641551281634865583518297030282874472190772894086521144482721001553",
+    "Ry": "16950150798460657717958625567821834550301663161624707787222815936182638968203",
+    "s": "0"
 })"_json;
 
 enum class TransactionType {
@@ -257,7 +259,7 @@ public:
   ethsnarks::FieldT amountB;
   ethsnarks::FieldT validUntil;
   ethsnarks::FieldT maxFeeBips;
-  ethsnarks::FieldT buy;
+  ethsnarks::FieldT fillAmountBorS;
   ethsnarks::FieldT taker;
 
   ethsnarks::FieldT feeBips;
@@ -273,7 +275,8 @@ static void from_json(const json &j, Order &order) {
   order.amountB = ethsnarks::FieldT(j.at("amountB").get<std::string>().c_str());
   order.validUntil = ethsnarks::FieldT(j.at("validUntil"));
   order.maxFeeBips = ethsnarks::FieldT(j.at("maxFeeBips"));
-  order.buy = ethsnarks::FieldT(j.at("buy").get<bool>() ? 1 : 0);
+  order.fillAmountBorS =
+      ethsnarks::FieldT(j.at("fillAmountBorS").get<bool>() ? 1 : 0);
   order.taker = ethsnarks::FieldT(j.at("taker").get<std::string>().c_str());
 
   order.feeBips = ethsnarks::FieldT(j.at("feeBips"));

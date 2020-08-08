@@ -17,6 +17,13 @@ using namespace ethsnarks;
 
 namespace Loopring {
 
+// When withdrawing from the protocol fee pool account (account 0),
+// account 1 is used as the main account (without side effects),
+// the withdrawing is done using the optimized protocol pool
+// balance update system.
+// This is to ensure this operation does not update the protocol pool
+// account leaf here, that account should only be modified once,
+// and that is done a single time in a block.
 class WithdrawCircuit : public BaseTransactionCircuit {
 public:
   // Inputs
@@ -126,10 +133,8 @@ public:
                        FMT(prefix, ".needsSignature")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS,
-                   FMT(prefix, ".balanceS_A")),
-        balanceB_P(pb, state.constants, state.pool.balanceB,
-                   FMT(prefix, ".balanceB_P")),
+        balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_P(pb, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
 
         // Check how much should be withdrawn
         fullBalance(pb, isProtocolFeeWithdrawal.result(), balanceB_P.balance(),
@@ -150,10 +155,8 @@ public:
                                    FMT(prefix, ".checkInvalidFullWithdrawal")),
 
         // Fee balances
-        balanceB_A(pb, state.constants, state.accountA.balanceB,
-                   FMT(prefix, ".balanceB_A")),
-        balanceA_O(pb, state.constants, state.oper.balanceA,
-                   FMT(prefix, ".balanceA_O")),
+        balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+        balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
         requireAccuracyFee(pb, fFee.value(), fee.packed, Float16Accuracy,

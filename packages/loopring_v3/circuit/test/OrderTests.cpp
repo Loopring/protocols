@@ -75,9 +75,9 @@ TEST_CASE("Order", "[OrderGadget]") {
       _order.maxFeeBips = getMaxFieldElement(NUM_BITS_BIPS) + 1;
       orderChecked(exchange, _order, false);
     }
-    SECTION("buy") {
+    SECTION("fillAmountBorS") {
       Order _order = order;
-      _order.buy = 2;
+      _order.fillAmountBorS = 2;
       orderChecked(exchange, _order, false);
     }
     SECTION("feeBips") {

@@ -182,9 +182,9 @@ public:
                          const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        fillAmount(pb, order.buy.packed, fillB, fillS,
+        fillAmount(pb, order.fillAmountBorS.packed, fillB, fillS,
                    FMT(prefix, ".fillAmount")),
-        fillLimit(pb, order.buy.packed, order.amountB.packed,
+        fillLimit(pb, order.fillAmountBorS.packed, order.amountB.packed,
                   order.amountS.packed, FMT(prefix, ".fillLimit")),
         filledAfter(pb, filled, fillAmount.result(), NUM_BITS_AMOUNT,
                     FMT(prefix, ".filledAfter")),

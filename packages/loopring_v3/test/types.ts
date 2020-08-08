@@ -25,7 +25,7 @@ export interface OrderInfo {
 
   validUntil?: number;
   maxFeeBips?: number;
-  buy?: boolean;
+  fillAmountBorS?: boolean;
   taker?: string;
 
   feeBips?: number;

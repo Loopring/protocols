@@ -24,6 +24,7 @@ library ExchangeSignatures
         )
         internal // inline call
     {
+        require(signer != address(0), "INVALID_SIGNER");
         // Verify the signature if one is provided, otherwise fall back to an approved tx
         if (signature.length > 0) {
             require(txHash.verifySignature(signer, signature), "INVALID_SIGNATURE");

@@ -161,7 +161,7 @@ export interface SpotTrade {
   /** The orderID of the taker order. */
   orderIdA: number;
   /** Whether the taker order is a buy or sell order. */
-  buyA: boolean;
+  fillAmountBorSA: boolean;
   /** The token the taker order sells. */
   tokenA: number;
   /** The amount of tokens (in tokenS) the taker sells. */
@@ -176,7 +176,7 @@ export interface SpotTrade {
   /** The orderID of the maker order. */
   orderIdB: number;
   /** Whether the maker order is a buy or sell order. */
-  buyB: boolean;
+  fillAmountBorSB: boolean;
   /** The token the maker order sells. */
   tokenB: number;
   /** The amount of tokens (in tokenS) the maker sells. */

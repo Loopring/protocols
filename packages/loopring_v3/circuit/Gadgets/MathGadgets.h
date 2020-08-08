@@ -275,7 +275,7 @@ public:
 
   void generate_r1cs_constraints() {
     pb.add_r1cs_constraint(ConstraintT(value - sub, FieldT::one(), sum),
-                           ".value - sub = sum");
+                           FMT(annotation_prefix, ".value - sub = sum"));
   }
 };
 
@@ -576,7 +576,11 @@ public:
 
   void generate_r1cs_witness() { pb.val(_not) = FieldT::one() - pb.val(A); }
 
-  void generate_r1cs_constraints() {
+  void generate_r1cs_constraints(bool enforceBitness = true) {
+    if (enforceBitness) {
+      libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(
+          pb, A, FMT(annotation_prefix, ".bitness"));
+    }
     pb.add_r1cs_constraint(ConstraintT(FieldT::one() - A, FieldT::one(), _not),
                            FMT(annotation_prefix, ".!A == _not"));
   }
@@ -828,10 +832,10 @@ public:
   void generate_r1cs_constraints() {
     Abits.generate_r1cs_constraints();
     Bbits.generate_r1cs_constraints();
-    Alo.generate_r1cs_constraints();
-    Ahi.generate_r1cs_constraints();
-    Blo.generate_r1cs_constraints();
-    Bhi.generate_r1cs_constraints();
+    Alo.generate_r1cs_constraints(false);
+    Ahi.generate_r1cs_constraints(false);
+    Blo.generate_r1cs_constraints(false);
+    Bhi.generate_r1cs_constraints(false);
     partLo.generate_r1cs_constraints();
     partHi.generate_r1cs_constraints();
     res.generate_r1cs_constraints();

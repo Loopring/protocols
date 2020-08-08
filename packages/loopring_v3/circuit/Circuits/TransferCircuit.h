@@ -192,14 +192,10 @@ public:
             FMT(this->annotation_prefix, ".hashDual")),
 
         // Balances
-        balanceS_A(pb, state.constants, state.accountA.balanceS,
-                   FMT(prefix, ".balanceS_A")),
-        balanceB_A(pb, state.constants, state.accountA.balanceB,
-                   FMT(prefix, ".balanceB_A")),
-        balanceB_B(pb, state.constants, state.accountB.balanceB,
-                   FMT(prefix, ".balanceB_B")),
-        balanceA_O(pb, state.constants, state.oper.balanceA,
-                   FMT(prefix, ".balanceA_O")),
+        balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+        balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+        balanceB_B(pb, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
+        balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
 
         // Validation
         toAccountValid(pb, state.constants, state.accountB.account.owner,

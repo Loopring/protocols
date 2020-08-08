@@ -282,7 +282,7 @@ class Order(object):
                  storageID, accountID,
                  tokenS, tokenB,
                  amountS, amountB,
-                 validUntil, buy, taker,
+                 validUntil, fillAmountBorS, taker,
                  maxFeeBips, feeBips):
         self.publicKeyX = str(publicKeyX)
         self.publicKeyY = str(publicKeyY)
@@ -297,7 +297,7 @@ class Order(object):
         self.tokenB = tokenB
 
         self.validUntil = validUntil
-        self.buy = bool(buy)
+        self.fillAmountBorS = bool(fillAmountBorS)
         self.taker = str(taker)
         self.maxFeeBips = maxFeeBips
 
@@ -416,11 +416,11 @@ class State(object):
         # Scale the order
         balanceS = int(account.getBalance(order.tokenS)) if balanceLimit else int(order.amountS)
 
-        limit = int(order.amountB) if order.buy else int(order.amountS)
+        limit = int(order.amountB) if order.fillAmountBorS else int(order.amountS)
         filledLimited = limit if limit < filled else filled
         remaining = limit - filledLimited
         remainingS_buy = remaining * int(order.amountS) // int(order.amountB)
-        remainingS = remainingS_buy if order.buy else remaining
+        remainingS = remainingS_buy if order.fillAmountBorS else remaining
         fillAmountS = balanceS if balanceS < remainingS else remainingS
         fillAmountB = fillAmountS * int(order.amountB) // int(order.amountS)
         return Fill(fillAmountS, fillAmountB)
@@ -499,7 +499,7 @@ class State(object):
             print("fillB.B: " + str(fillB.B))
             print("-------------")
             '''
-            if ring.orderA.buy:
+            if ring.orderA.fillAmountBorS:
                 (spread, matchable) = self.match(ring.orderA, fillA, ring.orderB, fillB)
                 fillA.S = fillB.B
             else:
@@ -571,7 +571,7 @@ class State(object):
             newState.balanceA_B_Balance = fillA.B - fee_A
 
             newState.storageA_Address = ring.orderA.storageID
-            newState.storageA_Data = filled_A + (fillA.B if ring.orderA.buy else fillA.S)
+            newState.storageA_Data = filled_A + (fillA.B if ring.orderA.fillAmountBorS else fillA.S)
             newState.storageA_StorageId = ring.orderA.storageID
 
 
@@ -585,7 +585,7 @@ class State(object):
             newState.balanceB_B_Balance = fillB.B - fee_B
 
             newState.storageB_Address = ring.orderB.storageID
-            newState.storageB_Data = filled_B + (fillB.B if ring.orderB.buy else fillB.S)
+            newState.storageB_Data = filled_B + (fillB.B if ring.orderB.fillAmountBorS else fillB.S)
             newState.storageB_StorageId = ring.orderB.storageID
 
             newState.balanceDeltaA_O = fee_A - protocolFee_A
