@@ -246,7 +246,7 @@ contract SecurityStore is DataStore
             "NOT_PENDING_REMOVAL"
         );
 
-        g.timestamp = int64(block.timestamp - 1);
+        w.guardians[idx - 1].timestamp = int64(block.timestamp - 1);
     }
 
     function getLock(address wallet)
