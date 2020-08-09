@@ -25,6 +25,12 @@
 
 using namespace ethsnarks;
 
+// Naming conventions:
+// - O: operator
+// - P: prrotocol fee
+// - S：sell (send)
+// - B: buy (receive)
+// - A/B: tokens/accounts that are not equal
 namespace Loopring
 {
 
@@ -569,7 +575,7 @@ public:
   DualVariableGadget operatorAccountID;
 
   // Increment the nonce of the Operator
-  AddGadget nonce_after;
+  AddGadget nonceAfter;
 
   // Signature
   Poseidon_gadget_T<3, 1, 6, 51, 2, 1> hash;
@@ -626,12 +632,12 @@ public:
           FMT(prefix, ".operatorAccountID")),
 
         // Increment the nonce of the Operator
-        nonce_after(
+        nonceAfter(
           pb,
           accountBefore_O.nonce,
           constants._1,
           NUM_BITS_NONCE,
-          FMT(prefix, ".nonce_after")),
+          FMT(prefix, ".nonceAfter")),
 
         // Signature
         hash(
@@ -665,7 +671,7 @@ public:
     operatorAccountID.generate_r1cs_constraints(true);
 
     // Increment the nonce of the Operator
-    nonce_after.generate_r1cs_constraints();
+    nonceAfter.generate_r1cs_constraints();
 
     // Transactions
     transactions.reserve(numTransactions);
@@ -724,7 +730,7 @@ public:
       {accountBefore_O.owner,
        accountBefore_O.publicKey.x,
        accountBefore_O.publicKey.y,
-       nonce_after.result(),
+       nonceAfter.result(),
        accountBefore_O.balancesRoot},
       FMT(annotation_prefix, ".updateAccount_O")));
     updateAccount_O->generate_r1cs_constraints();
@@ -784,7 +790,7 @@ public:
     operatorAccountID.generate_r1cs_witness(pb, block.operatorAccountID);
 
     // Increment the nonce of the Operator
-    nonce_after.generate_r1cs_witness();
+    nonceAfter.generate_r1cs_witness();
 
     // Transactions
     // First set numConditionalTransactionsAfter which is a dependency between
