@@ -209,6 +209,7 @@ public:
           pb,
           NUM_BITS_TX_TYPE,
           FMT(prefix, ".type")),
+
         selector(
           pb,
           constants,
@@ -587,9 +588,7 @@ public:
   UniversalCircuit(ProtoboardT &pb, const std::string &prefix)
       : Circuit(pb, prefix),
 
-        publicData( //
-          pb,
-          FMT(prefix, ".publicData")),
+        publicData(pb, FMT(prefix, ".publicData")), //
         constants(pb, FMT(prefix, ".constants")),
 
         // State

@@ -35,7 +35,10 @@ public:
   // Increase the number of conditional transactions
   UnsafeAddGadget numConditionalTransactionsAfter;
 
-  DepositCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
+  DepositCircuit( //
+    ProtoboardT &pb,
+    const TransactionState &state,
+    const std::string &prefix)
       : BaseTransactionCircuit(pb, state, prefix),
 
         // Inputs

@@ -59,7 +59,10 @@ public:
   TransferGadget protocolFeeA_from_balanceAO_to_balanceAP;
   TransferGadget protocolFeeB_from_balanceBO_to_balanceBP;
 
-  SpotTradeCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
+  SpotTradeCircuit( //
+    ProtoboardT &pb,
+    const TransactionState &state,
+    const std::string &prefix)
       : BaseTransactionCircuit(pb, state, prefix),
 
         // Orders
