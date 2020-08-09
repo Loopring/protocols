@@ -59,7 +59,10 @@ public:
   TransferGadget protocolFeeA_from_balanceAO_to_balanceAP;
   TransferGadget protocolFeeB_from_balanceBO_to_balanceBP;
 
-  SpotTradeCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
+  SpotTradeCircuit( //
+    ProtoboardT &pb,
+    const TransactionState &state,
+    const std::string &prefix)
       : BaseTransactionCircuit(pb, state, prefix),
 
         // Orders
@@ -71,10 +74,10 @@ public:
         balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
         balanceS_B(pb, state.accountB.balanceS, FMT(prefix, ".balanceS_B")),
         balanceB_B(pb, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
-        balanceA_P(pb, state.pool.balanceA, FMT(prefix, ".balanceA_P")),
-        balanceB_P(pb, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
-        balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
-        balanceB_O(pb, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
+        balanceA_P(pb, state.protocolFeeAccount.balanceA, FMT(prefix, ".balanceA_P")),
+        balanceB_P(pb, state.protocolFeeAccount.balanceB, FMT(prefix, ".balanceB_P")),
+        balanceA_O(pb, state.operatorAccount.balanceA, FMT(prefix, ".balanceA_O")),
+        balanceB_O(pb, state.operatorAccount.balanceB, FMT(prefix, ".balanceB_O")),
 
         // Order fills
         fillS_A(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_A")),
@@ -174,36 +177,36 @@ public:
           FMT(prefix, ".protocolFeeB_from_balanceBO_to_balanceBP"))
   {
     // Set tokens
-    setArrayOutput(balanceA_S_Address, orderA.tokenS.bits);
-    setArrayOutput(balanceB_S_Address, orderB.tokenS.bits);
+    setArrayOutput(BALANCE_A_S_ADDRESS, orderA.tokenS.bits);
+    setArrayOutput(BALANCE_B_S_ADDRESS, orderB.tokenS.bits);
 
     // Update account A
-    setArrayOutput(storageA_Address, subArray(orderA.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
-    setOutput(storageA_Data, orderMatching.getFilledAfter_A());
-    setOutput(storageA_StorageId, orderA.storageID.packed);
-    setOutput(balanceA_S_Balance, balanceS_A.balance());
-    setOutput(balanceA_B_Balance, balanceB_A.balance());
-    setArrayOutput(accountA_Address, orderA.accountID.bits);
+    setArrayOutput(STORAGE_A_ADDRESS, subArray(orderA.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
+    setOutput(STORAGE_A_DATA, orderMatching.getFilledAfter_A());
+    setOutput(STORAGE_A_STORAGEID, orderA.storageID.packed);
+    setOutput(BALANCE_A_S_BALANCE, balanceS_A.balance());
+    setOutput(BALANCE_A_B_BALANCE, balanceB_A.balance());
+    setArrayOutput(ACCOUNT_A_ADDRESS, orderA.accountID.bits);
 
     // Update account B
-    setArrayOutput(storageB_Address, subArray(orderB.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
-    setOutput(storageB_Data, orderMatching.getFilledAfter_B());
-    setOutput(storageB_StorageId, orderB.storageID.packed);
-    setOutput(balanceB_S_Balance, balanceS_B.balance());
-    setOutput(balanceB_B_Balance, balanceB_B.balance());
-    setArrayOutput(accountB_Address, orderB.accountID.bits);
+    setArrayOutput(STORAGE_B_ADDRESS, subArray(orderB.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
+    setOutput(STORAGE_B_DATA, orderMatching.getFilledAfter_B());
+    setOutput(STORAGE_B_STORAGEID, orderB.storageID.packed);
+    setOutput(BALANCE_B_S_BALANCE, balanceS_B.balance());
+    setOutput(BALANCE_B_B_BALANCE, balanceB_B.balance());
+    setArrayOutput(ACCOUNT_B_ADDRESS, orderB.accountID.bits);
 
     // Update balances of the protocol fee pool
-    setOutput(balanceP_A_Balance, balanceA_P.balance());
-    setOutput(balanceP_B_Balance, balanceB_P.balance());
+    setOutput(BALANCE_P_A_BALANCE, balanceA_P.balance());
+    setOutput(BALANCE_P_B_BALANCE, balanceB_P.balance());
 
     // Update the balance of the operator
-    setOutput(balanceO_A_Balance, balanceA_O.balance());
-    setOutput(balanceO_B_Balance, balanceB_O.balance());
+    setOutput(BALANCE_O_A_BALANCE, balanceA_O.balance());
+    setOutput(BALANCE_O_B_BALANCE, balanceB_O.balance());
 
     // A signature is required for each order
-    setOutput(hash_A, orderA.hash.result());
-    setOutput(hash_B, orderB.hash.result());
+    setOutput(HASH_A, orderA.hash.result());
+    setOutput(HASH_B, orderB.hash.result());
   }
 
   void generate_r1cs_witness(const SpotTrade &spotTrade)

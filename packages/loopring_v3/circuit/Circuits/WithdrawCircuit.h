@@ -92,7 +92,10 @@ public:
   // Increase the number of conditional transactions
   UnsafeAddGadget numConditionalTransactionsAfter;
 
-  WithdrawCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
+  WithdrawCircuit( //
+    ProtoboardT &pb,
+    const TransactionState &state,
+    const std::string &prefix)
       : BaseTransactionCircuit(pb, state, prefix),
 
         // Inputs
@@ -155,7 +158,7 @@ public:
 
         // Balances
         balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
-        balanceB_P(pb, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
+        balanceB_P(pb, state.protocolFeeAccount.balanceB, FMT(prefix, ".balanceB_P")),
 
         // Check how much should be withdrawn
         fullBalance(
@@ -193,7 +196,7 @@ public:
 
         // Fee balances
         balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
-        balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
+        balanceA_O(pb, state.operatorAccount.balanceA, FMT(prefix, ".balanceA_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
         requireAccuracyFee(
@@ -264,29 +267,29 @@ public:
           FMT(prefix, ".numConditionalTransactionsAfter"))
   {
     // Update the account owner
-    setArrayOutput(accountA_Address, merkleTreeAccountA.result());
-    setOutput(accountA_Nonce, nonce_after.result());
+    setArrayOutput(ACCOUNT_A_ADDRESS, merkleTreeAccountA.result());
+    setOutput(ACCOUNT_A_NONCE, nonce_after.result());
 
     // Update the account balances (withdrawal + fee)
-    setArrayOutput(balanceA_S_Address, tokenID.bits);
-    setOutput(balanceA_S_Balance, balanceA_after.result());
-    setArrayOutput(balanceB_S_Address, feeTokenID.bits);
-    setOutput(balanceA_B_Balance, balanceB_A.balance());
+    setArrayOutput(BALANCE_A_S_ADDRESS, tokenID.bits);
+    setOutput(BALANCE_A_S_BALANCE, balanceA_after.result());
+    setArrayOutput(BALANCE_B_S_ADDRESS, feeTokenID.bits);
+    setOutput(BALANCE_A_B_BALANCE, balanceB_A.balance());
 
     // Update the protocol fee pool balance when withdrawing from the protocol
     // pool
-    setOutput(balanceP_B_Balance, balanceP_after.result());
+    setOutput(BALANCE_P_B_BALANCE, balanceP_after.result());
 
     // Update the operator balance for the fee payment
-    setOutput(balanceO_A_Balance, balanceA_O.balance());
+    setOutput(BALANCE_O_A_BALANCE, balanceA_O.balance());
 
     // Verify a single signature of the account owner (if not conditional)
-    setOutput(hash_A, hash.result());
-    setOutput(signatureRequired_A, needsSignature.result());
-    setOutput(signatureRequired_B, state.constants._0);
+    setOutput(HASH_A, hash.result());
+    setOutput(SIGNATURE_REQUIRED_A, needsSignature.result());
+    setOutput(SIGNATURE_REQUIRED_B, state.constants._0);
 
     // Increase the number of conditional transactions
-    setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
+    setOutput(NUM_CONDITIONAL_TXS, numConditionalTransactionsAfter.result());
   }
 
   void generate_r1cs_witness(const Withdrawal &withdrawal)

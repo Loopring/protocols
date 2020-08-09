@@ -110,7 +110,10 @@ public:
   // Increase the number of conditional transactions (if conditional)
   UnsafeAddGadget numConditionalTransactionsAfter;
 
-  TransferCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
+  TransferCircuit( //
+    ProtoboardT &pb,
+    const TransactionState &state,
+    const std::string &prefix)
       : BaseTransactionCircuit(pb, state, prefix),
 
         // Inputs
@@ -227,7 +230,7 @@ public:
         balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
         balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
         balanceB_B(pb, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
-        balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
+        balanceA_O(pb, state.operatorAccount.balanceA, FMT(prefix, ".balanceA_O")),
 
         // Validation
         toAccountValid(
@@ -309,41 +312,41 @@ public:
           FMT(prefix, ".numConditionalTransactionsAfter"))
   {
     // Update the From account
-    setArrayOutput(accountA_Address, fromAccountID.bits);
+    setArrayOutput(ACCOUNT_A_ADDRESS, fromAccountID.bits);
 
     // Set the 2 tokens used
-    setArrayOutput(balanceA_S_Address, tokenID.bits);
-    setArrayOutput(balanceB_S_Address, feeTokenID.bits);
+    setArrayOutput(BALANCE_A_S_ADDRESS, tokenID.bits);
+    setArrayOutput(BALANCE_B_S_ADDRESS, feeTokenID.bits);
 
     // Update the From balances (transfer + fee payment)
-    setOutput(balanceA_S_Balance, balanceS_A.balance());
-    setOutput(balanceA_B_Balance, balanceB_A.balance());
+    setOutput(BALANCE_A_S_BALANCE, balanceS_A.balance());
+    setOutput(BALANCE_A_B_BALANCE, balanceB_A.balance());
 
     // Update the To account
-    setArrayOutput(accountB_Address, toAccountID.bits);
-    setOutput(accountB_Owner, to.packed);
+    setArrayOutput(ACCOUNT_B_ADDRESS, toAccountID.bits);
+    setOutput(ACCOUNT_B_OWNER, to.packed);
 
     // Update the To balance (transfer)
-    setOutput(balanceB_B_Balance, balanceB_B.balance());
+    setOutput(BALANCE_B_B_BALANCE, balanceB_B.balance());
 
     // Update the operator balance for the fee payment
-    setOutput(balanceO_A_Balance, balanceA_O.balance());
+    setOutput(BALANCE_O_A_BALANCE, balanceA_O.balance());
 
     // Verify 2 signatures (one of the payer, one of the dual author)
-    setOutput(hash_A, hashPayer.result());
-    setOutput(hash_B, hashDual.result());
-    setOutput(publicKeyX_B, resolvedDualAuthorX.result());
-    setOutput(publicKeyY_B, resolvedDualAuthorY.result());
-    setOutput(signatureRequired_A, needsSignature.result());
-    setOutput(signatureRequired_B, needsSignature.result());
+    setOutput(HASH_A, hashPayer.result());
+    setOutput(HASH_B, hashDual.result());
+    setOutput(PUBKEY_X_B, resolvedDualAuthorX.result());
+    setOutput(PUBKEY_Y_B, resolvedDualAuthorY.result());
+    setOutput(SIGNATURE_REQUIRED_A, needsSignature.result());
+    setOutput(SIGNATURE_REQUIRED_B, needsSignature.result());
 
     // Increase the number of conditional transactions (if conditional)
-    setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
+    setOutput(NUM_CONDITIONAL_TXS, numConditionalTransactionsAfter.result());
 
     // Nonce
-    setArrayOutput(storageA_Address, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
-    setOutput(storageA_Data, nonce.getData());
-    setOutput(storageA_StorageId, storageID.packed);
+    setArrayOutput(STORAGE_A_ADDRESS, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
+    setOutput(STORAGE_A_DATA, nonce.getData());
+    setOutput(STORAGE_A_STORAGEID, storageID.packed);
   }
 
   void generate_r1cs_witness(const Transfer &transfer)

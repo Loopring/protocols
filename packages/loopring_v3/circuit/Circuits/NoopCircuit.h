@@ -25,8 +25,8 @@ public:
       : BaseTransactionCircuit(pb, state, prefix)
   {
     // No signatures needed
-    setOutput(signatureRequired_A, state.constants._0);
-    setOutput(signatureRequired_B, state.constants._0);
+    setOutput(SIGNATURE_REQUIRED_A, state.constants._0);
+    setOutput(SIGNATURE_REQUIRED_B, state.constants._0);
   }
 
   void generate_r1cs_witness() {}

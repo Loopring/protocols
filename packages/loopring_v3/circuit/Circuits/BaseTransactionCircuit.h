@@ -26,8 +26,10 @@ struct TransactionAccountState : public GadgetT
   TransactionAccountState(ProtoboardT &pb, const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        storage(pb, FMT(prefix, ".storage")), balanceS(pb, FMT(prefix, ".balanceS")),
-        balanceB(pb, FMT(prefix, ".balanceB")), account(pb, FMT(prefix, ".account"))
+        storage(pb, FMT(prefix, ".storage")),   //
+        balanceS(pb, FMT(prefix, ".balanceS")), //
+        balanceB(pb, FMT(prefix, ".balanceB")), //
+        account(pb, FMT(prefix, ".account"))
   {
   }
 
@@ -44,16 +46,17 @@ struct TransactionAccountState : public GadgetT
   }
 };
 
-struct TransactionAccountOperatorState : public GadgetT
+struct TransactionOperatorAccountState : public GadgetT
 {
   BalanceGadget balanceA;
   BalanceGadget balanceB;
   AccountGadget account;
 
-  TransactionAccountOperatorState(ProtoboardT &pb, const std::string &prefix)
+  TransactionOperatorAccountState(ProtoboardT &pb, const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        balanceA(pb, FMT(prefix, ".balanceA")), balanceB(pb, FMT(prefix, ".balanceB")),
+        balanceA(pb, FMT(prefix, ".balanceA")), //
+        balanceB(pb, FMT(prefix, ".balanceB")), //
         account(pb, FMT(prefix, ".account"))
   {
   }
@@ -69,15 +72,16 @@ struct TransactionAccountOperatorState : public GadgetT
   }
 };
 
-struct TransactionAccountBalancesState : public GadgetT
+struct TransactionProtocolFeeAccountState : public GadgetT
 {
   BalanceGadget balanceA;
   BalanceGadget balanceB;
 
-  TransactionAccountBalancesState(ProtoboardT &pb, const std::string &prefix)
+  TransactionProtocolFeeAccountState(ProtoboardT &pb, const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        balanceA(pb, FMT(prefix, ".balanceA")), balanceB(pb, FMT(prefix, ".balanceB"))
+        balanceA(pb, FMT(prefix, ".balanceA")), //
+        balanceB(pb, FMT(prefix, ".balanceB"))
   {
   }
 
@@ -103,8 +107,8 @@ struct TransactionState : public GadgetT
 
   TransactionAccountState accountA;
   TransactionAccountState accountB;
-  TransactionAccountOperatorState oper;
-  TransactionAccountBalancesState pool;
+  TransactionOperatorAccountState operatorAccount;
+  TransactionProtocolFeeAccountState protocolFeeAccount;
 
   TransactionState(
     ProtoboardT &pb,
@@ -121,14 +125,19 @@ struct TransactionState : public GadgetT
 
         params(_params),
 
-        constants(_constants),
+        constants(_constants), //
 
-        exchange(_exchange), timestamp(_timestamp), protocolTakerFeeBips(_protocolTakerFeeBips),
-        protocolMakerFeeBips(_protocolMakerFeeBips),
-        numConditionalTransactions(_numConditionalTransactions), type(_type),
+        exchange(_exchange),                                     //
+        timestamp(_timestamp),                                   //
+        protocolTakerFeeBips(_protocolTakerFeeBips),             //
+        protocolMakerFeeBips(_protocolMakerFeeBips),             //
+        numConditionalTransactions(_numConditionalTransactions), //
+        type(_type),                                             //
 
-        accountA(pb, FMT(prefix, ".accountA")), accountB(pb, FMT(prefix, ".accountB")),
-        oper(pb, FMT(prefix, ".oper")), pool(pb, FMT(prefix, ".pool"))
+        accountA(pb, FMT(prefix, ".accountA")),               //
+        accountB(pb, FMT(prefix, ".accountB")),               //
+        operatorAccount(pb, FMT(prefix, ".operatorAccount")), //
+        protocolFeeAccount(pb, FMT(prefix, ".protocolFeeAccount"))
   {
   }
 
@@ -149,60 +158,60 @@ struct TransactionState : public GadgetT
   {
     accountA.generate_r1cs_witness(account_A, balanceLeafS_A, balanceLeafB_A, storageLeaf_A);
     accountB.generate_r1cs_witness(account_B, balanceLeafS_B, balanceLeafB_B, storageLeaf_B);
-    oper.generate_r1cs_witness(account_O, balanceLeafA_O, balanceLeafB_O);
-    pool.generate_r1cs_witness(balanceLeafS_P, balanceLeafB_P);
+    operatorAccount.generate_r1cs_witness(account_O, balanceLeafA_O, balanceLeafB_O);
+    protocolFeeAccount.generate_r1cs_witness(balanceLeafS_P, balanceLeafB_P);
   }
 };
 
 enum TxVariable
 {
-  storageA_Address,
-  storageA_Data,
-  storageA_StorageId,
+  STORAGE_A_ADDRESS,
+  STORAGE_A_DATA,
+  STORAGE_A_STORAGEID,
 
-  balanceA_S_Address,
-  balanceA_S_Balance,
+  BALANCE_A_S_ADDRESS,
+  BALANCE_A_S_BALANCE,
 
-  balanceA_B_Balance,
+  BALANCE_A_B_BALANCE,
 
-  accountA_Address,
-  accountA_Owner,
-  accountA_PublicKeyX,
-  accountA_PublicKeyY,
-  accountA_Nonce,
+  ACCOUNT_A_ADDRESS,
+  ACCOUNT_A_OWNER,
+  ACCOUNT_A_PUBKEY_X,
+  ACCOUNT_A_PUBKEY_Y,
+  ACCOUNT_A_NONCE,
 
-  storageB_Address,
-  storageB_Data,
-  storageB_StorageId,
+  STORAGE_B_ADDRESS,
+  STORAGE_B_DATA,
+  STORAGE_B_STORAGEID,
 
-  balanceB_S_Address,
-  balanceB_S_Balance,
+  BALANCE_B_S_ADDRESS,
+  BALANCE_B_S_BALANCE,
 
-  balanceB_B_Balance,
+  BALANCE_B_B_BALANCE,
 
-  accountB_Address,
-  accountB_Owner,
-  accountB_PublicKeyX,
-  accountB_PublicKeyY,
-  accountB_Nonce,
+  ACCOUNT_B_ADDRESS,
+  ACCOUNT_B_OWNER,
+  ACCOUNT_B_PUBKEY_X,
+  ACCOUNT_B_PUBKEY_Y,
+  ACCOUNT_B_NONCE,
 
-  balanceP_A_Balance,
-  balanceP_B_Balance,
+  BALANCE_P_A_BALANCE,
+  BALANCE_P_B_BALANCE,
 
-  balanceO_A_Balance,
-  balanceO_B_Balance,
+  BALANCE_O_A_BALANCE,
+  BALANCE_O_B_BALANCE,
 
-  hash_A,
-  publicKeyX_A,
-  publicKeyY_A,
-  signatureRequired_A,
+  HASH_A,
+  PUBKEY_X_A,
+  PUBKEY_Y_A,
+  SIGNATURE_REQUIRED_A,
 
-  hash_B,
-  publicKeyX_B,
-  publicKeyY_B,
-  signatureRequired_B,
+  HASH_B,
+  PUBKEY_X_B,
+  PUBKEY_Y_B,
+  SIGNATURE_REQUIRED_B,
 
-  misc_NumConditionalTransactions
+  NUM_CONDITIONAL_TXS
 };
 
 class BaseTransactionCircuit : public GadgetT
@@ -213,60 +222,61 @@ public:
   std::map<TxVariable, VariableT> uOutputs;
   std::map<TxVariable, VariableArrayT> aOutputs;
 
-  BaseTransactionCircuit(ProtoboardT &pb, const TransactionState &_state, const std::string &prefix)
+  BaseTransactionCircuit( //
+    ProtoboardT &pb,
+    const TransactionState &_state,
+    const std::string &prefix)
       : GadgetT(pb, prefix), state(_state)
   {
-    aOutputs[storageA_Address] = VariableArrayT(NUM_BITS_STORAGE_ADDRESS, state.constants._0);
-    uOutputs[storageA_Data] = state.accountA.storage.data;
-    uOutputs[storageA_StorageId] = state.accountA.storage.storageID;
+    aOutputs[STORAGE_A_ADDRESS] = VariableArrayT(NUM_BITS_STORAGE_ADDRESS, state.constants._0);
+    uOutputs[STORAGE_A_DATA] = state.accountA.storage.data;
+    uOutputs[STORAGE_A_STORAGEID] = state.accountA.storage.storageID;
 
-    aOutputs[balanceA_S_Address] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
-    uOutputs[balanceA_S_Balance] = state.accountA.balanceS.balance;
+    aOutputs[BALANCE_A_S_ADDRESS] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
+    uOutputs[BALANCE_A_S_BALANCE] = state.accountA.balanceS.balance;
+    uOutputs[BALANCE_A_B_BALANCE] = state.accountA.balanceB.balance;
 
-    uOutputs[balanceA_B_Balance] = state.accountA.balanceB.balance;
-
-    aOutputs[accountA_Address] = flatten(
+    aOutputs[ACCOUNT_A_ADDRESS] = flatten(
       {VariableArrayT(1, state.constants._1),
        VariableArrayT(NUM_BITS_ACCOUNT - 1, state.constants._0)});
-    uOutputs[accountA_Owner] = state.accountA.account.owner;
-    uOutputs[accountA_PublicKeyX] = state.accountA.account.publicKey.x;
-    uOutputs[accountA_PublicKeyY] = state.accountA.account.publicKey.y;
-    uOutputs[accountA_Nonce] = state.accountA.account.nonce;
+    uOutputs[ACCOUNT_A_OWNER] = state.accountA.account.owner;
+    uOutputs[ACCOUNT_A_PUBKEY_X] = state.accountA.account.publicKey.x;
+    uOutputs[ACCOUNT_A_PUBKEY_Y] = state.accountA.account.publicKey.y;
+    uOutputs[ACCOUNT_A_NONCE] = state.accountA.account.nonce;
 
-    aOutputs[storageB_Address] = VariableArrayT(NUM_BITS_STORAGE_ADDRESS, state.constants._0);
-    uOutputs[storageB_Data] = state.accountB.storage.data;
-    uOutputs[storageB_StorageId] = state.accountB.storage.storageID;
+    aOutputs[STORAGE_B_ADDRESS] = VariableArrayT(NUM_BITS_STORAGE_ADDRESS, state.constants._0);
+    uOutputs[STORAGE_B_DATA] = state.accountB.storage.data;
+    uOutputs[STORAGE_B_STORAGEID] = state.accountB.storage.storageID;
 
-    aOutputs[balanceB_S_Address] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
-    uOutputs[balanceB_S_Balance] = state.accountB.balanceS.balance;
+    aOutputs[BALANCE_B_S_ADDRESS] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
+    uOutputs[BALANCE_B_S_BALANCE] = state.accountB.balanceS.balance;
+    uOutputs[BALANCE_B_B_BALANCE] = state.accountB.balanceB.balance;
 
-    uOutputs[balanceB_B_Balance] = state.accountB.balanceB.balance;
-
-    aOutputs[accountB_Address] = flatten(
+    aOutputs[ACCOUNT_B_ADDRESS] = flatten(
       {VariableArrayT(1, state.constants._1),
        VariableArrayT(NUM_BITS_ACCOUNT - 1, state.constants._0)});
-    uOutputs[accountB_Owner] = state.accountB.account.owner;
-    uOutputs[accountB_PublicKeyX] = state.accountB.account.publicKey.x;
-    uOutputs[accountB_PublicKeyY] = state.accountB.account.publicKey.y;
-    uOutputs[accountB_Nonce] = state.accountB.account.nonce;
+    uOutputs[ACCOUNT_B_OWNER] = state.accountB.account.owner;
+    uOutputs[ACCOUNT_B_PUBKEY_X] = state.accountB.account.publicKey.x;
+    uOutputs[ACCOUNT_B_PUBKEY_Y] = state.accountB.account.publicKey.y;
+    uOutputs[ACCOUNT_B_NONCE] = state.accountB.account.nonce;
 
-    uOutputs[balanceP_A_Balance] = state.pool.balanceA.balance;
-    uOutputs[balanceP_B_Balance] = state.pool.balanceB.balance;
+    uOutputs[BALANCE_P_A_BALANCE] = state.protocolFeeAccount.balanceA.balance;
+    uOutputs[BALANCE_P_B_BALANCE] = state.protocolFeeAccount.balanceB.balance;
 
-    uOutputs[balanceO_A_Balance] = state.oper.balanceA.balance;
-    uOutputs[balanceO_B_Balance] = state.oper.balanceB.balance;
+    uOutputs[BALANCE_O_A_BALANCE] = state.operatorAccount.balanceA.balance;
+    uOutputs[BALANCE_O_B_BALANCE] = state.operatorAccount.balanceB.balance;
 
-    uOutputs[hash_A] = state.constants._0;
-    uOutputs[publicKeyX_A] = state.accountA.account.publicKey.x;
-    uOutputs[publicKeyY_A] = state.accountA.account.publicKey.y;
-    uOutputs[signatureRequired_A] = state.constants._1;
+    uOutputs[HASH_A] = state.constants._0;
+    uOutputs[PUBKEY_X_A] = state.accountA.account.publicKey.x;
+    uOutputs[PUBKEY_Y_A] = state.accountA.account.publicKey.y;
+    uOutputs[SIGNATURE_REQUIRED_A] = state.constants._1;
 
-    uOutputs[hash_B] = state.constants._0;
-    uOutputs[publicKeyX_B] = state.accountB.account.publicKey.x;
-    uOutputs[publicKeyY_B] = state.accountB.account.publicKey.y;
-    uOutputs[signatureRequired_B] = state.constants._1;
+    uOutputs[HASH_B] = state.constants._0;
+    uOutputs[PUBKEY_X_B] = state.accountB.account.publicKey.x;
+    uOutputs[PUBKEY_Y_B] = state.accountB.account.publicKey.y;
+    uOutputs[SIGNATURE_REQUIRED_B] = state.constants._1;
 
-    uOutputs[misc_NumConditionalTransactions] = state.numConditionalTransactions;
+    uOutputs[NUM_CONDITIONAL_TXS] = state.numConditionalTransactions;
   }
 
   const VariableT &getOutput(TxVariable txVariable) const { return uOutputs.at(txVariable); }
