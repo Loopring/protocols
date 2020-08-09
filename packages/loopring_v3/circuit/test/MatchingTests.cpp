@@ -235,7 +235,7 @@ TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]") {
         StorageGadget storage(pb, ".storage");
         storage.generate_r1cs_witness(orderState.storageLeaf);
 
-        StorageReaderGadget storageReader(pb, constants, storage,
+        ReadStorageGadget storageReader(pb, constants, storage,
                                           order.storageID, constants._1,
                                           ".storageReader");
         storageReader.generate_r1cs_witness();
@@ -553,7 +553,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]") {
     StorageGadget tradeHistoryA(pb, ".tradeHistoryA");
     tradeHistoryA.generate_r1cs_witness(orderStateA.storageLeaf);
 
-    StorageReaderGadget storageA(pb, constants, tradeHistoryA, orderA.storageID,
+    ReadStorageGadget storageA(pb, constants, tradeHistoryA, orderA.storageID,
                                  constants._1, ".storage");
     storageA.generate_r1cs_witness();
 
@@ -563,7 +563,7 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]") {
     StorageGadget tradeHistoryB(pb, ".tradeHistoryB");
     tradeHistoryB.generate_r1cs_witness(orderStateB.storageLeaf);
 
-    StorageReaderGadget storageB(pb, constants, tradeHistoryB, orderB.storageID,
+    ReadStorageGadget storageB(pb, constants, tradeHistoryB, orderB.storageID,
                                  constants._1, ".storageB");
     storageB.generate_r1cs_witness();
 

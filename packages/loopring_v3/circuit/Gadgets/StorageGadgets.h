@@ -140,7 +140,7 @@ public:
   const VariableT &result() const { return rootAfter.result(); }
 };
 
-class StorageReaderGadget : public GadgetT
+class ReadStorageGadget : public GadgetT
 {
   VariableT address;
   libsnark::packing_gadget<FieldT> packAddress;
@@ -158,7 +158,7 @@ class StorageReaderGadget : public GadgetT
   TernaryGadget data;
 
 public:
-  StorageReaderGadget(
+  ReadStorageGadget(
     ProtoboardT &pb,
     const Constants &constants,
     const StorageGadget &storage,
@@ -258,16 +258,16 @@ public:
   const VariableT &getOverwrite() const { return storageID_eq_nextStorageID.result(); }
 };
 
-class NonceGadget : public GadgetT
+class ReadNonceGadget : public GadgetT
 {
   const Constants &constants;
   const DualVariableGadget &storageID;
 
-  StorageReaderGadget storageReader;
+  ReadStorageGadget storageReader;
   IfThenRequireEqualGadget requireDataZero;
 
 public:
-  NonceGadget(
+  ReadNonceGadget(
     ProtoboardT &pb,
     const Constants &_constants,
     const StorageGadget &storage,
