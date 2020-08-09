@@ -409,8 +409,8 @@ public:
     UnsafeAddGadget filledAfterA;
     UnsafeAddGadget filledAfterB;
 
-    FeeCalculatorGadget feeCalculatorA;
-    FeeCalculatorGadget feeCalculatorB;
+    CalculateOrderFeesGadget feeCalculatorA;
+    CalculateOrderFeesGadget feeCalculatorB;
 
     DynamicVariableGadget balanceS_A;
     DynamicVariableGadget balanceB_A;

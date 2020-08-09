@@ -191,7 +191,7 @@ TEST_CASE("RequireFillRate", "[RequireFillRateGadget]") {
   }
 }
 
-TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]") {
+TEST_CASE("RequireFillLimit", "[RequireOrderFillLimitGadget]") {
   unsigned int numIterations = 1024;
 
   Block block = getBlock();
@@ -240,7 +240,7 @@ TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]") {
                                           ".storageReader");
         storageReader.generate_r1cs_witness();
 
-        RequireFillLimitGadget requireFillLimit(
+        RequireOrderFillLimitGadget requireFillLimit(
             pb, constants, order, storageReader.getData(), fillAmountS,
             fillAmountB, "requireFillRateGadget");
         requireFillLimit.generate_r1cs_constraints();
@@ -357,7 +357,7 @@ TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]") {
   }
 }
 
-TEST_CASE("FeeCalculator", "[FeeCalculatorGadget]") {
+TEST_CASE("FeeCalculator", "[CalculateOrderFeesGadget]") {
   unsigned int maxLength = NUM_BITS_AMOUNT;
   unsigned int numIterations = 8;
 
@@ -372,7 +372,7 @@ TEST_CASE("FeeCalculator", "[FeeCalculatorGadget]") {
     VariableT feeBips = make_variable(pb, toFieldElement(_feeBips), "feeBips");
 
     Constants constants(pb, "constants");
-    FeeCalculatorGadget feeCalculatorGadget(pb, constants, fillB,
+    CalculateOrderFeesGadget feeCalculatorGadget(pb, constants, fillB,
                                             protocolFeeBips, feeBips,
                                             "feeCalculatorGadget");
     feeCalculatorGadget.generate_r1cs_constraints();

@@ -45,8 +45,8 @@ public:
   OrderMatchingGadget orderMatching;
 
   // Calculate fees
-  FeeCalculatorGadget feeCalculatorA;
-  FeeCalculatorGadget feeCalculatorB;
+  CalculateOrderFeesGadget feeCalculatorA;
+  CalculateOrderFeesGadget feeCalculatorB;
 
   /* Token Transfers */
   // Actual trade

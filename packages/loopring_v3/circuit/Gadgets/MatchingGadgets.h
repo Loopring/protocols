@@ -182,13 +182,13 @@ public:
 };
 
 // Calculates the fees for an order
-class FeeCalculatorGadget : public GadgetT
+class CalculateOrderFeesGadget : public GadgetT
 {
 public:
   MulDivGadget protocolFee;
   MulDivGadget fee;
 
-  FeeCalculatorGadget(
+  CalculateOrderFeesGadget(
     ProtoboardT &pb,
     const Constants &constants,
     const VariableT &amountB,
@@ -238,7 +238,7 @@ public:
 };
 
 // Checks if the order isn't filled too much
-class RequireFillLimitGadget : public GadgetT
+class RequireOrderFillLimitGadget : public GadgetT
 {
 public:
   TernaryGadget fillAmount;
@@ -246,7 +246,7 @@ public:
   AddGadget filledAfter;
   RequireLeqGadget filledAfter_leq_fillLimit;
 
-  RequireFillLimitGadget(
+  RequireOrderFillLimitGadget(
     ProtoboardT &pb,
     const Constants &constants,
     const OrderGadget &order,
@@ -299,7 +299,7 @@ public:
   // Check rate
   RequireFillRateGadget requireFillRate;
   // Check fill limit
-  RequireFillLimitGadget requireFillLimit;
+  RequireOrderFillLimitGadget requireFillLimit;
 
   RequireOrderFillsGadget(
     ProtoboardT &pb,
