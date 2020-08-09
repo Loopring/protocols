@@ -145,7 +145,7 @@ public:
 12 updateAccount
 ```
 
-withdrawCircuit 中会 check 最后一个用户的 rootCalculatorAfter 等于输入的 merkleRootAfter
+withdrawCircuit 中会 check 最后一个用户的 rootAfter 等于输入的 merkleRootAfter
 
 ## 2 OffchainWithdrawCircuit
 
@@ -251,4 +251,4 @@ fee 需要付给 wallet 和 operator，所以这里涉及到 3 个角色：用�
 	这里用的是EdDSA_Poseidon
 ```
 
-withdrawCircuit 中会 check operator 的 rootCalculatorAfter 等于输入的 merkleRootAfter
+withdrawCircuit 中会 check operator 的 rootAfter 等于输入的 merkleRootAfter

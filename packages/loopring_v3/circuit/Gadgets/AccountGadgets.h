@@ -27,13 +27,13 @@ struct AccountState
   VariableT balancesRoot;
 };
 
-static void printAccount(const ProtoboardT &pb, const AccountState &state)
+static void printAccount(const ProtoboardT &pb, const AccountState &_state)
 {
-  std::cout << "- owner: " << pb.val(state.owner) << std::endl;
-  std::cout << "- publicKeyX: " << pb.val(state.publicKeyX) << std::endl;
-  std::cout << "- publicKeyY: " << pb.val(state.publicKeyY) << std::endl;
-  std::cout << "- nonce: " << pb.val(state.nonce) << std::endl;
-  std::cout << "- balancesRoot: " << pb.val(state.balancesRoot) << std::endl;
+  std::cout << "- owner: " << pb.val(_state.owner) << std::endl;
+  std::cout << "- publicKeyX: " << pb.val(_state.publicKeyX) << std::endl;
+  std::cout << "- publicKeyY: " << pb.val(_state.publicKeyY) << std::endl;
+  std::cout << "- nonce: " << pb.val(_state.nonce) << std::endl;
+  std::cout << "- balancesRoot: " << pb.val(_state.balancesRoot) << std::endl;
 }
 
 class AccountGadget : public GadgetT
@@ -69,52 +69,52 @@ public:
   HashAccountLeaf leafBefore;
   HashAccountLeaf leafAfter;
 
-  AccountState valuesBefore;
-  AccountState valuesAfter;
+  AccountState stateBefore;
+  AccountState stateAfter;
 
   const VariableArrayT proof;
-  MerklePathCheckT proofVerifierBefore;
-  MerklePathT rootCalculatorAfter;
+  MerklePathCheckT rootBeforeVerifier;
+  MerklePathT rootAfter;
 
   UpdateAccountGadget(
     ProtoboardT &pb,
-    const VariableT &merkleRoot,
-    const VariableArrayT &address,
-    const AccountState &before,
-    const AccountState &after,
+    const VariableT &_rootBefore,
+    const VariableArrayT &_slotID,
+    const AccountState &_stateBefore,
+    const AccountState &_stateAfter,
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        valuesBefore(before), valuesAfter(after),
+        stateBefore(_stateBefore), stateAfter(_stateAfter),
 
         leafBefore(
           pb,
           var_array(
-            {before.owner,
-             before.publicKeyX,
-             before.publicKeyY,
-             before.nonce,
-             before.balancesRoot}),
+            {_stateBefore.owner,
+             _stateBefore.publicKeyX,
+             _stateBefore.publicKeyY,
+             _stateBefore.nonce,
+             _stateBefore.balancesRoot}),
           FMT(prefix, ".leafBefore")),
         leafAfter(
           pb,
           var_array(
-            {after.owner, after.publicKeyX, after.publicKeyY, after.nonce, after.balancesRoot}),
+            {_stateAfter.owner, _stateAfter.publicKeyX, _stateAfter.publicKeyY, _stateAfter.nonce, _stateAfter.balancesRoot}),
           FMT(prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS * 3, FMT(prefix, ".proof"))),
-        proofVerifierBefore(
+        rootBeforeVerifier(
           pb,
           TREE_DEPTH_ACCOUNTS,
-          address,
+          _slotID,
           leafBefore.result(),
-          merkleRoot,
+          _rootBefore,
           proof,
           FMT(prefix, ".pathBefore")),
-        rootCalculatorAfter(
+        rootAfter(
           pb,
           TREE_DEPTH_ACCOUNTS,
-          address,
+          _slotID,
           leafAfter.result(),
           proof,
           FMT(prefix, ".pathAfter"))
@@ -127,18 +127,18 @@ public:
     leafAfter.generate_r1cs_witness();
 
     proof.fill_with_field_elements(pb, update.proof.data);
-    proofVerifierBefore.generate_r1cs_witness();
-    rootCalculatorAfter.generate_r1cs_witness();
+    rootBeforeVerifier.generate_r1cs_witness();
+    rootAfter.generate_r1cs_witness();
 
-    // ASSERT(pb.val(proofVerifierBefore.m_expected_root) == update.rootBefore,
+    // ASSERT(pb.val(rootBeforeVerifier.m_expected_root) == update.rootBefore,
     // annotation_prefix);
-    if (pb.val(rootCalculatorAfter.result()) != update.rootAfter)
+    if (pb.val(rootAfter.result()) != update.rootAfter)
       {
         std::cout << "Before:" << std::endl;
-        printAccount(pb, valuesBefore);
+        printAccount(pb, stateBefore);
         std::cout << "After:" << std::endl;
-        printAccount(pb, valuesAfter);
-        ASSERT(pb.val(rootCalculatorAfter.result()) == update.rootAfter, annotation_prefix);
+        printAccount(pb, stateAfter);
+        ASSERT(pb.val(rootAfter.result()) == update.rootAfter, annotation_prefix);
       }
   }
 
@@ -147,11 +147,11 @@ public:
     leafBefore.generate_r1cs_constraints();
     leafAfter.generate_r1cs_constraints();
 
-    proofVerifierBefore.generate_r1cs_constraints();
-    rootCalculatorAfter.generate_r1cs_constraints();
+    rootBeforeVerifier.generate_r1cs_constraints();
+    rootAfter.generate_r1cs_constraints();
   }
 
-  const VariableT &result() const { return rootCalculatorAfter.result(); }
+  const VariableT &result() const { return rootAfter.result(); }
 };
 
 struct BalanceState
@@ -160,10 +160,10 @@ struct BalanceState
   VariableT storageRoot;
 };
 
-static void printBalance(const ProtoboardT &pb, const BalanceState &state)
+static void printBalance(const ProtoboardT &pb, const BalanceState &_state)
 {
-  std::cout << "- balance: " << pb.val(state.balance) << std::endl;
-  std::cout << "- storageRoot: " << pb.val(state.storageRoot) << std::endl;
+  std::cout << "- balance: " << pb.val(_state.balance) << std::endl;
+  std::cout << "- storageRoot: " << pb.val(_state.storageRoot) << std::endl;
 }
 
 class BalanceGadget : public GadgetT
@@ -193,40 +193,40 @@ public:
   HashBalanceLeaf leafBefore;
   HashBalanceLeaf leafAfter;
 
-  BalanceState valuesBefore;
-  BalanceState valuesAfter;
+  BalanceState stateBefore;
+  BalanceState stateAfter;
 
   const VariableArrayT proof;
-  MerklePathCheckT proofVerifierBefore;
-  MerklePathT rootCalculatorAfter;
+  MerklePathCheckT rootBeforeVerifier;
+  MerklePathT rootAfter;
 
   UpdateBalanceGadget(
     ProtoboardT &pb,
-    const VariableT &merkleRoot,
-    const VariableArrayT &tokenID,
-    const BalanceState before,
-    const BalanceState after,
+    const VariableT &_rootBefore,
+    const VariableArrayT &_tokenID,
+    const BalanceState _stateBefore,
+    const BalanceState _stateAfter,
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        valuesBefore(before), valuesAfter(after),
+        stateBefore(_stateBefore), stateAfter(_stateAfter),
 
-        leafBefore(pb, var_array({before.balance, before.storageRoot}), FMT(prefix, ".leafBefore")),
-        leafAfter(pb, var_array({after.balance, after.storageRoot}), FMT(prefix, ".leafAfter")),
+        leafBefore(pb, var_array({_stateBefore.balance, _stateBefore.storageRoot}), FMT(prefix, ".leafBefore")),
+        leafAfter(pb, var_array({_stateAfter.balance, _stateAfter.storageRoot}), FMT(prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_TOKENS * 3, FMT(prefix, ".proof"))),
-        proofVerifierBefore(
+        rootBeforeVerifier(
           pb,
           TREE_DEPTH_TOKENS,
-          tokenID,
+          _tokenID,
           leafBefore.result(),
-          merkleRoot,
+          _rootBefore,
           proof,
           FMT(prefix, ".pathBefore")),
-        rootCalculatorAfter(
+        rootAfter(
           pb,
           TREE_DEPTH_TOKENS,
-          tokenID,
+          _tokenID,
           leafAfter.result(),
           proof,
           FMT(prefix, ".pathAfter"))
@@ -239,18 +239,18 @@ public:
     leafAfter.generate_r1cs_witness();
 
     proof.fill_with_field_elements(pb, update.proof.data);
-    proofVerifierBefore.generate_r1cs_witness();
-    rootCalculatorAfter.generate_r1cs_witness();
+    rootBeforeVerifier.generate_r1cs_witness();
+    rootAfter.generate_r1cs_witness();
 
-    // ASSERT(pb.val(proofVerifierBefore.m_expected_root) == update.rootBefore,
+    // ASSERT(pb.val(rootBeforeVerifier.m_expected_root) == update.rootBefore,
     // annotation_prefix);
-    if (pb.val(rootCalculatorAfter.result()) != update.rootAfter)
+    if (pb.val(rootAfter.result()) != update.rootAfter)
       {
         std::cout << "Before:" << std::endl;
-        printBalance(pb, valuesBefore);
+        printBalance(pb, stateBefore);
         std::cout << "After:" << std::endl;
-        printBalance(pb, valuesAfter);
-        ASSERT(pb.val(rootCalculatorAfter.result()) == update.rootAfter, annotation_prefix);
+        printBalance(pb, stateAfter);
+        ASSERT(pb.val(rootAfter.result()) == update.rootAfter, annotation_prefix);
       }
   }
 
@@ -259,26 +259,26 @@ public:
     leafBefore.generate_r1cs_constraints();
     leafAfter.generate_r1cs_constraints();
 
-    proofVerifierBefore.generate_r1cs_constraints();
-    rootCalculatorAfter.generate_r1cs_constraints();
+    rootBeforeVerifier.generate_r1cs_constraints();
+    rootAfter.generate_r1cs_constraints();
   }
 
-  const VariableT &result() const { return rootCalculatorAfter.result(); }
+  const VariableT &result() const { return rootAfter.result(); }
 };
 
 // Calculcates the state of a user's open position
 class DynamicBalanceGadget : public DynamicVariableGadget
 {
 public:
-  DynamicBalanceGadget(ProtoboardT &pb, const VariableT &balance, const std::string &prefix)
+  DynamicBalanceGadget(ProtoboardT &pb, const VariableT &_balance, const std::string &prefix)
       : DynamicVariableGadget(pb, prefix)
   {
-    add(balance);
+    add(_balance);
     allowGeneratingWitness = false;
   }
 
-  DynamicBalanceGadget(ProtoboardT &pb, const BalanceGadget &balance, const std::string &prefix)
-      : DynamicBalanceGadget(pb, balance.balance, prefix)
+  DynamicBalanceGadget(ProtoboardT &pb, const BalanceGadget &_balance, const std::string &prefix)
+      : DynamicBalanceGadget(pb, _balance.balance, prefix)
   {
   }
 

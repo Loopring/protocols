@@ -66,8 +66,8 @@ public:
   StorageState valuesAfter;
 
   const VariableArrayT proof;
-  MerklePathCheckT proofVerifierBefore;
-  MerklePathT rootCalculatorAfter;
+  MerklePathCheckT rootBeforeVerifier;
+  MerklePathT rootAfter;
 
   UpdateStorageGadget(
     ProtoboardT &pb,
@@ -84,7 +84,7 @@ public:
         leafAfter(pb, var_array({after.data, after.storageID}), FMT(prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(prefix, ".proof"))),
-        proofVerifierBefore(
+        rootBeforeVerifier(
           pb,
           TREE_DEPTH_STORAGE,
           slotID,
@@ -92,7 +92,7 @@ public:
           merkleRoot,
           proof,
           FMT(prefix, ".pathBefore")),
-        rootCalculatorAfter(
+        rootAfter(
           pb,
           TREE_DEPTH_STORAGE,
           slotID,
@@ -108,17 +108,17 @@ public:
     leafAfter.generate_r1cs_witness();
 
     proof.fill_with_field_elements(pb, update.proof.data);
-    proofVerifierBefore.generate_r1cs_witness();
-    rootCalculatorAfter.generate_r1cs_witness();
+    rootBeforeVerifier.generate_r1cs_witness();
+    rootAfter.generate_r1cs_witness();
 
-    ASSERT(pb.val(proofVerifierBefore.m_expected_root) == update.rootBefore, annotation_prefix);
-    if (pb.val(rootCalculatorAfter.result()) != update.rootAfter)
+    ASSERT(pb.val(rootBeforeVerifier.m_expected_root) == update.rootBefore, annotation_prefix);
+    if (pb.val(rootAfter.result()) != update.rootAfter)
       {
         std::cout << "Before:" << std::endl;
         printStorage(pb, valuesBefore);
         std::cout << "After:" << std::endl;
         printStorage(pb, valuesAfter);
-        ASSERT(pb.val(rootCalculatorAfter.result()) == update.rootAfter, annotation_prefix);
+        ASSERT(pb.val(rootAfter.result()) == update.rootAfter, annotation_prefix);
       }
   }
 
@@ -127,11 +127,11 @@ public:
     leafBefore.generate_r1cs_constraints();
     leafAfter.generate_r1cs_constraints();
 
-    proofVerifierBefore.generate_r1cs_constraints();
-    rootCalculatorAfter.generate_r1cs_constraints();
+    rootBeforeVerifier.generate_r1cs_constraints();
+    rootAfter.generate_r1cs_constraints();
   }
 
-  const VariableT &result() const { return rootCalculatorAfter.result(); }
+  const VariableT &result() const { return rootAfter.result(); }
 };
 
 class StorageReaderGadget : public GadgetT
