@@ -27,13 +27,13 @@ struct AccountState
   VariableT balancesRoot;
 };
 
-static void printAccount(const ProtoboardT &pb, const AccountState &_state)
+static void printAccount(const ProtoboardT &pb, const AccountState &state)
 {
-  std::cout << "- owner: " << pb.val(_state.owner) << std::endl;
-  std::cout << "- publicKeyX: " << pb.val(_state.publicKeyX) << std::endl;
-  std::cout << "- publicKeyY: " << pb.val(_state.publicKeyY) << std::endl;
-  std::cout << "- nonce: " << pb.val(_state.nonce) << std::endl;
-  std::cout << "- balancesRoot: " << pb.val(_state.balancesRoot) << std::endl;
+  std::cout << "- owner: " << pb.val(state.owner) << std::endl;
+  std::cout << "- publicKeyX: " << pb.val(state.publicKeyX) << std::endl;
+  std::cout << "- publicKeyY: " << pb.val(state.publicKeyY) << std::endl;
+  std::cout << "- nonce: " << pb.val(state.nonce) << std::endl;
+  std::cout << "- balancesRoot: " << pb.val(state.balancesRoot) << std::endl;
 }
 
 class AccountGadget : public GadgetT
@@ -164,10 +164,10 @@ struct BalanceState
   VariableT storageRoot;
 };
 
-static void printBalance(const ProtoboardT &pb, const BalanceState &_state)
+static void printBalance(const ProtoboardT &pb, const BalanceState &state)
 {
-  std::cout << "- balance: " << pb.val(_state.balance) << std::endl;
-  std::cout << "- storageRoot: " << pb.val(_state.storageRoot) << std::endl;
+  std::cout << "- balance: " << pb.val(state.balance) << std::endl;
+  std::cout << "- storageRoot: " << pb.val(state.storageRoot) << std::endl;
 }
 
 class BalanceGadget : public GadgetT
