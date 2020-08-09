@@ -22,7 +22,7 @@ namespace Loopring
 // (fillAmountS/fillAmountB) * 1000 <= (amountS/amountB) * 1001
 // (fillAmountS * amountB * 1000) <= (fillAmountB * amountS * 1001)
 // Also checks that not just a single fill is non-zero.
-class RequireFillRateGadget : public GadgetT
+class RequireOrderFillRateGadget : public GadgetT
 {
 public:
   UnsafeMulGadget fillAmountS_mul_amountB;
@@ -40,7 +40,7 @@ public:
   OrGadget fillsValid;
   RequireEqualGadget requireFillsValid;
 
-  RequireFillRateGadget(
+  RequireOrderFillRateGadget(
     ProtoboardT &pb,
     const Constants &constants,
     const VariableT &amountS,
@@ -256,14 +256,24 @@ public:
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        fillAmount(pb, order.fillAmountBorS.packed, fillB, fillS, FMT(prefix, ".fillAmount")),
+        fillAmount( //
+          pb,
+          order.fillAmountBorS.packed,
+          fillB,
+          fillS,
+          FMT(prefix, ".fillAmount")),
         fillLimit(
           pb,
           order.fillAmountBorS.packed,
           order.amountB.packed,
           order.amountS.packed,
           FMT(prefix, ".fillLimit")),
-        filledAfter(pb, filled, fillAmount.result(), NUM_BITS_AMOUNT, FMT(prefix, ".filledAfter")),
+        filledAfter( //
+          pb,
+          filled,
+          fillAmount.result(),
+          NUM_BITS_AMOUNT,
+          FMT(prefix, ".filledAfter")),
         filledAfter_leq_fillLimit(
           pb,
           filledAfter.result(),
@@ -297,7 +307,7 @@ class RequireOrderFillsGadget : public GadgetT
 {
 public:
   // Check rate
-  RequireFillRateGadget requireFillRate;
+  RequireOrderFillRateGadget requireFillRate;
   // Check fill limit
   RequireOrderFillLimitGadget requireFillLimit;
 
@@ -425,7 +435,9 @@ public:
     const VariableT &_fillS_A,
     const VariableT &_fillS_B,
     const std::string &prefix)
-      : GadgetT(pb, prefix), fillS_A(_fillS_A), fillS_B(_fillS_B),
+      : GadgetT(pb, prefix), //
+        fillS_A(_fillS_A),   //
+        fillS_B(_fillS_B),
 
         // Check if the fills are valid for the orders
         requireOrderFillsA(
@@ -458,12 +470,32 @@ public:
           FMT(prefix, ".orderA_tokenB_eq_orderB_tokenS")),
 
         // Check if the takers match
-        validateTakerA(pb, constants, ownerB, orderA.taker, FMT(prefix, ".validateTakerA")),
-        validateTakerB(pb, constants, ownerA, orderB.taker, FMT(prefix, ".validateTakerB")),
+        validateTakerA( //
+          pb,
+          constants,
+          ownerB,
+          orderA.taker,
+          FMT(prefix, ".validateTakerA")),
+        validateTakerB( //
+          pb,
+          constants,
+          ownerA,
+          orderB.taker,
+          FMT(prefix, ".validateTakerB")),
 
         // Check if the orders in the settlement are correctly filled
-        requireValidA(pb, constants, timestamp, orderA, FMT(prefix, ".checkValidA")),
-        requireValidB(pb, constants, timestamp, orderB, FMT(prefix, ".checkValidB"))
+        requireValidA( //
+          pb,
+          constants,
+          timestamp,
+          orderA,
+          FMT(prefix, ".checkValidA")),
+        requireValidB( //
+          pb,
+          constants,
+          timestamp,
+          orderB,
+          FMT(prefix, ".checkValidB"))
   {
   }
 

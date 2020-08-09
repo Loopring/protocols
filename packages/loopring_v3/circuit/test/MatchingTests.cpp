@@ -37,7 +37,7 @@ FieldT muldiv(const FieldT &V, const FieldT &N, const FieldT &D) {
   return toFieldElement(validate(toBigInt(V) * toBigInt(N)) / toBigInt(D));
 }
 
-TEST_CASE("RequireFillRate", "[RequireFillRateGadget]") {
+TEST_CASE("RequireFillRate", "[RequireOrderFillRateGadget]") {
   unsigned int maxLength = NUM_BITS_AMOUNT;
   unsigned int numIterations = 8;
   for (unsigned int n = 1; n <= maxLength; n++) {
@@ -60,7 +60,7 @@ TEST_CASE("RequireFillRate", "[RequireFillRateGadget]") {
             make_variable(pb, toFieldElement(_fillAmountB), "fillAmountB");
 
         Constants constants(pb, "constants");
-        RequireFillRateGadget requireFillRateGadget(
+        RequireOrderFillRateGadget requireFillRateGadget(
             pb, constants, amountS, amountB, fillAmountS, fillAmountB, n,
             "requireFillRateGadget");
         requireFillRateGadget.generate_r1cs_constraints();
