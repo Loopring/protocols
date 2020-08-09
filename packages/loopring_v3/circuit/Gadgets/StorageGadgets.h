@@ -258,6 +258,8 @@ public:
   const VariableT &getOverwrite() const { return storageID_eq_nextStorageID.result(); }
 };
 
+// Read storage data for transfers.
+// For a transfer, the storage data is either 0 (not used) or 1 (used).
 class ReadNonceGadget : public GadgetT
 {
   const Constants &constants;
