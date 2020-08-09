@@ -66,8 +66,8 @@ public:
   StorageState valuesAfter;
 
   const VariableArrayT proof;
-  MerklePathCheckT rootBeforeVerifier;
-  MerklePathT rootAfter;
+  VerifyMerklePath rootBeforeVerifier;
+  ComputeMerklePath rootAfter;
 
   UpdateStorageGadget(
     ProtoboardT &pb,

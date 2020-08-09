@@ -73,13 +73,13 @@ public:
   AccountState stateAfter;
 
   const VariableArrayT proof;
-  MerklePathCheckT rootBeforeVerifier;
-  MerklePathT rootAfter;
+  VerifyMerklePath rootBeforeVerifier;
+  ComputeMerklePath rootAfter;
 
   UpdateAccountGadget(
     ProtoboardT &pb,
-    const VariableT &_rootBefore,
-    const VariableArrayT &_slotID,
+    const VariableT &rootBefore,
+    const VariableArrayT &slotID,
     const AccountState &_stateBefore,
     const AccountState &_stateAfter,
     const std::string &prefix)
@@ -110,15 +110,15 @@ public:
         rootBeforeVerifier(
           pb,
           TREE_DEPTH_ACCOUNTS,
-          _slotID,
+          slotID,
           leafBefore.result(),
-          _rootBefore,
+          rootBefore,
           proof,
           FMT(prefix, ".pathBefore")),
         rootAfter(
           pb,
           TREE_DEPTH_ACCOUNTS,
-          _slotID,
+          slotID,
           leafAfter.result(),
           proof,
           FMT(prefix, ".pathAfter"))
@@ -201,13 +201,13 @@ public:
   BalanceState stateAfter;
 
   const VariableArrayT proof;
-  MerklePathCheckT rootBeforeVerifier;
-  MerklePathT rootAfter;
+  VerifyMerklePath rootBeforeVerifier;
+  ComputeMerklePath rootAfter;
 
   UpdateBalanceGadget(
     ProtoboardT &pb,
-    const VariableT &_rootBefore,
-    const VariableArrayT &_tokenID,
+    const VariableT &rootBefore,
+    const VariableArrayT &tokenID,
     const BalanceState _stateBefore,
     const BalanceState _stateAfter,
     const std::string &prefix)
@@ -228,15 +228,15 @@ public:
         rootBeforeVerifier(
           pb,
           TREE_DEPTH_TOKENS,
-          _tokenID,
+          tokenID,
           leafBefore.result(),
-          _rootBefore,
+          rootBefore,
           proof,
           FMT(prefix, ".pathBefore")),
         rootAfter(
           pb,
           TREE_DEPTH_TOKENS,
-          _tokenID,
+          tokenID,
           leafAfter.result(),
           proof,
           FMT(prefix, ".pathAfter"))
@@ -280,15 +280,15 @@ public:
 class DynamicBalanceGadget : public DynamicVariableGadget
 {
 public:
-  DynamicBalanceGadget(ProtoboardT &pb, const VariableT &_balance, const std::string &prefix)
+  DynamicBalanceGadget(ProtoboardT &pb, const VariableT &balance, const std::string &prefix)
       : DynamicVariableGadget(pb, prefix)
   {
-    add(_balance);
+    add(balance);
     allowGeneratingWitness = false;
   }
 
-  DynamicBalanceGadget(ProtoboardT &pb, const BalanceGadget &_balance, const std::string &prefix)
-      : DynamicBalanceGadget(pb, _balance.balance, prefix)
+  DynamicBalanceGadget(ProtoboardT &pb, const BalanceGadget &balance, const std::string &prefix)
+      : DynamicBalanceGadget(pb, balance.balance, prefix)
   {
   }
 

@@ -10,7 +10,7 @@
 namespace Loopring
 {
 
-class merkle_path_selector_4 : public GadgetT
+class SelectMerklePath : public GadgetT
 {
 public:
   OrGadget bit0_or_bit1;
@@ -23,14 +23,15 @@ public:
   TernaryGadget child2;
   TernaryGadget child3;
 
-  // 00   x  y0  y1 y2
-  // 01   y0 x   y1 y2
-  // 10   y0 y1   x y2
-  // 11   y0 y1  y2  x
-  merkle_path_selector_4(
+  //[bit1][bit0] [child0] [child1] [child2] [child3]
+  // 0 0         x         y0          y1      y2
+  // 0 1         y0        x           y1      y2
+  // 1 0         y0        y1          x       y2
+  // 1 1         y0        y1          y2      x
+  SelectMerklePath(
     ProtoboardT &pb,
-    const VariableT &input,
-    std::vector<VariableT> sideNodes,
+    const VariableT &x,
+    std::vector<VariableT> y,
     const VariableT &bit0,
     const VariableT &bit1,
     const std::string &prefix)
@@ -39,14 +40,14 @@ public:
         bit0_or_bit1(pb, {bit0, bit1}, FMT(prefix, ".bit0_or_bit1")),
         bit0_and_bit1(pb, {bit0, bit1}, FMT(prefix, ".bit0_and_bit1")),
 
-        child0(pb, bit0_or_bit1.result(), sideNodes[0], input, FMT(prefix, ".child0")),
-        child1p(pb, bit0, input, sideNodes[0], FMT(prefix, ".child1p")),
-        child1(pb, bit1, sideNodes[1], child1p.result(), FMT(prefix, ".child1")),
-        child2p(pb, bit0, sideNodes[2], input, FMT(prefix, ".child2p")),
-        child2(pb, bit1, child2p.result(), sideNodes[1], FMT(prefix, ".child2")),
-        child3(pb, bit0_and_bit1.result(), input, sideNodes[2], FMT(prefix, ".child3"))
+        child0(pb, bit0_or_bit1.result(), y[0], x, FMT(prefix, ".child0")),
+        child1p(pb, bit0, x, y[0], FMT(prefix, ".child1p")),
+        child1(pb, bit1, y[1], child1p.result(), FMT(prefix, ".child1")),
+        child2p(pb, bit0, y[2], x, FMT(prefix, ".child2p")),
+        child2(pb, bit1, child2p.result(), y[1], FMT(prefix, ".child2")),
+        child3(pb, bit0_and_bit1.result(), x, y[2], FMT(prefix, ".child3"))
   {
-    assert(sideNodes.size() == 3);
+    assert(y.size() == 3);
   }
 
   void generate_r1cs_constraints()
@@ -81,38 +82,38 @@ public:
   }
 };
 
-template <typename HashT> class merkle_path_compute_4 : public GadgetT
+template <typename HashT> class ComputeMerklePath4 : public GadgetT
 {
 public:
-  std::vector<merkle_path_selector_4> m_selectors;
+  std::vector<SelectMerklePath> m_selectors;
   std::vector<HashT> m_hashers;
 
-  merkle_path_compute_4(
-    ProtoboardT &in_pb,
-    const size_t in_depth,
-    const VariableArrayT &in_address_bits,
-    const VariableT in_leaf,
-    const VariableArrayT &in_path,
-    const std::string &in_annotation_prefix)
-      : GadgetT(in_pb, in_annotation_prefix)
+  ComputeMerklePath4(
+    ProtoboardT &pb,
+    const size_t depth,
+    const VariableArrayT &slotID,
+    const VariableT leaf,
+    const VariableArrayT &path,
+    const std::string &prefix)
+      : GadgetT(pb, prefix)
   {
-    assert(in_depth > 0);
-    assert(in_address_bits.size() == in_depth * 2);
+    assert(depth > 0);
+    assert(slotID.size() == depth * 2);
 
-    m_selectors.reserve(in_depth);
-    m_hashers.reserve(in_depth);
-    for (size_t i = 0; i < in_depth; i++)
+    m_selectors.reserve(depth);
+    m_hashers.reserve(depth);
+    for (size_t i = 0; i < depth; i++)
       {
-        m_selectors.push_back(merkle_path_selector_4(
-          in_pb,
-          (i == 0) ? in_leaf : m_hashers[i - 1].result(),
-          {in_path[i * 3 + 0], in_path[i * 3 + 1], in_path[i * 3 + 2]},
-          in_address_bits[i * 2 + 0],
-          in_address_bits[i * 2 + 1],
+        m_selectors.push_back(SelectMerklePath(
+          pb,
+          (i == 0) ? leaf : m_hashers[i - 1].result(),
+          {path[i * 3 + 0], path[i * 3 + 1], path[i * 3 + 2]},
+          slotID[i * 2 + 0],
+          slotID[i * 2 + 1],
           FMT(this->annotation_prefix, ".selector[%zu]", i)));
 
         m_hashers.emplace_back(
-          in_pb,
+          pb,
           var_array(m_selectors[i].getChildren()),
           FMT(this->annotation_prefix, ".hasher[%zu]", i));
       }
@@ -144,42 +145,36 @@ public:
 };
 
 /**
- * Merkle path authenticator, verifies computed root matches expected result
+ * Merkle path verifier, verifies computed root matches expected result
  */
-template <typename HashT> class merkle_path_authenticator_4 : public merkle_path_compute_4<HashT>
+template <typename HashT> class VerifyMerklePath4 : public ComputeMerklePath4<HashT>
 {
 public:
-  const VariableT m_expected_root;
+  const VariableT expectedRoot;
 
-  merkle_path_authenticator_4(
-    ProtoboardT &in_pb,
-    const size_t in_depth,
-    const VariableArrayT in_address_bits,
-    const VariableT in_leaf,
-    const VariableT in_expected_root,
-    const VariableArrayT in_path,
-    const std::string &in_annotation_prefix)
-      : merkle_path_compute_4<HashT>::merkle_path_compute_4(
-          in_pb,
-          in_depth,
-          in_address_bits,
-          in_leaf,
-          in_path,
-          in_annotation_prefix),
-        m_expected_root(in_expected_root)
+  VerifyMerklePath4(
+    ProtoboardT &pb,
+    const size_t depth,
+    const VariableArrayT slotID,
+    const VariableT leaf,
+    const VariableT _expectedRoot,
+    const VariableArrayT path,
+    const std::string &prefix)
+      : ComputeMerklePath4<HashT>::ComputeMerklePath4(pb, depth, slotID, leaf, path, prefix),
+        expectedRoot(_expectedRoot)
   {
   }
 
-  bool is_valid() const { return this->pb.val(this->result()) == this->pb.val(m_expected_root); }
+  bool is_valid() const { return this->pb.val(this->result()) == this->pb.val(expectedRoot); }
 
   void generate_r1cs_constraints()
   {
-    merkle_path_compute_4<HashT>::generate_r1cs_constraints();
+    ComputeMerklePath4<HashT>::generate_r1cs_constraints();
 
     // Ensure root matches calculated path hash
     this->pb.add_r1cs_constraint(
-      ConstraintT(this->result(), 1, m_expected_root),
-      FMT(this->annotation_prefix, ".expected_root authenticator"));
+      ConstraintT(this->result(), 1, expectedRoot),
+      FMT(this->annotation_prefix, ".expectedRoot verifier"));
   }
 };
 
@@ -189,8 +184,8 @@ using HashAccountLeaf = Poseidon_gadget_T<6, 1, 6, 52, 5, 1>;
 using HashBalanceLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
 using HashStorageLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
 
-using MerklePathCheckT = merkle_path_authenticator_4<HashMerkleTree>;
-using MerklePathT = merkle_path_compute_4<HashMerkleTree>;
+using VerifyMerklePath = VerifyMerklePath4<HashMerkleTree>;
+using ComputeMerklePath = ComputeMerklePath4<HashMerkleTree>;
 
 } // namespace Loopring
 
