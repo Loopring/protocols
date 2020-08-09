@@ -234,7 +234,6 @@ public:
 
     aOutputs[BALANCE_A_S_ADDRESS] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
     uOutputs[BALANCE_A_S_BALANCE] = state.accountA.balanceS.balance;
-
     uOutputs[BALANCE_A_B_BALANCE] = state.accountA.balanceB.balance;
 
     aOutputs[ACCOUNT_A_ADDRESS] = flatten(
@@ -251,7 +250,6 @@ public:
 
     aOutputs[BALANCE_B_S_ADDRESS] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
     uOutputs[BALANCE_B_S_BALANCE] = state.accountB.balanceS.balance;
-
     uOutputs[BALANCE_B_B_BALANCE] = state.accountB.balanceB.balance;
 
     aOutputs[ACCOUNT_B_ADDRESS] = flatten(
