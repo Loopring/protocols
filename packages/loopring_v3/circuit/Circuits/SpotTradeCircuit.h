@@ -71,10 +71,10 @@ public:
         balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
         balanceS_B(pb, state.accountB.balanceS, FMT(prefix, ".balanceS_B")),
         balanceB_B(pb, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
-        balanceA_P(pb, state.pool.balanceA, FMT(prefix, ".balanceA_P")),
-        balanceB_P(pb, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
-        balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
-        balanceB_O(pb, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
+        balanceA_P(pb, state.protocolFeeAccount.balanceA, FMT(prefix, ".balanceA_P")),
+        balanceB_P(pb, state.protocolFeeAccount.balanceB, FMT(prefix, ".balanceB_P")),
+        balanceA_O(pb, state.operatorAccount.balanceA, FMT(prefix, ".balanceA_O")),
+        balanceB_O(pb, state.operatorAccount.balanceB, FMT(prefix, ".balanceB_O")),
 
         // Order fills
         fillS_A(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_A")),

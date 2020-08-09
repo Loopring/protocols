@@ -46,13 +46,13 @@ struct TransactionAccountState : public GadgetT
   }
 };
 
-struct TransactionAccountOperatorState : public GadgetT
+struct TransactionOperatorAccountState : public GadgetT
 {
   BalanceGadget balanceA;
   BalanceGadget balanceB;
   AccountGadget account;
 
-  TransactionAccountOperatorState(ProtoboardT &pb, const std::string &prefix)
+  TransactionOperatorAccountState(ProtoboardT &pb, const std::string &prefix)
       : GadgetT(pb, prefix),
 
         balanceA(pb, FMT(prefix, ".balanceA")), //
@@ -72,12 +72,12 @@ struct TransactionAccountOperatorState : public GadgetT
   }
 };
 
-struct TransactionAccountBalancesState : public GadgetT
+struct TransactionProtocolFeeAccountState : public GadgetT
 {
   BalanceGadget balanceA;
   BalanceGadget balanceB;
 
-  TransactionAccountBalancesState(ProtoboardT &pb, const std::string &prefix)
+  TransactionProtocolFeeAccountState(ProtoboardT &pb, const std::string &prefix)
       : GadgetT(pb, prefix),
 
         balanceA(pb, FMT(prefix, ".balanceA")), //
@@ -107,8 +107,8 @@ struct TransactionState : public GadgetT
 
   TransactionAccountState accountA;
   TransactionAccountState accountB;
-  TransactionAccountOperatorState oper;
-  TransactionAccountBalancesState pool;
+  TransactionOperatorAccountState operatorAccount;
+  TransactionProtocolFeeAccountState protocolFeeAccount;
 
   TransactionState(
     ProtoboardT &pb,
@@ -134,10 +134,10 @@ struct TransactionState : public GadgetT
         numConditionalTransactions(_numConditionalTransactions), //
         type(_type),                                             //
 
-        accountA(pb, FMT(prefix, ".accountA")), //
-        accountB(pb, FMT(prefix, ".accountB")), //
-        oper(pb, FMT(prefix, ".oper")),         //
-        pool(pb, FMT(prefix, ".pool"))
+        accountA(pb, FMT(prefix, ".accountA")),               //
+        accountB(pb, FMT(prefix, ".accountB")),               //
+        operatorAccount(pb, FMT(prefix, ".operatorAccount")), //
+        protocolFeeAccount(pb, FMT(prefix, ".protocolFeeAccount"))
   {
   }
 
@@ -158,8 +158,8 @@ struct TransactionState : public GadgetT
   {
     accountA.generate_r1cs_witness(account_A, balanceLeafS_A, balanceLeafB_A, storageLeaf_A);
     accountB.generate_r1cs_witness(account_B, balanceLeafS_B, balanceLeafB_B, storageLeaf_B);
-    oper.generate_r1cs_witness(account_O, balanceLeafA_O, balanceLeafB_O);
-    pool.generate_r1cs_witness(balanceLeafS_P, balanceLeafB_P);
+    operatorAccount.generate_r1cs_witness(account_O, balanceLeafA_O, balanceLeafB_O);
+    protocolFeeAccount.generate_r1cs_witness(balanceLeafS_P, balanceLeafB_P);
   }
 };
 
@@ -262,11 +262,11 @@ public:
     uOutputs[ACCOUNT_B_PUBKEY_Y] = state.accountB.account.publicKey.y;
     uOutputs[ACCOUNT_B_NONCE] = state.accountB.account.nonce;
 
-    uOutputs[BALANCE_P_A_BALANCE] = state.pool.balanceA.balance;
-    uOutputs[BALANCE_P_B_BALANCE] = state.pool.balanceB.balance;
+    uOutputs[BALANCE_P_A_BALANCE] = state.protocolFeeAccount.balanceA.balance;
+    uOutputs[BALANCE_P_B_BALANCE] = state.protocolFeeAccount.balanceB.balance;
 
-    uOutputs[BALANCE_O_A_BALANCE] = state.oper.balanceA.balance;
-    uOutputs[BALANCE_O_B_BALANCE] = state.oper.balanceB.balance;
+    uOutputs[BALANCE_O_A_BALANCE] = state.operatorAccount.balanceA.balance;
+    uOutputs[BALANCE_O_B_BALANCE] = state.operatorAccount.balanceB.balance;
 
     uOutputs[HASH_A] = state.constants._0;
     uOutputs[PUBKEY_X_A] = state.accountA.account.publicKey.x;

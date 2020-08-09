@@ -155,7 +155,7 @@ public:
 
         // Balances
         balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
-        balanceB_P(pb, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
+        balanceB_P(pb, state.protocolFeeAccount.balanceB, FMT(prefix, ".balanceB_P")),
 
         // Check how much should be withdrawn
         fullBalance(
@@ -193,7 +193,7 @@ public:
 
         // Fee balances
         balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
-        balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
+        balanceA_O(pb, state.operatorAccount.balanceA, FMT(prefix, ".balanceA_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
         requireAccuracyFee(

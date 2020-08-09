@@ -109,7 +109,7 @@ public:
 
         // Balances
         balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
-        balanceB_O(pb, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
+        balanceB_O(pb, state.operatorAccount.balanceB, FMT(prefix, ".balanceB_O")),
         // Fee as float
         fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
         requireAccuracyFee(
