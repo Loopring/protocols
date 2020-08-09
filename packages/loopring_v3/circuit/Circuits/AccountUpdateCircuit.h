@@ -137,25 +137,25 @@ public:
           FMT(prefix, ".numConditionalTransactionsAfter"))
   {
     // Update the account data
-    setArrayOutput(accountA_Address, accountID.bits);
-    setOutput(accountA_PublicKeyX, publicKeyX);
-    setOutput(accountA_PublicKeyY, publicKeyY);
-    setOutput(accountA_Nonce, nonce_after.result());
+    setArrayOutput(ACCOUNT_A_ADDRESS, accountID.bits);
+    setOutput(ACCOUNT_A_PUBKEY_X, publicKeyX);
+    setOutput(ACCOUNT_A_PUBKEY_Y, publicKeyY);
+    setOutput(ACCOUNT_A_NONCE, nonce_after.result());
 
     // Update the account balance for the fee payment
-    setArrayOutput(balanceA_S_Address, feeTokenID.bits);
-    setOutput(balanceA_S_Balance, balanceS_A.balance());
+    setArrayOutput(BALANCE_A_S_ADDRESS, feeTokenID.bits);
+    setOutput(BALANCE_A_S_BALANCE, balanceS_A.balance());
     // Update the operator balance for the fee payment
-    setOutput(balanceO_B_Balance, balanceB_O.balance());
+    setOutput(BALANCE_O_B_BALANCE, balanceB_O.balance());
 
     // We need a single signature of the account that's being updated if not
     // conditional
-    setOutput(hash_A, hash.result());
-    setOutput(signatureRequired_A, needsSignature.result());
-    setOutput(signatureRequired_B, state.constants._0);
+    setOutput(HASH_A, hash.result());
+    setOutput(SIGNATURE_REQUIRED_A, needsSignature.result());
+    setOutput(SIGNATURE_REQUIRED_B, state.constants._0);
 
     // Increase the number of conditional transactions (if conditional)
-    setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
+    setOutput(NUM_CONDITIONAL_TXS, numConditionalTransactionsAfter.result());
   }
 
   void generate_r1cs_witness(const AccountUpdateTx &update)
