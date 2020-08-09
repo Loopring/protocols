@@ -12,9 +12,11 @@
 
 using namespace ethsnarks;
 
-namespace Loopring {
+namespace Loopring
+{
 
-class DepositCircuit : public BaseTransactionCircuit {
+class DepositCircuit : public BaseTransactionCircuit
+{
 public:
   // Inputs
   DualVariableGadget owner;
@@ -33,8 +35,7 @@ public:
   // Increase the number of conditional transactions
   UnsafeAddGadget numConditionalTransactionsAfter;
 
-  DepositCircuit(ProtoboardT &pb, const TransactionState &state,
-                 const std::string &prefix)
+  DepositCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
       : BaseTransactionCircuit(pb, state, prefix),
 
         // Inputs
@@ -44,19 +45,30 @@ public:
         amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
 
         // Validate
-        ownerValid(pb, state.constants, state.accountA.account.owner,
-                   owner.packed, FMT(prefix, ".ownerValid")),
+        ownerValid(
+          pb,
+          state.constants,
+          state.accountA.account.owner,
+          owner.packed,
+          FMT(prefix, ".ownerValid")),
 
         // Calculate the new balance
         balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
         depositedAmount(pb, amount.packed, FMT(prefix, ".depositedAmount")),
-        balance_after(pb, balanceS_A.balance(), depositedAmount.balance(),
-                      NUM_BITS_AMOUNT, FMT(prefix, ".balance_after")),
+        balance_after(
+          pb,
+          balanceS_A.balance(),
+          depositedAmount.balance(),
+          NUM_BITS_AMOUNT,
+          FMT(prefix, ".balance_after")),
 
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter(
-            pb, state.numConditionalTransactions, state.constants._1,
-            FMT(prefix, ".numConditionalTransactionsAfter")) {
+          pb,
+          state.numConditionalTransactions,
+          state.constants._1,
+          FMT(prefix, ".numConditionalTransactionsAfter"))
+  {
     // Update the account balance and index
     setArrayOutput(accountA_Address, accountID.bits);
     setOutput(accountA_Owner, owner.packed);
@@ -68,11 +80,11 @@ public:
     setOutput(signatureRequired_B, state.constants._0);
 
     // Increase the number of conditional transactions
-    setOutput(misc_NumConditionalTransactions,
-              numConditionalTransactionsAfter.result());
+    setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
   }
 
-  void generate_r1cs_witness(const Deposit &deposit) {
+  void generate_r1cs_witness(const Deposit &deposit)
+  {
     // Inputs
     owner.generate_r1cs_witness(pb, deposit.owner);
     accountID.generate_r1cs_witness(pb, deposit.accountID);
@@ -91,7 +103,8 @@ public:
     numConditionalTransactionsAfter.generate_r1cs_witness();
   }
 
-  void generate_r1cs_constraints() {
+  void generate_r1cs_constraints()
+  {
     // Inputs
     owner.generate_r1cs_constraints(true);
     accountID.generate_r1cs_constraints(true);
@@ -110,9 +123,9 @@ public:
     numConditionalTransactionsAfter.generate_r1cs_constraints();
   }
 
-  const VariableArrayT getPublicData() const {
-    return flattenReverse(
-        {owner.bits, accountID.bits, tokenID.bits, amount.bits});
+  const VariableArrayT getPublicData() const
+  {
+    return flattenReverse({owner.bits, accountID.bits, tokenID.bits, amount.bits});
   }
 };
 

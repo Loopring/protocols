@@ -14,9 +14,11 @@
 
 using namespace ethsnarks;
 
-namespace Loopring {
+namespace Loopring
+{
 
-class OrderGadget : public GadgetT {
+class OrderGadget : public GadgetT
+{
 public:
   // Inputs
   DualVariableGadget storageID;
@@ -41,8 +43,11 @@ public:
   // Signature
   Poseidon_gadget_T<12, 1, 6, 53, 11, 1> hash;
 
-  OrderGadget(ProtoboardT &pb, const Constants &constants,
-              const VariableT &blockExchange, const std::string &prefix)
+  OrderGadget(
+    ProtoboardT &pb,
+    const Constants &constants,
+    const VariableT &blockExchange,
+    const std::string &prefix)
       : GadgetT(pb, prefix),
 
         // Inputs
@@ -60,23 +65,37 @@ public:
         feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
 
         // Checks
-        feeBips_leq_maxFeeBips(pb, feeBips.packed, maxFeeBips.packed,
-                               NUM_BITS_BIPS,
-                               FMT(prefix, ".feeBips <= maxFeeBips")),
-        tokenS_neq_tokenB(pb, tokenS.packed, tokenB.packed,
-                          FMT(prefix, ".tokenS != tokenB")),
+        feeBips_leq_maxFeeBips(
+          pb,
+          feeBips.packed,
+          maxFeeBips.packed,
+          NUM_BITS_BIPS,
+          FMT(prefix, ".feeBips <= maxFeeBips")),
+        tokenS_neq_tokenB(pb, tokenS.packed, tokenB.packed, FMT(prefix, ".tokenS != tokenB")),
         amountS_notZero(pb, amountS.packed, FMT(prefix, ".amountS != 0")),
         amountB_notZero(pb, amountB.packed, FMT(prefix, ".amountB != 0")),
 
         // Signature
-        hash(pb,
-             var_array({blockExchange, storageID.packed, accountID.packed,
-                        tokenS.packed, tokenB.packed, amountS.packed,
-                        amountB.packed, validUntil.packed, maxFeeBips.packed,
-                        fillAmountBorS.packed, taker}),
-             FMT(this->annotation_prefix, ".hash")) {}
+        hash(
+          pb,
+          var_array(
+            {blockExchange,
+             storageID.packed,
+             accountID.packed,
+             tokenS.packed,
+             tokenB.packed,
+             amountS.packed,
+             amountB.packed,
+             validUntil.packed,
+             maxFeeBips.packed,
+             fillAmountBorS.packed,
+             taker}),
+          FMT(this->annotation_prefix, ".hash"))
+  {
+  }
 
-  void generate_r1cs_witness(const Order &order) {
+  void generate_r1cs_witness(const Order &order)
+  {
     // Inputs
     storageID.generate_r1cs_witness(pb, order.storageID);
     accountID.generate_r1cs_witness(pb, order.accountID);
@@ -101,7 +120,8 @@ public:
     hash.generate_r1cs_witness();
   }
 
-  void generate_r1cs_constraints(bool doSignatureCheck = true) {
+  void generate_r1cs_constraints(bool doSignatureCheck = true)
+  {
     // Inputs
     storageID.generate_r1cs_constraints(true);
     accountID.generate_r1cs_constraints(true);

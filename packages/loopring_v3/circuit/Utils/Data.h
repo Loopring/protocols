@@ -12,7 +12,8 @@
 
 using json = nlohmann::json;
 
-namespace Loopring {
+namespace Loopring
+{
 
 static auto dummySpotTrade = R"({
     "fFillS_A": 0,
@@ -103,7 +104,8 @@ static auto dummySignature = R"({
     "s": "0"
 })"_json;
 
-enum class TransactionType {
+enum class TransactionType
+{
   Noop = 0,
   Deposit,
   Withdrawal,
@@ -114,42 +116,48 @@ enum class TransactionType {
   COUNT
 };
 
-class Proof {
+class Proof
+{
 public:
   std::vector<ethsnarks::FieldT> data;
 };
 
-static void from_json(const json &j, Proof &proof) {
-  for (unsigned int i = 0; i < j.size(); i++) {
-    proof.data.push_back(ethsnarks::FieldT(j[i].get<std::string>().c_str()));
-  }
+static void from_json(const json &j, Proof &proof)
+{
+  for (unsigned int i = 0; i < j.size(); i++)
+    {
+      proof.data.push_back(ethsnarks::FieldT(j[i].get<std::string>().c_str()));
+    }
 }
 
-class StorageLeaf {
+class StorageLeaf
+{
 public:
   ethsnarks::FieldT data;
   ethsnarks::FieldT storageID;
 };
 
-static void from_json(const json &j, StorageLeaf &leaf) {
+static void from_json(const json &j, StorageLeaf &leaf)
+{
   leaf.data = ethsnarks::FieldT(j.at("data").get<std::string>().c_str());
-  leaf.storageID =
-      ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
+  leaf.storageID = ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
 }
 
-class BalanceLeaf {
+class BalanceLeaf
+{
 public:
   ethsnarks::FieldT balance;
   ethsnarks::FieldT storageRoot;
 };
 
-static void from_json(const json &j, BalanceLeaf &leaf) {
+static void from_json(const json &j, BalanceLeaf &leaf)
+{
   leaf.balance = ethsnarks::FieldT(j.at("balance").get<std::string>().c_str());
-  leaf.storageRoot =
-      ethsnarks::FieldT(j.at("storageRoot").get<std::string>().c_str());
+  leaf.storageRoot = ethsnarks::FieldT(j.at("storageRoot").get<std::string>().c_str());
 }
 
-class AccountLeaf {
+class AccountLeaf
+{
 public:
   ethsnarks::FieldT owner;
   ethsnarks::jubjub::EdwardsPoint publicKey;
@@ -157,18 +165,17 @@ public:
   ethsnarks::FieldT balancesRoot;
 };
 
-static void from_json(const json &j, AccountLeaf &account) {
+static void from_json(const json &j, AccountLeaf &account)
+{
   account.owner = ethsnarks::FieldT(j.at("owner").get<std::string>().c_str());
-  account.publicKey.x =
-      ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
-  account.publicKey.y =
-      ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
+  account.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
+  account.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
   account.nonce = ethsnarks::FieldT(j.at("nonce"));
-  account.balancesRoot =
-      ethsnarks::FieldT(j.at("balancesRoot").get<std::string>().c_str());
+  account.balancesRoot = ethsnarks::FieldT(j.at("balancesRoot").get<std::string>().c_str());
 }
 
-class BalanceUpdate {
+class BalanceUpdate
+{
 public:
   ethsnarks::FieldT tokenID;
   Proof proof;
@@ -178,18 +185,18 @@ public:
   BalanceLeaf after;
 };
 
-static void from_json(const json &j, BalanceUpdate &balanceUpdate) {
+static void from_json(const json &j, BalanceUpdate &balanceUpdate)
+{
   balanceUpdate.tokenID = ethsnarks::FieldT(j.at("tokenID"));
   balanceUpdate.proof = j.at("proof").get<Proof>();
-  balanceUpdate.rootBefore =
-      ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
-  balanceUpdate.rootAfter =
-      ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
+  balanceUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
+  balanceUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
   balanceUpdate.before = j.at("before").get<BalanceLeaf>();
   balanceUpdate.after = j.at("after").get<BalanceLeaf>();
 }
 
-class StorageUpdate {
+class StorageUpdate
+{
 public:
   ethsnarks::FieldT storageID;
   Proof proof;
@@ -199,19 +206,18 @@ public:
   StorageLeaf after;
 };
 
-static void from_json(const json &j, StorageUpdate &storageUpdate) {
-  storageUpdate.storageID =
-      ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
+static void from_json(const json &j, StorageUpdate &storageUpdate)
+{
+  storageUpdate.storageID = ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
   storageUpdate.proof = j.at("proof").get<Proof>();
-  storageUpdate.rootBefore =
-      ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
-  storageUpdate.rootAfter =
-      ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
+  storageUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
+  storageUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
   storageUpdate.before = j.at("before").get<StorageLeaf>();
   storageUpdate.after = j.at("after").get<StorageLeaf>();
 }
 
-class AccountUpdate {
+class AccountUpdate
+{
 public:
   ethsnarks::FieldT accountID;
   Proof proof;
@@ -221,35 +227,36 @@ public:
   AccountLeaf after;
 };
 
-static void from_json(const json &j, AccountUpdate &accountUpdate) {
+static void from_json(const json &j, AccountUpdate &accountUpdate)
+{
   accountUpdate.accountID = ethsnarks::FieldT(j.at("accountID"));
   accountUpdate.proof = j.at("proof").get<Proof>();
-  accountUpdate.rootBefore =
-      ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
-  accountUpdate.rootAfter =
-      ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
+  accountUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
+  accountUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
   accountUpdate.before = j.at("before").get<AccountLeaf>();
   accountUpdate.after = j.at("after").get<AccountLeaf>();
 }
 
-class Signature {
+class Signature
+{
 public:
   Signature() {}
 
-  Signature(ethsnarks::jubjub::EdwardsPoint _R, ethsnarks::FieldT _s)
-      : R(_R), s(_s) {}
+  Signature(ethsnarks::jubjub::EdwardsPoint _R, ethsnarks::FieldT _s) : R(_R), s(_s) {}
 
   ethsnarks::jubjub::EdwardsPoint R;
   ethsnarks::FieldT s;
 };
 
-static void from_json(const json &j, Signature &signature) {
+static void from_json(const json &j, Signature &signature)
+{
   signature.R.x = ethsnarks::FieldT(j.at("Rx").get<std::string>().c_str());
   signature.R.y = ethsnarks::FieldT(j.at("Ry").get<std::string>().c_str());
   signature.s = ethsnarks::FieldT(j.at("s").get<std::string>().c_str());
 }
 
-class Order {
+class Order
+{
 public:
   ethsnarks::FieldT storageID;
   ethsnarks::FieldT accountID;
@@ -265,9 +272,9 @@ public:
   ethsnarks::FieldT feeBips;
 };
 
-static void from_json(const json &j, Order &order) {
-  order.storageID =
-      ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
+static void from_json(const json &j, Order &order)
+{
+  order.storageID = ethsnarks::FieldT(j.at("storageID").get<std::string>().c_str());
   order.accountID = ethsnarks::FieldT(j.at("accountID"));
   order.tokenS = ethsnarks::FieldT(j.at("tokenS"));
   order.tokenB = ethsnarks::FieldT(j.at("tokenB"));
@@ -275,14 +282,14 @@ static void from_json(const json &j, Order &order) {
   order.amountB = ethsnarks::FieldT(j.at("amountB").get<std::string>().c_str());
   order.validUntil = ethsnarks::FieldT(j.at("validUntil"));
   order.maxFeeBips = ethsnarks::FieldT(j.at("maxFeeBips"));
-  order.fillAmountBorS =
-      ethsnarks::FieldT(j.at("fillAmountBorS").get<bool>() ? 1 : 0);
+  order.fillAmountBorS = ethsnarks::FieldT(j.at("fillAmountBorS").get<bool>() ? 1 : 0);
   order.taker = ethsnarks::FieldT(j.at("taker").get<std::string>().c_str());
 
   order.feeBips = ethsnarks::FieldT(j.at("feeBips"));
 }
 
-class SpotTrade {
+class SpotTrade
+{
 public:
   Order orderA;
   Order orderB;
@@ -290,14 +297,16 @@ public:
   ethsnarks::FieldT fillS_B;
 };
 
-static void from_json(const json &j, SpotTrade &spotTrade) {
+static void from_json(const json &j, SpotTrade &spotTrade)
+{
   spotTrade.orderA = j.at("orderA").get<Order>();
   spotTrade.orderB = j.at("orderB").get<Order>();
   spotTrade.fillS_A = ethsnarks::FieldT(j["fFillS_A"]);
   spotTrade.fillS_B = ethsnarks::FieldT(j["fFillS_B"]);
 }
 
-class Deposit {
+class Deposit
+{
 public:
   ethsnarks::FieldT owner;
   ethsnarks::FieldT accountID;
@@ -305,14 +314,16 @@ public:
   ethsnarks::FieldT amount;
 };
 
-static void from_json(const json &j, Deposit &deposit) {
+static void from_json(const json &j, Deposit &deposit)
+{
   deposit.owner = ethsnarks::FieldT(j.at("owner").get<std::string>().c_str());
   deposit.accountID = ethsnarks::FieldT(j.at("accountID"));
   deposit.tokenID = ethsnarks::FieldT(j.at("tokenID"));
   deposit.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
 }
 
-class Withdrawal {
+class Withdrawal
+{
 public:
   ethsnarks::FieldT accountID;
   ethsnarks::FieldT tokenID;
@@ -324,19 +335,20 @@ public:
   ethsnarks::FieldT type;
 };
 
-static void from_json(const json &j, Withdrawal &withdrawal) {
+static void from_json(const json &j, Withdrawal &withdrawal)
+{
   withdrawal.accountID = ethsnarks::FieldT(j.at("accountID"));
   withdrawal.tokenID = ethsnarks::FieldT(j.at("tokenID"));
   withdrawal.amount = ethsnarks::FieldT(j["amount"].get<std::string>().c_str());
   withdrawal.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
   withdrawal.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
-  withdrawal.onchainDataHash =
-      ethsnarks::FieldT(j["onchainDataHash"].get<std::string>().c_str());
+  withdrawal.onchainDataHash = ethsnarks::FieldT(j["onchainDataHash"].get<std::string>().c_str());
   withdrawal.validUntil = ethsnarks::FieldT(j.at("validUntil"));
   withdrawal.type = ethsnarks::FieldT(j.at("type"));
 }
 
-class AccountUpdateTx {
+class AccountUpdateTx
+{
 public:
   ethsnarks::FieldT accountID;
   ethsnarks::FieldT publicKeyX;
@@ -347,19 +359,19 @@ public:
   ethsnarks::FieldT type;
 };
 
-static void from_json(const json &j, AccountUpdateTx &update) {
+static void from_json(const json &j, AccountUpdateTx &update)
+{
   update.accountID = ethsnarks::FieldT(j.at("accountID"));
-  update.publicKeyX =
-      ethsnarks::FieldT(j["publicKeyX"].get<std::string>().c_str());
-  update.publicKeyY =
-      ethsnarks::FieldT(j["publicKeyY"].get<std::string>().c_str());
+  update.publicKeyX = ethsnarks::FieldT(j["publicKeyX"].get<std::string>().c_str());
+  update.publicKeyY = ethsnarks::FieldT(j["publicKeyY"].get<std::string>().c_str());
   update.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
   update.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
   update.validUntil = ethsnarks::FieldT(j.at("validUntil"));
   update.type = ethsnarks::FieldT(j.at("type"));
 }
 
-class Transfer {
+class Transfer
+{
 public:
   ethsnarks::FieldT fromAccountID;
   ethsnarks::FieldT toAccountID;
@@ -378,7 +390,8 @@ public:
   ethsnarks::FieldT type;
 };
 
-static void from_json(const json &j, Transfer &transfer) {
+static void from_json(const json &j, Transfer &transfer)
+{
   transfer.fromAccountID = ethsnarks::FieldT(j.at("fromAccountID"));
   transfer.toAccountID = ethsnarks::FieldT(j.at("toAccountID"));
   transfer.tokenID = ethsnarks::FieldT(j.at("tokenID"));
@@ -387,19 +400,17 @@ static void from_json(const json &j, Transfer &transfer) {
   transfer.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
   transfer.validUntil = ethsnarks::FieldT(j.at("validUntil"));
   transfer.to = ethsnarks::FieldT(j["to"].get<std::string>().c_str());
-  transfer.dualAuthorX =
-      ethsnarks::FieldT(j["dualAuthorX"].get<std::string>().c_str());
-  transfer.dualAuthorY =
-      ethsnarks::FieldT(j["dualAuthorY"].get<std::string>().c_str());
-  transfer.storageID =
-      ethsnarks::FieldT(j["storageID"].get<std::string>().c_str());
+  transfer.dualAuthorX = ethsnarks::FieldT(j["dualAuthorX"].get<std::string>().c_str());
+  transfer.dualAuthorY = ethsnarks::FieldT(j["dualAuthorY"].get<std::string>().c_str());
+  transfer.storageID = ethsnarks::FieldT(j["storageID"].get<std::string>().c_str());
   transfer.payerToAccountID = ethsnarks::FieldT(j.at("payerToAccountID"));
   transfer.payerTo = ethsnarks::FieldT(j["payerTo"].get<std::string>().c_str());
   transfer.payeeToAccountID = ethsnarks::FieldT(j.at("payeeToAccountID"));
   transfer.type = ethsnarks::FieldT(j.at("type"));
 }
 
-class Witness {
+class Witness
+{
 public:
   StorageUpdate storageUpdate_A;
   StorageUpdate storageUpdate_B;
@@ -425,7 +436,8 @@ public:
   ethsnarks::FieldT numConditionalTransactionsAfter;
 };
 
-static void from_json(const json &j, Witness &state) {
+static void from_json(const json &j, Witness &state)
+{
   state.storageUpdate_A = j.at("storageUpdate_A").get<StorageUpdate>();
   state.storageUpdate_B = j.at("storageUpdate_B").get<StorageUpdate>();
 
@@ -448,19 +460,24 @@ static void from_json(const json &j, Witness &state) {
   state.signatureB = dummySignature.get<Signature>();
 
   state.numConditionalTransactionsAfter =
-      ethsnarks::FieldT(j.at("numConditionalTransactionsAfter"));
+    ethsnarks::FieldT(j.at("numConditionalTransactionsAfter"));
 
-  if (j.contains("signatureA")) {
-    state.signatureA = j.at("signatureA").get<Signature>();
-  }
-  if (j.contains("signatureB")) {
-    state.signatureB = j.at("signatureB").get<Signature>();
-  } else {
-    state.signatureB = state.signatureA;
-  }
+  if (j.contains("signatureA"))
+    {
+      state.signatureA = j.at("signatureA").get<Signature>();
+    }
+  if (j.contains("signatureB"))
+    {
+      state.signatureB = j.at("signatureB").get<Signature>();
+    }
+  else
+    {
+      state.signatureB = state.signatureA;
+    }
 }
 
-class UniversalTransaction {
+class UniversalTransaction
+{
 public:
   Witness witness;
   ethsnarks::FieldT type;
@@ -471,7 +488,8 @@ public:
   AccountUpdateTx accountUpdate;
 };
 
-static void from_json(const json &j, UniversalTransaction &transaction) {
+static void from_json(const json &j, UniversalTransaction &transaction)
+{
   transaction.witness = j.at("witness").get<Witness>();
 
   // Fill in dummy data for all tx types
@@ -479,47 +497,50 @@ static void from_json(const json &j, UniversalTransaction &transaction) {
   transaction.transfer = dummyTransfer.get<Loopring::Transfer>();
   transaction.withdraw = dummyWithdraw.get<Loopring::Withdrawal>();
   transaction.deposit = dummyDeposit.get<Loopring::Deposit>();
-  transaction.accountUpdate =
-      dummyAccountUpdate.get<Loopring::AccountUpdateTx>();
+  transaction.accountUpdate = dummyAccountUpdate.get<Loopring::AccountUpdateTx>();
 
   // Patch some of the dummy tx's so they are valid against the current state
   // Deposit
   transaction.deposit.owner = transaction.witness.accountUpdate_A.before.owner;
   // Transfer
   transaction.transfer.to = transaction.witness.accountUpdate_B.before.owner;
-  transaction.transfer.payerTo =
-      transaction.witness.accountUpdate_B.before.owner;
+  transaction.transfer.payerTo = transaction.witness.accountUpdate_B.before.owner;
 
   // Now get the actual transaction data for the actual transaction that will
   // execute from the block
-  if (j.contains("noop")) {
-    transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::Noop));
-  }
-  if (j.contains("spotTrade")) {
-    transaction.type =
-        ethsnarks::FieldT(int(Loopring::TransactionType::SpotTrade));
-    transaction.spotTrade = j.at("spotTrade").get<Loopring::SpotTrade>();
-  } else if (j.contains("transfer")) {
-    transaction.type =
-        ethsnarks::FieldT(int(Loopring::TransactionType::Transfer));
-    transaction.transfer = j.at("transfer").get<Loopring::Transfer>();
-  } else if (j.contains("withdraw")) {
-    transaction.type =
-        ethsnarks::FieldT(int(Loopring::TransactionType::Withdrawal));
-    transaction.withdraw = j.at("withdraw").get<Loopring::Withdrawal>();
-  } else if (j.contains("deposit")) {
-    transaction.type =
-        ethsnarks::FieldT(int(Loopring::TransactionType::Deposit));
-    transaction.deposit = j.at("deposit").get<Loopring::Deposit>();
-  } else if (j.contains("accountUpdate")) {
-    transaction.type =
-        ethsnarks::FieldT(int(Loopring::TransactionType::AccountUpdate));
-    transaction.accountUpdate =
-        j.at("accountUpdate").get<Loopring::AccountUpdateTx>();
-  }
+  if (j.contains("noop"))
+    {
+      transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::Noop));
+    }
+  if (j.contains("spotTrade"))
+    {
+      transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::SpotTrade));
+      transaction.spotTrade = j.at("spotTrade").get<Loopring::SpotTrade>();
+    }
+  else if (j.contains("transfer"))
+    {
+      transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::Transfer));
+      transaction.transfer = j.at("transfer").get<Loopring::Transfer>();
+    }
+  else if (j.contains("withdraw"))
+    {
+      transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::Withdrawal));
+      transaction.withdraw = j.at("withdraw").get<Loopring::Withdrawal>();
+    }
+  else if (j.contains("deposit"))
+    {
+      transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::Deposit));
+      transaction.deposit = j.at("deposit").get<Loopring::Deposit>();
+    }
+  else if (j.contains("accountUpdate"))
+    {
+      transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountUpdate));
+      transaction.accountUpdate = j.at("accountUpdate").get<Loopring::AccountUpdateTx>();
+    }
 }
 
-class Block {
+class Block
+{
 public:
   ethsnarks::FieldT exchange;
 
@@ -543,20 +564,17 @@ public:
   std::vector<Loopring::UniversalTransaction> transactions;
 };
 
-static void from_json(const json &j, Block &block) {
+static void from_json(const json &j, Block &block)
+{
   block.exchange = ethsnarks::FieldT(j["exchange"].get<std::string>().c_str());
 
-  block.merkleRootBefore =
-      ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
-  block.merkleRootAfter =
-      ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+  block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
+  block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
 
   block.timestamp = ethsnarks::FieldT(j["timestamp"].get<unsigned int>());
 
-  block.protocolTakerFeeBips =
-      ethsnarks::FieldT(j["protocolTakerFeeBips"].get<unsigned int>());
-  block.protocolMakerFeeBips =
-      ethsnarks::FieldT(j["protocolMakerFeeBips"].get<unsigned int>());
+  block.protocolTakerFeeBips = ethsnarks::FieldT(j["protocolTakerFeeBips"].get<unsigned int>());
+  block.protocolMakerFeeBips = ethsnarks::FieldT(j["protocolMakerFeeBips"].get<unsigned int>());
 
   block.signature = j.at("signature").get<Signature>();
 
@@ -569,10 +587,10 @@ static void from_json(const json &j, Block &block) {
 
   // Read transactions
   json jTransactions = j["transactions"];
-  for (unsigned int i = 0; i < jTransactions.size(); i++) {
-    block.transactions.emplace_back(
-        jTransactions[i].get<Loopring::UniversalTransaction>());
-  }
+  for (unsigned int i = 0; i < jTransactions.size(); i++)
+    {
+      block.transactions.emplace_back(jTransactions[i].get<Loopring::UniversalTransaction>());
+    }
 }
 
 } // namespace Loopring
