@@ -51,13 +51,21 @@ public:
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        fillAmountS_mul_amountB(pb, fillAmountS, amountB, FMT(prefix, ".fillAmountS_mul_amountB")),
+        fillAmountS_mul_amountB( //
+          pb,
+          fillAmountS,
+          amountB,
+          FMT(prefix, ".fillAmountS_mul_amountB")),
         fillAmountS_mul_amountB_mul_1000(
           pb,
           fillAmountS_mul_amountB.result(),
           constants._1000,
           FMT(prefix, ".fillAmountS_mul_amountB_mul_1000")),
-        fillAmountB_mul_amountS(pb, fillAmountB, amountS, FMT(prefix, ".fillAmountB_mul_amountS")),
+        fillAmountB_mul_amountS( //
+          pb,
+          fillAmountB,
+          amountS,
+          FMT(prefix, ".fillAmountB_mul_amountS")),
         fillAmountB_mul_amountS_mul_1001(
           pb,
           fillAmountB_mul_amountS.result(),
@@ -72,20 +80,39 @@ public:
 
         // Also enforce that either both fill amounts are zero or both are
         // non-zero.
-        isNonZeroFillAmountS(pb, fillAmountS, FMT(prefix, "isNonZeroFillAmountS")),
-        isNonZeroFillAmountB(pb, fillAmountB, FMT(prefix, "isNonZeroFillAmountB")),
+        isNonZeroFillAmountS( //
+          pb,
+          fillAmountS,
+          FMT(prefix, "isNonZeroFillAmountS")),
+        isNonZeroFillAmountB( //
+          pb,
+          fillAmountB,
+          FMT(prefix, "isNonZeroFillAmountB")),
         fillsNonZero(
           pb,
           {isNonZeroFillAmountS.result(), isNonZeroFillAmountB.result()},
           FMT(prefix, "fillsNonZero")),
-        isZeroFillAmountS(pb, isNonZeroFillAmountS.result(), FMT(prefix, "isZeroFillAmountS")),
-        isZeroFillAmountB(pb, isNonZeroFillAmountB.result(), FMT(prefix, "isZeroFillAmountB")),
+        isZeroFillAmountS( //
+          pb,
+          isNonZeroFillAmountS.result(),
+          FMT(prefix, "isZeroFillAmountS")),
+        isZeroFillAmountB( //
+          pb,
+          isNonZeroFillAmountB.result(),
+          FMT(prefix, "isZeroFillAmountB")),
         fillsZero(
           pb,
           {isZeroFillAmountS.result(), isZeroFillAmountB.result()},
           FMT(prefix, "fillsZero")),
-        fillsValid(pb, {fillsNonZero.result(), fillsZero.result()}, FMT(prefix, "fillsValid")),
-        requireFillsValid(pb, fillsValid.result(), constants._1, FMT(prefix, "requireFillsValid"))
+        fillsValid( //
+          pb,
+          {fillsNonZero.result(), fillsZero.result()},
+          FMT(prefix, "fillsValid")),
+        requireFillsValid( //
+          pb,
+          fillsValid.result(),
+          constants._1,
+          FMT(prefix, "requireFillsValid"))
   {
   }
 
@@ -127,12 +154,12 @@ public:
 };
 
 // Check if an order is filled correctly
-class RequireValidOrderGadget : public GadgetT
+class RequireOrderNotExpiredGadget : public GadgetT
 {
 public:
   RequireLtGadget requireValidUntil;
 
-  RequireValidOrderGadget(
+  RequireOrderNotExpiredGadget(
     ProtoboardT &pb,
     const Constants &constants,
     const VariableT &timestamp,
@@ -145,7 +172,7 @@ public:
           timestamp,
           order.validUntil.packed,
           NUM_BITS_TIMESTAMP,
-          FMT(prefix, ".requireValidUntil"))
+          FMT(prefix, ".requireOrderNotExpired"))
   {
   }
 
@@ -382,8 +409,8 @@ public:
   RequireValidTakerGadget validateTakerB;
 
   // Check if the orders are valid
-  RequireValidOrderGadget requireValidA;
-  RequireValidOrderGadget requireValidB;
+  RequireOrderNotExpiredGadget requireValidA;
+  RequireOrderNotExpiredGadget requireValidB;
 
   OrderMatchingGadget(
     ProtoboardT &pb,

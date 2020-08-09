@@ -78,7 +78,8 @@ public:
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        stateBefore(_stateBefore), stateAfter(_stateAfter),
+        stateBefore(_stateBefore), //
+        stateAfter(_stateAfter),
 
         leafBefore(
           pb,
@@ -278,7 +279,8 @@ public:
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        constants(_constants), storageID(_storageID),
+        constants(_constants), //
+        storageID(_storageID),
 
         storageReader(pb, constants, storage, storageID, verify, FMT(prefix, ".storageReader")),
         requireDataZero(
