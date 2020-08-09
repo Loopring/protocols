@@ -164,13 +164,13 @@ public:
   }
 };
 
-class EdDSA_HashRAM_Poseidon_gadget : public GadgetT
+class EdDSAHashRAMPoseidon : public GadgetT
 {
 public:
   Poseidon_gadget_T<6, 1, 6, 52, 5, 1> m_hash_RAM; // hash_RAM = H(R, A, M)
   libsnark::dual_variable_gadget<FieldT> hash;
 
-  EdDSA_HashRAM_Poseidon_gadget(
+  EdDSAHashRAMPoseidon(
     ProtoboardT &in_pb,
     const Params &in_params,
     const VariablePointT &in_R,
@@ -202,20 +202,20 @@ public:
   const VariableArrayT &result() { return hash.bits; }
 };
 
-class EdDSA_Poseidon : public GadgetT
+class EdDSAPoseidon : public GadgetT
 {
 public:
-  PointValidator m_validator_R;             // IsValid(R)
-  fixed_base_mul m_lhs;                     // lhs = B*s
-  EdDSA_HashRAM_Poseidon_gadget m_hash_RAM; // hash_RAM = H(R,A,M)
-  ScalarMult m_At;                          // A*hash_RAM
-  PointAdder m_rhs;                         // rhs = R + (A*hash_RAM)
+  PointValidator m_validator_R;    // IsValid(R)
+  fixed_base_mul m_lhs;            // lhs = B*s
+  EdDSAHashRAMPoseidon m_hash_RAM; // hash_RAM = H(R,A,M)
+  ScalarMult m_At;                 // A*hash_RAM
+  PointAdder m_rhs;                // rhs = R + (A*hash_RAM)
 
   EqualGadget equalX;
   EqualGadget equalY;
   AndGadget valid;
 
-  EdDSA_Poseidon(
+  EdDSAPoseidon(
     ProtoboardT &in_pb,
     const Params &in_params,
     const EdwardsPoint &in_base, // B
@@ -303,7 +303,7 @@ public:
   const Constants &constants;
   const jubjub::VariablePointT sig_R;
   const VariableArrayT sig_s;
-  EdDSA_Poseidon signatureVerifier;
+  EdDSAPoseidon signatureVerifier;
 
   IfThenRequireGadget valid;
 

@@ -248,7 +248,7 @@ fee 需要付给 wallet 和 operator，所以这里涉及到 3 个角色：用�
 9 更新Operator的balance
 	(Operator的account是在withdrawCircuit中最后更新一次)
 10 检查用户签名
-	这里用的是EdDSA_Poseidon
+	这里用的是EdDSAPoseidon
 ```
 
 withdrawCircuit 中会 check operator 的 rootAfter 等于输入的 merkleRootAfter

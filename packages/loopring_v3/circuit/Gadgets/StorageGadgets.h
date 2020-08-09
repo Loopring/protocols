@@ -62,8 +62,8 @@ public:
   HashStorageLeaf leafBefore;
   HashStorageLeaf leafAfter;
 
-  StorageState valuesBefore;
-  StorageState valuesAfter;
+  StorageState stateBefore;
+  StorageState stateAfter;
 
   const VariableArrayT proof;
   VerifyMerklePath rootBeforeVerifier;
@@ -73,15 +73,21 @@ public:
     ProtoboardT &pb,
     const VariableT &merkleRoot,
     const VariableArrayT &slotID,
-    const StorageState &before,
-    const StorageState &after,
+    const StorageState &_stateBefore,
+    const StorageState &_stateAfter,
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        valuesBefore(before), valuesAfter(after),
+        stateBefore(_stateBefore), stateAfter(_stateAfter),
 
-        leafBefore(pb, var_array({before.data, before.storageID}), FMT(prefix, ".leafBefore")),
-        leafAfter(pb, var_array({after.data, after.storageID}), FMT(prefix, ".leafAfter")),
+        leafBefore(
+          pb,
+          var_array({_stateBefore.data, _stateBefore.storageID}),
+          FMT(prefix, ".leafBefore")),
+        leafAfter(
+          pb,
+          var_array({_stateAfter.data, _stateAfter.storageID}),
+          FMT(prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(prefix, ".proof"))),
         rootBeforeVerifier(
@@ -114,10 +120,10 @@ public:
     ASSERT(pb.val(rootBeforeVerifier.m_expected_root) == update.rootBefore, annotation_prefix);
     if (pb.val(rootAfter.result()) != update.rootAfter)
       {
-        std::cout << "Before:" << std::endl;
-        printStorage(pb, valuesBefore);
-        std::cout << "After:" << std::endl;
-        printStorage(pb, valuesAfter);
+        std::cout << "stateBefore:" << std::endl;
+        printStorage(pb, stateBefore);
+        std::cout << "stateAfter:" << std::endl;
+        printStorage(pb, stateAfter);
         ASSERT(pb.val(rootAfter.result()) == update.rootAfter, annotation_prefix);
       }
   }

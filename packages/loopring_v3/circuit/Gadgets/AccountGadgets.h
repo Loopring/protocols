@@ -138,9 +138,9 @@ public:
     // annotation_prefix);
     if (pb.val(rootAfter.result()) != update.rootAfter)
       {
-        std::cout << "Before:" << std::endl;
+        std::cout << "stateBefore:" << std::endl;
         printAccount(pb, stateBefore);
-        std::cout << "After:" << std::endl;
+        std::cout << "stateAfter:" << std::endl;
         printAccount(pb, stateAfter);
         ASSERT(pb.val(rootAfter.result()) == update.rootAfter, annotation_prefix);
       }
@@ -256,9 +256,9 @@ public:
     // annotation_prefix);
     if (pb.val(rootAfter.result()) != update.rootAfter)
       {
-        std::cout << "Before:" << std::endl;
+        std::cout << "stateBefore:" << std::endl;
         printBalance(pb, stateBefore);
-        std::cout << "After:" << std::endl;
+        std::cout << "stateAfter:" << std::endl;
         printBalance(pb, stateAfter);
         ASSERT(pb.val(rootAfter.result()) == update.rootAfter, annotation_prefix);
       }
