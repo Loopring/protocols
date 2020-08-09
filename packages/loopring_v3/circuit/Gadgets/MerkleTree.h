@@ -82,13 +82,13 @@ public:
   }
 };
 
-template <typename HashT> class ComputeMerklePath4 : public GadgetT
+template <typename HashT> class ComputeMerklePathT : public GadgetT
 {
 public:
   std::vector<SelectMerklePath> m_selectors;
   std::vector<HashT> m_hashers;
 
-  ComputeMerklePath4(
+  ComputeMerklePathT(
     ProtoboardT &pb,
     const size_t depth,
     const VariableArrayT &slotID,
@@ -147,12 +147,12 @@ public:
 /**
  * Merkle path verifier, verifies computed root matches expected result
  */
-template <typename HashT> class VerifyMerklePath4 : public ComputeMerklePath4<HashT>
+template <typename HashT> class VerifyMerklePathT : public ComputeMerklePathT<HashT>
 {
 public:
   const VariableT expectedRoot;
 
-  VerifyMerklePath4(
+  VerifyMerklePathT(
     ProtoboardT &pb,
     const size_t depth,
     const VariableArrayT slotID,
@@ -160,7 +160,7 @@ public:
     const VariableT _expectedRoot,
     const VariableArrayT path,
     const std::string &prefix)
-      : ComputeMerklePath4<HashT>::ComputeMerklePath4(pb, depth, slotID, leaf, path, prefix),
+      : ComputeMerklePathT<HashT>::ComputeMerklePathT(pb, depth, slotID, leaf, path, prefix),
         expectedRoot(_expectedRoot)
   {
   }
@@ -169,7 +169,7 @@ public:
 
   void generate_r1cs_constraints()
   {
-    ComputeMerklePath4<HashT>::generate_r1cs_constraints();
+    ComputeMerklePathT<HashT>::generate_r1cs_constraints();
 
     // Ensure root matches calculated path hash
     this->pb.add_r1cs_constraint(
@@ -184,8 +184,8 @@ using HashAccountLeaf = Poseidon_gadget_T<6, 1, 6, 52, 5, 1>;
 using HashBalanceLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
 using HashStorageLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
 
-using VerifyMerklePath = VerifyMerklePath4<HashMerkleTree>;
-using ComputeMerklePath = ComputeMerklePath4<HashMerkleTree>;
+using VerifyMerklePath = VerifyMerklePathT<HashMerkleTree>;
+using ComputeMerklePath = ComputeMerklePathT<HashMerkleTree>;
 
 } // namespace Loopring
 
