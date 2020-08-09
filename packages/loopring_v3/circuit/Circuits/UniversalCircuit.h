@@ -25,6 +25,12 @@
 
 using namespace ethsnarks;
 
+// Naming conventions:
+// - O: operator
+// - P: prrotocol fee
+// - S：sell (send)
+// - B: buy (receive)
+// - A/B: tokens/accounts that are not equal
 namespace Loopring
 {
 
