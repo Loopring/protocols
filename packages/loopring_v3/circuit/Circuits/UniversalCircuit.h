@@ -233,14 +233,22 @@ public:
           pb,
           state,
           FMT(prefix, ".noop")),
-        spotTrade(pb, state, FMT(prefix, ".spotTrade")), deposit( //
-                                                           pb,
-                                                           state,
-                                                           FMT(prefix, ".deposit")),
-        withdraw(pb, state, FMT(prefix, ".withdraw")), accountUpdate( //
-                                                         pb,
-                                                         state,
-                                                         FMT(prefix, ".accountUpdate")),
+        spotTrade( //
+          pb,
+          state,
+          FMT(prefix, ".spotTrade")),
+        deposit( //
+          pb,
+          state,
+          FMT(prefix, ".deposit")),
+        withdraw( //
+          pb,
+          state,
+          FMT(prefix, ".withdraw")),
+        accountUpdate( //
+          pb,
+          state,
+          FMT(prefix, ".accountUpdate")),
         transfer( //
           pb,
           state,
@@ -279,6 +287,7 @@ public:
           tx.getOutput(hash_A),
           tx.getOutput(signatureRequired_A),
           FMT(prefix, ".signatureVerifierA")),
+
         signatureVerifierB(
           pb,
           params,
@@ -296,6 +305,7 @@ public:
           {state.accountA.storage.data, state.accountA.storage.storageID},
           {tx.getOutput(storageA_Data), tx.getOutput(storageA_StorageId)},
           FMT(prefix, ".updateStorage_A")),
+
         updateBalanceS_A(
           pb,
           state.accountA.account.balancesRoot,
@@ -303,6 +313,7 @@ public:
           {state.accountA.balanceS.balance, state.accountA.balanceS.storageRoot},
           {tx.getOutput(balanceA_S_Balance), updateStorage_A.result()},
           FMT(prefix, ".updateBalanceS_A")),
+
         updateBalanceB_A(
           pb,
           updateBalanceS_A.result(),
@@ -310,6 +321,7 @@ public:
           {state.accountA.balanceB.balance, state.accountA.balanceB.storageRoot},
           {tx.getOutput(balanceA_B_Balance), state.accountA.balanceB.storageRoot},
           FMT(prefix, ".updateBalanceB_A")),
+
         updateAccount_A(
           pb,
           accountsRoot,
@@ -334,6 +346,7 @@ public:
           {state.accountB.storage.data, state.accountB.storage.storageID},
           {tx.getOutput(storageB_Data), tx.getOutput(storageB_StorageId)},
           FMT(prefix, ".updateStorage_B")),
+
         updateBalanceS_B(
           pb,
           state.accountB.account.balancesRoot,
@@ -341,6 +354,7 @@ public:
           {state.accountB.balanceS.balance, state.accountB.balanceS.storageRoot},
           {tx.getOutput(balanceB_S_Balance), updateStorage_B.result()},
           FMT(prefix, ".updateBalanceS_B")),
+
         updateBalanceB_B(
           pb,
           updateBalanceS_B.result(),
@@ -348,6 +362,7 @@ public:
           {state.accountB.balanceB.balance, state.accountB.balanceB.storageRoot},
           {tx.getOutput(balanceB_B_Balance), state.accountB.balanceB.storageRoot},
           FMT(prefix, ".updateBalanceB_B")),
+
         updateAccount_B(
           pb,
           updateAccount_A.result(),
@@ -372,6 +387,7 @@ public:
           {state.oper.balanceB.balance, state.oper.balanceB.storageRoot},
           {tx.getOutput(balanceO_B_Balance), state.oper.balanceB.storageRoot},
           FMT(prefix, ".updateBalanceB_O")),
+
         updateBalanceA_O(
           pb,
           updateBalanceB_O.result(),
@@ -379,6 +395,7 @@ public:
           {state.oper.balanceA.balance, state.oper.balanceA.storageRoot},
           {tx.getOutput(balanceO_A_Balance), state.oper.balanceA.storageRoot},
           FMT(prefix, ".updateBalanceA_O")),
+
         updateAccount_O(
           pb,
           updateAccount_B.result(),
