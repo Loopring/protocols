@@ -47,7 +47,8 @@ public:
   AccountGadget(ProtoboardT &pb, const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        owner(make_variable(pb, FMT(prefix, ".owner"))), publicKey(pb, FMT(prefix, ".publicKey")),
+        owner(make_variable(pb, FMT(prefix, ".owner"))), //
+        publicKey(pb, FMT(prefix, ".publicKey")),        //
         nonce(make_variable(pb, FMT(prefix, ".nonce"))),
         balancesRoot(make_variable(pb, FMT(prefix, ".balancesRoot")))
   {
@@ -85,7 +86,8 @@ public:
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        stateBefore(_stateBefore), stateAfter(_stateAfter),
+        stateBefore(_stateBefore), //
+        stateAfter(_stateAfter),
 
         leafBefore(
           pb,
@@ -129,10 +131,10 @@ public:
   {
     leafBefore.generate_r1cs_witness();
     leafAfter.generate_r1cs_witness();
-
-    proof.fill_with_field_elements(pb, update.proof.data);
     rootBeforeVerifier.generate_r1cs_witness();
     rootAfter.generate_r1cs_witness();
+
+    proof.fill_with_field_elements(pb, update.proof.data);
 
     // ASSERT(pb.val(rootBeforeVerifier.m_expected_root) == update.rootBefore,
     // annotation_prefix);
@@ -150,7 +152,6 @@ public:
   {
     leafBefore.generate_r1cs_constraints();
     leafAfter.generate_r1cs_constraints();
-
     rootBeforeVerifier.generate_r1cs_constraints();
     rootAfter.generate_r1cs_constraints();
   }
@@ -213,7 +214,8 @@ public:
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        stateBefore(_stateBefore), stateAfter(_stateAfter),
+        stateBefore(_stateBefore), //
+        stateAfter(_stateAfter),
 
         leafBefore(
           pb,
@@ -247,10 +249,10 @@ public:
   {
     leafBefore.generate_r1cs_witness();
     leafAfter.generate_r1cs_witness();
-
-    proof.fill_with_field_elements(pb, update.proof.data);
     rootBeforeVerifier.generate_r1cs_witness();
     rootAfter.generate_r1cs_witness();
+
+    proof.fill_with_field_elements(pb, update.proof.data);
 
     // ASSERT(pb.val(rootBeforeVerifier.m_expected_root) == update.rootBefore,
     // annotation_prefix);
@@ -268,7 +270,6 @@ public:
   {
     leafBefore.generate_r1cs_constraints();
     leafAfter.generate_r1cs_constraints();
-
     rootBeforeVerifier.generate_r1cs_constraints();
     rootAfter.generate_r1cs_constraints();
   }

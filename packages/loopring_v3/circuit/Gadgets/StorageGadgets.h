@@ -78,7 +78,8 @@ public:
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        stateBefore(_stateBefore), stateAfter(_stateAfter),
+        stateBefore(_stateBefore), //
+        stateAfter(_stateAfter),
 
         leafBefore(
           pb,
@@ -258,6 +259,8 @@ public:
   const VariableT &getOverwrite() const { return storageID_eq_nextStorageID.result(); }
 };
 
+// Read storage data for transfers.
+// For a transfer, the storage data is either 0 (not used) or 1 (used).
 class ReadNonceGadget : public GadgetT
 {
   const Constants &constants;
@@ -276,7 +279,8 @@ public:
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        constants(_constants), storageID(_storageID),
+        constants(_constants), //
+        storageID(_storageID),
 
         storageReader(pb, constants, storage, storageID, verify, FMT(prefix, ".storageReader")),
         requireDataZero(
@@ -302,6 +306,20 @@ public:
 
   const VariableT &getData() const { return constants._1; }
 
+  /*
+  It contains the bare minimum amount of data needed to reconstruct what happened in the circuits.
+  So it's only used for DA, nowhere else.
+
+  The height of the storage tree is only 14, so with 14 bits we know exactly which leaf is being
+  modified. But we don't know yet what the actual storageID is. But there can only be 2 cases: the
+  storageID == leaf.storageID (in this case the overwrite bit is 0), or storageID == leaf.storageID
+  + numSlots (in this case the overwrite bit is 1 because the data is reset before it is used).
+
+  But because the storageID is only 4 bytes now (back from 8 bytes like it was), maybe we could drop
+  it altogether. Theoretically this adds quite a number of DA bytes to trades/transfers (+4 DA bytes
+  for trades, +2 DA bytes for transfers), but in practice storageID bytes will be mostly small and
+  will contain many zeros, so the cost reduction may be pretty small.
+  */
   const VariableArrayT getShortStorageID() const
   {
     return reverse(flattenReverse(

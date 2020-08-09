@@ -73,12 +73,33 @@ public:
         // Reconstruct x
         // Pick the smallest root (the "positive" one) to make sqrt
         // deterministic
-        negRootX(pb, _constants._0, rootX, FMT(prefix, ".negRootX")),
-        isSmallestRoot(pb, rootX, negRootX.result(), FMT(prefix, ".isSmallestRoot")),
-        absX(pb, isSmallestRoot.lt(), rootX, negRootX.result(), FMT(prefix, ".absX")),
+        negRootX( //
+          pb,
+          _constants._0,
+          rootX,
+          FMT(prefix, ".negRootX")),
+        isSmallestRoot( //
+          pb,
+          rootX,
+          negRootX.result(),
+          FMT(prefix, ".isSmallestRoot")),
+        absX( //
+          pb,
+          isSmallestRoot.lt(),
+          rootX,
+          negRootX.result(),
+          FMT(prefix, ".absX")),
         // Check if x is the negative root or the positive root
-        negAbsX(pb, _constants._0, absX.result(), FMT(prefix, ".negAbsX")),
-        isNegativeX(pb, negAbsX.result(), _x, FMT(prefix, ".isNegativeX")),
+        negAbsX( //
+          pb,
+          _constants._0,
+          absX.result(),
+          FMT(prefix, ".negAbsX")),
+        isNegativeX( //
+          pb,
+          negAbsX.result(),
+          _x,
+          FMT(prefix, ".isNegativeX")),
         reconstructedX(
           pb,
           isNegativeX.result(),
@@ -87,8 +108,17 @@ public:
           FMT(prefix, ".reconstructedX")),
 
         // Special case 0
-        isZeroY(pb, y, constants._0, FMT(prefix, ".isZeroY")),
-        x(pb, isZeroY.result(), constants._0, reconstructedX.result(), FMT(prefix, ".x")),
+        isZeroY( //
+          pb,
+          y,
+          constants._0,
+          FMT(prefix, ".isZeroY")),
+        x( //
+          pb,
+          isZeroY.result(),
+          constants._0,
+          reconstructedX.result(),
+          FMT(prefix, ".x")),
 
         // Make sure the reconstructed x matches the original x
         valid(pb, _x, x.result(), FMT(prefix, ".valid")),
@@ -183,7 +213,11 @@ public:
           in_pb,
           var_array({in_R.x, in_R.y, in_A.x, in_A.y, in_M}),
           FMT(annotation_prefix, ".hash_RAM")),
-        hash(pb, m_hash_RAM.result(), NUM_BITS_MAX_VALUE, FMT(annotation_prefix, ".hash"))
+        hash(
+          pb, //
+          m_hash_RAM.result(),
+          NUM_BITS_MAX_VALUE,
+          FMT(annotation_prefix, ".hash"))
   {
   }
 
@@ -234,10 +268,22 @@ public:
           FMT(this->annotation_prefix, ".validator_R")),
 
         // lhs = ScalarMult(B, s)
-        m_lhs(in_pb, in_params, in_base.x, in_base.y, in_s, FMT(this->annotation_prefix, ".lhs")),
+        m_lhs( //
+          in_pb,
+          in_params,
+          in_base.x,
+          in_base.y,
+          in_s,
+          FMT(this->annotation_prefix, ".lhs")),
 
         // hash_RAM = H(R, A, M)
-        m_hash_RAM(in_pb, in_params, in_R, in_A, in_msg, FMT(this->annotation_prefix, ".hash_RAM")),
+        m_hash_RAM( //
+          in_pb,
+          in_params,
+          in_R,
+          in_A,
+          in_msg,
+          FMT(this->annotation_prefix, ".hash_RAM")),
 
         // At = ScalarMult(A,hash_RAM)
         m_At(
@@ -328,7 +374,11 @@ public:
           sig_s,
           message,
           FMT(prefix, ".signatureVerifier")),
-        valid(pb, required, signatureVerifier.result(), FMT(prefix, ".valid"))
+        valid( //
+          pb,
+          required,
+          signatureVerifier.result(),
+          FMT(prefix, ".valid"))
   {
   }
 

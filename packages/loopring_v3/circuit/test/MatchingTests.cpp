@@ -37,7 +37,7 @@ FieldT muldiv(const FieldT &V, const FieldT &N, const FieldT &D) {
   return toFieldElement(validate(toBigInt(V) * toBigInt(N)) / toBigInt(D));
 }
 
-TEST_CASE("RequireFillRate", "[RequireFillRateGadget]") {
+TEST_CASE("RequireFillRate", "[RequireOrderFillRateGadget]") {
   unsigned int maxLength = NUM_BITS_AMOUNT;
   unsigned int numIterations = 8;
   for (unsigned int n = 1; n <= maxLength; n++) {
@@ -60,7 +60,7 @@ TEST_CASE("RequireFillRate", "[RequireFillRateGadget]") {
             make_variable(pb, toFieldElement(_fillAmountB), "fillAmountB");
 
         Constants constants(pb, "constants");
-        RequireFillRateGadget requireFillRateGadget(
+        RequireOrderFillRateGadget requireFillRateGadget(
             pb, constants, amountS, amountB, fillAmountS, fillAmountB, n,
             "requireFillRateGadget");
         requireFillRateGadget.generate_r1cs_constraints();
@@ -191,7 +191,7 @@ TEST_CASE("RequireFillRate", "[RequireFillRateGadget]") {
   }
 }
 
-TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]") {
+TEST_CASE("RequireFillLimit", "[RequireOrderFillLimitGadget]") {
   unsigned int numIterations = 1024;
 
   Block block = getBlock();
@@ -240,7 +240,7 @@ TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]") {
                                           ".storageReader");
         storageReader.generate_r1cs_witness();
 
-        RequireFillLimitGadget requireFillLimit(
+        RequireOrderFillLimitGadget requireFillLimit(
             pb, constants, order, storageReader.getData(), fillAmountS,
             fillAmountB, "requireFillRateGadget");
         requireFillLimit.generate_r1cs_constraints();
@@ -357,7 +357,7 @@ TEST_CASE("RequireFillLimit", "[RequireFillLimitGadget]") {
   }
 }
 
-TEST_CASE("FeeCalculator", "[FeeCalculatorGadget]") {
+TEST_CASE("FeeCalculator", "[CalculateOrderFeesGadget]") {
   unsigned int maxLength = NUM_BITS_AMOUNT;
   unsigned int numIterations = 8;
 
@@ -372,7 +372,7 @@ TEST_CASE("FeeCalculator", "[FeeCalculatorGadget]") {
     VariableT feeBips = make_variable(pb, toFieldElement(_feeBips), "feeBips");
 
     Constants constants(pb, "constants");
-    FeeCalculatorGadget feeCalculatorGadget(pb, constants, fillB,
+    CalculateOrderFeesGadget feeCalculatorGadget(pb, constants, fillB,
                                             protocolFeeBips, feeBips,
                                             "feeCalculatorGadget");
     feeCalculatorGadget.generate_r1cs_constraints();

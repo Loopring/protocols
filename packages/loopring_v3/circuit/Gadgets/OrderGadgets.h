@@ -96,6 +96,8 @@ public:
 
   void generate_r1cs_witness(const Order &order)
   {
+    pb.val(taker) = order.taker;
+
     // Inputs
     storageID.generate_r1cs_witness(pb, order.storageID);
     accountID.generate_r1cs_witness(pb, order.accountID);
@@ -106,7 +108,6 @@ public:
     validUntil.generate_r1cs_witness(pb, order.validUntil);
     maxFeeBips.generate_r1cs_witness(pb, order.maxFeeBips);
     fillAmountBorS.generate_r1cs_witness(pb, order.fillAmountBorS);
-    pb.val(taker) = order.taker;
 
     feeBips.generate_r1cs_witness(pb, order.feeBips);
 

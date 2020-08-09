@@ -54,7 +54,11 @@ public:
           {
             variables.push_back(transactions[i]->getOutput(uPair.first));
           }
-        uSelects.emplace_back(pb, selector, variables, FMT(annotation_prefix, ".uSelects"));
+        uSelects.emplace_back( //
+          pb,
+          selector,
+          variables,
+          FMT(annotation_prefix, ".uSelects"));
 
         // Set the output variable
         setOutput(uPair.first, uSelects.back().result());
@@ -69,7 +73,11 @@ public:
           {
             variables.push_back(transactions[i]->getArrayOutput(aPair.first));
           }
-        aSelects.emplace_back(pb, selector, variables, FMT(annotation_prefix, ".aSelects"));
+        aSelects.emplace_back( //
+          pb,
+          selector,
+          variables,
+          FMT(annotation_prefix, ".aSelects"));
 
         // Set the output variable
         setArrayOutput(aPair.first, aSelects.back().result());
@@ -197,12 +205,16 @@ public:
 
         constants(_constants),
 
-        type(pb, NUM_BITS_TX_TYPE, FMT(prefix, ".type")), selector(
-                                                            pb,
-                                                            constants,
-                                                            type.packed,
-                                                            (unsigned int)TransactionType::COUNT,
-                                                            FMT(prefix, ".selector")),
+        type( //
+          pb,
+          NUM_BITS_TX_TYPE,
+          FMT(prefix, ".type")),
+        selector(
+          pb,
+          constants,
+          type.packed,
+          (unsigned int)TransactionType::COUNT,
+          FMT(prefix, ".selector")),
 
         state(
           pb,
@@ -217,10 +229,30 @@ public:
           FMT(prefix, ".transactionState")),
 
         // Process transaction
-        noop(pb, state, FMT(prefix, ".noop")), spotTrade(pb, state, FMT(prefix, ".spotTrade")),
-        deposit(pb, state, FMT(prefix, ".deposit")), withdraw(pb, state, FMT(prefix, ".withdraw")),
-        accountUpdate(pb, state, FMT(prefix, ".accountUpdate")),
-        transfer(pb, state, FMT(prefix, ".transfer")),
+        noop( //
+          pb,
+          state,
+          FMT(prefix, ".noop")),
+        spotTrade( //
+          pb,
+          state,
+          FMT(prefix, ".spotTrade")),
+        deposit( //
+          pb,
+          state,
+          FMT(prefix, ".deposit")),
+        withdraw( //
+          pb,
+          state,
+          FMT(prefix, ".withdraw")),
+        accountUpdate( //
+          pb,
+          state,
+          FMT(prefix, ".accountUpdate")),
+        transfer( //
+          pb,
+          state,
+          FMT(prefix, ".transfer")),
         tx(
           pb,
           state,
@@ -229,10 +261,22 @@ public:
           FMT(prefix, ".tx")),
 
         // General validation
-        accountA(pb, tx.getArrayOutput(accountA_Address), FMT(prefix, ".packAccountA")),
-        accountB(pb, tx.getArrayOutput(accountB_Address), FMT(prefix, ".packAccountA")),
-        validateAccountA(pb, accountA.packed, FMT(prefix, ".validateAccountA")),
-        validateAccountB(pb, accountB.packed, FMT(prefix, ".validateAccountB")),
+        accountA( //
+          pb,
+          tx.getArrayOutput(accountA_Address),
+          FMT(prefix, ".packAccountA")),
+        accountB( //
+          pb,
+          tx.getArrayOutput(accountB_Address),
+          FMT(prefix, ".packAccountA")),
+        validateAccountA( //
+          pb,
+          accountA.packed,
+          FMT(prefix, ".validateAccountA")),
+        validateAccountB( //
+          pb,
+          accountB.packed,
+          FMT(prefix, ".validateAccountB")),
 
         // Check signatures
         signatureVerifierA(
@@ -243,6 +287,7 @@ public:
           tx.getOutput(hash_A),
           tx.getOutput(signatureRequired_A),
           FMT(prefix, ".signatureVerifierA")),
+
         signatureVerifierB(
           pb,
           params,
@@ -260,6 +305,7 @@ public:
           {state.accountA.storage.data, state.accountA.storage.storageID},
           {tx.getOutput(storageA_Data), tx.getOutput(storageA_StorageId)},
           FMT(prefix, ".updateStorage_A")),
+
         updateBalanceS_A(
           pb,
           state.accountA.account.balancesRoot,
@@ -267,6 +313,7 @@ public:
           {state.accountA.balanceS.balance, state.accountA.balanceS.storageRoot},
           {tx.getOutput(balanceA_S_Balance), updateStorage_A.result()},
           FMT(prefix, ".updateBalanceS_A")),
+
         updateBalanceB_A(
           pb,
           updateBalanceS_A.result(),
@@ -274,6 +321,7 @@ public:
           {state.accountA.balanceB.balance, state.accountA.balanceB.storageRoot},
           {tx.getOutput(balanceA_B_Balance), state.accountA.balanceB.storageRoot},
           FMT(prefix, ".updateBalanceB_A")),
+
         updateAccount_A(
           pb,
           accountsRoot,
@@ -298,6 +346,7 @@ public:
           {state.accountB.storage.data, state.accountB.storage.storageID},
           {tx.getOutput(storageB_Data), tx.getOutput(storageB_StorageId)},
           FMT(prefix, ".updateStorage_B")),
+
         updateBalanceS_B(
           pb,
           state.accountB.account.balancesRoot,
@@ -305,6 +354,7 @@ public:
           {state.accountB.balanceS.balance, state.accountB.balanceS.storageRoot},
           {tx.getOutput(balanceB_S_Balance), updateStorage_B.result()},
           FMT(prefix, ".updateBalanceS_B")),
+
         updateBalanceB_B(
           pb,
           updateBalanceS_B.result(),
@@ -312,6 +362,7 @@ public:
           {state.accountB.balanceB.balance, state.accountB.balanceB.storageRoot},
           {tx.getOutput(balanceB_B_Balance), state.accountB.balanceB.storageRoot},
           FMT(prefix, ".updateBalanceB_B")),
+
         updateAccount_B(
           pb,
           updateAccount_A.result(),
@@ -336,6 +387,7 @@ public:
           {state.oper.balanceB.balance, state.oper.balanceB.storageRoot},
           {tx.getOutput(balanceO_B_Balance), state.oper.balanceB.storageRoot},
           FMT(prefix, ".updateBalanceB_O")),
+
         updateBalanceA_O(
           pb,
           updateBalanceB_O.result(),
@@ -343,6 +395,7 @@ public:
           {state.oper.balanceA.balance, state.oper.balanceA.storageRoot},
           {tx.getOutput(balanceO_A_Balance), state.oper.balanceA.storageRoot},
           FMT(prefix, ".updateBalanceA_O")),
+
         updateAccount_O(
           pb,
           updateAccount_B.result(),
@@ -534,20 +587,44 @@ public:
   UniversalCircuit(ProtoboardT &pb, const std::string &prefix)
       : Circuit(pb, prefix),
 
-        publicData(pb, FMT(prefix, ".publicData")), constants(pb, FMT(prefix, ".constants")),
+        publicData( //
+          pb,
+          FMT(prefix, ".publicData")),
+        constants(pb, FMT(prefix, ".constants")),
 
         // State
         accountBefore_P(pb, FMT(prefix, ".accountBefore_P")),
         accountBefore_O(pb, FMT(prefix, ".accountBefore_O")),
 
         // Inputs
-        exchange(pb, NUM_BITS_ADDRESS, FMT(prefix, ".exchange")),
-        merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
-        merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
-        timestamp(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".timestamp")),
-        protocolTakerFeeBips(pb, NUM_BITS_PROTOCOL_FEE_BIPS, FMT(prefix, ".protocolTakerFeeBips")),
-        protocolMakerFeeBips(pb, NUM_BITS_PROTOCOL_FEE_BIPS, FMT(prefix, ".protocolMakerFeeBips")),
-        operatorAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".operatorAccountID")),
+        exchange( //
+          pb,
+          NUM_BITS_ADDRESS,
+          FMT(prefix, ".exchange")),
+        merkleRootBefore( //
+          pb,
+          256,
+          FMT(prefix, ".merkleRootBefore")),
+        merkleRootAfter( //
+          pb,
+          256,
+          FMT(prefix, ".merkleRootAfter")),
+        timestamp( //
+          pb,
+          NUM_BITS_TIMESTAMP,
+          FMT(prefix, ".timestamp")),
+        protocolTakerFeeBips( //
+          pb,
+          NUM_BITS_PROTOCOL_FEE_BIPS,
+          FMT(prefix, ".protocolTakerFeeBips")),
+        protocolMakerFeeBips( //
+          pb,
+          NUM_BITS_PROTOCOL_FEE_BIPS,
+          FMT(prefix, ".protocolMakerFeeBips")),
+        operatorAccountID( //
+          pb,
+          NUM_BITS_ACCOUNT,
+          FMT(prefix, ".operatorAccountID")),
 
         // Increment the nonce of the Operator
         nonce_after(

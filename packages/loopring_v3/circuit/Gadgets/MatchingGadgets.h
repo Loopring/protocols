@@ -22,7 +22,7 @@ namespace Loopring
 // (fillAmountS/fillAmountB) * 1000 <= (amountS/amountB) * 1001
 // (fillAmountS * amountB * 1000) <= (fillAmountB * amountS * 1001)
 // Also checks that not just a single fill is non-zero.
-class RequireFillRateGadget : public GadgetT
+class RequireOrderFillRateGadget : public GadgetT
 {
 public:
   UnsafeMulGadget fillAmountS_mul_amountB;
@@ -40,7 +40,7 @@ public:
   OrGadget fillsValid;
   RequireEqualGadget requireFillsValid;
 
-  RequireFillRateGadget(
+  RequireOrderFillRateGadget(
     ProtoboardT &pb,
     const Constants &constants,
     const VariableT &amountS,
@@ -51,13 +51,21 @@ public:
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        fillAmountS_mul_amountB(pb, fillAmountS, amountB, FMT(prefix, ".fillAmountS_mul_amountB")),
+        fillAmountS_mul_amountB( //
+          pb,
+          fillAmountS,
+          amountB,
+          FMT(prefix, ".fillAmountS_mul_amountB")),
         fillAmountS_mul_amountB_mul_1000(
           pb,
           fillAmountS_mul_amountB.result(),
           constants._1000,
           FMT(prefix, ".fillAmountS_mul_amountB_mul_1000")),
-        fillAmountB_mul_amountS(pb, fillAmountB, amountS, FMT(prefix, ".fillAmountB_mul_amountS")),
+        fillAmountB_mul_amountS( //
+          pb,
+          fillAmountB,
+          amountS,
+          FMT(prefix, ".fillAmountB_mul_amountS")),
         fillAmountB_mul_amountS_mul_1001(
           pb,
           fillAmountB_mul_amountS.result(),
@@ -72,20 +80,39 @@ public:
 
         // Also enforce that either both fill amounts are zero or both are
         // non-zero.
-        isNonZeroFillAmountS(pb, fillAmountS, FMT(prefix, "isNonZeroFillAmountS")),
-        isNonZeroFillAmountB(pb, fillAmountB, FMT(prefix, "isNonZeroFillAmountB")),
+        isNonZeroFillAmountS( //
+          pb,
+          fillAmountS,
+          FMT(prefix, "isNonZeroFillAmountS")),
+        isNonZeroFillAmountB( //
+          pb,
+          fillAmountB,
+          FMT(prefix, "isNonZeroFillAmountB")),
         fillsNonZero(
           pb,
           {isNonZeroFillAmountS.result(), isNonZeroFillAmountB.result()},
           FMT(prefix, "fillsNonZero")),
-        isZeroFillAmountS(pb, isNonZeroFillAmountS.result(), FMT(prefix, "isZeroFillAmountS")),
-        isZeroFillAmountB(pb, isNonZeroFillAmountB.result(), FMT(prefix, "isZeroFillAmountB")),
+        isZeroFillAmountS( //
+          pb,
+          isNonZeroFillAmountS.result(),
+          FMT(prefix, "isZeroFillAmountS")),
+        isZeroFillAmountB( //
+          pb,
+          isNonZeroFillAmountB.result(),
+          FMT(prefix, "isZeroFillAmountB")),
         fillsZero(
           pb,
           {isZeroFillAmountS.result(), isZeroFillAmountB.result()},
           FMT(prefix, "fillsZero")),
-        fillsValid(pb, {fillsNonZero.result(), fillsZero.result()}, FMT(prefix, "fillsValid")),
-        requireFillsValid(pb, fillsValid.result(), constants._1, FMT(prefix, "requireFillsValid"))
+        fillsValid( //
+          pb,
+          {fillsNonZero.result(), fillsZero.result()},
+          FMT(prefix, "fillsValid")),
+        requireFillsValid( //
+          pb,
+          fillsValid.result(),
+          constants._1,
+          FMT(prefix, "requireFillsValid"))
   {
   }
 
@@ -127,12 +154,12 @@ public:
 };
 
 // Check if an order is filled correctly
-class RequireValidOrderGadget : public GadgetT
+class RequireOrderNotExpiredGadget : public GadgetT
 {
 public:
   RequireLtGadget requireValidUntil;
 
-  RequireValidOrderGadget(
+  RequireOrderNotExpiredGadget(
     ProtoboardT &pb,
     const Constants &constants,
     const VariableT &timestamp,
@@ -145,7 +172,7 @@ public:
           timestamp,
           order.validUntil.packed,
           NUM_BITS_TIMESTAMP,
-          FMT(prefix, ".requireValidUntil"))
+          FMT(prefix, ".requireOrderNotExpired"))
   {
   }
 
@@ -155,13 +182,13 @@ public:
 };
 
 // Calculates the fees for an order
-class FeeCalculatorGadget : public GadgetT
+class CalculateOrderFeesGadget : public GadgetT
 {
 public:
   MulDivGadget protocolFee;
   MulDivGadget fee;
 
-  FeeCalculatorGadget(
+  CalculateOrderFeesGadget(
     ProtoboardT &pb,
     const Constants &constants,
     const VariableT &amountB,
@@ -211,7 +238,7 @@ public:
 };
 
 // Checks if the order isn't filled too much
-class RequireFillLimitGadget : public GadgetT
+class RequireOrderFillLimitGadget : public GadgetT
 {
 public:
   TernaryGadget fillAmount;
@@ -219,7 +246,7 @@ public:
   AddGadget filledAfter;
   RequireLeqGadget filledAfter_leq_fillLimit;
 
-  RequireFillLimitGadget(
+  RequireOrderFillLimitGadget(
     ProtoboardT &pb,
     const Constants &constants,
     const OrderGadget &order,
@@ -229,14 +256,24 @@ public:
     const std::string &prefix)
       : GadgetT(pb, prefix),
 
-        fillAmount(pb, order.fillAmountBorS.packed, fillB, fillS, FMT(prefix, ".fillAmount")),
+        fillAmount( //
+          pb,
+          order.fillAmountBorS.packed,
+          fillB,
+          fillS,
+          FMT(prefix, ".fillAmount")),
         fillLimit(
           pb,
           order.fillAmountBorS.packed,
           order.amountB.packed,
           order.amountS.packed,
           FMT(prefix, ".fillLimit")),
-        filledAfter(pb, filled, fillAmount.result(), NUM_BITS_AMOUNT, FMT(prefix, ".filledAfter")),
+        filledAfter( //
+          pb,
+          filled,
+          fillAmount.result(),
+          NUM_BITS_AMOUNT,
+          FMT(prefix, ".filledAfter")),
         filledAfter_leq_fillLimit(
           pb,
           filledAfter.result(),
@@ -270,9 +307,9 @@ class RequireOrderFillsGadget : public GadgetT
 {
 public:
   // Check rate
-  RequireFillRateGadget requireFillRate;
+  RequireOrderFillRateGadget requireFillRate;
   // Check fill limit
-  RequireFillLimitGadget requireFillLimit;
+  RequireOrderFillLimitGadget requireFillLimit;
 
   RequireOrderFillsGadget(
     ProtoboardT &pb,
@@ -382,8 +419,8 @@ public:
   RequireValidTakerGadget validateTakerB;
 
   // Check if the orders are valid
-  RequireValidOrderGadget requireValidA;
-  RequireValidOrderGadget requireValidB;
+  RequireOrderNotExpiredGadget requireValidA;
+  RequireOrderNotExpiredGadget requireValidB;
 
   OrderMatchingGadget(
     ProtoboardT &pb,
@@ -398,7 +435,9 @@ public:
     const VariableT &_fillS_A,
     const VariableT &_fillS_B,
     const std::string &prefix)
-      : GadgetT(pb, prefix), fillS_A(_fillS_A), fillS_B(_fillS_B),
+      : GadgetT(pb, prefix), //
+        fillS_A(_fillS_A),   //
+        fillS_B(_fillS_B),
 
         // Check if the fills are valid for the orders
         requireOrderFillsA(
@@ -431,12 +470,32 @@ public:
           FMT(prefix, ".orderA_tokenB_eq_orderB_tokenS")),
 
         // Check if the takers match
-        validateTakerA(pb, constants, ownerB, orderA.taker, FMT(prefix, ".validateTakerA")),
-        validateTakerB(pb, constants, ownerA, orderB.taker, FMT(prefix, ".validateTakerB")),
+        validateTakerA( //
+          pb,
+          constants,
+          ownerB,
+          orderA.taker,
+          FMT(prefix, ".validateTakerA")),
+        validateTakerB( //
+          pb,
+          constants,
+          ownerA,
+          orderB.taker,
+          FMT(prefix, ".validateTakerB")),
 
         // Check if the orders in the settlement are correctly filled
-        requireValidA(pb, constants, timestamp, orderA, FMT(prefix, ".checkValidA")),
-        requireValidB(pb, constants, timestamp, orderB, FMT(prefix, ".checkValidB"))
+        requireValidA( //
+          pb,
+          constants,
+          timestamp,
+          orderA,
+          FMT(prefix, ".checkValidA")),
+        requireValidB( //
+          pb,
+          constants,
+          timestamp,
+          orderB,
+          FMT(prefix, ".checkValidB"))
   {
   }
 
