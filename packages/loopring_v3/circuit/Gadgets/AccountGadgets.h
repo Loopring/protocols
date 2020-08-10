@@ -214,8 +214,14 @@ class UpdateBalanceGadget : public GadgetT
           stateBefore(_stateBefore),
           stateAfter(_stateAfter),
 
-          leafBefore(pb, var_array({_stateBefore.balance, _stateBefore.storageRoot}), FMT(prefix, ".leafBefore")),
-          leafAfter(pb, var_array({_stateAfter.balance, _stateAfter.storageRoot}), FMT(prefix, ".leafAfter")),
+          leafBefore( //
+            pb,
+            var_array({_stateBefore.balance, _stateBefore.storageRoot}),
+            FMT(prefix, ".leafBefore")),
+          leafAfter( //
+            pb,
+            var_array({_stateAfter.balance, _stateAfter.storageRoot}),
+            FMT(prefix, ".leafAfter")),
 
           proof(make_var_array(pb, TREE_DEPTH_TOKENS * 3, FMT(prefix, ".proof"))),
           rootBeforeVerifier(
