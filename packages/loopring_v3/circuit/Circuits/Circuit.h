@@ -8,21 +8,27 @@
 
 using namespace ethsnarks;
 
-namespace Loopring {
+namespace Loopring
+{
 
-class Circuit : public GadgetT {
-public:
-  Circuit(libsnark::protoboard<FieldT> &pb,
-          const std::string &annotation_prefix)
-      : GadgetT(pb, annotation_prefix){};
-  virtual ~Circuit(){};
-  virtual void generateConstraints(unsigned int blockSize) = 0;
-  virtual bool generateWitness(const json &input) = 0;
-  virtual unsigned int getBlockType() = 0;
-  virtual unsigned int getBlockSize() = 0;
-  virtual void printInfo() = 0;
+class Circuit : public GadgetT
+{
+  public:
+    Circuit( //
+      libsnark::protoboard<FieldT> &pb,
+      const std::string &annotation_prefix)
+        : GadgetT(pb, annotation_prefix){};
+    virtual ~Circuit(){};
+    virtual void generateConstraints(unsigned int blockSize) = 0;
+    virtual bool generateWitness(const json &input) = 0;
+    virtual unsigned int getBlockType() = 0;
+    virtual unsigned int getBlockSize() = 0;
+    virtual void printInfo() = 0;
 
-  libsnark::protoboard<FieldT> &getPb() { return pb; }
+    libsnark::protoboard<FieldT> &getPb()
+    {
+        return pb;
+    }
 };
 
 } // namespace Loopring
