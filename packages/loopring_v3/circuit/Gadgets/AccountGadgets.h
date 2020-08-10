@@ -44,7 +44,9 @@ class AccountGadget : public GadgetT
     VariableT nonce;
     VariableT balancesRoot;
 
-    AccountGadget(ProtoboardT &pb, const std::string &prefix)
+    AccountGadget( //
+      ProtoboardT &pb,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           owner(make_variable(pb, FMT(prefix, ".owner"))),
@@ -165,7 +167,9 @@ class BalanceGadget : public GadgetT
     VariableT balance;
     VariableT storageRoot;
 
-    BalanceGadget(ProtoboardT &pb, const std::string &prefix)
+    BalanceGadget( //
+      ProtoboardT &pb,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           balance(make_variable(pb, FMT(prefix, ".balance"))),
@@ -261,14 +265,20 @@ class UpdateBalanceGadget : public GadgetT
 class DynamicBalanceGadget : public DynamicVariableGadget
 {
   public:
-    DynamicBalanceGadget(ProtoboardT &pb, const VariableT &balance, const std::string &prefix)
+    DynamicBalanceGadget( //
+      ProtoboardT &pb,
+      const VariableT &balance,
+      const std::string &prefix)
         : DynamicVariableGadget(pb, prefix)
     {
         add(balance);
         allowGeneratingWitness = false;
     }
 
-    DynamicBalanceGadget(ProtoboardT &pb, const BalanceGadget &balance, const std::string &prefix)
+    DynamicBalanceGadget( //
+      ProtoboardT &pb,
+      const BalanceGadget &balance,
+      const std::string &prefix)
         : DynamicBalanceGadget(pb, balance.balance, prefix)
     {
     }

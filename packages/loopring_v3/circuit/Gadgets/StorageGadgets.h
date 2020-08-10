@@ -34,7 +34,9 @@ class StorageGadget : public GadgetT
     VariableT data;
     VariableT storageID;
 
-    StorageGadget(ProtoboardT &pb, const std::string &prefix)
+    StorageGadget( //
+      ProtoboardT &pb,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           data(make_variable(pb, FMT(prefix, ".data"))),
@@ -42,7 +44,10 @@ class StorageGadget : public GadgetT
     {
     }
 
-    StorageGadget(ProtoboardT &pb, VariableT _data, VariableT _storageID)
+    StorageGadget( //
+      ProtoboardT &pb,
+      VariableT _data,
+      VariableT _storageID)
         : GadgetT(pb, "storageGadget"),
 
           data(_data),

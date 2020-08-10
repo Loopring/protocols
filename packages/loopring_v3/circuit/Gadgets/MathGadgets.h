@@ -20,7 +20,11 @@ namespace Loopring
 {
 
 // require(A == B)
-static void requireEqual(ProtoboardT &pb, const VariableT &A, const VariableT &B, const std::string &annotation_prefix)
+static void requireEqual( //
+  ProtoboardT &pb,
+  const VariableT &A,
+  const VariableT &B,
+  const std::string &annotation_prefix)
 {
     pb.add_r1cs_constraint(ConstraintT(A, FieldT::one(), B), FMT(annotation_prefix, ".requireEqual"));
 }
@@ -57,7 +61,9 @@ class Constants : public GadgetT
 
     std::vector<VariableT> values;
 
-    Constants(ProtoboardT &pb, const std::string &prefix)
+    Constants( //
+      ProtoboardT &pb,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           _0(make_variable(pb, FieldT::zero(), FMT(prefix, ".zero"))),
@@ -167,18 +173,28 @@ class DualVariableGadget : public libsnark::dual_variable_gadget<FieldT>
     bool fromPacked = false;
     bool fromBits = false;
 
-    DualVariableGadget(ProtoboardT &pb, const size_t width, const std::string &prefix)
+    DualVariableGadget( //
+      ProtoboardT &pb,
+      const size_t width,
+      const std::string &prefix)
         : libsnark::dual_variable_gadget<FieldT>(pb, width, prefix)
     {
     }
 
-    DualVariableGadget(ProtoboardT &pb, const VariableT &value, const size_t width, const std::string &prefix)
+    DualVariableGadget( //
+      ProtoboardT &pb,
+      const VariableT &value,
+      const size_t width,
+      const std::string &prefix)
         : libsnark::dual_variable_gadget<FieldT>(pb, value, width, prefix)
     {
         fromPacked = true;
     }
 
-    DualVariableGadget(ProtoboardT &pb, const VariableArrayT &bits, const std::string &prefix)
+    DualVariableGadget( //
+      ProtoboardT &pb,
+      const VariableArrayT &bits,
+      const std::string &prefix)
         : libsnark::dual_variable_gadget<FieldT>(pb, bits, prefix)
     {
         fromBits = true;
@@ -196,14 +212,18 @@ class DualVariableGadget : public libsnark::dual_variable_gadget<FieldT>
         }
     }
 
-    void generate_r1cs_witness(ProtoboardT &pb, const FieldT &value)
+    void generate_r1cs_witness( //
+      ProtoboardT &pb,
+      const FieldT &value)
     {
         assert(!fromPacked && !fromBits);
         pb.val(packed) = value;
         generate_r1cs_witness_from_packed();
     }
 
-    void generate_r1cs_witness(ProtoboardT &pb, const LimbT &value)
+    void generate_r1cs_witness( //
+      ProtoboardT &pb,
+      const LimbT &value)
     {
         assert(!fromPacked && !fromBits);
         assert(value.max_bits() == 256);
@@ -227,13 +247,19 @@ class DynamicVariableGadget : public GadgetT
     std::vector<VariableT> variables;
     bool allowGeneratingWitness;
 
-    DynamicVariableGadget(ProtoboardT &pb, const std::string &prefix) : GadgetT(pb, prefix)
+    DynamicVariableGadget( //
+      ProtoboardT &pb,
+      const std::string &prefix)
+        : GadgetT(pb, prefix)
     {
         add(make_variable(pb, FMT(prefix, ".initialValue")));
         allowGeneratingWitness = true;
     }
 
-    DynamicVariableGadget(ProtoboardT &pb, const VariableT &initialValue, const std::string &prefix)
+    DynamicVariableGadget( //
+      ProtoboardT &pb,
+      const VariableT &initialValue,
+      const std::string &prefix)
         : GadgetT(pb, prefix)
     {
         add(initialValue);
@@ -270,7 +296,11 @@ class UnsafeSubGadget : public GadgetT
     VariableT sub;
     VariableT sum;
 
-    UnsafeSubGadget(ProtoboardT &pb, const VariableT &_value, const VariableT &_sub, const std::string &prefix)
+    UnsafeSubGadget( //
+      ProtoboardT &pb,
+      const VariableT &_value,
+      const VariableT &_sub,
+      const std::string &prefix)
         : GadgetT(pb, prefix), value(_value), sub(_sub), sum(make_variable(pb, FMT(prefix, ".sum")))
     {
     }
@@ -300,7 +330,11 @@ class UnsafeAddGadget : public GadgetT
     VariableT add;
     VariableT sum;
 
-    UnsafeAddGadget(ProtoboardT &pb, const VariableT &_value, const VariableT &_add, const std::string &prefix)
+    UnsafeAddGadget( //
+      ProtoboardT &pb,
+      const VariableT &_value,
+      const VariableT &_add,
+      const std::string &prefix)
         : GadgetT(pb, prefix), value(_value), add(_add), sum(make_variable(pb, FMT(prefix, ".sum")))
     {
     }
@@ -330,7 +364,11 @@ class UnsafeMulGadget : public GadgetT
     VariableT valueB;
     VariableT product;
 
-    UnsafeMulGadget(ProtoboardT &pb, const VariableT &_valueA, const VariableT &_valueB, const std::string &prefix)
+    UnsafeMulGadget( //
+      ProtoboardT &pb,
+      const VariableT &_valueA,
+      const VariableT &_valueB,
+      const std::string &prefix)
         : GadgetT(pb, prefix), valueA(_valueA), valueB(_valueB), product(make_variable(pb, FMT(prefix, ".product")))
     {
     }
@@ -358,7 +396,12 @@ class AddGadget : public GadgetT
     UnsafeAddGadget unsafeAdd;
     libsnark::dual_variable_gadget<FieldT> rangeCheck;
 
-    AddGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, unsigned int n, const std::string &prefix)
+    AddGadget( //
+      ProtoboardT &pb,
+      const VariableT &A,
+      const VariableT &B,
+      unsigned int n,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           unsafeAdd(pb, A, B, FMT(prefix, ".unsafeAdd")),
@@ -392,7 +435,12 @@ class SubGadget : public GadgetT
     UnsafeSubGadget unsafeSub;
     libsnark::dual_variable_gadget<FieldT> rangeCheck;
 
-    SubGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, unsigned int n, const std::string &prefix)
+    SubGadget( //
+      ProtoboardT &pb,
+      const VariableT &A,
+      const VariableT &B,
+      unsigned int n,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           unsafeSub(pb, A, B, FMT(prefix, ".unsafeAdd")),
@@ -559,7 +607,10 @@ class AndGadget : public GadgetT
     std::vector<VariableT> inputs;
     std::vector<VariableT> results;
 
-    AndGadget(ProtoboardT &pb, const std::vector<VariableT> &_inputs, const std::string &prefix)
+    AndGadget( //
+      ProtoboardT &pb,
+      const std::vector<VariableT> &_inputs,
+      const std::string &prefix)
         : GadgetT(pb, prefix), inputs(_inputs)
     {
         assert(inputs.size() > 1);
@@ -603,7 +654,10 @@ class OrGadget : public GadgetT
     std::vector<VariableT> inputs;
     std::vector<VariableT> results;
 
-    OrGadget(ProtoboardT &pb, const std::vector<VariableT> &_inputs, const std::string &prefix)
+    OrGadget( //
+      ProtoboardT &pb,
+      const std::vector<VariableT> &_inputs,
+      const std::string &prefix)
         : GadgetT(pb, prefix), inputs(_inputs)
     {
         assert(inputs.size() > 1);
@@ -649,7 +703,10 @@ class NotGadget : public GadgetT
     VariableT A;
     VariableT _not;
 
-    NotGadget(ProtoboardT &pb, const VariableT &_A, const std::string &prefix)
+    NotGadget( //
+      ProtoboardT &pb,
+      const VariableT &_A,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           A(_A),
@@ -686,7 +743,11 @@ class XorArrayGadget : public GadgetT
     VariableArrayT B;
     VariableArrayT C;
 
-    XorArrayGadget(ProtoboardT &pb, VariableArrayT _A, VariableArrayT _B, const std::string &prefix)
+    XorArrayGadget( //
+      ProtoboardT &pb,
+      VariableArrayT _A,
+      VariableArrayT _B,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           A(_A),
@@ -729,7 +790,11 @@ class EqualGadget : public GadgetT
     IsNonZero isNonZeroDifference;
     NotGadget isZeroDifference;
 
-    EqualGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const std::string &prefix)
+    EqualGadget( //
+      ProtoboardT &pb,
+      const VariableT &A,
+      const VariableT &B,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           difference(pb, A, B, FMT(prefix, ".difference")),
@@ -765,7 +830,11 @@ class RequireEqualGadget : public GadgetT
     VariableT A;
     VariableT B;
 
-    RequireEqualGadget(ProtoboardT &pb, const VariableT &_A, const VariableT &_B, const std::string &prefix)
+    RequireEqualGadget( //
+      ProtoboardT &pb,
+      const VariableT &_A,
+      const VariableT &_B,
+      const std::string &prefix)
         : GadgetT(pb, prefix), A(_A), B(_B)
     {
     }
@@ -787,7 +856,11 @@ class RequireZeroAorBGadget : public GadgetT
     VariableT A;
     VariableT B;
 
-    RequireZeroAorBGadget(ProtoboardT &pb, const VariableT &_A, const VariableT &_B, const std::string &prefix)
+    RequireZeroAorBGadget( //
+      ProtoboardT &pb,
+      const VariableT &_A,
+      const VariableT &_B,
+      const std::string &prefix)
         : GadgetT(pb, prefix), A(_A), B(_B)
     {
     }
@@ -809,7 +882,10 @@ class RequireNotZeroGadget : public GadgetT
     VariableT A;
     VariableT A_inv;
 
-    RequireNotZeroGadget(ProtoboardT &pb, const VariableT &_A, const std::string &prefix)
+    RequireNotZeroGadget( //
+      ProtoboardT &pb,
+      const VariableT &_A,
+      const std::string &prefix)
         : GadgetT(pb, prefix), A(_A), A_inv(make_variable(pb, FMT(prefix, ".A_inv")))
     {
     }
@@ -835,7 +911,11 @@ class RequireNotEqualGadget : public GadgetT
     VariableT difference;
     RequireNotZeroGadget notZero;
 
-    RequireNotEqualGadget(ProtoboardT &pb, const VariableT &_A, const VariableT &_B, const std::string &prefix)
+    RequireNotEqualGadget( //
+      ProtoboardT &pb,
+      const VariableT &_A,
+      const VariableT &_B,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
           A(_A),
           B(_B),
@@ -869,7 +949,12 @@ class LeqGadget : public GadgetT
     NotGadget _gte;
     AndGadget _eq;
 
-    LeqGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
+    LeqGadget( //
+      ProtoboardT &pb,
+      const VariableT &A,
+      const VariableT &B,
+      const size_t n,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           _lt(make_variable(pb, 1, FMT(prefix, ".lt"))),
@@ -940,7 +1025,11 @@ class LtFieldGadget : public GadgetT
     LeqGadget partHi;
     TernaryGadget res;
 
-    LtFieldGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const std::string &prefix)
+    LtFieldGadget( //
+      ProtoboardT &pb,
+      const VariableT &A,
+      const VariableT &B,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           Abits(pb, A, FMT(prefix, ".Abits")),
@@ -995,7 +1084,12 @@ class MinGadget : public GadgetT
     LeqGadget A_lt_B;
     TernaryGadget minimum;
 
-    MinGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
+    MinGadget( //
+      ProtoboardT &pb,
+      const VariableT &A,
+      const VariableT &B,
+      const size_t n,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)")),
@@ -1028,7 +1122,12 @@ class MaxGadget : public GadgetT
     LeqGadget A_lt_B;
     TernaryGadget maximum;
 
-    MaxGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
+    MaxGadget( //
+      ProtoboardT &pb,
+      const VariableT &A,
+      const VariableT &B,
+      const size_t n,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)")),
@@ -1060,7 +1159,12 @@ class RequireLeqGadget : public GadgetT
   public:
     LeqGadget leqGadget;
 
-    RequireLeqGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
+    RequireLeqGadget( //
+      ProtoboardT &pb,
+      const VariableT &A,
+      const VariableT &B,
+      const size_t n,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
@@ -1086,7 +1190,12 @@ class RequireLtGadget : public GadgetT
   public:
     LeqGadget leqGadget;
 
-    RequireLtGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
+    RequireLtGadget( //
+      ProtoboardT &pb,
+      const VariableT &A,
+      const VariableT &B,
+      const size_t n,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
@@ -1113,7 +1222,11 @@ class IfThenRequireGadget : public GadgetT
     NotGadget notC;
     OrGadget res;
 
-    IfThenRequireGadget(ProtoboardT &pb, const VariableT &C, const VariableT &A, const std::string &prefix)
+    IfThenRequireGadget( //
+      ProtoboardT &pb,
+      const VariableT &C,
+      const VariableT &A,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           notC(pb, C, FMT(prefix, ".notC")),
@@ -1389,7 +1502,9 @@ class PublicDataGadget : public GadgetT
     std::unique_ptr<sha256_many> hasher;
     std::unique_ptr<libsnark::dual_variable_gadget<FieldT>> calculatedHash;
 
-    PublicDataGadget(ProtoboardT &pb, const std::string &prefix)
+    PublicDataGadget( //
+      ProtoboardT &pb,
+      const std::string &prefix)
         : GadgetT(pb, prefix), publicInput(make_variable(pb, FMT(prefix, ".publicInput")))
     {
         pb.set_input_sizes(1);

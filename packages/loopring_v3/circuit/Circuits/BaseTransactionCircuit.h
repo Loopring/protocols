@@ -23,7 +23,9 @@ struct TransactionAccountState : public GadgetT
     BalanceGadget balanceB;
     AccountGadget account;
 
-    TransactionAccountState(ProtoboardT &pb, const std::string &prefix)
+    TransactionAccountState( //
+      ProtoboardT &pb,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           storage(pb, FMT(prefix, ".storage")),
@@ -52,7 +54,9 @@ struct TransactionAccountOperatorState : public GadgetT
     BalanceGadget balanceB;
     AccountGadget account;
 
-    TransactionAccountOperatorState(ProtoboardT &pb, const std::string &prefix)
+    TransactionAccountOperatorState( //
+      ProtoboardT &pb,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           balanceA(pb, FMT(prefix, ".balanceA")),
@@ -77,7 +81,9 @@ struct TransactionAccountBalancesState : public GadgetT
     BalanceGadget balanceA;
     BalanceGadget balanceB;
 
-    TransactionAccountBalancesState(ProtoboardT &pb, const std::string &prefix)
+    TransactionAccountBalancesState( //
+      ProtoboardT &pb,
+      const std::string &prefix)
         : GadgetT(pb, prefix),
 
           balanceA(pb, FMT(prefix, ".balanceA")),
@@ -222,7 +228,10 @@ class BaseTransactionCircuit : public GadgetT
     std::map<TxVariable, VariableT> uOutputs;
     std::map<TxVariable, VariableArrayT> aOutputs;
 
-    BaseTransactionCircuit(ProtoboardT &pb, const TransactionState &_state, const std::string &prefix)
+    BaseTransactionCircuit( //
+      ProtoboardT &pb,
+      const TransactionState &_state,
+      const std::string &prefix)
         : GadgetT(pb, prefix), state(_state)
     {
         aOutputs[storageA_Address] = VariableArrayT(NUM_BITS_STORAGE_ADDRESS, state.constants._0);

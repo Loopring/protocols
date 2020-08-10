@@ -110,7 +110,10 @@ class TransferCircuit : public BaseTransactionCircuit
     // Increase the number of conditional transactions (if conditional)
     UnsafeAddGadget numConditionalTransactionsAfter;
 
-    TransferCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
+    TransferCircuit( //
+      ProtoboardT &pb,
+      const TransactionState &state,
+      const std::string &prefix)
         : BaseTransactionCircuit(pb, state, prefix),
 
           // Inputs

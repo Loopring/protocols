@@ -58,7 +58,10 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
     // Increase the number of conditional transactions (if conditional)
     UnsafeAddGadget numConditionalTransactionsAfter;
 
-    AccountUpdateCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
+    AccountUpdateCircuit( //
+      ProtoboardT &pb,
+      const TransactionState &state,
+      const std::string &prefix)
         : BaseTransactionCircuit(pb, state, prefix),
 
           // Inputs

@@ -18,7 +18,10 @@ namespace Loopring
 class NoopCircuit : public BaseTransactionCircuit
 {
   public:
-    NoopCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
+    NoopCircuit( //
+      ProtoboardT &pb,
+      const TransactionState &state,
+      const std::string &prefix)
         : BaseTransactionCircuit(pb, state, prefix)
     {
         // No signatures needed

@@ -537,7 +537,9 @@ class UniversalCircuit : public Circuit
     // Update Operator
     std::unique_ptr<UpdateAccountGadget> updateAccount_O;
 
-    UniversalCircuit(ProtoboardT &pb, const std::string &prefix)
+    UniversalCircuit( //
+      ProtoboardT &pb,
+      const std::string &prefix)
         : Circuit(pb, prefix),
 
           publicData(pb, FMT(prefix, ".publicData")),
