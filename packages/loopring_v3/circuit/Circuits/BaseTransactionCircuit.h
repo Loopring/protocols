@@ -26,9 +26,9 @@ struct TransactionAccountState : public GadgetT
     TransactionAccountState(ProtoboardT &pb, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          storage(pb, FMT(prefix, ".storage")),   //
-          balanceS(pb, FMT(prefix, ".balanceS")), //
-          balanceB(pb, FMT(prefix, ".balanceB")), //
+          storage(pb, FMT(prefix, ".storage")),
+          balanceS(pb, FMT(prefix, ".balanceS")),
+          balanceB(pb, FMT(prefix, ".balanceB")),
           account(pb, FMT(prefix, ".account"))
     {
     }
