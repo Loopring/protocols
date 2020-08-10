@@ -66,6 +66,8 @@ contract UpgraderModule is BaseModule {
     function upgradeWalletImplementation(address payable wallet)
         external
     {
+        require(msg.sender == address(this), "NOT_ALLOWED");
+
         if (walletImplementation != OwnedUpgradeabilityProxy(wallet).implementation()) {
             bytes memory txData = abi.encodeWithSelector(
                 OwnedUpgradeabilityProxy.upgradeTo.selector,
