@@ -1,15 +1,20 @@
 Language: Cpp
 BasedOnStyle: LLVM
-IndentWidth: 2
-ObjCBlockIndentWidth: 2
+IndentWidth: 4
 ContinuationIndentWidth: 2
-ColumnLimit: 100
+ColumnLimit: 140
 BinPackArguments: false
 SortIncludes: false
 BinPackParameters: false
 AlignAfterOpenBracket: AlwaysBreak
 IndentCaseLabels: true
 AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+BreakConstructorInitializers: BeforeComma
 BraceWrapping:
   AfterClass:      true
   AfterControlStatement: true
@@ -21,5 +26,5 @@ BraceWrapping:
   AfterUnion:      true
   BeforeCatch:     true
   BeforeElse:      true
-  IndentBraces:    true
+  IndentBraces:    false
 BreakBeforeBraces: Custom

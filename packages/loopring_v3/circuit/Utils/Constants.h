@@ -29,24 +29,23 @@ static const unsigned int NUM_BITS_TX_TYPE = 8;
 static const unsigned int NUM_BITS_ADDRESS = 160;
 static const unsigned int NUM_BITS_HASH = 160;
 
-static const char *EMPTY_TRADE_HISTORY =
-  "65927491675782344981534105642433692294864120547424810690492392975145903570"
-  "90";
+static const char *EMPTY_TRADE_HISTORY = "65927491675782344981534105642433692294864120547424810690492392975145903570"
+                                         "90";
 static const char *MAX_AMOUNT = "79228162514264337593543950335"; // 2^96 - 1
 
 struct FloatEncoding
 {
-  unsigned int numBitsExponent;
-  unsigned int numBitsMantissa;
-  unsigned int exponentBase;
+    unsigned int numBitsExponent;
+    unsigned int numBitsMantissa;
+    unsigned int exponentBase;
 };
 static const FloatEncoding Float24Encoding = {5, 19, 10};
 static const FloatEncoding Float16Encoding = {5, 11, 10};
 
 struct Accuracy
 {
-  unsigned int numerator;
-  unsigned int denominator;
+    unsigned int numerator;
+    unsigned int denominator;
 };
 static const Accuracy Float24Accuracy = {100000 - 2, 100000};
 static const Accuracy Float16Accuracy = {1000 - 5, 1000};
