@@ -49,11 +49,14 @@ class OrderGadget : public GadgetT
           // Inputs
           storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
           accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
-          tokenS(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenS")), tokenB(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenB")),
-          amountS(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amountS")), amountB(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amountB")),
+          tokenS(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenS")),
+          tokenB(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenB")),
+          amountS(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amountS")),
+          amountB(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amountB")),
           validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
           maxFeeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".maxFeeBips")),
-          fillAmountBorS(pb, 1, FMT(prefix, ".fillAmountBorS")), taker(make_variable(pb, FMT(prefix, ".taker"))),
+          fillAmountBorS(pb, 1, FMT(prefix, ".fillAmountBorS")),
+          taker(make_variable(pb, FMT(prefix, ".taker"))),
 
           feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
 

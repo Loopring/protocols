@@ -116,11 +116,15 @@ class TransferCircuit : public BaseTransactionCircuit
           // Inputs
           fromAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".fromAccountID")),
           toAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".toAccountID")),
-          tokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenID")), amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
-          feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")), fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
-          validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")), type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
+          tokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenID")),
+          amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
+          feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
+          fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
+          validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
+          type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
           from(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".from")),
-          to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".to")), storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
+          to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".to")),
+          storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
           dualAuthorX(make_variable(pb, FMT(prefix, ".dualAuthorX"))),
           dualAuthorY(make_variable(pb, FMT(prefix, ".dualAuthorY"))),
           payer_toAccountID(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_toAccountID")),
@@ -254,13 +258,14 @@ class TransferCircuit : public BaseTransactionCircuit
             FMT(prefix, ".da_StorageID")),
 
           // Fee as float
-          fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")), requireAccuracyFee(
-                                                                              pb,
-                                                                              fFee.value(),
-                                                                              fee.packed,
-                                                                              Float16Accuracy,
-                                                                              NUM_BITS_AMOUNT,
-                                                                              FMT(prefix, ".requireAccuracyFee")),
+          fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
+          requireAccuracyFee(
+            pb,
+            fFee.value(),
+            fee.packed,
+            Float16Accuracy,
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".requireAccuracyFee")),
           // Amount as float
           fAmount(pb, state.constants, Float24Encoding, FMT(prefix, ".fAmount")),
           requireAccuracyAmount(

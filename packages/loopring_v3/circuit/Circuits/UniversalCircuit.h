@@ -215,9 +215,12 @@ class TransactionGadget : public GadgetT
             FMT(prefix, ".transactionState")),
 
           // Process transaction
-          noop(pb, state, FMT(prefix, ".noop")), spotTrade(pb, state, FMT(prefix, ".spotTrade")),
-          deposit(pb, state, FMT(prefix, ".deposit")), withdraw(pb, state, FMT(prefix, ".withdraw")),
-          accountUpdate(pb, state, FMT(prefix, ".accountUpdate")), transfer(pb, state, FMT(prefix, ".transfer")),
+          noop(pb, state, FMT(prefix, ".noop")),
+          spotTrade(pb, state, FMT(prefix, ".spotTrade")),
+          deposit(pb, state, FMT(prefix, ".deposit")),
+          withdraw(pb, state, FMT(prefix, ".withdraw")),
+          accountUpdate(pb, state, FMT(prefix, ".accountUpdate")),
+          transfer(pb, state, FMT(prefix, ".transfer")),
           tx(
             pb,
             state,
@@ -537,10 +540,12 @@ class UniversalCircuit : public Circuit
     UniversalCircuit(ProtoboardT &pb, const std::string &prefix)
         : Circuit(pb, prefix),
 
-          publicData(pb, FMT(prefix, ".publicData")), constants(pb, FMT(prefix, ".constants")),
+          publicData(pb, FMT(prefix, ".publicData")),
+          constants(pb, FMT(prefix, ".constants")),
 
           // State
-          accountBefore_P(pb, FMT(prefix, ".accountBefore_P")), accountBefore_O(pb, FMT(prefix, ".accountBefore_O")),
+          accountBefore_P(pb, FMT(prefix, ".accountBefore_P")),
+          accountBefore_O(pb, FMT(prefix, ".accountBefore_O")),
 
           // Inputs
           exchange(pb, NUM_BITS_ADDRESS, FMT(prefix, ".exchange")),

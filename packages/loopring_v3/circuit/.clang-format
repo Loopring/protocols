@@ -16,6 +16,7 @@ AllowShortFunctionsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 BreakConstructorInitializersBeforeComma: false
 BreakConstructorInitializers: BeforeColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
 BraceWrapping:
   AfterClass:      true
   AfterControlStatement: true

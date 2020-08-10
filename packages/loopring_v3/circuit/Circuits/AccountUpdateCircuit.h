@@ -68,7 +68,8 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
           nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
           publicKeyX(make_variable(pb, FMT(prefix, ".publicKeyX"))),
           publicKeyY(make_variable(pb, FMT(prefix, ".publicKeyY"))),
-          feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")), fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
+          feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
+          fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
           type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
 
           // Signature
@@ -110,13 +111,14 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
           balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
           balanceB_O(pb, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
           // Fee as float
-          fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")), requireAccuracyFee(
-                                                                              pb,
-                                                                              fFee.value(),
-                                                                              fee.packed,
-                                                                              Float16Accuracy,
-                                                                              NUM_BITS_AMOUNT,
-                                                                              FMT(prefix, ".requireAccuracyFee")),
+          fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
+          requireAccuracyFee(
+            pb,
+            fFee.value(),
+            fee.packed,
+            Float16Accuracy,
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".requireAccuracyFee")),
           // Fee payment from to the operator
           feePayment(pb, balanceS_A, balanceB_O, fFee.value(), FMT(prefix, ".feePayment")),
 

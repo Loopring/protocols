@@ -472,7 +472,9 @@ class TernaryGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          b(_b), x(_x), y(_y),
+          b(_b),
+          x(_x),
+          y(_y),
 
           selected(make_variable(pb, FMT(prefix, ".selected")))
     {
@@ -650,7 +652,8 @@ class NotGadget : public GadgetT
     NotGadget(ProtoboardT &pb, const VariableT &_A, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          A(_A), _not(make_variable(pb, FMT(prefix, "._not")))
+          A(_A),
+          _not(make_variable(pb, FMT(prefix, "._not")))
     {
     }
 
@@ -686,7 +689,8 @@ class XorArrayGadget : public GadgetT
     XorArrayGadget(ProtoboardT &pb, VariableArrayT _A, VariableArrayT _B, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          A(_A), B(_B),
+          A(_A),
+          B(_B),
 
           C(make_var_array(pb, A.size(), FMT(prefix, ".C")))
     {
@@ -832,7 +836,10 @@ class RequireNotEqualGadget : public GadgetT
     RequireNotZeroGadget notZero;
 
     RequireNotEqualGadget(ProtoboardT &pb, const VariableT &_A, const VariableT &_B, const std::string &prefix)
-        : GadgetT(pb, prefix), A(_A), B(_B), difference(make_variable(pb, FMT(prefix, ".difference"))),
+        : GadgetT(pb, prefix),
+          A(_A),
+          B(_B),
+          difference(make_variable(pb, FMT(prefix, ".difference"))),
           notZero(pb, difference, FMT(prefix, ".difference != 0"))
     {
     }
@@ -865,9 +872,12 @@ class LeqGadget : public GadgetT
     LeqGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          _lt(make_variable(pb, 1, FMT(prefix, ".lt"))), _leq(make_variable(pb, 1, FMT(prefix, ".leq"))),
-          comparison(pb, n, A, B, _lt, _leq, FMT(prefix, ".A <(=) B")), _gt(pb, _leq, FMT(prefix, ".gt")),
-          _gte(pb, _lt, FMT(prefix, ".gte")), _eq(pb, {_leq, _gte.result()}, FMT(prefix, ".eq"))
+          _lt(make_variable(pb, 1, FMT(prefix, ".lt"))),
+          _leq(make_variable(pb, 1, FMT(prefix, ".leq"))),
+          comparison(pb, n, A, B, _lt, _leq, FMT(prefix, ".A <(=) B")),
+          _gt(pb, _leq, FMT(prefix, ".gt")),
+          _gte(pb, _lt, FMT(prefix, ".gte")),
+          _eq(pb, {_leq, _gte.result()}, FMT(prefix, ".eq"))
     {
         // The comparison gadget is only guaranteed to work correctly on values in
         // the field capacity - 1
@@ -933,7 +943,8 @@ class LtFieldGadget : public GadgetT
     LtFieldGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          Abits(pb, A, FMT(prefix, ".Abits")), Bbits(pb, B, FMT(prefix, ".Bbits")),
+          Abits(pb, A, FMT(prefix, ".Abits")),
+          Bbits(pb, B, FMT(prefix, ".Bbits")),
 
           Alo(pb, subArray(Abits.result(), 0, 254 / 2), FMT(prefix, ".Alo")),
           Ahi(pb, subArray(Abits.result(), 254 / 2, 254 / 2), FMT(prefix, ".Ahi")),
@@ -1105,7 +1116,8 @@ class IfThenRequireGadget : public GadgetT
     IfThenRequireGadget(ProtoboardT &pb, const VariableT &C, const VariableT &A, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          notC(pb, C, FMT(prefix, ".notC")), res(pb, {notC.result(), A}, FMT(prefix, ".res"))
+          notC(pb, C, FMT(prefix, ".notC")),
+          res(pb, {notC.result(), A}, FMT(prefix, ".res"))
     {
     }
 
@@ -1139,7 +1151,8 @@ class IfThenRequireEqualGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          eq(pb, A, B, FMT(prefix, ".eq")), res(pb, C, eq.result(), FMT(prefix, ".res"))
+          eq(pb, A, B, FMT(prefix, ".eq")),
+          res(pb, C, eq.result(), FMT(prefix, ".res"))
     {
     }
 
@@ -1172,7 +1185,8 @@ class IfThenRequireNotEqualGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          eq(pb, A, B, FMT(prefix, ".eq")), notEq(pb, eq.result(), FMT(prefix, ".notEq")),
+          eq(pb, A, B, FMT(prefix, ".eq")),
+          notEq(pb, eq.result(), FMT(prefix, ".notEq")),
           res(pb, C, notEq.result(), FMT(prefix, ".res"))
     {
     }
@@ -1221,7 +1235,9 @@ class MulDivGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          value(_value), numerator(_numerator), denominator(_denominator),
+          value(_value),
+          numerator(_numerator),
+          denominator(_denominator),
 
           quotient(make_variable(pb, FMT(prefix, ".quotient"))),
 
@@ -1229,12 +1245,13 @@ class MulDivGadget : public GadgetT
           product(pb, value, numerator, FMT(prefix, ".product")),
           // Range limit the remainder. The comparison below is not guaranteed to
           // work for very large values.
-          remainder(pb, numBitsDenominator, FMT(prefix, ".remainder")), remainder_lt_denominator(
-                                                                          pb,
-                                                                          remainder.packed,
-                                                                          denominator,
-                                                                          numBitsDenominator,
-                                                                          FMT(prefix, ".remainder < denominator"))
+          remainder(pb, numBitsDenominator, FMT(prefix, ".remainder")),
+          remainder_lt_denominator(
+            pb,
+            remainder.packed,
+            denominator,
+            numBitsDenominator,
+            FMT(prefix, ".remainder < denominator"))
     {
         assert(numBitsValue + numBitsNumerator <= NUM_BITS_FIELD_CAPACITY);
     }
@@ -1315,7 +1332,9 @@ class RequireAccuracyGadget : public GadgetT
 
           // Range limit the value. The comparison below is not guaranteed to work
           // for very large values.
-          value(pb, _value, maxNumBits, FMT(prefix, ".value")), original(_original), accuracy(_accuracy),
+          value(pb, _value, maxNumBits, FMT(prefix, ".value")),
+          original(_original),
+          accuracy(_accuracy),
 
           value_leq_original(pb, value.packed, original, maxNumBits, FMT(prefix, ".value_lt_original")),
 
@@ -1430,7 +1449,8 @@ class FloatGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          constants(_constants), floatEncoding(_floatEncoding),
+          constants(_constants),
+          floatEncoding(_floatEncoding),
 
           f(make_var_array(pb, floatEncoding.numBitsExponent + floatEncoding.numBitsMantissa, FMT(prefix, ".f")))
     {

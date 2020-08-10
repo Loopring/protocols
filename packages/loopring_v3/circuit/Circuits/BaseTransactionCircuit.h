@@ -26,8 +26,10 @@ struct TransactionAccountState : public GadgetT
     TransactionAccountState(ProtoboardT &pb, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          storage(pb, FMT(prefix, ".storage")), balanceS(pb, FMT(prefix, ".balanceS")),
-          balanceB(pb, FMT(prefix, ".balanceB")), account(pb, FMT(prefix, ".account"))
+          storage(pb, FMT(prefix, ".storage")),
+          balanceS(pb, FMT(prefix, ".balanceS")),
+          balanceB(pb, FMT(prefix, ".balanceB")),
+          account(pb, FMT(prefix, ".account"))
     {
     }
 
@@ -53,7 +55,8 @@ struct TransactionAccountOperatorState : public GadgetT
     TransactionAccountOperatorState(ProtoboardT &pb, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          balanceA(pb, FMT(prefix, ".balanceA")), balanceB(pb, FMT(prefix, ".balanceB")),
+          balanceA(pb, FMT(prefix, ".balanceA")),
+          balanceB(pb, FMT(prefix, ".balanceB")),
           account(pb, FMT(prefix, ".account"))
     {
     }
@@ -77,7 +80,8 @@ struct TransactionAccountBalancesState : public GadgetT
     TransactionAccountBalancesState(ProtoboardT &pb, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          balanceA(pb, FMT(prefix, ".balanceA")), balanceB(pb, FMT(prefix, ".balanceB"))
+          balanceA(pb, FMT(prefix, ".balanceA")),
+          balanceB(pb, FMT(prefix, ".balanceB"))
     {
     }
 
@@ -123,12 +127,17 @@ struct TransactionState : public GadgetT
 
           constants(_constants),
 
-          exchange(_exchange), timestamp(_timestamp), protocolTakerFeeBips(_protocolTakerFeeBips),
-          protocolMakerFeeBips(_protocolMakerFeeBips), numConditionalTransactions(_numConditionalTransactions),
+          exchange(_exchange),
+          timestamp(_timestamp),
+          protocolTakerFeeBips(_protocolTakerFeeBips),
+          protocolMakerFeeBips(_protocolMakerFeeBips),
+          numConditionalTransactions(_numConditionalTransactions),
           type(_type),
 
-          accountA(pb, FMT(prefix, ".accountA")), accountB(pb, FMT(prefix, ".accountB")),
-          oper(pb, FMT(prefix, ".oper")), pool(pb, FMT(prefix, ".pool"))
+          accountA(pb, FMT(prefix, ".accountA")),
+          accountB(pb, FMT(prefix, ".accountB")),
+          oper(pb, FMT(prefix, ".oper")),
+          pool(pb, FMT(prefix, ".pool"))
     {
     }
 

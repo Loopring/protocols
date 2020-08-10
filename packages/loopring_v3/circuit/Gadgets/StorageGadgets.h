@@ -37,14 +37,16 @@ class StorageGadget : public GadgetT
     StorageGadget(ProtoboardT &pb, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          data(make_variable(pb, FMT(prefix, ".data"))), storageID(make_variable(pb, FMT(prefix, ".storageID")))
+          data(make_variable(pb, FMT(prefix, ".data"))),
+          storageID(make_variable(pb, FMT(prefix, ".storageID")))
     {
     }
 
     StorageGadget(ProtoboardT &pb, VariableT _data, VariableT _storageID)
         : GadgetT(pb, "storageGadget"),
 
-          data(_data), storageID(_storageID)
+          data(_data),
+          storageID(_storageID)
     {
     }
 
@@ -77,19 +79,21 @@ class UpdateStorageGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          valuesBefore(before), valuesAfter(after),
+          valuesBefore(before),
+          valuesAfter(after),
 
           leafBefore(pb, var_array({before.data, before.storageID}), FMT(prefix, ".leafBefore")),
           leafAfter(pb, var_array({after.data, after.storageID}), FMT(prefix, ".leafAfter")),
 
-          proof(make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(prefix, ".proof"))), proofVerifierBefore(
-                                                                                      pb,
-                                                                                      TREE_DEPTH_STORAGE,
-                                                                                      slotID,
-                                                                                      leafBefore.result(),
-                                                                                      merkleRoot,
-                                                                                      proof,
-                                                                                      FMT(prefix, ".pathBefore")),
+          proof(make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(prefix, ".proof"))),
+          proofVerifierBefore(
+            pb,
+            TREE_DEPTH_STORAGE,
+            slotID,
+            leafBefore.result(),
+            merkleRoot,
+            proof,
+            FMT(prefix, ".pathBefore")),
           rootCalculatorAfter(pb, TREE_DEPTH_STORAGE, slotID, leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
     {
     }
@@ -255,7 +259,8 @@ class NonceGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          constants(_constants), storageID(_storageID),
+          constants(_constants),
+          storageID(_storageID),
 
           storageReader(pb, constants, storage, storageID, verify, FMT(prefix, ".storageReader")),
           requireDataZero(pb, verify, storageReader.getData(), constants._0, FMT(prefix, ".requireDataZero"))

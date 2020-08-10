@@ -63,12 +63,17 @@ class CompressPublicKey : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          params(_params), constants(_constants), y(_y),
+          params(_params),
+          constants(_constants),
+          y(_y),
 
           // Reconstruct sqrt(xx)
-          yy(make_variable(pb, FMT(prefix, ".yy"))), lhs(make_variable(pb, FMT(prefix, ".lhs"))),
-          rhs(make_variable(pb, FMT(prefix, ".rhs"))), irhs(make_variable(pb, FMT(prefix, ".irhs"))),
-          xx(make_variable(pb, FMT(prefix, ".xx"))), rootX(make_variable(pb, FMT(prefix, ".rootX"))),
+          yy(make_variable(pb, FMT(prefix, ".yy"))),
+          lhs(make_variable(pb, FMT(prefix, ".lhs"))),
+          rhs(make_variable(pb, FMT(prefix, ".rhs"))),
+          irhs(make_variable(pb, FMT(prefix, ".irhs"))),
+          xx(make_variable(pb, FMT(prefix, ".xx"))),
+          rootX(make_variable(pb, FMT(prefix, ".rootX"))),
 
           // Reconstruct x
           // Pick the smallest root (the "positive" one) to make sqrt
@@ -309,7 +314,8 @@ class SignatureVerifier : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          constants(_constants), sig_R(pb, FMT(prefix, ".R")),
+          constants(_constants),
+          sig_R(pb, FMT(prefix, ".R")),
           sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
           signatureVerifier(
             pb,

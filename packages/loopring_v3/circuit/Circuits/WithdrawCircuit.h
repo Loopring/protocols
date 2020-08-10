@@ -97,8 +97,10 @@ class WithdrawCircuit : public BaseTransactionCircuit
 
           // Inputs
           accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
-          tokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenID")), amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
-          feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")), fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
+          tokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenID")),
+          amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
+          feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
+          fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
           validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
           onchainDataHash(pb, NUM_BITS_HASH, FMT(prefix, ".onchainDataHash")),
           type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
@@ -177,13 +179,14 @@ class WithdrawCircuit : public BaseTransactionCircuit
           balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
           balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
           // Fee as float
-          fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")), requireAccuracyFee(
-                                                                              pb,
-                                                                              fFee.value(),
-                                                                              fee.packed,
-                                                                              Float16Accuracy,
-                                                                              NUM_BITS_AMOUNT,
-                                                                              FMT(prefix, ".requireAccuracyFee")),
+          fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
+          requireAccuracyFee(
+            pb,
+            fFee.value(),
+            fee.packed,
+            Float16Accuracy,
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".requireAccuracyFee")),
           // Fee payment from to the operator
           feePayment(pb, balanceB_A, balanceA_O, fFee.value(), FMT(prefix, ".feePayment")),
 

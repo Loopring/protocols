@@ -403,7 +403,9 @@ class OrderMatchingGadget : public GadgetT
       const VariableT &_fillS_A,
       const VariableT &_fillS_B,
       const std::string &prefix)
-        : GadgetT(pb, prefix), fillS_A(_fillS_A), fillS_B(_fillS_B),
+        : GadgetT(pb, prefix),
+          fillS_A(_fillS_A),
+          fillS_B(_fillS_B),
 
           // Check if the fills are valid for the orders
           requireOrderFillsA(pb, constants, orderA, filledA, fillS_A, fillS_B, FMT(prefix, ".requireOrderFillsA")),
