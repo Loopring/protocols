@@ -20,7 +20,6 @@ namespace Loopring
     New account: to != 0 and toAccountID == 0
     Open: to == 0 and toAccountID == 0
     Invalid: to == 0 and toAccountID != 0
-
     // Allow the payer to use dual authoring
     if (payer_to != 0) {
         require(payer_to == to);

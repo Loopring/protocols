@@ -289,12 +289,10 @@ class ReadNonceGadget : public GadgetT
     /*
     It contains the bare minimum amount of data needed to reconstruct what happened in the circuits.
     So it's only used for DA, nowhere else.
-
     The height of the storage tree is only 14, so with 14 bits we know exactly which leaf is being
     modified. But we don't know yet what the actual storageID is. But there can only be 2 cases: the
     storageID == leaf.storageID (in this case the overwrite bit is 0), or storageID == leaf.storageID
     + numSlots (in this case the overwrite bit is 1 because the data is reset before it is used).
-
     But because the storageID is only 4 bytes now (back from 8 bytes like it was), maybe we could drop
     it altogether. Theoretically this adds quite a number of DA bytes to trades/transfers (+4 DA bytes
     for trades, +2 DA bytes for transfers), but in practice storageID bytes will be mostly small and

@@ -105,7 +105,12 @@ class CompressPublicKey : public GadgetT
             negAbsX.result(),
             _x,
             FMT(prefix, ".isNegativeX")),
-          reconstructedX(pb, isNegativeX.result(), negAbsX.result(), absX.result(), FMT(prefix, ".reconstructedX")),
+          reconstructedX( //
+            pb,
+            isNegativeX.result(),
+            negAbsX.result(),
+            absX.result(),
+            FMT(prefix, ".reconstructedX")),
 
           // Special case 0
           isZeroY( //
