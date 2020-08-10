@@ -403,15 +403,27 @@ class OrderMatchingGadget : public GadgetT
       const VariableT &_fillS_A,
       const VariableT &_fillS_B,
       const std::string &prefix)
-        : GadgetT(pb, prefix), //
-          fillS_A(_fillS_A),   //
+        : GadgetT(pb, prefix),
+          fillS_A(_fillS_A),
           fillS_B(_fillS_B),
 
           // Check if the fills are valid for the orders
-          requireOrderFillsA(//
-            pb, constants, orderA, filledA, fillS_A, fillS_B, FMT(prefix, ".requireOrderFillsA")),
-          requireOrderFillsB(//
-            pb, constants, orderB, filledB, fillS_B, fillS_A, FMT(prefix, ".requireOrderFillsB")),
+          requireOrderFillsA( //
+            pb,
+            constants,
+            orderA,
+            filledA,
+            fillS_A,
+            fillS_B,
+            FMT(prefix, ".requireOrderFillsA")),
+          requireOrderFillsB( //
+            pb,
+            constants,
+            orderB,
+            filledB,
+            fillS_B,
+            fillS_A,
+            FMT(prefix, ".requireOrderFillsB")),
 
           // Check if tokenS/tokenB match
           orderA_tokenS_eq_orderB_tokenB(
@@ -426,16 +438,32 @@ class OrderMatchingGadget : public GadgetT
             FMT(prefix, ".orderA_tokenB_eq_orderB_tokenS")),
 
           // Check if the takers match
-          validateTakerA(//
-            pb, constants, ownerB, orderA.taker, FMT(prefix, ".validateTakerA")),
-          validateTakerB(//
-            pb, constants, ownerA, orderB.taker, FMT(prefix, ".validateTakerB")),
+          validateTakerA( //
+            pb,
+            constants,
+            ownerB,
+            orderA.taker,
+            FMT(prefix, ".validateTakerA")),
+          validateTakerB( //
+            pb,
+            constants,
+            ownerA,
+            orderB.taker,
+            FMT(prefix, ".validateTakerB")),
 
           // Check if the orders in the settlement are correctly filled
-          requireValidA(//
-            pb, constants, timestamp, orderA, FMT(prefix, ".checkValidA")),
-          requireValidB(//
-            pb, constants, timestamp, orderB, FMT(prefix, ".checkValidB"))
+          requireValidA( //
+            pb,
+            constants,
+            timestamp,
+            orderA,
+            FMT(prefix, ".checkValidA")),
+          requireValidB( //
+            pb,
+            constants,
+            timestamp,
+            orderB,
+            FMT(prefix, ".checkValidB"))
     {
     }
 
