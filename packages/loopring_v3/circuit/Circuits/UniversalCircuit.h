@@ -233,30 +233,12 @@ class TransactionGadget : public GadgetT
             FMT(prefix, ".transactionState")),
 
           // Process transaction
-          noop( //
-            pb,
-            state,
-            FMT(prefix, ".noop")),
-          spotTrade( //
-            pb,
-            state,
-            FMT(prefix, ".spotTrade")),
-          deposit( //
-            pb,
-            state,
-            FMT(prefix, ".deposit")),
-          withdraw( //
-            pb,
-            state,
-            FMT(prefix, ".withdraw")),
-          accountUpdate( //
-            pb,
-            state,
-            FMT(prefix, ".accountUpdate")),
-          transfer( //
-            pb,
-            state,
-            FMT(prefix, ".transfer")),
+          noop(pb, state, FMT(prefix, ".noop")),
+          spotTrade(pb, state, FMT(prefix, ".spotTrade")),
+          deposit(pb, state, FMT(prefix, ".deposit")),
+          withdraw(pb, state, FMT(prefix, ".withdraw")),
+          accountUpdate(pb, state, FMT(prefix, ".accountUpdate")),
+          transfer(pb, state, FMT(prefix, ".transfer")),
           tx(
             pb,
             state,
@@ -265,22 +247,10 @@ class TransactionGadget : public GadgetT
             FMT(prefix, ".tx")),
 
           // General validation
-          accountA( //
-            pb,
-            tx.getArrayOutput(ACCOUNT_A_ADDRESS),
-            FMT(prefix, ".packAccountA")),
-          accountB( //
-            pb,
-            tx.getArrayOutput(ACCOUNT_B_ADDRESS),
-            FMT(prefix, ".packAccountA")),
-          validateAccountA( //
-            pb,
-            accountA.packed,
-            FMT(prefix, ".validateAccountA")),
-          validateAccountB( //
-            pb,
-            accountB.packed,
-            FMT(prefix, ".validateAccountB")),
+          accountA(pb, tx.getArrayOutput(ACCOUNT_A_ADDRESS), FMT(prefix, ".packAccountA")),
+          accountB(pb, tx.getArrayOutput(ACCOUNT_B_ADDRESS), FMT(prefix, ".packAccountA")),
+          validateAccountA(pb, accountA.packed, FMT(prefix, ".validateAccountA")),
+          validateAccountB(pb, accountB.packed, FMT(prefix, ".validateAccountB")),
 
           // Check signatures
           signatureVerifierA(
@@ -605,34 +575,13 @@ class UniversalCircuit : public Circuit
           accountBefore_O(pb, FMT(prefix, ".accountBefore_O")),
 
           // Inputs
-          exchange( //
-            pb,
-            NUM_BITS_ADDRESS,
-            FMT(prefix, ".exchange")),
-          merkleRootBefore( //
-            pb,
-            256,
-            FMT(prefix, ".merkleRootBefore")),
-          merkleRootAfter( //
-            pb,
-            256,
-            FMT(prefix, ".merkleRootAfter")),
-          timestamp( //
-            pb,
-            NUM_BITS_TIMESTAMP,
-            FMT(prefix, ".timestamp")),
-          protocolTakerFeeBips( //
-            pb,
-            NUM_BITS_PROTOCOL_FEE_BIPS,
-            FMT(prefix, ".protocolTakerFeeBips")),
-          protocolMakerFeeBips( //
-            pb,
-            NUM_BITS_PROTOCOL_FEE_BIPS,
-            FMT(prefix, ".protocolMakerFeeBips")),
-          operatorAccountID( //
-            pb,
-            NUM_BITS_ACCOUNT,
-            FMT(prefix, ".operatorAccountID")),
+          exchange(pb, NUM_BITS_ADDRESS, FMT(prefix, ".exchange")),
+          merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
+          merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
+          timestamp(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".timestamp")),
+          protocolTakerFeeBips(pb, NUM_BITS_PROTOCOL_FEE_BIPS, FMT(prefix, ".protocolTakerFeeBips")),
+          protocolMakerFeeBips(pb, NUM_BITS_PROTOCOL_FEE_BIPS, FMT(prefix, ".protocolMakerFeeBips")),
+          operatorAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".operatorAccountID")),
 
           // Increment the nonce of the Operator
           nonceAfter(pb, accountBefore_O.nonce, constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonceAfter")),
