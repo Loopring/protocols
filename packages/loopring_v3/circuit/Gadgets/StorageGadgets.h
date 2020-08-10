@@ -79,14 +79,20 @@ class UpdateStorageGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          stateBefore(_stateBefore), //
+          stateBefore(_stateBefore),
           stateAfter(_stateAfter),
 
-          leafBefore(pb, var_array({_stateBefore.data, _stateBefore.storageID}), FMT(prefix, ".leafBefore")),
-          leafAfter(pb, var_array({_stateAfter.data, _stateAfter.storageID}), FMT(prefix, ".leafAfter")),
+          leafBefore( //
+            pb,
+            var_array({_stateBefore.data, _stateBefore.storageID}),
+            FMT(prefix, ".leafBefore")),
+          leafAfter( //
+            pb,
+            var_array({_stateAfter.data, _stateAfter.storageID}),
+            FMT(prefix, ".leafAfter")),
 
           proof(make_var_array(pb, TREE_DEPTH_STORAGE * 3, FMT(prefix, ".proof"))),
-          rootBeforeVerifier(
+          rootBeforeVerifier( //
             pb,
             TREE_DEPTH_STORAGE,
             slotID,
@@ -94,7 +100,13 @@ class UpdateStorageGadget : public GadgetT
             merkleRoot,
             proof,
             FMT(prefix, ".pathBefore")),
-          rootAfter(pb, TREE_DEPTH_STORAGE, slotID, leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
+          rootAfter( //
+            pb,
+            TREE_DEPTH_STORAGE,
+            slotID,
+            leafAfter.result(),
+            proof,
+            FMT(prefix, ".pathAfter"))
     {
     }
 
@@ -161,9 +173,16 @@ class ReadStorageGadget : public GadgetT
         : GadgetT(pb, prefix),
 
           address(make_variable(pb, FMT(prefix, ".address"))),
-          packAddress(pb, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS), address, FMT(prefix, ".packAddress")),
+          packAddress( //
+            pb,
+            subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
+            address,
+            FMT(prefix, ".packAddress")),
 
-          isNonZeroStorageLeafStorageID(pb, storage.storageID, FMT(prefix, ".isNonZeroStorageLeafStorageID")),
+          isNonZeroStorageLeafStorageID( //
+            pb,
+            storage.storageID,
+            FMT(prefix, ".isNonZeroStorageLeafStorageID")),
           leafStorageID(
             pb,
             isNonZeroStorageLeafStorageID.result(),
@@ -171,7 +190,11 @@ class ReadStorageGadget : public GadgetT
             address,
             FMT(prefix, ".leafStorageID")),
 
-          nextStorageID(pb, leafStorageID.result(), constants.numStorageSlots, FMT(prefix, ".nextStorageID")),
+          nextStorageID( //
+            pb,
+            leafStorageID.result(),
+            constants.numStorageSlots,
+            FMT(prefix, ".nextStorageID")),
 
           storageID_eq_leafStorageID(
             pb,
@@ -194,7 +217,12 @@ class ReadStorageGadget : public GadgetT
             constants._1,
             FMT(prefix, ".requireValidStorageID")),
 
-          data(pb, storageID_eq_leafStorageID.result(), storage.data, constants._0, FMT(prefix, ".data"))
+          data( //
+            pb,
+            storageID_eq_leafStorageID.result(),
+            storage.data,
+            constants._0,
+            FMT(prefix, ".data"))
     {
     }
 
@@ -261,11 +289,22 @@ class ReadNonceGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          constants(_constants), //
+          constants(_constants),
           storageID(_storageID),
 
-          storageReader(pb, constants, storage, storageID, verify, FMT(prefix, ".storageReader")),
-          requireDataZero(pb, verify, storageReader.getData(), constants._0, FMT(prefix, ".requireDataZero"))
+          storageReader( //
+            pb,
+            constants,
+            storage,
+            storageID,
+            verify,
+            FMT(prefix, ".storageReader")),
+          requireDataZero( //
+            pb,
+            verify,
+            storageReader.getData(),
+            constants._0,
+            FMT(prefix, ".requireDataZero"))
     {
     }
 
