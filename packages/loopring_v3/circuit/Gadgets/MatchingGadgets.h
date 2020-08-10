@@ -51,21 +51,13 @@ class RequireOrderFillRateGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          fillAmountS_mul_amountB( //
-            pb,
-            fillAmountS,
-            amountB,
-            FMT(prefix, ".fillAmountS_mul_amountB")),
+          fillAmountS_mul_amountB(pb, fillAmountS, amountB, FMT(prefix, ".fillAmountS_mul_amountB")),
           fillAmountS_mul_amountB_mul_1000(
             pb,
             fillAmountS_mul_amountB.result(),
             constants._1000,
             FMT(prefix, ".fillAmountS_mul_amountB_mul_1000")),
-          fillAmountB_mul_amountS( //
-            pb,
-            fillAmountB,
-            amountS,
-            FMT(prefix, ".fillAmountB_mul_amountS")),
+          fillAmountB_mul_amountS(pb, fillAmountB, amountS, FMT(prefix, ".fillAmountB_mul_amountS")),
           fillAmountB_mul_amountS_mul_1001(
             pb,
             fillAmountB_mul_amountS.result(),
@@ -80,33 +72,14 @@ class RequireOrderFillRateGadget : public GadgetT
 
           // Also enforce that either both fill amounts are zero or both are
           // non-zero.
-          isNonZeroFillAmountS( //
-            pb,
-            fillAmountS,
-            FMT(prefix, "isNonZeroFillAmountS")),
-          isNonZeroFillAmountB( //
-            pb,
-            fillAmountB,
-            FMT(prefix, "isNonZeroFillAmountB")),
+          isNonZeroFillAmountS(pb, fillAmountS, FMT(prefix, "isNonZeroFillAmountS")),
+          isNonZeroFillAmountB(pb, fillAmountB, FMT(prefix, "isNonZeroFillAmountB")),
           fillsNonZero(pb, {isNonZeroFillAmountS.result(), isNonZeroFillAmountB.result()}, FMT(prefix, "fillsNonZero")),
-          isZeroFillAmountS( //
-            pb,
-            isNonZeroFillAmountS.result(),
-            FMT(prefix, "isZeroFillAmountS")),
-          isZeroFillAmountB( //
-            pb,
-            isNonZeroFillAmountB.result(),
-            FMT(prefix, "isZeroFillAmountB")),
+          isZeroFillAmountS(pb, isNonZeroFillAmountS.result(), FMT(prefix, "isZeroFillAmountS")),
+          isZeroFillAmountB(pb, isNonZeroFillAmountB.result(), FMT(prefix, "isZeroFillAmountB")),
           fillsZero(pb, {isZeroFillAmountS.result(), isZeroFillAmountB.result()}, FMT(prefix, "fillsZero")),
-          fillsValid( //
-            pb,
-            {fillsNonZero.result(), fillsZero.result()},
-            FMT(prefix, "fillsValid")),
-          requireFillsValid( //
-            pb,
-            fillsValid.result(),
-            constants._1,
-            FMT(prefix, "requireFillsValid"))
+          fillsValid(pb, {fillsNonZero.result(), fillsZero.result()}, FMT(prefix, "fillsValid")),
+          requireFillsValid(pb, fillsValid.result(), constants._1, FMT(prefix, "requireFillsValid"))
     {
     }
 
@@ -262,24 +235,14 @@ class RequireOrderFillLimitGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          fillAmount( //
-            pb,
-            order.fillAmountBorS.packed,
-            fillB,
-            fillS,
-            FMT(prefix, ".fillAmount")),
+          fillAmount(pb, order.fillAmountBorS.packed, fillB, fillS, FMT(prefix, ".fillAmount")),
           fillLimit(
             pb,
             order.fillAmountBorS.packed,
             order.amountB.packed,
             order.amountS.packed,
             FMT(prefix, ".fillLimit")),
-          filledAfter( //
-            pb,
-            filled,
-            fillAmount.result(),
-            NUM_BITS_AMOUNT,
-            FMT(prefix, ".filledAfter")),
+          filledAfter(pb, filled, fillAmount.result(), NUM_BITS_AMOUNT, FMT(prefix, ".filledAfter")),
           filledAfter_leq_fillLimit(
             pb,
             filledAfter.result(),
@@ -461,32 +424,12 @@ class OrderMatchingGadget : public GadgetT
             FMT(prefix, ".orderA_tokenB_eq_orderB_tokenS")),
 
           // Check if the takers match
-          validateTakerA( //
-            pb,
-            constants,
-            ownerB,
-            orderA.taker,
-            FMT(prefix, ".validateTakerA")),
-          validateTakerB( //
-            pb,
-            constants,
-            ownerA,
-            orderB.taker,
-            FMT(prefix, ".validateTakerB")),
+          validateTakerA(pb, constants, ownerB, orderA.taker, FMT(prefix, ".validateTakerA")),
+          validateTakerB(pb, constants, ownerA, orderB.taker, FMT(prefix, ".validateTakerB")),
 
           // Check if the orders in the settlement are correctly filled
-          requireValidA( //
-            pb,
-            constants,
-            timestamp,
-            orderA,
-            FMT(prefix, ".checkValidA")),
-          requireValidB( //
-            pb,
-            constants,
-            timestamp,
-            orderB,
-            FMT(prefix, ".checkValidB"))
+          requireValidA(pb, constants, timestamp, orderA, FMT(prefix, ".checkValidA")),
+          requireValidB(pb, constants, timestamp, orderB, FMT(prefix, ".checkValidB"))
     {
     }
 
