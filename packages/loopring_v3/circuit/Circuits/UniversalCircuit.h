@@ -559,7 +559,7 @@ class UniversalCircuit : public Circuit
     UniversalCircuit(ProtoboardT &pb, const std::string &prefix)
         : Circuit(pb, prefix),
 
-          publicData(pb, FMT(prefix, ".publicData")), //
+          publicData(pb, FMT(prefix, ".publicData")),
           constants(pb, FMT(prefix, ".constants")),
 
           // State
