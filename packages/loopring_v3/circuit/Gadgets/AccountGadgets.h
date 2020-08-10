@@ -234,10 +234,11 @@ class UpdateBalanceGadget : public GadgetT
     {
         leafBefore.generate_r1cs_witness();
         leafAfter.generate_r1cs_witness();
-        rootBeforeVerifier.generate_r1cs_witness();
-        rootAfter.generate_r1cs_witness();
 
         proof.fill_with_field_elements(pb, update.proof.data);
+
+        rootBeforeVerifier.generate_r1cs_witness();
+        rootAfter.generate_r1cs_witness();
 
         // ASSERT(pb.val(rootBeforeVerifier.m_expected_root) == update.rootBefore,
         // annotation_prefix);
