@@ -47,8 +47,8 @@ class AccountGadget : public GadgetT
     AccountGadget(ProtoboardT &pb, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          owner(make_variable(pb, FMT(prefix, ".owner"))), //
-          publicKey(pb, FMT(prefix, ".publicKey")),        //
+          owner(make_variable(pb, FMT(prefix, ".owner"))),
+          publicKey(pb, FMT(prefix, ".publicKey")),
           nonce(make_variable(pb, FMT(prefix, ".nonce"))),
           balancesRoot(make_variable(pb, FMT(prefix, ".balancesRoot")))
     {
@@ -86,7 +86,7 @@ class UpdateAccountGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          stateBefore(_stateBefore), //
+          stateBefore(_stateBefore),
           stateAfter(_stateAfter),
 
           leafBefore(
@@ -211,7 +211,7 @@ class UpdateBalanceGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          stateBefore(_stateBefore), //
+          stateBefore(_stateBefore),
           stateAfter(_stateAfter),
 
           leafBefore(pb, var_array({_stateBefore.balance, _stateBefore.storageRoot}), FMT(prefix, ".leafBefore")),
