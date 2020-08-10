@@ -17,23 +17,30 @@ namespace Loopring
 
 class NoopCircuit : public BaseTransactionCircuit
 {
-public:
-  NoopCircuit( //
-    ProtoboardT &pb,
-    const TransactionState &state,
-    const std::string &prefix)
-      : BaseTransactionCircuit(pb, state, prefix)
-  {
-    // No signatures needed
-    setOutput(SIGNATURE_REQUIRED_A, state.constants._0);
-    setOutput(SIGNATURE_REQUIRED_B, state.constants._0);
-  }
+  public:
+    NoopCircuit( //
+      ProtoboardT &pb,
+      const TransactionState &state,
+      const std::string &prefix)
+        : BaseTransactionCircuit(pb, state, prefix)
+    {
+        // No signatures needed
+        setOutput(SIGNATURE_REQUIRED_A, state.constants._0);
+        setOutput(SIGNATURE_REQUIRED_B, state.constants._0);
+    }
 
-  void generate_r1cs_witness() {}
+    void generate_r1cs_witness()
+    {
+    }
 
-  void generate_r1cs_constraints() {}
+    void generate_r1cs_constraints()
+    {
+    }
 
-  const VariableArrayT getPublicData() const { return VariableArrayT(0, state.constants._0); }
+    const VariableArrayT getPublicData() const
+    {
+        return VariableArrayT(0, state.constants._0);
+    }
 };
 
 } // namespace Loopring
