@@ -55,8 +55,8 @@ struct TransactionOperatorAccountState : public GadgetT
     TransactionOperatorAccountState(ProtoboardT &pb, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          balanceA(pb, FMT(prefix, ".balanceA")), //
-          balanceB(pb, FMT(prefix, ".balanceB")), //
+          balanceA(pb, FMT(prefix, ".balanceA")),
+          balanceB(pb, FMT(prefix, ".balanceB")),
           account(pb, FMT(prefix, ".account"))
     {
     }
@@ -80,7 +80,7 @@ struct TransactionProtocolFeeAccountState : public GadgetT
     TransactionProtocolFeeAccountState(ProtoboardT &pb, const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          balanceA(pb, FMT(prefix, ".balanceA")), //
+          balanceA(pb, FMT(prefix, ".balanceA")),
           balanceB(pb, FMT(prefix, ".balanceB"))
     {
     }
@@ -125,18 +125,18 @@ struct TransactionState : public GadgetT
 
           params(_params),
 
-          constants(_constants), //
+          constants(_constants),
 
-          exchange(_exchange),                                     //
-          timestamp(_timestamp),                                   //
-          protocolTakerFeeBips(_protocolTakerFeeBips),             //
-          protocolMakerFeeBips(_protocolMakerFeeBips),             //
-          numConditionalTransactions(_numConditionalTransactions), //
-          type(_type),                                             //
+          exchange(_exchange),
+          timestamp(_timestamp),
+          protocolTakerFeeBips(_protocolTakerFeeBips),
+          protocolMakerFeeBips(_protocolMakerFeeBips),
+          numConditionalTransactions(_numConditionalTransactions),
+          type(_type),
 
-          accountA(pb, FMT(prefix, ".accountA")),               //
-          accountB(pb, FMT(prefix, ".accountB")),               //
-          operatorAccount(pb, FMT(prefix, ".operatorAccount")), //
+          accountA(pb, FMT(prefix, ".accountA")),
+          accountB(pb, FMT(prefix, ".accountB")),
+          operatorAccount(pb, FMT(prefix, ".operatorAccount")),
           protocolFeeAccount(pb, FMT(prefix, ".protocolFeeAccount"))
     {
     }
