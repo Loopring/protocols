@@ -205,10 +205,7 @@ class TransactionGadget : public GadgetT
 
           constants(_constants),
 
-          type( //
-            pb,
-            NUM_BITS_TX_TYPE,
-            FMT(prefix, ".type")),
+          type(pb, NUM_BITS_TX_TYPE, FMT(prefix, ".type")),
 
           selector(pb, constants, type.packed, (unsigned int)TransactionType::COUNT, FMT(prefix, ".selector")),
 
