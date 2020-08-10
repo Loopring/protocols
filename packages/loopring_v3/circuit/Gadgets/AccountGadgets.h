@@ -45,13 +45,10 @@ class AccountGadget : public GadgetT
     VariableT balancesRoot;
 
     AccountGadget(ProtoboardT &pb, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        owner(make_variable(pb, FMT(prefix, ".owner")))
-        , publicKey(pb, FMT(prefix, ".publicKey"))
-        , nonce(make_variable(pb, FMT(prefix, ".nonce")))
-        , balancesRoot(make_variable(pb, FMT(prefix, ".balancesRoot")))
+          owner(make_variable(pb, FMT(prefix, ".owner"))), publicKey(pb, FMT(prefix, ".publicKey")),
+          nonce(make_variable(pb, FMT(prefix, ".nonce"))), balancesRoot(make_variable(pb, FMT(prefix, ".balancesRoot")))
     {
     }
 
@@ -85,26 +82,28 @@ class UpdateAccountGadget : public GadgetT
       const AccountState &before,
       const AccountState &after,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        valuesBefore(before)
-        , valuesAfter(after)
-        ,
+          valuesBefore(before), valuesAfter(after),
 
-        leafBefore(
-          pb,
-          var_array({before.owner, before.publicKeyX, before.publicKeyY, before.nonce, before.balancesRoot}),
-          FMT(prefix, ".leafBefore"))
-        , leafAfter(
+          leafBefore(
+            pb,
+            var_array({before.owner, before.publicKeyX, before.publicKeyY, before.nonce, before.balancesRoot}),
+            FMT(prefix, ".leafBefore")),
+          leafAfter(
             pb,
             var_array({after.owner, after.publicKeyX, after.publicKeyY, after.nonce, after.balancesRoot}),
-            FMT(prefix, ".leafAfter"))
-        ,
+            FMT(prefix, ".leafAfter")),
 
-        proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS * 3, FMT(prefix, ".proof")))
-        , proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address, leafBefore.result(), merkleRoot, proof, FMT(prefix, ".pathBefore"))
-        , rootCalculatorAfter(pb, TREE_DEPTH_ACCOUNTS, address, leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
+          proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS * 3, FMT(prefix, ".proof"))), proofVerifierBefore(
+                                                                                       pb,
+                                                                                       TREE_DEPTH_ACCOUNTS,
+                                                                                       address,
+                                                                                       leafBefore.result(),
+                                                                                       merkleRoot,
+                                                                                       proof,
+                                                                                       FMT(prefix, ".pathBefore")),
+          rootCalculatorAfter(pb, TREE_DEPTH_ACCOUNTS, address, leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
     {
     }
 
@@ -163,11 +162,10 @@ class BalanceGadget : public GadgetT
     VariableT storageRoot;
 
     BalanceGadget(ProtoboardT &pb, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        balance(make_variable(pb, FMT(prefix, ".balance")))
-        , storageRoot(make_variable(pb, FMT(prefix, ".storageRoot")))
+          balance(make_variable(pb, FMT(prefix, ".balance"))),
+          storageRoot(make_variable(pb, FMT(prefix, ".storageRoot")))
     {
     }
 
@@ -198,20 +196,22 @@ class UpdateBalanceGadget : public GadgetT
       const BalanceState before,
       const BalanceState after,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        valuesBefore(before)
-        , valuesAfter(after)
-        ,
+          valuesBefore(before), valuesAfter(after),
 
-        leafBefore(pb, var_array({before.balance, before.storageRoot}), FMT(prefix, ".leafBefore"))
-        , leafAfter(pb, var_array({after.balance, after.storageRoot}), FMT(prefix, ".leafAfter"))
-        ,
+          leafBefore(pb, var_array({before.balance, before.storageRoot}), FMT(prefix, ".leafBefore")),
+          leafAfter(pb, var_array({after.balance, after.storageRoot}), FMT(prefix, ".leafAfter")),
 
-        proof(make_var_array(pb, TREE_DEPTH_TOKENS * 3, FMT(prefix, ".proof")))
-        , proofVerifierBefore(pb, TREE_DEPTH_TOKENS, tokenID, leafBefore.result(), merkleRoot, proof, FMT(prefix, ".pathBefore"))
-        , rootCalculatorAfter(pb, TREE_DEPTH_TOKENS, tokenID, leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
+          proof(make_var_array(pb, TREE_DEPTH_TOKENS * 3, FMT(prefix, ".proof"))), proofVerifierBefore(
+                                                                                     pb,
+                                                                                     TREE_DEPTH_TOKENS,
+                                                                                     tokenID,
+                                                                                     leafBefore.result(),
+                                                                                     merkleRoot,
+                                                                                     proof,
+                                                                                     FMT(prefix, ".pathBefore")),
+          rootCalculatorAfter(pb, TREE_DEPTH_TOKENS, tokenID, leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
     {
     }
 

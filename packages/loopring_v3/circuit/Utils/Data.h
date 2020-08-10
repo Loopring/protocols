@@ -244,9 +244,7 @@ class Signature
     {
     }
 
-    Signature(ethsnarks::jubjub::EdwardsPoint _R, ethsnarks::FieldT _s)
-        : R(_R)
-        , s(_s)
+    Signature(ethsnarks::jubjub::EdwardsPoint _R, ethsnarks::FieldT _s) : R(_R), s(_s)
     {
     }
 

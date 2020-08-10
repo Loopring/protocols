@@ -24,13 +24,10 @@ struct TransactionAccountState : public GadgetT
     AccountGadget account;
 
     TransactionAccountState(ProtoboardT &pb, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        storage(pb, FMT(prefix, ".storage"))
-        , balanceS(pb, FMT(prefix, ".balanceS"))
-        , balanceB(pb, FMT(prefix, ".balanceB"))
-        , account(pb, FMT(prefix, ".account"))
+          storage(pb, FMT(prefix, ".storage")), balanceS(pb, FMT(prefix, ".balanceS")),
+          balanceB(pb, FMT(prefix, ".balanceB")), account(pb, FMT(prefix, ".account"))
     {
     }
 
@@ -54,16 +51,17 @@ struct TransactionAccountOperatorState : public GadgetT
     AccountGadget account;
 
     TransactionAccountOperatorState(ProtoboardT &pb, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        balanceA(pb, FMT(prefix, ".balanceA"))
-        , balanceB(pb, FMT(prefix, ".balanceB"))
-        , account(pb, FMT(prefix, ".account"))
+          balanceA(pb, FMT(prefix, ".balanceA")), balanceB(pb, FMT(prefix, ".balanceB")),
+          account(pb, FMT(prefix, ".account"))
     {
     }
 
-    void generate_r1cs_witness(const AccountLeaf &accountLeaf, const BalanceLeaf &balanceLeafS, const BalanceLeaf &balanceLeafB)
+    void generate_r1cs_witness(
+      const AccountLeaf &accountLeaf,
+      const BalanceLeaf &balanceLeafS,
+      const BalanceLeaf &balanceLeafB)
     {
         balanceA.generate_r1cs_witness(balanceLeafS);
         balanceB.generate_r1cs_witness(balanceLeafB);
@@ -77,11 +75,9 @@ struct TransactionAccountBalancesState : public GadgetT
     BalanceGadget balanceB;
 
     TransactionAccountBalancesState(ProtoboardT &pb, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        balanceA(pb, FMT(prefix, ".balanceA"))
-        , balanceB(pb, FMT(prefix, ".balanceB"))
+          balanceA(pb, FMT(prefix, ".balanceA")), balanceB(pb, FMT(prefix, ".balanceB"))
     {
     }
 
@@ -121,27 +117,18 @@ struct TransactionState : public GadgetT
       const VariableT &_numConditionalTransactions,
       const VariableT &_type,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        params(_params)
-        ,
+          params(_params),
 
-        constants(_constants)
-        ,
+          constants(_constants),
 
-        exchange(_exchange)
-        , timestamp(_timestamp)
-        , protocolTakerFeeBips(_protocolTakerFeeBips)
-        , protocolMakerFeeBips(_protocolMakerFeeBips)
-        , numConditionalTransactions(_numConditionalTransactions)
-        , type(_type)
-        ,
+          exchange(_exchange), timestamp(_timestamp), protocolTakerFeeBips(_protocolTakerFeeBips),
+          protocolMakerFeeBips(_protocolMakerFeeBips), numConditionalTransactions(_numConditionalTransactions),
+          type(_type),
 
-        accountA(pb, FMT(prefix, ".accountA"))
-        , accountB(pb, FMT(prefix, ".accountB"))
-        , oper(pb, FMT(prefix, ".oper"))
-        , pool(pb, FMT(prefix, ".pool"))
+          accountA(pb, FMT(prefix, ".accountA")), accountB(pb, FMT(prefix, ".accountB")),
+          oper(pb, FMT(prefix, ".oper")), pool(pb, FMT(prefix, ".pool"))
     {
     }
 
@@ -227,8 +214,7 @@ class BaseTransactionCircuit : public GadgetT
     std::map<TxVariable, VariableArrayT> aOutputs;
 
     BaseTransactionCircuit(ProtoboardT &pb, const TransactionState &_state, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , state(_state)
+        : GadgetT(pb, prefix), state(_state)
     {
         aOutputs[storageA_Address] = VariableArrayT(NUM_BITS_STORAGE_ADDRESS, state.constants._0);
         uOutputs[storageA_Data] = state.accountA.storage.data;

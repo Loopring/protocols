@@ -34,19 +34,17 @@ class merkle_path_selector_4 : public GadgetT
       const VariableT &bit0,
       const VariableT &bit1,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        bit0_or_bit1(pb, {bit0, bit1}, FMT(prefix, ".bit0_or_bit1"))
-        , bit0_and_bit1(pb, {bit0, bit1}, FMT(prefix, ".bit0_and_bit1"))
-        ,
+          bit0_or_bit1(pb, {bit0, bit1}, FMT(prefix, ".bit0_or_bit1")),
+          bit0_and_bit1(pb, {bit0, bit1}, FMT(prefix, ".bit0_and_bit1")),
 
-        child0(pb, bit0_or_bit1.result(), sideNodes[0], input, FMT(prefix, ".child0"))
-        , child1p(pb, bit0, input, sideNodes[0], FMT(prefix, ".child1p"))
-        , child1(pb, bit1, sideNodes[1], child1p.result(), FMT(prefix, ".child1"))
-        , child2p(pb, bit0, sideNodes[2], input, FMT(prefix, ".child2p"))
-        , child2(pb, bit1, child2p.result(), sideNodes[1], FMT(prefix, ".child2"))
-        , child3(pb, bit0_and_bit1.result(), input, sideNodes[2], FMT(prefix, ".child3"))
+          child0(pb, bit0_or_bit1.result(), sideNodes[0], input, FMT(prefix, ".child0")),
+          child1p(pb, bit0, input, sideNodes[0], FMT(prefix, ".child1p")),
+          child1(pb, bit1, sideNodes[1], child1p.result(), FMT(prefix, ".child1")),
+          child2p(pb, bit0, sideNodes[2], input, FMT(prefix, ".child2p")),
+          child2(pb, bit1, child2p.result(), sideNodes[1], FMT(prefix, ".child2")),
+          child3(pb, bit0_and_bit1.result(), input, sideNodes[2], FMT(prefix, ".child3"))
     {
         assert(sideNodes.size() == 3);
     }
@@ -113,7 +111,8 @@ template <typename HashT> class merkle_path_compute_4 : public GadgetT
               in_address_bits[i * 2 + 1],
               FMT(this->annotation_prefix, ".selector[%zu]", i)));
 
-            m_hashers.emplace_back(in_pb, var_array(m_selectors[i].getChildren()), FMT(this->annotation_prefix, ".hasher[%zu]", i));
+            m_hashers.emplace_back(
+              in_pb, var_array(m_selectors[i].getChildren()), FMT(this->annotation_prefix, ".hasher[%zu]", i));
         }
     }
 
@@ -158,8 +157,14 @@ template <typename HashT> class merkle_path_authenticator_4 : public merkle_path
       const VariableT in_expected_root,
       const VariableArrayT in_path,
       const std::string &in_annotation_prefix)
-        : merkle_path_compute_4<HashT>::merkle_path_compute_4(in_pb, in_depth, in_address_bits, in_leaf, in_path, in_annotation_prefix)
-        , m_expected_root(in_expected_root)
+        : merkle_path_compute_4<HashT>::merkle_path_compute_4(
+            in_pb,
+            in_depth,
+            in_address_bits,
+            in_leaf,
+            in_path,
+            in_annotation_prefix),
+          m_expected_root(in_expected_root)
     {
     }
 
@@ -174,7 +179,8 @@ template <typename HashT> class merkle_path_authenticator_4 : public merkle_path
 
         // Ensure root matches calculated path hash
         this->pb.add_r1cs_constraint(
-          ConstraintT(this->result(), 1, m_expected_root), FMT(this->annotation_prefix, ".expected_root authenticator"));
+          ConstraintT(this->result(), 1, m_expected_root),
+          FMT(this->annotation_prefix, ".expected_root authenticator"));
     }
 };
 

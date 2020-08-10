@@ -60,113 +60,109 @@ class SpotTradeCircuit : public BaseTransactionCircuit
     TransferGadget protocolFeeB_from_balanceBO_to_balanceBP;
 
     SpotTradeCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
-        : BaseTransactionCircuit(pb, state, prefix)
-        ,
+        : BaseTransactionCircuit(pb, state, prefix),
 
-        // Orders
-        orderA(pb, state.constants, state.exchange, FMT(prefix, ".orderA"))
-        , orderB(pb, state.constants, state.exchange, FMT(prefix, ".orderB"))
-        ,
+          // Orders
+          orderA(pb, state.constants, state.exchange, FMT(prefix, ".orderA")),
+          orderB(pb, state.constants, state.exchange, FMT(prefix, ".orderB")),
 
-        // Balances
-        balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A"))
-        , balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A"))
-        , balanceS_B(pb, state.accountB.balanceS, FMT(prefix, ".balanceS_B"))
-        , balanceB_B(pb, state.accountB.balanceB, FMT(prefix, ".balanceB_B"))
-        , balanceA_P(pb, state.pool.balanceA, FMT(prefix, ".balanceA_P"))
-        , balanceB_P(pb, state.pool.balanceB, FMT(prefix, ".balanceB_P"))
-        , balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O"))
-        , balanceB_O(pb, state.oper.balanceB, FMT(prefix, ".balanceB_O"))
-        ,
+          // Balances
+          balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+          balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+          balanceS_B(pb, state.accountB.balanceS, FMT(prefix, ".balanceS_B")),
+          balanceB_B(pb, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
+          balanceA_P(pb, state.pool.balanceA, FMT(prefix, ".balanceA_P")),
+          balanceB_P(pb, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
+          balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
+          balanceB_O(pb, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
 
-        // Order fills
-        fillS_A(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_A"))
-        , fillS_B(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_B"))
-        ,
+          // Order fills
+          fillS_A(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_A")),
+          fillS_B(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_B")),
 
-        // Trade history
-        isSpotTradeTx(pb, state.type, state.constants.txTypeSpotTrade, FMT(prefix, ".isSpotTradeTx"))
-        , tradeHistory_A(
+          // Trade history
+          isSpotTradeTx(pb, state.type, state.constants.txTypeSpotTrade, FMT(prefix, ".isSpotTradeTx")),
+          tradeHistory_A(
             pb,
             state.constants,
             state.accountA.storage,
             orderA.storageID,
             isSpotTradeTx.result(),
-            FMT(prefix, ".tradeHistoryA"))
-        , tradeHistory_B(
+            FMT(prefix, ".tradeHistoryA")),
+          tradeHistory_B(
             pb,
             state.constants,
             state.accountB.storage,
             orderB.storageID,
             isSpotTradeTx.result(),
-            FMT(prefix, ".tradeHistoryB"))
-        ,
+            FMT(prefix, ".tradeHistoryB")),
 
-        // Match orders
-        orderMatching(
-          pb,
-          state.constants,
-          state.timestamp,
-          orderA,
-          orderB,
-          state.accountA.account.owner,
-          state.accountB.account.owner,
-          tradeHistory_A.getData(),
-          tradeHistory_B.getData(),
-          fillS_A.value(),
-          fillS_B.value(),
-          FMT(prefix, ".orderMatching"))
-        ,
+          // Match orders
+          orderMatching(
+            pb,
+            state.constants,
+            state.timestamp,
+            orderA,
+            orderB,
+            state.accountA.account.owner,
+            state.accountB.account.owner,
+            tradeHistory_A.getData(),
+            tradeHistory_B.getData(),
+            fillS_A.value(),
+            fillS_B.value(),
+            FMT(prefix, ".orderMatching")),
 
-        // Calculate fees
-        feeCalculatorA(
-          pb,
-          state.constants,
-          fillS_B.value(),
-          state.protocolTakerFeeBips,
-          orderA.feeBips.packed,
-          FMT(prefix, ".feeCalculatorA"))
-        , feeCalculatorB(
+          // Calculate fees
+          feeCalculatorA(
+            pb,
+            state.constants,
+            fillS_B.value(),
+            state.protocolTakerFeeBips,
+            orderA.feeBips.packed,
+            FMT(prefix, ".feeCalculatorA")),
+          feeCalculatorB(
             pb,
             state.constants,
             fillS_A.value(),
             state.protocolMakerFeeBips,
             orderB.feeBips.packed,
-            FMT(prefix, ".feeCalculatorB"))
-        ,
+            FMT(prefix, ".feeCalculatorB")),
 
-        /* Token Transfers */
-        // Actual trade
-        fillSA_from_balanceSA_to_balanceBB(pb, balanceS_A, balanceB_B, fillS_A.value(), FMT(prefix, ".fillSA_from_balanceSA_to_balanceBB"))
-        , fillSB_from_balanceSB_to_balanceBA(
+          /* Token Transfers */
+          // Actual trade
+          fillSA_from_balanceSA_to_balanceBB(
+            pb,
+            balanceS_A,
+            balanceB_B,
+            fillS_A.value(),
+            FMT(prefix, ".fillSA_from_balanceSA_to_balanceBB")),
+          fillSB_from_balanceSB_to_balanceBA(
             pb,
             balanceS_B,
             balanceB_A,
             fillS_B.value(),
-            FMT(prefix, ".fillSB_from_balanceSB_to_balanceBA"))
-        ,
-        // Fees
-        feeA_from_balanceBA_to_balanceAO(
-          pb,
-          balanceB_A,
-          balanceA_O,
-          feeCalculatorA.getFee(),
-          FMT(prefix, ".feeA_from_balanceBA_to_balanceAO"))
-        , feeB_from_balanceBB_to_balanceBO(
+            FMT(prefix, ".fillSB_from_balanceSB_to_balanceBA")),
+          // Fees
+          feeA_from_balanceBA_to_balanceAO(
+            pb,
+            balanceB_A,
+            balanceA_O,
+            feeCalculatorA.getFee(),
+            FMT(prefix, ".feeA_from_balanceBA_to_balanceAO")),
+          feeB_from_balanceBB_to_balanceBO(
             pb,
             balanceB_B,
             balanceB_O,
             feeCalculatorB.getFee(),
-            FMT(prefix, ".feeB_from_balanceBB_to_balanceBO"))
-        ,
-        // Protocol fees
-        protocolFeeA_from_balanceAO_to_balanceAP(
-          pb,
-          balanceA_O,
-          balanceA_P,
-          feeCalculatorA.getProtocolFee(),
-          FMT(prefix, ".protocolFeeA_from_balanceAO_to_balanceAP"))
-        , protocolFeeB_from_balanceBO_to_balanceBP(
+            FMT(prefix, ".feeB_from_balanceBB_to_balanceBO")),
+          // Protocol fees
+          protocolFeeA_from_balanceAO_to_balanceAP(
+            pb,
+            balanceA_O,
+            balanceA_P,
+            feeCalculatorA.getProtocolFee(),
+            FMT(prefix, ".protocolFeeA_from_balanceAO_to_balanceAP")),
+          protocolFeeB_from_balanceBO_to_balanceBP(
             pb,
             balanceB_O,
             balanceB_P,

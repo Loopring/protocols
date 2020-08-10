@@ -195,88 +195,83 @@ class TransactionGadget : public GadgetT
       const VariableT &protocolBalancesRoot,
       const VariableT &numConditionalTransactionsBefore,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        constants(_constants)
-        ,
+          constants(_constants),
 
-        type(pb, NUM_BITS_TX_TYPE, FMT(prefix, ".type"))
-        , selector(pb, constants, type.packed, (unsigned int)TransactionType::COUNT, FMT(prefix, ".selector"))
-        ,
+          type(pb, NUM_BITS_TX_TYPE, FMT(prefix, ".type")),
+          selector(pb, constants, type.packed, (unsigned int)TransactionType::COUNT, FMT(prefix, ".selector")),
 
-        state(
-          pb,
-          params,
-          constants,
-          exchange,
-          timestamp,
-          protocolTakerFeeBips,
-          protocolMakerFeeBips,
-          numConditionalTransactionsBefore,
-          type.packed,
-          FMT(prefix, ".transactionState"))
-        ,
+          state(
+            pb,
+            params,
+            constants,
+            exchange,
+            timestamp,
+            protocolTakerFeeBips,
+            protocolMakerFeeBips,
+            numConditionalTransactionsBefore,
+            type.packed,
+            FMT(prefix, ".transactionState")),
 
-        // Process transaction
-        noop(pb, state, FMT(prefix, ".noop"))
-        , spotTrade(pb, state, FMT(prefix, ".spotTrade"))
-        , deposit(pb, state, FMT(prefix, ".deposit"))
-        , withdraw(pb, state, FMT(prefix, ".withdraw"))
-        , accountUpdate(pb, state, FMT(prefix, ".accountUpdate"))
-        , transfer(pb, state, FMT(prefix, ".transfer"))
-        , tx(pb, state, selector.result(), {&noop, &deposit, &withdraw, &transfer, &spotTrade, &accountUpdate}, FMT(prefix, ".tx"))
-        ,
+          // Process transaction
+          noop(pb, state, FMT(prefix, ".noop")), spotTrade(pb, state, FMT(prefix, ".spotTrade")),
+          deposit(pb, state, FMT(prefix, ".deposit")), withdraw(pb, state, FMT(prefix, ".withdraw")),
+          accountUpdate(pb, state, FMT(prefix, ".accountUpdate")), transfer(pb, state, FMT(prefix, ".transfer")),
+          tx(
+            pb,
+            state,
+            selector.result(),
+            {&noop, &deposit, &withdraw, &transfer, &spotTrade, &accountUpdate},
+            FMT(prefix, ".tx")),
 
-        // General validation
-        accountA(pb, tx.getArrayOutput(accountA_Address), FMT(prefix, ".packAccountA"))
-        , accountB(pb, tx.getArrayOutput(accountB_Address), FMT(prefix, ".packAccountA"))
-        , validateAccountA(pb, accountA.packed, FMT(prefix, ".validateAccountA"))
-        , validateAccountB(pb, accountB.packed, FMT(prefix, ".validateAccountB"))
-        ,
+          // General validation
+          accountA(pb, tx.getArrayOutput(accountA_Address), FMT(prefix, ".packAccountA")),
+          accountB(pb, tx.getArrayOutput(accountB_Address), FMT(prefix, ".packAccountA")),
+          validateAccountA(pb, accountA.packed, FMT(prefix, ".validateAccountA")),
+          validateAccountB(pb, accountB.packed, FMT(prefix, ".validateAccountB")),
 
-        // Check signatures
-        signatureVerifierA(
-          pb,
-          params,
-          state.constants,
-          jubjub::VariablePointT(tx.getOutput(publicKeyX_A), tx.getOutput(publicKeyY_A)),
-          tx.getOutput(hash_A),
-          tx.getOutput(signatureRequired_A),
-          FMT(prefix, ".signatureVerifierA"))
-        , signatureVerifierB(
+          // Check signatures
+          signatureVerifierA(
+            pb,
+            params,
+            state.constants,
+            jubjub::VariablePointT(tx.getOutput(publicKeyX_A), tx.getOutput(publicKeyY_A)),
+            tx.getOutput(hash_A),
+            tx.getOutput(signatureRequired_A),
+            FMT(prefix, ".signatureVerifierA")),
+          signatureVerifierB(
             pb,
             params,
             state.constants,
             jubjub::VariablePointT(tx.getOutput(publicKeyX_B), tx.getOutput(publicKeyY_B)),
             tx.getOutput(hash_B),
             tx.getOutput(signatureRequired_B),
-            FMT(prefix, ".signatureVerifierB"))
-        ,
+            FMT(prefix, ".signatureVerifierB")),
 
-        // Update UserA
-        updateStorage_A(
-          pb,
-          state.accountA.balanceS.storageRoot,
-          tx.getArrayOutput(storageA_Address),
-          {state.accountA.storage.data, state.accountA.storage.storageID},
-          {tx.getOutput(storageA_Data), tx.getOutput(storageA_StorageId)},
-          FMT(prefix, ".updateStorage_A"))
-        , updateBalanceS_A(
+          // Update UserA
+          updateStorage_A(
+            pb,
+            state.accountA.balanceS.storageRoot,
+            tx.getArrayOutput(storageA_Address),
+            {state.accountA.storage.data, state.accountA.storage.storageID},
+            {tx.getOutput(storageA_Data), tx.getOutput(storageA_StorageId)},
+            FMT(prefix, ".updateStorage_A")),
+          updateBalanceS_A(
             pb,
             state.accountA.account.balancesRoot,
             tx.getArrayOutput(balanceA_S_Address),
             {state.accountA.balanceS.balance, state.accountA.balanceS.storageRoot},
             {tx.getOutput(balanceA_S_Balance), updateStorage_A.result()},
-            FMT(prefix, ".updateBalanceS_A"))
-        , updateBalanceB_A(
+            FMT(prefix, ".updateBalanceS_A")),
+          updateBalanceB_A(
             pb,
             updateBalanceS_A.result(),
             tx.getArrayOutput(balanceB_S_Address),
             {state.accountA.balanceB.balance, state.accountA.balanceB.storageRoot},
             {tx.getOutput(balanceA_B_Balance), state.accountA.balanceB.storageRoot},
-            FMT(prefix, ".updateBalanceB_A"))
-        , updateAccount_A(
+            FMT(prefix, ".updateBalanceB_A")),
+          updateAccount_A(
             pb,
             accountsRoot,
             tx.getArrayOutput(accountA_Address),
@@ -290,32 +285,31 @@ class TransactionGadget : public GadgetT
              tx.getOutput(accountA_PublicKeyY),
              tx.getOutput(accountA_Nonce),
              updateBalanceB_A.result()},
-            FMT(prefix, ".updateAccount_A"))
-        ,
+            FMT(prefix, ".updateAccount_A")),
 
-        // Update UserB
-        updateStorage_B(
-          pb,
-          state.accountB.balanceS.storageRoot,
-          tx.getArrayOutput(storageB_Address),
-          {state.accountB.storage.data, state.accountB.storage.storageID},
-          {tx.getOutput(storageB_Data), tx.getOutput(storageB_StorageId)},
-          FMT(prefix, ".updateStorage_B"))
-        , updateBalanceS_B(
+          // Update UserB
+          updateStorage_B(
+            pb,
+            state.accountB.balanceS.storageRoot,
+            tx.getArrayOutput(storageB_Address),
+            {state.accountB.storage.data, state.accountB.storage.storageID},
+            {tx.getOutput(storageB_Data), tx.getOutput(storageB_StorageId)},
+            FMT(prefix, ".updateStorage_B")),
+          updateBalanceS_B(
             pb,
             state.accountB.account.balancesRoot,
             tx.getArrayOutput(balanceB_S_Address),
             {state.accountB.balanceS.balance, state.accountB.balanceS.storageRoot},
             {tx.getOutput(balanceB_S_Balance), updateStorage_B.result()},
-            FMT(prefix, ".updateBalanceS_B"))
-        , updateBalanceB_B(
+            FMT(prefix, ".updateBalanceS_B")),
+          updateBalanceB_B(
             pb,
             updateBalanceS_B.result(),
             tx.getArrayOutput(balanceA_S_Address),
             {state.accountB.balanceB.balance, state.accountB.balanceB.storageRoot},
             {tx.getOutput(balanceB_B_Balance), state.accountB.balanceB.storageRoot},
-            FMT(prefix, ".updateBalanceB_B"))
-        , updateAccount_B(
+            FMT(prefix, ".updateBalanceB_B")),
+          updateAccount_B(
             pb,
             updateAccount_A.result(),
             tx.getArrayOutput(accountB_Address),
@@ -329,25 +323,24 @@ class TransactionGadget : public GadgetT
              tx.getOutput(accountB_PublicKeyY),
              tx.getOutput(accountB_Nonce),
              updateBalanceB_B.result()},
-            FMT(prefix, ".updateAccount_B"))
-        ,
+            FMT(prefix, ".updateAccount_B")),
 
-        // Update Operator
-        updateBalanceB_O(
-          pb,
-          state.oper.account.balancesRoot,
-          tx.getArrayOutput(balanceA_S_Address),
-          {state.oper.balanceB.balance, state.oper.balanceB.storageRoot},
-          {tx.getOutput(balanceO_B_Balance), state.oper.balanceB.storageRoot},
-          FMT(prefix, ".updateBalanceB_O"))
-        , updateBalanceA_O(
+          // Update Operator
+          updateBalanceB_O(
+            pb,
+            state.oper.account.balancesRoot,
+            tx.getArrayOutput(balanceA_S_Address),
+            {state.oper.balanceB.balance, state.oper.balanceB.storageRoot},
+            {tx.getOutput(balanceO_B_Balance), state.oper.balanceB.storageRoot},
+            FMT(prefix, ".updateBalanceB_O")),
+          updateBalanceA_O(
             pb,
             updateBalanceB_O.result(),
             tx.getArrayOutput(balanceB_S_Address),
             {state.oper.balanceA.balance, state.oper.balanceA.storageRoot},
             {tx.getOutput(balanceO_A_Balance), state.oper.balanceA.storageRoot},
-            FMT(prefix, ".updateBalanceA_O"))
-        , updateAccount_O(
+            FMT(prefix, ".updateBalanceA_O")),
+          updateAccount_O(
             pb,
             updateAccount_B.result(),
             operatorAccountID,
@@ -361,18 +354,17 @@ class TransactionGadget : public GadgetT
              state.oper.account.publicKey.y,
              state.oper.account.nonce,
              updateBalanceA_O.result()},
-            FMT(prefix, ".updateAccount_O"))
-        ,
+            FMT(prefix, ".updateAccount_O")),
 
-        // Update Protocol pool
-        updateBalanceB_P(
-          pb,
-          protocolBalancesRoot,
-          tx.getArrayOutput(balanceA_S_Address),
-          {state.pool.balanceB.balance, constants.emptyStorage},
-          {tx.getOutput(balanceP_B_Balance), constants.emptyStorage},
-          FMT(prefix, ".updateBalanceB_P"))
-        , updateBalanceA_P(
+          // Update Protocol pool
+          updateBalanceB_P(
+            pb,
+            protocolBalancesRoot,
+            tx.getArrayOutput(balanceA_S_Address),
+            {state.pool.balanceB.balance, constants.emptyStorage},
+            {tx.getOutput(balanceP_B_Balance), constants.emptyStorage},
+            FMT(prefix, ".updateBalanceB_P")),
+          updateBalanceA_P(
             pb,
             updateBalanceB_P.result(),
             tx.getArrayOutput(balanceB_S_Address),
@@ -543,35 +535,28 @@ class UniversalCircuit : public Circuit
     std::unique_ptr<UpdateAccountGadget> updateAccount_O;
 
     UniversalCircuit(ProtoboardT &pb, const std::string &prefix)
-        : Circuit(pb, prefix)
-        ,
+        : Circuit(pb, prefix),
 
-        publicData(pb, FMT(prefix, ".publicData"))
-        , constants(pb, FMT(prefix, ".constants"))
-        ,
+          publicData(pb, FMT(prefix, ".publicData")), constants(pb, FMT(prefix, ".constants")),
 
-        // State
-        accountBefore_P(pb, FMT(prefix, ".accountBefore_P"))
-        , accountBefore_O(pb, FMT(prefix, ".accountBefore_O"))
-        ,
+          // State
+          accountBefore_P(pb, FMT(prefix, ".accountBefore_P")), accountBefore_O(pb, FMT(prefix, ".accountBefore_O")),
 
-        // Inputs
-        exchange(pb, NUM_BITS_ADDRESS, FMT(prefix, ".exchange"))
-        , merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore"))
-        , merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter"))
-        , timestamp(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".timestamp"))
-        , protocolTakerFeeBips(pb, NUM_BITS_PROTOCOL_FEE_BIPS, FMT(prefix, ".protocolTakerFeeBips"))
-        , protocolMakerFeeBips(pb, NUM_BITS_PROTOCOL_FEE_BIPS, FMT(prefix, ".protocolMakerFeeBips"))
-        , operatorAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".operatorAccountID"))
-        ,
+          // Inputs
+          exchange(pb, NUM_BITS_ADDRESS, FMT(prefix, ".exchange")),
+          merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
+          merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
+          timestamp(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".timestamp")),
+          protocolTakerFeeBips(pb, NUM_BITS_PROTOCOL_FEE_BIPS, FMT(prefix, ".protocolTakerFeeBips")),
+          protocolMakerFeeBips(pb, NUM_BITS_PROTOCOL_FEE_BIPS, FMT(prefix, ".protocolMakerFeeBips")),
+          operatorAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".operatorAccountID")),
 
-        // Increment the nonce of the Operator
-        nonce_after(pb, accountBefore_O.nonce, constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonce_after"))
-        ,
+          // Increment the nonce of the Operator
+          nonce_after(pb, accountBefore_O.nonce, constants._1, NUM_BITS_NONCE, FMT(prefix, ".nonce_after")),
 
-        // Signature
-        hash(pb, var_array({publicData.publicInput, accountBefore_O.nonce}), FMT(this->annotation_prefix, ".hash"))
-        , signatureVerifier(
+          // Signature
+          hash(pb, var_array({publicData.publicInput, accountBefore_O.nonce}), FMT(this->annotation_prefix, ".hash")),
+          signatureVerifier(
             pb,
             params,
             constants,
@@ -605,7 +590,8 @@ class UniversalCircuit : public Circuit
         for (size_t j = 0; j < numTransactions; j++)
         {
             std::cout << "------------------- tx: " << j << std::endl;
-            const VariableT txAccountsRoot = (j == 0) ? merkleRootBefore.packed : transactions.back().getNewAccountsRoot();
+            const VariableT txAccountsRoot =
+              (j == 0) ? merkleRootBefore.packed : transactions.back().getNewAccountsRoot();
             const VariableT &txProtocolBalancesRoot =
               (j == 0) ? accountBefore_P.balancesRoot : transactions.back().getNewProtocolBalancesRoot();
             transactions.emplace_back(
@@ -769,7 +755,8 @@ class UniversalCircuit : public Circuit
 
     void printInfo() override
     {
-        std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numTransactions) << "/tx)" << std::endl;
+        std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numTransactions) << "/tx)"
+                  << std::endl;
     }
 };
 

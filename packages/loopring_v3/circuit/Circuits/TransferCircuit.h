@@ -111,85 +111,95 @@ class TransferCircuit : public BaseTransactionCircuit
     UnsafeAddGadget numConditionalTransactionsAfter;
 
     TransferCircuit(ProtoboardT &pb, const TransactionState &state, const std::string &prefix)
-        : BaseTransactionCircuit(pb, state, prefix)
-        ,
+        : BaseTransactionCircuit(pb, state, prefix),
 
-        // Inputs
-        fromAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".fromAccountID"))
-        , toAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".toAccountID"))
-        , tokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenID"))
-        , amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount"))
-        , feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID"))
-        , fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee"))
-        , validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil"))
-        , type(pb, NUM_BITS_TYPE, FMT(prefix, ".type"))
-        , from(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".from"))
-        , to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".to"))
-        , storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID"))
-        , dualAuthorX(make_variable(pb, FMT(prefix, ".dualAuthorX")))
-        , dualAuthorY(make_variable(pb, FMT(prefix, ".dualAuthorY")))
-        , payer_toAccountID(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_toAccountID"))
-        , payer_to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_to"))
-        , payee_toAccountID(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payee_toAccountID"))
-        ,
+          // Inputs
+          fromAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".fromAccountID")),
+          toAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".toAccountID")),
+          tokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenID")), amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
+          feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")), fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
+          validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")), type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
+          from(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".from")),
+          to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".to")), storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
+          dualAuthorX(make_variable(pb, FMT(prefix, ".dualAuthorX"))),
+          dualAuthorY(make_variable(pb, FMT(prefix, ".dualAuthorY"))),
+          payer_toAccountID(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_toAccountID")),
+          payer_to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_to")),
+          payee_toAccountID(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payee_toAccountID")),
 
-        // Check if the inputs are valid
-        isTransferTx(pb, state.type, state.constants.txTypeTransfer, FMT(prefix, ".isTransferTx"))
-        , isNonZero_payer_to(pb, payer_to.packed, FMT(prefix, ".isNonZero_payer_to"))
-        , ifrequire_payer_to_eq_to(pb, isNonZero_payer_to.result(), payer_to.packed, to.packed, FMT(prefix, ".ifrequire_payer_to_eq_to"))
-        , ifrequire_payer_toAccountID_eq_payee_toAccountID(
+          // Check if the inputs are valid
+          isTransferTx(pb, state.type, state.constants.txTypeTransfer, FMT(prefix, ".isTransferTx")),
+          isNonZero_payer_to(pb, payer_to.packed, FMT(prefix, ".isNonZero_payer_to")),
+          ifrequire_payer_to_eq_to(
+            pb,
+            isNonZero_payer_to.result(),
+            payer_to.packed,
+            to.packed,
+            FMT(prefix, ".ifrequire_payer_to_eq_to")),
+          ifrequire_payer_toAccountID_eq_payee_toAccountID(
             pb,
             isNonZero_payer_to.result(),
             payer_toAccountID.packed,
             payee_toAccountID.packed,
-            FMT(prefix, ".ifrequire_payer_toAccountID_eq_payee_toAccountID"))
-        , isNonZero_payee_toAccountID(pb, payee_toAccountID.packed, FMT(prefix, ".isNonZero_payee_toAccountID"))
-        , ifrequire_payee_toAccountID_eq_toAccountID(
+            FMT(prefix, ".ifrequire_payer_toAccountID_eq_payee_toAccountID")),
+          isNonZero_payee_toAccountID(pb, payee_toAccountID.packed, FMT(prefix, ".isNonZero_payee_toAccountID")),
+          ifrequire_payee_toAccountID_eq_toAccountID(
             pb,
             isNonZero_payee_toAccountID.result(),
             payee_toAccountID.packed,
             toAccountID.packed,
-            FMT(prefix, ".ifrequire_payee_toAccountID_eq_toAccountID"))
-        , ifrequire_NotZero_to(pb, isTransferTx.result(), to.packed, state.constants._0, FMT(prefix, ".ifrequire_NotZero_to"))
-        , requireValidUntil(pb, state.timestamp, validUntil.packed, NUM_BITS_TIMESTAMP, FMT(prefix, ".requireValidUntil"))
-        ,
+            FMT(prefix, ".ifrequire_payee_toAccountID_eq_toAccountID")),
+          ifrequire_NotZero_to(
+            pb,
+            isTransferTx.result(),
+            to.packed,
+            state.constants._0,
+            FMT(prefix, ".ifrequire_NotZero_to")),
+          requireValidUntil(
+            pb,
+            state.timestamp,
+            validUntil.packed,
+            NUM_BITS_TIMESTAMP,
+            FMT(prefix, ".requireValidUntil")),
 
-        // Fill in standard dual author key if none is given
-        isNonZero_dualAuthorX(pb, dualAuthorX, FMT(prefix, ".isNonZero_dualAuthorX"))
-        , isNonZero_dualAuthorY(pb, dualAuthorY, FMT(prefix, ".isNonZero_dualAuthorY"))
-        , isNonZero_dualAuthor(pb, {isNonZero_dualAuthorX.result(), isNonZero_dualAuthorY.result()}, FMT(prefix, ".isNonZero_dualAuthor"))
-        , resolvedDualAuthorX(
+          // Fill in standard dual author key if none is given
+          isNonZero_dualAuthorX(pb, dualAuthorX, FMT(prefix, ".isNonZero_dualAuthorX")),
+          isNonZero_dualAuthorY(pb, dualAuthorY, FMT(prefix, ".isNonZero_dualAuthorY")),
+          isNonZero_dualAuthor(
+            pb,
+            {isNonZero_dualAuthorX.result(), isNonZero_dualAuthorY.result()},
+            FMT(prefix, ".isNonZero_dualAuthor")),
+          resolvedDualAuthorX(
             pb,
             isNonZero_dualAuthor.result(),
             dualAuthorX,
             state.accountA.account.publicKey.x,
-            FMT(prefix, ".resolvedDualAuthorX"))
-        , resolvedDualAuthorY(
+            FMT(prefix, ".resolvedDualAuthorX")),
+          resolvedDualAuthorY(
             pb,
             isNonZero_dualAuthor.result(),
             dualAuthorY,
             state.accountA.account.publicKey.y,
-            FMT(prefix, ".resolvedDualAuthorY"))
-        ,
+            FMT(prefix, ".resolvedDualAuthorY")),
 
-        // Signature
-        hashPayer(
-          pb,
-          var_array(
-            {state.exchange,
-             fromAccountID.packed,
-             payer_toAccountID.packed,
-             tokenID.packed,
-             amount.packed,
-             feeTokenID.packed,
-             fee.packed,
-             payer_to.packed,
-             dualAuthorX,
-             dualAuthorY,
-             validUntil.packed,
-             storageID.packed}),
-          FMT(this->annotation_prefix, ".hashPayer"))
-        , hashDual(
+          // Signature
+          hashPayer(
+            pb,
+            var_array(
+              {state.exchange,
+               fromAccountID.packed,
+               payer_toAccountID.packed,
+               tokenID.packed,
+               amount.packed,
+               feeTokenID.packed,
+               fee.packed,
+               payer_to.packed,
+               dualAuthorX,
+               dualAuthorY,
+               validUntil.packed,
+               storageID.packed}),
+            FMT(this->annotation_prefix, ".hashPayer")),
+          hashDual(
             pb,
             var_array(
               {state.exchange,
@@ -204,61 +214,75 @@ class TransferCircuit : public BaseTransactionCircuit
                dualAuthorY,
                validUntil.packed,
                storageID.packed}),
-            FMT(this->annotation_prefix, ".hashDual"))
-        ,
+            FMT(this->annotation_prefix, ".hashDual")),
 
-        // Balances
-        balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A"))
-        , balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A"))
-        , balanceB_B(pb, state.accountB.balanceB, FMT(prefix, ".balanceB_B"))
-        , balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O"))
-        ,
+          // Balances
+          balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
+          balanceB_A(pb, state.accountA.balanceB, FMT(prefix, ".balanceB_A")),
+          balanceB_B(pb, state.accountB.balanceB, FMT(prefix, ".balanceB_B")),
+          balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
 
-        // Validation
-        toAccountValid(pb, state.constants, state.accountB.account.owner, to.packed, FMT(prefix, ".ownerValid"))
-        ,
+          // Validation
+          toAccountValid(pb, state.constants, state.accountB.account.owner, to.packed, FMT(prefix, ".ownerValid")),
 
-        // Type
-        isConditional(pb, type.packed, ".isConditional")
-        , needsSignature(pb, isConditional.result(), ".needsSignature")
-        ,
+          // Type
+          isConditional(pb, type.packed, ".isConditional"),
+          needsSignature(pb, isConditional.result(), ".needsSignature"),
 
-        // DA optimization
-        da_NeedsToAddress(pb, {toAccountValid.isNewAccount(), isConditional.result()}, FMT(prefix, ".da_NeedsToAddress"))
-        , da_To(pb, da_NeedsToAddress.result(), to.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_To"))
-        , da_From(pb, isConditional.result(), from.bits, VariableArrayT(NUM_BITS_ADDRESS, state.constants._0), FMT(prefix, ".da_From"))
-        , da_StorageID(
+          // DA optimization
+          da_NeedsToAddress(
+            pb,
+            {toAccountValid.isNewAccount(), isConditional.result()},
+            FMT(prefix, ".da_NeedsToAddress")),
+          da_To(
+            pb,
+            da_NeedsToAddress.result(),
+            to.bits,
+            VariableArrayT(NUM_BITS_ADDRESS, state.constants._0),
+            FMT(prefix, ".da_To")),
+          da_From(
+            pb,
+            isConditional.result(),
+            from.bits,
+            VariableArrayT(NUM_BITS_ADDRESS, state.constants._0),
+            FMT(prefix, ".da_From")),
+          da_StorageID(
             pb,
             isConditional.result(),
             storageID.bits,
             VariableArrayT(NUM_BITS_STORAGEID, state.constants._0),
-            FMT(prefix, ".da_StorageID"))
-        ,
+            FMT(prefix, ".da_StorageID")),
 
-        // Fee as float
-        fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee"))
-        , requireAccuracyFee(pb, fFee.value(), fee.packed, Float16Accuracy, NUM_BITS_AMOUNT, FMT(prefix, ".requireAccuracyFee"))
-        ,
-        // Amount as float
-        fAmount(pb, state.constants, Float24Encoding, FMT(prefix, ".fAmount"))
-        , requireAccuracyAmount(pb, fAmount.value(), amount.packed, Float24Accuracy, NUM_BITS_AMOUNT, FMT(prefix, ".requireAccuracyAmount"))
-        ,
-        // Fee payment from From to the operator
-        feePayment(pb, balanceB_A, balanceA_O, fFee.value(), FMT(prefix, ".feePayment"))
-        ,
-        // Transfer from From to To
-        transferPayment(pb, balanceS_A, balanceB_B, fAmount.value(), FMT(prefix, ".transferPayment"))
-        ,
+          // Fee as float
+          fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")), requireAccuracyFee(
+                                                                              pb,
+                                                                              fFee.value(),
+                                                                              fee.packed,
+                                                                              Float16Accuracy,
+                                                                              NUM_BITS_AMOUNT,
+                                                                              FMT(prefix, ".requireAccuracyFee")),
+          // Amount as float
+          fAmount(pb, state.constants, Float24Encoding, FMT(prefix, ".fAmount")),
+          requireAccuracyAmount(
+            pb,
+            fAmount.value(),
+            amount.packed,
+            Float24Accuracy,
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".requireAccuracyAmount")),
+          // Fee payment from From to the operator
+          feePayment(pb, balanceB_A, balanceA_O, fFee.value(), FMT(prefix, ".feePayment")),
+          // Transfer from From to To
+          transferPayment(pb, balanceS_A, balanceB_B, fAmount.value(), FMT(prefix, ".transferPayment")),
 
-        // Nonce
-        nonce(pb, state.constants, state.accountA.storage, storageID, isTransferTx.result(), FMT(prefix, ".nonce"))
-        ,
-        // Increase the number of conditional transactions (if conditional)
-        numConditionalTransactionsAfter(
-          pb,
-          state.numConditionalTransactions,
-          isConditional.result(),
-          FMT(prefix, ".numConditionalTransactionsAfter"))
+          // Nonce
+          nonce(pb, state.constants, state.accountA.storage, storageID, isTransferTx.result(), FMT(prefix, ".nonce")),
+          // Increase the number of conditional transactions (if conditional)
+          numConditionalTransactionsAfter(
+            pb,
+            state.numConditionalTransactions,
+            isConditional.result(),
+            FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         // Update the From account
         setArrayOutput(accountA_Address, fromAccountID.bits);

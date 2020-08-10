@@ -2,7 +2,7 @@ Language: Cpp
 BasedOnStyle: LLVM
 IndentWidth: 4
 ContinuationIndentWidth: 2
-ColumnLimit: 140
+ColumnLimit: 120
 BinPackArguments: false
 SortIncludes: false
 BinPackParameters: false
@@ -14,7 +14,8 @@ AllowShortCaseLabelsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-BreakConstructorInitializers: BeforeComma
+BreakConstructorInitializersBeforeComma: false
+BreakConstructorInitializers: BeforeColon
 BraceWrapping:
   AfterClass:      true
   AfterControlStatement: true

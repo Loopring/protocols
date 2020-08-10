@@ -58,42 +58,42 @@ class Constants : public GadgetT
     std::vector<VariableT> values;
 
     Constants(ProtoboardT &pb, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        _0(make_variable(pb, FieldT::zero(), FMT(prefix, ".zero")))
-        , _1(make_variable(pb, FieldT::one(), FMT(prefix, ".one")))
-        , _2(make_variable(pb, ethsnarks::FieldT(2), FMT(prefix, ".two")))
-        , _3(make_variable(pb, ethsnarks::FieldT(3), FMT(prefix, ".three")))
-        , _4(make_variable(pb, ethsnarks::FieldT(4), FMT(prefix, ".four")))
-        , _5(make_variable(pb, ethsnarks::FieldT(5), FMT(prefix, ".five")))
-        , _6(make_variable(pb, ethsnarks::FieldT(6), FMT(prefix, ".six")))
-        , _7(make_variable(pb, ethsnarks::FieldT(7), FMT(prefix, ".seven")))
-        , _8(make_variable(pb, ethsnarks::FieldT(8), FMT(prefix, ".eight")))
-        , _9(make_variable(pb, ethsnarks::FieldT(9), FMT(prefix, ".nine")))
-        , _10(make_variable(pb, ethsnarks::FieldT(10), FMT(prefix, ".ten")))
-        , _1000(make_variable(pb, ethsnarks::FieldT(1000), FMT(prefix, "._1000")))
-        , _1001(make_variable(pb, ethsnarks::FieldT(1001), FMT(prefix, "._1001")))
-        , _10000(make_variable(pb, ethsnarks::FieldT(10000), FMT(prefix, "._10000")))
-        , _100000(make_variable(pb, ethsnarks::FieldT(100000), FMT(prefix, "._100000")))
-        , emptyStorage(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyStorage")))
-        , maxAmount(make_variable(pb, ethsnarks::FieldT(MAX_AMOUNT), FMT(prefix, ".maxAmount")))
-        , numStorageSlots(make_variable(pb, ethsnarks::FieldT(NUM_STORAGE_SLOTS), FMT(prefix, ".numStorageSlots")))
-        , dummyPublicKeyX(make_variable(
+          _0(make_variable(pb, FieldT::zero(), FMT(prefix, ".zero"))),
+          _1(make_variable(pb, FieldT::one(), FMT(prefix, ".one"))),
+          _2(make_variable(pb, ethsnarks::FieldT(2), FMT(prefix, ".two"))),
+          _3(make_variable(pb, ethsnarks::FieldT(3), FMT(prefix, ".three"))),
+          _4(make_variable(pb, ethsnarks::FieldT(4), FMT(prefix, ".four"))),
+          _5(make_variable(pb, ethsnarks::FieldT(5), FMT(prefix, ".five"))),
+          _6(make_variable(pb, ethsnarks::FieldT(6), FMT(prefix, ".six"))),
+          _7(make_variable(pb, ethsnarks::FieldT(7), FMT(prefix, ".seven"))),
+          _8(make_variable(pb, ethsnarks::FieldT(8), FMT(prefix, ".eight"))),
+          _9(make_variable(pb, ethsnarks::FieldT(9), FMT(prefix, ".nine"))),
+          _10(make_variable(pb, ethsnarks::FieldT(10), FMT(prefix, ".ten"))),
+          _1000(make_variable(pb, ethsnarks::FieldT(1000), FMT(prefix, "._1000"))),
+          _1001(make_variable(pb, ethsnarks::FieldT(1001), FMT(prefix, "._1001"))),
+          _10000(make_variable(pb, ethsnarks::FieldT(10000), FMT(prefix, "._10000"))),
+          _100000(make_variable(pb, ethsnarks::FieldT(100000), FMT(prefix, "._100000"))),
+          emptyStorage(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyStorage"))),
+          maxAmount(make_variable(pb, ethsnarks::FieldT(MAX_AMOUNT), FMT(prefix, ".maxAmount"))),
+          numStorageSlots(make_variable(pb, ethsnarks::FieldT(NUM_STORAGE_SLOTS), FMT(prefix, ".numStorageSlots"))),
+          dummyPublicKeyX(make_variable(
             pb,
             ethsnarks::FieldT("132404916167441185773716937639098950030214269269"
                               "071041759116060313694190797"),
-            FMT(prefix, ".dummyPublicKeyX")))
-        , dummyPublicKeyY(make_variable(
+            FMT(prefix, ".dummyPublicKeyX"))),
+          dummyPublicKeyY(make_variable(
             pb,
             ethsnarks::FieldT("693327432091406580567063741045308167515412704492"
                               "6882796951068647148079547843"),
-            FMT(prefix, ".dummyPublicKeyY")))
-        , txTypeSpotTrade(make_variable(pb, ethsnarks::FieldT(int(TransactionType::SpotTrade)), FMT(prefix, ".txTypeSpotTrade")))
-        , txTypeTransfer(make_variable(pb, ethsnarks::FieldT(int(TransactionType::Transfer)), FMT(prefix, ".txTypeTransfer")))
-        ,
+            FMT(prefix, ".dummyPublicKeyY"))),
+          txTypeSpotTrade(
+            make_variable(pb, ethsnarks::FieldT(int(TransactionType::SpotTrade)), FMT(prefix, ".txTypeSpotTrade"))),
+          txTypeTransfer(
+            make_variable(pb, ethsnarks::FieldT(int(TransactionType::Transfer)), FMT(prefix, ".txTypeTransfer"))),
 
-        zeroAccount(NUM_BITS_ACCOUNT, _0)
+          zeroAccount(NUM_BITS_ACCOUNT, _0)
     {
         assert(NUM_BITS_MAX_VALUE == FieldT::size_in_bits());
         assert(NUM_BITS_FIELD_CAPACITY == FieldT::capacity());
@@ -133,9 +133,11 @@ class Constants : public GadgetT
         pb.add_r1cs_constraint(ConstraintT(_1001, FieldT::one(), ethsnarks::FieldT(1001)), "._1001");
         pb.add_r1cs_constraint(ConstraintT(_10000, FieldT::one(), ethsnarks::FieldT(10000)), "._10000");
         pb.add_r1cs_constraint(ConstraintT(_100000, FieldT::one(), ethsnarks::FieldT(100000)), "._100000");
-        pb.add_r1cs_constraint(ConstraintT(emptyStorage, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyStorage");
+        pb.add_r1cs_constraint(
+          ConstraintT(emptyStorage, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyStorage");
         pb.add_r1cs_constraint(ConstraintT(maxAmount, FieldT::one(), ethsnarks::FieldT(MAX_AMOUNT)), ".maxAmount");
-        pb.add_r1cs_constraint(ConstraintT(numStorageSlots, FieldT::one(), ethsnarks::FieldT(NUM_STORAGE_SLOTS)), ".numStorageSlots");
+        pb.add_r1cs_constraint(
+          ConstraintT(numStorageSlots, FieldT::one(), ethsnarks::FieldT(NUM_STORAGE_SLOTS)), ".numStorageSlots");
         pb.add_r1cs_constraint(
           ConstraintT(
             dummyPublicKeyX,
@@ -151,9 +153,11 @@ class Constants : public GadgetT
                               "127044926882796951068647148079547843")),
           ".dummyPublicKeyY");
         pb.add_r1cs_constraint(
-          ConstraintT(txTypeSpotTrade, FieldT::one(), ethsnarks::FieldT(int(TransactionType::SpotTrade))), ".txTypeSpotTrade");
+          ConstraintT(txTypeSpotTrade, FieldT::one(), ethsnarks::FieldT(int(TransactionType::SpotTrade))),
+          ".txTypeSpotTrade");
         pb.add_r1cs_constraint(
-          ConstraintT(txTypeTransfer, FieldT::one(), ethsnarks::FieldT(int(TransactionType::Transfer))), ".txTypeTransfer");
+          ConstraintT(txTypeTransfer, FieldT::one(), ethsnarks::FieldT(int(TransactionType::Transfer))),
+          ".txTypeTransfer");
     }
 };
 
@@ -223,8 +227,7 @@ class DynamicVariableGadget : public GadgetT
     std::vector<VariableT> variables;
     bool allowGeneratingWitness;
 
-    DynamicVariableGadget(ProtoboardT &pb, const std::string &prefix)
-        : GadgetT(pb, prefix)
+    DynamicVariableGadget(ProtoboardT &pb, const std::string &prefix) : GadgetT(pb, prefix)
     {
         add(make_variable(pb, FMT(prefix, ".initialValue")));
         allowGeneratingWitness = true;
@@ -268,10 +271,7 @@ class UnsafeSubGadget : public GadgetT
     VariableT sum;
 
     UnsafeSubGadget(ProtoboardT &pb, const VariableT &_value, const VariableT &_sub, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , value(_value)
-        , sub(_sub)
-        , sum(make_variable(pb, FMT(prefix, ".sum")))
+        : GadgetT(pb, prefix), value(_value), sub(_sub), sum(make_variable(pb, FMT(prefix, ".sum")))
     {
     }
 
@@ -287,7 +287,8 @@ class UnsafeSubGadget : public GadgetT
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(value - sub, FieldT::one(), sum), FMT(annotation_prefix, ".value - sub = sum"));
+        pb.add_r1cs_constraint(
+          ConstraintT(value - sub, FieldT::one(), sum), FMT(annotation_prefix, ".value - sub = sum"));
     }
 };
 
@@ -300,10 +301,7 @@ class UnsafeAddGadget : public GadgetT
     VariableT sum;
 
     UnsafeAddGadget(ProtoboardT &pb, const VariableT &_value, const VariableT &_add, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , value(_value)
-        , add(_add)
-        , sum(make_variable(pb, FMT(prefix, ".sum")))
+        : GadgetT(pb, prefix), value(_value), add(_add), sum(make_variable(pb, FMT(prefix, ".sum")))
     {
     }
 
@@ -319,7 +317,8 @@ class UnsafeAddGadget : public GadgetT
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(value + add, FieldT::one(), sum), FMT(annotation_prefix, ".value + add = sum"));
+        pb.add_r1cs_constraint(
+          ConstraintT(value + add, FieldT::one(), sum), FMT(annotation_prefix, ".value + add = sum"));
     }
 };
 
@@ -332,10 +331,7 @@ class UnsafeMulGadget : public GadgetT
     VariableT product;
 
     UnsafeMulGadget(ProtoboardT &pb, const VariableT &_valueA, const VariableT &_valueB, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , valueA(_valueA)
-        , valueB(_valueB)
-        , product(make_variable(pb, FMT(prefix, ".product")))
+        : GadgetT(pb, prefix), valueA(_valueA), valueB(_valueB), product(make_variable(pb, FMT(prefix, ".product")))
     {
     }
 
@@ -363,11 +359,10 @@ class AddGadget : public GadgetT
     libsnark::dual_variable_gadget<FieldT> rangeCheck;
 
     AddGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, unsigned int n, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        unsafeAdd(pb, A, B, FMT(prefix, ".unsafeAdd"))
-        , rangeCheck(pb, unsafeAdd.result(), n, FMT(prefix, ".rangeCheck"))
+          unsafeAdd(pb, A, B, FMT(prefix, ".unsafeAdd")),
+          rangeCheck(pb, unsafeAdd.result(), n, FMT(prefix, ".rangeCheck"))
     {
         assert(n + 1 <= NUM_BITS_FIELD_CAPACITY);
     }
@@ -398,11 +393,10 @@ class SubGadget : public GadgetT
     libsnark::dual_variable_gadget<FieldT> rangeCheck;
 
     SubGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, unsigned int n, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        unsafeSub(pb, A, B, FMT(prefix, ".unsafeAdd"))
-        , rangeCheck(pb, unsafeSub.result(), n, FMT(prefix, ".rangeCheck"))
+          unsafeSub(pb, A, B, FMT(prefix, ".unsafeAdd")),
+          rangeCheck(pb, unsafeSub.result(), n, FMT(prefix, ".rangeCheck"))
     {
         assert(n + 1 <= NUM_BITS_FIELD_CAPACITY);
     }
@@ -438,11 +432,10 @@ class TransferGadget : public GadgetT
       DynamicVariableGadget &to,
       const VariableT &value,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        sub(pb, from.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".sub"))
-        , add(pb, to.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".add"))
+          sub(pb, from.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".sub")),
+          add(pb, to.back(), value, NUM_BITS_AMOUNT, FMT(prefix, ".add"))
     {
         from.add(sub.result());
         to.add(add.result());
@@ -471,16 +464,17 @@ class TernaryGadget : public GadgetT
 
     VariableT selected;
 
-    TernaryGadget(ProtoboardT &pb, const VariableT &_b, const VariableT &_x, const VariableT &_y, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+    TernaryGadget(
+      ProtoboardT &pb,
+      const VariableT &_b,
+      const VariableT &_x,
+      const VariableT &_y,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
 
-        b(_b)
-        , x(_x)
-        , y(_y)
-        ,
+          b(_b), x(_x), y(_y),
 
-        selected(make_variable(pb, FMT(prefix, ".selected")))
+          selected(make_variable(pb, FMT(prefix, ".selected")))
     {
     }
 
@@ -500,7 +494,8 @@ class TernaryGadget : public GadgetT
         {
             libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, b, FMT(annotation_prefix, ".bitness"));
         }
-        pb.add_r1cs_constraint(ConstraintT(b, y - x, y - selected), FMT(annotation_prefix, ".b * (y - x) == (y - selected)"));
+        pb.add_r1cs_constraint(
+          ConstraintT(b, y - x, y - selected), FMT(annotation_prefix, ".b * (y - x) == (y - selected)"));
     }
 };
 
@@ -512,9 +507,13 @@ class ArrayTernaryGadget : public GadgetT
     std::vector<TernaryGadget> results;
     VariableArrayT res;
 
-    ArrayTernaryGadget(ProtoboardT &pb, const VariableT &_b, const VariableArrayT &x, const VariableArrayT &y, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , b(_b)
+    ArrayTernaryGadget(
+      ProtoboardT &pb,
+      const VariableT &_b,
+      const VariableArrayT &x,
+      const VariableArrayT &y,
+      const std::string &prefix)
+        : GadgetT(pb, prefix), b(_b)
     {
         assert(x.size() == y.size());
         results.reserve(x.size());
@@ -559,8 +558,7 @@ class AndGadget : public GadgetT
     std::vector<VariableT> results;
 
     AndGadget(ProtoboardT &pb, const std::vector<VariableT> &_inputs, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , inputs(_inputs)
+        : GadgetT(pb, prefix), inputs(_inputs)
     {
         assert(inputs.size() > 1);
         for (unsigned int i = 1; i < inputs.size(); i++)
@@ -590,7 +588,8 @@ class AndGadget : public GadgetT
         pb.add_r1cs_constraint(ConstraintT(inputs[0], inputs[1], results[0]), FMT(annotation_prefix, ".A && B"));
         for (unsigned int i = 2; i < inputs.size(); i++)
         {
-            pb.add_r1cs_constraint(ConstraintT(inputs[i], results[i - 2], results[i - 1]), FMT(annotation_prefix, ".A && B"));
+            pb.add_r1cs_constraint(
+              ConstraintT(inputs[i], results[i - 2], results[i - 1]), FMT(annotation_prefix, ".A && B"));
         }
     }
 };
@@ -603,8 +602,7 @@ class OrGadget : public GadgetT
     std::vector<VariableT> results;
 
     OrGadget(ProtoboardT &pb, const std::vector<VariableT> &_inputs, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , inputs(_inputs)
+        : GadgetT(pb, prefix), inputs(_inputs)
     {
         assert(inputs.size() > 1);
         for (unsigned int i = 1; i < inputs.size(); i++)
@@ -623,7 +621,8 @@ class OrGadget : public GadgetT
         pb.val(results[0]) = FieldT::one() - (FieldT::one() - pb.val(inputs[0])) * (FieldT::one() - pb.val(inputs[1]));
         for (unsigned int i = 2; i < inputs.size(); i++)
         {
-            pb.val(results[i - 1]) = FieldT::one() - (FieldT::one() - pb.val(results[i - 2])) * (FieldT::one() - pb.val(inputs[i]));
+            pb.val(results[i - 1]) =
+              FieldT::one() - (FieldT::one() - pb.val(results[i - 2])) * (FieldT::one() - pb.val(inputs[i]));
         }
     }
 
@@ -649,11 +648,9 @@ class NotGadget : public GadgetT
     VariableT _not;
 
     NotGadget(ProtoboardT &pb, const VariableT &_A, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        A(_A)
-        , _not(make_variable(pb, FMT(prefix, "._not")))
+          A(_A), _not(make_variable(pb, FMT(prefix, "._not")))
     {
     }
 
@@ -673,7 +670,8 @@ class NotGadget : public GadgetT
         {
             libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, A, FMT(annotation_prefix, ".bitness"));
         }
-        pb.add_r1cs_constraint(ConstraintT(FieldT::one() - A, FieldT::one(), _not), FMT(annotation_prefix, ".!A == _not"));
+        pb.add_r1cs_constraint(
+          ConstraintT(FieldT::one() - A, FieldT::one(), _not), FMT(annotation_prefix, ".!A == _not"));
     }
 };
 
@@ -686,14 +684,11 @@ class XorArrayGadget : public GadgetT
     VariableArrayT C;
 
     XorArrayGadget(ProtoboardT &pb, VariableArrayT _A, VariableArrayT _B, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        A(_A)
-        , B(_B)
-        ,
+          A(_A), B(_B),
 
-        C(make_var_array(pb, A.size(), FMT(prefix, ".C")))
+          C(make_var_array(pb, A.size(), FMT(prefix, ".C")))
     {
         assert(A.size() == B.size());
     }
@@ -707,7 +702,8 @@ class XorArrayGadget : public GadgetT
     {
         for (unsigned int i = 0; i < C.size(); i++)
         {
-            pb.val(C[i]) = pb.val(A[i]) + pb.val(B[i]) - ((pb.val(A[i]) == FieldT::one() && pb.val(B[i]) == FieldT::one()) ? 2 : 0);
+            pb.val(C[i]) =
+              pb.val(A[i]) + pb.val(B[i]) - ((pb.val(A[i]) == FieldT::one() && pb.val(B[i]) == FieldT::one()) ? 2 : 0);
         }
     }
 
@@ -715,7 +711,8 @@ class XorArrayGadget : public GadgetT
     {
         for (unsigned int i = 0; i < C.size(); i++)
         {
-            pb.add_r1cs_constraint(ConstraintT(2 * A[i], B[i], A[i] + B[i] - C[i]), FMT(annotation_prefix, ".A ^ B == C"));
+            pb.add_r1cs_constraint(
+              ConstraintT(2 * A[i], B[i], A[i] + B[i] - C[i]), FMT(annotation_prefix, ".A ^ B == C"));
         }
     }
 };
@@ -729,12 +726,11 @@ class EqualGadget : public GadgetT
     NotGadget isZeroDifference;
 
     EqualGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        difference(pb, A, B, FMT(prefix, ".difference"))
-        , isNonZeroDifference(pb, difference.result(), FMT(prefix, ".isNonZeroDifference"))
-        , isZeroDifference(pb, isNonZeroDifference.result(), FMT(prefix, ".isZeroDifference"))
+          difference(pb, A, B, FMT(prefix, ".difference")),
+          isNonZeroDifference(pb, difference.result(), FMT(prefix, ".isNonZeroDifference")),
+          isZeroDifference(pb, isNonZeroDifference.result(), FMT(prefix, ".isZeroDifference"))
     {
     }
 
@@ -766,9 +762,7 @@ class RequireEqualGadget : public GadgetT
     VariableT B;
 
     RequireEqualGadget(ProtoboardT &pb, const VariableT &_A, const VariableT &_B, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , A(_A)
-        , B(_B)
+        : GadgetT(pb, prefix), A(_A), B(_B)
     {
     }
 
@@ -790,9 +784,7 @@ class RequireZeroAorBGadget : public GadgetT
     VariableT B;
 
     RequireZeroAorBGadget(ProtoboardT &pb, const VariableT &_A, const VariableT &_B, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , A(_A)
-        , B(_B)
+        : GadgetT(pb, prefix), A(_A), B(_B)
     {
     }
 
@@ -814,9 +806,7 @@ class RequireNotZeroGadget : public GadgetT
     VariableT A_inv;
 
     RequireNotZeroGadget(ProtoboardT &pb, const VariableT &_A, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , A(_A)
-        , A_inv(make_variable(pb, FMT(prefix, ".A_inv")))
+        : GadgetT(pb, prefix), A(_A), A_inv(make_variable(pb, FMT(prefix, ".A_inv")))
     {
     }
 
@@ -842,11 +832,8 @@ class RequireNotEqualGadget : public GadgetT
     RequireNotZeroGadget notZero;
 
     RequireNotEqualGadget(ProtoboardT &pb, const VariableT &_A, const VariableT &_B, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , A(_A)
-        , B(_B)
-        , difference(make_variable(pb, FMT(prefix, ".difference")))
-        , notZero(pb, difference, FMT(prefix, ".difference != 0"))
+        : GadgetT(pb, prefix), A(_A), B(_B), difference(make_variable(pb, FMT(prefix, ".difference"))),
+          notZero(pb, difference, FMT(prefix, ".difference != 0"))
     {
     }
 
@@ -858,7 +845,8 @@ class RequireNotEqualGadget : public GadgetT
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(A - B, FieldT::one(), difference), FMT(annotation_prefix, ".A - B == difference"));
+        pb.add_r1cs_constraint(
+          ConstraintT(A - B, FieldT::one(), difference), FMT(annotation_prefix, ".A - B == difference"));
         notZero.generate_r1cs_constraints();
     }
 };
@@ -875,15 +863,11 @@ class LeqGadget : public GadgetT
     AndGadget _eq;
 
     LeqGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        _lt(make_variable(pb, 1, FMT(prefix, ".lt")))
-        , _leq(make_variable(pb, 1, FMT(prefix, ".leq")))
-        , comparison(pb, n, A, B, _lt, _leq, FMT(prefix, ".A <(=) B"))
-        , _gt(pb, _leq, FMT(prefix, ".gt"))
-        , _gte(pb, _lt, FMT(prefix, ".gte"))
-        , _eq(pb, {_leq, _gte.result()}, FMT(prefix, ".eq"))
+          _lt(make_variable(pb, 1, FMT(prefix, ".lt"))), _leq(make_variable(pb, 1, FMT(prefix, ".leq"))),
+          comparison(pb, n, A, B, _lt, _leq, FMT(prefix, ".A <(=) B")), _gt(pb, _leq, FMT(prefix, ".gt")),
+          _gte(pb, _lt, FMT(prefix, ".gte")), _eq(pb, {_leq, _gte.result()}, FMT(prefix, ".eq"))
     {
         // The comparison gadget is only guaranteed to work correctly on values in
         // the field capacity - 1
@@ -947,20 +931,17 @@ class LtFieldGadget : public GadgetT
     TernaryGadget res;
 
     LtFieldGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        Abits(pb, A, FMT(prefix, ".Abits"))
-        , Bbits(pb, B, FMT(prefix, ".Bbits"))
-        ,
+          Abits(pb, A, FMT(prefix, ".Abits")), Bbits(pb, B, FMT(prefix, ".Bbits")),
 
-        Alo(pb, subArray(Abits.result(), 0, 254 / 2), FMT(prefix, ".Alo"))
-        , Ahi(pb, subArray(Abits.result(), 254 / 2, 254 / 2), FMT(prefix, ".Ahi"))
-        , Blo(pb, subArray(Bbits.result(), 0, 254 / 2), FMT(prefix, ".Blo"))
-        , Bhi(pb, subArray(Bbits.result(), 254 / 2, 254 / 2), FMT(prefix, ".Bhi"))
-        , partLo(pb, Alo.packed, Blo.packed, 254 / 2, FMT(prefix, ".partLo"))
-        , partHi(pb, Ahi.packed, Bhi.packed, 254 / 2, FMT(prefix, ".partHi"))
-        , res(pb, partHi.eq(), partLo.lt(), partHi.lt(), FMT(prefix, ".res"))
+          Alo(pb, subArray(Abits.result(), 0, 254 / 2), FMT(prefix, ".Alo")),
+          Ahi(pb, subArray(Abits.result(), 254 / 2, 254 / 2), FMT(prefix, ".Ahi")),
+          Blo(pb, subArray(Bbits.result(), 0, 254 / 2), FMT(prefix, ".Blo")),
+          Bhi(pb, subArray(Bbits.result(), 254 / 2, 254 / 2), FMT(prefix, ".Bhi")),
+          partLo(pb, Alo.packed, Blo.packed, 254 / 2, FMT(prefix, ".partLo")),
+          partHi(pb, Ahi.packed, Bhi.packed, 254 / 2, FMT(prefix, ".partHi")),
+          res(pb, partHi.eq(), partLo.lt(), partHi.lt(), FMT(prefix, ".res"))
     {
     }
 
@@ -1004,11 +985,10 @@ class MinGadget : public GadgetT
     TernaryGadget minimum;
 
     MinGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)"))
-        , minimum(pb, A_lt_B.lt(), A, B, FMT(prefix, ".minimum = (A < B) ? A : B"))
+          A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)")),
+          minimum(pb, A_lt_B.lt(), A, B, FMT(prefix, ".minimum = (A < B) ? A : B"))
     {
     }
 
@@ -1038,11 +1018,10 @@ class MaxGadget : public GadgetT
     TernaryGadget maximum;
 
     MaxGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)"))
-        , maximum(pb, A_lt_B.lt(), B, A, FMT(prefix, ".maximum = (A < B) ? B : A"))
+          A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)")),
+          maximum(pb, A_lt_B.lt(), B, A, FMT(prefix, ".maximum = (A < B) ? B : A"))
     {
     }
 
@@ -1071,10 +1050,9 @@ class RequireLeqGadget : public GadgetT
     LeqGadget leqGadget;
 
     RequireLeqGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
+          leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
     {
     }
 
@@ -1086,7 +1064,8 @@ class RequireLeqGadget : public GadgetT
     void generate_r1cs_constraints()
     {
         leqGadget.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(leqGadget.leq(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".leq == 1"));
+        pb.add_r1cs_constraint(
+          ConstraintT(leqGadget.leq(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".leq == 1"));
     }
 };
 
@@ -1097,10 +1076,9 @@ class RequireLtGadget : public GadgetT
     LeqGadget leqGadget;
 
     RequireLtGadget(ProtoboardT &pb, const VariableT &A, const VariableT &B, const size_t n, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
+          leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
     {
     }
 
@@ -1112,7 +1090,8 @@ class RequireLtGadget : public GadgetT
     void generate_r1cs_constraints()
     {
         leqGadget.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(leqGadget.lt(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".lt == 1"));
+        pb.add_r1cs_constraint(
+          ConstraintT(leqGadget.lt(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".lt == 1"));
     }
 };
 
@@ -1124,11 +1103,9 @@ class IfThenRequireGadget : public GadgetT
     OrGadget res;
 
     IfThenRequireGadget(ProtoboardT &pb, const VariableT &C, const VariableT &A, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        notC(pb, C, FMT(prefix, ".notC"))
-        , res(pb, {notC.result(), A}, FMT(prefix, ".res"))
+          notC(pb, C, FMT(prefix, ".notC")), res(pb, {notC.result(), A}, FMT(prefix, ".res"))
     {
     }
 
@@ -1142,7 +1119,8 @@ class IfThenRequireGadget : public GadgetT
     {
         notC.generate_r1cs_constraints();
         res.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(res.result(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".valid"));
+        pb.add_r1cs_constraint(
+          ConstraintT(res.result(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".valid"));
     }
 };
 
@@ -1153,12 +1131,15 @@ class IfThenRequireEqualGadget : public GadgetT
     EqualGadget eq;
     IfThenRequireGadget res;
 
-    IfThenRequireEqualGadget(ProtoboardT &pb, const VariableT &C, const VariableT &A, const VariableT &B, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+    IfThenRequireEqualGadget(
+      ProtoboardT &pb,
+      const VariableT &C,
+      const VariableT &A,
+      const VariableT &B,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
 
-        eq(pb, A, B, FMT(prefix, ".eq"))
-        , res(pb, C, eq.result(), FMT(prefix, ".res"))
+          eq(pb, A, B, FMT(prefix, ".eq")), res(pb, C, eq.result(), FMT(prefix, ".res"))
     {
     }
 
@@ -1183,13 +1164,16 @@ class IfThenRequireNotEqualGadget : public GadgetT
     NotGadget notEq;
     IfThenRequireGadget res;
 
-    IfThenRequireNotEqualGadget(ProtoboardT &pb, const VariableT &C, const VariableT &A, const VariableT &B, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+    IfThenRequireNotEqualGadget(
+      ProtoboardT &pb,
+      const VariableT &C,
+      const VariableT &A,
+      const VariableT &B,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
 
-        eq(pb, A, B, FMT(prefix, ".eq"))
-        , notEq(pb, eq.result(), FMT(prefix, ".notEq"))
-        , res(pb, C, notEq.result(), FMT(prefix, ".res"))
+          eq(pb, A, B, FMT(prefix, ".eq")), notEq(pb, eq.result(), FMT(prefix, ".notEq")),
+          res(pb, C, notEq.result(), FMT(prefix, ".res"))
     {
     }
 
@@ -1235,24 +1219,22 @@ class MulDivGadget : public GadgetT
       unsigned int numBitsNumerator,
       unsigned int numBitsDenominator,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        value(_value)
-        , numerator(_numerator)
-        , denominator(_denominator)
-        ,
+          value(_value), numerator(_numerator), denominator(_denominator),
 
-        quotient(make_variable(pb, FMT(prefix, ".quotient")))
-        ,
+          quotient(make_variable(pb, FMT(prefix, ".quotient"))),
 
-        denominator_notZero(pb, denominator, FMT(prefix, ".denominator_notZero"))
-        , product(pb, value, numerator, FMT(prefix, ".product"))
-        ,
-        // Range limit the remainder. The comparison below is not guaranteed to
-        // work for very large values.
-        remainder(pb, numBitsDenominator, FMT(prefix, ".remainder"))
-        , remainder_lt_denominator(pb, remainder.packed, denominator, numBitsDenominator, FMT(prefix, ".remainder < denominator"))
+          denominator_notZero(pb, denominator, FMT(prefix, ".denominator_notZero")),
+          product(pb, value, numerator, FMT(prefix, ".product")),
+          // Range limit the remainder. The comparison below is not guaranteed to
+          // work for very large values.
+          remainder(pb, numBitsDenominator, FMT(prefix, ".remainder")), remainder_lt_denominator(
+                                                                          pb,
+                                                                          remainder.packed,
+                                                                          denominator,
+                                                                          numBitsDenominator,
+                                                                          FMT(prefix, ".remainder < denominator"))
     {
         assert(numBitsValue + numBitsNumerator <= NUM_BITS_FIELD_CAPACITY);
     }
@@ -1263,7 +1245,8 @@ class MulDivGadget : public GadgetT
         product.generate_r1cs_witness();
         if (pb.val(denominator) != FieldT::zero())
         {
-            pb.val(quotient) = ethsnarks::FieldT((toBigInt(pb.val(product.result())) / toBigInt(pb.val(denominator))).to_string().c_str());
+            pb.val(quotient) = ethsnarks::FieldT(
+              (toBigInt(pb.val(product.result())) / toBigInt(pb.val(denominator))).to_string().c_str());
         }
         else
         {
@@ -1328,29 +1311,23 @@ class RequireAccuracyGadget : public GadgetT
       const Accuracy &_accuracy,
       unsigned int maxNumBits,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        // Range limit the value. The comparison below is not guaranteed to work
-        // for very large values.
-        value(pb, _value, maxNumBits, FMT(prefix, ".value"))
-        , original(_original)
-        , accuracy(_accuracy)
-        ,
+          // Range limit the value. The comparison below is not guaranteed to work
+          // for very large values.
+          value(pb, _value, maxNumBits, FMT(prefix, ".value")), original(_original), accuracy(_accuracy),
 
-        value_leq_original(pb, value.packed, original, maxNumBits, FMT(prefix, ".value_lt_original"))
-        ,
+          value_leq_original(pb, value.packed, original, maxNumBits, FMT(prefix, ".value_lt_original")),
 
-        original_mul_accuracyN(make_variable(pb, FMT(prefix, ".original_mul_accuracyN")))
-        , value_mul_accuracyD(make_variable(pb, FMT(prefix, ".value_mul_accuracyD")))
-        ,
+          original_mul_accuracyN(make_variable(pb, FMT(prefix, ".original_mul_accuracyN"))),
+          value_mul_accuracyD(make_variable(pb, FMT(prefix, ".value_mul_accuracyD"))),
 
-        original_mul_accuracyN_LEQ_value_mul_accuracyD(
-          pb,
-          original_mul_accuracyN,
-          value_mul_accuracyD,
-          maxNumBits + 32,
-          FMT(prefix, ".original_mul_accuracyN_LEQ_value_mul_accuracyD"))
+          original_mul_accuracyN_LEQ_value_mul_accuracyD(
+            pb,
+            original_mul_accuracyN,
+            value_mul_accuracyD,
+            maxNumBits + 32,
+            FMT(prefix, ".original_mul_accuracyN_LEQ_value_mul_accuracyD"))
     {
     }
 
@@ -1394,8 +1371,7 @@ class PublicDataGadget : public GadgetT
     std::unique_ptr<libsnark::dual_variable_gadget<FieldT>> calculatedHash;
 
     PublicDataGadget(ProtoboardT &pb, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , publicInput(make_variable(pb, FMT(prefix, ".publicInput")))
+        : GadgetT(pb, prefix), publicInput(make_variable(pb, FMT(prefix, ".publicInput")))
     {
         pb.set_input_sizes(1);
     }
@@ -1447,15 +1423,16 @@ class FloatGadget : public GadgetT
     std::vector<VariableT> baseMultipliers;
     std::vector<TernaryGadget> multipliers;
 
-    FloatGadget(ProtoboardT &pb, const Constants &_constants, const FloatEncoding &_floatEncoding, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+    FloatGadget(
+      ProtoboardT &pb,
+      const Constants &_constants,
+      const FloatEncoding &_floatEncoding,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
 
-        constants(_constants)
-        , floatEncoding(_floatEncoding)
-        ,
+          constants(_constants), floatEncoding(_floatEncoding),
 
-        f(make_var_array(pb, floatEncoding.numBitsExponent + floatEncoding.numBitsMantissa, FMT(prefix, ".f")))
+          f(make_var_array(pb, floatEncoding.numBitsExponent + floatEncoding.numBitsMantissa, FMT(prefix, ".f")))
     {
         for (unsigned int i = 0; i < f.size(); i++)
         {
@@ -1465,8 +1442,8 @@ class FloatGadget : public GadgetT
         for (unsigned int i = 0; i < floatEncoding.numBitsExponent; i++)
         {
             baseMultipliers.emplace_back(make_variable(pb, FMT(prefix, ".baseMultipliers")));
-            multipliers.emplace_back(
-              TernaryGadget(pb, f[floatEncoding.numBitsMantissa + i], baseMultipliers[i], constants._1, FMT(prefix, ".multipliers")));
+            multipliers.emplace_back(TernaryGadget(
+              pb, f[floatEncoding.numBitsMantissa + i], baseMultipliers[i], constants._1, FMT(prefix, ".multipliers")));
         }
     }
 
@@ -1528,11 +1505,13 @@ class FloatGadget : public GadgetT
             unsigned int j = i - floatEncoding.numBitsMantissa;
             if (j == 0)
             {
-                pb.add_r1cs_constraint(ConstraintT(floatEncoding.exponentBase, FieldT::one(), baseMultipliers[j]), ".baseMultipliers");
+                pb.add_r1cs_constraint(
+                  ConstraintT(floatEncoding.exponentBase, FieldT::one(), baseMultipliers[j]), ".baseMultipliers");
             }
             else
             {
-                pb.add_r1cs_constraint(ConstraintT(baseMultipliers[j - 1], baseMultipliers[j - 1], baseMultipliers[j]), ".baseMultipliers");
+                pb.add_r1cs_constraint(
+                  ConstraintT(baseMultipliers[j - 1], baseMultipliers[j - 1], baseMultipliers[j]), ".baseMultipliers");
             }
             multipliers[j].generate_r1cs_constraints();
 
@@ -1561,15 +1540,20 @@ struct SelectorGadget : public GadgetT
 
     VariableArrayT res;
 
-    SelectorGadget(ProtoboardT &pb, const Constants &_constants, const VariableT &type, unsigned int maxBits, const std::string &prefix)
-        : GadgetT(pb, prefix)
-        , constants(_constants)
+    SelectorGadget(
+      ProtoboardT &pb,
+      const Constants &_constants,
+      const VariableT &type,
+      unsigned int maxBits,
+      const std::string &prefix)
+        : GadgetT(pb, prefix), constants(_constants)
     {
         assert(maxBits <= constants.values.size());
         for (unsigned int i = 0; i < maxBits; i++)
         {
             bits.emplace_back(pb, type, constants.values[i], FMT(annotation_prefix, ".bits"));
-            sum.emplace_back(pb, (i == 0) ? constants._0 : sum.back().result(), bits.back().result(), FMT(annotation_prefix, ".sum"));
+            sum.emplace_back(
+              pb, (i == 0) ? constants._0 : sum.back().result(), bits.back().result(), FMT(annotation_prefix, ".sum"));
             res.emplace_back(bits.back().result());
         }
     }
@@ -1605,14 +1589,18 @@ class SelectGadget : public GadgetT
   public:
     std::vector<TernaryGadget> results;
 
-    SelectGadget(ProtoboardT &pb, const VariableArrayT &selector, const std::vector<VariableT> &values, const std::string &prefix)
+    SelectGadget(
+      ProtoboardT &pb,
+      const VariableArrayT &selector,
+      const std::vector<VariableT> &values,
+      const std::string &prefix)
         : GadgetT(pb, prefix)
     {
         assert(values.size() == selector.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
-            results.emplace_back(
-              TernaryGadget(pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
+            results.emplace_back(TernaryGadget(
+              pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
         }
     }
 
@@ -1643,14 +1631,18 @@ class ArraySelectGadget : public GadgetT
   public:
     std::vector<ArrayTernaryGadget> results;
 
-    ArraySelectGadget(ProtoboardT &pb, const VariableArrayT &selector, const std::vector<VariableArrayT> &values, const std::string &prefix)
+    ArraySelectGadget(
+      ProtoboardT &pb,
+      const VariableArrayT &selector,
+      const std::vector<VariableArrayT> &values,
+      const std::string &prefix)
         : GadgetT(pb, prefix)
     {
         assert(values.size() == selector.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
-            results.emplace_back(
-              ArrayTernaryGadget(pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
+            results.emplace_back(ArrayTernaryGadget(
+              pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
         }
     }
 
@@ -1690,13 +1682,15 @@ class OwnerValidGadget : public GadgetT
       const VariableT &oldOwner,
       const VariableT &newOwner,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        newOwner_equal_oldOwner(pb, newOwner, oldOwner, FMT(prefix, ".newOwner_equal_oldOwner"))
-        , no_oldOwner(pb, oldOwner, constants._0, FMT(prefix, ".no_oldOwner"))
-        , equal_owner_or_no_owner(pb, {newOwner_equal_oldOwner.result(), no_oldOwner.result()}, FMT(prefix, ".equal_owner_or_no_owner"))
-        , equal_owner_or_no_owner_eq_true(
+          newOwner_equal_oldOwner(pb, newOwner, oldOwner, FMT(prefix, ".newOwner_equal_oldOwner")),
+          no_oldOwner(pb, oldOwner, constants._0, FMT(prefix, ".no_oldOwner")),
+          equal_owner_or_no_owner(
+            pb,
+            {newOwner_equal_oldOwner.result(), no_oldOwner.result()},
+            FMT(prefix, ".equal_owner_or_no_owner")),
+          equal_owner_or_no_owner_eq_true(
             pb,
             equal_owner_or_no_owner.result(),
             constants._1,

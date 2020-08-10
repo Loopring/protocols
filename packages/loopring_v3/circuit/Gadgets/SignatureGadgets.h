@@ -61,47 +61,35 @@ class CompressPublicKey : public GadgetT
       const VariableT &_x,
       const VariableT &_y,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        params(_params)
-        , constants(_constants)
-        , y(_y)
-        ,
+          params(_params), constants(_constants), y(_y),
 
-        // Reconstruct sqrt(xx)
-        yy(make_variable(pb, FMT(prefix, ".yy")))
-        , lhs(make_variable(pb, FMT(prefix, ".lhs")))
-        , rhs(make_variable(pb, FMT(prefix, ".rhs")))
-        , irhs(make_variable(pb, FMT(prefix, ".irhs")))
-        , xx(make_variable(pb, FMT(prefix, ".xx")))
-        , rootX(make_variable(pb, FMT(prefix, ".rootX")))
-        ,
+          // Reconstruct sqrt(xx)
+          yy(make_variable(pb, FMT(prefix, ".yy"))), lhs(make_variable(pb, FMT(prefix, ".lhs"))),
+          rhs(make_variable(pb, FMT(prefix, ".rhs"))), irhs(make_variable(pb, FMT(prefix, ".irhs"))),
+          xx(make_variable(pb, FMT(prefix, ".xx"))), rootX(make_variable(pb, FMT(prefix, ".rootX"))),
 
-        // Reconstruct x
-        // Pick the smallest root (the "positive" one) to make sqrt
-        // deterministic
-        negRootX(pb, _constants._0, rootX, FMT(prefix, ".negRootX"))
-        , isSmallestRoot(pb, rootX, negRootX.result(), FMT(prefix, ".isSmallestRoot"))
-        , absX(pb, isSmallestRoot.lt(), rootX, negRootX.result(), FMT(prefix, ".absX"))
-        ,
-        // Check if x is the negative root or the positive root
-        negAbsX(pb, _constants._0, absX.result(), FMT(prefix, ".negAbsX"))
-        , isNegativeX(pb, negAbsX.result(), _x, FMT(prefix, ".isNegativeX"))
-        , reconstructedX(pb, isNegativeX.result(), negAbsX.result(), absX.result(), FMT(prefix, ".reconstructedX"))
-        ,
+          // Reconstruct x
+          // Pick the smallest root (the "positive" one) to make sqrt
+          // deterministic
+          negRootX(pb, _constants._0, rootX, FMT(prefix, ".negRootX")),
+          isSmallestRoot(pb, rootX, negRootX.result(), FMT(prefix, ".isSmallestRoot")),
+          absX(pb, isSmallestRoot.lt(), rootX, negRootX.result(), FMT(prefix, ".absX")),
+          // Check if x is the negative root or the positive root
+          negAbsX(pb, _constants._0, absX.result(), FMT(prefix, ".negAbsX")),
+          isNegativeX(pb, negAbsX.result(), _x, FMT(prefix, ".isNegativeX")),
+          reconstructedX(pb, isNegativeX.result(), negAbsX.result(), absX.result(), FMT(prefix, ".reconstructedX")),
 
-        // Special case 0
-        isZeroY(pb, y, constants._0, FMT(prefix, ".isZeroY"))
-        , x(pb, isZeroY.result(), constants._0, reconstructedX.result(), FMT(prefix, ".x"))
-        ,
+          // Special case 0
+          isZeroY(pb, y, constants._0, FMT(prefix, ".isZeroY")),
+          x(pb, isZeroY.result(), constants._0, reconstructedX.result(), FMT(prefix, ".x")),
 
-        // Make sure the reconstructed x matches the original x
-        valid(pb, _x, x.result(), FMT(prefix, ".valid"))
-        ,
+          // Make sure the reconstructed x matches the original x
+          valid(pb, _x, x.result(), FMT(prefix, ".valid")),
 
-        // Get the bits of y
-        yBits(pb, _y, FMT(prefix, ".yBits"))
+          // Get the bits of y
+          yBits(pb, _y, FMT(prefix, ".yBits"))
     {
     }
 
@@ -165,7 +153,8 @@ class CompressPublicKey : public GadgetT
 
     VariableArrayT result() const
     {
-        return reverse(flattenReverse({VariableArrayT(1, isNegativeX.result()), VariableArrayT(1, constants._0), yBits.result()}));
+        return reverse(
+          flattenReverse({VariableArrayT(1, isNegativeX.result()), VariableArrayT(1, constants._0), yBits.result()}));
     }
 };
 
@@ -182,11 +171,10 @@ class EdDSA_HashRAM_Poseidon_gadget : public GadgetT
       const VariablePointT &in_A,
       const VariableT &in_M,
       const std::string &annotation_prefix)
-        : GadgetT(in_pb, annotation_prefix)
-        ,
-        // Prefix the message with R and A.
-        m_hash_RAM(in_pb, var_array({in_R.x, in_R.y, in_A.x, in_A.y, in_M}), FMT(annotation_prefix, ".hash_RAM"))
-        , hash(pb, m_hash_RAM.result(), NUM_BITS_MAX_VALUE, FMT(annotation_prefix, ".hash"))
+        : GadgetT(in_pb, annotation_prefix),
+          // Prefix the message with R and A.
+          m_hash_RAM(in_pb, var_array({in_R.x, in_R.y, in_A.x, in_A.y, in_M}), FMT(annotation_prefix, ".hash_RAM")),
+          hash(pb, m_hash_RAM.result(), NUM_BITS_MAX_VALUE, FMT(annotation_prefix, ".hash"))
     {
     }
 
@@ -230,32 +218,39 @@ class EdDSA_Poseidon : public GadgetT
       const VariableArrayT &in_s,  // s
       const VariableT &in_msg,     // m
       const std::string &annotation_prefix)
-        : GadgetT(in_pb, annotation_prefix)
-        ,
-        // IsValid(R)
-        m_validator_R(in_pb, in_params, in_R.x, in_R.y, FMT(this->annotation_prefix, ".validator_R"))
-        ,
+        : GadgetT(in_pb, annotation_prefix),
+          // IsValid(R)
+          m_validator_R(in_pb, in_params, in_R.x, in_R.y, FMT(this->annotation_prefix, ".validator_R")),
 
-        // lhs = ScalarMult(B, s)
-        m_lhs(in_pb, in_params, in_base.x, in_base.y, in_s, FMT(this->annotation_prefix, ".lhs"))
-        ,
+          // lhs = ScalarMult(B, s)
+          m_lhs(in_pb, in_params, in_base.x, in_base.y, in_s, FMT(this->annotation_prefix, ".lhs")),
 
-        // hash_RAM = H(R, A, M)
-        m_hash_RAM(in_pb, in_params, in_R, in_A, in_msg, FMT(this->annotation_prefix, ".hash_RAM"))
-        ,
+          // hash_RAM = H(R, A, M)
+          m_hash_RAM(in_pb, in_params, in_R, in_A, in_msg, FMT(this->annotation_prefix, ".hash_RAM")),
 
-        // At = ScalarMult(A,hash_RAM)
-        m_At(in_pb, in_params, in_A.x, in_A.y, m_hash_RAM.result(), FMT(this->annotation_prefix, ".At = A * hash_RAM"))
-        ,
+          // At = ScalarMult(A,hash_RAM)
+          m_At(
+            in_pb,
+            in_params,
+            in_A.x,
+            in_A.y,
+            m_hash_RAM.result(),
+            FMT(this->annotation_prefix, ".At = A * hash_RAM")),
 
-        // rhs = PointAdd(R, At)
-        m_rhs(in_pb, in_params, in_R.x, in_R.y, m_At.result_x(), m_At.result_y(), FMT(this->annotation_prefix, ".rhs"))
-        ,
+          // rhs = PointAdd(R, At)
+          m_rhs(
+            in_pb,
+            in_params,
+            in_R.x,
+            in_R.y,
+            m_At.result_x(),
+            m_At.result_y(),
+            FMT(this->annotation_prefix, ".rhs")),
 
-        // Verify the two points are equal
-        equalX(in_pb, m_lhs.result_x(), m_rhs.result_x(), ".equalX")
-        , equalY(in_pb, m_lhs.result_y(), m_rhs.result_y(), ".equalY")
-        , valid(in_pb, {equalX.result(), equalY.result()}, ".valid")
+          // Verify the two points are equal
+          equalX(in_pb, m_lhs.result_x(), m_rhs.result_x(), ".equalX"),
+          equalY(in_pb, m_lhs.result_y(), m_rhs.result_y(), ".equalY"),
+          valid(in_pb, {equalX.result(), equalY.result()}, ".valid")
     {
     }
 
@@ -312,13 +307,11 @@ class SignatureVerifier : public GadgetT
       const VariableT &message,
       const VariableT &required,
       const std::string &prefix)
-        : GadgetT(pb, prefix)
-        ,
+        : GadgetT(pb, prefix),
 
-        constants(_constants)
-        , sig_R(pb, FMT(prefix, ".R"))
-        , sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s")))
-        , signatureVerifier(
+          constants(_constants), sig_R(pb, FMT(prefix, ".R")),
+          sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
+          signatureVerifier(
             pb,
             params,
             jubjub::EdwardsPoint(params.Gx, params.Gy),
@@ -326,8 +319,8 @@ class SignatureVerifier : public GadgetT
             sig_R,
             sig_s,
             message,
-            FMT(prefix, ".signatureVerifier"))
-        , valid(pb, required, signatureVerifier.result(), FMT(prefix, ".valid"))
+            FMT(prefix, ".signatureVerifier")),
+          valid(pb, required, signatureVerifier.result(), FMT(prefix, ".valid"))
     {
     }
 

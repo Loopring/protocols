@@ -62,8 +62,9 @@ void process_mem_usage(double &vm_usage, double &resident_set)
     unsigned long vsize;
     long rss;
 
-    stat_stream >> pid >> comm >> state >> ppid >> pgrp >> session >> tty_nr >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt >>
-      utime >> stime >> cutime >> cstime >> priority >> nice >> O >> itrealvalue >> starttime >> vsize >> rss; // don't care about the rest
+    stat_stream >> pid >> comm >> state >> ppid >> pgrp >> session >> tty_nr >> tpgid >> flags >> minflt >> cminflt >>
+      majflt >> cmajflt >> utime >> stime >> cutime >> cstime >> priority >> nice >> O >> itrealvalue >> starttime >>
+      vsize >> rss; // don't care about the rest
 
     stat_stream.close();
 
@@ -220,7 +221,8 @@ bool generateKeyPair(ethsnarks::ProtoboardT &pb, std::string &baseFilename)
     }
 #ifdef GPU_PROVE
     std::cout << "Generating keys and params..." << std::endl;
-    int result = stub_genkeys_params_from_pb(pb, provingKeyFilename.c_str(), verificationKeyFilename.c_str(), paramsFilename.c_str());
+    int result = stub_genkeys_params_from_pb(
+      pb, provingKeyFilename.c_str(), verificationKeyFilename.c_str(), paramsFilename.c_str());
 #else
     std::cout << "Generating keys..." << std::endl;
     int result = stub_genkeys_from_pb(pb, provingKeyFilename.c_str(), verificationKeyFilename.c_str());
@@ -354,7 +356,11 @@ std::string getProvingKeyFilename(const std::string &baseFilename)
     return baseFilename + "_pk.raw";
 }
 
-void runServer(Loopring::Circuit *circuit, const std::string &provingKeyFilename, const libsnark::Config &config, unsigned int port)
+void runServer(
+  Loopring::Circuit *circuit,
+  const std::string &provingKeyFilename,
+  const libsnark::Config &config,
+  unsigned int port)
 {
     using namespace httplib;
 
@@ -368,7 +374,10 @@ void runServer(Loopring::Circuit *circuit, const std::string &provingKeyFilename
     struct ProverStatusRAII
     {
         ProverStatus &proverStatus;
-        ProverStatusRAII(ProverStatus &_proverStatus, const std::string &blockFilename, const std::string &proofFilename)
+        ProverStatusRAII(
+          ProverStatus &_proverStatus,
+          const std::string &blockFilename,
+          const std::string &proofFilename)
             : proverStatus(_proverStatus)
         {
             proverStatus.proving = true;
@@ -478,8 +487,8 @@ void runServer(Loopring::Circuit *circuit, const std::string &provingKeyFilename
     });
     // Info of this prover server
     svr.Get("/info", [&](const Request &req, Response &res) {
-        std::string info = std::string("BlockType: ") + std::to_string(int(circuit->getBlockType())) + std::string("; BlockSize: ") +
-                           std::to_string(circuit->getBlockSize()) + "\n";
+        std::string info = std::string("BlockType: ") + std::to_string(int(circuit->getBlockType())) +
+                           std::string("; BlockSize: ") + std::to_string(circuit->getBlockSize()) + "\n";
         res.set_content(info, "text/plain");
     });
     // Stops the prover server
@@ -512,7 +521,8 @@ bool runBenchmark(Loopring::Circuit *circuit, const std::string &provingKeyFilen
     loadProvingKey(provingKeyFilename, context.provingKey);
     context.constraint_system = &(circuit->getPb().constraint_system);
 
-    VerificationKeyT vk = loadVerificationKey(provingKeyFilename.substr(0, provingKeyFilename.length() - 6) + "vk.json");
+    VerificationKeyT vk =
+      loadVerificationKey(provingKeyFilename.substr(0, provingKeyFilename.length() - 6) + "vk.json");
 
     if (!validateCircuit(circuit))
     {
