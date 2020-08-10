@@ -270,14 +270,20 @@ class UpdateBalanceGadget : public GadgetT
 class DynamicBalanceGadget : public DynamicVariableGadget
 {
   public:
-    DynamicBalanceGadget(ProtoboardT &pb, const VariableT &balance, const std::string &prefix)
+    DynamicBalanceGadget( //
+      ProtoboardT &pb,
+      const VariableT &balance,
+      const std::string &prefix)
         : DynamicVariableGadget(pb, prefix)
     {
         add(balance);
         allowGeneratingWitness = false;
     }
 
-    DynamicBalanceGadget(ProtoboardT &pb, const BalanceGadget &balance, const std::string &prefix)
+    DynamicBalanceGadget( //
+      ProtoboardT &pb,
+      const BalanceGadget &balance,
+      const std::string &prefix)
         : DynamicBalanceGadget(pb, balance.balance, prefix)
     {
     }
