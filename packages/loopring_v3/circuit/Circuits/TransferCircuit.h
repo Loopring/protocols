@@ -127,10 +127,10 @@ public:
         storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
         dualAuthorX(make_variable(pb, FMT(prefix, ".dualAuthorX"))),
         dualAuthorY(make_variable(pb, FMT(prefix, ".dualAuthorY"))),
-        payer_toAccountID(pb, NUM_BITS_ADDRESS,
+        payer_toAccountID(pb, NUM_BITS_ACCOUNT,
                           FMT(prefix, ".payer_toAccountID")),
         payer_to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_to")),
-        payee_toAccountID(pb, NUM_BITS_ADDRESS,
+        payee_toAccountID(pb, NUM_BITS_ACCOUNT,
                           FMT(prefix, ".payee_toAccountID")),
 
         // Check if the inputs are valid
