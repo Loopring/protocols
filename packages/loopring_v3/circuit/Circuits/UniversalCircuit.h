@@ -81,6 +81,7 @@ class SelectTransactionGadget : public BaseTransactionCircuit
             for (unsigned int i = 0; i < transactions.size(); i++)
             {
                 VariableArrayT da = transactions[i]->getPublicData();
+                // QUESTION(brecht): why not TX_DATA_AVAILABILITY_SIZE * 8?
                 assert(da.size() <= (TX_DATA_AVAILABILITY_SIZE - 1) * 8);
                 // Pad with zeros if needed
                 for (unsigned int j = da.size(); j < (TX_DATA_AVAILABILITY_SIZE - 1) * 8; j++)
@@ -154,6 +155,7 @@ class TransactionGadget : public GadgetT
     // General validation
     DualVariableGadget accountA;
     DualVariableGadget accountB;
+
     RequireNotZeroGadget validateAccountA;
     RequireNotZeroGadget validateAccountB;
 
@@ -440,6 +442,7 @@ class TransactionGadget : public GadgetT
 
     void generate_r1cs_constraints()
     {
+        // QUESTION(brecht): missed 'constants.generate_r1cs_constraints'?
         type.generate_r1cs_constraints(true);
         selector.generate_r1cs_constraints();
 
@@ -542,6 +545,9 @@ class UniversalCircuit : public Circuit
       const std::string &prefix)
         : Circuit(pb, prefix),
 
+          // QUESTION(brecht): This seems to be the top level circuit entry point,
+          // should some veriables, including constants, params, and timestamp, be initialized
+          // using pass-in values, such as constants(_constants)?
           publicData(pb, FMT(prefix, ".publicData")),
           constants(pb, FMT(prefix, ".constants")),
 
