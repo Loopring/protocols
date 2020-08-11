@@ -391,7 +391,7 @@ class UnsafeMulGadget : public GadgetT
 
 // A + B = sum with A, B and sum < 2^n
 //
-// This gadgent is not designed to handle inputs of more than a couple of
+// This gadget is not designed to handle inputs of more than a couple of
 // variables. Threfore, we are have not optimized the constraints as suggested
 // in https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 class AddGadget : public GadgetT
@@ -657,7 +657,7 @@ class AndGadget : public GadgetT
 
 // (input[0] || input[1] || ...) (all inputs need to be boolean)
 //
-// This gadgent is not designed to handle inputs of more than a couple of
+// This gadget is not designed to handle inputs of more than a couple of
 // variables. Threfore, we are have not optimized the constraints as suggested
 // in https://github.com/daira/r1cs/blob/master/zkproofs.pdf
 class OrGadget : public GadgetT
