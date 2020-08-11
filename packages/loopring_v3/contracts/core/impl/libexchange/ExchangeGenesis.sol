@@ -42,8 +42,8 @@ library ExchangeGenesis
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
 
         S.merkleRoot = _genesisMerkleRoot;
-        // S.blocks[0] = ExchangeData.BlockInfo(uint32(block.timestamp), bytes28(0));
-        // S.numBlocks = 1;
+        S.blocks[0] = ExchangeData.BlockInfo(uint32(block.timestamp), bytes28(0));
+        S.numBlocks = 1;
 
         // Get the protocol fees for this exchange
         S.protocolFeeData.syncedAt = uint32(0);
