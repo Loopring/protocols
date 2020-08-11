@@ -144,10 +144,15 @@ library ExchangeBlocks
         emit BlockSubmitted(numBlocks, merkleRootAfter, _publicDataHash, blockFeeETH);
 
         S.merkleRoot = merkleRootAfter;
+
         if (_block.storeBlockInfoOnchain) {
-            S.blocks[numBlocks] = ExchangeData.BlockInfo(uint32(block.timestamp), bytes28(_publicDataHash));
-            S.numBlocks = numBlocks + 1;
+            S.blocks[numBlocks] = ExchangeData.BlockInfo(
+                uint32(block.timestamp),
+                bytes28(_publicDataHash)
+            );
         }
+
+        S.numBlocks = numBlocks + 1;
     }
 
     function verifyBlocks(
