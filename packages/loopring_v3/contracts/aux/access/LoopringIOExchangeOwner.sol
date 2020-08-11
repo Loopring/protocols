@@ -17,7 +17,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     bool   public  open;
 
     event SubmitBlocksAccessOpened(bool open);
-    event CalldataVsComputation   (int dataSizeDiff, uint decompressionGasCost);
+    event CalldataVsComputation   (int dataReduction, uint computationCost);
 
     constructor(address _exchange)
         SelectorBasedAccessManager(_exchange)
@@ -36,6 +36,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
         uint _gasleft = gasleft();
         bytes memory decompressed = LzDecompressor.decompress(data);
 
+        // Log the differences of bigger calldata or more computation.
+        // If (decompressed.length - data.length) * 16 > (_gasleft - gasleft()), then
+        // we should use `submitBlocksCompressed` more.
         emit CalldataVsComputation(decompressed.length - data.length, _gasleft - gasleft());
 
         require(
