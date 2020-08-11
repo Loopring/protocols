@@ -256,7 +256,7 @@ contract("DelayedOwner", (accounts: string[]) => {
     );
 
     // Now execute it after the necessary delay
-    delayedContract.executeTransaction(event.id);
+    await delayedContract.executeTransaction(event.id);
     assert(
       (await targetContract.value()).eq(newValue),
       "Test value unexpected"
