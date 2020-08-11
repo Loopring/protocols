@@ -388,15 +388,15 @@ class WithdrawCircuit : public BaseTransactionCircuit
     const VariableArrayT getPublicData() const
     {
         return flattenReverse(
-          {type.bits,
-           owner.bits,
+          {owner.bits,
            accountID.bits,
            tokenID.bits,
            amount.bits,
            feeTokenID.bits,
            fFee.bits(),
            nonce.bits,
-           onchainDataHash.bits});
+           onchainDataHash.bits,
+           type.bits});
     }
 };
 

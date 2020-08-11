@@ -677,19 +677,20 @@ export class ExchangeV3 {
     const timestamp = Number(ethereumBlock.timestamp);
 
     // Get the block data from the transaction data
-    const submitBlocksFunctionSignature = "0xde6fd7d0";
+    //const submitBlocksFunctionSignature = "0xde6fd7d0";
     //const submitBlocksFunctionSignature = "0x14867212";
+    //const submitBlocksFunctionSignature = "0x6d6f41cc";
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
     );
     //console.log(transaction.input);
-    if (transaction.input.startsWith(submitBlocksFunctionSignature)) {
-      /*const decodedCompressedInput = this.web3.eth.abi.decodeParameters(
+    if (/*transaction.input.startsWith(submitBlocksFunctionSignature)*/true) {
+      const decodedCompressedInput = this.web3.eth.abi.decodeParameters(
         ["bytes"],
         "0x" + transaction.input.slice(2 + 4 * 2)
       );
-      const data = decompressLZ(decodedCompressedInput[0]);*/
+      const data = decompressLZ(decodedCompressedInput[0]);
       // Get the inputs to commitBlock
       // Note: this will not work if an operator contract is used with a different function signature
       const decodedInputs = this.web3.eth.abi.decodeParameters(
@@ -708,7 +709,7 @@ export class ExchangeV3 {
           },
           "address"
         ],
-        "0x" + transaction.input.slice(2 + 4 * 2)
+        "0x" + /*transaction.input*/data/*decodedCompressedInput[0]*/.slice(2 + 4 * 2)
       );
       //console.log(decodedInputs);
       const numBlocks = decodedInputs[0].length;
@@ -865,8 +866,8 @@ export class ExchangeV3 {
   }
 
   private async processOwnershipTransferred(event: any) {
-    assert(this.owner === event.returnValues.oldOwner, "unexpected owner");
-    this.owner = event.returnValues.newOwner;
+    assert(this.owner === event.returnValues.previousOwner, "unexpected owner");
+    this.owner = event.returnValues.previousOwner;
   }
 
   // Apply the block changes to the current state

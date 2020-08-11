@@ -62,6 +62,19 @@ contract SelectorBasedAccessManager is Claimable
         }
     }
 
+    function transact(bytes calldata data)
+        payable
+        external
+        withAccess(msg.data.toBytes4(0))
+    {
+        (bool success, bytes memory returnData) = target
+            .call{value: msg.value}(data);
+
+        if (!success) {
+            assembly { revert(add(returnData, 32), mload(returnData)) }
+        }
+    }
+
     function hasAccessTo(address user, bytes4 selector)
         public
         view

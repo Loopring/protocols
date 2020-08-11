@@ -493,8 +493,8 @@ class TransferCircuit : public BaseTransactionCircuit
            feeTokenID.bits,
            fFee.bits(),
            nonce.getShortStorageID(),
-           da_To.result(),
            da_StorageID.result(),
+           da_To.result(),
            da_From.result()});
     }
 };

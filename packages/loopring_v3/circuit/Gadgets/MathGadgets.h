@@ -1515,6 +1515,39 @@ class PublicDataGadget : public GadgetT
         publicDataBits.insert(publicDataBits.end(), bits.rbegin(), bits.rend());
     }
 
+    void transform(unsigned int start, unsigned int count, unsigned int size)
+    {
+        VariableArrayT transformedBits;
+        transformedBits.reserve(publicDataBits.size());
+        for (unsigned int i = 0; i < start; i++)
+        {
+            transformedBits.emplace_back(publicDataBits[i]);
+        }
+
+        unsigned int sizeA = 25*8;
+        unsigned int sizeB = 43*8;
+
+        unsigned int startA = start;
+        unsigned int startB = startA + sizeA*count;
+
+        for (unsigned int i = 0; i < count; i++)
+        {
+            for (unsigned int j = 0; j < sizeA; j++)
+            {
+                transformedBits.emplace_back(publicDataBits[start + i*size + j]);
+            }
+        }
+        for (unsigned int i = 0; i < count; i++)
+        {
+            for (unsigned int j = 0; j < sizeB; j++)
+            {
+                transformedBits.emplace_back(publicDataBits[start + i*size + sizeA + j]);
+            }
+        }
+
+        publicDataBits = transformedBits;
+    }
+
     void generate_r1cs_witness()
     {
         // Calculate the hash

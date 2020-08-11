@@ -1,19 +1,19 @@
-import { calculateCalldataCost, compressLZ, decompressLZ, Bitstream } from "loopringV3.js";
+import { calculateCalldataCost, compressLZ, decompressLZ, compressZeros, decompressZeros, Bitstream } from "loopringV3.js";
 import { Artifacts } from "../util/Artifacts";
 
 contract("Compression", (accounts: string[]) => {
   let lzDecompressor: any;
 
   const compressLZChecked = (data: string) => {
-    const compressed = compressLZ(data);
-    const decompressed = decompressLZ(compressed);
+    const compressed = compressZeros(data);
+    const decompressed = decompressZeros(compressed);
     assert.equal(data, decompressed, "decompressed data differs from input");
     return compressed;
   };
 
   const decompressLZChecked = async (data: string) => {
     const decompressedEVM = await lzDecompressor.decompress(data);
-    const decompressedCPU = decompressLZ(data);
+    const decompressedCPU = decompressZeros(data);
     assert.equal(
       decompressedEVM,
       decompressedCPU,
