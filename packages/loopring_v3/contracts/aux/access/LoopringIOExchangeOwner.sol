@@ -17,6 +17,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     bool   public  open;
 
     event SubmitBlocksAccessOpened(bool open);
+    event CalldataVsComputation   (int dataSizeDiff, uint decompressionGasCost);
 
     constructor(address _exchange)
         SelectorBasedAccessManager(_exchange)
@@ -32,7 +33,11 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
             "PERMISSION_DENIED"
         );
+        uint _gasleft = gasleft();
         bytes memory decompressed = LzDecompressor.decompress(data);
+
+        emit CalldataVsComputation(decompressed.length - data.length, _gasleft - gasleft());
+
         require(
             decompressed.toBytes4(0) == SUBMITBLOCKS_SELECTOR,
             "INVALID_DATA"
