@@ -293,6 +293,8 @@ abstract contract IExchangeV3 is IExchange
         returns (uint);
 
     /// @dev Gets some minimal info of a previously submitted block that's kept onchain.
+    ///      A DEX can use this function to implement a payment receipt verification
+    ///      contract with a challange-response scheme.
     /// @param blockIdx The block index.
     function getBlockInfo(uint blockIdx)
         external
