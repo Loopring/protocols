@@ -25,7 +25,7 @@ module.exports = function(deployer, network, accounts) {
         DappAddressStore.deployed().then(dappAddressStore => {
           if (dappManager) {
             console.log("add dappManager for dappAddressStore:", dappManager);
-            dappAddressStore.addDapp(dappManager);
+            dappAddressStore.addManager(dappManager);
           }
 
           if (loopringDEX) {

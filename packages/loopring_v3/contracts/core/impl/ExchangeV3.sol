@@ -280,7 +280,7 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (uint)
     {
-        return state.blocks.length;
+        return state.numBlocks;
     }
 
     function getBlockInfo(uint blockIdx)

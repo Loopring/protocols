@@ -23,10 +23,11 @@ class merkle_path_selector_4 : public GadgetT
     TernaryGadget child2;
     TernaryGadget child3;
 
-    // 00   x  y0  y1 y2
-    // 01   y0 x   y1 y2
-    // 10   y0 y1   x y2
-    // 11   y0 y1  y2  x
+    //[bit1][bit0] [child0] [child1] [child2] [child3]
+    // 0 0         x         y0          y1      y2
+    // 0 1         y0        x           y1      y2
+    // 1 0         y0        y1          x       y2
+    // 1 1         y0        y1          y2      x
     merkle_path_selector_4(
       ProtoboardT &pb,
       const VariableT &input,
