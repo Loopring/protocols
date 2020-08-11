@@ -226,29 +226,29 @@ class WithdrawCircuit : public BaseTransactionCircuit
             FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         // Update the account owner
-        setArrayOutput(accountA_Address, merkleTreeAccountA.result());
-        setOutput(accountA_Nonce, nonce_after.result());
+        setArrayOutput(TXV_ACCOUNT_A_ADDRESS, merkleTreeAccountA.result());
+        setOutput(TXV_ACCOUNT_A_NONCE, nonce_after.result());
 
         // Update the account balances (withdrawal + fee)
-        setArrayOutput(balanceA_S_Address, tokenID.bits);
-        setOutput(balanceA_S_Balance, balanceA_after.result());
-        setArrayOutput(balanceB_S_Address, feeTokenID.bits);
-        setOutput(balanceA_B_Balance, balanceB_A.balance());
+        setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
+        setOutput(TXV_BALANCE_A_S_BALANCE, balanceA_after.result());
+        setArrayOutput(TXV_BALANCE_B_S_ADDRESS, feeTokenID.bits);
+        setOutput(TXV_BALANCE_A_B_BALANCE, balanceB_A.balance());
 
         // Update the protocol fee pool balance when withdrawing from the protocol
         // pool
-        setOutput(balanceP_B_Balance, balanceP_after.result());
+        setOutput(TXV_BALANCE_P_B_BALANCE, balanceP_after.result());
 
         // Update the operator balance for the fee payment
-        setOutput(balanceO_A_Balance, balanceA_O.balance());
+        setOutput(TXV_BALANCE_O_A_BALANCE, balanceA_O.balance());
 
         // Verify a single signature of the account owner (if not conditional)
-        setOutput(hash_A, hash.result());
-        setOutput(signatureRequired_A, needsSignature.result());
-        setOutput(signatureRequired_B, state.constants._0);
+        setOutput(TXV_HASH_A, hash.result());
+        setOutput(TXV_SIGNATURE_REQUIRED_A, needsSignature.result());
+        setOutput(TXV_SIGNATURE_REQUIRED_B, state.constants._0);
 
         // Increase the number of conditional transactions
-        setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
+        setOutput(TXV_NUM_CONDITIONAL_TXS, numConditionalTransactionsAfter.result());
     }
 
     void generate_r1cs_witness(const Withdrawal &withdrawal)

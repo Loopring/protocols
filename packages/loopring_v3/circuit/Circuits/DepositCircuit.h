@@ -68,17 +68,17 @@ class DepositCircuit : public BaseTransactionCircuit
             FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         // Update the account balance and index
-        setArrayOutput(accountA_Address, accountID.bits);
-        setOutput(accountA_Owner, owner.packed);
-        setArrayOutput(balanceA_S_Address, tokenID.bits);
-        setOutput(balanceA_S_Balance, balance_after.result());
+        setArrayOutput(TXV_ACCOUNT_A_ADDRESS, accountID.bits);
+        setOutput(TXV_ACCOUNT_A_OWNER, owner.packed);
+        setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
+        setOutput(TXV_BALANCE_A_S_BALANCE, balance_after.result());
 
         // No singatures needed
-        setOutput(signatureRequired_A, state.constants._0);
-        setOutput(signatureRequired_B, state.constants._0);
+        setOutput(TXV_SIGNATURE_REQUIRED_A, state.constants._0);
+        setOutput(TXV_SIGNATURE_REQUIRED_B, state.constants._0);
 
         // Increase the number of conditional transactions
-        setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
+        setOutput(TXV_NUM_CONDITIONAL_TXS, numConditionalTransactionsAfter.result());
     }
 
     void generate_r1cs_witness(const Deposit &deposit)
