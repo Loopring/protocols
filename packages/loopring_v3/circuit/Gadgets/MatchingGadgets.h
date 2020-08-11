@@ -51,15 +51,21 @@ class RequireFillRateGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          fillAmountS_mul_amountB(//
-            pb, fillAmountS, amountB, FMT(prefix, ".fillAmountS_mul_amountB")),
+          fillAmountS_mul_amountB( //
+            pb,
+            fillAmountS,
+            amountB,
+            FMT(prefix, ".fillAmountS_mul_amountB")),
           fillAmountS_mul_amountB_mul_1000(
             pb,
             fillAmountS_mul_amountB.result(),
             constants._1000,
             FMT(prefix, ".fillAmountS_mul_amountB_mul_1000")),
-          fillAmountB_mul_amountS(//
-            pb, fillAmountB, amountS, FMT(prefix, ".fillAmountB_mul_amountS")),
+          fillAmountB_mul_amountS( //
+            pb,
+            fillAmountB,
+            amountS,
+            FMT(prefix, ".fillAmountB_mul_amountS")),
           fillAmountB_mul_amountS_mul_1001(
             pb,
             fillAmountB_mul_amountS.result(),
@@ -237,16 +243,24 @@ class RequireFillLimitGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          fillAmount(//
-            pb, order.fillAmountBorS.packed, fillB, fillS, FMT(prefix, ".fillAmount")),
+          fillAmount( //
+            pb,
+            order.fillAmountBorS.packed,
+            fillB,
+            fillS,
+            FMT(prefix, ".fillAmount")),
           fillLimit(
             pb,
             order.fillAmountBorS.packed,
             order.amountB.packed,
             order.amountS.packed,
             FMT(prefix, ".fillLimit")),
-          filledAfter(//
-            pb, filled, fillAmount.result(), NUM_BITS_AMOUNT, FMT(prefix, ".filledAfter")),
+          filledAfter( //
+            pb,
+            filled,
+            fillAmount.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".filledAfter")),
           filledAfter_leq_fillLimit(
             pb,
             filledAfter.result(),
