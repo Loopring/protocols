@@ -390,6 +390,10 @@ class UnsafeMulGadget : public GadgetT
 };
 
 // A + B = sum with A, B and sum < 2^n
+//
+// This gadget is not designed to handle inputs of more than a couple of
+// variables. Threfore, we are have not optimized the constraints as suggested
+// in https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 class AddGadget : public GadgetT
 {
   public:
@@ -549,7 +553,7 @@ class TernaryGadget : public GadgetT
     }
 };
 
-// b ? A : B
+// b ? A[] : B[]
 class ArrayTernaryGadget : public GadgetT
 {
   public:
@@ -638,6 +642,10 @@ class AndGadget : public GadgetT
     {
         // This can be done more efficiently but we never have any long inputs so no
         // need
+        if (inputs.size() > 3)
+        {
+            std::cout << "[AndGadget] unexpected input length " << inputs.size() << std::endl;
+        }
         pb.add_r1cs_constraint(ConstraintT(inputs[0], inputs[1], results[0]), FMT(annotation_prefix, ".A && B"));
         for (unsigned int i = 2; i < inputs.size(); i++)
         {
@@ -648,6 +656,10 @@ class AndGadget : public GadgetT
 };
 
 // (input[0] || input[1] || ...) (all inputs need to be boolean)
+//
+// This gadget is not designed to handle inputs of more than a couple of
+// variables. Threfore, we are have not optimized the constraints as suggested
+// in https://github.com/daira/r1cs/blob/master/zkproofs.pdf
 class OrGadget : public GadgetT
 {
   public:
@@ -684,6 +696,11 @@ class OrGadget : public GadgetT
 
     void generate_r1cs_constraints()
     {
+        if (inputs.size() > 3)
+        {
+            std::cout << "[OrGadget] unexpected input length " << inputs.size() << std::endl;
+        }
+
         pb.add_r1cs_constraint(
           ConstraintT(FieldT::one() - inputs[0], FieldT::one() - inputs[1], FieldT::one() - results[0]),
           FMT(annotation_prefix, ".A || B == _or"));
@@ -1215,7 +1232,8 @@ class RequireLtGadget : public GadgetT
     }
 };
 
-// if (C) then require(A)
+// if (C) then require(A), i.e.,
+// require(!C || A)
 class IfThenRequireGadget : public GadgetT
 {
   public:
@@ -1249,7 +1267,8 @@ class IfThenRequireGadget : public GadgetT
     }
 };
 
-// if (C) then require(A == B)
+// if (C) then require(A == B), i.e.,
+// require(!C || A == B)
 class IfThenRequireEqualGadget : public GadgetT
 {
   public:
@@ -1282,7 +1301,8 @@ class IfThenRequireEqualGadget : public GadgetT
     }
 };
 
-// if (C) then require(A != B)
+// if (C) then require(A != B), i.e.,
+// require(!C || A != B)
 class IfThenRequireNotEqualGadget : public GadgetT
 {
   public:
@@ -1319,7 +1339,7 @@ class IfThenRequireNotEqualGadget : public GadgetT
     }
 };
 
-// (value * numerator) = product
+// (value * numerator) = product = denominator * quotient + remainder
 // product / denominator = quotient
 // product % denominator = remainder
 class MulDivGadget : public GadgetT
@@ -1666,6 +1686,7 @@ class FloatGadget : public GadgetT
     }
 };
 
+// Checks 'type' is one of Constants.values - [0 - 10]
 struct SelectorGadget : public GadgetT
 {
     const Constants &constants;
@@ -1719,6 +1740,11 @@ struct SelectorGadget : public GadgetT
     }
 };
 
+// if selector=[1,0,0] and values = [a,b,c], return a
+// if selector=[0,1,0] and values = [a,b,c], return b
+// if selector=[0,0,1] and values = [a,b,c], return c
+// special case,
+// if selector=[0,0,0] and values = [a,b,c], return c
 class SelectGadget : public GadgetT
 {
   public:
@@ -1761,6 +1787,8 @@ class SelectGadget : public GadgetT
     }
 };
 
+// Select one out of many arrays based on mutiple boolean selector values.
+// If all the selector values are false, then the last array is selected.
 class ArraySelectGadget : public GadgetT
 {
   public:
@@ -1803,6 +1831,7 @@ class ArraySelectGadget : public GadgetT
     }
 };
 
+// Checks that the new ower equals the current onwer or the current ower is 0.
 class OwnerValidGadget : public GadgetT
 {
   public:
