@@ -140,14 +140,14 @@ library ExchangeBlocks
         _feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
 
         // Emit an event
-        emit BlockSubmitted(S.blocks.length, merkleRootAfter, _publicDataHash, blockFeeETH);
+        uint numBlocks = S.numBlocks;
+        emit BlockSubmitted(numBlocks, merkleRootAfter, _publicDataHash, blockFeeETH);
 
         S.merkleRoot = merkleRootAfter;
-        S.blocks.push(
-            _block.storeBlockInfoOnchain ?
-                ExchangeData.BlockInfo(uint32(block.timestamp), bytes28(_publicDataHash)) :
-                ExchangeData.BlockInfo(uint32(0), bytes28(0))
-        );
+        if (_block.storeBlockInfoOnchain) {
+            S.blocks[numBlocks] = ExchangeData.BlockInfo(uint32(block.timestamp), bytes28(_publicDataHash));
+            S.numBlocks = numBlocks + 1;
+        }
     }
 
     function verifyBlocks(
