@@ -140,25 +140,25 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
             FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         // Update the account data
-        setArrayOutput(accountA_Address, accountID.bits);
-        setOutput(accountA_PublicKeyX, publicKeyX);
-        setOutput(accountA_PublicKeyY, publicKeyY);
-        setOutput(accountA_Nonce, nonce_after.result());
+        setArrayOutput(TXV_ACCOUNT_A_ADDRESS, accountID.bits);
+        setOutput(TXV_ACCOUNT_A_PUBKEY_X, publicKeyX);
+        setOutput(TXV_ACCOUNT_A_PUBKEY_Y, publicKeyY);
+        setOutput(TXV_ACCOUNT_A_NONCE, nonce_after.result());
 
         // Update the account balance for the fee payment
-        setArrayOutput(balanceA_S_Address, feeTokenID.bits);
-        setOutput(balanceA_S_Balance, balanceS_A.balance());
+        setArrayOutput(TXV_BALANCE_A_S_ADDRESS, feeTokenID.bits);
+        setOutput(TXV_BALANCE_A_S_BALANCE, balanceS_A.balance());
         // Update the operator balance for the fee payment
-        setOutput(balanceO_B_Balance, balanceB_O.balance());
+        setOutput(TXV_BALANCE_O_B_BALANCE, balanceB_O.balance());
 
         // We need a single signature of the account that's being updated if not
         // conditional
-        setOutput(hash_A, hash.result());
-        setOutput(signatureRequired_A, needsSignature.result());
-        setOutput(signatureRequired_B, state.constants._0);
+        setOutput(TXV_HASH_A, hash.result());
+        setOutput(TXV_SIGNATURE_REQUIRED_A, needsSignature.result());
+        setOutput(TXV_SIGNATURE_REQUIRED_B, state.constants._0);
 
         // Increase the number of conditional transactions (if conditional)
-        setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
+        setOutput(TXV_NUM_CONDITIONAL_TXS, numConditionalTransactionsAfter.result());
     }
 
     void generate_r1cs_witness(const AccountUpdateTx &update)
