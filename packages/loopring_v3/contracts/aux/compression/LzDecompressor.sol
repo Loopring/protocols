@@ -17,8 +17,8 @@ pragma solidity ^0.7.0;
 ///        (large initital cost but cheaper copying, does not support overlapping memory ranges)
 library LzDecompressor
 {
-    /*function decompress(
-        bytes calldata /*data*//*
+    function decompress(
+        bytes calldata /*data*/
         )
         internal
         pure
@@ -100,42 +100,7 @@ library LzDecompressor
             mstore(uncompressed, sub(sub(ptr, uncompressed), 32))
 
             // Update free memory pointer
-            // mstore(0x40, add(ptr, 0x20))
-        }
-        return uncompressed;
-    }*/
-
-    function decompress(
-        bytes calldata /*data*/
-        )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes memory uncompressed;
-        assembly {
-            uncompressed := mload(0x40)
-            let ptr := add(uncompressed, 32)
-            let pos := 40
-            let dataLength := add(calldataload(36), pos)
-            let tupple := 0
-            let numData := 0
-            let numZeros := 0
-
-            for {} lt(pos, dataLength) {} {
-                tupple := and(calldataload(pos), 0xFFFFFFFF)
-                numData := shr(16, tupple)
-                numZeros := and(tupple, 0xFFFF)
-                calldatacopy(ptr, add(32, pos), numData)
-                pos := add(pos, add(4, numData))
-                ptr := add(ptr, add(numData, numZeros))
-            }
-
-            // Store data length
-            mstore(uncompressed, sub(sub(ptr, uncompressed), 32))
-
-            // Update free memory pointer
-            //mstore(0x40, add(ptr, 0x20))
+            mstore(0x40, add(ptr, 0x20))
         }
         return uncompressed;
     }

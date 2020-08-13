@@ -3,7 +3,7 @@ const fs = require("fs");
 import Web3 from "web3";
 import { Bitstream } from "./bitstream";
 import { Constants } from "./constants";
-import { decompressLZ } from "./compression";
+import { decompressLZ, decompressZeros } from "./compression";
 const poseidon = require("./poseidon");
 import { ProtocolV3 } from "./protocol_v3";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
@@ -678,19 +678,19 @@ export class ExchangeV3 {
 
     // Get the block data from the transaction data
     //const submitBlocksFunctionSignature = "0xde6fd7d0";
-    //const submitBlocksFunctionSignature = "0x14867212";
+    const submitBlocksFunctionSignature = "0x14867212";
     //const submitBlocksFunctionSignature = "0x6d6f41cc";
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
     );
     //console.log(transaction.input);
-    if (/*transaction.input.startsWith(submitBlocksFunctionSignature)*/true) {
+    if (transaction.input.startsWith(submitBlocksFunctionSignature)) {
       const decodedCompressedInput = this.web3.eth.abi.decodeParameters(
         ["bytes"],
         "0x" + transaction.input.slice(2 + 4 * 2)
       );
-      const data = decompressLZ(decodedCompressedInput[0]);
+      const data = decompressZeros(decodedCompressedInput[0]);
       // Get the inputs to commitBlock
       // Note: this will not work if an operator contract is used with a different function signature
       const decodedInputs = this.web3.eth.abi.decodeParameters(
@@ -895,9 +895,10 @@ export class ExchangeV3 {
     };
 
     for (let i = 0; i < block.blockSize; i++) {
-      const txData = new Bitstream(
-        data.extractData(offset, Constants.TX_DATA_AVAILABILITY_SIZE)
-      );
+      const txData1 = data.extractData(offset + i * 25, 25);
+      const txData2 = data.extractData(offset + block.blockSize * 25 + i * 43, 43);
+      const txData = new Bitstream(txData1 + txData2);
+
       const txType = txData.extractUint8(0);
 
       let request: any;
@@ -918,7 +919,6 @@ export class ExchangeV3 {
       }
 
       requests.push(request);
-      offset += Constants.TX_DATA_AVAILABILITY_SIZE;
     }
 
     // Update operator nonce

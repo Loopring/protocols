@@ -57,9 +57,6 @@ export class WithdrawalProcessor {
     const withdrawal: Withdrawal = {};
     let offset = 1;
 
-    // Check that this is a conditional update
-    withdrawal.type = data.extractUint8(offset);
-    offset += 1;
     withdrawal.owner = data.extractAddress(offset);
     offset += 20;
     withdrawal.accountID = data.extractUint32(offset);
@@ -76,6 +73,8 @@ export class WithdrawalProcessor {
     offset += 4;
     withdrawal.onchainDataHash = data.extractData(offset, 20);
     offset += 20;
+    withdrawal.type = data.extractUint8(offset);
+    offset += 1;
 
     return withdrawal;
   }

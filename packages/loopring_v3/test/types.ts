@@ -195,7 +195,6 @@ export interface Block {
   data: string;
   auxiliaryData: any[];
   offchainData: string;
-  compressedData: string;
   publicDataHash: string;
   publicInput: string;
   proof?: string[];

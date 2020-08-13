@@ -128,6 +128,9 @@ library ExchangeData
     function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 14 days; }
     function ACCOUNTID_PROTOCOLFEE() internal pure returns (uint32) { return 0; }
 
+    function TX_DATA_AVAILABILITY_SIZE_PART_1() internal pure returns (uint32) { return 25; }
+    function TX_DATA_AVAILABILITY_SIZE_PART_2() internal pure returns (uint32) { return 43; }
+
     struct AccountLeaf
     {
         uint32   accountID;

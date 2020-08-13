@@ -42,10 +42,6 @@ export class AccountUpdateProcessor {
     const update: AccountUpdate = {};
     let offset = 1;
 
-    // Check that this is a conditional update
-    const updateType = data.extractUint8(offset);
-    offset += 1;
-
     update.owner = data.extractAddress(offset);
     offset += 20;
     update.accountID = data.extractUint32(offset);
@@ -58,6 +54,8 @@ export class AccountUpdateProcessor {
     offset += 32;
     update.nonce = data.extractUint32(offset);
     offset += 4;
+    const updateType = data.extractUint8(offset);
+    offset += 1;
 
     // Unpack the public key
     const unpacked = EdDSA.unpack(publicKey);

@@ -178,7 +178,7 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it.only("All transaction types in a single block", async () => {
+    it("All transaction types in a single block", async () => {
       const ringA: SpotTrade = {
         orderA: {
           tokenS: "ETH",
@@ -295,7 +295,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitTransactions();
       await verify();
 
-      const blockSizes = [8, 16/*32, 64*/];
+      const blockSizes = [8, 16, 32];
       for (const blockSize of blockSizes) {
         const rings: SpotTrade[] = [];
         for (let i = 0; i < blockSize; i++) {

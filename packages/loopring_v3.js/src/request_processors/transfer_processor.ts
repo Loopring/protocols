@@ -78,10 +78,10 @@ export class TransferProcessor {
     offset += 2;
     transfer.shortStorageID = data.extractUint16(offset);
     offset += 2;
-    transfer.to = data.extractAddress(offset);
-    offset += 20;
     transfer.storageID = data.extractUint32(offset);
     offset += 4;
+    transfer.to = data.extractAddress(offset);
+    offset += 20;
     transfer.from = data.extractAddress(offset);
     offset += 20;
 

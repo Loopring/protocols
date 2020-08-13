@@ -326,9 +326,9 @@ export function compressZeros(
   }
 
   // console.log("o: " + data.getData());
-  console.log("compressed: " + compressed.getData());
+  // console.log("compressed: " + compressed.getData());
   const decompressed = decompressZeros(compressed.getData());
-  console.log("decompress: " + decompressed);
+  // console.log("decompress: " + decompressed);
   assert.equal(
     input,
     decompressed,

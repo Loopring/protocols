@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../aux/compression/LzDecompressor.sol";
+import "../../aux/compression/ZeroDecompressor.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "./SelectorBasedAccessManager.sol";
@@ -32,7 +32,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
             "PERMISSION_DENIED"
         );
-        bytes memory decompressed = LzDecompressor.decompress(data);
+        bytes memory decompressed = ZeroDecompressor.decompress(data);
         require(
             decompressed.toBytes4(0) == SUBMITBLOCKS_SELECTOR,
             "INVALID_DATA"

@@ -399,7 +399,6 @@ export class ExchangeTestUtil {
 
   public loopringV3: any;
   public blockVerifier: any;
-  public lzDecompressor: any;
 
   public lrcAddress: string;
   public wethAddress: string;
@@ -1439,12 +1438,6 @@ export class ExchangeTestUtil {
     logDebug("[EVM]PublicInput: " + publicInput);
     logDebug("[EVM]AuxiliaryData: " + auxiliaryData);
 
-    const compressedData = compress(
-      data,
-      this.compressionType,
-      this.lzDecompressor.address
-    );
-
     // Make sure the keys are generated
     await this.registerCircuit(blockType, blockSize, 0);
 
@@ -1471,7 +1464,6 @@ export class ExchangeTestUtil {
       data,
       auxiliaryData,
       offchainData,
-      compressedData,
       publicDataHash,
       publicInput,
       blockFee: new BN(0),
@@ -1686,31 +1678,38 @@ export class ExchangeTestUtil {
     const txData = this.exchange.contract.methods
       .submitBlocks(onchainBlocks, this.exchangeOperator)
       .encodeABI();
-    //const compressed = compressZeros(txData);
+    const compressed = compressZeros(txData);
     //console.log(txData);
     //console.log(compressed);
 
     let tx: any = undefined;
-    /*tx = await operatorContract.submitBlocksCompressed(
+    tx = await operatorContract.submitBlocksCompressed(
       web3.utils.hexToBytes(compressed),
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
-    );*/
+    );
     /*tx = await operatorContract.submitBlocks(
       onchainBlocks,
       this.exchangeOperator,
       { from: this.exchangeOperator, gasPrice: 0 }
     );*/
-    tx = await operatorContract.transact(
+    /*tx = await operatorContract.transact(
       txData,
       { from: this.exchangeOperator, gasPrice: 0 }
-    );
+    );*/
     /*tx = await web3.eth.sendTransaction({
       from: this.exchangeOperator,
       to: operatorContract.address,
       data: txData,
       gasPrice: 0
     });*/
+    /*const wrapper = await this.contracts.ExchangeV3.at(operatorContract.address);
+    tx = await wrapper.submitBlocks(
+      onchainBlocks,
+      this.exchangeOperator,
+      { from: this.exchangeOperator, gasPrice: 0 }
+    );*/
+    //console.log(tx);
     logInfo(
       "\x1b[46m%s\x1b[0m",
       "[submitBlocks] Gas used: " + tx.receipt.gasUsed
@@ -1718,7 +1717,7 @@ export class ExchangeTestUtil {
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     // Check number of blocks submitted
-    /*const numBlocksSubmittedAfter = (
+    const numBlocksSubmittedAfter = (
       await this.exchange.getBlockHeight()
     ).toNumber();
     assert.equal(
@@ -1742,12 +1741,12 @@ export class ExchangeTestUtil {
           blocks[i].merkleRoot,
           "unexpected Merkle root"
         );
-        /*assert.equal(
+        assert.equal(
           event.publicDataHash,
           blocks[i].publicDataHash,
           "unexpected public data hash"
-        );*/
-        /*const block = this.blocks[this.exchangeId][event.blockIdx.toNumber()];
+        );
+        const block = this.blocks[this.exchangeId][event.blockIdx.toNumber()];
         block.transactionHash = tx.receipt.transactionHash;
         block.timestamp = ethBlock.timestamp;
         block.blockFee = new BN(event.blockFee);
@@ -1799,7 +1798,7 @@ export class ExchangeTestUtil {
       numAvailableSlotsAfter - numForcedRequestsProcessed,
       numAvailableSlotsBefore,
       "unexpected num available slots"
-    );*/
+    );
 
     // Check the current state against the explorer state
     await this.checkExplorerState();
@@ -2310,7 +2309,6 @@ export class ExchangeTestUtil {
       data: "0x",
       auxiliaryData: [],
       offchainData: "0x",
-      compressedData: "0x",
       publicDataHash: "0",
       publicInput: "0",
       blockFee: new BN(0),
@@ -2357,7 +2355,7 @@ export class ExchangeTestUtil {
   }
 
   public async syncExplorer() {
-    //await this.explorer.sync(await web3.eth.getBlockNumber());
+    await this.explorer.sync(await web3.eth.getBlockNumber());
   }
 
   public getTokenAddress(token: string) {
@@ -2603,7 +2601,6 @@ export class ExchangeTestUtil {
   }
 
   public async checkExplorerState() {
-    return;
     // Get the current state
     const numBlocksOnchain = this.blocks[this.exchangeId].length;
     const state = await Simulator.loadExchangeState(
@@ -3020,8 +3017,6 @@ export class ExchangeTestUtil {
 
     this.userStakingPool = userStakingPool;
     this.protocolFeeVaultContract = protocolFeeVaultContract;
-
-    this.lzDecompressor = await this.contracts.LzDecompressor.new();
 
     this.universalRegistry = universalRegistry;
     this.loopringV3 = loopringV3;

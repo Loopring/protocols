@@ -5,15 +5,15 @@ contract("Compression", (accounts: string[]) => {
   let lzDecompressor: any;
 
   const compressLZChecked = (data: string) => {
-    const compressed = compressZeros(data);
-    const decompressed = decompressZeros(compressed);
+    const compressed = compressLZ(data);
+    const decompressed = decompressLZ(compressed);
     assert.equal(data, decompressed, "decompressed data differs from input");
     return compressed;
   };
 
   const decompressLZChecked = async (data: string) => {
     const decompressedEVM = await lzDecompressor.decompress(data);
-    const decompressedCPU = decompressZeros(data);
+    const decompressedCPU = decompressLZ(data);
     assert.equal(
       decompressedEVM,
       decompressedCPU,

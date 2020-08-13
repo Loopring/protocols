@@ -131,10 +131,8 @@ library ExchangeBlocks
         uint blockFeeETH = processConditionalTransactions(
             S,
             offset,
-            _block.data,
-            _block.auxiliaryData,
-            inputTimestamp/*,
-            _block.blockSize*/
+            _block,
+            inputTimestamp
         );
 
         // Transfer the onchain block fee to the operator
@@ -226,27 +224,25 @@ library ExchangeBlocks
     function processConditionalTransactions(
         ExchangeData.State          storage S,
         uint                                offset,
-        bytes                        memory data,
-        ExchangeData.AuxiliaryData[] memory txAuxiliaryData,
-        uint32                              timestamp/*,
-        uint                                blockSize*/
+        ExchangeData.Block           memory _block,
+        uint32                              _timestamp
         )
         private
         returns (uint blockFeeETH)
     {
         // The length of the auxiliary data needs to match the number of conditional transactions
-        uint numConditionalTransactions = data.toUint32(offset);
+        uint numConditionalTransactions = _block.data.toUint32(offset);
         offset += 4;
 
         if (numConditionalTransactions > 0) {
             // Cache the domain seperator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
                 DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR,
-                timestamp: timestamp
+                timestamp: _timestamp
             });
 
             require(
-                txAuxiliaryData.length == numConditionalTransactions,
+                _block.auxiliaryData.length == numConditionalTransactions,
                 "AUXILIARYDATA_INVALID_LENGTH"
             );
 
@@ -254,28 +250,37 @@ library ExchangeBlocks
             offset += 4;
 
             // Run over all conditional transactions
-            uint prevTxDataOffset = 0;
-            for (uint i = 0; i < txAuxiliaryData.length; i++) {
+            bytes memory data = _block.data;
+            // Reuse the tx data buffer
+            bytes memory txData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE());
+            uint minTxIndex = 0;
+            for (uint i = 0; i < _block.auxiliaryData.length; i++) {
+                ExchangeData.AuxiliaryData memory auxiliaryData = _block.auxiliaryData[i];
                 // Each conditional transaction needs to be processed from left to right
+                require(auxiliaryData.txIndex < _block.blockSize &&
+                        auxiliaryData.txIndex >= minTxIndex, "AUXILIARYDATA_INVALID_ORDER");
+
+                // Reconstruct the transaction data
+                // Part 1
                 uint txDataOffset = offset +
-                    txAuxiliaryData[i].txIndex * 25;
-
-                require(txDataOffset > prevTxDataOffset, "AUXILIARYDATA_INVALID_ORDER");
-
-                // TODO: don't do this
-                bytes memory txData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE());
-                for (uint j = 0; j < 25; j++) {
-                    txData[j] = data[txDataOffset + j];
+                    auxiliaryData.txIndex * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1();
+                assembly {
+                    mstore(add(txData, 32), mload(add(data, add(txDataOffset, 32))))
                 }
-                for (uint j = 0; j < 43; j++) {
-                    txData[25 + j] = data[98 + 25 * 8 + txAuxiliaryData[i].txIndex * 43 + j];
+                // Part 2
+                txDataOffset = offset +
+                    _block.blockSize * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1() +
+                    auxiliaryData.txIndex * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_2();
+                assembly {
+                    mstore(add(txData, 57 /*32 + 25*/), mload(add(data, add(txDataOffset, 32))))
+                    mstore(add(txData, 68            ), mload(add(data, add(txDataOffset, 43))))
                 }
 
                 // Process the transaction
                 ExchangeData.TransactionType txType = ExchangeData.TransactionType(
-                    data.toUint8(txDataOffset)
+                    txData.toUint8(0)
                 );
-                txDataOffset += 1;
+                txDataOffset = 1;
 
                 uint txFeeETH = 0;
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
@@ -283,32 +288,32 @@ library ExchangeBlocks
                         S,
                         ctx,
                         txData,
-                        1,
-                        txAuxiliaryData[i].data
+                        txDataOffset,
+                        auxiliaryData.data
                     );
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
                     txFeeETH = WithdrawTransaction.process(
                         S,
                         ctx,
                         txData,
-                        1,
-                        txAuxiliaryData[i].data
+                        txDataOffset,
+                        auxiliaryData.data
                     );
                 } else if (txType == ExchangeData.TransactionType.TRANSFER) {
                     txFeeETH = TransferTransaction.process(
                         S,
                         ctx,
                         txData,
-                        1,
-                        txAuxiliaryData[i].data
+                        txDataOffset,
+                        auxiliaryData.data
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
                     txFeeETH = AccountUpdateTransaction.process(
                         S,
                         ctx,
                         txData,
-                        1,
-                        txAuxiliaryData[i].data
+                        txDataOffset,
+                        auxiliaryData.data
                     );
                 } else {
                     // ExchangeData.TransactionType.NOOP and
@@ -318,7 +323,7 @@ library ExchangeBlocks
                 }
 
                 blockFeeETH = blockFeeETH.add(txFeeETH);
-                prevTxDataOffset = txDataOffset;
+                minTxIndex = auxiliaryData.txIndex + 1;
             }
         }
     }
