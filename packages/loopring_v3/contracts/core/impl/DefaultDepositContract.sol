@@ -127,7 +127,8 @@ contract DefaultDepositContract is IDepositContract, Claimable
         }
 
         if (feeEth > 0) {
-            feeRecipient.sendETHAndVerify(feeEth, gasleft());
+            address to = feeRecipient == address(0) ? from : feeRecipient;
+            to.sendETHAndVerify(feeEth, gasleft());
         }
     }
 
