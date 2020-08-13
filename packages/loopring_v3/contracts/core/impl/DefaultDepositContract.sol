@@ -99,6 +99,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
             amountReceived = amount;
         } else {
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
+
             bool checkBalance = needCheckBalance[token];
             uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
 
