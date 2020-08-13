@@ -677,9 +677,7 @@ export class ExchangeV3 {
     const timestamp = Number(ethereumBlock.timestamp);
 
     // Get the block data from the transaction data
-    //const submitBlocksFunctionSignature = "0xde6fd7d0";
     const submitBlocksFunctionSignature = "0x14867212";
-    //const submitBlocksFunctionSignature = "0x6d6f41cc";
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
@@ -692,7 +690,6 @@ export class ExchangeV3 {
       );
       const data = decompressZeros(decodedCompressedInput[0]);
       // Get the inputs to commitBlock
-      // Note: this will not work if an operator contract is used with a different function signature
       const decodedInputs = this.web3.eth.abi.decodeParameters(
         [
           {
@@ -709,7 +706,7 @@ export class ExchangeV3 {
           },
           "address"
         ],
-        "0x" + /*transaction.input*/data/*decodedCompressedInput[0]*/.slice(2 + 4 * 2)
+        "0x" + data.slice(2 + 4 * 2)
       );
       //console.log(decodedInputs);
       const numBlocks = decodedInputs[0].length;

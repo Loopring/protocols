@@ -38,13 +38,14 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             "INVALID_DATA"
         );
 
-        bool success;
         address addr = target;
         assembly {
-            success := call(gas(), addr, 0, add(decompressed, 32), mload(decompressed), decompressed, 0)
-        }
-        if (!success) {
-            assembly { revert(add(decompressed, 32), mload(decompressed)) }
+            let success := call(gas(), addr, 0, add(decompressed, 32), mload(decompressed), decompressed, 0)
+            if eq(success, 0) {
+                let size := returndatasize()
+                returndatacopy(decompressed, 0, returndatasize())
+                revert(decompressed, size)
+            }
         }
     }
 

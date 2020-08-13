@@ -52,20 +52,14 @@ contract SelectorBasedAccessManager is Claimable
     fallback()
         payable
         external
-        withAccess(msg.data.toBytes4(0))
     {
-        (bool success, bytes memory returnData) = target
-            .call{value: msg.value}(msg.data);
-
-        if (!success) {
-            assembly { revert(add(returnData, 32), mload(returnData)) }
-        }
+        transact(msg.data);
     }
 
-    function transact(bytes calldata data)
+    function transact(bytes memory data)
         payable
-        external
-        withAccess(msg.data.toBytes4(0))
+        public
+        withAccess(data.toBytes4(0))
     {
         (bool success, bytes memory returnData) = target
             .call{value: msg.value}(data);

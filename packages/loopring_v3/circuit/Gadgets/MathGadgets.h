@@ -1550,6 +1550,7 @@ class PublicDataGadget : public GadgetT
         unsigned int startA = start;
         unsigned int startB = startA + sizeA*count;
 
+        // Part 1
         for (unsigned int i = 0; i < count; i++)
         {
             for (unsigned int j = 0; j < sizeA; j++)
@@ -1557,6 +1558,7 @@ class PublicDataGadget : public GadgetT
                 transformedBits.emplace_back(publicDataBits[start + i*size + j]);
             }
         }
+        // Part 2
         for (unsigned int i = 0; i < count; i++)
         {
             for (unsigned int j = 0; j < sizeB; j++)
