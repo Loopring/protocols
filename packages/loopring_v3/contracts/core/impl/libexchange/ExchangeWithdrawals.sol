@@ -69,11 +69,16 @@ library ExchangeWithdrawals
             msg.sender.sendETHAndVerify(feeSurplus, gasleft());
         }
 
-        require(S.pendingForcedWithdrawals[accountID][tokenID].timestamp == 0, "WITHDRAWAL_ALREADY_PENDING");
+        require(
+            S.pendingForcedWithdrawals[accountID][tokenID].timestamp == 0,
+            "WITHDRAWAL_ALREADY_PENDING"
+        );
 
-        S.pendingForcedWithdrawals[accountID][tokenID].owner = owner;
-        S.pendingForcedWithdrawals[accountID][tokenID].timestamp = uint32(block.timestamp);
-        S.pendingForcedWithdrawals[accountID][tokenID].fee = uint64(withdrawalFeeETH);
+        S.pendingForcedWithdrawals[accountID][tokenID] = ExchangeData.ForcedWithdrawal({
+            owner: owner,
+            timestamp: uint32(block.timestamp),
+            fee: uint64(withdrawalFeeETH)
+        });
 
         S.numPendingForcedTransactions++;
 
