@@ -24,8 +24,7 @@ library ExchangeDeposits
     event DepositRequested(
         address owner,
         address token,
-        uint96  amount,
-        uint    fee
+        uint96  amount
     );
 
     function deposit(
@@ -47,7 +46,7 @@ library ExchangeDeposits
         uint16 tokenID = S.getTokenID(tokenAddress);
 
         // Transfer the tokens to this contract
-        (uint96 amountDeposited, uint64 fee) = transferDeposit(
+        (uint96 amountDeposited) = transferDeposit(
             S,
             from,
             tokenAddress,
@@ -57,16 +56,14 @@ library ExchangeDeposits
 
         // Add the amount to the deposit request and reset the time the operator has to process it
         ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
-        _deposit.timestamp = uint32(block.timestamp);
+        _deposit.timestamp = uint64(block.timestamp);
         _deposit.amount = _deposit.amount.add96(amountDeposited);
-        _deposit.fee = _deposit.fee.add64(fee);
         S.pendingDeposits[to][tokenID] = _deposit;
 
         emit DepositRequested(
             to,
             tokenAddress,
-            uint96(amountDeposited),
-            fee
+            uint96(amountDeposited)
         );
     }
 
@@ -78,22 +75,17 @@ library ExchangeDeposits
         bytes   memory extraData
         )
         private
-        returns (
-            uint96 amountDeposited,
-            uint64 fee
-        )
+        returns (uint96 amountDeposited)
     {
         IDepositContract depositContract = S.depositContract;
-        uint depositValueETH = 0;
-        if (msg.value > 0 && (tokenAddress == address(0) || depositContract.isETH(tokenAddress))) {
-            depositValueETH = amount;
-            fee = uint64(msg.value.sub(amount));
+        if (tokenAddress == address(0) || depositContract.isETH(tokenAddress)) {
+            require(msg.value == amount, "INVALID_AMOUNT");
         } else {
-            fee = uint64(msg.value);
+            require(msg.value == 0, "INVALID_AMOUNT");
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        amountDeposited = depositContract.deposit{value: depositValueETH}(
+        amountDeposited = depositContract.deposit{value: msg.value}(
             from,
             tokenAddress,
             amount,

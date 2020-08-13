@@ -140,7 +140,6 @@ library ExchangeWithdrawals
         );
 
         uint amount = deposit.amount;
-        uint fee = deposit.fee;
 
         // Reset the deposit request
         delete S.pendingDeposits[owner][tokenID];
@@ -156,9 +155,6 @@ library ExchangeWithdrawals
             gasleft(),
             false
         );
-
-        // Return the fee
-        owner.sendETHAndVerify(fee, gasleft());
     }
 
     function withdrawFromApprovedWithdrawals(
