@@ -53,6 +53,10 @@ library ExchangeDeposits
             extraData
         );
 
+        if (amountDeposited == 0) {
+            return;
+        }
+
         // Add the amount to the deposit request and reset the time the operator has to process it
         ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
         _deposit.timestamp = uint64(block.timestamp);
