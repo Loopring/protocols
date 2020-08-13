@@ -66,10 +66,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
         external
         onlyOwner
     {
-        require(
-            _feeRecipient != address(0) && _feeRecipient != feeRecipient,
-            "INALID_ADDRESS"
-        );
+        require(_feeRecipient != feeRecipient, "INALID_ADDRESS");
         feeRecipient = _feeRecipient;
     }
 
