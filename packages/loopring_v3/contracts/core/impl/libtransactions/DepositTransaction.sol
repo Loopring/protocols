@@ -61,12 +61,10 @@ library DepositTransaction
         // If the deposit was fully consumed, reset it so the storage is freed up
         // and the owner receives a gas refund.
         if (pendingDeposit.amount == 0) {
-            // Reset the deposit data
-            pendingDeposit.timestamp = 0;
+            delete S.pendingDeposits[deposit.owner][deposit.tokenID];
+        } else {
+            S.pendingDeposits[deposit.owner][deposit.tokenID] = pendingDeposit;
         }
-
-        // Update the data in storage
-        S.pendingDeposits[deposit.owner][deposit.tokenID] = pendingDeposit;
 
         //emit DepositProcessed(owner, accountID, tokenID, amount);
     }
