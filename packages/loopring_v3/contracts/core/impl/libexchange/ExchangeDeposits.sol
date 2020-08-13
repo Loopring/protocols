@@ -46,8 +46,7 @@ library ExchangeDeposits
         uint16 tokenID = S.getTokenID(tokenAddress);
 
         // Transfer the tokens to this contract
-        (uint96 amountDeposited) = transferDeposit(
-            S,
+        uint96 amountDeposited = S.depositContract.deposit{value: msg.value}(
             from,
             tokenAddress,
             amount,
@@ -64,31 +63,6 @@ library ExchangeDeposits
             to,
             tokenAddress,
             uint96(amountDeposited)
-        );
-    }
-
-    function transferDeposit(
-        ExchangeData.State storage S,
-        address from,
-        address tokenAddress,
-        uint96  amount,
-        bytes   memory extraData
-        )
-        private
-        returns (uint96 amountDeposited)
-    {
-        IDepositContract depositContract = S.depositContract;
-
-        if (tokenAddress == address(0) || depositContract.isETH(tokenAddress)) {
-            require(msg.value >= amount, "INVALID_AMOUNT");
-        }
-
-        // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        amountDeposited = depositContract.deposit{value: msg.value}(
-            from,
-            tokenAddress,
-            amount,
-            extraData
         );
     }
 }
