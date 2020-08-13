@@ -79,11 +79,10 @@ contract("Exchange", (accounts: string[]) => {
     );
   };
 
-  const createExchange = async (determinstic: boolean = false) => {
+  const createExchange = async (deterministic: boolean = false) => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      true,
-      determinstic
+      {deterministic}
     );
   };
 

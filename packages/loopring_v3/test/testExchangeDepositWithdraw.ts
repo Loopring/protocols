@@ -251,10 +251,10 @@ contract("Exchange", (accounts: string[]) => {
     return new BN(web3.utils.toWei("0.0481", "ether"));
   };
 
-  const createExchange = async (bSetupTestState: boolean = true) => {
+  const createExchange = async (setupTestState: boolean = true) => {
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      bSetupTestState
+      {setupTestState}
     );
     exchange = exchangeTestUtil.exchange;
     depositContract = exchangeTestUtil.depositContract;

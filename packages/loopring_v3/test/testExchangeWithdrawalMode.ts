@@ -34,10 +34,10 @@ contract("Exchange", (accounts: string[]) => {
     }
   };
 
-  const createExchange = async (bSetupTestState: boolean = true) => {
+  const createExchange = async (setupTestState: boolean = true, useOwnerContract: boolean = true) => {
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      bSetupTestState
+      {setupTestState, useOwnerContract}
     );
     exchange = exchangeTestUtil.exchange;
   };
@@ -133,7 +133,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("should go into withdrawal mode when shutdown when not processing forced withdrawals", async () => {
-      await createExchange(false);
+      await createExchange(false, false);
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
       const token = exchangeTestUtil.getTokenAddressFromID(deposit.tokenID);

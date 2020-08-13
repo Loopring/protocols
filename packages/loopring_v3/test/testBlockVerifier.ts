@@ -16,10 +16,10 @@ contract("BlockVerifier", (accounts: string[]) => {
   const owner = accounts[0];
   const anyone = accounts[1];
 
-  const createExchange = async (bSetupTestState: boolean = true) => {
+  const createExchange = async (setupTestState: boolean = true) => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      bSetupTestState
+      {setupTestState}
     );
     exchange = exchangeTestUtil.exchange;
   };

@@ -95,6 +95,12 @@ function replacer(name: any, val: any) {
   }
 }
 
+export interface ExchangeOptions {
+  setupTestState?: boolean;
+  deterministic?: boolean;
+  useOwnerContract?: boolean;
+}
+
 export interface DepositOptions {
   fee?: BN;
   autoSetKeys?: boolean;
@@ -514,7 +520,7 @@ export class ExchangeTestUtil {
       this.accounts.push([protocolFeeAccount]);
     }
 
-    await this.createExchange(this.testContext.deployer, true);
+    await this.createExchange(this.testContext.deployer);
 
     const constants = await this.exchange.getConstants();
     this.SNARK_SCALAR_FIELD = new BN(constants.SNARK_SCALAR_FIELD);
@@ -2216,9 +2222,12 @@ export class ExchangeTestUtil {
 
   public async createExchange(
       owner: string,
-      bSetupTestState: boolean = true,
-      deterministic: boolean = false
+      options: ExchangeOptions = {}
     ) {
+    const setupTestState = options.setupTestState !== undefined ? options.setupTestState : true;
+    const deterministic = options.deterministic !== undefined ? options.deterministic : false;
+    const useOwnerContract = options.useOwnerContract !== undefined ? options.useOwnerContract : true;
+
     this.deterministic = deterministic;
     const operator = this.testContext.operators[0];
     const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
@@ -2318,7 +2327,7 @@ export class ExchangeTestUtil {
     };
     this.blocks[exchangeId] = [genesisBlock];
 
-    if (bSetupTestState) {
+    if (setupTestState) {
       await this.registerTokens();
       await this.setupTestState(exchangeId);
     }
@@ -2339,17 +2348,19 @@ export class ExchangeTestUtil {
     });
 
     // Set the owner
-    const ownerContract = await LoopringIOExchangeOwner.new(
-      this.exchange.address,
-      { from: this.exchangeOwner }
-    );
-    await this.setOperatorContract(ownerContract);
+    if (useOwnerContract) {
+      const ownerContract = await LoopringIOExchangeOwner.new(
+        this.exchange.address,
+        { from: this.exchangeOwner }
+      );
+      await this.setOperatorContract(ownerContract);
 
-    await this.exchange.transferOwnership(ownerContract.address, {from: this.exchangeOwner});
-    const txData = this.exchange.contract.methods
-      .claimOwnership()
-      .encodeABI();
-    await ownerContract.transact(txData, {from: this.exchangeOwner});
+      await this.exchange.transferOwnership(ownerContract.address, {from: this.exchangeOwner});
+      const txData = this.exchange.contract.methods
+        .claimOwnership()
+        .encodeABI();
+      await ownerContract.transact(txData, {from: this.exchangeOwner});
+    }
 
     return exchangeId;
   }

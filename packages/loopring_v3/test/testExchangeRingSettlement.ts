@@ -33,8 +33,7 @@ contract("Exchange", (accounts: string[]) => {
   beforeEach(async () => {
     // Fresh Exchange for each test
     exchangeID = await exchangeTestUtil.createExchange(
-      exchangeTestUtil.testContext.stateOwners[0],
-      true
+      exchangeTestUtil.testContext.stateOwners[0]
     );
     operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
     operator = exchangeTestUtil.getAccount(operatorAccountID).owner;

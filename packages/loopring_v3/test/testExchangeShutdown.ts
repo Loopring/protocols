@@ -7,10 +7,10 @@ contract("Exchange", (accounts: string[]) => {
   let exchange: any;
   let loopringV3: any;
 
-  const createExchange = async (bSetupTestState: boolean = true) => {
+  const createExchange = async () => {
     await ctx.createExchange(
       ctx.testContext.stateOwners[0],
-      true
+      {useOwnerContract: false}
     );
     exchange = ctx.exchange;
   };

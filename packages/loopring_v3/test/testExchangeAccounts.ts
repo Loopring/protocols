@@ -14,10 +14,10 @@ contract("Exchange", (accounts: string[]) => {
   let ownerC: string;
   let ownerD: string;
 
-  const createExchange = async (bSetupTestState: boolean = true) => {
+  const createExchange = async (setupTestState: boolean = true) => {
     exchangeID = await ctx.createExchange(
       ctx.testContext.stateOwners[0],
-      bSetupTestState
+      {setupTestState}
     );
     operatorAccountID = await ctx.getActiveOperator(exchangeID);
     operator = ctx.getAccount(operatorAccountID).owner;
