@@ -95,11 +95,9 @@ contract DefaultDepositContract is IDepositContract, Claimable
         returns (uint96 amountReceived)
     {
         if (isETHInternal(token)) {
-            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
+            require(msg.value >= amount, "INVALID_ETH_DEPOSIT");
             amountReceived = amount;
         } else {
-            require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
-
             bool checkBalance = needCheckBalance[token];
             uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
 

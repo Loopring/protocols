@@ -78,10 +78,9 @@ library ExchangeDeposits
         returns (uint96 amountDeposited)
     {
         IDepositContract depositContract = S.depositContract;
+
         if (tokenAddress == address(0) || depositContract.isETH(tokenAddress)) {
-            require(msg.value == amount, "INVALID_AMOUNT");
-        } else {
-            require(msg.value == 0, "INVALID_AMOUNT");
+            require(msg.value >= amount, "INVALID_AMOUNT");
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
