@@ -280,12 +280,12 @@ contract LoopringV3 is ILoopringV3
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
-        uint extraStake = exchange.exchangeStake -
-            IExchangeV3(exchange.exchangeAddress).getRequiredExchangeStake();
-
         // The total stake used here is the exchange stake + the protocol fee stake, but
         // the protocol fee stake has a reduced weight of 50%.
-        uint protocolFeeStake = extraStake.add(exchange.protocolFeeStake / 2);
+
+        uint protocolFeeStake = exchange.exchangeStake
+            .add(exchange.protocolFeeStake / 2)
+            .sub(IExchangeV3(exchange.exchangeAddress).getRequiredExchangeStake());
 
         takerFeeBips = calculateProtocolFee(
             minProtocolTakerFeeBips, maxProtocolTakerFeeBips, protocolFeeStake, targetProtocolTakerFeeStake
