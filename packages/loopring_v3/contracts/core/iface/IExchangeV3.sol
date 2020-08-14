@@ -183,9 +183,7 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (bool);
 
-    /// @dev Returns whether the Exchange has staked enough to submit blocks
-    ///      Exchanges with on-chain data-availaiblity need to stake at least
-    ///      stakePerThousandBlocks.
+    /// @dev Returns whether the Exchange has staked enough to submit blocks.
     /// @return True if the exchange has staked enough, else false
     function canSubmitBlocks()
         external
