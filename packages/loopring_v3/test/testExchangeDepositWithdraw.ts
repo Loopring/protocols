@@ -27,14 +27,6 @@ contract("Exchange", (accounts: string[]) => {
       "from",
       "depositContract"
     );
-    await snapshot.transfer(
-      from,
-      exchange.address,
-      "ETH",
-      new BN(0),
-      "from",
-      "exchange"
-    );
 
     const ethAddress = exchangeTestUtil.getTokenAddress("ETH");
     const ethValue = token === ethAddress ? amount : 0;
