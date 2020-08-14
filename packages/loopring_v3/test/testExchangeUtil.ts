@@ -2289,7 +2289,7 @@ export class ExchangeTestUtil {
 
     // Deposit some LRC to stake for the exchange
     const depositer = this.testContext.operators[2];
-    const stakeAmount = await this.loopringV3.dexStakingPer1000Blocks();
+    const stakeAmount = await this.loopringV3.stakePerThousandBlocks();
     await this.setBalanceAndApprove(
       depositer,
       "LRC",
@@ -2504,7 +2504,7 @@ export class ExchangeTestUtil {
       await this.loopringV3.blockVerifierAddress(),
       await this.loopringV3.exchangeCreationCostLRC(),
       this.getRandomFee(),
-      await this.loopringV3.dexStakingPer1000Blocks(),
+      await this.loopringV3.stakePerThousandBlocks(),
       { from: this.testContext.deployer }
     );
   }

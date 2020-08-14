@@ -56,7 +56,7 @@ abstract contract ILoopringV3 is ILoopring
     uint    public forcedWithdrawalFee;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
-    uint    public dexStakingPer1000Blocks;
+    uint    public stakePerThousandBlocks;
     uint8   public minProtocolTakerFeeBips;
     uint8   public maxProtocolTakerFeeBips;
     uint8   public minProtocolMakerFeeBips;
@@ -86,7 +86,7 @@ abstract contract ILoopringV3 is ILoopring
         address _blockVerifierAddress,       // address(0) not allowed
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _dexStakingPer1000Blocks
+        uint    _stakePerThousandBlocks
         )
         external
         virtual;

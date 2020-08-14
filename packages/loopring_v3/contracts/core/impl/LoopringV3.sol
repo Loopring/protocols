@@ -91,7 +91,7 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _dexStakingPer1000Blocks
+        uint    _stakePerThousandBlocks
         )
         external
         override
@@ -103,7 +103,7 @@ contract LoopringV3 is ILoopringV3
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _forcedWithdrawalFee,
-            _dexStakingPer1000Blocks
+            _stakePerThousandBlocks
         );
     }
 
@@ -151,7 +151,7 @@ contract LoopringV3 is ILoopringV3
     //         numStakingUnit = 1000;
     //     }
 
-    //     uint amountRequired = numStakingUnit.mul(dexStakingPer1000Blocks);
+    //     uint amountRequired = numStakingUnit.mul(stakePerThousandBlocks);
     //     uint amountStaked = getExchangeStake(exchangeId);
 
     //     return amountStaked >= amountRequired;
@@ -307,7 +307,7 @@ contract LoopringV3 is ILoopringV3
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
-        uint stake = exchange.exchangeStake - dexStakingPer1000Blocks;
+        uint stake = exchange.exchangeStake - stakePerThousandBlocks;
 
         // The total stake used here is the exchange stake + the protocol fee stake, but
         // the protocol fee stake has a reduced weight of 50%.
@@ -340,7 +340,7 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _dexStakingPer1000Blocks
+        uint    _stakePerThousandBlocks
         )
         private
     {
@@ -351,7 +351,7 @@ contract LoopringV3 is ILoopringV3
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         forcedWithdrawalFee = _forcedWithdrawalFee;
-        dexStakingPer1000Blocks = _dexStakingPer1000Blocks;
+        stakePerThousandBlocks = _stakePerThousandBlocks;
 
         emit SettingsUpdated(block.timestamp);
     }

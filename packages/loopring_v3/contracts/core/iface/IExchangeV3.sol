@@ -187,7 +187,7 @@ abstract contract IExchangeV3 is IExchange
 
     /// @dev Returns whether the Exchange has staked enough to submit blocks
     ///      Exchanges with on-chain data-availaiblity need to stake at least
-    ///      dexStakingPer1000Blocks.
+    ///      stakePerThousandBlocks.
     /// @return True if the exchange has staked enough, else false
     function canSubmitBlocks()
         external

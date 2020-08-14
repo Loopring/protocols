@@ -62,7 +62,7 @@ library ExchangeBlocks
             numStakingUnit = 1000;
         }
 
-        uint amountRequired = numStakingUnit.mul(S.loopring.dexStakingPer1000Blocks());
+        uint amountRequired = numStakingUnit.mul(S.loopring.stakePerThousandBlocks());
         uint amountStaked = S.loopring.getExchangeStake(S.id);
 
         return amountStaked >= amountRequired;
