@@ -16,25 +16,25 @@ contract LoopringV3Owner is DelayedOwner
 
     struct Costs
     {
-        uint minExchangeStake;
+        uint dexStakingPer1000Blocks;
     }
 
     Costs public USD;
 
     event LRCValuesUpdated(
-        uint minExchangeStakeLRC
+        uint dexStakingPer1000Blocks
     );
 
     constructor(
         ILoopringV3                _loopringV3,
         ITokenPriceProvider        _provider,
-        uint                       _minExchangeStakeUSD
+        uint                       _dexStakingPer1000BlocksUSD
         )
         DelayedOwner(address(_loopringV3), 3 days)
     {
         loopringV3 = _loopringV3;
         provider = _provider;
-        USD.minExchangeStake = _minExchangeStakeUSD;
+        USD.dexStakingPer1000Blocks = _dexStakingPer1000BlocksUSD;
 
         setFunctionDelay(loopringV3.transferOwnership.selector, 7 days);
         setFunctionDelay(loopringV3.updateSettings.selector, 7 days);
@@ -49,7 +49,7 @@ contract LoopringV3Owner is DelayedOwner
     {
         // Get the current costs in LRC
         Costs memory lrcCosts = Costs(
-            provider.usd2lrc(USD.minExchangeStake)
+            provider.usd2lrc(USD.dexStakingPer1000Blocks)
         );
 
         // Set the new LRC values on the protocol contract immediately
@@ -58,11 +58,11 @@ contract LoopringV3Owner is DelayedOwner
             loopringV3.blockVerifierAddress(),
             loopringV3.exchangeCreationCostLRC(),
             loopringV3.forcedWithdrawalFee(),
-            lrcCosts.minExchangeStake
+            lrcCosts.dexStakingPer1000Blocks
         );
 
         emit LRCValuesUpdated(
-            lrcCosts.minExchangeStake
+            lrcCosts.dexStakingPer1000Blocks
         );
     }
 }

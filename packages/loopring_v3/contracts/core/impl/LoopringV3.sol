@@ -91,7 +91,7 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStake
+        uint    _dexStakingPer1000Blocks
         )
         external
         override
@@ -103,7 +103,7 @@ contract LoopringV3 is ILoopringV3
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _forcedWithdrawalFee,
-            _minExchangeStake
+            _dexStakingPer1000Blocks
         );
     }
 
@@ -130,17 +130,32 @@ contract LoopringV3 is ILoopringV3
         emit SettingsUpdated(block.timestamp);
     }
 
-    function canExchangeSubmitBlocks(
-        uint exchangeId
-        )
-        external
-        override
-        view
-        returns (bool)
-    {
-        uint amountStaked = getExchangeStake(exchangeId);
-        return amountStaked >= minExchangeStake;
-    }
+    // function canExchangeSubmitBlocks(
+    //     uint exchangeId
+    //     )
+    //     external
+    //     override
+    //     view
+    //     returns (bool)
+    // {
+    //     Exchange storage exchange = exchanges[exchangeId];
+    //     uint numStakingUnit = exchange.getBlockHeight() / 1000;
+
+    //     // waive fee for the first 10K blocks.
+    //     if (numStakingUnit <= 10) {
+    //         return true;
+    //     }
+
+    //     // Cap at 1 million blocks
+    //     if (numStakingUnit > 1000) {
+    //         numStakingUnit = 1000;
+    //     }
+
+    //     uint amountRequired = numStakingUnit.mul(dexStakingPer1000Blocks);
+    //     uint amountStaked = getExchangeStake(exchangeId);
+
+    //     return amountStaked >= amountRequired;
+    // }
 
     function getExchangeStake(
         uint exchangeId
@@ -292,7 +307,7 @@ contract LoopringV3 is ILoopringV3
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
-        uint stake = exchange.exchangeStake - minExchangeStake;
+        uint stake = exchange.exchangeStake - dexStakingPer1000Blocks;
 
         // The total stake used here is the exchange stake + the protocol fee stake, but
         // the protocol fee stake has a reduced weight of 50%.
@@ -325,7 +340,7 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStake
+        uint    _dexStakingPer1000Blocks
         )
         private
     {
@@ -336,7 +351,7 @@ contract LoopringV3 is ILoopringV3
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         forcedWithdrawalFee = _forcedWithdrawalFee;
-        minExchangeStake = _minExchangeStake;
+        dexStakingPer1000Blocks = _dexStakingPer1000Blocks;
 
         emit SettingsUpdated(block.timestamp);
     }

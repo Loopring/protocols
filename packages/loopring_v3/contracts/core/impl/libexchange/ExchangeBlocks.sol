@@ -43,6 +43,31 @@ library ExchangeBlocks
         uint8 previousMakerFeeBips
     );
 
+    function canSubmitBlocks(
+        ExchangeData.State   storage S
+        )
+        public
+        view
+        returns (bool)
+    {
+        uint numStakingUnit = S.numBlocks / 1000;
+
+        // waive fee for the first 10K blocks.
+        if (numStakingUnit <= 10) {
+            return true;
+        }
+
+        // Cap at 1 million blocks
+        if (numStakingUnit > 1000) {
+            numStakingUnit = 1000;
+        }
+
+        uint amountRequired = numStakingUnit.mul(S.loopring.dexStakingPer1000Blocks());
+        uint amountStaked = S.loopring.getExchangeStake(S.id);
+
+        return amountStaked >= amountRequired;
+    }
+
     function submitBlocks(
         ExchangeData.State   storage S,
         ExchangeData.Block[] memory  blocks,
@@ -53,11 +78,7 @@ library ExchangeBlocks
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
-        // Check if this exchange has a minimal amount of LRC staked
-        require(
-            S.loopring.canExchangeSubmitBlocks(S.id),
-            "INSUFFICIENT_EXCHANGE_STAKE"
-        );
+        require(canSubmitBlocks(S), "INSUFFICIENT_EXCHANGE_STAKE");
 
         // Commit the blocks
         bytes32[] memory publicDataHashes = new bytes32[](blocks.length);

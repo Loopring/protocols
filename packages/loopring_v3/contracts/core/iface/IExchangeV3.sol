@@ -183,6 +183,18 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (bool);
 
+
+
+    /// @dev Returns whether the Exchange has staked enough to submit blocks
+    ///      Exchanges with on-chain data-availaiblity need to stake at least
+    ///      dexStakingPer1000Blocks.
+    /// @return True if the exchange has staked enough, else false
+    function canSubmitBlocks()
+        external
+        virtual
+        view
+        returns (bool);
+
     // -- Tokens --
     /// @dev Registers an ERC20 token for a token id. Note that different exchanges may have
     ///      different ids for the same ERC20 token.

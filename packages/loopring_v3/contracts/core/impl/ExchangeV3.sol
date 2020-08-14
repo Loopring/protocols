@@ -170,6 +170,15 @@ contract ExchangeV3 is IExchangeV3
         return state.isShutdown();
     }
 
+    function canSubmitBlocks()
+        external
+        override
+        view
+        returns (bool)
+    {
+        return state.canSubmitBlocks();
+    }
+
     // -- Tokens --
 
     function registerToken(
