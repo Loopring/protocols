@@ -43,6 +43,28 @@ library ExchangeBlocks
         uint8 previousMakerFeeBips
     );
 
+    function getRequiredExchangeStake(
+        ExchangeData.State   storage S
+        )
+        public
+        view
+        returns (uint)
+    {
+        uint numStakingUnit = S.numBlocks / 1000;
+
+        // waive fee for the first 10K blocks.
+        if (numStakingUnit <= 10) {
+            return 0;
+        }
+
+        // Cap at 1 million blocks
+        if (numStakingUnit > 1000) {
+            numStakingUnit = 1000;
+        }
+
+        return numStakingUnit.mul(S.loopring.stakePerThousandBlocks());
+    }
+
     function canSubmitBlocks(
         ExchangeData.State   storage S
         )
@@ -62,10 +84,7 @@ library ExchangeBlocks
             numStakingUnit = 1000;
         }
 
-        uint amountRequired = numStakingUnit.mul(S.loopring.stakePerThousandBlocks());
-        uint amountStaked = S.loopring.getExchangeStake(S.id);
-
-        return amountStaked >= amountRequired;
+        return S.loopring.getExchangeStake(S.id) >= getRequiredExchangeStake(S);
     }
 
     function submitBlocks(

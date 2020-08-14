@@ -183,6 +183,14 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (bool);
 
+    /// @dev Returns the number of LRC token required as exchange stake.
+    /// @return The number of LRC token required as stake.
+    function getRequiredExchangeStake()
+        public
+        virtual
+        view
+        returns (uint);
+
     /// @dev Returns whether the Exchange has staked enough to submit blocks.
     /// @return True if the exchange has staked enough, else false
     function canSubmitBlocks()

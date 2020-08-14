@@ -170,6 +170,15 @@ contract ExchangeV3 is IExchangeV3
         return state.isShutdown();
     }
 
+    function getRequiredExchangeStake()
+        public
+        override
+        view
+        returns (uint)
+    {
+        return state.getRequiredExchangeStake();
+    }
+
     function canSubmitBlocks()
         external
         override
