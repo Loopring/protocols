@@ -130,33 +130,6 @@ contract LoopringV3 is ILoopringV3
         emit SettingsUpdated(block.timestamp);
     }
 
-    // function canExchangeSubmitBlocks(
-    //     uint exchangeId
-    //     )
-    //     external
-    //     override
-    //     view
-    //     returns (bool)
-    // {
-    //     Exchange storage exchange = exchanges[exchangeId];
-    //     uint numStakingUnit = exchange.getBlockHeight() / 1000;
-
-    //     // waive fee for the first 10K blocks.
-    //     if (numStakingUnit <= 10) {
-    //         return true;
-    //     }
-
-    //     // Cap at 1 million blocks
-    //     if (numStakingUnit > 1000) {
-    //         numStakingUnit = 1000;
-    //     }
-
-    //     uint amountRequired = numStakingUnit.mul(stakePerThousandBlocks);
-    //     uint amountStaked = getExchangeStake(exchangeId);
-
-    //     return amountStaked >= amountRequired;
-    // }
-
     function getExchangeStake(
         uint exchangeId
         )
