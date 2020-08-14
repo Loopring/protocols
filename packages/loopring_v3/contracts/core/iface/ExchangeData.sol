@@ -120,7 +120,7 @@ library ExchangeData
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 7 days; }
     function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 32; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 16; }
-    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 15 days; }
+    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 7 days; }
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 30 days; }
     // The amount of bytes each rollup transaction uses in the block data for data-availability.
     // This is the maximum amount of bytes of all different transaction types.
