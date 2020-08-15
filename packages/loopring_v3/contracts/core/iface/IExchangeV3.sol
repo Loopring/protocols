@@ -43,8 +43,7 @@ abstract contract IExchangeV3 is IExchange
     event BlockSubmitted(
         uint    indexed blockIdx,
         bytes32         merkleRoot,
-        bytes32         publicDataHash,
-        uint            blockFee
+        bytes32         publicDataHash
     );
 
     event DepositRequested(

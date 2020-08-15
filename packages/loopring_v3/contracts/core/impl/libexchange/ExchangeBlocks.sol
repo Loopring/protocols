@@ -32,8 +32,7 @@ library ExchangeBlocks
     event BlockSubmitted(
         uint    indexed blockIdx,
         bytes32         merkleRoot,
-        bytes32         publicDataHash,
-        uint            blockFee
+        bytes32         publicDataHash
     );
 
     event ProtocolFeesUpdated(
@@ -167,7 +166,7 @@ library ExchangeBlocks
 
         // Emit an event
         uint numBlocks = S.numBlocks;
-        emit BlockSubmitted(numBlocks, merkleRootAfter, _publicDataHash, blockFeeETH);
+        emit BlockSubmitted(numBlocks, merkleRootAfter, _publicDataHash);
 
         S.merkleRoot = merkleRootAfter;
 
