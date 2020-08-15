@@ -91,7 +91,6 @@ function replacer(name: any, val: any) {
 }
 
 export interface DepositOptions {
-  fee?: BN;
   autoSetKeys?: boolean;
   accountContract?: any;
   amountDepositedCanDiffer?: boolean;
@@ -1018,7 +1017,6 @@ export class ExchangeTestUtil {
     options: DepositOptions = {}
   ) {
     // Fill in defaults
-    const fee = options.fee !== undefined ? options.fee : this.getRandomFee();
     const autoSetKeys =
       options.autoSetKeys !== undefined ? options.autoSetKeys : true;
     const contract =
@@ -1059,7 +1057,7 @@ export class ExchangeTestUtil {
       accountNewCreated = true;
     }
 
-    let ethToSend = fee;
+    let ethToSend = new BN(0);
     if (amount.gt(0)) {
       if (token !== Constants.zeroAddress) {
         const Token = this.testContext.tokenAddrInstanceMap.get(token);
@@ -1110,7 +1108,6 @@ export class ExchangeTestUtil {
       accountID,
       tokenID: this.tokenAddressToIDMap.get(token),
       amount,
-      fee,
       token,
       timestamp: ethBlock.timestamp,
       transactionHash: tx.receipt.transactionHash

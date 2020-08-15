@@ -50,8 +50,7 @@ abstract contract IExchangeV3 is IExchange
     event DepositRequested(
         address owner,
         address token,
-        uint96  amount,
-        uint    fee
+        uint96  amount
     );
 
     event ForcedWithdrawalRequested(

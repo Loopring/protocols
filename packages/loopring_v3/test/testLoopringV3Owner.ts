@@ -42,15 +42,15 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     mockChainlink: any,
     priceFactor: number
   ) => {
-    const startstakePerThousandBlocksLrc = await loopring.stakePerThousandBlocks();
+    const startStakePerThousandBlocks = await loopring.stakePerThousandBlocks();
 
     const transformPrice = (value: BN) => {
       return priceFactor > 1
         ? value.mul(new BN(priceFactor))
         : value.div(new BN(1 / priceFactor));
     };
-    const expectedstakePerThousandBlocksLrc = transformPrice(
-      startstakePerThousandBlocksLrc
+    const expectedStakePerThousandBlocks = transformPrice(
+      startStakePerThousandBlocks
     );
 
     // Set the conversion so the expected LRC amounts are returned by the oracle
@@ -63,7 +63,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     await setConversion(
       mockChainlink,
       stakePerThousandBlocks,
-      expectedstakePerThousandBlocksLrc
+      expectedStakePerThousandBlocks
     );
 
     // Update the LRC amounts
@@ -71,7 +71,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
 
     // Check against the contract values
     assert(
-      expectedstakePerThousandBlocksLrc.eq(
+      expectedStakePerThousandBlocks.eq(
         await loopring.stakePerThousandBlocks()
       ),
       "unexpected currentstakePerThousandBlocksLrc"
@@ -83,9 +83,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
       "LRCValuesUpdated"
     );
     assert(
-      updateEvent.stakePerThousandBlocksLRC.eq(
-        expectedstakePerThousandBlocksLrc
-      ),
+      updateEvent.stakePerThousandBlocks.eq(expectedStakePerThousandBlocks),
       "unexpected currentstakePerThousandBlocksLrc"
     );
   };

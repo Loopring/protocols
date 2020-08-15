@@ -83,8 +83,7 @@ library ExchangeData
     struct Deposit
     {
         uint96 amount;
-        uint32 timestamp; // only valid before 2105 (85 years to go)
-        uint64 fee;
+        uint64 timestamp;
     }
 
     // A forced withdrawal request.

@@ -39,7 +39,7 @@ library DepositTransaction
         bytes                     memory  /*auxiliaryData*/
         )
         internal
-        returns (uint feeETH)
+        returns (uint)
     {
         // Read in the deposit
         Deposit memory deposit = readTx(data, offset);
@@ -55,26 +55,16 @@ library DepositTransaction
         // Also note the original deposit.amount can be zero!
         if (deposit.amount > 0) {
             require(pendingDeposit.amount >= deposit.amount, "INVALID_AMOUNT");
-            feeETH = pendingDeposit.amount == deposit.amount?
-                uint(pendingDeposit.fee):
-                uint(pendingDeposit.fee).mul(deposit.amount) / pendingDeposit.amount;
-
-            pendingDeposit.fee = uint64(uint(pendingDeposit.fee).sub(feeETH));
             pendingDeposit.amount = uint96(uint(pendingDeposit.amount).sub(deposit.amount));
         }
 
         // If the deposit was fully consumed, reset it so the storage is freed up
         // and the owner receives a gas refund.
         if (pendingDeposit.amount == 0) {
-            // Give the owner the remaining fee
-            feeETH = feeETH.add(uint(pendingDeposit.fee));
-            // Reset the deposit data
-            pendingDeposit.fee = 0;
-            pendingDeposit.timestamp = 0;
+            delete S.pendingDeposits[deposit.owner][deposit.tokenID];
+        } else {
+            S.pendingDeposits[deposit.owner][deposit.tokenID] = pendingDeposit;
         }
-
-        // Update the data in storage
-        S.pendingDeposits[deposit.owner][deposit.tokenID] = pendingDeposit;
 
         //emit DepositProcessed(owner, accountID, tokenID, amount);
     }
