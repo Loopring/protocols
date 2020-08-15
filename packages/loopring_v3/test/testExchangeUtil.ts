@@ -451,7 +451,8 @@ export class ExchangeTestUtil {
   private proverPorts = new Map<number, number>();
   private portGenerator = 1234;
 
-  private emptyMerkleRoot = "0x2db90e056916400d3a29cf8e04b3963b5b92385d8b4d470b50e298872c3b64c5";
+  private emptyMerkleRoot =
+    "0x2db90e056916400d3a29cf8e04b3963b5b92385d8b4d470b50e298872c3b64c5";
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -819,7 +820,8 @@ export class ExchangeTestUtil {
     order.exchange =
       order.exchange !== undefined ? order.exchange : this.exchange.address;
 
-    order.fillAmountBorS = order.fillAmountBorS !== undefined ? order.fillAmountBorS : true;
+    order.fillAmountBorS =
+      order.fillAmountBorS !== undefined ? order.fillAmountBorS : true;
 
     order.taker =
       order.taker !== undefined ? order.taker : Constants.zeroAddress;
@@ -1145,7 +1147,8 @@ export class ExchangeTestUtil {
     const gas =
       options.gas !== undefined ? options.gas : minGas > 0 ? minGas : 100000;
     const signer = options.signer !== undefined ? options.signer : owner;
-    const extraData = options.extraData !== undefined ? options.extraData : "0x";
+    const extraData =
+      options.extraData !== undefined ? options.extraData : "0x";
     const validUntil =
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
@@ -1173,16 +1176,12 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.FORCE) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
-        const numAvailableSlotsBefore = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         await this.exchange.forceWithdraw(owner, token, accountID, {
           from: signer,
           value: withdrawalFee
         });
-        const numAvailableSlotsAfter = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         assert.equal(
           numAvailableSlotsAfter,
           numAvailableSlotsBefore - 1,
@@ -1203,9 +1202,12 @@ export class ExchangeTestUtil {
     onchainData.addNumber(minGas, 32);
     onchainData.addAddress(to);
     onchainData.addHex(extraData);
-    const onchainDataHash = "0x" + ethUtil.keccak(
-      Buffer.from(onchainData.getData().slice(2), "hex")
-    ).toString("hex").slice(0, 40);
+    const onchainDataHash =
+      "0x" +
+      ethUtil
+        .keccak(Buffer.from(onchainData.getData().slice(2), "hex"))
+        .toString("hex")
+        .slice(0, 40);
 
     const account = this.accounts[this.exchangeId][accountID];
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
@@ -1656,14 +1658,10 @@ export class ExchangeTestUtil {
       callback(onchainBlocks, blocks);
     }
 
-    const numBlocksSubmittedBefore = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
 
     // Forced requests
-    const numAvailableSlotsBefore = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
 
     // Submit the blocks onchain
     const operatorContract = /*this.operator ? this.operator : */ this.exchange;
@@ -1693,9 +1691,7 @@ export class ExchangeTestUtil {
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     // Check number of blocks submitted
-    const numBlocksSubmittedAfter = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedAfter = (await this.exchange.getBlockHeight()).toNumber();
     assert.equal(
       numBlocksSubmittedAfter,
       numBlocksSubmittedBefore + blocks.length,
@@ -1759,9 +1755,7 @@ export class ExchangeTestUtil {
     }
 
     // Forced requests
-    const numAvailableSlotsAfter = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
     let numForcedRequestsProcessed = 0;
     for (const block of blocks) {
       for (const tx of block.internalBlock.transactions) {
@@ -1803,31 +1797,21 @@ export class ExchangeTestUtil {
   }
 
   public getTransferAuxData(transfer: Transfer) {
-    return web3.eth.abi.encodeParameter(
-      "tuple(bytes,uint32)",
-      [
-        web3.utils.hexToBytes(
-          transfer.onchainSignature
-            ? transfer.onchainSignature
-            : "0x"
-        ),
-        transfer.validUntil
-      ]
-    );
+    return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
+      web3.utils.hexToBytes(
+        transfer.onchainSignature ? transfer.onchainSignature : "0x"
+      ),
+      transfer.validUntil
+    ]);
   }
 
   public getAccountUpdateAuxData(accountUpdate: AccountUpdate) {
-    return web3.eth.abi.encodeParameter(
-      "tuple(bytes,uint32)",
-      [
-        web3.utils.hexToBytes(
-          accountUpdate.onchainSignature
-            ? accountUpdate.onchainSignature
-            : "0x"
-        ),
-        accountUpdate.validUntil
-      ]
-    );
+    return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
+      web3.utils.hexToBytes(
+        accountUpdate.onchainSignature ? accountUpdate.onchainSignature : "0x"
+      ),
+      accountUpdate.validUntil
+    ]);
   }
 
   public getWithdrawalAuxData(withdrawal: WithdrawalRequest) {
@@ -1836,16 +1820,14 @@ export class ExchangeTestUtil {
       [
         withdrawal.gas,
         web3.utils.hexToBytes(
-          withdrawal.onchainSignature
-            ? withdrawal.onchainSignature
-            : "0x"
+          withdrawal.onchainSignature ? withdrawal.onchainSignature : "0x"
         ),
         withdrawal.minGas,
         withdrawal.to,
         withdrawal.extraData
           ? web3.utils.hexToBytes(withdrawal.extraData)
           : web3.utils.hexToBytes("0x"),
-          withdrawal.validUntil
+        withdrawal.validUntil
       ]
     );
   }
@@ -1909,8 +1891,13 @@ export class ExchangeTestUtil {
         } else if (transaction.txType === "AccountUpdate") {
           if (transaction.type > 0) {
             numConditionalTransactions++;
-            const encodedAccountUpdateData = this.getAccountUpdateAuxData(transaction);
-            auxiliaryData.push([i, web3.utils.hexToBytes(encodedAccountUpdateData)]);
+            const encodedAccountUpdateData = this.getAccountUpdateAuxData(
+              transaction
+            );
+            auxiliaryData.push([
+              i,
+              web3.utils.hexToBytes(encodedAccountUpdateData)
+            ]);
           }
         }
       }
@@ -2302,7 +2289,7 @@ export class ExchangeTestUtil {
 
     // Deposit some LRC to stake for the exchange
     const depositer = this.testContext.operators[2];
-    const stakeAmount = await this.loopringV3.minExchangeStake();
+    const stakeAmount = await this.loopringV3.stakePerThousandBlocks();
     await this.setBalanceAndApprove(
       depositer,
       "LRC",
@@ -2429,14 +2416,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const previousTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const currentTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -2517,7 +2504,7 @@ export class ExchangeTestUtil {
       await this.loopringV3.blockVerifierAddress(),
       await this.loopringV3.exchangeCreationCostLRC(),
       this.getRandomFee(),
-      await this.loopringV3.minExchangeStake(),
+      await this.loopringV3.stakePerThousandBlocks(),
       { from: this.testContext.deployer }
     );
   }
@@ -3004,27 +2991,19 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [
-      eth,
-      weth,
-      lrc,
-      gto,
-      rdn,
-      rep,
-      inda,
-      indb,
-      test
-    ] = await Promise.all([
-      null,
-      this.contracts.WETHToken.deployed(),
-      this.contracts.LRCToken.deployed(),
-      this.contracts.GTOToken.deployed(),
-      this.contracts.RDNToken.deployed(),
-      this.contracts.REPToken.deployed(),
-      this.contracts.INDAToken.deployed(),
-      this.contracts.INDBToken.deployed(),
-      this.contracts.TESTToken.deployed()
-    ]);
+    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
+      [
+        null,
+        this.contracts.WETHToken.deployed(),
+        this.contracts.LRCToken.deployed(),
+        this.contracts.GTOToken.deployed(),
+        this.contracts.RDNToken.deployed(),
+        this.contracts.REPToken.deployed(),
+        this.contracts.INDAToken.deployed(),
+        this.contracts.INDBToken.deployed(),
+        this.contracts.TESTToken.deployed()
+      ]
+    );
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 

@@ -18,7 +18,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
   let chainlinkTokenPriceOracle: any;
 
   // USD values
-  let minExchangeStake = new BN(web3.utils.toWei("10000", "ether"));
+  let stakePerThousandBlocks = new BN(web3.utils.toWei("10000", "ether"));
 
   before(async () => {
     contracts = new Artifacts(artifacts);
@@ -42,15 +42,15 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     mockChainlink: any,
     priceFactor: number
   ) => {
-    const startMinExchangeStakeLrc = await loopring.minExchangeStake();
+    const startstakePerThousandBlocksLrc = await loopring.stakePerThousandBlocks();
 
     const transformPrice = (value: BN) => {
       return priceFactor > 1
         ? value.mul(new BN(priceFactor))
         : value.div(new BN(1 / priceFactor));
     };
-    const expectedMinExchangeStakeLrc = transformPrice(
-      startMinExchangeStakeLrc
+    const expectedstakePerThousandBlocksLrc = transformPrice(
+      startstakePerThousandBlocksLrc
     );
 
     // Set the conversion so the expected LRC amounts are returned by the oracle
@@ -62,8 +62,8 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     };
     await setConversion(
       mockChainlink,
-      minExchangeStake,
-      expectedMinExchangeStakeLrc
+      stakePerThousandBlocks,
+      expectedstakePerThousandBlocksLrc
     );
 
     // Update the LRC amounts
@@ -71,8 +71,10 @@ contract("LoopringV3Owner", (accounts: string[]) => {
 
     // Check against the contract values
     assert(
-      expectedMinExchangeStakeLrc.eq(await loopring.minExchangeStake()),
-      "unexpected currentMinExchangeStakeLrc"
+      expectedstakePerThousandBlocksLrc.eq(
+        await loopring.stakePerThousandBlocks()
+      ),
+      "unexpected currentstakePerThousandBlocksLrc"
     );
 
     // Check the LRCValuesUpdated event
@@ -81,8 +83,10 @@ contract("LoopringV3Owner", (accounts: string[]) => {
       "LRCValuesUpdated"
     );
     assert(
-      updateEvent.minExchangeStakeLRC.eq(expectedMinExchangeStakeLrc),
-      "unexpected currentMinExchangeStakeLrc"
+      updateEvent.stakePerThousandBlocksLRC.eq(
+        expectedstakePerThousandBlocksLrc
+      ),
+      "unexpected currentstakePerThousandBlocksLrc"
     );
   };
 
@@ -91,7 +95,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     const loopringV3Owner = await LoopringV3Owner.new(
       loopring.address,
       mockProvider.address,
-      minExchangeStake
+      stakePerThousandBlocks
     );
 
     // Set the owner to the newly created LoopringV3Owner
@@ -116,7 +120,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     const loopringV3Owner2 = await LoopringV3Owner.new(
       loopring.address,
       mockProvider.address,
-      minExchangeStake
+      stakePerThousandBlocks
     );
 
     // Now transfer the ownership to the new contract (this operation is delayed)

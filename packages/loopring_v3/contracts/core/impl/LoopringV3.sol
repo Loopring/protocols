@@ -91,7 +91,7 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStake
+        uint    _stakePerThousandBlocks
         )
         external
         override
@@ -103,7 +103,7 @@ contract LoopringV3 is ILoopringV3
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _forcedWithdrawalFee,
-            _minExchangeStake
+            _stakePerThousandBlocks
         );
     }
 
@@ -128,18 +128,6 @@ contract LoopringV3 is ILoopringV3
         targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
 
         emit SettingsUpdated(block.timestamp);
-    }
-
-    function canExchangeSubmitBlocks(
-        uint exchangeId
-        )
-        external
-        override
-        view
-        returns (bool)
-    {
-        uint amountStaked = getExchangeStake(exchangeId);
-        return amountStaked >= minExchangeStake;
     }
 
     function getExchangeStake(
@@ -292,11 +280,12 @@ contract LoopringV3 is ILoopringV3
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
-        uint stake = exchange.exchangeStake - minExchangeStake;
-
         // The total stake used here is the exchange stake + the protocol fee stake, but
         // the protocol fee stake has a reduced weight of 50%.
-        uint protocolFeeStake = stake.add(exchange.protocolFeeStake / 2);
+
+        uint protocolFeeStake = exchange.exchangeStake
+            .add(exchange.protocolFeeStake / 2)
+            .sub(IExchangeV3(exchange.exchangeAddress).getRequiredExchangeStake());
 
         takerFeeBips = calculateProtocolFee(
             minProtocolTakerFeeBips, maxProtocolTakerFeeBips, protocolFeeStake, targetProtocolTakerFeeStake
@@ -325,7 +314,7 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStake
+        uint    _stakePerThousandBlocks
         )
         private
     {
@@ -336,7 +325,7 @@ contract LoopringV3 is ILoopringV3
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         forcedWithdrawalFee = _forcedWithdrawalFee;
-        minExchangeStake = _minExchangeStake;
+        stakePerThousandBlocks = _stakePerThousandBlocks;
 
         emit SettingsUpdated(block.timestamp);
     }
