@@ -59,31 +59,31 @@ contract("DefaultDepositContract", (accounts: string[]) => {
       });
     });
 
-    it("should not be able to send a wrong amount of ETH in a deposit", async () => {
-      const exchange = exchange1;
-      await depositContract.initialize(exchange1);
+    // it("should not be able to send a wrong amount of ETH in a deposit", async () => {
+    //   const exchange = exchange1;
+    //   await depositContract.initialize(exchange1);
 
-      await expectThrow(
-        depositContract.deposit(
-          owner1,
-          Constants.zeroAddress,
-          new BN(2),
-          "0x",
-          {
-            from: exchange,
-            value: new BN(1)
-          }
-        ),
-        "INVALID_ETH_DEPOSIT"
-      );
-      await expectThrow(
-        depositContract.deposit(owner1, token.address, new BN(1), "0x", {
-          from: exchange,
-          value: new BN(1)
-        }),
-        "INVALID_TOKEN_DEPOSIT"
-      );
-    });
+    //   await expectThrow(
+    //     depositContract.deposit(
+    //       owner1,
+    //       Constants.zeroAddress,
+    //       new BN(2),
+    //       "0x",
+    //       {
+    //         from: exchange,
+    //         value: new BN(1)
+    //       }
+    //     ),
+    //     "INVALID_ETH_DEPOSIT"
+    //   );
+    //   await expectThrow(
+    //     depositContract.deposit(owner1, token.address, new BN(1), "0x", {
+    //       from: exchange,
+    //       value: new BN(1)
+    //     }),
+    //     "INVALID_TOKEN_DEPOSIT"
+    //   );
+    // });
   });
 
   describe("anyone", () => {

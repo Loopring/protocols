@@ -78,7 +78,6 @@ contract("Exchange", (accounts: string[]) => {
           blockFee.iadd(tx.withdrawalFee);
         }
       } else if (tx.txType === "Deposit") {
-        blockFee.iadd(tx.fee);
       }
     }
     if (expectedSuccess === undefined) {
