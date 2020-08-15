@@ -1173,16 +1173,12 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.FORCE) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
-        const numAvailableSlotsBefore = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         await this.exchange.forceWithdraw(owner, token, accountID, {
           from: signer,
           value: withdrawalFee
         });
-        const numAvailableSlotsAfter = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         assert.equal(
           numAvailableSlotsAfter,
           numAvailableSlotsBefore - 1,
@@ -1659,14 +1655,10 @@ export class ExchangeTestUtil {
       callback(onchainBlocks, blocks);
     }
 
-    const numBlocksSubmittedBefore = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
 
     // Forced requests
-    const numAvailableSlotsBefore = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
 
     // Submit the blocks onchain
     const operatorContract = /*this.operator ? this.operator : */ this.exchange;
@@ -1696,9 +1688,7 @@ export class ExchangeTestUtil {
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     // Check number of blocks submitted
-    const numBlocksSubmittedAfter = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedAfter = (await this.exchange.getBlockHeight()).toNumber();
     assert.equal(
       numBlocksSubmittedAfter,
       numBlocksSubmittedBefore + blocks.length,
@@ -1762,9 +1752,7 @@ export class ExchangeTestUtil {
     }
 
     // Forced requests
-    const numAvailableSlotsAfter = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
     let numForcedRequestsProcessed = 0;
     for (const block of blocks) {
       for (const tx of block.internalBlock.transactions) {
@@ -2298,7 +2286,7 @@ export class ExchangeTestUtil {
 
     // Deposit some LRC to stake for the exchange
     const depositer = this.testContext.operators[2];
-    const stakeAmount = await this.loopringV3.minExchangeStake();
+    const stakeAmount = await this.loopringV3.stakePerThousandBlocks();
     await this.setBalanceAndApprove(
       depositer,
       "LRC",
@@ -2425,14 +2413,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const previousTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const currentTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -2513,7 +2501,7 @@ export class ExchangeTestUtil {
       await this.loopringV3.blockVerifierAddress(),
       await this.loopringV3.exchangeCreationCostLRC(),
       this.getRandomFee(),
-      await this.loopringV3.minExchangeStake(),
+      await this.loopringV3.stakePerThousandBlocks(),
       { from: this.testContext.deployer }
     );
   }
@@ -3000,27 +2988,19 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [
-      eth,
-      weth,
-      lrc,
-      gto,
-      rdn,
-      rep,
-      inda,
-      indb,
-      test
-    ] = await Promise.all([
-      null,
-      this.contracts.WETHToken.deployed(),
-      this.contracts.LRCToken.deployed(),
-      this.contracts.GTOToken.deployed(),
-      this.contracts.RDNToken.deployed(),
-      this.contracts.REPToken.deployed(),
-      this.contracts.INDAToken.deployed(),
-      this.contracts.INDBToken.deployed(),
-      this.contracts.TESTToken.deployed()
-    ]);
+    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
+      [
+        null,
+        this.contracts.WETHToken.deployed(),
+        this.contracts.LRCToken.deployed(),
+        this.contracts.GTOToken.deployed(),
+        this.contracts.RDNToken.deployed(),
+        this.contracts.REPToken.deployed(),
+        this.contracts.INDAToken.deployed(),
+        this.contracts.INDBToken.deployed(),
+        this.contracts.TESTToken.deployed()
+      ]
+    );
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 

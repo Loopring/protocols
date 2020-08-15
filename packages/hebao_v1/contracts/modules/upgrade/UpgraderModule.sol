@@ -120,14 +120,15 @@ contract UpgraderModule is BaseModule {
             w.setController(controller_);
         }
 
-        for(uint i = 0; i < modulesToAdd.length; i++) {
-            if (!w.hasModule(modulesToAdd[i])) {
-                w.addModule(modulesToAdd[i]);
-            }
-        }
         for(uint i = 0; i < modulesToRemove.length; i++) {
             if (w.hasModule(modulesToRemove[i])) {
                 w.removeModule(modulesToRemove[i]);
+            }
+        }
+
+        for(uint i = 0; i < modulesToAdd.length; i++) {
+            if (!w.hasModule(modulesToAdd[i])) {
+                w.addModule(modulesToAdd[i]);
             }
         }
 
