@@ -89,8 +89,7 @@ library ExchangeBlocks
 
     function submitBlocks(
         ExchangeData.State   storage S,
-        ExchangeData.Block[] memory  blocks,
-        address              payable feeRecipient
+        ExchangeData.Block[] memory  blocks
         )
         public
     {
@@ -108,7 +107,6 @@ library ExchangeBlocks
             commitBlock(
                 S,
                 blocks[i],
-                feeRecipient,
                 publicDataHashes[i]
             );
         }
@@ -126,7 +124,6 @@ library ExchangeBlocks
     function commitBlock(
         ExchangeData.State storage S,
         ExchangeData.Block memory  _block,
-        address            payable _feeRecipient,
         bytes32                    _publicDataHash
         )
         private
@@ -168,16 +165,13 @@ library ExchangeBlocks
         );
 
         // Process conditional transactions
-        uint blockFeeETH = processConditionalTransactions(
+        processConditionalTransactions(
             S,
             offset,
             _block.data,
             _block.auxiliaryData,
             inputTimestamp
         );
-
-        // Transfer the onchain block fee to the operator
-        _feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
 
         // Emit an event
         uint numBlocks = S.numBlocks;
@@ -270,7 +264,6 @@ library ExchangeBlocks
         uint32                              timestamp
         )
         private
-        returns (uint blockFeeETH)
     {
         // The length of the auxiliary data needs to match the number of conditional transactions
         uint numConditionalTransactions = data.toUint32(offset);
@@ -306,9 +299,8 @@ library ExchangeBlocks
                 );
                 txDataOffset += 1;
 
-                uint txFeeETH = 0;
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
-                    txFeeETH = DepositTransaction.process(
+                    DepositTransaction.process(
                         S,
                         ctx,
                         data,
@@ -316,7 +308,7 @@ library ExchangeBlocks
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
-                    txFeeETH = WithdrawTransaction.process(
+                    WithdrawTransaction.process(
                         S,
                         ctx,
                         data,
@@ -324,7 +316,7 @@ library ExchangeBlocks
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.TRANSFER) {
-                    txFeeETH = TransferTransaction.process(
+                    TransferTransaction.process(
                         S,
                         ctx,
                         data,
@@ -332,7 +324,7 @@ library ExchangeBlocks
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
-                    txFeeETH = AccountUpdateTransaction.process(
+                    AccountUpdateTransaction.process(
                         S,
                         ctx,
                         data,
@@ -346,7 +338,6 @@ library ExchangeBlocks
                     revert("UNSUPPORTED_TX_TYPE");
                 }
 
-                blockFeeETH = blockFeeETH.add(txFeeETH);
                 prevTxDataOffset = txDataOffset;
             }
         }

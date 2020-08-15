@@ -156,6 +156,16 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (IDepositContract);
 
+    // @dev Exchange owner withdraws fees from the exchange.
+    // @param token Fee token address
+    // @param feeRecipient Fee recipient address.
+    function withdrawFees(
+        address token,
+        address feeRecipient
+        )
+        external
+        virtual;
+
     // -- Constants --
     /// @dev Returns a list of constants used by the exchange.
     /// @return constants The list of constants.
@@ -330,11 +340,7 @@ abstract contract IExchangeV3 is IExchange
     ///      - data: The data for this block
     ///      - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
-    /// @param feeRecipient The address that will receive the onchain block rewards
-    function submitBlocks(
-        ExchangeData.Block[] calldata blocks,
-        address payable feeRecipient
-        )
+    function submitBlocks(ExchangeData.Block[] calldata blocks)
         external
         virtual;
 

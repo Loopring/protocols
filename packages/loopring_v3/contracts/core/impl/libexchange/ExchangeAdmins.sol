@@ -72,4 +72,22 @@ library ExchangeAdmins
         uint amount = S.loopring.getExchangeStake(S.id);
         return S.loopring.withdrawExchangeStake(S.id, recipient, amount);
     }
+
+    function withdrawFees(
+        ExchangeData.State storage S,
+        address token,
+        address recipient
+        )
+        external
+    {
+        require(recipient != address(0), "INVALID_ADDRESS");
+
+        if (token == address(0)) {
+            uint amount = address(this).balance;
+            recipient.sendETHAndVerify(amount, gasleft());
+        } else {
+            uint amount = ERC20(token).balanceOf(address(this));
+            token.safeTransferAndVerify(recipient, amount);
+        }
+    }
 }

@@ -130,6 +130,18 @@ contract ExchangeV3 is IExchangeV3
         return state.depositContract;
     }
 
+    function withdrawFees(
+        address token,
+        address feeRecipient
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        state.withdrawFees(token, feeRecipient);
+    }
+
     // -- Constants --
     function getConstants()
         external
@@ -310,19 +322,13 @@ contract ExchangeV3 is IExchangeV3
         return state.blocks[blockIdx];
     }
 
-    function submitBlocks(
-        ExchangeData.Block[] calldata blocks,
-        address payable feeRecipient
-        )
+    function submitBlocks(ExchangeData.Block[] calldata blocks)
         external
         override
         nonReentrant
         onlyOwner
     {
-        state.submitBlocks(
-            blocks,
-            feeRecipient
-        );
+        state.submitBlocks(blocks);
     }
 
     function getNumAvailableForcedSlots()
