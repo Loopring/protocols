@@ -158,7 +158,7 @@ abstract contract IExchangeV3 is IExchange
     // @dev Exchange owner withdraws fees from the exchange.
     // @param token Fee token address
     // @param feeRecipient Fee recipient address
-    function withdrawFees(
+    function withdrawExchangeFees(
         address token,
         address feeRecipient
         )
