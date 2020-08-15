@@ -91,7 +91,6 @@ function replacer(name: any, val: any) {
 }
 
 export interface DepositOptions {
-  fee?: BN;
   autoSetKeys?: boolean;
   accountContract?: any;
   amountDepositedCanDiffer?: boolean;
@@ -451,7 +450,8 @@ export class ExchangeTestUtil {
   private proverPorts = new Map<number, number>();
   private portGenerator = 1234;
 
-  private emptyMerkleRoot = "0x2db90e056916400d3a29cf8e04b3963b5b92385d8b4d470b50e298872c3b64c5";
+  private emptyMerkleRoot =
+    "0x2db90e056916400d3a29cf8e04b3963b5b92385d8b4d470b50e298872c3b64c5";
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -819,7 +819,8 @@ export class ExchangeTestUtil {
     order.exchange =
       order.exchange !== undefined ? order.exchange : this.exchange.address;
 
-    order.fillAmountBorS = order.fillAmountBorS !== undefined ? order.fillAmountBorS : true;
+    order.fillAmountBorS =
+      order.fillAmountBorS !== undefined ? order.fillAmountBorS : true;
 
     order.taker =
       order.taker !== undefined ? order.taker : Constants.zeroAddress;
@@ -1016,7 +1017,6 @@ export class ExchangeTestUtil {
     options: DepositOptions = {}
   ) {
     // Fill in defaults
-    const fee = options.fee !== undefined ? options.fee : this.getRandomFee();
     const autoSetKeys =
       options.autoSetKeys !== undefined ? options.autoSetKeys : true;
     const contract =
@@ -1057,7 +1057,7 @@ export class ExchangeTestUtil {
       accountNewCreated = true;
     }
 
-    let ethToSend = fee;
+    let ethToSend = new BN(0);
     if (amount.gt(0)) {
       if (token !== Constants.zeroAddress) {
         const Token = this.testContext.tokenAddrInstanceMap.get(token);
@@ -1108,7 +1108,6 @@ export class ExchangeTestUtil {
       accountID,
       tokenID: this.tokenAddressToIDMap.get(token),
       amount,
-      fee,
       token,
       timestamp: ethBlock.timestamp,
       transactionHash: tx.receipt.transactionHash
@@ -1145,7 +1144,8 @@ export class ExchangeTestUtil {
     const gas =
       options.gas !== undefined ? options.gas : minGas > 0 ? minGas : 100000;
     const signer = options.signer !== undefined ? options.signer : owner;
-    const extraData = options.extraData !== undefined ? options.extraData : "0x";
+    const extraData =
+      options.extraData !== undefined ? options.extraData : "0x";
     const validUntil =
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
@@ -1203,9 +1203,12 @@ export class ExchangeTestUtil {
     onchainData.addNumber(minGas, 32);
     onchainData.addAddress(to);
     onchainData.addHex(extraData);
-    const onchainDataHash = "0x" + ethUtil.keccak(
-      Buffer.from(onchainData.getData().slice(2), "hex")
-    ).toString("hex").slice(0, 40);
+    const onchainDataHash =
+      "0x" +
+      ethUtil
+        .keccak(Buffer.from(onchainData.getData().slice(2), "hex"))
+        .toString("hex")
+        .slice(0, 40);
 
     const account = this.accounts[this.exchangeId][accountID];
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
@@ -1803,31 +1806,21 @@ export class ExchangeTestUtil {
   }
 
   public getTransferAuxData(transfer: Transfer) {
-    return web3.eth.abi.encodeParameter(
-      "tuple(bytes,uint32)",
-      [
-        web3.utils.hexToBytes(
-          transfer.onchainSignature
-            ? transfer.onchainSignature
-            : "0x"
-        ),
-        transfer.validUntil
-      ]
-    );
+    return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
+      web3.utils.hexToBytes(
+        transfer.onchainSignature ? transfer.onchainSignature : "0x"
+      ),
+      transfer.validUntil
+    ]);
   }
 
   public getAccountUpdateAuxData(accountUpdate: AccountUpdate) {
-    return web3.eth.abi.encodeParameter(
-      "tuple(bytes,uint32)",
-      [
-        web3.utils.hexToBytes(
-          accountUpdate.onchainSignature
-            ? accountUpdate.onchainSignature
-            : "0x"
-        ),
-        accountUpdate.validUntil
-      ]
-    );
+    return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
+      web3.utils.hexToBytes(
+        accountUpdate.onchainSignature ? accountUpdate.onchainSignature : "0x"
+      ),
+      accountUpdate.validUntil
+    ]);
   }
 
   public getWithdrawalAuxData(withdrawal: WithdrawalRequest) {
@@ -1836,16 +1829,14 @@ export class ExchangeTestUtil {
       [
         withdrawal.gas,
         web3.utils.hexToBytes(
-          withdrawal.onchainSignature
-            ? withdrawal.onchainSignature
-            : "0x"
+          withdrawal.onchainSignature ? withdrawal.onchainSignature : "0x"
         ),
         withdrawal.minGas,
         withdrawal.to,
         withdrawal.extraData
           ? web3.utils.hexToBytes(withdrawal.extraData)
           : web3.utils.hexToBytes("0x"),
-          withdrawal.validUntil
+        withdrawal.validUntil
       ]
     );
   }
@@ -1909,8 +1900,13 @@ export class ExchangeTestUtil {
         } else if (transaction.txType === "AccountUpdate") {
           if (transaction.type > 0) {
             numConditionalTransactions++;
-            const encodedAccountUpdateData = this.getAccountUpdateAuxData(transaction);
-            auxiliaryData.push([i, web3.utils.hexToBytes(encodedAccountUpdateData)]);
+            const encodedAccountUpdateData = this.getAccountUpdateAuxData(
+              transaction
+            );
+            auxiliaryData.push([
+              i,
+              web3.utils.hexToBytes(encodedAccountUpdateData)
+            ]);
           }
         }
       }

@@ -74,7 +74,6 @@ export interface Deposit {
   tokenID: number;
   amount: BN;
 
-  fee: BN;
   token: string;
   timestamp?: number;
   transactionHash?: string;

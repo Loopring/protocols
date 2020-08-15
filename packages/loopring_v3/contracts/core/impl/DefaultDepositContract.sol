@@ -22,7 +22,6 @@ import "../iface/IDepositContract.sol";
 contract DefaultDepositContract is IDepositContract, Claimable
 {
     using AddressUtil       for address;
-    using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
@@ -116,7 +115,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
         }
 
         if (ethToReturn > 0) {
-            msg.sender.sendETHAndVerify(ethToReturn, gasleft());
+            from.sendETHAndVerify(ethToReturn, gasleft());
         }
     }
 

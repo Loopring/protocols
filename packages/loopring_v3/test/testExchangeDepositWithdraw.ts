@@ -742,7 +742,6 @@ contract("Exchange", (accounts: string[]) => {
         owner: Constants.zeroAddress,
         token: ring.orderA.tokenB,
         amount: protocolFeeA,
-        fee: new BN(0),
         timestamp: 0,
         accountID: 0,
         tokenID: await exchangeTestUtil.getTokenID(ring.orderA.tokenB)
@@ -751,7 +750,6 @@ contract("Exchange", (accounts: string[]) => {
         owner: Constants.zeroAddress,
         token: ring.orderB.tokenB,
         amount: protocolFeeB,
-        fee: new BN(0),
         timestamp: 0,
         accountID: 0,
         tokenID: await exchangeTestUtil.getTokenID(ring.orderB.tokenB)

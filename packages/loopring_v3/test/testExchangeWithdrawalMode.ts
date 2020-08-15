@@ -19,7 +19,11 @@ contract("Exchange", (accounts: string[]) => {
     );
   };
 
-  const checkNotifyForcedRequestTooOld = async (accountID: number, token: string, expectedInWithdrawalMode: boolean) => {
+  const checkNotifyForcedRequestTooOld = async (
+    accountID: number,
+    token: string,
+    expectedInWithdrawalMode: boolean
+  ) => {
     if (expectedInWithdrawalMode) {
       await exchange.notifyForcedRequestTooOld(accountID, token);
       await exchangeTestUtil.assertEventEmitted(
@@ -59,11 +63,21 @@ contract("Exchange", (accounts: string[]) => {
     token: string,
     expectedAmount: BN
   ) => {
-    const recipient = accountID === 0 ? await loopring.protocolFeeVault() : exchangeTestUtil.getAccount(accountID).owner;
+    const recipient =
+      accountID === 0
+        ? await loopring.protocolFeeVault()
+        : exchangeTestUtil.getAccount(accountID).owner;
 
     // Simulate all transfers
     const snapshot = new BalanceSnapshot(exchangeTestUtil);
-    await snapshot.transfer(exchangeTestUtil.depositContract.address, recipient, token, expectedAmount, "deposit contract", "owner");
+    await snapshot.transfer(
+      exchangeTestUtil.depositContract.address,
+      recipient,
+      token,
+      expectedAmount,
+      "deposit contract",
+      "owner"
+    );
 
     // Do the withdrawal
     await exchangeTestUtil.withdrawFromMerkleTree(accountID, token);
@@ -81,13 +95,18 @@ contract("Exchange", (accounts: string[]) => {
   const withdrawFromDepositRequestChecked = async (
     owner: string,
     token: string,
-    expectedAmount: BN,
-    expectedFee: BN
+    expectedAmount: BN
   ) => {
     // Simulate all transfers
     const snapshot = new BalanceSnapshot(exchangeTestUtil);
-    await snapshot.transfer(exchangeTestUtil.depositContract.address, owner, token, expectedAmount, "deposit contract", "owner");
-    await snapshot.transfer(exchange.address, owner, "ETH", expectedFee, "exchange", "owner");
+    await snapshot.transfer(
+      exchangeTestUtil.depositContract.address,
+      owner,
+      token,
+      expectedAmount,
+      "deposit contract",
+      "owner"
+    );
 
     // Do the withdrawal
     await exchangeTestUtil.exchange.withdrawFromDepositRequest(owner, token);
@@ -102,7 +121,11 @@ contract("Exchange", (accounts: string[]) => {
     it("should go into withdrawal mode when a forced withdrawal request isn't processed", async () => {
       await createExchange(true);
       // Try to notify using a request that doesn't exist
-      await checkNotifyForcedRequestTooOld(2, exchangeTestUtil.getTokenAddress("LRC"), false);
+      await checkNotifyForcedRequestTooOld(
+        2,
+        exchangeTestUtil.getTokenAddress("LRC"),
+        false
+      );
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
       console.log(exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE);
@@ -113,7 +136,9 @@ contract("Exchange", (accounts: string[]) => {
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Do a forced withdrawal
-      const withdrawal = await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
+      const withdrawal = await exchangeTestUtil.doRandomOnchainWithdrawal(
+        deposit
+      );
       const token = exchangeTestUtil.getTokenAddressFromID(withdrawal.tokenID);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
@@ -150,7 +175,9 @@ contract("Exchange", (accounts: string[]) => {
       await exchange.shutdown({ from: exchangeTestUtil.exchangeOwner });
 
       // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MIN_TIME_IN_SHUTDOWN + 100);
+      await exchangeTestUtil.advanceBlockTimestamp(
+        exchangeTestUtil.MIN_TIME_IN_SHUTDOWN + 100
+      );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
 
@@ -158,7 +185,9 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
 
       // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MIN_TIME_IN_SHUTDOWN - 100);
+      await exchangeTestUtil.advanceBlockTimestamp(
+        exchangeTestUtil.MIN_TIME_IN_SHUTDOWN - 100
+      );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Wait
@@ -201,7 +230,7 @@ contract("Exchange", (accounts: string[]) => {
         balance,
         "ETH",
         new BN(0),
-        {authMethod: AuthMethod.FORCE}
+        { authMethod: AuthMethod.FORCE }
       );
 
       // Operator doesn't do anything for a long time
@@ -217,7 +246,9 @@ contract("Exchange", (accounts: string[]) => {
         deposit.accountID,
         token
       );
-      proof.balanceLeaf.balance = new BN(proof.balanceLeaf.balance).mul(new BN(2)).toString(10);
+      proof.balanceLeaf.balance = new BN(proof.balanceLeaf.balance)
+        .mul(new BN(2))
+        .toString(10);
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTreeWithProof(proof),
         "INVALID_MERKLE_TREE_DATA"
@@ -250,12 +281,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Do another deposit with the same amount to the account and process it in a block
-      await exchangeTestUtil.deposit(
-        owner,
-        owner,
-        token,
-        balance
-      );
+      await exchangeTestUtil.deposit(owner, owner, token, balance);
 
       // Request withdrawal onchain
       await exchangeTestUtil.requestWithdrawal(
@@ -264,7 +290,7 @@ contract("Exchange", (accounts: string[]) => {
         balance,
         "ETH",
         new BN(0),
-        {authMethod: AuthMethod.FORCE}
+        { authMethod: AuthMethod.FORCE }
       );
 
       // Operator doesn't do anything for a long time
@@ -316,10 +342,7 @@ contract("Exchange", (accounts: string[]) => {
         .div(new BN(100000));
 
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(
-          0,
-          ring.orderA.tokenB
-        ),
+        exchangeTestUtil.withdrawFromMerkleTree(0, ring.orderA.tokenB),
         "NOT_IN_WITHDRAW_MODE"
       );
 
@@ -330,7 +353,7 @@ contract("Exchange", (accounts: string[]) => {
         protocolFeeA.mul(new BN(2)),
         "ETH",
         new BN(0),
-        {authMethod: AuthMethod.FORCE}
+        { authMethod: AuthMethod.FORCE }
       );
 
       // Operator doesn't do anything for a long time
@@ -342,16 +365,8 @@ contract("Exchange", (accounts: string[]) => {
       await checkNotifyForcedRequestTooOld(0, ring.orderA.tokenB, true);
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
-      await withdrawFromMerkleTreeChecked(
-        0,
-        ring.orderA.tokenB,
-        protocolFeeA
-      );
-      await withdrawFromMerkleTreeChecked(
-        0,
-        ring.orderB.tokenB,
-        protocolFeeB
-      );
+      await withdrawFromMerkleTreeChecked(0, ring.orderA.tokenB, protocolFeeA);
+      await withdrawFromMerkleTreeChecked(0, ring.orderB.tokenB, protocolFeeB);
     });
 
     it("Withdraw from deposit", async () => {
@@ -404,7 +419,10 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchangeTestUtil.exchange.withdrawFromDepositRequest(depositA.owner, depositA.token),
+        exchangeTestUtil.exchange.withdrawFromDepositRequest(
+          depositA.owner,
+          depositA.token
+        ),
         "DEPOSIT_NOT_WITHDRAWABLE_YET"
       );
 
@@ -417,14 +435,12 @@ contract("Exchange", (accounts: string[]) => {
       await withdrawFromDepositRequestChecked(
         depositB.owner,
         depositB.token,
-        depositB.amount.add(depositC.amount),
-        depositB.fee.add(depositC.fee)
+        depositB.amount.add(depositC.amount)
       );
       await withdrawFromDepositRequestChecked(
         depositD.owner,
         depositD.token,
-        depositD.amount,
-        depositD.fee
+        depositD.amount
       );
 
       // Try to withdraw again
@@ -432,8 +448,7 @@ contract("Exchange", (accounts: string[]) => {
         withdrawFromDepositRequestChecked(
           depositD.owner,
           depositD.token,
-          depositD.amount,
-          depositD.fee
+          depositD.amount
         ),
         "DEPOSIT_NOT_WITHDRAWABLE_YET"
       );
@@ -443,8 +458,7 @@ contract("Exchange", (accounts: string[]) => {
         withdrawFromDepositRequestChecked(
           depositA.owner,
           depositA.token,
-          depositA.amount,
-          depositA.fee
+          depositA.amount
         ),
         "DEPOSIT_NOT_WITHDRAWABLE_YET"
       );
