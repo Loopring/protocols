@@ -104,19 +104,11 @@ library ExchangeBlocks
             // Hash all the public data to a single value which is used as the input for the circuit
             publicDataHashes[i] = blocks[i].data.fastSHA256();
             // Commit the block
-            commitBlock(
-                S,
-                blocks[i],
-                publicDataHashes[i]
-            );
+            commitBlock(S, blocks[i], publicDataHashes[i]);
         }
 
         // Verify the blocks - blocks are verified in a batch to save gas.
-        verifyBlocks(
-            S,
-            blocks,
-            publicDataHashes
-        );
+        verifyBlocks(S, blocks, publicDataHashes);
     }
 
     // == Internal Functions ==
