@@ -3,9 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
-import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
@@ -27,8 +25,6 @@ import "./libtransactions/TransferTransaction.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    using AddressUtil           for address;
-    using ERC20SafeTransfer     for address;
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeBalances      for ExchangeData.State;
@@ -132,26 +128,6 @@ contract ExchangeV3 is IExchangeV3
         returns (IDepositContract)
     {
         return state.depositContract;
-    }
-
-    function withdrawExchangeFees(
-        address token,
-        address recipient
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        require(recipient != address(0), "INVALID_ADDRESS");
-
-        if (token == address(0)) {
-            uint amount = address(this).balance;
-            recipient.sendETHAndVerify(amount, gasleft());
-        } else {
-            uint amount = ERC20(token).balanceOf(address(this));
-            token.safeTransferAndVerify(recipient, amount);
-        }
     }
 
     // -- Constants --
@@ -334,13 +310,19 @@ contract ExchangeV3 is IExchangeV3
         return state.blocks[blockIdx];
     }
 
-    function submitBlocks(ExchangeData.Block[] calldata blocks)
+    function submitBlocks(
+        ExchangeData.Block[] calldata blocks,
+        address payable feeRecipient
+        )
         external
         override
         nonReentrant
         onlyOwner
     {
-        state.submitBlocks(blocks);
+        state.submitBlocks(
+            blocks,
+            feeRecipient
+        );
     }
 
     function getNumAvailableForcedSlots()

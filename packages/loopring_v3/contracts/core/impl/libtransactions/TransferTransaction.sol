@@ -58,6 +58,7 @@ library TransferTransaction
         bytes                     memory  auxiliaryData
         )
         internal
+        returns (uint /*feeETH*/)
     {
         // Read the transfer
         Transfer memory transfer = readTx(data, offset);

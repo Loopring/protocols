@@ -15,9 +15,9 @@ import "./ExchangeMode.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeAdmins
 {
+    using MathUint          for uint;
     using ERC20SafeTransfer for address;
     using ExchangeMode      for ExchangeData.State;
-    using MathUint          for uint;
 
     event OperatorChanged(
         uint    indexed exchangeId,

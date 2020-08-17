@@ -23,7 +23,7 @@ contract("Exchange", (accounts: string[]) => {
       bSetupTestState
     );
     exchange = exchangeTestUtil.exchange;
-    operator = /*exchangeTestUtil.operator*/ exchange;
+    operator = /*exchangeTestUtil.operator*/exchange;
     loopring = exchangeTestUtil.loopringV3;
   };
 
@@ -108,7 +108,7 @@ contract("Exchange", (accounts: string[]) => {
             auxiliaryData: Constants.emptyBytes
           };
           await expectThrow(
-            operator.submitBlocks([block], {
+            operator.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
               from: exchangeTestUtil.exchangeOperator
             }),
             "INVALID_EXCHANGE"
@@ -139,7 +139,7 @@ contract("Exchange", (accounts: string[]) => {
             auxiliaryData: Constants.emptyBytes
           };
           await expectThrow(
-            operator.submitBlocks([block], {
+            operator.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
               from: exchangeTestUtil.exchangeOperator
             }),
             "INVALID_MERKLE_ROOT"
@@ -155,9 +155,9 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion,
             new Array(18).fill(1)
           );
-          let timestamp = (
-            await web3.eth.getBlock(await web3.eth.getBlockNumber())
-          ).timestamp;
+          let timestamp = (await web3.eth.getBlock(
+            await web3.eth.getBlockNumber()
+          )).timestamp;
           timestamp -=
             exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
           const bs = new Bitstream();
@@ -176,7 +176,7 @@ contract("Exchange", (accounts: string[]) => {
             auxiliaryData: Constants.emptyBytes
           };
           await expectThrow(
-            operator.submitBlocks([block], {
+            operator.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
               from: exchangeTestUtil.exchangeOperator
             }),
             "INVALID_MERKLE_ROOT"
@@ -194,9 +194,9 @@ contract("Exchange", (accounts: string[]) => {
           );
           // Timestamp too early
           {
-            let timestamp = (
-              await web3.eth.getBlock(await web3.eth.getBlockNumber())
-            ).timestamp;
+            let timestamp = (await web3.eth.getBlock(
+              await web3.eth.getBlockNumber()
+            )).timestamp;
             timestamp -=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
             const bs = new Bitstream();
@@ -215,17 +215,19 @@ contract("Exchange", (accounts: string[]) => {
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              operator.submitBlocks([block], {
-                from: exchangeTestUtil.exchangeOperator
-              }),
+              operator.submitBlocks(
+                [block],
+                exchangeTestUtil.exchangeOperator,
+                { from: exchangeTestUtil.exchangeOperator }
+              ),
               "INVALID_TIMESTAMP"
             );
           }
           // Timestamp too late
           {
-            let timestamp = (
-              await web3.eth.getBlock(await web3.eth.getBlockNumber())
-            ).timestamp;
+            let timestamp = (await web3.eth.getBlock(
+              await web3.eth.getBlockNumber()
+            )).timestamp;
             timestamp +=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
             const bs = new Bitstream();
@@ -244,9 +246,11 @@ contract("Exchange", (accounts: string[]) => {
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              operator.submitBlocks([block], {
-                from: exchangeTestUtil.exchangeOperator
-              }),
+              operator.submitBlocks(
+                [block],
+                exchangeTestUtil.exchangeOperator,
+                { from: exchangeTestUtil.exchangeOperator }
+              ),
               "INVALID_TIMESTAMP"
             );
           }
@@ -264,9 +268,9 @@ contract("Exchange", (accounts: string[]) => {
           const protocolFees = await loopring.getProtocolFeeValues(
             exchangeTestUtil.exchangeId
           );
-          const timestamp = (
-            await web3.eth.getBlock(await web3.eth.getBlockNumber())
-          ).timestamp;
+          const timestamp = (await web3.eth.getBlock(
+            await web3.eth.getBlockNumber()
+          )).timestamp;
           // Invalid taker protocol fee
           {
             const bs = new Bitstream();
@@ -287,9 +291,11 @@ contract("Exchange", (accounts: string[]) => {
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              operator.submitBlocks([block], {
-                from: exchangeTestUtil.exchangeOperator
-              }),
+              operator.submitBlocks(
+                [block],
+                exchangeTestUtil.exchangeOperator,
+                { from: exchangeTestUtil.exchangeOperator }
+              ),
               "INVALID_PROTOCOL_FEES"
             );
           }
@@ -313,9 +319,11 @@ contract("Exchange", (accounts: string[]) => {
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              operator.submitBlocks([block], {
-                from: exchangeTestUtil.exchangeOperator
-              }),
+              operator.submitBlocks(
+                [block],
+                exchangeTestUtil.exchangeOperator,
+                { from: exchangeTestUtil.exchangeOperator }
+              ),
               "INVALID_PROTOCOL_FEES"
             );
           }
@@ -380,16 +388,12 @@ contract("Exchange", (accounts: string[]) => {
                   } else if (tx.txType === "Transfer" && tx.type > 0) {
                     auxiliaryData.push([
                       i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getTransferAuxData(tx)
-                      )
+                      web3.utils.hexToBytes(exchangeTestUtil.getTransferAuxData(tx))
                     ]);
                   } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
                     auxiliaryData.push([
                       i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getAccountUpdateAuxData(tx)
-                      )
+                      web3.utils.hexToBytes(exchangeTestUtil.getAccountUpdateAuxData(tx))
                     ]);
                   }
                 }
@@ -415,16 +419,12 @@ contract("Exchange", (accounts: string[]) => {
                   } else if (tx.txType === "Transfer" && tx.type > 0) {
                     auxiliaryData.push([
                       i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getTransferAuxData(tx)
-                      )
+                      web3.utils.hexToBytes(exchangeTestUtil.getTransferAuxData(tx))
                     ]);
                   } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
                     auxiliaryData.push([
                       i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getAccountUpdateAuxData(tx)
-                      )
+                      web3.utils.hexToBytes(exchangeTestUtil.getAccountUpdateAuxData(tx))
                     ]);
                   }
                 }
@@ -450,16 +450,12 @@ contract("Exchange", (accounts: string[]) => {
                   } else if (tx.txType === "Transfer" && tx.type > 0) {
                     auxiliaryData.push([
                       i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getTransferAuxData(tx)
-                      )
+                      web3.utils.hexToBytes(exchangeTestUtil.getTransferAuxData(tx))
                     ]);
                   } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
                     auxiliaryData.push([
                       i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getAccountUpdateAuxData(tx)
-                      )
+                      web3.utils.hexToBytes(exchangeTestUtil.getAccountUpdateAuxData(tx))
                     ]);
                   }
                 }
@@ -484,16 +480,12 @@ contract("Exchange", (accounts: string[]) => {
                 } else if (tx.txType === "Transfer" && tx.type > 0) {
                   auxiliaryData.push([
                     i,
-                    web3.utils.hexToBytes(
-                      exchangeTestUtil.getTransferAuxData(tx)
-                    )
+                    web3.utils.hexToBytes(exchangeTestUtil.getTransferAuxData(tx))
                   ]);
                 } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
                   auxiliaryData.push([
                     i,
-                    web3.utils.hexToBytes(
-                      exchangeTestUtil.getAccountUpdateAuxData(tx)
-                    )
+                    web3.utils.hexToBytes(exchangeTestUtil.getAccountUpdateAuxData(tx))
                   ]);
                 }
 
@@ -579,7 +571,7 @@ contract("Exchange", (accounts: string[]) => {
         };
         // Try to submit a block
         await expectThrow(
-          exchange.submitBlocks([block], {
+          exchange.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
             from: exchangeTestUtil.testContext.orderOwners[0]
           }),
           "UNAUTHORIZED"

@@ -92,7 +92,8 @@ library ExchangeData
     struct ForcedWithdrawal
     {
         address owner;
-        uint64  timestamp;
+        uint32  timestamp;
+        uint64  fee;
     }
 
     struct Constants

@@ -53,6 +53,7 @@ library AccountUpdateTransaction
         bytes                     memory  auxiliaryData
         )
         internal
+        returns (uint /*feeETH*/)
     {
         // Read the account update
         AccountUpdate memory accountUpdate = readTx(data, offset);

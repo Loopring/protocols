@@ -39,6 +39,7 @@ library DepositTransaction
         bytes                     memory  /*auxiliaryData*/
         )
         internal
+        returns (uint)
     {
         // Read in the deposit
         Deposit memory deposit = readTx(data, offset);

@@ -76,7 +76,8 @@ library ExchangeWithdrawals
 
         S.pendingForcedWithdrawals[accountID][tokenID] = ExchangeData.ForcedWithdrawal({
             owner: owner,
-            timestamp: uint64(block.timestamp)
+            timestamp: uint32(block.timestamp),
+            fee: uint64(withdrawalFeeETH)
         });
 
         S.numPendingForcedTransactions++;
