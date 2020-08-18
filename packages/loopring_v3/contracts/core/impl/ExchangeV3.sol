@@ -334,14 +334,6 @@ contract ExchangeV3 is IExchangeV3
         return state.blocks[blockIdx];
     }
 
-    function getSubmitBlocksSelector()
-        external
-        view
-        returns (bytes4)
-    {
-        return ExchangeV3(0).submitBlocks.selector;
-    }
-
     function submitBlocks(ExchangeData.Block[] calldata blocks)
         external
         override
