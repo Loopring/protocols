@@ -12,10 +12,10 @@ else
 	detected_OS := $(shell uname -s)
 	ifeq ($(detected_OS),Darwin)
 		DLL_EXT := .dylib
-		export LD_LIBRARY_PATH := /usr/local/opt/openssl/lib:/usr/local/opt/gmp/lib:"$(LD_LIBRARY_PATH)"
-		export LIBRARY_PATH := /usr/local/opt/gmp/lib:"$(LIBRARY_PATH)"
-		export CPATH := /usr/local/opt/openssl/include:/usr/local/opt/gmp/include:/usr/local/opt/boost/include:"$(CPATH)"
-		export PKG_CONFIG_PATH := /usr/local/opt/openssl/lib/pkgconfig:"$(PKG_CONFIG_PATH)"
+		export LD_LIBRARY_PATH := /usr/local/opt/openssl/lib:/usr/local/opt/gmp/lib:$(LD_LIBRARY_PATH)
+		export LIBRARY_PATH := /usr/local/opt/gmp/lib:$(LIBRARY_PATH)
+		export CPATH := /usr/local/opt/openssl/include:/usr/local/opt/gmp/include:/usr/local/opt/boost/include:$(CPATH)
+		export PKG_CONFIG_PATH := /usr/local/opt/openssl/lib/pkgconfig:$(PKG_CONFIG_PATH)
 		CMAKE_TYPE := cmake-release
 	else
 		DLL_EXT := .so
