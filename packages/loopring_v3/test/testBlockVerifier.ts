@@ -307,32 +307,32 @@ contract("BlockVerifier", (accounts: string[]) => {
         await exchangeTestUtil.sendRing(ring);
       }
       commitBlocksSize1.push(...(await exchangeTestUtil.submitTransactions(2)));
-      for (let i = 0; i < 2; i++) {
-        const ring = await setupRandomRing();
-        await exchangeTestUtil.sendRing(ring);
-      }
-      settlementBlocksSize1.push(
-        ...(await exchangeTestUtil.submitTransactions(2))
-      );
+      // for (let i = 0; i < 2; i++) {
+      //   const ring = await setupRandomRing();
+      //   await exchangeTestUtil.sendRing(ring);
+      // }
+      // settlementBlocksSize1.push(
+      //   ...(await exchangeTestUtil.submitTransactions(2))
+      // );
 
-      for (let i = 0; i < 2; i++) {
-        const ring = await setupRandomRing();
-        await exchangeTestUtil.sendRing(ring);
-      }
-      commitBlocksSize2.push(...(await exchangeTestUtil.submitTransactions(4)));
-      for (let i = 0; i < 2; i++) {
-        const ring = await setupRandomRing();
-        await exchangeTestUtil.sendRing(ring);
-      }
-      settlementBlocksSize2.push(
-        ...(await exchangeTestUtil.submitTransactions(4))
-      );
+      // for (let i = 0; i < 2; i++) {
+      //   const ring = await setupRandomRing();
+      //   await exchangeTestUtil.sendRing(ring);
+      // }
+      // commitBlocksSize2.push(...(await exchangeTestUtil.submitTransactions(4)));
+      // for (let i = 0; i < 2; i++) {
+      //   const ring = await setupRandomRing();
+      //   await exchangeTestUtil.sendRing(ring);
+      // }
+      // settlementBlocksSize2.push(
+      //   ...(await exchangeTestUtil.submitTransactions(4))
+      // );
 
       // Generate the proofs
       await exchangeTestUtil.submitPendingBlocks();
     });
 
-    it("should be able to verify a single block with a valid proof", async () => {
+    it.only("should be able to verify a single block with a valid proof", async () => {
       const block = commitBlocksSize1[0];
       const success = await blockVerifier.verifyProofs(
         block.blockType,

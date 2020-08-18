@@ -104,9 +104,10 @@ export class ExchangeV3 {
     const exchangeCreationTimestamp = (await this.exchange.methods
       .getBlockInfo(0)
       .call()).timestamp;
-    const genesisMerkleRoot = new BN((await this.exchange.methods.
-      getMerkleRoot()
-      .call()).slice(2), 16).toString(10);
+    const genesisMerkleRoot = new BN(
+      (await this.exchange.methods.getMerkleRoot().call()).slice(2),
+      16
+    ).toString(10);
 
     this.shutdown = false;
     this.shutdownStartTime = 0;
@@ -229,10 +230,7 @@ export class ExchangeV3 {
       Constants.BINARY_TREE_DEPTH_TOKENS / 2
     );
     balancesMerkleTree.newTree(
-      hasher([
-        0,
-        storageMerkleTree.getRoot()
-      ]).toString(10)
+      hasher([0, storageMerkleTree.getRoot()]).toString(10)
     );
     this.merkleTree = new SparseMerkleTree(
       Constants.BINARY_TREE_DEPTH_ACCOUNTS / 2
@@ -247,10 +245,7 @@ export class ExchangeV3 {
         Constants.BINARY_TREE_DEPTH_TOKENS / 2
       );
       account.balancesMerkleTree.newTree(
-        hasher([
-          0,
-          storageMerkleTree.getRoot()
-        ]).toString(10)
+        hasher([0, storageMerkleTree.getRoot()]).toString(10)
       );
       for (const tokenID of Object.keys(account.balances)) {
         const balanceValue = account.balances[Number(tokenID)];
@@ -262,10 +257,7 @@ export class ExchangeV3 {
           const storageValue = balanceValue.storage[Number(orderID)];
           balanceValue.storageTree.update(
             Number(orderID),
-            hasher([
-              storageValue.data,
-              storageValue.storageID
-            ]).toString(10)
+            hasher([storageValue.data, storageValue.storageID]).toString(10)
           );
         }
         account.balancesMerkleTree.update(
@@ -677,8 +669,7 @@ export class ExchangeV3 {
     const timestamp = Number(ethereumBlock.timestamp);
 
     // Get the block data from the transaction data
-    const submitBlocksFunctionSignature = "0xde6fd7d0";
-    //const submitBlocksFunctionSignature = "0x14867212";
+    const submitBlocksFunctionSignature = "0x8dadd3af";
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
