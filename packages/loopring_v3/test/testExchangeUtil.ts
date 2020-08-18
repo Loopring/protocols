@@ -2204,8 +2204,8 @@ export class ExchangeTestUtil {
 
     this.exchange = await this.contracts.ExchangeV3.at(exchangeAddress);
 
-    const submitBlocksSelector = await this.exchange.getSubmitBlocksSelector();
-    console.log("submitBlocksSelector:", submitBlocksSelector);
+    // const submitBlocksSelector = await this.exchange.getSubmitBlocksSelector();
+    // console.log("submitBlocksSelector:", submitBlocksSelector);
 
     // Create a deposit contract impl
     const depositContractImpl = await this.contracts.DefaultDepositContract.new();
