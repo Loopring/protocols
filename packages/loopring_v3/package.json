@@ -58,7 +58,7 @@
     "@types/mocha": "^8.0.0",
     "@types/node": "14.0.24",
     "@types/request-promise-native": "^1.0.17",
-    "@typescript-eslint/eslint-plugin": "^2.3.1",
+    "@typescript-eslint/eslint-plugin": "^3.9.1",
     "@typescript-eslint/parser": "^2.3.1",
     "ajv": "^6.10.0",
     "chai": "^4.2.0",
