@@ -80,6 +80,7 @@ contract("Exchange", (accounts: string[]) => {
       } else if (tx.txType === "Deposit") {
       }
     }
+
     if (expectedSuccess === undefined) {
       expectedSuccess = new Array(numWithdrawals).fill(true);
     }
@@ -108,14 +109,14 @@ contract("Exchange", (accounts: string[]) => {
       );
     }
     // Simulate block fee payment
-    await snapshot.transfer(
-      exchange.address,
-      feeRecipient,
-      "ETH",
-      blockFee,
-      "exchange",
-      "feeRecipient"
-    );
+    // await snapshot.transfer(
+    //   exchange.address,
+    //   feeRecipient,
+    //   "ETH",
+    //   blockFee,
+    //   "exchange",
+    //   "feeRecipient"
+    // );
 
     // Submit the block
     await exchangeTestUtil.submitPendingBlocks();
@@ -179,7 +180,6 @@ contract("Exchange", (accounts: string[]) => {
       block.blockIdx,
       "Unexpected block idx"
     );
-    assert(event.blockFee.eq(blockFee), "Unexpected block fee amount");
   };
 
   const withdrawOnceChecked = async (
