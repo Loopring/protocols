@@ -94,6 +94,7 @@ contract WalletFactory is ReentrancyGuard
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
     /// @param _adobe The uninitialized wallet address to use
+    /// @return _wallet The new wallet address
     function createWallet(
         address            _owner,
         string    calldata _ensLabel,
