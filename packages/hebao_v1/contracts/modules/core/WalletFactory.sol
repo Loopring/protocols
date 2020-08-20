@@ -32,13 +32,7 @@ contract WalletFactory is ReentrancyGuard
     event AdobeCreated (address wallet);
     event WalletCreated(address wallet, address owner);
 
-    // mapping from adobe to its modules
-    struct Adobe {
-        address addr;
-        bytes32 moduleHash;
-    }
-
-    Adobe[] adobes;
+    mapping(address => bytes32) adobes;
 
     address        public walletImplementation;
     bool           public allowEmptyENS;
@@ -87,7 +81,7 @@ contract WalletFactory is ReentrancyGuard
         bool               _ensRegisterReverse,
         address[] calldata _modules,
         bytes     calldata _signature,
-        bool               _useAdobe
+        address            _adobe
         )
         external
         payable
@@ -111,11 +105,10 @@ contract WalletFactory is ReentrancyGuard
             "INVALID_SIGNATURE"
         );
 
-        if (_useAdobe && adobes.length > 0) {
-            Adobe memory adobe = adobes[adobes.length - 1];
-            require(adobe.moduleHash == keccak256(abi.encode(_modules)), "INVALID_ADOBE");
-            adobes.pop();
-            _wallet = adobe.addr;
+        if (_adobe != address(0)) {
+            require(adobes[_adobe] == keccak256(abi.encode(_modules)), "INVALID_ADOBE");
+            delete adobes[_adobe];
+            _wallet = _adobe;
         } else {
             _wallet= createAdobeInternal(walletImplementation, _modules, true);
         }
@@ -185,27 +178,26 @@ contract WalletFactory is ReentrancyGuard
     }
 
     function createAdobeInternal(
-        address   _implementation,
-        address[] calldata _modules,
-        bool               _useNow
+        address   implementation,
+        address[] calldata modules,
+        bool               useNow
         )
         internal
-        returns (address _adobe)
+        returns (address adobe)
     {
         SimpleProxy proxy = new SimpleProxy();
-        proxy.setImplementation(_implementation);
+        proxy.setImplementation(implementation);
 
-        _adobe = address(proxy);
+        adobe = address(proxy);
 
-        Wallet w = Wallet(_adobe);
-        for(uint i = 0; i < _modules.length; i++) {
-            w.addModule(_modules[i]);
+        Wallet w = Wallet(adobe);
+        for(uint i = 0; i < modules.length; i++) {
+            w.addModule(modules[i]);
         }
 
-        if (!_useNow) {
-            Adobe memory adobe = Adobe(_adobe, keccak256(abi.encode(_modules)));
-            adobes.push(adobe);
-            emit AdobeCreated(_adobe);
+        if (!useNow) {
+            adobes[adobe] = keccak256(abi.encode(modules));
+            emit AdobeCreated(adobe);
         }
     }
 }
