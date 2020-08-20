@@ -129,12 +129,9 @@ contract("BlockVerifier", (accounts: string[]) => {
     );
     assert.equal(isEnabledBefore, true, "circuit should still be enabled");
 
-    await blockVerifier.disableCircuit(
-      blockType,
-      blockSize,
-      blockVersion,
-      { from: owner }
-    );
+    await blockVerifier.disableCircuit(blockType, blockSize, blockVersion, {
+      from: owner
+    });
 
     const isRegisteredAfter = await blockVerifier.isCircuitRegistered(
       blockType,
@@ -221,12 +218,7 @@ contract("BlockVerifier", (accounts: string[]) => {
         new Array(18).fill("0x123"),
         owner
       );
-      await disableCircuitChecked(
-        blockType,
-        blockSize,
-        blockVersion,
-        owner
-      );
+      await disableCircuitChecked(blockType, blockSize, blockVersion, owner);
     });
 
     it("should not be able to disable a circuit that wasn't registered", async () => {
@@ -234,12 +226,9 @@ contract("BlockVerifier", (accounts: string[]) => {
       const blockSize = 128;
       const blockVersion = 3;
       await expectThrow(
-        blockVerifier.disableCircuit(
-          blockType,
-          blockSize,
-          blockVersion,
-          { from: owner }
-        ),
+        blockVerifier.disableCircuit(blockType, blockSize, blockVersion, {
+          from: owner
+        }),
         "NOT_REGISTERED"
       );
     });
@@ -278,12 +267,9 @@ contract("BlockVerifier", (accounts: string[]) => {
         owner
       );
       await expectThrow(
-        blockVerifier.disableCircuit(
-          blockType,
-          blockSize,
-          blockVersion,
-          { from: anyone }
-        ),
+        blockVerifier.disableCircuit(blockType, blockSize, blockVersion, {
+          from: anyone
+        }),
         "UNAUTHORIZED"
       );
     });

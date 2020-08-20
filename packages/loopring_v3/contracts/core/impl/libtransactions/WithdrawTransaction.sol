@@ -79,7 +79,6 @@ library WithdrawTransaction
         bytes                     memory  auxiliaryData
         )
         internal
-        returns (uint feeETH)
     {
         Withdrawal memory withdrawal = readTx(data, offset);
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
@@ -133,9 +132,6 @@ library WithdrawTransaction
                     require(withdrawal.owner != forcedWithdrawal.owner, "INCONSISENT_OWNER");
                     require(withdrawal.amount == 0, "UNAUTHORIZED_WITHDRAWAL");
                 }
-
-                // Get the fee
-                feeETH = forcedWithdrawal.fee;
 
                 // delete the withdrawal request and free a slot
                 delete S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];

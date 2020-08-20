@@ -22,9 +22,10 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const getFunctionDelay = async (to: string, functionSelector: string) => {
-    return (
-      await delayedContract.getFunctionDelay(to, functionSelector)
-    ).toNumber();
+    return (await delayedContract.getFunctionDelay(
+      to,
+      functionSelector
+    )).toNumber();
   };
 
   const checkFunctionDelay = async (
@@ -61,9 +62,7 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const checkNumDelayedFunctions = async (numExpected: number) => {
-    const numDelayedFunctions = (
-      await delayedContract.getNumDelayedFunctions()
-    ).toNumber();
+    const numDelayedFunctions = (await delayedContract.getNumDelayedFunctions()).toNumber();
     assert.equal(
       numDelayedFunctions,
       numExpected,
@@ -72,9 +71,7 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const checkNumPendingTransactions = async (numExpected: number) => {
-    const numPendingTransactions = (
-      await delayedContract.getNumPendingTransactions()
-    ).toNumber();
+    const numPendingTransactions = (await delayedContract.getNumPendingTransactions()).toNumber();
     assert.equal(
       numPendingTransactions,
       numExpected,
@@ -110,6 +107,7 @@ contract("DelayedOwner", (accounts: string[]) => {
 
   it("Set function delay", async () => {
     // Create a new delayed contract without any function delays set
+    targetContract = await contracts.DelayedTargetContract.new();
     delayedContract = await contracts.DelayedOwnerContract.new(
       targetContract.address,
       false
@@ -125,14 +123,14 @@ contract("DelayedOwner", (accounts: string[]) => {
     await setFunctionDelayChecked(accounts[2], "0x00000002", 0);
     await checkNumDelayedFunctions(2);
     // Check if the function delays of the remaining functions are still correct
-    checkFunctionDelay(accounts[1], "0x00000001", 1);
-    checkFunctionDelay(accounts[3], "0x00000003", 3);
+    await checkFunctionDelay(accounts[1], "0x00000001", 1);
+    await checkFunctionDelay(accounts[3], "0x00000003", 3);
 
     // Remove the delay of 1
     await setFunctionDelayChecked(accounts[1], "0x00000001", 0);
     await checkNumDelayedFunctions(1);
     // Check if the function delays of the remaining functions are still correct
-    checkFunctionDelay(accounts[3], "0x00000003", 3);
+    await checkFunctionDelay(accounts[3], "0x00000003", 3);
 
     // Remove the delay of 3
     await setFunctionDelayChecked(accounts[3], "0x00000003", 0);

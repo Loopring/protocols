@@ -32,8 +32,7 @@ library ExchangeBlocks
     event BlockSubmitted(
         uint    indexed blockIdx,
         bytes32         merkleRoot,
-        bytes32         publicDataHash,
-        uint            blockFee
+        bytes32         publicDataHash
     );
 
     event ProtocolFeesUpdated(
@@ -89,8 +88,7 @@ library ExchangeBlocks
 
     function submitBlocks(
         ExchangeData.State   storage S,
-        ExchangeData.Block[] memory  blocks,
-        address              payable feeRecipient
+        ExchangeData.Block[] memory  blocks
         )
         public
     {
@@ -105,20 +103,11 @@ library ExchangeBlocks
             // Hash all the public data to a single value which is used as the input for the circuit
             publicDataHashes[i] = blocks[i].data.fastSHA256();
             // Commit the block
-            commitBlock(
-                S,
-                blocks[i],
-                feeRecipient,
-                publicDataHashes[i]
-            );
+            commitBlock(S, blocks[i], publicDataHashes[i]);
         }
 
         // Verify the blocks - blocks are verified in a batch to save gas.
-        verifyBlocks(
-            S,
-            blocks,
-            publicDataHashes
-        );
+        verifyBlocks(S, blocks, publicDataHashes);
     }
 
     // == Internal Functions ==
@@ -126,7 +115,6 @@ library ExchangeBlocks
     function commitBlock(
         ExchangeData.State storage S,
         ExchangeData.Block memory  _block,
-        address            payable _feeRecipient,
         bytes32                    _publicDataHash
         )
         private
@@ -168,7 +156,7 @@ library ExchangeBlocks
         );
 
         // Process conditional transactions
-        uint blockFeeETH = processConditionalTransactions(
+        processConditionalTransactions(
             S,
             offset,
             _block.data,
@@ -176,12 +164,9 @@ library ExchangeBlocks
             inputTimestamp
         );
 
-        // Transfer the onchain block fee to the operator
-        _feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
-
         // Emit an event
         uint numBlocks = S.numBlocks;
-        emit BlockSubmitted(numBlocks, merkleRootAfter, _publicDataHash, blockFeeETH);
+        emit BlockSubmitted(numBlocks, merkleRootAfter, _publicDataHash);
 
         S.merkleRoot = merkleRootAfter;
 
@@ -270,7 +255,6 @@ library ExchangeBlocks
         uint32                              timestamp
         )
         private
-        returns (uint blockFeeETH)
     {
         // The length of the auxiliary data needs to match the number of conditional transactions
         uint numConditionalTransactions = data.toUint32(offset);
@@ -306,9 +290,8 @@ library ExchangeBlocks
                 );
                 txDataOffset += 1;
 
-                uint txFeeETH = 0;
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
-                    txFeeETH = DepositTransaction.process(
+                    DepositTransaction.process(
                         S,
                         ctx,
                         data,
@@ -316,7 +299,7 @@ library ExchangeBlocks
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
-                    txFeeETH = WithdrawTransaction.process(
+                    WithdrawTransaction.process(
                         S,
                         ctx,
                         data,
@@ -324,7 +307,7 @@ library ExchangeBlocks
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.TRANSFER) {
-                    txFeeETH = TransferTransaction.process(
+                    TransferTransaction.process(
                         S,
                         ctx,
                         data,
@@ -332,7 +315,7 @@ library ExchangeBlocks
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
-                    txFeeETH = AccountUpdateTransaction.process(
+                    AccountUpdateTransaction.process(
                         S,
                         ctx,
                         data,
@@ -346,7 +329,6 @@ library ExchangeBlocks
                     revert("UNSUPPORTED_TX_TYPE");
                 }
 
-                blockFeeETH = blockFeeETH.add(txFeeETH);
                 prevTxDataOffset = txDataOffset;
             }
         }

@@ -43,8 +43,7 @@ abstract contract IExchangeV3 is IExchange
     event BlockSubmitted(
         uint    indexed blockIdx,
         bytes32         merkleRoot,
-        bytes32         publicDataHash,
-        uint            blockFee
+        bytes32         publicDataHash
     );
 
     event DepositRequested(
@@ -155,6 +154,16 @@ abstract contract IExchangeV3 is IExchange
         virtual
         view
         returns (IDepositContract);
+
+    // @dev Exchange owner withdraws fees from the exchange.
+    // @param token Fee token address
+    // @param feeRecipient Fee recipient address
+    function withdrawExchangeFees(
+        address token,
+        address feeRecipient
+        )
+        external
+        virtual;
 
     // -- Constants --
     /// @dev Returns a list of constants used by the exchange.
@@ -330,11 +339,7 @@ abstract contract IExchangeV3 is IExchange
     ///      - data: The data for this block
     ///      - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
-    /// @param feeRecipient The address that will receive the onchain block rewards
-    function submitBlocks(
-        ExchangeData.Block[] calldata blocks,
-        address payable feeRecipient
-        )
+    function submitBlocks(ExchangeData.Block[] calldata blocks)
         external
         virtual;
 
