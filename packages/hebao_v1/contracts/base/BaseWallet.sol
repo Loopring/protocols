@@ -51,6 +51,15 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
+    modifier onlyFromFactory
+    {
+        require(
+            msg.sender == controller.walletFactory(),
+            "UNAUTHORIZED"
+        );
+        _;
+    }
+
     /// @dev We need to make sure the Factory address cannot be changed without wallet owner's
     ///      explicit authorization.
     modifier onlyFromFactoryOrModule
@@ -68,11 +77,12 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     ///
     /// @param _controller The Controller instance.
     /// @param _initialOwner The owner of this wallet, must not be address(0).
-    function setup(
+    function initialize(
         address _controller,
         address _initialOwner
         )
         external
+        onlyFromFactory
         nonReentrant
     {
         require(_owner == address(0), "INITIALIZED_ALREADY");
@@ -80,6 +90,8 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
 
         controller = Controller(_controller);
         _owner = _initialOwner;
+
+        controller.walletRegistry().registerWallet(address(this));
 
         emit WalletSetup(_initialOwner);
     }
