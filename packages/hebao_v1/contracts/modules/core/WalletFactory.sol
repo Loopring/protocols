@@ -129,10 +129,9 @@ contract WalletFactory is ReentrancyGuard
         if (_adobe == address(0)) {
             _wallet= createAdobeInternal(walletImplementation, _modules, false);
         } else {
-            require(
-                adobes[_adobe] == keccak256(abi.encode(walletImplementation, _modules)),
-                "INVALID_ADOBE"
-            );
+            bytes32 version = keccak256(abi.encode(walletImplementation, _modules));
+            require(adobes[_adobe] == version, "INVALID_ADOBE");
+
             delete adobes[_adobe];
             _wallet = _adobe;
         }
