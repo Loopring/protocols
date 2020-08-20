@@ -29,6 +29,11 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     Controller public controller;
 
     mapping (bytes4  => address) internal methodToModule;
+
+    // Added in version 1.1.5 (2020-08-20)
+    // This manager address is only used for testing, change it to real manager address when
+    // deploying on mainnet
+    address constant public INIT_MANAGER = 0xE20cF871f1646d8651ee9dC95AAB1d93160b3467;
     //  ----- DATA LAYOUT ENDS -----
 
     event OwnerChanged          (address newOwner);
@@ -62,6 +67,29 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
+    modifier onlyFromFactoryOrInitManager(address _controller)
+    {
+        Controller controller_ = Controller(_controller);
+        require(
+            msg.sender == controller_.walletFactory() || msg.sender == INIT_MANAGER,
+            "INIT_UNAUTHORIZED"
+        );
+        _;
+    }
+
+    /// add modules before setup
+    function initModules(address[] calldata _modules, address _controller)
+        external
+        override
+    {
+        require(_owner == address(0), "INITIALIZED_ALREADY");
+
+        controller = Controller(_controller);
+        for (uint i = 0; i < _modules.length; i++) {
+            addModuleInternal(_modules[i]);
+        }
+    }
+
     /// @dev Set up this wallet by assigning an original owner and controller.
     ///
     ///      Note that calling this method more than once will throw.
@@ -74,9 +102,14 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         )
         external
         nonReentrant
+        onlyFromFactoryOrInitManager(_controller)
     {
         require(_owner == address(0), "INITIALIZED_ALREADY");
         require(_initialOwner != address(0), "ZERO_ADDRESS");
+
+        // controller should not be overwrited.
+        require(address(controller) == address(0) ||
+                address(controller) == _controller, "INVALID_CONTROLLER");
 
         controller = Controller(_controller);
         _owner = _initialOwner;

@@ -23,6 +23,10 @@ interface Wallet
     /// @dev Set a new owner.
     function setOwner(address newOwner) external;
 
+    /// @dev set modules before wallet setup.
+    /// @param _modules The modules to be add.
+    function initModules(address[] calldata _modules, address _controller) external;
+
     /// @dev Adds a new module. The `init` method of the module
     ///      will be called with `address(this)` as the parameter.
     ///      This method must throw if the module has already been added.

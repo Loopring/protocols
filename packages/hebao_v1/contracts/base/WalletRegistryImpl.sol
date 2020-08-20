@@ -16,13 +16,18 @@ contract WalletRegistryImpl is Claimable, WalletRegistry
     uint public count;
 
     address internal factory;
+    address internal blankFactory;
 
     event WalletRegistered      (address wallet);
     event WalletFactoryUpdated  (address factory);
+    event BlankWalletFactoryUpdated  (address factory);
 
     modifier onlyFactory()
     {
-        require(msg.sender == factory, "FACTORY_UNAUTHORIZED");
+        require(
+            msg.sender == factory || msg.sender == blankFactory,
+            "FACTORY_UNAUTHORIZED"
+        );
         _;
     }
 
@@ -33,6 +38,15 @@ contract WalletRegistryImpl is Claimable, WalletRegistry
         require(_factory != address(0), "ZERO_ADDRESS");
         factory = _factory;
         emit WalletFactoryUpdated(factory);
+    }
+
+    function setBlankWalletFactory(address _factory)
+        external
+        onlyOwner
+    {
+        require(_factory != address(0), "ZERO_ADDRESS");
+        blankFactory = _factory;
+        emit BlankWalletFactoryUpdated(factory);
     }
 
     function registerWallet(address wallet)
