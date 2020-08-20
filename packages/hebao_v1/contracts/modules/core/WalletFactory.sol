@@ -29,7 +29,7 @@ contract WalletFactory is ReentrancyGuard
     using AddressUtil for address;
     using SignatureUtil for bytes32;
 
-    event AdobeCreated (address wallet, bytes32 version);
+    event AdobeCreated (address adobe,  bytes32 version);
     event WalletCreated(address wallet, address owner);
 
     mapping(address => bytes32) adobes;
@@ -214,7 +214,7 @@ contract WalletFactory is ReentrancyGuard
         adobe = address(proxy);
 
         Wallet w = Wallet(adobe);
-        for(uint i = 0; i < modules.length; i++) {
+        for (uint i = 0; i < modules.length; i++) {
             w.addModule(modules[i]);
         }
 
