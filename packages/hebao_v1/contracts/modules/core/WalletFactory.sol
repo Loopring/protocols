@@ -29,7 +29,8 @@ contract WalletFactory is ReentrancyGuard
     using AddressUtil for address;
     using SignatureUtil for bytes32;
 
-    event WalletCreated(address wallet, address owner);
+    event WalletCreated(address wallet, address owner, string ensLabel);
+    event AdobeConsumed(address wallet);
 
     mapping(bytes32 => address[]) versionedAdobes;
 
@@ -95,7 +96,7 @@ contract WalletFactory is ReentrancyGuard
     /// @param _ensRegisterReverse True to register reverse ENS.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
-    /// @param _preferUsingAdobe True to use an existing adobe, if one can be found.
+    /// @param _preferAdobe True to use an existing adobe, if one can be found.
     /// @return _wallet The new wallet address
     function createWallet(
         address            _owner,
@@ -104,7 +105,7 @@ contract WalletFactory is ReentrancyGuard
         bool               _ensRegisterReverse,
         address[] calldata _modules,
         bytes     calldata _signature,
-        bool               _preferUsingAdobe
+        bool               _preferAdobe
         )
         external
         payable
@@ -128,12 +129,13 @@ contract WalletFactory is ReentrancyGuard
             "INVALID_SIGNATURE"
         );
 
-        if (_preferUsingAdobe) {
+        if (_preferAdobe) {
             bytes32 version = keccak256(abi.encode(walletImplementation, _modules));
             address[] storage adobes = versionedAdobes[version];
             if (adobes.length > 0) {
                 _wallet = adobes[adobes.length - 1];
                 adobes.pop();
+                emit AdobeConsumed(_wallet);
             }
         }
 
@@ -153,7 +155,7 @@ contract WalletFactory is ReentrancyGuard
             require(allowEmptyENS, "INVALID_ENS_LABEL");
         }
 
-        emit WalletCreated(_wallet, _owner);
+        emit WalletCreated(_wallet, _owner, _ensLabel);
     }
 
     function registerENS(
