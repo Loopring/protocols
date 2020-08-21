@@ -140,7 +140,7 @@ contract WalletFactory is ReentrancyGuard
         }
 
         if (_wallet == address(0)) {
-            _wallet= createAdobeInternal(walletImplementation, _modules, false);
+            _wallet = createAdobeInternal(walletImplementation, _modules, false);
         }
 
         BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
