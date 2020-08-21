@@ -106,7 +106,7 @@ contract WalletFactory is ReentrancyGuard
             _signature
         );
 
-        _wallet = createWallet_(_owner, _modules);
+        _wallet = createWallet_(_owner, _salt, _modules);
 
         initializeWallet_(
             _wallet,
@@ -163,12 +163,12 @@ contract WalletFactory is ReentrancyGuard
         registerENS_(msg.sender, _ensLabel, _ensApproval, _ensRegisterReverse);
     }
 
-    function computeWalletAddress(address owner)
+    function computeWalletAddress(address owner, uint salt)
         public
         view
         returns (address)
     {
-        return computeAddress_(PREFIX_WALLET_CREATION, uint(owner));
+        return computeAddress_(PREFIX_WALLET_CREATION, owner, salt);
     }
 
     function computeAdobeAddress(uint salt)
@@ -176,7 +176,7 @@ contract WalletFactory is ReentrancyGuard
         view
         returns (address)
     {
-        return computeAddress_(PREFIX_ADOBE_CREATION, salt);
+        return computeAddress_(PREFIX_ADOBE_CREATION, address(0), salt);
     }
 
     // ---- internal functions ---
@@ -202,7 +202,13 @@ contract WalletFactory is ReentrancyGuard
         internal
         returns (address adobe)
     {
-        adobe = deploy_(PREFIX_ADOBE_CREATION, implementation, modules, salt);
+        adobe = deploy_(
+            implementation,
+            modules,
+            PREFIX_ADOBE_CREATION,
+            address(0),
+            salt
+        );
         bytes32 version = keccak256(abi.encode(implementation, modules));
         adobes[adobe] = version;
 
@@ -211,24 +217,32 @@ contract WalletFactory is ReentrancyGuard
 
     function createWallet_(
         address   owner,
+        uint      salt,
         address[] calldata modules
         )
         internal
         returns (address wallet)
     {
-        return deploy_(PREFIX_WALLET_CREATION, walletImplementation, modules, uint(owner));
+        return deploy_(
+            walletImplementation,
+            modules,
+            PREFIX_WALLET_CREATION,
+            owner,
+            salt
+        );
     }
 
     function deploy_(
-        string    memory   prefix,
         address            implementation,
         address[] calldata modules,
+        string    memory   prefix,
+        address            owner,
         uint               salt
         )
         internal
         returns (address wallet)
     {
-        bytes32 salt_ = keccak256(abi.encodePacked(prefix, salt));
+        bytes32 salt_ = keccak256(abi.encodePacked(prefix, owner, salt));
         wallet = Create2.deploy(salt_, type(SimpleProxy).creationCode);
 
         SimpleProxy proxy = SimpleProxy(wallet.toPayable());
@@ -292,6 +306,7 @@ contract WalletFactory is ReentrancyGuard
 
     function computeAddress_(
         string memory prefix,
+        address       owner,
         uint          salt
         )
         internal
@@ -299,7 +314,7 @@ contract WalletFactory is ReentrancyGuard
         returns (address)
     {
         return Create2.computeAddress(
-            keccak256(abi.encodePacked(prefix, salt)),
+            keccak256(abi.encodePacked(prefix, owner, salt)),
             type(SimpleProxy).creationCode
         );
     }
