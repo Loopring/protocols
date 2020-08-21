@@ -29,7 +29,12 @@ contract WalletFactory is ReentrancyGuard
     using AddressUtil for address;
     using SignatureUtil for bytes32;
 
-    event WalletCreated(address wallet, address owner, string ensLabel, bool consumedExistingAdobe);
+    event WalletCreated(
+        address wallet,
+        address owner,
+        string ensLabel,
+        bool consumedExistingAdobe
+    );
 
     mapping(bytes32 => address[]) versionedAdobes;
 
@@ -95,7 +100,7 @@ contract WalletFactory is ReentrancyGuard
     /// @param _ensRegisterReverse True to register reverse ENS.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
-    /// @param _preferAdobe True to use an existing adobe, if one can be found.
+    /// @param _preferExistingAdobe True to use an existing adobe, if one can be found.
     /// @return _wallet The new wallet address
     function createWallet(
         address            _owner,
@@ -104,7 +109,7 @@ contract WalletFactory is ReentrancyGuard
         bool               _ensRegisterReverse,
         address[] calldata _modules,
         bytes     calldata _signature,
-        bool               _preferAdobe
+        bool               _preferExistingAdobe
         )
         external
         payable
@@ -128,7 +133,7 @@ contract WalletFactory is ReentrancyGuard
             "INVALID_SIGNATURE"
         );
 
-        _wallet = getAdobe(_owner, _ensLabel, _modules, _preferAdobe);
+        _wallet = getAdobe(_owner, _ensLabel, _modules, _preferExistingAdobe);
 
         BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
 
@@ -223,12 +228,12 @@ contract WalletFactory is ReentrancyGuard
         address          _owner,
         string    memory _ensLabel,
         address[] memory _modules,
-        bool             _preferAdobe
+        bool             _preferExistingAdobe
         )
         internal
         returns (address _wallet)
     {
-        if (_preferAdobe) {
+        if (_preferExistingAdobe) {
             bytes32 version = keccak256(abi.encode(walletImplementation, _modules));
             address[] storage adobes = versionedAdobes[version];
             if (adobes.length > 0) {
