@@ -114,10 +114,7 @@ abstract contract ForwarderModule is BaseModule
     {
         uint gasLeft = gasleft();
         uint gasLimit = (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD);
-        require(
-            gasLeft >= gasLimit,
-            "INSUFFICIENT_GAS"
-        );
+        require(gasLeft >= gasLimit, "INSUFFICIENT_GAS");
 
         uint gasCost = gasLimit.mul(metaTx.gasPrice);
         require(
