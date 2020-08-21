@@ -56,7 +56,6 @@ contract WalletFactory is ReentrancyGuard
         allowEmptyENS = _allowEmptyENS;
     }
 
-
     /// @dev Create a new wallet adobe to be used in the future.
     /// @param _implementation The wallet's implementation.
     /// @param _modules The wallet's modules.
@@ -72,7 +71,6 @@ contract WalletFactory is ReentrancyGuard
             createAdobe(_implementation, _modules, true);
         }
     }
-
 
     /// @dev Returns the number of available adobes for a version
     /// @param _implementation The wallet's implementation.
