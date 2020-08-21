@@ -31,7 +31,7 @@ contract WalletFactory is ReentrancyGuard
     using SignatureUtil for bytes32;
 
     event AdobeDeployed (address adobe,  bytes32 version);
-    event WalletCreated (address wallet, address owner);
+    event WalletCreated (address wallet, string ensLabel, address owner);
 
     mapping(address => bytes32) adobes;
 
@@ -93,23 +93,25 @@ contract WalletFactory is ReentrancyGuard
         payable
         returns (address _wallet)
     {
-        require(_owner != address(0) && !_owner.isContract(), "INVALID_OWNER");
-        require(_modules.length > 0, "EMPTY_MODULES");
+        {
+            require(_owner != address(0) && !_owner.isContract(), "INVALID_OWNER");
+            require(_modules.length > 0, "EMPTY_MODULES");
 
-        bytes memory encodedRequest = abi.encode(
-            CREATE_WALLET_TYPEHASH,
-            _owner,
-            keccak256(bytes(_ensLabel)),
-            keccak256(_ensApproval),
-            _ensRegisterReverse,
-            keccak256(abi.encode(_modules))
-        );
+            bytes memory encodedRequest = abi.encode(
+                CREATE_WALLET_TYPEHASH,
+                _owner,
+                keccak256(bytes(_ensLabel)),
+                keccak256(_ensApproval),
+                _ensRegisterReverse,
+                keccak256(abi.encode(_modules))
+            );
 
-        require(
-            EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest)
-                .verifySignature(_owner, _signature),
-            "INVALID_SIGNATURE"
-        );
+            require(
+                EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest)
+                    .verifySignature(_owner, _signature),
+                "INVALID_SIGNATURE"
+            );
+        }
 
         _wallet = _adobe == address(0)?
             deployWallet(_owner, _modules) :
@@ -120,7 +122,16 @@ contract WalletFactory is ReentrancyGuard
         registerENS_(_wallet, _ensLabel, _ensApproval);
         registerReverseENS_(_wallet, _ensRegisterReverse);
 
-        emit WalletCreated(_wallet, _owner);
+        emit WalletCreated(_wallet, _ensLabel, _owner);
+    }
+
+    function registerENS(
+        string calldata _ensLabel,
+        bytes  calldata _ensApproval
+        )
+        external
+    {
+        registerENS_(msg.sender, _ensLabel, _ensApproval);
     }
 
     function registerReverseENS()
@@ -130,55 +141,6 @@ contract WalletFactory is ReentrancyGuard
     }
 
     // ---- internal functions ---
-
-    function registerENS_(
-        address       wallet,
-        string memory ensLabel,
-        bytes  memory ensApproval
-        )
-        internal
-    {
-
-        if (bytes(ensLabel).length == 0) {
-            return;
-        }
-
-        require(
-            bytes(ensLabel).length > 0 &&
-            bytes(ensApproval).length > 0,
-            "INVALID_LABEL_OR_SIG"
-        );
-
-        BaseENSManager ensManager = controller.ensManager();
-        ensManager.register(wallet, ensLabel, ensApproval);
-    }
-
-    function registerReverseENS_(
-        address wallet,
-        bool    ensRegisterReverse
-        )
-        internal
-    {
-        if (!ensRegisterReverse) {
-            return;
-        }
-
-        BaseENSManager ensManager = controller.ensManager();
-        require(address(ensManager) != address(0), "NO_EMS_MANAGER");
-
-        bytes memory data = abi.encodeWithSelector(
-            ENSReverseRegistrar.claimWithResolver.selector,
-            address(0), // the owner of the reverse record
-            ensManager.ensResolver()
-        );
-
-        Wallet(wallet).transact(
-            uint8(1),
-            address(ensManager.getENSReverseRegistrar()),
-            0, // value
-            data
-        );
-    }
 
     function deployAdobe(
         address   implementation,
@@ -232,5 +194,54 @@ contract WalletFactory is ReentrancyGuard
         for (uint i = 0; i < modules.length; i++) {
             w.addModule(modules[i]);
         }
+    }
+
+    function registerENS_(
+        address       wallet,
+        string memory ensLabel,
+        bytes  memory ensApproval
+        )
+        internal
+    {
+
+        if (bytes(ensLabel).length == 0) {
+            return;
+        }
+
+        require(
+            bytes(ensLabel).length > 0 &&
+            bytes(ensApproval).length > 0,
+            "INVALID_LABEL_OR_SIG"
+        );
+
+        BaseENSManager ensManager = controller.ensManager();
+        ensManager.register(wallet, ensLabel, ensApproval);
+    }
+
+    function registerReverseENS_(
+        address wallet,
+        bool    ensRegisterReverse
+        )
+        internal
+    {
+        if (!ensRegisterReverse) {
+            return;
+        }
+
+        BaseENSManager ensManager = controller.ensManager();
+        require(address(ensManager) != address(0), "NO_EMS_MANAGER");
+
+        bytes memory data = abi.encodeWithSelector(
+            ENSReverseRegistrar.claimWithResolver.selector,
+            address(0), // the owner of the reverse record
+            ensManager.ensResolver()
+        );
+
+        Wallet(wallet).transact(
+            uint8(1),
+            address(ensManager.getENSReverseRegistrar()),
+            0, // value
+            data
+        );
     }
 }
