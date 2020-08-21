@@ -117,6 +117,15 @@ contract WalletFactory is ReentrancyGuard
         );
     }
 
+    /// @dev Create a new wallet by using a pre-deployed adobe.
+    /// @param _owner The wallet's owner.
+    /// @param _adobe The address of the adobe to use.
+    /// @param _ensLabel The ENS subdomain to register, use "" to skip.
+    /// @param _ensApproval The signature for ENS subdomain approval.
+    /// @param _ensRegisterReverse True to register reverse ENS.
+    /// @param _modules The wallet's modules.
+    /// @param _signature The wallet owner's signature.
+    /// @return _wallet The new wallet address
     function createWallet2(
         address            _owner,
         address            _adobe,
