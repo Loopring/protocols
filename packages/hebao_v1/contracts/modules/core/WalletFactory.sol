@@ -93,7 +93,7 @@ contract WalletFactory is ReentrancyGuard
         payable
         returns (address _wallet)
     {
-        {
+        {   // Avoid stack too deep
             require(_owner != address(0) && !_owner.isContract(), "INVALID_OWNER");
             require(_modules.length > 0, "EMPTY_MODULES");
 
@@ -154,13 +154,13 @@ contract WalletFactory is ReentrancyGuard
 
         adobe = address(proxy);
 
-        bytes32 version = keccak256(abi.encode(implementation, modules));
-        adobes[adobe] = version;
-
         Wallet w = Wallet(adobe);
         for (uint i = 0; i < modules.length; i++) {
             w.addModule(modules[i]);
         }
+
+        bytes32 version = keccak256(abi.encode(implementation, modules));
+        adobes[adobe] = version;
 
         emit AdobeDeployed(adobe, version);
     }
@@ -188,7 +188,8 @@ contract WalletFactory is ReentrancyGuard
         bytes32 salt = keccak256(abi.encodePacked("WALLET_CREATION", owner));
         wallet = Create2.deploy(salt, type(SimpleProxy).creationCode);
 
-        SimpleProxy(wallet.toPayable()).setImplementation(walletImplementation);
+        SimpleProxy proxy = SimpleProxy(wallet.toPayable());
+        proxy.setImplementation(walletImplementation);
 
         Wallet w = Wallet(wallet);
         for (uint i = 0; i < modules.length; i++) {
