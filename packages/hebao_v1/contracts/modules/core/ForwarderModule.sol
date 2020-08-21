@@ -172,8 +172,9 @@ abstract contract ForwarderModule is BaseModule
             // private key is leaked, the hacker won't be able to deplete ether/tokens
             // as high meta-tx fees.
             bool skipQuota = success && (
-                metaTx.txAwareHash != 0 ||
-                metaTx.data.toBytes4(0) == WalletFactory.createWallet.selector &&
+                metaTx.txAwareHash != 0 || (
+                    metaTx.data.toBytes4(0) == WalletFactory.createWallet.selector ||
+                    metaTx.data.toBytes4(0) == WalletFactory.createWallet2.selector) &&
                 metaTx.to == controller().walletFactory()
             );
 

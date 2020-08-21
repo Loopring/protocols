@@ -43,7 +43,7 @@ contract WalletFactory is ReentrancyGuard
 
     bytes32 public DOMAIN_SEPERATOR;
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,string ensLabel,bytes ensApproval,address[] modules)"
+        "createWallet(address owner,uint256 salt,string ensLabel,bytes ensApproval,bool ensRegisterReverse,address[] modules)"
     );
 
     constructor(
@@ -76,19 +76,21 @@ contract WalletFactory is ReentrancyGuard
 
     /// @dev Create a new wallet by deploying a proxy.
     /// @param _owner The wallet's owner.
+    /// @param _salt A salt to adjust address.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
     /// @param _ensApproval The signature for ENS subdomain approval.
+    /// @param _ensRegisterReverse True to register reverse ENS.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
-    /// @param _adobe The uninitialized wallet address to use
     /// @return _wallet The new wallet address
     function createWallet(
         address            _owner,
+        uint               _salt,
         string    calldata _ensLabel,
         bytes     calldata _ensApproval,
+        bool               _ensRegisterReverse,
         address[] calldata _modules,
-        bytes     calldata _signature,
-        address            _adobe
+        bytes     calldata _signature
         )
         external
         payable
@@ -101,8 +103,10 @@ contract WalletFactory is ReentrancyGuard
             bytes memory encodedRequest = abi.encode(
                 CREATE_WALLET_TYPEHASH,
                 _owner,
+                _salt,
                 keccak256(bytes(_ensLabel)),
                 keccak256(_ensApproval),
+                _ensRegisterReverse,
                 keccak256(abi.encode(_modules))
             );
 
@@ -113,26 +117,74 @@ contract WalletFactory is ReentrancyGuard
             );
         }
 
-        _wallet = _adobe == address(0)?
-            createWallet_(_owner, _modules) :
-            consumeAdobe_(_adobe, _modules);
+        _wallet = createWallet_(_owner, _modules);
 
         BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
 
         if (bytes(_ensLabel).length > 0) {
-            registerENS_(_wallet, _ensLabel, _ensApproval);
+            registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
+        }
+
+        emit WalletCreated(_wallet, _ensLabel, _owner);
+
+    }
+
+    function createWallet2(
+        address            _owner,
+        address            _adobe,
+        string    calldata _ensLabel,
+        bytes     calldata _ensApproval,
+        bool               _ensRegisterReverse,
+        address[] calldata _modules,
+        bytes     calldata _signature
+        )
+        external
+        payable
+        returns (address _wallet)
+    {
+        {   // Avoid stack too deep
+            require(_owner != address(0) && !_owner.isContract(), "INVALID_OWNER");
+            require(_modules.length > 0, "EMPTY_MODULES");
+
+            require(_adobe != address(0), "INVALID_ADOBE");
+
+            bytes memory encodedRequest = abi.encode(
+                CREATE_WALLET_TYPEHASH,
+                _owner,
+                uint(_adobe),
+                keccak256(bytes(_ensLabel)),
+                keccak256(_ensApproval),
+                _ensRegisterReverse,
+                keccak256(abi.encode(_modules))
+            );
+
+            require(
+                EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest)
+                    .verifySignature(_owner, _signature),
+                "INVALID_SIGNATURE"
+            );
+        }
+
+        _wallet = consumeAdobe_(_adobe, _modules);
+
+        BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
+
+        if (bytes(_ensLabel).length > 0) {
+            registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
         }
 
         emit WalletCreated(_wallet, _ensLabel, _owner);
     }
 
+
     function registerENS(
         string calldata _ensLabel,
-        bytes  calldata _ensApproval
+        bytes  calldata _ensApproval,
+        bool            _ensRegisterReverse
         )
         external
     {
-        registerENS_(msg.sender, _ensLabel, _ensApproval);
+        registerENS_(msg.sender, _ensLabel, _ensApproval, _ensRegisterReverse);
     }
 
     function computeWalletAddress(address owner)
@@ -229,7 +281,8 @@ contract WalletFactory is ReentrancyGuard
     function registerENS_(
         address       wallet,
         string memory ensLabel,
-        bytes  memory ensApproval
+        bytes  memory ensApproval,
+        bool          ensRegisterReverse
         )
         internal
     {
@@ -242,17 +295,19 @@ contract WalletFactory is ReentrancyGuard
         BaseENSManager ensManager = controller.ensManager();
         ensManager.register(wallet, ensLabel, ensApproval);
 
-        bytes memory data = abi.encodeWithSelector(
-            ENSReverseRegistrar.claimWithResolver.selector,
-            address(0), // the owner of the reverse record
-            ensManager.ensResolver()
-        );
+        if (ensRegisterReverse) {
+            bytes memory data = abi.encodeWithSelector(
+                ENSReverseRegistrar.claimWithResolver.selector,
+                address(0), // the owner of the reverse record
+                ensManager.ensResolver()
+            );
 
-        Wallet(wallet).transact(
-            uint8(1),
-            address(ensManager.getENSReverseRegistrar()),
-            0, // value
-            data
-        );
+            Wallet(wallet).transact(
+                uint8(1),
+                address(ensManager.getENSReverseRegistrar()),
+                0, // value
+                data
+            );
+        }
     }
 }
