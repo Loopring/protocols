@@ -29,8 +29,7 @@ contract WalletFactory is ReentrancyGuard
     using AddressUtil for address;
     using SignatureUtil for bytes32;
 
-    event WalletCreated(address wallet, address owner, string ensLabel);
-    event AdobeConsumed(address wallet);
+    event WalletCreated(address wallet, address owner, string ensLabel, bool consumedExistingAdobe);
 
     mapping(bytes32 => address[]) versionedAdobes;
 
@@ -129,19 +128,7 @@ contract WalletFactory is ReentrancyGuard
             "INVALID_SIGNATURE"
         );
 
-        if (_preferAdobe) {
-            bytes32 version = keccak256(abi.encode(walletImplementation, _modules));
-            address[] storage adobes = versionedAdobes[version];
-            if (adobes.length > 0) {
-                _wallet = adobes[adobes.length - 1];
-                adobes.pop();
-                emit AdobeConsumed(_wallet);
-            }
-        }
-
-        if (_wallet == address(0)) {
-            _wallet = createAdobe(walletImplementation, _modules, false);
-        }
+        _wallet = getAdobe(_owner, _ensLabel, _modules, _preferAdobe);
 
         BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
 
@@ -154,9 +141,10 @@ contract WalletFactory is ReentrancyGuard
         } else {
             require(allowEmptyENS, "INVALID_ENS_LABEL");
         }
-
-        emit WalletCreated(_wallet, _owner, _ensLabel);
     }
+
+
+
 
     function registerENS(
         address        wallet,
@@ -209,8 +197,8 @@ contract WalletFactory is ReentrancyGuard
 
     function createAdobe(
         address   implementation,
-        address[] calldata modules,
-        bool      register
+        address[] memory modules,
+        bool      registerAdobe
         )
         internal
         returns (address adobe)
@@ -225,9 +213,34 @@ contract WalletFactory is ReentrancyGuard
             w.addModule(modules[i]);
         }
 
-        if (register) {
+        if (registerAdobe) {
             bytes32 version = keccak256(abi.encode(implementation, modules));
             versionedAdobes[version].push(adobe);
+        }
+    }
+
+    function getAdobe(
+        address          _owner,
+        string    memory _ensLabel,
+        address[] memory _modules,
+        bool             _preferAdobe
+        )
+        internal
+        returns (address _wallet)
+    {
+        if (_preferAdobe) {
+            bytes32 version = keccak256(abi.encode(walletImplementation, _modules));
+            address[] storage adobes = versionedAdobes[version];
+            if (adobes.length > 0) {
+                _wallet = adobes[adobes.length - 1];
+                adobes.pop();
+                emit WalletCreated(_wallet, _owner, _ensLabel, true);
+            }
+        }
+
+        if (_wallet == address(0)) {
+            _wallet = createAdobe(walletImplementation, _modules, false);
+            emit WalletCreated(_wallet, _owner, _ensLabel, false);
         }
     }
 }
