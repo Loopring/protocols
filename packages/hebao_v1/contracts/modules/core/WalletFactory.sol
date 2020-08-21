@@ -62,7 +62,7 @@ contract WalletFactory is ReentrancyGuard
     /// @param _implementation The wallet's implementation.
     /// @param _modules The wallet's modules.
     /// @param _count The number of adobes to create.
-    function createAdobe(
+    function createAdobes(
         address   _implementation,
         address[] calldata _modules,
         uint               _count
@@ -70,7 +70,7 @@ contract WalletFactory is ReentrancyGuard
         external
     {
         for (uint i = 0; i < _count; i++) {
-            createAdobeInternal(_implementation, _modules, true);
+            createAdobe(_implementation, _modules, true);
         }
     }
 
@@ -79,14 +79,14 @@ contract WalletFactory is ReentrancyGuard
     ///      The adobe will be used in the future.
     /// @param _modules The wallet's modules.
     /// @param _count The number of adobes to create.
-    function createAdobe(
+    function createAdobes(
         address[] calldata _modules,
         uint               _count
         )
         external
     {
         for (uint i = 0; i < _count; i++) {
-            createAdobeInternal(walletImplementation, _modules, true);
+            createAdobe(walletImplementation, _modules, true);
         }
     }
 
@@ -140,7 +140,7 @@ contract WalletFactory is ReentrancyGuard
         }
 
         if (_wallet == address(0)) {
-            _wallet = createAdobeInternal(walletImplementation, _modules, false);
+            _wallet = createAdobe(walletImplementation, _modules, false);
         }
 
         BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
@@ -207,7 +207,7 @@ contract WalletFactory is ReentrancyGuard
         );
     }
 
-    function createAdobeInternal(
+    function createAdobe(
         address   implementation,
         address[] calldata modules,
         bool      register
