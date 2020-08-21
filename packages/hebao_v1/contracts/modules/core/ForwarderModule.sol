@@ -114,12 +114,12 @@ abstract contract ForwarderModule is BaseModule
     {
         uint gasLeft = gasleft();
         uint gasLimit = (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD);
-        require(gasLeft >= gasLimit, "INSUFFICIENT_GAS");
+        require(gasLeft >= gasLimit, "OPERATOR_INSUFFICIENT_GAS");
 
         uint gasCost = gasLimit.mul(metaTx.gasPrice);
         require(
             ERC20(metaTx.gasToken).balanceOf(metaTx.from) >= gasCost,
-            "INSUFFICIENT_FEE"
+            "WALLET_INSUFFICIENT_GAS"
         );
 
         // The trick is to append the really logical message sender and the
