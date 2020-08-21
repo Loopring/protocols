@@ -24,6 +24,7 @@ library ExchangeDeposits
     event DepositRequested(
         address owner,
         address token,
+        uint16  tokenId,
         uint96  amount
     );
 
@@ -62,6 +63,7 @@ library ExchangeDeposits
         emit DepositRequested(
             to,
             tokenAddress,
+            tokenID,
             uint96(amountDeposited)
         );
     }
