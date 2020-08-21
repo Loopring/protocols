@@ -31,10 +31,9 @@ contract WalletFactory is ReentrancyGuard
     using SignatureUtil for bytes32;
 
     event AdobeDeployed (address adobe,  bytes32 version);
-    event WalletCreated (address wallet, string ensLabel, address owner);
+    event WalletCreated (address wallet, string ensLabel, address owner, bool adobeUsed);
 
-    string constant public PREFIX_WALLET_CREATION = "WALLET_CREATION";
-    string constant public PREFIX_ADOBE_CREATION  = "ADOBE_CREATION";
+    string constant public WALLET_CREATION = "WALLET_CREATION";
 
     mapping(address => bytes32) adobes;
 
@@ -113,7 +112,8 @@ contract WalletFactory is ReentrancyGuard
             _owner,
             _ensLabel,
             _ensApproval,
-            _ensRegisterReverse
+            _ensRegisterReverse,
+            false
         );
     }
 
@@ -149,7 +149,8 @@ contract WalletFactory is ReentrancyGuard
             _owner,
             _ensLabel,
             _ensApproval,
-            _ensRegisterReverse
+            _ensRegisterReverse,
+            true
         );
     }
 
@@ -168,7 +169,7 @@ contract WalletFactory is ReentrancyGuard
         view
         returns (address)
     {
-        return computeAddress_(PREFIX_WALLET_CREATION, owner, salt);
+        return computeAddress_(WALLET_CREATION, owner, salt);
     }
 
     function computeAdobeAddress(uint salt)
@@ -176,7 +177,7 @@ contract WalletFactory is ReentrancyGuard
         view
         returns (address)
     {
-        return computeAddress_(PREFIX_ADOBE_CREATION, address(0), salt);
+        return computeAddress_(WALLET_CREATION, address(0), salt);
     }
 
     // ---- internal functions ---
@@ -205,7 +206,7 @@ contract WalletFactory is ReentrancyGuard
         adobe = deploy_(
             implementation,
             modules,
-            PREFIX_ADOBE_CREATION,
+            WALLET_CREATION,
             address(0),
             salt
         );
@@ -226,7 +227,7 @@ contract WalletFactory is ReentrancyGuard
         return deploy_(
             walletImplementation,
             modules,
-            PREFIX_WALLET_CREATION,
+            WALLET_CREATION,
             owner,
             salt
         );
@@ -291,7 +292,8 @@ contract WalletFactory is ReentrancyGuard
         address       _owner,
         string memory _ensLabel,
         bytes  memory _ensApproval,
-        bool          _ensRegisterReverse
+        bool          _ensRegisterReverse,
+        bool          _adobeUsed
         )
         private
     {
@@ -301,7 +303,7 @@ contract WalletFactory is ReentrancyGuard
             registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
         }
 
-        emit WalletCreated(_wallet, _ensLabel, _owner);
+        emit WalletCreated(_wallet, _ensLabel, _owner, _adobeUsed);
     }
 
     function computeAddress_(
