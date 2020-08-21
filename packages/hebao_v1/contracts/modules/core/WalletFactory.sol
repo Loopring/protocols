@@ -97,7 +97,7 @@ contract WalletFactory is ReentrancyGuard
     /// @param _ensRegisterReverse True to register reverse ENS.
     /// @param _modules The wallet's modules.
     /// @param _signature The wallet owner's signature.
-    /// @param _useAdobe True to use an existing adobe, if one can be found.
+    /// @param _preferUsingAdobe True to use an existing adobe, if one can be found.
     /// @return _wallet The new wallet address
     function createWallet(
         address            _owner,
@@ -106,7 +106,7 @@ contract WalletFactory is ReentrancyGuard
         bool               _ensRegisterReverse,
         address[] calldata _modules,
         bytes     calldata _signature,
-        bool               _useAdobe
+        bool               _preferUsingAdobe
         )
         external
         payable
@@ -130,7 +130,7 @@ contract WalletFactory is ReentrancyGuard
             "INVALID_SIGNATURE"
         );
 
-        if (_useAdobe) {
+        if (_preferUsingAdobe) {
             bytes32 version = keccak256(abi.encode(walletImplementation, _modules));
             address[] storage adobes = versionedAdobes[version];
             if (adobes.length > 0) {
