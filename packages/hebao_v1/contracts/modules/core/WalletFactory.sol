@@ -96,37 +96,25 @@ contract WalletFactory is ReentrancyGuard
         payable
         returns (address _wallet)
     {
-        {   // Avoid stack too deep
-            require(_owner != address(0) && !_owner.isContract(), "INVALID_OWNER");
-            require(_modules.length > 0, "EMPTY_MODULES");
-
-            bytes memory encodedRequest = abi.encode(
-                CREATE_WALLET_TYPEHASH,
-                _owner,
-                _salt,
-                keccak256(bytes(_ensLabel)),
-                keccak256(_ensApproval),
-                _ensRegisterReverse,
-                keccak256(abi.encode(_modules))
-            );
-
-            require(
-                EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest)
-                    .verifySignature(_owner, _signature),
-                "INVALID_SIGNATURE"
-            );
-        }
+        validateRequest_(
+            _owner,
+            _salt,
+            _ensLabel,
+            _ensApproval,
+            _ensRegisterReverse,
+            _modules,
+            _signature
+        );
 
         _wallet = createWallet_(_owner, _modules);
 
-        BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
-
-        if (bytes(_ensLabel).length > 0) {
-            registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
-        }
-
-        emit WalletCreated(_wallet, _ensLabel, _owner);
-
+        initializeWallet_(
+            _wallet,
+            _owner,
+            _ensLabel,
+            _ensApproval,
+            _ensRegisterReverse
+        );
     }
 
     function createWallet2(
@@ -142,40 +130,28 @@ contract WalletFactory is ReentrancyGuard
         payable
         returns (address _wallet)
     {
-        {   // Avoid stack too deep
-            require(_owner != address(0) && !_owner.isContract(), "INVALID_OWNER");
-            require(_modules.length > 0, "EMPTY_MODULES");
+        require(_adobe != address(0), "INVALID_ADOBE");
 
-            require(_adobe != address(0), "INVALID_ADOBE");
-
-            bytes memory encodedRequest = abi.encode(
-                CREATE_WALLET_TYPEHASH,
-                _owner,
-                uint(_adobe),
-                keccak256(bytes(_ensLabel)),
-                keccak256(_ensApproval),
-                _ensRegisterReverse,
-                keccak256(abi.encode(_modules))
-            );
-
-            require(
-                EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest)
-                    .verifySignature(_owner, _signature),
-                "INVALID_SIGNATURE"
-            );
-        }
+        validateRequest_(
+            _owner,
+            uint(_adobe),
+            _ensLabel,
+            _ensApproval,
+            _ensRegisterReverse,
+            _modules,
+            _signature
+        );
 
         _wallet = consumeAdobe_(_adobe, _modules);
 
-        BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
-
-        if (bytes(_ensLabel).length > 0) {
-            registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
-        }
-
-        emit WalletCreated(_wallet, _ensLabel, _owner);
+        initializeWallet_(
+            _wallet,
+            _owner,
+            _ensLabel,
+            _ensApproval,
+            _ensRegisterReverse
+        );
     }
-
 
     function registerENS(
         string calldata _ensLabel,
@@ -262,6 +238,56 @@ contract WalletFactory is ReentrancyGuard
         for (uint i = 0; i < modules.length; i++) {
             w.addModule(modules[i]);
         }
+    }
+
+    function validateRequest_(
+        address            _owner,
+        uint               _adobeOrSalt,
+        string    memory   _ensLabel,
+        bytes     memory   _ensApproval,
+        bool               _ensRegisterReverse,
+        address[] memory   _modules,
+        bytes     memory   _signature
+        )
+        private
+        view
+    {
+        require(_owner != address(0) && !_owner.isContract(), "INVALID_OWNER");
+        require(_modules.length > 0, "EMPTY_MODULES");
+
+        bytes memory encodedRequest = abi.encode(
+            CREATE_WALLET_TYPEHASH,
+            _owner,
+            uint(_adobeOrSalt),
+            keccak256(bytes(_ensLabel)),
+            keccak256(_ensApproval),
+            _ensRegisterReverse,
+            keccak256(abi.encode(_modules))
+        );
+
+        require(
+            EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest)
+                .verifySignature(_owner, _signature),
+            "INVALID_SIGNATURE"
+        );
+    }
+
+    function initializeWallet_(
+        address       _wallet,
+        address       _owner,
+        string memory _ensLabel,
+        bytes  memory _ensApproval,
+        bool          _ensRegisterReverse
+        )
+        private
+    {
+        BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
+
+        if (bytes(_ensLabel).length > 0) {
+            registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
+        }
+
+        emit WalletCreated(_wallet, _ensLabel, _owner);
     }
 
     function computeAddress_(
