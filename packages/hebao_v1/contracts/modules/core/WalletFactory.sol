@@ -29,7 +29,6 @@ contract WalletFactory is ReentrancyGuard
     using AddressUtil for address;
     using SignatureUtil for bytes32;
 
-    event AdobeCreated (address adobe,  bytes32 version);
     event WalletCreated(address wallet, address owner);
 
     mapping(bytes32 => address[]) versionedAdobes;
@@ -75,19 +74,20 @@ contract WalletFactory is ReentrancyGuard
     }
 
 
-    /// @dev Create a new wallet adobe using the current implementation.
-    ///      The adobe will be used in the future.
+    /// @dev Returns the number of available adobes for a version
+    /// @param _implementation The wallet's implementation.
     /// @param _modules The wallet's modules.
-    /// @param _count The number of adobes to create.
+    /// @param _count The number of adobes.
     function createAdobes(
-        address[] calldata _modules,
-        uint               _count
+        address   _implementation,
+        address[] calldata _modules
         )
-        external
+        public
+        view
+        returns (uint _count)
     {
-        for (uint i = 0; i < _count; i++) {
-            createAdobe(walletImplementation, _modules, true);
-        }
+        bytes32 version = keccak256(abi.encode(_implementation, _modules));
+        return versionedAdobes[version].length;
     }
 
     /// @dev Create a new wallet by deploying a proxy.
@@ -228,7 +228,6 @@ contract WalletFactory is ReentrancyGuard
         if (register) {
             bytes32 version = keccak256(abi.encode(implementation, modules));
             versionedAdobes[version].push(adobe);
-            emit AdobeCreated(adobe, version);
         }
     }
 }
