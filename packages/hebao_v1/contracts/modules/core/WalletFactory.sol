@@ -76,7 +76,7 @@ contract WalletFactory is ReentrancyGuard
     /// @param _implementation The wallet's implementation.
     /// @param _modules The wallet's modules.
     /// @param _count The number of adobes.
-    function createAdobes(
+    function countAdobes(
         address   _implementation,
         address[] calldata _modules
         )
