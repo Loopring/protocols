@@ -30,12 +30,12 @@ contract WalletFactory is ReentrancyGuard
     using AddressUtil for address;
     using SignatureUtil for bytes32;
 
-    event AdobeDeployed (address adobe,  bytes32 version);
-    event WalletCreated (address wallet, string ensLabel, address owner, bool adobeUsed);
+    event BlankDeployed (address blank,  bytes32 version);
+    event WalletCreated (address wallet, string ensLabel, address owner, bool blankUsed);
 
     string constant public WALLET_CREATION = "WALLET_CREATION";
 
-    mapping(address => bytes32) adobes;
+    mapping(address => bytes32) blanks;
 
     address        public walletImplementation;
     ControllerImpl public controller;
@@ -57,11 +57,11 @@ contract WalletFactory is ReentrancyGuard
         walletImplementation = _walletImplementation;
     }
 
-    /// @dev Create a set of new wallet adobes to be used in the future.
+    /// @dev Create a set of new wallet blanks to be used in the future.
     /// @param implementation The wallet's implementation.
     /// @param modules The wallet's modules.
     /// @param salts The salts that can be used to generate nice addresses.
-    function createAdobes(
+    function createBlanks(
         address   implementation,
         address[] calldata modules,
         uint[]    calldata salts
@@ -69,7 +69,7 @@ contract WalletFactory is ReentrancyGuard
         external
     {
         for (uint i = 0; i < salts.length; i++) {
-            createAdobe_(implementation, modules, salts[i]);
+            createBlank_(implementation, modules, salts[i]);
         }
     }
 
@@ -117,9 +117,9 @@ contract WalletFactory is ReentrancyGuard
         );
     }
 
-    /// @dev Create a new wallet by using a pre-deployed adobe.
+    /// @dev Create a new wallet by using a pre-deployed blank.
     /// @param _owner The wallet's owner.
-    /// @param _adobe The address of the adobe to use.
+    /// @param _blank The address of the blank to use.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
     /// @param _ensApproval The signature for ENS subdomain approval.
     /// @param _ensRegisterReverse True to register reverse ENS.
@@ -128,7 +128,7 @@ contract WalletFactory is ReentrancyGuard
     /// @return _wallet The new wallet address
     function createWallet2(
         address            _owner,
-        address            _adobe,
+        address            _blank,
         string    calldata _ensLabel,
         bytes     calldata _ensApproval,
         bool               _ensRegisterReverse,
@@ -141,7 +141,7 @@ contract WalletFactory is ReentrancyGuard
     {
         validateRequest_(
             _owner,
-            uint(_adobe),
+            uint(_blank),
             _ensLabel,
             _ensApproval,
             _ensRegisterReverse,
@@ -149,7 +149,7 @@ contract WalletFactory is ReentrancyGuard
             _signature
         );
 
-        _wallet = consumeAdobe_(_adobe, _modules);
+        _wallet = consumeBlank_(_blank, _modules);
 
         initializeWallet_(
             _wallet,
@@ -179,7 +179,7 @@ contract WalletFactory is ReentrancyGuard
         return computeAddress_(WALLET_CREATION, owner, salt);
     }
 
-    function computeAdobeAddress(uint salt)
+    function computeBlankAddress(uint salt)
         public
         view
         returns (address)
@@ -189,28 +189,28 @@ contract WalletFactory is ReentrancyGuard
 
     // ---- internal functions ---
 
-    function consumeAdobe_(
-        address adobe,
+    function consumeBlank_(
+        address blank,
         address[] calldata modules
         )
         internal
         returns (address)
     {
         bytes32 version = keccak256(abi.encode(walletImplementation, modules));
-        require(adobes[adobe] == version, "INVALID_ADOBE");
-        delete adobes[adobe];
-        return adobe;
+        require(blanks[blank] == version, "INVALID_ADOBE");
+        delete blanks[blank];
+        return blank;
     }
 
-    function createAdobe_(
+    function createBlank_(
         address   implementation,
         address[] calldata modules,
         uint      salt
         )
         internal
-        returns (address adobe)
+        returns (address blank)
     {
-        adobe = deploy_(
+        blank = deploy_(
             implementation,
             modules,
             WALLET_CREATION,
@@ -218,9 +218,9 @@ contract WalletFactory is ReentrancyGuard
             salt
         );
         bytes32 version = keccak256(abi.encode(implementation, modules));
-        adobes[adobe] = version;
+        blanks[blank] = version;
 
-        emit AdobeDeployed(adobe, version);
+        emit BlankDeployed(blank, version);
     }
 
     function createWallet_(
@@ -264,7 +264,7 @@ contract WalletFactory is ReentrancyGuard
 
     function validateRequest_(
         address            _owner,
-        uint               _adobeOrSalt,
+        uint               _blankOrSalt,
         string    memory   _ensLabel,
         bytes     memory   _ensApproval,
         bool               _ensRegisterReverse,
@@ -280,7 +280,7 @@ contract WalletFactory is ReentrancyGuard
         bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
-            uint(_adobeOrSalt),
+            uint(_blankOrSalt),
             keccak256(bytes(_ensLabel)),
             keccak256(_ensApproval),
             _ensRegisterReverse,
@@ -300,7 +300,7 @@ contract WalletFactory is ReentrancyGuard
         string memory _ensLabel,
         bytes  memory _ensApproval,
         bool          _ensRegisterReverse,
-        bool          _adobeUsed
+        bool          _blankUsed
         )
         private
     {
@@ -310,7 +310,7 @@ contract WalletFactory is ReentrancyGuard
             registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
         }
 
-        emit WalletCreated(_wallet, _ensLabel, _owner, _adobeUsed);
+        emit WalletCreated(_wallet, _ensLabel, _owner, _blankUsed);
     }
 
     function computeAddress_(
