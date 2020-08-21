@@ -11,6 +11,7 @@ import "../../lib/SimpleProxy.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
+import "../../thirdparty/Create2.sol";
 import "../../thirdparty/ens/BaseENSManager.sol";
 import "../../thirdparty/ens/ENS.sol";
 import "../ControllerImpl.sol";
@@ -29,13 +30,12 @@ contract WalletFactory is ReentrancyGuard
     using AddressUtil for address;
     using SignatureUtil for bytes32;
 
-    event AdobeCreated (address adobe,  bytes32 version);
-    event WalletCreated(address wallet, address owner);
+    event AdobeDeployed (address adobe,  bytes32 version);
+    event WalletCreated (address wallet, address owner);
 
     mapping(address => bytes32) adobes;
 
     address        public walletImplementation;
-    bool           public allowEmptyENS;
     ControllerImpl public controller;
 
     bytes32 public DOMAIN_SEPERATOR;
@@ -45,8 +45,7 @@ contract WalletFactory is ReentrancyGuard
 
     constructor(
         ControllerImpl _controller,
-        address        _walletImplementation,
-        bool           _allowEmptyENS
+        address        _walletImplementation
         )
     {
         DOMAIN_SEPERATOR = EIP712.hash(
@@ -54,36 +53,22 @@ contract WalletFactory is ReentrancyGuard
         );
         controller = _controller;
         walletImplementation = _walletImplementation;
-        allowEmptyENS = _allowEmptyENS;
     }
 
-
-    /// @dev Create a new wallet adobe to be used in the future.
-    /// @param _implementation The wallet's implementation.
-    /// @param _modules The wallet's modules.
-    /// @param _adobe The uninitialized wallet address to use
-    function createAdobe(
-        address   _implementation,
-        address[] calldata _modules
+    /// @dev Create a set of new wallet adobes to be used in the future.
+    /// @param implementation The wallet's implementation.
+    /// @param modules The wallet's modules.
+    /// @param count Number of adobes to create.
+    function createAdobes(
+        address   implementation,
+        address[] calldata modules,
+        uint      count
         )
         external
-        returns (address _adobe)
     {
-        return createAdobeInternal(_implementation, _modules, true);
-    }
-
-
-    /// @dev Create a new wallet adobe using the current implementation.
-    ///      The adobe will be used in the future.
-    /// @param _modules The wallet's modules.
-    /// @param _adobe The uninitialized wallet address to use
-    function createAdobe(
-        address[] calldata _modules
-        )
-        external
-        returns (address _adobe)
-    {
-        return createAdobeInternal(walletImplementation, _modules, true);
+        for (uint i = 0; i < count; i++) {
+            deployAdobe(implementation, modules);
+        }
     }
 
     /// @dev Create a new wallet by deploying a proxy.
@@ -126,63 +111,58 @@ contract WalletFactory is ReentrancyGuard
             "INVALID_SIGNATURE"
         );
 
-        if (_adobe == address(0)) {
-            _wallet= createAdobeInternal(walletImplementation, _modules, false);
-        } else {
-            bytes32 version = keccak256(abi.encode(walletImplementation, _modules));
-            require(adobes[_adobe] == version, "INVALID_ADOBE");
-
-            delete adobes[_adobe];
-            _wallet = _adobe;
-        }
+        _wallet = _adobe == address(0)?
+            deployWallet(_owner, _modules) :
+            consumeAdobe(_adobe, _modules);
 
         BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
 
-        if (bytes(_ensLabel).length > 0) {
-            registerENS(_wallet, _ensLabel, _ensApproval);
-
-            if (_ensRegisterReverse) {
-                registerReverseENSInternal(_wallet);
-            }
-        } else {
-            require(allowEmptyENS, "INVALID_ENS_LABEL");
-        }
+        registerENS_(_wallet, _ensLabel, _ensApproval);
+        registerReverseENS_(_wallet, _ensRegisterReverse);
 
         emit WalletCreated(_wallet, _owner);
     }
 
-    function registerENS(
-        address        wallet,
-        string memory  label,
-        bytes  memory  labelApproval
-        )
-        public
-    {
-        require(
-            bytes(label).length > 0 &&
-            bytes(labelApproval).length > 0,
-            "INVALID_LABEL_OR_SIG"
-        );
-
-        BaseENSManager ensManager = controller.ensManager();
-        require(address(ensManager) != address(0), "NO_EMS_MANAGER");
-
-        ensManager.register(wallet, label, labelApproval);
-    }
-
     function registerReverseENS()
-        public
+        external
     {
-        registerReverseENSInternal(msg.sender);
+        registerReverseENS_(msg.sender, true);
     }
 
     // ---- internal functions ---
 
-    function registerReverseENSInternal(
-        address wallet
+    function registerENS_(
+        address       wallet,
+        string memory ensLabel,
+        bytes  memory ensApproval
         )
         internal
     {
+
+        if (bytes(ensLabel).length == 0) {
+            return;
+        }
+
+        require(
+            bytes(ensLabel).length > 0 &&
+            bytes(ensApproval).length > 0,
+            "INVALID_LABEL_OR_SIG"
+        );
+
+        BaseENSManager ensManager = controller.ensManager();
+        ensManager.register(wallet, ensLabel, ensApproval);
+    }
+
+    function registerReverseENS_(
+        address wallet,
+        bool    ensRegisterReverse
+        )
+        internal
+    {
+        if (!ensRegisterReverse) {
+            return;
+        }
+
         BaseENSManager ensManager = controller.ensManager();
         require(address(ensManager) != address(0), "NO_EMS_MANAGER");
 
@@ -200,10 +180,9 @@ contract WalletFactory is ReentrancyGuard
         );
     }
 
-    function createAdobeInternal(
+    function deployAdobe(
         address   implementation,
-        address[] calldata modules,
-        bool      register
+        address[] calldata modules
         )
         internal
         returns (address adobe)
@@ -213,15 +192,45 @@ contract WalletFactory is ReentrancyGuard
 
         adobe = address(proxy);
 
+        bytes32 version = keccak256(abi.encode(implementation, modules));
+        adobes[adobe] = version;
+
         Wallet w = Wallet(adobe);
         for (uint i = 0; i < modules.length; i++) {
             w.addModule(modules[i]);
         }
 
-        if (register) {
-            bytes32 version = keccak256(abi.encode(implementation, modules));
-            adobes[adobe] = version;
-            emit AdobeCreated(adobe, version);
+        emit AdobeDeployed(adobe, version);
+    }
+
+    function consumeAdobe(
+        address adobe,
+        address[] calldata modules
+        )
+        internal
+        returns (address)
+    {
+        bytes32 version = keccak256(abi.encode(walletImplementation, modules));
+        require(adobes[adobe] == version, "INVALID_ADOBE");
+        delete adobes[adobe];
+        return adobe;
+    }
+
+    function deployWallet(
+        address   owner,
+        address[] calldata modules
+        )
+        internal
+        returns (address wallet)
+    {
+        bytes32 salt = keccak256(abi.encodePacked("WALLET_CREATION", owner));
+        wallet = Create2.deploy(salt, type(SimpleProxy).creationCode);
+
+        SimpleProxy(wallet.toPayable()).setImplementation(walletImplementation);
+
+        Wallet w = Wallet(wallet);
+        for (uint i = 0; i < modules.length; i++) {
+            w.addModule(modules[i]);
         }
     }
 }
