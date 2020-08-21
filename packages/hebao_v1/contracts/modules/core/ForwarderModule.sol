@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
+import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
@@ -112,10 +113,16 @@ abstract contract ForwarderModule is BaseModule
         )
     {
         uint gasLeft = gasleft();
-
+        uint gasLimit = (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD);
         require(
-            gasLeft >= (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD),
+            gasLeft >= gasLimit,
             "INSUFFICIENT_GAS"
+        );
+
+        uint gasCost = gasLimit.mul(metaTx.gasPrice);
+        require(
+            ERC20(metaTx.gasToken).balanceOf(metaTx.from) >= gasCost,
+            "INSUFFICIENT_FEE"
         );
 
         // The trick is to append the really logical message sender and the
