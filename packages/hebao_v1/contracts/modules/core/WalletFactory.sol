@@ -33,8 +33,8 @@ contract WalletFactory is ReentrancyGuard
     event AdobeDeployed (address adobe,  bytes32 version);
     event WalletCreated (address wallet, string ensLabel, address owner);
 
-    string constant PREFIX_WALLET_CREATION = "WALLET_CREATION";
-    string constant PREFIX_ADOBE_CREATION  = "ADOBE_CREATION";
+    string constant public PREFIX_WALLET_CREATION = "WALLET_CREATION";
+    string constant public PREFIX_ADOBE_CREATION  = "ADOBE_CREATION";
 
     mapping(address => bytes32) adobes;
 
@@ -70,12 +70,7 @@ contract WalletFactory is ReentrancyGuard
         external
     {
         for (uint i = 0; i < salts.length; i++) {
-            address adobe = deploy_(PREFIX_ADOBE_CREATION, implementation, modules, salts[i]);
-
-            bytes32 version = keccak256(abi.encode(implementation, modules));
-            adobes[adobe] = version;
-
-            emit AdobeDeployed(adobe, version);
+            createAdobe_(implementation, modules, salts[i]);
         }
     }
 
@@ -119,7 +114,7 @@ contract WalletFactory is ReentrancyGuard
         }
 
         _wallet = _adobe == address(0)?
-            deployWallet_(_owner, _modules) :
+            createWallet_(_owner, _modules) :
             consumeAdobe_(_adobe, _modules);
 
         BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
@@ -171,14 +166,29 @@ contract WalletFactory is ReentrancyGuard
         return adobe;
     }
 
-    function deployWallet_(
+    function createAdobe_(
+        address   implementation,
+        address[] calldata modules,
+        uint      salt
+        )
+        internal
+        returns (address adobe)
+    {
+        adobe = deploy_(PREFIX_ADOBE_CREATION, implementation, modules, salt);
+        bytes32 version = keccak256(abi.encode(implementation, modules));
+        adobes[adobe] = version;
+
+        emit AdobeDeployed(adobe, version);
+    }
+
+    function createWallet_(
         address   owner,
         address[] calldata modules
         )
         internal
         returns (address wallet)
     {
-        return deploy_(PREFIX_WALLET_CREATION, walletImplementation, modules,  uint(owner));
+        return deploy_(PREFIX_WALLET_CREATION, walletImplementation, modules, uint(owner));
     }
 
     function deploy_(
@@ -226,7 +236,7 @@ contract WalletFactory is ReentrancyGuard
         require(
             bytes(ensLabel).length > 0 &&
             bytes(ensApproval).length > 0,
-            "INVALID_LABEL_OR_SIG"
+            "INVALID_LABEL_OR_SIGNATURE"
         );
 
         BaseENSManager ensManager = controller.ensManager();
