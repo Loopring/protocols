@@ -33,6 +33,9 @@ contract WalletFactory is ReentrancyGuard
     event AdobeDeployed (address adobe,  bytes32 version);
     event WalletCreated (address wallet, string ensLabel, address owner);
 
+    string constant PREFIX_WALLET_CREATION = "WALLET_CREATION";
+    string constant PREFIX_ADOBE_CREATION  = "ADOBE_CREATION";
+
     mapping(address => bytes32) adobes;
 
     address        public walletImplementation;
@@ -58,16 +61,21 @@ contract WalletFactory is ReentrancyGuard
     /// @dev Create a set of new wallet adobes to be used in the future.
     /// @param implementation The wallet's implementation.
     /// @param modules The wallet's modules.
-    /// @param count Number of adobes to create.
+    /// @param salts The salts that can be used to generate nice addresses.
     function createAdobes(
         address   implementation,
         address[] calldata modules,
-        uint      count
+        uint[]    calldata salts
         )
         external
     {
-        for (uint i = 0; i < count; i++) {
-            deployAdobe(implementation, modules);
+        for (uint i = 0; i < salts.length; i++) {
+            address adobe = deploy_(PREFIX_ADOBE_CREATION, implementation, modules, salts[i]);
+
+            bytes32 version = keccak256(abi.encode(implementation, modules));
+            adobes[adobe] = version;
+
+            emit AdobeDeployed(adobe, version);
         }
     }
 
@@ -111,8 +119,8 @@ contract WalletFactory is ReentrancyGuard
         }
 
         _wallet = _adobe == address(0)?
-            deployWallet(_owner, _modules) :
-            consumeAdobe(_adobe, _modules);
+            deployWallet_(_owner, _modules) :
+            consumeAdobe_(_adobe, _modules);
 
         BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
 
@@ -132,32 +140,25 @@ contract WalletFactory is ReentrancyGuard
         registerENS_(msg.sender, _ensLabel, _ensApproval);
     }
 
-    // ---- internal functions ---
-
-    function deployAdobe(
-        address   implementation,
-        address[] calldata modules
-        )
-        internal
-        returns (address adobe)
+    function computeWalletAddress(address owner)
+        public
+        view
+        returns (address)
     {
-        SimpleProxy proxy = new SimpleProxy();
-        proxy.setImplementation(implementation);
-
-        adobe = address(proxy);
-
-        Wallet w = Wallet(adobe);
-        for (uint i = 0; i < modules.length; i++) {
-            w.addModule(modules[i]);
-        }
-
-        bytes32 version = keccak256(abi.encode(implementation, modules));
-        adobes[adobe] = version;
-
-        emit AdobeDeployed(adobe, version);
+        return computeAddress_(PREFIX_WALLET_CREATION, uint(owner));
     }
 
-    function consumeAdobe(
+    function computeAdobeAddress(uint salt)
+        public
+        view
+        returns (address)
+    {
+        return computeAddress_(PREFIX_ADOBE_CREATION, salt);
+    }
+
+    // ---- internal functions ---
+
+    function consumeAdobe_(
         address adobe,
         address[] calldata modules
         )
@@ -170,23 +171,49 @@ contract WalletFactory is ReentrancyGuard
         return adobe;
     }
 
-    function deployWallet(
+    function deployWallet_(
         address   owner,
         address[] calldata modules
         )
         internal
         returns (address wallet)
     {
-        bytes32 salt = keccak256(abi.encodePacked("WALLET_CREATION", owner));
-        wallet = Create2.deploy(salt, type(SimpleProxy).creationCode);
+        return deploy_(PREFIX_WALLET_CREATION, walletImplementation, modules,  uint(owner));
+    }
+
+    function deploy_(
+        string    memory   prefix,
+        address            implementation,
+        address[] calldata modules,
+        uint               salt
+        )
+        internal
+        returns (address wallet)
+    {
+        bytes32 salt_ = keccak256(abi.encodePacked(prefix, salt));
+        wallet = Create2.deploy(salt_, type(SimpleProxy).creationCode);
 
         SimpleProxy proxy = SimpleProxy(wallet.toPayable());
-        proxy.setImplementation(walletImplementation);
+        proxy.setImplementation(implementation);
 
         Wallet w = Wallet(wallet);
         for (uint i = 0; i < modules.length; i++) {
             w.addModule(modules[i]);
         }
+    }
+
+    function computeAddress_(
+        string memory prefix,
+        uint          salt
+        )
+        internal
+        view
+        returns (address)
+    {
+        return Create2.computeAddress(
+            keccak256(abi.encodePacked(prefix, salt)),
+            type(SimpleProxy).creationCode
+        );
     }
 
     function registerENS_(
