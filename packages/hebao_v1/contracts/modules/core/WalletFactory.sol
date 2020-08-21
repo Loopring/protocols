@@ -130,8 +130,6 @@ contract WalletFactory is ReentrancyGuard
         payable
         returns (address _wallet)
     {
-        require(_adobe != address(0), "INVALID_ADOBE");
-
         validateRequest_(
             _owner,
             uint(_adobe),
