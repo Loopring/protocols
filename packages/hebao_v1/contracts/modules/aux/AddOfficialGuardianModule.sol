@@ -13,7 +13,7 @@ import "../base/BaseModule.sol";
 ///      from the module list.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract OfficialGuardianModule is BaseModule {
+contract AddOfficialGuardianModule is BaseModule {
     event GuardianAdded (
         address indexed wallet,
         address         guardian,
