@@ -8,7 +8,7 @@ import "../../stores/SecurityStore.sol";
 import "../base/BaseModule.sol";
 
 
-/// @title OfficialGuardianModule
+/// @title AddOfficialGuardianModule
 /// @dev This module adds the official guardian to a wallet and removes itself
 ///      from the module list.
 ///
