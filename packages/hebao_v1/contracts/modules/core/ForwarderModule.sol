@@ -117,10 +117,19 @@ abstract contract ForwarderModule is BaseModule
         require(gasLeft >= gasLimit, "OPERATOR_INSUFFICIENT_GAS");
 
         uint gasCost = gasLimit.mul(metaTx.gasPrice);
-        require(
-            ERC20(metaTx.gasToken).balanceOf(metaTx.from) >= gasCost,
-            "WALLET_INSUFFICIENT_GAS"
-        );
+        if (metaTx.gasPrice > 0) {
+            if (metaTx.gasToken == address(0)) {
+                require(
+                    metaTx.from.balance >= gasCost,
+                    "WALLET_INSUFFICIENT_GAS"
+                );
+            } else {
+                require(
+                    ERC20(metaTx.gasToken).balanceOf(metaTx.from) >= gasCost,
+                    "WALLET_INSUFFICIENT_GAS"
+                );
+            }
+        }
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.

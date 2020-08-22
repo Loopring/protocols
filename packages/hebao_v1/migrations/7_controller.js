@@ -20,42 +20,34 @@ module.exports = function(deployer, network, accounts) {
   const lockPeriod = Number(process.env.controllerLockPeriod) || 1 * 24 * 3600;
   const collecTo = process.env.collectTo || accounts[1];
 
+  let priceOracle;
+  let controllerImpl;
   deployer
     .then(() => {
-      return Promise.all([deployer.deploy(TestPriceOracle)]);
+      return deployer.deploy(TestPriceOracle);
     })
-    .then(() => {
-      return Promise.all([
-        TestPriceOracle.deployed().then(priceOracle => {
-          return Promise.all([
-            deployer.deploy(
-              ControllerImpl,
-              ModuleRegistryImpl.address,
-              WalletRegistryImpl.address,
-              lockPeriod,
-              collecTo,
-              ensManagerAddr,
-              priceOracle.address,
-              true
-            )
-          ]);
-        })
-      ]);
+    .then(p => {
+      priceOracle = p;
+      return deployer.deploy(
+        ControllerImpl,
+        ModuleRegistryImpl.address,
+        WalletRegistryImpl.address,
+        lockPeriod,
+        collecTo,
+        ensManagerAddr,
+        priceOracle.address,
+        true
+      );
     })
-    .then(() => {
-      return Promise.all([
-        ControllerImpl.deployed().then(controllerImpl => {
-          return Promise.all([
-            controllerImpl.initStores(
-              DappAddressStore.address,
-              HashStore.address,
-              NonceStore.address,
-              QuotaStore.address,
-              SecurityStore.address,
-              WhitelistStore.address
-            )
-          ]);
-        })
-      ]);
+    .then(c => {
+      controllerImpl = c;
+      return controllerImpl.initStores(
+        DappAddressStore.address,
+        HashStore.address,
+        NonceStore.address,
+        QuotaStore.address,
+        SecurityStore.address,
+        WhitelistStore.address
+      );
     });
 };

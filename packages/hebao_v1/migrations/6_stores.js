@@ -9,30 +9,29 @@ const dappManager = process.env.APP_MANAGER || "";
 const loopringDEX = process.env.LOOPRING_DEX || "";
 
 module.exports = function(deployer, network, accounts) {
-  deployer
-    .then(() => {
-      return Promise.all([
-        deployer.deploy(DappAddressStore),
-        deployer.deploy(NonceStore),
-        deployer.deploy(HashStore),
-        deployer.deploy(QuotaStore, "1" + "0".repeat(19)), // 1000 wei for unit test
-        deployer.deploy(SecurityStore),
-        deployer.deploy(WhitelistStore)
-      ]);
-    })
-    .then(() => {
-      return Promise.all([
-        DappAddressStore.deployed().then(dappAddressStore => {
-          if (dappManager) {
-            console.log("add dappManager for dappAddressStore:", dappManager);
-            dappAddressStore.addManager(dappManager);
-          }
+  deployer.then(() => {
+    return Promise.all([
+      deployer.deploy(DappAddressStore),
+      deployer.deploy(NonceStore),
+      deployer.deploy(HashStore),
+      deployer.deploy(QuotaStore, "1" + "0".repeat(19)), // 1000 wei for unit test
+      deployer.deploy(SecurityStore),
+      deployer.deploy(WhitelistStore)
+    ]);
+  });
+  // .then(() => {
+  //   return Promise.all([
+  //     DappAddressStore.deployed().then(dappAddressStore => {
+  //       if (dappManager) {
+  //         console.log("add dappManager for dappAddressStore:", dappManager);
+  //         dappAddressStore.addManager(dappManager);
+  //       }
 
-          if (loopringDEX) {
-            console.log("add loopringDEX to dapp list:", loopringDEX);
-            dappAddressStore.addDapp(loopringDEX);
-          }
-        })
-      ]);
-    });
+  //       if (loopringDEX) {
+  //         console.log("add loopringDEX to dapp list:", loopringDEX);
+  //         dappAddressStore.addDapp(loopringDEX);
+  //       }
+  //     })
+  //   ]);
+  // });
 };
