@@ -5,9 +5,6 @@ const QuotaStore = artifacts.require("QuotaStore");
 const SecurityStore = artifacts.require("SecurityStore");
 const WhitelistStore = artifacts.require("WhitelistStore");
 
-const dappManager = process.env.APP_MANAGER || "";
-const loopringDEX = process.env.LOOPRING_DEX || "";
-
 module.exports = function(deployer, network, accounts) {
   deployer.then(() => {
     return Promise.all([
@@ -19,19 +16,4 @@ module.exports = function(deployer, network, accounts) {
       deployer.deploy(WhitelistStore)
     ]);
   });
-  // .then(() => {
-  //   return Promise.all([
-  //     DappAddressStore.deployed().then(dappAddressStore => {
-  //       if (dappManager) {
-  //         console.log("add dappManager for dappAddressStore:", dappManager);
-  //         dappAddressStore.addManager(dappManager);
-  //       }
-
-  //       if (loopringDEX) {
-  //         console.log("add loopringDEX to dapp list:", loopringDEX);
-  //         dappAddressStore.addDapp(loopringDEX);
-  //       }
-  //     })
-  //   ]);
-  // });
 };

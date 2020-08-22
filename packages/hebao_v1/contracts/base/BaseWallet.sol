@@ -87,7 +87,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         require(_initialOwner != address(0), "ZERO_ADDRESS");
 
         _owner = _initialOwner;
-        // controller.walletRegistry().registerWallet(address(this));
 
         emit WalletSetup(_initialOwner);
     }
