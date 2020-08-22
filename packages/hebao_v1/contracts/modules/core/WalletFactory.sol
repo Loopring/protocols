@@ -35,19 +35,21 @@ contract WalletFactory is ReentrancyGuard
 
     string constant public WALLET_CREATION = "WALLET_CREATION";
 
-    mapping(address => bytes32) blanks;
-
-    address        public walletImplementation;
-    ControllerImpl public controller;
-
-    bytes32 public DOMAIN_SEPERATOR;
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
         "createWallet(address owner,uint256 salt,string ensLabel,bytes ensApproval,bool ensRegisterReverse,address[] modules)"
     );
 
+    mapping(address => bytes32) blanks;
+
+    address        public walletImplementation;
+    bool           public allowEmptyENS;
+    ControllerImpl public controller;
+    bytes32        public DOMAIN_SEPERATOR;
+
     constructor(
         ControllerImpl _controller,
-        address        _walletImplementation
+        address        _walletImplementation,
+        bool           _allowEmptyENS
         )
     {
         DOMAIN_SEPERATOR = EIP712.hash(
@@ -55,6 +57,7 @@ contract WalletFactory is ReentrancyGuard
         );
         controller = _controller;
         walletImplementation = _walletImplementation;
+        allowEmptyENS = _allowEmptyENS;
     }
 
     /// @dev Create a set of new wallet blanks to be used in the future.
@@ -308,6 +311,8 @@ contract WalletFactory is ReentrancyGuard
 
         if (bytes(_ensLabel).length > 0) {
             registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
+        } else {
+            require(allowEmptyENS, "EMPTY_ENS_NOT_ALLOWED");
         }
 
         emit WalletCreated(_wallet, _ensLabel, _owner, _blankUsed);
