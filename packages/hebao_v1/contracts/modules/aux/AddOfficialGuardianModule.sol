@@ -60,8 +60,10 @@ contract AddOfficialGuardianModule is BaseModule {
         address payable wallet = msg.sender;
 
         SecurityStore ss = controller().securityStore();
-        uint numGuardians = ss.numGuardiansWithPending(wallet);
-        require(numGuardians == 0, "NOT_FIRST_GUARDIAN");
+        require(
+            ss.numGuardiansWithPending(wallet) == 0,
+            "NOT_THE_FIRST_GUARDIAN"
+        );
 
         ss.addGuardian(
             wallet,
