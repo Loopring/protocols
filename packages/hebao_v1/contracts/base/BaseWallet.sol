@@ -149,7 +149,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function addModule(address _module)
         external
         override
-    // onlyFromFactoryOrModule
+        onlyFromFactoryOrModule
     {
         addModuleInternal(_module);
     }
