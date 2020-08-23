@@ -179,7 +179,7 @@ contract WalletFactory is ReentrancyGuard
         view
         returns (address)
     {
-        return computeAddress_(WALLET_CREATION, owner, salt);
+        return computeAddress_(owner, salt);
     }
 
     function computeBlankAddress(uint salt)
@@ -187,7 +187,7 @@ contract WalletFactory is ReentrancyGuard
         view
         returns (address)
     {
-        return computeAddress_(WALLET_CREATION, address(0), salt);
+        return computeAddress_(address(0), salt);
     }
 
     // ---- internal functions ---
@@ -216,7 +216,6 @@ contract WalletFactory is ReentrancyGuard
         blank = deploy_(
             implementation,
             modules,
-            WALLET_CREATION,
             address(0),
             salt
         );
@@ -237,7 +236,6 @@ contract WalletFactory is ReentrancyGuard
         return deploy_(
             walletImplementation,
             modules,
-            WALLET_CREATION,
             owner,
             salt
         );
@@ -246,14 +244,13 @@ contract WalletFactory is ReentrancyGuard
     function deploy_(
         address            implementation,
         address[] calldata modules,
-        string    memory   prefix,
         address            owner,
         uint               salt
         )
         internal
         returns (address wallet)
     {
-        bytes32 salt_ = keccak256(abi.encodePacked(prefix, owner, salt));
+        bytes32 salt_ = keccak256(abi.encodePacked(WALLET_CREATION, owner, salt));
         wallet = Create2.deploy(salt_, type(SimpleProxy).creationCode);
 
         SimpleProxy proxy = SimpleProxy(wallet.toPayable());
@@ -319,7 +316,6 @@ contract WalletFactory is ReentrancyGuard
     }
 
     function computeAddress_(
-        string memory prefix,
         address       owner,
         uint          salt
         )
@@ -328,7 +324,7 @@ contract WalletFactory is ReentrancyGuard
         returns (address)
     {
         return Create2.computeAddress(
-            keccak256(abi.encodePacked(prefix, owner, salt)),
+            keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
             type(SimpleProxy).creationCode
         );
     }
