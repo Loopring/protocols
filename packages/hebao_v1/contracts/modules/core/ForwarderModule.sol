@@ -193,7 +193,6 @@ abstract contract ForwarderModule is BaseModule
         require(gasleft() >= gasLimit, "OPERATOR_INSUFFICIENT_GAS");
 
         // Check the wallet has enough meta tx gas
-
         if (metaTx.gasPrice  == 0) return;
 
         uint gasCost = gasLimit.mul(metaTx.gasPrice);

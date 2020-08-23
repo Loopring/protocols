@@ -198,7 +198,7 @@ contract WalletFactory is ReentrancyGuard
         internal
         returns (address)
     {
-        bytes32 version = keccak256(abi.encode(walletImplementation, modules));
+        bytes32 version = keccak256(abi.encode(modules));
         require(blanks[blank] == version, "INVALID_ADOBE");
         delete blanks[blank];
         return blank;
