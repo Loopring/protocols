@@ -61,18 +61,16 @@ contract WalletFactory is ReentrancyGuard
     }
 
     /// @dev Create a set of new wallet blanks to be used in the future.
-    /// @param implementation The wallet's implementation.
     /// @param modules The wallet's modules.
     /// @param salts The salts that can be used to generate nice addresses.
     function createBlanks(
-        address   implementation,
         address[] calldata modules,
         uint[]    calldata salts
         )
         external
     {
         for (uint i = 0; i < salts.length; i++) {
-            createBlank_(implementation, modules, salts[i]);
+            createBlank_(modules, salts[i]);
         }
     }
 
@@ -207,20 +205,14 @@ contract WalletFactory is ReentrancyGuard
     }
 
     function createBlank_(
-        address   implementation,
         address[] calldata modules,
         uint      salt
         )
         internal
         returns (address blank)
     {
-        blank = deploy_(
-            implementation,
-            modules,
-            address(0),
-            salt
-        );
-        bytes32 version = keccak256(abi.encode(implementation, modules));
+        blank = deploy_(modules, address(0), salt);
+        bytes32 version = keccak256(abi.encode(modules));
         blanks[blank] = version;
 
         emit BlankDeployed(blank, version);
@@ -234,16 +226,10 @@ contract WalletFactory is ReentrancyGuard
         internal
         returns (address wallet)
     {
-        return deploy_(
-            walletImplementation,
-            modules,
-            owner,
-            salt
-        );
+        return deploy_(modules, owner, salt);
     }
 
     function deploy_(
-        address            implementation,
         address[] calldata modules,
         address            owner,
         uint               salt
@@ -257,10 +243,10 @@ contract WalletFactory is ReentrancyGuard
         );
 
         SimpleProxy proxy = SimpleProxy(wallet);
-        proxy.setImplementation(implementation);
+        proxy.setImplementation(walletImplementation);
 
         BaseWallet w = BaseWallet(wallet);
-        w.initController(address(controller));
+        w.initController(controller);
         for (uint i = 0; i < modules.length; i++) {
             w.addModule(modules[i]);
         }

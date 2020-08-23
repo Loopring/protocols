@@ -98,18 +98,19 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     ///
     /// @param _controller The Controller instance.
     function initController(
-        address _controller
+        Controller _controller
         )
         external
         nonReentrant
     {
         require(
-            _owner == address(0) && address(controller) == address(0),
-            "CONTROLLER_INITIALIZED_ALREADY"
+            _owner == address(0) &&
+            controller == Controller(0) &&
+            _controller != Controller(0),
+            "CONTROLLER_INIT_FAILED"
         );
-        require(_controller != address(0), "ZERO_ADDRESS");
 
-        controller = Controller(_controller);
+        controller = _controller;
     }
 
     function owner()
