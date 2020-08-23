@@ -251,8 +251,10 @@ contract WalletFactory is ReentrancyGuard
         internal
         returns (address payable wallet)
     {
-        bytes32 salt_ = keccak256(abi.encodePacked(WALLET_CREATION, owner, salt));
-        wallet = Create2.deploy(salt_, type(SimpleProxy).creationCode);
+        wallet = Create2.deploy(
+            keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
+            type(SimpleProxy).creationCode
+        );
 
         SimpleProxy proxy = SimpleProxy(wallet);
         proxy.setImplementation(implementation);
