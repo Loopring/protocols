@@ -133,7 +133,8 @@ contract("WalletFactory", () => {
       ctx.walletFactory.contract.methods.registerENS(
         wallet,
         walletName,
-        ensApproval
+        ensApproval,
+        true
       ),
       ctx,
       useMetaTx,

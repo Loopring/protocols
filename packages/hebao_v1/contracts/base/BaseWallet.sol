@@ -65,20 +65,18 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     modifier onlyFromFactoryOrModule
     {
         require(
-            msg.sender == controller.walletFactory() || modules[msg.sender],
+            modules[msg.sender] || msg.sender == controller.walletFactory(),
             "UNAUTHORIZED"
         );
         _;
     }
 
-    /// @dev Set up this wallet by assigning an original owner and controller.
+    /// @dev Set up this wallet by assigning an original owner
     ///
     ///      Note that calling this method more than once will throw.
     ///
-    /// @param _controller The Controller instance.
     /// @param _initialOwner The owner of this wallet, must not be address(0).
-    function initialize(
-        address _controller,
+    function initOwner(
         address _initialOwner
         )
         external
@@ -88,12 +86,30 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         require(_owner == address(0), "INITIALIZED_ALREADY");
         require(_initialOwner != address(0), "ZERO_ADDRESS");
 
-        controller = Controller(_controller);
         _owner = _initialOwner;
 
-        controller.walletRegistry().registerWallet(address(this));
-
         emit WalletSetup(_initialOwner);
+    }
+
+    /// @dev Set up this wallet by assigning an controller.
+    ///
+    ///      Note that calling this method more than once will throw.
+    ///      And this method must be invoked before owner is initialized
+    ///
+    /// @param _controller The Controller instance.
+    function initController(
+        address _controller
+        )
+        external
+        nonReentrant
+    {
+        require(
+            _owner == address(0) && address(controller) == address(0),
+            "CONTROLLER_INITIALIZED_ALREADY"
+        );
+        require(_controller != address(0), "ZERO_ADDRESS");
+
+        controller = Controller(_controller);
     }
 
     function owner()

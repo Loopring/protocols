@@ -165,13 +165,14 @@ contract WalletFactory is ReentrancyGuard
     }
 
     function registerENS(
+        address         _wallet,
         string calldata _ensLabel,
         bytes  calldata _ensApproval,
         bool            _ensRegisterReverse
         )
         external
     {
-        registerENS_(msg.sender, _ensLabel, _ensApproval, _ensRegisterReverse);
+        registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
     }
 
     function computeWalletAddress(address owner, uint salt)
@@ -248,15 +249,16 @@ contract WalletFactory is ReentrancyGuard
         uint               salt
         )
         internal
-        returns (address wallet)
+        returns (address payable wallet)
     {
         bytes32 salt_ = keccak256(abi.encodePacked(WALLET_CREATION, owner, salt));
         wallet = Create2.deploy(salt_, type(SimpleProxy).creationCode);
 
-        SimpleProxy proxy = SimpleProxy(wallet.toPayable());
+        SimpleProxy proxy = SimpleProxy(wallet);
         proxy.setImplementation(implementation);
 
-        Wallet w = Wallet(wallet);
+        BaseWallet w = BaseWallet(wallet);
+        w.initController(address(controller));
         for (uint i = 0; i < modules.length; i++) {
             w.addModule(modules[i]);
         }
@@ -304,7 +306,8 @@ contract WalletFactory is ReentrancyGuard
         )
         private
     {
-        BaseWallet(_wallet.toPayable()).initialize(address(controller), _owner);
+        BaseWallet(_wallet.toPayable()).initOwner(_owner);
+        controller.walletRegistry().registerWallet(_wallet);
 
         if (bytes(_ensLabel).length > 0) {
             registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
