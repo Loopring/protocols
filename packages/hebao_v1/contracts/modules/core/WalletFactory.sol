@@ -31,6 +31,7 @@ contract WalletFactory is ReentrancyGuard
     using SignatureUtil for bytes32;
 
     event BlankDeployed (address blank,  bytes32 version);
+    event BlankConsumed (address blank);
     event WalletCreated (address wallet, string ensLabel, address owner, bool blankUsed);
 
     string constant public WALLET_CREATION = "WALLET_CREATION";
@@ -201,6 +202,7 @@ contract WalletFactory is ReentrancyGuard
         bytes32 version = keccak256(abi.encode(modules));
         require(blanks[blank] == version, "INVALID_ADOBE");
         delete blanks[blank];
+        emit BlankConsumed(blank);
         return blank;
     }
 
