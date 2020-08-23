@@ -14,13 +14,6 @@ import "../base/BaseModule.sol";
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 contract AddOfficialGuardianModule is BaseModule {
-    event GuardianAdded (
-        address indexed wallet,
-        address         guardian,
-        uint            group,
-        uint            effectiveTime
-    );
-
     ControllerImpl private controller_;
     address        public  officialGuardian;
     uint           public  officialGuardianGroup;
@@ -66,13 +59,6 @@ contract AddOfficialGuardianModule is BaseModule {
         );
 
         ss.addGuardian(
-            wallet,
-            officialGuardian,
-            officialGuardianGroup,
-            block.timestamp
-        );
-
-        emit GuardianAdded(
             wallet,
             officialGuardian,
             officialGuardianGroup,
