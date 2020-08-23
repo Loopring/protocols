@@ -127,7 +127,7 @@ contract("WalletFactory", () => {
     walletName: string = "",
     ensRegisterReverse: boolean = true
   ) => {
-    await ctx.walletFactory.createBlanks(ctx.walletImpl.address, modules, [0], {
+    await ctx.walletFactory.createBlanks(modules, [0], {
       from: owner
     });
     const blankWalletAddr = (
@@ -182,7 +182,11 @@ contract("WalletFactory", () => {
       ctx.walletFactory,
       "WalletCreated",
       (event: any) => {
-        return event.wallet === blankWalletAddr && event.owner === owner;
+        return (
+          event.wallet === blankWalletAddr &&
+          event.owner === owner &&
+          event.blankUsed == true
+        );
       }
     );
 
@@ -328,16 +332,10 @@ contract("WalletFactory", () => {
     const version =
       "0x" +
       ethUtil
-        .keccak(
-          web3.eth.abi.encodeParameters(
-            ["address", "address[]"],
-            [walletImplementation, modules]
-          )
-        )
+        .keccak(web3.eth.abi.encodeParameters(["address[]"], [modules]))
         .toString("hex");
 
     await ctx.walletFactory.createBlanks(
-      walletImplementation,
       modules,
       [...Array(10).keys()], // [0, ..., 9]
       { from: sender }
