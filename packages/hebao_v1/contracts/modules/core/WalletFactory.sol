@@ -42,7 +42,7 @@ contract WalletFactory is ReentrancyGuard
     mapping(address => bytes32) blanks;
 
     address        public walletImplementation;
-    bool           public allowEmptyENS;
+    bool           public allowEmptyENS; // MUST be false in production
     ControllerImpl public controller;
     bytes32        public DOMAIN_SEPERATOR;
 
