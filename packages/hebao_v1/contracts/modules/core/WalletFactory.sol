@@ -309,8 +309,8 @@ contract WalletFactory is ReentrancyGuard
     }
 
     function computeAddress_(
-        address       owner,
-        uint          salt
+        address owner,
+        uint    salt
         )
         internal
         view
