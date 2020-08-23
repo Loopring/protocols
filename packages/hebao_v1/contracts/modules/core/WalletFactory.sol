@@ -246,7 +246,7 @@ contract WalletFactory is ReentrancyGuard
         proxy.setImplementation(walletImplementation);
 
         BaseWallet w = BaseWallet(wallet);
-        w.setController(controller);
+        w.initController(controller);
         for (uint i = 0; i < modules.length; i++) {
             w.addModule(modules[i]);
         }
@@ -294,7 +294,7 @@ contract WalletFactory is ReentrancyGuard
         )
         private
     {
-        BaseWallet(_wallet.toPayable()).setOwner(_owner);
+        BaseWallet(_wallet.toPayable()).initOwner(_owner);
         controller.walletRegistry().registerWallet(_wallet);
 
         if (bytes(_ensLabel).length > 0) {

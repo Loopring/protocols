@@ -76,7 +76,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     ///      Note that calling this method more than once will throw.
     ///
     /// @param _initialOwner The owner of this wallet, must not be address(0).
-    function setOwner(
+    function initOwner(
         address _initialOwner
         )
         external
@@ -97,7 +97,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     ///      And this method must be invoked before owner is initialized
     ///
     /// @param _controller The Controller instance.
-    function setController(
+    function initController(
         Controller _controller
         )
         external
