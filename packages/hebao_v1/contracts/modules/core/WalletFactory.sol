@@ -165,13 +165,14 @@ contract WalletFactory is ReentrancyGuard
 
     function registerENS(
         address         _wallet,
+        address         _owner,
         string calldata _ensLabel,
         bytes  calldata _ensApproval,
         bool            _ensRegisterReverse
         )
         external
     {
-        registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
+        registerENS_(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
     }
 
     function computeWalletAddress(address owner, uint salt)
@@ -300,7 +301,7 @@ contract WalletFactory is ReentrancyGuard
         controller.walletRegistry().registerWallet(_wallet);
 
         if (bytes(_ensLabel).length > 0) {
-            registerENS_(_wallet, _ensLabel, _ensApproval, _ensRegisterReverse);
+            registerENS_(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
         } else {
             require(allowEmptyENS, "EMPTY_ENS_NOT_ALLOWED");
         }
@@ -324,6 +325,7 @@ contract WalletFactory is ReentrancyGuard
 
     function registerENS_(
         address       wallet,
+        address       owner,
         string memory ensLabel,
         bytes  memory ensApproval,
         bool          ensRegisterReverse
@@ -337,7 +339,7 @@ contract WalletFactory is ReentrancyGuard
         );
 
         BaseENSManager ensManager = controller.ensManager();
-        ensManager.register(wallet, ensLabel, ensApproval);
+        ensManager.register(wallet, owner, ensLabel, ensApproval);
 
         if (ensRegisterReverse) {
             bytes memory data = abi.encodeWithSelector(

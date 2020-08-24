@@ -41,7 +41,9 @@ contract("WalletFactory", () => {
     }
 
     const signer = ctx.owners[0];
-    const ensApproval = await getEnsApproval(wallet, walletName, signer);
+
+    const ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
+
     const txSignature = signCreateWallet(
       ctx.walletFactory.address,
       owner,
@@ -87,7 +89,9 @@ contract("WalletFactory", () => {
         "Registered",
         (event: any) => {
           return (
-            event._ens === walletName + walletDomain && event._owner === wallet
+            event._ens === walletName + walletDomain &&
+            event._wallet === wallet &&
+            event._owner === owner
           );
         }
       );
@@ -144,6 +148,7 @@ contract("WalletFactory", () => {
     const signer = ctx.owners[0];
     const ensApproval = await getEnsApproval(
       blankWalletAddr,
+      owner,
       walletName,
       signer
     );
@@ -197,7 +202,8 @@ contract("WalletFactory", () => {
         (event: any) => {
           return (
             event._ens === walletName + walletDomain &&
-            event._owner === blankWalletAddr
+            event._wallet === wallet &&
+            event._owner === owner
           );
         }
       );
@@ -236,13 +242,15 @@ contract("WalletFactory", () => {
     const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
 
     const signer = ctx.owners[0];
-    const ensApproval = await getEnsApproval(wallet, walletName, signer);
+
+    const ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
 
     const opt = { owner, wallet, gasPrice: new BN(1) };
 
     const tx = await executeTransaction(
       ctx.walletFactory.contract.methods.registerENS(
         wallet,
+        owner,
         walletName,
         ensApproval,
         true
@@ -260,7 +268,9 @@ contract("WalletFactory", () => {
         "Registered",
         (event: any) => {
           return (
-            event._ens === walletName + walletDomain && event._owner === wallet
+            event._ens === walletName + walletDomain &&
+            event._wallet === wallet &&
+            event._owner === owner
           );
         }
       );
