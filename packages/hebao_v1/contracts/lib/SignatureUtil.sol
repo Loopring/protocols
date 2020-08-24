@@ -154,6 +154,10 @@ library SignatureUtil
         pure
         returns (bool)
     {
+        if (signer == address(0)) {
+            return false;
+        }
+
         uint signatureTypeOffset = signature.length.sub(1);
         SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
 
