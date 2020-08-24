@@ -17,9 +17,10 @@ interface IENSManager {
 
     function isAvailable(bytes32 _subnode) external view returns (bool);
 
-    function resolveName(address _owner) external view returns (string memory);
+    function resolveName(address _wallet) external view returns (string memory);
 
     function register(
+        address _wallet,
         address _owner,
         string  calldata _label,
         bytes   calldata _approval
@@ -51,7 +52,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
 
     event RootnodeOwnerChange(bytes32 indexed _rootnode, address indexed _newOwner);
     event ENSResolverChanged(address addr);
-    event Registered(address indexed _owner, string _ens);
+    event Registered(address indexed _wallet, address _owner, string _ens);
     event Unregistered(string _ens);
 
     // *************** Constructor ********************** //
@@ -94,11 +95,13 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     /**
     * @dev Lets the manager assign an ENS subdomain of the root node to a target address.
     * Registers both the forward and reverse ENS.
-    * @param _owner The owner of the subdomain.
+    * @param _wallet The wallet which owns the subdomain.
+    * @param _owner The wallet's owner.
     * @param _label The subdomain label.
-    * @param _approval The signature of _owner and _label by a manager.
+    * @param _approval The signature of _wallet, _owner and _label by a manager.
     */
     function register(
+        address _wallet,
         address _owner,
         string  calldata _label,
         bytes   calldata _approval
@@ -107,7 +110,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         override
         onlyManager
     {
-        verifyApproval(_owner, _label, _approval);
+        verifyApproval(_wallet, _owner, _label, _approval);
 
         bytes32 labelNode = keccak256(abi.encodePacked(_label));
         bytes32 node = keccak256(abi.encodePacked(rootNode, labelNode));
@@ -117,28 +120,28 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         // Forward ENS
         getENSRegistry().setSubnodeOwner(rootNode, labelNode, address(this));
         getENSRegistry().setResolver(node, ensResolver);
-        getENSRegistry().setOwner(node, _owner);
-        ENSResolver(ensResolver).setAddr(node, _owner);
+        getENSRegistry().setOwner(node, _wallet);
+        ENSResolver(ensResolver).setAddr(node, _wallet);
 
         // Reverse ENS
         strings.slice[] memory parts = new strings.slice[](2);
         parts[0] = _label.toSlice();
         parts[1] = rootName.toSlice();
         string memory name = ".".toSlice().join(parts);
-        bytes32 reverseNode = getENSReverseRegistrar().node(_owner);
+        bytes32 reverseNode = getENSReverseRegistrar().node(_wallet);
         ENSResolver(ensResolver).setName(reverseNode, name);
 
-        emit Registered(_owner, name);
+        emit Registered(_wallet, _owner, name);
     }
 
     // *************** Public Functions ********************* //
 
     /**
     * @dev Resolves an address to an ENS name
-    * @param _owner The ENS owner address
+    * @param _wallet The ENS owner address
     */
-    function resolveName(address _owner) public view override returns (string memory) {
-        bytes32 reverseNode = getENSReverseRegistrar().node(_owner);
+    function resolveName(address _wallet) public view override returns (string memory) {
+        bytes32 reverseNode = getENSReverseRegistrar().node(_wallet);
         return ENSResolver(ensResolver).name(reverseNode);
     }
 
@@ -157,6 +160,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     }
 
     function verifyApproval(
+        address _wallet,
         address _owner,
         string  memory _label,
         bytes   memory _approval
@@ -166,6 +170,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     {
         bytes32 messageHash = keccak256(
             abi.encodePacked(
+                _wallet,
                 _owner,
                 _label
             )

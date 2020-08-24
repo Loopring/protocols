@@ -51,37 +51,66 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
-    /// @dev We need to make sure the Factory address cannot be changed without wallet owner's
-    ///      explicit authorization.
-    modifier onlyFromFactoryOrModule
+    modifier onlyFromFactory
     {
         require(
-            msg.sender == controller.walletFactory() || modules[msg.sender],
+            msg.sender == controller.walletFactory(),
             "UNAUTHORIZED"
         );
         _;
     }
 
-    /// @dev Set up this wallet by assigning an original owner and controller.
+    /// @dev We need to make sure the Factory address cannot be changed without wallet owner's
+    ///      explicit authorization.
+    modifier onlyFromFactoryOrModule
+    {
+        require(
+            modules[msg.sender] || msg.sender == controller.walletFactory(),
+            "UNAUTHORIZED"
+        );
+        _;
+    }
+
+    /// @dev Set up this wallet by assigning an original owner
     ///
     ///      Note that calling this method more than once will throw.
     ///
-    /// @param _controller The Controller instance.
     /// @param _initialOwner The owner of this wallet, must not be address(0).
-    function setup(
-        address _controller,
+    function initOwner(
         address _initialOwner
+        )
+        external
+        onlyFromFactory
+        nonReentrant
+    {
+        require(controller != Controller(0), "NO_CONTROLLER");
+        require(_owner == address(0), "INITIALIZED_ALREADY");
+        require(_initialOwner != address(0), "ZERO_ADDRESS");
+
+        _owner = _initialOwner;
+        emit WalletSetup(_initialOwner);
+    }
+
+    /// @dev Set up this wallet by assigning an controller.
+    ///
+    ///      Note that calling this method more than once will throw.
+    ///      And this method must be invoked before owner is initialized
+    ///
+    /// @param _controller The Controller instance.
+    function initController(
+        Controller _controller
         )
         external
         nonReentrant
     {
-        require(_owner == address(0), "INITIALIZED_ALREADY");
-        require(_initialOwner != address(0), "ZERO_ADDRESS");
+        require(
+            _owner == address(0) &&
+            controller == Controller(0) &&
+            _controller != Controller(0),
+            "CONTROLLER_INIT_FAILED"
+        );
 
-        controller = Controller(_controller);
-        _owner = _initialOwner;
-
-        emit WalletSetup(_initialOwner);
+        controller = _controller;
     }
 
     function owner()

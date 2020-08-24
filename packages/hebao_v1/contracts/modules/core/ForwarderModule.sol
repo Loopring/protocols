@@ -113,14 +113,7 @@ abstract contract ForwarderModule is BaseModule
         )
     {
         uint gasLeft = gasleft();
-        uint gasLimit = (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD);
-        require(gasLeft >= gasLimit, "OPERATOR_INSUFFICIENT_GAS");
-
-        uint gasCost = gasLimit.mul(metaTx.gasPrice);
-        require(
-            ERC20(metaTx.gasToken).balanceOf(metaTx.from) >= gasCost,
-            "WALLET_INSUFFICIENT_GAS"
-        );
+        checkSufficientGas(metaTx);
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
@@ -172,8 +165,9 @@ abstract contract ForwarderModule is BaseModule
             // private key is leaked, the hacker won't be able to deplete ether/tokens
             // as high meta-tx fees.
             bool skipQuota = success && (
-                metaTx.txAwareHash != 0 ||
-                metaTx.data.toBytes4(0) == WalletFactory.createWallet.selector &&
+                metaTx.txAwareHash != 0 || (
+                    metaTx.data.toBytes4(0) == WalletFactory.createWallet.selector ||
+                    metaTx.data.toBytes4(0) == WalletFactory.createWallet2.selector) &&
                 metaTx.to == controller().walletFactory()
             );
 
@@ -186,6 +180,33 @@ abstract contract ForwarderModule is BaseModule
                 skipQuota
             );
         }
+    }
 
+    function checkSufficientGas(
+        MetaTx calldata metaTx
+        )
+        private
+        view
+    {
+        // Check the relayer has enough Ether gas
+        uint gasLimit = (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD);
+        require(gasleft() >= gasLimit, "OPERATOR_INSUFFICIENT_GAS");
+
+        // Check the wallet has enough meta tx gas
+        if (metaTx.gasPrice  == 0) return;
+
+        uint gasCost = gasLimit.mul(metaTx.gasPrice);
+
+        if (metaTx.gasToken == address(0)) {
+            require(
+                metaTx.from.balance >= gasCost,
+                "WALLET_INSUFFICIENT_ETH_GAS"
+            );
+        } else {
+            require(
+                ERC20(metaTx.gasToken).balanceOf(metaTx.from) >= gasCost,
+                "WALLET_INSUFFICIENT_TOKEN_GAS"
+            );
+        }
     }
 }
