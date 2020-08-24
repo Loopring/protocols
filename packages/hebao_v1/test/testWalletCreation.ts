@@ -41,7 +41,7 @@ contract("WalletFactory", () => {
     }
 
     const signer = ctx.owners[0];
-    const ensApproval = await getEnsApproval(wallet, walletName, signer);
+    const ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
     const txSignature = signCreateWallet(
       ctx.walletFactory.address,
       owner,
@@ -130,9 +130,10 @@ contract("WalletFactory", () => {
     await ctx.walletFactory.createBlanks(modules, [0], {
       from: owner
     });
-    const blankWalletAddr = (
-      await assertEventEmitted(ctx.walletFactory, "BlankDeployed")
-    ).blank;
+    const blankWalletAddr = (await assertEventEmitted(
+      ctx.walletFactory,
+      "BlankDeployed"
+    )).blank;
 
     const wallet = blankWalletAddr;
 
@@ -144,6 +145,7 @@ contract("WalletFactory", () => {
     const signer = ctx.owners[0];
     const ensApproval = await getEnsApproval(
       blankWalletAddr,
+      owner,
       walletName,
       signer
     );
@@ -236,7 +238,7 @@ contract("WalletFactory", () => {
     const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
 
     const signer = ctx.owners[0];
-    const ensApproval = await getEnsApproval(wallet, walletName, signer);
+    const ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
 
     const opt = { owner, wallet, gasPrice: new BN(1) };
 
