@@ -66,6 +66,7 @@ contract("BaseENSManager", () => {
       );
 
       signer = ctx.owners[0];
+
       ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
       txSignature = signCreateWallet(
         ctx.walletFactory.address,
@@ -105,6 +106,7 @@ contract("BaseENSManager", () => {
       const modules: string[] = [ctx.finalSecurityModule.address];
 
       const signer = ctx.owners[0];
+
       const ensApproval = await getEnsApproval(
         wallet,
         owner,

@@ -105,6 +105,7 @@ export async function createWallet(
 
   const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
   const walletName = "mywalleta" + new Date().getTime();
+
   const ensApproval = await getEnsApproval(
     wallet,
     owner,
@@ -152,6 +153,7 @@ export async function createWallet2(
 
   const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
   const walletName = "mywalleta" + new Date().getTime();
+
   const ensApproval = await getEnsApproval(
     wallet,
     owner,
