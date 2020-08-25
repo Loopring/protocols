@@ -38,6 +38,8 @@ def orderFromJSON(jOrder, state):
 
     feeBips = int(jOrder["feeBips"])
 
+    amm = int(jOrder["amm"])
+
     account = state.getAccount(accountID)
 
     order = Order(account.publicKeyX, account.publicKeyY,
@@ -45,9 +47,12 @@ def orderFromJSON(jOrder, state):
                   tokenS, tokenB,
                   amountS, amountB,
                   validUntil, fillAmountBorS, taker,
-                  maxFeeBips, feeBips)
+                  maxFeeBips, feeBips,
+                  amm)
 
-    order.signature = jOrder["signature"]
+    order.signature = None
+    if "signature" in jOrder:
+        order.signature = jOrder["signature"]
 
     return order
 
@@ -120,6 +125,15 @@ def accountUpdateFromJSON(jUpdate):
         update.signature = jUpdate["signature"]
     return update
 
+def ammUpdateFromJSON(jUpdate):
+    update = GeneralObject()
+    update.owner = str(jUpdate["owner"])
+    update.accountID = int(jUpdate["accountID"])
+    update.tokenID = int(jUpdate["tokenID"])
+    update.feeBips = int(jUpdate["feeBips"])
+    update.tokenWeight = str(jUpdate["tokenWeight"])
+    return update
+
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
@@ -157,6 +171,8 @@ def createBlock(state, data):
             transaction = depositFromJSON(transactionInfo)
         if txType == "AccountUpdate":
             transaction = accountUpdateFromJSON(transactionInfo)
+        if txType == "AmmUpdate":
+            transaction = ammUpdateFromJSON(transactionInfo)
 
         transaction.txType = txType
         tx = state.executeTransaction(context, transaction)
@@ -174,6 +190,8 @@ def createBlock(state, data):
             txWitness.deposit = tx.input
         if txType == "AccountUpdate":
             txWitness.accountUpdate = tx.input
+        if txType == "AmmUpdate":
+            txWitness.ammUpdate = tx.input
         txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
         block.transactions.append(txWitness)
 

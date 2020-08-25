@@ -7,6 +7,7 @@ import "../../aux/compression/LzDecompressor.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "./SelectorBasedAccessManager.sol";
+import "./ISubmitBlocksCallback.sol";
 
 
 contract LoopringIOExchangeOwner is SelectorBasedAccessManager
@@ -42,6 +43,26 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
         if (!success) {
             assembly { revert(add(returnData, 32), mload(returnData)) }
         }
+    }
+
+    function submitBlocksWithCallbacks(
+        ExchangeData.Block[] memory blocks,
+        ISubmitBlocksCallback[] memory callbacks,
+        bytes[] memory auxiliaryData
+        )
+        external
+    {
+        require(
+            hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
+            "PERMISSION_DENIED"
+        );
+
+        require(callbacks.length == auxiliaryData.length, "INVALID_DATA");
+        for (uint i = 0; i < callbacks.length; i++) {
+            callbacks[i].onSubmitBlocks(blocks, auxiliaryData[i]);
+        }
+
+        IExchangeV3(target).submitBlocks(blocks);
     }
 
     function openAccessToSubmitBlocks(bool _open)

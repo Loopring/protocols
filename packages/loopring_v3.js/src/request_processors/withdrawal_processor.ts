@@ -30,6 +30,7 @@ export class WithdrawalProcessor {
     let amount = withdrawal.amount;
     if (withdrawal.type === 2) {
       amount = account.getBalance(withdrawal.tokenID).balance;
+      account.getBalance(withdrawal.tokenID).weightAMM = new BN(0);
     } else if (withdrawal.type === 3) {
       amount = new BN(0);
     }

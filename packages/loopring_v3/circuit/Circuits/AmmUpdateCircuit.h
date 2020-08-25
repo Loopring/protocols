@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-#ifndef _DEPOSITCIRCUIT_H_
-#define _DEPOSITCIRCUIT_H_
+#ifndef _AMMUPDATECIRCUIT_H_
+#define _AMMUPDATECIRCUIT_H_
 
 #include "Circuit.h"
 #include "../Utils/Constants.h"
@@ -15,50 +15,33 @@ using namespace ethsnarks;
 namespace Loopring
 {
 
-class DepositCircuit : public BaseTransactionCircuit
+class AmmUpdateCircuit : public BaseTransactionCircuit
 {
   public:
     // Inputs
     DualVariableGadget owner;
     DualVariableGadget accountID;
     DualVariableGadget tokenID;
-    DualVariableGadget amount;
-
-    // Validate
-    OwnerValidGadget ownerValid;
-
-    // Calculate the new balance
-    DynamicBalanceGadget balanceS_A;
-    DynamicBalanceGadget depositedAmount;
-    AddGadget balance_after;
+    DualVariableGadget feeBips;
+    DualVariableGadget tokenWeight;
+    DualVariableGadget balance;
 
     // Increase the number of conditional transactions
     UnsafeAddGadget numConditionalTransactionsAfter;
 
-    DepositCircuit( //
+    AmmUpdateCircuit( //
       ProtoboardT &pb,
       const TransactionState &state,
       const std::string &prefix)
         : BaseTransactionCircuit(pb, state, prefix),
 
           // Inputs
-          owner(pb, NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
+          owner(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
           accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
           tokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenID")),
-          amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
-
-          // Validate
-          ownerValid(pb, state.constants, state.accountA.account.owner, owner.packed, FMT(prefix, ".ownerValid")),
-
-          // Calculate the new balance
-          balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
-          depositedAmount(pb, amount.packed, FMT(prefix, ".depositedAmount")),
-          balance_after(
-            pb,
-            balanceS_A.balance(),
-            depositedAmount.balance(),
-            NUM_BITS_AMOUNT,
-            FMT(prefix, ".balance_after")),
+          feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
+          tokenWeight(pb, NUM_BITS_AMOUNT, FMT(prefix, ".tokenWeight")),
+          balance(pb, state.accountA.balanceS.balance, NUM_BITS_AMOUNT, FMT(prefix, ".balance")),
 
           // Increase the number of conditional transactions
           numConditionalTransactionsAfter(
@@ -67,11 +50,11 @@ class DepositCircuit : public BaseTransactionCircuit
             state.constants._1,
             FMT(prefix, ".numConditionalTransactionsAfter"))
     {
-        // Update the account balance
         setArrayOutput(TXV_ACCOUNT_A_ADDRESS, accountID.bits);
-        setOutput(TXV_ACCOUNT_A_OWNER, owner.packed);
         setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
-        setOutput(TXV_BALANCE_A_S_BALANCE, balance_after.result());
+
+        setOutput(TXV_ACCOUNT_A_FEEBIPSAMM, feeBips.packed);
+        setOutput(TXV_BALANCE_A_S_WEIGHTAMM, tokenWeight.packed);
 
         // No singatures needed
         setOutput(TXV_SIGNATURE_REQUIRED_A, state.constants._0);
@@ -81,21 +64,15 @@ class DepositCircuit : public BaseTransactionCircuit
         setOutput(TXV_NUM_CONDITIONAL_TXS, numConditionalTransactionsAfter.result());
     }
 
-    void generate_r1cs_witness(const Deposit &deposit)
+    void generate_r1cs_witness(const AmmUpdate &update)
     {
         // Inputs
-        owner.generate_r1cs_witness(pb, deposit.owner);
-        accountID.generate_r1cs_witness(pb, deposit.accountID);
-        tokenID.generate_r1cs_witness(pb, deposit.tokenID);
-        amount.generate_r1cs_witness(pb, deposit.amount);
-
-        // Validate
-        ownerValid.generate_r1cs_witness();
-
-        // Calculate the new balance
-        balanceS_A.generate_r1cs_witness();
-        depositedAmount.generate_r1cs_witness();
-        balance_after.generate_r1cs_witness();
+        owner.generate_r1cs_witness();
+        accountID.generate_r1cs_witness(pb, update.accountID);
+        tokenID.generate_r1cs_witness(pb, update.tokenID);
+        feeBips.generate_r1cs_witness(pb, update.feeBips);
+        tokenWeight.generate_r1cs_witness(pb, update.tokenWeight);
+        balance.generate_r1cs_witness();
 
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter.generate_r1cs_witness();
@@ -107,15 +84,9 @@ class DepositCircuit : public BaseTransactionCircuit
         owner.generate_r1cs_constraints(true);
         accountID.generate_r1cs_constraints(true);
         tokenID.generate_r1cs_constraints(true);
-        amount.generate_r1cs_constraints(true);
-
-        // Validate
-        ownerValid.generate_r1cs_constraints();
-
-        // Calculate the new balance
-        balanceS_A.generate_r1cs_constraints();
-        depositedAmount.generate_r1cs_constraints();
-        balance_after.generate_r1cs_constraints();
+        feeBips.generate_r1cs_constraints(true);
+        tokenWeight.generate_r1cs_constraints(true);
+        balance.generate_r1cs_constraints(true);
 
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter.generate_r1cs_constraints();
@@ -123,7 +94,14 @@ class DepositCircuit : public BaseTransactionCircuit
 
     const VariableArrayT getPublicData() const
     {
-        return flattenReverse({owner.bits, accountID.bits, tokenID.bits, amount.bits});
+        return flattenReverse({
+            owner.bits,
+            accountID.bits,
+            tokenID.bits,
+            VariableArrayT(2, state.constants._0), feeBips.bits,
+            tokenWeight.bits,
+            balance.bits
+        });
     }
 };
 

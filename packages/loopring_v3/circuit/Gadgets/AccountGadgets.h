@@ -24,6 +24,7 @@ struct AccountState
     VariableT publicKeyX;
     VariableT publicKeyY;
     VariableT nonce;
+    VariableT feeBipsAMM;
     VariableT balancesRoot;
 };
 
@@ -33,6 +34,7 @@ static void printAccount(const ProtoboardT &pb, const AccountState &state)
     std::cout << "- publicKeyX: " << pb.val(state.publicKeyX) << std::endl;
     std::cout << "- publicKeyY: " << pb.val(state.publicKeyY) << std::endl;
     std::cout << "- nonce: " << pb.val(state.nonce) << std::endl;
+    std::cout << "- feeBipsAMM: " << pb.val(state.feeBipsAMM) << std::endl;
     std::cout << "- balancesRoot: " << pb.val(state.balancesRoot) << std::endl;
 }
 
@@ -42,6 +44,7 @@ class AccountGadget : public GadgetT
     VariableT owner;
     const jubjub::VariablePointT publicKey;
     VariableT nonce;
+    VariableT feeBipsAMM;
     VariableT balancesRoot;
 
     AccountGadget( //
@@ -52,6 +55,7 @@ class AccountGadget : public GadgetT
           owner(make_variable(pb, FMT(prefix, ".owner"))),
           publicKey(pb, FMT(prefix, ".publicKey")),
           nonce(make_variable(pb, FMT(prefix, ".nonce"))),
+          feeBipsAMM(make_variable(pb, FMT(prefix, ".feeBipsAMM"))),
           balancesRoot(make_variable(pb, FMT(prefix, ".balancesRoot")))
     {
     }
@@ -62,6 +66,7 @@ class AccountGadget : public GadgetT
         pb.val(publicKey.x) = account.publicKey.x;
         pb.val(publicKey.y) = account.publicKey.y;
         pb.val(nonce) = account.nonce;
+        pb.val(feeBipsAMM) = account.feeBipsAMM;
         pb.val(balancesRoot) = account.balancesRoot;
     }
 };
@@ -93,11 +98,11 @@ class UpdateAccountGadget : public GadgetT
 
           leafBefore(
             pb,
-            var_array({before.owner, before.publicKeyX, before.publicKeyY, before.nonce, before.balancesRoot}),
+            var_array({before.owner, before.publicKeyX, before.publicKeyY, before.nonce, before.feeBipsAMM, before.balancesRoot}),
             FMT(prefix, ".leafBefore")),
           leafAfter(
             pb,
-            var_array({after.owner, after.publicKeyX, after.publicKeyY, after.nonce, after.balancesRoot}),
+            var_array({after.owner, after.publicKeyX, after.publicKeyY, after.nonce, after.feeBipsAMM, after.balancesRoot}),
             FMT(prefix, ".leafAfter")),
 
           proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS * 3, FMT(prefix, ".proof"))),
@@ -152,12 +157,14 @@ class UpdateAccountGadget : public GadgetT
 struct BalanceState
 {
     VariableT balance;
+    VariableT weightAMM;
     VariableT storageRoot;
 };
 
 static void printBalance(const ProtoboardT &pb, const BalanceState &state)
 {
     std::cout << "- balance: " << pb.val(state.balance) << std::endl;
+    std::cout << "- weightAMM: " << pb.val(state.weightAMM) << std::endl;
     std::cout << "- storageRoot: " << pb.val(state.storageRoot) << std::endl;
 }
 
@@ -165,6 +172,7 @@ class BalanceGadget : public GadgetT
 {
   public:
     VariableT balance;
+    VariableT weightAMM;
     VariableT storageRoot;
 
     BalanceGadget( //
@@ -173,6 +181,7 @@ class BalanceGadget : public GadgetT
         : GadgetT(pb, prefix),
 
           balance(make_variable(pb, FMT(prefix, ".balance"))),
+          weightAMM(make_variable(pb, FMT(prefix, ".weightAMM"))),
           storageRoot(make_variable(pb, FMT(prefix, ".storageRoot")))
     {
     }
@@ -180,6 +189,7 @@ class BalanceGadget : public GadgetT
     void generate_r1cs_witness(const BalanceLeaf &balanceLeaf)
     {
         pb.val(balance) = balanceLeaf.balance;
+        pb.val(weightAMM) = balanceLeaf.weightAMM;
         pb.val(storageRoot) = balanceLeaf.storageRoot;
     }
 };
@@ -209,8 +219,8 @@ class UpdateBalanceGadget : public GadgetT
           valuesBefore(before),
           valuesAfter(after),
 
-          leafBefore(pb, var_array({before.balance, before.storageRoot}), FMT(prefix, ".leafBefore")),
-          leafAfter(pb, var_array({after.balance, after.storageRoot}), FMT(prefix, ".leafAfter")),
+          leafBefore(pb, var_array({before.balance, before.weightAMM, before.storageRoot}), FMT(prefix, ".leafBefore")),
+          leafAfter(pb, var_array({after.balance, after.weightAMM, after.storageRoot}), FMT(prefix, ".leafAfter")),
 
           proof(make_var_array(pb, TREE_DEPTH_TOKENS * 3, FMT(prefix, ".proof"))),
           proofVerifierBefore(

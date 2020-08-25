@@ -14,7 +14,7 @@ from ethsnarks.merkletree import MerkleTree
 from ethsnarks.poseidon import poseidon, poseidon_params
 from ethsnarks.field import SNARK_SCALAR_FIELD
 
-poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 6, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 7, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsStorage = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 
@@ -72,8 +72,9 @@ class Signature(object):
             self.s = "0"
 
 class BalanceLeaf(object):
-    def __init__(self, balance = 0):
+    def __init__(self, balance = 0, weightAMM = 0):
         self.balance = str(balance)
+        self.weightAMM = str(weightAMM)
         # Storage
         self._storageTree = SparseMerkleTree(BINARY_TREE_DEPTH_STORAGE // 2, 4)
         self._storageTree.newTree(StorageLeaf().hash())
@@ -83,12 +84,13 @@ class BalanceLeaf(object):
 
     def hash(self):
         #print("balance: " + self.balance)
-        temp = [int(self.balance), int(self._storageTree._root)]
+        temp = [int(self.balance), int(self.weightAMM), int(self._storageTree._root)]
         #print(temp)
         return poseidon(temp, poseidonParamsBalance)
 
     def fromJSON(self, jBalance):
         self.balance = jBalance["balance"]
+        self.weightAMM = jBalance["weightAMM"]
         # Storage
         storageLeafsDict = jBalance["_storageLeafs"]
         for key, val in storageLeafsDict.items():
@@ -144,6 +146,7 @@ class Account(object):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
+        self.feeBipsAMM = 0
         # Balances
         self._balancesTree = SparseMerkleTree(BINARY_TREE_DEPTH_TOKENS // 2, 4)
         self._balancesTree.newTree(BalanceLeaf().hash())
@@ -151,13 +154,14 @@ class Account(object):
         # print("Empty balances tree: " + str(self._balancesTree._root))
 
     def hash(self):
-        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], poseidonParamsAccount)
+        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self.feeBipsAMM), int(self._balancesTree._root)], poseidonParamsAccount)
 
     def fromJSON(self, jAccount):
         self.owner = jAccount["owner"]
         self.publicKeyX = jAccount["publicKeyX"]
         self.publicKeyY = jAccount["publicKeyY"]
         self.nonce = int(jAccount["nonce"])
+        self.feeBipsAMM = int(jAccount["feeBipsAMM"])
         # Balances
         balancesLeafsDict = jAccount["_balancesLeafs"]
         for key, val in balancesLeafsDict.items():
@@ -196,7 +200,7 @@ class Account(object):
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter)
 
-    def updateBalanceAndStorage(self, tokenID, storageID, filled, delta_balance):
+    def updateBalanceAndStorage(self, tokenID, storageID, filled, delta_balance, weight = None):
         # Make sure the leaf exist in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -207,6 +211,8 @@ class Account(object):
         # Update filled amounts
         storageUpdate = self._balancesLeafs[str(tokenID)].updateStorage(storageID, filled)
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(delta_balance))
+        if weight is not None:
+            self._balancesLeafs[str(tokenID)].weightAMM = str(weight)
 
         #print("str(delta_balance): " + str(delta_balance))
         #print("endBalance: " + self._balancesLeafs[str(tokenID)].balance)
@@ -261,21 +267,6 @@ class AccountUpdateData(object):
         self.before = before
         self.after = after
 
-
-class WithdrawProof(object):
-    def __init__(self,
-                 accountID, tokenID,
-                 account, balance,
-                 root,
-                 accountProof, balanceProof):
-        self.accountID = int(accountID)
-        self.tokenID = int(tokenID)
-        self.account = account
-        self.balance = balance
-        self.root = str(root)
-        self.accountProof = [str(_) for _ in accountProof]
-        self.balanceProof = [str(_) for _ in balanceProof]
-
 class Order(object):
     def __init__(self,
                  publicKeyX, publicKeyY,
@@ -283,7 +274,8 @@ class Order(object):
                  tokenS, tokenB,
                  amountS, amountB,
                  validUntil, fillAmountBorS, taker,
-                 maxFeeBips, feeBips):
+                 maxFeeBips, feeBips,
+                 amm):
         self.publicKeyX = str(publicKeyX)
         self.publicKeyY = str(publicKeyY)
 
@@ -302,6 +294,8 @@ class Order(object):
         self.maxFeeBips = maxFeeBips
 
         self.feeBips = feeBips
+
+        self.amm = bool(amm)
 
     def checkValid(self, context, order, fillAmountS, fillAmountB):
         valid = True
@@ -451,8 +445,10 @@ class State(object):
         newState.TXV_ACCOUNT_A_PUBKEY_X = None
         newState.TXV_ACCOUNT_A_PUBKEY_Y = None
         newState.TXV_ACCOUNT_A_NONCE = None
+        newState.TXV_ACCOUNT_A_FEEBIPSAMM = None
         newState.TXV_BALANCE_A_S_ADDRESS = None
         newState.TXV_BALANCE_A_S_BALANCE = None
+        newState.TXV_BALANCE_A_S_WEIGHT = None
         newState.TXV_BALANCE_A_B_BALANCE = None
         newState.TXV_STORAGE_A_ADDRESS = None
         newState.TXV_STORAGE_A_DATA = None
@@ -641,6 +637,7 @@ class State(object):
                 # Full balance with intrest
                 balanceLeaf = account.getBalanceLeaf(txInput.tokenID)
                 txInput.amount = str(balanceLeaf.balance)
+                newState.TXV_BALANCE_A_S_WEIGHT = 0
             elif int(txInput.type) == 3:
                 txInput.amount = str(0)
 
@@ -702,6 +699,21 @@ class State(object):
             if txInput.type != 0:
                 context.numConditionalTransactions = context.numConditionalTransactions + 1
 
+        elif txInput.txType == "AmmUpdate":
+
+            # Cache the balance for tests
+            account = self.getAccount(txInput.accountID)
+            balanceLeaf = account.getBalanceLeaf(txInput.tokenID)
+            txInput.balance = str(balanceLeaf.balance)
+
+            newState.TXV_ACCOUNT_A_ADDRESS = txInput.accountID
+            newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
+
+            newState.TXV_ACCOUNT_A_FEEBIPSAMM = txInput.feeBips
+            newState.TXV_BALANCE_A_S_WEIGHT = txInput.tokenWeight
+
+            context.numConditionalTransactions = context.numConditionalTransactions + 1
+
 
         # Tokens default values
         newState.TXV_BALANCE_A_S_ADDRESS = setValue(newState.TXV_BALANCE_A_S_ADDRESS, 0)
@@ -714,9 +726,11 @@ class State(object):
         newState.TXV_ACCOUNT_A_PUBKEY_X = setValue(newState.TXV_ACCOUNT_A_PUBKEY_X, accountA.publicKeyX)
         newState.TXV_ACCOUNT_A_PUBKEY_Y = setValue(newState.TXV_ACCOUNT_A_PUBKEY_Y, accountA.publicKeyY)
         newState.TXV_ACCOUNT_A_NONCE = setValue(newState.TXV_ACCOUNT_A_NONCE, 0)
+        newState.TXV_ACCOUNT_A_FEEBIPSAMM = setValue(newState.TXV_ACCOUNT_A_FEEBIPSAMM, accountA.feeBipsAMM)
 
         balanceLeafA_S = accountA.getBalanceLeaf(newState.TXV_BALANCE_A_S_ADDRESS)
         newState.TXV_BALANCE_A_S_BALANCE = setValue(newState.TXV_BALANCE_A_S_BALANCE, 0)
+        newState.TXV_BALANCE_A_S_WEIGHT = setValue(newState.TXV_BALANCE_A_S_WEIGHT, balanceLeafA_S.weightAMM)
 
         newState.TXV_BALANCE_A_B_BALANCE = setValue(newState.TXV_BALANCE_A_B_BALANCE, 0)
 
@@ -748,7 +762,8 @@ class State(object):
             newState.TXV_BALANCE_A_S_ADDRESS,
             newState.TXV_STORAGE_A_STORAGEID,
             newState.TXV_STORAGE_A_DATA,
-            newState.TXV_BALANCE_A_S_BALANCE
+            newState.TXV_BALANCE_A_S_BALANCE,
+            newState.TXV_BALANCE_A_S_WEIGHT
         )
         balanceUpdateB_A = accountA.updateBalance(
             newState.TXV_BALANCE_B_S_ADDRESS,
@@ -759,6 +774,7 @@ class State(object):
         accountA.publicKeyX = newState.TXV_ACCOUNT_A_PUBKEY_X
         accountA.publicKeyY = newState.TXV_ACCOUNT_A_PUBKEY_Y
         accountA.nonce = accountA.nonce + newState.TXV_ACCOUNT_A_NONCE
+        accountA.feeBipsAMM = newState.TXV_ACCOUNT_A_FEEBIPSAMM
 
         self.updateAccountTree(newState.TXV_ACCOUNT_A_ADDRESS)
         accountAfter = copyAccountInfo(self.getAccount(newState.TXV_ACCOUNT_A_ADDRESS))

@@ -59,6 +59,9 @@ class SpotTradeCircuit : public BaseTransactionCircuit
     TransferGadget protocolFeeA_from_balanceAO_to_balanceAP;
     TransferGadget protocolFeeB_from_balanceBO_to_balanceBP;
 
+    // AMM validation
+    ValidateAMMGadget validateAMM;
+
     SpotTradeCircuit( //
       ProtoboardT &pb,
       const TransactionState &state,
@@ -170,7 +173,20 @@ class SpotTradeCircuit : public BaseTransactionCircuit
             balanceB_O,
             balanceB_P,
             feeCalculatorB.getProtocolFee(),
-            FMT(prefix, ".protocolFeeB_from_balanceBO_to_balanceBP"))
+            FMT(prefix, ".protocolFeeB_from_balanceBO_to_balanceBP")),
+
+          validateAMM(
+            pb,
+            state.constants,
+            {orderA, fillS_A.value(),
+             state.accountA.balanceS.balance, state.accountA.balanceB.balance,
+             balanceS_A.balance(), balanceB_A.balance(),
+             state.accountA.balanceS.weightAMM, state.accountA.balanceB.weightAMM, state.accountA.account.feeBipsAMM},
+            {orderB, fillS_B.value(),
+             state.accountB.balanceS.balance, state.accountB.balanceB.balance,
+             balanceS_B.balance(), balanceB_B.balance(),
+             state.accountB.balanceS.weightAMM, state.accountB.balanceB.weightAMM, state.accountB.account.feeBipsAMM},
+            FMT(prefix, ".validateAMM"))
     {
         // Set tokens
         setArrayOutput(TXV_BALANCE_A_S_ADDRESS, orderA.tokenS.bits);
@@ -200,9 +216,12 @@ class SpotTradeCircuit : public BaseTransactionCircuit
         setOutput(TXV_BALANCE_O_A_BALANCE, balanceA_O.balance());
         setOutput(TXV_BALANCE_O_B_BALANCE, balanceB_O.balance());
 
-        // A signature is required for each order
+        // A signature is required for each order that isn't an AMM
         setOutput(TXV_HASH_A, orderA.hash.result());
         setOutput(TXV_HASH_B, orderB.hash.result());
+
+        setOutput(TXV_SIGNATURE_REQUIRED_A, orderA.notAmm.result());
+        setOutput(TXV_SIGNATURE_REQUIRED_B, orderB.notAmm.result());
     }
 
     void generate_r1cs_witness(const SpotTrade &spotTrade)
@@ -247,6 +266,9 @@ class SpotTradeCircuit : public BaseTransactionCircuit
         // Protocol fees
         protocolFeeA_from_balanceAO_to_balanceAP.generate_r1cs_witness();
         protocolFeeB_from_balanceBO_to_balanceBP.generate_r1cs_witness();
+
+        // AMM validation
+        validateAMM.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
@@ -291,6 +313,9 @@ class SpotTradeCircuit : public BaseTransactionCircuit
         // Protocol fees
         protocolFeeA_from_balanceAO_to_balanceAP.generate_r1cs_constraints();
         protocolFeeB_from_balanceBO_to_balanceBP.generate_r1cs_constraints();
+
+        // AMM validation
+        validateAMM.generate_r1cs_constraints();
     }
 
     const VariableArrayT getPublicData() const

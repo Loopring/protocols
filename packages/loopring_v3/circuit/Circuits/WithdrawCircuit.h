@@ -89,6 +89,9 @@ class WithdrawCircuit : public BaseTransactionCircuit
     NotGadget isNotForcedWithdrawal;
     AddGadget nonce_after;
 
+    // Disable AMM for the token when doing a forced withdrawal
+    TernaryGadget newTokenWeight;
+
     // Increase the number of conditional transactions
     UnsafeAddGadget numConditionalTransactionsAfter;
 
@@ -218,6 +221,9 @@ class WithdrawCircuit : public BaseTransactionCircuit
             NUM_BITS_NONCE,
             FMT(prefix, ".nonce_after")),
 
+          // Disable AMM for the token when doing a forced withdrawal
+          newTokenWeight(pb, validFullWithdrawalType.result(), state.constants._0, state.accountA.balanceS.weightAMM, FMT(prefix, ".newTokenWeightAMM")),
+
           // Increase the number of conditional transactions
           numConditionalTransactionsAfter(
             pb,
@@ -232,6 +238,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
         // Update the account balances (withdrawal + fee)
         setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
         setOutput(TXV_BALANCE_A_S_BALANCE, balanceA_after.result());
+        setOutput(TXV_BALANCE_A_S_WEIGHTAMM, newTokenWeight.result());
         setArrayOutput(TXV_BALANCE_B_S_ADDRESS, feeTokenID.bits);
         setOutput(TXV_BALANCE_A_B_BALANCE, balanceB_A.balance());
 
@@ -314,6 +321,9 @@ class WithdrawCircuit : public BaseTransactionCircuit
         isNotForcedWithdrawal.generate_r1cs_witness();
         nonce_after.generate_r1cs_witness();
 
+        // Disable AMM for the token when doing a forced withdrawal
+        newTokenWeight.generate_r1cs_witness();
+
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter.generate_r1cs_witness();
     }
@@ -380,6 +390,9 @@ class WithdrawCircuit : public BaseTransactionCircuit
         isForcedWithdrawal.generate_r1cs_constraints();
         isNotForcedWithdrawal.generate_r1cs_constraints();
         nonce_after.generate_r1cs_constraints();
+
+        // Disable AMM for the token when doing a forced withdrawal
+        newTokenWeight.generate_r1cs_constraints();
 
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter.generate_r1cs_constraints();

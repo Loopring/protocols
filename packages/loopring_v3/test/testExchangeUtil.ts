@@ -33,6 +33,7 @@ import { Simulator, AccountLeaf } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import {
   Account,
+  AmmUpdate,
   AuthMethod,
   Block,
   Deposit,
@@ -51,7 +52,8 @@ type TxType =
   | Transfer
   | WithdrawalRequest
   | Deposit
-  | AccountUpdate;
+  | AccountUpdate
+  | AmmUpdate;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -61,16 +63,7 @@ function replacer(name: any, val: any) {
     name === "amountB" ||
     name === "amount" ||
     name === "fee" ||
-    name === "startHash" ||
-    name === "minPrice" ||
-    name === "maxPrice" ||
-    name === "minMarginFraction" ||
-    name === "fundingIndex" ||
-    name === "transferAmountTrade" ||
-    name === "triggerPrice" ||
-    name === "transferAmount" ||
-    name === "transferFee" ||
-    name === "index"
+    name === "tokenWeight"
   ) {
     return new BN(val, 16).toString(10);
   } else if (
@@ -451,7 +444,7 @@ export class ExchangeTestUtil {
   private portGenerator = 1234;
 
   private emptyMerkleRoot =
-    "0x2db90e056916400d3a29cf8e04b3963b5b92385d8b4d470b50e298872c3b64c5";
+    "0x1efe4f31c90f89eb9b139426a95e5e87f6e0c9e8dab9ddf295e3f9d651f54698";
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -830,6 +823,8 @@ export class ExchangeTestUtil {
     order.feeBips =
       order.feeBips !== undefined ? order.feeBips : order.maxFeeBips;
 
+    order.amm = order.amm !== undefined ? order.amm : false;
+
     order.storageID = order.storageID !== undefined ? order.storageID : index;
 
     order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
@@ -846,7 +841,7 @@ export class ExchangeTestUtil {
   }
 
   public signOrder(order: OrderInfo) {
-    if (order.signature !== undefined) {
+    if (order.signature !== undefined || order.amm) {
       return;
     }
     const account = this.accounts[this.exchangeId][order.accountID];
@@ -1333,6 +1328,37 @@ export class ExchangeTestUtil {
     account.secretKey = keyPair.secretKey;
 
     return accountUpdate;
+  }
+
+  public async requestAmmUpdate(
+    owner: string,
+    token: string,
+    feeBips: number,
+    tokenWeight: BN
+  ) {
+    if (!token.startsWith("0x")) {
+      token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+    const tokenID = this.tokenAddressToIDMap.get(token);
+
+    const account = this.findAccount(owner);
+
+    const ammUpdate: AmmUpdate = {
+      txType: "AmmUpdate",
+      exchange: this.exchange.address,
+      owner,
+      accountID: account.accountID,
+      tokenID,
+      feeBips,
+      tokenWeight
+    };
+
+    // Approve onchain
+    await this.exchange.approveAmmUpdate(owner, account.accountID, token, feeBips, tokenWeight, 0xffffffff, { from: owner });
+
+    this.pendingTransactions[this.exchangeId].push(ammUpdate);
+
+    return ammUpdate;
   }
 
   public sendRing(ring: SpotTrade) {
@@ -1907,6 +1933,9 @@ export class ExchangeTestUtil {
               web3.utils.hexToBytes(encodedAccountUpdateData)
             ]);
           }
+        } else if (transaction.txType === "AmmUpdate") {
+          numConditionalTransactions++;
+          auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
         }
       }
       console.log("numConditionalTransactions: " + numConditionalTransactions);
@@ -2061,6 +2090,15 @@ export class ExchangeTestUtil {
             32
           );
           da.addNumber(update.nonce, 4);
+        } else if (tx.ammUpdate) {
+          const update = tx.ammUpdate;
+          da.addNumber(TransactionType.AMM_UPDATE, 1);
+          da.addBN(new BN(update.owner), 20);
+          da.addNumber(update.accountID, 4);
+          da.addNumber(update.tokenID, 2);
+          da.addNumber(update.feeBips, 1);
+          da.addBN(new BN(update.tokenWeight), 12);
+          da.addBN(new BN(update.balance), 12);
         }
         // console.log("type: " + da.extractUint8(0));
         // console.log("da.length(): " + da.length());

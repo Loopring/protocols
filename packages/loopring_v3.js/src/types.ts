@@ -18,7 +18,8 @@ export enum TransactionType {
   WITHDRAWAL,
   TRANSFER,
   SPOT_TRADE,
-  ACCOUNT_UPDATE
+  ACCOUNT_UPDATE,
+  AMM_UPDATE
 }
 
 /**
@@ -389,20 +390,24 @@ export class StorageLeaf implements Storage {
 
 export class BalanceLeaf implements Balance {
   balance: BN;
+  weightAMM: BN;
   storage: { [key: number]: StorageLeaf };
 
   storageTree?: SparseMerkleTree;
 
   constructor() {
     this.balance = new BN(0);
+    this.weightAMM = new BN(0);
     this.storage = {};
   }
 
   public init(
     balance: BN,
+    weightAMM: BN,
     storage: { [key: number]: StorageLeaf }
   ) {
     this.balance = new BN(balance.toString(10));
+    this.weightAMM = new BN(weightAMM.toString(10));
     this.storage = storage;
   }
 
@@ -423,6 +428,7 @@ export class AccountLeaf implements Account {
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
+  feeBipsAMM: number;
   balances: { [key: number]: BalanceLeaf };
 
   balancesMerkleTree?: SparseMerkleTree;
@@ -434,6 +440,7 @@ export class AccountLeaf implements Account {
     this.publicKeyX = "0";
     this.publicKeyY = "0";
     this.nonce = 0;
+    this.feeBipsAMM = 0;
     this.balances = {};
   }
 
@@ -442,6 +449,7 @@ export class AccountLeaf implements Account {
     publicKeyX: string,
     publicKeyY: string,
     nonce: number,
+    feeBipsAMM: number,
     balances: { [key: number]: BalanceLeaf } = {}
   ) {
     this.exchangeId = 0;
@@ -450,6 +458,7 @@ export class AccountLeaf implements Account {
     this.publicKeyX = publicKeyX;
     this.publicKeyY = publicKeyY;
     this.nonce = nonce;
+    this.feeBipsAMM = feeBipsAMM;
     this.balances = balances;
   }
 

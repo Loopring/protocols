@@ -49,11 +49,10 @@ class Constants : public GadgetT
     const VariableT _1001;
     const VariableT _10000;
     const VariableT _100000;
+    const VariableT fixedBase;
     const VariableT emptyStorage;
     const VariableT maxAmount;
     const VariableT numStorageSlots;
-    const VariableT dummyPublicKeyX;
-    const VariableT dummyPublicKeyY;
     const VariableT txTypeSpotTrade;
     const VariableT txTypeTransfer;
 
@@ -81,19 +80,10 @@ class Constants : public GadgetT
           _1001(make_variable(pb, ethsnarks::FieldT(1001), FMT(prefix, "._1001"))),
           _10000(make_variable(pb, ethsnarks::FieldT(10000), FMT(prefix, "._10000"))),
           _100000(make_variable(pb, ethsnarks::FieldT(100000), FMT(prefix, "._100000"))),
+          fixedBase(make_variable(pb, ethsnarks::FieldT(FIXED_BASE), FMT(prefix, ".fixedBase"))),
           emptyStorage(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyStorage"))),
           maxAmount(make_variable(pb, ethsnarks::FieldT(MAX_AMOUNT), FMT(prefix, ".maxAmount"))),
           numStorageSlots(make_variable(pb, ethsnarks::FieldT(NUM_STORAGE_SLOTS), FMT(prefix, ".numStorageSlots"))),
-          dummyPublicKeyX(make_variable(
-            pb,
-            ethsnarks::FieldT("132404916167441185773716937639098950030214269269"
-                              "071041759116060313694190797"),
-            FMT(prefix, ".dummyPublicKeyX"))),
-          dummyPublicKeyY(make_variable(
-            pb,
-            ethsnarks::FieldT("693327432091406580567063741045308167515412704492"
-                              "6882796951068647148079547843"),
-            FMT(prefix, ".dummyPublicKeyY"))),
           txTypeSpotTrade(
             make_variable(pb, ethsnarks::FieldT(int(TransactionType::SpotTrade)), FMT(prefix, ".txTypeSpotTrade"))),
           txTypeTransfer(
@@ -139,25 +129,12 @@ class Constants : public GadgetT
         pb.add_r1cs_constraint(ConstraintT(_1001, FieldT::one(), ethsnarks::FieldT(1001)), "._1001");
         pb.add_r1cs_constraint(ConstraintT(_10000, FieldT::one(), ethsnarks::FieldT(10000)), "._10000");
         pb.add_r1cs_constraint(ConstraintT(_100000, FieldT::one(), ethsnarks::FieldT(100000)), "._100000");
+        pb.add_r1cs_constraint(ConstraintT(fixedBase, FieldT::one(), ethsnarks::FieldT(FIXED_BASE)), ".fixedBase");
         pb.add_r1cs_constraint(
           ConstraintT(emptyStorage, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyStorage");
         pb.add_r1cs_constraint(ConstraintT(maxAmount, FieldT::one(), ethsnarks::FieldT(MAX_AMOUNT)), ".maxAmount");
         pb.add_r1cs_constraint(
           ConstraintT(numStorageSlots, FieldT::one(), ethsnarks::FieldT(NUM_STORAGE_SLOTS)), ".numStorageSlots");
-        pb.add_r1cs_constraint(
-          ConstraintT(
-            dummyPublicKeyX,
-            FieldT::one(),
-            ethsnarks::FieldT("1324049161674411857737169376390989500302"
-                              "14269269071041759116060313694190797")),
-          ".dummyPublicKeyX");
-        pb.add_r1cs_constraint(
-          ConstraintT(
-            dummyPublicKeyY,
-            FieldT::one(),
-            ethsnarks::FieldT("6933274320914065805670637410453081675154"
-                              "127044926882796951068647148079547843")),
-          ".dummyPublicKeyY");
         pb.add_r1cs_constraint(
           ConstraintT(txTypeSpotTrade, FieldT::one(), ethsnarks::FieldT(int(TransactionType::SpotTrade))),
           ".txTypeSpotTrade");
@@ -1881,6 +1858,405 @@ class OwnerValidGadget : public GadgetT
     const VariableT &isNewAccount() const
     {
         return no_oldOwner.result();
+    }
+};
+
+
+// Signed variable:
+// positive: sign == 1
+// negative: sign == 0
+// Zero can be either positive or negative
+struct SignedVariableT
+{
+    public:
+
+    VariableT sign;
+    VariableT value;
+
+    SignedVariableT()
+    {
+
+    }
+
+    SignedVariableT(
+        ProtoboardT& pb,
+        const std::string& prefix
+    ) :
+        sign(make_variable(pb, FMT(prefix, ".sign"))),
+        value(make_variable(pb, FMT(prefix, ".value")))
+    {
+
+    }
+
+    SignedVariableT(
+        const VariableT& _sign,
+        const VariableT& _value
+    ) :
+        sign(_sign),
+        value(_value)
+    {
+
+    }
+};
+
+
+// A + B = sum with A, B and abs(sum) < 2^n
+class SignedAddGadget : public GadgetT
+{
+public:
+
+    SignedVariableT _A;
+    SignedVariableT _B;
+
+    UnsafeAddGadget a_add_b;
+    UnsafeSubGadget b_sub_a;
+    UnsafeSubGadget a_sub_b;
+
+    LeqGadget a_leq_b;
+
+    EqualGadget signsEqual;
+    TernaryGadget temp;
+    TernaryGadget value;
+
+    AndGadget signB_and_a_leq_b;
+    AndGadget signA_and_not_a_leq_b;
+    OrGadget sign_math;
+    EqualGadget isZero;
+    TernaryGadget sign;
+
+    libsnark::dual_variable_gadget<FieldT> rangeCheck;
+
+    SignedAddGadget(
+        ProtoboardT& pb,
+        const Constants& constants,
+        const SignedVariableT& A,
+        const SignedVariableT& B,
+        unsigned int n,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        _A(A),
+        _B(B),
+
+        a_add_b(pb, A.value, B.value, FMT(prefix, ".a_add_b")),
+        b_sub_a(pb, B.value, A.value, FMT(prefix, ".b_sub_a")),
+        a_sub_b(pb, A.value, B.value, FMT(prefix, ".a_sub_b")),
+
+        a_leq_b(pb, A.value, B.value, n, FMT(prefix, ".a_leq_b")),
+
+        signsEqual(pb, A.sign, B.sign, FMT(prefix, ".signsEqual")),
+        temp(pb, a_leq_b.lt(), b_sub_a.result(), a_sub_b.result(), FMT(prefix, ".temp")),
+        value(pb, signsEqual.result(), a_add_b.result(), temp.result(), FMT(prefix, ".value")),
+
+        signB_and_a_leq_b(pb, {B.sign, a_leq_b.leq()}, FMT(prefix, ".signB_and_a_leq_b")),
+        signA_and_not_a_leq_b(pb, {A.sign, a_leq_b.gt()}, FMT(prefix, ".signA_and_not_a_leq_b")),
+        sign_math(pb, {signB_and_a_leq_b.result(), signA_and_not_a_leq_b.result()}, FMT(prefix, ".sign")),
+        isZero(pb, value.result(), constants._0, FMT(prefix, ".isZero")),
+        sign(pb, isZero.result(), constants._0, sign_math.result(), FMT(prefix, ".sign")),
+
+        rangeCheck(pb, value.result(), n, FMT(prefix, ".rangeCheck"))
+    {
+        assert(n + 1 <= NUM_BITS_FIELD_CAPACITY);
+    }
+
+    void generate_r1cs_witness()
+    {
+        a_add_b.generate_r1cs_witness();
+        b_sub_a.generate_r1cs_witness();
+        a_sub_b.generate_r1cs_witness();
+
+        a_leq_b.generate_r1cs_witness();
+
+        signsEqual.generate_r1cs_witness();
+        temp.generate_r1cs_witness();
+        value.generate_r1cs_witness();
+
+        signB_and_a_leq_b.generate_r1cs_witness();
+        signA_and_not_a_leq_b.generate_r1cs_witness();
+        sign_math.generate_r1cs_witness();
+        isZero.generate_r1cs_witness();
+        sign.generate_r1cs_witness();
+
+        rangeCheck.generate_r1cs_witness_from_packed();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        a_add_b.generate_r1cs_constraints();
+        b_sub_a.generate_r1cs_constraints();
+        a_sub_b.generate_r1cs_constraints();
+
+        a_leq_b.generate_r1cs_constraints();
+
+        signsEqual.generate_r1cs_constraints();
+        temp.generate_r1cs_constraints();
+        value.generate_r1cs_constraints();
+
+        signB_and_a_leq_b.generate_r1cs_constraints();
+        signA_and_not_a_leq_b.generate_r1cs_constraints();
+        sign_math.generate_r1cs_constraints();
+        isZero.generate_r1cs_constraints();
+        sign.generate_r1cs_constraints();
+
+        rangeCheck.generate_r1cs_constraints(true);
+    }
+
+    const SignedVariableT result() const
+    {
+        return SignedVariableT(sign.result(), value.result());
+    }
+};
+
+// A - B = sum with A, B and sum < 2^n
+class SignedSubGadget : public GadgetT
+{
+public:
+
+    NotGadget notSignB;
+    SignedAddGadget signedAddGadget;
+
+    SignedSubGadget(
+        ProtoboardT& pb,
+        const Constants& constants,
+        const SignedVariableT& A,
+        const SignedVariableT& B,
+        unsigned int n,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        notSignB(pb, B.sign, FMT(prefix, ".notSignB")),
+        signedAddGadget(pb, constants, A, SignedVariableT(notSignB.result(), B.value), n, FMT(prefix, ".signedAddGadget"))
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+        notSignB.generate_r1cs_witness();
+        signedAddGadget.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        notSignB.generate_r1cs_constraints();
+        signedAddGadget.generate_r1cs_constraints();
+    }
+
+    const SignedVariableT result() const
+    {
+        return signedAddGadget.result();
+    }
+};
+
+// sA * sB / C
+// Always round down. For negative values we round away from zero.
+// So if the result is negative and the remainder of the division is non-zero we add 1 to abs(result).
+class SignedMulDivGadget : public GadgetT
+{
+public:
+
+    VariableT _sV;
+    VariableT _sN;
+
+    MulDivGadget res;
+    EqualGadget sign_math;
+
+    EqualGadget remainderZero;
+    AndGadget bias;
+
+    AddGadget value;
+
+    EqualGadget isZero;
+    TernaryGadget sign;
+
+    SignedMulDivGadget(
+        ProtoboardT& pb,
+        const Constants& constants,
+        const SignedVariableT& _value,
+        const SignedVariableT& _numerator,
+        const VariableT& _denominator,
+        unsigned int numBitsValue,
+        unsigned int numBitsNumerator,
+        unsigned int numBitsDenominator,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        _sV(_value.sign),
+        _sN(_numerator.sign),
+
+        res(pb, constants, _value.value, _numerator.value, _denominator, numBitsValue, numBitsNumerator, numBitsDenominator, FMT(prefix, ".res")),
+        sign_math(pb, _value.sign, _numerator.sign, FMT(prefix, ".sign")),
+
+        remainderZero(pb, res.getRemainder(), constants._0, FMT(prefix, ".remainderZero")),
+        bias(pb, {remainderZero.result(), sign_math.result()}, FMT(prefix, ".bias")),
+
+        value(pb, res.result(), /*bias.result()*/constants._0, numBitsValue + numBitsNumerator - numBitsDenominator, FMT(prefix, ".value")),
+
+        isZero(pb, value.result(), constants._0, FMT(prefix, ".isZero")),
+        sign(pb, isZero.result(), constants._0, sign_math.result(), FMT(prefix, ".sign"))
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+        res.generate_r1cs_witness();
+        sign_math.generate_r1cs_witness();
+
+        remainderZero.generate_r1cs_witness();
+        bias.generate_r1cs_witness();
+
+        value.generate_r1cs_witness();
+
+        isZero.generate_r1cs_witness();
+        sign.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        res.generate_r1cs_constraints();
+        sign_math.generate_r1cs_constraints();
+
+        remainderZero.generate_r1cs_constraints();
+        bias.generate_r1cs_constraints();
+
+        value.generate_r1cs_constraints();
+
+        isZero.generate_r1cs_constraints();
+        sign.generate_r1cs_constraints();
+    }
+
+    const SignedVariableT result() const
+    {
+        return SignedVariableT(sign.result(), value.result());
+    }
+};
+
+// Calculates [0, 1]**[0, inf[ using an approximation.
+class PowerGadget : public GadgetT
+{
+public:
+
+    const VariableT& _x;
+    const VariableT& _y;
+
+    UnsafeMulGadget sum0;
+
+    UnsafeSubGadget x1;
+    UnsafeMulGadget t1;
+    SignedAddGadget sum1;
+
+    std::vector<UnsafeAddGadget> bn;
+    std::vector<SignedSubGadget> vn;
+    std::vector<MulDivGadget> xn;
+    std::vector<SignedMulDivGadget> cn;
+    std::vector<SignedMulDivGadget> tn;
+    std::vector<SignedAddGadget> sum;
+
+    std::unique_ptr<MulDivGadget> res;
+    std::unique_ptr<RequireEqualGadget> requirePositive;
+
+    PowerGadget(
+        ProtoboardT& pb,
+        const Constants& constants,
+        const VariableT& x,
+        const VariableT& y,
+        const unsigned int iterations,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        _x(x),
+        _y(y),
+
+        sum0(pb, constants.fixedBase, constants.fixedBase, FMT(prefix, ".sum0")),
+
+        x1(pb, constants.fixedBase, x, FMT(prefix, ".x1")),
+        t1(pb, x1.result(), y, FMT(prefix, ".t1")),
+        sum1(pb, constants, SignedVariableT(constants._1, sum0.result()), SignedVariableT(constants._0, t1.result()), NUM_BITS_AMOUNT*2, FMT(prefix, ".sum1"))
+    {
+        assert(iterations >= 3);
+
+        for (unsigned int i = 2; i < iterations; i++)
+        {
+            bn.emplace_back(pb, i > 2 ? bn.back().result() : constants.fixedBase, constants.fixedBase, FMT(prefix, ".bn"));
+            vn.emplace_back(pb, constants, SignedVariableT(constants._1, y), i > 2 ? SignedVariableT(constants._1, bn[i-2-1].result()) : SignedVariableT(constants._1, constants.fixedBase), NUM_BITS_AMOUNT, FMT(prefix, ".vn"));
+            xn.emplace_back(pb, constants, xn.size() > 0 ? xn.back().result() : x1.result(), x1.result(), constants.fixedBase, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 60, FMT(prefix, ".xn"));
+            cn.emplace_back(pb, constants, (i > 2) ? cn.back().result() : SignedVariableT(constants._1, y), vn.back().result(), bn.back().result(), NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, FMT(prefix, ".cn"));
+            tn.emplace_back(pb, constants, SignedVariableT(constants.values[(i+1)%2], xn.back().result()), cn.back().result(), constants._1, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 1, FMT(prefix, ".t2"));
+            sum.emplace_back(pb, constants, sum.size() > 0 ? sum.back().result() : sum1.result(), tn.back().result(), NUM_BITS_AMOUNT*2, FMT(prefix, ".sum"));
+        }
+
+        res.reset(new MulDivGadget(pb, constants, sum.back().result().value, constants._1, constants.fixedBase, NUM_BITS_AMOUNT*2, 1, NUM_BITS_AMOUNT, FMT(prefix, ".res")));
+        requirePositive.reset(new RequireEqualGadget(pb, sum.back().result().sign, constants._1, FMT(prefix, ".requirePositive")));
+    }
+
+    void generate_r1cs_witness()
+    {
+        print(pb, "x", _x);
+        print(pb, "y", _y);
+
+        sum0.generate_r1cs_witness();
+        //print(pb, "sum0", sum0.result());
+
+        x1.generate_r1cs_witness();
+        //print(pb, "x1", x1.result());
+        t1.generate_r1cs_witness();
+        //print(pb, "t1", t1.result());
+        sum1.generate_r1cs_witness();
+        //print(pb, "sum1", sum1.result().sign);
+        //print(pb, "sum1", sum1.result().value);
+
+        for (unsigned int i = 0; i < sum.size(); i++)
+        {
+            bn[i].generate_r1cs_witness();
+            //print(pb, "bn[i]", bn[i].result());
+            vn[i].generate_r1cs_witness();
+            //print(pb, "vn[i].s", vn[i].result().sign);
+            //print(pb, "vn[i].v", vn[i].result().value);
+            xn[i].generate_r1cs_witness();
+            //print(pb, "xn[i]", xn[i].result());
+            cn[i].generate_r1cs_witness();
+            //print(pb, "cn[i].s", cn[i].result().sign);
+            //print(pb, "cn[i].v", cn[i].result().value);
+            tn[i].generate_r1cs_witness();
+            //print(pb, "tn[i].s", tn[i].result().sign);
+            //print(pb, "tn[i].v", tn[i].result().value);
+            sum[i].generate_r1cs_witness();
+            //print(pb, "sum[i].s", sum[i].result().sign);
+            //print(pb, "sum[i].v", sum[i].result().value);
+        }
+        res->generate_r1cs_witness();
+        requirePositive->generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        sum0.generate_r1cs_constraints();
+
+        x1.generate_r1cs_constraints();
+        t1.generate_r1cs_constraints();
+        sum1.generate_r1cs_constraints();
+
+        for (unsigned int i = 0; i < sum.size(); i++)
+        {
+            bn[i].generate_r1cs_constraints();
+            vn[i].generate_r1cs_constraints();
+            xn[i].generate_r1cs_constraints();
+            cn[i].generate_r1cs_constraints();
+            tn[i].generate_r1cs_constraints();
+            sum[i].generate_r1cs_constraints();
+        }
+        res->generate_r1cs_constraints();
+        requirePositive->generate_r1cs_constraints();
+    }
+
+    const VariableT& result() const
+    {
+        return res->result();
     }
 };
 

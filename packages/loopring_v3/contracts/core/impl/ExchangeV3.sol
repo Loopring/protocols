@@ -39,7 +39,7 @@ contract ExchangeV3 is IExchangeV3
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
-    ExchangeData.State private state;
+    ExchangeData.State public state;
 
     modifier onlyWhenUninitialized()
     {
@@ -370,6 +370,19 @@ contract ExchangeV3 is IExchangeV3
         state.deposit(from, to, tokenAddress, amount, extraData);
     }
 
+    function getPendingDepositAmount(
+        address owner,
+        address tokenAddress
+        )
+        external
+        override
+        view
+        returns (uint96)
+    {
+        uint16 tokenID = state.getTokenID(tokenAddress);
+        return state.pendingDeposits[owner][tokenID].amount;
+    }
+
     // -- Withdrawals --
 
     function forceWithdraw(
@@ -384,6 +397,19 @@ contract ExchangeV3 is IExchangeV3
         onlyFromUserOrAgent(owner)
     {
         state.forceWithdraw(owner, token, accountID);
+    }
+
+    function isForcedWithdrawalPending(
+        uint32  accountID,
+        address token
+        )
+        external
+        override
+        view
+        returns (bool)
+    {
+        uint16 tokenID = state.getTokenID(token);
+        return state.pendingForcedWithdrawals[accountID][tokenID].timestamp != 0;
     }
 
     function withdrawProtocolFees(
@@ -406,6 +432,19 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
     {
         state.withdrawFromMerkleTree(merkleProof);
+    }
+
+    function isWithdrawnInWithdrawalMode(
+        uint32  accountID,
+        address token
+        )
+        external
+        override
+        view
+        returns (bool)
+    {
+        uint16 tokenID = state.getTokenID(token);
+        return state.withdrawnInWithdrawMode[accountID][tokenID];
     }
 
     function withdrawFromDepositRequest(
@@ -557,6 +596,53 @@ contract ExchangeV3 is IExchangeV3
         returns (bool)
     {
         return state.approvedTx[owner][transactionHash];
+    }
+
+    function approveAmmUpdate(
+        address owner,
+        uint32  accountID,
+        address token,
+        uint8   feeBips,
+        uint96  tokenWeight,
+        uint    validUntil
+        )
+        external
+        override
+        nonReentrant
+        onlyFromUserOrAgent(owner)
+    {
+        require(accountID < ExchangeData.MAX_NUM_ACCOUNTS(), "INVALID_ACCOUNTID");
+
+        uint16 tokenID = state.getTokenID(token);
+
+        require(
+            block.timestamp > state.pendingAmmUpdates[owner][accountID][tokenID].validUntil,
+            "AMM_UPDATE_ALREADY_PENDING"
+        );
+
+        state.pendingAmmUpdates[owner][accountID][tokenID] = ExchangeData.AmmUpdate({
+            feeBips: feeBips,
+            tokenWeight: tokenWeight,
+            validUntil: uint64(validUntil)
+        });
+
+        emit AmmUpdateRequested(
+            owner,
+            accountID,
+            token,
+            feeBips,
+            tokenWeight,
+            validUntil
+        );
+    }
+
+    function getDomainSeparator()
+        external
+        override
+        view
+        returns (bytes32)
+    {
+        return state.DOMAIN_SEPARATOR;
     }
 
     // -- Admins --
