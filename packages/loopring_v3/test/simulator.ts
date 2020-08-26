@@ -513,6 +513,7 @@ export class Simulator {
     const account = state.getAccount(update.accountID);
     const balance = account.getBalance(update.tokenID);
 
+    account.nonce++;
     account.feeBipsAMM = update.feeBips;
     balance.weightAMM = update.tokenWeight;
 

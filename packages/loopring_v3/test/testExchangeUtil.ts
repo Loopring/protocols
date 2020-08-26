@@ -376,6 +376,53 @@ export namespace TransferUtils {
   }
 }
 
+
+export namespace AmmUpdateUtils {
+  export function toTypedData(update: AmmUpdate, verifyingContract: string) {
+    const typedData = {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" }
+        ],
+        AmmUpdate: [
+          { name: "owner", type: "address" },
+          { name: "accountID", type: "uint32" },
+          { name: "tokenID", type: "uint16" },
+          { name: "feeBips", type: "uint8" },
+          { name: "tokenWeight", type: "uint256" },
+          { name: "validUntil", type: "uint32" },
+          { name: "nonce", type: "uint32" }
+        ]
+      },
+      primaryType: "AmmUpdate",
+      domain: {
+        name: "Loopring Protocol",
+        version: "3.6.0",
+        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
+        verifyingContract
+      },
+      message: {
+        owner: update.owner,
+        accountID: update.accountID,
+        tokenID: update.tokenID,
+        feeBips: update.feeBips,
+        tokenWeight: update.tokenWeight,
+        validUntil: update.validUntil,
+        nonce: update.nonce
+      }
+    };
+    return typedData;
+  }
+
+  export function getHash(update: AmmUpdate, verifyingContract: string) {
+    const typedData = this.toTypedData(update, verifyingContract);
+    return sigUtil.TypedDataUtils.sign(typedData);
+  }
+}
+
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
@@ -1350,11 +1397,17 @@ export class ExchangeTestUtil {
       accountID: account.accountID,
       tokenID,
       feeBips,
-      tokenWeight
+      tokenWeight,
+      validUntil: 0xffffffff,
+      nonce: account.nonce++
     };
 
     // Approve onchain
-    await this.exchange.approveAmmUpdate(owner, account.accountID, token, feeBips, tokenWeight, 0xffffffff, { from: owner });
+    const hash = AmmUpdateUtils.getHash(
+      ammUpdate,
+      this.exchange.address
+    );
+    await this.exchange.approveTransaction(owner, hash, { from: owner });
 
     this.pendingTransactions[this.exchangeId].push(ammUpdate);
 
@@ -1848,6 +1901,15 @@ export class ExchangeTestUtil {
     ]);
   }
 
+  public getAmmUpdateAuxData(ammUpdate: AmmUpdate) {
+    return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
+      web3.utils.hexToBytes(
+        ammUpdate.onchainSignature ? ammUpdate.onchainSignature : "0x"
+      ),
+      ammUpdate.validUntil
+    ]);
+  }
+
   public getWithdrawalAuxData(withdrawal: WithdrawalRequest) {
     return web3.eth.abi.encodeParameter(
       "tuple(uint256,bytes,uint256,address,bytes,uint32)",
@@ -1935,7 +1997,13 @@ export class ExchangeTestUtil {
           }
         } else if (transaction.txType === "AmmUpdate") {
           numConditionalTransactions++;
-          auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+          const encodedAmmUpdateData = this.getAmmUpdateAuxData(
+            transaction
+          );
+          auxiliaryData.push([
+            i,
+            web3.utils.hexToBytes(encodedAmmUpdateData)
+          ]);
         }
       }
       console.log("numConditionalTransactions: " + numConditionalTransactions);
@@ -2098,6 +2166,7 @@ export class ExchangeTestUtil {
           da.addNumber(update.tokenID, 2);
           da.addNumber(update.feeBips, 1);
           da.addBN(new BN(update.tokenWeight), 12);
+          da.addNumber(update.nonce, 4);
           da.addBN(new BN(update.balance), 12);
         }
         // console.log("type: " + da.extractUint8(0));

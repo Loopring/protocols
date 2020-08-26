@@ -598,44 +598,6 @@ contract ExchangeV3 is IExchangeV3
         return state.approvedTx[owner][transactionHash];
     }
 
-    function approveAmmUpdate(
-        address owner,
-        uint32  accountID,
-        address token,
-        uint8   feeBips,
-        uint96  tokenWeight,
-        uint    validUntil
-        )
-        external
-        override
-        nonReentrant
-        onlyFromUserOrAgent(owner)
-    {
-        require(accountID < ExchangeData.MAX_NUM_ACCOUNTS(), "INVALID_ACCOUNTID");
-
-        uint16 tokenID = state.getTokenID(token);
-
-        require(
-            block.timestamp > state.pendingAmmUpdates[owner][accountID][tokenID].validUntil,
-            "AMM_UPDATE_ALREADY_PENDING"
-        );
-
-        state.pendingAmmUpdates[owner][accountID][tokenID] = ExchangeData.AmmUpdate({
-            feeBips: feeBips,
-            tokenWeight: tokenWeight,
-            validUntil: uint64(validUntil)
-        });
-
-        emit AmmUpdateRequested(
-            owner,
-            accountID,
-            token,
-            feeBips,
-            tokenWeight,
-            validUntil
-        );
-    }
-
     function getDomainSeparator()
         external
         override

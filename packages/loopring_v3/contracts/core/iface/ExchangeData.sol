@@ -208,9 +208,6 @@ library ExchangeData
         // A map from an account owner to an approved transaction hash to if the transaction is approved or not
         mapping (address => mapping (bytes32 => bool)) approvedTx;
 
-        // A map from an account owner to an account to a token to the AMM update
-        mapping (address => mapping (uint32 => mapping (uint16 => AmmUpdate))) pendingAmmUpdates;
-
         // A map from an account owner to a destination address to a tokenID to an amount to a nonce to a new recipient address
         mapping (address => mapping (address => mapping (uint16 => mapping (uint => mapping (uint32 => address))))) withdrawalRecipient;
 

@@ -9,6 +9,7 @@ interface AmmUpdate {
   tokenID?: number;
   feeBips?: number;
   tokenWeight?: BN;
+  nonce?: number;
   balance?: BN;
 }
 
@@ -22,6 +23,7 @@ export class AmmUpdateProcessor {
     const account = state.getAccount(update.accountID);
     const balance = account.getBalance(update.tokenID);
 
+    account.nonce++;
     account.feeBipsAMM = update.feeBips;
     balance.weightAMM = update.tokenWeight;
 
@@ -43,6 +45,8 @@ export class AmmUpdateProcessor {
     offset += 1;
     update.tokenWeight = data.extractUint96(offset);
     offset += 12;
+    update.nonce = data.extractUint32(offset);
+    offset += 4;
     update.balance = data.extractUint96(offset);
     offset += 12;
 

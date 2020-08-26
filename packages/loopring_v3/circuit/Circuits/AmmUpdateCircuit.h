@@ -24,8 +24,11 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
     DualVariableGadget tokenID;
     DualVariableGadget feeBips;
     DualVariableGadget tokenWeight;
+    DualVariableGadget nonce;
     DualVariableGadget balance;
 
+    // Increase the nonce
+    AddGadget nonce_after;
     // Increase the number of conditional transactions
     UnsafeAddGadget numConditionalTransactionsAfter;
 
@@ -41,8 +44,16 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
           tokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenID")),
           feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
           tokenWeight(pb, NUM_BITS_AMOUNT, FMT(prefix, ".tokenWeight")),
+          nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
           balance(pb, state.accountA.balanceS.balance, NUM_BITS_AMOUNT, FMT(prefix, ".balance")),
 
+          // Increase the nonce
+          nonce_after(
+            pb,
+            state.accountA.account.nonce,
+            state.constants._1,
+            NUM_BITS_NONCE,
+            FMT(prefix, ".nonce_after")),
           // Increase the number of conditional transactions
           numConditionalTransactionsAfter(
             pb,
@@ -53,6 +64,7 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
         setArrayOutput(TXV_ACCOUNT_A_ADDRESS, accountID.bits);
         setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
 
+        setOutput(TXV_ACCOUNT_A_NONCE, nonce_after.result());
         setOutput(TXV_ACCOUNT_A_FEEBIPSAMM, feeBips.packed);
         setOutput(TXV_BALANCE_A_S_WEIGHTAMM, tokenWeight.packed);
 
@@ -72,8 +84,11 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
         tokenID.generate_r1cs_witness(pb, update.tokenID);
         feeBips.generate_r1cs_witness(pb, update.feeBips);
         tokenWeight.generate_r1cs_witness(pb, update.tokenWeight);
+        nonce.generate_r1cs_witness();
         balance.generate_r1cs_witness();
 
+        // Increase the nonce
+        nonce_after.generate_r1cs_witness();
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter.generate_r1cs_witness();
     }
@@ -86,8 +101,11 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
         tokenID.generate_r1cs_constraints(true);
         feeBips.generate_r1cs_constraints(true);
         tokenWeight.generate_r1cs_constraints(true);
+        nonce.generate_r1cs_constraints(true);
         balance.generate_r1cs_constraints(true);
 
+        // Increase the nonce
+        nonce_after.generate_r1cs_witness();
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter.generate_r1cs_constraints();
     }
@@ -100,6 +118,7 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
             tokenID.bits,
             VariableArrayT(2, state.constants._0), feeBips.bits,
             tokenWeight.bits,
+            nonce.bits,
             balance.bits
         });
     }

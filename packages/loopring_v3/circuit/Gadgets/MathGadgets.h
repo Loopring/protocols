@@ -2135,17 +2135,34 @@ public:
     }
 };
 
-// Calculates [0, 1]**[0, inf[ using an approximation.
+// Calculates [0, 1]**[0, inf[ using an approximation. Best accuracy is achieved around 1**y.
+// The result is enforced to be containable in NUM_BITS_AMOUNT bits.
+// The higher the number of iterations, the greater the accuracy (and the greater the cost)
+/*
+    const x = (_x - BASE_FIXED);
+    const bn = [BASE_FIXED, BASE_FIXED];
+    const cn = [BASE_FIXED, y];
+    const xn = [BASE_FIXED, x];
+    let sum = xn[0]*cn[0] + xn[1]*cn[1];
+    for (let i = 2; i < iterations; i++) {
+        const v = y - bn[i-1];
+        bn.push(bn[i-1] + BASE_FIXED);
+        xn.push(Math.floor((xn[i-1] * x) / BASE_FIXED));
+        cn.push(Math.floor((cn[i-1] * v) / bn[i]));
+        sum += xn[i]*cn[i];
+    }
+    return Math.floor(sum / BASE_FIXED);
+*/
 class PowerGadget : public GadgetT
 {
 public:
 
-    const VariableT& _x;
-    const VariableT& _y;
+    //const VariableT& _x;
+    //const VariableT& _y;
 
     UnsafeMulGadget sum0;
 
-    UnsafeSubGadget x1;
+    SubGadget x1;
     UnsafeMulGadget t1;
     SignedAddGadget sum1;
 
@@ -2155,8 +2172,10 @@ public:
     std::vector<SignedMulDivGadget> cn;
     std::vector<SignedMulDivGadget> tn;
     std::vector<SignedAddGadget> sum;
+    std::vector<DualVariableGadget> cnRangeCheck;
 
     std::unique_ptr<MulDivGadget> res;
+    std::unique_ptr<DualVariableGadget> resRangeCheck;
     std::unique_ptr<RequireEqualGadget> requirePositive;
 
     PowerGadget(
@@ -2169,12 +2188,12 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        _x(x),
-        _y(y),
+        //_x(x),
+        //_y(y),
 
         sum0(pb, constants.fixedBase, constants.fixedBase, FMT(prefix, ".sum0")),
 
-        x1(pb, constants.fixedBase, x, FMT(prefix, ".x1")),
+        x1(pb, constants.fixedBase, x, NUM_BITS_FIXED_BASE, FMT(prefix, ".x1")),
         t1(pb, x1.result(), y, FMT(prefix, ".t1")),
         sum1(pb, constants, SignedVariableT(constants._1, sum0.result()), SignedVariableT(constants._0, t1.result()), NUM_BITS_AMOUNT*2, FMT(prefix, ".sum1"))
     {
@@ -2184,20 +2203,22 @@ public:
         {
             bn.emplace_back(pb, i > 2 ? bn.back().result() : constants.fixedBase, constants.fixedBase, FMT(prefix, ".bn"));
             vn.emplace_back(pb, constants, SignedVariableT(constants._1, y), i > 2 ? SignedVariableT(constants._1, bn[i-2-1].result()) : SignedVariableT(constants._1, constants.fixedBase), NUM_BITS_AMOUNT, FMT(prefix, ".vn"));
-            xn.emplace_back(pb, constants, xn.size() > 0 ? xn.back().result() : x1.result(), x1.result(), constants.fixedBase, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 60, FMT(prefix, ".xn"));
+            xn.emplace_back(pb, constants, xn.size() > 0 ? xn.back().result() : x1.result(), x1.result(), constants.fixedBase, NUM_BITS_FIXED_BASE, NUM_BITS_FIXED_BASE, NUM_BITS_FIXED_BASE, FMT(prefix, ".xn"));
             cn.emplace_back(pb, constants, (i > 2) ? cn.back().result() : SignedVariableT(constants._1, y), vn.back().result(), bn.back().result(), NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, FMT(prefix, ".cn"));
-            tn.emplace_back(pb, constants, SignedVariableT(constants.values[(i+1)%2], xn.back().result()), cn.back().result(), constants._1, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 1, FMT(prefix, ".t2"));
+            tn.emplace_back(pb, constants, SignedVariableT(constants.values[(i+1)%2], xn.back().result()), cn.back().result(), constants._1, NUM_BITS_FIXED_BASE, NUM_BITS_AMOUNT, 1, FMT(prefix, ".t2"));
             sum.emplace_back(pb, constants, sum.size() > 0 ? sum.back().result() : sum1.result(), tn.back().result(), NUM_BITS_AMOUNT*2, FMT(prefix, ".sum"));
+            cnRangeCheck.emplace_back(pb, cn.back().result().value, NUM_BITS_AMOUNT, FMT(prefix, ".cnRangeCheck"));
         }
 
-        res.reset(new MulDivGadget(pb, constants, sum.back().result().value, constants._1, constants.fixedBase, NUM_BITS_AMOUNT*2, 1, NUM_BITS_AMOUNT, FMT(prefix, ".res")));
+        res.reset(new MulDivGadget(pb, constants, sum.back().result().value, constants._1, constants.fixedBase, NUM_BITS_AMOUNT*2, 1, NUM_BITS_FIXED_BASE, FMT(prefix, ".res")));
+        resRangeCheck.reset(new DualVariableGadget(pb, res->result(), NUM_BITS_AMOUNT, FMT(prefix, ".resRangeCheck")));
         requirePositive.reset(new RequireEqualGadget(pb, sum.back().result().sign, constants._1, FMT(prefix, ".requirePositive")));
     }
 
     void generate_r1cs_witness()
     {
-        print(pb, "x", _x);
-        print(pb, "y", _y);
+        //print(pb, "x", _x);
+        //print(pb, "y", _y);
 
         sum0.generate_r1cs_witness();
         //print(pb, "sum0", sum0.result());
@@ -2228,8 +2249,10 @@ public:
             sum[i].generate_r1cs_witness();
             //print(pb, "sum[i].s", sum[i].result().sign);
             //print(pb, "sum[i].v", sum[i].result().value);
+            cnRangeCheck[i].generate_r1cs_witness();
         }
         res->generate_r1cs_witness();
+        resRangeCheck->generate_r1cs_witness();
         requirePositive->generate_r1cs_witness();
     }
 
@@ -2249,8 +2272,10 @@ public:
             cn[i].generate_r1cs_constraints();
             tn[i].generate_r1cs_constraints();
             sum[i].generate_r1cs_constraints();
+            cnRangeCheck[i].generate_r1cs_constraints();
         }
         res->generate_r1cs_constraints();
+        resRangeCheck->generate_r1cs_constraints();
         requirePositive->generate_r1cs_constraints();
     }
 

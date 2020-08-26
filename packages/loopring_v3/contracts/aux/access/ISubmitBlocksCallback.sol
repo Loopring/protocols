@@ -11,8 +11,11 @@ abstract contract ISubmitBlocksCallback
 {
     function onSubmitBlocks(
         ExchangeData.Block[] memory blocks,
-        bytes memory auxiliaryData
+        uint                        blockIdx,
+        uint                        txIdx,
+        bytes                memory auxiliaryData
         )
         public
-        virtual;
+        virtual
+        returns (uint numTransactionsConsumed);
 }

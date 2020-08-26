@@ -132,6 +132,7 @@ def ammUpdateFromJSON(jUpdate):
     update.tokenID = int(jUpdate["tokenID"])
     update.feeBips = int(jUpdate["feeBips"])
     update.tokenWeight = str(jUpdate["tokenWeight"])
+    update.nonce = int(jUpdate["nonce"])
     return update
 
 def ringFromJSON(jRing, state):

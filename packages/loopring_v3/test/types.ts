@@ -169,7 +169,6 @@ export interface WithdrawalRequest {
   transactionHash?: string;
 }
 
-
 export interface AmmUpdate {
   txType?: "AmmUpdate";
   exchange: string;
@@ -180,6 +179,11 @@ export interface AmmUpdate {
 
   feeBips: number;
   tokenWeight: BN;
+
+  validUntil: number;
+  nonce: number;
+
+  onchainSignature?: any;
 }
 
 // Blocks

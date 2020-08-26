@@ -558,6 +558,7 @@ class CalcOutGivenInAMMGadget : public GadgetT
 {
   public:
     MulDivGadget weightRatio;
+    DualVariableGadget weightRatioRangeCheck;
     MulDivGadget fee;
     UnsafeSubGadget amountInWithoutFee;
     AddGadget y_denom;
@@ -578,20 +579,22 @@ class CalcOutGivenInAMMGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          weightRatio(pb, constants, weightIn, constants.fixedBase, weightOut, NUM_BITS_AMOUNT, 60, NUM_BITS_AMOUNT, FMT(prefix, ".weightRatio")),
-          fee(pb, constants, amountIn, feeBips, constants._10000, NUM_BITS_AMOUNT, 60, 14 /*log2(10000)*/, FMT(prefix, ".fee")),
+          weightRatio(pb, constants, weightIn, constants.fixedBase, weightOut, NUM_BITS_AMOUNT, NUM_BITS_FIXED_BASE, NUM_BITS_AMOUNT, FMT(prefix, ".weightRatio")),
+          weightRatioRangeCheck(pb, weightRatio.result(), NUM_BITS_AMOUNT, FMT(prefix, ".weightRatioRangeCheck")),
+          fee(pb, constants, amountIn, feeBips, constants._10000, NUM_BITS_AMOUNT, NUM_BITS_FIXED_BASE, 14 /*log2(10000)*/, FMT(prefix, ".fee")),
           amountInWithoutFee(pb, amountIn, fee.result(), FMT(prefix, ".amountInWithoutFee")),
           y_denom(pb, balanceIn, amountInWithoutFee.result(), NUM_BITS_AMOUNT, FMT(prefix, ".y_denom")),
-          y(pb, constants, balanceIn, constants.fixedBase, y_denom.result(), NUM_BITS_AMOUNT, 60, NUM_BITS_AMOUNT, FMT(prefix, ".y")),
+          y(pb, constants, balanceIn, constants.fixedBase, y_denom.result(), NUM_BITS_AMOUNT, NUM_BITS_FIXED_BASE, NUM_BITS_AMOUNT, FMT(prefix, ".y")),
           p(pb, constants, y.result(), weightRatio.result(), 4, FMT(prefix, ".p")),
-          invP(pb, constants.fixedBase, p.result(), NUM_BITS_AMOUNT, FMT(prefix, ".invP")),
-          res(pb, constants, balanceOut, invP.result(), constants.fixedBase, NUM_BITS_AMOUNT, NUM_BITS_AMOUNT, 60, FMT(prefix, ".res"))
+          invP(pb, constants.fixedBase, p.result(), NUM_BITS_FIXED_BASE, FMT(prefix, ".invP")),
+          res(pb, constants, balanceOut, invP.result(), constants.fixedBase, NUM_BITS_AMOUNT, NUM_BITS_FIXED_BASE, NUM_BITS_FIXED_BASE, FMT(prefix, ".res"))
     {
     }
 
     void generate_r1cs_witness()
     {
         weightRatio.generate_r1cs_witness();
+        weightRatioRangeCheck.generate_r1cs_witness();
         fee.generate_r1cs_witness();
         amountInWithoutFee.generate_r1cs_witness();
         y_denom.generate_r1cs_witness();
@@ -604,6 +607,7 @@ class CalcOutGivenInAMMGadget : public GadgetT
     void generate_r1cs_constraints()
     {
         weightRatio.generate_r1cs_constraints();
+        weightRatioRangeCheck.generate_r1cs_constraints();
         fee.generate_r1cs_constraints();
         amountInWithoutFee.generate_r1cs_constraints();
         y_denom.generate_r1cs_constraints();

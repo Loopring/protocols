@@ -334,8 +334,6 @@ contract AmmPool is ISubmitBlocksCallback {
 
     struct AuxiliaryData
     {
-        uint blockIdx;
-        uint txIdx;
         uint numItems;
     }
 
@@ -344,15 +342,19 @@ contract AmmPool is ISubmitBlocksCallback {
     // Uses synchronized logic on L1/L2 to make onchain logic easy and efficient.
     function onSubmitBlocks(
         ExchangeData.Block[] memory blocks,
-        bytes memory auxiliaryData
+        uint                        blockIdx,
+        uint                        txIdx,
+        bytes                memory auxiliaryData
         )
         public
         override
         online
         onlyExchangeOwner
+        returns (uint numTransactionsConsumed)
     {
         AuxiliaryData memory auxData = abi.decode(auxiliaryData, (AuxiliaryData));
-        ExchangeData.Block memory _block = blocks[auxData.blockIdx];
+        ExchangeData.Block memory _block = blocks[blockIdx];
+        bytes32 exchangeDomainSeparator = exchange.getDomainSeparator();
 
         uint offset = 0;
         //address exchange = _block.data.toAddress(offset);
@@ -373,25 +375,24 @@ contract AmmPool is ISubmitBlocksCallback {
         offset += 4;
 
         // Jump the the starting transaction
-        offset += auxData.txIdx * ExchangeData.TX_DATA_AVAILABILITY_SIZE();
+        offset += txIdx * ExchangeData.TX_DATA_AVAILABILITY_SIZE();
 
         // First update the AMM parameters, which also pulls the AMM balances to L1
         uint[] memory ammBalances = new uint[](tokens.length);
         for (uint i = 0; i < tokens.length; i++) {
-            exchange.approveAmmUpdate(
-                address(this),
-                accountID,
-                tokens[i].addr,
-                feeBips,
-                tokens[i].weight,
-                block.timestamp
-            );
             AmmUpdateTransaction.AmmUpdate memory update = readAmmUpdate(_block.data, offset);
             offset += ExchangeData.TX_DATA_AVAILABILITY_SIZE();
             require(update.owner == address(this), "INVALID_TX_DATA");
             require(update.accountID == accountID, "INVALID_TX_DATA");
             require(update.tokenID == tokens[i].tokenID, "INVALID_TX_DATA");
+            require(update.feeBips == feeBips, "INVALID_TX_DATA");
+            require(update.tokenWeight == tokens[i].weight, "INVALID_TX_DATA");
             ammBalances[i] = update.balance;
+            update.validUntil = 0xffffffff;
+            bytes32 txHash = AmmUpdateTransaction.hashTx(exchangeDomainSeparator, update);
+            // Approve the AMM update
+            exchange.approveTransaction(address(this), txHash);
+            numTransactionsConsumed++;
         }
 
         // Process work in the queue
@@ -424,7 +425,7 @@ contract AmmPool is ISubmitBlocksCallback {
         }
         queuePos += auxData.numItems;
 
-        // Deposit/Withdraw from the exchange when necessary
+        // Deposit/Withdraw to/from the account when necessary
         for (uint i = 0; i < tokens.length; i++) {
             if (toDeposit[i] > toWithdraw[i]) {
                 uint amount = toDeposit[i] - toWithdraw[i];
@@ -442,6 +443,7 @@ contract AmmPool is ISubmitBlocksCallback {
                     uint96(_deposit.amount),
                     new bytes(0)
                 );
+                numTransactionsConsumed++;
                 // Total balance in this contract decreases by the amount deposited
                 totalBalance[tokens[i].addr] = totalBalance[tokens[i].addr].sub(amount);
             } else if (toWithdraw[i] > toDeposit[i]) {
@@ -456,9 +458,11 @@ contract AmmPool is ISubmitBlocksCallback {
                 require(withdrawal.fee == 0, "INVALID_TX_DATA");
                 require(withdrawal.to == address(this), "INVALID_TX_DATA");
                 require(withdrawal.extraData.length == 0, "INVALID_TX_DATA");
-                bytes32 txHash = WithdrawTransaction.hashTx(exchange.getDomainSeparator(), withdrawal);
-                // Do the withdrawal
+                withdrawal.validUntil = 0xffffffff;
+                bytes32 txHash = WithdrawTransaction.hashTx(exchangeDomainSeparator, withdrawal);
+                // Approve the withdrawal
                 exchange.approveTransaction(address(this), txHash);
+                numTransactionsConsumed++;
                 // Total balance in this contract increases by the amount withdrawn
                 totalBalance[tokens[i].addr] = totalBalance[tokens[i].addr].add(amount);
             }

@@ -84,15 +84,6 @@ abstract contract IExchangeV3 is IExchange
         bytes32 transactionHash
     );
 
-    event AmmUpdateRequested(
-        address owner,
-        uint32  accountID,
-        address token,
-        uint8   feeBips,
-        uint96  tokenWeight,
-        uint    validUntil
-    );
-
     // events from libraries
     /*event DepositProcessed(
         address owner,
@@ -653,27 +644,6 @@ abstract contract IExchangeV3 is IExchange
         virtual
         view
         returns (bool);
-
-    /// @dev Allows an agent to approve an AMM update.
-    ///
-    ///      This function can only be called by an agent.
-    ///
-    /// @param owner The owner of the account
-    /// @param accountID The accountID
-    /// @param token The token for which to update the weight
-    /// @param feeBips The new general fee for the AMM
-    /// @param weight The new weight for the specified token
-    /// @param validUntil The time before the update needs to be done
-    function approveAmmUpdate(
-        address owner,
-        uint32  accountID,
-        address token,
-        uint8   feeBips,
-        uint96  weight,
-        uint    validUntil
-        )
-        external
-        virtual;
 
     // -- Admins --
     /// @dev Sets the max time deposits have to wait before becoming withdrawable.

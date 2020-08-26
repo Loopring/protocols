@@ -709,6 +709,7 @@ class State(object):
             newState.TXV_ACCOUNT_A_ADDRESS = txInput.accountID
             newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
 
+            newState.TXV_ACCOUNT_A_NONCE = 1
             newState.TXV_ACCOUNT_A_FEEBIPSAMM = txInput.feeBips
             newState.TXV_BALANCE_A_S_WEIGHT = txInput.tokenWeight
 
