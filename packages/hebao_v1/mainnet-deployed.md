@@ -91,7 +91,7 @@
     - Params:  
       0x728348A947B808483365Bf24F5f7886f0a9786Bf // old Controller  
       0x303Baa149eFc0b3B47136177F27637f2c491E457  
-- Updrader2: 0x23033E1BAbff3Ab65E25f644a18AE6Ebf601EB70
+- Updrader2: 0x750F41B0AbAf33fA79287a80eFa714171feEDDe2
     - Params:  
       ```
       "0xd33a5Abf3ce5E9Ab889E998c09Ff49bD45Da3258", // new controller
