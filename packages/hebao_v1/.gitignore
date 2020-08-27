@@ -24,3 +24,4 @@ EDDSA_KeyPair.json
 *.deployed
 *.abi
 *.bin
+wallet_addr/
