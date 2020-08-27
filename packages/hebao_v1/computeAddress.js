@@ -35,12 +35,10 @@ function computeAddress(owner, salt) {
     codeHash
   ]);
 
-  const addr =
-    "0x" +
-    ethUtil
-      .keccak(rawBuf)
-      .slice(12)
-      .toString("hex");
+  const addr = ethUtil
+    .keccak(rawBuf)
+    .slice(12)
+    .toString("hex");
   return ethUtil.toChecksumAddress(addr);
 }
 
@@ -55,7 +53,7 @@ function isIdentical(str) {
 }
 
 function calcScore(hexstr, isTail = false) {
-  let score = 10;
+  let score = 50;
 
   const len = hexstr.length;
   if (isIdentical(hexstr.slice(0, 6))) score += 50;
@@ -77,14 +75,23 @@ function calcScore(hexstr, isTail = false) {
   const charSet2 = new Set();
   for (const ch of arr) {
     charSet2.add(ch);
+
+    if (ch == "6" || ch == "8" || ch == "0") {
+      score += 1;
+    } else if (ch == "4") {
+      score -= 2;
+    }
   }
   score -= charSet2.size;
+
+  if (score < 0) score = 0;
 
   return score;
 }
 
-function findTop50FromRange(from, to) {
-  const result = [];
+function findTopAddressesInBatch(from, to, count) {
+  const addresses = [];
+
   for (let i = from; i < to; i++) {
     const addr = computeAddress(zeroAddress, i);
     const prefixScore = calcScore(addr.slice(2, 8));
@@ -96,78 +103,57 @@ function findTop50FromRange(from, to) {
         .join(""),
       true
     );
-    let score = prefixScore + tailScore;
-    if (addr[2] === addr[addr.length - 1]) {
-      score += 20;
-    }
-
-    if (score > 20) {
-      result.push({ score, addr, salt: i });
-    }
+    let score = prefixScore * prefixScore + tailScore * tailScore;
+    addresses.push({ score, addr, salt: i });
   }
 
-  console.log(
-    `from: ${from}, to: ${to}, batch length(score > 20): ${result.length}`
-  );
-  result.sort((a, b) => b.score - a.score);
-  return result.slice(0, 50);
+  const prettyOnes = addresses
+    .sort((a, b) => b.score - a.score)
+    .slice(0, count);
+  const uglyOnes = addresses.sort((a, b) => a.score - b.score).slice(0, count);
+
+  return [prettyOnes, uglyOnes];
 }
 
-function findNormalAddrs(from, to, resAmount) {
-  const result = [];
-  let i = 0;
-  for (i = from; i < to; i++) {
-    const addr = computeAddress(zeroAddress, i);
-    const prefixScore = calcScore(addr.slice(2, 8));
-    const tailScore = calcScore(
-      addr
-        .slice(-6)
-        .split("")
-        .reverse()
-        .join(""),
-      true
-    );
-    let score = prefixScore + tailScore;
-    if (addr[2] === addr[addr.length - 1]) {
-      score += 20;
-    }
+function findTopAddresses(from, to, count) {
+  const batch = 10000;
+  let prettyOnes = [];
+  let uglyOnes = [];
 
-    if (score < 10) {
-      console.log({ score, addr, salt: i });
-      result.push({ score, addr, salt: i });
-    }
-
-    if (result.length >= resAmount) break;
-  }
-
-  // write to file:
-  if (result.length > 0) {
-    const fileName = `plainBlankAddrs-${from}-${i}.json`;
-    fs.writeFileSync(fileName, JSON.stringify(result, undefined, 2));
-  }
-
-  return result;
-}
-
-function findPreciousBlankAddrs(from, to, resAmount) {
-  let total = [];
-  const step = 10000;
-  for (let i = from; i < to; i += step) {
-    let stepTo = i + step;
+  for (let i = from; i < to; i += batch) {
+    let stepTo = i + batch;
     if (stepTo > to) stepTo = to;
-    const res = findTop50FromRange(i, stepTo);
-    total = total.concat(res);
+
+    let res = findTopAddressesInBatch(i, stepTo, count);
+
+    prettyOnes = prettyOnes
+      .concat(res[0])
+      .sort((a, b) => b.score - a.score)
+      .slice(0, count);
+    uglyOnes = uglyOnes
+      .concat(res[1])
+      .sort((a, b) => a.score - b.score)
+      .slice(0, count);
+
+    console.log(`batch ${i} - ${stepTo} done`);
   }
 
-  total.sort((a, b) => b.score - a.score);
-  total = total.slice(0, resAmount);
-  console.log("totoal:", total);
-
   // write to file:
-  const fileName = `prettyBlankAddrs-${from}-${to}.json`;
-  fs.writeFileSync(fileName, JSON.stringify(total, undefined, 2));
 
-  return total;
+  if (!fs.existsSync(`wallet_addr`)) {
+    fs.mkdirSync(`wallet_addr`);
+  }
+
+  fs.writeFileSync(
+    `wallet_addr/${from}-${to}_${count}_pretty.json`,
+    JSON.stringify(prettyOnes, undefined, 2)
+  );
+  console.log(`file written: wallet_addr/${from}-${to}_${count}_pretty.json`);
+  fs.writeFileSync(
+    `wallet_addr/${from}-${to}_${count}_ugly.json`,
+    JSON.stringify(uglyOnes, undefined, 2)
+  );
+  console.log(`file written: wallet_addr/${from}-${to}_${count}_ugly.json`);
 }
 
 function main() {
@@ -183,6 +169,4 @@ function main() {
 
 // main();
 
-findPreciousBlankAddrs(0, 1000000, 100);
-
-// findNormalAddrs(0, 1000, 100);
+findTopAddresses(0, 1000000, 100);

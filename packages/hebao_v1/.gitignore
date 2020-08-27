@@ -24,5 +24,4 @@ EDDSA_KeyPair.json
 *.deployed
 *.abi
 *.bin
-prettyBlankAddrs-*
-plainBlankAddrs-*
+wallet_addr/
