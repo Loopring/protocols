@@ -4,10 +4,11 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../aux/access/ISubmitBlocksCallback.sol";
+import "../aux/transactions/BlockReader.sol";
 import "../thirdparty/BytesUtil.sol";
-import "../core/iface/ExchangeData.sol";
 import "../core/iface/IExchangeV3.sol";
 import "../lib/AddressUtil.sol";
+import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 
@@ -19,7 +20,7 @@ contract AmmPool is ISubmitBlocksCallback {
 
     using AddressUtil       for address;
     using AddressUtil       for address payable;
-    using BytesUtil         for bytes;
+    using BlockReader       for ExchangeData.Block;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
@@ -104,7 +105,7 @@ contract AmmPool is ISubmitBlocksCallback {
     mapping (address => mapping (address => uint)) balance;
     // A map from an owner to a token to the balance locked
     mapping (address => mapping (address => uint)) locked;
-    // A map a token to the total balance owned by different users (NOT the balance of the pool itself)
+    // A map a token to the total balance owned directly by LPs (so NOT owned by the pool itself)
     mapping (address => uint) totalBalance;
 
     modifier onlyExchangeOwner()
@@ -126,11 +127,11 @@ contract AmmPool is ISubmitBlocksCallback {
     }
 
     function setupPool(
-        IExchangeV3 _exchange,
-        uint32      _accountID,
+        IExchangeV3        _exchange,
+        uint32             _accountID,
         address[] calldata _tokens,
-        uint96[] calldata _weights,
-        uint8 _feeBips
+        uint96[]  calldata _weights,
+        uint8              _feeBips
         )
         external
     {
@@ -338,8 +339,10 @@ contract AmmPool is ISubmitBlocksCallback {
     }
 
     // Processes work in the queue. Can only be called by the exchange owner
-    // before the blocks are submitted.
-    // Uses synchronized logic on L1/L2 to make onchain logic easy and efficient.
+    // before the blocks containing work for this pool are submitted.
+    // This just verifies if the work is done correctly and only then approves
+    // the L2 transactions that were already included in the block.
+    // Uses synchronized logic on L1/L2 to make the onchain logic easy and efficient.
     function onSubmitBlocks(
         ExchangeData.Block[] memory blocks,
         uint                        blockIdx,
@@ -356,48 +359,28 @@ contract AmmPool is ISubmitBlocksCallback {
         ExchangeData.Block memory _block = blocks[blockIdx];
         bytes32 exchangeDomainSeparator = exchange.getDomainSeparator();
 
-        uint offset = 0;
-        //address exchange = _block.data.toAddress(offset);
-        offset += 20;
-        //bytes32 merkleRootBefore = _block.data.toBytes32(offset);
-        offset += 32;
-        //bytes32 merkleRootAfter = _block.data.toBytes32(offset);
-        offset += 32;
-        //uint32 inputTimestamp = _block.data.toUint32(offset);
-        offset += 4;
-        //uint8 protocolTakerFeeBips = _block.data.toUint8(offset);
-        offset += 1;
-        //uint8 protocolMakerFeeBips = _block.data.toUint8(offset);
-        offset += 1;
-        //uint numConditionalTransactions = data.toUint32(offset);
-        offset += 4;
-        // uint32 operatorAccountID = data.toUint32(offset);
-        offset += 4;
-
-        // Jump the the starting transaction
-        offset += txIdx * ExchangeData.TX_DATA_AVAILABILITY_SIZE();
-
-        // First update the AMM parameters, which also pulls the AMM balances to L1
+        // First always update the AMM parameters, which also pulls the AMM balances onchain
+        uint[] memory initialAmmBalances = new uint[](tokens.length);
         uint[] memory ammBalances = new uint[](tokens.length);
         for (uint i = 0; i < tokens.length; i++) {
-            AmmUpdateTransaction.AmmUpdate memory update = readAmmUpdate(_block.data, offset);
-            offset += ExchangeData.TX_DATA_AVAILABILITY_SIZE();
+            // Check that the AMM update in the block matches the expected update
+            AmmUpdateTransaction.AmmUpdate memory update = _block.readAmmUpdate(txIdx++);
             require(update.owner == address(this), "INVALID_TX_DATA");
             require(update.accountID == accountID, "INVALID_TX_DATA");
             require(update.tokenID == tokens[i].tokenID, "INVALID_TX_DATA");
             require(update.feeBips == feeBips, "INVALID_TX_DATA");
             require(update.tokenWeight == tokens[i].weight, "INVALID_TX_DATA");
-            ammBalances[i] = update.balance;
+            // Now approve this AMM update
             update.validUntil = 0xffffffff;
             bytes32 txHash = AmmUpdateTransaction.hashTx(exchangeDomainSeparator, update);
-            // Approve the AMM update
             exchange.approveTransaction(address(this), txHash);
             numTransactionsConsumed++;
+            // AMM account balance now available onchain
+            initialAmmBalances[i] = update.balance;
+            ammBalances[i] = initialAmmBalances[i];
         }
 
         // Process work in the queue
-        uint[] memory toDeposit = new uint[](tokens.length);
-        uint[] memory toWithdraw = new uint[](tokens.length);
         for (uint n = queuePos; n < queuePos + auxData.numItems; n++) {
             QueueItem memory item = queue[n];
             // TODO: all the necessary pool logic, mint/burn LP tokens,...
@@ -425,18 +408,25 @@ contract AmmPool is ISubmitBlocksCallback {
         }
         queuePos += auxData.numItems;
 
-        // Deposit/Withdraw to/from the account when necessary
+        // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < tokens.length; i++) {
-            if (toDeposit[i] > toWithdraw[i]) {
-                uint amount = toDeposit[i] - toWithdraw[i];
-                DepositTransaction.Deposit memory _deposit = readDeposit(_block.data, offset);
-                offset += ExchangeData.TX_DATA_AVAILABILITY_SIZE();
+            if (ammBalances[i] > initialAmmBalances[i]) {
+                uint amount = ammBalances[i] - initialAmmBalances[i];
+                // Check that the deposit in the block matches the expected deposit
+                DepositTransaction.Deposit memory _deposit = _block.readDeposit(txIdx++);
                 require(_deposit.owner == address(this), "INVALID_TX_DATA");
                 require(_deposit.accountID == accountID, "INVALID_TX_DATA");
                 require(_deposit.tokenID == tokens[i].tokenID, "INVALID_TX_DATA");
                 require(_deposit.amount == amount, "INVALID_TX_DATA");
-                // Do the deposit
-                exchange.deposit(
+                // Now do this deposit
+                uint ethValue = 0;
+                if (tokens[i].addr == address(0)) {
+                    ethValue = _deposit.amount;
+                } else {
+                    // Approve the deposit transfer
+                    ERC20(tokens[i].addr).approve(address(exchange), _deposit.amount);
+                }
+                exchange.deposit{value: ethValue}(
                     _deposit.owner,
                     _deposit.owner,
                     tokens[i].addr,
@@ -446,10 +436,10 @@ contract AmmPool is ISubmitBlocksCallback {
                 numTransactionsConsumed++;
                 // Total balance in this contract decreases by the amount deposited
                 totalBalance[tokens[i].addr] = totalBalance[tokens[i].addr].sub(amount);
-            } else if (toWithdraw[i] > toDeposit[i]) {
-                uint amount = toWithdraw[i] - toDeposit[i];
-                WithdrawTransaction.Withdrawal memory withdrawal = readWithdrawal(_block.data, offset);
-                offset += ExchangeData.TX_DATA_AVAILABILITY_SIZE();
+            } else if (initialAmmBalances[i] > ammBalances[i]) {
+                uint amount = initialAmmBalances[i] - ammBalances[i];
+                // Check that the withdrawal in the block matches the expected withdrawal
+                WithdrawTransaction.Withdrawal memory withdrawal = _block.readWithdrawal(txIdx++);
                 require(withdrawal.owner == address(this), "INVALID_TX_DATA");
                 require(withdrawal.accountID == accountID, "INVALID_TX_DATA");
                 require(withdrawal.tokenID == tokens[i].tokenID, "INVALID_TX_DATA");
@@ -458,62 +448,14 @@ contract AmmPool is ISubmitBlocksCallback {
                 require(withdrawal.fee == 0, "INVALID_TX_DATA");
                 require(withdrawal.to == address(this), "INVALID_TX_DATA");
                 require(withdrawal.extraData.length == 0, "INVALID_TX_DATA");
+                // Now approve this withdrawal
                 withdrawal.validUntil = 0xffffffff;
                 bytes32 txHash = WithdrawTransaction.hashTx(exchangeDomainSeparator, withdrawal);
-                // Approve the withdrawal
                 exchange.approveTransaction(address(this), txHash);
                 numTransactionsConsumed++;
                 // Total balance in this contract increases by the amount withdrawn
                 totalBalance[tokens[i].addr] = totalBalance[tokens[i].addr].add(amount);
             }
         }
-    }
-
-    function readAmmUpdate(
-        bytes memory data,
-        uint         offset
-        )
-        internal
-        pure
-        returns (AmmUpdateTransaction.AmmUpdate memory)
-    {
-        ExchangeData.TransactionType txType = ExchangeData.TransactionType(
-            data.toUint8(offset)
-        );
-        offset += 1;
-        require(txType == ExchangeData.TransactionType.AMM_UPDATE, "UNEXPTECTED_TX_TYPE");
-        return AmmUpdateTransaction.readTx(data, offset);
-    }
-
-    function readDeposit(
-        bytes memory data,
-        uint         offset
-        )
-        internal
-        pure
-        returns (DepositTransaction.Deposit memory)
-    {
-        ExchangeData.TransactionType txType = ExchangeData.TransactionType(
-            data.toUint8(offset)
-        );
-        offset += 1;
-        require(txType == ExchangeData.TransactionType.DEPOSIT, "UNEXPTECTED_TX_TYPE");
-        return DepositTransaction.readTx(data, offset);
-    }
-
-    function readWithdrawal(
-        bytes memory data,
-        uint         offset
-        )
-        internal
-        pure
-        returns (WithdrawTransaction.Withdrawal memory)
-    {
-        ExchangeData.TransactionType txType = ExchangeData.TransactionType(
-            data.toUint8(offset)
-        );
-        offset += 1;
-        require(txType == ExchangeData.TransactionType.WITHDRAWAL, "UNEXPTECTED_TX_TYPE");
-        return WithdrawTransaction.readTx(data, offset);
     }
 }

@@ -48,11 +48,11 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     }
 
     function submitBlocksWithCallbacks(
-        ExchangeData.Block[] memory blocks,
+        ExchangeData.Block[]    memory blocks,
         ISubmitBlocksCallback[] memory callbacks,
-        uint[] memory blockIndices,
-        uint[] memory txIndices,
-        bytes[] memory auxiliaryData
+        uint[]                  memory blockIndices,
+        uint[]                  memory txIndices,
+        bytes[]                 memory auxiliaryData
         )
         external
     {
@@ -63,6 +63,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
 
         require(callbacks.length == auxiliaryData.length, "INVALID_DATA");
 
+        // Process the callback logic.
         // Make sure all txs can only be used once
         uint txIdxLowerBound = 0;
         uint previousBlockIdx = 0;
@@ -82,6 +83,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             txIdxLowerBound = txIndices[i].add(numTransactionsConsumed);
         }
 
+        // Finally submit the blocks
         IExchangeV3(target).submitBlocks(blocks);
     }
 

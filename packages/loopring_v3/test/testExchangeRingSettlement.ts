@@ -43,7 +43,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("Trade", function() {
     this.timeout(0);
 
-    it.only("AMM", async () => {
+    it("AMM", async () => {
       const ring: SpotTrade = {
         orderA: {
           owner: exchangeTestUtil.testContext.orderOwners[0],

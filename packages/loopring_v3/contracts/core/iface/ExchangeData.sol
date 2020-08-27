@@ -96,14 +96,6 @@ library ExchangeData
         uint64  timestamp;
     }
 
-    // Pending AMM update
-    struct AmmUpdate
-    {
-        uint8   feeBips;
-        uint96  tokenWeight;
-        uint64  validUntil;
-    }
-
     struct Constants
     {
         uint SNARK_SCALAR_FIELD;
@@ -142,12 +134,14 @@ library ExchangeData
         uint     pubKeyX;
         uint     pubKeyY;
         uint32   nonce;
+        uint     feeBipsAMM;
     }
 
     struct BalanceLeaf
     {
         uint16   tokenID;
         uint96   balance;
+        uint96   weightAMM;
         uint     storageRoot;
     }
 

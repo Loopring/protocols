@@ -277,6 +277,8 @@ export interface Storage {
 export interface Balance {
   /** How amount of tokens the account owner has for a token. */
   balance: BN;
+  /** The weight of the token for AMM. */
+  weightAMM: BN;
   /** The storage. */
   storage: { [key: number]: Storage };
 
@@ -300,6 +302,8 @@ export interface Account {
   publicKeyY: string;
   /** The nonce value of the account. */
   nonce: number;
+  /** The fee received for AMM. */
+  feeBipsAMM: number;
 
   balancesMerkleTree?: SparseMerkleTree;
 }
@@ -335,12 +339,16 @@ export interface OnchainAccountLeaf {
   pubKeyY: string;
   /** The current nonce value of the account. */
   nonce: number;
+  /** The fee received for AMM. */
+  feeBipsAMM: number;
 }
 export interface OnchainBalanceLeaf {
   /** The ID of the token. */
   tokenID: number;
   /** The current balance the account has for the requested token. */
   balance: string;
+  /** The weight of the token for AMM. */
+  weightAMM: string;
   /** The storage root of the balance leaf. */
   storageRoot: string;
 }

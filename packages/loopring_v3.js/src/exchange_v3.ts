@@ -324,11 +324,13 @@ export class ExchangeV3 {
       owner: account.owner,
       pubKeyX: account.publicKeyX,
       pubKeyY: account.publicKeyY,
-      nonce: account.nonce
+      nonce: account.nonce,
+      feeBipsAMM: account.feeBipsAMM
     };
     const balanceLeaf: OnchainBalanceLeaf = {
       tokenID,
       balance: account.getBalance(tokenID).balance.toString(10),
+      weightAMM: account.getBalance(tokenID).weightAMM.toString(10),
       storageRoot:
         account.getBalance(tokenID).storageTree !== undefined
           ? account.getBalance(tokenID).storageTree.getRoot()
