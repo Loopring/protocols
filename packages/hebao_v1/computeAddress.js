@@ -170,4 +170,5 @@ console.log(
   batchIdxEnd * batchSize,
   "):"
 );
+console.log(select, "best/worst addresses will be selected");
 findTopAddresses(batchSize, batchIdxStart, batchIdxEnd, select);
