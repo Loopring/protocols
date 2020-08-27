@@ -86,7 +86,7 @@ contract UpgraderModule is BaseModule {
         }
 
         SecurityStore_1_0_2.Guardian[] memory guardians =
-            oldSecurityStore.guardiansWithPending(wallet);
+            oldSecurityStore.guardians(wallet);
 
         for (uint i = 0; i < guardians.length; i++) {
             newSecurityStore.addGuardian(

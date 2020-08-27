@@ -17,7 +17,7 @@ abstract contract SecurityStore_1_0_2
     }
 
     // @dev Returns guardians who are either active or pending addition.
-    function guardiansWithPending(address wallet)
+    function guardians(address wallet)
         public
         virtual
         view
