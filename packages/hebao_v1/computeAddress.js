@@ -113,6 +113,42 @@ function findTop50FromRange(from, to) {
   return result.slice(0, 50);
 }
 
+function findNormalAddrs(from, to, resAmount) {
+  const result = [];
+  let i = 0;
+  for (i = from; i < to; i++) {
+    const addr = computeAddress(zeroAddress, i);
+    const prefixScore = calcScore(addr.slice(2, 8));
+    const tailScore = calcScore(
+      addr
+        .slice(-6)
+        .split("")
+        .reverse()
+        .join(""),
+      true
+    );
+    let score = prefixScore + tailScore;
+    if (addr[2] === addr[addr.length - 1]) {
+      score += 20;
+    }
+
+    if (score < 10) {
+      console.log({ score, addr, salt: i });
+      result.push({ score, addr, salt: i });
+    }
+
+    if (result.length >= resAmount) break;
+  }
+
+  // write to file:
+  if (result.length > 0) {
+    const fileName = `plainBlankAddrs-${from}-${i}.json`;
+    fs.writeFileSync(fileName, JSON.stringify(result, undefined, 2));
+  }
+
+  return result;
+}
+
 function findPreciousBlankAddrs(from, to, resAmount) {
   let total = [];
   const step = 10000;
@@ -128,8 +164,8 @@ function findPreciousBlankAddrs(from, to, resAmount) {
   console.log("totoal:", total);
 
   // write to file:
-  const fileName = `blankAddrs-${from}-${to}.json`;
-  fs.writeFileSync(fileName, JSON.stringify(total, undefined, 4));
+  const fileName = `prettyBlankAddrs-${from}-${to}.json`;
+  fs.writeFileSync(fileName, JSON.stringify(total, undefined, 2));
 
   return total;
 }
@@ -148,3 +184,5 @@ function main() {
 // main();
 
 findPreciousBlankAddrs(0, 1000000, 100);
+
+// findNormalAddrs(0, 1000, 100);

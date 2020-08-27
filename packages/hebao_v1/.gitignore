@@ -24,4 +24,5 @@ EDDSA_KeyPair.json
 *.deployed
 *.abi
 *.bin
-blankAddrs-*
+prettyBlankAddrs-*
+plainBlankAddrs-*
