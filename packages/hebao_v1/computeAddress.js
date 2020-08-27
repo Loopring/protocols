@@ -97,6 +97,7 @@ function findTopAddresses(batchSize, batchIdxStart, batchIdxEnd, select) {
   let uglyOnes = [];
 
   for (let batchIdx = batchIdxStart; batchIdx < batchIdxEnd; batchIdx++) {
+    const startTime = new Date().getTime();
     let res = findTopAddressesInBatch(batchSize, batchIdx, select);
 
     prettyOnes = prettyOnes
@@ -108,6 +109,8 @@ function findTopAddresses(batchSize, batchIdxStart, batchIdxEnd, select) {
       .sort((a, b) => a.score - b.score)
       .slice(0, select);
 
+    const endTime = new Date().getTime();
+
     console.log(
       "batch#",
       batchIdx,
@@ -115,7 +118,9 @@ function findTopAddresses(batchSize, batchIdxStart, batchIdxEnd, select) {
       batchIdx - batchIdxStart + 1,
       " of ",
       batchIdxEnd - batchIdxStart,
-      ")"
+      "), time used:",
+      (endTime - startTime) / 1000,
+      "seconds"
     );
   }
 
@@ -149,15 +154,17 @@ function main() {
 }
 
 // main();
-const batchSize = 100000;
+const batchSize = 1000000;
 const batchIdxStart = 0;
-const batchIdxEnd = 10;
+const batchIdxEnd = 100;
 const select = 1000;
 
 console.log(
   "Start scoring ",
   ((batchIdxEnd - batchIdxStart) * batchSize * 1.0) / 1000000,
-  "million addresses with salt range = [",
+  "million addresses in",
+  batchIdxEnd - batchIdxStart,
+  "batches with salt range = [",
   batchIdxStart * batchSize,
   ", ",
   batchIdxEnd * batchSize,
