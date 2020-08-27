@@ -116,7 +116,7 @@ function findTopAddresses(batchSize, batchIdxStart, batchIdxEnd, select) {
       batchIdx,
       "(",
       batchIdx - batchIdxStart + 1,
-      " of ",
+      "of",
       batchIdxEnd - batchIdxStart,
       "), time used:",
       (endTime - startTime) / 1000,
@@ -160,13 +160,13 @@ const batchIdxEnd = 100;
 const select = 1000;
 
 console.log(
-  "Start scoring ",
+  "Start scoring",
   ((batchIdxEnd - batchIdxStart) * batchSize * 1.0) / 1000000,
   "million addresses in",
   batchIdxEnd - batchIdxStart,
   "batches with salt range = [",
   batchIdxStart * batchSize,
-  ", ",
+  ",",
   batchIdxEnd * batchSize,
   "):"
 );
