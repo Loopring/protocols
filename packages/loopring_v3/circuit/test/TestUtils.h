@@ -24,6 +24,10 @@ static const BigInt &validate(const BigInt &v)
     return v;
 }
 
+static BigInt abs(const BigInt& num) {
+    return num < 0 ? -num : num;
+}
+
 static FieldT toFieldElement(const BigInt &v)
 {
     return FieldT(validate(v).to_string().c_str());

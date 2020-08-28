@@ -15,6 +15,8 @@ using namespace ethsnarks;
 namespace Loopring
 {
 
+// Updates the AMM fee bips and token weights for an account.
+// Also makes a token balance of an account available in the data-availability data.
 class AmmUpdateCircuit : public BaseTransactionCircuit
 {
   public:
@@ -42,7 +44,7 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
           owner(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
           accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
           tokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".tokenID")),
-          feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
+          feeBips(pb, NUM_BITS_AMM_BIPS, FMT(prefix, ".feeBips")),
           tokenWeight(pb, NUM_BITS_AMOUNT, FMT(prefix, ".tokenWeight")),
           nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
           balance(pb, state.accountA.balanceS.balance, NUM_BITS_AMOUNT, FMT(prefix, ".balance")),
@@ -68,7 +70,7 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
         setOutput(TXV_ACCOUNT_A_FEEBIPSAMM, feeBips.packed);
         setOutput(TXV_BALANCE_A_S_WEIGHTAMM, tokenWeight.packed);
 
-        // No singatures needed
+        // No signatures needed
         setOutput(TXV_SIGNATURE_REQUIRED_A, state.constants._0);
         setOutput(TXV_SIGNATURE_REQUIRED_B, state.constants._0);
 
@@ -116,7 +118,7 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
             owner.bits,
             accountID.bits,
             tokenID.bits,
-            VariableArrayT(2, state.constants._0), feeBips.bits,
+            feeBips.bits,
             tokenWeight.bits,
             nonce.bits,
             balance.bits

@@ -28,6 +28,7 @@ static const unsigned int NUM_MARKETS_PER_BLOCK = 16;
 static const unsigned int NUM_BITS_TX_TYPE = 8;
 static const unsigned int NUM_BITS_ADDRESS = 160;
 static const unsigned int NUM_BITS_HASH = 160;
+static const unsigned int NUM_BITS_AMM_BIPS = 8;
 
 static const char *EMPTY_TRADE_HISTORY = "65927491675782344981534105642433692294864120547424810690492392975145903570"
                                          "90";

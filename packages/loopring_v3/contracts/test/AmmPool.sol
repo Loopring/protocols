@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../aux/access/ISubmitBlocksCallback.sol";
+import "../aux/access/ISubmitBlockCallback.sol";
 import "../aux/transactions/BlockReader.sol";
 import "../thirdparty/BytesUtil.sol";
 import "../core/iface/IExchangeV3.sol";
@@ -16,7 +16,7 @@ import "../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "../core/impl/libtransactions/DepositTransaction.sol";
 import "../core/impl/libtransactions/WithdrawTransaction.sol";
 
-contract AmmPool is ISubmitBlocksCallback {
+contract AmmPool is ISubmitBlockCallback {
 
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -67,22 +67,15 @@ contract AmmPool is ISubmitBlocksCallback {
 
     enum WorkType
     {
+        NONE,
         JOIN,
         EXIT
-    }
-
-    enum Status
-    {
-        PENDING,
-        SUCCESS,
-        FAILED
     }
 
     struct QueueItem
     {
         address  owner;
         uint64   timestamp;
-        Status   status;
         WorkType workType;
         PoolJoin join;
         PoolExit exit;
@@ -105,7 +98,7 @@ contract AmmPool is ISubmitBlocksCallback {
     mapping (address => mapping (address => uint)) balance;
     // A map from an owner to a token to the balance locked
     mapping (address => mapping (address => uint)) locked;
-    // A map a token to the total balance owned directly by LPs (so NOT owned by the pool itself)
+    // A map from a token to the total balance owned directly by LPs (so NOT owned by the pool itself)
     mapping (address => uint) totalBalance;
 
     modifier onlyExchangeOwner()
@@ -157,6 +150,8 @@ contract AmmPool is ISubmitBlocksCallback {
         payable
         online
     {
+        require(amounts.length == tokens.length, "INVALID_DATA");
+
         // Deposit the max amounts to this contract so we are sure
         // the amounts are available when the actual deposit to the exchange is done.
         for (uint i = 0; i < tokens.length; i++) {
@@ -177,19 +172,20 @@ contract AmmPool is ISubmitBlocksCallback {
         external
         payable
     {
+        require(amounts.length == tokens.length, "INVALID_DATA");
+
+        // Withdraw any outstanding balances for the pool account on the exchange
+        address[] memory owners = new address[](tokens.length);
+        address[] memory tokenAddresses = new address[](tokens.length);
+        for (uint i = 0; i < tokens.length; i++) {
+            owners[i] = address(this);
+            tokenAddresses[i] = tokens[i].addr;
+        }
+        exchange.withdrawFromApprovedWithdrawals(owners, tokenAddresses);
+
+        // Withdraw
         for (uint i = 0; i < tokens.length; i++) {
             address token = tokens[i].addr;
-
-            // Check if there are any outstanding withdrawals on the exchange
-            if (exchange.getAmountWithdrawable(address(this), token) > 0) {
-                address[] memory owners = new address[](1);
-                owners[0] = address(this);
-                address[] memory tokenAddresses = new address[](1);
-                tokenAddresses[0] = token;
-                exchange.withdrawFromApprovedWithdrawals(owners, tokenAddresses);
-            }
-
-            // Withdraw
             require(availableBalance(msg.sender, token) >= amounts[i], "INSUFFICIENT_BALANCE");
             balance[msg.sender][token] = balance[msg.sender][token].sub(amounts[i]);
             if (token == address(0)) {
@@ -246,7 +242,6 @@ contract AmmPool is ISubmitBlocksCallback {
         queue.push(QueueItem({
             owner: msg.sender,
             timestamp: uint64(block.timestamp),
-            status: Status.PENDING,
             workType: WorkType.JOIN,
             join: join,
             exit: exit
@@ -270,7 +265,6 @@ contract AmmPool is ISubmitBlocksCallback {
         queue.push(QueueItem({
             owner: msg.sender,
             timestamp: uint64(block.timestamp),
-            status: Status.PENDING,
             workType: WorkType.EXIT,
             join: join,
             exit: exit
@@ -287,7 +281,7 @@ contract AmmPool is ISubmitBlocksCallback {
     {
         require(
             block.timestamp > queue[queuePos].timestamp + MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN &&
-            queue[queuePos].status == Status.PENDING,
+            queue[queuePos].workType != WorkType.NONE,
             "REQUEST_NOT_TOO_OLD"
         );
 
@@ -322,15 +316,24 @@ contract AmmPool is ISubmitBlocksCallback {
                 ready = ready && !exchange.isForcedWithdrawalPending(accountID, tokens[i].addr);
             }
         }
-
         // Check that nothing is withdrawable anymore.
         for (uint i = 0; i < tokens.length; i++) {
             ready = ready && (exchange.getAmountWithdrawable(address(this), tokens[i].addr) == 0);
         }
-
         require(ready, "FUNDS_STILL_IN_EXCHANGE");
 
-        // TODO: withdraw proportional to the pool amount owned
+        // Use the balances on this contract
+        for (uint i = 0; i < tokens.length; i++) {
+            uint contractBalance;
+            if (tokens[i].addr == address(0)) {
+                contractBalance = address(this).balance;
+            } else {
+                contractBalance = ERC20(tokens[i].addr).balanceOf(address(this));
+            }
+
+            uint poolBalance = contractBalance.sub(totalBalance[tokens[i].addr]);
+            // TODO: withdraw proportional to the pool amount owned
+        }
     }
 
     struct AuxiliaryData
@@ -343,11 +346,10 @@ contract AmmPool is ISubmitBlocksCallback {
     // This just verifies if the work is done correctly and only then approves
     // the L2 transactions that were already included in the block.
     // Uses synchronized logic on L1/L2 to make the onchain logic easy and efficient.
-    function onSubmitBlocks(
-        ExchangeData.Block[] memory blocks,
-        uint                        blockIdx,
-        uint                        txIdx,
-        bytes                memory auxiliaryData
+    function onSubmitBlock(
+        ExchangeData.Block memory _block,
+        uint                      txIdx,
+        bytes              memory auxiliaryData
         )
         public
         override
@@ -356,11 +358,13 @@ contract AmmPool is ISubmitBlocksCallback {
         returns (uint numTransactionsConsumed)
     {
         AuxiliaryData memory auxData = abi.decode(auxiliaryData, (AuxiliaryData));
-        ExchangeData.Block memory _block = blocks[blockIdx];
         bytes32 exchangeDomainSeparator = exchange.getDomainSeparator();
 
+        BlockReader.BlockHeader memory header = _block.readHeader();
+        require(header.exchange == address(exchange), "INVALID_EXCHANGE");
+
         // First always update the AMM parameters, which also pulls the AMM balances onchain
-        uint[] memory initialAmmBalances = new uint[](tokens.length);
+        uint[] memory ammBalancesInAccount = new uint[](tokens.length);
         uint[] memory ammBalances = new uint[](tokens.length);
         for (uint i = 0; i < tokens.length; i++) {
             // Check that the AMM update in the block matches the expected update
@@ -376,8 +380,8 @@ contract AmmPool is ISubmitBlocksCallback {
             exchange.approveTransaction(address(this), txHash);
             numTransactionsConsumed++;
             // AMM account balance now available onchain
-            initialAmmBalances[i] = update.balance;
-            ammBalances[i] = initialAmmBalances[i];
+            ammBalancesInAccount[i] = update.balance;
+            ammBalances[i] = ammBalancesInAccount[i];
         }
 
         // Process work in the queue
@@ -394,7 +398,6 @@ contract AmmPool is ISubmitBlocksCallback {
                     // Make the amount unavailable for withdrawing
                     balance[item.owner][tokens[i].addr] = balance[item.owner][tokens[i].addr].sub(amount);
                 }
-                item.status = Status.SUCCESS;
             } else if (item.workType == WorkType.EXIT) {
                 PoolExit memory exit = item.exit;
                 for (uint i = 0; i < tokens.length; i++) {
@@ -403,15 +406,16 @@ contract AmmPool is ISubmitBlocksCallback {
                     // Make the amount available for withdrawing
                     balance[item.owner][tokens[i].addr] = balance[item.owner][tokens[i].addr].add(amount);
                 }
-                item.status = Status.SUCCESS;
             }
+            // Clean up the queue item to get the gas refund
+            delete queue[n];
         }
         queuePos += auxData.numItems;
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < tokens.length; i++) {
-            if (ammBalances[i] > initialAmmBalances[i]) {
-                uint amount = ammBalances[i] - initialAmmBalances[i];
+            if (ammBalances[i] > ammBalancesInAccount[i]) {
+                uint amount = ammBalances[i] - ammBalancesInAccount[i];
                 // Check that the deposit in the block matches the expected deposit
                 DepositTransaction.Deposit memory _deposit = _block.readDeposit(txIdx++);
                 require(_deposit.owner == address(this), "INVALID_TX_DATA");
@@ -436,8 +440,8 @@ contract AmmPool is ISubmitBlocksCallback {
                 numTransactionsConsumed++;
                 // Total balance in this contract decreases by the amount deposited
                 totalBalance[tokens[i].addr] = totalBalance[tokens[i].addr].sub(amount);
-            } else if (initialAmmBalances[i] > ammBalances[i]) {
-                uint amount = initialAmmBalances[i] - ammBalances[i];
+            } else if (ammBalancesInAccount[i] > ammBalances[i]) {
+                uint amount = ammBalancesInAccount[i] - ammBalances[i];
                 // Check that the withdrawal in the block matches the expected withdrawal
                 WithdrawTransaction.Withdrawal memory withdrawal = _block.readWithdrawal(txIdx++);
                 require(withdrawal.owner == address(this), "INVALID_TX_DATA");

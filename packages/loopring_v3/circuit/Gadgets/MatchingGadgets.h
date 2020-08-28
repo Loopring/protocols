@@ -490,7 +490,7 @@ const calcSpotPrice = (balanceIn: number, weightIn: number, balanceOut: number, 
 }
 */
 // Result is guaranteed to fit inside NUM_BITS_AMOUNT bits.
-// Max ratio between weigts supported is 2**(96-14)/(10**18).
+// Max ratio between weights supported is 2**(96-14)/(10**18).
 class SpotPriceAMMGadget : public GadgetT
 {
   public:

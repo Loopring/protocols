@@ -1706,27 +1706,285 @@ TEST_CASE("ArraySelect", "[ArraySelectGadget]")
     }
 }
 
-/*const pow_approx = (_x: number, _y: number, iterations: number = 4) => {
-    const x = (_x - BASE_FIXED);
-    const a = _y;
+TEST_CASE("SignedAdd", "[SignedAddGadget]")
+{
+    unsigned int maxLength = 252;
+    for (unsigned int n = 1; n <= maxLength; n++)
+    {
+        DYNAMIC_SECTION("Bit-length: " << n)
+        {
+            auto addChecked = [n](const BigInt &_A, const BigInt &_B) {
+                protoboard<FieldT> pb;
 
-    console.log("x: " + x);
-    console.log("x_: " + (BASE_FIXED - _x));
+                pb_variable<FieldT> A = make_variable(pb, toFieldElement(abs(_A)), "A");
+                pb_variable<FieldT> B = make_variable(pb, toFieldElement(abs(_B)), "B");
 
-    const bn = [BASE_FIXED, BASE_FIXED];
-    const cn = [BASE_FIXED, a];
-    const xn = [BASE_FIXED, x];
-    let sum = xn[0]*cn[0] + xn[1]*cn[1];
-    for (let i = 2; i < iterations; i++) {
-        const v = a - bn[i-1];
-        bn.push(bn[i-1] + BASE_FIXED);
-        cn.push(Math.floor((cn[i-1] * v) / bn[i]));
-        xn.push(Math.floor((xn[i-1] * x) / BASE_FIXED));
-        sum += xn[i]*cn[i]
+                Constants constants(pb, "constants");
+
+                SignedAddGadget addGadget(pb, constants,
+                  SignedVariableT(_A > 0 ? constants._1 : constants._0, A),
+                  SignedVariableT(_B > 0 ? constants._1 : constants._0, B),
+                  n, "addGadget");
+                addGadget.generate_r1cs_constraints();
+                addGadget.generate_r1cs_witness();
+
+                BigInt sum = _A + _B;
+                unsigned int sign = sum > 0 ? 1 : 0;
+                bool expectedSatisfied = (abs(sum) <= getMaxFieldElementAsBigInt(n));
+
+                REQUIRE(pb.is_satisfied() == expectedSatisfied);
+                if (expectedSatisfied)
+                {
+                    REQUIRE(((pb.val(addGadget.result().value)) == toFieldElement(abs(sum))));
+                    REQUIRE(((pb.val(addGadget.result().sign)) == toFieldElement(sign)));
+                }
+            };
+
+            BigInt max = getMaxFieldElementAsBigInt(n);
+            BigInt halfMax = getMaxFieldElementAsBigInt(n - 1);
+
+            SECTION("0 + 0")
+            {
+                addChecked(0, 0);
+            }
+
+            SECTION("0 + 1")
+            {
+                addChecked(0, 1);
+            }
+
+            SECTION("0 + (-1)")
+            {
+                addChecked(0, -1);
+            }
+
+            SECTION("1 + (-1)")
+            {
+                addChecked(1, -1);
+            }
+
+            SECTION("(-1) + 0")
+            {
+                addChecked(-1, 0);
+            }
+
+            SECTION("(-1) + (-1)")
+            {
+                addChecked(-1, -1);
+            }
+
+            SECTION("max + 0")
+            {
+                addChecked(max, 0);
+            }
+
+            SECTION("max + (-1)")
+            {
+                addChecked(max, -1);
+            }
+
+            SECTION("max + (-max)")
+            {
+                addChecked(max, -max);
+            }
+
+            SECTION("(-max) + (-max)")
+            {
+                addChecked(-max, -max);
+            }
+
+            SECTION("halfMax + halfMax + 1")
+            {
+                addChecked(halfMax, halfMax + 1);
+            }
+
+            SECTION("max + 1 (overflow)")
+            {
+                addChecked(max, 1);
+            }
+
+            SECTION("max + max (overflow)")
+            {
+                addChecked(max, max);
+            }
+
+            SECTION("halfMax + halfMax + 2 (overflow)")
+            {
+                addChecked(halfMax, halfMax + 2);
+            }
+        }
     }
+}
 
-    return Math.floor(sum / BASE_FIXED);
-}*/
+TEST_CASE("SignedSub", "[SignedSubGadget]")
+{
+    unsigned int maxLength = 252;
+    for (unsigned int n = 1; n <= maxLength; n++)
+    {
+        DYNAMIC_SECTION("Bit-length: " << n)
+        {
+            auto subChecked = [n](const BigInt &_A, const BigInt &_B) {
+                protoboard<FieldT> pb;
+
+                pb_variable<FieldT> A = make_variable(pb, toFieldElement(abs(_A)), "A");
+                pb_variable<FieldT> B = make_variable(pb, toFieldElement(abs(_B)), "B");
+
+                Constants constants(pb, "constants");
+
+                SignedSubGadget subGadget(pb, constants,
+                  SignedVariableT(_A > 0 ? constants._1 : constants._0, A),
+                  SignedVariableT(_B > 0 ? constants._1 : constants._0, B),
+                  n, "subGadget");
+                subGadget.generate_r1cs_constraints();
+                subGadget.generate_r1cs_witness();
+
+                BigInt sum = _A - _B;
+                unsigned int sign = sum > 0 ? 1 : 0;
+                bool expectedSatisfied = (abs(sum) <= getMaxFieldElementAsBigInt(n));
+
+                REQUIRE(pb.is_satisfied() == expectedSatisfied);
+                if (expectedSatisfied)
+                {
+                    REQUIRE(((pb.val(subGadget.result().value)) == toFieldElement(abs(sum))));
+                    REQUIRE(((pb.val(subGadget.result().sign)) == toFieldElement(sign)));
+                }
+            };
+
+            BigInt max = getMaxFieldElementAsBigInt(n);
+            BigInt halfMax = getMaxFieldElementAsBigInt(n - 1);
+
+            SECTION("0 - 0")
+            {
+                subChecked(0, 0);
+            }
+
+            SECTION("0 - 1")
+            {
+                subChecked(0, 1);
+            }
+
+            SECTION("0 - (-1)")
+            {
+                subChecked(0, -1);
+            }
+
+            SECTION("1 - (-1)")
+            {
+                subChecked(1, -1);
+            }
+
+            SECTION("(-1) - 0")
+            {
+                subChecked(-1, 0);
+            }
+
+            SECTION("(-1) - (-1)")
+            {
+                subChecked(-1, -1);
+            }
+
+            SECTION("max - 0")
+            {
+                subChecked(max, 0);
+            }
+
+            SECTION("max - (-1)")
+            {
+                subChecked(max, -1);
+            }
+
+            SECTION("max - (-max)")
+            {
+                subChecked(max, -max);
+            }
+
+            SECTION("(-max) - (-max)")
+            {
+                subChecked(-max, -max);
+            }
+
+            SECTION("max - max")
+            {
+                subChecked(max, max);
+            }
+
+            SECTION("halfMax - (halfMax + 2)")
+            {
+                subChecked(halfMax, halfMax + 2);
+            }
+        }
+    }
+}
+
+TEST_CASE("SignedMulDiv", "[SignedMulDivGadget]")
+{
+    unsigned int maxLength = 253 / 2;
+    unsigned int numIterations = 8;
+    for (unsigned int n = 1; n <= maxLength; n++)
+    {
+        DYNAMIC_SECTION("Bit-length: " << n)
+        {
+            auto mulDivChecked = [n](
+                                   const BigInt &_value,
+                                   const BigInt &_numerator,
+                                   const BigInt &_denominator,
+                                   bool expectedSatisfied) {
+                protoboard<FieldT> pb;
+
+                pb_variable<FieldT> value = make_variable(pb, toFieldElement(abs(_value)), "value");
+                pb_variable<FieldT> numerator = make_variable(pb, toFieldElement(abs(_numerator)), "numerator");
+                pb_variable<FieldT> denominator = make_variable(pb, toFieldElement(_denominator), "denominator");
+
+                Constants constants(pb, "constants");
+                SignedMulDivGadget mulDivGadget(pb, constants,
+                  SignedVariableT(_value > 0 ? constants._1 : constants._0, value),
+                  SignedVariableT(_numerator > 0 ? constants._1 : constants._0, numerator),
+                  denominator, n, n, n, "mulDivGadget");
+                mulDivGadget.generate_r1cs_constraints();
+                mulDivGadget.generate_r1cs_witness();
+
+                REQUIRE(pb.is_satisfied() == expectedSatisfied);
+                if (expectedSatisfied)
+                {
+                    BigInt product = _value * _numerator;
+                    BigInt remainder = product % _denominator;
+                    BigInt result = product / _denominator;
+
+                    REQUIRE((pb.val(mulDivGadget.result().value) == toFieldElement(abs(result))));
+                    unsigned int sign = result > 0 ? 1 : 0;
+                    REQUIRE((pb.val(mulDivGadget.result().sign) == toFieldElement(sign)));
+                }
+            };
+
+            BigInt max = getMaxFieldElementAsBigInt(n);
+
+            SECTION("0 * 0 / 1 = 0")
+            {
+                mulDivChecked(0, 0, 1, true);
+            }
+
+            SECTION("1 * 1 / 1 = 1")
+            {
+                mulDivChecked(1, 1, 1, true);
+            }
+
+            SECTION("-1 * 1 / 1 = -1")
+            {
+                mulDivChecked(-1, 1, 1, true);
+            }
+
+            SECTION("1 * -1 / 1 = -1")
+            {
+                mulDivChecked(1, -1, 1, true);
+            }
+
+            SECTION("-1 * -1 / 1 = 1")
+            {
+                mulDivChecked(-1, -1, 1, true);
+            }
+        }
+    }
+}
 
 struct PowResult
 {
@@ -1755,10 +2013,9 @@ PowResult pow_approx(const FieldT& _x, const FieldT& _y, unsigned int iterations
     }
     sum /= BASE;
 
-    std::cout << "res: " << sum << std::endl;
-
+    //std::cout << "res: " << sum << std::endl;
     bool valid = true;
-    if (sum < 0 || sum >= SNARK_SCALAR_FIELD)
+    if (sum <= 0 || sum >= SNARK_SCALAR_FIELD)
     {
         valid = false;
         sum = 0;
@@ -1766,17 +2023,9 @@ PowResult pow_approx(const FieldT& _x, const FieldT& _y, unsigned int iterations
     return {valid, toFieldElement(sum)};
 }
 
-/*FieldT applyInterest(const FieldT& balance, const FieldT& oldIndex, const FieldT& newIndex)
-{
-    FieldT indexDiff = newIndex - oldIndex;
-    FieldT multiplier = power10(indexDiff);
-    FieldT newBalance = toFieldElement(toBigInt(balance) * toBigInt(power10(indexDiff)) / (BigInt(INDEX_BASE) * 10));
-    return newBalance;
-}*/
-
 TEST_CASE("Power", "[PowerGadget]")
 {
-    unsigned int numRandom = 256;
+    unsigned int numRandom = 128;
     unsigned int maxLength = 8;
     for (unsigned int n = 3; n <= maxLength; n++)
     {
@@ -1794,22 +2043,22 @@ TEST_CASE("Power", "[PowerGadget]")
                 powerGadget.generate_r1cs_constraints();
 
                 PowResult expected = pow_approx(_x, _y, n);
+                //print("satisfied", pb.is_satisfied());
+                //print("expect", expected.valid);
                 REQUIRE(pb.is_satisfied() == expected.valid);
-                print(pb, "gadget", powerGadget.result());
-                print("expect", expected.valid);
+                //print(pb, "gadget", powerGadget.result());
                 if (expected.valid)
                 {
                     REQUIRE((pb.val(powerGadget.result()) == expected.value));
                 }
             };
 
-
             unsigned int n = NUM_BITS_AMOUNT;
             BigInt BASE(FIXED_BASE);
             FieldT fixedBase = FieldT(FIXED_BASE);
             FieldT max = getMaxFieldElement(n);
 
-            /*SECTION("1^1")
+            SECTION("1^1")
             {
                 pow_approxChecked(fixedBase, fixedBase);
             }
@@ -1827,37 +2076,32 @@ TEST_CASE("Power", "[PowerGadget]")
             SECTION("0.5^2")
             {
                 pow_approxChecked(toFieldElement(BASE/2) , FieldT(2) * fixedBase);
-            }*/
+            }
 
-            /*SECTION("0.5^0.5")
+            SECTION("0.5^0.5")
             {
                 pow_approxChecked(toFieldElement(BASE/2), toFieldElement(BASE/2));
-            }*/
+            }
 
-            /*SECTION("0.333^0.5")
+            SECTION("0.333^0.5")
             {
-                pow_approxChecked(toFieldElement(BASE/3) , toFieldElement(BASE/2), 8);
+                pow_approxChecked(toFieldElement(BASE/3) , toFieldElement(BASE/2));
             }
 
             SECTION("0.5^0.333")
             {
-                pow_approxChecked(toFieldElement(BASE/2) , toFieldElement(BASE/3), 8);
+                pow_approxChecked(toFieldElement(BASE/2) , toFieldElement(BASE/3));
             }
 
             SECTION("0.5^3.333")
             {
-                pow_approxChecked(toFieldElement(BASE/2) , toFieldElement(BASE*10/3), 4);
+                pow_approxChecked(toFieldElement(BASE/2) , toFieldElement(BASE*10/3));
             }
 
             SECTION("0.333^3.333")
             {
-                pow_approxChecked(toFieldElement(BASE/3) , toFieldElement(BASE*10/3), 8);
-            }*/
-
-            /*SECTION("max")
-            {
-                pow_approxChecked(max, indexBase, indexBase);
-            }*/
+                pow_approxChecked(toFieldElement(BASE/3) , toFieldElement(BASE*10/3));
+            }
 
             SECTION("random value")
             {

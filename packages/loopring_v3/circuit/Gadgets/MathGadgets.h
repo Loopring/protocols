@@ -1899,8 +1899,7 @@ struct SignedVariableT
     }
 };
 
-
-// A + B = sum with A, B and abs(sum) < 2^n
+// A + B = sum with abs(A), abs(B) and abs(sum) < 2^n
 class SignedAddGadget : public GadgetT
 {
 public:
@@ -1920,9 +1919,9 @@ public:
 
     AndGadget signB_and_a_leq_b;
     AndGadget signA_and_not_a_leq_b;
-    OrGadget sign_math;
+    OrGadget sign;
     EqualGadget isZero;
-    TernaryGadget sign;
+    TernaryGadget normalizedSign;
 
     libsnark::dual_variable_gadget<FieldT> rangeCheck;
 
@@ -1951,9 +1950,9 @@ public:
 
         signB_and_a_leq_b(pb, {B.sign, a_leq_b.leq()}, FMT(prefix, ".signB_and_a_leq_b")),
         signA_and_not_a_leq_b(pb, {A.sign, a_leq_b.gt()}, FMT(prefix, ".signA_and_not_a_leq_b")),
-        sign_math(pb, {signB_and_a_leq_b.result(), signA_and_not_a_leq_b.result()}, FMT(prefix, ".sign")),
+        sign(pb, {signB_and_a_leq_b.result(), signA_and_not_a_leq_b.result()}, FMT(prefix, ".sign")),
         isZero(pb, value.result(), constants._0, FMT(prefix, ".isZero")),
-        sign(pb, isZero.result(), constants._0, sign_math.result(), FMT(prefix, ".sign")),
+        normalizedSign(pb, isZero.result(), constants._0, sign.result(), FMT(prefix, ".sign")),
 
         rangeCheck(pb, value.result(), n, FMT(prefix, ".rangeCheck"))
     {
@@ -1974,9 +1973,9 @@ public:
 
         signB_and_a_leq_b.generate_r1cs_witness();
         signA_and_not_a_leq_b.generate_r1cs_witness();
-        sign_math.generate_r1cs_witness();
-        isZero.generate_r1cs_witness();
         sign.generate_r1cs_witness();
+        isZero.generate_r1cs_witness();
+        normalizedSign.generate_r1cs_witness();
 
         rangeCheck.generate_r1cs_witness_from_packed();
     }
@@ -1995,20 +1994,20 @@ public:
 
         signB_and_a_leq_b.generate_r1cs_constraints();
         signA_and_not_a_leq_b.generate_r1cs_constraints();
-        sign_math.generate_r1cs_constraints();
-        isZero.generate_r1cs_constraints();
         sign.generate_r1cs_constraints();
+        isZero.generate_r1cs_constraints();
+        normalizedSign.generate_r1cs_constraints();
 
         rangeCheck.generate_r1cs_constraints(true);
     }
 
     const SignedVariableT result() const
     {
-        return SignedVariableT(sign.result(), value.result());
+        return SignedVariableT(normalizedSign.result(), value.result());
     }
 };
 
-// A - B = sum with A, B and sum < 2^n
+// A + (-B) = sum with abs(A), abs(B) and abs(sum) < 2^n
 class SignedSubGadget : public GadgetT
 {
 public:
@@ -2057,9 +2056,6 @@ class SignedMulDivGadget : public GadgetT
 {
 public:
 
-    VariableT _sV;
-    VariableT _sN;
-
     MulDivGadget res;
     EqualGadget sign_math;
 
@@ -2083,9 +2079,6 @@ public:
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
-
-        _sV(_value.sign),
-        _sN(_numerator.sign),
 
         res(pb, constants, _value.value, _numerator.value, _denominator, numBitsValue, numBitsNumerator, numBitsDenominator, FMT(prefix, ".res")),
         sign_math(pb, _value.sign, _numerator.sign, FMT(prefix, ".sign")),

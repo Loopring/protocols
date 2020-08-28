@@ -8,7 +8,7 @@ import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../lib/MathUint.sol";
 import "./SelectorBasedAccessManager.sol";
-import "./ISubmitBlocksCallback.sol";
+import "./ISubmitBlockCallback.sol";
 
 
 contract LoopringIOExchangeOwner is SelectorBasedAccessManager
@@ -20,6 +20,13 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     bool   public  open;
 
     event SubmitBlocksAccessOpened(bool open);
+
+    struct BlockCallback {
+        ISubmitBlockCallback target;
+        uint                 blockIdx;
+        uint                 txIdx;
+        bytes                auxiliaryData;
+    }
 
     constructor(address _exchange)
         SelectorBasedAccessManager(_exchange)
@@ -48,11 +55,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     }
 
     function submitBlocksWithCallbacks(
-        ExchangeData.Block[]    memory blocks,
-        ISubmitBlocksCallback[] memory callbacks,
-        uint[]                  memory blockIndices,
-        uint[]                  memory txIndices,
-        bytes[]                 memory auxiliaryData
+        ExchangeData.Block[] memory blocks,
+        BlockCallback[]      memory callbacks
         )
         external
     {
@@ -61,26 +65,23 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             "PERMISSION_DENIED"
         );
 
-        require(callbacks.length == auxiliaryData.length, "INVALID_DATA");
-
         // Process the callback logic.
         // Make sure all txs can only be used once
         uint txIdxLowerBound = 0;
         uint previousBlockIdx = 0;
         for (uint i = 0; i < callbacks.length; i++) {
-            if (blockIndices[i] > previousBlockIdx) {
+            if (callbacks[i].blockIdx > previousBlockIdx) {
                 txIdxLowerBound = 0;
             }
-            require(blockIndices[i] >= previousBlockIdx, "INVALID_DATA");
-            require(txIndices[i] >= txIdxLowerBound, "INVALID_DATA");
-            uint numTransactionsConsumed = callbacks[i].onSubmitBlocks(
-                blocks,
-                blockIndices[i],
-                txIndices[i],
-                auxiliaryData[i]
+            require(callbacks[i].blockIdx >= previousBlockIdx, "INVALID_DATA");
+            require(callbacks[i].txIdx >= txIdxLowerBound, "INVALID_DATA");
+            uint numTransactionsConsumed = callbacks[i].target.onSubmitBlock(
+                blocks[callbacks[i].blockIdx],
+                callbacks[i].txIdx,
+                callbacks[i].auxiliaryData
             );
-            previousBlockIdx = blockIndices[i];
-            txIdxLowerBound = txIndices[i].add(numTransactionsConsumed);
+            previousBlockIdx = callbacks[i].blockIdx;
+            txIdxLowerBound = callbacks[i].txIdx.add(numTransactionsConsumed);
         }
 
         // Finally submit the blocks
