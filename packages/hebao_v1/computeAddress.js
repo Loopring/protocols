@@ -42,100 +42,86 @@ function computeAddress(owner, salt) {
   return ethUtil.toChecksumAddress(addr);
 }
 
-function isIdentical(str) {
-  if (str.length < 2) return true;
-  for (let i = 1; i < str.length; i++) {
-    if (str[i] !== str[0]) {
-      return false;
+function scoreString(str) {
+  const len = str.length;
+  if (len == 0 || len == 1) return 0;
+  if (len == 2) return 1;
+
+  let score = 0.0;
+
+  let diff = str.charCodeAt(1) - str.charCodeAt(0);
+  let segment = 1 - Math.abs(diff) / 25.0;
+
+  for (let i = 2; i < len; i++) {
+    let diff2 = str.charCodeAt(i) - str.charCodeAt(i - 1);
+    if (diff2 == diff) {
+      segment += 1 - Math.abs(diff) / 25.0;
+    } else {
+      score += segment * segment;
+      diff = diff2;
+      segment = 1 - Math.abs(diff) / 25.0;
     }
   }
-  return true;
-}
 
-function calcScore(hexstr, isTail = false) {
-  let score = 50;
-
-  const len = hexstr.length;
-  if (isIdentical(hexstr.slice(0, 6))) score += 50;
-  else if (isIdentical(hexstr.slice(0, 5))) score += 40;
-  else if (isIdentical(hexstr.slice(0, 4))) score += 30;
-  else if (isIdentical(hexstr.slice(0, 3))) score += 20;
-  else if (isIdentical(hexstr.slice(0, 2))) score += 10;
-
-  if (score > 10 && isTail) score += 10;
-
-  const arrLower = Array.from(hexstr.toLowerCase());
-  const charSet = new Set();
-  for (const ch of arrLower) {
-    charSet.add(ch);
-  }
-  score -= charSet.size;
-
-  const arr = Array.from(hexstr);
-  const charSet2 = new Set();
-  for (const ch of arr) {
-    charSet2.add(ch);
-
-    if (ch == "6" || ch == "8" || ch == "0") {
-      score += 1;
-    } else if (ch == "4") {
-      score -= 2;
-    }
-  }
-  score -= charSet2.size;
-
-  if (score < 0) score = 0;
-
+  score += segment * segment;
+  score /= (len - 1) * (len - 1);
   return score;
 }
 
-function findTopAddressesInBatch(from, to, count) {
-  const addresses = [];
+function calAddress(salt, headSize, tailSize) {
+  const addr = computeAddress(zeroAddress, salt);
+  const prefixScore = scoreString(addr.slice(2, 2 + headSize));
+  const tailScore = scoreString(addr.slice(0 - tailSize));
 
-  for (let i = from; i < to; i++) {
-    const addr = computeAddress(zeroAddress, i);
-    const prefixScore = calcScore(addr.slice(2, 8));
-    const tailScore = calcScore(
-      addr
-        .slice(-6)
-        .split("")
-        .reverse()
-        .join(""),
-      true
-    );
-    let score = prefixScore * prefixScore + tailScore * tailScore;
-    addresses.push({ score, addr, salt: i });
+  const score = (prefixScore * prefixScore + tailScore * tailScore) / 2.0;
+  return { addr, salt, score, prefixScore, tailScore };
+}
+
+function findTopAddressesInBatch(batchSize, batchIdx, select) {
+  const addresses = [];
+  const base = batchIdx * batchSize;
+  for (let i = 0; i < batchSize; i++) {
+    addresses.push(calAddress(i + base, 6, 6));
   }
 
   const prettyOnes = addresses
     .sort((a, b) => b.score - a.score)
-    .slice(0, count);
-  const uglyOnes = addresses.sort((a, b) => a.score - b.score).slice(0, count);
+    .slice(0, select);
+  const uglyOnes = addresses.sort((a, b) => a.score - b.score).slice(0, select);
 
   return [prettyOnes, uglyOnes];
 }
 
-function findTopAddresses(from, to, count) {
-  const batch = 10000;
+function findTopAddresses(batchSize, batchIdxStart, batchIdxEnd, select) {
   let prettyOnes = [];
   let uglyOnes = [];
 
-  for (let i = from; i < to; i += batch) {
-    let stepTo = i + batch;
-    if (stepTo > to) stepTo = to;
-
-    let res = findTopAddressesInBatch(i, stepTo, count);
+  for (let batchIdx = batchIdxStart; batchIdx < batchIdxEnd; batchIdx++) {
+    const startTime = new Date().getTime();
+    let res = findTopAddressesInBatch(batchSize, batchIdx, select);
 
     prettyOnes = prettyOnes
       .concat(res[0])
       .sort((a, b) => b.score - a.score)
-      .slice(0, count);
+      .slice(0, select);
     uglyOnes = uglyOnes
       .concat(res[1])
       .sort((a, b) => a.score - b.score)
-      .slice(0, count);
+      .slice(0, select);
 
-    console.log(`batch ${i} - ${stepTo} done`);
+    const endTime = new Date().getTime();
+
+    console.log(
+      "batch#",
+      batchIdx,
+      "(",
+      batchIdx - batchIdxStart + 1,
+      "of",
+      batchIdxEnd - batchIdxStart,
+      "), time used:",
+      (endTime - startTime) / 1000,
+      "seconds"
+    );
   }
 
   // write to file:
@@ -144,16 +130,16 @@ function findTopAddresses(from, to, count) {
     fs.mkdirSync(`wallet_addr`);
   }
 
-  fs.writeFileSync(
-    `wallet_addr/${from}-${to}_${count}_pretty.json`,
-    JSON.stringify(prettyOnes, undefined, 2)
-  );
-  console.log(`file written: wallet_addr/${from}-${to}_${count}_pretty.json`);
-  fs.writeFileSync(
-    `wallet_addr/${from}-${to}_${count}_ugly.json`,
-    JSON.stringify(uglyOnes, undefined, 2)
-  );
-  console.log(`file written: wallet_addr/${from}-${to}_${count}_ugly.json`);
+  const prefix = `wallet_addr/batch_${batchIdxStart * batchSize}_${batchIdxEnd *
+    batchSize}_select${select}_`;
+  const prettyFile = prefix + "pretty.json";
+  const uglyFile = prefix + "ugly.json";
+
+  fs.writeFileSync(prettyFile, JSON.stringify(prettyOnes, undefined, 2));
+  console.log(`file written:`, prettyFile);
+
+  fs.writeFileSync(uglyFile, JSON.stringify(uglyOnes, undefined, 2));
+  console.log(`file written:`, uglyFile);
 }
 
 function main() {
@@ -168,5 +154,21 @@ function main() {
 }
 
 // main();
+const batchSize = 1000000;
+const batchIdxStart = 0;
+const batchIdxEnd = 100;
+const select = 1000;
 
-findTopAddresses(0, 1000000, 100);
+console.log(
+  "Start scoring",
+  ((batchIdxEnd - batchIdxStart) * batchSize * 1.0) / 1000000,
+  "million addresses in",
+  batchIdxEnd - batchIdxStart,
+  "batches with salt range = [",
+  batchIdxStart * batchSize,
+  ",",
+  batchIdxEnd * batchSize,
+  "):"
+);
+console.log(select, "best/worst addresses will be selected");
+findTopAddresses(batchSize, batchIdxStart, batchIdxEnd, select);
