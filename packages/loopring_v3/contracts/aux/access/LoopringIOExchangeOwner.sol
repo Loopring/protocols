@@ -8,7 +8,7 @@ import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../lib/MathUint.sol";
 import "./SelectorBasedAccessManager.sol";
-import "./ISubmitBlockCallback.sol";
+import "./IBlockReceiver.sol";
 
 
 contract LoopringIOExchangeOwner is SelectorBasedAccessManager
@@ -22,10 +22,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     event SubmitBlocksAccessOpened(bool open);
 
     struct BlockCallback {
-        ISubmitBlockCallback target;
-        uint                 blockIdx;
-        uint                 txIdx;
-        bytes                auxiliaryData;
+        IBlockReceiver target;
+        uint           blockIdx;
+        uint           txIdx;
+        bytes          auxiliaryData;
     }
 
     constructor(address _exchange)
@@ -75,7 +75,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             }
             require(callbacks[i].blockIdx >= previousBlockIdx, "INVALID_DATA");
             require(callbacks[i].txIdx >= txIdxLowerBound, "INVALID_DATA");
-            uint numTransactionsConsumed = callbacks[i].target.onSubmitBlock(
+            uint numTransactionsConsumed = callbacks[i].target.beforeBlockSubmitted(
                 blocks[callbacks[i].blockIdx],
                 callbacks[i].txIdx,
                 callbacks[i].auxiliaryData

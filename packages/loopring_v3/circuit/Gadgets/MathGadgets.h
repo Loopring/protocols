@@ -1917,7 +1917,7 @@ struct SignedVariableT
     }
 };
 
-// A + B = sum with abs(A), abs(B) and abs(sum) < 2^n
+// sA + sB = sSum with abs(A), abs(B) and abs(sum) < 2^n
 class SignedAddGadget : public GadgetT
 {
   public:
@@ -2023,7 +2023,7 @@ class SignedAddGadget : public GadgetT
     }
 };
 
-// A + (-B) = sum with abs(A), abs(B) and abs(sum) < 2^n
+// sA + (-sB) = sSum with abs(A), abs(B) and abs(sum) < 2^n
 class SignedSubGadget : public GadgetT
 {
   public:

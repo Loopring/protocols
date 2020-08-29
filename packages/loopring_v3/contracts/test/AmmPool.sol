@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../aux/access/ISubmitBlockCallback.sol";
+import "../aux/access/IBlockReceiver.sol";
 import "../aux/transactions/BlockReader.sol";
 import "../thirdparty/BytesUtil.sol";
 import "../core/iface/IExchangeV3.sol";
@@ -16,7 +16,7 @@ import "../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "../core/impl/libtransactions/DepositTransaction.sol";
 import "../core/impl/libtransactions/WithdrawTransaction.sol";
 
-contract AmmPool is ISubmitBlockCallback {
+contract AmmPool is IBlockReceiver {
 
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -346,7 +346,7 @@ contract AmmPool is ISubmitBlockCallback {
     // This just verifies if the work is done correctly and only then approves
     // the L2 transactions that were already included in the block.
     // Uses synchronized logic on L1/L2 to make the onchain logic easy and efficient.
-    function onSubmitBlock(
+    function beforeBlockSubmitted(
         ExchangeData.Block memory _block,
         uint                      txIdx,
         bytes              memory auxiliaryData

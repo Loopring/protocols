@@ -5,11 +5,11 @@ pragma experimental ABIEncoderV2;
 
 import "../../core/iface/ExchangeData.sol";
 
-/// @title ISubmitBlockCallback
+/// @title IBlockReceiver
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract ISubmitBlockCallback
+abstract contract IBlockReceiver
 {
-    function onSubmitBlock(
+    function beforeBlockSubmitted(
         ExchangeData.Block memory _block,
         uint                      txIdx,
         bytes              memory auxiliaryData

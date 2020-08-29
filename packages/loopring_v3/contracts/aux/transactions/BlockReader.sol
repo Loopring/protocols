@@ -24,11 +24,11 @@ library BlockReader {
         address exchange;
         bytes32 merkleRootBefore;
         bytes32 merkleRootAfter;
-        uint32 inputTimestamp;
-        uint8 protocolTakerFeeBips;
-        uint8 protocolMakerFeeBips;
-        uint numConditionalTransactions;
-        uint32 operatorAccountID;
+        uint32  inputTimestamp;
+        uint8   protocolTakerFeeBips;
+        uint8   protocolMakerFeeBips;
+        uint    numConditionalTransactions;
+        uint32  operatorAccountID;
     }
 
     function readHeader(
