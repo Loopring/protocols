@@ -26,7 +26,9 @@ static void requireEqual( //
   const VariableT &B,
   const std::string &annotation_prefix)
 {
-    pb.add_r1cs_constraint(ConstraintT(A, FieldT::one(), B), FMT(annotation_prefix, ".requireEqual"));
+    pb.add_r1cs_constraint( //
+      ConstraintT(A, FieldT::one(), B),
+      FMT(annotation_prefix, ".requireEqual"));
 }
 
 // Constants stored in a VariableT for ease of use
@@ -278,7 +280,12 @@ class UnsafeSubGadget : public GadgetT
       const VariableT &_value,
       const VariableT &_sub,
       const std::string &prefix)
-        : GadgetT(pb, prefix), value(_value), sub(_sub), sum(make_variable(pb, FMT(prefix, ".sum")))
+        : GadgetT( //
+            pb,
+            prefix),
+          value(_value),
+          sub(_sub),
+          sum(make_variable(pb, FMT(prefix, ".sum")))
     {
     }
 
@@ -295,7 +302,11 @@ class UnsafeSubGadget : public GadgetT
     void generate_r1cs_constraints()
     {
         pb.add_r1cs_constraint(
-          ConstraintT(value - sub, FieldT::one(), sum), FMT(annotation_prefix, ".value - sub = sum"));
+          ConstraintT( //
+            value - sub,
+            FieldT::one(),
+            sum),
+          FMT(annotation_prefix, ".value - sub = sum"));
     }
 };
 
@@ -312,7 +323,12 @@ class UnsafeAddGadget : public GadgetT
       const VariableT &_value,
       const VariableT &_add,
       const std::string &prefix)
-        : GadgetT(pb, prefix), value(_value), add(_add), sum(make_variable(pb, FMT(prefix, ".sum")))
+        : GadgetT( //
+            pb,
+            prefix),
+          value(_value),
+          add(_add),
+          sum(make_variable(pb, FMT(prefix, ".sum")))
     {
     }
 
@@ -329,7 +345,11 @@ class UnsafeAddGadget : public GadgetT
     void generate_r1cs_constraints()
     {
         pb.add_r1cs_constraint(
-          ConstraintT(value + add, FieldT::one(), sum), FMT(annotation_prefix, ".value + add = sum"));
+          ConstraintT( //
+            value + add,
+            FieldT::one(),
+            sum),
+          FMT(annotation_prefix, ".value + add = sum"));
     }
 };
 
@@ -346,7 +366,12 @@ class UnsafeMulGadget : public GadgetT
       const VariableT &_valueA,
       const VariableT &_valueB,
       const std::string &prefix)
-        : GadgetT(pb, prefix), valueA(_valueA), valueB(_valueB), product(make_variable(pb, FMT(prefix, ".product")))
+        : GadgetT( //
+            pb,
+            prefix),
+          valueA(_valueA),
+          valueB(_valueB),
+          product(make_variable(pb, FMT(prefix, ".product")))
     {
     }
 
@@ -362,7 +387,9 @@ class UnsafeMulGadget : public GadgetT
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(valueA, valueB, product), ".valueA * valueB = product");
+        pb.add_r1cs_constraint( //
+          ConstraintT(valueA, valueB, product),
+          ".valueA * valueB = product");
     }
 };
 
@@ -1875,12 +1902,17 @@ struct SignedVariableT
     {
     }
 
-    SignedVariableT(ProtoboardT &pb, const std::string &prefix)
+    SignedVariableT( //
+      ProtoboardT &pb,
+      const std::string &prefix)
         : sign(make_variable(pb, FMT(prefix, ".sign"))), value(make_variable(pb, FMT(prefix, ".value")))
     {
     }
 
-    SignedVariableT(const VariableT &_sign, const VariableT &_value) : sign(_sign), value(_value)
+    SignedVariableT( //
+      const VariableT &_sign,
+      const VariableT &_value)
+        : sign(_sign), value(_value)
     {
     }
 };
