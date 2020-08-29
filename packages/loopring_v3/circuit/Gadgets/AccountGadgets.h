@@ -98,11 +98,18 @@ class UpdateAccountGadget : public GadgetT
 
           leafBefore(
             pb,
-            var_array({before.owner, before.publicKeyX, before.publicKeyY, before.nonce, before.feeBipsAMM, before.balancesRoot}),
+            var_array(
+              {before.owner,
+               before.publicKeyX,
+               before.publicKeyY,
+               before.nonce,
+               before.feeBipsAMM,
+               before.balancesRoot}),
             FMT(prefix, ".leafBefore")),
           leafAfter(
             pb,
-            var_array({after.owner, after.publicKeyX, after.publicKeyY, after.nonce, after.feeBipsAMM, after.balancesRoot}),
+            var_array(
+              {after.owner, after.publicKeyX, after.publicKeyY, after.nonce, after.feeBipsAMM, after.balancesRoot}),
             FMT(prefix, ".leafAfter")),
 
           proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS * 3, FMT(prefix, ".proof"))),

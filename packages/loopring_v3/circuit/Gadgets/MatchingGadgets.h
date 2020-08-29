@@ -514,10 +514,28 @@ class SpotPriceAMMGadget : public GadgetT
 
           numer(pb, balanceIn, weightOut, FMT(prefix, ".numer")),
           denom(pb, balanceOut, weightIn, FMT(prefix, ".denom")),
-          ratio(pb, constants, numer.result(), constants.fixedBase, denom.result(), NUM_BITS_AMOUNT*2, 60, NUM_BITS_AMOUNT*2, FMT(prefix, ".ratio")),
+          ratio(
+            pb,
+            constants,
+            numer.result(),
+            constants.fixedBase,
+            denom.result(),
+            NUM_BITS_AMOUNT * 2,
+            60,
+            NUM_BITS_AMOUNT * 2,
+            FMT(prefix, ".ratio")),
           ratioRangeCheck(pb, ratio.result(), NUM_BITS_AMOUNT - 14 /*log2(10000)*/, FMT(prefix, ".ratioRangeCheck")),
           invFeeBips(pb, constants._10000, feeBips, FMT(prefix, ".invFeeBips")),
-          res(pb, constants, ratio.result(), constants._10000, invFeeBips.result(), NUM_BITS_AMOUNT - 14, 14 /*log2(10000)*/, 14 /*log2(10000)*/, FMT(prefix, ".res"))
+          res(
+            pb,
+            constants,
+            ratio.result(),
+            constants._10000,
+            invFeeBips.result(),
+            NUM_BITS_AMOUNT - 14,
+            14 /*log2(10000)*/,
+            14 /*log2(10000)*/,
+            FMT(prefix, ".res"))
     {
     }
 
@@ -547,12 +565,10 @@ class SpotPriceAMMGadget : public GadgetT
     }
 };
 
-/*const calcOutGivenIn = (balanceIn: number, weightIn: number, balanceOut: number, weightOut: number, amountIn: number) => {
-    const weightRatio = (weightIn * BASE_FIXED) / weightOut;
-    const fee = amountIn * feeBips / BASE_BIPS;
-    const y = (balanceIn * BASE_FIXED) / (balanceIn + (amountIn - fee));
-    const p = pow_approx(y, weightRatio);
-    return Math.floor(balanceOut * (BASE_FIXED - p) / BASE_FIXED);
+/*const calcOutGivenIn = (balanceIn: number, weightIn: number, balanceOut: number, weightOut: number, amountIn: number)
+=> { const weightRatio = (weightIn * BASE_FIXED) / weightOut; const fee = amountIn * feeBips / BASE_BIPS; const y =
+(balanceIn * BASE_FIXED) / (balanceIn + (amountIn - fee)); const p = pow_approx(y, weightRatio); return
+Math.floor(balanceOut * (BASE_FIXED - p) / BASE_FIXED);
 }*/
 class CalcOutGivenInAMMGadget : public GadgetT
 {
@@ -579,15 +595,50 @@ class CalcOutGivenInAMMGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          weightRatio(pb, constants, weightIn, constants.fixedBase, weightOut, NUM_BITS_AMOUNT, NUM_BITS_FIXED_BASE, NUM_BITS_AMOUNT, FMT(prefix, ".weightRatio")),
+          weightRatio(
+            pb,
+            constants,
+            weightIn,
+            constants.fixedBase,
+            weightOut,
+            NUM_BITS_AMOUNT,
+            NUM_BITS_FIXED_BASE,
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".weightRatio")),
           weightRatioRangeCheck(pb, weightRatio.result(), NUM_BITS_AMOUNT, FMT(prefix, ".weightRatioRangeCheck")),
-          fee(pb, constants, amountIn, feeBips, constants._10000, NUM_BITS_AMOUNT, NUM_BITS_FIXED_BASE, 14 /*log2(10000)*/, FMT(prefix, ".fee")),
+          fee(
+            pb,
+            constants,
+            amountIn,
+            feeBips,
+            constants._10000,
+            NUM_BITS_AMOUNT,
+            NUM_BITS_FIXED_BASE,
+            14 /*log2(10000)*/,
+            FMT(prefix, ".fee")),
           amountInWithoutFee(pb, amountIn, fee.result(), FMT(prefix, ".amountInWithoutFee")),
           y_denom(pb, balanceIn, amountInWithoutFee.result(), NUM_BITS_AMOUNT, FMT(prefix, ".y_denom")),
-          y(pb, constants, balanceIn, constants.fixedBase, y_denom.result(), NUM_BITS_AMOUNT, NUM_BITS_FIXED_BASE, NUM_BITS_AMOUNT, FMT(prefix, ".y")),
+          y(pb,
+            constants,
+            balanceIn,
+            constants.fixedBase,
+            y_denom.result(),
+            NUM_BITS_AMOUNT,
+            NUM_BITS_FIXED_BASE,
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".y")),
           p(pb, constants, y.result(), weightRatio.result(), 4, FMT(prefix, ".p")),
           invP(pb, constants.fixedBase, p.result(), NUM_BITS_FIXED_BASE, FMT(prefix, ".invP")),
-          res(pb, constants, balanceOut, invP.result(), constants.fixedBase, NUM_BITS_AMOUNT, NUM_BITS_FIXED_BASE, NUM_BITS_FIXED_BASE, FMT(prefix, ".res"))
+          res(
+            pb,
+            constants,
+            balanceOut,
+            invP.result(),
+            constants.fixedBase,
+            NUM_BITS_AMOUNT,
+            NUM_BITS_FIXED_BASE,
+            NUM_BITS_FIXED_BASE,
+            FMT(prefix, ".res"))
     {
     }
 
@@ -674,16 +725,41 @@ class RequireAMMFillsGadget : public GadgetT
         : GadgetT(pb, prefix),
 
           // Use dummy data if this isn't an AMM order
-          inBalanceBefore(pb, data.order.amm.packed, data.balanceBeforeB, constants.fixedBase, FMT(prefix, ".inBalanceBefore")),
-          inBalanceAfter(pb, data.order.amm.packed, data.balanceAfterB, constants.fixedBase, FMT(prefix, ".inBalanceAfter")),
+          inBalanceBefore(
+            pb,
+            data.order.amm.packed,
+            data.balanceBeforeB,
+            constants.fixedBase,
+            FMT(prefix, ".inBalanceBefore")),
+          inBalanceAfter(
+            pb,
+            data.order.amm.packed,
+            data.balanceAfterB,
+            constants.fixedBase,
+            FMT(prefix, ".inBalanceAfter")),
           inWeight(pb, data.order.amm.packed, data.weightB, constants.fixedBase, FMT(prefix, ".inWeight")),
-          outBalanceBefore(pb, data.order.amm.packed, data.balanceBeforeS, constants.fixedBase, FMT(prefix, ".outBalanceBefore")),
-          outBalanceAfter(pb, data.order.amm.packed, data.balanceAfterS, constants.fixedBase, FMT(prefix, ".outBalanceAfter")),
+          outBalanceBefore(
+            pb,
+            data.order.amm.packed,
+            data.balanceBeforeS,
+            constants.fixedBase,
+            FMT(prefix, ".outBalanceBefore")),
+          outBalanceAfter(
+            pb,
+            data.order.amm.packed,
+            data.balanceAfterS,
+            constants.fixedBase,
+            FMT(prefix, ".outBalanceAfter")),
           outWeight(pb, data.order.amm.packed, data.weightS, constants.fixedBase, FMT(prefix, ".outWeight")),
           ammFill(pb, data.order.amm.packed, fillB, constants._0, FMT(prefix, ".ammFill")),
 
           // Verify general assumptions AMM orders
-          requireOrderFeeBipsZero(pb, data.order.amm.packed, data.order.feeBips.packed, constants._0, FMT(prefix, ".requireOrderFeeBipsZero")),
+          requireOrderFeeBipsZero(
+            pb,
+            data.order.amm.packed,
+            data.order.feeBips.packed,
+            constants._0,
+            FMT(prefix, ".requireOrderFeeBipsZero")),
           requireInWeightNotZero(pb, inWeight.result(), FMT(prefix, ".requireInWeightNotZero")),
           requireOutWeightNotZero(pb, outWeight.result(), FMT(prefix, ".requireOutWeightNotZero")),
 
@@ -698,8 +774,17 @@ class RequireAMMFillsGadget : public GadgetT
             data.ammFeeBips,
             ammFill.result(),
             FMT(prefix, ".ammMaximumFillS")),
-          fillS_leq_ammMaximumFillS(pb, data.fillS, ammMaximumFillS.result(), NUM_BITS_AMOUNT, FMT(prefix, ".fillS_leq_ammMaximumFillS")),
-          requireValidAmmFillS(pb, data.order.amm.packed, fillS_leq_ammMaximumFillS.leq(), FMT(prefix, ".requireValidAmmFillS")),
+          fillS_leq_ammMaximumFillS(
+            pb,
+            data.fillS,
+            ammMaximumFillS.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".fillS_leq_ammMaximumFillS")),
+          requireValidAmmFillS(
+            pb,
+            data.order.amm.packed,
+            fillS_leq_ammMaximumFillS.leq(),
+            FMT(prefix, ".requireValidAmmFillS")),
 
           // Check that the price increased as an additional safety check
           priceBefore(
@@ -720,8 +805,17 @@ class RequireAMMFillsGadget : public GadgetT
             outWeight.result(),
             data.ammFeeBips,
             FMT(prefix, ".priceBefore")),
-          priceBefore_leq_priceAfter(pb, priceBefore.result(), priceAfter.result(), NUM_BITS_AMOUNT, FMT(prefix, ".priceBefore_leq_priceAfter")),
-          requirePriceIncreased(pb, data.order.amm.packed, priceBefore_leq_priceAfter.leq(), FMT(prefix, ".requirePriceIncreased"))
+          priceBefore_leq_priceAfter(
+            pb,
+            priceBefore.result(),
+            priceAfter.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".priceBefore_leq_priceAfter")),
+          requirePriceIncreased(
+            pb,
+            data.order.amm.packed,
+            priceBefore_leq_priceAfter.leq(),
+            FMT(prefix, ".requirePriceIncreased"))
     {
     }
 

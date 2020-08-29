@@ -114,15 +114,8 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
 
     const VariableArrayT getPublicData() const
     {
-        return flattenReverse({
-            owner.bits,
-            accountID.bits,
-            tokenID.bits,
-            feeBips.bits,
-            tokenWeight.bits,
-            nonce.bits,
-            balance.bits
-        });
+        return flattenReverse(
+          {owner.bits, accountID.bits, tokenID.bits, feeBips.bits, tokenWeight.bits, nonce.bits, balance.bits});
     }
 };
 
