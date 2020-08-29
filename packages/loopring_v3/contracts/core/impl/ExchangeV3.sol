@@ -488,6 +488,7 @@ contract ExchangeV3 is IExchangeV3
         uint16 tokenID = state.getTokenID(token);
         uint16 feeTokenID = state.getTokenID(feeToken);
         TransferTransaction.Transfer memory transfer = TransferTransaction.Transfer({
+            exchange: address(this),
             from: from,
             to: to,
             tokenID: tokenID,

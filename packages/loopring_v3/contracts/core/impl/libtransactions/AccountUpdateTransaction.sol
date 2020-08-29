@@ -29,6 +29,7 @@ library AccountUpdateTransaction
 
     struct AccountUpdate
     {
+        address exchange;
         address owner;
         uint32  accountID;
         uint16  feeTokenID;
@@ -56,6 +57,8 @@ library AccountUpdateTransaction
     {
         // Read the account update
         AccountUpdate memory accountUpdate = readTx(data, offset);
+        require(accountUpdate.exchange == address(this), "INVALID_EXCHANGE");
+
         AccountUpdateAuxiliaryData memory auxData = abi.decode(auxiliaryData, (AccountUpdateAuxiliaryData));
 
         // Check validUntil
@@ -87,6 +90,8 @@ library AccountUpdateTransaction
         // Extract the data from the tx data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
+        accountUpdate.exchange = data.toAddress(offset);
+        offset += 20;
         accountUpdate.owner = data.toAddress(offset);
         offset += 20;
         accountUpdate.accountID = data.toUint32(offset);
@@ -114,6 +119,7 @@ library AccountUpdateTransaction
             keccak256(
                 abi.encode(
                     ACCOUNTUPDATE_TYPEHASH,
+                    accountUpdate.exchange,
                     accountUpdate.owner,
                     accountUpdate.accountID,
                     accountUpdate.feeTokenID,

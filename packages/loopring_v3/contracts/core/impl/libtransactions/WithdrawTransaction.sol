@@ -39,6 +39,7 @@ library WithdrawTransaction
     struct Withdrawal
     {
         uint    withdrawalType;
+        address exchange;
         address owner;
         uint32  accountID;
         uint16  tokenID;
@@ -81,6 +82,8 @@ library WithdrawTransaction
         internal
     {
         Withdrawal memory withdrawal = readTx(data, offset);
+        require(withdrawal.exchange == address(this), "INVALID_EXCHANGE");
+
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
 
         // Validate the withdrawal data not directly part of the DA
@@ -195,6 +198,8 @@ library WithdrawTransaction
         // Extract the transfer data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
+        withdrawal.exchange = data.toAddress(offset);
+        offset += 20;
         withdrawal.withdrawalType = data.toUint8(offset);
         offset += 1;
         withdrawal.owner = data.toAddress(offset);
@@ -228,6 +233,7 @@ library WithdrawTransaction
             keccak256(
                 abi.encode(
                     WITHDRAWAL_TYPEHASH,
+                    withdrawal.exchange,
                     withdrawal.owner,
                     withdrawal.accountID,
                     withdrawal.tokenID,

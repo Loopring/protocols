@@ -26,6 +26,7 @@ library TransferTransaction
 
     struct Transfer
     {
+        address exchange;
         address from;
         address to;
         uint16  tokenID;
@@ -61,8 +62,9 @@ library TransferTransaction
     {
         // Read the transfer
         Transfer memory transfer = readTx(data, offset);
-        TransferAuxiliaryData memory auxData = abi.decode(auxiliaryData, (TransferAuxiliaryData));
+        require(transfer.exchange == address(this), "INVALID_EXCHANGE");
 
+        TransferAuxiliaryData memory auxData = abi.decode(auxiliaryData, (TransferAuxiliaryData));
         // Check validUntil
         require(ctx.timestamp < auxData.validUntil, "WITHDRAWAL_EXPIRED");
         transfer.validUntil = auxData.validUntil;
@@ -91,6 +93,8 @@ library TransferTransaction
         // Extract the transfer data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
+        transfer.exchange = data.toAddress(offset);
+        offset += 20;
         //transfer.fromAccountID = data.toUint32(offset);
         offset += 4;
         //transfer.toAccountID = data.toUint32(offset);
@@ -126,6 +130,7 @@ library TransferTransaction
             keccak256(
                 abi.encode(
                     TRANSFER_TYPEHASH,
+                    transfer.exchange,
                     transfer.from,
                     transfer.to,
                     transfer.tokenID,
