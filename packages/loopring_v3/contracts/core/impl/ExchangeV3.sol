@@ -70,6 +70,14 @@ contract ExchangeV3 is IExchangeV3
         return "3.6.0";
     }
 
+    function domainSeperator()
+        public
+        view
+        returns (bytes32)
+    {
+        return state.DOMAIN_SEPARATOR;
+    }
+
     // -- Initialization --
     function initialize(
         address _loopring,
