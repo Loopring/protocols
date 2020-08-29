@@ -222,7 +222,12 @@ class WithdrawCircuit : public BaseTransactionCircuit
             FMT(prefix, ".nonce_after")),
 
           // Disable AMM for the token when doing a forced withdrawal
-          newTokenWeight(pb, validFullWithdrawalType.result(), state.constants._0, state.accountA.balanceS.weightAMM, FMT(prefix, ".newTokenWeightAMM")),
+          newTokenWeight(
+            pb,
+            validFullWithdrawalType.result(),
+            state.constants._0,
+            state.accountA.balanceS.weightAMM,
+            FMT(prefix, ".newTokenWeightAMM")),
 
           // Increase the number of conditional transactions
           numConditionalTransactionsAfter(
