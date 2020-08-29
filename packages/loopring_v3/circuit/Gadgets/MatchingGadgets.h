@@ -490,7 +490,7 @@ class OrderMatchingGadget : public GadgetT
 // }
 
 // Result is guaranteed to fit inside NUM_BITS_AMOUNT bits.
-// Max ratio between weights supported is 2**(96-14)/(10**18).
+// Max ratio between weights supported is 2**(96-14)/(10**18) = 4835703.278458517
 class SpotPriceAMMGadget : public GadgetT
 {
   public:
