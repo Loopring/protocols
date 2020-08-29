@@ -109,7 +109,12 @@ class UpdateAccountGadget : public GadgetT
           leafAfter(
             pb,
             var_array(
-              {after.owner, after.publicKeyX, after.publicKeyY, after.nonce, after.feeBipsAMM, after.balancesRoot}),
+              {after.owner, //
+               after.publicKeyX,
+               after.publicKeyY,
+               after.nonce,
+               after.feeBipsAMM,
+               after.balancesRoot}),
             FMT(prefix, ".leafAfter")),
 
           proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS * 3, FMT(prefix, ".proof"))),
@@ -121,7 +126,13 @@ class UpdateAccountGadget : public GadgetT
             merkleRoot,
             proof,
             FMT(prefix, ".pathBefore")),
-          rootCalculatorAfter(pb, TREE_DEPTH_ACCOUNTS, address, leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
+          rootCalculatorAfter( //
+            pb,
+            TREE_DEPTH_ACCOUNTS,
+            address,
+            leafAfter.result(),
+            proof,
+            FMT(prefix, ".pathAfter"))
     {
     }
 
@@ -226,8 +237,14 @@ class UpdateBalanceGadget : public GadgetT
           valuesBefore(before),
           valuesAfter(after),
 
-          leafBefore(pb, var_array({before.balance, before.weightAMM, before.storageRoot}), FMT(prefix, ".leafBefore")),
-          leafAfter(pb, var_array({after.balance, after.weightAMM, after.storageRoot}), FMT(prefix, ".leafAfter")),
+          leafBefore( //
+            pb,
+            var_array({before.balance, before.weightAMM, before.storageRoot}),
+            FMT(prefix, ".leafBefore")),
+          leafAfter( //
+            pb,
+            var_array({after.balance, after.weightAMM, after.storageRoot}),
+            FMT(prefix, ".leafAfter")),
 
           proof(make_var_array(pb, TREE_DEPTH_TOKENS * 3, FMT(prefix, ".proof"))),
           proofVerifierBefore(
@@ -238,7 +255,13 @@ class UpdateBalanceGadget : public GadgetT
             merkleRoot,
             proof,
             FMT(prefix, ".pathBefore")),
-          rootCalculatorAfter(pb, TREE_DEPTH_TOKENS, tokenID, leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
+          rootCalculatorAfter( //
+            pb,
+            TREE_DEPTH_TOKENS,
+            tokenID,
+            leafAfter.result(),
+            proof,
+            FMT(prefix, ".pathAfter"))
     {
     }
 

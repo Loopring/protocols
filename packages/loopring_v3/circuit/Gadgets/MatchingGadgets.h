@@ -477,18 +477,18 @@ class OrderMatchingGadget : public GadgetT
     }
 };
 
-/*
-const calcSpotPrice = (balanceIn: number, weightIn: number, balanceOut: number, weightOut: number) => {
-    //const numer = (balanceIn * BASE_FIXED) / weightIn;
-    //const denom = (balanceOut * BASE_FIXED) / weightOut;
-    //const ratio = (numer * BASE_FIXED) / denom;
-    const numer = balanceIn * weightOut;
-    const denom = balanceOut * weightIn;
-    const ratio = (numer * BASE_FIXED) / denom;
-    const invFeeBips = BASE_BIPS - feeBips;
-    return Math.floor((ratio * BASE_BIPS) / invFeeBips);
-}
-*/
+// const calcSpotPrice = (
+//         balanceIn: number,
+//         weightIn: number,
+//         balanceOut: number,
+//         weightOut: number) => {
+//     const numer = balanceIn * weightOut;
+//     const denom = balanceOut * weightIn;
+//     const ratio = (numer * BASE_FIXED) / denom;
+//     const invFeeBips = BASE_BIPS - feeBips;
+//     return Math.floor((ratio * BASE_BIPS) / invFeeBips);
+// }
+
 // Result is guaranteed to fit inside NUM_BITS_AMOUNT bits.
 // Max ratio between weights supported is 2**(96-14)/(10**18).
 class SpotPriceAMMGadget : public GadgetT
@@ -565,11 +565,18 @@ class SpotPriceAMMGadget : public GadgetT
     }
 };
 
-/*const calcOutGivenIn = (balanceIn: number, weightIn: number, balanceOut: number, weightOut: number, amountIn: number)
-=> { const weightRatio = (weightIn * BASE_FIXED) / weightOut; const fee = amountIn * feeBips / BASE_BIPS; const y =
-(balanceIn * BASE_FIXED) / (balanceIn + (amountIn - fee)); const p = pow_approx(y, weightRatio); return
-Math.floor(balanceOut * (BASE_FIXED - p) / BASE_FIXED);
-}*/
+// const calcOutGivenIn = (
+//       balanceIn: number,
+//       weightIn: number,
+//       balanceOut: number,
+//       weightOut: number,
+//       amountIn: number) => {
+//   const weightRatio = (weightIn * BASE_FIXED) / weightOut;
+//   const fee = amountIn * feeBips / BASE_BIPS;
+//   const y =(balanceIn * BASE_FIXED) / (balanceIn + (amountIn - fee));
+//   const p = pow_approx(y, weightRatio);
+//   return Math.floor(balanceOut * (BASE_FIXED - p) / BASE_FIXED);
+// }
 class CalcOutGivenInAMMGadget : public GadgetT
 {
   public:
