@@ -1144,3 +1144,100 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
           expectedFillS_B);
     }
 }
+
+struct CalcOutResult
+{
+    bool valid;
+    BigInt value;
+};
+
+static CalcOutResult calcOutGivenIn(
+    const BigInt &balanceIn,
+    const BigInt &weightIn,
+    const BigInt &balanceOut,
+    const BigInt &weightOut,
+    unsigned int  feeBips,
+    const BigInt &amountIn
+    )
+{
+    BigInt BASE(FIXED_BASE);
+    BigInt BASE_BIPS(10000);
+
+    BigInt weightRatio = (weightIn * BASE) / weightOut;
+    BigInt fee = amountIn * feeBips / BASE_BIPS;
+    BigInt y = (balanceIn * BASE) / (balanceIn + (amountIn - fee));
+    PowResult pow = pow_approx(toFieldElement(y), toFieldElement(weightRatio), 4);
+    if(!pow.valid)
+    {
+        return CalcOutResult({false, 0});
+    }
+    BigInt p = toBigInt(pow.value);
+    BigInt res = (balanceOut * (BASE - p)) / BASE;
+    return {true, res};
+}
+
+TEST_CASE("CalcOutGivenInAMM", "[CalcOutGivenInAMMGadget]")
+{
+    unsigned int numRandom = 1024;
+    auto calcOutGivenInChecked = [](
+                                  const BigInt &_balanceIn,
+                                  const BigInt &_weightIn,
+                                  const BigInt &_balanceOut,
+                                  const BigInt &_weightOut,
+                                  unsigned int  _feeBips,
+                                  const BigInt &_amountIn) {
+        protoboard<FieldT> pb;
+
+        VariableT balanceIn = make_variable(pb, toFieldElement(_balanceIn), "balanceIn");
+        VariableT weightIn = make_variable(pb, toFieldElement(_weightIn), "weightIn");
+        VariableT balanceOut = make_variable(pb, toFieldElement(_balanceOut), "balanceOut");
+        VariableT weightOut = make_variable(pb, toFieldElement(_weightOut), "weightOut");
+        VariableT feeBips = make_variable(pb, FieldT(_feeBips), "feeBips");
+        VariableT amountIn = make_variable(pb, toFieldElement(_amountIn), "amountIn");
+
+        Constants constants(pb, "constants");
+        CalcOutGivenInAMMGadget calcOutGivenInAMM(pb, constants,
+          balanceIn, weightIn,
+          balanceOut, weightOut,
+          feeBips, amountIn, "calcOutGivenInAMM");
+        calcOutGivenInAMM.generate_r1cs_constraints();
+        calcOutGivenInAMM.generate_r1cs_witness();
+
+        CalcOutResult expected = calcOutGivenIn(_balanceIn, _weightIn, _balanceOut, _weightOut, _feeBips, _amountIn);
+        bool expectedSatisfied = expected.valid;
+        REQUIRE(pb.is_satisfied() == expectedSatisfied);
+        if (expectedSatisfied)
+        {
+            REQUIRE((pb.val(calcOutGivenInAMM.result()) == toFieldElement(expected.value)));
+        }
+    };
+
+    SECTION("Swap 0")
+    {
+        calcOutGivenInChecked(1, 1, 1, 1, 10, 0);
+    }
+
+    SECTION("Swap 100 @ 100/10")
+    {
+        calcOutGivenInChecked(1234567, 100, 7654321, 10, 30, 159);
+    }
+
+    SECTION("Swap 1000 @ 10/1000")
+    {
+        calcOutGivenInChecked(1234567, 10, 7654321, 100, 30, 357);
+    }
+
+    SECTION("random value")
+    {
+        for (unsigned int j = 0; j < numRandom; j++)
+        {
+            BigInt balanceIn = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
+            BigInt weightIn = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
+            BigInt balanceOut = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
+            BigInt weightOut = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
+            BigInt amountIn = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
+            calcOutGivenInChecked(balanceIn, weightIn, balanceOut, weightOut, rand() % 10000, amountIn);
+        }
+    }
+}
+

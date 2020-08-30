@@ -2158,9 +2158,9 @@ class SignedMulDivGadget : public GadgetT
     }
 };
 
-// Calculates [0, 1]**[0, inf[ using an approximation. Best accuracy is achieved around 1**y.
+// Calculates [0, 1]**[0, inf) using an approximation. The closer the base is to 1, the higher the accuracy.
 // The result is enforced to be containable in NUM_BITS_AMOUNT bits.
-// The higher the number of iterations, the greater the accuracy (and the greater the cost)
+// The higher the number of iterations, the higher the accuracy (and the greater the cost).
 /*
     const x = (_x - BASE_FIXED);
     const bn = [BASE_FIXED, BASE_FIXED];

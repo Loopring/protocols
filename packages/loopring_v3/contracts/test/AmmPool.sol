@@ -16,6 +16,9 @@ import "../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "../core/impl/libtransactions/DepositTransaction.sol";
 import "../core/impl/libtransactions/WithdrawTransaction.sol";
 
+/// @title AmmPool
+/// @author Brecht Devos - <brecht@loopring.org>
+/// @dev Incomplete AMM pool implementation for demo/testing purposes.
 contract AmmPool is IBlockReceiver {
 
     using AddressUtil       for address;

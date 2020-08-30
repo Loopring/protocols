@@ -147,4 +147,41 @@ static UniversalTransaction getSpotTrade(const Block &block)
     return tx;
 }
 
+struct PowResult
+{
+    bool valid;
+    FieldT value;
+};
+
+static PowResult pow_approx(const FieldT& _x, const FieldT& _y, unsigned int iterations)
+{
+    BigInt BASE(FIXED_BASE);
+
+    BigInt x = toBigInt(_x) - BASE;
+    BigInt a = toBigInt(_y);
+
+    std::vector<BigInt> bn = {BASE, BASE};
+    std::vector<BigInt> cn = {BASE, a};
+    std::vector<BigInt> xn = {BASE, x};
+    BigInt sum = xn[0]*cn[0] + xn[1]*cn[1];
+    for (unsigned int i = 2; i < iterations; i++)
+    {
+        BigInt v = a - bn[i-1];
+        bn.push_back(bn[i-1] + BASE);
+        cn.push_back((cn[i-1] * v) / bn[i]);
+        xn.push_back((xn[i-1] * x) / BASE);
+        sum += xn[i]*cn[i];
+    }
+    sum /= BASE;
+
+    //std::cout << "res: " << sum << std::endl;
+    bool valid = true;
+    if (sum <= 0 || sum >= SNARK_SCALAR_FIELD)
+    {
+        valid = false;
+        sum = 0;
+    }
+    return {valid, toFieldElement(sum)};
+}
+
 #endif

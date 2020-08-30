@@ -43,52 +43,6 @@ contract("Exchange", (accounts: string[]) => {
   describe("Trade", function() {
     this.timeout(0);
 
-    it("AMM", async () => {
-      const ring: SpotTrade = {
-        orderA: {
-          owner: exchangeTestUtil.testContext.orderOwners[0],
-          tokenS: "WETH",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("99", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether")),
-          balanceS: new BN(web3.utils.toWei("10000", "ether")),
-          balanceB: new BN(web3.utils.toWei("20000", "ether")),
-          feeBips: 0,
-          amm: true
-        },
-        orderB: {
-          tokenS: "GTO",
-          tokenB: "WETH",
-          amountS: new BN(web3.utils.toWei("200", "ether")),
-          amountB: new BN(web3.utils.toWei("99", "ether"))
-        },
-        expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(0) },
-          orderB: { filledFraction: 1.0 }
-        }
-      };
-      await exchangeTestUtil.setupRing(ring);
-
-      await exchangeTestUtil.deposit(
-        exchangeTestUtil.exchangeOperator,
-        exchangeTestUtil.exchangeOperator,
-        ring.orderA.tokenB,
-        ring.orderA.amountB
-      );
-
-      const feeFips = 0;
-      const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
-      const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
-      await exchangeTestUtil.requestAmmUpdate(ring.orderA.owner, ring.orderA.tokenS, feeFips, tokenWeightS);
-      await exchangeTestUtil.requestAmmUpdate(ring.orderA.owner, ring.orderA.tokenB, feeFips, tokenWeightB);
-
-      await exchangeTestUtil.sendRing(ring);
-
-      await exchangeTestUtil.submitTransactions();
-
-      await verify();
-    });
-
     it("Perfect match", async () => {
       const ring: SpotTrade = {
         orderA: {
