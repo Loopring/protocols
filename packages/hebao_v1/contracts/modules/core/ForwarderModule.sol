@@ -21,7 +21,7 @@ abstract contract ForwarderModule is BaseModule
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 135000; // // TODO(kongliang): what's the amount?
+    uint    public constant MIN_REIMBURSTMENT_OVERHEAD = 135000; // // TODO(kongliang): what's the amount?
     bytes32 public FORWARDER_DOMAIN_SEPARATOR;
 
     event MetaTxExecuted(
@@ -30,7 +30,8 @@ abstract contract ForwarderModule is BaseModule
         uint    nonce,
         bytes32 txAwareHash,
         bool    success,
-        uint    gasUsed
+        uint    gasUsed,
+        uint    gasReimbursted
     );
 
     struct MetaTx {
@@ -141,19 +142,8 @@ abstract contract ForwarderModule is BaseModule
             controller().nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
         }
 
-        uint gasUsed = gasLeft - gasleft() +
-            (signature.length + metaTx.data.length + 7) * 16 + // data input cost
-            423 + // cost of MetaTxExecuted = 375 + 6 * 8
-            21000; // transaction cost
-
-        emit MetaTxExecuted(
-            msg.sender,
-            metaTx.from,
-            metaTx.nonce,
-            metaTx.txAwareHash,
-            success,
-            gasUsed
-        );
+        uint gasUsed;
+        uint gasDiff;
 
         // Fees are not to be charged by a relayer if the transaction fails with a
         // non-zero txAwareHash. The reason is that relayer can pick arbitrary 'data'
@@ -172,15 +162,21 @@ abstract contract ForwarderModule is BaseModule
                 metaTx.to == controller().walletFactory()
             );
 
-            uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
-            gasAmount += MAX_REIMBURSTMENT_OVERHEAD;
+            gasUsed = gasLeft - gasleft() +
+                (signature.length + metaTx.data.length + 7) * 16 + // data input cost
+                431 + // cost of MetaTxExecuted = 375 + 7 * 8
+                21000; // transaction cost
 
-            // MAX_REIMBURSTMENT_OVERHEAD covers an ERC20 transfer and a quota update.
-            if (skipQuota) {
-                gasAmount -= 20000; // TODO(kongliang): a quota update
+            gasDiff = gasUsed <= metaTx.gasLimit ? 0 : gasUsed - metaTx.gasLimit;
+
+            gasUsed += MIN_REIMBURSTMENT_OVERHEAD;
+
+            // MIN_REIMBURSTMENT_OVERHEAD covers an ERC20 transfer and a quota update.
+            if (!skipQuota) {
+                gasUsed += 20000; // TODO(kongliang): a quota update
             }
-            if (metaTx.gasToken == address(0)) {
-                gasAmount -= 1400; // diff between an regular ERC20 transfer and an ETH send
+            if (metaTx.gasToken != address(0)) {
+                gasUsed += 2000; // diff between an regular ERC20 transfer and an ETH send
             }
 
             reimburseGasFee(
@@ -188,10 +184,25 @@ abstract contract ForwarderModule is BaseModule
                 controller().collectTo(),
                 metaTx.gasToken,
                 metaTx.gasPrice,
-                gasAmount,
+                gasUsed - gasDiff,
                 skipQuota
             );
+        } else {
+            gasUsed = gasLeft - gasleft() +
+                (signature.length + metaTx.data.length + 7) * 16 + // data input cost
+                431 + // cost of MetaTxExecuted = 375 + 7 * 8
+                21000; // transaction cost
         }
+
+        emit MetaTxExecuted(
+            msg.sender,
+            metaTx.from,
+            metaTx.nonce,
+            metaTx.txAwareHash,
+            success,
+            gasUsed,
+            gasUsed - gasDiff
+        );
     }
 
     function checkSufficientGas(
@@ -201,7 +212,7 @@ abstract contract ForwarderModule is BaseModule
         view
     {
         // Check the relayer has enough Ether gas
-        uint gasLimit = (metaTx.gasLimit + metaTx.gasLimit / 63).add(MAX_REIMBURSTMENT_OVERHEAD);
+        uint gasLimit = (metaTx.gasLimit + metaTx.gasLimit / 63).add(MIN_REIMBURSTMENT_OVERHEAD);
         require(gasleft() >= gasLimit, "OPERATOR_INSUFFICIENT_GAS");
 
         // Check the wallet has enough meta tx gas
