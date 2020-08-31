@@ -48,8 +48,8 @@ contract("WalletFactory", () => {
       ctx.walletFactory.address,
       owner,
       0,
+      Constants.zeroAddress,
       walletName,
-      ensApproval,
       ensRegisterReverse,
       modules
     );
@@ -155,9 +155,9 @@ contract("WalletFactory", () => {
     const txSignature = signCreateWallet(
       ctx.walletFactory.address,
       owner,
+      0,
       blankWalletAddr,
       walletName,
-      ensApproval,
       ensRegisterReverse,
       modules
     );

@@ -39,8 +39,8 @@ contract("BaseENSManager", () => {
         ctx.walletFactory.address,
         owner,
         0,
+        Constants.zeroAddress,
         walletName,
-        ensApproval,
         true,
         modules
       );
@@ -72,8 +72,8 @@ contract("BaseENSManager", () => {
         ctx.walletFactory.address,
         owner,
         0,
+        Constants.zeroAddress,
         walletName,
-        ensApproval,
         true,
         modules
       );
@@ -117,8 +117,8 @@ contract("BaseENSManager", () => {
         ctx.walletFactory.address,
         owner,
         0,
+        Constants.zeroAddress,
         walletName,
-        ensApproval,
         true,
         modules
       );

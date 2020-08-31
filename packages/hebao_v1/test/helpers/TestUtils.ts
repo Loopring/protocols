@@ -116,8 +116,8 @@ export async function createWallet(
     ctx.walletFactory.address,
     owner,
     0,
+    Constants.zeroAddress,
     walletName,
-    ensApproval,
     true,
     modules
   );
@@ -164,8 +164,8 @@ export async function createWallet2(
     ctx.walletFactory.address,
     owner,
     0,
+    Constants.zeroAddress,
     walletName,
-    ensApproval,
     true,
     modules
   );

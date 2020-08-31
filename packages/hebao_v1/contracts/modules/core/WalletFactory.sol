@@ -37,7 +37,7 @@ contract WalletFactory is ReentrancyGuard
     string constant public WALLET_CREATION = "WALLET_CREATION";
 
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,uint256 salt,string ensLabel,bytes ensApproval,bool ensRegisterReverse,address[] modules)"
+        "createWallet(address owner,uint256 salt,address blankAddress,string ensLabel,bool ensRegisterReverse,address[] modules)"
     );
 
     mapping(address => bytes32) blanks;
@@ -100,8 +100,8 @@ contract WalletFactory is ReentrancyGuard
         validateRequest_(
             _owner,
             _salt,
+            address(0),
             _ensLabel,
-            _ensApproval,
             _ensRegisterReverse,
             _modules,
             _signature
@@ -143,9 +143,9 @@ contract WalletFactory is ReentrancyGuard
     {
         validateRequest_(
             _owner,
-            uint(_blank),
+            0,
+            _blank,
             _ensLabel,
-            _ensApproval,
             _ensRegisterReverse,
             _modules,
             _signature
@@ -257,9 +257,9 @@ contract WalletFactory is ReentrancyGuard
 
     function validateRequest_(
         address            _owner,
-        uint               _blankOrSalt,
+        uint               _salt,
+        address            _blankAddress,
         string    memory   _ensLabel,
-        bytes     memory   _ensApproval,
         bool               _ensRegisterReverse,
         address[] memory   _modules,
         bytes     memory   _signature
@@ -273,9 +273,9 @@ contract WalletFactory is ReentrancyGuard
         bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
-            uint(_blankOrSalt),
+            _salt,
+            _blankAddress,
             keccak256(bytes(_ensLabel)),
-            keccak256(_ensApproval),
             _ensRegisterReverse,
             keccak256(abi.encode(_modules))
         );
