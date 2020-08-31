@@ -16,6 +16,19 @@ contract OfficialGuardian is OwnerManagable, ERC1271
     mapping (address => bool) public whitelist;
 
     function isValidSignature(
+        bytes32        _hash,
+        bytes   memory _signature
+        )
+        public
+        view
+        override
+        returns (bytes4)
+    {
+        (address addr1, address addr2) = abi.encodePacked(_hash).recoverECDSASigner(_signature);
+        return isManager(addr1) || isManager(addr2) ?  ERC1271_MAGICVALUE_BS32 : bytes4(0);
+    }
+
+    function isValidSignature(
         bytes memory _data,
         bytes memory _signature
         )
@@ -25,7 +38,7 @@ contract OfficialGuardian is OwnerManagable, ERC1271
         returns (bytes4)
     {
         (address addr1, address addr2) = _data.recoverECDSASigner(_signature);
-        return isManager(addr1) || isManager(addr2) ?  ERC1271_MAGICVALUE : bytes4(0);
+        return isManager(addr1) || isManager(addr2) ?  ERC1271_MAGICVALUE_BS : bytes4(0);
     }
 
     function addWhitelist(address target, bool toAdd)

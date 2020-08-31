@@ -54,7 +54,7 @@ abstract contract ERC1271Module is ERC1271, BaseModule
         }
 
         if (_data.verifySignature(Wallet(wallet).owner(), _signature)) {
-            return ERC1271_MAGICVALUE;
+            return ERC1271_MAGICVALUE_BS;
         } else {
             return 0;
         }

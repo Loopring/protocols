@@ -3,8 +3,11 @@
 pragma solidity ^0.7.0;
 
 abstract contract ERC1271 {
+
     // bytes4(keccak256("isValidSignature(bytes,bytes)")
-    bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
+    bytes4 constant internal ERC1271_MAGICVALUE_BS = 0x20c13b0b;
+    // bytes4(keccak256("isValidSignature(bytes32,bytes)")
+    bytes4 constant internal ERC1271_MAGICVALUE_BS32 = 0x1626ba7e;
 
     bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES_SELECTOR = bytes4(
         keccak256(bytes("isValidSignature(bytes,bytes)"))
@@ -39,6 +42,9 @@ abstract contract ERC1271 {
         virtual
         returns (bytes4 magicValue)
     {
-        return isValidSignature(abi.encodePacked(_hash), _signature);
+        magicValue = isValidSignature(abi.encodePacked(_hash), _signature);
+        if (magicValue == ERC1271_MAGICVALUE_BS) {
+            magicValue = ERC1271_MAGICVALUE_BS32;
+        }
     }
 }
