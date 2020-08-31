@@ -114,7 +114,7 @@ abstract contract ForwarderModule is BaseModule
         )
     {
         uint gasLeft = gasleft();
-        checkSufficientGas(metaTx);
+        uint baseGasCost = checkSufficientGas(metaTx, signature);
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
@@ -143,13 +143,15 @@ abstract contract ForwarderModule is BaseModule
         }
 
         uint gasUsed;
-        uint gasDiff;
+        uint gasReimbursted;
+
+        bool needReimburst = metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success);
 
         // Fees are not to be charged by a relayer if the transaction fails with a
         // non-zero txAwareHash. The reason is that relayer can pick arbitrary 'data'
         // to make the transaction fail. Charging fees for such failures can drain
         // wallet funds.
-        if (metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success)) {
+        if (needReimburst) {
             // Do not consume quota when call factory's createWallet function or
             // when a successful meta-tx's txAwareHash is non-zero (which means it will
             // be signed by at least a guardian). Therefor, even if the owner's
@@ -162,14 +164,7 @@ abstract contract ForwarderModule is BaseModule
                 metaTx.to == controller().walletFactory()
             );
 
-            gasUsed = gasLeft - gasleft() +
-                (signature.length + metaTx.data.length + 7) * 16 + // data input cost
-                431 + // cost of MetaTxExecuted = 375 + 7 * 8
-                21000; // transaction cost
-
-            gasDiff = gasUsed <= metaTx.gasLimit ? 0 : gasUsed - metaTx.gasLimit;
-
-            gasUsed += MAX_REIMBURSTMENT_OVERHEAD;
+            gasUsed = gasLeft - gasleft() + baseGasCost + MAX_REIMBURSTMENT_OVERHEAD;
 
             // MAX_REIMBURSTMENT_OVERHEAD covers an ERC20 transfer and a quota update.
             if (skipQuota) {
@@ -179,19 +174,18 @@ abstract contract ForwarderModule is BaseModule
                 gasUsed -= 2000; // diff between an regular ERC20 transfer and an ETH send
             }
 
+            gasReimbursted = gasUsed <= metaTx.gasLimit? gasUsed : metaTx.gasLimit;
+
             reimburseGasFee(
                 metaTx.from,
                 controller().collectTo(),
                 metaTx.gasToken,
                 metaTx.gasPrice,
-                gasUsed - gasDiff,
+                gasReimbursted,
                 skipQuota
             );
         } else {
-            gasUsed = gasLeft - gasleft() +
-                (signature.length + metaTx.data.length + 7) * 16 + // data input cost
-                431 + // cost of MetaTxExecuted = 375 + 7 * 8
-                21000; // transaction cost
+            gasUsed = gasLeft - gasleft() + baseGasCost;
         }
 
         emit MetaTxExecuted(
@@ -201,35 +195,42 @@ abstract contract ForwarderModule is BaseModule
             metaTx.txAwareHash,
             success,
             gasUsed,
-            gasUsed - gasDiff
+            gasReimbursted
         );
     }
 
     function checkSufficientGas(
-        MetaTx calldata metaTx
+        MetaTx calldata metaTx,
+        bytes  calldata signature
         )
         private
         view
+        returns (uint baseGasCost)
     {
+        baseGasCost = (signature.length + metaTx.data.length + 7) * 16 + // data input cost
+                431 + // cost of MetaTxExecuted = 375 + 7 * 8
+                21000; // transaction cost
+
         // Check the relayer has enough Ether gas
-        uint gasLimit = (metaTx.gasLimit + metaTx.gasLimit / 63).add(MAX_REIMBURSTMENT_OVERHEAD);
+        uint gasLimit = metaTx.gasLimit.mul(64) / 63;
+
         require(gasleft() >= gasLimit, "OPERATOR_INSUFFICIENT_GAS");
 
         // Check the wallet has enough meta tx gas
-        if (metaTx.gasPrice  == 0) return;
+        if (metaTx.gasPrice > 0) {
+            uint gasCost = gasLimit.mul(metaTx.gasPrice);
 
-        uint gasCost = gasLimit.mul(metaTx.gasPrice);
-
-        if (metaTx.gasToken == address(0)) {
-            require(
-                metaTx.from.balance >= gasCost,
-                "WALLET_INSUFFICIENT_ETH_GAS"
-            );
-        } else {
-            require(
-                ERC20(metaTx.gasToken).balanceOf(metaTx.from) >= gasCost,
-                "WALLET_INSUFFICIENT_TOKEN_GAS"
-            );
+            if (metaTx.gasToken == address(0)) {
+                require(
+                    metaTx.from.balance >= gasCost,
+                    "WALLET_INSUFFICIENT_ETH_GAS"
+                );
+            } else {
+                require(
+                    ERC20(metaTx.gasToken).balanceOf(metaTx.from) >= gasCost,
+                    "WALLET_INSUFFICIENT_TOKEN_GAS"
+                );
+            }
         }
     }
 }
