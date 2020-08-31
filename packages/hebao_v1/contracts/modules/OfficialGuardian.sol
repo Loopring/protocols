@@ -25,7 +25,7 @@ contract OfficialGuardian is OwnerManagable, ERC1271
         returns (bytes4)
     {
         (address addr1, address addr2) = abi.encodePacked(_hash).recoverECDSASigner(_signature);
-        return isManager(addr1) || isManager(addr2) ?  ERC1271_MAGICVALUE_BS32 : bytes4(0);
+        return isManager(addr1) || isManager(addr2) ?  ERC1271_MAGICVALUE_B32 : bytes4(0);
     }
 
     function isValidSignature(

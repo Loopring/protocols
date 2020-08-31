@@ -6,33 +6,25 @@ abstract contract ERC1271 {
 
     // bytes4(keccak256("isValidSignature(bytes,bytes)")
     bytes4 constant internal ERC1271_MAGICVALUE_BS = 0x20c13b0b;
-    // bytes4(keccak256("isValidSignature(bytes32,bytes)")
-    bytes4 constant internal ERC1271_MAGICVALUE_BS32 = 0x1626ba7e;
 
-    bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES_SELECTOR = bytes4(
+    // bytes4(keccak256("isValidSignature(bytes32,bytes)")
+    bytes4 constant internal ERC1271_MAGICVALUE_B32 = 0x1626ba7e;
+
+    bytes4 constant internal ERC1271_SELECTOR_BS = bytes4(
         keccak256(bytes("isValidSignature(bytes,bytes)"))
     );
 
-    bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES32_SELECTOR = bytes4(
+    bytes4 constant internal ERC1271_SELECTOR_B32 = bytes4(
         keccak256(bytes("isValidSignature(bytes32,bytes)"))
     );
 
-    /**
-     * @dev Should return whether the signature provided is valid for the provided data
-     * @param _data Arbitrary length data signed on the behalf of address(this)
-     * @param _signature Signature byte array associated with _data
-     *
-     * MUST return the bytes4 magic value 0x20c13b0b when function passes.
-     * MUST NOT modify state (using STATICCALL for solc < 0.5, view modifier for solc > 0.5)
-     * MUST allow external calls
-     */
     function isValidSignature(
         bytes memory _data,
         bytes memory _signature)
         public
         view
         virtual
-        returns (bytes4 magicValue);
+        returns (bytes4 magicValueBS);
 
     function isValidSignature(
         bytes32      _hash,
@@ -40,11 +32,5 @@ abstract contract ERC1271 {
         public
         view
         virtual
-        returns (bytes4 magicValue)
-    {
-        magicValue = isValidSignature(abi.encodePacked(_hash), _signature);
-        if (magicValue == ERC1271_MAGICVALUE_BS) {
-            magicValue = ERC1271_MAGICVALUE_BS32;
-        }
-    }
+        returns (bytes4 magicValueB32);
 }
