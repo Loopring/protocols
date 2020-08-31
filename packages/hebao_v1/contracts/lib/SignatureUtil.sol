@@ -29,13 +29,13 @@ library SignatureUtil
     }
 
     bytes4 constant internal ERC1271_MAGICVALUE_BS = 0x20c13b0b;
-    bytes4 constant internal ERC1271_MAGICVALUE_BS32 = 0x1626ba7e;
+    bytes4 constant internal ERC1271_MAGICVALUE_B32 = 0x1626ba7e;
 
-    bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES_SELECTOR = bytes4(
+    bytes4 constant internal ERC1271_SELECTOR_BS = bytes4(
         keccak256(bytes("isValidSignature(bytes,bytes)"))
     );
 
-    bytes4 constant internal ERC1271_FUNCTION_WITH_BYTES32_SELECTOR = bytes4(
+    bytes4 constant internal ERC1271_SELECTOR_B32 = bytes4(
         keccak256(bytes("isValidSignature(bytes32,bytes)"))
     );
 
@@ -209,7 +209,7 @@ library SignatureUtil
         returns (bool)
     {
         bytes memory callData = abi.encodeWithSelector(
-            ERC1271_FUNCTION_WITH_BYTES_SELECTOR,
+            ERC1271_SELECTOR_BS,
             data,
             signature
         );
@@ -231,7 +231,7 @@ library SignatureUtil
         returns (bool)
     {
         bytes memory callData = abi.encodeWithSelector(
-            ERC1271_FUNCTION_WITH_BYTES32_SELECTOR,
+            ERC1271_SELECTOR_B32,
             hash,
             signature
         );
@@ -239,7 +239,7 @@ library SignatureUtil
         return (
             success &&
             result.length == 32 &&
-            result.toBytes4(0) == ERC1271_MAGICVALUE_BS32
+            result.toBytes4(0) == ERC1271_MAGICVALUE_B32
         );
     }
 }
