@@ -145,6 +145,7 @@ abstract contract ForwarderModule is BaseModule
         uint baseGasCost = (signature.length + metaTx.data.length + 7) * 16 + // data input cost
                 431 + // cost of MetaTxExecuted = 375 + 7 * 8
                 21000; // transaction cost
+
         uint gasUsed;
         uint gasReimbursted;
 
