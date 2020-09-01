@@ -34,7 +34,6 @@ abstract contract ForwarderModule is BaseModule
         uint    gasPrice,
         uint    gasLimit,
         uint    gasUsed,
-        uint    gasReimbursted,
         bool    gasSkipQuota
     );
 
@@ -154,10 +153,9 @@ abstract contract ForwarderModule is BaseModule
 
         uint gasUsed = gasLeft - gasleft() +
             (signature.length + metaTx.data.length + 7) * 16 + // data input cost
-            375 + 11 * 8 + // cost of MetaTxExecuted = 375 + 7 * 8
+            375 + 10 * 8 + // cost of MetaTxExecuted = 375 + 7 * 8
             21000; // transaction cost;
 
-        uint gasReimbursted;
         bool skipQuota;
 
         if (needReimburst) {
@@ -184,7 +182,7 @@ abstract contract ForwarderModule is BaseModule
                 gasUsed -= 15000; // diff between an regular ERC20 transfer and an ETH send
             }
 
-            gasReimbursted = gasUsed <= metaTx.gasLimit? gasUsed : metaTx.gasLimit;
+            uint gasReimbursted = gasUsed <= metaTx.gasLimit? gasUsed : metaTx.gasLimit;
 
             reimburseGasFee(
                 metaTx.from,
@@ -206,7 +204,6 @@ abstract contract ForwarderModule is BaseModule
             metaTx.gasPrice,
             metaTx.gasLimit,
             gasUsed,
-            gasReimbursted,
             skipQuota
         );
     }
