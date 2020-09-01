@@ -490,7 +490,8 @@ class OrderMatchingGadget : public GadgetT
 // }
 
 // Result is guaranteed to fit inside NUM_BITS_AMOUNT bits.
-// Max ratio between weights supported is 2**(96-14)/(10**18) = 4835703.278458517
+// Max ratio between weights guaranteed to be supported is 2**(96-14)/(10**18) = 4835703.278458517
+// but this depends on the balances inside the pool as well. Normally it should be even much higher.
 class SpotPriceAMMGadget : public GadgetT
 {
   public:
@@ -573,13 +574,15 @@ class SpotPriceAMMGadget : public GadgetT
 //       amountIn: number) => {
 //   const weightRatio = (weightIn * BASE_FIXED) / weightOut;
 //   const fee = amountIn * feeBips / BASE_BIPS;
-//   const y =(balanceIn * BASE_FIXED) / (balanceIn + (amountIn - fee));
+//   const y = (balanceIn * BASE_FIXED) / (balanceIn + (amountIn - fee));
 //   const p = pow_approx(y, weightRatio);
 //   return Math.floor(balanceOut * (BASE_FIXED - p) / BASE_FIXED);
 // }
 class CalcOutGivenInAMMGadget : public GadgetT
 {
   public:
+    static const unsigned int numIterations = 4;
+
     MulDivGadget weightRatio;
     DualVariableGadget weightRatioRangeCheck;
     MulDivGadget fee;
@@ -634,7 +637,7 @@ class CalcOutGivenInAMMGadget : public GadgetT
             NUM_BITS_FIXED_BASE,
             NUM_BITS_AMOUNT,
             FMT(prefix, ".y")),
-          p(pb, constants, y.result(), weightRatio.result(), 4, FMT(prefix, ".p")),
+          p(pb, constants, y.result(), weightRatio.result(), numIterations, FMT(prefix, ".p")),
           invP(pb, constants.fixedBase, p.result(), NUM_BITS_FIXED_BASE, FMT(prefix, ".invP")),
           res(
             pb,
@@ -683,7 +686,8 @@ class CalcOutGivenInAMMGadget : public GadgetT
 
 struct OrderMatchingData
 {
-    const OrderGadget &order;
+    const VariableT &amm;
+    const VariableT &orderFeeBips;
     const VariableT &fillS;
     const VariableT &balanceBeforeS;
     const VariableT &balanceBeforeB;
@@ -734,37 +738,37 @@ class RequireAMMFillsGadget : public GadgetT
           // Use dummy data if this isn't an AMM order
           inBalanceBefore(
             pb,
-            data.order.amm.packed,
+            data.amm,
             data.balanceBeforeB,
             constants.fixedBase,
             FMT(prefix, ".inBalanceBefore")),
           inBalanceAfter(
             pb,
-            data.order.amm.packed,
+            data.amm,
             data.balanceAfterB,
             constants.fixedBase,
             FMT(prefix, ".inBalanceAfter")),
-          inWeight(pb, data.order.amm.packed, data.weightB, constants.fixedBase, FMT(prefix, ".inWeight")),
+          inWeight(pb, data.amm, data.weightB, constants.fixedBase, FMT(prefix, ".inWeight")),
           outBalanceBefore(
             pb,
-            data.order.amm.packed,
+            data.amm,
             data.balanceBeforeS,
             constants.fixedBase,
             FMT(prefix, ".outBalanceBefore")),
           outBalanceAfter(
             pb,
-            data.order.amm.packed,
+            data.amm,
             data.balanceAfterS,
             constants.fixedBase,
             FMT(prefix, ".outBalanceAfter")),
-          outWeight(pb, data.order.amm.packed, data.weightS, constants.fixedBase, FMT(prefix, ".outWeight")),
-          ammFill(pb, data.order.amm.packed, fillB, constants._0, FMT(prefix, ".ammFill")),
+          outWeight(pb, data.amm, data.weightS, constants.fixedBase, FMT(prefix, ".outWeight")),
+          ammFill(pb, data.amm, fillB, constants._0, FMT(prefix, ".ammFill")),
 
           // Verify general assumptions AMM orders
           requireOrderFeeBipsZero(
             pb,
-            data.order.amm.packed,
-            data.order.feeBips.packed,
+            data.amm,
+            data.orderFeeBips,
             constants._0,
             FMT(prefix, ".requireOrderFeeBipsZero")),
           requireInWeightNotZero(pb, inWeight.result(), FMT(prefix, ".requireInWeightNotZero")),
@@ -789,7 +793,7 @@ class RequireAMMFillsGadget : public GadgetT
             FMT(prefix, ".fillS_leq_ammMaximumFillS")),
           requireValidAmmFillS(
             pb,
-            data.order.amm.packed,
+            data.amm,
             fillS_leq_ammMaximumFillS.leq(),
             FMT(prefix, ".requireValidAmmFillS")),
 
@@ -820,7 +824,7 @@ class RequireAMMFillsGadget : public GadgetT
             FMT(prefix, ".priceBefore_leq_priceAfter")),
           requirePriceIncreased(
             pb,
-            data.order.amm.packed,
+            data.amm,
             priceBefore_leq_priceAfter.leq(),
             FMT(prefix, ".requirePriceIncreased"))
     {

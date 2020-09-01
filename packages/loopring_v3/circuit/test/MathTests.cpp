@@ -1721,10 +1721,13 @@ TEST_CASE("SignedAdd", "[SignedAddGadget]")
 
                 Constants constants(pb, "constants");
 
-                SignedAddGadget addGadget(pb, constants,
+                SignedAddGadget addGadget(
+                  pb,
+                  constants,
                   SignedVariableT(_A > 0 ? constants._1 : constants._0, A),
                   SignedVariableT(_B > 0 ? constants._1 : constants._0, B),
-                  n, "addGadget");
+                  n,
+                  "addGadget");
                 addGadget.generate_r1cs_constraints();
                 addGadget.generate_r1cs_witness();
 
@@ -1831,10 +1834,13 @@ TEST_CASE("SignedSub", "[SignedSubGadget]")
 
                 Constants constants(pb, "constants");
 
-                SignedSubGadget subGadget(pb, constants,
+                SignedSubGadget subGadget(
+                  pb,
+                  constants,
                   SignedVariableT(_A > 0 ? constants._1 : constants._0, A),
                   SignedVariableT(_B > 0 ? constants._1 : constants._0, B),
-                  n, "subGadget");
+                  n,
+                  "subGadget");
                 subGadget.generate_r1cs_constraints();
                 subGadget.generate_r1cs_witness();
 
@@ -1918,43 +1924,47 @@ TEST_CASE("SignedSub", "[SignedSubGadget]")
 
 TEST_CASE("SignedMulDiv", "[SignedMulDivGadget]")
 {
+    unsigned int numRandom = 32;
     unsigned int maxLength = 253 / 2;
     unsigned int numIterations = 8;
     for (unsigned int n = 1; n <= maxLength; n++)
     {
         DYNAMIC_SECTION("Bit-length: " << n)
         {
-            auto mulDivChecked = [n](
-                                   const BigInt &_value,
-                                   const BigInt &_numerator,
-                                   const BigInt &_denominator,
-                                   bool expectedSatisfied) {
-                protoboard<FieldT> pb;
+            auto mulDivChecked =
+              [n](const BigInt &_value, const BigInt &_numerator, const BigInt &_denominator, bool expectedSatisfied) {
+                  protoboard<FieldT> pb;
 
-                pb_variable<FieldT> value = make_variable(pb, toFieldElement(abs(_value)), "value");
-                pb_variable<FieldT> numerator = make_variable(pb, toFieldElement(abs(_numerator)), "numerator");
-                pb_variable<FieldT> denominator = make_variable(pb, toFieldElement(_denominator), "denominator");
+                  pb_variable<FieldT> value = make_variable(pb, toFieldElement(abs(_value)), "value");
+                  pb_variable<FieldT> numerator = make_variable(pb, toFieldElement(abs(_numerator)), "numerator");
+                  pb_variable<FieldT> denominator = make_variable(pb, toFieldElement(_denominator), "denominator");
 
-                Constants constants(pb, "constants");
-                SignedMulDivGadget mulDivGadget(pb, constants,
-                  SignedVariableT(_value > 0 ? constants._1 : constants._0, value),
-                  SignedVariableT(_numerator > 0 ? constants._1 : constants._0, numerator),
-                  denominator, n, n, n, "mulDivGadget");
-                mulDivGadget.generate_r1cs_constraints();
-                mulDivGadget.generate_r1cs_witness();
+                  Constants constants(pb, "constants");
+                  SignedMulDivGadget mulDivGadget(
+                    pb,
+                    constants,
+                    SignedVariableT(_value > 0 ? constants._1 : constants._0, value),
+                    SignedVariableT(_numerator > 0 ? constants._1 : constants._0, numerator),
+                    denominator,
+                    n,
+                    n,
+                    n,
+                    "mulDivGadget");
+                  mulDivGadget.generate_r1cs_constraints();
+                  mulDivGadget.generate_r1cs_witness();
 
-                REQUIRE(pb.is_satisfied() == expectedSatisfied);
-                if (expectedSatisfied)
-                {
-                    BigInt product = _value * _numerator;
-                    BigInt remainder = product % _denominator;
-                    BigInt result = product / _denominator;
+                  REQUIRE(pb.is_satisfied() == expectedSatisfied);
+                  if (expectedSatisfied)
+                  {
+                      BigInt product = _value * _numerator;
+                      BigInt remainder = product % _denominator;
+                      BigInt result = product / _denominator;
 
-                    REQUIRE((pb.val(mulDivGadget.result().value) == toFieldElement(abs(result))));
-                    unsigned int sign = result > 0 ? 1 : 0;
-                    REQUIRE((pb.val(mulDivGadget.result().sign) == toFieldElement(sign)));
-                }
-            };
+                      REQUIRE((pb.val(mulDivGadget.result().value) == toFieldElement(abs(result))));
+                      unsigned int sign = result > 0 ? 1 : 0;
+                      REQUIRE((pb.val(mulDivGadget.result().sign) == toFieldElement(sign)));
+                  }
+              };
 
             BigInt max = getMaxFieldElementAsBigInt(n);
 
@@ -1982,6 +1992,23 @@ TEST_CASE("SignedMulDiv", "[SignedMulDivGadget]")
             {
                 mulDivChecked(-1, -1, 1, true);
             }
+
+            SECTION("-3 * 1 / 2 = -1")
+            {
+                mulDivChecked(-3, 1, 2, true);
+            }
+
+            SECTION("random value")
+            {
+                for (unsigned int j = 0; j < numRandom; j++)
+                {
+                    BigInt value = toBigInt(getRandomFieldElement(n), (rand() % 2) == 0);
+                    BigInt numerator = toBigInt(getRandomFieldElement(n), (rand() % 2) == 0);
+                    BigInt denominator = toBigInt(getRandomFieldElement(n));
+                    bool expectedSatisfied = (denominator != 0);
+                    mulDivChecked(value, numerator, denominator, expectedSatisfied);
+                }
+            }
         }
     }
 }
@@ -1994,8 +2021,7 @@ TEST_CASE("Power", "[PowerGadget]")
     {
         DYNAMIC_SECTION("Iterations: " << n)
         {
-            auto pow_approxChecked = [n](const FieldT& _x, const FieldT& _y)
-            {
+            auto pow_approxChecked = [n](const FieldT &_x, const FieldT &_y) {
                 protoboard<FieldT> pb;
                 Constants constants(pb, "constants");
 
@@ -2006,10 +2032,7 @@ TEST_CASE("Power", "[PowerGadget]")
                 powerGadget.generate_r1cs_constraints();
 
                 PowResult expected = pow_approx(_x, _y, n);
-                //print("satisfied", pb.is_satisfied());
-                //print("expect", expected.valid);
                 REQUIRE(pb.is_satisfied() == expected.valid);
-                //print(pb, "gadget", powerGadget.result());
                 if (expected.valid)
                 {
                     REQUIRE((pb.val(powerGadget.result()) == expected.value));
@@ -2038,32 +2061,32 @@ TEST_CASE("Power", "[PowerGadget]")
 
             SECTION("0.5^2")
             {
-                pow_approxChecked(toFieldElement(BASE/2) , FieldT(2) * fixedBase);
+                pow_approxChecked(toFieldElement(BASE / 2), FieldT(2) * fixedBase);
             }
 
             SECTION("0.5^0.5")
             {
-                pow_approxChecked(toFieldElement(BASE/2), toFieldElement(BASE/2));
+                pow_approxChecked(toFieldElement(BASE / 2), toFieldElement(BASE / 2));
             }
 
             SECTION("0.333^0.5")
             {
-                pow_approxChecked(toFieldElement(BASE/3) , toFieldElement(BASE/2));
+                pow_approxChecked(toFieldElement(BASE / 3), toFieldElement(BASE / 2));
             }
 
             SECTION("0.5^0.333")
             {
-                pow_approxChecked(toFieldElement(BASE/2) , toFieldElement(BASE/3));
+                pow_approxChecked(toFieldElement(BASE / 2), toFieldElement(BASE / 3));
             }
 
             SECTION("0.5^3.333")
             {
-                pow_approxChecked(toFieldElement(BASE/2) , toFieldElement(BASE*10/3));
+                pow_approxChecked(toFieldElement(BASE / 2), toFieldElement(BASE * 10 / 3));
             }
 
             SECTION("0.333^3.333")
             {
-                pow_approxChecked(toFieldElement(BASE/3) , toFieldElement(BASE*10/3));
+                pow_approxChecked(toFieldElement(BASE / 3), toFieldElement(BASE * 10 / 3));
             }
 
             SECTION("random value")

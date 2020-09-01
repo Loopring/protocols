@@ -90,6 +90,8 @@ class WithdrawCircuit : public BaseTransactionCircuit
     AddGadget nonce_after;
 
     // Disable AMM for the token when doing a forced withdrawal
+    NotGadget isNotProtocolFeeWithdrawal;
+    AndGadget doUpdateTokenWeight;
     TernaryGadget newTokenWeight;
 
     // Increase the number of conditional transactions
@@ -222,9 +224,12 @@ class WithdrawCircuit : public BaseTransactionCircuit
             FMT(prefix, ".nonce_after")),
 
           // Disable AMM for the token when doing a forced withdrawal
+          // (but not if it's a protocol fee withdrawal)
+          isNotProtocolFeeWithdrawal(pb, isProtocolFeeWithdrawal.result(), FMT(prefix, ".isNotProtocolFeeWithdrawal")),
+          doUpdateTokenWeight(pb, {isNotProtocolFeeWithdrawal.result(), validFullWithdrawalType.result()}, FMT(prefix, ".doUpdateTokenWeight")),
           newTokenWeight(
             pb,
-            validFullWithdrawalType.result(),
+            doUpdateTokenWeight.result(),
             state.constants._0,
             state.accountA.balanceS.weightAMM,
             FMT(prefix, ".newTokenWeightAMM")),
@@ -327,6 +332,8 @@ class WithdrawCircuit : public BaseTransactionCircuit
         nonce_after.generate_r1cs_witness();
 
         // Disable AMM for the token when doing a forced withdrawal
+        isNotProtocolFeeWithdrawal.generate_r1cs_witness();
+        doUpdateTokenWeight.generate_r1cs_witness();
         newTokenWeight.generate_r1cs_witness();
 
         // Increase the number of conditional transactions
@@ -397,6 +404,8 @@ class WithdrawCircuit : public BaseTransactionCircuit
         nonce_after.generate_r1cs_constraints();
 
         // Disable AMM for the token when doing a forced withdrawal
+        isNotProtocolFeeWithdrawal.generate_r1cs_constraints();
+        doUpdateTokenWeight.generate_r1cs_constraints();
         newTokenWeight.generate_r1cs_constraints();
 
         // Increase the number of conditional transactions

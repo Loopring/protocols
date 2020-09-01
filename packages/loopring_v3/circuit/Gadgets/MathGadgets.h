@@ -2069,21 +2069,15 @@ class SignedSubGadget : public GadgetT
 };
 
 // sA * sB / C
-// Always round down. For negative values we round away from zero.
-// So if the result is negative and the remainder of the division is non-zero we add 1 to abs(result).
+// Always rounds towards zero, even for negative values.
 class SignedMulDivGadget : public GadgetT
 {
   public:
     MulDivGadget res;
-    EqualGadget sign_math;
-
-    EqualGadget remainderZero;
-    AndGadget bias;
-
-    AddGadget value;
+    EqualGadget sign;
 
     EqualGadget isZero;
-    TernaryGadget sign;
+    TernaryGadget normalizedSign;
 
     SignedMulDivGadget(
       ProtoboardT &pb,
@@ -2107,54 +2101,34 @@ class SignedMulDivGadget : public GadgetT
             numBitsNumerator,
             numBitsDenominator,
             FMT(prefix, ".res")),
-          sign_math(pb, _value.sign, _numerator.sign, FMT(prefix, ".sign")),
+          sign(pb, _value.sign, _numerator.sign, FMT(prefix, ".sign")),
 
-          remainderZero(pb, res.getRemainder(), constants._0, FMT(prefix, ".remainderZero")),
-          bias(pb, {remainderZero.result(), sign_math.result()}, FMT(prefix, ".bias")),
-
-          value(
-            pb,
-            res.result(),
-            /*bias.result()*/ constants._0,
-            numBitsValue + numBitsNumerator - numBitsDenominator,
-            FMT(prefix, ".value")),
-
-          isZero(pb, value.result(), constants._0, FMT(prefix, ".isZero")),
-          sign(pb, isZero.result(), constants._0, sign_math.result(), FMT(prefix, ".sign"))
+          isZero(pb, res.result(), constants._0, FMT(prefix, ".isZero")),
+          normalizedSign(pb, isZero.result(), constants._0, sign.result(), FMT(prefix, ".sign"))
     {
     }
 
     void generate_r1cs_witness()
     {
         res.generate_r1cs_witness();
-        sign_math.generate_r1cs_witness();
-
-        remainderZero.generate_r1cs_witness();
-        bias.generate_r1cs_witness();
-
-        value.generate_r1cs_witness();
+        sign.generate_r1cs_witness();
 
         isZero.generate_r1cs_witness();
-        sign.generate_r1cs_witness();
+        normalizedSign.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
         res.generate_r1cs_constraints();
-        sign_math.generate_r1cs_constraints();
-
-        remainderZero.generate_r1cs_constraints();
-        bias.generate_r1cs_constraints();
-
-        value.generate_r1cs_constraints();
+        sign.generate_r1cs_constraints();
 
         isZero.generate_r1cs_constraints();
-        sign.generate_r1cs_constraints();
+        normalizedSign.generate_r1cs_constraints();
     }
 
     const SignedVariableT result() const
     {
-        return SignedVariableT(sign.result(), value.result());
+        return SignedVariableT(normalizedSign.result(), res.result());
     }
 };
 
@@ -2179,8 +2153,6 @@ class SignedMulDivGadget : public GadgetT
 class PowerGadget : public GadgetT
 {
   public:
-    // const VariableT& _x;
-    // const VariableT& _y;
 
     UnsafeMulGadget sum0;
 
@@ -2295,38 +2267,20 @@ class PowerGadget : public GadgetT
 
     void generate_r1cs_witness()
     {
-        // print(pb, "x", _x);
-        // print(pb, "y", _y);
-
         sum0.generate_r1cs_witness();
-        // print(pb, "sum0", sum0.result());
 
         x1.generate_r1cs_witness();
-        // print(pb, "x1", x1.result());
         t1.generate_r1cs_witness();
-        // print(pb, "t1", t1.result());
         sum1.generate_r1cs_witness();
-        // print(pb, "sum1", sum1.result().sign);
-        // print(pb, "sum1", sum1.result().value);
 
         for (unsigned int i = 0; i < sum.size(); i++)
         {
             bn[i].generate_r1cs_witness();
-            // print(pb, "bn[i]", bn[i].result());
             vn[i].generate_r1cs_witness();
-            // print(pb, "vn[i].s", vn[i].result().sign);
-            // print(pb, "vn[i].v", vn[i].result().value);
             xn[i].generate_r1cs_witness();
-            // print(pb, "xn[i]", xn[i].result());
             cn[i].generate_r1cs_witness();
-            // print(pb, "cn[i].s", cn[i].result().sign);
-            // print(pb, "cn[i].v", cn[i].result().value);
             tn[i].generate_r1cs_witness();
-            // print(pb, "tn[i].s", tn[i].result().sign);
-            // print(pb, "tn[i].v", tn[i].result().value);
             sum[i].generate_r1cs_witness();
-            // print(pb, "sum[i].s", sum[i].result().sign);
-            // print(pb, "sum[i].v", sum[i].result().value);
             cnRangeCheck[i].generate_r1cs_witness();
         }
         res->generate_r1cs_witness();

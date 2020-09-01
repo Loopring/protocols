@@ -37,13 +37,6 @@ export class WithdrawalProcessor {
     account.getBalance(withdrawal.tokenID).balance.isub(amount);
     account.getBalance(withdrawal.feeTokenID).balance.isub(withdrawal.fee);
 
-    // Special cases when withdrawing from the protocol fee pool.
-    if (withdrawal.accountID === 0) {
-      state.getAccount(1).getBalance(withdrawal.tokenID);
-    } else {
-      state.getAccount(0).getBalance(withdrawal.tokenID);
-    }
-
     const operator = state.getAccount(block.operatorAccountID);
     operator.getBalance(withdrawal.feeTokenID).balance.iadd(withdrawal.fee);
 

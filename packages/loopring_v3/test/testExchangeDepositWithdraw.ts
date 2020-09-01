@@ -497,7 +497,7 @@ contract("Exchange", (accounts: string[]) => {
       await submitWithdrawalBlockChecked([expectedResult], undefined, [ownerB]);
     });
 
-    it("Forced withdrawal", async () => {
+    it("Forced withdrawal (correct owner)", async () => {
       await createExchange();
 
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
@@ -549,6 +549,42 @@ contract("Exchange", (accounts: string[]) => {
 
       // Submit the block
       const expectedResult = { ...deposit };
+      await submitWithdrawalBlockChecked([expectedResult]);
+    });
+
+    it("Forced withdrawal (incorrect owner)", async () => {
+      await createExchange();
+
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
+      const balance = new BN(web3.utils.toWei("7", "ether"));
+      const token = exchangeTestUtil.getTokenAddress("LRC");
+
+      const deposit = await exchangeTestUtil.deposit(
+        ownerA,
+        ownerA,
+        token,
+        balance
+      );
+      await exchangeTestUtil.submitTransactions();
+      await exchangeTestUtil.submitPendingBlocks();
+
+      // Do the request
+      await exchangeTestUtil.requestWithdrawal(
+        ownerA,
+        token,
+        balance,
+        "ETH",
+        new BN(0),
+        { authMethod: AuthMethod.FORCE, signer: ownerB }
+      );
+
+      // Commit the withdrawal
+      await exchangeTestUtil.submitTransactions();
+
+      // Submit the block
+      const expectedResult = { ...deposit };
+      expectedResult.amount = new BN(0);
       await submitWithdrawalBlockChecked([expectedResult]);
     });
 
@@ -710,6 +746,10 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
+
+      const feeBipsAMM = 30;
+      const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
+      await exchangeTestUtil.requestAmmUpdate(exchangeTestUtil.exchangeOperator, ring.orderA.tokenS, feeBipsAMM, tokenWeightS);
 
       await exchangeTestUtil.requestWithdrawal(
         Constants.zeroAddress,

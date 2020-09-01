@@ -1218,7 +1218,7 @@ export class ExchangeTestUtil {
         const numAvailableSlotsBefore = (
           await this.exchange.getNumAvailableForcedSlots()
         ).toNumber();
-        await this.exchange.forceWithdraw(owner, token, accountID, {
+        await this.exchange.forceWithdraw(signer, token, accountID, {
           from: signer,
           value: withdrawalFee
         });

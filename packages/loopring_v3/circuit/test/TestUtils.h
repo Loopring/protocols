@@ -171,15 +171,17 @@ static PowResult pow_approx(const FieldT& _x, const FieldT& _y, unsigned int ite
         cn.push_back((cn[i-1] * v) / bn[i]);
         xn.push_back((xn[i-1] * x) / BASE);
         sum += xn[i]*cn[i];
+        if(cn.back() > getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT))
+        {
+            return {false, 0};
+        }
     }
     sum /= BASE;
 
-    //std::cout << "res: " << sum << std::endl;
     bool valid = true;
-    if (sum <= 0 || sum >= SNARK_SCALAR_FIELD)
+    if (sum <= 0 || sum > getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT))
     {
-        valid = false;
-        sum = 0;
+        return {false, 0};
     }
     return {valid, toFieldElement(sum)};
 }

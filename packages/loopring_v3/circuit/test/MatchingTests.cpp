@@ -707,9 +707,18 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
           make_variable(pb, roundToFloatValue(_expectedFillS_B, Float24Encoding), "expectedFillS_B");
 
         OrderMatchingGadget orderMatching(
-            pb, constants, timestamp, orderA, orderB, constants._0, constants._0,
-            storageA.getData(), storageB.getData(), expectedFillS_A,
-            expectedFillS_B, "orderMatching");
+          pb,
+          constants,
+          timestamp,
+          orderA,
+          orderB,
+          constants._0,
+          constants._0,
+          storageA.getData(),
+          storageB.getData(),
+          expectedFillS_A,
+          expectedFillS_B,
+          "orderMatching");
         orderMatching.generate_r1cs_constraints();
         orderMatching.generate_r1cs_witness();
 
@@ -1152,92 +1161,300 @@ struct CalcOutResult
 };
 
 static CalcOutResult calcOutGivenIn(
-    const BigInt &balanceIn,
-    const BigInt &weightIn,
-    const BigInt &balanceOut,
-    const BigInt &weightOut,
-    unsigned int  feeBips,
-    const BigInt &amountIn
-    )
+  const BigInt &balanceIn,
+  const BigInt &weightIn,
+  const BigInt &balanceOut,
+  const BigInt &weightOut,
+  unsigned int feeBips,
+  const BigInt &amountIn)
 {
     BigInt BASE(FIXED_BASE);
     BigInt BASE_BIPS(10000);
 
     BigInt weightRatio = (weightIn * BASE) / weightOut;
-    BigInt fee = amountIn * feeBips / BASE_BIPS;
-    BigInt y = (balanceIn * BASE) / (balanceIn + (amountIn - fee));
-    PowResult pow = pow_approx(toFieldElement(y), toFieldElement(weightRatio), 4);
-    if(!pow.valid)
+    if (weightRatio > getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT))
     {
-        return CalcOutResult({false, 0});
+        return {false, 0};
+    }
+    BigInt fee = amountIn * feeBips / BASE_BIPS;
+    BigInt denom = balanceIn + (amountIn - fee);
+    if (denom == 0)
+    {
+        return {false, 0};
+    }
+    BigInt y = (balanceIn * BASE) / denom;
+    PowResult pow = pow_approx(toFieldElement(y), toFieldElement(weightRatio), CalcOutGivenInAMMGadget::numIterations);
+    if (!pow.valid)
+    {
+        return {false, 0};
     }
     BigInt p = toBigInt(pow.value);
     BigInt res = (balanceOut * (BASE - p)) / BASE;
     return {true, res};
 }
 
-TEST_CASE("CalcOutGivenInAMM", "[CalcOutGivenInAMMGadget]")
+struct CalcSpotResult
 {
-    unsigned int numRandom = 1024;
-    auto calcOutGivenInChecked = [](
-                                  const BigInt &_balanceIn,
-                                  const BigInt &_weightIn,
-                                  const BigInt &_balanceOut,
-                                  const BigInt &_weightOut,
-                                  unsigned int  _feeBips,
-                                  const BigInt &_amountIn) {
-        protoboard<FieldT> pb;
+    bool valid;
+    BigInt value;
+};
 
-        VariableT balanceIn = make_variable(pb, toFieldElement(_balanceIn), "balanceIn");
+static CalcSpotResult
+calcSpotPrice(BigInt balanceIn, BigInt weightIn, BigInt balanceOut, BigInt weightOut, unsigned int feeBips)
+{
+    BigInt BASE(FIXED_BASE);
+    BigInt numer = balanceIn * weightOut;
+    BigInt denom = balanceOut * weightIn;
+    if (denom == 0)
+    {
+        return {false, 0};
+    }
+    BigInt ratio = (numer * BASE) / denom;
+    if (ratio > getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT))
+    {
+        return {false, 0};
+    }
+    BigInt invFeeBips = 10000 - feeBips;
+    return {true, (ratio * 10000) / invFeeBips};
+}
+
+static bool simulateRequireAMMFills(
+  bool amm,
+  unsigned int orderFeeBips,
+  const BigInt &balanceIn,
+  const BigInt &weightIn,
+  const BigInt &balanceOut,
+  const BigInt &weightOut,
+  unsigned int feeBips,
+  const BigInt &amountIn,
+  const BigInt &amountOut)
+{
+    if (!amm)
+    {
+        return true;
+    }
+
+    if (orderFeeBips != 0)
+    {
+        return false;
+    }
+    if (weightIn == 0 || weightOut == 0)
+    {
+        return false;
+    }
+
+    CalcOutResult expected = calcOutGivenIn(balanceIn, weightIn, balanceOut, weightOut, feeBips, amountIn);
+    if (!expected.valid || amountOut > expected.value)
+    {
+        return false;
+    }
+
+    CalcSpotResult spotPriceBefore = calcSpotPrice(balanceIn, weightIn, balanceOut, weightOut, feeBips);
+    CalcSpotResult spotPriceAfter =
+      calcSpotPrice(balanceIn + amountIn, weightIn, balanceOut - amountOut, weightOut, feeBips);
+    if (!spotPriceBefore.valid || !spotPriceAfter.valid || spotPriceAfter.value < spotPriceBefore.value)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+TEST_CASE("RequireAMMFills", "[RequireAMMFillsGadget]")
+{
+    enum class ExpectedSatisfied
+    {
+        Satisfied,
+        NotSatisfied,
+        Automatic
+    };
+    unsigned int numRandom = 1024;
+    auto requireAMMFillsChecked = [](
+                                    bool _amm,
+                                    unsigned int _orderFeeBips,
+                                    const BigInt &_balanceIn,
+                                    const BigInt &_weightIn,
+                                    const BigInt &_balanceOut,
+                                    const BigInt &_weightOut,
+                                    unsigned int _feeBips,
+                                    const BigInt &__amountIn,
+                                    const BigInt &__amountOut,
+                                    ExpectedSatisfied expectedSatisfied = ExpectedSatisfied::Automatic) {
+        BigInt _amountIn = __amountIn;
+        BigInt _amountOut = __amountOut;
+        if (_balanceIn + _amountIn > getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT))
+        {
+            _amountIn = getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT) - _balanceIn;
+        }
+        if (_balanceOut - _amountOut < 0)
+        {
+            _amountOut = _balanceOut;
+        }
+
+        protoboard<FieldT> pb;
+        VariableT amm = make_variable(pb, _amm ? 1 : 0, "amm");
+        VariableT orderFeeBips = make_variable(pb, _orderFeeBips, "amm");
+        VariableT balanceInBefore = make_variable(pb, toFieldElement(_balanceIn), "balanceInBefore");
         VariableT weightIn = make_variable(pb, toFieldElement(_weightIn), "weightIn");
-        VariableT balanceOut = make_variable(pb, toFieldElement(_balanceOut), "balanceOut");
+        VariableT balanceOutBefore = make_variable(pb, toFieldElement(_balanceOut), "balanceOut");
         VariableT weightOut = make_variable(pb, toFieldElement(_weightOut), "weightOut");
         VariableT feeBips = make_variable(pb, FieldT(_feeBips), "feeBips");
         VariableT amountIn = make_variable(pb, toFieldElement(_amountIn), "amountIn");
+        VariableT amountOut = make_variable(pb, toFieldElement(_amountOut), "amountOut");
+
+        VariableT balanceInAfter = make_variable(pb, toFieldElement(_balanceIn + _amountIn), "balanceInAfter");
+        VariableT balanceOutAfter = make_variable(pb, toFieldElement(_balanceOut - _amountOut), "balanceOutAfter");
 
         Constants constants(pb, "constants");
-        CalcOutGivenInAMMGadget calcOutGivenInAMM(pb, constants,
-          balanceIn, weightIn,
-          balanceOut, weightOut,
-          feeBips, amountIn, "calcOutGivenInAMM");
-        calcOutGivenInAMM.generate_r1cs_constraints();
-        calcOutGivenInAMM.generate_r1cs_witness();
+        RequireAMMFillsGadget requireAMMFills(
+          pb,
+          constants,
+          {amm,
+           orderFeeBips,
+           amountOut,
+           balanceOutBefore,
+           balanceInBefore,
+           balanceOutAfter,
+           balanceInAfter,
+           weightOut,
+           weightIn,
+           feeBips},
+          amountIn,
+          "calcOutGivenInAMM");
+        requireAMMFills.generate_r1cs_constraints();
+        requireAMMFills.generate_r1cs_witness();
 
-        CalcOutResult expected = calcOutGivenIn(_balanceIn, _weightIn, _balanceOut, _weightOut, _feeBips, _amountIn);
-        bool expectedSatisfied = expected.valid;
-        REQUIRE(pb.is_satisfied() == expectedSatisfied);
-        if (expectedSatisfied)
+        bool expected = simulateRequireAMMFills(
+          _amm, _orderFeeBips, _balanceIn, _weightIn, _balanceOut, _weightOut, _feeBips, _amountIn, _amountOut);
+        if (expectedSatisfied != ExpectedSatisfied::Automatic)
         {
-            REQUIRE((pb.val(calcOutGivenInAMM.result()) == toFieldElement(expected.value)));
+            bool manualExpected = (expectedSatisfied == ExpectedSatisfied::Satisfied);
+            REQUIRE(expected == manualExpected);
         }
+        REQUIRE(pb.is_satisfied() == expected);
     };
 
-    SECTION("Swap 0")
+    BigInt BASE(FIXED_BASE);
+    BigInt max = getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT);
+
+    SECTION("Simple swap")
     {
-        calcOutGivenInChecked(1, 1, 1, 1, 10, 0);
+        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 1, 1, ExpectedSatisfied::NotSatisfied);
+        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 2, 1, ExpectedSatisfied::Satisfied);
     }
 
-    SECTION("Swap 100 @ 100/10")
+    SECTION("AMM zero weights")
     {
-        calcOutGivenInChecked(1234567, 100, 7654321, 10, 30, 159);
+        requireAMMFillsChecked(true, 0, 1000, 0, 1000, 0, 10, 2, 1, ExpectedSatisfied::NotSatisfied);
+        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 0, 10, 2, 1, ExpectedSatisfied::NotSatisfied);
+        requireAMMFillsChecked(true, 0, 1000, 0, 1000, 1, 10, 2, 1, ExpectedSatisfied::NotSatisfied);
+        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 2, 1, ExpectedSatisfied::Satisfied);
     }
 
-    SECTION("Swap 1000 @ 10/1000")
+    SECTION("not AMM zero weights")
     {
-        calcOutGivenInChecked(1234567, 10, 7654321, 100, 30, 357);
+        requireAMMFillsChecked(false, 0, 1000, 0, 1000, 0, 10, 2, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(false, 0, 1000, 1, 1000, 0, 10, 2, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(false, 0, 1000, 0, 1000, 1, 10, 2, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(false, 0, 1000, 1, 1000, 1, 10, 2, 1, ExpectedSatisfied::Satisfied);
     }
 
-    SECTION("random value")
+    SECTION("not AMM 'invalid' fills")
+    {
+        requireAMMFillsChecked(false, 0, 1000, 0, 1000, 0, 10, 1, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(false, 1, 1000, 1, 1000, 0, 10, 1, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(false, 1, 1000, 1, 1000, 0, 10, 2, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(false, 1, 1000, 1, 1000, 0, 10, 1, 2, ExpectedSatisfied::Satisfied);
+    }
+
+    SECTION("AMM non-zero orderFeeBips")
+    {
+        requireAMMFillsChecked(true, 1, 1000, 1, 1000, 1, 10, 2, 1, ExpectedSatisfied::NotSatisfied);
+        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 2, 1, ExpectedSatisfied::Satisfied);
+    }
+
+    SECTION("Swap 0 -> 0")
+    {
+        requireAMMFillsChecked(true, 0, 1, 1, 1, 1, 10, 0, 0, ExpectedSatisfied::Satisfied);
+    }
+
+    SECTION("Swap 1 -> 0")
+    {
+        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 1, 0, ExpectedSatisfied::Satisfied);
+    }
+
+    SECTION("Swap 0 -> 1")
+    {
+        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 0, 1, ExpectedSatisfied::NotSatisfied);
+    }
+
+    SECTION("Max weights")
+    {
+        requireAMMFillsChecked(true, 0, 1000, max, 1000, max, 10, 2, 1);
+        requireAMMFillsChecked(true, 0, 1000, 1, 1000, max, 10, 2, 1);
+        requireAMMFillsChecked(true, 0, 1000, max, 1000, 1, 10, 2, 1);
+    }
+
+    SECTION("Balances zero")
+    {
+        requireAMMFillsChecked(true, 0, 0, 1, 0, 1, 10, 0, 0);
+        requireAMMFillsChecked(true, 0, 1000, 1, 0, 1, 10, 0, 0);
+        requireAMMFillsChecked(true, 0, 0, 1, 1000, 1, 10, 0, 0);
+    }
+
+    SECTION("Ratio overflow")
+    {
+        requireAMMFillsChecked(true, 0, max, 1, 1, 2, 10, 0, 0, ExpectedSatisfied::NotSatisfied);
+        requireAMMFillsChecked(true, 0, 1, max, 1, 2, 10, 0, 0, ExpectedSatisfied::NotSatisfied);
+    }
+
+    SECTION("Maxed out")
+    {
+        requireAMMFillsChecked(true, 0, max, max, max, max, 10, 0, 0);
+    }
+
+    SECTION("Large approximation errors")
+    {
+        requireAMMFillsChecked(true, 0, 1000, 4, 1000, 1, 10, 1000, 100);
+    }
+
+    SECTION("Large approximation errors")
+    {
+        requireAMMFillsChecked(true, 0, 1000, 4, 1000, 1, 10, 1000, 100);
+    }
+
+    SECTION("Fill limit check")
+    {
+        BigInt balanceIn = BASE * 1000;
+        BigInt amountIn = BASE * 1;
+        BigInt weight = BASE * 1;
+        unsigned int feeBips = 30;
+        CalcOutResult result = calcOutGivenIn(balanceIn, weight, balanceIn, weight, feeBips, amountIn);
+        for (unsigned int p = 1; p < 200; p++)
+        {
+            BigInt amountOut = (amountIn * p) / 100;
+            ExpectedSatisfied expected =
+              (amountOut <= result.value) ? ExpectedSatisfied::Satisfied : ExpectedSatisfied::NotSatisfied;
+            requireAMMFillsChecked(
+              true, 0, balanceIn, weight, balanceIn, weight, feeBips, amountIn, amountOut, expected);
+        }
+    }
+
+    SECTION("random")
     {
         for (unsigned int j = 0; j < numRandom; j++)
         {
+            bool amm = (rand() % 100) != 0;
+            bool orderFeeBips = ((rand() % 100) == 0) ? (rand() % 64) : 0;
             BigInt balanceIn = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
             BigInt weightIn = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
             BigInt balanceOut = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
             BigInt weightOut = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
+            unsigned int feeBips = rand() % 256;
             BigInt amountIn = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
-            calcOutGivenInChecked(balanceIn, weightIn, balanceOut, weightOut, rand() % 10000, amountIn);
+            BigInt amountOut = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
+            requireAMMFillsChecked(
+              amm, orderFeeBips, balanceIn, weightIn, balanceOut, weightOut, feeBips, amountIn, amountOut);
         }
     }
 }
-

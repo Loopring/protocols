@@ -637,7 +637,6 @@ class State(object):
                 # Full balance with intrest
                 balanceLeaf = account.getBalanceLeaf(txInput.tokenID)
                 txInput.amount = str(balanceLeaf.balance)
-                newState.TXV_BALANCE_A_S_WEIGHT = 0
             elif int(txInput.type) == 3:
                 txInput.amount = str(0)
 
@@ -661,6 +660,8 @@ class State(object):
 
             if int(txInput.type) == 0 or int(txInput.type) == 1:
                 newState.TXV_ACCOUNT_A_NONCE = 1
+            if not isProtocolfeeWithdrawal and int(txInput.type) == 2:
+                newState.TXV_BALANCE_A_S_WEIGHT = 0
 
             newState.balanceDeltaA_O = feeValue
 

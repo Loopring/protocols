@@ -245,10 +245,12 @@ export class Simulator {
 
       balanceValueA = balanceValueA || {
         balance: new BN(0),
+        weightAMM: new BN(0),
         storage: {}
       };
       balanceValueB = balanceValueB || {
         balance: new BN(0),
+        weightAMM: new BN(0),
         storage: {}
       };
 
@@ -290,6 +292,19 @@ export class Simulator {
           ", " +
           balanceValueB.balance.toString(10)
       );
+      assert(
+        balanceValueA.weightAMM.eq(balanceValueB.weightAMM),
+        "weight does not match: " +
+          "account: " +
+          accountB.accountID +
+          ", " +
+          "token: " +
+          tokenID +
+          ", " +
+          balanceValueA.weightAMM.toString(10) +
+          ", " +
+          balanceValueB.weightAMM.toString(10)
+      );
     }
     assert.equal(
       Simulator.normalizeOwner(accountA.owner),
@@ -307,6 +322,7 @@ export class Simulator {
       "pubKeyY does not match"
     );
     assert.equal(accountA.nonce, accountB.nonce, "nonce does not match");
+    assert.equal(accountA.feeBipsAMM, accountB.feeBipsAMM, "feeBipsAMM does not match");
   }
 
   public static executeBlock(
@@ -560,6 +576,7 @@ export class Simulator {
     let amount = withdrawal.amount;
     if (withdrawal.type === 2) {
       amount = account.getBalance(withdrawal.tokenID).balance;
+      account.getBalance(withdrawal.tokenID).weightAMM = new BN(0);
     } else if (withdrawal.type === 3) {
       amount = new BN(0);
     }
@@ -567,14 +584,6 @@ export class Simulator {
     account
       .getBalance(withdrawal.feeTokenID)
       .balance.isub(withdrawal.fee);
-
-    // Special cases when withdrawing from the protocol fee pool.
-    // These account balances will have interest accrued.
-    if (withdrawal.accountID === 0) {
-      state.getAccount(1).getBalance(withdrawal.tokenID);
-    } else {
-      state.getAccount(0).getBalance(withdrawal.tokenID);
-    }
 
     const operator = state.getAccount(block.operatorAccountID);
     operator
