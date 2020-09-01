@@ -30,6 +30,9 @@ abstract contract ForwarderModule is BaseModule
         uint    nonce,
         bytes32 txAwareHash,
         bool    success,
+        bool    gasSkipQuota,
+        address gasToken,
+        uint    gasPrice,
         uint    gasUsed,
         uint    gasReimbursted
     );
@@ -150,10 +153,11 @@ abstract contract ForwarderModule is BaseModule
 
         uint gasUsed = gasLeft - gasleft() +
             (signature.length + metaTx.data.length + 7) * 16 + // data input cost
-            431 + // cost of MetaTxExecuted = 375 + 7 * 8
+            375 + 10 * 8 + // cost of MetaTxExecuted = 375 + 7 * 8
             21000; // transaction cost;
 
         uint gasReimbursted;
+        bool skipQuota;
 
         if (needReimburst) {
             gasUsed += MAX_REIMBURSTMENT_OVERHEAD;
@@ -163,7 +167,7 @@ abstract contract ForwarderModule is BaseModule
             // be signed by at least a guardian). Therefor, even if the owner's
             // private key is leaked, the hacker won't be able to deplete ether/tokens
             // as high meta-tx fees.
-            bool skipQuota = success && (
+            skipQuota = success && (
                 metaTx.txAwareHash != 0 || (
                     metaTx.data.toBytes4(0) == WalletFactory.createWallet.selector ||
                     metaTx.data.toBytes4(0) == WalletFactory.createWallet2.selector) &&
@@ -197,6 +201,9 @@ abstract contract ForwarderModule is BaseModule
             metaTx.nonce,
             metaTx.txAwareHash,
             success,
+            skipQuota,
+            metaTx.gasToken,
+            metaTx.gasPrice,
             gasUsed,
             gasReimbursted
         );
