@@ -142,23 +142,21 @@ abstract contract ForwarderModule is BaseModule
             controller().nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
         }
 
-        uint baseGasCost = (signature.length + metaTx.data.length + 7) * 16 + // data input cost
-                431 + // cost of MetaTxExecuted = 375 + 7 * 8
-                21000; // transaction cost
-
-        uint gasUsed;
-        uint gasReimbursted;
-
-        bool needReimburst = metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success);
-
         // Fees are not to be charged by a relayer if the transaction fails with a
         // non-zero txAwareHash. The reason is that relayer can pick arbitrary 'data'
         // to make the transaction fail. Charging fees for such failures can drain
         // wallet funds.
-        if (!needReimburst) {
-            gasUsed = gasLeft - gasleft() + baseGasCost;
-        } else {
-            gasUsed = gasLeft - gasleft() + baseGasCost + MAX_REIMBURSTMENT_OVERHEAD;
+        bool needReimburst = metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success);
+
+        uint gasUsed = gasLeft - gasleft() +
+            (signature.length + metaTx.data.length + 7) * 16 + // data input cost
+            431 + // cost of MetaTxExecuted = 375 + 7 * 8
+            21000; // transaction cost;
+
+        uint gasReimbursted;
+
+        if (needReimburst) {
+            gasUsed += MAX_REIMBURSTMENT_OVERHEAD;
 
             // Do not consume quota when call factory's createWallet function or
             // when a successful meta-tx's txAwareHash is non-zero (which means it will
