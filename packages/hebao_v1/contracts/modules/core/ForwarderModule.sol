@@ -155,7 +155,9 @@ abstract contract ForwarderModule is BaseModule
         // non-zero txAwareHash. The reason is that relayer can pick arbitrary 'data'
         // to make the transaction fail. Charging fees for such failures can drain
         // wallet funds.
-        if (needReimburst) {
+        if (!needReimburst) {
+            gasUsed = gasLeft - gasleft() + baseGasCost;
+        } eles {
             // Do not consume quota when call factory's createWallet function or
             // when a successful meta-tx's txAwareHash is non-zero (which means it will
             // be signed by at least a guardian). Therefor, even if the owner's
@@ -189,8 +191,6 @@ abstract contract ForwarderModule is BaseModule
                 gasReimbursted,
                 skipQuota
             );
-        } else {
-            gasUsed = gasLeft - gasleft() + baseGasCost;
         }
 
         emit MetaTxExecuted(
