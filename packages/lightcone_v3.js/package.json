@@ -46,7 +46,7 @@
     "@types/mocha": "^7.0.1",
     "@types/pluralize": "0.0.29",
     "@typescript-eslint/eslint-plugin": "^2.15.0",
-    "@typescript-eslint/parser": "^2.15.0",
+    "@typescript-eslint/parser": "^4.0.1",
     "blake2b": "^2.1.3",
     "browserify": "^16.2.2",
     "eslint": "^7.0.0",
