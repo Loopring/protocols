@@ -30,12 +30,12 @@ abstract contract ForwarderModule is BaseModule
         uint    nonce,
         bytes32 txAwareHash,
         bool    success,
-        bool    gasSkipQuota,
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
         uint    gasUsed,
-        uint    gasReimbursted
+        uint    gasReimbursted,
+        bool    gasSkipQuota
     );
 
     struct MetaTx {
@@ -202,12 +202,12 @@ abstract contract ForwarderModule is BaseModule
             metaTx.nonce,
             metaTx.txAwareHash,
             success,
-            skipQuota,
             metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
             gasUsed,
-            gasReimbursted
+            gasReimbursted,
+            skipQuota
         );
     }
 
