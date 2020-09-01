@@ -158,6 +158,8 @@ abstract contract ForwarderModule is BaseModule
         if (!needReimburst) {
             gasUsed = gasLeft - gasleft() + baseGasCost;
         } eles {
+            gasUsed = gasLeft - gasleft() + baseGasCost + MAX_REIMBURSTMENT_OVERHEAD;
+
             // Do not consume quota when call factory's createWallet function or
             // when a successful meta-tx's txAwareHash is non-zero (which means it will
             // be signed by at least a guardian). Therefor, even if the owner's
@@ -169,8 +171,6 @@ abstract contract ForwarderModule is BaseModule
                     metaTx.data.toBytes4(0) == WalletFactory.createWallet2.selector) &&
                 metaTx.to == controller().walletFactory()
             );
-
-            gasUsed = gasLeft - gasleft() + baseGasCost + MAX_REIMBURSTMENT_OVERHEAD;
 
             // MAX_REIMBURSTMENT_OVERHEAD covers an ERC20 transfer and a quota update.
             if (skipQuota) {
