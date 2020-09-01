@@ -114,7 +114,7 @@ abstract contract ForwarderModule is BaseModule
         )
     {
         uint gasLeft = gasleft();
-        uint baseGasCost = checkSufficientGas(metaTx, signature);
+        checkSufficientGas(metaTx, signature);
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
@@ -142,6 +142,9 @@ abstract contract ForwarderModule is BaseModule
             controller().nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
         }
 
+        uint baseGasCost = (signature.length + metaTx.data.length + 7) * 16 + // data input cost
+                431 + // cost of MetaTxExecuted = 375 + 7 * 8
+                21000; // transaction cost
         uint gasUsed;
         uint gasReimbursted;
 
@@ -205,12 +208,7 @@ abstract contract ForwarderModule is BaseModule
         )
         private
         view
-        returns (uint baseGasCost)
     {
-        baseGasCost = (signature.length + metaTx.data.length + 7) * 16 + // data input cost
-                431 + // cost of MetaTxExecuted = 375 + 7 * 8
-                21000; // transaction cost
-
         // Check the relayer has enough Ether gas
         uint gasLimit = metaTx.gasLimit.mul(64) / 63;
 
