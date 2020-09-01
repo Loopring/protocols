@@ -33,6 +33,7 @@ abstract contract ForwarderModule is BaseModule
         bool    gasSkipQuota,
         address gasToken,
         uint    gasPrice,
+        uint    gasLimit,
         uint    gasUsed,
         uint    gasReimbursted
     );
@@ -153,7 +154,7 @@ abstract contract ForwarderModule is BaseModule
 
         uint gasUsed = gasLeft - gasleft() +
             (signature.length + metaTx.data.length + 7) * 16 + // data input cost
-            375 + 10 * 8 + // cost of MetaTxExecuted = 375 + 7 * 8
+            375 + 11 * 8 + // cost of MetaTxExecuted = 375 + 7 * 8
             21000; // transaction cost;
 
         uint gasReimbursted;
@@ -204,6 +205,7 @@ abstract contract ForwarderModule is BaseModule
             skipQuota,
             metaTx.gasToken,
             metaTx.gasPrice,
+            metaTx.gasLimit,
             gasUsed,
             gasReimbursted
         );
