@@ -201,7 +201,7 @@ abstract contract ForwarderModule is BaseModule
 
     function checkSufficientGas(
         MetaTx calldata metaTx,
-        bytes  calldata signature
+        bytes  memory signature // TODO(kongliang): calldata or memory?
         )
         private
         view
