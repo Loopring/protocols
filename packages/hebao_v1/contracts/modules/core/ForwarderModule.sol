@@ -33,8 +33,7 @@ abstract contract ForwarderModule is BaseModule
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
-        uint    gasUsed,
-        bool    gasSkipQuota
+        uint    gasUsed
     );
 
     struct MetaTx {
@@ -117,7 +116,7 @@ abstract contract ForwarderModule is BaseModule
         )
     {
         uint gasLeft = gasleft();
-        checkSufficientGas(metaTx, signature);
+        checkSufficientGas(metaTx);
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
@@ -153,20 +152,20 @@ abstract contract ForwarderModule is BaseModule
 
         uint gasUsed = gasLeft - gasleft() +
             (signature.length + metaTx.data.length + 7) * 16 + // data input cost
-            375 + 10 * 8 + // cost of MetaTxExecuted = 375 + 7 * 8
+            447 + // cost of MetaTxExecuted = 375 + 9 * 8
             21000; // transaction cost;
 
-        bool skipQuota;
-
         if (needReimburst) {
-            gasUsed += MAX_REIMBURSTMENT_OVERHEAD;
+            gasUsed = gasUsed +
+                MAX_REIMBURSTMENT_OVERHEAD + // near-worst case cost
+                1500; // 3 * 500 for three SLOAD for calculating skipQuota below
 
             // Do not consume quota when call factory's createWallet function or
             // when a successful meta-tx's txAwareHash is non-zero (which means it will
             // be signed by at least a guardian). Therefor, even if the owner's
             // private key is leaked, the hacker won't be able to deplete ether/tokens
             // as high meta-tx fees.
-            skipQuota = success && (
+            bool skipQuota = success && (
                 metaTx.txAwareHash != 0 || (
                     metaTx.data.toBytes4(0) == WalletFactory.createWallet.selector ||
                     metaTx.data.toBytes4(0) == WalletFactory.createWallet2.selector) &&
@@ -182,7 +181,7 @@ abstract contract ForwarderModule is BaseModule
                 gasUsed -= 15000; // diff between an regular ERC20 transfer and an ETH send
             }
 
-            uint gasReimbursted = gasUsed <= metaTx.gasLimit? gasUsed : metaTx.gasLimit;
+            uint gasReimbursted = gasUsed <= metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 
             reimburseGasFee(
                 metaTx.from,
@@ -203,14 +202,12 @@ abstract contract ForwarderModule is BaseModule
             metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
-            gasUsed,
-            skipQuota
+            gasUsed
         );
     }
 
     function checkSufficientGas(
-        MetaTx calldata metaTx,
-        bytes  memory signature
+        MetaTx calldata metaTx
         )
         private
         view
