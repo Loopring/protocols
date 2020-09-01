@@ -174,6 +174,7 @@ abstract contract ForwarderModule is BaseModule
             if (skipQuota) {
                 gasUsed -= 48000;
             }
+
             if (metaTx.gasToken == address(0)) {
                 gasUsed -= 15000; // diff between an regular ERC20 transfer and an ETH send
             }
