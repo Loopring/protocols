@@ -21,7 +21,7 @@ abstract contract ForwarderModule is BaseModule
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 135000; // // TODO(kongliang): what's the amount?
+    uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 165000;
     bytes32 public FORWARDER_DOMAIN_SEPARATOR;
 
     event MetaTxExecuted(
@@ -168,10 +168,10 @@ abstract contract ForwarderModule is BaseModule
 
             // MAX_REIMBURSTMENT_OVERHEAD covers an ERC20 transfer and a quota update.
             if (skipQuota) {
-                gasUsed -= 20000; // TODO(kongliang): a quota update
+                gasUsed -= 48000;
             }
             if (metaTx.gasToken == address(0)) {
-                gasUsed -= 2000; // diff between an regular ERC20 transfer and an ETH send
+                gasUsed -= 15000; // diff between an regular ERC20 transfer and an ETH send
             }
 
             gasReimbursted = gasUsed <= metaTx.gasLimit? gasUsed : metaTx.gasLimit;
@@ -201,7 +201,7 @@ abstract contract ForwarderModule is BaseModule
 
     function checkSufficientGas(
         MetaTx calldata metaTx,
-        bytes  memory signature // TODO(kongliang): calldata or memory?
+        bytes  memory signature
         )
         private
         view
