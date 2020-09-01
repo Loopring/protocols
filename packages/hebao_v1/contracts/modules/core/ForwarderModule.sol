@@ -157,7 +157,7 @@ abstract contract ForwarderModule is BaseModule
         // wallet funds.
         if (!needReimburst) {
             gasUsed = gasLeft - gasleft() + baseGasCost;
-        } eles {
+        } else {
             gasUsed = gasLeft - gasleft() + baseGasCost + MAX_REIMBURSTMENT_OVERHEAD;
 
             // Do not consume quota when call factory's createWallet function or
