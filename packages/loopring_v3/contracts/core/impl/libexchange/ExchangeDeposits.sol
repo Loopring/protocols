@@ -72,6 +72,8 @@ library ExchangeDeposits
         uint96 amountDeposited;
 
         if (fromCustody) {
+            require(extraData.length == 0, "INVALID_EXTRA_DATA");
+
             uint balance = S.custody[from][tokenAddress];
             require(balance >= amount, "INSUFFCIENT_BALANCE");
             S.custody[from][tokenAddress] =
