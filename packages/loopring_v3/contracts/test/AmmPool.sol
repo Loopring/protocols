@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../aux/access/IBlockReceiver.sol";
-import "../aux/transactions/BlockReader.sol";
+import "../aux/transactions/BlockReaderUtils.sol";
 import "../thirdparty/BytesUtil.sol";
 import "../core/iface/IExchangeV3.sol";
 import "../lib/AddressUtil.sol";
@@ -24,6 +24,7 @@ contract AmmPool is IBlockReceiver {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
     using BlockReader       for ExchangeData.Block;
+    using BlockReaderUtils  for ExchangeData.Block;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
@@ -303,8 +304,9 @@ contract AmmPool is IBlockReceiver {
 
     // Only used to withdraw from the pool when shutdown.
     // Otherwise LPs should withdraw by doing normal queued exit requests.
-    function withdrawFromPoolWhenShutdown(uint poolAmountIn)
+    function withdrawFromPoolWhenShutdown(uint /*poolAmountIn*/)
         external
+        view
         offline
     {
         bool ready = true;
@@ -334,7 +336,7 @@ contract AmmPool is IBlockReceiver {
                 contractBalance = ERC20(tokens[i].addr).balanceOf(address(this));
             }
 
-            uint poolBalance = contractBalance.sub(totalBalance[tokens[i].addr]);
+            // uint poolBalance = contractBalance.sub(totalBalance[tokens[i].addr]);
             // TODO: withdraw proportional to the pool amount owned
         }
     }

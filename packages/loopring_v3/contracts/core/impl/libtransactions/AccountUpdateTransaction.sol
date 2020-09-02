@@ -79,6 +79,10 @@ library AccountUpdateTransaction
         pure
         returns (AccountUpdate memory accountUpdate)
     {
+        // Check that this is a conditional offset
+        require(data.toUint8(offset) == 1, "INVALID_AUXILIARYDATA_DATA");
+        offset += 1;
+
         // Extract the data from the tx data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
@@ -94,11 +98,6 @@ library AccountUpdateTransaction
         offset += 32;
         accountUpdate.nonce = data.toUint32(offset);
         offset += 4;
-        uint updateType = data.toUint8(offset);
-        offset += 1;
-
-        // Check that this is a conditional update
-        require(updateType == 1, "INVALID_AUXILIARYDATA_DATA");
     }
 
     function hashTx(

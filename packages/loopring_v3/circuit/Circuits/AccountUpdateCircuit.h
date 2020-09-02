@@ -244,13 +244,13 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
     const VariableArrayT getPublicData() const
     {
         return flattenReverse(
-          {owner.bits,
+          {type.bits,
+           owner.bits,
            accountID.bits,
            feeTokenID.bits,
            fFee.bits(),
            compressPublicKey.result(),
-           nonce.bits,
-           type.bits});
+           nonce.bits});
     }
 };
 

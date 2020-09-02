@@ -242,6 +242,15 @@ contract("Exchange", (accounts: string[]) => {
       const ownerE = exchangeTestUtil.testContext.orderOwners[4];
       const ownerF = exchangeTestUtil.testContext.orderOwners[5];
 
+      // Update AMM
+      await exchangeTestUtil.requestAmmUpdate(
+        ownerA,
+        token,
+        15,
+        new BN(123),
+        {authMethod: AuthMethod.APPROVE}
+      );
+
       // Do a transfer
       await exchangeTestUtil.transfer(
         ownerA,

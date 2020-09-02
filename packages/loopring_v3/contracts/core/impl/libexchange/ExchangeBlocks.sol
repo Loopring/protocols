@@ -8,6 +8,7 @@ import "../../../lib/MathUint.sol";
 import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 import "../../iface/IBlockVerifier.sol";
+import "../libtransactions/BlockReader.sol";
 import "../libtransactions/AccountUpdateTransaction.sol";
 import "../libtransactions/AmmUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
@@ -24,6 +25,7 @@ library ExchangeBlocks
 {
     using AddressUtil          for address;
     using AddressUtil          for address payable;
+    using BlockReader          for ExchangeData.Block;
     using BytesUtil            for bytes;
     using MathUint             for uint;
     using ExchangeMode         for ExchangeData.State;
@@ -120,55 +122,39 @@ library ExchangeBlocks
         )
         private
     {
-        uint offset = 0;
+        // Read the block header
+        BlockReader.BlockHeader memory header = _block.readHeader();
 
-        // Extract the exchange address from the data
-        address exchange = _block.data.toAddress(offset);
-        offset += 20;
-        require(exchange == address(this), "INVALID_EXCHANGE");
-
-        // Get the old and new Merkle roots
-        bytes32 merkleRootBefore = _block.data.toBytes32(offset);
-        offset += 32;
-        require(merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
-
-        bytes32 merkleRootAfter = _block.data.toBytes32(offset);
-        offset += 32;
-        require(merkleRootAfter != merkleRootBefore, "EMPTY_BLOCK_DISABLED");
-        require(uint(merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
-
-        // Validate timestamp
-        uint32 inputTimestamp = _block.data.toUint32(offset);
-        offset += 4;
+        // Validate the exchange
+        require(header.exchange == address(this), "INVALID_EXCHANGE");
+        // Validate the Merkle roots
+        require(header.merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
+        require(header.merkleRootAfter != header.merkleRootBefore, "EMPTY_BLOCK_DISABLED");
+        require(uint(header.merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
+        // Validate the timestamp
         require(
-            inputTimestamp > block.timestamp - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
-            inputTimestamp < block.timestamp + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
+            header.timestamp > block.timestamp - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
+            header.timestamp < block.timestamp + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
             "INVALID_TIMESTAMP"
         );
-
-        // Validate protocol fee values
-        uint8 protocolTakerFeeBips = _block.data.toUint8(offset);
-        offset += 1;
-        uint8 protocolMakerFeeBips = _block.data.toUint8(offset);
-        offset += 1;
+        // Validate the protocol fee values
         require(
-            validateAndSyncProtocolFees(S, protocolTakerFeeBips, protocolMakerFeeBips),
+            validateAndSyncProtocolFees(S, header.protocolTakerFeeBips, header.protocolMakerFeeBips),
             "INVALID_PROTOCOL_FEES"
         );
 
         // Process conditional transactions
         processConditionalTransactions(
             S,
-            offset,
             _block,
-            inputTimestamp
+            header
         );
 
         // Emit an event
         uint numBlocks = S.numBlocks;
-        emit BlockSubmitted(numBlocks, merkleRootAfter, _publicDataHash);
+        emit BlockSubmitted(numBlocks, header.merkleRootAfter, _publicDataHash);
 
-        S.merkleRoot = merkleRootAfter;
+        S.merkleRoot = header.merkleRootAfter;
 
         if (_block.storeBlockInfoOnchain) {
             S.blocks[numBlocks] = ExchangeData.BlockInfo(
@@ -248,64 +234,39 @@ library ExchangeBlocks
     }
 
     function processConditionalTransactions(
-        ExchangeData.State          storage S,
-        uint                                offset,
-        ExchangeData.Block           memory _block,
-        uint32                              _timestamp
+        ExchangeData.State      storage S,
+        ExchangeData.Block      memory _block,
+        BlockReader.BlockHeader memory header
         )
         private
     {
-        // The length of the auxiliary data needs to match the number of conditional transactions
-        uint numConditionalTransactions = _block.data.toUint32(offset);
-        offset += 4;
-
-        if (numConditionalTransactions > 0) {
+        if (header.numConditionalTransactions > 0) {
             // Cache the domain seperator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
                 DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR,
-                timestamp: _timestamp
+                timestamp: header.timestamp
             });
 
             require(
-                _block.auxiliaryData.length == numConditionalTransactions,
+                _block.auxiliaryData.length == header.numConditionalTransactions,
                 "AUXILIARYDATA_INVALID_LENGTH"
             );
 
-            // uint32 operatorAccountID = data.toUint32(offset);
-            offset += 4;
-
             // Run over all conditional transactions
-            bytes memory data = _block.data;
-            // Reuse the tx data buffer
-            bytes memory txData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE());
             uint minTxIndex = 0;
             for (uint i = 0; i < _block.auxiliaryData.length; i++) {
                 ExchangeData.AuxiliaryData memory auxiliaryData = _block.auxiliaryData[i];
                 // Each conditional transaction needs to be processed from left to right
-                require(auxiliaryData.txIndex < _block.blockSize &&
-                        auxiliaryData.txIndex >= minTxIndex, "AUXILIARYDATA_INVALID_ORDER");
+                require(auxiliaryData.txIndex >= minTxIndex, "AUXILIARYDATA_INVALID_ORDER");
 
-                // Reconstruct the transaction data
-                // Part 1
-                uint txDataOffset = offset +
-                    auxiliaryData.txIndex * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1();
-                assembly {
-                    mstore(add(txData, 32), mload(add(data, add(txDataOffset, 32))))
-                }
-                // Part 2
-                txDataOffset = offset +
-                    _block.blockSize * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1() +
-                    auxiliaryData.txIndex * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_2();
-                assembly {
-                    mstore(add(txData, 57 /*32 + 25*/), mload(add(data, add(txDataOffset, 32))))
-                    mstore(add(txData, 68            ), mload(add(data, add(txDataOffset, 43))))
-                }
+                // Get the transaction data
+                bytes memory txData = _block.readTransactionData(auxiliaryData.txIndex);
 
                 // Process the transaction
                 ExchangeData.TransactionType txType = ExchangeData.TransactionType(
                     txData.toUint8(0)
                 );
-                txDataOffset = 1;
+                uint txDataOffset = 1;
 
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
                     DepositTransaction.process(

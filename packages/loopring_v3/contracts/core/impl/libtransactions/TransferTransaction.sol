@@ -105,10 +105,10 @@ library TransferTransaction
         offset += 2;
         //uint16 shortStorageID = data.toUint16(offset);
         offset += 2;
-        transfer.storageID = data.toUint32(offset);
-        offset += 4;
         transfer.to = data.toAddress(offset);
         offset += 20;
+        transfer.storageID = data.toUint32(offset);
+        offset += 4;
         transfer.from = data.toAddress(offset);
         offset += 20;
     }

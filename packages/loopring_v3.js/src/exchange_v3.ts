@@ -680,7 +680,7 @@ export class ExchangeV3 {
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
     );
-    console.log(transaction.input);
+    //console.log(transaction.input);
     if (transaction.input.startsWith(submitBlocksFunctionSignature)) {
       const decodedCompressedInput = this.web3.eth.abi.decodeParameters(
         ["bytes"],

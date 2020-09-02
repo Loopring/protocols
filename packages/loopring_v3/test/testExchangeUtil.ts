@@ -127,6 +127,11 @@ export interface AccountUpdateOptions {
   validUntil?: number;
 }
 
+export interface AmmUpdateOptions {
+  authMethod?: AuthMethod;
+  validUntil?: number;
+}
+
 export interface OnchainBlock {
   blockType: number;
   blockSize: number;
@@ -1400,8 +1405,15 @@ export class ExchangeTestUtil {
     owner: string,
     token: string,
     feeBips: number,
-    tokenWeight: BN
+    tokenWeight: BN,
+    options: AmmUpdateOptions = {}
   ) {
+    // Fill in defaults
+    const authMethod =
+      options.authMethod !== undefined ? options.authMethod : AuthMethod.ECDSA;
+    const validUntil =
+      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
@@ -1417,16 +1429,29 @@ export class ExchangeTestUtil {
       tokenID,
       feeBips,
       tokenWeight,
-      validUntil: 0xffffffff,
+      validUntil,
       nonce: account.nonce++
     };
 
-    // Approve onchain
-    const hash = AmmUpdateUtils.getHash(
-      ammUpdate,
-      this.exchange.address
-    );
-    await this.exchange.approveTransaction(owner, hash, { from: owner });
+    // Aprove
+    if (authMethod === AuthMethod.ECDSA) {
+      const hash = AmmUpdateUtils.getHash(
+        ammUpdate,
+        this.exchange.address
+      );
+      ammUpdate.onchainSignature = await sign(
+        owner,
+        hash,
+        SignatureType.EIP_712
+      );
+      await verifySignature(owner, hash, ammUpdate.onchainSignature);
+    } else if (authMethod === AuthMethod.APPROVE) {
+      const hash = AmmUpdateUtils.getHash(
+        ammUpdate,
+        this.exchange.address
+      );
+      await this.exchange.approveTransaction(owner, hash, { from: owner });
+    }
 
     this.pendingTransactions[this.exchangeId].push(ammUpdate);
 
@@ -2135,17 +2160,18 @@ export class ExchangeTestUtil {
               (transfer.storageID % Constants.NUM_STORAGE_SLOTS),
             2
           );
-          da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 4);
           da.addBN(
             new BN(
               transfer.type > 0 || transfer.toNewAccount ? transfer.to : "0"
             ),
             20
           );
+          da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 4);
           da.addBN(new BN(transfer.type > 0 ? transfer.from : "0"), 20);
         } else if (tx.withdraw) {
           const withdraw = tx.withdraw;
           da.addNumber(TransactionType.WITHDRAWAL, 1);
+          da.addNumber(withdraw.type, 1);
           da.addBN(new BN(withdraw.owner), 20);
           da.addNumber(withdraw.accountID, 4);
           da.addNumber(withdraw.tokenID, 2);
@@ -2157,7 +2183,6 @@ export class ExchangeTestUtil {
           );
           da.addNumber(withdraw.nonce, 4);
           da.addBN(new BN(withdraw.onchainDataHash), 20);
-          da.addNumber(withdraw.type, 1);
         } else if (tx.deposit) {
           const deposit = tx.deposit;
           da.addNumber(TransactionType.DEPOSIT, 1);
@@ -2168,6 +2193,7 @@ export class ExchangeTestUtil {
         } else if (tx.accountUpdate) {
           const update = tx.accountUpdate;
           da.addNumber(TransactionType.ACCOUNT_UPDATE, 1);
+          da.addNumber(update.type, 1);
           da.addBN(new BN(update.owner), 20);
           da.addNumber(update.accountID, 4);
           da.addNumber(update.feeTokenID, 2);
@@ -2180,7 +2206,6 @@ export class ExchangeTestUtil {
             32
           );
           da.addNumber(update.nonce, 4);
-          da.addNumber(update.type, 1);
         } else if (tx.ammUpdate) {
           const update = tx.ammUpdate;
           da.addNumber(TransactionType.AMM_UPDATE, 1);
