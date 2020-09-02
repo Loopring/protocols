@@ -144,21 +144,21 @@ abstract contract ForwarderModule is BaseModule
             controller().nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
         }
 
+        uint gasUsed = gasLeft - gasleft() +
+            (signature.length + metaTx.data.length + 7) * 16 + // data input cost
+            447 +  // cost of MetaTxExecuted = 375 + 9 * 8
+            21000; // transaction cost;
+
         // Fees are not to be charged by a relayer if the transaction fails with a
         // non-zero txAwareHash. The reason is that relayer can pick arbitrary 'data'
         // to make the transaction fail. Charging fees for such failures can drain
         // wallet funds.
-        bool needReimburst = metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success);
+        bool needReimburse = metaTx.gasPrice > 0 && (metaTx.txAwareHash == 0 || success);
 
-        uint gasUsed = gasLeft - gasleft() +
-            (signature.length + metaTx.data.length + 7) * 16 + // data input cost
-            447 + // cost of MetaTxExecuted = 375 + 9 * 8
-            21000; // transaction cost;
-
-        if (needReimburst) {
+        if (needReimburse) {
             gasUsed = gasUsed +
                 MAX_REIMBURSTMENT_OVERHEAD + // near-worst case cost
-                1500; // 3 * 500 for three SLOAD for calculating skipQuota below
+                2300; // 2*SLOAD+1*CALL = 2*800+1*700=2300
 
             // Do not consume quota when call factory's createWallet function or
             // when a successful meta-tx's txAwareHash is non-zero (which means it will
@@ -181,14 +181,14 @@ abstract contract ForwarderModule is BaseModule
                 gasUsed -= 15000; // diff between an regular ERC20 transfer and an ETH send
             }
 
-            uint gasReimbursted = gasUsed <= metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
+            uint gasToReimburse = gasUsed <= metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 
             reimburseGasFee(
                 metaTx.from,
                 controller().collectTo(),
                 metaTx.gasToken,
                 metaTx.gasPrice,
-                gasReimbursted,
+                gasToReimburse,
                 skipQuota
             );
         }
