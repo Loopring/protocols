@@ -360,8 +360,11 @@ contract ExchangeV3 is IExchangeV3
         return state.getNumAvailableForcedSlots();
     }
 
+    // -- Custody --
+
     function depositToCustody(
         address from,
+        address to,
         address tokenAddress,
         uint96  amount,
         bytes   calldata extraData
@@ -370,12 +373,14 @@ contract ExchangeV3 is IExchangeV3
         payable
         override
         nonReentrant
+        onlyFromUserOrAgent(from)
         returns (uint _amount)
     {
-        return state.depositToCustody(from, msg.sender, tokenAddress, amount, extraData);
+        return state.depositToCustody(from, to, tokenAddress, amount, extraData);
     }
 
     function withdrawFromCustody(
+        address from,
         address to,
         address tokenAddress,
         uint96  amount,
@@ -384,8 +389,21 @@ contract ExchangeV3 is IExchangeV3
         external
         override
         nonReentrant
+        onlyFromUserOrAgent(from)
     {
-        state.withdrawFromCustody(msg.sender, to, tokenAddress, amount, extraData);
+        state.withdrawFromCustody(from, to, tokenAddress, amount, extraData);
+    }
+
+    function getCustodyBalance(
+        address user,
+        address tokenAddress
+        )
+        public
+        override
+        view
+        returns (uint)
+    {
+        return state.custody[user][tokenAddress];
     }
 
     // -- Deposits --

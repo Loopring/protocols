@@ -352,8 +352,11 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (uint);
 
+    // -- Custody --
+
     function depositToCustody(
         address from,
+        address to,
         address tokenAddress,
         uint96  amount,
         bytes   calldata extraData
@@ -364,6 +367,7 @@ abstract contract IExchangeV3 is IExchange
         returns (uint _amount);
 
     function withdrawFromCustody(
+        address from,
         address to,
         address tokenAddress,
         uint96  amount,
@@ -371,6 +375,15 @@ abstract contract IExchangeV3 is IExchange
         )
         external
         virtual;
+
+    function getCustodyBalance(
+        address user,
+        address tokenAddress
+        )
+        public
+        view
+        virtual
+        returns (uint);
 
     // -- Deposits --
 
