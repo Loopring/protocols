@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2017 Loopring Technology Limited.
+// Copyright 2017 Loopring Technology Limited. pragma solidity ^0.7.0;
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
@@ -31,6 +31,7 @@ library ExchangeDeposits
     function depositToCustody(
         ExchangeData.State storage S,
         address from,
+        address to,
         address tokenAddress,
         uint96  amount,                 // can be zero
         bytes   memory extraData
@@ -47,15 +48,8 @@ library ExchangeDeposits
             extraData
         );
 
-        S.custody[msg.sender][from][tokenAddress] =
-            S.custody[msg.sender][from][tokenAddress].add(_amount);
-
-        // emit DepositRequested(
-        //     to,
-        //     tokenAddress,
-        //     tokenID,
-        //     uint96(amountDeposited)
-        // );
+        S.custody[to][tokenAddress] =
+            S.custody[to][tokenAddress].add(_amount);
     }
 
     function deposit(
@@ -78,10 +72,10 @@ library ExchangeDeposits
         uint96 amountDeposited;
 
         if (fromCustody) {
-            uint balance = S.custody[msg.sender][from][tokenAddress];
+            uint balance = S.custody[from][tokenAddress];
             require(balance >= amount, "INSUFFCIENT_BALANCE");
-            S.custody[msg.sender][from][tokenAddress] =
-                S.custody[msg.sender][from][tokenAddress].sub(amount);
+            S.custody[from][tokenAddress] =
+                S.custody[from][tokenAddress].sub(amount);
 
             amountDeposited = amount;
         } else {

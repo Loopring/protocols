@@ -353,18 +353,7 @@ abstract contract IExchangeV3 is IExchange
         returns (uint);
 
     function depositToCustody(
-        address user,
-        address tokenAddress,
-        uint96  amount,
-        bool    fromCustody,
-        bytes   calldata extraData
-        )
-        external
-        virtual
-        payable;
-
-    function withdrawFromCustody(
-        address payable user,
+        address from,
         address tokenAddress,
         uint96  amount,
         bytes   calldata extraData
@@ -373,6 +362,15 @@ abstract contract IExchangeV3 is IExchange
         virtual
         payable
         returns (uint _amount);
+
+    function withdrawFromCustody(
+        address to,
+        address tokenAddress,
+        uint96  amount,
+        bytes   calldata extraData
+        )
+        external
+        virtual;
 
     // -- Deposits --
 
@@ -394,6 +392,7 @@ abstract contract IExchangeV3 is IExchange
         address to,
         address tokenAddress,
         uint96  amount,
+        bool    fromCustody,
         bytes   calldata extraData
         )
         external
