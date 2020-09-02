@@ -145,9 +145,9 @@ abstract contract ForwarderModule is BaseModule
         }
 
         uint gasUsed = gasLeft - gasleft() +
-            (signature.length + metaTx.data.length + 7) * 16 + // data input cost
+            (signature.length + metaTx.data.length + 7 * 32) * 16 + // data input cost
             447 +  // cost of MetaTxExecuted = 375 + 9 * 8
-            21000; // transaction cost;
+            23000; // transaction cost;
 
         // Fees are not to be charged by a relayer if the transaction fails with a
         // non-zero txAwareHash. The reason is that relayer can pick arbitrary 'data'
