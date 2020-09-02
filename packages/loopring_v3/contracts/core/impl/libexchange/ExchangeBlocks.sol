@@ -9,6 +9,7 @@ import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 import "../../iface/IBlockVerifier.sol";
 import "../libtransactions/AccountUpdateTransaction.sol";
+import "../libtransactions/AmmUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
 import "../libtransactions/TransferTransaction.sol";
 import "../libtransactions/WithdrawTransaction.sol";
@@ -32,8 +33,7 @@ library ExchangeBlocks
     event BlockSubmitted(
         uint    indexed blockIdx,
         bytes32         merkleRoot,
-        bytes32         publicDataHash,
-        uint            blockFee
+        bytes32         publicDataHash
     );
 
     event ProtocolFeesUpdated(
@@ -43,21 +43,60 @@ library ExchangeBlocks
         uint8 previousMakerFeeBips
     );
 
+    function getRequiredExchangeStake(
+        ExchangeData.State   storage S
+        )
+        public
+        view
+        returns (uint)
+    {
+        uint numStakingUnit = S.numBlocks / 1000;
+
+        // waive fee for the first 10K blocks.
+        if (numStakingUnit <= 10) {
+            return 0;
+        }
+
+        // Cap at 1 million blocks
+        if (numStakingUnit > 1000) {
+            numStakingUnit = 1000;
+        }
+
+        return numStakingUnit.mul(S.loopring.stakePerThousandBlocks());
+    }
+
+    function canSubmitBlocks(
+        ExchangeData.State   storage S
+        )
+        public
+        view
+        returns (bool)
+    {
+        uint numStakingUnit = S.numBlocks / 1000;
+
+        // waive fee for the first 10K blocks.
+        if (numStakingUnit <= 10) {
+            return true;
+        }
+
+        // Cap at 1 million blocks
+        if (numStakingUnit > 1000) {
+            numStakingUnit = 1000;
+        }
+
+        return S.loopring.getExchangeStake(S.id) >= getRequiredExchangeStake(S);
+    }
+
     function submitBlocks(
         ExchangeData.State   storage S,
-        ExchangeData.Block[] memory  blocks,
-        address              payable feeRecipient
+        ExchangeData.Block[] memory  blocks
         )
         public
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
-        // Check if this exchange has a minimal amount of LRC staked
-        require(
-            S.loopring.canExchangeSubmitBlocks(S.id),
-            "INSUFFICIENT_EXCHANGE_STAKE"
-        );
+        require(canSubmitBlocks(S), "INSUFFICIENT_EXCHANGE_STAKE");
 
         // Commit the blocks
         bytes32[] memory publicDataHashes = new bytes32[](blocks.length);
@@ -65,20 +104,11 @@ library ExchangeBlocks
             // Hash all the public data to a single value which is used as the input for the circuit
             publicDataHashes[i] = blocks[i].data.fastSHA256();
             // Commit the block
-            commitBlock(
-                S,
-                blocks[i],
-                feeRecipient,
-                publicDataHashes[i]
-            );
+            commitBlock(S, blocks[i], publicDataHashes[i]);
         }
 
         // Verify the blocks - blocks are verified in a batch to save gas.
-        verifyBlocks(
-            S,
-            blocks,
-            publicDataHashes
-        );
+        verifyBlocks(S, blocks, publicDataHashes);
     }
 
     // == Internal Functions ==
@@ -86,7 +116,6 @@ library ExchangeBlocks
     function commitBlock(
         ExchangeData.State storage S,
         ExchangeData.Block memory  _block,
-        address            payable _feeRecipient,
         bytes32                    _publicDataHash
         )
         private
@@ -128,19 +157,16 @@ library ExchangeBlocks
         );
 
         // Process conditional transactions
-        uint blockFeeETH = processConditionalTransactions(
+        processConditionalTransactions(
             S,
             offset,
             _block,
             inputTimestamp
         );
 
-        // Transfer the onchain block fee to the operator
-        _feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
-
         // Emit an event
         uint numBlocks = S.numBlocks;
-        emit BlockSubmitted(numBlocks, merkleRootAfter, _publicDataHash, blockFeeETH);
+        emit BlockSubmitted(numBlocks, merkleRootAfter, _publicDataHash);
 
         S.merkleRoot = merkleRootAfter;
 
@@ -228,7 +254,6 @@ library ExchangeBlocks
         uint32                              _timestamp
         )
         private
-        returns (uint blockFeeETH)
     {
         // The length of the auxiliary data needs to match the number of conditional transactions
         uint numConditionalTransactions = _block.data.toUint32(offset);
@@ -282,9 +307,8 @@ library ExchangeBlocks
                 );
                 txDataOffset = 1;
 
-                uint txFeeETH = 0;
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
-                    txFeeETH = DepositTransaction.process(
+                    DepositTransaction.process(
                         S,
                         ctx,
                         txData,
@@ -292,7 +316,7 @@ library ExchangeBlocks
                         auxiliaryData.data
                     );
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
-                    txFeeETH = WithdrawTransaction.process(
+                    WithdrawTransaction.process(
                         S,
                         ctx,
                         txData,
@@ -300,7 +324,7 @@ library ExchangeBlocks
                         auxiliaryData.data
                     );
                 } else if (txType == ExchangeData.TransactionType.TRANSFER) {
-                    txFeeETH = TransferTransaction.process(
+                    TransferTransaction.process(
                         S,
                         ctx,
                         txData,
@@ -308,7 +332,15 @@ library ExchangeBlocks
                         auxiliaryData.data
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
-                    txFeeETH = AccountUpdateTransaction.process(
+                    AccountUpdateTransaction.process(
+                        S,
+                        ctx,
+                        txData,
+                        txDataOffset,
+                        auxiliaryData.data
+                    );
+                } else if (txType == ExchangeData.TransactionType.AMM_UPDATE) {
+                    AmmUpdateTransaction.process(
                         S,
                         ctx,
                         txData,
@@ -322,7 +354,6 @@ library ExchangeBlocks
                     revert("UNSUPPORTED_TX_TYPE");
                 }
 
-                blockFeeETH = blockFeeETH.add(txFeeETH);
                 minTxIndex = auxiliaryData.txIndex + 1;
             }
         }

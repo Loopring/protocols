@@ -24,7 +24,8 @@ library ExchangeData
         WITHDRAWAL,
         TRANSFER,
         SPOT_TRADE,
-        ACCOUNT_UPDATE
+        ACCOUNT_UPDATE,
+        AMM_UPDATE
     }
 
     // -- Structs --
@@ -83,8 +84,7 @@ library ExchangeData
     struct Deposit
     {
         uint96 amount;
-        uint32 timestamp; // only valid before 2105 (85 years to go)
-        uint64 fee;
+        uint64 timestamp;
     }
 
     // A forced withdrawal request.
@@ -93,8 +93,7 @@ library ExchangeData
     struct ForcedWithdrawal
     {
         address owner;
-        uint32  timestamp;
-        uint64  fee;
+        uint64  timestamp;
     }
 
     struct Constants
@@ -120,12 +119,12 @@ library ExchangeData
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 7 days; }
     function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 32; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 16; }
-    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
-    function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
+    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 7 days; }
+    function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 30 days; }
     // The amount of bytes each rollup transaction uses in the block data for data-availability.
     // This is the maximum amount of bytes of all different transaction types.
     function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 68; }
-    function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 14 days; }
+    function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 15 days; }
     function ACCOUNTID_PROTOCOLFEE() internal pure returns (uint32) { return 0; }
 
     function TX_DATA_AVAILABILITY_SIZE_PART_1() internal pure returns (uint32) { return 25; }
@@ -138,12 +137,14 @@ library ExchangeData
         uint     pubKeyX;
         uint     pubKeyY;
         uint32   nonce;
+        uint     feeBipsAMM;
     }
 
     struct BalanceLeaf
     {
         uint16   tokenID;
         uint96   balance;
+        uint96   weightAMM;
         uint     storageRoot;
     }
 

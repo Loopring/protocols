@@ -43,15 +43,14 @@ abstract contract IExchangeV3 is IExchange
     event BlockSubmitted(
         uint    indexed blockIdx,
         bytes32         merkleRoot,
-        bytes32         publicDataHash,
-        uint            blockFee
+        bytes32         publicDataHash
     );
 
     event DepositRequested(
         address owner,
         address token,
-        uint96  amount,
-        uint    fee
+        uint16  tokenId,
+        uint96  amount
     );
 
     event ForcedWithdrawalRequested(
@@ -157,6 +156,16 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (IDepositContract);
 
+    // @dev Exchange owner withdraws fees from the exchange.
+    // @param token Fee token address
+    // @param feeRecipient Fee recipient address
+    function withdrawExchangeFees(
+        address token,
+        address feeRecipient
+        )
+        external
+        virtual;
+
     // -- Constants --
     /// @dev Returns a list of constants used by the exchange.
     /// @return constants The list of constants.
@@ -178,6 +187,22 @@ abstract contract IExchangeV3 is IExchange
     /// @dev Returns whether the exchange is shutdown.
     /// @return Returns true if the exchange is shutdown, else false.
     function isShutdown()
+        external
+        virtual
+        view
+        returns (bool);
+
+    /// @dev Returns the number of LRC token required as exchange stake.
+    /// @return The number of LRC token required as stake.
+    function getRequiredExchangeStake()
+        public
+        virtual
+        view
+        returns (uint);
+
+    /// @dev Returns whether the Exchange has staked enough to submit blocks.
+    /// @return True if the exchange has staked enough, else false
+    function canSubmitBlocks()
         external
         virtual
         view
@@ -315,11 +340,7 @@ abstract contract IExchangeV3 is IExchange
     ///      - data: The data for this block
     ///      - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
-    /// @param feeRecipient The address that will receive the onchain block rewards
-    function submitBlocks(
-        ExchangeData.Block[] calldata blocks,
-        address payable feeRecipient
-        )
+    function submitBlocks(ExchangeData.Block[] calldata blocks)
         external
         virtual;
 
@@ -357,6 +378,19 @@ abstract contract IExchangeV3 is IExchange
         virtual
         payable;
 
+    /// @dev Gets the amount of tokens that may be added to the owner's account.
+    /// @param owner The destination address for the amount deposited.
+    /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    /// @return The amount of tokens pending.
+    function getPendingDepositAmount(
+        address owner,
+        address tokenAddress
+        )
+        external
+        virtual
+        view
+        returns (uint96);
+
     // -- Withdrawals --
     /// @dev Submits an onchain request to force withdraw Ether or ERC20 tokens.
     ///      This request always withdraws the full balance.
@@ -381,6 +415,19 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual
         payable;
+
+    /// @dev Checks if a forced withdrawal is pending for an account balance.
+    /// @param  accountID The accountID of the account to check.
+    /// @param  token The token address
+    /// @return True if a request is pending, false otherwise
+    function isForcedWithdrawalPending(
+        uint32  accountID,
+        address token
+        )
+        external
+        virtual
+        view
+        returns (bool);
 
     /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens from the
     ///      protocol fees account. The complete balance is always withdrawn.
@@ -426,6 +473,19 @@ abstract contract IExchangeV3 is IExchange
         )
         external
         virtual;
+
+    /// @dev Checks if the balance for the account was withdrawn with `withdrawFromMerkleTree`.
+    /// @param  accountID The accountID of the balance to check.
+    /// @param  token The token address
+    /// @return True if it was already withdrawn, false otherwise
+    function isWithdrawnInWithdrawalMode(
+        uint32  accountID,
+        address token
+        )
+        external
+        virtual
+        view
+        returns (bool);
 
     /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
     ///      it was never processed by the owner within the maximum time allowed.
@@ -640,4 +700,11 @@ abstract contract IExchangeV3 is IExchange
             uint8 previousTakerFeeBips,
             uint8 previousMakerFeeBips
         );
+
+    /// @dev Gets the domain separator used in this exchange.
+    function getDomainSeparator()
+        external
+        virtual
+        view
+        returns (bytes32);
 }

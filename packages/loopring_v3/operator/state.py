@@ -14,7 +14,7 @@ from ethsnarks.merkletree import MerkleTree
 from ethsnarks.poseidon import poseidon, poseidon_params
 from ethsnarks.field import SNARK_SCALAR_FIELD
 
-poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 6, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 7, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsStorage = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 
@@ -72,8 +72,9 @@ class Signature(object):
             self.s = "0"
 
 class BalanceLeaf(object):
-    def __init__(self, balance = 0):
+    def __init__(self, balance = 0, weightAMM = 0):
         self.balance = str(balance)
+        self.weightAMM = str(weightAMM)
         # Storage
         self._storageTree = SparseMerkleTree(BINARY_TREE_DEPTH_STORAGE // 2, 4)
         self._storageTree.newTree(StorageLeaf().hash())
@@ -83,12 +84,13 @@ class BalanceLeaf(object):
 
     def hash(self):
         #print("balance: " + self.balance)
-        temp = [int(self.balance), int(self._storageTree._root)]
+        temp = [int(self.balance), int(self.weightAMM), int(self._storageTree._root)]
         #print(temp)
         return poseidon(temp, poseidonParamsBalance)
 
     def fromJSON(self, jBalance):
         self.balance = jBalance["balance"]
+        self.weightAMM = jBalance["weightAMM"]
         # Storage
         storageLeafsDict = jBalance["_storageLeafs"]
         for key, val in storageLeafsDict.items():
@@ -144,6 +146,7 @@ class Account(object):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
+        self.feeBipsAMM = 0
         # Balances
         self._balancesTree = SparseMerkleTree(BINARY_TREE_DEPTH_TOKENS // 2, 4)
         self._balancesTree.newTree(BalanceLeaf().hash())
@@ -151,13 +154,14 @@ class Account(object):
         # print("Empty balances tree: " + str(self._balancesTree._root))
 
     def hash(self):
-        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], poseidonParamsAccount)
+        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self.feeBipsAMM), int(self._balancesTree._root)], poseidonParamsAccount)
 
     def fromJSON(self, jAccount):
         self.owner = jAccount["owner"]
         self.publicKeyX = jAccount["publicKeyX"]
         self.publicKeyY = jAccount["publicKeyY"]
         self.nonce = int(jAccount["nonce"])
+        self.feeBipsAMM = int(jAccount["feeBipsAMM"])
         # Balances
         balancesLeafsDict = jAccount["_balancesLeafs"]
         for key, val in balancesLeafsDict.items():
@@ -196,7 +200,7 @@ class Account(object):
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter)
 
-    def updateBalanceAndStorage(self, tokenID, storageID, filled, delta_balance):
+    def updateBalanceAndStorage(self, tokenID, storageID, filled, delta_balance, weight = None):
         # Make sure the leaf exist in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -207,6 +211,8 @@ class Account(object):
         # Update filled amounts
         storageUpdate = self._balancesLeafs[str(tokenID)].updateStorage(storageID, filled)
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(delta_balance))
+        if weight is not None:
+            self._balancesLeafs[str(tokenID)].weightAMM = str(weight)
 
         #print("str(delta_balance): " + str(delta_balance))
         #print("endBalance: " + self._balancesLeafs[str(tokenID)].balance)
@@ -261,21 +267,6 @@ class AccountUpdateData(object):
         self.before = before
         self.after = after
 
-
-class WithdrawProof(object):
-    def __init__(self,
-                 accountID, tokenID,
-                 account, balance,
-                 root,
-                 accountProof, balanceProof):
-        self.accountID = int(accountID)
-        self.tokenID = int(tokenID)
-        self.account = account
-        self.balance = balance
-        self.root = str(root)
-        self.accountProof = [str(_) for _ in accountProof]
-        self.balanceProof = [str(_) for _ in balanceProof]
-
 class Order(object):
     def __init__(self,
                  publicKeyX, publicKeyY,
@@ -283,7 +274,8 @@ class Order(object):
                  tokenS, tokenB,
                  amountS, amountB,
                  validUntil, fillAmountBorS, taker,
-                 maxFeeBips, feeBips):
+                 maxFeeBips, feeBips,
+                 amm):
         self.publicKeyX = str(publicKeyX)
         self.publicKeyY = str(publicKeyY)
 
@@ -302,6 +294,8 @@ class Order(object):
         self.maxFeeBips = maxFeeBips
 
         self.feeBips = feeBips
+
+        self.amm = bool(amm)
 
     def checkValid(self, context, order, fillAmountS, fillAmountB):
         valid = True
@@ -443,32 +437,34 @@ class State(object):
         newState.signatureA = None
         newState.signatureB = None
         # Tokens
-        newState.balanceA_S_Address = None
-        newState.balanceA_S_Address = None
+        newState.TXV_BALANCE_A_S_ADDRESS = None
+        newState.TXV_BALANCE_A_S_ADDRESS = None
         # A
-        newState.accountA_Address = None
-        newState.accountA_Owner = None
-        newState.accountA_PublicKeyX = None
-        newState.accountA_PublicKeyY = None
-        newState.accountA_Nonce = None
-        newState.balanceA_S_Address = None
-        newState.balanceA_S_Balance = None
-        newState.balanceA_B_Balance = None
-        newState.storageA_Address = None
-        newState.storageA_Data = None
-        newState.storageA_StorageId = None
+        newState.TXV_ACCOUNT_A_ADDRESS = None
+        newState.TXV_ACCOUNT_A_OWNER = None
+        newState.TXV_ACCOUNT_A_PUBKEY_X = None
+        newState.TXV_ACCOUNT_A_PUBKEY_Y = None
+        newState.TXV_ACCOUNT_A_NONCE = None
+        newState.TXV_ACCOUNT_A_FEEBIPSAMM = None
+        newState.TXV_BALANCE_A_S_ADDRESS = None
+        newState.TXV_BALANCE_A_S_BALANCE = None
+        newState.TXV_BALANCE_A_S_WEIGHT = None
+        newState.TXV_BALANCE_A_B_BALANCE = None
+        newState.TXV_STORAGE_A_ADDRESS = None
+        newState.TXV_STORAGE_A_DATA = None
+        newState.TXV_STORAGE_A_STORAGEID = None
         # B
-        newState.accountB_Address = None
-        newState.accountB_Owner = None
-        newState.accountB_PublicKeyX = None
-        newState.accountB_PublicKeyY = None
-        newState.accountB_Nonce = None
-        newState.balanceB_S_Address = None
-        newState.balanceB_S_Balance = None
-        newState.balanceB_B_Balance = None
-        newState.storageB_Address = None
-        newState.storageB_Data = None
-        newState.storageB_StorageId = None
+        newState.TXV_ACCOUNT_B_ADDRESS = None
+        newState.TXV_ACCOUNT_B_OWNER = None
+        newState.TXV_ACCOUNT_B_PUBKEY_X = None
+        newState.TXV_ACCOUNT_B_PUBKEY_Y = None
+        newState.TXV_ACCOUNT_B_NONCE = None
+        newState.TXV_BALANCE_B_S_ADDRESS = None
+        newState.TXV_BALANCE_B_S_BALANCE = None
+        newState.TXV_BALANCE_B_B_BALANCE = None
+        newState.TXV_STORAGE_B_ADDRESS = None
+        newState.TXV_STORAGE_B_DATA = None
+        newState.TXV_STORAGE_B_STORAGEID = None
         # Operator
         newState.balanceDeltaA_O = None
         newState.balanceDeltaB_O = None
@@ -561,32 +557,32 @@ class State(object):
             newState.signatureA = ring.orderA.signature
             newState.signatureB = ring.orderB.signature
 
-            newState.accountA_Address = ring.orderA.accountID
+            newState.TXV_ACCOUNT_A_ADDRESS = ring.orderA.accountID
             accountA = self.getAccount(ring.orderA.accountID)
 
-            newState.balanceA_S_Address = ring.orderA.tokenS
-            newState.balanceA_S_Balance = -fillA.S
+            newState.TXV_BALANCE_A_S_ADDRESS = ring.orderA.tokenS
+            newState.TXV_BALANCE_A_S_BALANCE = -fillA.S
 
-            newState.balanceB_S_Address = ring.orderA.tokenB
-            newState.balanceA_B_Balance = fillA.B - fee_A
+            newState.TXV_BALANCE_B_S_ADDRESS = ring.orderA.tokenB
+            newState.TXV_BALANCE_A_B_BALANCE = fillA.B - fee_A
 
-            newState.storageA_Address = ring.orderA.storageID
-            newState.storageA_Data = filled_A + (fillA.B if ring.orderA.fillAmountBorS else fillA.S)
-            newState.storageA_StorageId = ring.orderA.storageID
+            newState.TXV_STORAGE_A_ADDRESS = ring.orderA.storageID
+            newState.TXV_STORAGE_A_DATA = filled_A + (fillA.B if ring.orderA.fillAmountBorS else fillA.S)
+            newState.TXV_STORAGE_A_STORAGEID = ring.orderA.storageID
 
 
-            newState.accountB_Address = ring.orderB.accountID
+            newState.TXV_ACCOUNT_B_ADDRESS = ring.orderB.accountID
             accountB = self.getAccount(ring.orderB.accountID)
 
-            newState.balanceB_S_Address = ring.orderB.tokenS
-            newState.balanceB_S_Balance = -fillB.S
+            newState.TXV_BALANCE_B_S_ADDRESS = ring.orderB.tokenS
+            newState.TXV_BALANCE_B_S_BALANCE = -fillB.S
 
-            newState.balanceA_S_Address = ring.orderB.tokenB
-            newState.balanceB_B_Balance = fillB.B - fee_B
+            newState.TXV_BALANCE_A_S_ADDRESS = ring.orderB.tokenB
+            newState.TXV_BALANCE_B_B_BALANCE = fillB.B - fee_B
 
-            newState.storageB_Address = ring.orderB.storageID
-            newState.storageB_Data = filled_B + (fillB.B if ring.orderB.fillAmountBorS else fillB.S)
-            newState.storageB_StorageId = ring.orderB.storageID
+            newState.TXV_STORAGE_B_ADDRESS = ring.orderB.storageID
+            newState.TXV_STORAGE_B_DATA = filled_B + (fillB.B if ring.orderB.fillAmountBorS else fillB.S)
+            newState.TXV_STORAGE_B_STORAGEID = ring.orderB.storageID
 
             newState.balanceDeltaA_O = fee_A - protocolFee_A
             newState.balanceDeltaB_O = fee_B - protocolFee_B
@@ -604,25 +600,25 @@ class State(object):
             newState.signatureA = txInput.signature
             newState.signatureB = txInput.dualSignature
 
-            newState.accountA_Address = txInput.fromAccountID
-            accountA = self.getAccount(newState.accountA_Address)
+            newState.TXV_ACCOUNT_A_ADDRESS = txInput.fromAccountID
+            accountA = self.getAccount(newState.TXV_ACCOUNT_A_ADDRESS)
 
-            newState.balanceA_S_Address = txInput.tokenID
-            newState.balanceA_S_Balance = -transferAmount
+            newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
+            newState.TXV_BALANCE_A_S_BALANCE = -transferAmount
 
-            newState.balanceB_S_Address = txInput.feeTokenID
-            newState.balanceA_B_Balance = -feeValue
+            newState.TXV_BALANCE_B_S_ADDRESS = txInput.feeTokenID
+            newState.TXV_BALANCE_A_B_BALANCE = -feeValue
 
-            newState.accountB_Address = txInput.toAccountID
-            accountB = self.getAccount(newState.accountB_Address)
-            newState.accountB_Owner = txInput.to
+            newState.TXV_ACCOUNT_B_ADDRESS = txInput.toAccountID
+            accountB = self.getAccount(newState.TXV_ACCOUNT_B_ADDRESS)
+            newState.TXV_ACCOUNT_B_OWNER = txInput.to
 
-            newState.balanceA_S_Address = txInput.tokenID
-            newState.balanceB_B_Balance = transferAmount
+            newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
+            newState.TXV_BALANCE_B_B_BALANCE = transferAmount
 
-            newState.storageA_Address = txInput.storageID
-            newState.storageA_Data = 1
-            newState.storageA_StorageId = txInput.storageID
+            newState.TXV_STORAGE_A_ADDRESS = txInput.storageID
+            newState.TXV_STORAGE_A_DATA = 1
+            newState.TXV_STORAGE_A_STORAGEID = txInput.storageID
 
             if txInput.type != 0:
                 context.numConditionalTransactions = context.numConditionalTransactions + 1
@@ -653,17 +649,19 @@ class State(object):
 
             newState.signatureA = txInput.signature
 
-            newState.accountA_Address = 1 if isProtocolfeeWithdrawal else txInput.accountID
-            accountA = self.getAccount(newState.accountA_Address)
+            newState.TXV_ACCOUNT_A_ADDRESS = 1 if isProtocolfeeWithdrawal else txInput.accountID
+            accountA = self.getAccount(newState.TXV_ACCOUNT_A_ADDRESS)
 
-            newState.balanceA_S_Address = txInput.tokenID
-            newState.balanceA_S_Balance = 0 if isProtocolfeeWithdrawal else -int(txInput.amount)
+            newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
+            newState.TXV_BALANCE_A_S_BALANCE = 0 if isProtocolfeeWithdrawal else -int(txInput.amount)
 
-            newState.balanceB_S_Address = txInput.feeTokenID
-            newState.balanceA_B_Balance = -feeValue
+            newState.TXV_BALANCE_B_S_ADDRESS = txInput.feeTokenID
+            newState.TXV_BALANCE_A_B_BALANCE = -feeValue
 
             if int(txInput.type) == 0 or int(txInput.type) == 1:
-                newState.accountA_Nonce = 1
+                newState.TXV_ACCOUNT_A_NONCE = 1
+            if not isProtocolfeeWithdrawal and int(txInput.type) == 2:
+                newState.TXV_BALANCE_A_S_WEIGHT = 0
 
             newState.balanceDeltaA_O = feeValue
 
@@ -673,11 +671,11 @@ class State(object):
 
         elif txInput.txType == "Deposit":
 
-            newState.accountA_Address = txInput.accountID
-            newState.accountA_Owner = txInput.owner
+            newState.TXV_ACCOUNT_A_ADDRESS = txInput.accountID
+            newState.TXV_ACCOUNT_A_OWNER = txInput.owner
 
-            newState.balanceA_S_Address = txInput.tokenID
-            newState.balanceA_S_Balance = txInput.amount
+            newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
+            newState.TXV_BALANCE_A_S_BALANCE = txInput.amount
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 
@@ -685,15 +683,15 @@ class State(object):
 
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
 
-            newState.accountA_Address = txInput.accountID
-            accountA = self.getAccount(newState.accountA_Address)
+            newState.TXV_ACCOUNT_A_ADDRESS = txInput.accountID
+            accountA = self.getAccount(newState.TXV_ACCOUNT_A_ADDRESS)
 
-            newState.accountA_PublicKeyX = txInput.publicKeyX
-            newState.accountA_PublicKeyY = txInput.publicKeyY
-            newState.accountA_Nonce = 1
+            newState.TXV_ACCOUNT_A_PUBKEY_X = txInput.publicKeyX
+            newState.TXV_ACCOUNT_A_PUBKEY_Y = txInput.publicKeyY
+            newState.TXV_ACCOUNT_A_NONCE = 1
 
-            newState.balanceA_S_Address = txInput.feeTokenID
-            newState.balanceA_S_Balance = -feeValue
+            newState.TXV_BALANCE_A_S_ADDRESS = txInput.feeTokenID
+            newState.TXV_BALANCE_A_S_BALANCE = -feeValue
 
             newState.balanceDeltaB_O = feeValue
 
@@ -702,28 +700,46 @@ class State(object):
             if txInput.type != 0:
                 context.numConditionalTransactions = context.numConditionalTransactions + 1
 
+        elif txInput.txType == "AmmUpdate":
+
+            # Cache the balance for tests
+            account = self.getAccount(txInput.accountID)
+            balanceLeaf = account.getBalanceLeaf(txInput.tokenID)
+            txInput.balance = str(balanceLeaf.balance)
+
+            newState.TXV_ACCOUNT_A_ADDRESS = txInput.accountID
+            newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
+
+            newState.TXV_ACCOUNT_A_NONCE = 1
+            newState.TXV_ACCOUNT_A_FEEBIPSAMM = txInput.feeBips
+            newState.TXV_BALANCE_A_S_WEIGHT = txInput.tokenWeight
+
+            context.numConditionalTransactions = context.numConditionalTransactions + 1
+
 
         # Tokens default values
-        newState.balanceA_S_Address = setValue(newState.balanceA_S_Address, 0)
-        newState.balanceB_S_Address = setValue(newState.balanceB_S_Address, 0)
+        newState.TXV_BALANCE_A_S_ADDRESS = setValue(newState.TXV_BALANCE_A_S_ADDRESS, 0)
+        newState.TXV_BALANCE_B_S_ADDRESS = setValue(newState.TXV_BALANCE_B_S_ADDRESS, 0)
 
         # A default values
-        newState.accountA_Address = setValue(newState.accountA_Address, 1)
-        accountA = self.getAccount(newState.accountA_Address)
-        newState.accountA_Owner = setValue(newState.accountA_Owner, accountA.owner)
-        newState.accountA_PublicKeyX = setValue(newState.accountA_PublicKeyX, accountA.publicKeyX)
-        newState.accountA_PublicKeyY = setValue(newState.accountA_PublicKeyY, accountA.publicKeyY)
-        newState.accountA_Nonce = setValue(newState.accountA_Nonce, 0)
+        newState.TXV_ACCOUNT_A_ADDRESS = setValue(newState.TXV_ACCOUNT_A_ADDRESS, 1)
+        accountA = self.getAccount(newState.TXV_ACCOUNT_A_ADDRESS)
+        newState.TXV_ACCOUNT_A_OWNER = setValue(newState.TXV_ACCOUNT_A_OWNER, accountA.owner)
+        newState.TXV_ACCOUNT_A_PUBKEY_X = setValue(newState.TXV_ACCOUNT_A_PUBKEY_X, accountA.publicKeyX)
+        newState.TXV_ACCOUNT_A_PUBKEY_Y = setValue(newState.TXV_ACCOUNT_A_PUBKEY_Y, accountA.publicKeyY)
+        newState.TXV_ACCOUNT_A_NONCE = setValue(newState.TXV_ACCOUNT_A_NONCE, 0)
+        newState.TXV_ACCOUNT_A_FEEBIPSAMM = setValue(newState.TXV_ACCOUNT_A_FEEBIPSAMM, accountA.feeBipsAMM)
 
-        balanceLeafA_S = accountA.getBalanceLeaf(newState.balanceA_S_Address)
-        newState.balanceA_S_Balance = setValue(newState.balanceA_S_Balance, 0)
+        balanceLeafA_S = accountA.getBalanceLeaf(newState.TXV_BALANCE_A_S_ADDRESS)
+        newState.TXV_BALANCE_A_S_BALANCE = setValue(newState.TXV_BALANCE_A_S_BALANCE, 0)
+        newState.TXV_BALANCE_A_S_WEIGHT = setValue(newState.TXV_BALANCE_A_S_WEIGHT, balanceLeafA_S.weightAMM)
 
-        newState.balanceA_B_Balance = setValue(newState.balanceA_B_Balance, 0)
+        newState.TXV_BALANCE_A_B_BALANCE = setValue(newState.TXV_BALANCE_A_B_BALANCE, 0)
 
-        newState.storageA_Address = setValue(newState.storageA_Address, 0)
-        storageA = balanceLeafA_S.getStorage(newState.storageA_Address)
-        newState.storageA_Data = setValue(newState.storageA_Data, storageA.data)
-        newState.storageA_StorageId = setValue(newState.storageA_StorageId, storageA.storageID)
+        newState.TXV_STORAGE_A_ADDRESS = setValue(newState.TXV_STORAGE_A_ADDRESS, 0)
+        storageA = balanceLeafA_S.getStorage(newState.TXV_STORAGE_A_ADDRESS)
+        newState.TXV_STORAGE_A_DATA = setValue(newState.TXV_STORAGE_A_DATA, storageA.data)
+        newState.TXV_STORAGE_A_STORAGEID = setValue(newState.TXV_STORAGE_A_STORAGEID, storageA.storageID)
 
         # Operator default values
         newState.balanceDeltaA_O = setValue(newState.balanceDeltaA_O, 0)
@@ -738,79 +754,81 @@ class State(object):
         accountsMerkleRoot = self._accountsTree._root
 
         # Update A
-        accountA = self.getAccount(newState.accountA_Address)
+        accountA = self.getAccount(newState.TXV_ACCOUNT_A_ADDRESS)
 
         rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(newState.accountA_Address))
-        proof = self._accountsTree.createProof(newState.accountA_Address)
+        accountBefore = copyAccountInfo(self.getAccount(newState.TXV_ACCOUNT_A_ADDRESS))
+        proof = self._accountsTree.createProof(newState.TXV_ACCOUNT_A_ADDRESS)
 
         (balanceUpdateS_A, storageUpdate_A) = accountA.updateBalanceAndStorage(
-            newState.balanceA_S_Address,
-            newState.storageA_StorageId,
-            newState.storageA_Data,
-            newState.balanceA_S_Balance
+            newState.TXV_BALANCE_A_S_ADDRESS,
+            newState.TXV_STORAGE_A_STORAGEID,
+            newState.TXV_STORAGE_A_DATA,
+            newState.TXV_BALANCE_A_S_BALANCE,
+            newState.TXV_BALANCE_A_S_WEIGHT
         )
         balanceUpdateB_A = accountA.updateBalance(
-            newState.balanceB_S_Address,
-            newState.balanceA_B_Balance
+            newState.TXV_BALANCE_B_S_ADDRESS,
+            newState.TXV_BALANCE_A_B_BALANCE
         )
 
-        accountA.owner = newState.accountA_Owner
-        accountA.publicKeyX = newState.accountA_PublicKeyX
-        accountA.publicKeyY = newState.accountA_PublicKeyY
-        accountA.nonce = accountA.nonce + newState.accountA_Nonce
+        accountA.owner = newState.TXV_ACCOUNT_A_OWNER
+        accountA.publicKeyX = newState.TXV_ACCOUNT_A_PUBKEY_X
+        accountA.publicKeyY = newState.TXV_ACCOUNT_A_PUBKEY_Y
+        accountA.nonce = accountA.nonce + newState.TXV_ACCOUNT_A_NONCE
+        accountA.feeBipsAMM = newState.TXV_ACCOUNT_A_FEEBIPSAMM
 
-        self.updateAccountTree(newState.accountA_Address)
-        accountAfter = copyAccountInfo(self.getAccount(newState.accountA_Address))
+        self.updateAccountTree(newState.TXV_ACCOUNT_A_ADDRESS)
+        accountAfter = copyAccountInfo(self.getAccount(newState.TXV_ACCOUNT_A_ADDRESS))
         rootAfter = self._accountsTree._root
-        accountUpdate_A = AccountUpdateData(newState.accountA_Address, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdate_A = AccountUpdateData(newState.TXV_ACCOUNT_A_ADDRESS, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
         # B default values
-        newState.accountB_Address = setValue(newState.accountB_Address, 1)
-        accountB = self.getAccount(newState.accountB_Address)
-        newState.accountB_Owner = setValue(newState.accountB_Owner, accountB.owner)
-        newState.accountB_PublicKeyX = setValue(newState.accountB_PublicKeyX, accountB.publicKeyX)
-        newState.accountB_PublicKeyY = setValue(newState.accountB_PublicKeyY, accountB.publicKeyY)
-        newState.accountB_Nonce = setValue(newState.accountB_Nonce, 0)
+        newState.TXV_ACCOUNT_B_ADDRESS = setValue(newState.TXV_ACCOUNT_B_ADDRESS, 1)
+        accountB = self.getAccount(newState.TXV_ACCOUNT_B_ADDRESS)
+        newState.TXV_ACCOUNT_B_OWNER = setValue(newState.TXV_ACCOUNT_B_OWNER, accountB.owner)
+        newState.TXV_ACCOUNT_B_PUBKEY_X = setValue(newState.TXV_ACCOUNT_B_PUBKEY_X, accountB.publicKeyX)
+        newState.TXV_ACCOUNT_B_PUBKEY_Y = setValue(newState.TXV_ACCOUNT_B_PUBKEY_Y, accountB.publicKeyY)
+        newState.TXV_ACCOUNT_B_NONCE = setValue(newState.TXV_ACCOUNT_B_NONCE, 0)
 
-        balanceLeafB_S = accountB.getBalanceLeaf(newState.balanceB_S_Address)
-        newState.balanceB_S_Balance = setValue(newState.balanceB_S_Balance, 0)
+        balanceLeafB_S = accountB.getBalanceLeaf(newState.TXV_BALANCE_B_S_ADDRESS)
+        newState.TXV_BALANCE_B_S_BALANCE = setValue(newState.TXV_BALANCE_B_S_BALANCE, 0)
 
-        newState.balanceB_B_Balance = setValue(newState.balanceB_B_Balance, 0)
+        newState.TXV_BALANCE_B_B_BALANCE = setValue(newState.TXV_BALANCE_B_B_BALANCE, 0)
 
-        newState.storageB_Address = setValue(newState.storageB_Address, 0)
-        storageB = balanceLeafB_S.getStorage(newState.storageB_Address)
-        newState.storageB_Data = setValue(newState.storageB_Data, storageB.data)
-        newState.storageB_StorageId = setValue(newState.storageB_StorageId, storageB.storageID)
+        newState.TXV_STORAGE_B_ADDRESS = setValue(newState.TXV_STORAGE_B_ADDRESS, 0)
+        storageB = balanceLeafB_S.getStorage(newState.TXV_STORAGE_B_ADDRESS)
+        newState.TXV_STORAGE_B_DATA = setValue(newState.TXV_STORAGE_B_DATA, storageB.data)
+        newState.TXV_STORAGE_B_STORAGEID = setValue(newState.TXV_STORAGE_B_STORAGEID, storageB.storageID)
 
         # Update B
-        accountB = self.getAccount(newState.accountB_Address)
+        accountB = self.getAccount(newState.TXV_ACCOUNT_B_ADDRESS)
 
         rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(newState.accountB_Address))
-        proof = self._accountsTree.createProof(newState.accountB_Address)
+        accountBefore = copyAccountInfo(self.getAccount(newState.TXV_ACCOUNT_B_ADDRESS))
+        proof = self._accountsTree.createProof(newState.TXV_ACCOUNT_B_ADDRESS)
 
         (balanceUpdateS_B, storageUpdate_B) = accountB.updateBalanceAndStorage(
-            newState.balanceB_S_Address,
-            newState.storageB_StorageId,
-            newState.storageB_Data,
-            newState.balanceB_S_Balance
+            newState.TXV_BALANCE_B_S_ADDRESS,
+            newState.TXV_STORAGE_B_STORAGEID,
+            newState.TXV_STORAGE_B_DATA,
+            newState.TXV_BALANCE_B_S_BALANCE
         )
         balanceUpdateB_B = accountB.updateBalance(
-            newState.balanceA_S_Address,
-            newState.balanceB_B_Balance
+            newState.TXV_BALANCE_A_S_ADDRESS,
+            newState.TXV_BALANCE_B_B_BALANCE
         )
 
-        accountB.owner = newState.accountB_Owner
-        accountB.publicKeyX = newState.accountB_PublicKeyX
-        accountB.publicKeyY = newState.accountB_PublicKeyY
-        accountB.nonce = accountB.nonce + newState.accountB_Nonce
+        accountB.owner = newState.TXV_ACCOUNT_B_OWNER
+        accountB.publicKeyX = newState.TXV_ACCOUNT_B_PUBKEY_X
+        accountB.publicKeyY = newState.TXV_ACCOUNT_B_PUBKEY_Y
+        accountB.nonce = accountB.nonce + newState.TXV_ACCOUNT_B_NONCE
 
-        self.updateAccountTree(newState.accountB_Address)
-        accountAfter = copyAccountInfo(self.getAccount(newState.accountB_Address))
+        self.updateAccountTree(newState.TXV_ACCOUNT_B_ADDRESS)
+        accountAfter = copyAccountInfo(self.getAccount(newState.TXV_ACCOUNT_B_ADDRESS))
         rootAfter = self._accountsTree._root
-        accountUpdate_B = AccountUpdateData(newState.accountB_Address, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdate_B = AccountUpdateData(newState.TXV_ACCOUNT_B_ADDRESS, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
         # Update balances Operator
@@ -821,11 +839,11 @@ class State(object):
         proof = self._accountsTree.createProof(context.operatorAccountID)
 
         balanceUpdateB_O = accountO.updateBalance(
-            newState.balanceA_S_Address,
+            newState.TXV_BALANCE_A_S_ADDRESS,
             newState.balanceDeltaB_O
         )
         balanceUpdateA_O = accountO.updateBalance(
-            newState.balanceB_S_Address,
+            newState.TXV_BALANCE_B_S_ADDRESS,
             newState.balanceDeltaA_O
         )
 
@@ -836,8 +854,8 @@ class State(object):
         ###
 
         # Protocol fee payment
-        balanceUpdateB_P = self.getAccount(0).updateBalance(newState.balanceA_S_Address, newState.balanceDeltaB_P)
-        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.balanceB_S_Address, newState.balanceDeltaA_P)
+        balanceUpdateB_P = self.getAccount(0).updateBalance(newState.TXV_BALANCE_A_S_ADDRESS, newState.balanceDeltaB_P)
+        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.TXV_BALANCE_B_S_ADDRESS, newState.balanceDeltaA_P)
         ###
 
         witness = Witness(newState.signatureA, newState.signatureB,

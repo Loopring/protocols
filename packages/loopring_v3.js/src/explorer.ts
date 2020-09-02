@@ -38,7 +38,7 @@ export class Explorer {
     this.universalRegistryAddress = universalRegistryAddress;
     this.syncedToEthereumBlockIdx = ethereumBlockFrom;
 
-    const ABIPath = "ABI/version30/";
+    const ABIPath = "ABI/version36/";
     this.universalRegistryAbi = fs.readFileSync(
       ABIPath + "IUniversalRegistry.abi",
       "ascii"

@@ -3,9 +3,7 @@ import { expectThrow } from "./expectThrow";
 import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
 import { Constants } from "loopringV3.js";
 
-const AgentRegistry = artifacts.require(
-  "AgentRegistry"
-);
+const AgentRegistry = artifacts.require("AgentRegistry");
 
 contract("Exchange", (accounts: string[]) => {
   let ctx: ExchangeTestUtil;
@@ -13,7 +11,7 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeOwner: string;
 
   let agentRegistry: any;
-  let registryOwner:  string;
+  let registryOwner: string;
 
   let ownerA: string;
   let ownerB: string;
@@ -30,13 +28,19 @@ contract("Exchange", (accounts: string[]) => {
 
     // Create the agent registry
     registryOwner = accounts[7];
-    agentRegistry = await AgentRegistry.new({from: registryOwner});
+    agentRegistry = await AgentRegistry.new({ from: registryOwner });
 
     // Register it on the exchange contract
-    await exchange.setAgentRegistry(agentRegistry.address, {from: exchangeOwner});
+    await exchange.setAgentRegistry(agentRegistry.address, {
+      from: exchangeOwner
+    });
     // Check if it's set correctly
     const exchangeAgentRegistry = await exchange.getAgentRegistry();
-    assert.equal(exchangeAgentRegistry, agentRegistry.address, "unexpected agent registry");
+    assert.equal(
+      exchangeAgentRegistry,
+      agentRegistry.address,
+      "unexpected agent registry"
+    );
   };
 
   const registerUserAgentChecked = async (
@@ -45,7 +49,10 @@ contract("Exchange", (accounts: string[]) => {
     from: string
   ) => {
     await agentRegistry.registerUserAgent(agent, registered, { from });
-    const event = await ctx.assertEventEmitted(agentRegistry, "AgentRegistered");
+    const event = await ctx.assertEventEmitted(
+      agentRegistry,
+      "AgentRegistered"
+    );
     assert.equal(event.user, from, "user unexpected");
     assert.equal(event.agent, agent, "agent unexpected");
     assert.equal(event.registered, registered, "registered unexpected");
@@ -63,7 +70,10 @@ contract("Exchange", (accounts: string[]) => {
     from: string
   ) => {
     await agentRegistry.registerUniversalAgent(agent, registered, { from });
-    const event = await ctx.assertEventEmitted(agentRegistry, "AgentRegistered");
+    const event = await ctx.assertEventEmitted(
+      agentRegistry,
+      "AgentRegistered"
+    );
     assert.equal(event.user, Constants.zeroAddress, "user unexpected");
     assert.equal(event.agent, agent, "agent unexpected");
     assert.equal(event.registered, registered, "registered unexpected");
@@ -157,19 +167,10 @@ contract("Exchange", (accounts: string[]) => {
       await createExchange();
 
       const withdrawalFee = await ctx.loopringV3.forcedWithdrawalFee();
-      const depositFee = ctx.getRandomFee();
 
       const agent = ownerC;
 
       const token = ctx.getTokenAddress("LRC");
-
-      await expectThrow(
-        exchange.deposit(ownerA, ownerA, token, new BN(0), "0x", {
-          from: agent,
-          value: depositFee
-        }),
-        "UNAUTHORIZED"
-      );
 
       await expectThrow(
         exchange.forceWithdraw(ownerA, token, 0, {
@@ -187,16 +188,34 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), token, new BN(0), 0xffffffff, new BN(1), {
-          from: agent
-        }),
+        exchange.approveOffchainTransfer(
+          ownerA,
+          ownerB,
+          token,
+          new BN(0),
+          token,
+          new BN(0),
+          0xffffffff,
+          new BN(1),
+          {
+            from: agent
+          }
+        ),
         "UNAUTHORIZED"
       );
 
       await expectThrow(
-        exchange.setWithdrawalRecipient(ownerA, ownerB, token, new BN(0), 0, ownerB, {
-          from: agent
-        }),
+        exchange.setWithdrawalRecipient(
+          ownerA,
+          ownerB,
+          token,
+          new BN(0),
+          0,
+          ownerB,
+          {
+            from: agent
+          }
+        ),
         "UNAUTHORIZED"
       );
 
@@ -210,13 +229,7 @@ contract("Exchange", (accounts: string[]) => {
       // Authorize the agent
       await registerUserAgentChecked(agent, true, ownerA);
 
-      // Now call the functions successfully
-
-      await exchange.deposit(ownerA, ownerA, token, new BN(0), "0x", {
-        from: agent,
-        value: depositFee
-      });
-
+      // Now call the functions successfull
       await exchange.forceWithdraw(ownerA, token, 0, {
         from: agent,
         value: withdrawalFee
@@ -226,13 +239,31 @@ contract("Exchange", (accounts: string[]) => {
         from: agent
       });
 
-      await exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), token, new BN(0), 0xfffffff, new BN(1), {
-        from: agent
-      });
+      await exchange.approveOffchainTransfer(
+        ownerA,
+        ownerB,
+        token,
+        new BN(0),
+        token,
+        new BN(0),
+        0xfffffff,
+        new BN(1),
+        {
+          from: agent
+        }
+      );
 
-      await exchange.setWithdrawalRecipient(ownerA, ownerB, token, new BN(0), 0, ownerB, {
-        from: agent
-      });
+      await exchange.setWithdrawalRecipient(
+        ownerA,
+        ownerB,
+        token,
+        new BN(0),
+        0,
+        ownerB,
+        {
+          from: agent
+        }
+      );
 
       await exchange.onchainTransferFrom(ownerA, ownerB, token, new BN(0), {
         from: agent

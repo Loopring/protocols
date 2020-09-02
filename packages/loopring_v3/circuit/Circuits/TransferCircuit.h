@@ -293,41 +293,41 @@ class TransferCircuit : public BaseTransactionCircuit
             FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         // Update the From account
-        setArrayOutput(accountA_Address, fromAccountID.bits);
+        setArrayOutput(TXV_ACCOUNT_A_ADDRESS, fromAccountID.bits);
 
         // Set the 2 tokens used
-        setArrayOutput(balanceA_S_Address, tokenID.bits);
-        setArrayOutput(balanceB_S_Address, feeTokenID.bits);
+        setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
+        setArrayOutput(TXV_BALANCE_B_S_ADDRESS, feeTokenID.bits);
 
         // Update the From balances (transfer + fee payment)
-        setOutput(balanceA_S_Balance, balanceS_A.balance());
-        setOutput(balanceA_B_Balance, balanceB_A.balance());
+        setOutput(TXV_BALANCE_A_S_BALANCE, balanceS_A.balance());
+        setOutput(TXV_BALANCE_A_B_BALANCE, balanceB_A.balance());
 
         // Update the To account
-        setArrayOutput(accountB_Address, toAccountID.bits);
-        setOutput(accountB_Owner, to.packed);
+        setArrayOutput(TXV_ACCOUNT_B_ADDRESS, toAccountID.bits);
+        setOutput(TXV_ACCOUNT_B_OWNER, to.packed);
 
         // Update the To balance (transfer)
-        setOutput(balanceB_B_Balance, balanceB_B.balance());
+        setOutput(TXV_BALANCE_B_B_BALANCE, balanceB_B.balance());
 
         // Update the operator balance for the fee payment
-        setOutput(balanceO_A_Balance, balanceA_O.balance());
+        setOutput(TXV_BALANCE_O_A_BALANCE, balanceA_O.balance());
 
         // Verify 2 signatures (one of the payer, one of the dual author)
-        setOutput(hash_A, hashPayer.result());
-        setOutput(hash_B, hashDual.result());
-        setOutput(publicKeyX_B, resolvedDualAuthorX.result());
-        setOutput(publicKeyY_B, resolvedDualAuthorY.result());
-        setOutput(signatureRequired_A, needsSignature.result());
-        setOutput(signatureRequired_B, needsSignature.result());
+        setOutput(TXV_HASH_A, hashPayer.result());
+        setOutput(TXV_HASH_B, hashDual.result());
+        setOutput(TXV_PUBKEY_X_B, resolvedDualAuthorX.result());
+        setOutput(TXV_PUBKEY_Y_B, resolvedDualAuthorY.result());
+        setOutput(TXV_SIGNATURE_REQUIRED_A, needsSignature.result());
+        setOutput(TXV_SIGNATURE_REQUIRED_B, needsSignature.result());
 
         // Increase the number of conditional transactions (if conditional)
-        setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
+        setOutput(TXV_NUM_CONDITIONAL_TXS, numConditionalTransactionsAfter.result());
 
         // Nonce
-        setArrayOutput(storageA_Address, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
-        setOutput(storageA_Data, nonce.getData());
-        setOutput(storageA_StorageId, storageID.packed);
+        setArrayOutput(TXV_STORAGE_A_ADDRESS, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
+        setOutput(TXV_STORAGE_A_DATA, nonce.getData());
+        setOutput(TXV_STORAGE_A_STORAGEID, storageID.packed);
     }
 
     void generate_r1cs_witness(const Transfer &transfer)

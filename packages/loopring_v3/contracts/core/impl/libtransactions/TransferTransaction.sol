@@ -58,14 +58,13 @@ library TransferTransaction
         bytes                     memory  auxiliaryData
         )
         internal
-        returns (uint /*feeETH*/)
     {
         // Read the transfer
         Transfer memory transfer = readTx(data, offset);
         TransferAuxiliaryData memory auxData = abi.decode(auxiliaryData, (TransferAuxiliaryData));
 
         // Check validUntil
-        require(ctx.timestamp < auxData.validUntil, "WITHDRAWAL_EXPIRED");
+        require(ctx.timestamp < auxData.validUntil, "TRANSFER_EXPIRED");
         transfer.validUntil = auxData.validUntil;
 
         // Calculate the tx hash

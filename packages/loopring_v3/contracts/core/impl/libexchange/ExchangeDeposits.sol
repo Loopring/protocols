@@ -24,8 +24,8 @@ library ExchangeDeposits
     event DepositRequested(
         address owner,
         address token,
-        uint96  amount,
-        uint    fee
+        uint16  tokenId,
+        uint96  amount
     );
 
     function deposit(
@@ -47,8 +47,7 @@ library ExchangeDeposits
         uint16 tokenID = S.getTokenID(tokenAddress);
 
         // Transfer the tokens to this contract
-        (uint96 amountDeposited, uint64 fee) = transferDeposit(
-            S,
+        uint96 amountDeposited = S.depositContract.deposit{value: msg.value}(
             from,
             tokenAddress,
             amount,
@@ -57,47 +56,15 @@ library ExchangeDeposits
 
         // Add the amount to the deposit request and reset the time the operator has to process it
         ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
-        _deposit.timestamp = uint32(block.timestamp);
+        _deposit.timestamp = uint64(block.timestamp);
         _deposit.amount = _deposit.amount.add96(amountDeposited);
-        _deposit.fee = _deposit.fee.add64(fee);
         S.pendingDeposits[to][tokenID] = _deposit;
 
         emit DepositRequested(
             to,
             tokenAddress,
-            uint96(amountDeposited),
-            fee
-        );
-    }
-
-    function transferDeposit(
-        ExchangeData.State storage S,
-        address from,
-        address tokenAddress,
-        uint96  amount,
-        bytes   memory extraData
-        )
-        private
-        returns (
-            uint96 amountDeposited,
-            uint64 fee
-        )
-    {
-        IDepositContract depositContract = S.depositContract;
-        uint depositValueETH = 0;
-        if (msg.value > 0 && (tokenAddress == address(0) || depositContract.isETH(tokenAddress))) {
-            depositValueETH = amount;
-            fee = uint64(msg.value.sub(amount));
-        } else {
-            fee = uint64(msg.value);
-        }
-
-        // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        amountDeposited = depositContract.deposit{value: depositValueETH}(
-            from,
-            tokenAddress,
-            amount,
-            extraData
+            tokenID,
+            uint96(amountDeposited)
         );
     }
 }

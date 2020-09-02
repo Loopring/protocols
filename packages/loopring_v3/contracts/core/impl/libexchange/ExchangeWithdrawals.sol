@@ -69,11 +69,15 @@ library ExchangeWithdrawals
             msg.sender.sendETHAndVerify(feeSurplus, gasleft());
         }
 
-        require(S.pendingForcedWithdrawals[accountID][tokenID].timestamp == 0, "WITHDRAWAL_ALREADY_PENDING");
+        require(
+            S.pendingForcedWithdrawals[accountID][tokenID].timestamp == 0,
+            "WITHDRAWAL_ALREADY_PENDING"
+        );
 
-        S.pendingForcedWithdrawals[accountID][tokenID].owner = owner;
-        S.pendingForcedWithdrawals[accountID][tokenID].timestamp = uint32(block.timestamp);
-        S.pendingForcedWithdrawals[accountID][tokenID].fee = uint64(withdrawalFeeETH);
+        S.pendingForcedWithdrawals[accountID][tokenID] = ExchangeData.ForcedWithdrawal({
+            owner: owner,
+            timestamp: uint64(block.timestamp)
+        });
 
         S.numPendingForcedTransactions++;
 
@@ -140,7 +144,6 @@ library ExchangeWithdrawals
         );
 
         uint amount = deposit.amount;
-        uint fee = deposit.fee;
 
         // Reset the deposit request
         delete S.pendingDeposits[owner][tokenID];
@@ -156,9 +159,6 @@ library ExchangeWithdrawals
             gasleft(),
             false
         );
-
-        // Return the fee
-        owner.sendETHAndVerify(fee, gasleft());
     }
 
     function withdrawFromApprovedWithdrawals(

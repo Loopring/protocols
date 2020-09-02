@@ -105,13 +105,19 @@ export async function createWallet(
 
   const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
   const walletName = "mywalleta" + new Date().getTime();
-  const ensApproval = await getEnsApproval(wallet, walletName, ctx.owners[0]);
+
+  const ensApproval = await getEnsApproval(
+    wallet,
+    owner,
+    walletName,
+    ctx.owners[0]
+  );
   const txSignature = signCreateWallet(
     ctx.walletFactory.address,
     owner,
     0,
+    Constants.zeroAddress,
     walletName,
-    ensApproval,
     true,
     modules
   );
@@ -147,13 +153,19 @@ export async function createWallet2(
 
   const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
   const walletName = "mywalleta" + new Date().getTime();
-  const ensApproval = await getEnsApproval(wallet, walletName, ctx.owners[0]);
+
+  const ensApproval = await getEnsApproval(
+    wallet,
+    owner,
+    walletName,
+    ctx.owners[0]
+  );
   const txSignature = signCreateWallet(
     ctx.walletFactory.address,
     owner,
     0,
+    Constants.zeroAddress,
     walletName,
-    ensApproval,
     true,
     modules
   );
@@ -235,11 +247,13 @@ export function sortAddresses(addresses: string[]) {
 
 export async function getEnsApproval(
   wallet: string,
+  owner: string,
   walletName: string,
   signer: string
 ) {
   const messageBuf = Buffer.concat([
     Buffer.from(wallet.slice(2), "hex"),
+    Buffer.from(owner.slice(2), "hex"),
     Buffer.from(walletName, "utf8")
   ]);
 

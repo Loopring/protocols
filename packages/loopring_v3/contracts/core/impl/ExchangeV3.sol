@@ -3,7 +3,9 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
@@ -25,6 +27,8 @@ import "./libtransactions/TransferTransaction.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
+    using AddressUtil           for address;
+    using ERC20SafeTransfer     for address;
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeBalances      for ExchangeData.State;
@@ -35,7 +39,7 @@ contract ExchangeV3 is IExchangeV3
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
-    ExchangeData.State private state;
+    ExchangeData.State public state;
 
     modifier onlyWhenUninitialized()
     {
@@ -64,6 +68,14 @@ contract ExchangeV3 is IExchangeV3
         returns (string memory)
     {
         return "3.6.0";
+    }
+
+    function domainSeperator()
+        public
+        view
+        returns (bytes32)
+    {
+        return state.DOMAIN_SEPARATOR;
     }
 
     // -- Initialization --
@@ -130,6 +142,26 @@ contract ExchangeV3 is IExchangeV3
         return state.depositContract;
     }
 
+    function withdrawExchangeFees(
+        address token,
+        address recipient
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(recipient != address(0), "INVALID_ADDRESS");
+
+        if (token == address(0)) {
+            uint amount = address(this).balance;
+            recipient.sendETHAndVerify(amount, gasleft());
+        } else {
+            uint amount = ERC20(token).balanceOf(address(this));
+            token.safeTransferAndVerify(recipient, amount);
+        }
+    }
+
     // -- Constants --
     function getConstants()
         external
@@ -168,6 +200,24 @@ contract ExchangeV3 is IExchangeV3
         returns (bool)
     {
         return state.isShutdown();
+    }
+
+    function getRequiredExchangeStake()
+        public
+        override
+        view
+        returns (uint)
+    {
+        return state.getRequiredExchangeStake();
+    }
+
+    function canSubmitBlocks()
+        external
+        override
+        view
+        returns (bool)
+    {
+        return state.canSubmitBlocks();
     }
 
     // -- Tokens --
@@ -292,19 +342,13 @@ contract ExchangeV3 is IExchangeV3
         return state.blocks[blockIdx];
     }
 
-    function submitBlocks(
-        ExchangeData.Block[] calldata blocks,
-        address payable feeRecipient
-        )
+    function submitBlocks(ExchangeData.Block[] calldata blocks)
         external
         override
         nonReentrant
         onlyOwner
     {
-        state.submitBlocks(
-            blocks,
-            feeRecipient
-        );
+        state.submitBlocks(blocks);
     }
 
     function getNumAvailableForcedSlots()
@@ -334,6 +378,19 @@ contract ExchangeV3 is IExchangeV3
         state.deposit(from, to, tokenAddress, amount, extraData);
     }
 
+    function getPendingDepositAmount(
+        address owner,
+        address tokenAddress
+        )
+        external
+        override
+        view
+        returns (uint96)
+    {
+        uint16 tokenID = state.getTokenID(tokenAddress);
+        return state.pendingDeposits[owner][tokenID].amount;
+    }
+
     // -- Withdrawals --
 
     function forceWithdraw(
@@ -348,6 +405,19 @@ contract ExchangeV3 is IExchangeV3
         onlyFromUserOrAgent(owner)
     {
         state.forceWithdraw(owner, token, accountID);
+    }
+
+    function isForcedWithdrawalPending(
+        uint32  accountID,
+        address token
+        )
+        external
+        override
+        view
+        returns (bool)
+    {
+        uint16 tokenID = state.getTokenID(token);
+        return state.pendingForcedWithdrawals[accountID][tokenID].timestamp != 0;
     }
 
     function withdrawProtocolFees(
@@ -370,6 +440,19 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
     {
         state.withdrawFromMerkleTree(merkleProof);
+    }
+
+    function isWithdrawnInWithdrawalMode(
+        uint32  accountID,
+        address token
+        )
+        external
+        override
+        view
+        returns (bool)
+    {
+        uint16 tokenID = state.getTokenID(token);
+        return state.withdrawnInWithdrawMode[accountID][tokenID];
     }
 
     function withdrawFromDepositRequest(
@@ -521,6 +604,15 @@ contract ExchangeV3 is IExchangeV3
         returns (bool)
     {
         return state.approvedTx[owner][transactionHash];
+    }
+
+    function getDomainSeparator()
+        external
+        override
+        view
+        returns (bytes32)
+    {
+        return state.DOMAIN_SEPARATOR;
     }
 
     // -- Admins --

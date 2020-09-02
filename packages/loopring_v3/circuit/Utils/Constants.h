@@ -28,10 +28,13 @@ static const unsigned int NUM_MARKETS_PER_BLOCK = 16;
 static const unsigned int NUM_BITS_TX_TYPE = 8;
 static const unsigned int NUM_BITS_ADDRESS = 160;
 static const unsigned int NUM_BITS_HASH = 160;
+static const unsigned int NUM_BITS_AMM_BIPS = 8;
 
 static const char *EMPTY_TRADE_HISTORY = "65927491675782344981534105642433692294864120547424810690492392975145903570"
                                          "90";
 static const char *MAX_AMOUNT = "79228162514264337593543950335"; // 2^96 - 1
+static const char *FIXED_BASE = "1000000000000000000";           // 10^18
+static const unsigned int NUM_BITS_FIXED_BASE = 60;              // ceil(log2(10^18))
 
 struct FloatEncoding
 {

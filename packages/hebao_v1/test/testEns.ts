@@ -34,13 +34,13 @@ contract("BaseENSManager", () => {
 
       // sign with non-manager address:
       let signer = ctx.miscAddresses[1];
-      let ensApproval = await getEnsApproval(wallet, walletName, signer);
+      let ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
       let txSignature = signCreateWallet(
         ctx.walletFactory.address,
         owner,
         0,
+        Constants.zeroAddress,
         walletName,
-        ensApproval,
         true,
         modules
       );
@@ -66,13 +66,14 @@ contract("BaseENSManager", () => {
       );
 
       signer = ctx.owners[0];
-      ensApproval = await getEnsApproval(wallet, walletName, signer);
+
+      ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
       txSignature = signCreateWallet(
         ctx.walletFactory.address,
         owner,
         0,
+        Constants.zeroAddress,
         walletName,
-        ensApproval,
         true,
         modules
       );
@@ -105,13 +106,19 @@ contract("BaseENSManager", () => {
       const modules: string[] = [ctx.finalSecurityModule.address];
 
       const signer = ctx.owners[0];
-      const ensApproval = await getEnsApproval(wallet, walletName, signer);
+
+      const ensApproval = await getEnsApproval(
+        wallet,
+        owner,
+        walletName,
+        signer
+      );
       const txSignature = signCreateWallet(
         ctx.walletFactory.address,
         owner,
         0,
+        Constants.zeroAddress,
         walletName,
-        ensApproval,
         true,
         modules
       );

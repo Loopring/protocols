@@ -53,14 +53,13 @@ library AccountUpdateTransaction
         bytes                     memory  auxiliaryData
         )
         internal
-        returns (uint /*feeETH*/)
     {
         // Read the account update
         AccountUpdate memory accountUpdate = readTx(data, offset);
         AccountUpdateAuxiliaryData memory auxData = abi.decode(auxiliaryData, (AccountUpdateAuxiliaryData));
 
         // Check validUntil
-        require(ctx.timestamp < auxData.validUntil, "WITHDRAWAL_EXPIRED");
+        require(ctx.timestamp < auxData.validUntil, "ACCOUNT_UPDATE_EXPIRED");
         accountUpdate.validUntil = auxData.validUntil;
 
         // Calculate the tx hash

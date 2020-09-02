@@ -56,7 +56,7 @@ abstract contract ILoopringV3 is ILoopring
     uint    public forcedWithdrawalFee;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
-    uint    public minExchangeStake;
+    uint    public stakePerThousandBlocks;
     uint8   public minProtocolTakerFeeBips;
     uint8   public maxProtocolTakerFeeBips;
     uint8   public minProtocolMakerFeeBips;
@@ -86,7 +86,7 @@ abstract contract ILoopringV3 is ILoopring
         address _blockVerifierAddress,       // address(0) not allowed
         uint    _exchangeCreationCostLRC,
         uint    _forcedWithdrawalFee,
-        uint    _minExchangeStake
+        uint    _stakePerThousandBlocks
         )
         external
         virtual;
@@ -106,19 +106,6 @@ abstract contract ILoopringV3 is ILoopring
         )
         external
         virtual;
-
-    /// @dev Returns whether the Exchange has staked enough to submit blocks
-    ///      Exchanges with on-chain data-availaiblity need to stake at least
-    ///      minExchangeStake.
-    /// @param exchangeId The id of the exchange
-    /// @return True if the exchange has staked enough, else false
-    function canExchangeSubmitBlocks(
-        uint exchangeId
-        )
-        external
-        virtual
-        view
-        returns (bool);
 
     /// @dev Gets the amount of staked LRC for an exchange.
     /// @param exchangeId The id of the exchange

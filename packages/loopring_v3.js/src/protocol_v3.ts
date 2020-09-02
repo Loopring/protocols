@@ -48,7 +48,7 @@ export class ProtocolV3 {
 
     this.syncedToEthereumBlockIdx = 0;
 
-    const ABIPath = "ABI/version30/";
+    const ABIPath = "ABI/version36/";
     this.loopringAbi = fs.readFileSync(ABIPath + "ILoopringV3.abi", "ascii");
 
     this.loopring = new web3.eth.Contract(JSON.parse(this.loopringAbi));

@@ -30,6 +30,8 @@ export interface OrderInfo {
 
   feeBips?: number;
 
+  amm?: boolean;
+
   balanceS?: BN;
   balanceB?: BN;
 
@@ -74,7 +76,6 @@ export interface Deposit {
   tokenID: number;
   amount: BN;
 
-  fee: BN;
   token: string;
   timestamp?: number;
   transactionHash?: string;
@@ -166,6 +167,23 @@ export interface WithdrawalRequest {
 
   timestamp?: number;
   transactionHash?: string;
+}
+
+export interface AmmUpdate {
+  txType?: "AmmUpdate";
+  exchange: string;
+
+  owner: string;
+  accountID: number;
+  tokenID: number;
+
+  feeBips: number;
+  tokenWeight: BN;
+
+  validUntil: number;
+  nonce: number;
+
+  onchainSignature?: any;
 }
 
 // Blocks

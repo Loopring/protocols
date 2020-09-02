@@ -89,6 +89,11 @@ class WithdrawCircuit : public BaseTransactionCircuit
     NotGadget isNotForcedWithdrawal;
     AddGadget nonce_after;
 
+    // Disable AMM for the token when doing a forced withdrawal
+    NotGadget isNotProtocolFeeWithdrawal;
+    AndGadget doUpdateTokenWeight;
+    TernaryGadget newTokenWeight;
+
     // Increase the number of conditional transactions
     UnsafeAddGadget numConditionalTransactionsAfter;
 
@@ -218,6 +223,17 @@ class WithdrawCircuit : public BaseTransactionCircuit
             NUM_BITS_NONCE,
             FMT(prefix, ".nonce_after")),
 
+          // Disable AMM for the token when doing a forced withdrawal
+          // (but not if it's a protocol fee withdrawal)
+          isNotProtocolFeeWithdrawal(pb, isProtocolFeeWithdrawal.result(), FMT(prefix, ".isNotProtocolFeeWithdrawal")),
+          doUpdateTokenWeight(pb, {isNotProtocolFeeWithdrawal.result(), validFullWithdrawalType.result()}, FMT(prefix, ".doUpdateTokenWeight")),
+          newTokenWeight(
+            pb,
+            doUpdateTokenWeight.result(),
+            state.constants._0,
+            state.accountA.balanceS.weightAMM,
+            FMT(prefix, ".newTokenWeightAMM")),
+
           // Increase the number of conditional transactions
           numConditionalTransactionsAfter(
             pb,
@@ -226,29 +242,30 @@ class WithdrawCircuit : public BaseTransactionCircuit
             FMT(prefix, ".numConditionalTransactionsAfter"))
     {
         // Update the account owner
-        setArrayOutput(accountA_Address, merkleTreeAccountA.result());
-        setOutput(accountA_Nonce, nonce_after.result());
+        setArrayOutput(TXV_ACCOUNT_A_ADDRESS, merkleTreeAccountA.result());
+        setOutput(TXV_ACCOUNT_A_NONCE, nonce_after.result());
 
         // Update the account balances (withdrawal + fee)
-        setArrayOutput(balanceA_S_Address, tokenID.bits);
-        setOutput(balanceA_S_Balance, balanceA_after.result());
-        setArrayOutput(balanceB_S_Address, feeTokenID.bits);
-        setOutput(balanceA_B_Balance, balanceB_A.balance());
+        setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
+        setOutput(TXV_BALANCE_A_S_BALANCE, balanceA_after.result());
+        setOutput(TXV_BALANCE_A_S_WEIGHTAMM, newTokenWeight.result());
+        setArrayOutput(TXV_BALANCE_B_S_ADDRESS, feeTokenID.bits);
+        setOutput(TXV_BALANCE_A_B_BALANCE, balanceB_A.balance());
 
         // Update the protocol fee pool balance when withdrawing from the protocol
         // pool
-        setOutput(balanceP_B_Balance, balanceP_after.result());
+        setOutput(TXV_BALANCE_P_B_BALANCE, balanceP_after.result());
 
         // Update the operator balance for the fee payment
-        setOutput(balanceO_A_Balance, balanceA_O.balance());
+        setOutput(TXV_BALANCE_O_A_BALANCE, balanceA_O.balance());
 
         // Verify a single signature of the account owner (if not conditional)
-        setOutput(hash_A, hash.result());
-        setOutput(signatureRequired_A, needsSignature.result());
-        setOutput(signatureRequired_B, state.constants._0);
+        setOutput(TXV_HASH_A, hash.result());
+        setOutput(TXV_SIGNATURE_REQUIRED_A, needsSignature.result());
+        setOutput(TXV_SIGNATURE_REQUIRED_B, state.constants._0);
 
         // Increase the number of conditional transactions
-        setOutput(misc_NumConditionalTransactions, numConditionalTransactionsAfter.result());
+        setOutput(TXV_NUM_CONDITIONAL_TXS, numConditionalTransactionsAfter.result());
     }
 
     void generate_r1cs_witness(const Withdrawal &withdrawal)
@@ -313,6 +330,11 @@ class WithdrawCircuit : public BaseTransactionCircuit
         isForcedWithdrawal.generate_r1cs_witness();
         isNotForcedWithdrawal.generate_r1cs_witness();
         nonce_after.generate_r1cs_witness();
+
+        // Disable AMM for the token when doing a forced withdrawal
+        isNotProtocolFeeWithdrawal.generate_r1cs_witness();
+        doUpdateTokenWeight.generate_r1cs_witness();
+        newTokenWeight.generate_r1cs_witness();
 
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter.generate_r1cs_witness();
@@ -380,6 +402,11 @@ class WithdrawCircuit : public BaseTransactionCircuit
         isForcedWithdrawal.generate_r1cs_constraints();
         isNotForcedWithdrawal.generate_r1cs_constraints();
         nonce_after.generate_r1cs_constraints();
+
+        // Disable AMM for the token when doing a forced withdrawal
+        isNotProtocolFeeWithdrawal.generate_r1cs_constraints();
+        doUpdateTokenWeight.generate_r1cs_constraints();
+        newTokenWeight.generate_r1cs_constraints();
 
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter.generate_r1cs_constraints();

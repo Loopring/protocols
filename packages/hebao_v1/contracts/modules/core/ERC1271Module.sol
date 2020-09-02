@@ -27,8 +27,8 @@ abstract contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](2);
-        methods[0] = ERC1271_FUNCTION_WITH_BYTES_SELECTOR;
-        methods[1] = ERC1271_FUNCTION_WITH_BYTES32_SELECTOR;
+        methods[0] = ERC1271_SELECTOR_BS;
+        methods[1] = ERC1271_SELECTOR_B32;
     }
 
     // Will use msg.sender to detect the wallet, so this function should be called through
@@ -54,9 +54,23 @@ abstract contract ERC1271Module is ERC1271, BaseModule
         }
 
         if (_data.verifySignature(Wallet(wallet).owner(), _signature)) {
-            return ERC1271_MAGICVALUE;
+            return ERC1271_MAGICVALUE_BS;
         } else {
             return 0;
+        }
+    }
+
+    function isValidSignature(
+        bytes32      _hash,
+        bytes memory _signature)
+        public
+        view
+        override
+        returns (bytes4 magicValue)
+    {
+        magicValue = isValidSignature(abi.encodePacked(_hash), _signature);
+        if (magicValue == ERC1271_MAGICVALUE_BS) {
+            magicValue = ERC1271_MAGICVALUE_B32;
         }
     }
 }
