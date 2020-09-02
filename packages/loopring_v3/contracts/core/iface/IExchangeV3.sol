@@ -356,6 +356,7 @@ abstract contract IExchangeV3 is IExchange
         address user,
         address tokenAddress,
         uint96  amount,
+        bool    fromCustody,
         bytes   calldata extraData
         )
         external

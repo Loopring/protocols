@@ -398,6 +398,7 @@ contract ExchangeV3 is IExchangeV3
         address to,
         address tokenAddress,
         uint96  amount,
+        bool    fromCustody,
         bytes   calldata extraData
         )
         external
@@ -406,7 +407,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        state.deposit(from, to, tokenAddress, amount, extraData);
+        state.deposit(from, to, tokenAddress, amount, fromCustody, extraData);
     }
 
     // -- Withdrawals --

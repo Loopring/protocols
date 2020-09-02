@@ -64,25 +64,35 @@ library ExchangeDeposits
         address to,
         address tokenAddress,
         uint96  amount,                 // can be zero
+        bool    fromCustody,
         bytes   memory extraData
         )
         internal  // inline call
     {
-        require(to != address(0), "ZERO_ADDRESS");
-
         // Deposits are still possible when the exchange is being shutdown, or even in withdrawal mode.
         // This is fine because the user can easily withdraw the deposited amounts again.
         // We don't want to make all deposits more expensive just to stop that from happening.
 
+        require(to != address(0), "ZERO_ADDRESS");
         uint16 tokenID = S.getTokenID(tokenAddress);
+        uint96 amountDeposited;
 
-        // Transfer the tokens to this contract
-        uint96 amountDeposited = S.depositContract.deposit{value: msg.value}(
-            from,
-            tokenAddress,
-            amount,
-            extraData
-        );
+        if (fromCustody) {
+            uint balance = S.custody[msg.sender][from][tokenAddress];
+            require(balance >= amount, "INSUFFCIENT_BALANCE");
+            S.custody[msg.sender][from][tokenAddress] =
+                S.custody[msg.sender][from][tokenAddress].sub(amount);
+
+            amountDeposited = amount;
+        } else {
+            // Transfer the tokens to this contract
+            amountDeposited = S.depositContract.deposit{value: msg.value}(
+                from,
+                tokenAddress,
+                amount,
+                extraData
+            );
+        }
 
         // Add the amount to the deposit request and reset the time the operator has to process it
         ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
