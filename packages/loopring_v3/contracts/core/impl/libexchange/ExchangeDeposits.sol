@@ -28,6 +28,36 @@ library ExchangeDeposits
         uint96  amount
     );
 
+    function depositToCustody(
+        ExchangeData.State storage S,
+        address from,
+        address tokenAddress,
+        uint96  amount,                 // can be zero
+        bytes   memory extraData
+        )
+        internal  // inline call
+        returns (uint _amount)
+    {
+        require(from != address(0), "ZERO_ADDRESS");
+
+        _amount = S.depositContract.deposit{value: msg.value}(
+            from,
+            tokenAddress,
+            amount,
+            extraData
+        );
+
+        S.custody[msg.sender][from][tokenAddress] =
+            S.custody[msg.sender][from][tokenAddress].add(_amount);
+
+        // emit DepositRequested(
+        //     to,
+        //     tokenAddress,
+        //     tokenID,
+        //     uint96(amountDeposited)
+        // );
+    }
+
     function deposit(
         ExchangeData.State storage S,
         address from,

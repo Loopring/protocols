@@ -44,6 +44,38 @@ library ExchangeWithdrawals
         uint96  amount
     );
 
+    function withdrawFromCustody(
+        ExchangeData.State storage S,
+        address payable to,
+        address tokenAddress,
+        uint96  amount,                 // can be zero
+        bytes   memory extraData
+        )
+        internal  // inline call
+        returns (uint _amount)
+    {
+        require(to != address(0), "ZERO_ADDRESS");
+
+        S.custody[msg.sender][to][tokenAddress] =
+            S.custody[msg.sender][to][tokenAddress].sub(amount);
+
+        // Transfer the tokens to this contract
+        _amount = S.depositContract.withdraw{value: msg.value}(
+            to,
+            tokenAddress,
+            amount,
+            extraData
+        );
+
+        // emit DepositRequested(
+        //     to,
+        //     tokenAddress,
+        //     tokenID,
+        //     uint96(amountDeposited)
+        // );
+    }
+
+
     function forceWithdraw(
         ExchangeData.State storage S,
         address owner,

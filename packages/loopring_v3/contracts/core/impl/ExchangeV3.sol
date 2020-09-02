@@ -360,6 +360,37 @@ contract ExchangeV3 is IExchangeV3
         return state.getNumAvailableForcedSlots();
     }
 
+    function depositToCustody(
+        address from,
+        address tokenAddress,
+        uint96  amount,
+        bytes   calldata extraData
+        )
+        external
+        payable
+        override
+        nonReentrant
+        onlyFromUserOrAgent(from)
+        returns (uint _amount)
+    {
+        return state.depositToCustody(from, tokenAddress, amount, extraData);
+    }
+
+    function withdrawFromCustody(
+        address payable to,
+        address tokenAddress,
+        uint96  amount,
+        bytes   calldata extraData
+        )
+        external
+        override
+        nonReentrant
+        onlyFromUserOrAgent(to)
+        returns (uint _amount)
+    {
+        return state.withdrawFromCustody(to, tokenAddress, amount, extraData);
+    }
+
     // -- Deposits --
 
     function deposit(

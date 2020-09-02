@@ -352,6 +352,27 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (uint);
 
+    function depositToCustody(
+        address user,
+        address tokenAddress,
+        uint96  amount,
+        bytes   calldata extraData
+        )
+        external
+        virtual
+        payable;
+
+    function withdrawFromCustody(
+        address payable user,
+        address tokenAddress,
+        uint96  amount,
+        bytes   calldata extraData
+        )
+        external
+        virtual
+        payable
+        returns (uint _amount);
+
     // -- Deposits --
 
     /// @dev Deposits Ether or ERC20 tokens to the specified account.
@@ -366,13 +387,13 @@ abstract contract IExchangeV3 is IExchange
     /// @param to The account owner's address receiving the funds
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
-    /// @param auxiliaryData Optional extra data used by the deposit contract
+    /// @param extraData Optional extra data used by the deposit contract
     function deposit(
         address from,
         address to,
         address tokenAddress,
         uint96  amount,
-        bytes   calldata auxiliaryData
+        bytes   calldata extraData
         )
         external
         virtual

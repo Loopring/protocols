@@ -202,6 +202,8 @@ library ExchangeData
         // A map from an account owner to a destination address to a tokenID to an amount to a nonce to a new recipient address
         mapping (address => mapping (address => mapping (uint16 => mapping (uint => mapping (uint32 => address))))) withdrawalRecipient;
 
+        // A map from apps to users to tokens to their balances
+        mapping (address => mapping(address => mapping(address => uint))) custody;
 
         // Counter to keep track of how many of forced requests are open so we can limit the work that needs to be done by the owner
         uint32 numPendingForcedTransactions;
