@@ -378,6 +378,19 @@ abstract contract IExchangeV3 is IExchange
         virtual
         payable;
 
+    /// @dev Gets the amount of tokens that may be added to the owner's account.
+    /// @param owner The destination address for the amount deposited.
+    /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    /// @return The amount of tokens pending.
+    function getPendingDepositAmount(
+        address owner,
+        address tokenAddress
+        )
+        external
+        virtual
+        view
+        returns (uint96);
+
     // -- Withdrawals --
     /// @dev Submits an onchain request to force withdraw Ether or ERC20 tokens.
     ///      This request always withdraws the full balance.
@@ -402,6 +415,19 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual
         payable;
+
+    /// @dev Checks if a forced withdrawal is pending for an account balance.
+    /// @param  accountID The accountID of the account to check.
+    /// @param  token The token address
+    /// @return True if a request is pending, false otherwise
+    function isForcedWithdrawalPending(
+        uint32  accountID,
+        address token
+        )
+        external
+        virtual
+        view
+        returns (bool);
 
     /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens from the
     ///      protocol fees account. The complete balance is always withdrawn.
@@ -447,6 +473,19 @@ abstract contract IExchangeV3 is IExchange
         )
         external
         virtual;
+
+    /// @dev Checks if the balance for the account was withdrawn with `withdrawFromMerkleTree`.
+    /// @param  accountID The accountID of the balance to check.
+    /// @param  token The token address
+    /// @return True if it was already withdrawn, false otherwise
+    function isWithdrawnInWithdrawalMode(
+        uint32  accountID,
+        address token
+        )
+        external
+        virtual
+        view
+        returns (bool);
 
     /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
     ///      it was never processed by the owner within the maximum time allowed.
@@ -661,4 +700,11 @@ abstract contract IExchangeV3 is IExchange
             uint8 previousTakerFeeBips,
             uint8 previousMakerFeeBips
         );
+
+    /// @dev Gets the domain separator used in this exchange.
+    function getDomainSeparator()
+        external
+        virtual
+        view
+        returns (bytes32);
 }

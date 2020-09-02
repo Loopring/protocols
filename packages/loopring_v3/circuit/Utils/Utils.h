@@ -118,13 +118,17 @@ static const VariableArrayT var_array(const std::vector<VariableT> &inputs)
     return VariableArrayT(inputs.begin(), inputs.end());
 }
 
-static BigInt toBigInt(ethsnarks::FieldT _value)
+static BigInt toBigInt(ethsnarks::FieldT _value, bool sign = true)
 {
     auto value = _value.as_bigint();
     BigInt bi = 0;
     for (unsigned int i = 0; i < value.num_bits(); i++)
     {
         bi = bi * 2 + (value.test_bit(value.num_bits() - 1 - i) ? 1 : 0);
+    }
+    if (!sign)
+    {
+        bi = -bi;
     }
     return bi;
 }

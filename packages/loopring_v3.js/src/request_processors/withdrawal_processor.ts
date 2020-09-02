@@ -30,18 +30,12 @@ export class WithdrawalProcessor {
     let amount = withdrawal.amount;
     if (withdrawal.type === 2) {
       amount = account.getBalance(withdrawal.tokenID).balance;
+      account.getBalance(withdrawal.tokenID).weightAMM = new BN(0);
     } else if (withdrawal.type === 3) {
       amount = new BN(0);
     }
     account.getBalance(withdrawal.tokenID).balance.isub(amount);
     account.getBalance(withdrawal.feeTokenID).balance.isub(withdrawal.fee);
-
-    // Special cases when withdrawing from the protocol fee pool.
-    if (withdrawal.accountID === 0) {
-      state.getAccount(1).getBalance(withdrawal.tokenID);
-    } else {
-      state.getAccount(0).getBalance(withdrawal.tokenID);
-    }
 
     const operator = state.getAccount(block.operatorAccountID);
     operator.getBalance(withdrawal.feeTokenID).balance.iadd(withdrawal.fee);

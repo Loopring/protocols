@@ -67,13 +67,13 @@ class DepositCircuit : public BaseTransactionCircuit
             state.constants._1,
             FMT(prefix, ".numConditionalTransactionsAfter"))
     {
-        // Update the account balance and index
+        // Update the account balance
         setArrayOutput(TXV_ACCOUNT_A_ADDRESS, accountID.bits);
         setOutput(TXV_ACCOUNT_A_OWNER, owner.packed);
         setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
         setOutput(TXV_BALANCE_A_S_BALANCE, balance_after.result());
 
-        // No singatures needed
+        // No signatures needed
         setOutput(TXV_SIGNATURE_REQUIRED_A, state.constants._0);
         setOutput(TXV_SIGNATURE_REQUIRED_B, state.constants._0);
 

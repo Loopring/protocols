@@ -40,6 +40,7 @@ library ExchangeBalances
         uint calculatedRoot = getBalancesRoot(
             merkleProof.balanceLeaf.tokenID,
             merkleProof.balanceLeaf.balance,
+            merkleProof.balanceLeaf.weightAMM,
             merkleProof.balanceLeaf.storageRoot,
             merkleProof.balanceMerkleProof
         );
@@ -49,6 +50,7 @@ library ExchangeBalances
             merkleProof.accountLeaf.pubKeyX,
             merkleProof.accountLeaf.pubKeyY,
             merkleProof.accountLeaf.nonce,
+            merkleProof.accountLeaf.feeBipsAMM,
             calculatedRoot,
             merkleProof.accountMerkleProof
         );
@@ -58,6 +60,7 @@ library ExchangeBalances
     function getBalancesRoot(
         uint16   tokenID,
         uint     balance,
+        uint     weightAMM,
         uint     storageRoot,
         uint[24] memory balanceMerkleProof
         )
@@ -65,7 +68,7 @@ library ExchangeBalances
         pure
         returns (uint)
     {
-        uint balanceItem = hashImpl(balance, storageRoot, 0, 0);
+        uint balanceItem = hashImpl(balance, weightAMM, storageRoot, 0);
         uint _id = tokenID;
         for (uint depth = 0; depth < 8; depth++) {
             uint base = depth * 3;
@@ -109,6 +112,7 @@ library ExchangeBalances
         uint     pubKeyX,
         uint     pubKeyY,
         uint     nonce,
+        uint     feeBipsAMM,
         uint     balancesRoot,
         uint[48] memory accountMerkleProof
         )
@@ -116,7 +120,7 @@ library ExchangeBalances
         pure
         returns (uint)
     {
-        uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, balancesRoot);
+        uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, feeBipsAMM, balancesRoot);
         uint _id = accountID;
         for (uint depth = 0; depth < 16; depth++) {
             uint base = depth * 3;
@@ -159,14 +163,15 @@ library ExchangeBalances
         uint t1,
         uint t2,
         uint t3,
-        uint t4
+        uint t4,
+        uint t5
         )
         public
         pure
         returns (uint)
     {
-        Poseidon.HashInputs6 memory inputs = Poseidon.HashInputs6(t0, t1, t2, t3, t4, 0);
-        return Poseidon.hash_t6f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
+        Poseidon.HashInputs7 memory inputs = Poseidon.HashInputs7(t0, t1, t2, t3, t4, t5, 0);
+        return Poseidon.hash_t7f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
     }
 
     function hashImpl(

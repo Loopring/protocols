@@ -10,7 +10,8 @@ import {
   WithdrawalRequest,
   Transfer,
   TxBlock,
-  AccountUpdate
+  AccountUpdate,
+  AmmUpdate
 } from "./types";
 
 interface SettlementValues {
@@ -47,18 +48,22 @@ export class Storage {
 
 export class Balance {
   balance: BN;
+  weightAMM: BN;
   storage: { [key: number]: Storage };
 
   constructor() {
     this.balance = new BN(0);
+    this.weightAMM = new BN(0);
     this.storage = {};
   }
 
   public init(
     balance: BN,
+    weightAMM: BN,
     storage: { [key: number]: Storage }
   ) {
     this.balance = new BN(balance.toString(10));
+    this.weightAMM = new BN(weightAMM.toString(10));
     this.storage = storage;
   }
 
@@ -76,12 +81,14 @@ export class AccountLeaf {
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
+  feeBipsAMM: number;
   balances: { [key: number]: Balance };
 
   constructor() {
     (this.owner = "0"), (this.publicKeyX = "0");
     this.publicKeyY = "0";
     this.nonce = 0;
+    this.feeBipsAMM = 0;
     this.balances = {};
   }
 
@@ -90,12 +97,14 @@ export class AccountLeaf {
     publicKeyX: string,
     publicKeyY: string,
     nonce: number,
+    feeBipsAMM: number,
     balances: { [key: number]: Balance } = {}
   ) {
     this.owner = owner;
     this.publicKeyX = publicKeyX;
     this.publicKeyY = publicKeyY;
     this.nonce = nonce;
+    this.feeBipsAMM = feeBipsAMM;
     this.balances = balances;
   }
 
@@ -182,6 +191,7 @@ export class Simulator {
           balances[Number(balanceKey)] = new Balance();
           balances[Number(balanceKey)].init(
             new BN(jBalance.balance, 10),
+            new BN(jBalance.weightAMM, 10),
             storage
           );
         }
@@ -191,6 +201,7 @@ export class Simulator {
           jAccount.publicKeyX,
           jAccount.publicKeyY,
           jAccount.nonce,
+          jAccount.feeBipsAMM,
           balances
         );
         accounts[Number(accountKey)] = account;
@@ -234,10 +245,12 @@ export class Simulator {
 
       balanceValueA = balanceValueA || {
         balance: new BN(0),
+        weightAMM: new BN(0),
         storage: {}
       };
       balanceValueB = balanceValueB || {
         balance: new BN(0),
+        weightAMM: new BN(0),
         storage: {}
       };
 
@@ -279,6 +292,19 @@ export class Simulator {
           ", " +
           balanceValueB.balance.toString(10)
       );
+      assert(
+        balanceValueA.weightAMM.eq(balanceValueB.weightAMM),
+        "weight does not match: " +
+          "account: " +
+          accountB.accountID +
+          ", " +
+          "token: " +
+          tokenID +
+          ", " +
+          balanceValueA.weightAMM.toString(10) +
+          ", " +
+          balanceValueB.weightAMM.toString(10)
+      );
     }
     assert.equal(
       Simulator.normalizeOwner(accountA.owner),
@@ -296,6 +322,7 @@ export class Simulator {
       "pubKeyY does not match"
     );
     assert.equal(accountA.nonce, accountB.nonce, "nonce does not match");
+    assert.equal(accountA.feeBipsAMM, accountB.feeBipsAMM, "feeBipsAMM does not match");
   }
 
   public static executeBlock(
@@ -433,6 +460,13 @@ export class Simulator {
           accountBefore.getBalance(withdrawal.tokenID).balance,
           accountAfter.getBalance(withdrawal.tokenID).balance
         );
+      } else if (tx.txType === "AmmUpdate") {
+        const update: AmmUpdate = tx;
+        report = this.updateAMM(state, block, update);
+
+        logInfo("#" + index + " AMM Update");
+        const accountBefore = previousState.getAccount(update.accountID);
+        const accountAfter = state.getAccount(update.accountID);
       } else {
         assert(false, "Unknown tx type: " + tx.txType);
       }
@@ -487,6 +521,24 @@ export class Simulator {
     return simulatorReport;
   }
 
+  public static updateAMM(
+    state: ExchangeState,
+    block: TxBlock,
+    update: AmmUpdate
+  ) {
+    const account = state.getAccount(update.accountID);
+    const balance = account.getBalance(update.tokenID);
+
+    account.nonce++;
+    account.feeBipsAMM = update.feeBips;
+    balance.weightAMM = update.tokenWeight;
+
+    const simulatorReport: SimulatorReport = {
+      exchangeStateAfter: state
+    };
+    return simulatorReport;
+  }
+
   public static transfer(
     state: ExchangeState,
     block: TxBlock,
@@ -524,6 +576,7 @@ export class Simulator {
     let amount = withdrawal.amount;
     if (withdrawal.type === 2) {
       amount = account.getBalance(withdrawal.tokenID).balance;
+      account.getBalance(withdrawal.tokenID).weightAMM = new BN(0);
     } else if (withdrawal.type === 3) {
       amount = new BN(0);
     }
@@ -531,14 +584,6 @@ export class Simulator {
     account
       .getBalance(withdrawal.feeTokenID)
       .balance.isub(withdrawal.fee);
-
-    // Special cases when withdrawing from the protocol fee pool.
-    // These account balances will have interest accrued.
-    if (withdrawal.accountID === 0) {
-      state.getAccount(1).getBalance(withdrawal.tokenID);
-    } else {
-      state.getAccount(0).getBalance(withdrawal.tokenID);
-    }
 
     const operator = state.getAccount(block.operatorAccountID);
     operator
@@ -1146,6 +1191,7 @@ export class Simulator {
       balances[Number(tokenID)] = new Balance();
       balances[Number(tokenID)].init(
         balanceValue.balance,
+        balanceValue.weightAMM,
         storage
       );
     }
@@ -1155,6 +1201,7 @@ export class Simulator {
       account.publicKeyX,
       account.publicKeyY,
       account.nonce,
+      account.feeBipsAMM,
       balances
     );
     return accountCopy;

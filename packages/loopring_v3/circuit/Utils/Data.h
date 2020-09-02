@@ -29,7 +29,8 @@ static auto dummySpotTrade = R"({
         "tokenS": 0,
         "tokenB": 1,
         "validUntil": 4294967295,
-        "taker": "0"
+        "taker": "0",
+        "amm": false
     },
     "orderB": {
         "accountID": 0,
@@ -42,7 +43,8 @@ static auto dummySpotTrade = R"({
         "tokenS": 1,
         "tokenB": 0,
         "validUntil": 4294967295,
-        "taker": "0"
+        "taker": "0",
+        "amm": false
     }
 })"_json;
 
@@ -96,6 +98,13 @@ static auto dummyDeposit = R"({
     "amount": "0"
 })"_json;
 
+static auto dummyAmmUpdate = R"({
+    "accountID": 0,
+    "tokenID": 0,
+    "feeBips": 0,
+    "tokenWeight": "0"
+})"_json;
+
 // Baby Jubjub base point.
 // https://github.com/ethereum/EIPs/blob/41569d75e42da2046cb18fdca79609e18968af47/eip-draft_babyjubjub.md#base-point
 static auto dummySignature = R"({
@@ -112,6 +121,7 @@ enum class TransactionType
     Transfer,
     SpotTrade,
     AccountUpdate,
+    AmmUpdate,
 
     COUNT
 };
@@ -147,12 +157,14 @@ class BalanceLeaf
 {
   public:
     ethsnarks::FieldT balance;
+    ethsnarks::FieldT weightAMM;
     ethsnarks::FieldT storageRoot;
 };
 
 static void from_json(const json &j, BalanceLeaf &leaf)
 {
     leaf.balance = ethsnarks::FieldT(j.at("balance").get<std::string>().c_str());
+    leaf.weightAMM = ethsnarks::FieldT(j.at("weightAMM").get<std::string>().c_str());
     leaf.storageRoot = ethsnarks::FieldT(j.at("storageRoot").get<std::string>().c_str());
 }
 
@@ -162,6 +174,7 @@ class AccountLeaf
     ethsnarks::FieldT owner;
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::FieldT nonce;
+    ethsnarks::FieldT feeBipsAMM;
     ethsnarks::FieldT balancesRoot;
 };
 
@@ -171,6 +184,7 @@ static void from_json(const json &j, AccountLeaf &account)
     account.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     account.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     account.nonce = ethsnarks::FieldT(j.at("nonce"));
+    account.feeBipsAMM = ethsnarks::FieldT(j.at("feeBipsAMM"));
     account.balancesRoot = ethsnarks::FieldT(j.at("balancesRoot").get<std::string>().c_str());
 }
 
@@ -274,6 +288,8 @@ class Order
     ethsnarks::FieldT taker;
 
     ethsnarks::FieldT feeBips;
+
+    ethsnarks::FieldT amm;
 };
 
 static void from_json(const json &j, Order &order)
@@ -290,6 +306,8 @@ static void from_json(const json &j, Order &order)
     order.taker = ethsnarks::FieldT(j.at("taker").get<std::string>().c_str());
 
     order.feeBips = ethsnarks::FieldT(j.at("feeBips"));
+
+    order.amm = ethsnarks::FieldT(j.at("amm").get<bool>() ? 1 : 0);
 }
 
 class SpotTrade
@@ -372,6 +390,23 @@ static void from_json(const json &j, AccountUpdateTx &update)
     update.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
     update.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     update.type = ethsnarks::FieldT(j.at("type"));
+}
+
+class AmmUpdate
+{
+  public:
+    ethsnarks::FieldT accountID;
+    ethsnarks::FieldT tokenID;
+    ethsnarks::FieldT feeBips;
+    ethsnarks::FieldT tokenWeight;
+};
+
+static void from_json(const json &j, AmmUpdate &update)
+{
+    update.accountID = ethsnarks::FieldT(j.at("accountID"));
+    update.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    update.feeBips = ethsnarks::FieldT(j.at("feeBips"));
+    update.tokenWeight = ethsnarks::FieldT(j.at("tokenWeight").get<std::string>().c_str());
 }
 
 class Transfer
@@ -489,6 +524,7 @@ class UniversalTransaction
     Withdrawal withdraw;
     Deposit deposit;
     AccountUpdateTx accountUpdate;
+    AmmUpdate ammUpdate;
 };
 
 static void from_json(const json &j, UniversalTransaction &transaction)
@@ -501,6 +537,7 @@ static void from_json(const json &j, UniversalTransaction &transaction)
     transaction.withdraw = dummyWithdraw.get<Loopring::Withdrawal>();
     transaction.deposit = dummyDeposit.get<Loopring::Deposit>();
     transaction.accountUpdate = dummyAccountUpdate.get<Loopring::AccountUpdateTx>();
+    transaction.ammUpdate = dummyAmmUpdate.get<Loopring::AmmUpdate>();
 
     // Patch some of the dummy tx's so they are valid against the current state
     // Deposit
@@ -539,6 +576,11 @@ static void from_json(const json &j, UniversalTransaction &transaction)
     {
         transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AccountUpdate));
         transaction.accountUpdate = j.at("accountUpdate").get<Loopring::AccountUpdateTx>();
+    }
+    else if (j.contains("ammUpdate"))
+    {
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AmmUpdate));
+        transaction.ammUpdate = j.at("ammUpdate").get<Loopring::AmmUpdate>();
     }
 }
 

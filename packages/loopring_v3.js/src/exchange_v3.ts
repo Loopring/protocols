@@ -29,6 +29,7 @@ import { AccountUpdateProcessor } from "./request_processors/account_update_proc
 import { SpotTradeProcessor } from "./request_processors/spot_trade_processor";
 import { TransferProcessor } from "./request_processors/transfer_processor";
 import { WithdrawalProcessor } from "./request_processors/withdrawal_processor";
+import { AmmUpdateProcessor } from "./request_processors/amm_update_processor";
 import * as log from "./logs";
 
 /**
@@ -219,7 +220,7 @@ export class ExchangeV3 {
    */
   public buildMerkleTree() {
     const hasher = poseidon.createHash(5, 6, 52);
-    const accountHasher = poseidon.createHash(6, 6, 52);
+    const accountHasher = poseidon.createHash(7, 6, 52);
 
     // Make empty trees so we have all necessary default values
     const storageMerkleTree = new SparseMerkleTree(
@@ -230,13 +231,13 @@ export class ExchangeV3 {
       Constants.BINARY_TREE_DEPTH_TOKENS / 2
     );
     balancesMerkleTree.newTree(
-      hasher([0, storageMerkleTree.getRoot()]).toString(10)
+      hasher([0, 0, storageMerkleTree.getRoot()]).toString(10)
     );
     this.merkleTree = new SparseMerkleTree(
       Constants.BINARY_TREE_DEPTH_ACCOUNTS / 2
     );
     this.merkleTree.newTree(
-      accountHasher([0, 0, 0, 0, balancesMerkleTree.getRoot()]).toString(10)
+      accountHasher([0, 0, 0, 0, 0, balancesMerkleTree.getRoot()]).toString(10)
     );
 
     // Run over all account data and build the Merkle tree
@@ -245,7 +246,7 @@ export class ExchangeV3 {
         Constants.BINARY_TREE_DEPTH_TOKENS / 2
       );
       account.balancesMerkleTree.newTree(
-        hasher([0, storageMerkleTree.getRoot()]).toString(10)
+        hasher([0, 0, storageMerkleTree.getRoot()]).toString(10)
       );
       for (const tokenID of Object.keys(account.balances)) {
         const balanceValue = account.balances[Number(tokenID)];
@@ -264,6 +265,7 @@ export class ExchangeV3 {
           Number(tokenID),
           hasher([
             balanceValue.balance,
+            balanceValue.weightAMM,
             balanceValue.storageTree.getRoot()
           ]).toString(10)
         );
@@ -275,6 +277,7 @@ export class ExchangeV3 {
           account.publicKeyX,
           account.publicKeyY,
           account.nonce,
+          account.feeBipsAMM,
           account.balancesMerkleTree.getRoot()
         ]).toString(10)
       );
@@ -321,11 +324,13 @@ export class ExchangeV3 {
       owner: account.owner,
       pubKeyX: account.publicKeyX,
       pubKeyY: account.publicKeyY,
-      nonce: account.nonce
+      nonce: account.nonce,
+      feeBipsAMM: account.feeBipsAMM
     };
     const balanceLeaf: OnchainBalanceLeaf = {
       tokenID,
       balance: account.getBalance(tokenID).balance.toString(10),
+      weightAMM: account.getBalance(tokenID).weightAMM.toString(10),
       storageRoot:
         account.getBalance(tokenID).storageTree !== undefined
           ? account.getBalance(tokenID).storageTree.getRoot()
@@ -903,6 +908,8 @@ export class ExchangeV3 {
         request = WithdrawalProcessor.process(this.state, ctx, txData);
       } else if (txType === TransactionType.ACCOUNT_UPDATE) {
         request = AccountUpdateProcessor.process(this.state, ctx, txData);
+      } else if (txType === TransactionType.AMM_UPDATE) {
+        request = AmmUpdateProcessor.process(this.state, ctx, txData);
       } else {
         assert(false, "unknown transaction type: " + txType);
       }

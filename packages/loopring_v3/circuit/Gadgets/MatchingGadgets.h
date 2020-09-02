@@ -371,9 +371,6 @@ class RequireValidTakerGadget : public GadgetT
 class OrderMatchingGadget : public GadgetT
 {
   public:
-    const VariableT &fillS_A;
-    const VariableT &fillS_B;
-
     // Verify the order fills
     RequireOrderFillsGadget requireOrderFillsA;
     RequireOrderFillsGadget requireOrderFillsB;
@@ -400,12 +397,10 @@ class OrderMatchingGadget : public GadgetT
       const VariableT &ownerB,
       const VariableT &filledA,
       const VariableT &filledB,
-      const VariableT &_fillS_A,
-      const VariableT &_fillS_B,
+      const VariableT &fillS_A,
+      const VariableT &fillS_B,
       const std::string &prefix)
         : GadgetT(pb, prefix),
-          fillS_A(_fillS_A),
-          fillS_B(_fillS_B),
 
           // Check if the fills are valid for the orders
           requireOrderFillsA(pb, constants, orderA, filledA, fillS_A, fillS_B, FMT(prefix, ".requireOrderFillsA")),
@@ -479,6 +474,452 @@ class OrderMatchingGadget : public GadgetT
     const VariableT &getFilledAfter_B() const
     {
         return requireOrderFillsB.getFilledAfter();
+    }
+};
+
+// const calcSpotPrice = (
+//         balanceIn: number,
+//         weightIn: number,
+//         balanceOut: number,
+//         weightOut: number) => {
+//     const numer = balanceIn * weightOut;
+//     const denom = balanceOut * weightIn;
+//     const ratio = (numer * BASE_FIXED) / denom;
+//     const invFeeBips = BASE_BIPS - feeBips;
+//     return Math.floor((ratio * BASE_BIPS) / invFeeBips);
+// }
+
+// Result is guaranteed to fit inside NUM_BITS_AMOUNT bits.
+// Max ratio between weights guaranteed to be supported is 2**(96-14)/(10**18) = 4835703.278458517
+// but this depends on the balances inside the pool as well. Normally it should be even much higher.
+class SpotPriceAMMGadget : public GadgetT
+{
+  public:
+    UnsafeMulGadget numer;
+    UnsafeMulGadget denom;
+    MulDivGadget ratio;
+    DualVariableGadget ratioRangeCheck;
+    UnsafeSubGadget invFeeBips;
+    MulDivGadget res;
+
+    SpotPriceAMMGadget(
+      ProtoboardT &pb,
+      const Constants &constants,
+      const VariableT &balanceIn,
+      const VariableT &weightIn,
+      const VariableT &balanceOut,
+      const VariableT &weightOut,
+      const VariableT &feeBips,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
+
+          numer(pb, balanceIn, weightOut, FMT(prefix, ".numer")),
+          denom(pb, balanceOut, weightIn, FMT(prefix, ".denom")),
+          ratio(
+            pb,
+            constants,
+            numer.result(),
+            constants.fixedBase,
+            denom.result(),
+            NUM_BITS_AMOUNT * 2,
+            60,
+            NUM_BITS_AMOUNT * 2,
+            FMT(prefix, ".ratio")),
+          ratioRangeCheck(pb, ratio.result(), NUM_BITS_AMOUNT - 14 /*log2(10000)*/, FMT(prefix, ".ratioRangeCheck")),
+          invFeeBips(pb, constants._10000, feeBips, FMT(prefix, ".invFeeBips")),
+          res(
+            pb,
+            constants,
+            ratio.result(),
+            constants._10000,
+            invFeeBips.result(),
+            NUM_BITS_AMOUNT - 14,
+            14 /*log2(10000)*/,
+            14 /*log2(10000)*/,
+            FMT(prefix, ".res"))
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+        numer.generate_r1cs_witness();
+        denom.generate_r1cs_witness();
+        ratio.generate_r1cs_witness();
+        ratioRangeCheck.generate_r1cs_witness();
+        invFeeBips.generate_r1cs_witness();
+        res.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        numer.generate_r1cs_constraints();
+        denom.generate_r1cs_constraints();
+        ratio.generate_r1cs_constraints();
+        ratioRangeCheck.generate_r1cs_constraints();
+        invFeeBips.generate_r1cs_constraints();
+        res.generate_r1cs_constraints();
+    }
+
+    const VariableT &result() const
+    {
+        return res.result();
+    }
+};
+
+// const calcOutGivenIn = (
+//       balanceIn: number,
+//       weightIn: number,
+//       balanceOut: number,
+//       weightOut: number,
+//       amountIn: number) => {
+//   const weightRatio = (weightIn * BASE_FIXED) / weightOut;
+//   const fee = amountIn * feeBips / BASE_BIPS;
+//   const y = (balanceIn * BASE_FIXED) / (balanceIn + (amountIn - fee));
+//   const p = pow_approx(y, weightRatio);
+//   return Math.floor(balanceOut * (BASE_FIXED - p) / BASE_FIXED);
+// }
+class CalcOutGivenInAMMGadget : public GadgetT
+{
+  public:
+    static const unsigned int numIterations = 4;
+
+    MulDivGadget weightRatio;
+    DualVariableGadget weightRatioRangeCheck;
+    MulDivGadget fee;
+    UnsafeSubGadget amountInWithoutFee;
+    AddGadget y_denom;
+    MulDivGadget y;
+    PowerGadget p;
+    SubGadget invP;
+    MulDivGadget res;
+
+    CalcOutGivenInAMMGadget(
+      ProtoboardT &pb,
+      const Constants &constants,
+      const VariableT &balanceIn,
+      const VariableT &weightIn,
+      const VariableT &balanceOut,
+      const VariableT &weightOut,
+      const VariableT &feeBips,
+      const VariableT &amountIn,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
+
+          weightRatio(
+            pb,
+            constants,
+            weightIn,
+            constants.fixedBase,
+            weightOut,
+            NUM_BITS_AMOUNT,
+            NUM_BITS_FIXED_BASE,
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".weightRatio")),
+          weightRatioRangeCheck(pb, weightRatio.result(), NUM_BITS_AMOUNT, FMT(prefix, ".weightRatioRangeCheck")),
+          fee(
+            pb,
+            constants,
+            amountIn,
+            feeBips,
+            constants._10000,
+            NUM_BITS_AMOUNT,
+            NUM_BITS_FIXED_BASE,
+            14 /*log2(10000)*/,
+            FMT(prefix, ".fee")),
+          amountInWithoutFee(pb, amountIn, fee.result(), FMT(prefix, ".amountInWithoutFee")),
+          y_denom(pb, balanceIn, amountInWithoutFee.result(), NUM_BITS_AMOUNT, FMT(prefix, ".y_denom")),
+          y(pb,
+            constants,
+            balanceIn,
+            constants.fixedBase,
+            y_denom.result(),
+            NUM_BITS_AMOUNT,
+            NUM_BITS_FIXED_BASE,
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".y")),
+          p(pb, constants, y.result(), weightRatio.result(), numIterations, FMT(prefix, ".p")),
+          invP(pb, constants.fixedBase, p.result(), NUM_BITS_FIXED_BASE, FMT(prefix, ".invP")),
+          res(
+            pb,
+            constants,
+            balanceOut,
+            invP.result(),
+            constants.fixedBase,
+            NUM_BITS_AMOUNT,
+            NUM_BITS_FIXED_BASE,
+            NUM_BITS_FIXED_BASE,
+            FMT(prefix, ".res"))
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+        weightRatio.generate_r1cs_witness();
+        weightRatioRangeCheck.generate_r1cs_witness();
+        fee.generate_r1cs_witness();
+        amountInWithoutFee.generate_r1cs_witness();
+        y_denom.generate_r1cs_witness();
+        y.generate_r1cs_witness();
+        p.generate_r1cs_witness();
+        invP.generate_r1cs_witness();
+        res.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        weightRatio.generate_r1cs_constraints();
+        weightRatioRangeCheck.generate_r1cs_constraints();
+        fee.generate_r1cs_constraints();
+        amountInWithoutFee.generate_r1cs_constraints();
+        y_denom.generate_r1cs_constraints();
+        y.generate_r1cs_constraints();
+        p.generate_r1cs_constraints();
+        invP.generate_r1cs_constraints();
+        res.generate_r1cs_constraints();
+    }
+
+    const VariableT &result() const
+    {
+        return res.result();
+    }
+};
+
+struct OrderMatchingData
+{
+    const VariableT &amm;
+    const VariableT &orderFeeBips;
+    const VariableT &fillS;
+    const VariableT &balanceBeforeS;
+    const VariableT &balanceBeforeB;
+    const VariableT &balanceAfterS;
+    const VariableT &balanceAfterB;
+    const VariableT &weightS;
+    const VariableT &weightB;
+    const VariableT &ammFeeBips;
+};
+
+// Checks if the order requirements are fulfilled with the given fill amounts
+class RequireAMMFillsGadget : public GadgetT
+{
+  public:
+    // Use dummy data if this isn't an AMM order
+    TernaryGadget inBalanceBefore;
+    TernaryGadget inBalanceAfter;
+    TernaryGadget inWeight;
+    TernaryGadget outBalanceBefore;
+    TernaryGadget outBalanceAfter;
+    TernaryGadget outWeight;
+    TernaryGadget ammFill;
+
+    // Verify general assumptions AMM orders
+    IfThenRequireEqualGadget requireOrderFeeBipsZero;
+    RequireNotZeroGadget requireInWeightNotZero;
+    RequireNotZeroGadget requireOutWeightNotZero;
+
+    // Calculate AMM minimum rate
+    CalcOutGivenInAMMGadget ammMaximumFillS;
+    LeqGadget fillS_leq_ammMaximumFillS;
+    IfThenRequireGadget requireValidAmmFillS;
+
+    // Check that the price increased as an additional safety check
+    SpotPriceAMMGadget priceBefore;
+    SpotPriceAMMGadget priceAfter;
+    LeqGadget priceBefore_leq_priceAfter;
+    IfThenRequireGadget requirePriceIncreased;
+
+    RequireAMMFillsGadget(
+      ProtoboardT &pb,
+      const Constants &constants,
+      const OrderMatchingData &data,
+      const VariableT &fillB,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
+
+          // Use dummy data if this isn't an AMM order
+          inBalanceBefore(
+            pb,
+            data.amm,
+            data.balanceBeforeB,
+            constants.fixedBase,
+            FMT(prefix, ".inBalanceBefore")),
+          inBalanceAfter(
+            pb,
+            data.amm,
+            data.balanceAfterB,
+            constants.fixedBase,
+            FMT(prefix, ".inBalanceAfter")),
+          inWeight(pb, data.amm, data.weightB, constants.fixedBase, FMT(prefix, ".inWeight")),
+          outBalanceBefore(
+            pb,
+            data.amm,
+            data.balanceBeforeS,
+            constants.fixedBase,
+            FMT(prefix, ".outBalanceBefore")),
+          outBalanceAfter(
+            pb,
+            data.amm,
+            data.balanceAfterS,
+            constants.fixedBase,
+            FMT(prefix, ".outBalanceAfter")),
+          outWeight(pb, data.amm, data.weightS, constants.fixedBase, FMT(prefix, ".outWeight")),
+          ammFill(pb, data.amm, fillB, constants._0, FMT(prefix, ".ammFill")),
+
+          // Verify general assumptions AMM orders
+          requireOrderFeeBipsZero(
+            pb,
+            data.amm,
+            data.orderFeeBips,
+            constants._0,
+            FMT(prefix, ".requireOrderFeeBipsZero")),
+          requireInWeightNotZero(pb, inWeight.result(), FMT(prefix, ".requireInWeightNotZero")),
+          requireOutWeightNotZero(pb, outWeight.result(), FMT(prefix, ".requireOutWeightNotZero")),
+
+          // Calculate AMM minimum rate
+          ammMaximumFillS(
+            pb,
+            constants,
+            inBalanceBefore.result(),
+            inWeight.result(),
+            outBalanceBefore.result(),
+            outWeight.result(),
+            data.ammFeeBips,
+            ammFill.result(),
+            FMT(prefix, ".ammMaximumFillS")),
+          fillS_leq_ammMaximumFillS(
+            pb,
+            data.fillS,
+            ammMaximumFillS.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".fillS_leq_ammMaximumFillS")),
+          requireValidAmmFillS(
+            pb,
+            data.amm,
+            fillS_leq_ammMaximumFillS.leq(),
+            FMT(prefix, ".requireValidAmmFillS")),
+
+          // Check that the price increased as an additional safety check
+          priceBefore(
+            pb,
+            constants,
+            inBalanceBefore.result(),
+            inWeight.result(),
+            outBalanceBefore.result(),
+            outWeight.result(),
+            data.ammFeeBips,
+            FMT(prefix, ".priceBefore")),
+          priceAfter(
+            pb,
+            constants,
+            inBalanceAfter.result(),
+            inWeight.result(),
+            outBalanceAfter.result(),
+            outWeight.result(),
+            data.ammFeeBips,
+            FMT(prefix, ".priceBefore")),
+          priceBefore_leq_priceAfter(
+            pb,
+            priceBefore.result(),
+            priceAfter.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".priceBefore_leq_priceAfter")),
+          requirePriceIncreased(
+            pb,
+            data.amm,
+            priceBefore_leq_priceAfter.leq(),
+            FMT(prefix, ".requirePriceIncreased"))
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+        // Use dummy data if this isn't an AMM order
+        inBalanceBefore.generate_r1cs_witness();
+        inBalanceAfter.generate_r1cs_witness();
+        inWeight.generate_r1cs_witness();
+        outBalanceBefore.generate_r1cs_witness();
+        outBalanceAfter.generate_r1cs_witness();
+        outWeight.generate_r1cs_witness();
+        ammFill.generate_r1cs_witness();
+
+        // Verify general assumptions AMM orders
+        requireOrderFeeBipsZero.generate_r1cs_witness();
+        requireInWeightNotZero.generate_r1cs_witness();
+        requireOutWeightNotZero.generate_r1cs_witness();
+
+        // Calculate AMM minimum rate
+        ammMaximumFillS.generate_r1cs_witness();
+        fillS_leq_ammMaximumFillS.generate_r1cs_witness();
+        requireValidAmmFillS.generate_r1cs_witness();
+
+        // Check that the price increased as an additional safety check
+        priceBefore.generate_r1cs_witness();
+        priceAfter.generate_r1cs_witness();
+        priceBefore_leq_priceAfter.generate_r1cs_witness();
+        requirePriceIncreased.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        // Use dummy data if this isn't an AMM order
+        inBalanceBefore.generate_r1cs_constraints();
+        inBalanceAfter.generate_r1cs_constraints();
+        inWeight.generate_r1cs_constraints();
+        outBalanceBefore.generate_r1cs_constraints();
+        outBalanceAfter.generate_r1cs_constraints();
+        outWeight.generate_r1cs_constraints();
+        ammFill.generate_r1cs_constraints();
+
+        // Verify general assumptions AMM orders
+        requireOrderFeeBipsZero.generate_r1cs_constraints();
+        requireInWeightNotZero.generate_r1cs_constraints();
+        requireOutWeightNotZero.generate_r1cs_constraints();
+
+        // Calculate AMM minimum rate
+        ammMaximumFillS.generate_r1cs_constraints();
+        fillS_leq_ammMaximumFillS.generate_r1cs_constraints();
+        requireValidAmmFillS.generate_r1cs_constraints();
+
+        // Check that the price increased as an additional safety check
+        priceBefore.generate_r1cs_constraints();
+        priceAfter.generate_r1cs_constraints();
+        priceBefore_leq_priceAfter.generate_r1cs_constraints();
+        requirePriceIncreased.generate_r1cs_constraints();
+    }
+};
+
+class ValidateAMMGadget : public GadgetT
+{
+  public:
+    // Verify the order fills
+    RequireAMMFillsGadget requireFillsA;
+    RequireAMMFillsGadget requireFillsB;
+
+    ValidateAMMGadget(
+      ProtoboardT &pb,
+      const Constants &constants,
+      const OrderMatchingData &dataA,
+      const OrderMatchingData &dataB,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
+
+          // Check if the fills are valid for the orders
+          requireFillsA(pb, constants, dataA, dataB.fillS, FMT(prefix, ".requireFillsA")),
+          requireFillsB(pb, constants, dataB, dataA.fillS, FMT(prefix, ".requireFillsB"))
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+        // Check if the fills are valid for the orders
+        requireFillsA.generate_r1cs_witness();
+        requireFillsB.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        // Check if the fills are valid for the orders
+        requireFillsA.generate_r1cs_constraints();
+        requireFillsB.generate_r1cs_constraints();
     }
 };
 

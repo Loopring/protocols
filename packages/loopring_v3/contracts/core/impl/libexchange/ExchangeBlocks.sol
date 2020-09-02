@@ -9,6 +9,7 @@ import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 import "../../iface/IBlockVerifier.sol";
 import "../libtransactions/AccountUpdateTransaction.sol";
+import "../libtransactions/AmmUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
 import "../libtransactions/TransferTransaction.sol";
 import "../libtransactions/WithdrawTransaction.sol";
@@ -316,6 +317,14 @@ library ExchangeBlocks
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
                     AccountUpdateTransaction.process(
+                        S,
+                        ctx,
+                        data,
+                        txDataOffset,
+                        txAuxiliaryData[i].data
+                    );
+                } else if (txType == ExchangeData.TransactionType.AMM_UPDATE) {
+                    AmmUpdateTransaction.process(
                         S,
                         ctx,
                         data,

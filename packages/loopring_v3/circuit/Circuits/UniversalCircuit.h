@@ -18,6 +18,7 @@
 #include "./AccountUpdateCircuit.h"
 #include "./WithdrawCircuit.h"
 #include "./NoopCircuit.h"
+#include "./AmmUpdateCircuit.h"
 
 #include "ethsnarks.hpp"
 #include "utils.hpp"
@@ -156,6 +157,7 @@ class TransactionGadget : public GadgetT
     WithdrawCircuit withdraw;
     AccountUpdateCircuit accountUpdate;
     TransferCircuit transfer;
+    AmmUpdateCircuit ammUpdate;
     SelectTransactionGadget tx;
 
     // General validation
@@ -228,11 +230,12 @@ class TransactionGadget : public GadgetT
           withdraw(pb, state, FMT(prefix, ".withdraw")),
           accountUpdate(pb, state, FMT(prefix, ".accountUpdate")),
           transfer(pb, state, FMT(prefix, ".transfer")),
+          ammUpdate(pb, state, FMT(prefix, ".ammUpdate")),
           tx(
             pb,
             state,
             selector.result(),
-            {&noop, &deposit, &withdraw, &transfer, &spotTrade, &accountUpdate},
+            {&noop, &deposit, &withdraw, &transfer, &spotTrade, &accountUpdate, &ammUpdate},
             FMT(prefix, ".tx")),
 
           // General validation
@@ -271,15 +274,17 @@ class TransactionGadget : public GadgetT
             pb,
             state.accountA.account.balancesRoot,
             tx.getArrayOutput(TXV_BALANCE_A_S_ADDRESS),
-            {state.accountA.balanceS.balance, state.accountA.balanceS.storageRoot},
-            {tx.getOutput(TXV_BALANCE_A_S_BALANCE), updateStorage_A.result()},
+            {state.accountA.balanceS.balance, state.accountA.balanceS.weightAMM, state.accountA.balanceS.storageRoot},
+            {tx.getOutput(TXV_BALANCE_A_S_BALANCE), tx.getOutput(TXV_BALANCE_A_S_WEIGHTAMM), updateStorage_A.result()},
             FMT(prefix, ".updateBalanceS_A")),
           updateBalanceB_A(
             pb,
             updateBalanceS_A.result(),
             tx.getArrayOutput(TXV_BALANCE_B_S_ADDRESS),
-            {state.accountA.balanceB.balance, state.accountA.balanceB.storageRoot},
-            {tx.getOutput(TXV_BALANCE_A_B_BALANCE), state.accountA.balanceB.storageRoot},
+            {state.accountA.balanceB.balance, state.accountA.balanceB.weightAMM, state.accountA.balanceB.storageRoot},
+            {tx.getOutput(TXV_BALANCE_A_B_BALANCE),
+             state.accountA.balanceB.weightAMM,
+             state.accountA.balanceB.storageRoot},
             FMT(prefix, ".updateBalanceB_A")),
           updateAccount_A(
             pb,
@@ -289,11 +294,13 @@ class TransactionGadget : public GadgetT
              state.accountA.account.publicKey.x,
              state.accountA.account.publicKey.y,
              state.accountA.account.nonce,
+             state.accountA.account.feeBipsAMM,
              state.accountA.account.balancesRoot},
             {tx.getOutput(TXV_ACCOUNT_A_OWNER),
              tx.getOutput(TXV_ACCOUNT_A_PUBKEY_X),
              tx.getOutput(TXV_ACCOUNT_A_PUBKEY_Y),
              tx.getOutput(TXV_ACCOUNT_A_NONCE),
+             tx.getOutput(TXV_ACCOUNT_A_FEEBIPSAMM),
              updateBalanceB_A.result()},
             FMT(prefix, ".updateAccount_A")),
 
@@ -309,15 +316,17 @@ class TransactionGadget : public GadgetT
             pb,
             state.accountB.account.balancesRoot,
             tx.getArrayOutput(TXV_BALANCE_B_S_ADDRESS),
-            {state.accountB.balanceS.balance, state.accountB.balanceS.storageRoot},
-            {tx.getOutput(TXV_BALANCE_B_S_BALANCE), updateStorage_B.result()},
+            {state.accountB.balanceS.balance, state.accountB.balanceS.weightAMM, state.accountB.balanceS.storageRoot},
+            {tx.getOutput(TXV_BALANCE_B_S_BALANCE), state.accountB.balanceS.weightAMM, updateStorage_B.result()},
             FMT(prefix, ".updateBalanceS_B")),
           updateBalanceB_B(
             pb,
             updateBalanceS_B.result(),
             tx.getArrayOutput(TXV_BALANCE_A_S_ADDRESS),
-            {state.accountB.balanceB.balance, state.accountB.balanceB.storageRoot},
-            {tx.getOutput(TXV_BALANCE_B_B_BALANCE), state.accountB.balanceB.storageRoot},
+            {state.accountB.balanceB.balance, state.accountB.balanceB.weightAMM, state.accountB.balanceB.storageRoot},
+            {tx.getOutput(TXV_BALANCE_B_B_BALANCE),
+             state.accountB.balanceB.weightAMM,
+             state.accountB.balanceB.storageRoot},
             FMT(prefix, ".updateBalanceB_B")),
           updateAccount_B(
             pb,
@@ -327,11 +336,13 @@ class TransactionGadget : public GadgetT
              state.accountB.account.publicKey.x,
              state.accountB.account.publicKey.y,
              state.accountB.account.nonce,
+             state.accountB.account.feeBipsAMM,
              state.accountB.account.balancesRoot},
             {tx.getOutput(TXV_ACCOUNT_B_OWNER),
              tx.getOutput(TXV_ACCOUNT_B_PUBKEY_X),
              tx.getOutput(TXV_ACCOUNT_B_PUBKEY_Y),
              tx.getOutput(TXV_ACCOUNT_B_NONCE),
+             state.accountB.account.feeBipsAMM,
              updateBalanceB_B.result()},
             FMT(prefix, ".updateAccount_B")),
 
@@ -340,15 +351,15 @@ class TransactionGadget : public GadgetT
             pb,
             state.oper.account.balancesRoot,
             tx.getArrayOutput(TXV_BALANCE_A_S_ADDRESS),
-            {state.oper.balanceB.balance, state.oper.balanceB.storageRoot},
-            {tx.getOutput(TXV_BALANCE_O_B_BALANCE), state.oper.balanceB.storageRoot},
+            {state.oper.balanceB.balance, state.oper.balanceB.weightAMM, state.oper.balanceB.storageRoot},
+            {tx.getOutput(TXV_BALANCE_O_B_BALANCE), state.oper.balanceB.weightAMM, state.oper.balanceB.storageRoot},
             FMT(prefix, ".updateBalanceB_O")),
           updateBalanceA_O(
             pb,
             updateBalanceB_O.result(),
             tx.getArrayOutput(TXV_BALANCE_B_S_ADDRESS),
-            {state.oper.balanceA.balance, state.oper.balanceA.storageRoot},
-            {tx.getOutput(TXV_BALANCE_O_A_BALANCE), state.oper.balanceA.storageRoot},
+            {state.oper.balanceA.balance, state.oper.balanceA.weightAMM, state.oper.balanceA.storageRoot},
+            {tx.getOutput(TXV_BALANCE_O_A_BALANCE), state.oper.balanceA.weightAMM, state.oper.balanceA.storageRoot},
             FMT(prefix, ".updateBalanceA_O")),
           updateAccount_O(
             pb,
@@ -358,11 +369,13 @@ class TransactionGadget : public GadgetT
              state.oper.account.publicKey.x,
              state.oper.account.publicKey.y,
              state.oper.account.nonce,
+             state.oper.account.feeBipsAMM,
              state.oper.account.balancesRoot},
             {state.oper.account.owner,
              state.oper.account.publicKey.x,
              state.oper.account.publicKey.y,
              state.oper.account.nonce,
+             state.oper.account.feeBipsAMM,
              updateBalanceA_O.result()},
             FMT(prefix, ".updateAccount_O")),
 
@@ -371,15 +384,15 @@ class TransactionGadget : public GadgetT
             pb,
             protocolBalancesRoot,
             tx.getArrayOutput(TXV_BALANCE_A_S_ADDRESS),
-            {state.pool.balanceB.balance, constants.emptyStorage},
-            {tx.getOutput(TXV_BALANCE_P_B_BALANCE), constants.emptyStorage},
+            {state.pool.balanceB.balance, constants._0, constants.emptyStorage},
+            {tx.getOutput(TXV_BALANCE_P_B_BALANCE), constants._0, constants.emptyStorage},
             FMT(prefix, ".updateBalanceB_P")),
           updateBalanceA_P(
             pb,
             updateBalanceB_P.result(),
             tx.getArrayOutput(TXV_BALANCE_B_S_ADDRESS),
-            {state.pool.balanceA.balance, constants.emptyStorage},
-            {tx.getOutput(TXV_BALANCE_P_A_BALANCE), constants.emptyStorage},
+            {state.pool.balanceA.balance, constants._0, constants.emptyStorage},
+            {tx.getOutput(TXV_BALANCE_P_A_BALANCE), constants._0, constants.emptyStorage},
             FMT(prefix, ".updateBalanceA_P"))
 
     {
@@ -411,6 +424,7 @@ class TransactionGadget : public GadgetT
         withdraw.generate_r1cs_witness(uTx.withdraw);
         accountUpdate.generate_r1cs_witness(uTx.accountUpdate);
         transfer.generate_r1cs_witness(uTx.transfer);
+        ammUpdate.generate_r1cs_witness(uTx.ammUpdate);
         tx.generate_r1cs_witness();
 
         // General validation
@@ -456,6 +470,7 @@ class TransactionGadget : public GadgetT
         withdraw.generate_r1cs_constraints();
         accountUpdate.generate_r1cs_constraints();
         transfer.generate_r1cs_constraints();
+        ammUpdate.generate_r1cs_constraints();
         tx.generate_r1cs_constraints();
 
         // General validation
@@ -633,11 +648,13 @@ class UniversalCircuit : public Circuit
            accountBefore_P.publicKey.x,
            accountBefore_P.publicKey.y,
            accountBefore_P.nonce,
+           accountBefore_P.feeBipsAMM,
            accountBefore_P.balancesRoot},
           {accountBefore_P.owner,
            accountBefore_P.publicKey.x,
            accountBefore_P.publicKey.y,
            accountBefore_P.nonce,
+           accountBefore_P.feeBipsAMM,
            transactions.back().getNewProtocolBalancesRoot()},
           FMT(annotation_prefix, ".updateAccount_P")));
         updateAccount_P->generate_r1cs_constraints();
@@ -651,11 +668,13 @@ class UniversalCircuit : public Circuit
            accountBefore_O.publicKey.x,
            accountBefore_O.publicKey.y,
            accountBefore_O.nonce,
+           accountBefore_O.feeBipsAMM,
            accountBefore_O.balancesRoot},
           {accountBefore_O.owner,
            accountBefore_O.publicKey.x,
            accountBefore_O.publicKey.y,
            nonce_after.result(),
+           accountBefore_O.feeBipsAMM,
            accountBefore_O.balancesRoot},
           FMT(annotation_prefix, ".updateAccount_O")));
         updateAccount_O->generate_r1cs_constraints();

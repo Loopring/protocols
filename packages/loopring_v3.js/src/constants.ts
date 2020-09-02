@@ -38,6 +38,7 @@ export class Constants {
 
   static readonly DefaultBalance: Balance = {
     balance: new BN(0),
+    weightAMM: new BN(0),
     storage: {}
   };
 }

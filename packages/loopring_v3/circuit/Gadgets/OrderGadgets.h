@@ -33,6 +33,9 @@ class OrderGadget : public GadgetT
     VariableT taker;
 
     DualVariableGadget feeBips;
+    DualVariableGadget amm;
+
+    NotGadget notAmm;
 
     // Checks
     RequireLeqGadget feeBips_leq_maxFeeBips;
@@ -63,6 +66,9 @@ class OrderGadget : public GadgetT
           taker(make_variable(pb, FMT(prefix, ".taker"))),
 
           feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
+          amm(pb, 1, FMT(prefix, ".amm")),
+
+          notAmm(pb, amm.packed, FMT(prefix, ".notAmm")),
 
           // Checks
           feeBips_leq_maxFeeBips(
@@ -109,6 +115,9 @@ class OrderGadget : public GadgetT
         pb.val(taker) = order.taker;
 
         feeBips.generate_r1cs_witness(pb, order.feeBips);
+        amm.generate_r1cs_witness(pb, order.amm);
+
+        notAmm.generate_r1cs_witness();
 
         // Checks
         feeBips_leq_maxFeeBips.generate_r1cs_witness();
@@ -134,6 +143,9 @@ class OrderGadget : public GadgetT
         fillAmountBorS.generate_r1cs_constraints(true);
 
         feeBips.generate_r1cs_constraints(true);
+        amm.generate_r1cs_constraints(true);
+
+        notAmm.generate_r1cs_constraints();
 
         // Checks
         feeBips_leq_maxFeeBips.generate_r1cs_constraints();

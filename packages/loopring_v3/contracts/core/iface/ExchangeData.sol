@@ -24,7 +24,8 @@ library ExchangeData
         WITHDRAWAL,
         TRANSFER,
         SPOT_TRADE,
-        ACCOUNT_UPDATE
+        ACCOUNT_UPDATE,
+        AMM_UPDATE
     }
 
     // -- Structs --
@@ -133,12 +134,14 @@ library ExchangeData
         uint     pubKeyX;
         uint     pubKeyY;
         uint32   nonce;
+        uint     feeBipsAMM;
     }
 
     struct BalanceLeaf
     {
         uint16   tokenID;
         uint96   balance;
+        uint96   weightAMM;
         uint     storageRoot;
     }
 
