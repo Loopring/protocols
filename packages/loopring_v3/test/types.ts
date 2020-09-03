@@ -115,6 +115,7 @@ export class Transfer {
 
   feeTokenID: number;
   fee: BN;
+  maxFee: BN;
 
   from: string;
   to: string;
@@ -151,6 +152,7 @@ export interface WithdrawalRequest {
 
   feeTokenID?: number;
   fee?: BN;
+  maxFee: BN;
 
   minGas: number;
   gas?: number;

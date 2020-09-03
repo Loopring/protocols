@@ -36,6 +36,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
     DualVariableGadget fee;
     DualVariableGadget validUntil;
     DualVariableGadget onchainDataHash;
+    DualVariableGadget maxFee;
     DualVariableGadget type;
 
     // Special case protocol fee withdrawal
@@ -50,6 +51,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
 
     // Validate
     RequireLtGadget requireValidUntil;
+    RequireLeqGadget requireValidFee;
 
     // Type
     IsNonZero isConditional;
@@ -111,6 +113,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
           fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
           validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
           onchainDataHash(pb, NUM_BITS_HASH, FMT(prefix, ".onchainDataHash")),
+          maxFee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".maxFee")),
           type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
 
           // Special case protocol fee withdrawal
@@ -139,7 +142,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
                tokenID.packed,
                amount.packed,
                feeTokenID.packed,
-               fee.packed,
+               maxFee.packed,
                onchainDataHash.packed,
                validUntil.packed,
                state.accountA.account.nonce}),
@@ -152,6 +155,12 @@ class WithdrawCircuit : public BaseTransactionCircuit
             validUntil.packed,
             NUM_BITS_TIMESTAMP,
             FMT(prefix, ".requireValidUntil")),
+          requireValidFee(
+            pb,
+            fee.packed,
+            maxFee.packed,
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".requireValidFee")),
 
           // Type
           isConditional(pb, type.packed, FMT(prefix, ".isConditional")),
@@ -278,6 +287,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
         fee.generate_r1cs_witness(pb, withdrawal.fee);
         validUntil.generate_r1cs_witness(pb, withdrawal.validUntil);
         onchainDataHash.generate_r1cs_witness(pb, withdrawal.onchainDataHash);
+        maxFee.generate_r1cs_witness(pb, withdrawal.maxFee);
         type.generate_r1cs_witness(pb, withdrawal.type);
 
         // Special case protocol fee withdrawal
@@ -292,6 +302,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
 
         // Validate
         requireValidUntil.generate_r1cs_witness();
+        requireValidFee.generate_r1cs_witness();
 
         // Type
         isConditional.generate_r1cs_witness();
@@ -350,6 +361,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
         fee.generate_r1cs_constraints(true);
         validUntil.generate_r1cs_constraints(true);
         onchainDataHash.generate_r1cs_constraints(true);
+        maxFee.generate_r1cs_constraints(true);
         type.generate_r1cs_constraints(true);
 
         // Special case protocol fee withdrawal
@@ -364,6 +376,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
 
         // Validate
         requireValidUntil.generate_r1cs_constraints();
+        requireValidFee.generate_r1cs_constraints();
 
         // Type
         isConditional.generate_r1cs_constraints();

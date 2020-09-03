@@ -102,7 +102,8 @@ contract("Exchange", (accounts: string[]) => {
         token,
         amount.mul(new BN(2)),
         feeToken,
-        fee.mul(new BN(2))
+        fee.mul(new BN(2)),
+        { maxFee: fee.mul(new BN(3)) }
       );
       await exchangeTestUtil.transfer(ownerB, ownerA, token, amount, feeToken, fee);
 
@@ -250,6 +251,27 @@ contract("Exchange", (accounts: string[]) => {
 
       // Verify the block
       await exchangeTestUtil.submitPendingBlocks();
+    });
+
+    it("should not be able to do transfer with fee > maxFee", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("1", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+
+      // Do some transfers transfer
+      await exchangeTestUtil.transfer(
+        ownerA, ownerD, token, amount, feeToken, fee,
+        {maxFee: fee.div(new BN(2))}
+      );
+
+      // Commit the transfers
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("should be able to transfer to a new account", async () => {

@@ -53,6 +53,7 @@ class TransferCircuit : public BaseTransactionCircuit
     DualVariableGadget payer_toAccountID;
     DualVariableGadget payer_to;
     DualVariableGadget payee_toAccountID;
+    DualVariableGadget maxFee;
 
     // Check if the inputs are valid
     EqualGadget isTransferTx;
@@ -63,6 +64,7 @@ class TransferCircuit : public BaseTransactionCircuit
     IfThenRequireEqualGadget ifrequire_payee_toAccountID_eq_toAccountID;
     IfThenRequireNotEqualGadget ifrequire_NotZero_to;
     RequireLtGadget requireValidUntil;
+    RequireLeqGadget requireValidFee;
 
     // Fill in standard dual author key if none is given
     IsNonZero isNonZero_dualAuthorX;
@@ -133,6 +135,7 @@ class TransferCircuit : public BaseTransactionCircuit
           payer_toAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".payer_toAccountID")),
           payer_to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_to")),
           payee_toAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".payee_toAccountID")),
+          maxFee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".maxFee")),
 
           // Check if the inputs are valid
           isTransferTx(pb, state.type, state.constants.txTypeTransfer, FMT(prefix, ".isTransferTx")),
@@ -168,6 +171,12 @@ class TransferCircuit : public BaseTransactionCircuit
             validUntil.packed,
             NUM_BITS_TIMESTAMP,
             FMT(prefix, ".requireValidUntil")),
+          requireValidFee(
+            pb,
+            fee.packed,
+            maxFee.packed,
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".requireValidFee")),
 
           // Fill in standard dual author key if none is given
           isNonZero_dualAuthorX(pb, dualAuthorX, FMT(prefix, ".isNonZero_dualAuthorX")),
@@ -199,7 +208,7 @@ class TransferCircuit : public BaseTransactionCircuit
                tokenID.packed,
                amount.packed,
                feeTokenID.packed,
-               fee.packed,
+               maxFee.packed,
                payer_to.packed,
                dualAuthorX,
                dualAuthorY,
@@ -215,7 +224,7 @@ class TransferCircuit : public BaseTransactionCircuit
                tokenID.packed,
                amount.packed,
                feeTokenID.packed,
-               fee.packed,
+               maxFee.packed,
                to.packed,
                dualAuthorX,
                dualAuthorY,
@@ -349,6 +358,7 @@ class TransferCircuit : public BaseTransactionCircuit
         payer_toAccountID.generate_r1cs_witness(pb, transfer.payerToAccountID);
         payer_to.generate_r1cs_witness(pb, transfer.payerTo);
         payee_toAccountID.generate_r1cs_witness(pb, transfer.payeeToAccountID);
+        maxFee.generate_r1cs_witness(pb, transfer.maxFee);
 
         // Check if the inputs are valid
         isTransferTx.generate_r1cs_witness();
@@ -359,6 +369,7 @@ class TransferCircuit : public BaseTransactionCircuit
         ifrequire_payee_toAccountID_eq_toAccountID.generate_r1cs_witness();
         ifrequire_NotZero_to.generate_r1cs_witness();
         requireValidUntil.generate_r1cs_witness();
+        requireValidFee.generate_r1cs_witness();
 
         // Fill in standard dual author key if none is given
         isNonZero_dualAuthorX.generate_r1cs_witness();
@@ -424,6 +435,7 @@ class TransferCircuit : public BaseTransactionCircuit
         payer_toAccountID.generate_r1cs_constraints(true);
         payer_to.generate_r1cs_constraints(true);
         payee_toAccountID.generate_r1cs_constraints(true);
+        maxFee.generate_r1cs_constraints(true);
 
         // Check if the inputs are valid
         isTransferTx.generate_r1cs_constraints();
@@ -434,6 +446,7 @@ class TransferCircuit : public BaseTransactionCircuit
         ifrequire_payee_toAccountID_eq_toAccountID.generate_r1cs_constraints();
         ifrequire_NotZero_to.generate_r1cs_constraints();
         requireValidUntil.generate_r1cs_constraints();
+        requireValidFee.generate_r1cs_constraints();
 
         // Fill in standard dual author key if none is given
         isNonZero_dualAuthorX.generate_r1cs_constraints();
