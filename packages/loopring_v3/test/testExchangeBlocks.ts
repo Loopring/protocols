@@ -99,6 +99,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addAddress(exchangeTestUtil.blockVerifier.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+          bs.addNumber(0, 1024);
           const block: OnchainBlock = {
             blockType: BlockType.UNIVERSAL,
             blockSize: 2,
@@ -130,6 +131,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addAddress(exchange.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)), 32);
+          bs.addNumber(0, 1024);
           const block: OnchainBlock = {
             blockType: BlockType.UNIVERSAL,
             blockSize: 2,
@@ -167,6 +169,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.SNARK_SCALAR_FIELD, 32);
           bs.addNumber(timestamp, 4);
+          bs.addNumber(0, 1024);
           const block: OnchainBlock = {
             blockType: BlockType.UNIVERSAL,
             blockSize: 2,
@@ -206,6 +209,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
+            bs.addNumber(0, 1024);
             const block: OnchainBlock = {
               blockType: BlockType.UNIVERSAL,
               blockSize: 2,
@@ -235,6 +239,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
+            bs.addNumber(0, 1024);
             const block: OnchainBlock = {
               blockType: BlockType.UNIVERSAL,
               blockSize: 2,
@@ -278,6 +283,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(timestamp, 4);
             bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
             bs.addNumber(protocolFees.makerFeeBips, 1);
+            bs.addNumber(0, 1024);
             const block: OnchainBlock = {
               blockType: BlockType.UNIVERSAL,
               blockSize: 2,
@@ -304,6 +310,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(timestamp, 4);
             bs.addNumber(protocolFees.takerFeeBips, 1);
             bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
+            bs.addNumber(0, 1024);
             const block: OnchainBlock = {
               blockType: BlockType.UNIVERSAL,
               blockSize: 2,

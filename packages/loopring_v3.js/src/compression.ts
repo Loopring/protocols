@@ -264,10 +264,8 @@ export function compressZeros(
   input: string,
   speed: CompressionSpeed = CompressionSpeed.MEDIUM
 ) {
-  const minGasSavedForReplacement = GAS_COST_NONZERO_BYTE * 25;
-  const minLengthReplacement = Math.floor(
-    minGasSavedForReplacement / GAS_COST_NONZERO_BYTE
-  );
+  const minNumZeros = 20;
+  const maxLength = 2**16-1;
 
   const stream = new Bitstream(input);
   assert(stream.length() > 0, "cannot compress empty input");
@@ -278,54 +276,54 @@ export function compressZeros(
     data.push(stream.extractUint8(i));
   }
 
-  const minNumZeros = 5;
-  const maxDataLength = 255;
-  const maxZeroLength = 255;
-
   let previousPos = 0;
   const compressed = new Bitstream();
   let pos = 0;
   const dataLength = stream.length();
+
+  const writeLiterals = (numData: number, numZeros: number) => {
+    // Make sure no length is longer than `maxLength`
+    const numDataWriteLoops = Math.floor((numData + maxLength) / (maxLength + 1));
+      for (let i = 0; i < numDataWriteLoops - 1; i++)
+      {
+        compressed.addNumber(maxLength, 2);
+        compressed.addNumber(0, 2);
+        for (let i = 0; i < maxLength; i++) {
+          compressed.addNumber(data[previousPos + i], 1);
+        }
+        previousPos += maxLength;
+        numData -= maxLength;
+      }
+      compressed.addNumber(numData, 2);
+      compressed.addNumber(numZeros, 2);
+      for (let i = 0; i < numData; i++) {
+         compressed.addNumber(data[previousPos + i], 1);
+      }
+  };
+
   while (pos < dataLength) {
     let numZeros = 0;
     // Find a run of zeros
     while (data[pos] !== 0 && pos < dataLength) {
       pos++;
-      //console.log("a " + pos);
     }
     const firstZeroPos = pos;
-    while (data[pos] === 0 && pos < dataLength) {
+    while (data[pos] === 0 && pos < dataLength && numZeros < maxLength) {
       pos++;
       numZeros++;
-      //console.log("b " + pos);
     }
     if (numZeros >= minNumZeros) {
-      const numData = firstZeroPos - previousPos;
-      //console.log("numData: " + numData);
-      //console.log("numZeros: " + numZeros);
-      compressed.addNumber(numData, 2);
-      compressed.addNumber(numZeros, 2);
-      for (let i = 0; i < numData; i++) {
-        //console.log("Data: " + data[previousPos + i]);
-        compressed.addNumber(data[previousPos + i], 1);
-      }
+      let numData = firstZeroPos - previousPos;
+      writeLiterals(numData, numZeros);
       previousPos = pos;
     }
-    //console.log("---" + pos);
   }
-  const numData = dataLength - previousPos;
+  let numData = dataLength - previousPos;
   if (numData > 0) {
-    //console.log("numData: " + numData);
-    //console.log("numZeros: " + 0);
-    compressed.addNumber(numData, 2);
-    compressed.addNumber(0, 2);
-    for (let i = 0; i < numData; i++) {
-      //console.log("Data: " + data[previousPos + i]);
-      compressed.addNumber(data[previousPos + i], 1);
-    }
+    writeLiterals(numData, 0);
   }
 
-  // console.log("o: " + data.getData());
+  // console.log("original: " + data.getData());
   // console.log("compressed: " + compressed.getData());
   const decompressed = decompressZeros(compressed.getData());
   // console.log("decompress: " + decompressed);
@@ -334,7 +332,6 @@ export function compressZeros(
     decompressed,
     "decompressed data does not match original data"
   );
-
 
   return compressed.getData();
 }

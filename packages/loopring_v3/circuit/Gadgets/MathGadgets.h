@@ -2216,9 +2216,6 @@ class PowerGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          //_x(x),
-          //_y(y),
-
           sum0(pb, constants.fixedBase, constants.fixedBase, FMT(prefix, ".sum0")),
 
           x1(pb, constants.fixedBase, x, NUM_BITS_FIXED_BASE, FMT(prefix, ".x1")),

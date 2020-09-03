@@ -57,7 +57,6 @@ export class AccountUpdateProcessor {
     update.nonce = data.extractUint32(offset);
     offset += 4;
 
-
     // Unpack the public key
     const unpacked = EdDSA.unpack(publicKey);
     update.publicKeyX = unpacked.publicKeyX;
