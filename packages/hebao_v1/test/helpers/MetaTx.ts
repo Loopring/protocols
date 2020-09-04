@@ -34,6 +34,7 @@ export interface TransactionOptions {
   feeRecipient?: string;
   signatureTypes?: SignatureType[];
   checkSignatures?: boolean;
+  txAwareHash?: string;
 }
 
 function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
@@ -97,7 +98,12 @@ export async function executeMetaTx(
   const gasToken = options.gasToken ? options.gasToken : "ETH";
   const gasPrice = options.gasPrice ? options.gasPrice : new BN(0);
   const gasLimit = options.gasLimit ? options.gasLimit : 4000000;
-  const nonce = options.nonce ? options.nonce : new Date().getTime();
+  let nonce = options.nonce ? options.nonce : new Date().getTime();
+  nonce = txAwareHash === "0x" + "00".repeat(32) ? nonce : 0;
+  const metaTxData =
+    txAwareHash === "0x" + "00".repeat(32) ? data : data.slice(0, 10);
+  // console.log('metaTxData:', metaTxData);
+  // console.log('txAwareHash:', txAwareHash);
 
   // Create the meta transaction
   const metaTx: MetaTx = {
@@ -108,19 +114,32 @@ export async function executeMetaTx(
     gasToken: await getTokenAddress(ctx, gasToken),
     gasPrice: gasPrice.toNumber(),
     gasLimit,
-    data,
+    data: metaTxData,
     chainId: /*await web3.eth.net.getId()*/ 1
   };
 
   // Sign the meta transaction
   const hash: Buffer = getMetaTxHash(metaTx, ctx.finalCoreModule.address);
+  // console.log('hash', hash);
   const signature = sign(options.owner, hash);
+
+  // const trustedForwarder = await ctx.walletFactory.trustedForwarder();
+  // console.log('trustedForwarder:', trustedForwarder);
 
   const tx = await ctx.finalCoreModule.executeMetaTx(metaTx, signature, {
     from,
     gas,
     gasPrice: gasPrice.toString()
   });
+
+  // const allEvents = await ctx.finalCoreModule.getPastEvents(
+  //   "allEvents",
+  //   {
+  //     fromBlock: await web3.eth.getBlockNumber(),
+  //     toBlock: await web3.eth.getBlockNumber()
+  //   }
+  // );
+  // console.log("allEvents:", allEvents);
 
   // console.log("tx:", tx);
   // console.log("tx.reciept.logs:", tx.receipt.logs);

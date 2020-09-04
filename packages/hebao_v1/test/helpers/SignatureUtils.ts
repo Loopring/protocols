@@ -48,7 +48,8 @@ export function signCreateWallet(
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
   // console.log(`hash: ${hash.toString("hex")}`);
 
-  return sign(owner, hash);
+  const txSignature = sign(owner, hash);
+  return { txSignature, hash };
 }
 
 export function signAddToWhitelistImmediately(

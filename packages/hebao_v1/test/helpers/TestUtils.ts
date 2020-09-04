@@ -79,6 +79,7 @@ export async function createContext(context?: Context) {
     true
   );
 
+  await walletFactory.initTrustedForwarder(context.finalCoreModule.address);
   await context.walletRegistryImpl.setWalletFactory(walletFactory.address);
   await context.baseENSManager.addManager(walletFactory.address);
   await context.controllerImpl.initWalletFactory(walletFactory.address);
@@ -112,7 +113,7 @@ export async function createWallet(
     walletName,
     ctx.owners[0]
   );
-  const txSignature = signCreateWallet(
+  const { txSignature } = signCreateWallet(
     ctx.walletFactory.address,
     owner,
     0,
@@ -160,7 +161,7 @@ export async function createWallet2(
     walletName,
     ctx.owners[0]
   );
-  const txSignature = signCreateWallet(
+  const { txSignature } = signCreateWallet(
     ctx.walletFactory.address,
     owner,
     0,
@@ -200,11 +201,12 @@ export async function executeTransaction(
 ) {
   const contract = txData._parent;
   const data = txData.encodeABI();
+  const txAwareHash = options.txAwareHash || "0x" + "00".repeat(32);
   if (useMetaTx) {
     const result = await executeMetaTx(
       ctx,
       contract,
-      "0x" + "00".repeat(32),
+      txAwareHash,
       data,
       options
     );

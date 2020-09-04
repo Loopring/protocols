@@ -34,6 +34,13 @@ abstract contract MetaTxAware
         _;
     }
 
+    function initTrustedForwarder(address _trustedForwarder)
+        public
+    {
+        require(trustedForwarder == address(0), "INITIALIZED_ALREADY");
+        trustedForwarder = _trustedForwarder;
+    }
+
     /// @dev Return's the function's logicial message sender. This method should be
     // used to replace `msg.sender` for all meta-tx enabled functions.
     function msgSender()

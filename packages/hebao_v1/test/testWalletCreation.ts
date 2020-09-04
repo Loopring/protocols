@@ -44,7 +44,7 @@ contract("WalletFactory", () => {
 
     const ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
 
-    const txSignature = signCreateWallet(
+    const { txSignature } = signCreateWallet(
       ctx.walletFactory.address,
       owner,
       0,
@@ -126,6 +126,76 @@ contract("WalletFactory", () => {
     }
   };
 
+  const createWalletWithTxAwareHashChecked = async (
+    owner: string,
+    walletName: string = "",
+    ensRegisterReverse: boolean = true
+  ) => {
+    const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
+
+    await transferFrom(ctx, owner, wallet, "ETH", toAmount("0.1"));
+
+    const signer = ctx.owners[0];
+
+    const ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
+
+    const { txSignature, hash } = signCreateWallet(
+      ctx.walletFactory.address,
+      owner,
+      0,
+      Constants.zeroAddress,
+      walletName,
+      ensRegisterReverse,
+      modules
+    );
+
+    const opt = { owner, wallet, gasPrice: new BN(1), txAwareHash: hash };
+
+    const tx = await executeTransaction(
+      ctx.walletFactory.contract.methods.createWallet(
+        owner,
+        0,
+        walletName,
+        ensApproval,
+        ensRegisterReverse,
+        modules,
+        txSignature
+      ),
+      ctx,
+      true,
+      wallet,
+      [],
+      opt
+    );
+
+    await assertEventEmitted(
+      ctx.walletFactory,
+      "WalletCreated",
+      (event: any) => {
+        return event.wallet === wallet && event.owner === owner;
+      }
+    );
+
+    if (walletName !== "") {
+      await assertEventEmitted(
+        ctx.baseENSManager,
+        "Registered",
+        (event: any) => {
+          return (
+            event._ens === walletName + walletDomain &&
+            event._wallet === wallet &&
+            event._owner === owner
+          );
+        }
+      );
+    } else {
+      await assertNoEventEmitted(ctx.baseENSManager, "Registered");
+    }
+
+    const walletContract = await ctx.contracts.WalletImpl.at(wallet);
+    assert.equal(await walletContract.owner(), owner, "wallet owner incorrect");
+  };
+
   const createWallet2Checked = async (
     owner: string,
     walletName: string = "",
@@ -152,7 +222,7 @@ contract("WalletFactory", () => {
       walletName,
       signer
     );
-    const txSignature = signCreateWallet(
+    const { txSignature } = signCreateWallet(
       ctx.walletFactory.address,
       owner,
       0,
@@ -334,6 +404,20 @@ contract("WalletFactory", () => {
       }
     );
   });
+
+  // it.only(
+  //   description(
+  //     "user should be able to create a wallet using txAwareHash",
+  //     true
+  //   ),
+  //   async () => {
+  //     useMetaTx = true;
+  //     await createWalletWithTxAwareHashChecked(
+  //       ctx.owners[2],
+  //       "mywallet" + new Date().getTime()
+  //     );
+  //   }
+  // );
 
   it("anyone should be able to create a group of blank wallets", async () => {
     const walletImplementation = ctx.walletImpl.address;

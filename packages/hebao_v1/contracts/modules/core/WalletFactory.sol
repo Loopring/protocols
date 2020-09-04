@@ -50,11 +50,10 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
 
     constructor(
         ControllerImpl _controller,
-        address         _trustedForwarder,
         address        _walletImplementation,
         bool           _allowEmptyENS
         )
-        MetaTxAware(_trustedForwarder)
+        MetaTxAware(address(0))
     {
         DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("WalletFactory", "1.1.0", address(this))
