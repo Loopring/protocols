@@ -87,9 +87,9 @@ abstract contract ForwarderModule is BaseModule
             "INVALID_NONCE"
         );
 
-        if (data.toBytes4(0) == WalletFactory.createWallet.selector) {
+        if (data.toBytes4(0) == WalletFactory.createWallet.selector && txAwareHash != 0) {
             address walletOwner = data.toAddress(4 + 12);
-            require (Wallet(from).owner() == walletOwner);
+            require (Wallet(from).owner() == walletOwner, "INVALID_WALLET_OWNER");
         }
 
         bytes memory data_ = txAwareHash == 0 ? data : data.slice(0, 4); // function selector
