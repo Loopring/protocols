@@ -35,7 +35,7 @@ contract("BaseENSManager", () => {
       // sign with non-manager address:
       let signer = ctx.miscAddresses[1];
       let ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
-      let txSignature = signCreateWallet(
+      let { txSignature } = signCreateWallet(
         ctx.walletFactory.address,
         owner,
         0,
@@ -68,7 +68,7 @@ contract("BaseENSManager", () => {
       signer = ctx.owners[0];
 
       ensApproval = await getEnsApproval(wallet, owner, walletName, signer);
-      txSignature = signCreateWallet(
+      const { txSignature: txSignature2 } = signCreateWallet(
         ctx.walletFactory.address,
         owner,
         0,
@@ -86,7 +86,7 @@ contract("BaseENSManager", () => {
           ensApproval,
           true,
           modules,
-          txSignature
+          txSignature2
         ),
         ctx,
         false,
@@ -113,7 +113,7 @@ contract("BaseENSManager", () => {
         walletName,
         signer
       );
-      const txSignature = signCreateWallet(
+      const { txSignature } = signCreateWallet(
         ctx.walletFactory.address,
         owner,
         0,
