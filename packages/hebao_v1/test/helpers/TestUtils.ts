@@ -201,7 +201,7 @@ export async function executeTransaction(
 ) {
   const contract = txData._parent;
   const data = txData.encodeABI();
-  const txAwareHash = options.txAwareHash || "0x" + "00".repeat(32);
+  const txAwareHash = options.txAwareHash || Constants.emptyBytes32;
   if (useMetaTx) {
     const result = await executeMetaTx(
       ctx,

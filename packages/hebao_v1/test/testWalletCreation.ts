@@ -405,19 +405,19 @@ contract("WalletFactory", () => {
     );
   });
 
-  // it.only(
-  //   description(
-  //     "user should be able to create a wallet using txAwareHash",
-  //     true
-  //   ),
-  //   async () => {
-  //     useMetaTx = true;
-  //     await createWalletWithTxAwareHashChecked(
-  //       ctx.owners[2],
-  //       "mywallet" + new Date().getTime()
-  //     );
-  //   }
-  // );
+  it(
+    description(
+      "user should be able to create a wallet using txAwareHash",
+      true
+    ),
+    async () => {
+      useMetaTx = true;
+      await createWalletWithTxAwareHashChecked(
+        ctx.owners[2],
+        "mywallet" + new Date().getTime()
+      );
+    }
+  );
 
   it("anyone should be able to create a group of blank wallets", async () => {
     const walletImplementation = ctx.walletImpl.address;
