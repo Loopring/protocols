@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../iface/Wallet.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
@@ -85,6 +86,11 @@ abstract contract ForwarderModule is BaseModule
             nonce != 0 && txAwareHash == 0,
             "INVALID_NONCE"
         );
+
+        if (data.toBytes4(0) == WalletFactory.createWallet.selector) {
+            address walletOwner = data.toAddress(4 + 12);
+            require (Wallet(from).owner() == walletOwner);
+        }
 
         bytes memory data_ = txAwareHash == 0 ? data : data.slice(0, 4); // function selector
 
