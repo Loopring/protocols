@@ -63,6 +63,7 @@ function replacer(name: any, val: any) {
     name === "amountB" ||
     name === "amount" ||
     name === "fee" ||
+    name === "maxFee" ||
     name === "tokenWeight"
   ) {
     return new BN(val, 16).toString(10);
@@ -99,6 +100,7 @@ export interface TransferOptions {
   signer?: string;
   validUntil?: number;
   storageID?: number;
+  maxFee?: BN;
 }
 
 export interface WithdrawOptions {
@@ -109,6 +111,7 @@ export interface WithdrawOptions {
   extraData?: string;
   signer?: string;
   validUntil?: number;
+  maxFee?: BN;
 }
 
 export interface AccountUpdateOptions {
@@ -277,7 +280,7 @@ export namespace WithdrawalUtils {
       withdrawal.tokenID,
       withdrawal.amount,
       withdrawal.feeTokenID,
-      withdrawal.fee,
+      withdrawal.maxFee,
       withdrawal.onchainDataHash,
       withdrawal.validUntil,
       withdrawal.nonce
@@ -353,7 +356,7 @@ export namespace TransferUtils {
       transfer.tokenID,
       transfer.amount,
       transfer.feeTokenID,
-      transfer.fee,
+      transfer.maxFee,
       payer ? transfer.payerTo : transfer.to,
       transfer.dualAuthorX,
       transfer.dualAuthorY,
@@ -674,6 +677,8 @@ export class ExchangeTestUtil {
       options.storageID !== undefined
         ? options.storageID
         : this.storageIDGenerator++;
+    const maxFee =
+      options.maxFee !== undefined ? options.maxFee : fee;
 
     // From
     await this.deposit(from, from, token, amountToDeposit);
@@ -732,6 +737,7 @@ export class ExchangeTestUtil {
       amount,
       feeTokenID,
       fee,
+      maxFee,
       from,
       to,
       type: authMethod === AuthMethod.EDDSA ? 0 : 1,
@@ -1190,6 +1196,8 @@ export class ExchangeTestUtil {
       options.extraData !== undefined ? options.extraData : "0x";
     const validUntil =
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+    const maxFee =
+      options.maxFee !== undefined ? options.maxFee : fee;
 
     let type = 0;
     if (authMethod === AuthMethod.ECDSA || authMethod === AuthMethod.APPROVE) {
@@ -1266,6 +1274,7 @@ export class ExchangeTestUtil {
       amount,
       feeTokenID,
       fee,
+      maxFee,
       to,
       extraData,
       withdrawalFee: await this.loopringV3.forcedWithdrawalFee(),

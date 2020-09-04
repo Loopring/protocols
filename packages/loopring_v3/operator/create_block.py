@@ -74,6 +74,7 @@ def transferFromJSON(jTransfer):
     transfer.payerToAccountID = int(jTransfer["payerToAccountID"])
     transfer.payerTo = str(jTransfer["payerTo"])
     transfer.payeeToAccountID = int(jTransfer["payeeToAccountID"])
+    transfer.maxFee = str(jTransfer["maxFee"])
     transfer.signature = None
     transfer.dualSignature = None
     transfer.onchainSignature = None
@@ -95,6 +96,7 @@ def withdrawFromJSON(jWithdraw):
     withdraw.onchainDataHash = str(jWithdraw["onchainDataHash"])
     withdraw.type = int(jWithdraw["type"])
     withdraw.validUntil = int(jWithdraw["validUntil"])
+    withdraw.maxFee = str(jWithdraw["maxFee"])
     withdraw.signature = None
     if "signature" in jWithdraw:
         withdraw.signature = jWithdraw["signature"]
@@ -154,9 +156,8 @@ def createBlock(state, data):
 
     context = Context(block.operatorAccountID, block.timestamp, block.protocolTakerFeeBips, block.protocolMakerFeeBips)
 
-    # Protocol fee payment / index
+    # Protocol fee payment
     accountBefore_P = copyAccountInfo(state.getAccount(0))
-    accountBefore_I = copyAccountInfo(state.getAccount(1))
 
     for transactionInfo in data["transactions"]:
         txType = transactionInfo["txType"]
@@ -203,14 +204,6 @@ def createBlock(state, data):
     accountAfter = copyAccountInfo(state.getAccount(0))
     rootAfter = state._accountsTree._root
     block.accountUpdate_P = AccountUpdateData(0, proof, rootBefore, rootAfter, accountBefore_P, accountAfter)
-
-    # Index
-    rootBefore = state._accountsTree._root
-    proof = state._accountsTree.createProof(1)
-    state.updateAccountTree(1)
-    accountAfter = copyAccountInfo(state.getAccount(1))
-    rootAfter = state._accountsTree._root
-    block.accountUpdate_I = AccountUpdateData(1, proof, rootBefore, rootAfter, accountBefore_I, accountAfter)
 
     # Operator
     account = state.getAccount(context.operatorAccountID)

@@ -641,7 +641,8 @@ contract("Exchange", (accounts: string[]) => {
         token,
         toWithdraw,
         feeToken,
-        fee
+        fee,
+        { maxFee: fee.mul(new BN(4)) }
       );
 
       await exchangeTestUtil.submitTransactions();
@@ -722,6 +723,37 @@ contract("Exchange", (accounts: string[]) => {
       const expectedResult = { ...deposit };
       expectedResult.amount = toWithdraw;
       await submitWithdrawalBlockChecked([expectedResult]);
+    });
+
+    it("Withdrawal (fee > maxFee)", async () => {
+      await createExchange();
+
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const balance = new BN(web3.utils.toWei("4", "ether"));
+      const toWithdraw = new BN(web3.utils.toWei("2", "ether"));
+      const token = "ETH";
+      const feeToken = "ETH";
+      const fee = new BN(web3.utils.toWei("1.5", "ether"));
+
+      await exchangeTestUtil.deposit(
+        owner,
+        owner,
+        token,
+        balance
+      );
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { maxFee: fee.div(new BN(3))}
+      );
+
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("Withdraw (protocol fees)", async () => {

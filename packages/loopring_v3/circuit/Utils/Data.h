@@ -56,6 +56,7 @@ static auto dummyTransfer = R"({
     "feeTokenID": 0,
     "tokenID": 0,
     "validUntil": 4294967295,
+    "maxFee": "0",
     "type": 0,
     "ownerFrom": "0",
     "to": "2",
@@ -76,6 +77,7 @@ static auto dummyWithdraw = R"({
     "feeTokenID": 0,
     "fee": "0",
     "validUntil": 4294967295,
+    "maxFee": "0",
     "onchainDataHash": "0",
     "type": 0
 })"_json;
@@ -354,6 +356,7 @@ class Withdrawal
     ethsnarks::FieldT fee;
     ethsnarks::FieldT onchainDataHash;
     ethsnarks::FieldT validUntil;
+    ethsnarks::FieldT maxFee;
     ethsnarks::FieldT type;
 };
 
@@ -366,6 +369,7 @@ static void from_json(const json &j, Withdrawal &withdrawal)
     withdrawal.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
     withdrawal.onchainDataHash = ethsnarks::FieldT(j["onchainDataHash"].get<std::string>().c_str());
     withdrawal.validUntil = ethsnarks::FieldT(j.at("validUntil"));
+    withdrawal.maxFee = ethsnarks::FieldT(j["maxFee"].get<std::string>().c_str());
     withdrawal.type = ethsnarks::FieldT(j.at("type"));
 }
 
@@ -426,6 +430,7 @@ class Transfer
     ethsnarks::FieldT payerToAccountID;
     ethsnarks::FieldT payerTo;
     ethsnarks::FieldT payeeToAccountID;
+    ethsnarks::FieldT maxFee;
     ethsnarks::FieldT type;
 };
 
@@ -445,6 +450,7 @@ static void from_json(const json &j, Transfer &transfer)
     transfer.payerToAccountID = ethsnarks::FieldT(j.at("payerToAccountID"));
     transfer.payerTo = ethsnarks::FieldT(j["payerTo"].get<std::string>().c_str());
     transfer.payeeToAccountID = ethsnarks::FieldT(j.at("payeeToAccountID"));
+    transfer.maxFee = ethsnarks::FieldT(j["maxFee"].get<std::string>().c_str());
     transfer.type = ethsnarks::FieldT(j.at("type"));
 }
 
@@ -604,8 +610,6 @@ class Block
     ethsnarks::FieldT operatorAccountID;
     AccountUpdate accountUpdate_O;
 
-    AccountUpdate accountUpdate_I;
-
     std::vector<Loopring::UniversalTransaction> transactions;
 };
 
@@ -627,8 +631,6 @@ static void from_json(const json &j, Block &block)
 
     block.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
     block.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
-
-    block.accountUpdate_I = j.at("accountUpdate_I").get<AccountUpdate>();
 
     // Read transactions
     json jTransactions = j["transactions"];
