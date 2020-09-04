@@ -67,6 +67,7 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         external
     {
         require(trustedForwarder == address(0), "INITIALIZED_ALREADY");
+        require(_trustedForwarder != address(0), "INVALID_ADDRESS");
         trustedForwarder = _trustedForwarder;
     }
 
