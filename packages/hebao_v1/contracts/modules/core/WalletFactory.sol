@@ -63,6 +63,13 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         allowEmptyENS = _allowEmptyENS;
     }
 
+    function initTrustedForwarder(address _trustedForwarder)
+        external
+    {
+        require(trustedForwarder == address(0), "INITIALIZED_ALREADY");
+        trustedForwarder = _trustedForwarder;
+    }
+
     /// @dev Create a set of new wallet blanks to be used in the future.
     /// @param modules The wallet's modules.
     /// @param salts The salts that can be used to generate nice addresses.
@@ -103,7 +110,7 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         // txAwareHashNotAllowed()
         returns (address _wallet)
     {
-        bytes32 signHash = validateRequest_(
+        validateRequest_(
             _owner,
             _salt,
             address(0),
@@ -112,9 +119,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
             _modules,
             _signature
         );
-
-        bytes32 txAwareHash_ = txAwareHash();
-        require(txAwareHash_ == 0 || txAwareHash_ == signHash, "INVALID_TX_AWARE_HASH");
 
         _wallet = createWallet_(_owner, _salt, _modules);
 
@@ -152,7 +156,7 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         // txAwareHashNotAllowed()
         returns (address _wallet)
     {
-        bytes32 signHash = validateRequest_(
+        validateRequest_(
             _owner,
             0,
             _blank,
@@ -161,9 +165,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
             _modules,
             _signature
         );
-
-        bytes32 txAwareHash_ = txAwareHash();
-        require(txAwareHash_ == 0 || txAwareHash_ == signHash, "INVALID_TX_AWARE_HASH");
 
         _wallet = consumeBlank_(_blank, _modules);
 
@@ -282,7 +283,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         )
         private
         view
-        returns (bytes32 signHash)
     {
         require(_owner != address(0) && !_owner.isContract(), "INVALID_OWNER");
         require(_modules.length > 0, "EMPTY_MODULES");
@@ -297,7 +297,10 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
             keccak256(abi.encode(_modules))
         );
 
-        signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
+        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
+
+        bytes32 txAwareHash_ = txAwareHash();
+        require(txAwareHash_ == 0 || txAwareHash_ == signHash, "INVALID_TX_AWARE_HASH");
 
         require(signHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
     }
