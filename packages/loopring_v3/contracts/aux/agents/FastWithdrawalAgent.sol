@@ -67,15 +67,56 @@ contract FastWithdrawalAgent is ReentrancyGuard
         bytes   signature;
     }
 
+    struct FastWithdrawalTx
+    {
+        address liquidityProvider;
+        bytes txData;
+        bytes signature;
+    }
+
     // EIP712
     bytes32 constant public FASTWITHDRAWAL_TYPEHASH = keccak256(
         "FastWithdrawal(address exchange,address from,address to,address token,uint96 amount,address feeToken,uint96 fee,uint32 nonce,uint32 validUntil)"
     );
+
+    bytes32 constant public FASTWITHDRAWAL_TX_TYPEHASH = keccak256(
+        "FastWithdrawalTx(address liquidityProvider,bytes txData,bytes signature)"
+    );
+
     bytes32 public DOMAIN_SEPARATOR;
 
     constructor()
     {
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalAgent", "1.0", address(this)));
+    }
+
+    function executeFastWithdrawalTx(FastWithdrawalTx memory fastWithdrawalTx)
+        public
+        nonReentrant
+        payable
+    {
+        bytes32 hash = EIP712.hashPacked(
+            DOMAIN_SEPARATOR,
+            keccak256(
+                abi.encodePacked(
+                    FASTWITHDRAWAL_TX_TYPEHASH,
+                    fastWithdrawalTx.txData
+                )
+            )
+        );
+
+        require(
+            hash.verifySignature(
+                fastWithdrawalTx.liquidityProvider,
+                fastWithdrawalTx.signature
+            ),
+            "INVALID_SIGNATURE"
+        );
+
+        FastWithdrawal memory fastWithdrawal = abi.decode(fastWithdrawalTx.txData, (FastWithdrawal));
+        executeFastWithdrawal(fastWithdrawal);
+
+        msg.sender.sendETHAndVerify(address(this).balance, gasleft());
     }
 
     // This method needs to be called by any liquidity provider
@@ -101,54 +142,39 @@ contract FastWithdrawalAgent is ReentrancyGuard
         // The liquidity provider always authorizes the fast withdrawal by being the direct caller
         address payable liquidityProvider = msg.sender;
 
-        if (fastWithdrawal.signature.length > 0) {
-            // Compute the hash
-            bytes32 hash = EIP712.hashPacked(
-                DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encodePacked(
-                        FASTWITHDRAWAL_TYPEHASH,
-                        fastWithdrawal.exchange,
-                        fastWithdrawal.from,
-                        fastWithdrawal.to,
-                        fastWithdrawal.token,
-                        fastWithdrawal.amount,
-                        fastWithdrawal.feeToken,
-                        fastWithdrawal.fee,
-                        fastWithdrawal.nonce,
-                        fastWithdrawal.validUntil
-                    )
+        // Compute the hash
+        bytes32 hash = EIP712.hashPacked(
+            DOMAIN_SEPARATOR,
+            keccak256(
+                abi.encodePacked(
+                    FASTWITHDRAWAL_TYPEHASH,
+                    fastWithdrawal.exchange,
+                    fastWithdrawal.from,
+                    fastWithdrawal.to,
+                    fastWithdrawal.token,
+                    fastWithdrawal.amount,
+                    fastWithdrawal.feeToken,
+                    fastWithdrawal.fee,
+                    fastWithdrawal.nonce,
+                    fastWithdrawal.validUntil
                 )
-            );
+            )
+        );
 
-            // Check the signature
-            require(hash.verifySignature(fastWithdrawal.from, fastWithdrawal.signature), "INVALID_SIGNATURE");
+        // Check the signature
+        require(hash.verifySignature(fastWithdrawal.from, fastWithdrawal.signature), "INVALID_SIGNATURE");
 
-            // Check the time limit
-            require(block.timestamp <= fastWithdrawal.validUntil, "TX_EXPIRED");
+        // Check the time limit
+        require(block.timestamp <= fastWithdrawal.validUntil, "TX_EXPIRED");
 
-            // Approve the offchain transfer from the account that's withdrawing back to the liquidity provider
-            IExchangeV3(fastWithdrawal.exchange).approveOffchainTransfer(
-                fastWithdrawal.from,
-                liquidityProvider,
-                fastWithdrawal.token,
-                fastWithdrawal.amount,
-                fastWithdrawal.feeToken,
-                fastWithdrawal.fee,
-                fastWithdrawal.validUntil,
-                fastWithdrawal.nonce
-            );
-        } else {
-            // Override the destination address of a withdrawal to the address of the liquidity provider
-            IExchangeV3(fastWithdrawal.exchange).setWithdrawalRecipient(
-                fastWithdrawal.from,
-                fastWithdrawal.to,
-                fastWithdrawal.token,
-                fastWithdrawal.amount,
-                fastWithdrawal.nonce,
-                liquidityProvider
-            );
-        }
+        IExchangeV3(fastWithdrawal.exchange).setWithdrawalRecipient(
+            fastWithdrawal.from,
+            fastWithdrawal.to,
+            fastWithdrawal.token,
+            fastWithdrawal.amount,
+            fastWithdrawal.nonce,
+            liquidityProvider
+        );
 
         // Transfer the tokens immediately to the requested address
         // using funds from the liquidity provider (`msg.sender`).

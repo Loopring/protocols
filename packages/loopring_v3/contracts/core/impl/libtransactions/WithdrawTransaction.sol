@@ -63,6 +63,7 @@ library WithdrawTransaction
         address to;
         bytes   extraData;
         uint32  validUntil;
+        uint8   isFastWithdrawal;
     }
 
     /*event ForcedWithdrawalProcessed(
@@ -168,6 +169,10 @@ library WithdrawTransaction
             withdrawal.minGas = 0;
 
             delete S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.nonce];
+        } else if (auxData.isFastWithdrawal > 0) {
+            // process a fastwithdrawal as a normal withdrawal,
+            // write the recipient to prevent the fastwithdrawal being processed by the LP again.
+            S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.nonce] = withdrawal.to;
         }
 
         // Validate gas provided
