@@ -116,7 +116,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         FastWithdrawal memory fastWithdrawal = abi.decode(fastWithdrawalTx.txData, (FastWithdrawal));
 
         // withdrawalRecipient can not override, so replay attach is impossible.
-        executeFastWithdrawal(fastWithdrawal);
+        executeFastWithdrawal(fastWithdrawal, fastWithdrawalTx.liquidityProvider);
 
         msg.sender.sendETHAndVerify(address(this).balance, gasleft());
     }
@@ -129,7 +129,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
     {
         // Do all fast withdrawals
         for (uint i = 0; i < fastWithdrawals.length; i++) {
-            executeFastWithdrawal(fastWithdrawals[i]);
+            executeFastWithdrawal(fastWithdrawals[i], msg.sender);
         }
         // Return any ETH left into this contract
         // (can happen when more ETH is sent than needed for the fast withdrawals)
@@ -138,11 +138,9 @@ contract FastWithdrawalAgent is ReentrancyGuard
 
     // -- Internal --
 
-    function executeFastWithdrawal(FastWithdrawal memory fastWithdrawal)
+    function executeFastWithdrawal(FastWithdrawal memory fastWithdrawal, address liquidityProvider)
         internal
     {
-        // The liquidity provider always authorizes the fast withdrawal by being the direct caller
-        address payable liquidityProvider = msg.sender;
 
         // Compute the hash
         bytes32 hash = EIP712.hashPacked(
