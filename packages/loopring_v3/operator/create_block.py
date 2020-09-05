@@ -88,7 +88,7 @@ def withdrawFromJSON(jWithdraw):
     withdraw = GeneralObject()
     withdraw.owner = str(jWithdraw["owner"])
     withdraw.accountID = int(jWithdraw["accountID"])
-    withdraw.nonce = str(jWithdraw["nonce"])
+    withdraw.storageID = str(jWithdraw["storageID"])
     withdraw.tokenID = int(jWithdraw["tokenID"])
     withdraw.amount = str(jWithdraw["amount"])
     withdraw.feeTokenID = int(jWithdraw["feeTokenID"])

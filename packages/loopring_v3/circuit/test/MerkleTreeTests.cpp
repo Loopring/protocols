@@ -11,6 +11,7 @@ AccountState createAccountState(ProtoboardT &pb, const AccountLeaf &state)
     accountState.publicKeyX = make_variable(pb, state.publicKey.x, ".publicKeyX");
     accountState.publicKeyY = make_variable(pb, state.publicKey.y, ".publicKeyY");
     accountState.nonce = make_variable(pb, state.nonce, ".nonce");
+    accountState.feeBipsAMM = make_variable(pb, state.feeBipsAMM, ".feeBipsAMM");
     accountState.balancesRoot = make_variable(pb, state.balancesRoot, ".balancesRoot");
     return accountState;
 }
@@ -19,6 +20,7 @@ BalanceState createBalanceState(ProtoboardT &pb, const BalanceLeaf &state)
 {
     BalanceState balanceState;
     balanceState.balance = make_variable(pb, state.balance, ".balance");
+    balanceState.weightAMM = make_variable(pb, state.weightAMM, ".weightAMM");
     balanceState.storageRoot = make_variable(pb, state.storageRoot, ".storage");
     return balanceState;
 }

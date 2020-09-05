@@ -554,7 +554,7 @@ contract ExchangeV3 is IExchangeV3
         address to,
         address token,
         uint96  amount,
-        uint32  nonce,
+        uint32  storageID,
         address newRecipient
         )
         external
@@ -562,9 +562,26 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(from)
     {
+        require(newRecipient != address(0), "INVALID_DATA");
         uint16 tokenID = state.getTokenID(token);
-        require(state.withdrawalRecipient[from][to][tokenID][amount][nonce] == address(0), "CANNOT_OVERRIDE_RECIPIENT_ADDRESS");
-        state.withdrawalRecipient[from][to][tokenID][amount][nonce] = newRecipient;
+        require(state.withdrawalRecipient[from][to][tokenID][amount][storageID] == address(0), "CANNOT_OVERRIDE_RECIPIENT_ADDRESS");
+        state.withdrawalRecipient[from][to][tokenID][amount][storageID] = newRecipient;
+    }
+
+    function getWithdrawalRecipient(
+        address from,
+        address to,
+        address token,
+        uint96  amount,
+        uint32  storageID
+        )
+        external
+        override
+        view
+        returns (address)
+    {
+        uint16 tokenID = state.getTokenID(token);
+        return state.withdrawalRecipient[from][to][tokenID][amount][storageID];
     }
 
     function onchainTransferFrom(

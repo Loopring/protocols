@@ -591,7 +591,11 @@ export class Simulator {
       .balance.iadd(withdrawal.fee);
 
     if (withdrawal.type === 0 || withdrawal.type === 1) {
-      account.nonce++;
+      // Nonce
+      const storageSlot = withdrawal.storageID % Constants.NUM_STORAGE_SLOTS;
+      const storage = account.getBalance(withdrawal.tokenID).getStorage(storageSlot);
+      storage.storageID = withdrawal.storageID;
+      storage.data = new BN(1);
     }
 
     const simulatorReport: SimulatorReport = {

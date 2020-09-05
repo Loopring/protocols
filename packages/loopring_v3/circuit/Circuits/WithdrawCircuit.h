@@ -37,14 +37,14 @@ class WithdrawCircuit : public BaseTransactionCircuit
     DualVariableGadget validUntil;
     DualVariableGadget onchainDataHash;
     DualVariableGadget maxFee;
+    DualVariableGadget storageID;
     DualVariableGadget type;
 
     // Special case protocol fee withdrawal
+    EqualGadget isWithdrawalTx;
     EqualGadget isProtocolFeeWithdrawal;
     TernaryGadget ownerValue;
-    TernaryGadget nonceValue;
     DualVariableGadget owner;
-    DualVariableGadget nonce;
 
     // Signature
     Poseidon_gadget_T<10, 1, 6, 53, 9, 1> hash;
@@ -86,10 +86,11 @@ class WithdrawCircuit : public BaseTransactionCircuit
     SubGadget balanceP_after;
     ArrayTernaryGadget merkleTreeAccountA;
 
-    // Increase the nonce of the user by 1
+    // Update the nonce storage (unless it's a forced withdrawal)
+    NonceGadget nonce;
     OrGadget isForcedWithdrawal;
-    NotGadget isNotForcedWithdrawal;
-    AddGadget nonce_after;
+    TernaryGadget storageDataValue;
+    IfThenRequireEqualGadget ifrequireSameStorageID;
 
     // Disable AMM for the token when doing a forced withdrawal
     NotGadget isNotProtocolFeeWithdrawal;
@@ -114,9 +115,11 @@ class WithdrawCircuit : public BaseTransactionCircuit
           validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
           onchainDataHash(pb, NUM_BITS_HASH, FMT(prefix, ".onchainDataHash")),
           maxFee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".maxFee")),
+          storageID(pb, NUM_BITS_STORAGEID, FMT(prefix, ".storageID")),
           type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
 
           // Special case protocol fee withdrawal
+          isWithdrawalTx(pb, state.type, state.constants.txTypeWithdrawal, FMT(prefix, ".isWithdrawalTx")),
           isProtocolFeeWithdrawal(pb, accountID.packed, state.constants._0, FMT(prefix, ".isProtocolFeeWithdrawal")),
           ownerValue(
             pb,
@@ -124,14 +127,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
             state.constants._0,
             state.accountA.account.owner,
             FMT(prefix, ".ownerValue")),
-          nonceValue(
-            pb,
-            isProtocolFeeWithdrawal.result(),
-            state.constants._0,
-            state.accountA.account.nonce,
-            FMT(prefix, ".nonceValue")),
           owner(pb, ownerValue.result(), NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
-          nonce(pb, nonceValue.result(), NUM_BITS_NONCE, FMT(prefix, ".nonce")),
 
           // Signature
           hash(
@@ -145,7 +141,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
                maxFee.packed,
                onchainDataHash.packed,
                validUntil.packed,
-               state.accountA.account.nonce}),
+               storageID.packed}),
             FMT(this->annotation_prefix, ".hash")),
 
           // Validate
@@ -219,18 +215,19 @@ class WithdrawCircuit : public BaseTransactionCircuit
             accountID.bits,
             FMT(prefix, ".merkleTreeAccountA")),
 
-          // Increase the nonce by 1 (unless it's a forced withdrawal)
+          // Update the nonce storage (unless it's a forced withdrawal)
+          nonce(pb, state.constants, state.accountA.storage, storageID, isWithdrawalTx.result(), FMT(prefix, ".nonce")),
           isForcedWithdrawal(
             pb,
             {validFullWithdrawalType.result(), invalidFullWithdrawalType.result()},
             FMT(prefix, ".isForcedWithdrawal")),
-          isNotForcedWithdrawal(pb, isForcedWithdrawal.result(), FMT(prefix, ".isNotForcedWithdrawal")),
-          nonce_after(
+          storageDataValue(
             pb,
-            state.accountA.account.nonce,
-            isNotForcedWithdrawal.result(),
-            NUM_BITS_NONCE,
-            FMT(prefix, ".nonce_after")),
+            isForcedWithdrawal.result(),
+            state.accountA.storage.data,
+            nonce.getData(),
+            FMT(prefix, ".storageDataValue")),
+          ifrequireSameStorageID(pb, isForcedWithdrawal.result(), storageID.packed, state.accountA.storage.storageID, FMT(prefix, ".ifrequireSameStorageID")),
 
           // Disable AMM for the token when doing a forced withdrawal
           // (but not if it's a protocol fee withdrawal)
@@ -242,7 +239,6 @@ class WithdrawCircuit : public BaseTransactionCircuit
             state.constants._0,
             state.accountA.balanceS.weightAMM,
             FMT(prefix, ".newTokenWeightAMM")),
-
           // Increase the number of conditional transactions
           numConditionalTransactionsAfter(
             pb,
@@ -250,9 +246,8 @@ class WithdrawCircuit : public BaseTransactionCircuit
             state.constants._1,
             FMT(prefix, ".numConditionalTransactionsAfter"))
     {
-        // Update the account owner
+        // Set the account
         setArrayOutput(TXV_ACCOUNT_A_ADDRESS, merkleTreeAccountA.result());
-        setOutput(TXV_ACCOUNT_A_NONCE, nonce_after.result());
 
         // Update the account balances (withdrawal + fee)
         setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
@@ -275,6 +270,11 @@ class WithdrawCircuit : public BaseTransactionCircuit
 
         // Increase the number of conditional transactions
         setOutput(TXV_NUM_CONDITIONAL_TXS, numConditionalTransactionsAfter.result());
+
+        // Nonce
+        setArrayOutput(TXV_STORAGE_A_ADDRESS, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
+        setOutput(TXV_STORAGE_A_DATA, storageDataValue.result());
+        setOutput(TXV_STORAGE_A_STORAGEID, storageID.packed);
     }
 
     void generate_r1cs_witness(const Withdrawal &withdrawal)
@@ -288,14 +288,14 @@ class WithdrawCircuit : public BaseTransactionCircuit
         validUntil.generate_r1cs_witness(pb, withdrawal.validUntil);
         onchainDataHash.generate_r1cs_witness(pb, withdrawal.onchainDataHash);
         maxFee.generate_r1cs_witness(pb, withdrawal.maxFee);
+        storageID.generate_r1cs_witness(pb, withdrawal.storageID);
         type.generate_r1cs_witness(pb, withdrawal.type);
 
         // Special case protocol fee withdrawal
+        isWithdrawalTx.generate_r1cs_witness();
         isProtocolFeeWithdrawal.generate_r1cs_witness();
         ownerValue.generate_r1cs_witness();
-        nonceValue.generate_r1cs_witness();
         owner.generate_r1cs_witness();
-        nonce.generate_r1cs_witness();
 
         // Signature
         hash.generate_r1cs_witness();
@@ -337,10 +337,11 @@ class WithdrawCircuit : public BaseTransactionCircuit
         balanceP_after.generate_r1cs_witness();
         merkleTreeAccountA.generate_r1cs_witness();
 
-        // Increase the nonce by 1 (unless it's a forced withdrawal)
+        // Update the nonce storage (unless it's a forced withdrawal)
+        nonce.generate_r1cs_witness();
         isForcedWithdrawal.generate_r1cs_witness();
-        isNotForcedWithdrawal.generate_r1cs_witness();
-        nonce_after.generate_r1cs_witness();
+        storageDataValue.generate_r1cs_witness();
+        ifrequireSameStorageID.generate_r1cs_witness();
 
         // Disable AMM for the token when doing a forced withdrawal
         isNotProtocolFeeWithdrawal.generate_r1cs_witness();
@@ -362,14 +363,14 @@ class WithdrawCircuit : public BaseTransactionCircuit
         validUntil.generate_r1cs_constraints(true);
         onchainDataHash.generate_r1cs_constraints(true);
         maxFee.generate_r1cs_constraints(true);
+        storageID.generate_r1cs_constraints(true);
         type.generate_r1cs_constraints(true);
 
         // Special case protocol fee withdrawal
+        isWithdrawalTx.generate_r1cs_constraints();
         isProtocolFeeWithdrawal.generate_r1cs_constraints();
         ownerValue.generate_r1cs_constraints();
-        nonceValue.generate_r1cs_constraints();
         owner.generate_r1cs_constraints(true);
-        nonce.generate_r1cs_constraints(true);
 
         // Signature
         hash.generate_r1cs_constraints();
@@ -411,10 +412,11 @@ class WithdrawCircuit : public BaseTransactionCircuit
         balanceP_after.generate_r1cs_constraints();
         merkleTreeAccountA.generate_r1cs_constraints();
 
-        // Increase the nonce by 1 (unless it's a forced withdrawal)
+        // Update the nonce storage (unless it's a forced withdrawal)
+        nonce.generate_r1cs_constraints();
         isForcedWithdrawal.generate_r1cs_constraints();
-        isNotForcedWithdrawal.generate_r1cs_constraints();
-        nonce_after.generate_r1cs_constraints();
+        storageDataValue.generate_r1cs_constraints();
+        ifrequireSameStorageID.generate_r1cs_constraints();
 
         // Disable AMM for the token when doing a forced withdrawal
         isNotProtocolFeeWithdrawal.generate_r1cs_constraints();
@@ -435,7 +437,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
            amount.bits,
            feeTokenID.bits,
            fFee.bits(),
-           nonce.bits,
+           storageID.bits,
            onchainDataHash.bits});
     }
 };
