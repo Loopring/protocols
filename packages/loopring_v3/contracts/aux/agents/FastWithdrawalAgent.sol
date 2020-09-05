@@ -114,6 +114,8 @@ contract FastWithdrawalAgent is ReentrancyGuard
         );
 
         FastWithdrawal memory fastWithdrawal = abi.decode(fastWithdrawalTx.txData, (FastWithdrawal));
+
+        // withdrawalRecipient can not override, so replay attach is impossible.
         executeFastWithdrawal(fastWithdrawal);
 
         msg.sender.sendETHAndVerify(address(this).balance, gasleft());
