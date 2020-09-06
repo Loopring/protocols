@@ -19,7 +19,7 @@ library TransactionReader {
 
     function readDeposit(
         ExchangeData.Block memory _block,
-        uint         txIdx
+        uint txIdx
         )
         internal
         pure
@@ -31,7 +31,7 @@ library TransactionReader {
 
     function readWithdrawal(
         ExchangeData.Block memory _block,
-        uint         txIdx
+        uint txIdx
         )
         internal
         pure
@@ -43,7 +43,7 @@ library TransactionReader {
 
     function readAmmUpdate(
         ExchangeData.Block memory _block,
-        uint         txIdx
+        uint txIdx
         )
         internal
         pure
