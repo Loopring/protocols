@@ -65,6 +65,7 @@ class TransferCircuit : public BaseTransactionCircuit
     IfThenRequireNotEqualGadget ifrequire_NotZero_to;
     RequireLtGadget requireValidUntil;
     RequireLeqGadget requireValidFee;
+    IfThenRequireEqualGadget requireZeroWeightB;
 
     // Fill in standard dual author key if none is given
     IsNonZero isNonZero_dualAuthorX;
@@ -177,6 +178,12 @@ class TransferCircuit : public BaseTransactionCircuit
             maxFee.packed,
             NUM_BITS_AMOUNT,
             FMT(prefix, ".requireValidFee")),
+          requireZeroWeightB(
+            pb,
+            isTransferTx.result(),
+            state.accountB.balanceB.weightAMM,
+            state.constants._0,
+            FMT(prefix, ".requireZeroWeightB")),
 
           // Fill in standard dual author key if none is given
           isNonZero_dualAuthorX(pb, dualAuthorX, FMT(prefix, ".isNonZero_dualAuthorX")),
@@ -370,6 +377,7 @@ class TransferCircuit : public BaseTransactionCircuit
         ifrequire_NotZero_to.generate_r1cs_witness();
         requireValidUntil.generate_r1cs_witness();
         requireValidFee.generate_r1cs_witness();
+        requireZeroWeightB.generate_r1cs_witness();
 
         // Fill in standard dual author key if none is given
         isNonZero_dualAuthorX.generate_r1cs_witness();
@@ -447,6 +455,7 @@ class TransferCircuit : public BaseTransactionCircuit
         ifrequire_NotZero_to.generate_r1cs_constraints();
         requireValidUntil.generate_r1cs_constraints();
         requireValidFee.generate_r1cs_constraints();
+        requireZeroWeightB.generate_r1cs_constraints();
 
         // Fill in standard dual author key if none is given
         isNonZero_dualAuthorX.generate_r1cs_constraints();
