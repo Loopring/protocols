@@ -9,12 +9,12 @@ import "../../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "../../core/impl/libtransactions/DepositTransaction.sol";
 import "../../core/impl/libtransactions/WithdrawTransaction.sol";
 
-/// @title BlockReaderUtils
+/// @title TransactionReader
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Utility library to read transactions.
-library BlockReaderUtils {
+library TransactionReader {
     using BlockReader       for ExchangeData.Block;
-    using BlockReaderUtils  for ExchangeData.Block;
+    using TransactionReader  for ExchangeData.Block;
     using BytesUtil         for bytes;
 
     function readDeposit(
@@ -25,11 +25,7 @@ library BlockReaderUtils {
         pure
         returns (DepositTransaction.Deposit memory)
     {
-        bytes memory data = _block.readTransactionData(txIdx);
-        ExchangeData.TransactionType txType = ExchangeData.TransactionType(
-            data.toUint8(0)
-        );
-        require(txType == ExchangeData.TransactionType.DEPOSIT, "UNEXPTECTED_TX_TYPE");
+        bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.DEPOSIT);
         return DepositTransaction.readTx(data, 1);
     }
 
@@ -41,11 +37,7 @@ library BlockReaderUtils {
         pure
         returns (WithdrawTransaction.Withdrawal memory)
     {
-        bytes memory data = _block.readTransactionData(txIdx);
-        ExchangeData.TransactionType txType = ExchangeData.TransactionType(
-            data.toUint8(0)
-        );
-        require(txType == ExchangeData.TransactionType.WITHDRAWAL, "UNEXPTECTED_TX_TYPE");
+        bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.WITHDRAWAL);
         return WithdrawTransaction.readTx(data, 1);
     }
 
@@ -57,11 +49,20 @@ library BlockReaderUtils {
         pure
         returns (AmmUpdateTransaction.AmmUpdate memory)
     {
-        bytes memory data = _block.readTransactionData(txIdx);
-        ExchangeData.TransactionType txType = ExchangeData.TransactionType(
-            data.toUint8(0)
-        );
-        require(txType == ExchangeData.TransactionType.AMM_UPDATE, "UNEXPTECTED_TX_TYPE");
+        bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.AMM_UPDATE);
         return AmmUpdateTransaction.readTx(data, 1);
+    }
+
+    function readTx(
+        ExchangeData.Block memory    _block,
+        uint                         txIdx,
+        ExchangeData.TransactionType txType
+        )
+        internal
+        pure
+        returns (bytes memory data)
+    {
+        data = _block.readTransactionData(txIdx);
+        require(txType == ExchangeData.TransactionType(data.toUint8(0)), "UNEXPTECTED_TX_TYPE");
     }
 }

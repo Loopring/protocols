@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../aux/access/IBlockReceiver.sol";
-import "../aux/transactions/BlockReaderUtils.sol";
+import "../aux/transactions/TransactionReader.sol";
 import "../thirdparty/BytesUtil.sol";
 import "../core/iface/IExchangeV3.sol";
 import "../lib/AddressUtil.sol";
@@ -24,7 +24,7 @@ contract AmmPool is IBlockReceiver {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
     using BlockReader       for ExchangeData.Block;
-    using BlockReaderUtils  for ExchangeData.Block;
+    using TransactionReader for ExchangeData.Block;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 

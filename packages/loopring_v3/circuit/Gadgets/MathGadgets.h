@@ -1548,16 +1548,16 @@ class PublicDataGadget : public GadgetT
             transformedBits.emplace_back(publicDataBits[i]);
         }
 
-        unsigned int sizeA = 25 * 8;
-        unsigned int sizeB = 43 * 8;
+        unsigned int sizePart1 = 25 * 8;
+        unsigned int sizePart2 = 43 * 8;
 
-        unsigned int startA = start;
-        unsigned int startB = startA + sizeA * count;
+        unsigned int startPart1 = start;
+        unsigned int startPart2 = startPart1 + sizePart1 * count;
 
         // Part 1
         for (unsigned int i = 0; i < count; i++)
         {
-            for (unsigned int j = 0; j < sizeA; j++)
+            for (unsigned int j = 0; j < sizePart1; j++)
             {
                 transformedBits.emplace_back(publicDataBits[start + i * size + j]);
             }
@@ -1565,9 +1565,9 @@ class PublicDataGadget : public GadgetT
         // Part 2
         for (unsigned int i = 0; i < count; i++)
         {
-            for (unsigned int j = 0; j < sizeB; j++)
+            for (unsigned int j = 0; j < sizePart2; j++)
             {
-                transformedBits.emplace_back(publicDataBits[start + i * size + sizeA + j]);
+                transformedBits.emplace_back(publicDataBits[start + i * size + sizePart1 + j]);
             }
         }
 
