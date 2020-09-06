@@ -51,7 +51,7 @@ contract("Exchange", (accounts: string[]) => {
       const token = exchangeTestUtil.getTokenAddress("LRC");
       const fee = exchangeTestUtil.getRandomFee();
 
-      // Fund the payer
+      // Create the AMM account
       await exchangeTestUtil.deposit(owner, owner, token, balance);
 
       // Send some funds over to the new account
@@ -69,6 +69,32 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitPendingBlocks();
     });
 
+    it("Should not be possible to transfer tokens to non-zero token weight", async () => {
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
+
+      const token = "LRC";
+      const tokenWeight = new BN(web3.utils.toWei("1", "ether"));
+
+      // Create the AMM account
+      await exchangeTestUtil.deposit(owner, owner, token, new BN(123));
+
+      // Create the transferrer
+      await exchangeTestUtil.deposit(ownerB, ownerB, token, new BN(123));
+
+      // Setup the AMM
+      await exchangeTestUtil.requestAmmUpdate(owner, token, 15, tokenWeight);
+
+      // Request forced withdrawal
+      await exchangeTestUtil.transfer(ownerB, owner, token, new BN(1), token, new BN(0));
+
+      // Commit the transfers
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
+    });
+
     it("Forced withdrawals should reset the AMM token weight", async () => {
       const owner = exchangeTestUtil.testContext.orderOwners[0];
 
@@ -76,7 +102,7 @@ contract("Exchange", (accounts: string[]) => {
       const tokenWeight = new BN(web3.utils.toWei("1", "ether"));
       const balance = new BN(web3.utils.toWei("5484.24", "ether"));
 
-      // Fund the payer
+      // Create the AMM account
       await exchangeTestUtil.deposit(owner, owner, token, balance);
 
       // Setup the AMM

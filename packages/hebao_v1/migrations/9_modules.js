@@ -73,6 +73,15 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
+      return Promise.all([
+        WalletFactory.deployed().then(walletFactory => {
+          return Promise.all([
+            walletFactory.initTrustedForwarder(FinalCoreModule.address)
+          ]);
+        })
+      ]);
+    })
+    .then(() => {
       let ensManagerAddr = process.env.ENSManager || "";
       if (web3.utils.isAddress(ensManagerAddr.toLowerCase())) {
         // should be done manually.

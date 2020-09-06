@@ -48,7 +48,8 @@ export function signCreateWallet(
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
   // console.log(`hash: ${hash.toString("hex")}`);
 
-  return sign(owner, hash);
+  const txSignature = sign(owner, hash);
+  return { txSignature, hash };
 }
 
 export function signAddToWhitelistImmediately(
@@ -287,6 +288,11 @@ export function getMetaTxHash(metaTx: MetaTx, moduleAddr: string) {
     )
   );
 
+  const data =
+    metaTx.txAwareHash === Constants.emptyBytes32
+      ? metaTx.data
+      : metaTx.data.slice(0, 10);
+
   const encodedRequest = web3.eth.abi.encodeParameters(
     [
       "bytes32",
@@ -308,7 +314,7 @@ export function getMetaTxHash(metaTx: MetaTx, moduleAddr: string) {
       metaTx.gasToken,
       new BN(metaTx.gasPrice).toString(10),
       new BN(metaTx.gasLimit).toString(10),
-      ethUtil.keccak(metaTx.data)
+      ethUtil.keccak(data)
     ]
   );
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
