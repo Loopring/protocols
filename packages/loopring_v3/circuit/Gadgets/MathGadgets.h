@@ -2159,7 +2159,6 @@ class SignedMulDivGadget : public GadgetT
 class PowerGadget : public GadgetT
 {
   public:
-
     UnsafeMulGadget sum0;
 
     SubGadget x1;

@@ -151,12 +151,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
             validUntil.packed,
             NUM_BITS_TIMESTAMP,
             FMT(prefix, ".requireValidUntil")),
-          requireValidFee(
-            pb,
-            fee.packed,
-            maxFee.packed,
-            NUM_BITS_AMOUNT,
-            FMT(prefix, ".requireValidFee")),
+          requireValidFee(pb, fee.packed, maxFee.packed, NUM_BITS_AMOUNT, FMT(prefix, ".requireValidFee")),
 
           // Type
           isConditional(pb, type.packed, FMT(prefix, ".isConditional")),
@@ -227,12 +222,20 @@ class WithdrawCircuit : public BaseTransactionCircuit
             state.accountA.storage.data,
             nonce.getData(),
             FMT(prefix, ".storageDataValue")),
-          ifrequireSameStorageID(pb, isForcedWithdrawal.result(), storageID.packed, state.accountA.storage.storageID, FMT(prefix, ".ifrequireSameStorageID")),
+          ifrequireSameStorageID(
+            pb,
+            isForcedWithdrawal.result(),
+            storageID.packed,
+            state.accountA.storage.storageID,
+            FMT(prefix, ".ifrequireSameStorageID")),
 
           // Disable AMM for the token when doing a forced withdrawal
           // (but not if it's a protocol fee withdrawal)
           isNotProtocolFeeWithdrawal(pb, isProtocolFeeWithdrawal.result(), FMT(prefix, ".isNotProtocolFeeWithdrawal")),
-          doUpdateTokenWeight(pb, {isNotProtocolFeeWithdrawal.result(), validFullWithdrawalType.result()}, FMT(prefix, ".doUpdateTokenWeight")),
+          doUpdateTokenWeight(
+            pb,
+            {isNotProtocolFeeWithdrawal.result(), validFullWithdrawalType.result()},
+            FMT(prefix, ".doUpdateTokenWeight")),
           newTokenWeight(
             pb,
             doUpdateTokenWeight.result(),

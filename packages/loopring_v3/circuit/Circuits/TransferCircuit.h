@@ -171,12 +171,7 @@ class TransferCircuit : public BaseTransactionCircuit
             validUntil.packed,
             NUM_BITS_TIMESTAMP,
             FMT(prefix, ".requireValidUntil")),
-          requireValidFee(
-            pb,
-            fee.packed,
-            maxFee.packed,
-            NUM_BITS_AMOUNT,
-            FMT(prefix, ".requireValidFee")),
+          requireValidFee(pb, fee.packed, maxFee.packed, NUM_BITS_AMOUNT, FMT(prefix, ".requireValidFee")),
 
           // Fill in standard dual author key if none is given
           isNonZero_dualAuthorX(pb, dualAuthorX, FMT(prefix, ".isNonZero_dualAuthorX")),

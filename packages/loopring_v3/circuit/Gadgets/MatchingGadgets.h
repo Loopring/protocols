@@ -736,31 +736,11 @@ class RequireAMMFillsGadget : public GadgetT
         : GadgetT(pb, prefix),
 
           // Use dummy data if this isn't an AMM order
-          inBalanceBefore(
-            pb,
-            data.amm,
-            data.balanceBeforeB,
-            constants.fixedBase,
-            FMT(prefix, ".inBalanceBefore")),
-          inBalanceAfter(
-            pb,
-            data.amm,
-            data.balanceAfterB,
-            constants.fixedBase,
-            FMT(prefix, ".inBalanceAfter")),
+          inBalanceBefore(pb, data.amm, data.balanceBeforeB, constants.fixedBase, FMT(prefix, ".inBalanceBefore")),
+          inBalanceAfter(pb, data.amm, data.balanceAfterB, constants.fixedBase, FMT(prefix, ".inBalanceAfter")),
           inWeight(pb, data.amm, data.weightB, constants.fixedBase, FMT(prefix, ".inWeight")),
-          outBalanceBefore(
-            pb,
-            data.amm,
-            data.balanceBeforeS,
-            constants.fixedBase,
-            FMT(prefix, ".outBalanceBefore")),
-          outBalanceAfter(
-            pb,
-            data.amm,
-            data.balanceAfterS,
-            constants.fixedBase,
-            FMT(prefix, ".outBalanceAfter")),
+          outBalanceBefore(pb, data.amm, data.balanceBeforeS, constants.fixedBase, FMT(prefix, ".outBalanceBefore")),
+          outBalanceAfter(pb, data.amm, data.balanceAfterS, constants.fixedBase, FMT(prefix, ".outBalanceAfter")),
           outWeight(pb, data.amm, data.weightS, constants.fixedBase, FMT(prefix, ".outWeight")),
           ammFill(pb, data.amm, fillB, constants._0, FMT(prefix, ".ammFill")),
 
@@ -791,11 +771,7 @@ class RequireAMMFillsGadget : public GadgetT
             ammMaximumFillS.result(),
             NUM_BITS_AMOUNT,
             FMT(prefix, ".fillS_leq_ammMaximumFillS")),
-          requireValidAmmFillS(
-            pb,
-            data.amm,
-            fillS_leq_ammMaximumFillS.leq(),
-            FMT(prefix, ".requireValidAmmFillS")),
+          requireValidAmmFillS(pb, data.amm, fillS_leq_ammMaximumFillS.leq(), FMT(prefix, ".requireValidAmmFillS")),
 
           // Check that the price increased as an additional safety check
           priceBefore(
@@ -822,11 +798,7 @@ class RequireAMMFillsGadget : public GadgetT
             priceAfter.result(),
             NUM_BITS_AMOUNT,
             FMT(prefix, ".priceBefore_leq_priceAfter")),
-          requirePriceIncreased(
-            pb,
-            data.amm,
-            priceBefore_leq_priceAfter.leq(),
-            FMT(prefix, ".requirePriceIncreased"))
+          requirePriceIncreased(pb, data.amm, priceBefore_leq_priceAfter.leq(), FMT(prefix, ".requirePriceIncreased"))
     {
     }
 
