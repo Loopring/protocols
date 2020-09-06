@@ -36,9 +36,15 @@ import "../../lib/SignatureUtil.sol";
 ///        itself using a smart contract where the liquidity provider enforces who, how
 ///        and even if their funds can be used to facilitate the fast withdrawals.
 ///
-///        The liquidity provider can call `execute` to provide users
+///        Any one can call `execute` with the approvals from liquidity providers to provide users
 ///        immediately with funds onchain. This allows the security of the funds to be handled
 ///        by any EOA or smart contract.
+///
+///        Fast withdrawal recipients (the users) can even create duplicate `execute` transactions
+///        with higher gas price to accelerate pending fast withdrawal transactions using their own
+///        funds. Therefore, Loopring's implementation of fast withdrawals involves two seperate
+///        steps, one by he liquidity provider, one by the user himself (or anyone who are willing
+///        to help the user).
 ///
 ///        Users that want to make use of this functionality have to
 ///        authorize this contract as their agent.
