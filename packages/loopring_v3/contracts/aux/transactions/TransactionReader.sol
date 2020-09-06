@@ -14,7 +14,7 @@ import "../../core/impl/libtransactions/WithdrawTransaction.sol";
 /// @dev Utility library to read transactions.
 library TransactionReader {
     using BlockReader       for ExchangeData.Block;
-    using TransactionReader  for ExchangeData.Block;
+    using TransactionReader for ExchangeData.Block;
     using BytesUtil         for bytes;
 
     function readDeposit(
@@ -54,8 +54,8 @@ library TransactionReader {
     }
 
     function readTx(
-        ExchangeData.Block memory    _block,
-        uint                         txIdx,
+        ExchangeData.Block memory _block,
+        uint txIdx,
         ExchangeData.TransactionType txType
         )
         internal
