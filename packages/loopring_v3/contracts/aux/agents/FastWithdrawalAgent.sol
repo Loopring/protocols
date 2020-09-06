@@ -52,6 +52,16 @@ contract FastWithdrawalAgent is ReentrancyGuard
     using MathUint          for uint;
     using SignatureUtil     for bytes32;
 
+    enum Status {
+        SUCCEEDED,
+        ACCELERATED,
+        FRONTRUN,
+        TOO_LATE,
+        UNKNOWN_FAILURE
+    }
+
+    event Processed(bytes32 hash, Status status);
+
     struct FastWithdrawal
     {
         address exchange;
@@ -59,28 +69,15 @@ contract FastWithdrawalAgent is ReentrancyGuard
         address to;                     // The address that will receive the tokens withdrawn
         address token;
         uint96  amount;
-        address feeToken;
-        uint96  fee;
-        uint32  nonce;
-        uint32  validUntil;
+        uint32  storageID;
 
-        bytes   signature;
+        address provider;
+        int     validUntil; // seconds since epoch or block (if < 0)
+        bytes   signature; // provider's signature
     }
 
-    struct FastWithdrawalTx
-    {
-        address liquidityProvider;
-        bytes txData;
-        bytes signature;
-    }
-
-    // EIP712
     bytes32 constant public FASTWITHDRAWAL_TYPEHASH = keccak256(
-        "FastWithdrawal(address exchange,address from,address to,address token,uint96 amount,address feeToken,uint96 fee,uint32 nonce,uint32 validUntil)"
-    );
-
-    bytes32 constant public FASTWITHDRAWAL_TX_TYPEHASH = keccak256(
-        "FastWithdrawalTx(address liquidityProvider,bytes txData,bytes signature)"
+        "FastWithdrawal(address exchange,address from,address to,address token,uint96 amount,uint32 storageID,address provider,int256 validUntil)"
     );
 
     bytes32 public DOMAIN_SEPARATOR;
@@ -90,58 +87,37 @@ contract FastWithdrawalAgent is ReentrancyGuard
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalAgent", "1.0", address(this)));
     }
 
-    function executeFastWithdrawalTx(FastWithdrawalTx memory fastWithdrawalTx)
-        public
+    function executeFastWithdrawals(FastWithdrawal memory fastWithdrawal)
+        external
         nonReentrant
         payable
     {
-        bytes32 hash = EIP712.hashPacked(
-            DOMAIN_SEPARATOR,
-            keccak256(
-                abi.encodePacked(
-                    FASTWITHDRAWAL_TX_TYPEHASH,
-                    fastWithdrawalTx.txData
-                )
-            )
-        );
-
-        require(
-            hash.verifySignature(
-                fastWithdrawalTx.liquidityProvider,
-                fastWithdrawalTx.signature
-            ),
-            "INVALID_SIGNATURE"
-        );
-
-        FastWithdrawal memory fastWithdrawal = abi.decode(fastWithdrawalTx.txData, (FastWithdrawal));
-
-        // withdrawalRecipient can not override, so replay attach is impossible.
-        executeFastWithdrawal(fastWithdrawal, fastWithdrawalTx.liquidityProvider);
-
+        executeFastWithdrawal_(fastWithdrawal);
         msg.sender.sendETHAndVerify(address(this).balance, gasleft());
     }
 
-    // This method needs to be called by any liquidity provider
     function executeFastWithdrawals(FastWithdrawal[] memory fastWithdrawals)
-        public
+        external
         nonReentrant
         payable
     {
-        // Do all fast withdrawals
         for (uint i = 0; i < fastWithdrawals.length; i++) {
-            executeFastWithdrawal(fastWithdrawals[i], msg.sender);
+            executeFastWithdrawal_(fastWithdrawals[i]);
         }
-        // Return any ETH left into this contract
-        // (can happen when more ETH is sent than needed for the fast withdrawals)
         msg.sender.sendETHAndVerify(address(this).balance, gasleft());
     }
 
     // -- Internal --
 
-    function executeFastWithdrawal(FastWithdrawal memory fastWithdrawal, address liquidityProvider)
+    function executeFastWithdrawal_(FastWithdrawal memory fastWithdrawal)
         internal
     {
-
+        require(
+            fastWithdrawal.exchange != address(0) &&
+            fastWithdrawal.from != address(0) &&
+            fastWithdrawal.to != address(0),
+            "INVALID_WITHDRAWAL"
+        );
         // Compute the hash
         bytes32 hash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
@@ -153,37 +129,74 @@ contract FastWithdrawalAgent is ReentrancyGuard
                     fastWithdrawal.to,
                     fastWithdrawal.token,
                     fastWithdrawal.amount,
-                    fastWithdrawal.feeToken,
-                    fastWithdrawal.fee,
-                    fastWithdrawal.nonce,
+                    fastWithdrawal.storageID,
+                    fastWithdrawal.provider,
                     fastWithdrawal.validUntil
                 )
             )
         );
 
         // Check the signature
-        require(hash.verifySignature(fastWithdrawal.from, fastWithdrawal.signature), "INVALID_SIGNATURE");
+        require(
+            hash.verifySignature(
+                fastWithdrawal.provider,
+                fastWithdrawal.signature
+            ),
+            "INVALID_SIGNATURE"
+        );
 
-        // Check the time limit
-        require(block.timestamp <= fastWithdrawal.validUntil, "TX_EXPIRED");
+        if (fastWithdrawal.validUntil >= 0) {
+            if (block.timestamp < uint(fastWithdrawal.validUntil)) {
+                emit Processed(hash, Status.TOO_LATE);
+                return;
+            }
+        } else {
+            if (block.number < uint(-fastWithdrawal.validUntil)) {
+                emit Processed(hash, Status.TOO_LATE);
+                return;
+            }
+        }
 
-        IExchangeV3(fastWithdrawal.exchange).setWithdrawalRecipient(
+        IExchangeV3 exchange = IExchangeV3(fastWithdrawal.exchange);
+
+        address recipient = exchange.getWithdrawalRecipient(
             fastWithdrawal.from,
             fastWithdrawal.to,
             fastWithdrawal.token,
             fastWithdrawal.amount,
-            fastWithdrawal.nonce,
-            liquidityProvider
+            fastWithdrawal.storageID
+        );
+
+        if (recipient == fastWithdrawal.provider) {
+            emit Processed(hash, Status.ACCELERATED);
+            return;
+        } else if (recipient == fastWithdrawal.to) {
+            emit Processed(hash, Status.FRONTRUN);
+            return;
+        } else if (recipient != address(0)) {
+            emit Processed(hash, Status.UNKNOWN_FAILURE);
+            return;
+        }
+
+        exchange.setWithdrawalRecipient(
+            fastWithdrawal.from,
+            fastWithdrawal.to,
+            fastWithdrawal.token,
+            fastWithdrawal.amount,
+            fastWithdrawal.storageID,
+            fastWithdrawal.provider
         );
 
         // Transfer the tokens immediately to the requested address
         // using funds from the liquidity provider (`msg.sender`).
         transfer(
-            liquidityProvider,
+            fastWithdrawal.provider,
             fastWithdrawal.to,
             fastWithdrawal.token,
             fastWithdrawal.amount
         );
+
+        emit Processed(hash, Status.SUCCEEDED);
     }
 
     function transfer(
