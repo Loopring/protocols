@@ -119,8 +119,16 @@ class WithdrawCircuit : public BaseTransactionCircuit
           type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
 
           // Special case protocol fee withdrawal
-          isWithdrawalTx(pb, state.type, state.constants.txTypeWithdrawal, FMT(prefix, ".isWithdrawalTx")),
-          isProtocolFeeWithdrawal(pb, accountID.packed, state.constants._0, FMT(prefix, ".isProtocolFeeWithdrawal")),
+          isWithdrawalTx( //
+            pb,
+            state.type,
+            state.constants.txTypeWithdrawal,
+            FMT(prefix, ".isWithdrawalTx")),
+          isProtocolFeeWithdrawal( //
+            pb,
+            accountID.packed,
+            state.constants._0,
+            FMT(prefix, ".isProtocolFeeWithdrawal")),
           ownerValue(
             pb,
             isProtocolFeeWithdrawal.result(),
@@ -211,7 +219,13 @@ class WithdrawCircuit : public BaseTransactionCircuit
             FMT(prefix, ".merkleTreeAccountA")),
 
           // Update the nonce storage (unless it's a forced withdrawal)
-          nonce(pb, state.constants, state.accountA.storage, storageID, isWithdrawalTx.result(), FMT(prefix, ".nonce")),
+          nonce( //
+            pb,
+            state.constants,
+            state.accountA.storage,
+            storageID,
+            isWithdrawalTx.result(),
+            FMT(prefix, ".nonce")),
           isForcedWithdrawal(
             pb,
             {validFullWithdrawalType.result(), invalidFullWithdrawalType.result()},
@@ -231,7 +245,10 @@ class WithdrawCircuit : public BaseTransactionCircuit
 
           // Disable AMM for the token when doing a forced withdrawal
           // (but not if it's a protocol fee withdrawal)
-          isNotProtocolFeeWithdrawal(pb, isProtocolFeeWithdrawal.result(), FMT(prefix, ".isNotProtocolFeeWithdrawal")),
+          isNotProtocolFeeWithdrawal( //
+            pb,
+            isProtocolFeeWithdrawal.result(),
+            FMT(prefix, ".isNotProtocolFeeWithdrawal")),
           doUpdateTokenWeight(
             pb,
             {isNotProtocolFeeWithdrawal.result(), validFullWithdrawalType.result()},

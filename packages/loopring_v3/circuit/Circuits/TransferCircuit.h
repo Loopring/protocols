@@ -138,8 +138,15 @@ class TransferCircuit : public BaseTransactionCircuit
           maxFee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".maxFee")),
 
           // Check if the inputs are valid
-          isTransferTx(pb, state.type, state.constants.txTypeTransfer, FMT(prefix, ".isTransferTx")),
-          isNonZero_payer_to(pb, payer_to.packed, FMT(prefix, ".isNonZero_payer_to")),
+          isTransferTx( //
+            pb,
+            state.type,
+            state.constants.txTypeTransfer,
+            FMT(prefix, ".isTransferTx")),
+          isNonZero_payer_to( //
+            pb,
+            payer_to.packed,
+            FMT(prefix, ".isNonZero_payer_to")),
           ifrequire_payer_to_eq_to(
             pb,
             isNonZero_payer_to.result(),
