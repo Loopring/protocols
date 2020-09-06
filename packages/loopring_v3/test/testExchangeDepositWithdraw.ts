@@ -445,6 +445,7 @@ contract("Exchange", (accounts: string[]) => {
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
       const balance = new BN(web3.utils.toWei("7", "ether"));
       const token = exchangeTestUtil.getTokenAddress("LRC");
+      const recipient = ownerB;
 
       const deposit = await exchangeTestUtil.deposit(
         ownerA,
@@ -462,7 +463,7 @@ contract("Exchange", (accounts: string[]) => {
         balance,
         "ETH",
         new BN(0),
-        { authMethod: AuthMethod.EDDSA }
+        { authMethod: AuthMethod.EDDSA, storeRecipient: true }
       );
 
       // Set a new recipient address
@@ -471,8 +472,8 @@ contract("Exchange", (accounts: string[]) => {
         ownerA,
         token,
         balance,
-        request.nonce,
-        ownerB,
+        request.storageID,
+        recipient,
         { from: ownerA }
       );
       // Try to set it again
@@ -482,19 +483,56 @@ contract("Exchange", (accounts: string[]) => {
           ownerA,
           token,
           balance,
-          request.nonce,
-          ownerB,
+          request.storageID,
+          recipient,
           { from: ownerA }
         ),
         "CANNOT_OVERRIDE_RECIPIENT_ADDRESS"
       );
+      {
+        const onchainRecipient = await exchange.getWithdrawalRecipient(
+          ownerA,
+          ownerA,
+          token,
+          balance,
+          request.storageID
+        );
+        assert.equal(onchainRecipient, recipient, "unexpected recipient");
+      }
 
       // Commit the withdrawal
       await exchangeTestUtil.submitTransactions();
 
       // Submit the block
       const expectedResult = { ...deposit };
-      await submitWithdrawalBlockChecked([expectedResult], undefined, [ownerB]);
+      await submitWithdrawalBlockChecked([expectedResult], undefined, [
+        recipient
+      ]);
+
+      // Try to set it again even after the block has been submitted
+      await expectThrow(
+        exchange.setWithdrawalRecipient(
+          ownerA,
+          ownerA,
+          token,
+          balance,
+          request.storageID,
+          ownerA,
+          { from: ownerA }
+        ),
+        "CANNOT_OVERRIDE_RECIPIENT_ADDRESS"
+      );
+
+      {
+        const onchainRecipient = await exchange.getWithdrawalRecipient(
+          ownerA,
+          ownerA,
+          token,
+          balance,
+          request.storageID
+        );
+        assert.equal(onchainRecipient, recipient, "unexpected recipient");
+      }
     });
 
     it("Forced withdrawal (correct owner)", async () => {
@@ -735,25 +773,17 @@ contract("Exchange", (accounts: string[]) => {
       const feeToken = "ETH";
       const fee = new BN(web3.utils.toWei("1.5", "ether"));
 
-      await exchangeTestUtil.deposit(
-        owner,
-        owner,
-        token,
-        balance
-      );
+      await exchangeTestUtil.deposit(owner, owner, token, balance);
       await exchangeTestUtil.requestWithdrawal(
         owner,
         token,
         toWithdraw,
         feeToken,
         fee,
-        { maxFee: fee.div(new BN(3))}
+        { maxFee: fee.div(new BN(3)) }
       );
 
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("Withdraw (protocol fees)", async () => {
@@ -781,7 +811,12 @@ contract("Exchange", (accounts: string[]) => {
 
       const feeBipsAMM = 30;
       const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
-      await exchangeTestUtil.requestAmmUpdate(exchangeTestUtil.exchangeOperator, ring.orderA.tokenS, feeBipsAMM, tokenWeightS);
+      await exchangeTestUtil.requestAmmUpdate(
+        exchangeTestUtil.exchangeOperator,
+        ring.orderA.tokenS,
+        feeBipsAMM,
+        tokenWeightS
+      );
 
       await exchangeTestUtil.requestWithdrawal(
         Constants.zeroAddress,
@@ -857,6 +892,72 @@ contract("Exchange", (accounts: string[]) => {
         timestampAfterB.gt(timestampBeforeB),
         "protocol fees withdrawal time unexpected"
       );
+    });
+
+    it("Withdrawal (nonces)", async () => {
+      await createExchange();
+
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const balance = new BN(web3.utils.toWei("4", "ether"));
+      const toWithdraw = new BN(web3.utils.toWei("0.123", "ether"));
+      const token = "ETH";
+      const feeToken = "ETH";
+      const fee = new BN(web3.utils.toWei("0.0456", "ether"));
+
+      await exchangeTestUtil.deposit(owner, owner, token, balance);
+
+      let storageID = 123;
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { storageID }
+      );
+      storageID++;
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { storageID }
+      );
+      storageID++;
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { storageID }
+      );
+      storageID += Constants.NUM_STORAGE_SLOTS;
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { storageID }
+      );
+
+      await exchangeTestUtil.submitTransactions();
+      await exchangeTestUtil.submitPendingBlocks();
+
+      // Try to use the same slot again
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { storageID }
+      );
+
+      // Commit the withdrawals
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("Deposits should not total more than MAX_AMOUNT", async () => {

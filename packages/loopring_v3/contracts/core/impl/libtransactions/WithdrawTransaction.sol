@@ -33,7 +33,7 @@ library WithdrawTransaction
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
-        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes extraData,uint minGas,uint32 validUntil,uint32 nonce)"
+        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes extraData,uint minGas,uint32 validUntil,uint32 storageID)"
     );
 
     struct Withdrawal
@@ -49,13 +49,14 @@ library WithdrawTransaction
         bytes   extraData;
         uint    minGas;
         uint32  validUntil;
-        uint32  nonce;
+        uint32  storageID;
         bytes20 onchainDataHash;
     }
 
     // Auxiliary data for each withdrawal
     struct WithdrawalAuxiliaryData
     {
+        bool  storeRecipient;
         uint  gasLimit;
         bytes signature;
 
@@ -158,7 +159,7 @@ library WithdrawTransaction
         }
 
         // Check if there is a withdrawal recipient
-        address recipient = S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.nonce];
+        address recipient = S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.storageID];
         if (recipient != address(0)) {
             // Auxiliary data is not supported
             require (withdrawal.extraData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
@@ -168,11 +169,14 @@ library WithdrawTransaction
             // Allow any amount of gas to be used on this withdrawal (which allows the transfer to be skipped)
             withdrawal.minGas = 0;
 
-            delete S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.nonce];
-        } else if (auxData.isFastWithdrawal > 0) {
-            // process a fastwithdrawal as a normal withdrawal,
-            // write the recipient to prevent the fastwithdrawal being processed by the LP again.
-            S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.nonce] = withdrawal.to;
+            // Delete the recipient if we don't have to store it to get the gas refund
+            if (!auxData.storeRecipient) {
+                delete S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.storageID];
+            }
+        } else if (auxData.storeRecipient) {
+            // Store the destination address to mark the withdrawal as done
+            require(withdrawal.to != address(0), "INVALID_DESTINATION_ADDRESS");
+            S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.storageID] = withdrawal.to;
         }
 
         // Validate gas provided
@@ -214,7 +218,7 @@ library WithdrawTransaction
         offset += 2;
         withdrawal.fee = uint(data.toUint16(offset)).decodeFloat(16);
         offset += 2;
-        withdrawal.nonce = data.toUint32(offset);
+        withdrawal.storageID = data.toUint32(offset);
         offset += 4;
         withdrawal.onchainDataHash = data.toBytes20(offset);
         offset += 20;
@@ -243,7 +247,7 @@ library WithdrawTransaction
                     keccak256(withdrawal.extraData),
                     withdrawal.minGas,
                     withdrawal.validUntil,
-                    withdrawal.nonce
+                    withdrawal.storageID
                 )
             )
         );

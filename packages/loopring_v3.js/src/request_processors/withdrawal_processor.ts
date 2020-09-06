@@ -16,14 +16,18 @@ interface Withdrawal {
   onchainDataHash?: string;
   minGas?: number;
   validUntil?: number;
-  nonce?: number;
+  storageID?: number;
 }
 
 /**
  * Processes internal transfer requests.
  */
 export class WithdrawalProcessor {
-  public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
+  public static process(
+    state: ExchangeState,
+    block: BlockContext,
+    txData: Bitstream
+  ) {
     const withdrawal = this.extractData(txData);
 
     const account = state.getAccount(withdrawal.accountID);
@@ -41,7 +45,13 @@ export class WithdrawalProcessor {
     operator.getBalance(withdrawal.feeTokenID).balance.iadd(withdrawal.fee);
 
     if (withdrawal.type === 0 || withdrawal.type === 1) {
-      account.nonce++;
+      // Nonce
+      const storageSlot = withdrawal.storageID % Constants.NUM_STORAGE_SLOTS;
+      const storage = account
+        .getBalance(withdrawal.tokenID)
+        .getStorage(storageSlot);
+      storage.storageID = withdrawal.storageID;
+      storage.data = new BN(1);
     }
 
     return withdrawal;
@@ -64,9 +74,12 @@ export class WithdrawalProcessor {
     offset += 12;
     withdrawal.feeTokenID = data.extractUint16(offset);
     offset += 2;
-    withdrawal.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
+    withdrawal.fee = fromFloat(
+      data.extractUint16(offset),
+      Constants.Float16Encoding
+    );
     offset += 2;
-    withdrawal.nonce = data.extractUint32(offset);
+    withdrawal.storageID = data.extractUint32(offset);
     offset += 4;
     withdrawal.onchainDataHash = data.extractData(offset, 20);
     offset += 20;

@@ -57,11 +57,7 @@ export class Balance {
     this.storage = {};
   }
 
-  public init(
-    balance: BN,
-    weightAMM: BN,
-    storage: { [key: number]: Storage }
-  ) {
+  public init(balance: BN, weightAMM: BN, storage: { [key: number]: Storage }) {
     this.balance = new BN(balance.toString(10));
     this.weightAMM = new BN(weightAMM.toString(10));
     this.storage = storage;
@@ -178,9 +174,7 @@ export class Simulator {
           const jBalance = jAccount._balancesLeafs[balanceKey];
 
           const storage: { [key: number]: Storage } = {};
-          const storageKeys: string[] = Object.keys(
-            jBalance._storageLeafs
-          );
+          const storageKeys: string[] = Object.keys(jBalance._storageLeafs);
           for (const storageKey of storageKeys) {
             const jStorage = jBalance._storageLeafs[storageKey];
             storage[Number(storageKey)] = {
@@ -322,7 +316,11 @@ export class Simulator {
       "pubKeyY does not match"
     );
     assert.equal(accountA.nonce, accountB.nonce, "nonce does not match");
-    assert.equal(accountA.feeBipsAMM, accountB.feeBipsAMM, "feeBipsAMM does not match");
+    assert.equal(
+      accountA.feeBipsAMM,
+      accountB.feeBipsAMM,
+      "feeBipsAMM does not match"
+    );
   }
 
   public static executeBlock(
@@ -554,7 +552,9 @@ export class Simulator {
     from.getBalance(transfer.feeTokenID).balance.isub(transfer.fee);
 
     // Nonce
-    const storage = from.getBalance(transfer.tokenID).getStorage(transfer.storageID);
+    const storage = from
+      .getBalance(transfer.tokenID)
+      .getStorage(transfer.storageID);
     storage.data = new BN(1);
     storage.storageID = transfer.storageID;
 
@@ -581,17 +581,19 @@ export class Simulator {
       amount = new BN(0);
     }
     account.getBalance(withdrawal.tokenID).balance.isub(amount);
-    account
-      .getBalance(withdrawal.feeTokenID)
-      .balance.isub(withdrawal.fee);
+    account.getBalance(withdrawal.feeTokenID).balance.isub(withdrawal.fee);
 
     const operator = state.getAccount(block.operatorAccountID);
-    operator
-      .getBalance(withdrawal.feeTokenID)
-      .balance.iadd(withdrawal.fee);
+    operator.getBalance(withdrawal.feeTokenID).balance.iadd(withdrawal.fee);
 
     if (withdrawal.type === 0 || withdrawal.type === 1) {
-      account.nonce++;
+      // Nonce
+      const storageSlot = withdrawal.storageID % Constants.NUM_STORAGE_SLOTS;
+      const storage = account
+        .getBalance(withdrawal.tokenID)
+        .getStorage(storageSlot);
+      storage.storageID = withdrawal.storageID;
+      storage.data = new BN(1);
     }
 
     const simulatorReport: SimulatorReport = {
@@ -903,7 +905,8 @@ export class Simulator {
         .isub(s.feeA);
 
       const tradeHistoryA = accountA.getBalance(tokenA).getStorage(storageIdA);
-      tradeHistoryA.data = storageIdA > tradeHistoryA.storageID ? new BN(0) : tradeHistoryA.data;
+      tradeHistoryA.data =
+        storageIdA > tradeHistoryA.storageID ? new BN(0) : tradeHistoryA.data;
       tradeHistoryA.data.iadd(fillAmountBorSA ? s.fillBA : s.fillSA);
       tradeHistoryA.storageID = storageIdA;
     }
@@ -917,7 +920,8 @@ export class Simulator {
         .isub(s.feeB);
 
       const tradeHistoryB = accountB.getBalance(tokenB).getStorage(storageIdB);
-      tradeHistoryB.data = storageIdB > tradeHistoryB.storageID ? new BN(0) : tradeHistoryB.data;
+      tradeHistoryB.data =
+        storageIdB > tradeHistoryB.storageID ? new BN(0) : tradeHistoryB.data;
       tradeHistoryB.data.iadd(fillAmountBorSB ? s.fillBB : s.fillSB);
       tradeHistoryB.storageID = storageIdB;
     }
@@ -1070,8 +1074,10 @@ export class Simulator {
       .getBalance(order.tokenIdS)
       .getStorage(order.storageID);
     // Trade history trimming
-    const leafStorageID = tradeHistory.storageID === 0 ? storageSlot : tradeHistory.storageID;
-    const filled = leafStorageID === order.storageID ? tradeHistory.data : new BN(0);
+    const leafStorageID =
+      tradeHistory.storageID === 0 ? storageSlot : tradeHistory.storageID;
+    const filled =
+      leafStorageID === order.storageID ? tradeHistory.data : new BN(0);
     return filled;
   }
 
