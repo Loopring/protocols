@@ -682,7 +682,9 @@ export class ExchangeTestUtil {
 
     // From
     await this.deposit(from, from, token, amountToDeposit);
-    await this.deposit(from, from, feeToken, feeToDeposit);
+    if (feeToDeposit.gt(new BN(0))) {
+      await this.deposit(from, from, feeToken, feeToDeposit);
+    }
 
     // To
     let toAccountID = this.getAccountID(to);
