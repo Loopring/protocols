@@ -34,6 +34,7 @@ export interface TransactionOptions {
   feeRecipient?: string;
   signatureTypes?: SignatureType[];
   checkSignatures?: boolean;
+  txAwareHash?: string;
 }
 
 function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
@@ -97,7 +98,8 @@ export async function executeMetaTx(
   const gasToken = options.gasToken ? options.gasToken : "ETH";
   const gasPrice = options.gasPrice ? options.gasPrice : new BN(0);
   const gasLimit = options.gasLimit ? options.gasLimit : 4000000;
-  const nonce = options.nonce ? options.nonce : new Date().getTime();
+  let nonce = options.nonce ? options.nonce : new Date().getTime();
+  nonce = txAwareHash === Constants.emptyBytes32 ? nonce : 0;
 
   // Create the meta transaction
   const metaTx: MetaTx = {

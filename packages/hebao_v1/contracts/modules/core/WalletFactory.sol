@@ -14,6 +14,7 @@ import "../../lib/EIP712.sol";
 import "../../thirdparty/Create2.sol";
 import "../../thirdparty/ens/BaseENSManager.sol";
 import "../../thirdparty/ens/ENS.sol";
+import "../base/MetaTxAware.sol";
 import "../ControllerImpl.sol";
 
 
@@ -25,7 +26,7 @@ import "../ControllerImpl.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactory is ReentrancyGuard
+contract WalletFactory is ReentrancyGuard, MetaTxAware
 {
     using AddressUtil for address;
     using SignatureUtil for bytes32;
@@ -52,6 +53,7 @@ contract WalletFactory is ReentrancyGuard
         address        _walletImplementation,
         bool           _allowEmptyENS
         )
+        MetaTxAware(address(0))
     {
         DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("WalletFactory", "1.1.0", address(this))
@@ -59,6 +61,14 @@ contract WalletFactory is ReentrancyGuard
         controller = _controller;
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
+    }
+
+    function initTrustedForwarder(address _trustedForwarder)
+        external
+    {
+        require(trustedForwarder == address(0), "INITIALIZED_ALREADY");
+        require(_trustedForwarder != address(0), "INVALID_ADDRESS");
+        trustedForwarder = _trustedForwarder;
     }
 
     /// @dev Create a set of new wallet blanks to be used in the future.
@@ -69,6 +79,8 @@ contract WalletFactory is ReentrancyGuard
         uint[]    calldata salts
         )
         external
+        nonReentrant
+        txAwareHashNotAllowed()
     {
         for (uint i = 0; i < salts.length; i++) {
             createBlank_(modules, salts[i]);
@@ -95,6 +107,8 @@ contract WalletFactory is ReentrancyGuard
         )
         external
         payable
+        nonReentrant
+        // txAwareHashNotAllowed()
         returns (address _wallet)
     {
         validateRequest_(
@@ -139,6 +153,8 @@ contract WalletFactory is ReentrancyGuard
         )
         external
         payable
+        nonReentrant
+        // txAwareHashNotAllowed()
         returns (address _wallet)
     {
         validateRequest_(
@@ -171,6 +187,8 @@ contract WalletFactory is ReentrancyGuard
         bool            _ensRegisterReverse
         )
         external
+        nonReentrant
+        txAwareHashNotAllowed()
     {
         registerENS_(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
     }
@@ -280,11 +298,12 @@ contract WalletFactory is ReentrancyGuard
             keccak256(abi.encode(_modules))
         );
 
-        require(
-            EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest)
-                .verifySignature(_owner, _signature),
-            "INVALID_SIGNATURE"
-        );
+        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
+
+        bytes32 txAwareHash_ = txAwareHash();
+        require(txAwareHash_ == 0 || txAwareHash_ == signHash, "INVALID_TX_AWARE_HASH");
+
+        require(signHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
     }
 
     function initializeWallet_(
