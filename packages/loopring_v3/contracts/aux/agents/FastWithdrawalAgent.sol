@@ -12,44 +12,22 @@ import "../../lib/ReentrancyGuard.sol";
 import "../../lib/SignatureUtil.sol";
 
 
-/// @title Fast withdrawal agent implementation. The fast withdrawal request reduces to
-///        a normal onchain withdrawal request after a specified time limit has exceeded.
+/// @title Fast withdrawal agent implementation.
+///        With the help of liquidity providers (LPs), exchange operators can convert any
+///        normal withdrawals into fast withdrawals. This design, however, requires LPs
+///        to trust the exchange operators for providing real user withdrawal information.
 ///
-///        Fast withdrawals are a way for the owner to provide instant withdrawals for
-///        users with the help of a liquidity provider and conditional transfers.
+///        LPs can send transactions to tranfer Ether/tokens to exchange users with valid
+///        FastWithdrawalApprovals. These users can also send overriding transactions with
+///        the same FastWithdrawalApprovals using a higher gas price to further accelerate
+///        the incoming transfers.
 ///
-///        A fast withdrawal requires the non-trustless cooperation of 2 parties:
-///        - A liquidity provider which provides funds to users immediately onchain
-///        - The operator which will make sure the user has sufficient funds offchain
-///          so that the liquidity provider can be paid back offchain using a conditional transfer.
-///          The operator also needs to process those conditional transfers so that the
-///          liquidity provider receives its funds back in its own account where it
-///          again has full custody over it.
-///
-///        However, there is a special case when the fast withdrawal reduces to a standard
-///        withdrawal and the fee is paid onchain. In this case the withdrawal can be
-///        done completely trustless, no cooperation with the owner is needed.
-///
-///        We require the fast withdrawals to be executed by the liquidity provider (as msg.sender)
-///        so that the liquidity provider can impose its own rules on how its funds are spent. This will
-///        inevitably need to be done in close cooperation with the operator, or by the operator
-///        itself using a smart contract where the liquidity provider enforces who, how
-///        and even if their funds can be used to facilitate the fast withdrawals.
-///
-///        Any one can call `execute` with the approvals from liquidity providers to provide users
-///        immediately with funds onchain. This allows the security of the funds to be handled
-///        by any EOA or smart contract.
-///
-///        Fast withdrawal recipients (the users) can even create duplicate `execute` transactions
-///        with higher gas price to accelerate pending fast withdrawal transactions using their own
-///        funds. Therefore, Loopring's implementation of fast withdrawals involves two seperate
-///        steps, one by he liquidity provider, one by the user himself (or anyone who are willing
-///        to help the user).
-///
-///        Users that want to make use of this functionality have to
-///        authorize this contract as their agent.
+///        Users that want to make use of this functionality have to authorize this contract
+///        as their agent.
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
+/// @author Kongliang Zhong - <kongliang@loopring.org>
+/// @author Daniel Wang - <daniel@loopring.org>
 contract FastWithdrawalAgent is ReentrancyGuard
 {
     using AddressUtil       for address;
@@ -75,7 +53,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         address token;
         uint96  amount;
         uint32  storageID;
-        uint64  validUntil; // left 32 bits: until blockNumber, right 32 bits: until time
+        uint64  validUntil; // most significant 32 bits as block height, least significant 32 bits as block time
         address provider;
         bytes   signature; // provider's signature
     }
