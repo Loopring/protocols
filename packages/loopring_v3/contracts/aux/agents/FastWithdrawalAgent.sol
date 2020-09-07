@@ -81,7 +81,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
     }
 
     bytes32 constant public FASTWITHDRAWAL_APPROVAL_TYPEHASH = keccak256(
-        "FastWithdrawalApproval(address exchange,address from,address to,address token,uint96 amount,uint32 storageID,int256 validUntil)"
+        "FastWithdrawalApproval(address exchange,address from,address to,address token,uint96 amount,uint32 storageID,uint64 validUntil)"
     );
 
     bytes32 public DOMAIN_SEPARATOR;
