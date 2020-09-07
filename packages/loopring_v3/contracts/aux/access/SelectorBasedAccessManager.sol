@@ -49,6 +49,13 @@ contract SelectorBasedAccessManager is Claimable
 
     receive() payable external {}
 
+    fallback()
+        payable
+        external
+    {
+        transact(msg.data);
+    }
+
     function transact(bytes memory data)
         payable
         public
