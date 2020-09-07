@@ -43,7 +43,15 @@ contract FastWithdrawalAgent is ReentrancyGuard
         TOO_LATE
     }
 
-    event Processed(bytes32 hash, Status status);
+    event Processed(
+        address exchange,
+        address from,
+        address to,
+        address token,
+        uint96  amount,
+        address provider,
+        Status status
+    );
 
     struct FastWithdrawalApproval
     {
@@ -74,7 +82,17 @@ contract FastWithdrawalAgent is ReentrancyGuard
         nonReentrant
         payable
     {
-        execute_(fwa);
+        Status s = execute_(fwa);
+        emit Processed(
+            fwa.exchange,
+            fwa.from,
+            fwa.to,
+            fwa.token,
+            fwa.amount,
+            fwa.provider,
+            s
+        );
+
         msg.sender.sendETHAndVerify(address(this).balance, gasleft());
     }
 
@@ -83,8 +101,18 @@ contract FastWithdrawalAgent is ReentrancyGuard
         nonReentrant
         payable
     {
+        Status s;
         for (uint i = 0; i < fwas.length; i++) {
-            execute_(fwas[i]);
+            s = execute_(fwas[i]);
+            emit Processed(
+                fwas[i].exchange,
+                fwas[i].from,
+                fwas[i].to,
+                fwas[i].token,
+                fwas[i].amount,
+                fwas[i].provider,
+                s
+            );
         }
         msg.sender.sendETHAndVerify(address(this).balance, gasleft());
     }
@@ -93,6 +121,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
 
     function execute_(FastWithdrawalApproval memory fwa)
         internal
+        returns (Status s)
     {
         require(
             fwa.exchange != address(0) &&
@@ -134,29 +163,27 @@ contract FastWithdrawalAgent is ReentrancyGuard
         );
 
         if (recipient != address(0)) {
-            emit Processed(hash, Status.TOO_LATE);
-            return;
+            s = Status.TOO_LATE;
+        } else {
+            exchange.setWithdrawalRecipient(
+                fwa.from,
+                fwa.to,
+                fwa.token,
+                fwa.amount,
+                fwa.storageID,
+                fwa.provider
+                                            );
+            // Transfer the tokens immediately to the requested address
+            // using funds from the liquidity provider (`msg.sender`).
+            transfer(
+                fwa.provider,
+                fwa.to,
+                fwa.token,
+                fwa.amount
+            );
+
+            s = Status.SUCCEEDED;
         }
-
-        exchange.setWithdrawalRecipient(
-            fwa.from,
-            fwa.to,
-            fwa.token,
-            fwa.amount,
-            fwa.storageID,
-            fwa.provider
-        );
-
-        // Transfer the tokens immediately to the requested address
-        // using funds from the liquidity provider (`msg.sender`).
-        transfer(
-            fwa.provider,
-            fwa.to,
-            fwa.token,
-            fwa.amount
-        );
-
-        emit Processed(hash, Status.SUCCEEDED);
     }
 
     function transfer(
@@ -181,7 +208,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         view
         returns (bool)
     {
-        return (validUntil & 0xFFFFFFFF) >= block.timestamp &&
+        return (validUntil & 0xFFFFFFFF) >= block.timestamp ||
             (validUntil >> 32) >= block.number;
     }
 }
