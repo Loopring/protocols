@@ -50,7 +50,8 @@ contract FastWithdrawalAgent is ReentrancyGuard
         address token,
         uint96  amount,
         address provider,
-        Status status
+        address transactor,
+        Status  status
     );
 
     struct FastWithdrawalApproval
@@ -82,7 +83,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         nonReentrant
         payable
     {
-        Status s = execute_(fwa);
+        Status status = execute_(fwa);
         emit Processed(
             fwa.exchange,
             fwa.from,
@@ -90,7 +91,8 @@ contract FastWithdrawalAgent is ReentrancyGuard
             fwa.token,
             fwa.amount,
             fwa.provider,
-            s
+            msg.sender,
+            status
         );
 
         msg.sender.sendETHAndVerify(address(this).balance, gasleft());
@@ -101,9 +103,9 @@ contract FastWithdrawalAgent is ReentrancyGuard
         nonReentrant
         payable
     {
-        Status s;
+        Status status;
         for (uint i = 0; i < fwas.length; i++) {
-            s = execute_(fwas[i]);
+            status = execute_(fwas[i]);
             emit Processed(
                 fwas[i].exchange,
                 fwas[i].from,
@@ -111,7 +113,8 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 fwas[i].token,
                 fwas[i].amount,
                 fwas[i].provider,
-                s
+                msg.sender,
+                status
             );
         }
         msg.sender.sendETHAndVerify(address(this).balance, gasleft());
@@ -121,7 +124,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
 
     function execute_(FastWithdrawalApproval memory fwa)
         internal
-        returns (Status s)
+        returns (Status)
     {
         require(
             fwa.exchange != address(0) &&
@@ -163,7 +166,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         );
 
         if (recipient != address(0)) {
-            s = Status.TOO_LATE;
+            return Status.TOO_LATE;
         } else {
             exchange.setWithdrawalRecipient(
                 fwa.from,
@@ -182,7 +185,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 fwa.amount
             );
 
-            s = Status.SUCCEEDED;
+            return Status.SUCCEEDED;
         }
     }
 
