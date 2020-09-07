@@ -175,7 +175,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 fwa.amount,
                 fwa.storageID,
                 fwa.provider
-                                            );
+            );
             // Transfer the tokens immediately to the requested address
             // using funds from the liquidity provider (`msg.sender`).
             transfer(
