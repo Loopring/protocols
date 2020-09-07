@@ -168,11 +168,6 @@ library WithdrawTransaction
             withdrawal.to = recipient;
             // Allow any amount of gas to be used on this withdrawal (which allows the transfer to be skipped)
             withdrawal.minGas = 0;
-
-            // Delete the recipient if we don't have to store it to get the gas refund
-            if (!auxData.storeRecipient) {
-                delete S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.storageID];
-            }
         } else if (auxData.storeRecipient) {
             // Store the destination address to mark the withdrawal as done
             require(withdrawal.to != address(0), "INVALID_DESTINATION_ADDRESS");

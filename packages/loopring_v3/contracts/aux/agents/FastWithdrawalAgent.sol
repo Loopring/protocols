@@ -75,7 +75,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         address token;
         uint96  amount;
         uint32  storageID;
-        int     validUntil; // seconds since epoch or block (if < 0)
+        uint64  validUntil; // left 32 bits: until blockNumber, right 32 bits: until time
         address provider;
         bytes   signature; // provider's signature
     }
@@ -85,8 +85,6 @@ contract FastWithdrawalAgent is ReentrancyGuard
     );
 
     bytes32 public DOMAIN_SEPARATOR;
-
-    mapping(bytes32 => bool) consumedApprovals;
 
     constructor()
     {
@@ -145,26 +143,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
 
         // Check the signature
         require(hash.verifySignature(fwa.provider, fwa.signature ), "INVALID_SIGNATURE");
-
-        if (consumedApprovals[hash]) {
-            emit Processed(hash, Status.FRONTRUN);
-            return;
-        }
-
-        consumedApprovals[hash] = true;
-
-        // Return if expired.
-        if (fwa.validUntil >= 0) {
-            if (block.timestamp < uint(fwa.validUntil)) {
-                emit Processed(hash, Status.EXPIRED);
-                return;
-            }
-        } else {
-            if (block.number < uint(-fwa.validUntil)) {
-                emit Processed(hash, Status.EXPIRED);
-                return;
-            }
-        }
+        require(checkValidUntil(fwa.validUntil), "FASTWITHDRAWAL_APPROVAL_EXPIRED");
 
         IExchangeV3 exchange = IExchangeV3(fwa.exchange);
 
@@ -217,5 +196,14 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 token.safeTransferFromAndVerify(from, to, amount);  // ERC20 token
             }
         }
+    }
+
+    function checkValidUntil(uint64 validUntil)
+        internal
+        view
+        returns (bool)
+    {
+        return (validUntil & 0xFFFFFFFF) >= block.timestamp &&
+            (validUntil >> 32) >= block.number;
     }
 }
