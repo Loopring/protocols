@@ -33,7 +33,6 @@ contract FastWithdrawalAgent is ReentrancyGuard
     using AddressUtil       for address;
     using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
-    using MathUint          for uint;
     using SignatureUtil     for bytes32;
 
     enum Status {
