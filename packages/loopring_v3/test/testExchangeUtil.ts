@@ -122,7 +122,9 @@ export interface WithdrawOptions {
   extraData?: string;
   signer?: string;
   validUntil?: number;
+  storageID?: number;
   maxFee?: BN;
+  storeRecipient?: boolean;
 }
 
 export interface AccountUpdateOptions {
@@ -252,7 +254,7 @@ export namespace WithdrawalUtils {
           { name: "extraData", type: "bytes" },
           { name: "minGas", type: "uint" },
           { name: "validUntil", type: "uint32" },
-          { name: "nonce", type: "uint32" }
+          { name: "storageID", type: "uint32" }
         ]
       },
       primaryType: "Withdrawal",
@@ -273,7 +275,7 @@ export namespace WithdrawalUtils {
         extraData: withdrawal.extraData,
         minGas: withdrawal.minGas,
         validUntil: withdrawal.validUntil,
-        nonce: withdrawal.nonce
+        storageID: withdrawal.storageID
       }
     };
     return typedData;
@@ -299,7 +301,7 @@ export namespace WithdrawalUtils {
       withdrawal.maxFee,
       withdrawal.onchainDataHash,
       withdrawal.validUntil,
-      withdrawal.nonce
+      withdrawal.storageID
     ];
     const hash = hasher(inputs).toString(10);
 
@@ -1224,6 +1226,14 @@ export class ExchangeTestUtil {
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
     const maxFee =
       options.maxFee !== undefined ? options.maxFee : fee;
+    let storageID =
+      options.storageID !== undefined
+        ? options.storageID
+        : this.storageIDGenerator++;
+    let storeRecipient =
+      options.storeRecipient !== undefined
+        ? options.storeRecipient
+        : false;
 
     let type = 0;
     if (authMethod === AuthMethod.ECDSA || authMethod === AuthMethod.APPROVE) {
@@ -1235,6 +1245,7 @@ export class ExchangeTestUtil {
       } else {
         type = 3;
       }
+      storageID = 0;
     }
 
     if (!token.startsWith("0x")) {
@@ -1294,7 +1305,7 @@ export class ExchangeTestUtil {
       type,
       owner,
       accountID,
-      nonce: account.nonce,
+      storageID,
       validUntil,
       tokenID,
       amount,
@@ -1302,6 +1313,7 @@ export class ExchangeTestUtil {
       fee,
       maxFee,
       to,
+      storeRecipient,
       extraData,
       withdrawalFee: await this.loopringV3.forcedWithdrawalFee(),
       minGas,
@@ -1328,10 +1340,6 @@ export class ExchangeTestUtil {
         this.exchange.address
       );
       await this.exchange.approveTransaction(owner, hash, { from: owner });
-    }
-
-    if (type == 0 || type == 1) {
-      this.accounts[this.exchangeId][accountID].nonce++;
     }
 
     this.pendingTransactions[this.exchangeId].push(withdrawalRequest);
@@ -1972,8 +1980,9 @@ export class ExchangeTestUtil {
 
   public getWithdrawalAuxData(withdrawal: WithdrawalRequest) {
     return web3.eth.abi.encodeParameter(
-      "tuple(uint256,bytes,uint256,address,bytes,uint32)",
+      "tuple(bool,uint256,bytes,uint256,address,bytes,uint32)",
       [
+        withdrawal.storeRecipient,
         withdrawal.gas,
         web3.utils.hexToBytes(
           withdrawal.onchainSignature ? withdrawal.onchainSignature : "0x"
@@ -2192,7 +2201,7 @@ export class ExchangeTestUtil {
             toFloat(new BN(withdraw.fee), Constants.Float16Encoding),
             2
           );
-          da.addNumber(withdraw.nonce, 4);
+          da.addNumber(withdraw.storageID, 4);
           da.addBN(new BN(withdraw.onchainDataHash), 20);
         } else if (tx.deposit) {
           const deposit = tx.deposit;

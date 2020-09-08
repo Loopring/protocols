@@ -79,7 +79,8 @@ static auto dummyWithdraw = R"({
     "validUntil": 4294967295,
     "maxFee": "0",
     "onchainDataHash": "0",
-    "type": 0
+    "type": 0,
+    "storageID": "0"
 })"_json;
 
 static auto dummyAccountUpdate = R"({
@@ -355,6 +356,7 @@ class Withdrawal
     ethsnarks::FieldT feeTokenID;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT onchainDataHash;
+    ethsnarks::FieldT storageID;
     ethsnarks::FieldT validUntil;
     ethsnarks::FieldT maxFee;
     ethsnarks::FieldT type;
@@ -368,6 +370,7 @@ static void from_json(const json &j, Withdrawal &withdrawal)
     withdrawal.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
     withdrawal.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
     withdrawal.onchainDataHash = ethsnarks::FieldT(j["onchainDataHash"].get<std::string>().c_str());
+    withdrawal.storageID = ethsnarks::FieldT(j["storageID"].get<std::string>().c_str());
     withdrawal.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     withdrawal.maxFee = ethsnarks::FieldT(j["maxFee"].get<std::string>().c_str());
     withdrawal.type = ethsnarks::FieldT(j.at("type"));

@@ -145,7 +145,7 @@ export interface WithdrawalRequest {
 
   owner: string;
   accountID: number;
-  nonce: number;
+  storageID: number;
   validUntil: number;
   tokenID: number;
   amount: BN;
@@ -153,6 +153,8 @@ export interface WithdrawalRequest {
   feeTokenID?: number;
   fee?: BN;
   maxFee: BN;
+
+  storeRecipient: boolean;
 
   minGas: number;
   gas?: number;

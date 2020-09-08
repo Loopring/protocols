@@ -658,8 +658,10 @@ class State(object):
             newState.TXV_BALANCE_B_S_ADDRESS = txInput.feeTokenID
             newState.TXV_BALANCE_A_B_BALANCE = -feeValue
 
+            newState.TXV_STORAGE_A_ADDRESS = txInput.storageID
             if int(txInput.type) == 0 or int(txInput.type) == 1:
-                newState.TXV_ACCOUNT_A_NONCE = 1
+                newState.TXV_STORAGE_A_DATA = 1
+                newState.TXV_STORAGE_A_STORAGEID = txInput.storageID
             if not isProtocolfeeWithdrawal and int(txInput.type) == 2:
                 newState.TXV_BALANCE_A_S_WEIGHT = 0
 
