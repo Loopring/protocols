@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
@@ -17,6 +18,7 @@ import "./WalletFactory.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract ForwarderModule is BaseModule
 {
+    using AddressUtil   for address;
     using BytesUtil     for bytes;
     using MathUint      for uint;
     using SignatureUtil for bytes32;
@@ -120,7 +122,9 @@ abstract contract ForwarderModule is BaseModule
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
-        (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
+        (success, ret) = metaTx.to.fastCall(
+            metaTx.gasLimit,
+            0,
             abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
         );
 

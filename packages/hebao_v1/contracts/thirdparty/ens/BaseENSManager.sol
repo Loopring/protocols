@@ -162,8 +162,8 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     function verifyApproval(
         address _wallet,
         address _owner,
-        string  memory _label,
-        bytes   memory _approval
+        string  calldata _label,
+        bytes   calldata _approval
         )
         internal
         view

@@ -266,10 +266,10 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     // This call is introduced to support reentrany check.
     // The caller shall NOT have the nonReentrant modifier.
     function nonReentrantCall(
-        uint8        mode,
-        address      target,
-        uint         value,
-        bytes memory data
+        uint8          mode,
+        address        target,
+        uint           value,
+        bytes calldata data
         )
         private
         nonReentrant

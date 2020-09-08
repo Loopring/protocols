@@ -129,7 +129,15 @@ abstract contract BaseModule is ReentrancyGuard, Module
         internal
         returns (bytes memory)
     {
-        return Wallet(wallet).transact(uint8(1), to, value, data);
+        bytes memory callData = abi.encodeWithSelector(
+            Wallet.transact.selector,
+            uint8(1),
+            to,
+            value,
+            data
+        );
+        bytes memory ret = wallet.fastCallAndVerify(gasleft(), 0, callData);
+        return abi.decode(ret, (bytes));
     }
 
     // Special case for transactCall to support transfers on "bad" ERC20 tokens
@@ -184,7 +192,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         address wallet,
         address to,
         uint    value,
-        bytes   memory data
+        bytes   calldata data
         )
         internal
         returns (bytes memory)
@@ -195,7 +203,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
     function transactStaticCall(
         address wallet,
         address to,
-        bytes   memory data
+        bytes   calldata data
         )
         internal
         returns (bytes memory)
