@@ -22,32 +22,29 @@ module.exports = function(deployer, network, accounts) {
 
   let priceOracle;
   let controllerImpl;
-  deployer
-    .then(() => {
-      return deployer.deploy(TestPriceOracle);
-    })
-    .then(p => {
-      priceOracle = p;
-      return deployer.deploy(
-        ControllerImpl,
-        ModuleRegistryImpl.address,
-        WalletRegistryImpl.address,
-        lockPeriod,
-        collecTo,
-        ensManagerAddr,
-        priceOracle.address,
-        true
-      );
-    })
-    .then(c => {
-      controllerImpl = c;
-      return controllerImpl.initStores(
+  deployer.then(async () => {
+    await deployer.deploy(TestPriceOracle);
+    await deployer.deploy(
+      ControllerImpl,
+      ModuleRegistryImpl.address,
+      WalletRegistryImpl.address,
+      lockPeriod,
+      collecTo,
+      ensManagerAddr,
+      TestPriceOracle.address,
+      true
+    );
+
+    const controllerImpl = await ControllerImpl.deployed();
+    return Promise.all([
+      controllerImpl.initStores(
         DappAddressStore.address,
         HashStore.address,
         NonceStore.address,
         QuotaStore.address,
         SecurityStore.address,
         WhitelistStore.address
-      );
-    });
+      )
+    ]);
+  });
 };
