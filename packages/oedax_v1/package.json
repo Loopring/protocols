@@ -83,7 +83,7 @@
     "protocol2-js": "^0.4.4",
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
-    "snarkjs": "0.1.31",
+    "snarkjs": "0.3.27",
     "truffle": "5.1.42",
     "truffle-hdwallet-provider": "web3-one",
     "typedarray-to-buffer": "^3.1.5"
