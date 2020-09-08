@@ -1,7 +1,7 @@
 var SignedRequest = artifacts.require("SignedRequest");
 
 module.exports = function(deployer) {
-  deployer.then(() => {
-    return Promise.all([deployer.deploy(SignedRequest)]);
+  deployer.then(async () => {
+    await deployer.deploy(SignedRequest);
   });
 };
