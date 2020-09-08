@@ -6,7 +6,6 @@ import { AuthMethod, Block, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
-  let exchangeId = 0;
   let exchange: any;
   let operator: any;
   let loopring: any;
@@ -17,13 +16,16 @@ contract("Exchange", (accounts: string[]) => {
   let ownerC: string;
   let ownerD: string;
 
-  const createExchange = async (bSetupTestState: boolean = true) => {
-    exchangeId = await exchangeTestUtil.createExchange(
+  const createExchange = async (
+    setupTestState: boolean = true,
+    useOwnerContract: boolean = false
+  ) => {
+    await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      bSetupTestState
+      { setupTestState, useOwnerContract }
     );
     exchange = exchangeTestUtil.exchange;
-    operator = /*exchangeTestUtil.operator*/ exchange;
+    operator = exchange;
     loopring = exchangeTestUtil.loopringV3;
   };
 
@@ -97,6 +99,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addAddress(exchangeTestUtil.blockVerifier.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+          bs.addNumber(0, 1024);
           const block: OnchainBlock = {
             blockType: BlockType.UNIVERSAL,
             blockSize: 2,
@@ -128,6 +131,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addAddress(exchange.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)), 32);
+          bs.addNumber(0, 1024);
           const block: OnchainBlock = {
             blockType: BlockType.UNIVERSAL,
             blockSize: 2,
@@ -165,6 +169,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.SNARK_SCALAR_FIELD, 32);
           bs.addNumber(timestamp, 4);
+          bs.addNumber(0, 1024);
           const block: OnchainBlock = {
             blockType: BlockType.UNIVERSAL,
             blockSize: 2,
@@ -204,6 +209,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
+            bs.addNumber(0, 1024);
             const block: OnchainBlock = {
               blockType: BlockType.UNIVERSAL,
               blockSize: 2,
@@ -233,6 +239,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
+            bs.addNumber(0, 1024);
             const block: OnchainBlock = {
               blockType: BlockType.UNIVERSAL,
               blockSize: 2,
@@ -276,6 +283,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(timestamp, 4);
             bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
             bs.addNumber(protocolFees.makerFeeBips, 1);
+            bs.addNumber(0, 1024);
             const block: OnchainBlock = {
               blockType: BlockType.UNIVERSAL,
               blockSize: 2,
@@ -302,6 +310,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(timestamp, 4);
             bs.addNumber(protocolFees.takerFeeBips, 1);
             bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
+            bs.addNumber(0, 1024);
             const block: OnchainBlock = {
               blockType: BlockType.UNIVERSAL,
               blockSize: 2,
@@ -322,7 +331,7 @@ contract("Exchange", (accounts: string[]) => {
         });
 
         it("Invalid auxiliary data", async () => {
-          await createExchange();
+          await createExchange(true, true);
           // Do some transfers
           await exchangeTestUtil.transfer(
             ownerA,
@@ -504,7 +513,7 @@ contract("Exchange", (accounts: string[]) => {
         });
 
         it("should be able to submit blocks of different types", async () => {
-          await createExchange();
+          await createExchange(true, true);
           // Commit some blocks
           await commitSomeWork();
           await commitSomeWork();
@@ -514,7 +523,7 @@ contract("Exchange", (accounts: string[]) => {
         });
 
         it("should not be able to submit blocks when one of the proofs is incorrect", async () => {
-          await createExchange();
+          await createExchange(true, true);
           // Commit some blocks
           await commitSomeWork();
           await commitSomeWork();
@@ -541,7 +550,7 @@ contract("Exchange", (accounts: string[]) => {
         });
 
         it("should not be able to submit blocks with incorrect public data", async () => {
-          await createExchange();
+          await createExchange(true, true);
           // Commit some blocks
           await commitSomeWork();
           await commitSomeWork();

@@ -13,12 +13,9 @@ export class Artifacts {
   public INDAToken: any;
   public INDBToken: any;
   public TESTToken: any;
-  public Operator: any;
   public TestAccountContract: any;
-  public LzDecompressor: any;
   public TransferContract: any;
   public PoseidonContract: any;
-  public LzDecompressorContract: any;
   public UserStakingPool: any;
   public ProtocolFeeVault: any;
   public UniswapTokenSeller: any;
@@ -45,10 +42,8 @@ export class Artifacts {
     this.INDBToken = artifacts.require("test/tokens/INDB");
     this.TESTToken = artifacts.require("test/tokens/TEST");
     this.TestAccountContract = artifacts.require("TestAccountContract");
-    this.LzDecompressor = artifacts.require("LzDecompressor");
     this.TransferContract = artifacts.require("TransferContract");
     this.PoseidonContract = artifacts.require("PoseidonContract");
-    this.LzDecompressorContract = artifacts.require("LzDecompressorContract");
     this.UserStakingPool = artifacts.require("UserStakingPool");
     this.ProtocolFeeVault = artifacts.require("ProtocolFeeVault");
     this.DelayedOwnerContract = artifacts.require("DelayedOwnerContract");

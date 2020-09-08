@@ -20,8 +20,8 @@ contract("DefaultDepositContract", (accounts: string[]) => {
   let ctx: ExchangeTestUtil;
   let exchange: any;
 
-  const createExchange = async (bSetupTestState: boolean = true) => {
-    await ctx.createExchange(ctx.testContext.stateOwners[0], true);
+  const createExchange = async () => {
+    await ctx.createExchange(ctx.testContext.stateOwners[0]);
     exchange = ctx.exchange;
   };
 

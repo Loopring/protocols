@@ -20,7 +20,11 @@ interface AccountUpdate {
  * Processes account update requests.
  */
 export class AccountUpdateProcessor {
-  public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
+  public static process(
+    state: ExchangeState,
+    block: BlockContext,
+    txData: Bitstream
+  ) {
     const update = AccountUpdateProcessor.extractData(txData);
 
     const account = state.getAccount(update.accountID);
@@ -42,17 +46,18 @@ export class AccountUpdateProcessor {
     const update: AccountUpdate = {};
     let offset = 1;
 
-    // Check that this is a conditional update
     const updateType = data.extractUint8(offset);
     offset += 1;
-
     update.owner = data.extractAddress(offset);
     offset += 20;
     update.accountID = data.extractUint32(offset);
     offset += 4;
     update.feeTokenID = data.extractUint16(offset);
     offset += 2;
-    update.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
+    update.fee = fromFloat(
+      data.extractUint16(offset),
+      Constants.Float16Encoding
+    );
     offset += 2;
     const publicKey = data.extractData(offset, 32);
     offset += 32;

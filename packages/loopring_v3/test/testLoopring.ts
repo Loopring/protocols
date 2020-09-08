@@ -10,6 +10,11 @@ contract("Loopring", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
     loopring = exchangeTestUtil.loopringV3;
+
+    await exchangeTestUtil.createExchange(
+      exchangeTestUtil.testContext.stateOwners[0],
+      { setupTestState: false, useOwnerContract: false }
+    );
   });
 
   after(async () => {
@@ -38,9 +43,9 @@ contract("Loopring", (accounts: string[]) => {
     const targetProtocolTakerFeeStake = await loopring.targetProtocolTakerFeeStake();
     const targetProtocolMakerFeeStake = await loopring.targetProtocolMakerFeeStake();
 
-    const stake = (await loopring.getProtocolFeeStake(
-      exchangeTestUtil.exchangeId
-    )).div(new BN(2));
+    const stake = (
+      await loopring.getProtocolFeeStake(exchangeTestUtil.exchangeId)
+    ).div(new BN(2));
 
     const expectedTakerFee = calculateProtocolFee(
       minProtocolTakerFeeBips,

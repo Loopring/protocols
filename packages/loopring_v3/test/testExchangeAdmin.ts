@@ -7,10 +7,10 @@ contract("Exchange", (accounts: string[]) => {
   let exchange: any;
   let maxAge = 123;
 
-  const createExchange = async (bSetupTestState: boolean = true) => {
+  const createExchange = async (setupTestState: boolean = true) => {
     await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      bSetupTestState
+      { setupTestState, useOwnerContract: false }
     );
     exchange = exchangeTestUtil.exchange;
   };
@@ -30,7 +30,6 @@ contract("Exchange", (accounts: string[]) => {
     describe("Exchange owner", () => {
       it("should be able to set the max age of a deposit", async () => {
         await createExchange();
-        const newOperator = exchangeTestUtil.testContext.orderOwners[5];
         await exchange.setMaxAgeDepositUntilWithdrawable(maxAge, {
           from: exchangeTestUtil.exchangeOwner
         });
@@ -43,7 +42,6 @@ contract("Exchange", (accounts: string[]) => {
     describe("anyone", () => {
       it("should not be able to  set the max age of a deposit", async () => {
         await createExchange();
-        const newOperator = exchangeTestUtil.testContext.orderOwners[5];
         await expectThrow(
           exchange.setMaxAgeDepositUntilWithdrawable(maxAge, {
             from: exchangeTestUtil.testContext.orderOwners[0]

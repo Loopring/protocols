@@ -79,10 +79,10 @@ contract("Exchange", (accounts: string[]) => {
     );
   };
 
-  const createExchange = async () => {
+  const createExchange = async (deterministic: boolean = false) => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      true
+      { deterministic }
     );
   };
 
@@ -242,6 +242,11 @@ contract("Exchange", (accounts: string[]) => {
       const ownerE = exchangeTestUtil.testContext.orderOwners[4];
       const ownerF = exchangeTestUtil.testContext.orderOwners[5];
 
+      // Update AMM
+      await exchangeTestUtil.requestAmmUpdate(ownerA, token, 15, new BN(123), {
+        authMethod: AuthMethod.APPROVE
+      });
+
       // Do a transfer
       await exchangeTestUtil.transfer(
         ownerA,
@@ -250,7 +255,7 @@ contract("Exchange", (accounts: string[]) => {
         amount,
         feeToken,
         fee,
-        {authMethod: AuthMethod.ECDSA}
+        { authMethod: AuthMethod.ECDSA }
       );
 
       // Do a withdrawal
@@ -270,9 +275,68 @@ contract("Exchange", (accounts: string[]) => {
         exchangeTestUtil.getKeyPairEDDSA()
       );
 
-
-      await exchangeTestUtil.submitTransactions(24);
+      await exchangeTestUtil.submitTransactions();
       await verify();
+    });
+
+    it("Benchmark (trades)", async () => {
+      await createExchange(true);
+
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
+
+      const tokenA = "ETH";
+      const tokenB = "LRC";
+
+      const amountA = new BN(web3.utils.toWei("1.0", "ether"));
+      const amountB = new BN(web3.utils.toWei("1.0", "ether"));
+
+      // Fund ownerA
+      await exchangeTestUtil.deposit(ownerA, ownerA, tokenA, amountA);
+      // Fund ownerB
+      await exchangeTestUtil.deposit(ownerB, ownerB, tokenB, amountB);
+
+      await exchangeTestUtil.submitTransactions();
+      await verify();
+
+      const blockSizes = [8, 16, 32];
+      for (const blockSize of blockSizes) {
+        const rings: SpotTrade[] = [];
+        for (let i = 0; i < blockSize; i++) {
+          const ring: SpotTrade = {
+            orderA: {
+              tokenS: tokenA,
+              tokenB: tokenB,
+              amountS: new BN(web3.utils.toWei("0.000001", "ether")),
+              amountB: new BN(web3.utils.toWei("0.000001", "ether")),
+              owner: ownerA
+            },
+            orderB: {
+              tokenS: tokenB,
+              tokenB: tokenA,
+              amountS: new BN(web3.utils.toWei("0.000001", "ether")),
+              amountB: new BN(web3.utils.toWei("0.000001", "ether")),
+              owner: ownerB
+            },
+            expected: {
+              orderA: {
+                filledFraction: 1.0,
+                spread: new BN(web3.utils.toWei("0", "ether"))
+              },
+              orderB: { filledFraction: 1.0 }
+            }
+          };
+          rings.push(ring);
+        }
+        for (const ring of rings) {
+          await exchangeTestUtil.setupRing(ring, true, true, false, false);
+          await exchangeTestUtil.sendRing(ring);
+        }
+        await exchangeTestUtil.submitTransactions(blockSize);
+        await verify();
+      }
+      //await exchangeTestUtil.submitTransactions(8);
+      //await verify();
     });
   });
 });

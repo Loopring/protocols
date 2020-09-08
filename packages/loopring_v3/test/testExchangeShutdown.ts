@@ -7,11 +7,10 @@ contract("Exchange", (accounts: string[]) => {
   let exchange: any;
   let loopringV3: any;
 
-  const createExchange = async (bSetupTestState: boolean = true) => {
-    await ctx.createExchange(
-      ctx.testContext.stateOwners[0],
-      true
-    );
+  const createExchange = async () => {
+    await ctx.createExchange(ctx.testContext.stateOwners[0], {
+      useOwnerContract: false
+    });
     exchange = ctx.exchange;
   };
 
@@ -44,10 +43,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Stake it
-      await ctx.depositExchangeStakeChecked(
-        stakeAmount,
-        depositer
-      );
+      await ctx.depositExchangeStakeChecked(stakeAmount, depositer);
 
       // Try to withdraw before the exchange is shutdown
       await expectThrow(

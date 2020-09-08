@@ -79,10 +79,9 @@ library AccountUpdateTransaction
         pure
         returns (AccountUpdate memory accountUpdate)
     {
-        // Check that this is a conditional update
-        uint updateType = data.toUint8(offset);
+        // Check that this is a conditional offset
+        require(data.toUint8(offset) == 1, "INVALID_AUXILIARYDATA_DATA");
         offset += 1;
-        require(updateType == 1, "INVALID_AUXILIARYDATA_DATA");
 
         // Extract the data from the tx data
         // We don't use abi.decode for this because of the large amount of zero-padding

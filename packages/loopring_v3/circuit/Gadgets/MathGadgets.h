@@ -1545,6 +1545,41 @@ class PublicDataGadget : public GadgetT
         publicDataBits.insert(publicDataBits.end(), bits.rbegin(), bits.rend());
     }
 
+    void transform(unsigned int start, unsigned int count, unsigned int size)
+    {
+        VariableArrayT transformedBits;
+        transformedBits.reserve(publicDataBits.size());
+        for (unsigned int i = 0; i < start; i++)
+        {
+            transformedBits.emplace_back(publicDataBits[i]);
+        }
+
+        unsigned int sizePart1 = 25 * 8;
+        unsigned int sizePart2 = 43 * 8;
+
+        unsigned int startPart1 = start;
+        unsigned int startPart2 = startPart1 + sizePart1 * count;
+
+        // Part 1
+        for (unsigned int i = 0; i < count; i++)
+        {
+            for (unsigned int j = 0; j < sizePart1; j++)
+            {
+                transformedBits.emplace_back(publicDataBits[start + i * size + j]);
+            }
+        }
+        // Part 2
+        for (unsigned int i = 0; i < count; i++)
+        {
+            for (unsigned int j = 0; j < sizePart2; j++)
+            {
+                transformedBits.emplace_back(publicDataBits[start + i * size + sizePart1 + j]);
+            }
+        }
+
+        publicDataBits = transformedBits;
+    }
+
     void generate_r1cs_witness()
     {
         // Calculate the hash
@@ -2185,9 +2220,6 @@ class PowerGadget : public GadgetT
       const unsigned int iterations,
       const std::string &prefix)
         : GadgetT(pb, prefix),
-
-          //_x(x),
-          //_y(y),
 
           sum0(pb, constants.fixedBase, constants.fixedBase, FMT(prefix, ".sum0")),
 

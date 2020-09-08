@@ -61,7 +61,6 @@ export class WithdrawalProcessor {
     const withdrawal: Withdrawal = {};
     let offset = 1;
 
-    // Check that this is a conditional update
     withdrawal.type = data.extractUint8(offset);
     offset += 1;
     withdrawal.owner = data.extractAddress(offset);
