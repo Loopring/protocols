@@ -154,38 +154,26 @@ contract FastWithdrawalAgent is ReentrancyGuard
         require(hash.verifySignature(fwa.provider, fwa.signature ), "INVALID_SIGNATURE");
         require(checkValidUntil(fwa.validUntil), "FASTWITHDRAWAL_APPROVAL_EXPIRED");
 
-        IExchangeV3 exchange = IExchangeV3(fwa.exchange);
-
-        address recipient = exchange.getWithdrawalRecipient(
+        try IExchangeV3(fwa.exchange).setWithdrawalRecipient(
             fwa.from,
             fwa.to,
             fwa.token,
             fwa.amount,
-            fwa.storageID
+            fwa.storageID,
+            fwa.provider
+        ) {} catch {
+            return Status.TOO_LATE;
+        }
+        // Transfer the tokens immediately to the requested address
+        // using funds from the liquidity provider (`msg.sender`).
+        transfer(
+            fwa.provider,
+            fwa.to,
+            fwa.token,
+            fwa.amount
         );
 
-        if (recipient != address(0)) {
-            return Status.TOO_LATE;
-        } else {
-            exchange.setWithdrawalRecipient(
-                fwa.from,
-                fwa.to,
-                fwa.token,
-                fwa.amount,
-                fwa.storageID,
-                fwa.provider
-            );
-            // Transfer the tokens immediately to the requested address
-            // using funds from the liquidity provider (`msg.sender`).
-            transfer(
-                fwa.provider,
-                fwa.to,
-                fwa.token,
-                fwa.amount
-            );
-
-            return Status.SUCCEEDED;
-        }
+        return Status.SUCCEEDED;
     }
 
     function transfer(
