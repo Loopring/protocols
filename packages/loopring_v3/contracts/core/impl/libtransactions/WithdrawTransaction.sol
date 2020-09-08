@@ -64,7 +64,6 @@ library WithdrawTransaction
         address to;
         bytes   extraData;
         uint32  validUntil;
-        uint8   isFastWithdrawal;
     }
 
     /*event ForcedWithdrawalProcessed(
