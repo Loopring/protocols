@@ -19,7 +19,7 @@ contract("Transfers", (accounts: string[]) => {
     contracts = new Artifacts(artifacts);
     transferContract = await contracts.TransferContract.new({ from: deployer });
     testToken = await contracts.TESTToken.new({ from: deployer });
-    noDefaultFunctionContract = await contracts.LzDecompressorContract.new({
+    noDefaultFunctionContract = await contracts.PoseidonContract.new({
       from: deployer
     });
     // Approve the transferContract for the 'transferFrom' tests

@@ -26,7 +26,7 @@ contract("Exchange", (accounts: string[]) => {
     // Fresh Exchange for each test
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      true
+      {setupTestState: true}
     );
     operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
     operator = exchangeTestUtil.getAccount(operatorAccountID).owner;
@@ -59,8 +59,8 @@ contract("Exchange", (accounts: string[]) => {
 
       // Setup the AMM
       await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenA, 15, tokenWeightA);
-      await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenB, 15, tokenWeightB);
-      await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenC, 15, tokenWeightC);
+      await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenB, 15, tokenWeightB, {authMethod: AuthMethod.ECDSA});
+      await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenC, 15, tokenWeightC, {authMethod: AuthMethod.APPROVE});
       // Change some of the parameters
       await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenA, 20, tokenWeightC);
       await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenC, 25, tokenWeightA);

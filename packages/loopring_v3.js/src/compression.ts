@@ -81,7 +81,7 @@ export function compressLZ(
   input: string,
   speed: CompressionSpeed = CompressionSpeed.MEDIUM
 ) {
-  const minGasSavedForReplacement = GAS_COST_NONZERO_BYTE * 10;
+  const minGasSavedForReplacement = GAS_COST_NONZERO_BYTE * 40;
   const minLengthReplacement = Math.floor(
     minGasSavedForReplacement / GAS_COST_NONZERO_BYTE
   );
@@ -255,6 +255,105 @@ export function decompressLZ(input: string) {
       // console.log("memmove");
     } else {
       assert(false);
+    }
+  }
+  return uncompressed.getData();
+}
+
+export function compressZeros(
+  input: string,
+  speed: CompressionSpeed = CompressionSpeed.MEDIUM
+) {
+  const minNumZeros = 20;
+  const maxLength = 2**16-1;
+
+  const stream = new Bitstream(input);
+  assert(stream.length() > 0, "cannot compress empty input");
+
+  // Cache the data in an array for performance
+  const data: number[] = [];
+  for (let i = 0; i < stream.length(); i++) {
+    data.push(stream.extractUint8(i));
+  }
+
+  let previousPos = 0;
+  const compressed = new Bitstream();
+  let pos = 0;
+  const dataLength = stream.length();
+
+  const writeLiterals = (numData: number, numZeros: number) => {
+    // Make sure no length is longer than `maxLength`
+    const numDataWriteLoops = Math.floor((numData + maxLength) / (maxLength + 1));
+      for (let i = 0; i < numDataWriteLoops - 1; i++)
+      {
+        compressed.addNumber(maxLength, 2);
+        compressed.addNumber(0, 2);
+        for (let i = 0; i < maxLength; i++) {
+          compressed.addNumber(data[previousPos + i], 1);
+        }
+        previousPos += maxLength;
+        numData -= maxLength;
+      }
+      compressed.addNumber(numData, 2);
+      compressed.addNumber(numZeros, 2);
+      for (let i = 0; i < numData; i++) {
+         compressed.addNumber(data[previousPos + i], 1);
+      }
+  };
+
+  while (pos < dataLength) {
+    let numZeros = 0;
+    // Find a run of zeros
+    while (data[pos] !== 0 && pos < dataLength) {
+      pos++;
+    }
+    const firstZeroPos = pos;
+    while (data[pos] === 0 && pos < dataLength && numZeros < maxLength) {
+      pos++;
+      numZeros++;
+    }
+    if (numZeros >= minNumZeros) {
+      let numData = firstZeroPos - previousPos;
+      writeLiterals(numData, numZeros);
+      previousPos = pos;
+    }
+  }
+  let numData = dataLength - previousPos;
+  if (numData > 0) {
+    writeLiterals(numData, 0);
+  }
+
+  // console.log("original: " + data.getData());
+  // console.log("compressed: " + compressed.getData());
+  const decompressed = decompressZeros(compressed.getData());
+  // console.log("decompress: " + decompressed);
+  assert.equal(
+    input,
+    decompressed,
+    "decompressed data does not match original data"
+  );
+
+  return compressed.getData();
+}
+
+export function decompressZeros(input: string) {
+  const data = new Bitstream(input);
+  assert(data.length() > 0, "cannot decompress empty input");
+
+  const uncompressed = new Bitstream();
+  let pos = 0;
+  while (pos < data.length()) {
+    const numData = data.extractUint16(pos);
+    pos += 2;
+    const numZeros = data.extractUint16(pos);
+    pos += 2;
+
+    for (let i = 0; i < numData; i++) {
+      uncompressed.addNumber(data.extractUint8(pos), 1);
+      pos += 1;
+    }
+    for (let i = 0; i < numZeros; i++) {
+      uncompressed.addNumber(0, 1);
     }
   }
   return uncompressed.getData();

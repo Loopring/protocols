@@ -10,6 +10,11 @@ contract("Loopring", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
     loopring = exchangeTestUtil.loopringV3;
+
+    await exchangeTestUtil.createExchange(
+      exchangeTestUtil.testContext.stateOwners[0],
+      {setupTestState: false, useOwnerContract: false}
+    );
   });
 
   after(async () => {

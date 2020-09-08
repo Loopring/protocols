@@ -246,10 +246,10 @@ contract("Exchange", (accounts: string[]) => {
     await withdrawOnceChecked(owner, token, new BN(0));
   };
 
-  const createExchange = async (bSetupTestState: boolean = true) => {
+  const createExchange = async (setupTestState: boolean = true) => {
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      bSetupTestState
+      {setupTestState}
     );
     exchange = exchangeTestUtil.exchange;
     depositContract = exchangeTestUtil.depositContract;

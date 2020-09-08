@@ -693,10 +693,12 @@ class UniversalCircuit : public Circuit
         publicData.add(protocolMakerFeeBips.bits);
         publicData.add(numConditionalTransactions->bits);
         publicData.add(operatorAccountID.bits);
+        unsigned int start = publicData.publicDataBits.size();
         for (size_t j = 0; j < numTransactions; j++)
         {
             publicData.add(reverse(transactions[j].getPublicData()));
         }
+        publicData.transform(start, numTransactions, TX_DATA_AVAILABILITY_SIZE * 8);
         publicData.generate_r1cs_constraints();
 
         // Signature
