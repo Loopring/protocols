@@ -104,7 +104,7 @@ library TransferTransaction
         _offset += 2;
         transfer.fee = uint(data.toUint16(_offset)).decodeFloat(16);
         _offset += 2;
-        //uint16 shortStorageID = data.toUint16(offset);
+        //uint16 shortStorageID = data.toUint16(_offset);
         _offset += 2;
         transfer.to = data.toAddress(_offset);
         _offset += 20;
