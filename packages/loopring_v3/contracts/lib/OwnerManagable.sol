@@ -21,7 +21,7 @@ contract OwnerManagable is Claimable, AddressSet
 
     modifier onlyOwnerOrManager
     {
-        require(isOwnerOrManager(msg.sender), "NOT_OWNER_OR_MANAGER");
+        require(msg.sender == owner || isManager(msg.sender), "NOT_OWNER_OR_MANAGER");
         _;
     }
 
@@ -47,7 +47,7 @@ contract OwnerManagable is Claimable, AddressSet
         return numAddressesInSet(MANAGER);
     }
 
-    /// @dev Checks if an address is a manager.
+    /// @dev Checks if an address is a manger.
     /// @param addr The address to check.
     /// @return True if the address is a manager, False otherwise.
     function isManager(address addr)
@@ -56,17 +56,6 @@ contract OwnerManagable is Claimable, AddressSet
         returns (bool)
     {
         return isAddressInSet(MANAGER, addr);
-    }
-
-    /// @dev Checks if an address is the owner or the manager.
-    /// @param addr The address to check.
-    /// @return True if the address is the ower or a manager, False otherwise.
-    function isOwnerOrManager(address addr)
-        public
-        view
-        returns (bool)
-    {
-        return addr == owner || isManager(msg.sender);
     }
 
     /// @dev Adds a new manager.
