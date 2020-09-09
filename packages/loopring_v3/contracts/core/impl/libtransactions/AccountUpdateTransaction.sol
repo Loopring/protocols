@@ -79,25 +79,26 @@ library AccountUpdateTransaction
         pure
         returns (AccountUpdate memory accountUpdate)
     {
+        uint _offset = offset;
         // Check that this is a conditional offset
-        require(data.toUint8(offset) == 1, "INVALID_AUXILIARYDATA_DATA");
-        offset += 1;
+        require(data.toUint8(_offset) == 1, "INVALID_AUXILIARYDATA_DATA");
+        _offset += 1;
 
         // Extract the data from the tx data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        accountUpdate.owner = data.toAddress(offset);
-        offset += 20;
-        accountUpdate.accountID = data.toUint32(offset);
-        offset += 4;
-        accountUpdate.feeTokenID = data.toUint16(offset);
-        offset += 2;
-        accountUpdate.fee = uint(data.toUint16(offset)).decodeFloat(16);
-        offset += 2;
-        accountUpdate.publicKey = data.toUint(offset);
-        offset += 32;
-        accountUpdate.nonce = data.toUint32(offset);
-        offset += 4;
+        accountUpdate.owner = data.toAddress(_offset);
+        _offset += 20;
+        accountUpdate.accountID = data.toUint32(_offset);
+        _offset += 4;
+        accountUpdate.feeTokenID = data.toUint16(_offset);
+        _offset += 2;
+        accountUpdate.fee = uint(data.toUint16(_offset)).decodeFloat(16);
+        _offset += 2;
+        accountUpdate.publicKey = data.toUint(_offset);
+        _offset += 32;
+        accountUpdate.nonce = data.toUint32(_offset);
+        _offset += 4;
     }
 
     function hashTx(

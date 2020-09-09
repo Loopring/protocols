@@ -15,7 +15,7 @@ import "../../lib/SignatureUtil.sol";
 
 /// @title Basic contract storing funds for a liquidity provider.
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BasicLiquidityProvider is ReentrancyGuard, OwnerManagable
+contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -47,7 +47,7 @@ contract BasicLiquidityProvider is ReentrancyGuard, OwnerManagable
     constructor(FastWithdrawalAgent _agent)
     {
         agent = _agent;
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("BasicLiquidityProvider", "1.0", address(this)));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalLiquidityProvider", "1.0", address(this)));
     }
 
     // Execute the fast withdrawals.
@@ -58,13 +58,10 @@ contract BasicLiquidityProvider is ReentrancyGuard, OwnerManagable
         external
         nonReentrant
     {
-        // Validate the approval when executed by an external party.
-        bool needsValidation = !isOwnerOrManager(msg.sender);
-
         // Prepare the data and validate the approvals when necessary
         FastWithdrawalAgent.Withdrawal[] memory withdrawals = new FastWithdrawalAgent.Withdrawal[](approvals.length);
         for (uint i = 0; i < approvals.length; i++) {
-            if (needsValidation) {
+            if (!isManager(msg.sender)) {
                 validateApproval(approvals[i]);
             }
             withdrawals[i] = translate(approvals[i]);
@@ -110,10 +107,7 @@ contract BasicLiquidityProvider is ReentrancyGuard, OwnerManagable
         nonReentrant
         onlyOwner
     {
-        require(
-            ERC20(token).approve(spender, amount),
-            "APPROVAL_FAILED"
-        );
+        require(ERC20(token).approve(spender, amount), "APPROVAL_FAILED");
     }
 
     receive() payable external {}
@@ -141,7 +135,7 @@ contract BasicLiquidityProvider is ReentrancyGuard, OwnerManagable
             )
         );
         // Check the signature
-        require(isOwnerOrManager(approval.signer), "INVALID_SIGNER");
+        require(isManager(approval.signer), "INVALID_SIGNER");
         require(hash.verifySignature(approval.signer, approval.signature), "INVALID_SIGNATURE");
         require(checkValidUntil(approval.validUntil), "FASTWITHDRAWAL_APPROVAL_EXPIRED");
     }
