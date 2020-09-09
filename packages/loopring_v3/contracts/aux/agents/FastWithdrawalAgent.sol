@@ -68,7 +68,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
     }
 
     // This method needs to be called by any liquidity provider
-    function execute(Withdrawal[] calldata withdrawals)
+    function executeFastWithdrawals(Withdrawal[] calldata withdrawals)
         public
         nonReentrant
         payable
@@ -77,19 +77,6 @@ contract FastWithdrawalAgent is ReentrancyGuard
         for (uint i = 0; i < withdrawals.length; i++) {
             executeInternal(withdrawals[i]);
         }
-        // Return any ETH left into this contract
-        // (can happen when more ETH is sent than needed for the fast withdrawals)
-        msg.sender.sendETHAndVerify(address(this).balance, gasleft());
-    }
-
-    // This method needs to be called by any liquidity provider
-    function execute(Withdrawal calldata withdrawal)
-        public
-        nonReentrant
-        payable
-    {
-        // Do the fast withdrawal
-        executeInternal(withdrawal);
         // Return any ETH left into this contract
         // (can happen when more ETH is sent than needed for the fast withdrawals)
         msg.sender.sendETHAndVerify(address(this).balance, gasleft());
