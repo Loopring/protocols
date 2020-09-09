@@ -34,7 +34,7 @@ library AddressUtil
         pure
         returns (address payable)
     {
-        return address(uint160(addr));
+        return payable(addr);
     }
 
     // Works like address.send but with a customizable gas limit
