@@ -50,6 +50,10 @@ contract AmmPool is IBlockReceiver {
         uint96[] minAmountsOut
     );
 
+    event QueueItemsProcessed(
+        uint numItems
+    );
+
     uint public constant MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN = 7 days;
 
     IExchangeV3 public exchange;
@@ -466,5 +470,7 @@ contract AmmPool is IBlockReceiver {
                 totalBalance[tokens[i].addr] = totalBalance[tokens[i].addr].add(amount);
             }
         }
+
+        emit QueueItemsProcessed(auxData.numItems);
     }
 }
