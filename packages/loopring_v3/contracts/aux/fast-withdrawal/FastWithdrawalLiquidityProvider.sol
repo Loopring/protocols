@@ -134,7 +134,7 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
                 )
             )
         );
-        // Check the signature
+
         return hash.verifySignature(approval.signer, approval.signature) &&
             checkValidUntil(approval.validUntil) &&
             isManager(approval.signer);
