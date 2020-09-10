@@ -10,8 +10,7 @@ TEST_CASE("StorageReader", "[StorageReaderGadget]")
                                   const FieldT &_storageID,
                                   bool _verify,
                                   bool expectedSatisfied,
-                                  const FieldT &expectedFilled = FieldT::zero(),
-                                  const FieldT &expectedOverwrite = FieldT::zero()) {
+                                  const FieldT &expectedFilled = FieldT::zero()) {
         protoboard<FieldT> pb;
 
         VariableT verify = make_variable(pb, _verify ? FieldT::one() : FieldT::zero(), ".verify");
@@ -31,7 +30,6 @@ TEST_CASE("StorageReader", "[StorageReaderGadget]")
         if (expectedSatisfied)
         {
             REQUIRE((pb.val(storageReaderGadget.getData()) == expectedFilled));
-            REQUIRE((pb.val(storageReaderGadget.getOverwrite()) == expectedOverwrite));
         }
     };
 
@@ -43,19 +41,19 @@ TEST_CASE("StorageReader", "[StorageReaderGadget]")
     {
         SECTION("Initial state storageID == 0")
         {
-            storageReaderChecked({0, 0}, 0, true, true, 0, 0);
+            storageReaderChecked({0, 0}, 0, true, true, 0);
         }
         SECTION("Initial state storageID > 0")
         {
-            storageReaderChecked({0, 0}, storageID, true, true, 0, 0);
+            storageReaderChecked({0, 0}, storageID, true, true, 0);
         }
         SECTION("Order filled")
         {
-            storageReaderChecked({filled, storageID}, storageID, true, true, filled, 0);
+            storageReaderChecked({filled, storageID}, storageID, true, true, filled);
         }
         SECTION("Initial state storageID == delta - 1")
         {
-            storageReaderChecked({0, 0}, delta - 1, true, true, 0, 0);
+            storageReaderChecked({0, 0}, delta - 1, true, true, 0);
         }
     }
 
@@ -63,27 +61,24 @@ TEST_CASE("StorageReader", "[StorageReaderGadget]")
     {
         SECTION("First overwrite")
         {
-            storageReaderChecked({0, 0}, delta, true, true, 0, 1);
+            storageReaderChecked({0, 0}, delta, true, true, 0);
         }
         SECTION("Previous order not filled")
         {
-            storageReaderChecked({0, storageID}, delta + storageID, true, true, 0, 1);
+            storageReaderChecked({0, storageID}, delta + storageID, true, true, 0);
         }
         SECTION("Previous order filled")
         {
-            storageReaderChecked({filled, storageID}, delta + storageID, true, true, 0, 1);
+            storageReaderChecked({filled, storageID}, delta + storageID, true, true, 0);
         }
-        SECTION("Max overwrite delta")
+        SECTION("Overwrite delta")
         {
-            storageReaderChecked({0, 0}, delta + storageID, true, true, 0, 1);
-        }
-        SECTION("storageID too big")
-        {
-            storageReaderChecked({0, 0}, delta + delta + storageID, true, false);
-            storageReaderChecked({0, 0}, delta * 9 + storageID, true, false);
-            storageReaderChecked({0, 0}, delta * 99 + storageID, true, false);
-            storageReaderChecked({0, 0}, delta * 999 + storageID, true, false);
-            storageReaderChecked({0, 0}, delta * 9999 + storageID, true, false);
+            storageReaderChecked({0, 0}, delta + storageID, true, true, 0);
+            storageReaderChecked({0, 0}, delta + delta + storageID, true, true);
+            storageReaderChecked({0, 0}, delta * 9 + storageID, true, true);
+            storageReaderChecked({0, 0}, delta * 99 + storageID, true, true);
+            storageReaderChecked({0, 0}, delta * 999 + storageID, true, true);
+            storageReaderChecked({0, 0}, delta * 9999 + storageID, true, true);
         }
     }
 
@@ -114,8 +109,7 @@ TEST_CASE("Nonce", "[NonceGadget]")
                           const StorageLeaf &storageLeaf,
                           const FieldT &_storageID,
                           bool _verify,
-                          bool expectedSatisfied,
-                          const FieldT &expectedOverwrite = FieldT::zero()) {
+                          bool expectedSatisfied) {
         protoboard<FieldT> pb;
 
         VariableT verify = make_variable(pb, _verify ? FieldT::one() : FieldT::zero(), ".verify");
@@ -136,7 +130,7 @@ TEST_CASE("Nonce", "[NonceGadget]")
         if (expectedSatisfied)
         {
             REQUIRE((pb.val(nonceGadget.getData()) == FieldT::one()));
-            REQUIRE((pb.val(nonceGadget.getOverwrite()) == expectedOverwrite));
+
         }
     };
 
@@ -148,31 +142,31 @@ TEST_CASE("Nonce", "[NonceGadget]")
     {
         SECTION("Initial state storageID == 0")
         {
-            nonceChecked({0, 0}, 0, true, true, 0);
+            nonceChecked({0, 0}, 0, true, true);
         }
         SECTION("Initial state storageID > 0")
         {
-            nonceChecked({0, 0}, storageID, true, true, 0);
+            nonceChecked({0, 0}, storageID, true, true);
         }
         SECTION("Initial state storageID == delta - 1")
         {
-            nonceChecked({0, 0}, delta - 1, true, true, 0);
+            nonceChecked({0, 0}, delta - 1, true, true);
         }
         SECTION("Slot not used")
         {
-            nonceChecked({0, storageID}, storageID, true, true, 0);
+            nonceChecked({0, storageID}, storageID, true, true);
         }
         SECTION("Slot used")
         {
-            nonceChecked({filled, storageID}, storageID, true, false, 0);
+            nonceChecked({filled, storageID}, storageID, true, false);
         }
         SECTION("Slot not used (don't validate)")
         {
-            nonceChecked({0, storageID}, storageID, false, true, 0);
+            nonceChecked({0, storageID}, storageID, false, true);
         }
         SECTION("Slot used (don't validate)")
         {
-            nonceChecked({filled, storageID}, storageID, false, true, 0);
+            nonceChecked({filled, storageID}, storageID, false, true);
         }
     }
 
@@ -180,27 +174,24 @@ TEST_CASE("Nonce", "[NonceGadget]")
     {
         SECTION("First overwrite")
         {
-            nonceChecked({0, 0}, delta, true, true, 1);
+            nonceChecked({0, 0}, delta, true, true);
         }
         SECTION("Previous slot unused")
         {
-            nonceChecked({0, storageID}, delta + storageID, true, true, 1);
+            nonceChecked({0, storageID}, delta + storageID, true, true);
         }
         SECTION("Previous slot used")
         {
-            nonceChecked({filled, storageID}, delta + storageID, true, true, 1);
+            nonceChecked({filled, storageID}, delta + storageID, true, true);
         }
-        SECTION("Max overwrite delta")
+        SECTION("Overwrite")
         {
-            nonceChecked({0, 0}, delta + storageID, true, true, 1);
-        }
-        SECTION("storageID too big")
-        {
-            nonceChecked({0, 0}, delta + delta + storageID, true, false);
-            nonceChecked({0, 0}, delta * 9 + storageID, true, false);
-            nonceChecked({0, 0}, delta * 99 + storageID, true, false);
-            nonceChecked({0, 0}, delta * 999 + storageID, true, false);
-            nonceChecked({0, 0}, delta * 9999 + storageID, true, false);
+            nonceChecked({0, 0}, delta + storageID, true, true);
+            nonceChecked({0, 0}, delta + delta + storageID, true, true);
+            nonceChecked({0, 0}, delta * 9 + storageID, true, true);
+            nonceChecked({0, 0}, delta * 99 + storageID, true, true);
+            nonceChecked({0, 0}, delta * 999 + storageID, true, true);
+            nonceChecked({0, 0}, delta * 9999 + storageID, true, true);
         }
     }
 

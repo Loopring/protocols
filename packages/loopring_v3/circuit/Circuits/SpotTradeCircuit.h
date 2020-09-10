@@ -333,12 +333,8 @@ class SpotTradeCircuit : public BaseTransactionCircuit
     const VariableArrayT getPublicData() const
     {
         return flattenReverse({
-          VariableArrayT(1, state.constants._0),
-          VariableArrayT(1, tradeHistory_A.getOverwrite()),
-          subArray(orderA.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
-          VariableArrayT(1, state.constants._0),
-          VariableArrayT(1, tradeHistory_B.getOverwrite()),
-          subArray(orderB.storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS),
+          orderA.storageID.bits,
+          orderB.storageID.bits,
 
           orderA.accountID.bits,
           orderB.accountID.bits,

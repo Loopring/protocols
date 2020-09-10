@@ -11,7 +11,6 @@ interface Transfer {
   amount?: BN;
   feeTokenID?: number;
   fee?: BN;
-  shortStorageID?: number;
   validUntil?: number;
   storageID?: number;
   from?: string;
@@ -23,7 +22,11 @@ interface Transfer {
  * Processes internal transfer requests.
  */
 export class TransferProcessor {
-  public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
+  public static process(
+    state: ExchangeState,
+    block: BlockContext,
+    txData: Bitstream
+  ) {
     const transfer = this.extractData(txData);
 
     const from = state.getAccount(transfer.accountFromID);
@@ -38,16 +41,10 @@ export class TransferProcessor {
     from.getBalance(transfer.feeTokenID).balance.isub(transfer.fee);
 
     // Nonce
-    const storageSlot = transfer.shortStorageID & 0b0011111111111111;
-    const overwriteSlot = (transfer.shortStorageID & 0b0100000000000000) !== 0;
-    const storage = from.getBalance(transfer.tokenID).getStorage(storageSlot);
-    if (storage.storageID === 0) {
-      storage.storageID = storageSlot;
-    }
-    if (overwriteSlot) {
-      storage.storageID += Constants.NUM_STORAGE_SLOTS;
-      storage.data = new BN(0);
-    }
+    const storage = from
+      .getBalance(transfer.tokenID)
+      .getStorage(transfer.storageID);
+    storage.storageID = transfer.storageID;
     storage.data = new BN(1);
 
     const operator = state.getAccount(block.operatorAccountID);
@@ -70,18 +67,22 @@ export class TransferProcessor {
     offset += 4;
     transfer.tokenID = data.extractUint16(offset);
     offset += 2;
-    transfer.amount = fromFloat(data.extractUint24(offset), Constants.Float24Encoding);
+    transfer.amount = fromFloat(
+      data.extractUint24(offset),
+      Constants.Float24Encoding
+    );
     offset += 3;
     transfer.feeTokenID = data.extractUint16(offset);
     offset += 2;
-    transfer.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
+    transfer.fee = fromFloat(
+      data.extractUint16(offset),
+      Constants.Float16Encoding
+    );
     offset += 2;
-    transfer.shortStorageID = data.extractUint16(offset);
-    offset += 2;
-    transfer.to = data.extractAddress(offset);
-    offset += 20;
     transfer.storageID = data.extractUint32(offset);
     offset += 4;
+    transfer.to = data.extractAddress(offset);
+    offset += 20;
     transfer.from = data.extractAddress(offset);
     offset += 20;
 

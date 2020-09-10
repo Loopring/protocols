@@ -228,14 +228,14 @@ The `fillAmountBorS` parameter can be used to decide which amount is the limitin
 ```
 - For both Orders:
     - Account ID: 4 bytes
-    - Short StorageID: 2 bytes
+    - Storage ID: 4 bytes
     - TokenS: 2 bytes
     - FillS: 3 bytes （24 bits, 19 bits for the mantissa part and 5 for the exponent part)
     - Order data (fillAmountBorS,feeBips): 1 byte
 ```
 
-- => **24 bytes/ring**
-- => Calldata cost: 24 \* 16 = **384 gas/ring**
+- => **28 bytes/ring**
+- => Calldata cost: 28 \* 16 = **448 gas/ring**
 
 ### Fee Model
 
@@ -321,7 +321,7 @@ If the order never left the DEX and the user trusts the DEX, the order can simpl
 
 ### Storage
 
-Every account has a storage tree with 2^14 leaves **for every token**. Which leaf is used for storing e.g., the trading history for an order is completely left up to the user, and we call this the **storageID**. The storageID is stored in a 32-bit value and works as a 2D nonce. We allow the user to overwrite the existing storage stored at `storageID % 2^14` if `order.storageID == storage.storageID + 2^14`. If `order.storageID < storage.storageID` the order is automatically canceled. If `order.storageID == storage.storageID` we use the data stored in the leaf. If `order.storageID > storage.storageID + 2^14`, the order cannot be used yet as the storageID can only be incremented by `2^14`. This allows the account to create 2^32 unique orders for every token, and the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
+Every account has a storage tree with 2^14 leaves **for every token**. Which leaf is used for storing e.g., the trading history for an order is completely left up to the user, and we call this the **storageID**. The storageID is stored in a 32-bit value and works as a 2D nonce. We allow the user to overwrite the existing storage stored at `storageID % 2^14` if `order.storageID > storage.storageID`. If `order.storageID < storage.storageID` the order is automatically canceled. If `order.storageID == storage.storageID` we use the data stored in the leaf. This allows the account to create 2^32 unique orders for every token, and the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
 
 While this was done for performance reasons (so we do not have to have a storage tree with a large depth using the order hash as an address), this does open up some interesting possibilities.
 
@@ -390,14 +390,13 @@ Not all features available for transfers using EdDSA signatures are available us
 - Amount: 3 bytes （24 bits, 19 bits for the mantissa part and 5 for the exponent part)
 - Fee token ID: 2 bytes
 - Fee amount: 2 bytes （16 bits, 11 bits for the mantissa part and 5 for the exponent part)
-- Short storageID: 2 bytes
+- StorageID: 4 bytes
 - To: 20 bytes （only set when transferring to a new account)
-- storageID: 4 bytes （only set for conditional transfers)
 - From: 20 bytes （only set for conditional transfers)
 ```
 
-- => **20 bytes/transfer** (in the most common case)
-- => Calldata cost: 20 \* 16 = **320 gas/transfer**
+- => **22 bytes/transfer** (in the most common case)
+- => Calldata cost: 22 \* 16 = **352 gas/transfer**
 
 ## Deposit
 
