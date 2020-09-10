@@ -168,10 +168,8 @@ library WithdrawTransaction
             // Allow any amount of gas to be used on this withdrawal (which allows the transfer to be skipped)
             withdrawal.minGas = 0;
 
-            // Delete the recipient if we don't have to store it to get the gas refund
-            if (!auxData.storeRecipient) {
-                delete S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.storageID];
-            }
+            // Do NOT delete the recipient to prevent replay attack
+            // delete S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.storageID];
         } else if (auxData.storeRecipient) {
             // Store the destination address to mark the withdrawal as done
             require(withdrawal.to != address(0), "INVALID_DESTINATION_ADDRESS");
@@ -200,27 +198,28 @@ library WithdrawTransaction
         pure
         returns (Withdrawal memory withdrawal)
     {
+        uint _offset = offset;
         // Extract the transfer data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        withdrawal.withdrawalType = data.toUint8(offset);
-        offset += 1;
-        withdrawal.owner = data.toAddress(offset);
-        offset += 20;
-        withdrawal.accountID = data.toUint32(offset);
-        offset += 4;
-        withdrawal.tokenID = data.toUint16(offset);
-        offset += 2;
-        withdrawal.amount = data.toUint96(offset);
-        offset += 12;
-        withdrawal.feeTokenID = data.toUint16(offset);
-        offset += 2;
-        withdrawal.fee = uint(data.toUint16(offset)).decodeFloat(16);
-        offset += 2;
-        withdrawal.storageID = data.toUint32(offset);
-        offset += 4;
-        withdrawal.onchainDataHash = data.toBytes20(offset);
-        offset += 20;
+        withdrawal.withdrawalType = data.toUint8(_offset);
+        _offset += 1;
+        withdrawal.owner = data.toAddress(_offset);
+        _offset += 20;
+        withdrawal.accountID = data.toUint32(_offset);
+        _offset += 4;
+        withdrawal.tokenID = data.toUint16(_offset);
+        _offset += 2;
+        withdrawal.amount = data.toUint96(_offset);
+        _offset += 12;
+        withdrawal.feeTokenID = data.toUint16(_offset);
+        _offset += 2;
+        withdrawal.fee = uint(data.toUint16(_offset)).decodeFloat(16);
+        _offset += 2;
+        withdrawal.storageID = data.toUint32(_offset);
+        _offset += 4;
+        withdrawal.onchainDataHash = data.toBytes20(_offset);
+        _offset += 20;
     }
 
     function hashTx(

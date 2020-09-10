@@ -179,12 +179,7 @@ class TransferCircuit : public BaseTransactionCircuit
             validUntil.packed,
             NUM_BITS_TIMESTAMP,
             FMT(prefix, ".requireValidUntil")),
-          requireValidFee(
-            pb,
-            fee.packed,
-            maxFee.packed,
-            NUM_BITS_AMOUNT,
-            FMT(prefix, ".requireValidFee")),
+          requireValidFee(pb, fee.packed, maxFee.packed, NUM_BITS_AMOUNT, FMT(prefix, ".requireValidFee")),
           requireZeroWeightB(
             pb,
             isTransferTx.result(),
