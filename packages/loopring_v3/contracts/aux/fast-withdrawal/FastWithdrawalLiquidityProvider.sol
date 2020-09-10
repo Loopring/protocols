@@ -62,13 +62,9 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
         FastWithdrawalAgent.Withdrawal[] memory withdrawals =
             new FastWithdrawalAgent.Withdrawal[](approvals.length);
 
-        address prevSigner;
+        bool skipApprovalCheck = isManager(msg.sender);
         for (uint i = 0; i < approvals.length; i++) {
-            require(
-                isApprovalValid(approvals[i], prevSigner != approvals[i].signer),
-                "INVALID_APPROVAL"
-            );
-            prevSigner = approvals[i].signer;
+            require(skipApprovalCheck || isApprovalValid(approvals[i]), "PROHIBITED");
             withdrawals[i] = translate(approvals[i]);
         }
 
@@ -118,24 +114,9 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
     function isApprovalValid(
         FastWithdrawalApproval calldata approval
         )
-        public
-        view
-        returns (bool)
-    {
-        return isApprovalValid(approval, true);
-    }
-
-    receive() payable external {}
-
-    // -- Internal --
-
-    function isApprovalValid(
-        FastWithdrawalApproval calldata approval,
-        bool checkSigner
-        )
         internal
         view
-        returns (bool isValid)
+        returns (bool)
     {
         // Compute the hash
         bytes32 hash = EIP712.hashPacked(
@@ -154,13 +135,14 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
             )
         );
         // Check the signature
-        isValid = hash.verifySignature(approval.signer, approval.signature);
-        isValid = isValid && checkValidUntil(approval.validUntil);
-
-        if (checkSigner) {
-            isValid = isValid && isManager(approval.signer);
-        }
+        return hash.verifySignature(approval.signer, approval.signature) &&
+            checkValidUntil(approval.validUntil) &&
+            isManager(approval.signer);
     }
+
+    receive() payable external {}
+
+    // -- Internal --
 
     function checkValidUntil(uint64 validUntil)
         internal
