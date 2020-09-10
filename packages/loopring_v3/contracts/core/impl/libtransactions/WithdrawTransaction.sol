@@ -85,16 +85,14 @@ library WithdrawTransaction
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
 
         // Validate the withdrawal data not directly part of the DA
-        bytes32 onchainDataHash = keccak256(
-            abi.encodePacked(
-                auxData.minGas,
-                auxData.to,
-                auxData.extraData
-            )
+        bytes20 onchainDataHash = hashOnchainData(
+            auxData.minGas,
+            auxData.to,
+            auxData.extraData
         );
         // Only the 20 MSB are used, which is still 80-bit of security, which is more
         // than enough, especially when combined with validUntil.
-        require(withdrawal.onchainDataHash == bytes20(onchainDataHash), "INVALID_WITHDRAWAL_DATA");
+        require(withdrawal.onchainDataHash == onchainDataHash, "INVALID_WITHDRAWAL_DATA");
 
         // Fill in withdrawal data missing from DA
         withdrawal.to = auxData.to;
@@ -250,5 +248,25 @@ library WithdrawTransaction
                 )
             )
         );
+    }
+
+    function hashOnchainData(
+        uint    minGas,
+        address to,
+        bytes   memory extraData
+        )
+        internal
+        pure
+        returns (bytes20)
+    {
+        // Only the 20 MSB are used, which is still 80-bit of security, which is more
+        // than enough, especially when combined with validUntil.
+        return bytes20(keccak256(
+            abi.encodePacked(
+                minGas,
+                to,
+                extraData
+            )
+        ));
     }
 }

@@ -529,7 +529,9 @@ export class ExchangeTestUtil {
     await this.explorer.initialize(web3, this.universalRegistry.address);
 
     // Initialize LoopringV3
-    this.protocolFeeVault = this.testContext.ringMatchers[0];
+    this.protocolFeeVault = this.testContext.orderOwners[
+      this.testContext.orderOwners.length - 1
+    ];
 
     await this.loopringV3.updateSettings(
       this.protocolFeeVault,
@@ -1184,17 +1186,13 @@ export class ExchangeTestUtil {
       amount = event.amount;
     }
 
-    const deposit: Deposit = {
-      txType: "Deposit",
-      owner: to,
-      accountID,
-      tokenID: this.tokenAddressToIDMap.get(token),
-      amount,
+    const deposit = await this.requestDeposit(
+      to,
       token,
-      timestamp: ethBlock.timestamp,
-      transactionHash: tx.receipt.transactionHash
-    };
-    this.pendingTransactions[this.exchangeId].push(deposit);
+      amount,
+      ethBlock.timestamp,
+      tx.receipt.transactionHash
+    );
 
     if (accountNewCreated && autoSetKeys) {
       let keyPair = this.getKeyPairEDDSA();
@@ -1203,6 +1201,28 @@ export class ExchangeTestUtil {
       });
     }
 
+    return deposit;
+  }
+
+  public async requestDeposit(
+    owner: string,
+    token: string,
+    amount: BN,
+    timestamp?: number,
+    transactionHash?: string
+  ) {
+    const accountID = await this.getAccountID(owner);
+    const deposit: Deposit = {
+      txType: "Deposit",
+      owner,
+      accountID,
+      tokenID: this.getTokenIdFromNameOrAddress(token),
+      amount,
+      token,
+      timestamp,
+      transactionHash
+    };
+    this.pendingTransactions[this.exchangeId].push(deposit);
     return deposit;
   }
 
@@ -1238,9 +1258,9 @@ export class ExchangeTestUtil {
     let storeRecipient =
       options.storeRecipient !== undefined ? options.storeRecipient : false;
 
-    let type = 0;
-    if (authMethod === AuthMethod.ECDSA || authMethod === AuthMethod.APPROVE) {
-      type = 1;
+    let type = 1;
+    if (authMethod === AuthMethod.EDDSA) {
+      type = 0;
     }
     if (authMethod === AuthMethod.FORCE) {
       if (signer === owner) {
@@ -2643,13 +2663,13 @@ export class ExchangeTestUtil {
     );
   }
 
-  public async getOffchainBalance(
-    exchangeID: number,
-    accountID: number,
-    tokenID: number
-  ) {
-    const latestBlockIdx = this.blocks[exchangeID].length - 1;
-    const state = await Simulator.loadExchangeState(exchangeID, latestBlockIdx);
+  public async getOffchainBalance(accountID: number, token: string) {
+    const tokenID = this.getTokenIdFromNameOrAddress(token);
+    const latestBlockIdx = this.blocks[this.exchangeId].length - 1;
+    const state = await Simulator.loadExchangeState(
+      this.exchangeId,
+      latestBlockIdx
+    );
     try {
       return state.accounts[accountID].balances[tokenID].balance;
     } catch {
@@ -2697,9 +2717,8 @@ export class ExchangeTestUtil {
     }
 
     const balance = await this.getOffchainBalance(
-      this.exchangeId,
       accountID,
-      tokenID
+      this.getTokenAddressFromID(tokenID)
     );
     assert(
       balance.eq(expectedBalance),
@@ -3271,10 +3290,8 @@ export class ExchangeTestUtil {
     const deployer = accounts[0];
     const stateOwners = accounts.slice(1, 5);
     const operators = accounts.slice(5, 10);
-    const orderOwners = accounts.slice(10, 20);
-    const wallets = accounts.slice(20, 30);
-    const ringMatchers = accounts.slice(30, 40);
-    const feeRecipients = accounts.slice(40, 50);
+    const orderOwners = accounts.slice(10, 40);
+    const wallets = accounts.slice(40, 50);
 
     return new ExchangeTestContext(
       deployer,
@@ -3282,8 +3299,6 @@ export class ExchangeTestUtil {
       operators,
       orderOwners,
       wallets,
-      ringMatchers,
-      feeRecipients,
       tokenSymbolAddrMap,
       tokenAddrSymbolMap,
       tokenAddrDecimalsMap,

@@ -437,7 +437,7 @@ contract AmmPool is IBlockReceiver {
                     ethValue = _deposit.amount;
                 } else {
                     // Approve the deposit transfer
-                    ERC20(tokens[i].addr).approve(address(exchange), _deposit.amount);
+                    ERC20(tokens[i].addr).approve(address(exchange.getDepositContract()), _deposit.amount);
                 }
                 exchange.deposit{value: ethValue}(
                     _deposit.owner,
@@ -459,10 +459,19 @@ contract AmmPool is IBlockReceiver {
                 require(withdrawal.amount == amount, "INVALID_TX_DATA");
                 require(withdrawal.feeTokenID == withdrawal.tokenID, "INVALID_TX_DATA");
                 require(withdrawal.fee == 0, "INVALID_TX_DATA");
-                require(withdrawal.to == address(this), "INVALID_TX_DATA");
-                require(withdrawal.extraData.length == 0, "INVALID_TX_DATA");
+                withdrawal.minGas = 0;
+                withdrawal.to = address(this);
+                withdrawal.extraData = new bytes(0);
+                bytes20 onchainDataHash = WithdrawTransaction.hashOnchainData(
+                    withdrawal.minGas,
+                    withdrawal.to,
+                    withdrawal.extraData
+                );
+                require(withdrawal.onchainDataHash == onchainDataHash, "INVALID_TX_DATA");
                 // Now approve this withdrawal
+
                 withdrawal.validUntil = 0xffffffff;
+
                 bytes32 txHash = WithdrawTransaction.hashTx(exchangeDomainSeparator, withdrawal);
                 exchange.approveTransaction(address(this), txHash);
                 numTransactionsConsumed++;

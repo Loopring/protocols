@@ -4,6 +4,20 @@ import { expectThrow } from "./expectThrow";
 import { BlockCallback, ExchangeTestUtil } from "./testExchangeUtil";
 import { AuthMethod, OrderInfo, SpotTrade } from "./types";
 
+export interface PoolJoin {
+  workType?: "PoolJoin";
+  poolAmountOut: BN;
+  maxAmountsIn: BN[];
+}
+
+export interface PoolExit {
+  workType?: "PoolExit";
+  poolAmountIn: BN;
+  minAmountsOut: BN[];
+}
+
+type TxType = PoolJoin | PoolExit;
+
 export class AmmPool {
   public ctx: ExchangeTestUtil;
   public contract: any;
@@ -12,8 +26,11 @@ export class AmmPool {
   public tokens: string[];
   public weights: BN[];
 
+  public queue: TxType[];
+
   constructor(ctx: ExchangeTestUtil) {
     this.ctx = ctx;
+    this.queue = [];
   }
 
   public async setupPool(tokens: string[], weights: BN[], feeBips: number) {
@@ -34,22 +51,6 @@ export class AmmPool {
       { autoSetKeys: false }
     );
 
-    // Initial liquidity
-    await this.ctx.deposit(
-      this.ctx.testContext.orderOwners[0],
-      this.contract.address,
-      "WETH",
-      new BN(web3.utils.toWei("10000", "ether")),
-      { autoSetKeys: false }
-    );
-    await this.ctx.deposit(
-      this.ctx.testContext.orderOwners[0],
-      this.contract.address,
-      "GTO",
-      new BN(web3.utils.toWei("20000", "ether")),
-      { autoSetKeys: false }
-    );
-
     const tokenAddress: string[] = [];
     for (const token of tokens) {
       tokenAddress.push(this.ctx.getTokenAddress(token));
@@ -65,14 +66,62 @@ export class AmmPool {
   }
 
   public async deposit(owner: string, amounts: BN[]) {
-    await this.contract.deposit(amounts);
+    let value = new BN(0);
+    for (let i = 0; i < this.tokens.length; i++) {
+      const token = this.tokens[i];
+      const amount = amounts[i];
+      if (amount.gt(0)) {
+        if (token !== Constants.zeroAddress) {
+          const Token = await this.ctx.getTokenContract(token);
+          await Token.setBalance(owner, amount);
+          await Token.approve(this.contract.address, amount, { from: owner });
+        } else {
+          value = value.add(web3.utils.toBN(amount));
+        }
+      }
+    }
+
+    await this.contract.deposit(amounts, { value, from: owner });
+  }
+
+  public async join(owner: string, poolAmountOut: BN, maxAmountsIn: BN[]) {
+    await this.contract.joinPool(poolAmountOut, maxAmountsIn, { from: owner });
+    const poolJoin: PoolJoin = {
+      workType: "PoolJoin",
+      poolAmountOut,
+      maxAmountsIn
+    };
+    this.queue.push(poolJoin);
+  }
+
+  public async exit(owner: string, poolAmountIn: BN, minAmountsOut: BN[]) {
+    await this.contract.exitPool(poolAmountIn, minAmountsOut, { from: owner });
+    const poolExit: PoolExit = {
+      workType: "PoolExit",
+      poolAmountIn,
+      minAmountsOut
+    };
+    this.queue.push(poolExit);
+  }
+
+  public async depositAndJoin(
+    owner: string,
+    poolAmountOut: BN,
+    maxAmountsIn: BN[]
+  ) {
+    await this.deposit(owner, maxAmountsIn);
+    await this.join(owner, poolAmountOut, maxAmountsIn);
   }
 
   public async process() {
+    // To make things easy always start a new block and finalize state
     await this.ctx.submitTransactions();
     await this.ctx.submitPendingBlocks();
 
     const owner = this.contract.address;
+
+    const ammBalancesInAccount: BN[] = [];
+    const ammBalances: BN[] = [];
     for (let i = 0; i < this.tokens.length; i++) {
       await this.ctx.requestAmmUpdate(
         owner,
@@ -81,9 +130,58 @@ export class AmmPool {
         this.weights[i],
         { authMethod: AuthMethod.NONE }
       );
+      ammBalancesInAccount.push(
+        await this.ctx.getOffchainBalance(owner, this.tokens[i])
+      );
+      ammBalances.push(
+        await this.ctx.getOffchainBalance(owner, this.tokens[i])
+      );
     }
 
-    const auxiliaryData = web3.eth.abi.encodeParameter("tuple(uint256)", [0]);
+    // Process work in the queue
+    for (const item of this.queue) {
+      if (item.workType === "PoolJoin") {
+        for (let i = 0; i < this.tokens.length; i++) {
+          const amount = item.maxAmountsIn[i];
+          ammBalances[i] = ammBalances[i].add(amount);
+          console.log("pool join: " + amount.toString(10));
+        }
+      } else if (item.workType === "PoolExit") {
+        for (let i = 0; i < this.tokens.length; i++) {
+          const amount = item.minAmountsOut[i];
+          ammBalances[i] = ammBalances[i].sub(amount);
+          console.log("pool exit: " + amount.toString(10));
+        }
+      }
+    }
+
+    // Deposit/Withdraw to/from the AMM account when necessary
+    for (let i = 0; i < this.tokens.length; i++) {
+      if (ammBalances[i].gt(ammBalancesInAccount[i])) {
+        const amount = ammBalances[i].sub(ammBalancesInAccount[i]);
+        await this.ctx.requestDeposit(owner, this.tokens[i], amount);
+        console.log("pool deposit: " + amount.toString(10));
+      } else if (ammBalances[i].lt(ammBalancesInAccount[i])) {
+        const amount = ammBalancesInAccount[i].sub(ammBalances[i]);
+        await this.ctx.requestWithdrawal(
+          owner,
+          this.tokens[i],
+          amount,
+          this.tokens[i],
+          new BN(0),
+          { authMethod: AuthMethod.NONE, minGas: 0 }
+        );
+        console.log("pool withdraw: " + amount.toString(10));
+      }
+    }
+
+    const numItems = this.queue.length;
+    this.queue = [];
+    console.log("queue: " + numItems);
+
+    const auxiliaryData = web3.eth.abi.encodeParameter("tuple(uint256)", [
+      numItems
+    ]);
     const blockCallbacks: BlockCallback[] = [];
     blockCallbacks.push({
       target: owner,
@@ -119,6 +217,8 @@ contract("AMM Pool", (accounts: string[]) => {
     this.timeout(0);
 
     it.only("Successful swap (AMM maker)", async () => {
+      const ownerA = ctx.testContext.orderOwners[10];
+
       const feeBipsAMM = 30;
       const tokens = ["WETH", "GTO"];
       const weights = [
@@ -128,6 +228,16 @@ contract("AMM Pool", (accounts: string[]) => {
 
       const pool = new AmmPool(ctx);
       await pool.setupPool(tokens, weights, feeBipsAMM);
+
+      await pool.depositAndJoin(
+        ownerA,
+        new BN(web3.utils.toWei("1", "ether")),
+        [
+          new BN(web3.utils.toWei("10000", "ether")),
+          new BN(web3.utils.toWei("20000", "ether"))
+        ]
+      );
+
       await pool.process();
 
       const ring: SpotTrade = {
@@ -137,8 +247,6 @@ contract("AMM Pool", (accounts: string[]) => {
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("98", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
-          //balanceS: new BN(web3.utils.toWei("10000", "ether")),
-          //balanceB: new BN(web3.utils.toWei("20000", "ether")),
           feeBips: 0,
           amm: true
         },
@@ -165,6 +273,12 @@ contract("AMM Pool", (accounts: string[]) => {
       await ctx.sendRing(ring);
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
+
+      await pool.exit(ownerA, new BN(web3.utils.toWei("1", "ether")), [
+        new BN(web3.utils.toWei("5000", "ether")),
+        new BN(web3.utils.toWei("10000", "ether"))
+      ]);
+      await pool.process();
     });
   });
 });
