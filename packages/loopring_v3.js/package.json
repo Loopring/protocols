@@ -70,7 +70,7 @@
     "js-sha3": "^0.8.0",
     "lodash": "^4.17.14",
     "node-bin-setup": "^1.0.6",
-    "serialize-javascript": "^3.0.0",
+    "serialize-javascript": "^5.0.1",
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
     "snarkjs": "0.1.31",
