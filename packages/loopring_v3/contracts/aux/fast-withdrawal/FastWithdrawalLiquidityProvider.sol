@@ -64,11 +64,13 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
 
         address prevSigner;
         for (uint i = 0; i < approvals.length; i++) {
-            bool checkSigner = prevSigner != approvals[i].signer;
+            validateApproval(approvals[i]);
 
-            validateApproval(approvals[i], checkSigner);
+            if (prevSigner != approvals[i].signer) {
+                require(isManager(approvals[i].signer), "INVALID_SIGNER");
+                prevSigner = approvals[i].signer;
+            }
 
-            prevSigner = approvals[i].signer;
             withdrawals[i] = translate(approvals[i]);
         }
 
@@ -120,8 +122,7 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
     // -- Internal --
 
     function validateApproval(
-        FastWithdrawalApproval calldata approval,
-        bool checkSigner
+        FastWithdrawalApproval calldata approval
         )
         internal
         view
@@ -143,9 +144,6 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
             )
         );
         // Check the signature
-        if (checkSigner) {
-            require(isManager(approval.signer), "INVALID_SIGNER");
-        }
         require(hash.verifySignature(approval.signer, approval.signature), "INVALID_SIGNATURE");
         require(checkValidUntil(approval.validUntil), "FASTWITHDRAWAL_APPROVAL_EXPIRED");
     }
