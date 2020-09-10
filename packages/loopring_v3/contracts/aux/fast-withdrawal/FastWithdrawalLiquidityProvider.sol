@@ -64,13 +64,11 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
 
         address prevSigner;
         for (uint i = 0; i < approvals.length; i++) {
-            validateApproval(approvals[i]);
-
-            if (prevSigner != approvals[i].signer) {
-                require(isManager(approvals[i].signer), "INVALID_SIGNER");
-                prevSigner = approvals[i].signer;
-            }
-
+            require(
+                isApprovalValid(approvals[i], prevSigner != approvals[i].signer),
+                "INVALID_APPROVAL"
+            );
+            prevSigner = approvals[i].signer;
             withdrawals[i] = translate(approvals[i]);
         }
 
@@ -117,15 +115,27 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
         require(ERC20(token).approve(spender, amount), "APPROVAL_FAILED");
     }
 
+    function isApprovalValid(
+        FastWithdrawalApproval calldata approval
+        )
+        public
+        view
+        returns (bool)
+    {
+        return isApprovalValid(approval, true);
+    }
+
     receive() payable external {}
 
     // -- Internal --
 
-    function validateApproval(
-        FastWithdrawalApproval calldata approval
+    function isApprovalValid(
+        FastWithdrawalApproval calldata approval,
+        bool checkSigner
         )
         internal
         view
+        returns (bool isValid)
     {
         // Compute the hash
         bytes32 hash = EIP712.hashPacked(
@@ -144,8 +154,12 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
             )
         );
         // Check the signature
-        require(hash.verifySignature(approval.signer, approval.signature), "INVALID_SIGNATURE");
-        require(checkValidUntil(approval.validUntil), "FASTWITHDRAWAL_APPROVAL_EXPIRED");
+        isValid = hash.verifySignature(approval.signer, approval.signature);
+        isValid = isValid && checkValidUntil(approval.validUntil);
+
+        if (checkSigner) {
+            isValid = isValid && isManager(approval.signer);
+        }
     }
 
     function checkValidUntil(uint64 validUntil)
