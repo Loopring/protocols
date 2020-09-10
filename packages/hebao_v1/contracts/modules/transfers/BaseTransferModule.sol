@@ -39,7 +39,7 @@ abstract contract BaseTransferModule is SecurityModule
         address token,
         address to,
         uint    amount,
-        bytes   memory logdata
+        bytes   calldata logdata
         )
         internal
     {
@@ -80,7 +80,7 @@ abstract contract BaseTransferModule is SecurityModule
         address wallet,
         address to,
         uint    value,
-        bytes   memory txData
+        bytes   calldata txData
         )
         internal
         virtual

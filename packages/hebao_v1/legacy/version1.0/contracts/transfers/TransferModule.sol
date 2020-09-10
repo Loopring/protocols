@@ -93,7 +93,7 @@ abstract contract TransferModule is SecurityModule
         address wallet,
         address to,
         uint    value,
-        bytes   memory txData
+        bytes   calldata txData
         )
         internal
         virtual
