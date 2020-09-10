@@ -105,34 +105,30 @@ TEST_CASE("StorageReader", "[StorageReaderGadget]")
 
 TEST_CASE("Nonce", "[NonceGadget]")
 {
-    auto nonceChecked = [](
-                          const StorageLeaf &storageLeaf,
-                          const FieldT &_storageID,
-                          bool _verify,
-                          bool expectedSatisfied) {
-        protoboard<FieldT> pb;
+    auto nonceChecked =
+      [](const StorageLeaf &storageLeaf, const FieldT &_storageID, bool _verify, bool expectedSatisfied) {
+          protoboard<FieldT> pb;
 
-        VariableT verify = make_variable(pb, _verify ? FieldT::one() : FieldT::zero(), ".verify");
+          VariableT verify = make_variable(pb, _verify ? FieldT::one() : FieldT::zero(), ".verify");
 
-        StorageGadget storage(pb, "storage");
-        storage.generate_r1cs_witness(storageLeaf);
+          StorageGadget storage(pb, "storage");
+          storage.generate_r1cs_witness(storageLeaf);
 
-        DualVariableGadget storageID(pb, NUM_BITS_STORAGEID, "storageID");
-        storageID.generate_r1cs_witness(pb, _storageID);
+          DualVariableGadget storageID(pb, NUM_BITS_STORAGEID, "storageID");
+          storageID.generate_r1cs_witness(pb, _storageID);
 
-        jubjub::Params params;
-        Constants constants(pb, "constants");
-        NonceGadget nonceGadget(pb, constants, storage, storageID, verify, "nonceGadget");
-        nonceGadget.generate_r1cs_witness();
-        nonceGadget.generate_r1cs_constraints();
+          jubjub::Params params;
+          Constants constants(pb, "constants");
+          NonceGadget nonceGadget(pb, constants, storage, storageID, verify, "nonceGadget");
+          nonceGadget.generate_r1cs_witness();
+          nonceGadget.generate_r1cs_constraints();
 
-        REQUIRE(pb.is_satisfied() == expectedSatisfied);
-        if (expectedSatisfied)
-        {
-            REQUIRE((pb.val(nonceGadget.getData()) == FieldT::one()));
-
-        }
-    };
+          REQUIRE(pb.is_satisfied() == expectedSatisfied);
+          if (expectedSatisfied)
+          {
+              REQUIRE((pb.val(nonceGadget.getData()) == FieldT::one()));
+          }
+      };
 
     unsigned int delta = pow(2, NUM_BITS_STORAGE_ADDRESS);
     unsigned int storageID = rand() % delta;

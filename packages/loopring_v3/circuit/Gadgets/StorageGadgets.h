@@ -161,11 +161,7 @@ class StorageReaderGadget : public GadgetT
             storage.storageID,
             NUM_BITS_STORAGEID,
             FMT(prefix, ".storageID_leq_leafStorageID")),
-          requireValidStorageID(
-            pb,
-            verify,
-            storageID_leq_leafStorageID.gte(),
-            FMT(prefix, ".requireValidStorageID")),
+          requireValidStorageID(pb, verify, storageID_leq_leafStorageID.gte(), FMT(prefix, ".requireValidStorageID")),
 
           data(pb, storageID_leq_leafStorageID.eq(), storage.data, constants._0, FMT(prefix, ".data"))
     {
