@@ -68,7 +68,7 @@
     "install": "^0.13.0",
     "js-sha3": "^0.8.0",
     "lodash": "^4.17.14",
-    "openzeppelin-solidity": "^2.2.0",
+    "openzeppelin-solidity": "^3.2.0",
     "protocol2-js": "0.2.26",
     "sha3": "^2.0.0",
     "truffle": "5.1.42",
