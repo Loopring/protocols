@@ -11,6 +11,7 @@ import "../lib/AddressUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/SignatureUtil.sol";
 
 import "../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "../core/impl/libtransactions/DepositTransaction.sol";
@@ -27,6 +28,15 @@ contract AmmPool is IBlockReceiver {
     using TransactionReader for ExchangeData.Block;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
+    using SignatureUtil     for bytes32;
+
+    bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
+        "PoolJoin(address owner,bool fromLayer2,uint256 poolAmountOut,uint256[] maxAmountsIn)"
+    );
+
+    bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
+        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut)"
+    );
 
     event Deposit(
         address  owner,
@@ -46,6 +56,7 @@ contract AmmPool is IBlockReceiver {
 
     event ExitPoolRequested(
         address  owner,
+        bool     toLayer2,
         uint     poolAmountIn,
         uint96[] minAmountsOut
     );
@@ -54,39 +65,63 @@ contract AmmPool is IBlockReceiver {
         uint numItems
     );
 
+    uint public constant BASE = 10**18;
+    uint public constant INITIAL_SUPPLY = 100 * BASE;
+
     uint public constant MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN = 7 days;
 
     IExchangeV3 public exchange;
     uint32      public accountID;
 
+    bytes32     public DOMAIN_SEPARATOR;
+
     uint        public shutdownTimestamp = 0;
+
+    enum PoolTransactionType
+    {
+        NOOP,
+        JOIN,
+        EXIT
+    }
+
+    struct Context
+    {
+        ExchangeData.Block _block;
+        uint    txIdx;
+        bytes32 exchangeDomainSeparator;
+        uint[]  ammBalancesInAccount;
+        uint[]  ammBalances;
+        uint    numTransactionsConsumed;
+    }
 
     struct PoolJoin
     {
-        uint poolAmountOut;
+        address  owner;
+        bool     fromLayer2;
+        uint     poolAmountOut;
         uint96[] maxAmountsIn;
     }
 
     struct PoolExit
     {
-        uint poolAmountIn;
+        address  owner;
+        bool     toLayer2;
+        uint     poolAmountIn;
         uint96[] minAmountsOut;
     }
 
-    enum WorkType
+    struct PoolTransaction
     {
-        NONE,
-        JOIN,
-        EXIT
+        PoolTransactionType txType;
+        bytes               data;
+        bytes               signature;
     }
 
     struct QueueItem
     {
-        address  owner;
-        uint64   timestamp;
-        WorkType workType;
-        PoolJoin join;
-        PoolExit exit;
+        uint64              timestamp;
+        PoolTransactionType txType;
+        bytes32             txHash;
     }
 
     struct Token
@@ -108,6 +143,10 @@ contract AmmPool is IBlockReceiver {
     mapping (address => mapping (address => uint)) locked;
     // A map from a token to the total balance owned directly by LPs (so NOT owned by the pool itself)
     mapping (address => uint) totalBalance;
+
+    // Liquidity tokens
+    uint public poolSupply;
+    mapping (address => uint) poolBalance;
 
     modifier onlyExchangeOwner()
     {
@@ -139,6 +178,8 @@ contract AmmPool is IBlockReceiver {
         require(tokens.length == 0, "ALREADY_INITIALIZED");
         require(_tokens.length == _weights.length, "INVALID_DATA");
         require(_tokens.length >= 2, "INVALID_DATA");
+
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("AMM Pool", "1.0.0", address(this)));
 
         exchange = _exchange;
         accountID = _accountID;
@@ -243,42 +284,40 @@ contract AmmPool is IBlockReceiver {
 
         // Queue the work
         PoolJoin memory join = PoolJoin({
+            owner: msg.sender,
+            fromLayer2: false,
             poolAmountOut: poolAmountOut,
             maxAmountsIn: maxAmountsIn
         });
-        PoolExit memory exit;
         queue.push(QueueItem({
-            owner: msg.sender,
             timestamp: uint64(block.timestamp),
-            workType: WorkType.JOIN,
-            join: join,
-            exit: exit
+            txType: PoolTransactionType.JOIN,
+            txHash: hashPoolJoin(DOMAIN_SEPARATOR, join)
         }));
 
         emit JoinPoolRequested(msg.sender, poolAmountOut, maxAmountsIn);
     }
 
-    function exitPool(uint poolAmountIn, uint96[] calldata minAmountsOut)
+    function exitPool(uint poolAmountIn, uint96[] calldata minAmountsOut, bool toLayer2)
         external
         online
     {
         require(minAmountsOut.length == tokens.length, "INVALID_DATA");
 
         // Queue the work
-        PoolJoin memory join;
         PoolExit memory exit = PoolExit({
+            owner: msg.sender,
+            toLayer2: toLayer2,
             poolAmountIn: poolAmountIn,
             minAmountsOut: minAmountsOut
         });
         queue.push(QueueItem({
-            owner: msg.sender,
             timestamp: uint64(block.timestamp),
-            workType: WorkType.EXIT,
-            join: join,
-            exit: exit
+            txType: PoolTransactionType.EXIT,
+            txHash: hashPoolExit(DOMAIN_SEPARATOR, exit)
         }));
 
-        emit ExitPoolRequested(msg.sender, poolAmountIn, minAmountsOut);
+        emit ExitPoolRequested(msg.sender, toLayer2, poolAmountIn, minAmountsOut);
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
@@ -289,7 +328,7 @@ contract AmmPool is IBlockReceiver {
     {
         require(
             block.timestamp > queue[queuePos].timestamp + MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN &&
-            queue[queuePos].workType != WorkType.NONE,
+            queue[queuePos].txType != PoolTransactionType.NOOP,
             "REQUEST_NOT_TOO_OLD"
         );
 
@@ -345,11 +384,6 @@ contract AmmPool is IBlockReceiver {
         }
     }
 
-    struct AuxiliaryData
-    {
-        uint numItems;
-    }
-
     // Processes work in the queue. Can only be called by the exchange owner
     // before the blocks containing work for this pool are submitted.
     // This just verifies if the work is done correctly and only then approves
@@ -364,122 +398,338 @@ contract AmmPool is IBlockReceiver {
         override
         online
         onlyExchangeOwner
-        returns (uint numTransactionsConsumed)
+        returns (uint)
     {
-        AuxiliaryData memory auxData = abi.decode(auxiliaryData, (AuxiliaryData));
-        bytes32 exchangeDomainSeparator = exchange.getDomainSeparator();
+        PoolTransaction[] memory poolTransactions = abi.decode(auxiliaryData, (PoolTransaction[]));
+
+        // Cache the domain seperator to save on SLOADs each time it is accessed.
+        Context memory ctx = Context({
+            _block: _block,
+            txIdx: txIdx,
+            exchangeDomainSeparator: exchange.getDomainSeparator(),
+            ammBalancesInAccount: new uint[](tokens.length),
+            ammBalances: new uint[](tokens.length),
+            numTransactionsConsumed: 0
+        });
 
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(exchange), "INVALID_EXCHANGE");
 
-        // First always update the AMM parameters, which also pulls the AMM balances onchain
-        uint[] memory ammBalancesInAccount = new uint[](tokens.length);
-        uint[] memory ammBalances = new uint[](tokens.length);
+        // The starting AMM updates
+        // This also pulls the AMM balances onchain.
+        processAmmUpdates(ctx, true);
+
+        // Process all pool transactions
+        for (uint n = 0; n < poolTransactions.length; n++) {
+            PoolTransaction memory poolTx = poolTransactions[n];
+            if (poolTx.txType == PoolTransactionType.JOIN) {
+                PoolJoin memory join = abi.decode(poolTx.data, (PoolJoin));
+                processJoin(ctx, join, poolTx.signature);
+            } else if (poolTx.txType == PoolTransactionType.EXIT) {
+                PoolExit memory exit = abi.decode(poolTx.data, (PoolExit));
+                processExit(ctx, exit, poolTx.signature);
+            }
+        }
+
+        // Deposit/Withdraw to/from the AMM account when necessary
+        for (uint i = 0; i < tokens.length; i++) {
+            if (ctx.ammBalances[i] > ctx.ammBalancesInAccount[i]) {
+                uint amount = ctx.ammBalances[i] - ctx.ammBalancesInAccount[i];
+                processDeposit(ctx, tokens[i], amount);
+            } else if (ctx.ammBalancesInAccount[i] > ctx.ammBalances[i]) {
+                uint amount = ctx.ammBalancesInAccount[i] - ctx.ammBalances[i];
+                processWithdrawal(ctx, tokens[i], amount);
+            }
+        }
+
+        // The ending AMM updates
+        processAmmUpdates(ctx, false);
+
+        emit QueueItemsProcessed(poolTransactions.length);
+        return ctx.numTransactionsConsumed;
+    }
+
+    function totalSupply()
+        public
+        view
+        returns (uint256)
+    {
+        return poolSupply;
+    }
+
+    function mint(address owner, uint amount)
+        internal
+    {
+        poolSupply = poolSupply.add(amount);
+        poolBalance[owner] = poolBalance[owner].add(amount);
+    }
+
+    function burn(address owner, uint amount)
+        internal
+    {
+        poolSupply = poolSupply.sub(amount);
+        poolBalance[owner] = poolBalance[owner].sub(amount);
+    }
+
+    function processAmmUpdates(
+        Context memory ctx,
+        bool   start
+        )
+        internal
+    {
         for (uint i = 0; i < tokens.length; i++) {
             // Check that the AMM update in the block matches the expected update
-            AmmUpdateTransaction.AmmUpdate memory update = _block.readAmmUpdate(txIdx++);
+            AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
             require(update.owner == address(this), "INVALID_TX_DATA");
             require(update.accountID == accountID, "INVALID_TX_DATA");
             require(update.tokenID == tokens[i].tokenID, "INVALID_TX_DATA");
             require(update.feeBips == feeBips, "INVALID_TX_DATA");
-            require(update.tokenWeight == tokens[i].weight, "INVALID_TX_DATA");
+            require(update.tokenWeight == (start ? 0 : tokens[i].weight), "INVALID_TX_DATA");
             // Now approve this AMM update
             update.validUntil = 0xffffffff;
-            bytes32 txHash = AmmUpdateTransaction.hashTx(exchangeDomainSeparator, update);
+            bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.exchangeDomainSeparator, update);
             exchange.approveTransaction(address(this), txHash);
-            numTransactionsConsumed++;
-            // AMM account balance now available onchain
-            ammBalancesInAccount[i] = update.balance;
-            ammBalances[i] = ammBalancesInAccount[i];
-        }
-
-        // Process work in the queue
-        for (uint n = queuePos; n < queuePos + auxData.numItems; n++) {
-            QueueItem memory item = queue[n];
-            // TODO: all the necessary pool logic, mint/burn LP tokens,...
-            if (item.workType == WorkType.JOIN) {
-                PoolJoin memory join = item.join;
-                for (uint i = 0; i < tokens.length; i++) {
-                    uint amount = join.maxAmountsIn[i];
-                    ammBalances[i] = ammBalances[i].add(amount);
-                    // Unlock the amount locked for this join
-                    locked[item.owner][tokens[i].addr] = locked[item.owner][tokens[i].addr].sub(join.maxAmountsIn[i]);
-                    // Make the amount unavailable for withdrawing
-                    balance[item.owner][tokens[i].addr] = balance[item.owner][tokens[i].addr].sub(amount);
-                }
-            } else if (item.workType == WorkType.EXIT) {
-                PoolExit memory exit = item.exit;
-                for (uint i = 0; i < tokens.length; i++) {
-                    uint amount = exit.minAmountsOut[i];
-                    ammBalances[i] = ammBalances[i].sub(amount);
-                    // Make the amount available for withdrawing
-                    balance[item.owner][tokens[i].addr] = balance[item.owner][tokens[i].addr].add(amount);
-                }
+            ctx.numTransactionsConsumed++;
+            if (start) {
+                // AMM account balance now available onchain
+                ctx.ammBalancesInAccount[i] = update.balance;
+                ctx.ammBalances[i] = ctx.ammBalancesInAccount[i];
             }
-            // Clean up the queue item to get the gas refund
-            delete queue[n];
         }
-        queuePos += auxData.numItems;
+    }
 
-        // Deposit/Withdraw to/from the AMM account when necessary
+    function processJoin(
+        Context  memory ctx,
+        PoolJoin memory join,
+        bytes    memory signature
+        )
+        internal
+    {
+        bytes32 poolTxHash = hashPoolJoin(DOMAIN_SEPARATOR, join);
+        if (signature.length == 0) {
+            require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
+            delete queue[queuePos];
+            queuePos++;
+        } else {
+            require(poolTxHash.verifySignature(join.owner, signature), "INVALID_SIGNATURE");
+        }
+
+        uint poolTotal = totalSupply();
+        uint ratio = BASE;
+        if (poolTotal > 0) {
+            ratio = (join.poolAmountOut * BASE) / poolTotal;
+        } else {
+            // Important for accuracy
+            require(join.poolAmountOut == INITIAL_SUPPLY, "INITIAL_SUPPLY_UNEXPECTED");
+        }
+
         for (uint i = 0; i < tokens.length; i++) {
-            if (ammBalances[i] > ammBalancesInAccount[i]) {
-                uint amount = ammBalances[i] - ammBalancesInAccount[i];
-                // Check that the deposit in the block matches the expected deposit
-                DepositTransaction.Deposit memory _deposit = _block.readDeposit(txIdx++);
-                require(_deposit.owner == address(this), "INVALID_TX_DATA");
-                require(_deposit.accountID == accountID, "INVALID_TX_DATA");
-                require(_deposit.tokenID == tokens[i].tokenID, "INVALID_TX_DATA");
-                require(_deposit.amount == amount, "INVALID_TX_DATA");
-                // Now do this deposit
-                uint ethValue = 0;
-                if (tokens[i].addr == address(0)) {
-                    ethValue = _deposit.amount;
-                } else {
-                    // Approve the deposit transfer
-                    ERC20(tokens[i].addr).approve(address(exchange.getDepositContract()), _deposit.amount);
-                }
-                exchange.deposit{value: ethValue}(
-                    _deposit.owner,
-                    _deposit.owner,
-                    tokens[i].addr,
-                    uint96(_deposit.amount),
-                    new bytes(0)
-                );
-                numTransactionsConsumed++;
-                // Total balance in this contract decreases by the amount deposited
-                totalBalance[tokens[i].addr] = totalBalance[tokens[i].addr].sub(amount);
-            } else if (ammBalancesInAccount[i] > ammBalances[i]) {
-                uint amount = ammBalancesInAccount[i] - ammBalances[i];
-                // Check that the withdrawal in the block matches the expected withdrawal
-                WithdrawTransaction.Withdrawal memory withdrawal = _block.readWithdrawal(txIdx++);
-                require(withdrawal.owner == address(this), "INVALID_TX_DATA");
-                require(withdrawal.accountID == accountID, "INVALID_TX_DATA");
-                require(withdrawal.tokenID == tokens[i].tokenID, "INVALID_TX_DATA");
-                require(withdrawal.amount == amount, "INVALID_TX_DATA");
-                require(withdrawal.feeTokenID == withdrawal.tokenID, "INVALID_TX_DATA");
-                require(withdrawal.fee == 0, "INVALID_TX_DATA");
-                withdrawal.minGas = 0;
-                withdrawal.to = address(this);
-                withdrawal.extraData = new bytes(0);
-                bytes20 onchainDataHash = WithdrawTransaction.hashOnchainData(
-                    withdrawal.minGas,
-                    withdrawal.to,
-                    withdrawal.extraData
-                );
-                require(withdrawal.onchainDataHash == onchainDataHash, "INVALID_TX_DATA");
-                // Now approve this withdrawal
-
-                withdrawal.validUntil = 0xffffffff;
-
-                bytes32 txHash = WithdrawTransaction.hashTx(exchangeDomainSeparator, withdrawal);
-                exchange.approveTransaction(address(this), txHash);
-                numTransactionsConsumed++;
-                // Total balance in this contract increases by the amount withdrawn
-                totalBalance[tokens[i].addr] = totalBalance[tokens[i].addr].add(amount);
+            uint amount = ctx.ammBalances[i] * ratio / BASE;
+            if (poolTotal == 0) {
+                amount = join.maxAmountsIn[i];
             }
+            require(amount <= join.maxAmountsIn[i], "LIMIT_IN");
+            if (join.fromLayer2) {
+                TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+                require(transfer.from == join.owner, "INVALID_TX_DATA");
+                require(transfer.toAccountID == accountID, "INVALID_TX_DATA");
+                require(transfer.tokenID == tokens[i].tokenID, "INVALID_TX_DATA");
+                require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
+                require(transfer.fee == 0, "INVALID_TX_DATA");
+                if (signature.length != 0) {
+                    // Now approve this transfer
+                    transfer.validUntil = 0xffffffff;
+                    bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+                    exchange.approveTransaction(join.owner, txHash);
+                }
+                ctx.numTransactionsConsumed++;
+                // Update the balances in the account
+                ctx.ammBalancesInAccount[i] = ctx.ammBalancesInAccount[i].add(amount);
+            } else {
+                // Unlock the amount locked for this join
+                locked[join.owner][tokens[i].addr] = locked[join.owner][tokens[i].addr].sub(amount);
+                // Make the amount unavailable for withdrawing
+                balance[join.owner][tokens[i].addr] = balance[join.owner][tokens[i].addr].sub(amount);
+            }
+            ctx.ammBalances[i] = ctx.ammBalances[i].add(amount);
         }
 
-        emit QueueItemsProcessed(auxData.numItems);
+        // Mint liquidity tokens
+        mint(join.owner, join.poolAmountOut);
+    }
+
+    function processExit(
+        Context  memory ctx,
+        PoolExit memory exit,
+        bytes    memory signature
+        )
+        internal
+    {
+        bytes32 poolTxHash = hashPoolExit(DOMAIN_SEPARATOR, exit);
+        if (signature.length == 0) {
+            require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
+            delete queue[queuePos];
+            queuePos++;
+        } else {
+            require(poolTxHash.verifySignature(exit.owner, signature), "INVALID_SIGNATURE");
+        }
+
+        uint poolTotal = totalSupply();
+        uint ratio = (exit.poolAmountIn * BASE) / poolTotal;
+
+        for (uint i = 0; i < tokens.length; i++) {
+            uint amount = ctx.ammBalances[i] * ratio / BASE;
+            require(amount >= exit.minAmountsOut[i], "LIMIT_OUT");
+            if (exit.toLayer2) {
+                TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+                require(transfer.fromAccountID == accountID, "INVALID_TX_DATA");
+                require(transfer.from == address(this), "INVALID_TX_DATA");
+                require(transfer.to == exit.owner, "INVALID_TX_DATA");
+                require(transfer.tokenID == tokens[i].tokenID, "INVALID_TX_DATA");
+                require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
+                require(transfer.fee == 0, "INVALID_TX_DATA");
+                // Now approve this transfer
+                transfer.validUntil = 0xffffffff;
+                bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+                exchange.approveTransaction(address(this), txHash);
+                ctx.numTransactionsConsumed++;
+                // Update the balances in the account
+                ctx.ammBalancesInAccount[i] = ctx.ammBalancesInAccount[i].sub(amount);
+            } else {
+                // Make the amount available for withdrawing
+                balance[exit.owner][tokens[i].addr] = balance[exit.owner][tokens[i].addr].add(amount);
+            }
+            ctx.ammBalances[i] = ctx.ammBalances[i].sub(amount);
+        }
+
+        // Burn liquidity tokens
+        burn(exit.owner, exit.poolAmountIn);
+    }
+
+    function processDeposit(
+        Context memory ctx,
+        Token   memory token,
+        uint    amount
+        )
+        internal
+    {
+        // Check that the deposit in the block matches the expected deposit
+        DepositTransaction.Deposit memory _deposit = ctx._block.readDeposit(ctx.txIdx++);
+        require(_deposit.owner == address(this), "INVALID_TX_DATA");
+        require(_deposit.accountID == accountID, "INVALID_TX_DATA");
+        require(_deposit.tokenID == token.tokenID, "INVALID_TX_DATA");
+        require(_deposit.amount == amount, "INVALID_TX_DATA");
+        // Now do this deposit
+        uint ethValue = 0;
+        if (token.addr == address(0)) {
+            ethValue = _deposit.amount;
+        } else {
+            // Approve the deposit transfer
+            ERC20(token.addr).approve(address(exchange.getDepositContract()), _deposit.amount);
+        }
+        exchange.deposit{value: ethValue}(
+            _deposit.owner,
+            _deposit.owner,
+            token.addr,
+            uint96(_deposit.amount),
+            new bytes(0)
+        );
+        ctx.numTransactionsConsumed++;
+        // Total balance in this contract decreases by the amount deposited
+        totalBalance[token.addr] = totalBalance[token.addr].sub(amount);
+    }
+
+    function processWithdrawal(
+        Context memory ctx,
+        Token   memory token,
+        uint    amount
+        )
+        internal
+    {
+        // Check that the withdrawal in the block matches the expected withdrawal
+        WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
+        require(withdrawal.owner == address(this), "INVALID_TX_DATA");
+        require(withdrawal.accountID == accountID, "INVALID_TX_DATA");
+        require(withdrawal.tokenID == token.tokenID, "INVALID_TX_DATA");
+        require(withdrawal.amount == amount, "INVALID_TX_DATA");
+        require(withdrawal.feeTokenID == withdrawal.tokenID, "INVALID_TX_DATA");
+        require(withdrawal.fee == 0, "INVALID_TX_DATA");
+        withdrawal.minGas = 0;
+        withdrawal.to = address(this);
+        withdrawal.extraData = new bytes(0);
+        bytes20 onchainDataHash = WithdrawTransaction.hashOnchainData(
+            withdrawal.minGas,
+            withdrawal.to,
+            withdrawal.extraData
+        );
+        require(withdrawal.onchainDataHash == onchainDataHash, "INVALID_TX_DATA");
+        // Now approve this withdrawal
+        withdrawal.validUntil = 0xffffffff;
+        bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
+        exchange.approveTransaction(address(this), txHash);
+        ctx.numTransactionsConsumed++;
+        // Total balance in this contract increases by the amount withdrawn
+        totalBalance[token.addr] = totalBalance[token.addr].add(amount);
+    }
+
+    function hashPoolJoin(
+        bytes32 _DOMAIN_SEPARATOR,
+        PoolJoin memory join
+        )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return EIP712.hashPacked(
+            _DOMAIN_SEPARATOR,
+            keccak256(
+                abi.encode(
+                    POOLJOIN_TYPEHASH,
+                    join.owner,
+                    join.fromLayer2,
+                    join.poolAmountOut,
+                    keccak256(abi.encodePacked(join.maxAmountsIn))
+                )
+            )
+        );
+    }
+
+    function hashPoolExit(
+        bytes32 _DOMAIN_SEPARATOR,
+        PoolExit memory exit
+        )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return EIP712.hashPacked(
+            _DOMAIN_SEPARATOR,
+            keccak256(
+                abi.encode(
+                    POOLEXIT_TYPEHASH,
+                    exit.owner,
+                    exit.toLayer2,
+                    exit.poolAmountIn,
+                    keccak256(abi.encodePacked(exit.minAmountsOut))
+                )
+            )
+        );
+    }
+
+    function isAlmostEqual(
+        uint amount,
+        uint targetAmount
+        )
+        internal
+        pure
+        returns (bool)
+    {
+        if (targetAmount == 0) {
+            return amount == 0;
+        } else {
+            // Max rounding error for a float24 is 2/100000
+            uint ratio = (amount * 100000) / targetAmount;
+            return (100000 - 2) <= ratio && ratio <= (100000 + 2);
+        }
     }
 }

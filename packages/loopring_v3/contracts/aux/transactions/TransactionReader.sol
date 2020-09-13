@@ -7,6 +7,7 @@ import "../../core/impl/libtransactions/BlockReader.sol";
 
 import "../../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "../../core/impl/libtransactions/DepositTransaction.sol";
+import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../core/impl/libtransactions/WithdrawTransaction.sol";
 
 /// @title TransactionReader
@@ -51,6 +52,18 @@ library TransactionReader {
     {
         bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.AMM_UPDATE);
         return AmmUpdateTransaction.readTx(data, 1);
+    }
+
+    function readTransfer(
+        ExchangeData.Block memory _block,
+        uint txIdx
+        )
+        internal
+        pure
+        returns (TransferTransaction.Transfer memory)
+    {
+        bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.TRANSFER);
+        return TransferTransaction.readTx(data, 1);
     }
 
     function readTx(

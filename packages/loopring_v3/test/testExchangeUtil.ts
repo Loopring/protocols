@@ -11,10 +11,6 @@ import { SignatureType, sign, verifySignature } from "../util/Signature";
 import {
   Bitstream,
   BlockType,
-  calculateCalldataCost,
-  compress,
-  compressLZ,
-  decompressLZ,
   compressZeros,
   CompressionType,
   Constants,
@@ -27,10 +23,9 @@ import {
   WithdrawFromMerkleTreeData
 } from "loopringV3.js";
 import { Context } from "./context";
-import { expectThrow } from "./expectThrow";
 import { doDebugLogging, logDebug, logInfo } from "./logs";
 import * as sigUtil from "eth-sig-util";
-import { Simulator, AccountLeaf } from "./simulator";
+import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import {
   Account,
@@ -110,6 +105,7 @@ export interface TransferOptions {
   validUntil?: number;
   storageID?: number;
   maxFee?: BN;
+  putAddressesInDA?: boolean;
 }
 
 export interface WithdrawOptions {
@@ -705,9 +701,13 @@ export class ExchangeTestUtil {
         ? options.storageID
         : this.storageIDGenerator++;
     const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
+    const putAddressesInDA =
+      options.putAddressesInDA !== undefined ? options.putAddressesInDA : false;
 
     // From
-    await this.deposit(from, from, token, amountToDeposit);
+    if (amountToDeposit.gt(new BN(0))) {
+      await this.deposit(from, from, token, amountToDeposit);
+    }
     if (feeToDeposit.gt(new BN(0))) {
       await this.deposit(from, from, feeToken, feeToDeposit);
     }
@@ -770,6 +770,7 @@ export class ExchangeTestUtil {
       to,
       type: authMethod === AuthMethod.EDDSA ? 0 : 1,
       validUntil,
+      putAddressesInDA,
       dualAuthorX,
       dualAuthorY,
       payerToAccountID: useDualAuthoring ? 0 : toAccountID,
@@ -2207,14 +2208,15 @@ export class ExchangeTestUtil {
               (transfer.storageID % Constants.NUM_STORAGE_SLOTS),
             2
           );
-          da.addBN(
-            new BN(
-              transfer.type > 0 || transfer.toNewAccount ? transfer.to : "0"
-            ),
-            20
-          );
+          const needsToAddress =
+            transfer.type > 0 ||
+            transfer.toNewAccount ||
+            transfer.putAddressesInDA;
+          da.addBN(new BN(needsToAddress ? transfer.to : "0"), 20);
           da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 4);
-          da.addBN(new BN(transfer.type > 0 ? transfer.from : "0"), 20);
+          const needsFromAddress =
+            transfer.type > 0 || transfer.putAddressesInDA;
+          da.addBN(new BN(needsFromAddress ? transfer.from : "0"), 20);
         } else if (tx.withdraw) {
           const withdraw = tx.withdraw;
           da.addNumber(TransactionType.WITHDRAWAL, 1);
@@ -2663,7 +2665,8 @@ export class ExchangeTestUtil {
     );
   }
 
-  public async getOffchainBalance(accountID: number, token: string) {
+  public async getOffchainBalance(owner: string, token: string) {
+    const accountID = this.getAccountID(owner);
     const tokenID = this.getTokenIdFromNameOrAddress(token);
     const latestBlockIdx = this.blocks[this.exchangeId].length - 1;
     const state = await Simulator.loadExchangeState(
@@ -2717,7 +2720,7 @@ export class ExchangeTestUtil {
     }
 
     const balance = await this.getOffchainBalance(
-      accountID,
+      this.getAccount(accountID).owner,
       this.getTokenAddressFromID(tokenID)
     );
     assert(

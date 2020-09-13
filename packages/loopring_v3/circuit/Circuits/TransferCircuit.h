@@ -54,6 +54,7 @@ class TransferCircuit : public BaseTransactionCircuit
     DualVariableGadget payer_to;
     DualVariableGadget payee_toAccountID;
     DualVariableGadget maxFee;
+    DualVariableGadget putAddressesInDA;
 
     // Check if the inputs are valid
     EqualGadget isTransferTx;
@@ -93,6 +94,7 @@ class TransferCircuit : public BaseTransactionCircuit
 
     // DA optimization
     OrGadget da_NeedsToAddress;
+    OrGadget da_NeedsFromAddress;
     ArrayTernaryGadget da_To;
     ArrayTernaryGadget da_From;
     ArrayTernaryGadget da_StorageID;
@@ -137,6 +139,7 @@ class TransferCircuit : public BaseTransactionCircuit
           payer_to(pb, NUM_BITS_ADDRESS, FMT(prefix, ".payer_to")),
           payee_toAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".payee_toAccountID")),
           maxFee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".maxFee")),
+          putAddressesInDA(pb, 1, FMT(prefix, ".putAddressesInDA")),
 
           // Check if the inputs are valid
           isTransferTx( //
@@ -262,7 +265,7 @@ class TransferCircuit : public BaseTransactionCircuit
           // DA optimization
           da_NeedsToAddress(
             pb,
-            {toAccountValid.isNewAccount(), isConditional.result()},
+            {toAccountValid.isNewAccount(), isConditional.result(), putAddressesInDA.packed},
             FMT(prefix, ".da_NeedsToAddress")),
           da_To(
             pb,
@@ -270,9 +273,13 @@ class TransferCircuit : public BaseTransactionCircuit
             to.bits,
             VariableArrayT(NUM_BITS_ADDRESS, state.constants._0),
             FMT(prefix, ".da_To")),
+          da_NeedsFromAddress(
+            pb,
+            {isConditional.result(), putAddressesInDA.packed},
+            FMT(prefix, ".da_NeedsFromAddress")),
           da_From(
             pb,
-            isConditional.result(),
+            da_NeedsFromAddress.result(),
             from.bits,
             VariableArrayT(NUM_BITS_ADDRESS, state.constants._0),
             FMT(prefix, ".da_From")),
@@ -373,6 +380,7 @@ class TransferCircuit : public BaseTransactionCircuit
         payer_to.generate_r1cs_witness(pb, transfer.payerTo);
         payee_toAccountID.generate_r1cs_witness(pb, transfer.payeeToAccountID);
         maxFee.generate_r1cs_witness(pb, transfer.maxFee);
+        putAddressesInDA.generate_r1cs_witness(pb, transfer.putAddressesInDA);
 
         // Check if the inputs are valid
         isTransferTx.generate_r1cs_witness();
@@ -413,6 +421,7 @@ class TransferCircuit : public BaseTransactionCircuit
         // DA optimization
         da_NeedsToAddress.generate_r1cs_witness();
         da_To.generate_r1cs_witness();
+        da_NeedsFromAddress.generate_r1cs_witness();
         da_From.generate_r1cs_witness();
         da_StorageID.generate_r1cs_witness();
 
@@ -451,6 +460,7 @@ class TransferCircuit : public BaseTransactionCircuit
         payer_to.generate_r1cs_constraints(true);
         payee_toAccountID.generate_r1cs_constraints(true);
         maxFee.generate_r1cs_constraints(true);
+        putAddressesInDA.generate_r1cs_constraints(true);
 
         // Check if the inputs are valid
         isTransferTx.generate_r1cs_constraints();
@@ -491,6 +501,7 @@ class TransferCircuit : public BaseTransactionCircuit
         // DA optimization
         da_NeedsToAddress.generate_r1cs_constraints();
         da_To.generate_r1cs_constraints();
+        da_NeedsFromAddress.generate_r1cs_constraints();
         da_From.generate_r1cs_constraints();
         da_StorageID.generate_r1cs_constraints();
 

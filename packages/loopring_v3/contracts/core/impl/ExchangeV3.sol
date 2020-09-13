@@ -542,7 +542,9 @@ contract ExchangeV3 is IExchangeV3
             feeTokenID: feeTokenID,
             fee: fee,
             validUntil: validUntil,
-            storageID: storageID
+            storageID: storageID,
+            fromAccountID: 0,       // Not used in hash
+            toAccountID: 0          // Not used in hash
         });
         bytes32 txHash = TransferTransaction.hashTx(state.DOMAIN_SEPARATOR, transfer);
         state.approvedTx[transfer.from][txHash] = true;
