@@ -340,7 +340,10 @@ abstract contract IExchangeV3 is IExchange
     ///      - data: The data for this block
     ///      - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
-    function submitBlocks(ExchangeData.Block[] calldata blocks)
+    function submitBlocks(
+        uint    preconditionBlockNumber,
+        bytes32 preconditionBlockHash,
+        ExchangeData.Block[] calldata blocks)
         external
         virtual;
 

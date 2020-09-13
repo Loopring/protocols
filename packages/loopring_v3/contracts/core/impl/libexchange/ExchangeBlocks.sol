@@ -91,10 +91,24 @@ library ExchangeBlocks
 
     function submitBlocks(
         ExchangeData.State   storage S,
+        uint    preconditionBlockNumber,
+        bytes32 preconditionBlockHash,
         ExchangeData.Block[] memory  blocks
         )
         public
     {
+        if (preconditionBlockNumber == 0) {
+            require(preconditionBlockHash == bytes32(0), "INVALID_PRECONDITION_BLOCK_HASH");
+        } else {
+            require(block.number > preconditionBlockNumber, "INVALID_PRECONDITION_BLOCK_NUMBER");
+            if (block.number - preconditionBlockNumber <= 256) {
+                require(
+                    blockhash(preconditionBlockNumber) == preconditionBlockHash,
+                    "INVALID_PRECONDITION"
+                );
+            }
+        }
+
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 

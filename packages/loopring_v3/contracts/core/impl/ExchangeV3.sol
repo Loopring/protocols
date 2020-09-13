@@ -342,13 +342,16 @@ contract ExchangeV3 is IExchangeV3
         return state.blocks[blockIdx];
     }
 
-    function submitBlocks(ExchangeData.Block[] calldata blocks)
+    function submitBlocks(
+        uint    preconditionBlockNumber,
+        bytes32 preconditionBlockHash,
+        ExchangeData.Block[] calldata blocks)
         external
         override
         nonReentrant
         onlyOwner
     {
-        state.submitBlocks(blocks);
+        state.submitBlocks(preconditionBlockNumber, preconditionBlockHash, blocks);
     }
 
     function getNumAvailableForcedSlots()

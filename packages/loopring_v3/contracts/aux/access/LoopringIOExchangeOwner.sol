@@ -60,6 +60,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     }
 
     function submitBlocksWithCallbacks(
+        uint    preconditionBlockNumber,
+        bytes32 preconditionBlockHash,
         ExchangeData.Block[] memory blocks,
         BlockCallback[]      memory callbacks
         )
@@ -90,7 +92,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
         }
 
         // Finally submit the blocks
-        IExchangeV3(target).submitBlocks(blocks);
+        IExchangeV3(target).submitBlocks(
+            preconditionBlockNumber,
+            preconditionBlockHash,
+            blocks);
     }
 
     function openAccessToSubmitBlocks(bool _open)
