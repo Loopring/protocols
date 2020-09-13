@@ -99,14 +99,11 @@ library ExchangeBlocks
     {
         if (preconditionBlockNumber == 0) {
             require(preconditionBlockHash == bytes32(0), "INVALID_PRECONDITION_BLOCK_HASH");
-        } else {
-            require(block.number > preconditionBlockNumber, "INVALID_PRECONDITION_BLOCK_NUMBER");
-            if (block.number - preconditionBlockNumber <= 256) {
-                require(
-                    blockhash(preconditionBlockNumber) == preconditionBlockHash,
-                    "INVALID_PRECONDITION"
-                );
-            }
+        } else if (block.number.sub(preconditionBlockNumber) <= 256) {
+            require(
+                blockhash(preconditionBlockNumber) == preconditionBlockHash,
+                "INVALID_PRECONDITION"
+            );
         }
 
         // Exchange cannot be in withdrawal mode

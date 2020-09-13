@@ -331,6 +331,13 @@ abstract contract IExchangeV3 is IExchange
     ///
     ///      This function can only be called by the exchange operator.
     ///
+    /// @param preconditionBlockNumber The index of last Ethereum block that contains at
+    ///                                least one transaction that this submitBlocks invocation
+    ///                                depends on as a precondition. Use 0 to skip the check.
+    ///                                Note that if the differece between this block height and
+    ///                                the current block height is greater than 256, we also
+    ///                                skip the check.
+    /// @param preconditionBlockHash   The hash of the precondition Ethereum block.
     /// @param blocks The blocks being submitted
     ///      - blockType: The type of the new block
     ///      - blockSize: The number of onchain or offchain requests/settlements
