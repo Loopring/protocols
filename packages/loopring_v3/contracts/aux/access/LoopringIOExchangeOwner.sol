@@ -7,11 +7,12 @@ import "../../aux/compression/ZeroDecompressor.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/ReentrancyGuard.sol";
 import "./SelectorBasedAccessManager.sol";
 import "./IBlockReceiver.sol";
 
 
-contract LoopringIOExchangeOwner is SelectorBasedAccessManager
+contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ReentrancyGuard
 {
     using BytesUtil for bytes;
     using MathUint  for uint;
@@ -33,7 +34,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     {
     }
 
-    function submitBlocksCompressed(
+    function compressCall(
         bytes calldata data
         )
         external
@@ -60,15 +61,27 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     }
 
     function submitBlocksWithCallbacks(
+        uint    preconditionBlockNumber,
+        bytes32 preconditionBlockHash,
         ExchangeData.Block[] memory blocks,
         BlockCallback[]      memory callbacks
         )
         external
+        nonReentrant
     {
         require(
             hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
             "PERMISSION_DENIED"
         );
+
+        if (preconditionBlockNumber == 0) {
+            require(preconditionBlockHash == bytes32(0), "INVALID_PRECONDITION_BLOCK_HASH");
+        } else if (block.number.sub(preconditionBlockNumber) <= 256) {
+            require(
+                blockhash(preconditionBlockNumber) == preconditionBlockHash,
+                "INVALID_PRECONDITION"
+            );
+        }
 
         // Process the callback logic.
         // Make sure all txs can only be used once
