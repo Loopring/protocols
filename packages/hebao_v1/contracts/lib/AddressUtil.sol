@@ -34,7 +34,7 @@ library AddressUtil
         pure
         returns (address payable)
     {
-        return address(uint160(addr));
+        return payable(addr);
     }
 
     // Works like address.send but with a customizable gas limit
@@ -67,5 +67,50 @@ library AddressUtil
     {
         success = to.sendETH(amount, gasLimit);
         require(success, "TRANSFER_FAILURE");
+    }
+
+    // Works like call but is slightly more efficient when data
+    // needs to be copied from memory to do the call.
+    function fastCall(
+        address to,
+        uint    gasLimit,
+        uint    value,
+        bytes   memory data
+        )
+        internal
+        returns (bool success, bytes memory returnData)
+    {
+        if (to != address(0)) {
+            assembly {
+                // Do the call
+                success := call(gasLimit, to, value, add(data, 32), mload(data), 0, 0)
+                // Copy the return data
+                let size := returndatasize()
+                returnData := mload(0x40)
+                mstore(returnData, size)
+                returndatacopy(add(returnData, 32), 0, size)
+                // Update free memory pointer
+                mstore(0x40, add(returnData, add(32, size)))
+            }
+        }
+    }
+
+    // Like fastCall, but throws when the call is unsuccessful.
+    function fastCallAndVerify(
+        address to,
+        uint    gasLimit,
+        uint    value,
+        bytes   memory data
+        )
+        internal
+        returns (bytes memory returnData)
+    {
+        bool success;
+        (success, returnData) = fastCall(to, gasLimit, value, data);
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
     }
 }

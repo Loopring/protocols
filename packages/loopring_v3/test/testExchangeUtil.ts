@@ -2164,17 +2164,8 @@ export class ExchangeTestUtil {
           const orderB = spotTrade.orderB;
 
           da.addNumber(TransactionType.SPOT_TRADE, 1);
-
-          da.addNumber(
-            spotTrade.overwriteDataSlotA * Constants.NUM_STORAGE_SLOTS +
-              (orderA.storageID % Constants.NUM_STORAGE_SLOTS),
-            2
-          );
-          da.addNumber(
-            spotTrade.overwriteDataSlotB * Constants.NUM_STORAGE_SLOTS +
-              (orderB.storageID % Constants.NUM_STORAGE_SLOTS),
-            2
-          );
+          da.addNumber(orderA.storageID, 4);
+          da.addNumber(orderB.storageID, 4);
           da.addNumber(orderA.accountID, 4);
           da.addNumber(orderB.accountID, 4);
           da.addNumber(orderA.tokenS, 2);
@@ -2203,17 +2194,12 @@ export class ExchangeTestUtil {
             toFloat(new BN(transfer.fee), Constants.Float16Encoding),
             2
           );
-          da.addNumber(
-            transfer.overwriteDataSlot * Constants.NUM_STORAGE_SLOTS +
-              (transfer.storageID % Constants.NUM_STORAGE_SLOTS),
-            2
-          );
+          da.addNumber(transfer.storageID, 4);
           const needsToAddress =
             transfer.type > 0 ||
             transfer.toNewAccount ||
             transfer.putAddressesInDA;
           da.addBN(new BN(needsToAddress ? transfer.to : "0"), 20);
-          da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 4);
           const needsFromAddress =
             transfer.type > 0 || transfer.putAddressesInDA;
           da.addBN(new BN(needsFromAddress ? transfer.from : "0"), 20);
@@ -2281,14 +2267,14 @@ export class ExchangeTestUtil {
       // Transform DA
       const transformedDa = new Bitstream();
       const size = Constants.TX_DATA_AVAILABILITY_SIZE;
-      const sizeA = 25;
-      const sizeB = 43;
-      assert.equal(sizeA + sizeB, size, "invalid transform sizes");
+      const size1 = 29;
+      const size2 = 39;
+      assert.equal(size1 + size2, size, "invalid transform sizes");
       for (let i = 0; i < blockSize; i++) {
-        transformedDa.addHex(allDa.extractData(i * size, sizeA));
+        transformedDa.addHex(allDa.extractData(i * size, size1));
       }
       for (let i = 0; i < blockSize; i++) {
-        transformedDa.addHex(allDa.extractData(i * size + sizeA, sizeB));
+        transformedDa.addHex(allDa.extractData(i * size + size1, size2));
       }
       bs.addHex(transformedDa.getData());
 

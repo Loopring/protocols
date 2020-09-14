@@ -86,33 +86,32 @@ library TransferTransaction
         pure
         returns (Transfer memory transfer)
     {
+        uint _offset = offset;
         // Check that this is a conditional transfer
-        require(data.toUint8(offset) == 1, "INVALID_AUXILIARYDATA_DATA");
-        offset += 1;
+        require(data.toUint8(_offset) == 1, "INVALID_AUXILIARYDATA_DATA");
+        _offset += 1;
 
         // Extract the transfer data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        transfer.fromAccountID = data.toUint32(offset);
-        offset += 4;
-        transfer.toAccountID = data.toUint32(offset);
-        offset += 4;
-        transfer.tokenID = data.toUint16(offset);
-        offset += 2;
-        transfer.amount = uint(data.toUint24(offset)).decodeFloat(24);
-        offset += 3;
-        transfer.feeTokenID = data.toUint16(offset);
-        offset += 2;
-        transfer.fee = uint(data.toUint16(offset)).decodeFloat(16);
-        offset += 2;
-        //uint16 shortStorageID = data.toUint16(offset);
-        offset += 2;
-        transfer.to = data.toAddress(offset);
-        offset += 20;
-        transfer.storageID = data.toUint32(offset);
-        offset += 4;
-        transfer.from = data.toAddress(offset);
-        offset += 20;
+        transfer.fromAccountID = data.toUint32(_offset);
+        _offset += 4;
+        transfer.toAccountID = data.toUint32(_offset);
+        _offset += 4;
+        transfer.tokenID = data.toUint16(_offset);
+        _offset += 2;
+        transfer.amount = uint(data.toUint24(_offset)).decodeFloat(24);
+        _offset += 3;
+        transfer.feeTokenID = data.toUint16(_offset);
+        _offset += 2;
+        transfer.fee = uint(data.toUint16(_offset)).decodeFloat(16);
+        _offset += 2;
+        transfer.storageID = data.toUint32(_offset);
+        _offset += 4;
+        transfer.to = data.toAddress(_offset);
+        _offset += 20;
+        transfer.from = data.toAddress(_offset);
+        _offset += 20;
     }
 
     function hashTx(

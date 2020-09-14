@@ -78,8 +78,8 @@ library BlockReader {
             _block.blockSize * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1() +
             txIdx * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_2();
         assembly {
-            mstore(add(txData, 57 /*32 + 25*/), mload(add(data, add(txDataOffset, 32))))
-            mstore(add(txData, 68            ), mload(add(data, add(txDataOffset, 43))))
+            mstore(add(txData, 61 /*32 + 29*/), mload(add(data, add(txDataOffset, 32))))
+            mstore(add(txData, 68            ), mload(add(data, add(txDataOffset, 39))))
         }
         return txData;
     }

@@ -1554,8 +1554,8 @@ class PublicDataGadget : public GadgetT
             transformedBits.emplace_back(publicDataBits[i]);
         }
 
-        unsigned int sizePart1 = 25 * 8;
-        unsigned int sizePart2 = 43 * 8;
+        unsigned int sizePart1 = 29 * 8;
+        unsigned int sizePart2 = 39 * 8;
 
         unsigned int startPart1 = start;
         unsigned int startPart2 = startPart1 + sizePart1 * count;

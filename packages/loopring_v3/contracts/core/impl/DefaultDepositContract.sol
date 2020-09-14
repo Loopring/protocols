@@ -38,7 +38,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
     modifier ifNotZero(uint amount)
     {
         if (amount == 0) return;
-        else { _; }
+        else  _;
     }
 
     event CheckBalance(

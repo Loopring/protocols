@@ -140,18 +140,8 @@ class UpdateStorageGadget : public GadgetT
 
 class StorageReaderGadget : public GadgetT
 {
-    VariableT address;
-    libsnark::packing_gadget<FieldT> packAddress;
-    IsNonZero isNonZeroStorageLeafStorageID;
-    TernaryGadget leafStorageID;
-
-    UnsafeAddGadget nextStorageID;
-
-    EqualGadget storageID_eq_leafStorageID;
-    EqualGadget storageID_eq_nextStorageID;
-
-    OrGadget isValidStorageID;
-    IfThenRequireEqualGadget requireValidStorageID;
+    LeqGadget storageID_leq_leafStorageID;
+    IfThenRequireGadget requireValidStorageID;
 
     TernaryGadget data;
 
@@ -165,55 +155,21 @@ class StorageReaderGadget : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          address(make_variable(pb, FMT(prefix, ".address"))),
-          packAddress(pb, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS), address, FMT(prefix, ".packAddress")),
-
-          isNonZeroStorageLeafStorageID(pb, storage.storageID, FMT(prefix, ".isNonZeroStorageLeafStorageID")),
-          leafStorageID(
+          storageID_leq_leafStorageID(
             pb,
-            isNonZeroStorageLeafStorageID.result(),
+            storageID.packed,
             storage.storageID,
-            address,
-            FMT(prefix, ".leafStorageID")),
+            NUM_BITS_STORAGEID,
+            FMT(prefix, ".storageID_leq_leafStorageID")),
+          requireValidStorageID(pb, verify, storageID_leq_leafStorageID.gte(), FMT(prefix, ".requireValidStorageID")),
 
-          nextStorageID(pb, leafStorageID.result(), constants.numStorageSlots, FMT(prefix, ".nextStorageID")),
-
-          storageID_eq_leafStorageID(
-            pb,
-            storageID.packed,
-            leafStorageID.result(),
-            FMT(prefix, ".storageID_eq_leafStorageID")),
-          storageID_eq_nextStorageID(
-            pb,
-            storageID.packed,
-            nextStorageID.result(),
-            FMT(prefix, ".storageID_eq_nextStorageID")),
-          isValidStorageID(
-            pb,
-            {storageID_eq_leafStorageID.result(), storageID_eq_nextStorageID.result()},
-            FMT(prefix, ".isValidStorageID")),
-          requireValidStorageID(
-            pb,
-            verify,
-            isValidStorageID.result(),
-            constants._1,
-            FMT(prefix, ".requireValidStorageID")),
-
-          data(pb, storageID_eq_leafStorageID.result(), storage.data, constants._0, FMT(prefix, ".data"))
+          data(pb, storageID_leq_leafStorageID.eq(), storage.data, constants._0, FMT(prefix, ".data"))
     {
     }
 
     void generate_r1cs_witness()
     {
-        packAddress.generate_r1cs_witness_from_bits();
-        isNonZeroStorageLeafStorageID.generate_r1cs_witness();
-        leafStorageID.generate_r1cs_witness();
-
-        nextStorageID.generate_r1cs_witness();
-
-        storageID_eq_leafStorageID.generate_r1cs_witness();
-        storageID_eq_nextStorageID.generate_r1cs_witness();
-        isValidStorageID.generate_r1cs_witness();
+        storageID_leq_leafStorageID.generate_r1cs_witness();
         requireValidStorageID.generate_r1cs_witness();
 
         data.generate_r1cs_witness();
@@ -221,15 +177,7 @@ class StorageReaderGadget : public GadgetT
 
     void generate_r1cs_constraints()
     {
-        packAddress.generate_r1cs_constraints(false);
-        isNonZeroStorageLeafStorageID.generate_r1cs_constraints();
-        leafStorageID.generate_r1cs_constraints();
-
-        nextStorageID.generate_r1cs_constraints();
-
-        storageID_eq_leafStorageID.generate_r1cs_constraints();
-        storageID_eq_nextStorageID.generate_r1cs_constraints();
-        isValidStorageID.generate_r1cs_constraints();
+        storageID_leq_leafStorageID.generate_r1cs_constraints();
         requireValidStorageID.generate_r1cs_constraints();
 
         data.generate_r1cs_constraints();
@@ -238,11 +186,6 @@ class StorageReaderGadget : public GadgetT
     const VariableT &getData() const
     {
         return data.result();
-    }
-
-    const VariableT &getOverwrite() const
-    {
-        return storageID_eq_nextStorageID.result();
     }
 };
 
@@ -287,19 +230,6 @@ class NonceGadget : public GadgetT
     const VariableT &getData() const
     {
         return constants._1;
-    }
-
-    const VariableArrayT getShortStorageID() const
-    {
-        return reverse(flattenReverse(
-          {VariableArrayT(1, constants._0),
-           VariableArrayT(1, storageReader.getOverwrite()),
-           subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS)}));
-    }
-
-    const VariableT &getOverwrite() const
-    {
-        return storageReader.getOverwrite();
     }
 };
 

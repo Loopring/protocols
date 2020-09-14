@@ -152,7 +152,7 @@ contract QuotaTransfers is TransferModule
         address wallet,
         address to,
         uint    value,
-        bytes   memory txData
+        bytes   calldata txData
         )
         internal
         override

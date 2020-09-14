@@ -184,7 +184,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         address wallet,
         address to,
         uint    value,
-        bytes   memory data
+        bytes   calldata data
         )
         internal
         returns (bytes memory)
@@ -195,7 +195,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
     function transactStaticCall(
         address wallet,
         address to,
-        bytes   memory data
+        bytes   calldata data
         )
         internal
         returns (bytes memory)
