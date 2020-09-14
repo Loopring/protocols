@@ -39,16 +39,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ReentrancyGuard
         )
         external
     {
-        require(
-            hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
-            "PERMISSION_DENIED"
-        );
         bytes memory decompressed = ZeroDecompressor.decompress(data);
-        require(
-            decompressed.toBytes4(0) == SUBMITBLOCKS_SELECTOR,
-            "INVALID_DATA"
-        );
-
         address addr = target;
         assembly {
             let success := call(gas(), addr, 0, add(decompressed, 32), mload(decompressed), decompressed, 0)
