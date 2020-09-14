@@ -34,17 +34,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ReentrancyGuard
     {
     }
 
-    function submitBlocksWithCallbacksCompressed(
+    function callCompressed(
         bytes calldata data
         )
         external
     {
         bytes memory decompressed = ZeroDecompressor.decompress(data);
-        require(
-            decompressed.toBytes4(0) == this.submitBlocksWithCallbacks.selector,
-            "INVALID_FUNCTION"
-        );
-
         address addr = address(this);
         assembly {
             let success := call(gas(), addr, 0, add(decompressed, 32), mload(decompressed), decompressed, 0)
