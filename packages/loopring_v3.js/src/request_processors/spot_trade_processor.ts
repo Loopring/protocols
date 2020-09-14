@@ -2,7 +2,13 @@ import BN from "bn.js";
 import { Bitstream } from "../bitstream";
 import { Constants } from "../constants";
 import { fromFloat } from "../float";
-import { AccountLeaf, BalanceLeaf, BlockContext, ExchangeState, SpotTrade } from "../types";
+import {
+  AccountLeaf,
+  BalanceLeaf,
+  BlockContext,
+  ExchangeState,
+  SpotTrade
+} from "../types";
 
 interface SettlementValues {
   fillSA: BN;
@@ -20,14 +26,18 @@ interface SettlementValues {
  * Processes ring settlement requests.
  */
 export class SpotTradeProcessor {
-  public static process(state: ExchangeState, block: BlockContext, data: Bitstream) {
+  public static process(
+    state: ExchangeState,
+    block: BlockContext,
+    data: Bitstream
+  ) {
     let offset = 1;
 
     // Storage IDs
-    const tradeHistoryDataA = data.extractUint16(offset);
-    offset += 2;
-    const tradeHistoryDataB = data.extractUint16(offset);
-    offset += 2;
+    const storageIdA = data.extractUint32(offset);
+    offset += 4;
+    const storageIdB = data.extractUint32(offset);
+    offset += 4;
 
     // Accounts
     const accountIdA = data.extractUint32(offset);
@@ -54,16 +64,10 @@ export class SpotTradeProcessor {
     offset += 1;
 
     // Further extraction of packed data
-    const tradeHistorySlotA = tradeHistoryDataA & 0b0011111111111111;
-    const overwriteTradeHistorySlotA =
-      (tradeHistoryDataA & 0b0100000000000000) !== 0;
     const limitMaskA = orderDataA & 0b10000000;
     const feeBipsA = orderDataA & 0b00111111;
     const fillAmountBorSA = limitMaskA > 0;
 
-    const tradeHistorySlotB = tradeHistoryDataB & 0b0011111111111111;
-    const overwriteTradeHistorySlotB =
-      (tradeHistoryDataB & 0b0100000000000000) !== 0;
     const limitMaskB = orderDataB & 0b10000000;
     const feeBipsB = orderDataB & 0b00111111;
     const fillAmountBorSB = limitMaskB > 0;
@@ -71,9 +75,6 @@ export class SpotTradeProcessor {
     // Decode the float values
     const fillSA = fromFloat(fFillSA, Constants.Float24Encoding);
     const fillSB = fromFloat(fFillSB, Constants.Float24Encoding);
-
-    let orderIdA: number = undefined;
-    let orderIdB: number = undefined;
 
     const s = this.calculateSettlementValues(
       block.protocolFeeTakerBips,
@@ -88,35 +89,33 @@ export class SpotTradeProcessor {
     {
       const accountA = state.getAccount(accountIdA);
       accountA.getBalance(tokenA).balance.isub(s.fillSA);
-      accountA.getBalance(tokenB).balance.iadd(s.fillBA).isub(s.feeA);
+      accountA
+        .getBalance(tokenB)
+        .balance.iadd(s.fillBA)
+        .isub(s.feeA);
 
-      const tradeHistoryA = accountA.getBalance(tokenA).getStorage(tradeHistorySlotA);
-      if (tradeHistoryA.storageID === 0) {
-        tradeHistoryA.storageID = tradeHistorySlotA;
-      }
-      if (overwriteTradeHistorySlotA) {
-        tradeHistoryA.storageID += Constants.NUM_STORAGE_SLOTS;
+      const tradeHistoryA = accountA.getBalance(tokenA).getStorage(storageIdA);
+      if (tradeHistoryA.storageID !== storageIdA) {
         tradeHistoryA.data = new BN(0);
       }
+      tradeHistoryA.storageID = storageIdA;
       tradeHistoryA.data.iadd(fillAmountBorSA ? s.fillBA : s.fillSA);
-      orderIdA = tradeHistoryA.storageID;
     }
     // Update accountB
     {
       const accountB = state.getAccount(accountIdB);
       accountB.getBalance(tokenB).balance.isub(s.fillSB);
-      accountB.getBalance(tokenA).balance.iadd(s.fillBB).isub(s.feeB);
+      accountB
+        .getBalance(tokenA)
+        .balance.iadd(s.fillBB)
+        .isub(s.feeB);
 
-      const tradeHistoryB = accountB.getBalance(tokenB).getStorage(tradeHistorySlotB);
-      if (tradeHistoryB.storageID === 0) {
-        tradeHistoryB.storageID = tradeHistorySlotB;
-      }
-      if (overwriteTradeHistorySlotB) {
-        tradeHistoryB.storageID += Constants.NUM_STORAGE_SLOTS;
+      const tradeHistoryB = accountB.getBalance(tokenB).getStorage(storageIdB);
+      if (tradeHistoryB.storageID !== storageIdB) {
         tradeHistoryB.data = new BN(0);
       }
+      tradeHistoryB.storageID = storageIdB;
       tradeHistoryB.data.iadd(fillAmountBorSB ? s.fillBB : s.fillSB);
-      orderIdB = tradeHistoryB.storageID;
     }
 
     // Update protocol fee
@@ -126,18 +125,23 @@ export class SpotTradeProcessor {
 
     // Update operator
     const operator = state.getAccount(block.operatorAccountID);
-    operator.getBalance(tokenA).balance.iadd(s.feeB).isub(s.protocolFeeB);
-    operator.getBalance(tokenB).balance.iadd(s.feeA).isub(s.protocolFeeA);
-
+    operator
+      .getBalance(tokenA)
+      .balance.iadd(s.feeB)
+      .isub(s.protocolFeeB);
+    operator
+      .getBalance(tokenB)
+      .balance.iadd(s.feeA)
+      .isub(s.protocolFeeA);
 
     // Create struct
     const trade: SpotTrade = {
       exchangeId: state.exchangeId,
       requestIdx: state.processedRequests.length,
-      blockIdx: /*block.blockIdx*/0,
+      blockIdx: /*block.blockIdx*/ 0,
 
       accountIdA,
-      orderIdA,
+      orderIdA: storageIdA,
       fillAmountBorSA,
       tokenA,
       fillSA: s.fillSA,
@@ -145,7 +149,7 @@ export class SpotTradeProcessor {
       protocolFeeA: s.protocolFeeA,
 
       accountIdB,
-      orderIdB,
+      orderIdB: storageIdB,
       fillAmountBorSB,
       tokenB,
       fillSB: s.fillSB,

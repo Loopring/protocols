@@ -23,7 +23,11 @@ interface Withdrawal {
  * Processes internal transfer requests.
  */
 export class WithdrawalProcessor {
-  public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
+  public static process(
+    state: ExchangeState,
+    block: BlockContext,
+    txData: Bitstream
+  ) {
     const withdrawal = this.extractData(txData);
 
     const account = state.getAccount(withdrawal.accountID);
@@ -42,8 +46,9 @@ export class WithdrawalProcessor {
 
     if (withdrawal.type === 0 || withdrawal.type === 1) {
       // Nonce
-      const storageSlot = withdrawal.storageID % Constants.NUM_STORAGE_SLOTS;
-      const storage = account.getBalance(withdrawal.tokenID).getStorage(storageSlot);
+      const storage = account
+        .getBalance(withdrawal.tokenID)
+        .getStorage(withdrawal.storageID);
       storage.storageID = withdrawal.storageID;
       storage.data = new BN(1);
     }
@@ -67,7 +72,10 @@ export class WithdrawalProcessor {
     offset += 12;
     withdrawal.feeTokenID = data.extractUint16(offset);
     offset += 2;
-    withdrawal.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
+    withdrawal.fee = fromFloat(
+      data.extractUint16(offset),
+      Constants.Float16Encoding
+    );
     offset += 2;
     withdrawal.storageID = data.extractUint32(offset);
     offset += 4;

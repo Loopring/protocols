@@ -703,7 +703,9 @@ export class ExchangeV3 {
             }
           }
         ],
-        "0x" + data/*transaction.input*/.slice(2 + 4 * 2)
+        "0x" +
+          data /*transaction.input*/
+            .slice(2 + 4 * 2)
       );
       //console.log(decodedInputs);
       const numBlocks = decodedInputs[0].length;
@@ -889,8 +891,13 @@ export class ExchangeV3 {
     };
 
     for (let i = 0; i < block.blockSize; i++) {
-      const txData1 = data.extractData(offset + i * 25, 25);
-      const txData2 = data.extractData(offset + block.blockSize * 25 + i * 43, 43);
+      const size1 = 29;
+      const size2 = 39;
+      const txData1 = data.extractData(offset + i * size1, size1);
+      const txData2 = data.extractData(
+        offset + block.blockSize * size1 + i * size2,
+        size2
+      );
       const txData = new Bitstream(txData1 + txData2);
 
       const txType = txData.extractUint8(0);

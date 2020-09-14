@@ -47,9 +47,7 @@ import {
   WithdrawalRequest
 } from "./types";
 
-const LoopringIOExchangeOwner = artifacts.require(
-  "LoopringIOExchangeOwner"
-);
+const LoopringIOExchangeOwner = artifacts.require("LoopringIOExchangeOwner");
 
 type TxType =
   | Noop
@@ -397,7 +395,6 @@ export namespace TransferUtils {
   }
 }
 
-
 export namespace AmmUpdateUtils {
   export function toTypedData(update: AmmUpdate, verifyingContract: string) {
     const typedData = {
@@ -516,7 +513,6 @@ export class ExchangeTestUtil {
 
   private emptyMerkleRoot =
     "0x1efe4f31c90f89eb9b139426a95e5e87f6e0c9e8dab9ddf295e3f9d651f54698";
-
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -699,8 +695,7 @@ export class ExchangeTestUtil {
       options.storageID !== undefined
         ? options.storageID
         : this.storageIDGenerator++;
-    const maxFee =
-      options.maxFee !== undefined ? options.maxFee : fee;
+    const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
 
     // From
     await this.deposit(from, from, token, amountToDeposit);
@@ -863,7 +858,11 @@ export class ExchangeTestUtil {
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
   }
 
-  public async setupOrder(order: OrderInfo, index: number, bDeposit: boolean = true) {
+  public async setupOrder(
+    order: OrderInfo,
+    index: number,
+    bDeposit: boolean = true
+  ) {
     if (order.owner === undefined) {
       const accountIndex = index % this.testContext.orderOwners.length;
       order.owner = this.testContext.orderOwners[accountIndex];
@@ -1224,16 +1223,13 @@ export class ExchangeTestUtil {
       options.extraData !== undefined ? options.extraData : "0x";
     const validUntil =
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
-    const maxFee =
-      options.maxFee !== undefined ? options.maxFee : fee;
+    const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
     let storageID =
       options.storageID !== undefined
         ? options.storageID
         : this.storageIDGenerator++;
     let storeRecipient =
-      options.storeRecipient !== undefined
-        ? options.storeRecipient
-        : false;
+      options.storeRecipient !== undefined ? options.storeRecipient : false;
 
     let type = 0;
     if (authMethod === AuthMethod.ECDSA || authMethod === AuthMethod.APPROVE) {
@@ -1454,10 +1450,7 @@ export class ExchangeTestUtil {
 
     // Aprove
     if (authMethod === AuthMethod.ECDSA) {
-      const hash = AmmUpdateUtils.getHash(
-        ammUpdate,
-        this.exchange.address
-      );
+      const hash = AmmUpdateUtils.getHash(ammUpdate, this.exchange.address);
       ammUpdate.onchainSignature = await sign(
         owner,
         hash,
@@ -1465,10 +1458,7 @@ export class ExchangeTestUtil {
       );
       await verifySignature(owner, hash, ammUpdate.onchainSignature);
     } else if (authMethod === AuthMethod.APPROVE) {
-      const hash = AmmUpdateUtils.getHash(
-        ammUpdate,
-        this.exchange.address
-      );
+      const hash = AmmUpdateUtils.getHash(ammUpdate, this.exchange.address);
       await this.exchange.approveTransaction(owner, hash, { from: owner });
     }
 
@@ -1804,7 +1794,7 @@ export class ExchangeTestUtil {
     ).toNumber();
 
     // Submit the blocks onchain
-    const operatorContract = this.operator ? this.operator :  this.exchange;
+    const operatorContract = this.operator ? this.operator : this.exchange;
 
     // Compress the data
     const txData = this.exchange.contract.methods
@@ -2066,13 +2056,8 @@ export class ExchangeTestUtil {
           }
         } else if (transaction.txType === "AmmUpdate") {
           numConditionalTransactions++;
-          const encodedAmmUpdateData = this.getAmmUpdateAuxData(
-            transaction
-          );
-          auxiliaryData.push([
-            i,
-            web3.utils.hexToBytes(encodedAmmUpdateData)
-          ]);
+          const encodedAmmUpdateData = this.getAmmUpdateAuxData(transaction);
+          auxiliaryData.push([i, web3.utils.hexToBytes(encodedAmmUpdateData)]);
         }
       }
       logDebug("numConditionalTransactions: " + numConditionalTransactions);
@@ -2136,17 +2121,8 @@ export class ExchangeTestUtil {
           const orderB = spotTrade.orderB;
 
           da.addNumber(TransactionType.SPOT_TRADE, 1);
-
-          da.addNumber(
-            spotTrade.overwriteDataSlotA * Constants.NUM_STORAGE_SLOTS +
-              (orderA.storageID % Constants.NUM_STORAGE_SLOTS),
-            2
-          );
-          da.addNumber(
-            spotTrade.overwriteDataSlotB * Constants.NUM_STORAGE_SLOTS +
-              (orderB.storageID % Constants.NUM_STORAGE_SLOTS),
-            2
-          );
+          da.addNumber(orderA.storageID, 4);
+          da.addNumber(orderB.storageID, 4);
           da.addNumber(orderA.accountID, 4);
           da.addNumber(orderB.accountID, 4);
           da.addNumber(orderA.tokenS, 2);
@@ -2175,18 +2151,13 @@ export class ExchangeTestUtil {
             toFloat(new BN(transfer.fee), Constants.Float16Encoding),
             2
           );
-          da.addNumber(
-            transfer.overwriteDataSlot * Constants.NUM_STORAGE_SLOTS +
-              (transfer.storageID % Constants.NUM_STORAGE_SLOTS),
-            2
-          );
+          da.addNumber(transfer.storageID, 4);
           da.addBN(
             new BN(
               transfer.type > 0 || transfer.toNewAccount ? transfer.to : "0"
             ),
             20
           );
-          da.addNumber(transfer.type > 0 ? transfer.storageID : 0, 4);
           da.addBN(new BN(transfer.type > 0 ? transfer.from : "0"), 20);
         } else if (tx.withdraw) {
           const withdraw = tx.withdraw;
@@ -2252,14 +2223,14 @@ export class ExchangeTestUtil {
       // Transform DA
       const transformedDa = new Bitstream();
       const size = Constants.TX_DATA_AVAILABILITY_SIZE;
-      const sizeA = 25;
-      const sizeB = 43;
-      assert.equal(sizeA + sizeB, size, "invalid transform sizes");
+      const size1 = 29;
+      const size2 = 39;
+      assert.equal(size1 + size2, size, "invalid transform sizes");
       for (let i = 0; i < blockSize; i++) {
-        transformedDa.addHex(allDa.extractData(i * size, sizeA));
+        transformedDa.addHex(allDa.extractData(i * size, size1));
       }
       for (let i = 0; i < blockSize; i++) {
-        transformedDa.addHex(allDa.extractData(i * size + sizeA, sizeB));
+        transformedDa.addHex(allDa.extractData(i * size + size1, size2));
       }
       bs.addHex(transformedDa.getData());
 
@@ -2364,13 +2335,13 @@ export class ExchangeTestUtil {
     return undefined;
   }
 
-  public async createExchange(
-      owner: string,
-      options: ExchangeOptions = {}
-    ) {
-    const setupTestState = options.setupTestState !== undefined ? options.setupTestState : true;
-    const deterministic = options.deterministic !== undefined ? options.deterministic : false;
-    const useOwnerContract = options.useOwnerContract !== undefined ? options.useOwnerContract : true;
+  public async createExchange(owner: string, options: ExchangeOptions = {}) {
+    const setupTestState =
+      options.setupTestState !== undefined ? options.setupTestState : true;
+    const deterministic =
+      options.deterministic !== undefined ? options.deterministic : false;
+    const useOwnerContract =
+      options.useOwnerContract !== undefined ? options.useOwnerContract : true;
 
     this.deterministic = deterministic;
     const operator = this.testContext.operators[0];
@@ -2499,11 +2470,13 @@ export class ExchangeTestUtil {
       );
       await this.setOperatorContract(ownerContract);
 
-      await this.exchange.transferOwnership(ownerContract.address, {from: this.exchangeOwner});
+      await this.exchange.transferOwnership(ownerContract.address, {
+        from: this.exchangeOwner
+      });
       const txData = this.exchange.contract.methods
         .claimOwnership()
         .encodeABI();
-      await ownerContract.transact(txData, {from: this.exchangeOwner});
+      await ownerContract.transact(txData, { from: this.exchangeOwner });
     }
 
     return exchangeId;
@@ -2956,7 +2929,9 @@ export class ExchangeTestUtil {
   }
 
   public getRandomFee() {
-    return this.deterministic ? new BN(0) : new BN(web3.utils.toWei("" + this.getRandomInt(10000) / 1000000));
+    return this.deterministic
+      ? new BN(0)
+      : new BN(web3.utils.toWei("" + this.getRandomInt(10000) / 1000000));
   }
 
   public async depositExchangeStakeChecked(amount: BN, owner: string) {

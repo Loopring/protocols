@@ -95,7 +95,6 @@ class TransferCircuit : public BaseTransactionCircuit
     OrGadget da_NeedsToAddress;
     ArrayTernaryGadget da_To;
     ArrayTernaryGadget da_From;
-    ArrayTernaryGadget da_StorageID;
 
     // Fee as float
     FloatGadget fFee;
@@ -271,12 +270,6 @@ class TransferCircuit : public BaseTransactionCircuit
             from.bits,
             VariableArrayT(NUM_BITS_ADDRESS, state.constants._0),
             FMT(prefix, ".da_From")),
-          da_StorageID(
-            pb,
-            isConditional.result(),
-            storageID.bits,
-            VariableArrayT(NUM_BITS_STORAGEID, state.constants._0),
-            FMT(prefix, ".da_StorageID")),
 
           // Fee as float
           fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
@@ -409,7 +402,6 @@ class TransferCircuit : public BaseTransactionCircuit
         da_NeedsToAddress.generate_r1cs_witness();
         da_To.generate_r1cs_witness();
         da_From.generate_r1cs_witness();
-        da_StorageID.generate_r1cs_witness();
 
         // Fee as float
         fFee.generate_r1cs_witness(toFloat(transfer.fee, Float16Encoding));
@@ -487,7 +479,6 @@ class TransferCircuit : public BaseTransactionCircuit
         da_NeedsToAddress.generate_r1cs_constraints();
         da_To.generate_r1cs_constraints();
         da_From.generate_r1cs_constraints();
-        da_StorageID.generate_r1cs_constraints();
 
         // Fee as float
         fFee.generate_r1cs_constraints();
@@ -516,9 +507,8 @@ class TransferCircuit : public BaseTransactionCircuit
            fAmount.bits(),
            feeTokenID.bits,
            fFee.bits(),
-           nonce.getShortStorageID(),
+           storageID.bits,
            da_To.result(),
-           da_StorageID.result(),
            da_From.result()});
     }
 };

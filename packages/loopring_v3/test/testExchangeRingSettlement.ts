@@ -4,7 +4,6 @@ import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { AuthMethod, OrderInfo, SpotTrade } from "./types";
 
-
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
 
@@ -690,10 +689,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("Specific taker (correct)", async () => {
@@ -751,10 +747,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("No funds available", async () => {
@@ -938,10 +931,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("fillAmountB is 0 because of rounding error", async () => {
@@ -968,10 +958,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("operator == order owner", async () => {
@@ -1060,10 +1047,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("tokenS == tokenB", async () => {
@@ -1085,10 +1069,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("Wrong order signature", async () => {
@@ -1111,10 +1092,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("validUntil < now", async () => {
@@ -1141,10 +1119,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("Multiple rings", async () => {
@@ -1312,10 +1287,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(ringB);
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("Trimmed storageID (order.storageID > storage.storageID)", async () => {
@@ -1396,7 +1368,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-            storageID: storageIDA + Constants.NUM_STORAGE_SLOTS
+          storageID: storageIDA + Constants.NUM_STORAGE_SLOTS
         },
         orderB: {
           tokenS: "GTO",
@@ -1404,8 +1376,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
-          storageID:
-            storageIDB + 2 * Constants.NUM_STORAGE_SLOTS
+          storageID: storageIDB + 2 * Constants.NUM_STORAGE_SLOTS
         },
         expected: {
           orderA: { filledFraction: 0.0, spread: new BN(0) },
@@ -1419,8 +1390,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-          storageID:
-            storageIDA + 2 * Constants.NUM_STORAGE_SLOTS
+          storageID: storageIDA + 2 * Constants.NUM_STORAGE_SLOTS
         },
         orderB: {
           tokenS: "GTO",
@@ -1428,8 +1398,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
-          storageID:
-            storageIDB + 3 * Constants.NUM_STORAGE_SLOTS
+          storageID: storageIDB + 5 * Constants.NUM_STORAGE_SLOTS
         },
         expected: {
           orderA: { filledFraction: 1.0, spread: new BN(0) },
@@ -1451,65 +1420,6 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitTransactions();
 
       await verify();
-    });
-
-    it("Invalid storageID (order.storageID > storage.storageID)", async () => {
-      const storageID = 8;
-      const ringA: SpotTrade = {
-        orderA: {
-          tokenS: "WETH",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("100", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether")),
-          owner: exchangeTestUtil.testContext.orderOwners[0],
-          storageID
-        },
-        orderB: {
-          tokenS: "GTO",
-          tokenB: "WETH",
-          amountS: new BN(web3.utils.toWei("200", "ether")),
-          amountB: new BN(web3.utils.toWei("100", "ether")),
-          owner: exchangeTestUtil.testContext.orderOwners[1]
-        },
-        expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(0) },
-          orderB: { filledFraction: 1.0 }
-        }
-      };
-      const ringB: SpotTrade = {
-        orderA: {
-          tokenS: "WETH",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("100", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether")),
-          owner: exchangeTestUtil.testContext.orderOwners[0],
-          storageID:
-            storageID + 2 * 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
-        },
-        orderB: {
-          tokenS: "GTO",
-          tokenB: "WETH",
-          amountS: new BN(web3.utils.toWei("200", "ether")),
-          amountB: new BN(web3.utils.toWei("100", "ether")),
-          owner: exchangeTestUtil.testContext.orderOwners[3]
-        },
-        expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(0) },
-          orderB: { filledFraction: 1.0 }
-        }
-      };
-
-      await exchangeTestUtil.setupRing(ringA);
-      await exchangeTestUtil.sendRing(ringA);
-      await exchangeTestUtil.submitTransactions();
-      await verify();
-
-      await exchangeTestUtil.setupRing(ringB);
-      await exchangeTestUtil.sendRing(ringB);
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
     });
 
     it("Cancelled storageID (order.storageID < storage.storageID)", async () => {
@@ -1564,10 +1474,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(ringB);
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
   });
 });
