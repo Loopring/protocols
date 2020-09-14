@@ -7,11 +7,12 @@ import "../../aux/compression/ZeroDecompressor.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/ReentrancyGuard.sol";
 import "./SelectorBasedAccessManager.sol";
 import "./IBlockReceiver.sol";
 
 
-contract LoopringIOExchangeOwner is SelectorBasedAccessManager
+contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ReentrancyGuard
 {
     using BytesUtil for bytes;
     using MathUint  for uint;
@@ -62,6 +63,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
         BlockCallback[]      calldata callbacks
         )
         external
+        nonReentrant
     {
         require(
             hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
