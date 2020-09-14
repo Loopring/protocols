@@ -22,7 +22,7 @@ contract("Exchange", (accounts: string[]) => {
   ) => {
     await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {setupTestState, useOwnerContract}
+      { setupTestState, useOwnerContract }
     );
     exchange = exchangeTestUtil.exchange;
     operator = exchange;
@@ -111,7 +111,7 @@ contract("Exchange", (accounts: string[]) => {
             auxiliaryData: Constants.emptyBytes
           };
           await expectThrow(
-            operator.submitBlocks([block], {
+            operator.submitBlocks(new BN(0), new BN(0), [block], {
               from: exchangeTestUtil.exchangeOperator
             }),
             "INVALID_EXCHANGE"
@@ -143,7 +143,7 @@ contract("Exchange", (accounts: string[]) => {
             auxiliaryData: Constants.emptyBytes
           };
           await expectThrow(
-            operator.submitBlocks([block], {
+            operator.submitBlocks(new BN(0), new BN(0), [block], {
               from: exchangeTestUtil.exchangeOperator
             }),
             "INVALID_MERKLE_ROOT"
@@ -181,7 +181,7 @@ contract("Exchange", (accounts: string[]) => {
             auxiliaryData: Constants.emptyBytes
           };
           await expectThrow(
-            operator.submitBlocks([block], {
+            operator.submitBlocks(new BN(0), new BN(0), [block], {
               from: exchangeTestUtil.exchangeOperator
             }),
             "INVALID_MERKLE_ROOT"
@@ -221,7 +221,7 @@ contract("Exchange", (accounts: string[]) => {
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              operator.submitBlocks([block], {
+              operator.submitBlocks(new BN(0), new BN(0), [block], {
                 from: exchangeTestUtil.exchangeOperator
               }),
               "INVALID_TIMESTAMP"
@@ -251,7 +251,7 @@ contract("Exchange", (accounts: string[]) => {
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              operator.submitBlocks([block], {
+              operator.submitBlocks(new BN(0), new BN(0), [block], {
                 from: exchangeTestUtil.exchangeOperator
               }),
               "INVALID_TIMESTAMP"
@@ -295,7 +295,7 @@ contract("Exchange", (accounts: string[]) => {
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              operator.submitBlocks([block], {
+              operator.submitBlocks(new BN(0), new BN(0), [block], {
                 from: exchangeTestUtil.exchangeOperator
               }),
               "INVALID_PROTOCOL_FEES"
@@ -322,7 +322,7 @@ contract("Exchange", (accounts: string[]) => {
               auxiliaryData: Constants.emptyBytes
             };
             await expectThrow(
-              operator.submitBlocks([block], {
+              operator.submitBlocks(new BN(0), new BN(0), [block], {
                 from: exchangeTestUtil.exchangeOperator
               }),
               "INVALID_PROTOCOL_FEES"
@@ -588,7 +588,7 @@ contract("Exchange", (accounts: string[]) => {
         };
         // Try to submit a block
         await expectThrow(
-          exchange.submitBlocks([block], {
+          exchange.submitBlocks(new BN(0), new BN(0), [block], {
             from: exchangeTestUtil.testContext.orderOwners[0]
           }),
           "UNAUTHORIZED"

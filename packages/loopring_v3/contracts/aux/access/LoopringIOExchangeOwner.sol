@@ -33,22 +33,18 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     {
     }
 
-    function submitBlocksCompressed(
+    function submitBlocksWithCallbacksCompressed(
         bytes calldata data
         )
         external
     {
-        require(
-            hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
-            "PERMISSION_DENIED"
-        );
         bytes memory decompressed = ZeroDecompressor.decompress(data);
         require(
-            decompressed.toBytes4(0) == SUBMITBLOCKS_SELECTOR,
-            "INVALID_DATA"
+            decompressed.toBytes4(0) == this.submitBlocksWithCallbacks.selector,
+            "INVALID_FUNCTION"
         );
 
-        address addr = target;
+        address addr = address(this);
         assembly {
             let success := call(gas(), addr, 0, add(decompressed, 32), mload(decompressed), decompressed, 0)
             if eq(success, 0) {
@@ -60,8 +56,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     }
 
     function submitBlocksWithCallbacks(
-        ExchangeData.Block[] memory blocks,
-        BlockCallback[]      memory callbacks
+        uint    preconditionBlockNumber,
+        bytes32 preconditionBlockHash,
+        ExchangeData.Block[] calldata blocks,
+        BlockCallback[]      calldata callbacks
         )
         external
     {
@@ -69,6 +67,15 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
             "PERMISSION_DENIED"
         );
+
+        if (preconditionBlockNumber == 0) {
+            require(preconditionBlockHash == bytes32(0), "INVALID_PRECONDITION_BLOCK_HASH");
+        } else if (block.number.sub(preconditionBlockNumber) <= 256) {
+            require(
+                blockhash(preconditionBlockNumber) == preconditionBlockHash,
+                "INVALID_PRECONDITION"
+            );
+        }
 
         // Process the callback logic.
         // Make sure all txs can only be used once
