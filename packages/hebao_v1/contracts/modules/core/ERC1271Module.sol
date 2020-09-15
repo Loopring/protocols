@@ -45,18 +45,11 @@ abstract contract ERC1271Module is ERC1271, BaseModule
         public
         view
         override
-        returns (bytes4)
+        returns (bytes4 magicValue)
     {
-        address wallet = msg.sender;
-        (uint _lock,) = controller().securityStore().getLock(wallet);
-        if (_lock > block.timestamp) { // wallet locked
-            return 0;
-        }
-
-        if (_data.verifySignature(Wallet(wallet).owner(), _signature)) {
-            return ERC1271_MAGICVALUE_BS;
-        } else {
-            return 0;
+        magicValue = isValidSignature(keccak256(_data), _signature);
+        if (magicValue == ERC1271_MAGICVALUE_B32) {
+            magicValue = ERC1271_MAGICVALUE_BS;
         }
     }
 
@@ -66,7 +59,7 @@ abstract contract ERC1271Module is ERC1271, BaseModule
         public
         view
         override
-        returns (bytes4 magicValue)
+        returns (bytes4)
     {
         address wallet = msg.sender;
         (uint _lock,) = controller().securityStore().getLock(wallet);
