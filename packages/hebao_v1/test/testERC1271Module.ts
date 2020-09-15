@@ -30,21 +30,6 @@ contract("ERC1271Module", () => {
   });
 
   describe("Wallet", () => {
-    it("should be able to verify a signature of raw data signed by wallet owner", async () => {
-      const owner = ctx.owners[0];
-      const { wallet, guardians } = await createWallet(ctx, owner, 2);
-      const data = Buffer.from("1234", "utf8");
-      const hash = ethUtil.keccak("1234");
-      const sig = sign(owner, hash);
-
-      // convert wallet to a ERC1271 module then it can invoke the isValidSignature method
-      const walletContract = await ctx.contracts.FinalCoreModule.at(wallet);
-      const isValid = await walletContract.contract.methods[
-        "isValidSignature(bytes,bytes)"
-      ](data, sig).call();
-      assert.equal(MAGICVALUE, isValid, "signature verify failed.");
-    });
-
     it("should be able to verify a signature signed by wallet owner", async () => {
       const owner = ctx.owners[0];
       const { wallet, guardians } = await createWallet(ctx, owner, 2);
