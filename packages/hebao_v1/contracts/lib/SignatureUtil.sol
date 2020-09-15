@@ -46,7 +46,16 @@ library SignatureUtil
         view
         returns (bool)
     {
-        return verifySignatures(abi.encodePacked(signHash), signers, signatures);
+        require(signers.length == signatures.length, "BAD_SIGNATURE_DATA");
+        address lastSigner;
+        for (uint i = 0; i < signers.length; i++) {
+            require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
+            lastSigner = signers[i];
+            if (!verifySignature(signHash, signers[i], signatures[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     function verifySignatures(
