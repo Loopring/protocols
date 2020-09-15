@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../thirdparty/BytesUtil.sol";
 import "./AddressUtil.sol";
 import "./MathUint.sol";
+import "./ERC1271.sol";
 
 
 /// @title SignatureUtil
@@ -26,31 +27,10 @@ library SignatureUtil
         WALLET   // deprecated
     }
 
-    bytes4 constant internal ERC1271_MAGICVALUE_BS = 0x20c13b0b;
-    bytes4 constant internal ERC1271_MAGICVALUE_B32 = 0x1626ba7e;
-
-    bytes4 constant internal ERC1271_SELECTOR_BS = bytes4(
-        keccak256(bytes("isValidSignature(bytes,bytes)"))
-    );
-
-    bytes4 constant internal ERC1271_SELECTOR_B32 = bytes4(
-        keccak256(bytes("isValidSignature(bytes32,bytes)"))
-    );
+    bytes4 constant internal ERC1271_MAGICVALUE = 0x1626ba7e;
 
     function verifySignatures(
         bytes32          signHash,
-        address[] memory signers,
-        bytes[]   memory signatures
-        )
-        internal
-        view
-        returns (bool)
-    {
-        return verifySignatures(abi.encodePacked(signHash), signers, signatures);
-    }
-
-    function verifySignatures(
-        bytes     memory data,
         address[] memory signers,
         bytes[]   memory signatures
         )
@@ -63,25 +43,11 @@ library SignatureUtil
         for (uint i = 0; i < signers.length; i++) {
             require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
             lastSigner = signers[i];
-            if (!verifySignature(data, signers[i], signatures[i])) {
+            if (!verifySignature(signHash, signers[i], signatures[i])) {
                 return false;
             }
         }
         return true;
-    }
-
-    function verifySignature(
-        bytes   memory data,
-        address        signer,
-        bytes   memory signature
-        )
-        internal
-        view
-        returns (bool)
-    {
-        return signer.isContract() ?
-            verifyERC1271WithBytes(data, signer, signature) :
-            verifyEOASignature(keccak256(data), signer, signature);
     }
 
     function verifySignature(
@@ -93,8 +59,12 @@ library SignatureUtil
         view
         returns (bool)
     {
-        return signer.isContract() ?
-            verifyERC1271WithBytes32(signHash, signer, signature) :
+        if (signer == address(0)) {
+            return false;
+        }
+
+        return signer.isContract()?
+            verifyERC1271Signature(signHash, signer, signature):
             verifyEOASignature(signHash, signer, signature);
     }
 
@@ -172,8 +142,8 @@ library SignatureUtil
         return success;
     }
 
-    function verifyERC1271WithBytes(
-        bytes   memory data,
+    function verifyERC1271Signature(
+        bytes32 signHash,
         address signer,
         bytes   memory signature
         )
@@ -182,37 +152,15 @@ library SignatureUtil
         returns (bool)
     {
         bytes memory callData = abi.encodeWithSelector(
-            ERC1271_SELECTOR_BS,
-            data,
+            ERC1271.isValidSignature.selector,
+            signHash,
             signature
         );
         (bool success, bytes memory result) = signer.staticcall(callData);
         return (
             success &&
             result.length == 32 &&
-            result.toBytes4(0) == ERC1271_MAGICVALUE_BS
-        );
-    }
-
-    function verifyERC1271WithBytes32(
-        bytes32 hash,
-        address signer,
-        bytes   memory signature
-        )
-        private
-        view
-        returns (bool)
-    {
-        bytes memory callData = abi.encodeWithSelector(
-            ERC1271_SELECTOR_B32,
-            hash,
-            signature
-        );
-        (bool success, bytes memory result) = signer.staticcall(callData);
-        return (
-            success &&
-            result.length == 32 &&
-            result.toBytes4(0) == ERC1271_MAGICVALUE_B32
+            result.toBytes4(0) == ERC1271_MAGICVALUE
         );
     }
 }
