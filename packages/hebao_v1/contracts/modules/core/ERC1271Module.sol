@@ -26,9 +26,8 @@ abstract contract ERC1271Module is ERC1271, BaseModule
         pure
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](2);
-        methods[0] = ERC1271_SELECTOR_BS;
-        methods[1] = ERC1271_SELECTOR_B32;
+        methods = new bytes4[](1);
+        methods[0] = ERC1271_SELECTOR;
     }
 
     // Will use msg.sender to detect the wallet, so this function should be called through
@@ -39,7 +38,7 @@ abstract contract ERC1271Module is ERC1271, BaseModule
     // The verificaiton of Wallet1's signature will succeed if the final EOA's signature is
     // valid.
     function isValidSignature(
-        bytes memory _data,
+        bytes32      _hash,
         bytes memory _signature
         )
         public
@@ -53,29 +52,8 @@ abstract contract ERC1271Module is ERC1271, BaseModule
             return 0;
         }
 
-        if (_data.verifySignature(Wallet(wallet).owner(), _signature)) {
-            return ERC1271_MAGICVALUE_BS;
-        } else {
-            return 0;
-        }
-    }
-
-    function isValidSignature(
-        bytes32      _hash,
-        bytes memory _signature)
-        public
-        view
-        override
-        returns (bytes4 magicValue)
-    {
-        address wallet = msg.sender;
-        (uint _lock,) = controller().securityStore().getLock(wallet);
-        if (_lock > block.timestamp) { // wallet locked
-            return 0;
-        }
-
         if (_hash.verifySignature(Wallet(wallet).owner(), _signature)) {
-            return ERC1271_MAGICVALUE_B32;
+            return ERC1271_MAGICVALUE;
         } else {
             return 0;
         }
