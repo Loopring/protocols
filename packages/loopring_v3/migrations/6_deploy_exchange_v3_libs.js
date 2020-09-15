@@ -11,54 +11,20 @@ const ExchangeTokens = artifacts.require("ExchangeTokens");
 const ExchangeWithdrawals = artifacts.require("ExchangeWithdrawals");
 
 module.exports = function(deployer, network, accounts) {
-  console.log("deploying to network: " + network);
-  deployer
-    .then(() => {
-      return Promise.all([deployer.deploy(ExchangeBalances)]);
-    })
-    .then(() => {
-      return Promise.all([
-        deployer.link(ExchangeBalances, [ExchangeWithdrawals])
-      ]);
-    })
-    .then(() => {
-      return Promise.all([
-        deployer.deploy(ExchangeAdmins),
-        deployer.deploy(ExchangeTokens)
-      ]);
-    })
-    .then(() => {
-      return Promise.all([
-        deployer.link(ExchangeTokens, [
-          ExchangeDeposits,
-          ExchangeGenesis,
-          ExchangeWithdrawals
-        ])
-      ]);
-    })
-    .then(() => {
-      return Promise.all([deployer.deploy(ExchangeWithdrawals)]);
-    })
-    .then(() => {
-      return Promise.all([
-        deployer.link(ExchangeWithdrawals, [ExchangeBlocks])
-      ]);
-    })
-    .then(() => {
-      return Promise.all([
-        deployer.deploy(ExchangeBlocks),
-        deployer.deploy(ExchangeGenesis),
-        deployer.deploy(ExchangeDeposits)
-      ]);
-    })
-    .then(() => {
-      console.log(">>>>>>>> contracts deployed by deploy_exchange_v3_libs:");
-      console.log("ExchangeBalances: ", ExchangeBalances.address);
-      console.log("ExchangeAdmins: ", ExchangeAdmins.address);
-      console.log("ExchangeBlocks: ", ExchangeBlocks.address);
-      console.log("ExchangeTokens: ", ExchangeTokens.address);
-      console.log("ExchangeGenesis: ", ExchangeGenesis.address);
-      console.log("ExchangeDeposits: ", ExchangeDeposits.address);
-      console.log("ExchangeWithdrawals: ", ExchangeWithdrawals.address);
-    });
+  deployer.then(async () => {
+    await deployer.deploy(ExchangeBalances);
+    await deployer.link(ExchangeBalances, [ExchangeWithdrawals]);
+    await deployer.deploy(ExchangeAdmins);
+    await deployer.deploy(ExchangeTokens);
+    await deployer.link(ExchangeTokens, [
+      ExchangeDeposits,
+      ExchangeGenesis,
+      ExchangeWithdrawals
+    ]);
+    await deployer.deploy(ExchangeWithdrawals);
+    await deployer.link(ExchangeWithdrawals, [ExchangeBlocks]);
+    await deployer.deploy(ExchangeBlocks);
+    await deployer.deploy(ExchangeGenesis);
+    await deployer.deploy(ExchangeDeposits);
+  });
 };

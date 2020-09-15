@@ -1,36 +1,15 @@
 // Deploy UniversalRegistry
-
-var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
+const LRCToken = artifacts.require("LRC");
+const UniversalRegistry = artifacts.require("UniversalRegistry");
 
 module.exports = function(deployer, network, accounts) {
-  console.log("deploying to network: " + network);
-  var deployer_ = deployer;
+  let lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
 
   if (network != "live" && network != "live-fork") {
-    const LRCToken = artifacts.require("./test/tokens/LRC.sol");
-    const WETHToken = artifacts.require("./test/tokens/WETH.sol");
-
-    deployer_.then(() => {
-      return Promise.all([
-        LRCToken.deployed().then(c => {
-          lrcAddress = c.address;
-        })
-      ]);
-    });
+    lrcAddress = LRCToken.address;
   }
 
-  // common deployment
-
-  const UniversalRegistry = artifacts.require("UniversalRegistry");
-
-  deployer_
-    .then(() => {
-      return Promise.all([deployer.deploy(UniversalRegistry, lrcAddress)]);
-    })
-    .then(() => {
-      console.log(">>>>>>>> contracts deployed by deploy_registry:");
-      console.log("lrcAddress:", lrcAddress);
-      console.log("UniversalRegistry:", UniversalRegistry.address);
-      console.log("");
-    });
+  deployer.then(async () => {
+    await deployer.deploy(UniversalRegistry, lrcAddress);
+  });
 };
