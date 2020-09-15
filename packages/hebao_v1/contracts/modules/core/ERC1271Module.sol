@@ -27,7 +27,7 @@ abstract contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
-        methods[0] = ERC1271_SELECTOR;
+        methods[0] = ERC1271.isValidSignature.selector;
     }
 
     // Will use msg.sender to detect the wallet, so this function should be called through

@@ -29,10 +29,6 @@ library SignatureUtil
 
     bytes4 constant internal ERC1271_MAGICVALUE = 0x1626ba7e;
 
-    bytes4 constant internal ERC1271_SELECTOR = bytes4(
-        keccak256(bytes("isValidSignature(bytes32,bytes)"))
-    );
-
     function verifySignatures(
         bytes32          signHash,
         address[] memory signers,
@@ -156,7 +152,7 @@ library SignatureUtil
         returns (bool)
     {
         bytes memory callData = abi.encodeWithSelector(
-            ERC1271_SELECTOR,
+            ERC1271.isValidSignature.selector,
             signHash,
             signature
         );
