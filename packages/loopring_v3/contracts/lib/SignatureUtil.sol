@@ -10,10 +10,8 @@ import "./MathUint.sol";
 
 /// @title SignatureUtil
 /// @author Daniel Wang - <daniel@loopring.org>
-/// @dev This method supports multihash standard. Each signature's first byte indicates
-///      the signature's type, the second byte indicates the signature's length, therefore,
-///      each signature will have 2 extra bytes prefix. Mulitple signatures are concatenated
-///      together.
+/// @dev This method supports multihash standard. Each signature's last byte indicates
+///      the signature's type.
 library SignatureUtil
 {
     using BytesUtil     for bytes;
@@ -82,8 +80,8 @@ library SignatureUtil
         returns (bool)
     {
         return signer.isContract() ?
-            verifyERC1271Signature(data, signer, signature) :
-            verifyEOASignature(data, signer, signature);
+            verifyERC1271WithBytes(data, signer, signature) :
+            verifyEOASignature(keccak256(data), signer, signature);
     }
 
     function verifySignature(
@@ -95,7 +93,9 @@ library SignatureUtil
         view
         returns (bool)
     {
-        return verifySignature(abi.encodePacked(signHash), signer, signature);
+        return signer.isContract() ?
+            verifyERC1271WithBytes32(signHash, signer, signature) :
+            verifyEOASignature(signHash, signer, signature);
     }
 
     function recoverECDSASigner(
@@ -132,28 +132,14 @@ library SignatureUtil
         }
     }
 
-    function recoverECDSASigner(
-        bytes memory data,
-        bytes memory signature
-        )
-        internal
-        pure
-        returns (address addr1, address addr2)
-    {
-        if (data.length == 32) {
-            addr1 = recoverECDSASigner(data.toBytes32(0), signature);
-        }
-        addr2 = recoverECDSASigner(keccak256(data), signature);
-    }
-
     function verifyEOASignature(
-        bytes   memory data,
+        bytes32        signHash,
         address        signer,
         bytes   memory signature
         )
         private
         pure
-        returns (bool)
+        returns (bool success)
     {
         if (signer == address(0)) {
             return false;
@@ -162,41 +148,28 @@ library SignatureUtil
         uint signatureTypeOffset = signature.length.sub(1);
         SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
 
-        bytes memory stripped = signature.slice(0, signatureTypeOffset);
+        // Strip off the last byte of the signature by updating the length
+        assembly {
+            mstore(signature, signatureTypeOffset)
+        }
 
         if (signatureType == SignatureType.EIP_712) {
-            (address addr1, address addr2) = recoverECDSASigner(data, stripped);
-            return addr1 == signer || addr2 == signer;
+            success = (signer == recoverECDSASigner(signHash, signature));
         } else if (signatureType == SignatureType.ETH_SIGN) {
-            if (data.length == 32) {
-                bytes32 hash = keccak256(
-                    abi.encodePacked("\x19Ethereum Signed Message:\n32", data.toBytes32(0))
-                );
-                if (recoverECDSASigner(hash, stripped) == signer) {
-                    return true;
-                }
-            }
             bytes32 hash = keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(data))
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", signHash)
             );
-            return recoverECDSASigner(hash, stripped) == signer;
+            success = (signer == recoverECDSASigner(hash, signature));
         } else {
-            return false;
+            success = false;
         }
-    }
 
-    function verifyERC1271Signature(
-        bytes   memory data,
-        address signer,
-        bytes   memory signature
-        )
-        private
-        view
-        returns (bool)
-    {
-        return data.length == 32 &&
-            verifyERC1271WithBytes32(data.toBytes32(0), signer, signature) ||
-            verifyERC1271WithBytes(data, signer, signature);
+        // Restore the signature length
+        assembly {
+            mstore(signature, add(signatureTypeOffset, 1))
+        }
+
+        return success;
     }
 
     function verifyERC1271WithBytes(
