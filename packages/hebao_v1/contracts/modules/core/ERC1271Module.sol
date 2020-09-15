@@ -38,13 +38,13 @@ abstract contract ERC1271Module is ERC1271, BaseModule
     // The verificaiton of Wallet1's signature will succeed if the final EOA's signature is
     // valid.
     function isValidSignature(
-        bytes32      _hash,
+        bytes32      _signHash,
         bytes memory _signature
         )
         public
         view
         override
-        returns (bytes4)
+        returns (bytes4 magicValue)
     {
         address wallet = msg.sender;
         (uint _lock,) = controller().securityStore().getLock(wallet);
@@ -52,7 +52,7 @@ abstract contract ERC1271Module is ERC1271, BaseModule
             return 0;
         }
 
-        if (_hash.verifySignature(Wallet(wallet).owner(), _signature)) {
+        if (_signHash.verifySignature(Wallet(wallet).owner(), _signature)) {
             return ERC1271_MAGICVALUE;
         } else {
             return 0;
