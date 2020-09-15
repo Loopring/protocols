@@ -13,38 +13,16 @@ const Cloneable = artifacts.require("./thirdparty/Cloneable.sol");
 const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 
 module.exports = function(deployer, network, accounts) {
-  console.log("deploying to network: " + network);
-  deployer
-    .then(() => {
-      return Promise.all([
-        ExchangeBalances.deployed(),
-        ExchangeAdmins.deployed(),
-        ExchangeBlocks.deployed(),
-        ExchangeTokens.deployed(),
-        ExchangeGenesis.deployed(),
-        ExchangeDeposits.deployed(),
-        ExchangeWithdrawals.deployed(),
-        Cloneable.deployed()
-      ]);
-    })
-    .then(() => {
-      return Promise.all([
-        deployer.link(ExchangeBalances, ExchangeV3),
-        deployer.link(ExchangeAdmins, ExchangeV3),
-        deployer.link(ExchangeBlocks, ExchangeV3),
-        deployer.link(ExchangeTokens, ExchangeV3),
-        deployer.link(ExchangeGenesis, ExchangeV3),
-        deployer.link(ExchangeDeposits, ExchangeV3),
-        deployer.link(ExchangeWithdrawals, ExchangeV3),
-        deployer.link(Cloneable, ExchangeV3)
-      ]);
-    })
-    .then(() => {
-      return Promise.all([deployer.deploy(ExchangeV3, { gas: 6700000 })]);
-    })
-    .then(() => {
-      console.log(">>>>>>>> contracts deployed by deploy_exchange_v3:");
-      console.log("ExchangeV3:", ExchangeV3.address);
-      console.log("");
-    });
+  deployer.then(async () => {
+    await deployer.link(ExchangeBalances, ExchangeV3);
+    await deployer.link(ExchangeAdmins, ExchangeV3);
+    await deployer.link(ExchangeBlocks, ExchangeV3);
+    await deployer.link(ExchangeTokens, ExchangeV3);
+    await deployer.link(ExchangeGenesis, ExchangeV3);
+    await deployer.link(ExchangeDeposits, ExchangeV3);
+    await deployer.link(ExchangeWithdrawals, ExchangeV3);
+    await deployer.link(Cloneable, ExchangeV3);
+
+    await deployer.deploy(ExchangeV3, { gas: 6700000 });
+  });
 };
