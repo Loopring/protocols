@@ -68,9 +68,16 @@ abstract contract ERC1271Module is ERC1271, BaseModule
         override
         returns (bytes4 magicValue)
     {
-        magicValue = isValidSignature(abi.encodePacked(_hash), _signature);
-        if (magicValue == ERC1271_MAGICVALUE_BS) {
-            magicValue = ERC1271_MAGICVALUE_B32;
+        address wallet = msg.sender;
+        (uint _lock,) = controller().securityStore().getLock(wallet);
+        if (_lock > block.timestamp) { // wallet locked
+            return 0;
+        }
+
+        if (_hash.verifySignature(Wallet(wallet).owner(), _signature)) {
+            return ERC1271_MAGICVALUE_B32;
+        } else {
+            return 0;
         }
     }
 }
