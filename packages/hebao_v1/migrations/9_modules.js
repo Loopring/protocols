@@ -35,27 +35,32 @@ module.exports = function(deployer, network, accounts) {
 
     const dest = [FinalCoreModule, FinalSecurityModule, FinalTransferModule];
     await deployer.link(SignedRequest, dest);
-    await deployer.deploy(FinalCoreModule, ControllerImpl.address);
+    await deployer.deploy(FinalCoreModule, ControllerImpl.address, {
+      gas: 6700000
+    });
     await deployer.deploy(
       FinalSecurityModule,
       ControllerImpl.address,
       FinalCoreModule.address,
       guardianPendingPeriod,
       inheritanceWaitingPeriod,
-      whitelistDelayPeriod
+      whitelistDelayPeriod,
+      { gas: 6700000 }
     );
     await deployer.deploy(
       FinalTransferModule,
       ControllerImpl.address,
       FinalCoreModule.address,
-      quotaDelayPeriod
+      quotaDelayPeriod,
+      { gas: 6700000 }
     );
 
     await deployer.deploy(
       AddOfficialGuardianModule,
       ControllerImpl.address,
       OfficialGuardian.address,
-      11
+      11,
+      { gas: 6700000 }
     );
 
     const moduleRegistry = await ModuleRegistryImpl.deployed();
