@@ -19,7 +19,7 @@ module.exports = function(deployer, network, accounts) {
       );
 
       const universalRegistry = await UniversalRegistry.deployed();
-      universalRegistry.registerProtocol(
+      await universalRegistry.registerProtocol(
         LoopringV3.address,
         ExchangeV3.address
       );
