@@ -100,11 +100,11 @@ contract AmmPool is IBlockReceiver {
     {
         ExchangeData.Block _block;
         uint    txIdx;
+        uint    numTransactionsConsumed;
         bytes32 DOMAIN_SEPARATOR;
         bytes32 EXCHANGE_DOMAIN_SEPERATOR;
-        uint[]  ammBalancesInAccount;
-        uint[]  ammBalances;
-        uint    numTransactionsConsumed;
+        uint[]  ammBalancesInAccount; // Q
+        uint[]  ammBalances;          // Q
         Token[] tokens;
     }
 
@@ -502,13 +502,14 @@ contract AmmPool is IBlockReceiver {
 
     function processAmmUpdates(
         Context memory ctx,
-        bool   start
+        bool           start
         )
         internal
     {
         for (uint i = 0; i < ctx.tokens.length; i++) {
             // Check that the AMM update in the block matches the expected update
-            AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
+            AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx);
+
             require(update.owner == address(this), "INVALID_TX_DATA");
             require(update.accountID == accountID, "INVALID_TX_DATA");
             require(update.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
@@ -518,12 +519,15 @@ contract AmmPool is IBlockReceiver {
             update.validUntil = 0xffffffff;
             bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.EXCHANGE_DOMAIN_SEPERATOR, update);
             exchange.approveTransaction(address(this), txHash);
-            ctx.numTransactionsConsumed++;
+
             if (start) {
                 // AMM account balance now available onchain
                 ctx.ammBalancesInAccount[i] = update.balance;
-                ctx.ammBalances[i] = ctx.ammBalancesInAccount[i];
+                ctx.ammBalances[i] = update.balance;
             }
+
+            ctx.txIdx++;
+            ctx.numTransactionsConsumed++;
         }
     }
 
