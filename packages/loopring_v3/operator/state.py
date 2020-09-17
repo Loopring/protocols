@@ -400,9 +400,8 @@ class State(object):
         numSlots = (2 ** BINARY_TREE_DEPTH_STORAGE)
         leafStorageID = storage.storageID if int(storage.storageID) > 0 else int(storageID) % numSlots
         filled = int(storage.data) if (int(storageID) == int(leafStorageID)) else 0
-        overwrite = 1 if (int(storageID) == int(leafStorageID) + numSlots) else 0
 
-        return (filled, overwrite)
+        return filled
 
     def getMaxFill(self, order, filled, balanceLimit):
         account = self.getAccount(order.accountID)
@@ -482,8 +481,8 @@ class State(object):
             ring = txInput
 
             # Amount filled in the trade history
-            (filled_A, overwriteDataSlotA) = self.getData(ring.orderA.accountID, ring.orderA.tokenS, ring.orderA.storageID)
-            (filled_B, overwriteDataSlotB) = self.getData(ring.orderB.accountID, ring.orderB.tokenS, ring.orderB.storageID)
+            filled_A = self.getData(ring.orderA.accountID, ring.orderA.tokenS, ring.orderA.storageID)
+            filled_B = self.getData(ring.orderB.accountID, ring.orderB.tokenS, ring.orderB.storageID)
 
             # Simple matching logic
             fillA = self.getMaxFill(ring.orderA, filled_A, True)
@@ -518,8 +517,6 @@ class State(object):
             # Saved in ring for tests
             ring.fFillS_A = toFloat(fillA.S, Float24Encoding)
             ring.fFillS_B = toFloat(fillB.S, Float24Encoding)
-            ring.overwriteDataSlotA = overwriteDataSlotA
-            ring.overwriteDataSlotB = overwriteDataSlotB
 
             fillA.S = roundToFloatValue(fillA.S, Float24Encoding)
             fillB.S = roundToFloatValue(fillB.S, Float24Encoding)
@@ -592,7 +589,7 @@ class State(object):
 
         elif txInput.txType == "Transfer":
 
-            (storageData, overwriteDataSlot) = self.getData(txInput.fromAccountID, txInput.tokenID, txInput.storageID)
+            storageData = self.getData(txInput.fromAccountID, txInput.tokenID, txInput.storageID)
 
             transferAmount = roundToFloatValue(int(txInput.amount), Float24Encoding)
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
@@ -627,7 +624,6 @@ class State(object):
 
             # For tests (used to set the DA data)
             txInput.toNewAccount = True if accountB.owner == str(0) else False
-            txInput.overwriteDataSlot = overwriteDataSlot
 
         elif txInput.txType == "Withdraw":
 

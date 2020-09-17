@@ -13,18 +13,21 @@ pragma solidity ^0.7.0;
 library ZeroDecompressor
 {
     function decompress(
-        bytes calldata /*data*/
+        bytes calldata /*data*/,
+        uint  parameterIdx
         )
         internal
         pure
         returns (bytes memory)
     {
         bytes memory uncompressed;
+        uint offsetPos = 4 + 32 * parameterIdx;
         assembly {
             uncompressed := mload(0x40)
             let ptr := add(uncompressed, 32)
-            let pos := 40
-            let dataLength := add(calldataload(36), pos)
+            let offset := add(4, calldataload(offsetPos))
+            let pos := add(offset, 4)
+            let dataLength := add(calldataload(offset), pos)
             let tupple := 0
             let numDataBytes := 0
             let numZeroBytes := 0

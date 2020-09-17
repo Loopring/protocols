@@ -499,7 +499,7 @@ export class ExchangeTestUtil {
 
   public autoCommit = true;
 
-  public useProverServer: boolean = false;
+  public useProverServer: boolean = true;
 
   // Enabling this will remove randomness so gas measurements
   // can be compared between different runs.
@@ -1010,6 +1010,10 @@ export class ExchangeTestUtil {
       );
       order.accountID = deposit.accountID;
     }
+  }
+
+  public reserveStorageID() {
+    return this.storageIDGenerator++;
   }
 
   public getAddressBook(
@@ -1837,11 +1841,12 @@ export class ExchangeTestUtil {
     //console.log(compressed);
 
     let tx: any = undefined;
-    /*tx = await operatorContract.submitBlocksCompressed(
+    tx = await operatorContract.submitBlocksCompressed(
       web3.utils.hexToBytes(compressed),
+      blockCallbacks,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
-    );*/
+    );
     /*tx = await operatorContract.submitBlocks(
       onchainBlocks,
       { from: this.exchangeOperator, gasPrice: 0 }
@@ -1859,11 +1864,11 @@ export class ExchangeTestUtil {
       onchainBlocks,
       { from: this.exchangeOwner, gasPrice: 0 }
     );*/
-    tx = await operatorContract.submitBlocksWithCallbacks(
+    /*tx = await operatorContract.submitBlocksWithCallbacks(
       onchainBlocks,
       blockCallbacks,
       { from: this.exchangeOperator, gasPrice: 0 }
-    );
+    );*/
     logInfo(
       "\x1b[46m%s\x1b[0m",
       "[submitBlocks] Gas used: " + tx.receipt.gasUsed
@@ -2527,7 +2532,7 @@ export class ExchangeTestUtil {
   }
 
   public async syncExplorer() {
-    // await this.explorer.sync(await web3.eth.getBlockNumber());
+    await this.explorer.sync(await web3.eth.getBlockNumber());
   }
 
   public getTokenAddress(token: string) {
@@ -2773,8 +2778,6 @@ export class ExchangeTestUtil {
   }
 
   public async checkExplorerState() {
-    return;
-
     // Get the current state
     const numBlocksOnchain = this.blocks[this.exchangeId].length;
     const state = await Simulator.loadExchangeState(
