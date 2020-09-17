@@ -38,35 +38,6 @@ contract AmmPool is IBlockReceiver {
         "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut)"
     );
 
-    event Deposit(
-        address  owner,
-        address  token,
-        uint     amount
-    );
-
-    event Withdrawal(
-        address  owner,
-        address  token,
-        uint     amount
-    );
-
-    event JoinPoolRequested(
-        address  owner,
-        uint     poolAmountOut,
-        uint96[] maxAmountsIn
-    );
-
-    event ExitPoolRequested(
-        address  owner,
-        bool     toLayer2,
-        uint     poolAmountIn,
-        uint96[] minAmountsOut
-    );
-
-    event QueueItemsProcessed(
-        uint numItems
-    );
-
     uint public constant BASE = 10 ** 18;
     uint public constant INITIAL_SUPPLY = 100 * BASE;
 
@@ -136,6 +107,30 @@ contract AmmPool is IBlockReceiver {
         uint    numTransactionsConsumed;
         Token[] tokens;
     }
+
+    event Deposit(
+        address  owner,
+        address  token,
+        uint     amount
+    );
+
+    event Withdrawal(
+        address  owner,
+        address  token,
+        uint     amount
+    );
+
+    event QueueItemsProcessed(
+        uint numItems
+    );
+
+    event JoinPoolRequested(
+        PoolJoin join
+    );
+
+    event ExitPoolRequested(
+        PoolExit exit
+    );
 
     uint8 public feeBips;
 
@@ -331,7 +326,7 @@ contract AmmPool is IBlockReceiver {
             txHash: hashPoolJoin(DOMAIN_SEPARATOR, join)
         }));
 
-        emit JoinPoolRequested(msg.sender, poolAmountOut, maxAmountsIn);
+        emit JoinPoolRequested(join);
     }
 
     function exitPool(
@@ -357,7 +352,7 @@ contract AmmPool is IBlockReceiver {
             txHash: hashPoolExit(DOMAIN_SEPARATOR, exit)
         }));
 
-        emit ExitPoolRequested(msg.sender, toLayer2, poolAmountIn, minAmountsOut);
+        emit ExitPoolRequested(exit);
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
@@ -456,8 +451,7 @@ contract AmmPool is IBlockReceiver {
             tokens: tokens
         });
 
-        BlockReader.BlockHeader memory header = _block.readHeader();
-        require(header.exchange == address(exchange), "INVALID_EXCHANGE");
+        require(_block.readHeader().exchange == address(exchange), "INVALID_EXCHANGE");
 
         // The starting AMM updates
         // This also pulls the AMM balances onchain.
