@@ -81,7 +81,7 @@ contract AmmPool is IBlockReceiver {
 
     enum PoolTransactionType
     {
-        NOOP,
+        NOOP,  // === 0
         JOIN,
         EXIT
     }
@@ -207,7 +207,9 @@ contract AmmPool is IBlockReceiver {
         }
     }
 
-    function deposit(uint96[] calldata amounts)
+    function deposit(
+        uint96[] calldata amounts
+        )
         external
         payable
         online
@@ -231,7 +233,9 @@ contract AmmPool is IBlockReceiver {
         }
     }
 
-    function withdraw(uint96[] calldata amounts)
+    function withdraw(
+        uint96[] calldata amounts
+        )
         external
         payable
     {
@@ -257,7 +261,7 @@ contract AmmPool is IBlockReceiver {
                 delete balance[msg.sender][token];
             } else {
                 require(availableBalance(msg.sender, token) >= amount, "INSUFFICIENT_BALANCE");
-                balance[msg.sender][token] = balance[msg.sender][token].sub(amount);
+                balance[msg.sender][token] -= amount;
             }
 
             if (token == address(0)) {
@@ -272,7 +276,10 @@ contract AmmPool is IBlockReceiver {
     // Needs to be able to receive ETH from the exchange contract
     receive() payable external {}
 
-    function availableBalance(address owner, address token)
+    function availableBalance(
+        address owner,
+        address token
+        )
         public
         view
         returns (uint)
@@ -292,7 +299,10 @@ contract AmmPool is IBlockReceiver {
         return shutdownTimestamp == 0;
     }
 
-    function joinPool(uint poolAmountOut, uint96[] calldata maxAmountsIn)
+    function joinPool(
+        uint              poolAmountOut,
+        uint96[] calldata maxAmountsIn
+        )
         external
         online
     {
@@ -300,8 +310,10 @@ contract AmmPool is IBlockReceiver {
 
         // Lock the necessary amounts so we're sure they are available when doing the actual deposit
         for (uint i = 0; i < tokens.length; i++) {
-            require(availableBalance(msg.sender, tokens[i].addr) >= maxAmountsIn[i], "INSUFFICIENT_BALANCE");
-            locked[msg.sender][tokens[i].addr] = locked[msg.sender][tokens[i].addr].add(maxAmountsIn[i]);
+            address token = tokens[i].addr;
+            uint96  maxAmountIn = maxAmountsIn[i];
+            require(availableBalance(msg.sender, token) >= maxAmountIn, "INSUFFICIENT_BALANCE");
+            locked[msg.sender][token] = locked[msg.sender][token].add(maxAmountIn);
         }
 
         // Queue the work
@@ -320,7 +332,11 @@ contract AmmPool is IBlockReceiver {
         emit JoinPoolRequested(msg.sender, poolAmountOut, maxAmountsIn);
     }
 
-    function exitPool(uint poolAmountIn, uint96[] calldata minAmountsOut, bool toLayer2)
+    function exitPool(
+        uint poolAmountIn,
+        uint96[] calldata minAmountsOut,
+        bool toLayer2
+        )
         external
         online
     {
@@ -355,8 +371,9 @@ contract AmmPool is IBlockReceiver {
         );
 
         if (!exchange.isInWithdrawalMode()) {
+            uint ethValue = msg.value / tokens.length;
             for (uint i = 0; i < tokens.length; i++) {
-                exchange.forceWithdraw{value: msg.value/tokens.length}(
+                exchange.forceWithdraw{value: ethValue}(
                     address(this),
                     tokens[i].addr,
                     accountID
@@ -394,11 +411,12 @@ contract AmmPool is IBlockReceiver {
 
         // Use the balances on this contract
         for (uint i = 0; i < tokens.length; i++) {
+            address token = tokens[i].addr;
             uint contractBalance;
-            if (tokens[i].addr == address(0)) {
+            if (token == address(0)) {
                 contractBalance = address(this).balance;
             } else {
-                contractBalance = ERC20(tokens[i].addr).balanceOf(address(this));
+                contractBalance = ERC20(token).balanceOf(address(this));
             }
 
             // uint poolBalance = contractBalance.sub(totalBalance[tokens[i].addr]);
