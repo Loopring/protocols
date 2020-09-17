@@ -108,29 +108,16 @@ contract AmmPool is IBlockReceiver {
         Token[] tokens;
     }
 
-    event Deposit(
-        address  owner,
-        address  token,
-        uint     amount
-    );
+    event Deposit   (address owner, address token, uint amount);
+    event Withdrawal(address owner, address token, uint amount);
 
-    event Withdrawal(
-        address  owner,
-        address  token,
-        uint     amount
-    );
+    event QueueItemsProcessed(uint numItems);
 
-    event QueueItemsProcessed(
-        uint numItems
-    );
+    event JoinPoolRequested(PoolJoin join);
+    event ExitPoolRequested(PoolExit exit);
 
-    event JoinPoolRequested(
-        PoolJoin join
-    );
-
-    event ExitPoolRequested(
-        PoolExit exit
-    );
+    event Mint(address owner, uint amount);
+    event Burn(address owner, uint amount);
 
     uint8 public feeBips;
 
@@ -466,6 +453,8 @@ contract AmmPool is IBlockReceiver {
             } else if (poolTx.txType == PoolTransactionType.EXIT) {
                 PoolExit memory exit = abi.decode(poolTx.data, (PoolExit));
                 processExit(ctx, exit, poolTx.signature);
+            } else {
+                revert("INVALID_POOL_TX_TYPE");
             }
         }
 
@@ -500,6 +489,7 @@ contract AmmPool is IBlockReceiver {
     {
         poolSupply = poolSupply.add(amount);
         poolBalance[owner] = poolBalance[owner].add(amount);
+        emit Mint(owner, amount);
     }
 
     function burn(address owner, uint amount)
@@ -507,6 +497,7 @@ contract AmmPool is IBlockReceiver {
     {
         poolSupply = poolSupply.sub(amount);
         poolBalance[owner] = poolBalance[owner].sub(amount);
+        emit Burn(owner, amount);
     }
 
     function processAmmUpdates(
