@@ -103,8 +103,8 @@ contract AmmPool is IBlockReceiver {
         uint    numTransactionsConsumed;
         bytes32 DOMAIN_SEPARATOR;
         bytes32 EXCHANGE_DOMAIN_SEPERATOR;
-        uint[]  ammLayer1Balances;          // Q
-        uint[]  ammLayer2Balances; // Q
+        uint[]  layer1Balances;          // Q
+        uint[]  layer2Balances; // Q
         Token[] tokens;
     }
 
@@ -415,8 +415,8 @@ contract AmmPool is IBlockReceiver {
     // Uses synchronized logic on L1/L2 to make the onchain logic easy and efficient.
     function beforeBlockSubmitted(
         ExchangeData.Block memory _block,
-        uint                      txIdx,
-        bytes              memory auxiliaryData
+        uint                      _firstTxIdx,
+        bytes              memory _poolTxs
         )
         public
         override
@@ -424,16 +424,16 @@ contract AmmPool is IBlockReceiver {
         onlyExchangeOwner
         returns (uint)
     {
-        PoolTransaction[] memory poolTransactions = abi.decode(auxiliaryData, (PoolTransaction[]));
+        PoolTransaction[] memory poolTxs = abi.decode(_poolTxs, (PoolTransaction[]));
 
         // Cache the domain seperator to save on SLOADs each time it is accessed.
         Context memory ctx = Context({
             _block: _block,
-            txIdx: txIdx,
+            txIdx: _firstTxIdx,
             DOMAIN_SEPARATOR: DOMAIN_SEPARATOR,
             EXCHANGE_DOMAIN_SEPERATOR: EXCHANGE_DOMAIN_SEPERATOR,
-            ammLayer1Balances: new uint[](tokens.length),
-            ammLayer2Balances: new uint[](tokens.length),
+            layer1Balances: new uint[](tokens.length),
+            layer2Balances: new uint[](tokens.length),
             numTransactionsConsumed: 0,
             tokens: tokens
         });
@@ -445,14 +445,20 @@ contract AmmPool is IBlockReceiver {
         processAmmUpdates(ctx, true);
 
         // Process all pool transactions
-        for (uint n = 0; n < poolTransactions.length; n++) {
-            PoolTransaction memory poolTx = poolTransactions[n];
+        for (uint n = 0; n < poolTxs.length; n++) {
+            PoolTransaction memory poolTx = poolTxs[n];
             if (poolTx.txType == PoolTransactionType.JOIN) {
-                PoolJoin memory join = abi.decode(poolTx.data, (PoolJoin));
-                processJoin(ctx, join, poolTx.signature);
+                processJoin(
+                    ctx,
+                    poolTx.signature,
+                    abi.decode(poolTx.data, (PoolJoin))
+                );
             } else if (poolTx.txType == PoolTransactionType.EXIT) {
-                PoolExit memory exit = abi.decode(poolTx.data, (PoolExit));
-                processExit(ctx, exit, poolTx.signature);
+                processExit(
+                    ctx,
+                    poolTx.signature,
+                    abi.decode(poolTx.data, (PoolExit))
+                );
             } else {
                 revert("INVALID_POOL_TX_TYPE");
             }
@@ -460,12 +466,12 @@ contract AmmPool is IBlockReceiver {
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            uint layer1Balance = ctx.ammLayer1Balances[i];
-            uint layer2Balance = ctx.ammLayer2Balances[i];
+            uint layer1Balance = ctx.layer1Balances[i];
+            uint layer2Balance = ctx.layer2Balances[i];
 
             if (layer1Balance > layer2Balance) {
                 processDeposit(ctx, ctx.tokens[i], layer1Balance - layer2Balance);
-            } else if (layer2Balance > layer1Balance) {
+            } else if (layer1Balance < layer2Balance) {
                 processWithdrawal(ctx, ctx.tokens[i], layer2Balance - layer1Balance);
             }
         }
@@ -473,7 +479,7 @@ contract AmmPool is IBlockReceiver {
         // The ending AMM updates
         processAmmUpdates(ctx, false);
 
-        emit QueueItemsProcessed(poolTransactions.length);
+        emit QueueItemsProcessed(poolTxs.length);
         return ctx.numTransactionsConsumed;
     }
 
@@ -526,10 +532,11 @@ contract AmmPool is IBlockReceiver {
 
             if (start) {
                 // AMM account balance now available onchain
-                ctx.ammLayer2Balances[i] = update.balance;
-                ctx.ammLayer1Balances[i] = update.balance;
+                ctx.layer1Balances[i] = update.balance;
+                ctx.layer2Balances[i] = update.balance;
             } else {
                 // Q: shall we do some final verification here?
+                // require(ctx.layer1Balances[i] = ctx.layer2Balances[i], "INCONSISTENT_BALANCE");
             }
         }
 
@@ -538,8 +545,8 @@ contract AmmPool is IBlockReceiver {
 
     function processJoin(
         Context  memory ctx,
-        PoolJoin memory join,
-        bytes    memory signature
+        bytes    memory signature,
+        PoolJoin memory join
         )
         internal
     {
@@ -562,7 +569,7 @@ contract AmmPool is IBlockReceiver {
         }
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            uint amount = ctx.ammLayer1Balances[i] * ratio / BASE;
+            uint amount = ctx.layer1Balances[i] * ratio / BASE;
             if (poolTotal == 0) {
                 amount = join.maxAmountsIn[i];
             }
@@ -582,14 +589,14 @@ contract AmmPool is IBlockReceiver {
                 }
                 ctx.numTransactionsConsumed++;
                 // Update the balances in the account
-                ctx.ammLayer2Balances[i] = ctx.ammLayer2Balances[i].add(amount);
+                ctx.layer2Balances[i] = ctx.layer2Balances[i].add(amount);
             } else {
                 // Unlock the amount locked for this join
                 locked[join.owner][ctx.tokens[i].addr] = locked[join.owner][ctx.tokens[i].addr].sub(amount);
                 // Make the amount unavailable for withdrawing
                 balance[join.owner][ctx.tokens[i].addr] = balance[join.owner][ctx.tokens[i].addr].sub(amount);
             }
-            ctx.ammLayer1Balances[i] = ctx.ammLayer1Balances[i].add(amount);
+            ctx.layer1Balances[i] = ctx.layer1Balances[i].add(amount);
         }
 
         // Mint liquidity tokens
@@ -598,8 +605,8 @@ contract AmmPool is IBlockReceiver {
 
     function processExit(
         Context  memory ctx,
-        PoolExit memory exit,
-        bytes    memory signature
+        bytes    memory signature,
+        PoolExit memory exit
         )
         internal
     {
@@ -616,7 +623,7 @@ contract AmmPool is IBlockReceiver {
         uint ratio = (exit.poolAmountIn * BASE) / poolTotal;
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            uint amount = ctx.ammLayer1Balances[i] * ratio / BASE;
+            uint amount = ctx.layer1Balances[i] * ratio / BASE;
             require(amount >= exit.minAmountsOut[i], "LIMIT_OUT");
             if (exit.toLayer2) {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -632,12 +639,12 @@ contract AmmPool is IBlockReceiver {
                 exchange.approveTransaction(address(this), txHash);
                 ctx.numTransactionsConsumed++;
                 // Update the balances in the account
-                ctx.ammLayer2Balances[i] = ctx.ammLayer2Balances[i].sub(amount);
+                ctx.layer2Balances[i] = ctx.layer2Balances[i].sub(amount);
             } else {
                 // Make the amount available for withdrawing
                 balance[exit.owner][ctx.tokens[i].addr] = balance[exit.owner][ctx.tokens[i].addr].add(amount);
             }
-            ctx.ammLayer1Balances[i] = ctx.ammLayer1Balances[i].sub(amount);
+            ctx.layer1Balances[i] = ctx.layer1Balances[i].sub(amount);
         }
 
         // Burn liquidity tokens
