@@ -76,6 +76,7 @@ contract AmmPool is IBlockReceiver {
     uint32      public accountID;
 
     bytes32     public DOMAIN_SEPARATOR;
+    bytes32     public EXCHANGE_DOMAIN_SEPERATOR;
 
     uint        public shutdownTimestamp = 0;
 
@@ -129,7 +130,7 @@ contract AmmPool is IBlockReceiver {
         ExchangeData.Block _block;
         uint    txIdx;
         bytes32 DOMAIN_SEPARATOR;
-        bytes32 exchangeDomainSeparator;
+        bytes32 EXCHANGE_DOMAIN_SEPERATOR;
         uint[]  ammBalancesInAccount;
         uint[]  ammBalances;
         uint    numTransactionsConsumed;
@@ -186,6 +187,7 @@ contract AmmPool is IBlockReceiver {
         require(_tokens.length >= 2, "INVALID_DATA");
 
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("AMM Pool", "1.0.0", address(this)));
+        EXCHANGE_DOMAIN_SEPERATOR = exchange.getDomainSeparator();
 
         exchange = _exchange;
         accountID = _accountID;
@@ -447,7 +449,7 @@ contract AmmPool is IBlockReceiver {
             _block: _block,
             txIdx: txIdx,
             DOMAIN_SEPARATOR: DOMAIN_SEPARATOR,
-            exchangeDomainSeparator: exchange.getDomainSeparator(),
+            EXCHANGE_DOMAIN_SEPERATOR: EXCHANGE_DOMAIN_SEPERATOR,
             ammBalancesInAccount: new uint[](tokens.length),
             ammBalances: new uint[](tokens.length),
             numTransactionsConsumed: 0,
@@ -529,7 +531,7 @@ contract AmmPool is IBlockReceiver {
             require(update.tokenWeight == (start ? 0 : ctx.tokens[i].weight), "INVALID_TX_DATA");
             // Now approve this AMM update
             update.validUntil = 0xffffffff;
-            bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.exchangeDomainSeparator, update);
+            bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.EXCHANGE_DOMAIN_SEPERATOR, update);
             exchange.approveTransaction(address(this), txHash);
             ctx.numTransactionsConsumed++;
             if (start) {
@@ -581,7 +583,7 @@ contract AmmPool is IBlockReceiver {
                 if (signature.length != 0) {
                     // Now approve this transfer
                     transfer.validUntil = 0xffffffff;
-                    bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+                    bytes32 txHash = TransferTransaction.hashTx(ctx.EXCHANGE_DOMAIN_SEPERATOR, transfer);
                     exchange.approveTransaction(join.owner, txHash);
                 }
                 ctx.numTransactionsConsumed++;
@@ -632,7 +634,7 @@ contract AmmPool is IBlockReceiver {
                 require(transfer.fee == 0, "INVALID_TX_DATA");
                 // Now approve this transfer
                 transfer.validUntil = 0xffffffff;
-                bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+                bytes32 txHash = TransferTransaction.hashTx(ctx.EXCHANGE_DOMAIN_SEPERATOR, transfer);
                 exchange.approveTransaction(address(this), txHash);
                 ctx.numTransactionsConsumed++;
                 // Update the balances in the account
@@ -707,7 +709,7 @@ contract AmmPool is IBlockReceiver {
         require(withdrawal.onchainDataHash == onchainDataHash, "INVALID_TX_DATA");
         // Now approve this withdrawal
         withdrawal.validUntil = 0xffffffff;
-        bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
+        bytes32 txHash = WithdrawTransaction.hashTx(ctx.EXCHANGE_DOMAIN_SEPERATOR, withdrawal);
         exchange.approveTransaction(address(this), txHash);
         ctx.numTransactionsConsumed++;
         // Total balance in this contract increases by the amount withdrawn
