@@ -65,7 +65,7 @@ contract AmmPool is IBlockReceiver {
         uint numItems
     );
 
-    uint public constant BASE = 10**18;
+    uint public constant BASE = 10 ** 18;
     uint public constant INITIAL_SUPPLY = 100 * BASE;
 
     uint public constant MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN = 7 days;
@@ -114,6 +114,7 @@ contract AmmPool is IBlockReceiver {
         bytes32             txHash;
     }
 
+    // Represents a token that's supported by this AMM pool.
     struct Token
     {
         address addr;
@@ -134,6 +135,7 @@ contract AmmPool is IBlockReceiver {
     }
 
     uint8 public feeBips;
+
     Token[] public tokens;
 
     QueueItem[] public queue;
@@ -186,10 +188,17 @@ contract AmmPool is IBlockReceiver {
         exchange = _exchange;
         accountID = _accountID;
         feeBips = _feeBips;
+
+        address lastToken = address(0);
         for (uint i = 0; i < _tokens.length; i++) {
-            uint16 tokenID = exchange.getTokenID(_tokens[i]);
+            address token = _tokens[i];
+
+            require(lastToken == address(0) || token > lastToken, "INVALID_TOKEN");
+            lastToken = token;
+
+            uint16 tokenID = exchange.getTokenID(token);
             tokens.push(Token({
-                addr: _tokens[i],
+                addr: token,
                 tokenID: tokenID,
                 weight: _weights[i]
             }));
