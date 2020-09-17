@@ -188,6 +188,9 @@ contract AmmPool is IBlockReceiver {
                 tokenID: tokenID,
                 weight: _weights[i]
             }));
+            if (token != address(0)) {
+                ERC20(token).approve(address(exchange), ~uint(0));
+            }
         }
     }
 
