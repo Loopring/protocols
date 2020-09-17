@@ -40,12 +40,14 @@ contract AmmPool is IBlockReceiver {
 
     event Deposit(
         address  owner,
-        uint96[] amounts
+        address  token,
+        uint     amount
     );
 
     event Withdrawal(
         address  owner,
-        uint96[] amounts
+        address  token,
+        uint     amount
     );
 
     event JoinPoolRequested(
@@ -216,16 +218,17 @@ contract AmmPool is IBlockReceiver {
         // the amounts are available when the actual deposit to the exchange is done.
         for (uint i = 0; i < tokens.length; i++) {
             address token = tokens[i].addr;
-            if (token == address(0)) {
-                require(msg.value == amounts[i], "INVALID_ETH_DEPOSIT");
-            } else {
-                token.safeTransferFromAndVerify(msg.sender, address(this), uint(amounts[i]));
-            }
-            balance[msg.sender][token] = balance[msg.sender][token].add(amounts[i]);
-            totalBalance[token] = totalBalance[token].add(amounts[i]);
-        }
+            uint amount = amounts[i];
 
-        emit Deposit(msg.sender, amounts);
+            if (token == address(0)) {
+                require(msg.value == amount, "INVALID_ETH_DEPOSIT");
+            } else {
+                token.safeTransferFromAndVerify(msg.sender, address(this), uint(amount));
+            }
+            balance[msg.sender][token] = balance[msg.sender][token].add(amount);
+            totalBalance[token] = totalBalance[token].add(amount);
+            emit Deposit(msg.sender, token, amount);
+        }
     }
 
     function withdraw(uint96[] calldata amounts)
@@ -237,6 +240,7 @@ contract AmmPool is IBlockReceiver {
         // Withdraw any outstanding balances for the pool account on the exchange
         address[] memory owners = new address[](tokens.length);
         address[] memory tokenAddresses = new address[](tokens.length);
+
         for (uint i = 0; i < tokens.length; i++) {
             owners[i] = address(this);
             tokenAddresses[i] = tokens[i].addr;
@@ -246,16 +250,23 @@ contract AmmPool is IBlockReceiver {
         // Withdraw
         for (uint i = 0; i < tokens.length; i++) {
             address token = tokens[i].addr;
-            require(availableBalance(msg.sender, token) >= amounts[i], "INSUFFICIENT_BALANCE");
-            balance[msg.sender][token] = balance[msg.sender][token].sub(amounts[i]);
-            if (token == address(0)) {
-                msg.sender.sendETHAndVerify(amounts[i], gasleft());
-            } else {
-                token.safeTransferAndVerify(msg.sender, amounts[i]);
-            }
-        }
+            uint amount = amounts[i];
 
-        emit Withdrawal(msg.sender, amounts);
+            if (amount == 0) {
+                amount = availableBalance(msg.sender, token);
+                delete balance[msg.sender][token];
+            } else {
+                require(availableBalance(msg.sender, token) >= amount, "INSUFFICIENT_BALANCE");
+                balance[msg.sender][token] = balance[msg.sender][token].sub(amount);
+            }
+
+            if (token == address(0)) {
+                msg.sender.sendETHAndVerify(amount, gasleft());
+            } else {
+                token.safeTransferAndVerify(msg.sender, amount);
+            }
+            emit Withdrawal(msg.sender, token, amount);
+        }
     }
 
     // Needs to be able to receive ETH from the exchange contract
