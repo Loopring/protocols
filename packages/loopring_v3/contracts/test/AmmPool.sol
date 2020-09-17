@@ -103,8 +103,8 @@ contract AmmPool is IBlockReceiver {
         uint    numTransactionsConsumed;
         bytes32 DOMAIN_SEPARATOR;
         bytes32 EXCHANGE_DOMAIN_SEPERATOR;
-        uint[]  ammBalancesInAccount; // Q
-        uint[]  ammBalances;          // Q
+        uint[]  ammLayer1Balances;          // Q
+        uint[]  ammLayer2Balances; // Q
         Token[] tokens;
     }
 
@@ -432,8 +432,8 @@ contract AmmPool is IBlockReceiver {
             txIdx: txIdx,
             DOMAIN_SEPARATOR: DOMAIN_SEPARATOR,
             EXCHANGE_DOMAIN_SEPERATOR: EXCHANGE_DOMAIN_SEPERATOR,
-            ammBalancesInAccount: new uint[](tokens.length),
-            ammBalances: new uint[](tokens.length),
+            ammLayer1Balances: new uint[](tokens.length),
+            ammLayer2Balances: new uint[](tokens.length),
             numTransactionsConsumed: 0,
             tokens: tokens
         });
@@ -460,12 +460,13 @@ contract AmmPool is IBlockReceiver {
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            if (ctx.ammBalances[i] > ctx.ammBalancesInAccount[i]) {
-                uint amount = ctx.ammBalances[i] - ctx.ammBalancesInAccount[i];
-                processDeposit(ctx, ctx.tokens[i], amount);
-            } else if (ctx.ammBalancesInAccount[i] > ctx.ammBalances[i]) {
-                uint amount = ctx.ammBalancesInAccount[i] - ctx.ammBalances[i];
-                processWithdrawal(ctx, ctx.tokens[i], amount);
+            uint layer1Balance = ctx.ammLayer1Balances[i];
+            uint layer2Balance = ctx.ammLayer2Balances[i];
+
+            if (layer1Balance > layer2Balance) {
+                processDeposit(ctx, ctx.tokens[i], layer1Balance - layer2Balance);
+            } else if (layer2Balance > layer1Balance) {
+                processWithdrawal(ctx, ctx.tokens[i], layer2Balance - layer1Balance);
             }
         }
 
@@ -508,7 +509,7 @@ contract AmmPool is IBlockReceiver {
     {
         for (uint i = 0; i < ctx.tokens.length; i++) {
             // Check that the AMM update in the block matches the expected update
-            AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx);
+            AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
 
             require(update.owner == address(this), "INVALID_TX_DATA");
             require(update.accountID == accountID, "INVALID_TX_DATA");
@@ -517,18 +518,22 @@ contract AmmPool is IBlockReceiver {
             require(update.tokenWeight == (start ? 0 : ctx.tokens[i].weight), "INVALID_TX_DATA");
             // Now approve this AMM update
             update.validUntil = 0xffffffff;
+
+            // Ignore nonce value as it must have been checked in circuit.
+
             bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.EXCHANGE_DOMAIN_SEPERATOR, update);
             exchange.approveTransaction(address(this), txHash);
 
             if (start) {
                 // AMM account balance now available onchain
-                ctx.ammBalancesInAccount[i] = update.balance;
-                ctx.ammBalances[i] = update.balance;
+                ctx.ammLayer2Balances[i] = update.balance;
+                ctx.ammLayer1Balances[i] = update.balance;
+            } else {
+                // Q: shall we do some final verification here?
             }
-
-            ctx.txIdx++;
-            ctx.numTransactionsConsumed++;
         }
+
+        ctx.numTransactionsConsumed += ctx.tokens.length;
     }
 
     function processJoin(
@@ -557,7 +562,7 @@ contract AmmPool is IBlockReceiver {
         }
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            uint amount = ctx.ammBalances[i] * ratio / BASE;
+            uint amount = ctx.ammLayer1Balances[i] * ratio / BASE;
             if (poolTotal == 0) {
                 amount = join.maxAmountsIn[i];
             }
@@ -577,14 +582,14 @@ contract AmmPool is IBlockReceiver {
                 }
                 ctx.numTransactionsConsumed++;
                 // Update the balances in the account
-                ctx.ammBalancesInAccount[i] = ctx.ammBalancesInAccount[i].add(amount);
+                ctx.ammLayer2Balances[i] = ctx.ammLayer2Balances[i].add(amount);
             } else {
                 // Unlock the amount locked for this join
                 locked[join.owner][ctx.tokens[i].addr] = locked[join.owner][ctx.tokens[i].addr].sub(amount);
                 // Make the amount unavailable for withdrawing
                 balance[join.owner][ctx.tokens[i].addr] = balance[join.owner][ctx.tokens[i].addr].sub(amount);
             }
-            ctx.ammBalances[i] = ctx.ammBalances[i].add(amount);
+            ctx.ammLayer1Balances[i] = ctx.ammLayer1Balances[i].add(amount);
         }
 
         // Mint liquidity tokens
@@ -611,7 +616,7 @@ contract AmmPool is IBlockReceiver {
         uint ratio = (exit.poolAmountIn * BASE) / poolTotal;
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            uint amount = ctx.ammBalances[i] * ratio / BASE;
+            uint amount = ctx.ammLayer1Balances[i] * ratio / BASE;
             require(amount >= exit.minAmountsOut[i], "LIMIT_OUT");
             if (exit.toLayer2) {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -627,12 +632,12 @@ contract AmmPool is IBlockReceiver {
                 exchange.approveTransaction(address(this), txHash);
                 ctx.numTransactionsConsumed++;
                 // Update the balances in the account
-                ctx.ammBalancesInAccount[i] = ctx.ammBalancesInAccount[i].sub(amount);
+                ctx.ammLayer2Balances[i] = ctx.ammLayer2Balances[i].sub(amount);
             } else {
                 // Make the amount available for withdrawing
                 balance[exit.owner][ctx.tokens[i].addr] = balance[exit.owner][ctx.tokens[i].addr].add(amount);
             }
-            ctx.ammBalances[i] = ctx.ammBalances[i].sub(amount);
+            ctx.ammLayer1Balances[i] = ctx.ammLayer1Balances[i].sub(amount);
         }
 
         // Burn liquidity tokens
