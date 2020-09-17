@@ -103,7 +103,7 @@ contract AmmPool is IBlockReceiver {
         uint    numTransactionsConsumed;
         bytes32 DOMAIN_SEPARATOR;
         bytes32 EXCHANGE_DOMAIN_SEPERATOR;
-        uint[]  ammLayer1Balances;          // Q
+        uint[]  ammTotalBalances;          // Q
         uint[]  ammLayer2Balances; // Q
         Token[] tokens;
     }
@@ -435,7 +435,7 @@ contract AmmPool is IBlockReceiver {
             txIdx: txIdx,
             DOMAIN_SEPARATOR: DOMAIN_SEPARATOR,
             EXCHANGE_DOMAIN_SEPERATOR: EXCHANGE_DOMAIN_SEPERATOR,
-            ammLayer1Balances: new uint[](tokens.length),
+            ammTotalBalances: new uint[](tokens.length),
             ammLayer2Balances: new uint[](tokens.length),
             numTransactionsConsumed: 0,
             tokens: tokens
@@ -463,7 +463,7 @@ contract AmmPool is IBlockReceiver {
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            uint layer1Balance = ctx.ammLayer1Balances[i];
+            uint layer1Balance = ctx.ammTotalBalances[i];
             uint layer2Balance = ctx.ammLayer2Balances[i];
 
             if (layer1Balance > layer2Balance) {
@@ -530,7 +530,7 @@ contract AmmPool is IBlockReceiver {
             if (start) {
                 // AMM account balance now available onchain
                 ctx.ammLayer2Balances[i] = update.balance;
-                ctx.ammLayer1Balances[i] = update.balance;
+                ctx.ammTotalBalances[i] = update.balance;
             } else {
                 // Q: shall we do some final verification here?
             }
@@ -567,7 +567,7 @@ contract AmmPool is IBlockReceiver {
         }
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            uint amount = ctx.ammLayer1Balances[i] * ratio / BASE;
+            uint amount = ctx.ammTotalBalances[i] * ratio / BASE;
             if (poolTotal == 0) {
                 amount = join.maxAmountsIn[i];
             }
@@ -579,12 +579,12 @@ contract AmmPool is IBlockReceiver {
                 require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
                 require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
                 require(transfer.fee == 0, "INVALID_TX_DATA");
-                if (signature.length != 0) {
-                    // Now approve this transfer
-                    transfer.validUntil = 0xffffffff;
-                    bytes32 txHash = TransferTransaction.hashTx(ctx.EXCHANGE_DOMAIN_SEPERATOR, transfer);
-                    exchange.approveTransaction(owner, txHash);
-                }
+                // if (signature.length != 0) {
+                //     // Now approve this transfer
+                //     transfer.validUntil = 0xffffffff;
+                //     bytes32 txHash = TransferTransaction.hashTx(ctx.EXCHANGE_DOMAIN_SEPERATOR, transfer);
+                //     exchange.approveTransaction(owner, txHash);
+                // }
                 ctx.numTransactionsConsumed++;
                 // Update the balances in the account
                 ctx.ammLayer2Balances[i] = ctx.ammLayer2Balances[i].add(amount);
@@ -595,7 +595,7 @@ contract AmmPool is IBlockReceiver {
                 // Make the amount unavailable for withdrawing
                 balance[owner][token] = balance[owner][token].sub(amount);
             }
-            ctx.ammLayer1Balances[i] = ctx.ammLayer1Balances[i].add(amount);
+            ctx.ammTotalBalances[i] = ctx.ammTotalBalances[i].add(amount);
         }
 
         // Mint liquidity tokens
@@ -624,7 +624,7 @@ contract AmmPool is IBlockReceiver {
         uint ratio = (exit.poolAmountIn * BASE) / poolTotal;
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            uint amount = ctx.ammLayer1Balances[i] * ratio / BASE;
+            uint amount = ctx.ammTotalBalances[i] * ratio / BASE;
             require(amount >= exit.minAmountsOut[i], "LIMIT_OUT");
             if (exit.toLayer2) {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -646,7 +646,7 @@ contract AmmPool is IBlockReceiver {
                 address token = ctx.tokens[i].addr;
                 balance[owner][token] = balance[owner][token].add(amount);
             }
-            ctx.ammLayer1Balances[i] = ctx.ammLayer1Balances[i].sub(amount);
+            ctx.ammTotalBalances[i] = ctx.ammTotalBalances[i].sub(amount);
         }
 
         // Burn liquidity tokens
