@@ -65,9 +65,7 @@ contract AmmPool is IBlockReceiver {
         uint pos
     );
 
-    uint public constant MAX_UINT = ~uint(0);
-
-    uint public constant BASE = 10**18;
+    uint public constant BASE = 10 ** 18;
     uint public constant INITIAL_SUPPLY = 100 * BASE;
 
     uint public constant MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN = 7 days;
@@ -189,13 +187,19 @@ contract AmmPool is IBlockReceiver {
         exchange = _exchange;
         accountID = _accountID;
         feeBips = _feeBips;
+
+        address depositContract = address(exchange.getDepositContract());
+
         for (uint i = 0; i < _tokens.length; i++) {
-            uint16 tokenID = exchange.getTokenID(_tokens[i]);
+            address token = _tokens[i];
+            uint16 tokenID = exchange.getTokenID(token);
             tokens.push(Token({
-                addr: _tokens[i],
+                addr: token,
                 tokenID: tokenID,
                 weight: _weights[i]
             }));
+
+            ERC20(token).approve(depositContract, ~uint(0));
         }
     }
 
@@ -707,7 +711,7 @@ contract AmmPool is IBlockReceiver {
             address depositContract = address(exchange.getDepositContract());
             if (ERC20(token.addr).allowance(address(this), depositContract) < _deposit.amount) {
                 // Approve the deposit transfer
-                ERC20(token.addr).approve(depositContract, MAX_UINT);
+                ERC20(token.addr).approve(depositContract, ~uint(0));
             }
         }
         exchange.deposit{value: ethValue}(
