@@ -499,7 +499,7 @@ export class ExchangeTestUtil {
 
   public autoCommit = true;
 
-  public useProverServer: boolean = false;
+  public useProverServer: boolean = true;
 
   // Enabling this will remove randomness so gas measurements
   // can be compared between different runs.
@@ -1012,6 +1012,10 @@ export class ExchangeTestUtil {
     }
   }
 
+  public reserveStorageID() {
+    return this.storageIDGenerator++;
+  }
+
   public getAddressBook(
     ring: SpotTrade,
     index?: number,
@@ -1284,16 +1288,12 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.FORCE) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
-        const numAvailableSlotsBefore = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         await this.exchange.forceWithdraw(signer, token, accountID, {
           from: signer,
           value: withdrawalFee
         });
-        const numAvailableSlotsAfter = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         assert.equal(
           numAvailableSlotsAfter,
           numAvailableSlotsBefore - 1,
@@ -1816,14 +1816,10 @@ export class ExchangeTestUtil {
       testCallback(onchainBlocks, blocks);
     }
 
-    const numBlocksSubmittedBefore = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
 
     // Forced requests
-    const numAvailableSlotsBefore = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
 
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
@@ -1837,11 +1833,12 @@ export class ExchangeTestUtil {
     //console.log(compressed);
 
     let tx: any = undefined;
-    /*tx = await operatorContract.submitBlocksCompressed(
+    tx = await operatorContract.submitBlocksCompressed(
       web3.utils.hexToBytes(compressed),
+      blockCallbacks,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
-    );*/
+    );
     /*tx = await operatorContract.submitBlocks(
       onchainBlocks,
       { from: this.exchangeOperator, gasPrice: 0 }
@@ -1859,11 +1856,11 @@ export class ExchangeTestUtil {
       onchainBlocks,
       { from: this.exchangeOwner, gasPrice: 0 }
     );*/
-    tx = await operatorContract.submitBlocksWithCallbacks(
+    /*tx = await operatorContract.submitBlocksWithCallbacks(
       onchainBlocks,
       blockCallbacks,
       { from: this.exchangeOperator, gasPrice: 0 }
-    );
+    );*/
     logInfo(
       "\x1b[46m%s\x1b[0m",
       "[submitBlocks] Gas used: " + tx.receipt.gasUsed
@@ -1871,9 +1868,7 @@ export class ExchangeTestUtil {
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     // Check number of blocks submitted
-    const numBlocksSubmittedAfter = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedAfter = (await this.exchange.getBlockHeight()).toNumber();
     assert.equal(
       numBlocksSubmittedAfter,
       numBlocksSubmittedBefore + blocks.length,
@@ -1937,9 +1932,7 @@ export class ExchangeTestUtil {
     }
 
     // Forced requests
-    const numAvailableSlotsAfter = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
     let numForcedRequestsProcessed = 0;
     for (const block of blocks) {
       for (const tx of block.internalBlock.transactions) {
@@ -2527,7 +2520,7 @@ export class ExchangeTestUtil {
   }
 
   public async syncExplorer() {
-    // await this.explorer.sync(await web3.eth.getBlockNumber());
+    await this.explorer.sync(await web3.eth.getBlockNumber());
   }
 
   public getTokenAddress(token: string) {
@@ -2637,14 +2630,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const previousTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const currentTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -2773,8 +2766,6 @@ export class ExchangeTestUtil {
   }
 
   public async checkExplorerState() {
-    return;
-
     // Get the current state
     const numBlocksOnchain = this.blocks[this.exchangeId].length;
     const state = await Simulator.loadExchangeState(
@@ -3214,27 +3205,19 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [
-      eth,
-      weth,
-      lrc,
-      gto,
-      rdn,
-      rep,
-      inda,
-      indb,
-      test
-    ] = await Promise.all([
-      null,
-      this.contracts.WETHToken.deployed(),
-      this.contracts.LRCToken.deployed(),
-      this.contracts.GTOToken.deployed(),
-      this.contracts.RDNToken.deployed(),
-      this.contracts.REPToken.deployed(),
-      this.contracts.INDAToken.deployed(),
-      this.contracts.INDBToken.deployed(),
-      this.contracts.TESTToken.deployed()
-    ]);
+    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
+      [
+        null,
+        this.contracts.WETHToken.deployed(),
+        this.contracts.LRCToken.deployed(),
+        this.contracts.GTOToken.deployed(),
+        this.contracts.RDNToken.deployed(),
+        this.contracts.REPToken.deployed(),
+        this.contracts.INDAToken.deployed(),
+        this.contracts.INDBToken.deployed(),
+        this.contracts.TESTToken.deployed()
+      ]
+    );
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 

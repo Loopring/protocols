@@ -12,6 +12,6 @@ contract ZeroDecompressorContract {
         pure
         returns (bytes memory)
     {
-        return ZeroDecompressor.decompress(data);
+        return ZeroDecompressor.decompress(data, 0);
     }
 }

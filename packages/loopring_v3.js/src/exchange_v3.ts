@@ -102,9 +102,9 @@ export class ExchangeV3 {
     this.exchange = new web3.eth.Contract(JSON.parse(this.exchangeV3Abi));
     this.exchange.options.address = this.exchangeAddress;
 
-    const exchangeCreationTimestamp = (
-      await this.exchange.methods.getBlockInfo(0).call()
-    ).timestamp;
+    const exchangeCreationTimestamp = (await this.exchange.methods
+      .getBlockInfo(0)
+      .call()).timestamp;
     const genesisMerkleRoot = new BN(
       (await this.exchange.methods.getMerkleRoot().call()).slice(2),
       16
@@ -675,7 +675,7 @@ export class ExchangeV3 {
 
     // Get the block data from the transaction data
     //const submitBlocksFunctionSignature = "0x8dadd3af"; // submitBlocks
-    const submitBlocksFunctionSignature = "0x14867212"; // submitBlocksCompressed
+    const submitBlocksFunctionSignature = "0xdeaa355e"; // submitBlocksCompressed
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
@@ -683,7 +683,17 @@ export class ExchangeV3 {
     //console.log(transaction.input);
     if (transaction.input.startsWith(submitBlocksFunctionSignature)) {
       const decodedCompressedInput = this.web3.eth.abi.decodeParameters(
-        ["bytes"],
+        [
+          "bytes",
+          {
+            "struct BlockCallback[]": {
+              target: "address",
+              blockIdx: "uint",
+              txIdx: "uint",
+              auxiliaryData: "bytes"
+            }
+          }
+        ],
         "0x" + transaction.input.slice(2 + 4 * 2)
       );
       const data = decompressZeros(decodedCompressedInput[0]);
