@@ -188,6 +188,9 @@ contract AmmPool is IBlockReceiver {
                 tokenID: tokenID,
                 weight: _weights[i]
             }));
+            if (token != address(0)) {
+                ERC20(token).approve(address(exchange), ~uint(0));
+            }
         }
     }
 
@@ -551,12 +554,14 @@ contract AmmPool is IBlockReceiver {
         internal
     {
         bytes32 poolTxHash = hashPoolJoin(ctx.DOMAIN_SEPARATOR, join);
+        address owner = join.owner;
+
         if (signature.length == 0) {
             require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
             delete queue[queuePos];
             queuePos++;
         } else {
-            require(poolTxHash.verifySignature(join.owner, signature), "INVALID_SIGNATURE");
+            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
         }
 
         uint poolTotal = totalSupply();
@@ -576,31 +581,32 @@ contract AmmPool is IBlockReceiver {
             require(amount <= join.maxAmountsIn[i], "LIMIT_IN");
             if (join.fromLayer2) {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
-                require(transfer.from == join.owner, "INVALID_TX_DATA");
+                require(transfer.from == owner, "INVALID_TX_DATA");
                 require(transfer.toAccountID == accountID, "INVALID_TX_DATA");
                 require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
                 require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
                 require(transfer.fee == 0, "INVALID_TX_DATA");
-                if (signature.length != 0) {
-                    // Now approve this transfer
-                    transfer.validUntil = 0xffffffff;
-                    bytes32 txHash = TransferTransaction.hashTx(ctx.EXCHANGE_DOMAIN_SEPERATOR, transfer);
-                    exchange.approveTransaction(join.owner, txHash);
-                }
+                // if (signature.length != 0) {
+                //     // Now approve this transfer
+                //     transfer.validUntil = 0xffffffff;
+                //     bytes32 txHash = TransferTransaction.hashTx(ctx.EXCHANGE_DOMAIN_SEPERATOR, transfer);
+                //     exchange.approveTransaction(owner, txHash);
+                // }
                 ctx.numTransactionsConsumed++;
                 // Update the balances in the account
                 ctx.ammLayer2Balances[i] = ctx.ammLayer2Balances[i].add(amount);
             } else {
+                address token = ctx.tokens[i].addr;
                 // Unlock the amount locked for this join
-                locked[join.owner][ctx.tokens[i].addr] = locked[join.owner][ctx.tokens[i].addr].sub(amount);
+                locked[owner][token] = locked[owner][token].sub(amount);
                 // Make the amount unavailable for withdrawing
-                balance[join.owner][ctx.tokens[i].addr] = balance[join.owner][ctx.tokens[i].addr].sub(amount);
+                balance[owner][token] = balance[owner][token].sub(amount);
             }
             ctx.ammTotalBalances[i] = ctx.ammTotalBalances[i].add(amount);
         }
 
         // Mint liquidity tokens
-        mint(join.owner, join.poolAmountOut);
+        mint(owner, join.poolAmountOut);
     }
 
     function processExit(
@@ -611,12 +617,14 @@ contract AmmPool is IBlockReceiver {
         internal
     {
         bytes32 poolTxHash = hashPoolExit(ctx.DOMAIN_SEPARATOR, exit);
+        address owner = exit.owner;
+
         if (signature.length == 0) {
             require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
             delete queue[queuePos];
             queuePos++;
         } else {
-            require(poolTxHash.verifySignature(exit.owner, signature), "INVALID_SIGNATURE");
+            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
         }
 
         uint poolTotal = totalSupply();
@@ -629,7 +637,7 @@ contract AmmPool is IBlockReceiver {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 require(transfer.fromAccountID == accountID, "INVALID_TX_DATA");
                 require(transfer.from == address(this), "INVALID_TX_DATA");
-                require(transfer.to == exit.owner, "INVALID_TX_DATA");
+                require(transfer.to == owner, "INVALID_TX_DATA");
                 require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
                 require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
                 require(transfer.fee == 0, "INVALID_TX_DATA");
@@ -642,13 +650,14 @@ contract AmmPool is IBlockReceiver {
                 ctx.ammLayer2Balances[i] = ctx.ammLayer2Balances[i].sub(amount);
             } else {
                 // Make the amount available for withdrawing
-                balance[exit.owner][ctx.tokens[i].addr] = balance[exit.owner][ctx.tokens[i].addr].add(amount);
+                address token = ctx.tokens[i].addr;
+                balance[owner][token] = balance[owner][token].add(amount);
             }
             ctx.ammTotalBalances[i] = ctx.ammTotalBalances[i].sub(amount);
         }
 
         // Burn liquidity tokens
-        burn(exit.owner, exit.poolAmountIn);
+        burn(owner, exit.poolAmountIn);
     }
 
     function processDeposit(
