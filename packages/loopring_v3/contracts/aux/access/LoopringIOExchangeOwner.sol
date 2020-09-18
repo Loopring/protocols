@@ -35,7 +35,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     {
     }
 
-    function submitBlocksCompressed(
+    function submitBlocksWithCallbacks(
+        bool              isDataCompressed,
         bytes             calldata data,
         BlockCallback[]   calldata callbacks
         )
@@ -45,7 +46,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
             "PERMISSION_DENIED"
         );
-        bytes memory decompressed = ZeroDecompressor.decompress(data, 0);
+        bytes memory decompressed = isDataCompressed ?
+            ZeroDecompressor.decompress(data, 0):
+            data;
+
         require(
             decompressed.toBytes4(0) == SUBMITBLOCKS_SELECTOR,
             "INVALID_DATA"
@@ -64,24 +68,6 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
         target.fastCallAndVerify(gasleft(), 0, decompressed);
     }
 
-    function submitBlocksWithCallbacks(
-        ExchangeData.Block[] memory blocks,
-        BlockCallback[]      calldata callbacks
-        )
-        external
-    {
-        require(
-            hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
-            "PERMISSION_DENIED"
-        );
-
-        // Process the callback logic.
-        processCallbacks(blocks, callbacks);
-
-        // Finally submit the blocks
-        IExchangeV3(target).submitBlocks(blocks);
-    }
-
     function openAccessToSubmitBlocks(bool _open)
         external
         onlyOwner
@@ -90,9 +76,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
         emit SubmitBlocksAccessOpened(_open);
     }
 
-
     function processCallbacks(
-        ExchangeData.Block[] memory blocks,
+        ExchangeData.Block[] memory   blocks,
         BlockCallback[]      calldata callbacks
         )
         internal
