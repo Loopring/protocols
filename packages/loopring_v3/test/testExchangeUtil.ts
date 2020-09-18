@@ -499,7 +499,7 @@ export class ExchangeTestUtil {
 
   public autoCommit = true;
 
-  public useProverServer: boolean = true;
+  public useProverServer: boolean = false;
 
   // Enabling this will remove randomness so gas measurements
   // can be compared between different runs.
@@ -1841,7 +1841,8 @@ export class ExchangeTestUtil {
     //console.log(compressed);
 
     let tx: any = undefined;
-    tx = await operatorContract.submitBlocksCompressed(
+    tx = await operatorContract.submitBlocksWithCallbacks(
+      true,
       web3.utils.hexToBytes(compressed),
       blockCallbacks,
       //txData,

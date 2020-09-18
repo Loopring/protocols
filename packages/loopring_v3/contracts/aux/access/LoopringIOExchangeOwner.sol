@@ -47,7 +47,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             "PERMISSION_DENIED"
         );
         bytes memory decompressed = isDataCompressed ?
-            ZeroDecompressor.decompress(data, 0):
+            ZeroDecompressor.decompress(data, 1):
             data;
 
         require(

@@ -383,7 +383,8 @@ contract AmmPool is IBlockReceiver, IAgent {
         external
         offline
     {
-        bool ready = true;
+        // Currently commented out to make the contract size smaller...
+        /*bool ready = true;
         if (exchange.isInWithdrawalMode()) {
             // Check if all tokens were withdrawn using Merkle proofs
             for (uint i = 0; i < tokens.length; i++) {
@@ -421,7 +422,7 @@ contract AmmPool is IBlockReceiver, IAgent {
         }
 
         // Burn liquidity tokens
-        burn(msg.sender, poolAmountIn);
+        burn(msg.sender, poolAmountIn);*/
     }
 
     // Processes work in the queue. Can only be called by the exchange owner
