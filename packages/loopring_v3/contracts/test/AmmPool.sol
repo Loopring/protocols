@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../aux/access/IBlockReceiver.sol";
 import "../aux/transactions/TransactionReader.sol";
 import "../thirdparty/BytesUtil.sol";
+import "../core/iface/IAgentRegistry.sol";
 import "../core/iface/IExchangeV3.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20.sol";
@@ -20,7 +21,7 @@ import "../core/impl/libtransactions/WithdrawTransaction.sol";
 /// @title AmmPool
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Incomplete AMM pool implementation for demo/testing purposes.
-contract AmmPool is IBlockReceiver {
+contract AmmPool is IBlockReceiver, IAgent {
 
     using AddressUtil       for address;
     using AddressUtil       for address payable;
