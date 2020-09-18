@@ -51,6 +51,7 @@ contract AmmPool is IBlockReceiver, IAgent {
 
     event JoinPoolRequested(
         address  owner,
+        bool     fromLayer2,
         uint     poolAmountOut,
         uint96[] maxAmountsIn
     );
@@ -62,14 +63,17 @@ contract AmmPool is IBlockReceiver, IAgent {
         uint96[] minAmountsOut
     );
 
-    event NewQueuePosition(
-        uint pos
+    event LockedUntil(
+        address  owner,
+        uint     timestamp
     );
 
     uint public constant BASE = 10 ** 18;
     uint public constant INITIAL_SUPPLY = 100 * BASE;
 
     uint public constant MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN = 7 days;
+
+    uint public constant MIN_TIME_TO_UNLOCK = 1 days;
 
     IExchangeV3 public exchange;
     uint32      public accountID;
@@ -139,13 +143,16 @@ contract AmmPool is IBlockReceiver, IAgent {
     uint8 public feeBips;
     Token[] public tokens;
 
-    QueueItem[] public queue;
-    uint public queuePos = 0;
+    // A map of approved transaction hashes to the timestamp it was created
+    mapping (bytes32 => uint) approvedTx;
 
     // A map from an owner to a token to the balance
     mapping (address => mapping (address => uint)) balance;
-    // A map from an owner to a token to the balance locked
-    mapping (address => mapping (address => uint)) locked;
+    // A map from an owner to the timestamp until all funds of the user are locked
+    // A zero value == locked indefinitely.
+    mapping (address => uint) lockedUntil;
+    // A map from an owner to if a user is currently exiting using an onchain approval.
+    mapping (address => bool) isExiting;
     // A map from a token to the total balance owned directly by LPs (so NOT owned by the pool itself)
     mapping (address => uint) totalBalance;
 
@@ -204,17 +211,18 @@ contract AmmPool is IBlockReceiver, IAgent {
         }
     }
 
+    /// @param amounts The amounts to deposit + the amount of pool tokens to deposit
     function deposit(uint96[] calldata amounts)
         external
         payable
         online
     {
-        require(amounts.length == tokens.length, "INVALID_DATA");
+        require(amounts.length == tokens.length + 1, "INVALID_DATA");
 
         // Deposit the max amounts to this contract so we are sure
         // the amounts are available when the actual deposit to the exchange is done.
-        for (uint i = 0; i < tokens.length; i++) {
-            address token = tokens[i].addr;
+        for (uint i = 0; i < tokens.length + 1; i++) {
+            address token = (i < tokens.length) ? tokens[i].addr : address(this);
             if (token == address(0)) {
                 require(msg.value == amounts[i], "INVALID_ETH_DEPOSIT");
             } else {
@@ -227,11 +235,21 @@ contract AmmPool is IBlockReceiver, IAgent {
         emit Deposit(msg.sender, amounts);
     }
 
-    function withdraw(uint96[] calldata amounts)
+    /// @param amounts The amounts to withdraw + the amount of pool tokens to withdraw
+    /// @param signature Signature of the operator to allow withdrawals without unlocking
+    function withdraw(uint96[] calldata amounts, bytes memory signature)
         external
         payable
     {
-        require(amounts.length == tokens.length, "INVALID_DATA");
+        require(amounts.length == tokens.length + 1, "INVALID_DATA");
+        if (amounts[tokens.length] > 0) {
+            // Never allow withdrawing liquidity tokens when exiting
+            require(isExiting[msg.sender] == false, "LIQUIDITY_TOKENS_LOCKED");
+        }
+        if (signature.length > 0) {
+            // TODO: check signature provided by the operator and allow the specified amounts
+            // to be withdrawn regardless if locked or not.
+        }
 
         // Withdraw any outstanding balances for the pool account on the exchange
         address[] memory owners = new address[](tokens.length);
@@ -246,7 +264,7 @@ contract AmmPool is IBlockReceiver, IAgent {
         // Withdraw
         uint96[] memory withdrawn = new uint96[](tokens.length);
         for (uint i = 0; i < tokens.length; i++) {
-            address token = tokens[i].addr;
+            address token = (i < tokens.length) ? tokens[i].addr : address(this);
             uint available = availableBalance(token, msg.sender);
             if (amounts[i] == 0 || amounts[i] > available) {
                 withdrawn[i] = uint96(available);
@@ -271,7 +289,12 @@ contract AmmPool is IBlockReceiver, IAgent {
         returns (uint)
     {
         if (isOnline()) {
-            return balance[token][owner].sub(locked[token][owner]);
+            uint until = lockedUntil[owner];
+            if (until == 0 || block.timestamp < until) {
+                return balance[token][owner];
+            } else {
+                return 0;
+            }
         } else {
             return balance[token][owner];
         }
@@ -290,34 +313,27 @@ contract AmmPool is IBlockReceiver, IAgent {
     /// @param poolAmountOut The number of liquidity tokens that need to be minted for this join.
     /// @param maxAmountsIn The maximum amounts that can be used to mint
     ///                     the specified amount of liquidity tokens.
-    function joinPool(uint poolAmountOut, uint96[] calldata maxAmountsIn)
+    function joinPool(uint poolAmountOut, uint96[] calldata maxAmountsIn, bool fromLayer2)
         external
         online
     {
         require(maxAmountsIn.length == tokens.length, "INVALID_DATA");
 
-        // Lock the necessary amounts so we're sure they are available when doing the actual deposit
-        for (uint i = 0; i < tokens.length; i++) {
-            address token = tokens[i].addr;
-            require(availableBalance(token, msg.sender) >= maxAmountsIn[i], "INSUFFICIENT_BALANCE");
-            locked[token][msg.sender] = locked[token][msg.sender].add(maxAmountsIn[i]);
-        }
+        // Don't check the available funds here, if the operator isn't sure the funds
+        // are locked this transaction can simply be dropped.
 
-        // Queue the work
+        // Approve the join
         PoolJoin memory join = PoolJoin({
             owner: msg.sender,
-            fromLayer2: false,
+            fromLayer2: fromLayer2,
             poolAmountOut: poolAmountOut,
             maxAmountsIn: maxAmountsIn,
             storageIDs: new uint32[](0)
         });
-        queue.push(QueueItem({
-            timestamp: uint64(block.timestamp),
-            txType: PoolTransactionType.JOIN,
-            txHash: hashPoolJoin(DOMAIN_SEPARATOR, join)
-        }));
+        bytes32 txHash = hashPoolJoin(DOMAIN_SEPARATOR, join);
+        approvedTx[txHash] = 0xffffffff;
 
-        emit JoinPoolRequested(msg.sender, poolAmountOut, maxAmountsIn);
+        emit JoinPoolRequested(msg.sender, fromLayer2, poolAmountOut, maxAmountsIn);
     }
 
     /// @dev Joins the pool using on-chain funds.
@@ -330,12 +346,22 @@ contract AmmPool is IBlockReceiver, IAgent {
     {
         require(minAmountsOut.length == tokens.length, "INVALID_DATA");
 
-        // Lock liquidity token - Not needed now with non-transferable liquidity token
-        //address token = address(this);
-        //require(availableBalance(token, msg.sender) >= poolAmountIn, "INSUFFICIENT_BALANCE");
-        //locked[token][msg.sender] = locked[token][msg.sender].add(poolAmountIn);
+        // Make sure the necessary amount of liquidity tokens are available.
+        address token = address(this);
+        require(availableBalance(token, msg.sender) >= poolAmountIn, "INSUFFICIENT_BALANCE");
+        // To make the above funds cannot be used twice only allow a single open exit/owner
+        require(isExiting[msg.sender] == false, "ALREADY_EXITING");
+        isExiting[msg.sender] = true;
 
-        // Queue the work
+        // Lock up funds for at least MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN seconds
+        // so we can be sure at least `poolAmountIn` liquidity tokens are available
+        // for the full duration.
+        uint minUntil = block.timestamp + MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN;
+        if (lockedUntil[msg.sender] == 0 || lockedUntil[msg.sender] < minUntil) {
+            setLockedUntil(minUntil);
+        }
+
+        // Approve the exit
         PoolExit memory exit = PoolExit({
             owner: msg.sender,
             toLayer2: toLayer2,
@@ -343,24 +369,32 @@ contract AmmPool is IBlockReceiver, IAgent {
             minAmountsOut: minAmountsOut,
             storageIDs: new uint32[](0)
         });
-        queue.push(QueueItem({
-            timestamp: uint64(block.timestamp),
-            txType: PoolTransactionType.EXIT,
-            txHash: hashPoolExit(DOMAIN_SEPARATOR, exit)
-        }));
+        bytes32 txHash = hashPoolExit(DOMAIN_SEPARATOR, exit);
+        approvedTx[txHash] = block.timestamp;
 
         emit ExitPoolRequested(msg.sender, toLayer2, poolAmountIn, minAmountsOut);
     }
 
+    function setLockedUntil(uint timestamp)
+        public
+    {
+        if (timestamp > 0) {
+            require(timestamp > lockedUntil[msg.sender], "CANNOT_UNLOCK_EARLIER");
+            require(timestamp >= block.timestamp + MIN_TIME_TO_UNLOCK, "TOO_SOON");
+        }
+        lockedUntil[msg.sender] = timestamp;
+
+        emit LockedUntil(msg.sender, timestamp);
+    }
+
     // Anyone is able to shut down the pool when requests aren't being processed any more.
-    function shutdown()
+    function shutdown(bytes32 txHash)
         external
         payable
         online
     {
         require(
-            block.timestamp > queue[queuePos].timestamp + MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN &&
-            queue[queuePos].txType != PoolTransactionType.NOOP,
+            block.timestamp > approvedTx[txHash] + MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN,
             "REQUEST_NOT_TOO_OLD"
         );
 
@@ -488,7 +522,6 @@ contract AmmPool is IBlockReceiver, IAgent {
         // The ending AMM updates
         processAmmUpdates(ctx, false);
 
-        emit NewQueuePosition(queuePos);
         return ctx.numTransactionsConsumed;
     }
 
@@ -552,12 +585,10 @@ contract AmmPool is IBlockReceiver, IAgent {
     {
         bytes32 poolTxHash = hashPoolJoin(ctx.DOMAIN_SEPARATOR, join);
         if (signature.length == 0) {
-            require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
-            delete queue[queuePos];
-            queuePos++;
+            require(approvedTx[poolTxHash] != 0, "NOT_APPROVED");
+            delete approvedTx[poolTxHash];
         } else {
             require(poolTxHash.verifySignature(join.owner, signature), "INVALID_SIGNATURE");
-            require(join.fromLayer2, "INVALID_DATA");
         }
 
         uint poolTotal = totalSupply();
@@ -618,15 +649,6 @@ contract AmmPool is IBlockReceiver, IAgent {
             // Mint liquidity tokens
             mint(join.owner, join.poolAmountOut);
         }
-
-        if (!join.fromLayer2) {
-            for (uint i = 0; i < ctx.tokens.length; i++) {
-                address token = ctx.tokens[i].addr;
-                uint amount = join.maxAmountsIn[i];
-                // Unlock the amount locked for this join
-                locked[token][join.owner] = locked[token][join.owner].sub(amount);
-            }
-        }
     }
 
     function processExit(
@@ -638,9 +660,9 @@ contract AmmPool is IBlockReceiver, IAgent {
     {
         bytes32 poolTxHash = hashPoolExit(ctx.DOMAIN_SEPARATOR, exit);
         if (signature.length == 0) {
-            require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
-            delete queue[queuePos];
-            queuePos++;
+            require(approvedTx[poolTxHash] != 0, "NOT_APPROVED");
+            delete approvedTx[poolTxHash];
+            delete isExiting[exit.owner];
         } else {
             require(poolTxHash.verifySignature(exit.owner, signature), "INVALID_SIGNATURE");
         }
@@ -692,13 +714,6 @@ contract AmmPool is IBlockReceiver, IAgent {
             // Burn liquidity tokens
             burn(exit.owner, exit.poolAmountIn);
         }
-
-        // Not needed now with non-transferable liquidity token
-        // if (signature.length == 0) {
-        //     // Unlock the amount of liquidity tokens locked for this exit
-        //     address token = address(this);
-        //     locked[token][exit.owner] = locked[token][exit.owner].sub(exit.poolAmountIn);
-        // }
     }
 
     function processDeposit(
