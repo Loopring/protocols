@@ -703,13 +703,15 @@ contract AmmPool is IBlockReceiver {
         require(_deposit.accountID == accountID, "INVALID_TX_DATA");
         require(_deposit.tokenID == token.tokenID, "INVALID_TX_DATA");
         require(_deposit.amount == amount, "INVALID_TX_DATA");
+
         // Now do this deposit
         uint ethValue = 0;
         if (token.addr == address(0)) {
-            ethValue = _deposit.amount;
+            ethValue = amount;
         } else {
             address depositContract = address(exchange.getDepositContract());
-            if (ERC20(token.addr).allowance(address(this), depositContract) < _deposit.amount) {
+            uint allowance = ERC20(token.addr).allowance(address(this), depositContract);
+            if (allowance < amount) {
                 // Approve the deposit transfer
                 ERC20(token.addr).approve(depositContract, ~uint(0));
             }
