@@ -32,7 +32,7 @@ library AccountUpdateTransaction
         address owner;
         uint32  accountID;
         uint16  feeTokenID;
-        uint    fee;
+        uint96  fee;
         uint    publicKey;
         uint32  validUntil;
         uint32  nonce;

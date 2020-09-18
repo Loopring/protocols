@@ -24,14 +24,15 @@ library FloatUtil
         )
         internal
         pure
-        returns (uint value)
+        returns (uint96)
     {
         uint numBitsMantissa = numBits.sub(5);
         uint exponent = f >> numBitsMantissa;
         // log2(10**77) = 255.79 < 256
         require(exponent <= 77, "EXPONENT_TOO_LARGE");
         uint mantissa = f & ((1 << numBitsMantissa) - 1);
-        value = mantissa.mul(10 ** exponent);
+        uint value = mantissa.mul(10 ** exponent);
         require(value < (2 ** 96), "FLOAT_VALUE_TOO_LARGE");
+        return uint96(value);
     }
 }

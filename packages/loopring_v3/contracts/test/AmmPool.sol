@@ -6,12 +6,14 @@ pragma experimental ABIEncoderV2;
 import "../aux/access/IBlockReceiver.sol";
 import "../aux/transactions/TransactionReader.sol";
 import "../thirdparty/BytesUtil.sol";
+import "../thirdparty/SafeCast.sol";
 import "../core/iface/IAgentRegistry.sol";
 import "../core/iface/IExchangeV3.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/MathUint96.sol";
 import "../lib/SignatureUtil.sol";
 
 import "../core/impl/libtransactions/AmmUpdateTransaction.sol";
@@ -29,7 +31,10 @@ contract AmmPool is IBlockReceiver, IAgent {
     using TransactionReader for ExchangeData.Block;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
+    using MathUint96        for uint96;
+    using SafeCast          for uint;
     using SignatureUtil     for bytes32;
+
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
         "PoolJoin(address owner,bool fromLayer2,uint256 poolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs)"
@@ -127,13 +132,13 @@ contract AmmPool is IBlockReceiver, IAgent {
     struct Context
     {
         ExchangeData.Block _block;
-        uint    txIdx;
-        bytes32 DOMAIN_SEPARATOR;
-        bytes32 exchangeDomainSeparator;
-        uint[]  ammBalancesInAccount;
-        uint[]  ammBalances;
-        uint    numTransactionsConsumed;
-        Token[] tokens;
+        uint     txIdx;
+        bytes32  DOMAIN_SEPARATOR;
+        bytes32  exchangeDomainSeparator;
+        uint96[] ammBalancesInAccount;
+        uint96[] ammBalances;
+        uint     numTransactionsConsumed;
+        Token[]  tokens;
     }
 
     uint8 public feeBips;
@@ -449,8 +454,8 @@ contract AmmPool is IBlockReceiver, IAgent {
             txIdx: txIdx,
             DOMAIN_SEPARATOR: DOMAIN_SEPARATOR,
             exchangeDomainSeparator: exchange.getDomainSeparator(),
-            ammBalancesInAccount: new uint[](tokens.length),
-            ammBalances: new uint[](tokens.length),
+            ammBalancesInAccount: new uint96[](tokens.length),
+            ammBalances: new uint96[](tokens.length),
             numTransactionsConsumed: 0,
             tokens: tokens
         });
@@ -477,10 +482,10 @@ contract AmmPool is IBlockReceiver, IAgent {
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < ctx.tokens.length; i++) {
             if (ctx.ammBalances[i] > ctx.ammBalancesInAccount[i]) {
-                uint amount = ctx.ammBalances[i] - ctx.ammBalancesInAccount[i];
+                uint96 amount = ctx.ammBalances[i].sub(ctx.ammBalancesInAccount[i]);
                 processDeposit(ctx, ctx.tokens[i], amount);
             } else if (ctx.ammBalancesInAccount[i] > ctx.ammBalances[i]) {
-                uint amount = ctx.ammBalancesInAccount[i] - ctx.ammBalances[i];
+                uint96 amount = ctx.ammBalancesInAccount[i].sub(ctx.ammBalances[i]);
                 processWithdrawal(ctx, ctx.tokens[i], amount);
             }
         }
@@ -571,9 +576,9 @@ contract AmmPool is IBlockReceiver, IAgent {
 
         // Check if the requirements are fulfilled
         bool valid = true;
-        uint[] memory amounts = new uint[](ctx.tokens.length);
+        uint96[] memory amounts = new uint96[](ctx.tokens.length);
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = ctx.ammBalances[i] * ratio / BASE;
+            amounts[i] = (ctx.ammBalances[i] * ratio / BASE).toUint96();
             if (poolTotal == 0) {
                 amounts[i] = join.maxAmountsIn[i];
             }
@@ -584,7 +589,7 @@ contract AmmPool is IBlockReceiver, IAgent {
 
         if (valid) {
             for (uint i = 0; i < ctx.tokens.length; i++) {
-                uint amount = amounts[i];
+                uint96 amount = amounts[i];
                 if (join.fromLayer2) {
                     TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                     require(transfer.from == join.owner, "INVALID_TX_DATA");
@@ -650,9 +655,9 @@ contract AmmPool is IBlockReceiver, IAgent {
 
         // Check if the requirements are fulfilled
         bool valid = availableBalance(address(this), exit.owner) >= exit.poolAmountIn;
-        uint[] memory amounts = new uint[](ctx.tokens.length);
+        uint96[] memory amounts = new uint96[](ctx.tokens.length);
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = ctx.ammBalances[i] * ratio / BASE;
+            amounts[i] = (ctx.ammBalances[i] * ratio / BASE).toUint96();
             if(amounts[i] < exit.minAmountsOut[i]) {
                 valid = false;
             }
@@ -660,7 +665,7 @@ contract AmmPool is IBlockReceiver, IAgent {
 
         if (valid) {
             for (uint i = 0; i < ctx.tokens.length; i++) {
-                uint amount = amounts[i];
+                uint96 amount = amounts[i];
                 if (exit.toLayer2) {
                     TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                     require(transfer.fromAccountID == accountID, "INVALID_TX_DATA");
@@ -704,7 +709,7 @@ contract AmmPool is IBlockReceiver, IAgent {
     function processDeposit(
         Context memory ctx,
         Token   memory token,
-        uint    amount
+        uint96  amount
         )
         internal
     {
@@ -833,8 +838,8 @@ contract AmmPool is IBlockReceiver, IAgent {
     }
 
     function isAlmostEqual(
-        uint amount,
-        uint targetAmount
+        uint96 amount,
+        uint96 targetAmount
         )
         internal
         pure
