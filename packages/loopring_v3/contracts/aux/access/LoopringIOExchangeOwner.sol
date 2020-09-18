@@ -35,7 +35,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     {
     }
 
-    function submitBlocksCompressedWithCallbacks(
+    function submitBlocksWithCallbacks(
         bool              isDataCompressed,
         bytes             calldata data,
         BlockCallback[]   calldata callbacks
