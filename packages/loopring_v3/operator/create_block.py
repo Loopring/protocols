@@ -121,6 +121,7 @@ def accountUpdateFromJSON(jUpdate):
     update.publicKeyY = str(jUpdate["publicKeyY"])
     update.feeTokenID = int(jUpdate["feeTokenID"])
     update.fee = str(jUpdate["fee"])
+    update.maxFee = str(jUpdate["maxFee"])
     update.type = int(jUpdate["type"])
     update.signature = None
     if "signature" in jUpdate:

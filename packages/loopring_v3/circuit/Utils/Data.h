@@ -91,6 +91,7 @@ static auto dummyAccountUpdate = R"({
     "publicKeyY": "0",
     "feeTokenID": 0,
     "fee": "0",
+    "maxFee": "0",
     "type": 0
 })"_json;
 
@@ -384,6 +385,7 @@ class AccountUpdateTx
     ethsnarks::FieldT publicKeyY;
     ethsnarks::FieldT feeTokenID;
     ethsnarks::FieldT fee;
+    ethsnarks::FieldT maxFee;
     ethsnarks::FieldT validUntil;
     ethsnarks::FieldT type;
 };
@@ -395,6 +397,7 @@ static void from_json(const json &j, AccountUpdateTx &update)
     update.publicKeyY = ethsnarks::FieldT(j["publicKeyY"].get<std::string>().c_str());
     update.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
     update.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
+    update.maxFee = ethsnarks::FieldT(j["maxFee"].get<std::string>().c_str());
     update.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     update.type = ethsnarks::FieldT(j.at("type"));
 }
