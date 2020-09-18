@@ -667,16 +667,21 @@ contract AmmPool is IBlockReceiver {
         // Now do this deposit
         uint ethValue = 0;
         if (token.addr == address(0)) {
-            ethValue = _deposit.amount;
+            ethValue = amount;
         } else {
             // Approve the deposit transfer
-            ERC20(token.addr).approve(address(exchange.getDepositContract()), _deposit.amount);
+            address depositContract = address(exchange.getDepositContract());
+            ERC20 tokenContract = ERC20(token.addr);
+            uint allowance = tokenContract.allowance(address(this), depositContract);
+            if (allowance < amount) {
+                tokenContract.approve(depositContract, ~uint(0));
+            }
         }
         exchange.deposit{value: ethValue}(
             _deposit.owner,
             _deposit.owner,
             token.addr,
-            uint96(_deposit.amount),
+            uint96(amount),
             new bytes(0)
         );
         ctx.numTransactionsConsumed++;
