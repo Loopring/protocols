@@ -31,11 +31,11 @@ contract AmmPool is IBlockReceiver {
     using SignatureUtil     for bytes32;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool fromLayer2,uint256 poolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs)"
+        "PoolJoin(address owner,bool fromLayer2,uint256 minLiquidityTokenToMint,uint256[] maxAmountsIn,uint32[] storageIDs)"
     );
 
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs)"
+        "PoolExit(address owner,bool toLayer2,uint256 maxLiquidityTokenToBurn,uint256[] minAmountsOut,uint32[] storageIDs)"
     );
 
     event Deposit(
@@ -50,14 +50,14 @@ contract AmmPool is IBlockReceiver {
 
     event JoinPoolRequested(
         address  owner,
-        uint     poolAmountOut,
+        uint     minLiquidityTokenToMint,
         uint96[] maxAmountsIn
     );
 
     event ExitPoolRequested(
         address  owner,
         bool     toLayer2,
-        uint     poolAmountIn,
+        uint     maxLiquidityTokenToBurn,
         uint96[] minAmountsOut
     );
 
@@ -90,7 +90,7 @@ contract AmmPool is IBlockReceiver {
     {
         address  owner;
         bool     fromLayer2;
-        uint     poolAmountOut;
+        uint     minLiquidityTokenToMint;
         uint96[] maxAmountsIn;
         uint32[] storageIDs;
     }
@@ -99,7 +99,7 @@ contract AmmPool is IBlockReceiver {
     {
         address  owner;
         bool     toLayer2;
-        uint     poolAmountIn;
+        uint     maxLiquidityTokenToBurn;
         uint96[] minAmountsOut;
         uint32[] storageIDs;
     }
@@ -271,12 +271,16 @@ contract AmmPool is IBlockReceiver {
         return shutdownTimestamp == 0;
     }
 
-
     /// @dev Joins the pool using on-chain funds.
-    /// @param poolAmountOut The number of liquidity tokens that need to be minted for this join.
+    /// @param minLiquidityTokenToMint The minimul number of liquidity tokens that is expected
+    ///                                to be minted for this join. If this requirement cannot be
+    ///                                met, this join should fail.
     /// @param maxAmountsIn The maximum amounts that can be used to mint
     ///                     the specified amount of liquidity tokens.
-    function joinPool(uint poolAmountOut, uint96[] calldata maxAmountsIn)
+    function joinPool(
+        uint              minLiquidityTokenToMint,
+        uint96[] calldata maxAmountsIn
+        )
         external
         online
     {
@@ -293,24 +297,30 @@ contract AmmPool is IBlockReceiver {
         PoolJoin memory join = PoolJoin({
             owner: msg.sender,
             fromLayer2: false,
-            poolAmountOut: poolAmountOut,
+            minLiquidityTokenToMint: minLiquidityTokenToMint,
             maxAmountsIn: maxAmountsIn,
             storageIDs: new uint32[](0)
         });
+
         queue.push(QueueItem({
             timestamp: uint64(block.timestamp),
             txType: PoolTransactionType.JOIN,
             txHash: hashPoolJoin(DOMAIN_SEPARATOR, join)
         }));
 
-        emit JoinPoolRequested(msg.sender, poolAmountOut, maxAmountsIn);
+        emit JoinPoolRequested(msg.sender, minLiquidityTokenToMint, maxAmountsIn);
     }
 
     /// @dev Joins the pool using on-chain funds.
-    /// @param poolAmountIn The number of liquidity tokens that will be burned.
+    /// @param maxLiquidityTokenToBurn The maximum number of liquidity tokens to burn. If
+    ///                                this requirement is not met, this exit should fail.
     /// @param minAmountsOut The minimum amounts that need to be withdrawn when burning
     ///                      the specified amount of liquidity tokens.
-    function exitPool(uint poolAmountIn, uint96[] calldata minAmountsOut, bool toLayer2)
+    function exitPool(
+        uint              maxLiquidityTokenToBurn,
+        uint96[] calldata minAmountsOut,
+        bool              toLayer2
+        )
         external
         online
     {
@@ -318,14 +328,14 @@ contract AmmPool is IBlockReceiver {
 
         // Lock liquidity token - Not needed now with non-transferable liquidity token
         //address token = address(this);
-        //require(availableBalance(token, msg.sender) >= poolAmountIn, "INSUFFICIENT_BALANCE");
-        //locked[token][msg.sender] = locked[token][msg.sender].add(poolAmountIn);
+        //require(availableBalance(token, msg.sender) >= maxLiquidityTokenToBurn, "INSUFFICIENT_BALANCE");
+        //locked[token][msg.sender] = locked[token][msg.sender].add(maxLiquidityTokenToBurn);
 
         // Queue the work
         PoolExit memory exit = PoolExit({
             owner: msg.sender,
             toLayer2: toLayer2,
-            poolAmountIn: poolAmountIn,
+            maxLiquidityTokenToBurn: maxLiquidityTokenToBurn,
             minAmountsOut: minAmountsOut,
             storageIDs: new uint32[](0)
         });
@@ -335,7 +345,7 @@ contract AmmPool is IBlockReceiver {
             txHash: hashPoolExit(DOMAIN_SEPARATOR, exit)
         }));
 
-        emit ExitPoolRequested(msg.sender, toLayer2, poolAmountIn, minAmountsOut);
+        emit ExitPoolRequested(msg.sender, toLayer2, maxLiquidityTokenToBurn, minAmountsOut);
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
@@ -365,7 +375,7 @@ contract AmmPool is IBlockReceiver {
 
     // Only used to withdraw from the pool when shutdown.
     // Otherwise LPs should withdraw by doing normal queued exit requests.
-    function withdrawFromPoolWhenShutdown(uint poolAmountIn)
+    function withdrawFromPoolWhenShutdown(uint maxLiquidityTokenToBurn)
         external
         offline
     {
@@ -402,12 +412,12 @@ contract AmmPool is IBlockReceiver {
             uint tokenBalance = contractBalance.sub(totalBalance[token]);
 
             // Withdraw the part owned
-            uint amount = poolAmountIn.mul(tokenBalance) / poolTotal;
+            uint amount = maxLiquidityTokenToBurn.mul(tokenBalance) / poolTotal;
             withdrawInternal(token, amount, msg.sender);
         }
 
         // Burn liquidity tokens
-        burn(msg.sender, poolAmountIn);
+        burn(msg.sender, maxLiquidityTokenToBurn);
     }
 
     // Processes work in the queue. Can only be called by the exchange owner
@@ -489,14 +499,16 @@ contract AmmPool is IBlockReceiver {
         internal
     {
         poolSupply = poolSupply.add(amount);
-        balance[address(this)][owner] = balance[address(this)][owner].add(amount);
+        address liqudityToken = address(this);
+        balance[liqudityToken][owner] = balance[liqudityToken][owner].add(amount);
     }
 
     function burn(address owner, uint amount)
         internal
     {
         poolSupply = poolSupply.sub(amount);
-        balance[address(this)][owner] = balance[address(this)][owner].sub(amount);
+        address liqudityToken = address(this);
+        balance[liqudityToken][owner] = balance[liqudityToken][owner].sub(amount);
     }
 
     function processAmmUpdates(
@@ -548,10 +560,10 @@ contract AmmPool is IBlockReceiver {
         uint poolTotal = totalSupply();
         uint ratio = BASE;
         if (poolTotal > 0) {
-            ratio = (join.poolAmountOut * BASE) / poolTotal;
+            ratio = (join.minLiquidityTokenToMint * BASE) / poolTotal;
         } else {
             // Important for accuracy
-            require(join.poolAmountOut == INITIAL_SUPPLY, "INITIAL_SUPPLY_UNEXPECTED");
+            require(join.minLiquidityTokenToMint == INITIAL_SUPPLY, "INITIAL_SUPPLY_UNEXPECTED");
         }
 
         // Check if the requirements are fulfilled
@@ -601,7 +613,7 @@ contract AmmPool is IBlockReceiver {
             }
 
             // Mint liquidity tokens
-            mint(join.owner, join.poolAmountOut);
+            mint(join.owner, join.minLiquidityTokenToMint);
         }
 
         if (!join.fromLayer2) {
@@ -631,10 +643,10 @@ contract AmmPool is IBlockReceiver {
         }
 
         uint poolTotal = totalSupply();
-        uint ratio = (exit.poolAmountIn * BASE) / poolTotal;
+        uint ratio = (exit.maxLiquidityTokenToBurn * BASE) / poolTotal;
 
         // Check if the requirements are fulfilled
-        bool valid = availableBalance(address(this), exit.owner) >= exit.poolAmountIn;
+        bool valid = availableBalance(address(this), exit.owner) >= exit.maxLiquidityTokenToBurn;
         uint[] memory amounts = new uint[](ctx.tokens.length);
         for (uint i = 0; i < ctx.tokens.length; i++) {
             amounts[i] = ctx.ammBalances[i] * ratio / BASE;
@@ -675,14 +687,14 @@ contract AmmPool is IBlockReceiver {
             }
 
             // Burn liquidity tokens
-            burn(exit.owner, exit.poolAmountIn);
+            burn(exit.owner, exit.maxLiquidityTokenToBurn);
         }
 
         // Not needed now with non-transferable liquidity token
         // if (signature.length == 0) {
         //     // Unlock the amount of liquidity tokens locked for this exit
         //     address token = address(this);
-        //     locked[token][exit.owner] = locked[token][exit.owner].sub(exit.poolAmountIn);
+        //     locked[token][exit.owner] = locked[token][exit.owner].sub(exit.maxLiquidityTokenToBurn);
         // }
     }
 
@@ -784,7 +796,7 @@ contract AmmPool is IBlockReceiver {
                     POOLJOIN_TYPEHASH,
                     join.owner,
                     join.fromLayer2,
-                    join.poolAmountOut,
+                    join.minLiquidityTokenToMint,
                     keccak256(abi.encodePacked(join.maxAmountsIn)),
                     keccak256(abi.encodePacked(join.storageIDs))
                 )
@@ -807,7 +819,7 @@ contract AmmPool is IBlockReceiver {
                     POOLEXIT_TYPEHASH,
                     exit.owner,
                     exit.toLayer2,
-                    exit.poolAmountIn,
+                    exit.maxLiquidityTokenToBurn,
                     keccak256(abi.encodePacked(exit.minAmountsOut)),
                     keccak256(abi.encodePacked(exit.storageIDs))
                 )
