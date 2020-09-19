@@ -63,14 +63,14 @@ abstract contract IExchangeV3 is IExchange
         address from,
         address to,
         address token,
-        uint96  amount
+        uint    amount
     );
 
     event WithdrawalFailed(
         address from,
         address to,
         address token,
-        uint96  amount
+        uint    amount
     );
 
     event ProtocolFeesUpdated(

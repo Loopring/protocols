@@ -31,9 +31,9 @@ library TransferTransaction
         address from;
         address to;
         uint16  tokenID;
-        uint    amount;
+        uint96  amount;
         uint16  feeTokenID;
-        uint    fee;
+        uint96  fee;
         uint32  validUntil;
         uint32  storageID;
     }

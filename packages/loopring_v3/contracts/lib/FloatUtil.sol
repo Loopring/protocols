@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 
 import "./MathUint.sol";
+import "../thirdparty/SafeCast.sol";
 
 
 /// @title Utility Functions for floats
@@ -10,6 +11,7 @@ import "./MathUint.sol";
 library FloatUtil
 {
     using MathUint for uint;
+    using SafeCast for uint;
 
     // Decodes a decimal float value that is encoded like `exponent | mantissa`.
     // Both exponent and mantissa are in base 10.
@@ -24,14 +26,13 @@ library FloatUtil
         )
         internal
         pure
-        returns (uint value)
+        returns (uint96 value)
     {
         uint numBitsMantissa = numBits.sub(5);
         uint exponent = f >> numBitsMantissa;
         // log2(10**77) = 255.79 < 256
         require(exponent <= 77, "EXPONENT_TOO_LARGE");
         uint mantissa = f & ((1 << numBitsMantissa) - 1);
-        value = mantissa.mul(10 ** exponent);
-        require(value < (2 ** 96), "FLOAT_VALUE_TOO_LARGE");
+        value = mantissa.mul(10 ** exponent).toUint96();
     }
 }
