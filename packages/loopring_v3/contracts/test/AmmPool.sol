@@ -135,8 +135,8 @@ contract AmmPool is IBlockReceiver, IAgent {
         uint     txIdx;
         bytes32  DOMAIN_SEPARATOR;
         bytes32  exchangeDomainSeparator;
-        uint96[] ammBalancesInAccount;
-        uint96[] ammBalances;
+        uint96[] ammBalancesBefore;
+        uint96[] ammBalancesAfter;
         uint     numTransactionsConsumed;
         Token[]  tokens;
     }
@@ -454,8 +454,8 @@ contract AmmPool is IBlockReceiver, IAgent {
             txIdx: txIdx,
             DOMAIN_SEPARATOR: DOMAIN_SEPARATOR,
             exchangeDomainSeparator: exchange.getDomainSeparator(),
-            ammBalancesInAccount: new uint96[](tokens.length),
-            ammBalances: new uint96[](tokens.length),
+            ammBalancesBefore: new uint96[](tokens.length),
+            ammBalancesAfter: new uint96[](tokens.length),
             numTransactionsConsumed: 0,
             tokens: tokens
         });
@@ -481,11 +481,11 @@ contract AmmPool is IBlockReceiver, IAgent {
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            if (ctx.ammBalances[i] > ctx.ammBalancesInAccount[i]) {
-                uint96 amount = ctx.ammBalances[i].sub(ctx.ammBalancesInAccount[i]);
+            if (ctx.ammBalancesAfter[i] > ctx.ammBalancesBefore[i]) {
+                uint96 amount = ctx.ammBalancesAfter[i] - ctx.ammBalancesBefore[i];
                 processDeposit(ctx, ctx.tokens[i], amount);
-            } else if (ctx.ammBalancesInAccount[i] > ctx.ammBalances[i]) {
-                uint96 amount = ctx.ammBalancesInAccount[i].sub(ctx.ammBalances[i]);
+            } else if (ctx.ammBalancesBefore[i] > ctx.ammBalancesAfter[i]) {
+                uint96 amount = ctx.ammBalancesBefore[i] - ctx.ammBalancesAfter[i];
                 processWithdrawal(ctx, ctx.tokens[i], amount);
             }
         }
@@ -540,10 +540,10 @@ contract AmmPool is IBlockReceiver, IAgent {
             ctx.numTransactionsConsumed++;
             if (start) {
                 // AMM account balance now available onchain
-                ctx.ammBalancesInAccount[i] = update.balance;
-                ctx.ammBalances[i] = ctx.ammBalancesInAccount[i];
+                ctx.ammBalancesBefore[i] = update.balance;
+                ctx.ammBalancesAfter[i] = update.balance;
             } else {
-                require(ctx.ammBalances[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
+                require(ctx.ammBalancesAfter[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
             }
         }
     }
@@ -577,17 +577,7 @@ contract AmmPool is IBlockReceiver, IAgent {
         }
 
         // Check if the requirements are fulfilled
-        bool valid = true;
-        uint96[] memory amounts = new uint96[](ctx.tokens.length);
-        for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = (ctx.ammBalances[i] * ratio / BASE).toUint96();
-            if (poolTotal == 0) {
-                amounts[i] = join.maxAmountsIn[i];
-            }
-            if(amounts[i] > join.maxAmountsIn[i]) {
-                valid = false;
-            }
-        }
+        (bool valid, uint96[] memory amounts) = validateJoinAmounts(ctx, join);
 
         if (valid) {
             for (uint i = 0; i < ctx.tokens.length; i++) {
@@ -612,13 +602,13 @@ contract AmmPool is IBlockReceiver, IAgent {
                     // Update the amount to the actual amount transferred (which can have some some small rounding errors)
                     amount = transfer.amount;
                     // Update the balances in the account
-                    ctx.ammBalancesInAccount[i] = ctx.ammBalancesInAccount[i].add(amount);
+                    ctx.ammBalancesBefore[i] = ctx.ammBalancesBefore[i].add(amount);
                 } else {
                     // Make the amount unavailable for withdrawing
                     address token = ctx.tokens[i].addr;
                     balance[token][join.owner] = balance[token][join.owner].sub(amount);
                 }
-                ctx.ammBalances[i] = ctx.ammBalances[i].add(amount);
+                ctx.ammBalancesAfter[i] = ctx.ammBalancesAfter[i].add(amount);
             }
 
             // Mint liquidity tokens
@@ -635,6 +625,41 @@ contract AmmPool is IBlockReceiver, IAgent {
         }
     }
 
+    function validateJoinAmounts(
+        Context  memory ctx,
+        PoolJoin memory join
+        )
+        internal
+        view
+        returns(
+            bool /* valid */,
+            uint96[] memory /* amounts */
+        )
+    {
+        uint96[] memory amounts = new uint96[](ctx.tokens.length);
+        uint poolTotal = totalSupply();
+        uint ratio;
+        if (poolTotal > 0) {
+            ratio = join.poolAmountOut.mul(BASE) / poolTotal;
+        } else if (join.poolAmountOut != INITIAL_SUPPLY) {
+            return (false, amounts);
+        } else {
+            ratio = BASE;
+        }
+
+        // Check if the requirements are fulfilled
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            amounts[i] = (poolTotal == 0) ?
+                join.maxAmountsIn[i] :
+                (ratio.mul(ctx.ammBalancesAfter[i]) / BASE).toUint96();
+
+            if (amounts[i] > join.maxAmountsIn[i]) {
+                return (false, amounts);
+            }
+        }
+        return (true, amounts);
+    }
+
     function processExit(
         Context  memory ctx,
         PoolExit memory exit,
@@ -648,20 +673,11 @@ contract AmmPool is IBlockReceiver, IAgent {
             signature
         );
 
-        uint poolTotal = totalSupply();
-        uint ratio = (exit.poolAmountIn * BASE) / poolTotal;
-
-        // Check if the requirements are fulfilled
-        bool valid = availableBalance(address(this), exit.owner) >= exit.poolAmountIn;
-        uint96[] memory amounts = new uint96[](ctx.tokens.length);
-        for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = (ctx.ammBalances[i] * ratio / BASE).toUint96();
-            if(amounts[i] < exit.minAmountsOut[i]) {
-                valid = false;
-            }
-        }
+        (bool valid, uint96[] memory amounts) = validateExitAmounts(ctx, exit);
 
         if (valid) {
+            burn(exit.owner, exit.poolAmountIn);
+
             for (uint i = 0; i < ctx.tokens.length; i++) {
                 uint96 amount = amounts[i];
                 if (exit.toLayer2) {
@@ -686,16 +702,42 @@ contract AmmPool is IBlockReceiver, IAgent {
                     // Update the amount to the actual amount transferred (which can have some some small rounding errors)
                     amount = transfer.amount;
                     // Update the balances in the account
-                    ctx.ammBalancesInAccount[i] = ctx.ammBalancesInAccount[i].sub(amount);
+                    ctx.ammBalancesBefore[i] = ctx.ammBalancesBefore[i].sub(amount);
                 } else {
+                    address token = ctx.tokens[i].addr;
                     // Make the amount available for withdrawing
-                    balance[ctx.tokens[i].addr][exit.owner] = balance[ctx.tokens[i].addr][exit.owner].add(amount);
+                    balance[token][exit.owner] = balance[token][exit.owner].add(amount);
                 }
-                ctx.ammBalances[i] = ctx.ammBalances[i].sub(amount);
+                ctx.ammBalancesAfter[i] = ctx.ammBalancesAfter[i].sub(amount);
             }
+        }
+    }
 
-            // Burn liquidity tokens
-            burn(exit.owner, exit.poolAmountIn);
+    function validateExitAmounts(
+        Context  memory ctx,
+        PoolExit memory exit
+        )
+        internal
+        view
+        returns(
+            bool /* valid */,
+            uint96[] memory /* amounts */
+        )
+    {
+        uint96[] memory amounts = new uint96[](ctx.tokens.length);
+        uint poolTotal = totalSupply();
+        uint ratio = exit.poolAmountIn.mul(BASE) / poolTotal;
+
+        // Check if the user has enough pool tokens
+        if (availableBalance(address(this), exit.owner) < exit.poolAmountIn) {
+            return (false, amounts);
+        }
+
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            amounts[i] = (ratio.mul(ctx.ammBalancesAfter[i]) / BASE).toUint96();
+            if (amounts[i] < exit.minAmountsOut[i]) {
+                return (false, amounts);
+            }
         }
     }
 
