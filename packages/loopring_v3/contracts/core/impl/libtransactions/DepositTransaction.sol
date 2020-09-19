@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../../lib/EIP712.sol";
-import "../../../lib/MathUint.sol";
+import "../../../lib/MathUint96.sol";
 import "../../../lib/SignatureUtil.sol";
 import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
@@ -14,15 +14,15 @@ import "../../iface/ExchangeData.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library DepositTransaction
 {
-    using BytesUtil for bytes;
-    using MathUint  for uint;
+    using BytesUtil   for bytes;
+    using MathUint96  for uint96;
 
     struct Deposit
     {
         address owner;
         uint32  accountID;
         uint16  tokenID;
-        uint    amount;
+        uint96  amount;
     }
 
     /*event DepositProcessed(
@@ -55,7 +55,7 @@ library DepositTransaction
         // Also note the original deposit.amount can be zero!
         if (deposit.amount > 0) {
             require(pendingDeposit.amount >= deposit.amount, "INVALID_AMOUNT");
-            pendingDeposit.amount = uint96(uint(pendingDeposit.amount).sub(deposit.amount));
+            pendingDeposit.amount = pendingDeposit.amount.sub(deposit.amount);
         }
 
         // If the deposit was fully consumed, reset it so the storage is freed up

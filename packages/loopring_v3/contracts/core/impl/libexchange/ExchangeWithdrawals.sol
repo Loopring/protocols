@@ -34,14 +34,14 @@ library ExchangeWithdrawals
         address from,
         address to,
         address token,
-        uint96  amount
+        uint    amount
     );
 
     event WithdrawalFailed(
         address from,
         address to,
         address token,
-        uint96  amount
+        uint    amount
     );
 
     function forceWithdraw(
@@ -262,7 +262,7 @@ library ExchangeWithdrawals
                 from,
                 to,
                 token,
-                uint96(amount)
+                amount
             );
             if (from == address(0)) {
                 S.protocolFeeLastWithdrawnTime[token] = block.timestamp;
@@ -272,7 +272,7 @@ library ExchangeWithdrawals
                 from,
                 to,
                 token,
-                uint96(amount)
+                amount
             );
         }
     }

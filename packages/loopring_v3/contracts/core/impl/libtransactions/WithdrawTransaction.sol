@@ -42,9 +42,9 @@ library WithdrawTransaction
         address owner;
         uint32  accountID;
         uint16  tokenID;
-        uint    amount;
+        uint96  amount;
         uint16  feeTokenID;
-        uint    fee;
+        uint96  fee;
         address to;
         bytes   extraData;
         uint    minGas;
