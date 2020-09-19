@@ -555,15 +555,27 @@ contract AmmPool is IBlockReceiver, IAgent {
         )
         internal
     {
-        bytes32 poolTxHash = hashPoolJoin(ctx.DOMAIN_SEPARATOR, join);
-        if (signature.length == 0) {
-            require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
-            delete queue[queuePos];
-            queuePos++;
+        require(
+            signature.length == 0 && !join.fromLayer2 ||
+            signature.length != 0 && join.fromLayer2,
+            "SIGNATURE_VS_FROM_LAYER2"
+        );
+
+        authenticatePoolTx(
+            join.owner,
+            hashPoolJoin(ctx.DOMAIN_SEPARATOR, join),
+            signature
+        );
+
+        uint poolTotal = totalSupply();
+        uint ratio = BASE;
+        if (poolTotal > 0) {
+            ratio = (join.poolAmountOut * BASE) / poolTotal;
         } else {
-            require(poolTxHash.verifySignature(join.owner, signature), "INVALID_SIGNATURE");
-            require(join.fromLayer2, "INVALID_DATA");
+            // Important for accuracy
+            require(join.poolAmountOut == INITIAL_SUPPLY, "INITIAL_SUPPLY_UNEXPECTED");
         }
+
         // Check if the requirements are fulfilled
         (bool valid, uint96[] memory amounts) = validateJoinAmounts(ctx, join);
 
@@ -577,16 +589,15 @@ contract AmmPool is IBlockReceiver, IAgent {
                     require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
                     require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
                     require(transfer.fee == 0, "INVALID_TX_DATA");
+
                     // Replay protection (only necessary when using a signature)
-                    if (signature.length != 0) {
-                        require(transfer.storageID == join.storageIDs[i], "INVALID_TX_DATA");
-                    }
-                    if (signature.length != 0) {
-                        // Now approve this transfer
-                        transfer.validUntil = 0xffffffff;
-                        bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-                        exchange.approveTransaction(join.owner, txHash);
-                    }
+                    require(transfer.storageID == join.storageIDs[i], "INVALID_TX_DATA");
+
+                    // Now approve this transfer
+                    transfer.validUntil = 0xffffffff;
+                    bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+                    exchange.approveTransaction(join.owner, txHash);
+
                     ctx.numTransactionsConsumed++;
                     // Update the amount to the actual amount transferred (which can have some some small rounding errors)
                     amount = transfer.amount;
@@ -656,14 +667,11 @@ contract AmmPool is IBlockReceiver, IAgent {
         )
         internal
     {
-        bytes32 poolTxHash = hashPoolExit(ctx.DOMAIN_SEPARATOR, exit);
-        if (signature.length == 0) {
-            require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
-            delete queue[queuePos];
-            queuePos++;
-        } else {
-            require(poolTxHash.verifySignature(exit.owner, signature), "INVALID_SIGNATURE");
-        }
+        authenticatePoolTx(
+            exit.owner,
+            hashPoolExit(ctx.DOMAIN_SEPARATOR, exit),
+            signature
+        );
 
         (bool valid, uint96[] memory amounts) = validateExitAmounts(ctx, exit);
 
@@ -680,10 +688,12 @@ contract AmmPool is IBlockReceiver, IAgent {
                     require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
                     require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
                     require(transfer.fee == 0, "INVALID_TX_DATA");
-                    // Replay protection (only necessary when using a signature)
+
                     if (signature.length != 0) {
+                        // Replay protection (only necessary when using a signature)
                         require(transfer.storageID == exit.storageIDs[i], "INVALID_TX_DATA");
                     }
+
                     // Now approve this transfer
                     transfer.validUntil = 0xffffffff;
                     bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
@@ -729,8 +739,22 @@ contract AmmPool is IBlockReceiver, IAgent {
                 return (false, amounts);
             }
         }
+    }
 
-        return (true, amounts);
+    function authenticatePoolTx(
+        address owner,
+        bytes32 poolTxHash,
+        bytes   memory signature
+        )
+        internal
+    {
+        if (signature.length == 0) {
+            require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
+            delete queue[queuePos];
+            queuePos++;
+        } else {
+            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
+        }
     }
 
     function processDeposit(
