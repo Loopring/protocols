@@ -131,8 +131,8 @@ contract AmmPool is IBlockReceiver {
         uint    txIdx;
         bytes32 DOMAIN_SEPARATOR;
         bytes32 exchangeDomainSeparator;
-        uint[]  ammBalancesInAccount;
-        uint[]  ammBalances;
+        uint[]  ammStartBalances;
+        uint[]  ammEndBalances;
         uint    numTransactionsConsumed;
         Token[] tokens;
     }
@@ -444,8 +444,8 @@ contract AmmPool is IBlockReceiver {
             txIdx: txIdx,
             DOMAIN_SEPARATOR: DOMAIN_SEPARATOR,
             exchangeDomainSeparator: exchange.getDomainSeparator(),
-            ammBalancesInAccount: new uint[](tokens.length),
-            ammBalances: new uint[](tokens.length),
+            ammStartBalances: new uint[](tokens.length),
+            ammEndBalances: new uint[](tokens.length),
             numTransactionsConsumed: 0,
             tokens: tokens
         });
@@ -471,11 +471,11 @@ contract AmmPool is IBlockReceiver {
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            if (ctx.ammBalances[i] > ctx.ammBalancesInAccount[i]) {
-                uint amount = ctx.ammBalances[i] - ctx.ammBalancesInAccount[i];
+            if (ctx.ammEndBalances[i] > ctx.ammStartBalances[i]) {
+                uint amount = ctx.ammEndBalances[i] - ctx.ammStartBalances[i];
                 processDeposit(ctx, ctx.tokens[i], amount);
-            } else if (ctx.ammBalancesInAccount[i] > ctx.ammBalances[i]) {
-                uint amount = ctx.ammBalancesInAccount[i] - ctx.ammBalances[i];
+            } else if (ctx.ammStartBalances[i] > ctx.ammEndBalances[i]) {
+                uint amount = ctx.ammStartBalances[i] - ctx.ammEndBalances[i];
                 processWithdrawal(ctx, ctx.tokens[i], amount);
             }
         }
@@ -532,10 +532,10 @@ contract AmmPool is IBlockReceiver {
             ctx.numTransactionsConsumed++;
             if (start) {
                 // AMM account balance now available onchain
-                ctx.ammBalancesInAccount[i] = update.balance;
-                ctx.ammBalances[i] = ctx.ammBalancesInAccount[i];
+                ctx.ammStartBalances[i] = update.balance;
+                ctx.ammEndBalances[i] = update.balance;
             } else {
-                require(ctx.ammBalances[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
+                require(ctx.ammEndBalances[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
             }
         }
     }
@@ -570,7 +570,7 @@ contract AmmPool is IBlockReceiver {
         bool valid = true;
         uint[] memory amounts = new uint[](ctx.tokens.length);
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = ctx.ammBalances[i] * ratio / BASE;
+            amounts[i] = ctx.ammEndBalances[i] * ratio / BASE;
             if (poolTotal == 0) {
                 amounts[i] = join.maxAmountsIn[i];
             }
@@ -603,13 +603,13 @@ contract AmmPool is IBlockReceiver {
                     // Update the amount to the actual amount transferred (which can have some some small rounding errors)
                     amount = transfer.amount;
                     // Update the balances in the account
-                    ctx.ammBalancesInAccount[i] = ctx.ammBalancesInAccount[i].add(amount);
+                    ctx.ammStartBalances[i] = ctx.ammStartBalances[i].add(amount);
                 } else {
                     // Make the amount unavailable for withdrawing
                     address token = ctx.tokens[i].addr;
                     balance[token][join.owner] = balance[token][join.owner].sub(amount);
                 }
-                ctx.ammBalances[i] = ctx.ammBalances[i].add(amount);
+                ctx.ammEndBalances[i] = ctx.ammEndBalances[i].add(amount);
             }
 
             // Mint liquidity tokens
@@ -649,7 +649,7 @@ contract AmmPool is IBlockReceiver {
         bool valid = availableBalance(address(this), exit.owner) >= exit.maxLiquidityTokenToBurn;
         uint[] memory amounts = new uint[](ctx.tokens.length);
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = ctx.ammBalances[i] * ratio / BASE;
+            amounts[i] = ctx.ammEndBalances[i] * ratio / BASE;
             if(amounts[i] < exit.minAmountsOut[i]) {
                 valid = false;
             }
@@ -678,12 +678,12 @@ contract AmmPool is IBlockReceiver {
                     // Update the amount to the actual amount transferred (which can have some some small rounding errors)
                     amount = transfer.amount;
                     // Update the balances in the account
-                    ctx.ammBalancesInAccount[i] = ctx.ammBalancesInAccount[i].sub(amount);
+                    ctx.ammStartBalances[i] = ctx.ammStartBalances[i].sub(amount);
                 } else {
                     // Make the amount available for withdrawing
                     balance[ctx.tokens[i].addr][exit.owner] = balance[ctx.tokens[i].addr][exit.owner].add(amount);
                 }
-                ctx.ammBalances[i] = ctx.ammBalances[i].sub(amount);
+                ctx.ammEndBalances[i] = ctx.ammEndBalances[i].sub(amount);
             }
 
             // Burn liquidity tokens
