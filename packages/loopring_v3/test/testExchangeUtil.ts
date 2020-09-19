@@ -124,6 +124,7 @@ export interface WithdrawOptions {
 export interface AccountUpdateOptions {
   authMethod?: AuthMethod;
   validUntil?: number;
+  maxFee?: BN;
 }
 
 export interface AmmUpdateOptions {
@@ -209,7 +210,7 @@ export namespace AccountUpdateUtils {
       update.exchange,
       update.accountID,
       update.feeTokenID,
-      update.fee,
+      update.maxFee,
       update.publicKeyX,
       update.publicKeyY,
       update.validUntil,
@@ -1388,6 +1389,7 @@ export class ExchangeTestUtil {
       options.authMethod !== undefined ? options.authMethod : AuthMethod.EDDSA;
     const validUntil =
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+    const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
 
     // Type
     let type = 0;
@@ -1413,7 +1415,8 @@ export class ExchangeTestUtil {
       publicKeyX: keyPair.publicKeyX,
       publicKeyY: keyPair.publicKeyY,
       feeTokenID,
-      fee
+      fee,
+      maxFee
     };
 
     // Sign the public key update

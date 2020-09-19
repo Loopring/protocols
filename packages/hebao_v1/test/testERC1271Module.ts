@@ -17,10 +17,15 @@ contract("ERC1271Module", () => {
   let ctx: Context;
 
   const MAGICVALUE = "0x20c13b0b";
+  const MAGICVALUE_B32 = "0x1626ba7e";
   const FAILEDVALUE = "0x00000000";
 
   before(async () => {
     defaultCtx = await getContext();
+    ctx = await createContext(defaultCtx);
+  });
+
+  beforeEach(async () => {
     ctx = await createContext(defaultCtx);
   });
 
@@ -33,10 +38,10 @@ contract("ERC1271Module", () => {
 
       // convert wallet to a ERC1271 module then it can invoke the isValidSignature method
       const walletContract = await ctx.contracts.FinalCoreModule.at(wallet);
-      const isValid = await walletContract.contract.methods
-        .isValidSignature(hash, sig)
-        .call();
-      assert.equal(MAGICVALUE, isValid, "signature verify failed.");
+      const isValid = await walletContract.contract.methods[
+        "isValidSignature(bytes32,bytes)"
+      ](hash, sig).call();
+      assert.equal(MAGICVALUE_B32, isValid, "signature verify failed.");
     });
 
     it("should not able to verify a signature when wallet is locked", async () => {
@@ -45,9 +50,7 @@ contract("ERC1271Module", () => {
       const hash = ethUtil.keccak("1234");
       const sig = sign(owner, hash);
 
-      const defaultLockPeriod = (
-        await ctx.controllerImpl.defaultLockPeriod()
-      ).toNumber();
+      const defaultLockPeriod = (await ctx.controllerImpl.defaultLockPeriod()).toNumber();
 
       const walletContract = await ctx.contracts.FinalCoreModule.at(wallet);
 
@@ -61,9 +64,9 @@ contract("ERC1271Module", () => {
         await ctx.finalSecurityModule.isLocked(wallet),
         "wallet needs to be locked"
       );
-      const isValidBefore = await walletContract.contract.methods
-        .isValidSignature(hash, sig)
-        .call();
+      const isValidBefore = await walletContract.contract.methods[
+        "isValidSignature(bytes32,bytes)"
+      ](hash, sig).call();
       assert.equal(
         FAILEDVALUE,
         isValidBefore,
@@ -74,10 +77,10 @@ contract("ERC1271Module", () => {
       await advanceTimeAndBlockAsync(defaultLockPeriod);
 
       // verify agian:
-      const isValidAfter = await walletContract.contract.methods
-        .isValidSignature(hash, sig)
-        .call();
-      assert.equal(MAGICVALUE, isValidAfter, "signature verify failed.");
+      const isValidAfter = await walletContract.contract.methods[
+        "isValidSignature(bytes32,bytes)"
+      ](hash, sig).call();
+      assert.equal(MAGICVALUE_B32, isValidAfter, "signature verify failed.");
     });
   });
 });

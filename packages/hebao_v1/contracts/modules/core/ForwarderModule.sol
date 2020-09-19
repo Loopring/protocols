@@ -221,7 +221,7 @@ abstract contract ForwarderModule is BaseModule
 
         // Check the wallet has enough meta tx gas
         if (metaTx.gasPrice > 0) {
-            uint gasCost = gasLimit.mul(metaTx.gasPrice);
+            uint gasCost = metaTx.gasLimit.mul(metaTx.gasPrice);
 
             if (metaTx.gasToken == address(0)) {
                 require(

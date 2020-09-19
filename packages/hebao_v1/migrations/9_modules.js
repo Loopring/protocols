@@ -7,10 +7,15 @@ const BaseENSManager = artifacts.require("BaseENSManager");
 const ControllerImpl = artifacts.require("ControllerImpl");
 const WalletImpl = artifacts.require("WalletImpl");
 
+const OfficialGuardian = artifacts.require("OfficialGuardian");
+
 const WalletFactory = artifacts.require("WalletFactory");
 const FinalCoreModule = artifacts.require("FinalCoreModule");
 const FinalSecurityModule = artifacts.require("FinalSecurityModule");
 const FinalTransferModule = artifacts.require("FinalTransferModule");
+const AddOfficialGuardianModule = artifacts.require(
+  "AddOfficialGuardianModule"
+);
 
 module.exports = function(deployer, network, accounts) {
   const guardianPendingPeriod =
@@ -26,22 +31,36 @@ module.exports = function(deployer, network, accounts) {
   const ensManagerAddr = process.env.ENSManager || "";
 
   deployer.then(async () => {
+    await deployer.deploy(OfficialGuardian);
+
     const dest = [FinalCoreModule, FinalSecurityModule, FinalTransferModule];
     await deployer.link(SignedRequest, dest);
-    await deployer.deploy(FinalCoreModule, ControllerImpl.address);
+    await deployer.deploy(FinalCoreModule, ControllerImpl.address, {
+      gas: 6700000
+    });
     await deployer.deploy(
       FinalSecurityModule,
       ControllerImpl.address,
       FinalCoreModule.address,
       guardianPendingPeriod,
       inheritanceWaitingPeriod,
-      whitelistDelayPeriod
+      whitelistDelayPeriod,
+      { gas: 6700000 }
     );
     await deployer.deploy(
       FinalTransferModule,
       ControllerImpl.address,
       FinalCoreModule.address,
-      quotaDelayPeriod
+      quotaDelayPeriod,
+      { gas: 6700000 }
+    );
+
+    await deployer.deploy(
+      AddOfficialGuardianModule,
+      ControllerImpl.address,
+      OfficialGuardian.address,
+      11,
+      { gas: 6700000 }
     );
 
     const moduleRegistry = await ModuleRegistryImpl.deployed();

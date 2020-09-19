@@ -12,7 +12,7 @@ FLATTER_COMMAND="../node_modules/.bin/truffle-flattener"
 SPDX_FILTER="SPDX-License-Identifier"
 SPDX_LINE="// SPDX-License-Identifier: Apache-2.0"
 PRAGMA_SOL_FILTER="pragma solidity"
-PRAGMA_SOL_LINE="pragma solidity ^0.6.10;"
+PRAGMA_SOL_LINE="pragma solidity ^0.7.0;"
 PRAGMA_EXPR_FILTER="pragma experimental"
 PRAGMA_EXPR_LINE="pragma experimental ABIEncoderV2;"
 
