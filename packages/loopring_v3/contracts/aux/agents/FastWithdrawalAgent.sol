@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../core/iface/IAgentRegistry.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../lib/Claimable.sol";
 import "../../lib/EIP712.sol";
@@ -40,7 +41,7 @@ import "../../lib/SignatureUtil.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-contract FastWithdrawalAgent is ReentrancyGuard
+contract FastWithdrawalAgent is ReentrancyGuard, IAgent
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;

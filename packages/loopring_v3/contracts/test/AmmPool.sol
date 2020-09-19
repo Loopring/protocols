@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../aux/access/IBlockReceiver.sol";
 import "../aux/transactions/TransactionReader.sol";
 import "../thirdparty/BytesUtil.sol";
+import "../core/iface/IAgentRegistry.sol";
 import "../core/iface/IExchangeV3.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20.sol";
@@ -20,7 +21,7 @@ import "../core/impl/libtransactions/WithdrawTransaction.sol";
 /// @title AmmPool
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Incomplete AMM pool implementation for demo/testing purposes.
-contract AmmPool is IBlockReceiver {
+contract AmmPool is IBlockReceiver, IAgent {
 
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -65,9 +66,7 @@ contract AmmPool is IBlockReceiver {
         uint pos
     );
 
-    uint public constant MAX_UINT = ~uint(0);
-
-    uint public constant BASE = 10**18;
+    uint public constant BASE = 10 ** 18;
     uint public constant INITIAL_SUPPLY = 100 * BASE;
 
     uint public constant MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN = 7 days;
@@ -189,13 +188,19 @@ contract AmmPool is IBlockReceiver {
         exchange = _exchange;
         accountID = _accountID;
         feeBips = _feeBips;
+
+        address depositContract = address(exchange.getDepositContract());
+
         for (uint i = 0; i < _tokens.length; i++) {
-            uint16 tokenID = exchange.getTokenID(_tokens[i]);
+            address token = _tokens[i];
+            uint16 tokenID = exchange.getTokenID(token);
             tokens.push(Token({
-                addr: _tokens[i],
+                addr: token,
                 tokenID: tokenID,
                 weight: _weights[i]
             }));
+
+            ERC20(token).approve(depositContract, ~uint(0));
         }
     }
 
@@ -231,6 +236,7 @@ contract AmmPool is IBlockReceiver {
         // Withdraw any outstanding balances for the pool account on the exchange
         address[] memory owners = new address[](tokens.length);
         address[] memory tokenAddresses = new address[](tokens.length);
+
         for (uint i = 0; i < tokens.length; i++) {
             owners[i] = address(this);
             tokenAddresses[i] = tokens[i].addr;
@@ -238,14 +244,22 @@ contract AmmPool is IBlockReceiver {
         exchange.withdrawFromApprovedWithdrawals(owners, tokenAddresses);
 
         // Withdraw
+        uint96[] memory withdrawn = new uint96[](tokens.length);
         for (uint i = 0; i < tokens.length; i++) {
             address token = tokens[i].addr;
-            require(availableBalance(token, msg.sender) >= amounts[i], "INSUFFICIENT_BALANCE");
-            balance[token][msg.sender] = balance[token][msg.sender].sub(amounts[i]);
-            withdrawInternal(token, amounts[i], msg.sender);
+            uint available = availableBalance(token, msg.sender);
+            if (amounts[i] == 0 || amounts[i] > available) {
+                withdrawn[i] = uint96(available);
+            } else {
+                withdrawn[i] = amounts[i];
+            }
+            if (withdrawn[i] > 0) {
+                balance[token][msg.sender] = balance[token][msg.sender].sub(withdrawn[i]);
+                withdrawInternal(token, withdrawn[i], msg.sender);
+            }
         }
 
-        emit Withdrawal(msg.sender, amounts);
+        emit Withdrawal(msg.sender, withdrawn);
     }
 
     // Needs to be able to receive ETH from the exchange contract
@@ -379,7 +393,8 @@ contract AmmPool is IBlockReceiver {
         external
         offline
     {
-        bool ready = true;
+        // Currently commented out to make the contract size smaller...
+        /*bool ready = true;
         if (exchange.isInWithdrawalMode()) {
             // Check if all tokens were withdrawn using Merkle proofs
             for (uint i = 0; i < tokens.length; i++) {
@@ -418,6 +433,7 @@ contract AmmPool is IBlockReceiver {
 
         // Burn liquidity tokens
         burn(msg.sender, maxLiquidityTokenToBurn);
+        */
     }
 
     // Processes work in the queue. Can only be called by the exchange owner
@@ -711,15 +727,17 @@ contract AmmPool is IBlockReceiver {
         require(_deposit.accountID == accountID, "INVALID_TX_DATA");
         require(_deposit.tokenID == token.tokenID, "INVALID_TX_DATA");
         require(_deposit.amount == amount, "INVALID_TX_DATA");
+
         // Now do this deposit
         uint ethValue = 0;
         if (token.addr == address(0)) {
-            ethValue = _deposit.amount;
+            ethValue = amount;
         } else {
             address depositContract = address(exchange.getDepositContract());
-            if (ERC20(token.addr).allowance(address(this), depositContract) < _deposit.amount) {
+            uint allowance = ERC20(token.addr).allowance(address(this), depositContract);
+            if (allowance < amount) {
                 // Approve the deposit transfer
-                ERC20(token.addr).approve(depositContract, MAX_UINT);
+                ERC20(token.addr).approve(depositContract, ~uint(0));
             }
         }
         exchange.deposit{value: ethValue}(
