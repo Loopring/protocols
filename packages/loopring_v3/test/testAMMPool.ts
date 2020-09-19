@@ -231,7 +231,7 @@ export class AmmPool {
     };
 
     if (authMethod === AuthMethod.APPROVE) {
-      await this.contract.joinPool(poolAmountOut, maxAmountsIn, {
+      await this.contract.joinPool(poolAmountOut, maxAmountsIn, fromLayer2, {
         from: owner
       });
     } else if (authMethod === AuthMethod.ECDSA) {
