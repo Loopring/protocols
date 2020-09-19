@@ -555,16 +555,17 @@ contract AmmPool is IBlockReceiver, IAgent {
         )
         internal
     {
-        bytes32 poolTxHash = hashPoolJoin(ctx.DOMAIN_SEPARATOR, join);
-        if (signature.length == 0) {
-            require(!join.fromLayer2, "INVALID_DATA");
-            require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
-            delete queue[queuePos];
-            queuePos++;
-        } else {
-            require(join.fromLayer2, "INVALID_DATA");
-            require(poolTxHash.verifySignature(join.owner, signature), "INVALID_SIGNATURE");
-        }
+        require(
+            signature.length == 0 && !join.fromLayer2 ||
+            signature.length != 0 && join.fromLayer2,
+            "SIGNATURE_VS_FROM_LAYER2"
+        );
+
+        authenticatePoolTx(
+            join.owner,
+            hashPoolJoin(ctx.DOMAIN_SEPARATOR, join),
+            signature
+        );
 
         uint poolTotal = totalSupply();
         uint ratio = BASE;
@@ -641,14 +642,11 @@ contract AmmPool is IBlockReceiver, IAgent {
         )
         internal
     {
-        bytes32 poolTxHash = hashPoolExit(ctx.DOMAIN_SEPARATOR, exit);
-        if (signature.length == 0) {
-            require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
-            delete queue[queuePos];
-            queuePos++;
-        } else {
-            require(poolTxHash.verifySignature(exit.owner, signature), "INVALID_SIGNATURE");
-        }
+        authenticatePoolTx(
+            exit.owner,
+            hashPoolExit(ctx.DOMAIN_SEPARATOR, exit),
+            signature
+        );
 
         uint poolTotal = totalSupply();
         uint ratio = (exit.poolAmountIn * BASE) / poolTotal;
@@ -674,8 +672,11 @@ contract AmmPool is IBlockReceiver, IAgent {
                     require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
                     require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
                     require(transfer.fee == 0, "INVALID_TX_DATA");
-                    // Replay protection (only necessary when using a signature)
-                    require(transfer.storageID == exit.storageIDs[i], "INVALID_TX_DATA");
+
+                    if (signature.length != 0) {
+                        // Replay protection (only necessary when using a signature)
+                        require(transfer.storageID == exit.storageIDs[i], "INVALID_TX_DATA");
+                    }
 
                     // Now approve this transfer
                     transfer.validUntil = 0xffffffff;
@@ -696,13 +697,22 @@ contract AmmPool is IBlockReceiver, IAgent {
             // Burn liquidity tokens
             burn(exit.owner, exit.poolAmountIn);
         }
+    }
 
-        // Not needed now with non-transferable liquidity token
-        // if (signature.length == 0) {
-        //     // Unlock the amount of liquidity tokens locked for this exit
-        //     address token = address(this);
-        //     locked[token][exit.owner] = locked[token][exit.owner].sub(exit.poolAmountIn);
-        // }
+    function authenticatePoolTx(
+        address owner,
+        bytes32 poolTxHash,
+        bytes   memory signature
+        )
+        internal
+    {
+        if (signature.length == 0) {
+            require(queue[queuePos].txHash == poolTxHash, "NOT_APPROVED");
+            delete queue[queuePos];
+            queuePos++;
+        } else {
+            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
+        }
     }
 
     function processDeposit(
