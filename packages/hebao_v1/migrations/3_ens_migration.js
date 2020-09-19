@@ -26,7 +26,7 @@ module.exports = function(deployer, network, accounts) {
         BaseENSResolver.address
       );
 
-      await await deployer.deploy(
+      await deployer.deploy(
         BaseENSManager,
         fullName,
         rootNode,
@@ -37,29 +37,29 @@ module.exports = function(deployer, network, accounts) {
       const ensRegistry = await ENSRegistryImpl.deployed();
       const ensResolver = await BaseENSResolver.deployed();
 
-      return Promise.all([
-        ensRegistry.setSubnodeOwner(
-          "0x0",
-          web3.utils.keccak256(root),
-          accounts[0]
-        ),
-        ensRegistry.setSubnodeOwner(
-          ethers.utils.namehash(root),
-          web3.utils.keccak256(subName),
-          BaseENSManager.address
-        ),
-        ensRegistry.setSubnodeOwner(
-          "0x0",
-          web3.utils.keccak256("reverse"),
-          accounts[0]
-        ),
-        ensRegistry.setSubnodeOwner(
-          ethers.utils.namehash("reverse"),
-          web3.utils.keccak256("addr"),
-          ENSReverseRegistrarImpl.address
-        ),
-        ensResolver.addManager(BaseENSManager.address)
-      ]);
+      await ensRegistry.setSubnodeOwner(
+        "0x" + "00".repeat(20),
+        web3.utils.keccak256(root),
+        accounts[0]
+      );
+      await ensRegistry.setSubnodeOwner(
+        ethers.utils.namehash(root),
+        web3.utils.keccak256(subName),
+        BaseENSManager.address,
+        { from: accounts[0] }
+      );
+      await ensRegistry.setSubnodeOwner(
+        "0x" + "00".repeat(20),
+        web3.utils.keccak256("reverse"),
+        accounts[0]
+      );
+      await ensRegistry.setSubnodeOwner(
+        ethers.utils.namehash("reverse"),
+        web3.utils.keccak256("addr"),
+        ENSReverseRegistrarImpl.address,
+        { from: accounts[0] }
+      );
+      await ensResolver.addManager(BaseENSManager.address);
     });
   }
 };

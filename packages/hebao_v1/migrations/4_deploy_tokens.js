@@ -14,16 +14,14 @@ module.exports = function(deployer, network, accounts) {
     network != "goerli" &&
     network != "goerli-fork"
   ) {
-    deployer.then(() => {
-      return Promise.all([
-        deployer.deploy(GTOToken),
-        deployer.deploy(INDAToken),
-        deployer.deploy(INDBToken),
-        deployer.deploy(LRCToken),
-        deployer.deploy(RDNToken),
-        deployer.deploy(REPToken),
-        deployer.deploy(WETHToken)
-      ]);
+    deployer.then(async () => {
+      await deployer.deploy(GTOToken);
+      await deployer.deploy(INDAToken);
+      await deployer.deploy(INDBToken);
+      await deployer.deploy(LRCToken);
+      await deployer.deploy(RDNToken);
+      await deployer.deploy(REPToken);
+      await deployer.deploy(WETHToken);
     });
   }
 };

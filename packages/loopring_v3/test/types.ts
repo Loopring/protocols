@@ -96,6 +96,7 @@ export interface AccountUpdate {
   publicKeyY: string;
   feeTokenID: number;
   fee: BN;
+  maxFee: BN;
 
   signature?: Signature;
   onchainSignature?: any;
