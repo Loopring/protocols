@@ -630,9 +630,9 @@ contract AmmPool is IBlockReceiver, IAgent {
         uint ratio;
         if (poolTotal > 0) {
             ratio = join.poolAmountOut.mul(BASE) / poolTotal;
+        } else if (join.poolAmountOut != INITIAL_SUPPLY) {
+            return (false, amounts);
         } else {
-            // Important for accuracy
-            require(join.poolAmountOut == INITIAL_SUPPLY, "INITIAL_SUPPLY_UNEXPECTED");
             ratio = BASE;
         }
 
