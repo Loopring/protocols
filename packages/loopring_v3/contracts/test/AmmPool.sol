@@ -6,12 +6,14 @@ pragma experimental ABIEncoderV2;
 import "../aux/access/IBlockReceiver.sol";
 import "../aux/transactions/TransactionReader.sol";
 import "../thirdparty/BytesUtil.sol";
+import "../thirdparty/SafeCast.sol";
 import "../core/iface/IAgentRegistry.sol";
 import "../core/iface/IExchangeV3.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/MathUint96.sol";
 import "../lib/SignatureUtil.sol";
 
 import "../core/impl/libtransactions/AmmUpdateTransaction.sol";
@@ -29,7 +31,10 @@ contract AmmPool is IBlockReceiver, IAgent {
     using TransactionReader for ExchangeData.Block;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
+    using MathUint96        for uint96;
+    using SafeCast          for uint;
     using SignatureUtil     for bytes32;
+
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
         "PoolJoin(address owner,bool fromLayer2,uint256 poolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs)"
@@ -131,13 +136,13 @@ contract AmmPool is IBlockReceiver, IAgent {
     struct Context
     {
         ExchangeData.Block _block;
-        uint    txIdx;
-        bytes32 DOMAIN_SEPARATOR;
-        bytes32 exchangeDomainSeparator;
-        uint[]  ammBalancesInAccount;
-        uint[]  ammBalances;
-        uint    numTransactionsConsumed;
-        Token[] tokens;
+        uint     txIdx;
+        bytes32  DOMAIN_SEPARATOR;
+        bytes32  exchangeDomainSeparator;
+        uint96[] ammBalancesBefore;
+        uint96[] ammBalancesAfter;
+        uint     numTransactionsConsumed;
+        Token[]  tokens;
     }
 
     uint8 public feeBips;
@@ -483,8 +488,8 @@ contract AmmPool is IBlockReceiver, IAgent {
             txIdx: txIdx,
             DOMAIN_SEPARATOR: DOMAIN_SEPARATOR,
             exchangeDomainSeparator: exchange.getDomainSeparator(),
-            ammBalancesInAccount: new uint[](tokens.length),
-            ammBalances: new uint[](tokens.length),
+            ammBalancesBefore: new uint96[](tokens.length),
+            ammBalancesAfter: new uint96[](tokens.length),
             numTransactionsConsumed: 0,
             tokens: tokens
         });
@@ -510,11 +515,11 @@ contract AmmPool is IBlockReceiver, IAgent {
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            if (ctx.ammBalances[i] > ctx.ammBalancesInAccount[i]) {
-                uint amount = ctx.ammBalances[i] - ctx.ammBalancesInAccount[i];
+            if (ctx.ammBalancesAfter[i] > ctx.ammBalancesBefore[i]) {
+                uint96 amount = ctx.ammBalancesAfter[i] - ctx.ammBalancesBefore[i];
                 processDeposit(ctx, ctx.tokens[i], amount);
-            } else if (ctx.ammBalancesInAccount[i] > ctx.ammBalances[i]) {
-                uint amount = ctx.ammBalancesInAccount[i] - ctx.ammBalances[i];
+            } else if (ctx.ammBalancesBefore[i] > ctx.ammBalancesAfter[i]) {
+                uint96 amount = ctx.ammBalancesBefore[i] - ctx.ammBalancesAfter[i];
                 processWithdrawal(ctx, ctx.tokens[i], amount);
             }
         }
@@ -568,10 +573,10 @@ contract AmmPool is IBlockReceiver, IAgent {
             ctx.numTransactionsConsumed++;
             if (start) {
                 // AMM account balance now available onchain
-                ctx.ammBalancesInAccount[i] = update.balance;
-                ctx.ammBalances[i] = ctx.ammBalancesInAccount[i];
+                ctx.ammBalancesBefore[i] = update.balance;
+                ctx.ammBalancesAfter[i] = update.balance;
             } else {
-                require(ctx.ammBalances[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
+                require(ctx.ammBalancesAfter[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
             }
         }
     }
@@ -583,13 +588,11 @@ contract AmmPool is IBlockReceiver, IAgent {
         )
         internal
     {
-        bytes32 poolTxHash = hashPoolJoin(ctx.DOMAIN_SEPARATOR, join);
-        if (signature.length == 0) {
-            require(approvedTx[poolTxHash] != 0, "NOT_APPROVED");
-            delete approvedTx[poolTxHash];
-        } else {
-            require(poolTxHash.verifySignature(join.owner, signature), "INVALID_SIGNATURE");
-        }
+        authenticatePoolTx(
+            join.owner,
+            hashPoolJoin(ctx.DOMAIN_SEPARATOR, join),
+            signature
+        );
 
         uint poolTotal = totalSupply();
         uint ratio = BASE;
@@ -601,21 +604,11 @@ contract AmmPool is IBlockReceiver, IAgent {
         }
 
         // Check if the requirements are fulfilled
-        bool valid = true;
-        uint[] memory amounts = new uint[](ctx.tokens.length);
-        for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = ctx.ammBalances[i] * ratio / BASE;
-            if (poolTotal == 0) {
-                amounts[i] = join.maxAmountsIn[i];
-            }
-            if(amounts[i] > join.maxAmountsIn[i]) {
-                valid = false;
-            }
-        }
+        (bool valid, uint96[] memory amounts) = validateJoinAmounts(ctx, join);
 
         if (valid) {
             for (uint i = 0; i < ctx.tokens.length; i++) {
-                uint amount = amounts[i];
+                uint96 amount = amounts[i];
                 if (join.fromLayer2) {
                     TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                     require(transfer.from == join.owner, "INVALID_TX_DATA");
@@ -623,32 +616,66 @@ contract AmmPool is IBlockReceiver, IAgent {
                     require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
                     require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
                     require(transfer.fee == 0, "INVALID_TX_DATA");
+
                     // Replay protection (only necessary when using a signature)
-                    if (signature.length != 0) {
-                        require(transfer.storageID == join.storageIDs[i], "INVALID_TX_DATA");
-                    }
-                    if (signature.length != 0) {
-                        // Now approve this transfer
-                        transfer.validUntil = 0xffffffff;
-                        bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-                        exchange.approveTransaction(join.owner, txHash);
-                    }
+                    require(transfer.storageID == join.storageIDs[i], "INVALID_TX_DATA");
+
+                    // Now approve this transfer
+                    transfer.validUntil = 0xffffffff;
+                    bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+                    exchange.approveTransaction(join.owner, txHash);
+
                     ctx.numTransactionsConsumed++;
                     // Update the amount to the actual amount transferred (which can have some some small rounding errors)
                     amount = transfer.amount;
                     // Update the balances in the account
-                    ctx.ammBalancesInAccount[i] = ctx.ammBalancesInAccount[i].add(amount);
+                    ctx.ammBalancesBefore[i] = ctx.ammBalancesBefore[i].add(amount);
                 } else {
                     // Make the amount unavailable for withdrawing
                     address token = ctx.tokens[i].addr;
                     balance[token][join.owner] = balance[token][join.owner].sub(amount);
                 }
-                ctx.ammBalances[i] = ctx.ammBalances[i].add(amount);
+                ctx.ammBalancesAfter[i] = ctx.ammBalancesAfter[i].add(amount);
             }
 
             // Mint liquidity tokens
             mint(join.owner, join.poolAmountOut);
         }
+    }
+
+    function validateJoinAmounts(
+        Context  memory ctx,
+        PoolJoin memory join
+        )
+        internal
+        view
+        returns(
+            bool /* valid */,
+            uint96[] memory /* amounts */
+        )
+    {
+        uint96[] memory amounts = new uint96[](ctx.tokens.length);
+        uint poolTotal = totalSupply();
+        uint ratio;
+        if (poolTotal > 0) {
+            ratio = join.poolAmountOut.mul(BASE) / poolTotal;
+        } else if (join.poolAmountOut != INITIAL_SUPPLY) {
+            return (false, amounts);
+        } else {
+            ratio = BASE;
+        }
+
+        // Check if the requirements are fulfilled
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            amounts[i] = (poolTotal == 0) ?
+                join.maxAmountsIn[i] :
+                (ratio.mul(ctx.ammBalancesAfter[i]) / BASE).toUint96();
+
+            if (amounts[i] > join.maxAmountsIn[i]) {
+                return (false, amounts);
+            }
+        }
+        return (true, amounts);
     }
 
     function processExit(
@@ -658,31 +685,19 @@ contract AmmPool is IBlockReceiver, IAgent {
         )
         internal
     {
-        bytes32 poolTxHash = hashPoolExit(ctx.DOMAIN_SEPARATOR, exit);
-        if (signature.length == 0) {
-            require(approvedTx[poolTxHash] != 0, "NOT_APPROVED");
-            delete approvedTx[poolTxHash];
-            delete isExiting[exit.owner];
-        } else {
-            require(poolTxHash.verifySignature(exit.owner, signature), "INVALID_SIGNATURE");
-        }
+        authenticatePoolTx(
+            exit.owner,
+            hashPoolExit(ctx.DOMAIN_SEPARATOR, exit),
+            signature
+        );
 
-        uint poolTotal = totalSupply();
-        uint ratio = (exit.poolAmountIn * BASE) / poolTotal;
-
-        // Check if the requirements are fulfilled
-        bool valid = availableBalance(address(this), exit.owner) >= exit.poolAmountIn;
-        uint[] memory amounts = new uint[](ctx.tokens.length);
-        for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = ctx.ammBalances[i] * ratio / BASE;
-            if(amounts[i] < exit.minAmountsOut[i]) {
-                valid = false;
-            }
-        }
+        (bool valid, uint96[] memory amounts) = validateExitAmounts(ctx, exit);
 
         if (valid) {
+            burn(exit.owner, exit.poolAmountIn);
+
             for (uint i = 0; i < ctx.tokens.length; i++) {
-                uint amount = amounts[i];
+                uint96 amount = amounts[i];
                 if (exit.toLayer2) {
                     TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                     require(transfer.fromAccountID == accountID, "INVALID_TX_DATA");
@@ -691,10 +706,12 @@ contract AmmPool is IBlockReceiver, IAgent {
                     require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
                     require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
                     require(transfer.fee == 0, "INVALID_TX_DATA");
-                    // Replay protection (only necessary when using a signature)
+
                     if (signature.length != 0) {
+                        // Replay protection (only necessary when using a signature)
                         require(transfer.storageID == exit.storageIDs[i], "INVALID_TX_DATA");
                     }
+
                     // Now approve this transfer
                     transfer.validUntil = 0xffffffff;
                     bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
@@ -703,23 +720,64 @@ contract AmmPool is IBlockReceiver, IAgent {
                     // Update the amount to the actual amount transferred (which can have some some small rounding errors)
                     amount = transfer.amount;
                     // Update the balances in the account
-                    ctx.ammBalancesInAccount[i] = ctx.ammBalancesInAccount[i].sub(amount);
+                    ctx.ammBalancesBefore[i] = ctx.ammBalancesBefore[i].sub(amount);
                 } else {
+                    address token = ctx.tokens[i].addr;
                     // Make the amount available for withdrawing
-                    balance[ctx.tokens[i].addr][exit.owner] = balance[ctx.tokens[i].addr][exit.owner].add(amount);
+                    balance[token][exit.owner] = balance[token][exit.owner].add(amount);
                 }
-                ctx.ammBalances[i] = ctx.ammBalances[i].sub(amount);
+                ctx.ammBalancesAfter[i] = ctx.ammBalancesAfter[i].sub(amount);
             }
+        }
+    }
 
-            // Burn liquidity tokens
-            burn(exit.owner, exit.poolAmountIn);
+    function validateExitAmounts(
+        Context  memory ctx,
+        PoolExit memory exit
+        )
+        internal
+        view
+        returns(
+            bool /* valid */,
+            uint96[] memory /* amounts */
+        )
+    {
+        uint96[] memory amounts = new uint96[](ctx.tokens.length);
+        uint poolTotal = totalSupply();
+        uint ratio = exit.poolAmountIn.mul(BASE) / poolTotal;
+
+        // Check if the user has enough pool tokens
+        if (availableBalance(address(this), exit.owner) < exit.poolAmountIn) {
+            return (false, amounts);
+        }
+
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            amounts[i] = (ratio.mul(ctx.ammBalancesAfter[i]) / BASE).toUint96();
+            if (amounts[i] < exit.minAmountsOut[i]) {
+                return (false, amounts);
+            }
+        }
+    }
+
+    function authenticatePoolTx(
+        address owner,
+        bytes32 poolTxHash,
+        bytes   memory signature
+        )
+        internal
+    {
+        if (signature.length == 0) {
+            require(approvedTx[poolTxHash] != 0, "NOT_APPROVED");
+            delete approvedTx[poolTxHash];
+        } else {
+            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
         }
     }
 
     function processDeposit(
         Context memory ctx,
         Token   memory token,
-        uint    amount
+        uint96  amount
         )
         internal
     {
@@ -848,8 +906,8 @@ contract AmmPool is IBlockReceiver, IAgent {
     }
 
     function isAlmostEqual(
-        uint amount,
-        uint targetAmount
+        uint96 amount,
+        uint96 targetAmount
         )
         internal
         pure

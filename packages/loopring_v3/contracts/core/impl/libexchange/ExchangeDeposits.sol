@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../../lib/AddressUtil.sol";
+import "../../../lib/MathUint96.sol";
 import "../../iface/ExchangeData.sol";
 import "./ExchangeMode.sol";
 import "./ExchangeTokens.sol";
@@ -15,9 +16,7 @@ import "./ExchangeTokens.sol";
 library ExchangeDeposits
 {
     using AddressUtil       for address payable;
-    using MathUint          for uint;
-    using MathUint          for uint64;
-    using MathUint          for uint96;
+    using MathUint96        for uint96;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
 
@@ -57,14 +56,14 @@ library ExchangeDeposits
         // Add the amount to the deposit request and reset the time the operator has to process it
         ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
         _deposit.timestamp = uint64(block.timestamp);
-        _deposit.amount = _deposit.amount.add96(amountDeposited);
+        _deposit.amount = _deposit.amount.add(amountDeposited);
         S.pendingDeposits[to][tokenID] = _deposit;
 
         emit DepositRequested(
             to,
             tokenAddress,
             tokenID,
-            uint96(amountDeposited)
+            amountDeposited
         );
     }
 }
