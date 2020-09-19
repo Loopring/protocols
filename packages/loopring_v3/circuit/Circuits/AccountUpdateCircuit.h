@@ -29,6 +29,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
     VariableT publicKeyY;
     DualVariableGadget feeTokenID;
     DualVariableGadget fee;
+    DualVariableGadget maxFee;
     DualVariableGadget type;
 
     // Signature
@@ -36,6 +37,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
 
     // Validate
     RequireLtGadget requireValidUntil;
+    RequireLeqGadget requireValidFee;
 
     // Type
     IsNonZero isConditional;
@@ -73,6 +75,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
           publicKeyY(make_variable(pb, FMT(prefix, ".publicKeyY"))),
           feeTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".feeTokenID")),
           fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
+          maxFee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".maxFee")),
           type(pb, NUM_BITS_TYPE, FMT(prefix, ".type")),
 
           // Signature
@@ -82,7 +85,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
               {state.exchange,
                accountID.packed,
                feeTokenID.packed,
-               fee.packed,
+               maxFee.packed,
                publicKeyX,
                publicKeyY,
                validUntil.packed,
@@ -96,6 +99,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
             validUntil.packed,
             NUM_BITS_TIMESTAMP,
             FMT(prefix, ".requireValidUntil")),
+          requireValidFee(pb, fee.packed, maxFee.packed, NUM_BITS_AMOUNT, FMT(prefix, ".requireValidFee")),
 
           // Type
           isConditional(pb, type.packed, ".isConditional"),
@@ -172,6 +176,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
         pb.val(publicKeyY) = update.publicKeyY;
         feeTokenID.generate_r1cs_witness(pb, update.feeTokenID);
         fee.generate_r1cs_witness(pb, update.fee);
+        maxFee.generate_r1cs_witness(pb, update.maxFee);
         type.generate_r1cs_witness(pb, update.type);
 
         // Signature
@@ -179,6 +184,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
 
         // Validate
         requireValidUntil.generate_r1cs_witness();
+        requireValidFee.generate_r1cs_witness();
 
         // Type
         isConditional.generate_r1cs_witness();
@@ -211,6 +217,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
         nonce.generate_r1cs_constraints();
         feeTokenID.generate_r1cs_constraints(true);
         fee.generate_r1cs_constraints(true);
+        maxFee.generate_r1cs_constraints(true);
         type.generate_r1cs_constraints(true);
 
         // Signature
@@ -218,6 +225,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
 
         // Validate
         requireValidUntil.generate_r1cs_constraints();
+        requireValidFee.generate_r1cs_constraints();
 
         // Type
         isConditional.generate_r1cs_constraints();
