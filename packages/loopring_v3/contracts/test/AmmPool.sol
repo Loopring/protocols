@@ -45,6 +45,10 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs)"
     );
 
+    bytes32 constant public WITHDRAW_TYPEHASH = keccak256(
+        "Withdraw(address owner,uint256 poolAmount,uint256[] amounts,uint256 validUntil,uint256 nonce)"
+    );
+
     event Deposit(
         address  owner,
         uint96[] amounts
@@ -52,7 +56,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
 
     event Withdrawal(
         address  owner,
-        uint96[] amounts
+        uint256[] amounts
     );
 
     event JoinPoolRequested(
@@ -157,11 +161,14 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
     // A map from an owner to the timestamp until all funds of the user are locked
     // A zero value == locked indefinitely.
     mapping (address => uint) lockedUntil;
-    // A map from an owner to if a user is currently exiting using an onchain approval.
-    mapping (address => bool) isExiting;
     // A map from a token to the total balance owned directly by LPs (so NOT owned by the pool itself)
     mapping (address => uint) totalLockedBalance;
 
+    // A map from an address to a nonce.
+    mapping(address => uint) public nonces;
+
+    // A map from an owner to if a user is currently exiting using an onchain approval.
+    mapping (address => bool) isExiting;
 
     modifier onlyExchangeOwner()
     {
@@ -227,19 +234,35 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
 
     /// @param poolAmount The amount of liquidity tokens to withdraw
     /// @param amounts The amounts to withdraw
+    /// @param validUntil When a signature is provided: the `validUntil` of the signature.
     /// @param signature Signature of the operator to allow withdrawals without unlocking
-    function withdraw(uint96 poolAmount, uint96[] calldata amounts, bytes memory signature)
+    function withdraw(
+        uint   poolAmount,
+        uint[] calldata amounts,
+        uint   validUntil,
+        bytes  calldata signature
+        )
         external
-        payable
     {
         require(amounts.length == tokens.length, "INVALID_DATA");
-        if (poolAmount > 0) {
-            // Never allow withdrawing liquidity tokens when exiting
-            require(isExiting[msg.sender] == false, "LIQUIDITY_TOKENS_LOCKED");
-        }
+
+        // Check if we can withdraw without unlocking
         if (signature.length > 0) {
-            // TODO: check signature provided by the operator and allow the specified amounts
-            // to be withdrawn regardless if locked or not.
+            require(validUntil >= block.timestamp, 'SIGNATURE_EXPIRED');
+            bytes32 withdrawHash = EIP712.hashPacked(
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        WITHDRAW_TYPEHASH,
+                        msg.sender,
+                        poolAmount,
+                        keccak256(abi.encodePacked(amounts)),
+                        validUntil,
+                        nonces[msg.sender]++
+                    )
+                )
+            );
+            require(withdrawHash.verifySignature(exchange.owner(), signature), "INVALID_SIGNATURE");
         }
 
         // Withdraw any outstanding balances for the pool account on the exchange
@@ -253,13 +276,13 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         exchange.withdrawFromApprovedWithdrawals(owners, tokenAddresses);
 
         // Withdraw
-        uint96[] memory withdrawn = new uint96[](tokens.length + 1);
+        uint[] memory withdrawn = new uint[](tokens.length + 1);
         for (uint i = 0; i < tokens.length + 1; i++) {
-            uint96 amount = (i < tokens.length) ? amounts[i] : poolAmount;
+            uint amount = (i < tokens.length) ? amounts[i] : poolAmount;
             address token = (i < tokens.length) ? tokens[i].addr : address(this);
-            uint available = availableBalance(token, msg.sender);
+            uint available = (signature.length > 0) ? lockedBalance[token][msg.sender] : availableBalance(token, msg.sender);
             if (amount > available) {
-                withdrawn[i] = uint96(available);
+                withdrawn[i] = available;
             } else {
                 withdrawn[i] = amount;
             }
@@ -330,20 +353,10 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
     {
         require(minAmountsOut.length == tokens.length, "INVALID_DATA");
 
-        // Make sure the necessary amount of liquidity tokens are available.
-        address token = address(this);
-        require(availableBalance(token, msg.sender) >= poolAmountIn, "INSUFFICIENT_BALANCE");
-        // To make the above funds cannot be used twice only allow a single open exit/owner
+        // To make the the available liqudity tokens cannot suddenly change
+        // we keep track of when onchain exits (which need to be processed) are pending.
         require(isExiting[msg.sender] == false, "ALREADY_EXITING");
         isExiting[msg.sender] = true;
-
-        // Lock up funds for at least MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN seconds
-        // so we can be sure at least `poolAmountIn` liquidity tokens are available
-        // for the full duration.
-        uint minUntil = block.timestamp + MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN;
-        if (lockedUntil[msg.sender] == 0 || lockedUntil[msg.sender] < minUntil) {
-            setLockedUntil(minUntil);
-        }
 
         // Approve the exit
         PoolExit memory exit = PoolExit({
@@ -509,14 +522,19 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         return ctx.numTransactionsConsumed;
     }
 
-    function depositInternal(uint96 poolAmount, uint96[] calldata amounts)
+    function depositInternal(uint poolAmount, uint96[] calldata amounts)
         internal
     {
         require(amounts.length == tokens.length, "INVALID_DATA");
+        if (isExiting[msg.sender]) {
+            // This could suddenly change the amount of liquidity tokens available, which
+            // could change how the operator needs to process the exit.
+            require(poolAmount == 0, "CANNOT_DEPOSIT_LIQUIDITY_TOKENS_WHILE_EXITING");
+        }
 
         // Lock up funds inside this contract so we can depend on them being available.
         for (uint i = 0; i < tokens.length + 1; i++) {
-            uint96 amount = (i < tokens.length) ? amounts[i] : poolAmount;
+            uint amount = (i < tokens.length) ? amounts[i] : poolAmount;
             address token = (i < tokens.length) ? tokens[i].addr : address(this);
             if (token == address(0)) {
                 require(msg.value == amount, "INVALID_ETH_DEPOSIT");
@@ -672,7 +690,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             bool initialValueSet = false;
             for (uint i = 0; i < ctx.tokens.length; i++) {
                 if (ctx.ammBalancesAfter[i] > 0) {
-                    uint amountOut = join.maxAmountsIn[i] / ctx.ammBalancesAfter[i];
+                    uint amountOut = uint(join.maxAmountsIn[i]).mul(poolTotal) / uint(ctx.ammBalancesAfter[i]);
                     if (!initialValueSet || amountOut < poolAmountOut) {
                         poolAmountOut = amountOut;
                         initialValueSet = true;
@@ -704,6 +722,10 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             hashPoolExit(ctx.DOMAIN_SEPARATOR, exit),
             signature
         );
+        if (signature.length == 0) {
+            // This is an onchain exit, we're processing it now so stop tracking it.
+            isExiting[msg.sender] = true;
+        }
 
         (bool valid, uint96[] memory amounts) = validateExitAmounts(ctx, exit);
 
