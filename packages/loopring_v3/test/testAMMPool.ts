@@ -6,6 +6,7 @@ import { AuthMethod, OrderInfo, SpotTrade } from "./types";
 import * as sigUtil from "eth-sig-util";
 import { SignatureType, sign, verifySignature } from "../util/Signature";
 import { roundToFloatValue } from "loopringV3.js";
+import { logDebug } from "./logs";
 
 const AgentRegistry = artifacts.require("AgentRegistry");
 
@@ -19,9 +20,10 @@ export interface PoolJoin {
   txType?: "Join";
   owner: string;
   fromLayer2: boolean;
-  poolAmountOut: BN;
+  minPoolAmountOut: BN;
   maxAmountsIn: BN[];
   storageIDs: number[];
+  validUntil: number;
   signature?: string;
 }
 
@@ -32,6 +34,7 @@ export interface PoolExit {
   poolAmountIn: BN;
   minAmountsOut: BN[];
   storageIDs: number[];
+  validUntil: number;
   signature?: string;
 }
 
@@ -47,10 +50,12 @@ export interface AuxiliaryData {
 
 export interface JoinOptions {
   authMethod?: AuthMethod;
+  validUntil?: number;
 }
 
 export interface ExitOptions {
   authMethod?: AuthMethod;
+  validUntil?: number;
 }
 
 type TxType = PoolJoin | PoolExit;
@@ -68,9 +73,10 @@ export namespace PoolJoinUtils {
         PoolJoin: [
           { name: "owner", type: "address" },
           { name: "fromLayer2", type: "bool" },
-          { name: "poolAmountOut", type: "uint256" },
+          { name: "minPoolAmountOut", type: "uint256" },
           { name: "maxAmountsIn", type: "uint256[]" },
-          { name: "storageIDs", type: "uint32[]" }
+          { name: "storageIDs", type: "uint32[]" },
+          { name: "validUntil", type: "uint256" }
         ]
       },
       primaryType: "PoolJoin",
@@ -83,9 +89,10 @@ export namespace PoolJoinUtils {
       message: {
         owner: join.owner,
         fromLayer2: join.fromLayer2,
-        poolAmountOut: join.poolAmountOut,
+        minPoolAmountOut: join.minPoolAmountOut,
         maxAmountsIn: join.maxAmountsIn,
-        storageIDs: join.storageIDs
+        storageIDs: join.storageIDs,
+        validUntil: join.validUntil
       }
     };
     return typedData;
@@ -112,7 +119,8 @@ export namespace PoolExitUtils {
           { name: "toLayer2", type: "bool" },
           { name: "poolAmountIn", type: "uint256" },
           { name: "minAmountsOut", type: "uint256[]" },
-          { name: "storageIDs", type: "uint32[]" }
+          { name: "storageIDs", type: "uint32[]" },
+          { name: "validUntil", type: "uint256" }
         ]
       },
       primaryType: "PoolExit",
@@ -127,7 +135,8 @@ export namespace PoolExitUtils {
         toLayer2: exit.toLayer2,
         poolAmountIn: exit.poolAmountIn,
         minAmountsOut: exit.minAmountsOut,
-        storageIDs: exit.storageIDs
+        storageIDs: exit.storageIDs,
+        validUntil: exit.validUntil
       }
     };
     return typedData;
@@ -152,10 +161,10 @@ export class AmmPool {
 
   public totalSupply: BN;
 
-  public queue: TxType[];
+  public pendingTransactions: TxType[];
   constructor(ctx: ExchangeTestUtil) {
     this.ctx = ctx;
-    this.queue = [];
+    this.pendingTransactions = [];
   }
 
   public async setupPool(tokens: string[], weights: BN[], feeBips: number) {
@@ -192,7 +201,7 @@ export class AmmPool {
     );
   }
 
-  public async deposit(owner: string, amounts: BN[]) {
+  public async deposit(owner: string, poolAmount: BN, amounts: BN[]) {
     let value = new BN(0);
     for (let i = 0; i < this.tokens.length; i++) {
       const token = this.tokens[i];
@@ -207,12 +216,12 @@ export class AmmPool {
         }
       }
     }
-    await this.contract.deposit(amounts, { value, from: owner });
+    await this.contract.deposit(poolAmount, amounts, { value, from: owner });
   }
 
   public async join(
     owner: string,
-    poolAmountOut: BN,
+    minPoolAmountOut: BN,
     maxAmountsIn: BN[],
     fromLayer2: boolean,
     options: JoinOptions = {}
@@ -220,20 +229,29 @@ export class AmmPool {
     // Fill in defaults
     const authMethod =
       options.authMethod !== undefined ? options.authMethod : AuthMethod.ECDSA;
+    const validUntil =
+      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
     const join: PoolJoin = {
       txType: "Join",
       owner,
       fromLayer2,
-      poolAmountOut,
+      minPoolAmountOut,
       maxAmountsIn,
-      storageIDs: []
+      storageIDs: [],
+      validUntil
     };
 
     if (authMethod === AuthMethod.APPROVE) {
-      await this.contract.joinPool(poolAmountOut, maxAmountsIn, {
-        from: owner
-      });
+      await this.contract.joinPool(
+        minPoolAmountOut,
+        maxAmountsIn,
+        fromLayer2,
+        validUntil,
+        {
+          from: owner
+        }
+      );
     } else if (authMethod === AuthMethod.ECDSA) {
       for (const token of this.tokens) {
         join.storageIDs.push(this.ctx.reserveStorageID());
@@ -243,7 +261,7 @@ export class AmmPool {
       await verifySignature(owner, hash, join.signature);
     }
 
-    this.queue.push(join);
+    this.pendingTransactions.push(join);
   }
 
   public async exit(
@@ -256,6 +274,8 @@ export class AmmPool {
     // Fill in defaults
     const authMethod =
       options.authMethod !== undefined ? options.authMethod : AuthMethod.ECDSA;
+    const validUntil =
+      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
 
     const exit: PoolExit = {
       txType: "Exit",
@@ -263,7 +283,8 @@ export class AmmPool {
       toLayer2,
       poolAmountIn,
       minAmountsOut,
-      storageIDs: []
+      storageIDs: [],
+      validUntil
     };
 
     if (authMethod === AuthMethod.APPROVE) {
@@ -279,16 +300,16 @@ export class AmmPool {
       await verifySignature(owner, hash, exit.signature);
     }
 
-    this.queue.push(exit);
+    this.pendingTransactions.push(exit);
   }
 
   public async depositAndJoin(
     owner: string,
-    poolAmountOut: BN,
+    minPoolAmountOut: BN,
     maxAmountsIn: BN[]
   ) {
-    await this.deposit(owner, maxAmountsIn);
-    await this.join(owner, poolAmountOut, maxAmountsIn, false, {
+    await this.deposit(owner, new BN(0), maxAmountsIn);
+    await this.join(owner, minPoolAmountOut, maxAmountsIn, false, {
       authMethod: AuthMethod.APPROVE
     });
   }
@@ -320,28 +341,47 @@ export class AmmPool {
 
     const poolTransactions: PoolTransaction[] = [];
 
-    // Process work in the queue
-    for (const item of this.queue) {
+    // Process the pending transactions
+    for (const item of this.pendingTransactions) {
       if (item.txType === "Join") {
         const join = item;
 
         // Calculate expected amounts for specified liquidity tokens
         const poolTotal = this.totalSupply;
-        let ratio = this.BASE;
-        if (poolTotal.gt(new BN(0))) {
-          ratio = join.poolAmountOut.mul(this.BASE).div(poolTotal);
+
+        let poolAmountOut = new BN(0);
+        let amounts: BN[] = [];
+        if (poolTotal.eq(new BN(0))) {
+          poolAmountOut = this.INITIAL_SUPPLY;
+          amounts.push(...join.maxAmountsIn);
         } else {
+          // Calculate the amount of liquidity tokens that should be minted
+          let initialValueSet = false;
+          for (let i = 0; i < this.tokens.length; i++) {
+            if (ammBalances[i].gt(new BN(0))) {
+              const amountOut = join.maxAmountsIn[i]
+                .mul(poolTotal)
+                .div(ammBalances[i]);
+              if (!initialValueSet || amountOut.lt(poolAmountOut)) {
+                poolAmountOut = amountOut;
+                initialValueSet = true;
+              }
+            }
+          }
           assert(
-            join.poolAmountOut.eq(this.INITIAL_SUPPLY),
-            "INITIAL_SUPPLY_UNEXPECTED"
+            poolAmountOut.gte(join.minPoolAmountOut),
+            "min pool amounts out not achieved"
           );
+
+          // Calculate the amounts to deposit
+          let ratio = poolAmountOut.mul(this.BASE).div(poolTotal);
+          for (let i = 0; i < this.tokens.length; i++) {
+            amounts.push(ammBalances[i].mul(ratio).div(this.BASE));
+          }
         }
 
         for (let i = 0; i < this.tokens.length; i++) {
-          let amount = ammBalances[i].mul(ratio).div(this.BASE);
-          if (poolTotal.eq(new BN(0))) {
-            amount = join.maxAmountsIn[i];
-          }
+          let amount = amounts[i];
           if (join.fromLayer2) {
             amount = roundToFloatValue(amount, Constants.Float24Encoding);
             const storageID =
@@ -362,7 +402,7 @@ export class AmmPool {
             ammBalancesInAccount[i] = ammBalancesInAccount[i].add(amount);
           }
           ammBalances[i] = ammBalances[i].add(amount);
-          console.log(
+          logDebug(
             "pool join: " +
               amount.toString(10) +
               " (L" +
@@ -375,7 +415,7 @@ export class AmmPool {
           data: this.getPoolJoinAuxData(join),
           signature: join.signature
         });
-        poolTotal.iadd(join.poolAmountOut);
+        poolTotal.iadd(poolAmountOut);
       } else if (item.txType === "Exit") {
         const exit = item;
 
@@ -405,13 +445,14 @@ export class AmmPool {
             ammBalancesInAccount[i] = ammBalancesInAccount[i].sub(amount);
           }
           ammBalances[i] = ammBalances[i].sub(amount);
-          console.log("pool exit: " + amount.toString(10));
+          logDebug("pool exit: " + amount.toString(10));
         }
         poolTransactions.push({
           txType: PoolTransactionType.EXIT,
           data: this.getPoolExitAuxData(exit),
           signature: exit.signature
         });
+        poolTotal.isub(exit.poolAmountIn);
       }
     }
 
@@ -420,7 +461,7 @@ export class AmmPool {
       if (ammBalances[i].gt(ammBalancesInAccount[i])) {
         const amount = ammBalances[i].sub(ammBalancesInAccount[i]);
         await this.ctx.requestDeposit(owner, this.tokens[i], amount);
-        console.log("pool deposit: " + amount.toString(10));
+        logDebug("pool deposit: " + amount.toString(10));
       } else if (ammBalances[i].lt(ammBalancesInAccount[i])) {
         const amount = ammBalancesInAccount[i].sub(ammBalances[i]);
         await this.ctx.requestWithdrawal(
@@ -431,7 +472,7 @@ export class AmmPool {
           new BN(0),
           { authMethod: AuthMethod.NONE, minGas: 0 }
         );
-        console.log("pool withdraw: " + amount.toString(10));
+        logDebug("pool withdraw: " + amount.toString(10));
       }
     }
 
@@ -446,11 +487,10 @@ export class AmmPool {
       );
     }
 
-    this.queue = [];
+    this.pendingTransactions = [];
 
-    console.log(poolTransactions);
+    logDebug(poolTransactions);
     const auxiliaryData = this.getAuxiliaryData(poolTransactions);
-    //console.log(auxiliaryData);
     const blockCallbacks: BlockCallback[] = [];
     blockCallbacks.push({
       target: owner,
@@ -468,13 +508,14 @@ export class AmmPool {
       amounts.push(amount.toString(10));
     }
     return web3.eth.abi.encodeParameter(
-      "tuple(address,bool,uint256,uint256[],uint32[])",
+      "tuple(address,bool,uint256,uint256[],uint32[],uint256)",
       [
         join.owner,
         join.fromLayer2,
-        join.poolAmountOut.toString(10),
+        join.minPoolAmountOut.toString(10),
         amounts,
-        join.storageIDs
+        join.storageIDs,
+        join.validUntil
       ]
     );
   }
@@ -485,13 +526,14 @@ export class AmmPool {
       amounts.push(amount.toString(10));
     }
     return web3.eth.abi.encodeParameter(
-      "tuple(address,bool,uint256,uint256[],uint32[])",
+      "tuple(address,bool,uint256,uint256[],uint32[],uint256)",
       [
         exit.owner,
         exit.toLayer2,
         exit.poolAmountIn.toString(10),
         amounts,
-        exit.storageIDs
+        exit.storageIDs,
+        exit.validUntil
       ]
     );
   }
@@ -548,7 +590,7 @@ contract("AMM Pool", (accounts: string[]) => {
   describe("AMM", function() {
     this.timeout(0);
 
-    it.only("Successful swap (AMM maker)", async () => {
+    it("Successful swap (AMM maker)", async () => {
       const ownerA = ctx.testContext.orderOwners[10];
       const ownerB = ctx.testContext.orderOwners[11];
 
@@ -580,14 +622,14 @@ contract("AMM Pool", (accounts: string[]) => {
         from: registryOwner
       });
 
-      /*await pool.depositAndJoin(
+      await pool.depositAndJoin(
         ownerA,
         new BN(web3.utils.toWei("100", "ether")),
         [
           new BN(web3.utils.toWei("10000.123456", "ether")),
           new BN(web3.utils.toWei("20000.654321", "ether"))
         ]
-      );*/
+      );
       await pool.join(
         ownerB,
         new BN(web3.utils.toWei("100", "ether")),
@@ -634,16 +676,16 @@ contract("AMM Pool", (accounts: string[]) => {
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
 
-      /*await pool.exit(
+      await pool.exit(
         ownerA,
         new BN(web3.utils.toWei("60", "ether")),
         [
           new BN(web3.utils.toWei("5000", "ether")),
           new BN(web3.utils.toWei("10000", "ether"))
         ],
-        true,
+        false,
         { authMethod: AuthMethod.APPROVE }
-      );*/
+      );
       await pool.exit(
         ownerB,
         new BN(web3.utils.toWei("60", "ether")),

@@ -7,16 +7,19 @@ import "../../aux/compression/ZeroDecompressor.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../lib/AddressUtil.sol";
+import "../../lib/ERC1271.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/SignatureUtil.sol";
 import "./SelectorBasedAccessManager.sol";
 import "./IBlockReceiver.sol";
 
 
-contract LoopringIOExchangeOwner is SelectorBasedAccessManager
+contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
 {
-    using AddressUtil for address;
-    using BytesUtil   for bytes;
-    using MathUint    for uint;
+    using AddressUtil     for address;
+    using BytesUtil       for bytes;
+    using MathUint        for uint;
+    using SignatureUtil   for bytes32;
 
     bytes4 private constant SUBMITBLOCKS_SELECTOR  = IExchangeV3.submitBlocks.selector;
     bool   public  open;
@@ -75,6 +78,23 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
         open = _open;
         emit SubmitBlocksAccessOpened(_open);
     }
+
+    function isValidSignature(
+        bytes32        signHash,
+        bytes   memory signature
+        )
+        public
+        view
+        override
+        returns (bytes4)
+    {
+        // Role system used a bit differently here.
+        return hasAccessTo(
+            signHash.recoverECDSASigner(signature),
+            this.isValidSignature.selector
+        ) ? ERC1271_MAGICVALUE : bytes4(0);
+    }
+
 
     function processCallbacks(
         ExchangeData.Block[] memory   blocks,
