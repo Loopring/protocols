@@ -18,12 +18,11 @@ contract("Exchange", (accounts: string[]) => {
   const createExchange = async (setupTestState: boolean = true) => {
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {setupTestState}
+      { setupTestState }
     );
     operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
     operator = exchangeTestUtil.getAccount(operatorAccountID).owner;
   };
-
 
   before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
@@ -54,12 +53,41 @@ contract("Exchange", (accounts: string[]) => {
       it("General transfers (mixed conditional/non-conditional)", async () => {
         await createExchange();
         // Do some transfers
-        await exchangeTestUtil.transfer(ownerA, ownerD, tokenA, amountA, tokenB, amountC);
-        await exchangeTestUtil.transfer(ownerB, ownerC, tokenA, amountB, tokenA, amountD);
-        await exchangeTestUtil.transfer(ownerA, ownerB, tokenA, amountC, tokenB, amountD, {
-          authMethod: AuthMethod.APPROVE
-        });
-        await exchangeTestUtil.transfer(ownerA, ownerB, tokenB, amountD, tokenA, amountA);
+        await exchangeTestUtil.transfer(
+          ownerA,
+          ownerD,
+          tokenA,
+          amountA,
+          tokenB,
+          amountC
+        );
+        await exchangeTestUtil.transfer(
+          ownerB,
+          ownerC,
+          tokenA,
+          amountB,
+          tokenA,
+          amountD
+        );
+        await exchangeTestUtil.transfer(
+          ownerA,
+          ownerB,
+          tokenA,
+          amountC,
+          tokenB,
+          amountD,
+          {
+            authMethod: AuthMethod.APPROVE
+          }
+        );
+        await exchangeTestUtil.transfer(
+          ownerA,
+          ownerB,
+          tokenB,
+          amountD,
+          tokenA,
+          amountA
+        );
         // Submit the transfers
         await exchangeTestUtil.submitTransactions();
         await exchangeTestUtil.submitPendingBlocks();
@@ -68,18 +96,50 @@ contract("Exchange", (accounts: string[]) => {
       it("Conditional transfers with same (from, to, token) values", async () => {
         await createExchange();
         // Do some transfers with the same (from, to, token) values
-        await exchangeTestUtil.transfer(ownerA, ownerB, tokenA, amountA, tokenB, amountC, {
-          authMethod: AuthMethod.APPROVE
-        });
-        await exchangeTestUtil.transfer(ownerB, ownerA, tokenA, amountA, tokenB, amountC, {
-          authMethod: AuthMethod.APPROVE
-        });
-        await exchangeTestUtil.transfer(ownerB, ownerA, tokenA, amountB, tokenB, amountD, {
-          authMethod: AuthMethod.APPROVE
-        });
-        await exchangeTestUtil.transfer(ownerA, ownerB, tokenA, amountA, tokenB, amountC, {
-          authMethod: AuthMethod.APPROVE
-        });
+        await exchangeTestUtil.transfer(
+          ownerA,
+          ownerB,
+          tokenA,
+          amountA,
+          tokenB,
+          amountC,
+          {
+            authMethod: AuthMethod.APPROVE
+          }
+        );
+        await exchangeTestUtil.transfer(
+          ownerB,
+          ownerA,
+          tokenA,
+          amountA,
+          tokenB,
+          amountC,
+          {
+            authMethod: AuthMethod.APPROVE
+          }
+        );
+        await exchangeTestUtil.transfer(
+          ownerB,
+          ownerA,
+          tokenA,
+          amountB,
+          tokenB,
+          amountD,
+          {
+            authMethod: AuthMethod.APPROVE
+          }
+        );
+        await exchangeTestUtil.transfer(
+          ownerA,
+          ownerB,
+          tokenA,
+          amountA,
+          tokenB,
+          amountC,
+          {
+            authMethod: AuthMethod.APPROVE
+          }
+        );
         // Submit the transfers
         await exchangeTestUtil.submitTransactions();
         await exchangeTestUtil.submitPendingBlocks();
@@ -95,7 +155,14 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee);
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee
+      );
       await exchangeTestUtil.transfer(
         ownerB,
         ownerD,
@@ -105,7 +172,14 @@ contract("Exchange", (accounts: string[]) => {
         fee.mul(new BN(2)),
         { maxFee: fee.mul(new BN(3)) }
       );
-      await exchangeTestUtil.transfer(ownerB, ownerA, token, amount, feeToken, fee);
+      await exchangeTestUtil.transfer(
+        ownerB,
+        ownerA,
+        token,
+        amount,
+        feeToken,
+        fee
+      );
 
       // Commit the transfers
       await exchangeTestUtil.submitTransactions();
@@ -123,16 +197,31 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("12.3", "ether"));
 
       // Do a transfer
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee);
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee
+      );
       await exchangeTestUtil.transfer(
         ownerB,
         ownerD,
         token,
         amount.mul(new BN(2)),
         feeToken,
-        fee.mul(new BN(2))
+        fee.mul(new BN(2)),
+        { putAddressesInDA: false }
       );
-      await exchangeTestUtil.transfer(ownerB, ownerA, token, amount, feeToken, fee);
+      await exchangeTestUtil.transfer(
+        ownerB,
+        ownerA,
+        token,
+        amount,
+        feeToken,
+        fee
+      );
 
       // Commit the transfers
       await exchangeTestUtil.submitTransactions();
@@ -150,7 +239,14 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, feeToken, fee);
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerA,
+        token,
+        amount,
+        feeToken,
+        fee
+      );
       await exchangeTestUtil.transfer(
         ownerB,
         ownerB,
@@ -192,7 +288,14 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("12.3", "ether"));
 
       // Do a transfer
-      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, feeToken, fee);
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerA,
+        token,
+        amount,
+        feeToken,
+        fee
+      );
       await exchangeTestUtil.transfer(
         ownerB,
         ownerB,
@@ -234,10 +337,38 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee);
-      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, feeToken, fee);
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, token, fee);
-      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, token, fee);
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee
+      );
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerA,
+        token,
+        amount,
+        feeToken,
+        fee
+      );
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        token,
+        fee
+      );
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerA,
+        token,
+        amount,
+        token,
+        fee
+      );
 
       exchangeTestUtil.setActiveOperator(
         await exchangeTestUtil.getAccountID(ownerA)
@@ -263,15 +394,17 @@ contract("Exchange", (accounts: string[]) => {
 
       // Do some transfers transfer
       await exchangeTestUtil.transfer(
-        ownerA, ownerD, token, amount, feeToken, fee,
-        {maxFee: fee.div(new BN(2))}
+        ownerA,
+        ownerD,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { maxFee: fee.div(new BN(2)) }
       );
 
       // Commit the transfers
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("should be able to transfer to a new account", async () => {
@@ -283,7 +416,15 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {transferToNew: true});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerD,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { transferToNew: true }
+      );
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
@@ -298,7 +439,15 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {useDualAuthoring: true});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerD,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { useDualAuthoring: true }
+      );
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
@@ -313,13 +462,18 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {useDualAuthoring: true, secretKnown: false});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerD,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { useDualAuthoring: true, secretKnown: false }
+      );
 
       // Commit the transfers
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("should be able to authorize a transfer using an onchain signature", async () => {
@@ -331,7 +485,15 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {authMethod: AuthMethod.ECDSA});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerD,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { authMethod: AuthMethod.ECDSA }
+      );
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
@@ -346,10 +508,16 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      const transfer = await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {authMethod: AuthMethod.ECDSA, signer: ownerD});
-      transfer.onchainSignature =
-
-      await exchangeTestUtil.submitTransactions();
+      const transfer = await exchangeTestUtil.transfer(
+        ownerA,
+        ownerD,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { authMethod: AuthMethod.ECDSA, signer: ownerD }
+      );
+      transfer.onchainSignature = await exchangeTestUtil.submitTransactions();
       await expectThrow(
         exchangeTestUtil.submitPendingBlocks(),
         "INVALID_SIGNATURE"
@@ -365,7 +533,15 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {authMethod: AuthMethod.APPROVE});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerD,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { authMethod: AuthMethod.APPROVE }
+      );
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
@@ -380,7 +556,15 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {authMethod: AuthMethod.APPROVE, signer: ownerD});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerD,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { authMethod: AuthMethod.APPROVE, signer: ownerD }
+      );
 
       await exchangeTestUtil.submitTransactions();
       await expectThrow(
@@ -398,7 +582,15 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerD, token, amount, feeToken, fee, {authMethod: AuthMethod.NONE});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerD,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { authMethod: AuthMethod.NONE }
+      );
 
       await exchangeTestUtil.submitTransactions();
       await expectThrow(
@@ -416,16 +608,21 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {
-        amountToDeposit: amount,
-        feeToDeposit: new BN(0)
-      });
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee,
+        {
+          amountToDeposit: amount,
+          feeToDeposit: new BN(0)
+        }
+      );
 
       // Commit the transfers
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("insufficient balance (token, token != feeToken)", async () => {
@@ -437,16 +634,21 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {
-        amountToDeposit: amount.div(new BN(2)),
-        feeToDeposit: fee
-      });
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee,
+        {
+          amountToDeposit: amount.div(new BN(2)),
+          feeToDeposit: fee
+        }
+      );
 
       // Commit the transfers
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("insufficient balance (feeToken, token != feeToken)", async () => {
@@ -458,16 +660,21 @@ contract("Exchange", (accounts: string[]) => {
       const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
       // Do some transfers
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {
-        amountToDeposit: amount,
-        feeToDeposit: new BN(0)
-      });
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee,
+        {
+          amountToDeposit: amount,
+          feeToDeposit: new BN(0)
+        }
+      );
 
       // Commit the transfers
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("transfer (parallel transfers)", async () => {
@@ -481,10 +688,42 @@ contract("Exchange", (accounts: string[]) => {
       let storageID = 123;
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, feeToken, fee, {storageID: storageID++});
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {storageID: storageID++});
-      await exchangeTestUtil.transfer(ownerA, ownerC, token, amount, token, fee, {storageID: storageID++});
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, token, fee, {storageID: storageID++});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerA,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { storageID: storageID++ }
+      );
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { storageID: storageID++ }
+      );
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerC,
+        token,
+        amount,
+        token,
+        fee,
+        { storageID: storageID++ }
+      );
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        token,
+        fee,
+        { storageID: storageID++ }
+      );
 
       // Verify the block
       await exchangeTestUtil.submitTransactions();
@@ -502,13 +741,45 @@ contract("Exchange", (accounts: string[]) => {
       let storageID = 123;
 
       // Do some transfers transfer
-      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, feeToken, fee, {storageID});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerA,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { storageID }
+      );
       storageID += Constants.NUM_STORAGE_SLOTS;
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {storageID});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { storageID }
+      );
       storageID += Constants.NUM_STORAGE_SLOTS;
-      await exchangeTestUtil.transfer(ownerA, ownerC, token, amount, token, fee, {storageID});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerC,
+        token,
+        amount,
+        token,
+        fee,
+        { storageID }
+      );
       storageID += Constants.NUM_STORAGE_SLOTS;
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, token, fee, {storageID});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        token,
+        fee,
+        { storageID }
+      );
 
       // Verify the block
       await exchangeTestUtil.submitTransactions();
@@ -526,14 +797,27 @@ contract("Exchange", (accounts: string[]) => {
       let storageID = 123;
 
       // Do some transfers transfers with the same storageID
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {storageID});
-      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, token, fee, {storageID});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { storageID }
+      );
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerA,
+        token,
+        amount,
+        token,
+        fee,
+        { storageID }
+      );
 
       // Commit the transfers
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("transfer (reuse old storageID)", async () => {
@@ -547,18 +831,38 @@ contract("Exchange", (accounts: string[]) => {
       let storageID = 123;
 
       // Do some transfers transfers with the same storageID
-      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {storageID});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee,
+        { storageID }
+      );
       storageID += Constants.NUM_STORAGE_SLOTS;
-      await exchangeTestUtil.transfer(ownerA, ownerA, token, amount, token, fee, {storageID});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerA,
+        token,
+        amount,
+        token,
+        fee,
+        { storageID }
+      );
       storageID -= Constants.NUM_STORAGE_SLOTS;
-      await exchangeTestUtil.transfer(ownerA, ownerC, token, amount, token, fee, {storageID});
+      await exchangeTestUtil.transfer(
+        ownerA,
+        ownerC,
+        token,
+        amount,
+        token,
+        fee,
+        { storageID }
+      );
 
       // Commit the transfers
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
-
   });
 });

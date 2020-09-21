@@ -38,11 +38,11 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
 
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs)"
+        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs,uint256 validUntil)"
     );
 
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs)"
+        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs,uint256 validUntil)"
     );
 
     bytes32 constant public WITHDRAW_TYPEHASH = keccak256(
@@ -51,11 +51,12 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
 
     event Deposit(
         address  owner,
+        uint     poolAmount,
         uint96[] amounts
     );
 
     event Withdrawal(
-        address  owner,
+        address   owner,
         uint256[] amounts
     );
 
@@ -63,7 +64,8 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         address  owner,
         bool     fromLayer2,
         uint     minPoolAmountOut,
-        uint96[] maxAmountsIn
+        uint96[] maxAmountsIn,
+        uint     validUntil
     );
 
     event ExitPoolRequested(
@@ -106,6 +108,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         uint     minPoolAmountOut;
         uint96[] maxAmountsIn;
         uint32[] storageIDs;
+        uint     validUntil;
     }
 
     struct PoolExit
@@ -115,6 +118,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         uint     poolAmountIn;
         uint96[] minAmountsOut;
         uint32[] storageIDs;
+        uint     validUntil;
     }
 
     struct PoolTransaction
@@ -266,7 +270,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         }
 
         // Withdraw any outstanding balances for the pool account on the exchange
-        address[] memory owners = new address[](tokens.length);
+        /*address[] memory owners = new address[](tokens.length);
         address[] memory tokenAddresses = new address[](tokens.length);
 
         for (uint i = 0; i < tokens.length; i++) {
@@ -292,7 +296,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             }
         }
 
-        emit Withdrawal(msg.sender, withdrawn);
+        emit Withdrawal(msg.sender, withdrawn);*/
     }
 
     // Needs to be able to receive ETH from the exchange contract
@@ -305,7 +309,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
     {
         if (isOnline()) {
             uint until = lockedUntil[owner];
-            if (until == 0 || block.timestamp < until) {
+            if (until != 0 && block.timestamp > until) {
                 return lockedBalance[token][owner];
             } else {
                 return 0;
@@ -323,24 +327,33 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         return shutdownTimestamp == 0;
     }
 
-
-     function depositAndJoinPool(uint minPoolAmountOut, uint96[] calldata maxAmountsIn, bool fromLayer2)
+    function depositAndJoinPool(
+        uint minPoolAmountOut,
+        uint96[] calldata maxAmountsIn,
+        bool fromLayer2,
+        uint validUntil
+        )
         external
         online
     {
         depositInternal(0, maxAmountsIn);
-        joinPoolInternal(minPoolAmountOut, maxAmountsIn, fromLayer2);
+        joinPoolInternal(minPoolAmountOut, maxAmountsIn, fromLayer2, validUntil);
     }
 
     /// @dev Joins the pool using on-chain funds.
     /// @param minPoolAmountOut The minimum number of liquidity tokens that need to be minted for this join.
     /// @param maxAmountsIn The maximum amounts that can be used to mint
     ///                     the specified amount of liquidity tokens.
-    function joinPool(uint minPoolAmountOut, uint96[] calldata maxAmountsIn, bool fromLayer2)
+    function joinPool(
+        uint minPoolAmountOut,
+        uint96[] calldata maxAmountsIn,
+        bool fromLayer2,
+        uint validUntil
+        )
         external
         online
     {
-        joinPoolInternal(minPoolAmountOut, maxAmountsIn, fromLayer2);
+        joinPoolInternal(minPoolAmountOut, maxAmountsIn, fromLayer2, validUntil);
     }
 
     /// @dev Joins the pool using on-chain funds.
@@ -364,7 +377,8 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             toLayer2: toLayer2,
             poolAmountIn: poolAmountIn,
             minAmountsOut: minAmountsOut,
-            storageIDs: new uint32[](0)
+            storageIDs: new uint32[](0),
+            validUntil: 0xffffffff
         });
         bytes32 txHash = hashPoolExit(DOMAIN_SEPARATOR, exit);
         approvedTx[txHash] = block.timestamp;
@@ -376,7 +390,6 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         public
     {
         if (timestamp > 0) {
-            require(timestamp > lockedUntil[msg.sender], "CANNOT_UNLOCK_EARLIER");
             require(timestamp >= block.timestamp + MIN_TIME_TO_UNLOCK, "TOO_SOON");
         }
         lockedUntil[msg.sender] = timestamp;
@@ -545,10 +558,10 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             totalLockedBalance[token] = totalLockedBalance[token].add(amount);
         }
 
-        emit Deposit(msg.sender, amounts);
+        emit Deposit(msg.sender, poolAmount, amounts);
     }
 
-    function joinPoolInternal(uint minPoolAmountOut, uint96[] calldata maxAmountsIn, bool fromLayer2)
+    function joinPoolInternal(uint minPoolAmountOut, uint96[] calldata maxAmountsIn, bool fromLayer2, uint validUntil)
         internal
     {
         require(maxAmountsIn.length == tokens.length, "INVALID_DATA");
@@ -562,12 +575,13 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             fromLayer2: fromLayer2,
             minPoolAmountOut: minPoolAmountOut,
             maxAmountsIn: maxAmountsIn,
-            storageIDs: new uint32[](0)
+            storageIDs: new uint32[](0),
+            validUntil: validUntil
         });
         bytes32 txHash = hashPoolJoin(DOMAIN_SEPARATOR, join);
         approvedTx[txHash] = 0xffffffff;
 
-        emit JoinPoolRequested(msg.sender, fromLayer2, minPoolAmountOut, maxAmountsIn);
+        emit JoinPoolRequested(msg.sender, fromLayer2, minPoolAmountOut, maxAmountsIn, validUntil);
     }
 
     function mint(address owner, uint amount)
@@ -680,8 +694,12 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             uint96[] memory /* amounts */
         )
     {
-        uint poolTotal = totalSupply();
+        // Check if we can still use this join
+        if (block.timestamp > join.validUntil) {
+            return (false, 0, join.maxAmountsIn);
+        }
 
+        uint poolTotal = totalSupply();
         if (poolTotal == 0) {
             return(true, INITIAL_SUPPLY, join.maxAmountsIn);
         } else {
@@ -705,7 +723,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
                 amounts[i] = (ratio.mul(ctx.ammBalancesAfter[i]) / BASE).toUint96();
             }
 
-            bool valid = poolAmountOut >= join.minPoolAmountOut;
+            bool valid = (poolAmountOut >= join.minPoolAmountOut);
             return (valid, poolAmountOut, amounts);
         }
     }
@@ -724,7 +742,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         );
         if (signature.length == 0) {
             // This is an onchain exit, we're processing it now so stop tracking it.
-            isExiting[msg.sender] = true;
+            isExiting[msg.sender] = false;
         }
 
         (bool valid, uint96[] memory amounts) = validateExitAmounts(ctx, exit);
@@ -779,14 +797,20 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         )
     {
         uint96[] memory amounts = new uint96[](ctx.tokens.length);
-        uint poolTotal = totalSupply();
-        uint ratio = exit.poolAmountIn.mul(BASE) / poolTotal;
 
-        // Check if the user has enough pool tokens
-        if (availableBalance(address(this), exit.owner) < exit.poolAmountIn) {
+        // Check if we can still use this exit
+        if (block.timestamp > exit.validUntil) {
             return (false, amounts);
         }
 
+        // Check if the user has enough pool tokens
+        if (lockedBalance[address(this)][exit.owner] < exit.poolAmountIn) {
+            return (false, amounts);
+        }
+
+        // Calculate how much will be withdrawn
+        uint poolTotal = totalSupply();
+        uint ratio = exit.poolAmountIn.mul(BASE) / poolTotal;
         for (uint i = 0; i < ctx.tokens.length; i++) {
             amounts[i] = (ratio.mul(ctx.ammBalancesAfter[i]) / BASE).toUint96();
             if (amounts[i] < exit.minAmountsOut[i]) {
@@ -914,7 +938,8 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
                     join.fromLayer2,
                     join.minPoolAmountOut,
                     keccak256(abi.encodePacked(join.maxAmountsIn)),
-                    keccak256(abi.encodePacked(join.storageIDs))
+                    keccak256(abi.encodePacked(join.storageIDs)),
+                    join.validUntil
                 )
             )
         );
@@ -937,7 +962,8 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
                     exit.toLayer2,
                     exit.poolAmountIn,
                     keccak256(abi.encodePacked(exit.minAmountsOut)),
-                    keccak256(abi.encodePacked(exit.storageIDs))
+                    keccak256(abi.encodePacked(exit.storageIDs)),
+                    exit.validUntil
                 )
             )
         );
