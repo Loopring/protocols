@@ -22,7 +22,7 @@ contract("Exchange", (accounts: string[]) => {
   ) => {
     await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {setupTestState, useOwnerContract}
+      { setupTestState, useOwnerContract }
     );
     exchange = exchangeTestUtil.exchange;
     operator = exchange;
@@ -377,6 +377,7 @@ contract("Exchange", (accounts: string[]) => {
           // Submit the transfers: wrong order
           await expectThrow(
             exchangeTestUtil.submitPendingBlocks(
+              [],
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
                 let auxiliaryData: any[] = [];
@@ -412,6 +413,7 @@ contract("Exchange", (accounts: string[]) => {
           // Submit the transfers: duplicated index
           await expectThrow(
             exchangeTestUtil.submitPendingBlocks(
+              [],
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
                 let auxiliaryData: any[] = [];
@@ -447,6 +449,7 @@ contract("Exchange", (accounts: string[]) => {
           // Submit the transfers: invalid length
           await expectThrow(
             exchangeTestUtil.submitPendingBlocks(
+              [],
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
                 const auxiliaryData: any[] = [];
@@ -481,6 +484,7 @@ contract("Exchange", (accounts: string[]) => {
 
           // Submit the transfers: everything alright
           await exchangeTestUtil.submitPendingBlocks(
+            [],
             (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
               assert(blocks.length === 1, "unexpected number of blocks");
               const auxiliaryData: any[] = [];
@@ -530,21 +534,24 @@ contract("Exchange", (accounts: string[]) => {
           await commitSomeWork();
           // Try so submit blocks with invalid proofs
           await expectThrow(
-            exchangeTestUtil.submitPendingBlocks((blocks: OnchainBlock[]) => {
-              // Change a random proof
-              const blockToModify = exchangeTestUtil.getRandomInt(
-                blocks.length
-              );
-              const proofIdxToModify = exchangeTestUtil.getRandomInt(8);
-              blocks[blockToModify].proof[proofIdxToModify] =
-                "0x" +
-                new BN(
-                  blocks[blockToModify].proof[proofIdxToModify].slice(2),
-                  16
-                )
-                  .add(new BN(1))
-                  .toString(16);
-            }),
+            exchangeTestUtil.submitPendingBlocks(
+              [],
+              (blocks: OnchainBlock[]) => {
+                // Change a random proof
+                const blockToModify = exchangeTestUtil.getRandomInt(
+                  blocks.length
+                );
+                const proofIdxToModify = exchangeTestUtil.getRandomInt(8);
+                blocks[blockToModify].proof[proofIdxToModify] =
+                  "0x" +
+                  new BN(
+                    blocks[blockToModify].proof[proofIdxToModify].slice(2),
+                    16
+                  )
+                    .add(new BN(1))
+                    .toString(16);
+              }
+            ),
             "INVALID_PROOF"
           );
         });
@@ -557,16 +564,19 @@ contract("Exchange", (accounts: string[]) => {
           await commitSomeWork();
           // Try so submit blocks with invalid proofs
           await expectThrow(
-            exchangeTestUtil.submitPendingBlocks((blocks: OnchainBlock[]) => {
-              // Change the data of a random block
-              const blockToModify = exchangeTestUtil.getRandomInt(
-                blocks.length
-              );
-              blocks[blockToModify].data = [
-                ...blocks[blockToModify].data,
-                ...web3.utils.hexToBytes(web3.utils.randomHex(1))
-              ];
-            }),
+            exchangeTestUtil.submitPendingBlocks(
+              [],
+              (blocks: OnchainBlock[]) => {
+                // Change the data of a random block
+                const blockToModify = exchangeTestUtil.getRandomInt(
+                  blocks.length
+                );
+                blocks[blockToModify].data = [
+                  ...blocks[blockToModify].data,
+                  ...web3.utils.hexToBytes(web3.utils.randomHex(1))
+                ];
+              }
+            ),
             "INVALID_PROOF"
           );
         });

@@ -6,15 +6,20 @@ pragma experimental ABIEncoderV2;
 import "../../aux/compression/ZeroDecompressor.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
+import "../../lib/AddressUtil.sol";
+import "../../lib/ERC1271.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/SignatureUtil.sol";
 import "./SelectorBasedAccessManager.sol";
 import "./IBlockReceiver.sol";
 
 
-contract LoopringIOExchangeOwner is SelectorBasedAccessManager
+contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
 {
-    using BytesUtil for bytes;
-    using MathUint  for uint;
+    using AddressUtil     for address;
+    using BytesUtil       for bytes;
+    using MathUint        for uint;
+    using SignatureUtil   for bytes32;
 
     bytes4 private constant SUBMITBLOCKS_SELECTOR  = IExchangeV3.submitBlocks.selector;
     bool   public  open;
@@ -33,8 +38,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
     {
     }
 
-    function submitBlocksCompressed(
-        bytes calldata data
+    function submitBlocksWithCallbacks(
+        bool              isDataCompressed,
+        bytes             calldata data,
+        BlockCallback[]   calldata callbacks
         )
         external
     {
@@ -42,35 +49,59 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
             "PERMISSION_DENIED"
         );
-        bytes memory decompressed = ZeroDecompressor.decompress(data);
+        bytes memory decompressed = isDataCompressed ?
+            ZeroDecompressor.decompress(data, 1):
+            data;
+
         require(
             decompressed.toBytes4(0) == SUBMITBLOCKS_SELECTOR,
             "INVALID_DATA"
         );
 
-        address addr = target;
-        assembly {
-            let success := call(gas(), addr, 0, add(decompressed, 32), mload(decompressed), decompressed, 0)
-            if eq(success, 0) {
-                let size := returndatasize()
-                returndatacopy(decompressed, 0, returndatasize())
-                revert(decompressed, size)
+        // Process the callback logic.
+        if (callbacks.length > 0) {
+            bytes memory blockData;
+            assembly {
+                blockData := add(decompressed, 4)
             }
+            ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
+            processCallbacks(blocks, callbacks);
         }
+
+        target.fastCallAndVerify(gasleft(), 0, decompressed);
     }
 
-    function submitBlocksWithCallbacks(
-        ExchangeData.Block[] memory blocks,
-        BlockCallback[]      memory callbacks
-        )
+    function openAccessToSubmitBlocks(bool _open)
         external
+        onlyOwner
     {
-        require(
-            hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
-            "PERMISSION_DENIED"
-        );
+        open = _open;
+        emit SubmitBlocksAccessOpened(_open);
+    }
 
-        // Process the callback logic.
+    function isValidSignature(
+        bytes32        signHash,
+        bytes   memory signature
+        )
+        public
+        view
+        override
+        returns (bytes4)
+    {
+        // Role system used a bit differently here.
+        return hasAccessTo(
+            signHash.recoverECDSASigner(signature),
+            this.isValidSignature.selector
+        ) ? ERC1271_MAGICVALUE : bytes4(0);
+    }
+
+
+    function processCallbacks(
+        ExchangeData.Block[] memory   blocks,
+        BlockCallback[]      calldata callbacks
+        )
+        internal
+    {
         // Make sure all txs can only be used once
         uint txIdxLowerBound = 0;
         uint previousBlockIdx = 0;
@@ -88,16 +119,5 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager
             previousBlockIdx = callbacks[i].blockIdx;
             txIdxLowerBound = callbacks[i].txIdx.add(numTransactionsConsumed);
         }
-
-        // Finally submit the blocks
-        IExchangeV3(target).submitBlocks(blocks);
-    }
-
-    function openAccessToSubmitBlocks(bool _open)
-        external
-        onlyOwner
-    {
-        open = _open;
-        emit SubmitBlocksAccessOpened(_open);
     }
 }

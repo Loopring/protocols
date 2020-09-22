@@ -208,7 +208,7 @@ contract("Exchange", (accounts: string[]) => {
     );
 
     await exchange.withdrawFromApprovedWithdrawals([owner], [token], {
-      from: exchangeTestUtil.testContext.feeRecipients[0]
+      from: exchangeTestUtil.testContext.orderOwners[10]
     });
 
     // Complete amount needs to be withdrawn
@@ -249,7 +249,7 @@ contract("Exchange", (accounts: string[]) => {
   const createExchange = async (setupTestState: boolean = true) => {
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {setupTestState}
+      { setupTestState }
     );
     exchange = exchangeTestUtil.exchange;
     depositContract = exchangeTestUtil.depositContract;
@@ -505,7 +505,9 @@ contract("Exchange", (accounts: string[]) => {
 
       // Submit the block
       const expectedResult = { ...deposit };
-      await submitWithdrawalBlockChecked([expectedResult], undefined, [recipient]);
+      await submitWithdrawalBlockChecked([expectedResult], undefined, [
+        recipient
+      ]);
 
       // Try to set it again even after the block has been submitted
       await expectThrow(
@@ -771,25 +773,17 @@ contract("Exchange", (accounts: string[]) => {
       const feeToken = "ETH";
       const fee = new BN(web3.utils.toWei("1.5", "ether"));
 
-      await exchangeTestUtil.deposit(
-        owner,
-        owner,
-        token,
-        balance
-      );
+      await exchangeTestUtil.deposit(owner, owner, token, balance);
       await exchangeTestUtil.requestWithdrawal(
         owner,
         token,
         toWithdraw,
         feeToken,
         fee,
-        { maxFee: fee.div(new BN(3))}
+        { maxFee: fee.div(new BN(3)) }
       );
 
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("Withdraw (protocol fees)", async () => {
@@ -817,7 +811,12 @@ contract("Exchange", (accounts: string[]) => {
 
       const feeBipsAMM = 30;
       const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
-      await exchangeTestUtil.requestAmmUpdate(exchangeTestUtil.exchangeOperator, ring.orderA.tokenS, feeBipsAMM, tokenWeightS);
+      await exchangeTestUtil.requestAmmUpdate(
+        exchangeTestUtil.exchangeOperator,
+        ring.orderA.tokenS,
+        feeBipsAMM,
+        tokenWeightS
+      );
 
       await exchangeTestUtil.requestWithdrawal(
         Constants.zeroAddress,
@@ -905,33 +904,60 @@ contract("Exchange", (accounts: string[]) => {
       const feeToken = "ETH";
       const fee = new BN(web3.utils.toWei("0.0456", "ether"));
 
-      await exchangeTestUtil.deposit(
-        owner,
-        owner,
-        token,
-        balance
-      );
+      await exchangeTestUtil.deposit(owner, owner, token, balance);
 
       let storageID = 123;
-      await exchangeTestUtil.requestWithdrawal(owner, token, toWithdraw, feeToken, fee, {storageID});
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { storageID }
+      );
       storageID++;
-      await exchangeTestUtil.requestWithdrawal(owner, token, toWithdraw, feeToken, fee, {storageID});
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { storageID }
+      );
       storageID++;
-      await exchangeTestUtil.requestWithdrawal(owner, token, toWithdraw, feeToken, fee, {storageID});
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { storageID }
+      );
       storageID += Constants.NUM_STORAGE_SLOTS;
-      await exchangeTestUtil.requestWithdrawal(owner, token, toWithdraw, feeToken, fee, {storageID});
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { storageID }
+      );
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
 
       // Try to use the same slot again
-      await exchangeTestUtil.requestWithdrawal(owner, token, toWithdraw, feeToken, fee, {storageID});
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
+        token,
+        toWithdraw,
+        feeToken,
+        fee,
+        { storageID }
+      );
 
       // Commit the withdrawals
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("Deposits should not total more than MAX_AMOUNT", async () => {

@@ -675,7 +675,7 @@ export class ExchangeV3 {
 
     // Get the block data from the transaction data
     //const submitBlocksFunctionSignature = "0x8dadd3af"; // submitBlocks
-    const submitBlocksFunctionSignature = "0x14867212"; // submitBlocksCompressed
+    const submitBlocksFunctionSignature = "0x78e9a4f3"; // submitBlocksWithCallbacks
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
@@ -683,10 +683,21 @@ export class ExchangeV3 {
     //console.log(transaction.input);
     if (transaction.input.startsWith(submitBlocksFunctionSignature)) {
       const decodedCompressedInput = this.web3.eth.abi.decodeParameters(
-        ["bytes"],
+        [
+          "bool",
+          "bytes",
+          {
+            "struct BlockCallback[]": {
+              target: "address",
+              blockIdx: "uint",
+              txIdx: "uint",
+              auxiliaryData: "bytes"
+            }
+          }
+        ],
         "0x" + transaction.input.slice(2 + 4 * 2)
       );
-      const data = decompressZeros(decodedCompressedInput[0]);
+      const data = decompressZeros(decodedCompressedInput[1]);
       // Get the inputs to commitBlock
       const decodedInputs = this.web3.eth.abi.decodeParameters(
         [

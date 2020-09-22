@@ -23,7 +23,7 @@ library BlockReader {
         uint32  timestamp;
         uint8   protocolTakerFeeBips;
         uint8   protocolMakerFeeBips;
-        uint    numConditionalTransactions;
+        uint32  numConditionalTransactions;
         uint32  operatorAccountID;
     }
 

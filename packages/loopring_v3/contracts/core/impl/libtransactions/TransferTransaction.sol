@@ -26,12 +26,14 @@ library TransferTransaction
 
     struct Transfer
     {
+        uint32  fromAccountID;
+        uint32  toAccountID;
         address from;
         address to;
         uint16  tokenID;
-        uint    amount;
+        uint96  amount;
         uint16  feeTokenID;
-        uint    fee;
+        uint96  fee;
         uint32  validUntil;
         uint32  storageID;
     }
@@ -92,9 +94,9 @@ library TransferTransaction
         // Extract the transfer data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        //transfer.fromAccountID = data.toUint32(_offset);
+        transfer.fromAccountID = data.toUint32(_offset);
         _offset += 4;
-        //transfer.toAccountID = data.toUint32(_offset);
+        transfer.toAccountID = data.toUint32(_offset);
         _offset += 4;
         transfer.tokenID = data.toUint16(_offset);
         _offset += 2;

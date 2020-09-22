@@ -4,8 +4,6 @@ export class ExchangeTestContext {
   public operators: string[];
   public orderOwners: string[];
   public wallets: string[];
-  public ringMatchers: string[];
-  public feeRecipients: string[];
 
   public tokenSymbolAddrMap: Map<string, string>; // key: symbol, value: addr
   public tokenAddrSymbolMap: Map<string, string>; // key: addr, value: symbol
@@ -19,8 +17,6 @@ export class ExchangeTestContext {
     operators: string[],
     orderOwners: string[],
     wallets: string[],
-    ringMatchers: string[],
-    feeRecipients: string[],
     tokenSymbolAddrMap: Map<string, string>,
     tokenAddrSymbolMap: Map<string, string>,
     tokenAddrDecimalsMap: Map<string, number>,
@@ -28,11 +24,10 @@ export class ExchangeTestContext {
     allTokens: any[]
   ) {
     this.deployer = deployer;
-    (this.stateOwners = stateOwners), (this.operators = operators);
+    this.stateOwners = stateOwners;
+    this.operators = operators;
     this.orderOwners = orderOwners;
     this.wallets = wallets;
-    this.ringMatchers = ringMatchers;
-    this.feeRecipients = feeRecipients;
     this.tokenSymbolAddrMap = tokenSymbolAddrMap;
     this.tokenAddrSymbolMap = tokenAddrSymbolMap;
     this.tokenAddrDecimalsMap = tokenAddrDecimalsMap;

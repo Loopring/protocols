@@ -66,7 +66,8 @@ static auto dummyTransfer = R"({
     "payerToAccountID": 2,
     "payerTo": "2",
     "payeeToAccountID": 2,
-    "storageID": "0"
+    "storageID": "0",
+    "putAddressesInDA": false
 })"_json;
 
 static auto dummyWithdraw = R"({
@@ -437,6 +438,7 @@ class Transfer
     ethsnarks::FieldT payerTo;
     ethsnarks::FieldT payeeToAccountID;
     ethsnarks::FieldT maxFee;
+    ethsnarks::FieldT putAddressesInDA;
     ethsnarks::FieldT type;
 };
 
@@ -457,6 +459,7 @@ static void from_json(const json &j, Transfer &transfer)
     transfer.payerTo = ethsnarks::FieldT(j["payerTo"].get<std::string>().c_str());
     transfer.payeeToAccountID = ethsnarks::FieldT(j.at("payeeToAccountID"));
     transfer.maxFee = ethsnarks::FieldT(j["maxFee"].get<std::string>().c_str());
+    transfer.putAddressesInDA = ethsnarks::FieldT(j.at("putAddressesInDA").get<bool>() ? 1 : 0);
     transfer.type = ethsnarks::FieldT(j.at("type"));
 }
 

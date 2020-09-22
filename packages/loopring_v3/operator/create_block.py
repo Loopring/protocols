@@ -75,6 +75,7 @@ def transferFromJSON(jTransfer):
     transfer.payerTo = str(jTransfer["payerTo"])
     transfer.payeeToAccountID = int(jTransfer["payeeToAccountID"])
     transfer.maxFee = str(jTransfer["maxFee"])
+    transfer.putAddressesInDA = bool(jTransfer["putAddressesInDA"])
     transfer.signature = None
     transfer.dualSignature = None
     transfer.onchainSignature = None

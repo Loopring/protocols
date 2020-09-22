@@ -7,6 +7,7 @@ import "../../lib/Claimable.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+import "../../thirdparty/SafeCast.sol";
 import "../iface/IDepositContract.sol";
 
 
@@ -24,6 +25,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
+    using SafeCast          for uint;
 
     address public exchange;
 
@@ -108,8 +110,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
 
             uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
             uint diff = balanceAfter.sub(balanceBefore);
-            amountReceived = uint96(diff);
-            require(uint(amountReceived) == diff, "OUT_OF_RANGE");
+            amountReceived = diff.toUint96();
 
             ethToReturn = msg.value;
         }

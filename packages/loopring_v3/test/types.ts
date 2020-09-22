@@ -130,6 +130,8 @@ export class Transfer {
   storageID: number;
   validUntil: number;
 
+  putAddressesInDA: boolean;
+
   dualSecretKey?: string;
 
   signature?: Signature;
