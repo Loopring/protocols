@@ -209,6 +209,14 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         return computeAddress_(address(0), salt);
     }
 
+    function getSimpleProxyCreationCode()
+        external
+        view
+        returns (bytes memory)
+    {
+        return type(SimpleProxy).creationCode;
+    }
+
     // ---- internal functions ---
 
     function consumeBlank_(
