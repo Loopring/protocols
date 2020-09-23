@@ -13,9 +13,10 @@ import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmStatus.sol";
 import "./libamm/AmmExitRequest.sol";
 import "./libamm/AmmBlockReceiver.sol";
+import "../../lib/ReentrancyGuard.sol";
 
 /// @title AmmPool
-abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
+abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
 {
     using AmmExchange      for AmmData.State;
     using AmmJoinRequest   for AmmData.State;
@@ -92,6 +93,7 @@ abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
         uint8              _feeBips
         )
         external
+        nonReentrant
     {
         state.setupPool(_exchange, _accountID, _tokens, _weights, _feeBips);
     }
@@ -101,6 +103,7 @@ abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
         external
         payable
         online
+        nonReentrant
     {
         state.shutdown(txHash);
     }
@@ -110,6 +113,7 @@ abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
     function withdrawFromPoolWhenShutdown(uint poolAmountIn)
         external
         offline
+        nonReentrant
     {
         uint _totalSupply = totalSupply();
         state.withdrawFromPoolWhenShutdown(poolAmountIn, _totalSupply);
@@ -125,6 +129,7 @@ abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
         external
         payable
         online
+        nonReentrant
     {
         state.deposit(poolAmount, amounts);
     }
@@ -141,6 +146,7 @@ abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
         )
         external
         online
+        nonReentrant
     {
         state.joinPool(minPoolAmountOut, maxAmountsIn, fromLayer2, validUntil);
     }
@@ -154,6 +160,7 @@ abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
         )
         external
         online
+        nonReentrant
     {
         state.deposit(0, maxAmountsIn);
         state.joinPool(minPoolAmountOut, maxAmountsIn, fromLayer2, validUntil);
@@ -161,6 +168,7 @@ abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
 
     function setLockedUntil(uint timestamp)
         external
+        nonReentrant
     {
         state.setLockedUntil(timestamp);
         emit LockedUntil(msg.sender, timestamp);
@@ -169,6 +177,7 @@ abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
     function exitPool(uint poolAmountIn, uint96[] calldata minAmountsOut, bool toLayer2)
         external
         online
+        nonReentrant
     {
         state.exitPool(poolAmountIn, minAmountsOut, toLayer2);
         emit ExitPoolRequested(msg.sender, toLayer2, poolAmountIn, minAmountsOut);
@@ -185,6 +194,7 @@ abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
         bytes  calldata signature
         )
         external
+        nonReentrant
     {
         uint[] memory withdrawn = state.withdraw(poolAmount, amounts, validUntil, signature);
         emit Withdrawal(msg.sender, withdrawn);
@@ -204,6 +214,7 @@ abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
         override
         online
         onlyExchangeOwner
+        nonReentrant
         returns (uint)
     {
         return state.beforeBlockSubmitted(_block, txIdx, auxiliaryData);
