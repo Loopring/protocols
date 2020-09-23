@@ -15,6 +15,14 @@ contract OfficialGuardian is OwnerManagable, ERC1271
     using SignatureUtil for bytes32;
     mapping (address => bool) public whitelist;
 
+
+    /// @dev init owner for proxy contract:
+    function initOwner(address _owner) external
+    {
+        require(owner == address(0), "INITIALIZED_ALREADY");
+        owner = _owner;
+    }
+
     function isValidSignature(
         bytes32        _signHash,
         bytes   memory _signature
