@@ -69,6 +69,12 @@ contract AmmData
     }
 
     struct State {
+        // Liquidity token state variables
+        uint  totalSupply;
+        mapping(address => uint) balanceOf;
+        mapping(address => mapping(address => uint)) allowance;
+
+        // AMM state variables
         uint8   feeBips;
         Token[] tokens;
 

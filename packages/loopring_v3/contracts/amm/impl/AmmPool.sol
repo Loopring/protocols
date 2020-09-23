@@ -5,12 +5,12 @@ pragma experimental ABIEncoderV2;
 
 import "../iface/IAmmPool.sol";
 import "./AmmData.sol";
+import './LPToken.sol';
 import "./libamm/AmmJoin.sol";
-import "./libamm/AmmLPToken.sol";
 import "./libamm/AmmExit.sol";
 
 /// @title AmmPool
-contract AmmPool is IAmmPool
+abstract contract AmmPool is IAmmPool, LPToken
 {
     AmmData.State state;
 }
