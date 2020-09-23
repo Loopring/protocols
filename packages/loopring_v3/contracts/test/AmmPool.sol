@@ -148,8 +148,8 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         uint     txIdx;
         bytes32  DOMAIN_SEPARATOR;
         bytes32  exchangeDomainSeparator;
-        uint96[] ammBalancesBefore;
-        uint96[] ammBalancesAfter;
+        uint96[] ammActualL2Balances;
+        uint96[] ammExpectedL2Balances;
         uint     numTransactionsConsumed;
         Token[]  tokens;
     }
@@ -493,8 +493,8 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             txIdx: txIdx,
             DOMAIN_SEPARATOR: DOMAIN_SEPARATOR,
             exchangeDomainSeparator: exchange.getDomainSeparator(),
-            ammBalancesBefore: new uint96[](tokens.length),
-            ammBalancesAfter: new uint96[](tokens.length),
+            ammActualL2Balances: new uint96[](tokens.length),
+            ammExpectedL2Balances: new uint96[](tokens.length),
             numTransactionsConsumed: 0,
             tokens: tokens
         });
@@ -520,11 +520,11 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            if (ctx.ammBalancesAfter[i] > ctx.ammBalancesBefore[i]) {
-                uint96 amount = ctx.ammBalancesAfter[i] - ctx.ammBalancesBefore[i];
+            if (ctx.ammExpectedL2Balances[i] > ctx.ammActualL2Balances[i]) {
+                uint96 amount = ctx.ammExpectedL2Balances[i] - ctx.ammActualL2Balances[i];
                 processDeposit(ctx, ctx.tokens[i], amount);
-            } else if (ctx.ammBalancesBefore[i] > ctx.ammBalancesAfter[i]) {
-                uint96 amount = ctx.ammBalancesBefore[i] - ctx.ammBalancesAfter[i];
+            } else if (ctx.ammActualL2Balances[i] > ctx.ammExpectedL2Balances[i]) {
+                uint96 amount = ctx.ammActualL2Balances[i] - ctx.ammExpectedL2Balances[i];
                 processWithdrawal(ctx, ctx.tokens[i], amount);
             }
         }
@@ -540,6 +540,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
     {
         require(amounts.length == tokens.length, "INVALID_DATA");
         if (isExiting[msg.sender]) {
+            // Q: 这个标记的用途？
             // This could suddenly change the amount of liquidity tokens available, which
             // could change how the operator needs to process the exit.
             require(poolAmount == 0, "CANNOT_DEPOSIT_LIQUIDITY_TOKENS_WHILE_EXITING");
@@ -575,13 +576,15 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             fromLayer2: fromLayer2,
             minPoolAmountOut: minPoolAmountOut,
             maxAmountsIn: maxAmountsIn,
-            storageIDs: new uint32[](0),
+            storageIDs: new uint32[](0), // Q：这是做什么的？
             validUntil: validUntil
         });
         bytes32 txHash = hashPoolJoin(DOMAIN_SEPARATOR, join);
         approvedTx[txHash] = 0xffffffff;
 
         emit JoinPoolRequested(msg.sender, fromLayer2, minPoolAmountOut, maxAmountsIn, validUntil);
+
+        // Q: 可以直接在事件里面包含PoolJoin
     }
 
     function mint(address owner, uint amount)
@@ -619,10 +622,10 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             ctx.numTransactionsConsumed++;
             if (start) {
                 // AMM account balance now available onchain
-                ctx.ammBalancesBefore[i] = update.balance;
-                ctx.ammBalancesAfter[i] = update.balance;
+                ctx.ammActualL2Balances[i] = update.balance;
+                ctx.ammExpectedL2Balances[i] = update.balance;
             } else {
-                require(ctx.ammBalancesAfter[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
+                require(ctx.ammExpectedL2Balances[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
             }
         }
     }
@@ -642,44 +645,46 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
 
         // Check if the requirements are fulfilled
         (bool valid, uint poolAmountOut, uint96[] memory amounts) = validateJoinAmounts(ctx, join);
-
-        if (valid) {
-            for (uint i = 0; i < ctx.tokens.length; i++) {
-                uint96 amount = amounts[i];
-                if (join.fromLayer2) {
-                    TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
-                    require(transfer.from == join.owner, "INVALID_TX_DATA");
-                    require(transfer.toAccountID == accountID, "INVALID_TX_DATA");
-                    require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
-                    require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
-                    require(transfer.fee == 0, "INVALID_TX_DATA");
-
-                    // Replay protection (only necessary when using a signature)
-                    if (signature.length > 0) {
-                        require(transfer.storageID == join.storageIDs[i], "INVALID_TX_DATA");
-                    }
-
-                    // Now approve this transfer
-                    transfer.validUntil = 0xffffffff;
-                    bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-                    exchange.approveTransaction(join.owner, txHash);
-
-                    ctx.numTransactionsConsumed++;
-                    // Update the amount to the actual amount transferred (which can have some some small rounding errors)
-                    amount = transfer.amount;
-                    // Update the balances in the account
-                    ctx.ammBalancesBefore[i] = ctx.ammBalancesBefore[i].add(amount);
-                } else {
-                    // Make the amount unavailable for withdrawing
-                    address token = ctx.tokens[i].addr;
-                    lockedBalance[token][join.owner] = lockedBalance[token][join.owner].sub(amount);
-                }
-                ctx.ammBalancesAfter[i] = ctx.ammBalancesAfter[i].add(amount);
-            }
-
-            // Mint liquidity tokens
-            mint(join.owner, poolAmountOut);
+        if (!valid) {
+            return;
         }
+
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            uint96 amount = amounts[i];
+            if (join.fromLayer2) {
+                TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+                require(transfer.from == join.owner, "INVALID_TX_DATA");
+                require(transfer.toAccountID == accountID, "INVALID_TX_DATA");
+                require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
+                require(isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
+                require(transfer.fee == 0, "INVALID_TX_DATA");
+
+                // Replay protection (only necessary when using a signature)
+                if (signature.length > 0) {
+                    require(transfer.storageID == join.storageIDs[i], "INVALID_TX_DATA");
+                }
+
+                // Now approve this transfer
+                transfer.validUntil = 0xffffffff;
+                bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+                exchange.approveTransaction(join.owner, txHash);
+
+                ctx.numTransactionsConsumed++;
+                // Update the amount to the actual amount transferred (which can have some some small rounding errors)
+                amount = transfer.amount;
+                // Update the balances in the account
+                // Q: 为什么更新这个呢？
+                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
+            } else {
+                // Make the amount unavailable for withdrawing
+                address token = ctx.tokens[i].addr;
+                lockedBalance[token][join.owner] = lockedBalance[token][join.owner].sub(amount);
+            }
+            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
+        }
+
+        // Mint liquidity tokens
+        mint(join.owner, poolAmountOut);
     }
 
     function validateJoinAmounts(
@@ -695,37 +700,42 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         )
     {
         // Check if we can still use this join
+        uint96[] memory amounts = new uint96[](ctx.tokens.length);
         if (block.timestamp > join.validUntil) {
-            return (false, 0, join.maxAmountsIn);
+            return (false, 0, amounts);
         }
 
         uint poolTotal = totalSupply();
         if (poolTotal == 0) {
             return(true, INITIAL_SUPPLY, join.maxAmountsIn);
-        } else {
-            // Calculate the amount of liquidity tokens that should be minted
-            uint poolAmountOut = 0;
-            bool initialValueSet = false;
-            for (uint i = 0; i < ctx.tokens.length; i++) {
-                if (ctx.ammBalancesAfter[i] > 0) {
-                    uint amountOut = uint(join.maxAmountsIn[i]).mul(poolTotal) / uint(ctx.ammBalancesAfter[i]);
-                    if (!initialValueSet || amountOut < poolAmountOut) {
-                        poolAmountOut = amountOut;
-                        initialValueSet = true;
-                    }
+        }
+
+        // Calculate the amount of liquidity tokens that should be minted
+        uint poolAmountOut = 0;
+        bool initialValueSet = false;
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            if (ctx.ammExpectedL2Balances[i] > 0) {
+                uint amountOut = uint(join.maxAmountsIn[i]).mul(poolTotal) / uint(ctx.ammExpectedL2Balances[i]);
+                if (!initialValueSet || amountOut < poolAmountOut) {
+                    poolAmountOut = amountOut;
+                    initialValueSet = true;
                 }
             }
-
-            // Calculate the amounts to deposit
-            uint ratio = poolAmountOut.mul(BASE) / poolTotal;
-            uint96[] memory amounts = new uint96[](ctx.tokens.length);
-            for (uint i = 0; i < ctx.tokens.length; i++) {
-                amounts[i] = (ratio.mul(ctx.ammBalancesAfter[i]) / BASE).toUint96();
-            }
-
-            bool valid = (poolAmountOut >= join.minPoolAmountOut);
-            return (valid, poolAmountOut, amounts);
         }
+
+        if (poolAmountOut == 0) {
+            return (false, 0, amounts);
+        }
+
+        // Calculate the amounts to deposit
+        uint ratio = poolAmountOut.mul(BASE) / poolTotal;
+
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i]) / BASE).toUint96();
+        }
+
+        bool valid = (poolAmountOut >= join.minPoolAmountOut);
+        return (valid, poolAmountOut, amounts);
     }
 
     function processExit(
@@ -774,13 +784,13 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
                     // Update the amount to the actual amount transferred (which can have some some small rounding errors)
                     amount = transfer.amount;
                     // Update the balances in the account
-                    ctx.ammBalancesBefore[i] = ctx.ammBalancesBefore[i].sub(amount);
+                    ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
                 } else {
                     address token = ctx.tokens[i].addr;
                     // Make the amount available for withdrawing
                     lockedBalance[token][exit.owner] = lockedBalance[token][exit.owner].add(amount);
                 }
-                ctx.ammBalancesAfter[i] = ctx.ammBalancesAfter[i].sub(amount);
+                ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
             }
         }
     }
@@ -812,7 +822,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         uint poolTotal = totalSupply();
         uint ratio = exit.poolAmountIn.mul(BASE) / poolTotal;
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = (ratio.mul(ctx.ammBalancesAfter[i]) / BASE).toUint96();
+            amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i]) / BASE).toUint96();
             if (amounts[i] < exit.minAmountsOut[i]) {
                 return (false, amounts);
             }
