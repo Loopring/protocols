@@ -100,10 +100,10 @@ contract AmmData
         mapping (address => bool) isExiting;
     }
 
-    uint constant BASE = 10 ** 18;
-    uint constant INITIAL_SUPPLY = 100 * BASE;
-    uint constant MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN = 7 days;
-    uint constant MIN_TIME_TO_UNLOCK = 1 days;
+    function BASE() internal pure returns (uint) { return 10 ** 18; }
+    function INITIAL_SUPPLY() internal pure returns (uint) { return 100 * BASE(); }
+    function MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN() internal pure returns (uint) { return 7 days; }
+    function MIN_TIME_TO_UNLOCK() internal pure returns (uint) { return 1 days; }
 
     event Withdrawal(
         address   owner,

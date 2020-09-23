@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../iface/IAmmPool.sol";
 import "./AmmData.sol";
 import './LPToken.sol';
+import "./libamm/AmmExchange.sol";
 import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmStatus.sol";
 import "./libamm/AmmExitRequest.sol";
@@ -13,6 +14,7 @@ import "./libamm/AmmExitRequest.sol";
 /// @title AmmPool
 abstract contract AmmPool is IAmmPool, LPToken
 {
+    using AmmExchange      for AmmData.State;
     using AmmJoinRequest   for AmmData.State;
     using AmmStatus        for AmmData.State;
     using AmmExitRequest   for AmmData.State;
@@ -69,6 +71,26 @@ abstract contract AmmPool is IAmmPool, LPToken
         external
     {
         state.setupPool(_exchange, _accountID, _tokens, _weights, _feeBips);
+    }
+
+    // Anyone is able to shut down the pool when requests aren't being processed any more.
+    function shutdown(bytes32 txHash)
+        external
+        payable
+        online
+    {
+        state.shutdown(txHash);
+    }
+
+        // Only used to withdraw from the pool when shutdown.
+    // Otherwise LPs should withdraw by doing normal queued exit requests.
+    function withdrawFromPoolWhenShutdown(uint poolAmountIn)
+        external
+        offline
+    {
+        uint _totalSupply = totalSupply();
+        state.withdrawFromPoolWhenShutdown(poolAmountIn, _totalSupply);
+        _burn(msg.sender, poolAmountIn);
     }
 
     /// @param poolAmount The amount of liquidity tokens to deposit

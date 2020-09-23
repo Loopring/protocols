@@ -54,4 +54,30 @@ library AmmStatus
             ERC20(token).approve(depositContract, ~uint(0));
         }
     }
+
+    // Anyone is able to shut down the pool when requests aren't being processed any more.
+    function shutdown(
+        AmmData.State storage S,
+        bytes32               txHash
+        )
+        external
+    {
+        // // TODO
+        // require(
+        //     block.timestamp > S.approvedTx[txHash] + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
+        //     "REQUEST_NOT_TOO_OLD"
+        // );
+
+        if (!S.exchange.isInWithdrawalMode()) {
+            for (uint i = 0; i < S.tokens.length; i++) {
+                S.exchange.forceWithdraw{value: msg.value/S.tokens.length}(
+                    address(this),
+                    S.tokens[i].addr,
+                    S.accountID
+                );
+            }
+        }
+
+        S.shutdownTimestamp = block.timestamp;
+    }
 }
