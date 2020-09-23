@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 
-/// @title LPToken
-library AmmExit
+/// @title AmmExitRequest
+library AmmExitRequest
 {
 }

@@ -105,23 +105,9 @@ contract AmmData
     uint constant MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN = 7 days;
     uint constant MIN_TIME_TO_UNLOCK = 1 days;
 
-    event Deposit(
-        address  owner,
-        uint     poolAmount,
-        uint96[] amounts
-    );
-
     event Withdrawal(
         address   owner,
         uint256[] amounts
-    );
-
-    event JoinPoolRequested(
-        address  owner,
-        bool     fromLayer2,
-        uint     minPoolAmountOut,
-        uint96[] maxAmountsIn,
-        uint     validUntil
     );
 
     event ExitPoolRequested(
