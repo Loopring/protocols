@@ -147,8 +147,8 @@ library AmmJoinProcess
             return (false, 0, amounts);
         }
 
-        if (ctx.totalSupply == 0) {
-            return(true, ctx.initialSupply, join.maxAmountsIn);
+        if (ctx.poolTokenTotalSupply == 0) {
+            return(true, ctx.poolTokenInitialSupply, join.maxAmountsIn);
         }
 
         // Calculate the amount of liquidity tokens that should be minted
@@ -156,7 +156,7 @@ library AmmJoinProcess
         bool initialValueSet = false;
         for (uint i = 0; i < ctx.tokens.length; i++) {
             if (ctx.ammExpectedL2Balances[i] > 0) {
-                uint amountOut = uint(join.maxAmountsIn[i]).mul(ctx.totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
+                uint amountOut = uint(join.maxAmountsIn[i]).mul(ctx.poolTokenTotalSupply) / uint(ctx.ammExpectedL2Balances[i]);
                 if (!initialValueSet || amountOut < poolAmountOut) {
                     poolAmountOut = amountOut;
                     initialValueSet = true;
@@ -169,10 +169,10 @@ library AmmJoinProcess
         }
 
         // Calculate the amounts to deposit
-        uint ratio = poolAmountOut.mul(ctx.base) / ctx.totalSupply;
+        uint ratio = poolAmountOut.mul(ctx.poolTokenBase) / ctx.poolTokenTotalSupply;
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i]) / ctx.base).toUint96();
+            amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i]) / ctx.poolTokenBase).toUint96();
         }
 
         bool valid = (poolAmountOut >= join.minPoolAmountOut);

@@ -65,10 +65,12 @@ library AmmData
         uint96[] ammActualL2Balances;
         uint96[] ammExpectedL2Balances;
         uint     numTransactionsConsumed;
+
         Token[]  tokens;
-        uint     totalSupply;
-        uint     base;
-        uint     initialSupply;
+
+        uint     poolTokenTotalSupply;
+        uint     poolTokenBase;
+        uint     poolTokenInitialSupply;
     }
 
     struct State {

@@ -116,8 +116,8 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
         nonReentrant
     {
         uint _totalSupply = totalSupply();
-        state.withdrawFromPoolWhenShutdown(poolAmountIn, _totalSupply);
         _burn(msg.sender, poolAmountIn);
+        state.withdrawFromPoolWhenShutdown(poolAmountIn, _totalSupply);
     }
 
     /// @param poolAmount The amount of liquidity tokens to deposit
@@ -228,6 +228,6 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
         nonReentrant
         returns (uint)
     {
-        return state.beforeBlockSubmitted(_block, txIdx, auxiliaryData);
+        return state.beforeBlockSubmitted(totalSupply(), _block, txIdx, auxiliaryData);
     }
 }

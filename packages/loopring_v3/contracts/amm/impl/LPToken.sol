@@ -8,11 +8,11 @@ import '../../lib/MathUint.sol';
 
 contract LPToken is ERC20 {
     using MathUint for uint;
-
+    // TODO:support permit
     // TODO: derive name and symbol from the list of tokens?
     string public constant name = 'Loopring AMM Token';
     string public constant symbol = 'LAT';
-    uint8  public constant decimals = 18;
+    uint   public constant decimals = 18;
 
     uint  private _totalSupply;
     mapping(address => uint) private _balanceOf;

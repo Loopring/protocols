@@ -86,7 +86,7 @@ library AmmExitRequest
         S.exchange.withdrawFromApprovedWithdrawals(owners, tokenAddresses);
 
         // Withdraw
-        uint[] memory withdrawn = new uint[](S.tokens.length + 1);
+        withdrawn = new uint[](S.tokens.length + 1);
         // for (uint i = 0; i < S.tokens.length + 1; i++) {
         //     uint amount = (i < S.tokens.length) ? amounts[i] : poolAmount;
         //     address token = (i < S.tokens.length) ? S.tokens[i].addr : address(this);
