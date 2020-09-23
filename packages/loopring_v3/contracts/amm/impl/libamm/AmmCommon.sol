@@ -46,19 +46,5 @@ library AmmCommon
         }
     }
 
-    function authenticatePoolTx(
-        AmmData.State storage S,
-        address        owner,
-        bytes32        poolTxHash,
-        bytes   memory signature
-        )
-        internal
-    {
-        if (signature.length == 0) {
-            require(S.approvedTx[poolTxHash] != 0, "NOT_APPROVED");
-            delete S.approvedTx[poolTxHash];
-        } else {
-            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
-        }
-    }
+
 }

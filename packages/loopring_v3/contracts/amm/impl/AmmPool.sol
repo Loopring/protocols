@@ -78,6 +78,8 @@ abstract contract AmmPool is IAmmPool, LPToken
         return state.isOnline();
     }
 
+    receive() payable external {}
+
     function setupPool(
         IExchangeV3        _exchange,
         uint32             _accountID,
