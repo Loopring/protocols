@@ -4,20 +4,24 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../iface/IAmmPool.sol";
+import "../../aux/access/IBlockReceiver.sol";
+import "../../core/iface/IAgentRegistry.sol";
 import "./AmmData.sol";
 import './LPToken.sol';
 import "./libamm/AmmExchange.sol";
 import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmStatus.sol";
 import "./libamm/AmmExitRequest.sol";
+import "./libamm/AmmBlockReceiver.sol";
 
 /// @title AmmPool
-abstract contract AmmPool is IAmmPool, LPToken
+abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken
 {
     using AmmExchange      for AmmData.State;
     using AmmJoinRequest   for AmmData.State;
     using AmmStatus        for AmmData.State;
     using AmmExitRequest   for AmmData.State;
+    using AmmBlockReceiver for AmmData.State;
 
     AmmData.State state;
 
@@ -184,5 +188,24 @@ abstract contract AmmPool is IAmmPool, LPToken
     {
         uint[] memory withdrawn = state.withdraw(poolAmount, amounts, validUntil, signature);
         emit Withdrawal(msg.sender, withdrawn);
+    }
+
+    // Processes work in the queue. Can only be called by the exchange owner
+    // before the blocks containing work for this pool are submitted.
+    // This just verifies if the work is done correctly and only then approves
+    // the L2 transactions that were already included in the block.
+    // Uses synchronized logic on L1/L2 to make the onchain logic easy and efficient.
+    function beforeBlockSubmitted(
+        ExchangeData.Block memory  _block,
+        uint                       txIdx,
+        bytes              memory  auxiliaryData
+        )
+        public
+        override
+        online
+        onlyExchangeOwner
+        returns (uint)
+    {
+        return state.beforeBlockSubmitted(_block, txIdx, auxiliaryData);
     }
 }
