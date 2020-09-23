@@ -35,6 +35,11 @@ abstract contract AmmPool is IAmmPool, LPToken
         uint     validUntil
     );
 
+    event LockedUntil(
+        address  owner,
+        uint     timestamp
+    );
+
     modifier onlyExchangeOwner()
     {
         require(msg.sender == state.exchange.owner(), "UNAUTHORIZED");
@@ -133,5 +138,11 @@ abstract contract AmmPool is IAmmPool, LPToken
     {
         state.deposit(0, maxAmountsIn);
         state.joinPool(minPoolAmountOut, maxAmountsIn, fromLayer2, validUntil);
+    }
+
+    function setLockedUntil(uint timestamp)
+        external
+    {
+        state.setLockedUntil(timestamp);
     }
 }

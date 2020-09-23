@@ -117,8 +117,4 @@ contract AmmData
         uint96[] minAmountsOut
     );
 
-    event LockedUntil(
-        address  owner,
-        uint     timestamp
-    );
 }
