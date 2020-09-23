@@ -21,9 +21,8 @@ library AmmExitRequest
     using MathUint96        for uint96;
     using SafeCast          for uint;
 
-    event LockedUntil(
-        address  owner,
-        uint     timestamp
+    bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
+        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs,uint256 validUntil)"
     );
 
     function setLockedUntil(
@@ -37,7 +36,57 @@ library AmmExitRequest
         //     require(timestamp >= block.timestamp + AmmData.MIN_TIME_TO_UNLOCK(), "TOO_SOON");
         // }
         S.lockedUntil[msg.sender] = timestamp;
+    }
 
-        emit LockedUntil(msg.sender, timestamp);
+    function exitPool(
+        AmmData.State storage S,
+        uint                  poolAmountIn,
+        uint96[]     calldata minAmountsOut,
+        bool                  toLayer2
+        )
+        public
+    {
+        require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
+
+        // To make the the available liqudity tokens cannot suddenly change
+        // we keep track of when onchain exits (which need to be processed) are pending.
+        require(S.isExiting[msg.sender] == false, "ALREADY_EXITING");
+        S.isExiting[msg.sender] = true;
+
+        // Approve the exit
+        AmmData.PoolExit memory exit = AmmData.PoolExit({
+            owner: msg.sender,
+            toLayer2: toLayer2,
+            poolAmountIn: poolAmountIn,
+            minAmountsOut: minAmountsOut,
+            storageIDs: new uint32[](0),
+            validUntil: 0xffffffff
+        });
+        bytes32 txHash = hashPoolExit(S.DOMAIN_SEPARATOR, exit);
+        S.approvedTx[txHash] = block.timestamp;
+    }
+
+    function hashPoolExit(
+        bytes32 _DOMAIN_SEPARATOR,
+        AmmData.PoolExit memory exit
+        )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return EIP712.hashPacked(
+            _DOMAIN_SEPARATOR,
+            keccak256(
+                abi.encode(
+                    POOLEXIT_TYPEHASH,
+                    exit.owner,
+                    exit.toLayer2,
+                    exit.poolAmountIn,
+                    keccak256(abi.encodePacked(exit.minAmountsOut)),
+                    keccak256(abi.encodePacked(exit.storageIDs)),
+                    exit.validUntil
+                )
+            )
+        );
     }
 }

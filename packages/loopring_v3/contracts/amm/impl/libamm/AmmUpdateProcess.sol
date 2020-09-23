@@ -24,7 +24,8 @@ library AmmUpdateProcess
     using AmmCommon         for AmmData.State;
     using TransactionReader for ExchangeData.Block;
 
-  function processAmmUpdates(
+
+    function processAmmUpdates(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         bool                     start

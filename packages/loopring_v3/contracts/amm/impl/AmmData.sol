@@ -113,11 +113,6 @@ contract AmmData
         uint256[] amounts
     );
 
-    event ExitPoolRequested(
-        address  owner,
-        bool     toLayer2,
-        uint     poolAmountIn,
-        uint96[] minAmountsOut
-    );
+
 
 }

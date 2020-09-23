@@ -40,6 +40,13 @@ abstract contract AmmPool is IAmmPool, LPToken
         uint     timestamp
     );
 
+    event ExitPoolRequested(
+        address  owner,
+        bool     toLayer2,
+        uint     poolAmountIn,
+        uint96[] minAmountsOut
+    );
+
     modifier onlyExchangeOwner()
     {
         require(msg.sender == state.exchange.owner(), "UNAUTHORIZED");
@@ -127,6 +134,7 @@ abstract contract AmmPool is IAmmPool, LPToken
         state.joinPool(minPoolAmountOut, maxAmountsIn, fromLayer2, validUntil);
     }
 
+
     function depositAndJoinPool(
         uint              minPoolAmountOut,
         uint96[] calldata maxAmountsIn,
@@ -144,7 +152,14 @@ abstract contract AmmPool is IAmmPool, LPToken
         external
     {
         state.setLockedUntil(timestamp);
+        emit LockedUntil(msg.sender, timestamp);
     }
 
-
+    function exitPool(uint poolAmountIn, uint96[] calldata minAmountsOut, bool toLayer2)
+        external
+        online
+    {
+        state.exitPool(poolAmountIn, minAmountsOut, toLayer2);
+        emit ExitPoolRequested(msg.sender, toLayer2, poolAmountIn, minAmountsOut);
+    }
 }
