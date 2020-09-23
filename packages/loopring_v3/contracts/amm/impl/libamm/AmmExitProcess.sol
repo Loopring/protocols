@@ -3,27 +3,27 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./AmmCommon.sol";
-import "./AmmStatus.sol";
-import "./AmmExitRequest.sol";
-import "./AmmData.sol";
+import "../../../aux/transactions/TransactionReader.sol";
+import "../../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../../lib/EIP712.sol";
 import "../../../lib/ERC20SafeTransfer.sol";
 import "../../../lib/MathUint.sol";
 import "../../../lib/MathUint96.sol";
 import "../../../thirdparty/SafeCast.sol";
+import "./AmmCommon.sol";
+import "./AmmData.sol";
+import "./AmmExitRequest.sol";
+import "./AmmStatus.sol";
 
-import "../../../aux/transactions/TransactionReader.sol";
-import "../../../core/impl/libtransactions/TransferTransaction.sol";
 
 /// @title AmmExitProcess
 library AmmExitProcess
 {
+    using AmmStatus         for AmmData.State;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;
-    using AmmStatus         for AmmData.State;
     using TransactionReader for ExchangeData.Block;
 
     function processWithdrawal(
@@ -131,10 +131,10 @@ library AmmExitProcess
         view
         returns(
             bool /* valid */,
-            uint96[] memory /* amounts */
+            uint96[] memory amounts
         )
     {
-        uint96[] memory amounts = new uint96[](ctx.tokens.length);
+        amounts = new uint96[](ctx.tokens.length);
 
         // Check if we can still use this exit
         if (block.timestamp > exit.validUntil) {
@@ -148,6 +148,7 @@ library AmmExitProcess
 
         // Calculate how much will be withdrawn
         uint ratio = exit.poolAmountIn.mul(ctx.poolTokenBase) / ctx.poolTokenTotalSupply;
+
         for (uint i = 0; i < ctx.tokens.length; i++) {
             amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i]) / ctx.poolTokenBase).toUint96();
             if (amounts[i] < exit.minAmountsOut[i]) {
