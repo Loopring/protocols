@@ -30,6 +30,45 @@ library AmmJoinProcess
         "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs,uint256 validUntil)"
     );
 
+     function processDeposit(
+        AmmData.State    storage S,
+        AmmData.Context  memory  ctx,
+        AmmData.Token    memory  token,
+        uint96                   amount
+        )
+        internal
+    {
+        // Check that the deposit in the block matches the expected deposit
+        DepositTransaction.Deposit memory _deposit = ctx._block.readDeposit(ctx.txIdx++);
+        require(_deposit.owner == address(this), "INVALID_TX_DATA");
+        require(_deposit.accountID == S.accountID, "INVALID_TX_DATA");
+        require(_deposit.tokenID == token.tokenID, "INVALID_TX_DATA");
+        require(_deposit.amount == amount, "INVALID_TX_DATA");
+
+        // Now do this deposit
+        uint ethValue = 0;
+        if (token.addr == address(0)) {
+            ethValue = amount;
+        } else {
+            address depositContract = address(S.exchange.getDepositContract());
+            uint allowance = ERC20(token.addr).allowance(address(this), depositContract);
+            if (allowance < amount) {
+                // Approve the deposit transfer
+                ERC20(token.addr).approve(depositContract, ~uint(0));
+            }
+        }
+        S.exchange.deposit{value: ethValue}(
+            _deposit.owner,
+            _deposit.owner,
+            token.addr,
+            uint96(_deposit.amount),
+            new bytes(0)
+        );
+        ctx.numTransactionsConsumed++;
+        // Total balance in this contract decreases by the amount deposited
+        S.totalLockedBalance[token.addr] = S.totalLockedBalance[token.addr].sub(amount);
+    }
+
     function processJoin(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
