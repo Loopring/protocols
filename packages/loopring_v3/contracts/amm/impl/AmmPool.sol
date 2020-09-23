@@ -27,6 +27,11 @@ abstract contract AmmPool is IAmmPool, LPToken
         uint96[] amounts
     );
 
+    event Withdrawal(
+        address   owner,
+        uint256[] amounts
+    );
+
     event JoinPoolRequested(
         address  owner,
         bool     fromLayer2,
@@ -161,5 +166,21 @@ abstract contract AmmPool is IAmmPool, LPToken
     {
         state.exitPool(poolAmountIn, minAmountsOut, toLayer2);
         emit ExitPoolRequested(msg.sender, toLayer2, poolAmountIn, minAmountsOut);
+    }
+
+    /// @param poolAmount The amount of liquidity tokens to withdraw
+    /// @param amounts The amounts to withdraw
+    /// @param validUntil When a signature is provided: the `validUntil` of the signature.
+    /// @param signature Signature of the operator to allow withdrawals without unlocking
+    function withdraw(
+        uint            poolAmount,
+        uint[] calldata amounts,
+        uint            validUntil,
+        bytes  calldata signature
+        )
+        external
+    {
+        uint[] memory withdrawn = state.withdraw(poolAmount, amounts, validUntil, signature);
+        emit Withdrawal(msg.sender, withdrawn);
     }
 }

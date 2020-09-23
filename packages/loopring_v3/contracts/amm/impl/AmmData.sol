@@ -108,10 +108,6 @@ contract AmmData
     function MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN() internal pure returns (uint) { return 7 days; }
     function MIN_TIME_TO_UNLOCK() internal pure returns (uint) { return 1 days; }
 
-    event Withdrawal(
-        address   owner,
-        uint256[] amounts
-    );
 
 
 
