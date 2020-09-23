@@ -16,7 +16,7 @@ import "./libamm/AmmBlockReceiver.sol";
 import "../../lib/ReentrancyGuard.sol";
 
 /// @title AmmPool
-abstract contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
+contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
 {
     using AmmExchange      for AmmData.State;
     using AmmJoinRequest   for AmmData.State;
