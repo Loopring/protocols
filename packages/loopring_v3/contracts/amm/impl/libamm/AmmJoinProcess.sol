@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./AmmCommon.sol";
 import "./AmmStatus.sol";
 import "./AmmJoinRequest.sol";
-import "../AmmData.sol";
+import "./AmmData.sol";
 import "../../../lib/EIP712.sol";
 import "../../../lib/ERC20SafeTransfer.sol";
 import "../../../lib/MathUint.sol";
@@ -36,7 +36,7 @@ library AmmJoinProcess
         AmmData.Token    memory  token,
         uint96                   amount
         )
-        internal
+        external
     {
         // Check that the deposit in the block matches the expected deposit
         DepositTransaction.Deposit memory _deposit = ctx._block.readDeposit(ctx.txIdx++);
@@ -79,7 +79,7 @@ library AmmJoinProcess
     {
         S.authenticatePoolTx(
             join.owner,
-            AmmJoinRequest.hashPoolJoin(ctx.DOMAIN_SEPARATOR, join),
+            AmmJoinRequest.hashPoolJoin(ctx.domainSeperator, join),
             signature
         );
 

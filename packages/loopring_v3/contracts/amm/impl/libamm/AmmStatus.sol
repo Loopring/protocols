@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../AmmData.sol";
+import "./AmmData.sol";
 import "../../../core/iface/IExchangeV3.sol";
 import "../../../lib/EIP712.sol";
 import "../../../lib/ERC20.sol";
@@ -73,7 +73,7 @@ library AmmStatus
         require(_tokens.length == _weights.length, "INVALID_DATA");
         require(_tokens.length >= 2, "INVALID_DATA");
 
-        S.DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("AMM Pool", "1.0.0", address(this)));
+        S.domainSeperator = EIP712.hash(EIP712.Domain("AMM Pool", "1.0.0", address(this)));
 
         S.exchange = _exchange;
         S.accountID = _accountID;
@@ -99,13 +99,13 @@ library AmmStatus
         AmmData.State storage S,
         bytes32               txHash
         )
-        external
+        public
     {
-        // // TODO
-        // require(
-        //     block.timestamp > S.approvedTx[txHash] + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
-        //     "REQUEST_NOT_TOO_OLD"
-        // );
+        require(
+            block.timestamp > S.approvedTx[txHash] +
+                AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
+            "REQUEST_NOT_TOO_OLD"
+        );
 
         if (!S.exchange.isInWithdrawalMode()) {
             for (uint i = 0; i < S.tokens.length; i++) {

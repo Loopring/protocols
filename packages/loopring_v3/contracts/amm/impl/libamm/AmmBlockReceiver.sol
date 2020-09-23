@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./AmmUpdateProcess.sol";
 import "./AmmJoinProcess.sol";
 import "./AmmExitProcess.sol";
-import "../AmmData.sol";
+import "./AmmData.sol";
 import "../../../lib/AddressUtil.sol";
 import "../../../lib/ERC20SafeTransfer.sol";
 import "../../../lib/SignatureUtil.sol";
@@ -26,7 +26,7 @@ library AmmBlockReceiver
         uint                       txIdx,
         bytes              memory  auxiliaryData
         )
-        public
+        external
         returns (uint)
     {
         AmmData.PoolTransaction[] memory poolTransactions = abi.decode(
@@ -38,7 +38,7 @@ library AmmBlockReceiver
         AmmData.Context memory ctx = AmmData.Context({
             _block: _block,
             txIdx: txIdx,
-            DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR,
+            domainSeperator: S.domainSeperator,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
             ammActualL2Balances: new uint96[](S.tokens.length),
             ammExpectedL2Balances: new uint96[](S.tokens.length),

@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../iface/IAmmPool.sol";
 import "../../aux/access/IBlockReceiver.sol";
 import "../../core/iface/IAgentRegistry.sol";
-import "./AmmData.sol";
+import "./libamm/AmmData.sol";
 import './LPToken.sol';
 import "./libamm/AmmExchange.sol";
 import "./libamm/AmmJoinRequest.sol";
@@ -63,13 +63,13 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
         _;
     }
 
-    modifier online()
+    modifier onlyWhenOnline()
     {
         require(state.isOnline(), "NOT_ONLINE");
         _;
     }
 
-    modifier offline()
+    modifier onlyWhenOffline()
     {
         require(!state.isOnline(), "NOT_OFFLINE");
         _;
@@ -102,17 +102,17 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
     function shutdown(bytes32 txHash)
         external
         payable
-        online
+        onlyWhenOnline
         nonReentrant
     {
         state.shutdown(txHash);
     }
 
-        // Only used to withdraw from the pool when shutdown.
+    // Only used to withdraw from the pool when shutdown.
     // Otherwise LPs should withdraw by doing normal queued exit requests.
     function withdrawFromPoolWhenShutdown(uint poolAmountIn)
         external
-        offline
+        onlyWhenOffline
         nonReentrant
     {
         uint _totalSupply = totalSupply();
@@ -128,10 +128,11 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
         )
         external
         payable
-        online
+        onlyWhenOnline
         nonReentrant
     {
         state.deposit(poolAmount, amounts);
+        emit Deposit(msg.sender, poolAmount, amounts);
     }
 
     /// @dev Joins the pool using on-chain funds.
@@ -145,12 +146,18 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
         uint              validUntil
         )
         external
-        online
+        onlyWhenOnline
         nonReentrant
     {
         state.joinPool(minPoolAmountOut, maxAmountsIn, fromLayer2, validUntil);
+        emit JoinPoolRequested(
+            msg.sender,
+            fromLayer2,
+            minPoolAmountOut,
+            maxAmountsIn,
+            validUntil
+        );
     }
-
 
     function depositAndJoinPool(
         uint              minPoolAmountOut,
@@ -159,7 +166,7 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
         uint              validUntil
         )
         external
-        online
+        onlyWhenOnline
         nonReentrant
     {
         state.deposit(0, maxAmountsIn);
@@ -174,9 +181,13 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
         emit LockedUntil(msg.sender, timestamp);
     }
 
-    function exitPool(uint poolAmountIn, uint96[] calldata minAmountsOut, bool toLayer2)
+    function exitPool(
+        uint              poolAmountIn,
+        uint96[] calldata minAmountsOut,
+        bool              toLayer2
+        )
         external
-        online
+        onlyWhenOnline
         nonReentrant
     {
         state.exitPool(poolAmountIn, minAmountsOut, toLayer2);
@@ -212,7 +223,7 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
         )
         public
         override
-        online
+        onlyWhenOnline
         onlyExchangeOwner
         nonReentrant
         returns (uint)

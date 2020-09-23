@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../AmmData.sol";
+import "./AmmData.sol";
 import "../../../lib/EIP712.sol";
 import "../../../lib/ERC20SafeTransfer.sol";
 import "../../../lib/MathUint.sol";
@@ -21,20 +21,6 @@ library AmmJoinRequest
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
         "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs,uint256 validUntil)"
-    );
-
-    event Deposit(
-        address  owner,
-        uint     poolAmount,
-        uint96[] amounts
-    );
-
-    event JoinPoolRequested(
-        address  owner,
-        bool     fromLayer2,
-        uint     minPoolAmountOut,
-        uint96[] maxAmountsIn,
-        uint     validUntil
     );
 
     function deposit(
@@ -64,8 +50,6 @@ library AmmJoinRequest
             S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].add(amount);
             S.totalLockedBalance[token] = S.totalLockedBalance[token].add(amount);
         }
-
-        emit Deposit(msg.sender, poolAmount, amounts);
     }
 
     function joinPool(
@@ -75,7 +59,7 @@ library AmmJoinRequest
         bool                  fromLayer2,
         uint                  validUntil
         )
-        internal
+        external
     {
         require(maxAmountsIn.length == S.tokens.length, "INVALID_DATA");
 
@@ -91,20 +75,12 @@ library AmmJoinRequest
             storageIDs: new uint32[](0), // Q：这是做什么的？
             validUntil: validUntil
         });
-        bytes32 txHash = hashPoolJoin(S.DOMAIN_SEPARATOR, join);
+        bytes32 txHash = hashPoolJoin(S.domainSeperator, join);
         S.approvedTx[txHash] = 0xffffffff;
-
-        emit JoinPoolRequested(
-            msg.sender,
-            fromLayer2,
-            minPoolAmountOut,
-            maxAmountsIn,
-            validUntil
-        );
     }
 
     function hashPoolJoin(
-        bytes32 _DOMAIN_SEPARATOR,
+        bytes32 _domainSeperator,
         AmmData.PoolJoin memory join
         )
         internal
@@ -112,7 +88,7 @@ library AmmJoinRequest
         returns (bytes32)
     {
         return EIP712.hashPacked(
-            _DOMAIN_SEPARATOR,
+            _domainSeperator,
             keccak256(
                 abi.encode(
                     POOLJOIN_TYPEHASH,

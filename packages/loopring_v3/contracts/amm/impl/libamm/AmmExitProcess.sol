@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./AmmCommon.sol";
 import "./AmmStatus.sol";
 import "./AmmExitRequest.sol";
-import "../AmmData.sol";
+import "./AmmData.sol";
 import "../../../lib/EIP712.sol";
 import "../../../lib/ERC20SafeTransfer.sol";
 import "../../../lib/MathUint.sol";
@@ -32,7 +32,7 @@ library AmmExitProcess
         AmmData.Token    memory  token,
         uint                     amount
         )
-        internal
+        external
     {
         // Check that the withdrawal in the block matches the expected withdrawal
         WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
@@ -66,12 +66,12 @@ library AmmExitProcess
         AmmData.PoolExit memory  exit,
         bytes            memory  signature
         )
-        public
+        internal
         returns (bool valid)
     {
         S.authenticatePoolTx(
             exit.owner,
-            AmmExitRequest.hashPoolExit(ctx.DOMAIN_SEPARATOR, exit),
+            AmmExitRequest.hashPoolExit(ctx.domainSeperator, exit),
             signature
         );
         if (signature.length == 0) {

@@ -128,13 +128,6 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         bytes               signature;
     }
 
-    struct QueueItem
-    {
-        uint64              timestamp;
-        PoolTransactionType txType;
-        bytes32             txHash;
-    }
-
     struct Token
     {
         address addr;
