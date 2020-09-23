@@ -3,14 +3,17 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../AmmData.sol";
 import "../../../lib/AddressUtil.sol";
 import "../../../lib/ERC20SafeTransfer.sol";
+import "../../../lib/SignatureUtil.sol";
 
 /// @title AmmCommon
 library AmmCommon
 {
     using ERC20SafeTransfer for address;
     using AddressUtil       for address;
+    using SignatureUtil     for bytes32;
 
     function isAlmostEqual(
         uint96 amount,
@@ -40,6 +43,22 @@ library AmmCommon
             to.sendETHAndVerify(amount, gasleft());
         } else {
             token.safeTransferAndVerify(to, amount);
+        }
+    }
+
+    function authenticatePoolTx(
+        AmmData.State storage S,
+        address        owner,
+        bytes32        poolTxHash,
+        bytes   memory signature
+        )
+        internal
+    {
+        if (signature.length == 0) {
+            require(S.approvedTx[poolTxHash] != 0, "NOT_APPROVED");
+            delete S.approvedTx[poolTxHash];
+        } else {
+            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
         }
     }
 }

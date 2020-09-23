@@ -67,6 +67,9 @@ contract AmmData
         uint96[] ammExpectedL2Balances;
         uint     numTransactionsConsumed;
         Token[]  tokens;
+        uint     totalSupply;
+        uint     base;
+        uint     initialSupply;
     }
 
     struct State {

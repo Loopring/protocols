@@ -107,7 +107,7 @@ library AmmJoinRequest
         bytes32 _DOMAIN_SEPARATOR,
         AmmData.PoolJoin memory join
         )
-        private
+        internal
         pure
         returns (bytes32)
     {
