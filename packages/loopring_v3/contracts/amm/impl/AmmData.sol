@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../core/iface/ExchangeData.sol";
+import "../../core/iface/IExchangeV3.sol";
 
 /// @title AmmData
 contract AmmData
@@ -69,10 +70,13 @@ contract AmmData
     }
 
     struct State {
-        // Liquidity token state variables
-        uint  totalSupply;
-        mapping(address => uint) balanceOf;
-        mapping(address => mapping(address => uint)) allowance;
+        IExchangeV3 exchange;
+        uint32      accountID;
+
+        bytes32     DOMAIN_SEPARATOR;
+
+        uint        shutdownTimestamp;
+
 
         // AMM state variables
         uint8   feeBips;
@@ -95,4 +99,40 @@ contract AmmData
         // A map from an owner to if a user is currently exiting using an onchain approval.
         mapping (address => bool) isExiting;
     }
+
+    uint constant BASE = 10 ** 18;
+    uint constant INITIAL_SUPPLY = 100 * BASE;
+    uint constant MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN = 7 days;
+    uint constant MIN_TIME_TO_UNLOCK = 1 days;
+
+    event Deposit(
+        address  owner,
+        uint     poolAmount,
+        uint96[] amounts
+    );
+
+    event Withdrawal(
+        address   owner,
+        uint256[] amounts
+    );
+
+    event JoinPoolRequested(
+        address  owner,
+        bool     fromLayer2,
+        uint     minPoolAmountOut,
+        uint96[] maxAmountsIn,
+        uint     validUntil
+    );
+
+    event ExitPoolRequested(
+        address  owner,
+        bool     toLayer2,
+        uint     poolAmountIn,
+        uint96[] minAmountsOut
+    );
+
+    event LockedUntil(
+        address  owner,
+        uint     timestamp
+    );
 }
