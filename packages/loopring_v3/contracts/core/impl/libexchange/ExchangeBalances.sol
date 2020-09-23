@@ -19,7 +19,7 @@ library ExchangeBalances
         uint                              merkleRoot,
         ExchangeData.MerkleProof calldata merkleProof
         )
-        external
+        public
         pure
     {
         require(

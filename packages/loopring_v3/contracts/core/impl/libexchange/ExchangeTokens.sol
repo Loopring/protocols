@@ -27,7 +27,7 @@ library ExchangeTokens
         ExchangeData.State storage S,
         uint16 tokenID
         )
-        external
+        public
         view
         returns (address)
     {
@@ -39,7 +39,7 @@ library ExchangeTokens
         ExchangeData.State storage S,
         address tokenAddress
         )
-        external
+        public
         returns (uint16 tokenID)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");

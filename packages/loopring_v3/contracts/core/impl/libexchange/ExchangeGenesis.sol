@@ -25,7 +25,7 @@ library ExchangeGenesis
         bytes32 _genesisMerkleRoot,
         bytes32 _domainSeperator
         )
-        external
+        public
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopring, "INVALID_LOOPRING_ADDRESS");

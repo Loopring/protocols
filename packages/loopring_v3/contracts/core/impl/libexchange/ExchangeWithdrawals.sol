@@ -50,7 +50,7 @@ library ExchangeWithdrawals
         address token,
         uint32  accountID
         )
-        external
+        public
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
@@ -93,7 +93,7 @@ library ExchangeWithdrawals
         ExchangeData.State       storage S,
         ExchangeData.MerkleProof calldata merkleProof
         )
-        external
+        public
     {
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
@@ -130,7 +130,7 @@ library ExchangeWithdrawals
         address owner,
         address token
         )
-        external
+        public
     {
         uint16 tokenID = S.getTokenID(token);
         ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID];
