@@ -210,8 +210,8 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
     }
 
     function getSimpleProxyCreationCode()
-        external
-        view
+        public
+        pure
         returns (bytes memory)
     {
         return type(SimpleProxy).creationCode;
