@@ -14,11 +14,11 @@ import "./libamm/AmmExitRequest.sol";
 import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmPoolToken.sol";
 import "./libamm/AmmStatus.sol";
-import './PoolToken.sol';
+import './LoopringPoolToken.sol';
 
 
-/// @title AmmPool
-contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
+/// @title LoopringAmmPool
+contract LoopringAmmPool is LoopringPoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
 {
     using AmmBlockReceiver for AmmData.State;
     using AmmExchange      for AmmData.State;
@@ -130,14 +130,13 @@ contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
         state.withdrawFromPoolWhenShutdown(poolAmountIn, _totalSupply);
     }
 
-    /// @param poolAmount The amount of liquidity tokens to deposit
-    /// @param amounts The amounts to deposit
     function deposit(
         uint96            poolAmount,
         uint96[] calldata amounts
         )
         external
         payable
+        override
         onlyWhenOnline
         nonReentrant
     {
@@ -145,10 +144,6 @@ contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
         emit Deposit(msg.sender, poolAmount, amounts);
     }
 
-    /// @dev Joins the pool using on-chain funds.
-    /// @param minPoolAmountOut The minimum number of liquidity tokens that need to be minted for this join.
-    /// @param maxAmountsIn The maximum amounts that can be used to mint
-    ///                     the specified amount of liquidity tokens.
     function joinPool(
         uint              minPoolAmountOut,
         uint96[] calldata maxAmountsIn,
@@ -156,6 +151,7 @@ contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
         uint              validUntil
         )
         external
+        override
         onlyWhenOnline
         nonReentrant
     {
@@ -176,6 +172,7 @@ contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
         uint              validUntil
         )
         external
+        override
         onlyWhenOnline
         nonReentrant
     {
@@ -197,6 +194,7 @@ contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
         bool              toLayer2
         )
         external
+        override
         onlyWhenOnline
         nonReentrant
     {
@@ -204,10 +202,6 @@ contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
         emit ExitPoolRequested(msg.sender, toLayer2, poolAmountIn, minAmountsOut);
     }
 
-    /// @param poolAmount The amount of liquidity tokens to withdraw
-    /// @param amounts The amounts to withdraw
-    /// @param validUntil When a signature is provided: the `validUntil` of the signature.
-    /// @param signature Signature of the operator to allow withdrawals without unlocking
     function withdraw(
         uint            poolAmount,
         uint[] calldata amounts,
@@ -215,17 +209,13 @@ contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
         bytes  calldata signature
         )
         external
+        override
         nonReentrant
     {
         uint[] memory withdrawn = state.withdraw(poolAmount, amounts, validUntil, signature);
         emit Withdrawal(msg.sender, withdrawn);
     }
 
-    // Processes work in the queue. Can only be called by the exchange owner
-    // before the blocks containing work for this pool are submitted.
-    // This just verifies if the work is done correctly and only then approves
-    // the L2 transactions that were already included in the block.
-    // Uses synchronized logic on L1/L2 to make the onchain logic easy and efficient.
     function beforeBlockSubmitted(
         ExchangeData.Block memory  _block,
         uint                       txIdx,

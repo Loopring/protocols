@@ -8,7 +8,7 @@ import '../../lib/ERC2612.sol';
 import '../../lib/MathUint.sol';
 
 
-contract PoolToken is ERC2612 {
+contract LoopringPoolToken is ERC2612 {
     using MathUint     for uint;
     using AmmPoolToken for AmmData.State;
 
@@ -87,13 +87,13 @@ contract PoolToken is ERC2612 {
     }
 
     function permit(
-        address               owner,
-        address               spender,
-        uint256               value,
-        uint256               deadline,
-        uint8                 v,
-        bytes32               r,
-        bytes32               s
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8   v,
+        bytes32 r,
+        bytes32 s
         )
         external
         override
