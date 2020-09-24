@@ -35,7 +35,7 @@ library ExchangeAdmins
         ExchangeData.State storage S,
         uint32 newValue
         )
-        external
+        public
         returns (uint32 oldValue)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -58,7 +58,7 @@ library ExchangeAdmins
         ExchangeData.State storage S,
         address recipient
         )
-        external
+        public
         returns (uint)
     {
         // Exchange needs to be shutdown
