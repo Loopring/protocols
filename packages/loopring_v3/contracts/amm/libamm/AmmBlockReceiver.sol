@@ -64,7 +64,7 @@ library AmmBlockReceiver
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < size; i++) {
-            processToken(
+            processPoolBalance(
                 S,
                 ctx,
                 ctx.tokens[i],
@@ -101,7 +101,7 @@ library AmmBlockReceiver
         }
     }
 
-    function processToken(
+    function processPoolBalance(
         AmmData.State   storage S,
         AmmData.Context memory  ctx,
         AmmData.Token   memory  token,
