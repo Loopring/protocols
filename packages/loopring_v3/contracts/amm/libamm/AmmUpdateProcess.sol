@@ -32,7 +32,7 @@ library AmmUpdateProcess
         )
         internal
     {
-        for (uint i = 0; i < ctx.tokens.length; i++) {
+        for (uint i = 0; i < ctx.size; i++) {
             // Check that the AMM update in the block matches the expected update
             AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
 

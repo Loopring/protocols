@@ -54,7 +54,7 @@ library AmmStatus
                 weight: _weights[i]
             }));
 
-            ERC20(token).approve(depositContract, ~uint(0));
+            ERC20(token).approve(depositContract, uint(-1));
         }
     }
 
