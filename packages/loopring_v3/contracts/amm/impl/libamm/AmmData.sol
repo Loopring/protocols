@@ -3,12 +3,18 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../core/iface/ExchangeData.sol";
-import "../../core/iface/IExchangeV3.sol";
+import "../../../core/iface/ExchangeData.sol";
+import "../../../core/iface/IExchangeV3.sol";
+
 
 /// @title AmmData
-contract AmmData
+library AmmData
 {
+    function LP_TOKEN_BASE() internal pure returns (uint) { return 10 ** 18; }
+    function LP_TOKEN_INITIAL_SUPPLY() internal pure returns (uint) { return 100 * LP_TOKEN_BASE(); }
+    function MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN() public pure returns (uint) { return 7 days; }
+    function MIN_TIME_TO_UNLOCK() internal pure returns (uint) { return 1 days; }
+
     enum PoolTransactionType
     {
         NOOP,
@@ -43,13 +49,6 @@ contract AmmData
         bytes               signature;
     }
 
-    struct QueueItem
-    {
-        uint64              timestamp;
-        PoolTransactionType txType;
-        bytes32             txHash;
-    }
-
     struct Token
     {
         address addr;
@@ -61,38 +60,44 @@ contract AmmData
     {
         ExchangeData.Block _block;
         uint     txIdx;
-        bytes32  DOMAIN_SEPARATOR;
+        bytes32  domainSeperator;
         bytes32  exchangeDomainSeparator;
         uint96[] ammActualL2Balances;
         uint96[] ammExpectedL2Balances;
         uint     numTransactionsConsumed;
+
         Token[]  tokens;
-        uint     totalSupply;
-        uint     base;
-        uint     initialSupply;
+
+        uint     poolTokenTotalSupply;
+        uint     poolTokenBase;
+        uint     poolTokenInitialSupply;
     }
 
     struct State {
+        string name;
+        string symbol;
+        uint   totalSupply;
+        mapping(address => uint) balanceOf;
+        mapping(address => mapping(address => uint)) allowance;
+        mapping(address => uint) erc2612Nonces; // ERC2612
+
         IExchangeV3 exchange;
         uint32      accountID;
-
-        bytes32     DOMAIN_SEPARATOR;
-
+        bytes32     domainSeperator;
         uint        shutdownTimestamp;
-
-
-        // AMM state variables
-        uint8   feeBips;
-        Token[] tokens;
+        uint8       feeBips;
+        Token[]     tokens;
 
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => uint) approvedTx;
 
         // A map from an owner to a token to the balance
         mapping (address => mapping (address => uint)) lockedBalance;
+
         // A map from an owner to the timestamp until all funds of the user are locked
         // A zero value == locked indefinitely.
         mapping (address => uint) lockedUntil;
+
         // A map from a token to the total balance owned directly by LPs (so NOT owned by the pool itself)
         mapping (address => uint) totalLockedBalance;
 
@@ -102,13 +107,4 @@ contract AmmData
         // A map from an owner to if a user is currently exiting using an onchain approval.
         mapping (address => bool) isExiting;
     }
-
-    function BASE() internal pure returns (uint) { return 10 ** 18; }
-    function INITIAL_SUPPLY() internal pure returns (uint) { return 100 * BASE(); }
-    function MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN() internal pure returns (uint) { return 7 days; }
-    function MIN_TIME_TO_UNLOCK() internal pure returns (uint) { return 1 days; }
-
-
-
-
 }

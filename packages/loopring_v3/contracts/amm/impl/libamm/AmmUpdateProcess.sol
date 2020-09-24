@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "./AmmCommon.sol";
 import "./AmmJoinRequest.sol";
-import "../AmmData.sol";
+import "./AmmData.sol";
 import "../../../lib/EIP712.sol";
 import "../../../lib/ERC20SafeTransfer.sol";
 import "../../../lib/MathUint.sol";
@@ -30,7 +30,7 @@ library AmmUpdateProcess
         AmmData.Context  memory  ctx,
         bool                     start
         )
-        public
+        internal
     {
         for (uint i = 0; i < ctx.tokens.length; i++) {
             // Check that the AMM update in the block matches the expected update
