@@ -29,6 +29,7 @@ library AmmJoinRequest
     {
         uint size = S.tokens.length;
         require(amounts.length == size, "INVALID_DATA");
+
         if (S.isExiting[msg.sender]) {
             // Q: 这个标记的用途？
             // This could suddenly change the amount of liquidity tokens available, which
@@ -36,19 +37,13 @@ library AmmJoinRequest
             require(poolAmount == 0, "CANNOT_DEPOSIT_LIQUIDITY_TOKENS_WHILE_EXITING");
         }
 
-        // Lock up funds inside this contract so we can depend on them being available.
-        for (uint i = 0; i < size + 1; i++) {
-            uint amount = (i < size) ? amounts[i] : poolAmount;
-            address token = (i < size) ? S.tokens[i].addr : address(this);
+        if (poolAmount > 0) {
+            address poolToken = address(this);
+            depositAndLockToken(S, poolToken, poolAmount);
+        }
 
-            if (token == address(0)) {
-                require(msg.value == amount, "INVALID_ETH_DEPOSIT");
-            } else {
-                token.safeTransferFromAndVerify(msg.sender, address(this), uint(amount));
-            }
-
-            S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].add(amount);
-            S.totalLockedBalance[token] = S.totalLockedBalance[token].add(amount);
+        for (uint i = 0; i < size; i++) {
+            depositAndLockToken(S, S.tokens[i].addr, uint(amounts[i]));
         }
     }
 
@@ -79,5 +74,22 @@ library AmmJoinRequest
         // Approve the join
         bytes32 txHash = AmmUtil.hashPoolJoin(S.domainSeperator, join);
         S.approvedTx[txHash] = 0xffffffff;
+    }
+
+    function depositAndLockToken(
+        AmmData.State storage S,
+        address               token,
+        uint                  amount
+        )
+        private
+    {
+        if (token == address(0)) {
+            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
+        } else {
+            token.safeTransferFromAndVerify(msg.sender, address(this), amount);
+        }
+
+        S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].add(amount);
+        S.totalLockedBalance[token] = S.totalLockedBalance[token].add(amount);
     }
 }
