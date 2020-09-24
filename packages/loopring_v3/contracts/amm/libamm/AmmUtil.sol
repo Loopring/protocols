@@ -55,7 +55,7 @@ library AmmUtil
     }
 
     function hashPoolJoin(
-        bytes32 _domainSeperator,
+        bytes32                 domainSeperator,
         AmmData.PoolJoin memory join
         )
         internal
@@ -63,7 +63,7 @@ library AmmUtil
         returns (bytes32)
     {
         return EIP712.hashPacked(
-            _domainSeperator,
+            domainSeperator,
             keccak256(
                 abi.encode(
                     POOLJOIN_TYPEHASH,
@@ -79,7 +79,7 @@ library AmmUtil
     }
 
     function hashPoolExit(
-        bytes32 _domainSeperator,
+        bytes32                 domainSeperator,
         AmmData.PoolExit memory exit
         )
         internal
@@ -87,7 +87,7 @@ library AmmUtil
         returns (bytes32)
     {
         return EIP712.hashPacked(
-            _domainSeperator,
+            domainSeperator,
             keccak256(
                 abi.encode(
                     POOLEXIT_TYPEHASH,
