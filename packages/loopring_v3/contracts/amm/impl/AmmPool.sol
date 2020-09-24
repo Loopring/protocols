@@ -126,7 +126,7 @@ contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
         nonReentrant
     {
         uint _totalSupply = totalSupply();
-        burn(msg.sender, poolAmountIn);
+        state.burn(msg.sender, poolAmountIn);
         state.withdrawFromPoolWhenShutdown(poolAmountIn, _totalSupply);
     }
 

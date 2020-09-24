@@ -113,16 +113,4 @@ contract PoolToken is ERC2612 {
     {
         state.permit(owner, spender, value, deadline, signature);
     }
-
-    function mint(address to, uint value)
-        internal
-    {
-        state.mint(to, value);
-    }
-
-    function burn(address from, uint value)
-        internal
-    {
-        state.burn(from, value);
-    }
 }
