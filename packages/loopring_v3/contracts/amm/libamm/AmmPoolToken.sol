@@ -19,6 +19,7 @@ library AmmPoolToken
     event Transfer(address indexed from,  address indexed to,      uint value);
 
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+
     function approve(
         AmmData.State storage S,
         address               spender,
@@ -39,10 +40,7 @@ library AmmPoolToken
         internal
         returns (bool)
     {
-        S.balanceOf[msg.sender] = S.balanceOf[msg.sender].sub(value);
-        S.balanceOf[to] = S.balanceOf[to].add(value);
-        emit Transfer(msg.sender, to, value);
-
+        _transfer(S, msg.sender, to, value);
         return true;
     }
 
@@ -58,9 +56,7 @@ library AmmPoolToken
         if (S.allowance[from][msg.sender] != uint(-1)) {
             S.allowance[from][msg.sender] = S.allowance[from][msg.sender].sub(value);
         }
-        S.balanceOf[from] = S.balanceOf[from].sub(value);
-        S.balanceOf[to] = S.balanceOf[to].add(value);
-        emit Transfer(from, to, value);
+         _transfer(S, from, to, value);
         return true;
     }
 
@@ -161,5 +157,18 @@ library AmmPoolToken
     {
         S.allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
+    }
+
+    function _transfer(
+        AmmData.State storage S,
+        address               from,
+        address               to,
+        uint                  value
+        )
+        private
+    {
+        S.balanceOf[from] = S.balanceOf[from].sub(value);
+        S.balanceOf[to] = S.balanceOf[to].add(value);
+        emit Transfer(from, to, value);
     }
 }

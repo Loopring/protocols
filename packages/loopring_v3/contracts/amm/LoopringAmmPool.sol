@@ -128,9 +128,7 @@ contract LoopringAmmPool is
         onlyWhenOffline
         nonReentrant
     {
-        uint _totalSupply = totalSupply();
-        state.burn(msg.sender, poolAmountIn);
-        state.withdrawFromPoolWhenShutdown(poolAmountIn, _totalSupply);
+        state.withdrawFromPoolWhenShutdown(poolAmountIn);
     }
 
     function deposit(

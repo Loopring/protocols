@@ -9,31 +9,11 @@ import "../../lib/EIP712.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/SignatureUtil.sol";
 
+
 /// @title LPToken
 library AmmStatus
 {
     using SignatureUtil     for bytes32;
-
-    function availableBalance(
-        AmmData.State storage S,
-        address               token,
-        address               owner
-        )
-        public
-        view
-        returns (uint)
-    {
-        if (isOnline(S)) {
-            uint until = S.lockedUntil[owner];
-            if (until != 0 && block.timestamp > until) {
-                return S.lockedBalance[token][owner];
-            } else {
-                return 0;
-            }
-        } else {
-            return S.lockedBalance[token][owner];
-        }
-    }
 
     function isOnline(AmmData.State storage S)
         public
@@ -41,22 +21,6 @@ library AmmStatus
         returns (bool)
     {
         return S.shutdownTimestamp == 0;
-    }
-
-    function authenticatePoolTx(
-        AmmData.State storage S,
-        address        owner,
-        bytes32        poolTxHash,
-        bytes   memory signature
-        )
-        internal
-    {
-        if (signature.length == 0) {
-            require(S.approvedTx[poolTxHash] != 0, "NOT_APPROVED");
-            delete S.approvedTx[poolTxHash];
-        } else {
-            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
-        }
     }
 
     function setupPool(
@@ -118,5 +82,42 @@ library AmmStatus
         }
 
         S.shutdownTimestamp = block.timestamp;
+    }
+
+    function availableBalance(
+        AmmData.State storage S,
+        address               token,
+        address               owner
+        )
+        public
+        view
+        returns (uint)
+    {
+        if (isOnline(S)) {
+            uint until = S.lockedUntil[owner];
+            if (until != 0 && block.timestamp > until) {
+                return S.lockedBalance[token][owner];
+            } else {
+                return 0;
+            }
+        } else {
+            return S.lockedBalance[token][owner];
+        }
+    }
+
+    function authenticatePoolTx(
+        AmmData.State storage S,
+        address        owner,
+        bytes32        poolTxHash,
+        bytes   memory signature
+        )
+        internal
+    {
+        if (signature.length == 0) {
+            require(S.approvedTx[poolTxHash] != 0, "NOT_APPROVED");
+            delete S.approvedTx[poolTxHash];
+        } else {
+            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
+        }
     }
 }
