@@ -18,7 +18,12 @@ import './LoopringPoolToken.sol';
 
 
 /// @title LoopringAmmPool
-contract LoopringAmmPool is LoopringPoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
+contract LoopringAmmPool is
+    LoopringPoolToken,
+    IAmmPool,
+    IAgent,
+    IBlockReceiver,
+    ReentrancyGuard
 {
     using AmmBlockReceiver for AmmData.State;
     using AmmExchange      for AmmData.State;

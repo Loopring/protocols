@@ -8,7 +8,7 @@ import '../../lib/ERC2612.sol';
 import '../../lib/MathUint.sol';
 
 
-contract LoopringPoolToken is ERC2612 {
+abstract contract LoopringPoolToken is ERC2612 {
     using MathUint     for uint;
     using AmmPoolToken for AmmData.State;
 
