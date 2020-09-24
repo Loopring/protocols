@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./AmmCommon.sol";
+import "./AmmUtil.sol";
 import "./AmmJoinRequest.sol";
 import "./AmmData.sol";
 import "../../../lib/EIP712.sol";
@@ -21,7 +21,7 @@ library AmmUpdateProcess
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;
-    using AmmCommon         for AmmData.State;
+    using AmmUtil         for AmmData.State;
     using TransactionReader for ExchangeData.Block;
 
 

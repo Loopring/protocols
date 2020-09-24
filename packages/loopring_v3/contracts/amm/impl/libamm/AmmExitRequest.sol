@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./AmmCommon.sol";
+import "./AmmUtil.sol";
 import "./AmmStatus.sol";
 import "./AmmData.sol";
 import "../../../lib/EIP712.sol";
@@ -23,10 +23,6 @@ library AmmExitRequest
     using SafeCast          for uint;
     using SignatureUtil     for bytes32;
     using AmmStatus         for AmmData.State;
-
-    bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs,uint256 validUntil)"
-    );
 
     bytes32 constant public WITHDRAW_TYPEHASH = keccak256(
         "Withdraw(address owner,uint256 poolAmount,uint256[] amounts,uint256 validUntil,uint256 nonce)"
@@ -99,7 +95,7 @@ library AmmExitRequest
         //     if (withdrawn[i] > 0) {
         //         S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].sub(withdrawn[i]);
         //         // TODO
-        //         AmmCommon.tranferOut(token, withdrawn[i], msg.sender);
+        //         AmmUtil.tranferOut(token, withdrawn[i], msg.sender);
         //     }
         // }
     }
@@ -128,31 +124,9 @@ library AmmExitRequest
             storageIDs: new uint32[](0),
             validUntil: 0xffffffff
         });
-        bytes32 txHash = hashPoolExit(S.domainSeperator, exit);
+        bytes32 txHash = AmmUtil.hashPoolExit(S.domainSeperator, exit);
         S.approvedTx[txHash] = block.timestamp;
     }
 
-    function hashPoolExit(
-        bytes32 _domainSeperator,
-        AmmData.PoolExit memory exit
-        )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return EIP712.hashPacked(
-            _domainSeperator,
-            keccak256(
-                abi.encode(
-                    POOLEXIT_TYPEHASH,
-                    exit.owner,
-                    exit.toLayer2,
-                    exit.poolAmountIn,
-                    keccak256(abi.encodePacked(exit.minAmountsOut)),
-                    keccak256(abi.encodePacked(exit.storageIDs)),
-                    exit.validUntil
-                )
-            )
-        );
-    }
+
 }

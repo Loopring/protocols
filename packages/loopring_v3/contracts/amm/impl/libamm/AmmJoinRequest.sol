@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "./AmmUtil.sol";
 import "./AmmData.sol";
 import "../../../lib/EIP712.sol";
 import "../../../lib/ERC20SafeTransfer.sol";
@@ -19,9 +20,7 @@ library AmmJoinRequest
     using MathUint96        for uint96;
     using SafeCast          for uint;
 
-    bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs,uint256 validUntil)"
-    );
+
 
     function deposit(
         AmmData.State storage S,
@@ -75,31 +74,9 @@ library AmmJoinRequest
             storageIDs: new uint32[](0), // Q：这是做什么的？
             validUntil: validUntil
         });
-        bytes32 txHash = hashPoolJoin(S.domainSeperator, join);
+        bytes32 txHash = AmmUtil.hashPoolJoin(S.domainSeperator, join);
         S.approvedTx[txHash] = 0xffffffff;
     }
 
-    function hashPoolJoin(
-        bytes32 _domainSeperator,
-        AmmData.PoolJoin memory join
-        )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return EIP712.hashPacked(
-            _domainSeperator,
-            keccak256(
-                abi.encode(
-                    POOLJOIN_TYPEHASH,
-                    join.owner,
-                    join.fromLayer2,
-                    join.minPoolAmountOut,
-                    keccak256(abi.encodePacked(join.maxAmountsIn)),
-                    keccak256(abi.encodePacked(join.storageIDs)),
-                    join.validUntil
-                )
-            )
-        );
-    }
+
 }

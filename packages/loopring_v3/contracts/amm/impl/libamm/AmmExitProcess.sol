@@ -10,7 +10,7 @@ import "../../../lib/ERC20SafeTransfer.sol";
 import "../../../lib/MathUint.sol";
 import "../../../lib/MathUint96.sol";
 import "../../../thirdparty/SafeCast.sol";
-import "./AmmCommon.sol";
+import "./AmmUtil.sol";
 import "./AmmData.sol";
 import "./AmmExitRequest.sol";
 import "./AmmPoolToken.sol";
@@ -73,7 +73,7 @@ library AmmExitProcess
     {
         S.authenticatePoolTx(
             exit.owner,
-            AmmExitRequest.hashPoolExit(ctx.domainSeperator, exit),
+            AmmUtil.hashPoolExit(ctx.domainSeperator, exit),
             signature
         );
         if (signature.length == 0) {
@@ -96,7 +96,7 @@ library AmmExitProcess
                 require(transfer.from == address(this), "INVALID_TX_DATA");
                 require(transfer.to == exit.owner, "INVALID_TX_DATA");
                 require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
-                require(AmmCommon.isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
+                require(AmmUtil.isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
                 require(transfer.fee == 0, "INVALID_TX_DATA");
 
                 if (signature.length != 0) {

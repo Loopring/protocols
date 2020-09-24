@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../../lib/ERC20.sol";
 import "../../../lib/MathUint.sol";
-import "./AmmCommon.sol";
+import "./AmmUtil.sol";
 import "./AmmData.sol";
 
 
@@ -65,7 +65,7 @@ library AmmExchange
 
             // Withdraw the part owned
             uint amount = balance.mul(poolAmountIn) / poolTokenTotalSupply;
-            AmmCommon.tranferOut(token, amount, msg.sender);
+            AmmUtil.tranferOut(token, amount, msg.sender);
         }
     }
 }

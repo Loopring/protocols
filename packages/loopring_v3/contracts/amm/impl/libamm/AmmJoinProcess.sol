@@ -10,7 +10,7 @@ import "../../../lib/ERC20SafeTransfer.sol";
 import "../../../lib/MathUint.sol";
 import "../../../lib/MathUint96.sol";
 import "../../../thirdparty/SafeCast.sol";
-import "./AmmCommon.sol";
+import "./AmmUtil.sol";
 import "./AmmData.sol";
 import "./AmmJoinRequest.sol";
 import "./AmmPoolToken.sol";
@@ -81,7 +81,7 @@ library AmmJoinProcess
     {
         S.authenticatePoolTx(
             join.owner,
-            AmmJoinRequest.hashPoolJoin(ctx.domainSeperator, join),
+            AmmUtil.hashPoolJoin(ctx.domainSeperator, join),
             signature
         );
 
@@ -98,7 +98,7 @@ library AmmJoinProcess
                 require(transfer.from == join.owner, "INVALID_TX_DATA");
                 require(transfer.toAccountID == S.accountID, "INVALID_TX_DATA");
                 require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
-                require(AmmCommon.isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
+                require(AmmUtil.isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
                 require(transfer.fee == 0, "INVALID_TX_DATA");
 
                 // Replay protection (only necessary when using a signature)
