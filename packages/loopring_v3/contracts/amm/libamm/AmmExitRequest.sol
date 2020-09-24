@@ -105,6 +105,7 @@ library AmmExitRequest
         bool                  toLayer2
         )
         public
+        returns(AmmData.PoolExit memory exit)
     {
         require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
 
@@ -113,8 +114,7 @@ library AmmExitRequest
         require(S.isExiting[msg.sender] == false, "ALREADY_EXITING");
         S.isExiting[msg.sender] = true;
 
-        // Approve the exit
-        AmmData.PoolExit memory exit = AmmData.PoolExit({
+        exit = AmmData.PoolExit({
             owner: msg.sender,
             toLayer2: toLayer2,
             poolAmountIn: poolAmountIn,
@@ -122,6 +122,8 @@ library AmmExitRequest
             storageIDs: new uint32[](0),
             validUntil: 0xffffffff
         });
+
+        // Approve the exit
         bytes32 txHash = AmmUtil.hashPoolExit(S.domainSeperator, exit);
         S.approvedTx[txHash] = block.timestamp;
     }
