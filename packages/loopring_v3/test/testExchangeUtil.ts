@@ -254,7 +254,7 @@ export namespace WithdrawalUtils {
           { name: "fee", type: "uint256" },
           { name: "to", type: "address" },
           { name: "extraData", type: "bytes" },
-          { name: "minGas", type: "uint" },
+          { name: "minGas", type: "uint256" },
           { name: "validUntil", type: "uint32" },
           { name: "storageID", type: "uint32" }
         ]
