@@ -14,6 +14,6 @@ contract WalletImpl is BaseWallet {
         returns (string memory)
     {
         // 使用中国省会作为别名
-        return "1.1.6 (hefei)";
+        return "1.1.7 (changsha)";
     }
 }

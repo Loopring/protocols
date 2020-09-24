@@ -184,7 +184,7 @@ function main() {
 // main();
 const batchSize = 1000000;
 const batchIdxStart = 0;
-const batchIdxEnd = 10;
+const batchIdxEnd = 1;
 const select = 1000;
 
 console.log(
