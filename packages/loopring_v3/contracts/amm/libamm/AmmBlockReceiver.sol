@@ -44,51 +44,78 @@ library AmmBlockReceiver
             ammExpectedL2Balances: new uint96[](size),
             numTransactionsConsumed: 0,
             tokens: S.tokens,
+            size: size,
             poolTokenTotalSupply: poolTokenTotalSupply,
             poolTokenBase: AmmData.LP_TOKEN_BASE(),
             poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY()
         });
 
-        {
-            BlockReader.BlockHeader memory header = _block.readHeader();
-            require(header.exchange == address(S.exchange), "INVALID_EXCHANGE");
-        }
+        BlockReader.BlockHeader memory header = _block.readHeader();
+        require(header.exchange == address(S.exchange), "INVALID_EXCHANGE");
 
-        // The starting AMM updates
+        // The openning AMM updates
         // This also pulls the AMM balances onchain.
         S.processAmmUpdates(ctx, true);
 
-        {
-            // Process all pool transactions
-            for (uint i = 0; i < poolTransactions.length; i++) {
-                AmmData.PoolTransaction memory poolTx = poolTransactions[i];
-                if (poolTx.txType == AmmData.PoolTransactionType.JOIN) {
-                    AmmData.PoolJoin memory join = abi.decode(poolTx.data, (AmmData.PoolJoin));
-                    S.processJoin(ctx, join, poolTx.signature);
-                } else if (poolTx.txType == AmmData.PoolTransactionType.EXIT) {
-                    AmmData.PoolExit memory exit = abi.decode(poolTx.data, (AmmData.PoolExit));
-                    S.processExit(ctx, exit, poolTx.signature);
-                }
-            }
+        // Process all pool transactions
+        for (uint i = 0; i < poolTransactions.length; i++) {
+            processPoolTransaction(S, ctx, poolTransactions[i]);
         }
 
-        {
-            // Deposit/Withdraw to/from the AMM account when necessary
-            for (uint i = 0; i < size; i++) {
-                if (ctx.ammExpectedL2Balances[i] > ctx.ammActualL2Balances[i]) {
-                    uint96 amount = ctx.ammExpectedL2Balances[i] - ctx.ammActualL2Balances[i];
-                    S.processDeposit(ctx, ctx.tokens[i], amount);
-                } else if (ctx.ammActualL2Balances[i] > ctx.ammExpectedL2Balances[i]) {
-                    uint96 amount = ctx.ammActualL2Balances[i] - ctx.ammExpectedL2Balances[i];
-                    S.processWithdrawal(ctx, ctx.tokens[i], amount);
-                }
-            }
+        // Deposit/Withdraw to/from the AMM account when necessary
+        for (uint i = 0; i < size; i++) {
+            processToken(
+                S,
+                ctx,
+                ctx.tokens[i],
+                ctx.ammExpectedL2Balances[i],
+                ctx.ammActualL2Balances[i]
+            );
         }
 
-        // The ending AMM updates
+        // The closing AMM updates
         S.processAmmUpdates(ctx, false);
 
         return ctx.numTransactionsConsumed;
     }
 
+    function processPoolTransaction(
+        AmmData.State           storage S,
+        AmmData.Context         memory  ctx,
+        AmmData.PoolTransaction memory  poolTx
+        )
+        private
+    {
+        if (poolTx.txType == AmmData.PoolTransactionType.JOIN) {
+            S.processJoin(
+                ctx,
+                abi.decode(poolTx.data, (AmmData.PoolJoin)),
+                poolTx.signature
+            );
+        } else if (poolTx.txType == AmmData.PoolTransactionType.EXIT) {
+            S.processExit(
+                ctx,
+                abi.decode(poolTx.data, (AmmData.PoolExit)),
+                poolTx.signature
+            );
+        }
+    }
+
+    function processToken(
+        AmmData.State   storage S,
+        AmmData.Context memory  ctx,
+        AmmData.Token   memory  token,
+        uint96                  ammExpectedL2Balance,
+        uint96                  ammActualL2Balance
+        )
+        private
+    {
+        if (ammExpectedL2Balance > ammActualL2Balance) {
+            uint96 amount = ammExpectedL2Balance - ammActualL2Balance;
+            S.processDeposit(ctx, token, amount);
+        } else if (ammActualL2Balance > ammExpectedL2Balance) {
+            uint96 amount = ammActualL2Balance - ammExpectedL2Balance;
+            S.processWithdrawal(ctx, token, amount);
+        }
+    }
 }
