@@ -111,11 +111,17 @@ library AmmBlockReceiver
         private
     {
         if (ammExpectedL2Balance > ammActualL2Balance) {
-            uint96 amount = ammExpectedL2Balance - ammActualL2Balance;
-            S.processDeposit(ctx, token, amount);
-        } else if (ammActualL2Balance > ammExpectedL2Balance) {
-            uint96 amount = ammActualL2Balance - ammExpectedL2Balance;
-            S.processWithdrawal(ctx, token, amount);
+            S.processDeposit(
+                ctx,
+                token,
+                ammExpectedL2Balance - ammActualL2Balance
+            );
+        } else if (ammExpectedL2Balance < ammActualL2Balance) {
+            S.processWithdrawal(
+                ctx,
+                token,
+                ammActualL2Balance - ammExpectedL2Balance
+            );
         }
     }
 }
