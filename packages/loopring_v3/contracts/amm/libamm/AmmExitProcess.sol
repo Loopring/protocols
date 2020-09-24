@@ -3,13 +3,13 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../../aux/transactions/TransactionReader.sol";
-import "../../../core/impl/libtransactions/TransferTransaction.sol";
-import "../../../lib/EIP712.sol";
-import "../../../lib/ERC20SafeTransfer.sol";
-import "../../../lib/MathUint.sol";
-import "../../../lib/MathUint96.sol";
-import "../../../thirdparty/SafeCast.sol";
+import "../../aux/transactions/TransactionReader.sol";
+import "../../core/impl/libtransactions/TransferTransaction.sol";
+import "../../lib/EIP712.sol";
+import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/MathUint96.sol";
+import "../../thirdparty/SafeCast.sol";
 import "./AmmUtil.sol";
 import "./AmmData.sol";
 import "./AmmExitRequest.sol";
@@ -47,17 +47,21 @@ library AmmExitProcess
         withdrawal.minGas = 0;
         withdrawal.to = address(this);
         withdrawal.extraData = new bytes(0);
+
         bytes20 onchainDataHash = WithdrawTransaction.hashOnchainData(
             withdrawal.minGas,
             withdrawal.to,
             withdrawal.extraData
         );
         require(withdrawal.onchainDataHash == onchainDataHash, "INVALID_TX_DATA");
+
         // Now approve this withdrawal
         withdrawal.validUntil = 0xffffffff;
         bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
         S.exchange.approveTransaction(address(this), txHash);
+
         ctx.numTransactionsConsumed++;
+
         // Total balance in this contract increases by the amount withdrawn
         S.totalLockedBalance[token.addr] = S.totalLockedBalance[token.addr].add(amount);
     }
@@ -83,12 +87,11 @@ library AmmExitProcess
         uint96[] memory amounts;
         (valid, amounts) = validateExitAmounts(S, ctx, exit);
 
-        if (!valid) {
-            return false;
-        }
+        if (!valid) return;
+
         S.burn(exit.owner, exit.poolAmountIn);
 
-        for (uint i = 0; i < ctx.tokens.length; i++) {
+        for (uint i = 0; i < ctx.size; i++) {
             uint96 amount = amounts[i];
             if (exit.toLayer2) {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -108,9 +111,12 @@ library AmmExitProcess
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 S.exchange.approveTransaction(address(this), txHash);
+
                 ctx.numTransactionsConsumed++;
+
                 // Update the amount to the actual amount transferred (which can have some some small rounding errors)
                 amount = transfer.amount;
+
                 // Update the balances in the account
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
             } else {
@@ -118,10 +124,10 @@ library AmmExitProcess
                 // Make the amount available for withdrawing
                 S.lockedBalance[token][exit.owner] = S.lockedBalance[token][exit.owner].add(amount);
             }
+
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
         }
     }
-
 
     function validateExitAmounts(
         AmmData.State    storage S,
@@ -135,7 +141,7 @@ library AmmExitProcess
             uint96[] memory amounts
         )
     {
-        amounts = new uint96[](ctx.tokens.length);
+        amounts = new uint96[](ctx.size);
 
         // Check if we can still use this exit
         if (block.timestamp > exit.validUntil) {
@@ -150,7 +156,7 @@ library AmmExitProcess
         // Calculate how much will be withdrawn
         uint ratio = exit.poolAmountIn.mul(ctx.poolTokenBase) / ctx.poolTokenTotalSupply;
 
-        for (uint i = 0; i < ctx.tokens.length; i++) {
+        for (uint i = 0; i < ctx.size; i++) {
             amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i]) / ctx.poolTokenBase).toUint96();
             if (amounts[i] < exit.minAmountsOut[i]) {
                 return (false, amounts);

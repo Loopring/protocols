@@ -3,13 +3,13 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./AmmUtil.sol";
+import "../../lib/EIP712.sol";
+import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/MathUint96.sol";
+import "../../thirdparty/SafeCast.sol";
 import "./AmmData.sol";
-import "../../../lib/EIP712.sol";
-import "../../../lib/ERC20SafeTransfer.sol";
-import "../../../lib/MathUint.sol";
-import "../../../lib/MathUint96.sol";
-import "../../../thirdparty/SafeCast.sol";
+import "./AmmUtil.sol";
 
 
 /// @title AmmJoinRequest
@@ -20,8 +20,6 @@ library AmmJoinRequest
     using MathUint96        for uint96;
     using SafeCast          for uint;
 
-
-
     function deposit(
         AmmData.State storage S,
         uint                  poolAmount,
@@ -29,7 +27,8 @@ library AmmJoinRequest
         )
         public
     {
-        require(amounts.length == S.tokens.length, "INVALID_DATA");
+        uint size = S.tokens.length;
+        require(amounts.length == size, "INVALID_DATA");
         if (S.isExiting[msg.sender]) {
             // Q: 这个标记的用途？
             // This could suddenly change the amount of liquidity tokens available, which
@@ -38,14 +37,16 @@ library AmmJoinRequest
         }
 
         // Lock up funds inside this contract so we can depend on them being available.
-        for (uint i = 0; i < S.tokens.length + 1; i++) {
-            uint amount = (i < S.tokens.length) ? amounts[i] : poolAmount;
-            address token = (i < S.tokens.length) ? S.tokens[i].addr : address(this);
+        for (uint i = 0; i < size + 1; i++) {
+            uint amount = (i < size) ? amounts[i] : poolAmount;
+            address token = (i < size) ? S.tokens[i].addr : address(this);
+
             if (token == address(0)) {
                 require(msg.value == amount, "INVALID_ETH_DEPOSIT");
             } else {
                 token.safeTransferFromAndVerify(msg.sender, address(this), uint(amount));
             }
+
             S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].add(amount);
             S.totalLockedBalance[token] = S.totalLockedBalance[token].add(amount);
         }
@@ -71,12 +72,10 @@ library AmmJoinRequest
             fromLayer2: fromLayer2,
             minPoolAmountOut: minPoolAmountOut,
             maxAmountsIn: maxAmountsIn,
-            storageIDs: new uint32[](0), // Q：这是做什么的？
+            storageIDs: new uint32[](0),
             validUntil: validUntil
         });
         bytes32 txHash = AmmUtil.hashPoolJoin(S.domainSeperator, join);
         S.approvedTx[txHash] = 0xffffffff;
     }
-
-
 }

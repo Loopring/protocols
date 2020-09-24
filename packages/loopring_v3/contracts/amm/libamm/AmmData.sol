@@ -3,8 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../../core/iface/ExchangeData.sol";
-import "../../../core/iface/IExchangeV3.sol";
+import "../../core/iface/ExchangeData.sol";
+import "../../core/iface/IExchangeV3.sol";
 
 
 /// @title AmmData
@@ -12,7 +12,7 @@ library AmmData
 {
     function LP_TOKEN_BASE() internal pure returns (uint) { return 10 ** 18; }
     function LP_TOKEN_INITIAL_SUPPLY() internal pure returns (uint) { return 100 * LP_TOKEN_BASE(); }
-    function MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN() public pure returns (uint) { return 7 days; }
+    function MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN() internal pure returns (uint) { return 7 days; }
     function MIN_TIME_TO_UNLOCK() internal pure returns (uint) { return 1 days; }
 
     enum PoolTransactionType
@@ -59,6 +59,7 @@ library AmmData
     struct Context
     {
         ExchangeData.Block _block;
+
         uint     txIdx;
         bytes32  domainSeperator;
         bytes32  exchangeDomainSeparator;
@@ -67,6 +68,7 @@ library AmmData
         uint     numTransactionsConsumed;
 
         Token[]  tokens;
+        uint     size; // == token.length;
 
         uint     poolTokenTotalSupply;
         uint     poolTokenBase;
@@ -74,13 +76,16 @@ library AmmData
     }
 
     struct State {
+        // Pool token state variables
         string name;
         string symbol;
         uint   totalSupply;
+
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
-        mapping(address => uint) erc2612Nonces; // ERC2612
+        mapping(address => uint) permitNonces; // ERC2612
 
+        // AMM pool state variables
         IExchangeV3 exchange;
         uint32      accountID;
         bytes32     domainSeperator;

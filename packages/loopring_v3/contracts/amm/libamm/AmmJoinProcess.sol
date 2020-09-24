@@ -3,18 +3,18 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../../aux/transactions/TransactionReader.sol";
-import "../../../core/impl/libtransactions/TransferTransaction.sol";
-import "../../../lib/EIP712.sol";
-import "../../../lib/ERC20SafeTransfer.sol";
-import "../../../lib/MathUint.sol";
-import "../../../lib/MathUint96.sol";
-import "../../../thirdparty/SafeCast.sol";
-import "./AmmUtil.sol";
+import "../../aux/transactions/TransactionReader.sol";
+import "../../core/impl/libtransactions/TransferTransaction.sol";
+import "../../lib/EIP712.sol";
+import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/MathUint96.sol";
+import "../../thirdparty/SafeCast.sol";
 import "./AmmData.sol";
 import "./AmmJoinRequest.sol";
 import "./AmmPoolToken.sol";
 import "./AmmStatus.sol";
+import "./AmmUtil.sol";
 
 
 /// @title AmmJoinProcess
@@ -28,11 +28,7 @@ library AmmJoinProcess
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-    bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs,uint256 validUntil)"
-    );
-
-     function processDeposit(
+    function processDeposit(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         AmmData.Token    memory  token,
@@ -56,9 +52,10 @@ library AmmJoinProcess
             uint allowance = ERC20(token.addr).allowance(address(this), depositContract);
             if (allowance < amount) {
                 // Approve the deposit transfer
-                ERC20(token.addr).approve(depositContract, ~uint(0));
+                ERC20(token.addr).approve(depositContract, uint(-1));
             }
         }
+
         S.exchange.deposit{value: ethValue}(
             _deposit.owner,
             _deposit.owner,
@@ -87,11 +84,12 @@ library AmmJoinProcess
 
         // Check if the requirements are fulfilled
         (bool valid, uint poolAmountOut, uint96[] memory amounts) = validateJoinAmounts(ctx, join);
-        if (!valid) {
-            return;
-        }
 
-        for (uint i = 0; i < ctx.tokens.length; i++) {
+        if (!valid) return;
+
+        S.mint(join.owner, poolAmountOut);
+
+        for (uint i = 0; i < ctx.size; i++) {
             uint96 amount = amounts[i];
             if (join.fromLayer2) {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -124,9 +122,6 @@ library AmmJoinProcess
             }
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
         }
-
-        // Mint liquidity tokens
-        S.mint(join.owner, poolAmountOut);
     }
 
     function validateJoinAmounts(
@@ -136,13 +131,13 @@ library AmmJoinProcess
         private
         view
         returns(
-            bool /* valid */,
-            uint /*poolAmountOut*/,
-            uint96[] memory /* amounts */
+            bool            valid,
+            uint            poolAmountOut,
+            uint96[] memory amounts
         )
     {
         // Check if we can still use this join
-        uint96[] memory amounts = new uint96[](ctx.tokens.length);
+        amounts = new uint96[](ctx.size);
         if (block.timestamp > join.validUntil) {
             return (false, 0, amounts);
         }
@@ -152,11 +147,12 @@ library AmmJoinProcess
         }
 
         // Calculate the amount of liquidity tokens that should be minted
-        uint poolAmountOut = 0;
         bool initialValueSet = false;
-        for (uint i = 0; i < ctx.tokens.length; i++) {
+        for (uint i = 0; i < ctx.size; i++) {
             if (ctx.ammExpectedL2Balances[i] > 0) {
-                uint amountOut = uint(join.maxAmountsIn[i]).mul(ctx.poolTokenTotalSupply) / uint(ctx.ammExpectedL2Balances[i]);
+                uint amountOut = uint(
+                    join.maxAmountsIn[i]).mul(ctx.poolTokenTotalSupply) / uint(ctx.ammExpectedL2Balances[i]
+                );
                 if (!initialValueSet || amountOut < poolAmountOut) {
                     poolAmountOut = amountOut;
                     initialValueSet = true;
@@ -171,11 +167,11 @@ library AmmJoinProcess
         // Calculate the amounts to deposit
         uint ratio = poolAmountOut.mul(ctx.poolTokenBase) / ctx.poolTokenTotalSupply;
 
-        for (uint i = 0; i < ctx.tokens.length; i++) {
+        for (uint i = 0; i < ctx.size; i++) {
             amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i]) / ctx.poolTokenBase).toUint96();
         }
 
-        bool valid = (poolAmountOut >= join.minPoolAmountOut);
+        valid = (poolAmountOut >= join.minPoolAmountOut);
         return (valid, poolAmountOut, amounts);
     }
 }
