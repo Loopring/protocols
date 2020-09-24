@@ -3,13 +3,13 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../../aux/transactions/TransactionReader.sol";
-import "../../../core/impl/libtransactions/TransferTransaction.sol";
-import "../../../lib/EIP712.sol";
-import "../../../lib/ERC20SafeTransfer.sol";
-import "../../../lib/MathUint.sol";
-import "../../../lib/MathUint96.sol";
-import "../../../thirdparty/SafeCast.sol";
+import "../../aux/transactions/TransactionReader.sol";
+import "../../core/impl/libtransactions/TransferTransaction.sol";
+import "../../lib/EIP712.sol";
+import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/MathUint96.sol";
+import "../../thirdparty/SafeCast.sol";
 import "./AmmUtil.sol";
 import "./AmmData.sol";
 import "./AmmJoinRequest.sol";

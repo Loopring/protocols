@@ -4,10 +4,10 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./AmmData.sol";
-import "../../../core/iface/IExchangeV3.sol";
-import "../../../lib/EIP712.sol";
-import "../../../lib/ERC20.sol";
-import "../../../lib/SignatureUtil.sol";
+import "../../core/iface/IExchangeV3.sol";
+import "../../lib/EIP712.sol";
+import "../../lib/ERC20.sol";
+import "../../lib/SignatureUtil.sol";
 
 /// @title LPToken
 library AmmStatus

@@ -3,8 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../../core/iface/ExchangeData.sol";
-import "../../../core/iface/IExchangeV3.sol";
+import "../../core/iface/ExchangeData.sol";
+import "../../core/iface/IExchangeV3.sol";
 
 
 /// @title AmmData

@@ -4,9 +4,9 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./AmmData.sol";
-import "../../../lib/EIP712.sol";
-import "../../../lib/MathUint.sol";
-import "../../../lib/SignatureUtil.sol";
+import "../../lib/EIP712.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/SignatureUtil.sol";
 
 
 /// @title AmmPoolToken

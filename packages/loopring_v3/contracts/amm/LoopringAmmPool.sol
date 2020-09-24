@@ -3,10 +3,9 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../aux/access/IBlockReceiver.sol";
-import "../../core/iface/IAgentRegistry.sol";
-import "../../lib/ReentrancyGuard.sol";
-import "../iface/IAmmPool.sol";
+import "../aux/access/IBlockReceiver.sol";
+import "../core/iface/IAgentRegistry.sol";
+import "../lib/ReentrancyGuard.sol";
 import "./libamm/AmmBlockReceiver.sol";
 import "./libamm/AmmData.sol";
 import "./libamm/AmmExchange.sol";
@@ -20,7 +19,6 @@ import './LoopringPoolToken.sol';
 /// @title LoopringAmmPool
 contract LoopringAmmPool is
     LoopringPoolToken,
-    IAmmPool,
     IAgent,
     IBlockReceiver,
     ReentrancyGuard
@@ -141,7 +139,6 @@ contract LoopringAmmPool is
         )
         external
         payable
-        override
         onlyWhenOnline
         nonReentrant
     {
@@ -156,7 +153,6 @@ contract LoopringAmmPool is
         uint              validUntil
         )
         external
-        override
         onlyWhenOnline
         nonReentrant
     {
@@ -177,7 +173,6 @@ contract LoopringAmmPool is
         uint              validUntil
         )
         external
-        override
         onlyWhenOnline
         nonReentrant
     {
@@ -199,7 +194,6 @@ contract LoopringAmmPool is
         bool              toLayer2
         )
         external
-        override
         onlyWhenOnline
         nonReentrant
     {
@@ -214,7 +208,6 @@ contract LoopringAmmPool is
         bytes  calldata signature
         )
         external
-        override
         nonReentrant
     {
         uint[] memory withdrawn = state.withdraw(poolAmount, amounts, validUntil, signature);

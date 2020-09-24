@@ -3,8 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../../lib/ERC20.sol";
-import "../../../lib/MathUint.sol";
+import "../../lib/ERC20.sol";
+import "../../lib/MathUint.sol";
 import "./AmmUtil.sol";
 import "./AmmData.sol";
 

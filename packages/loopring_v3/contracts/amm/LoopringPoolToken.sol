@@ -4,8 +4,8 @@ pragma solidity ^0.7.0;
 
 import "./libamm/AmmData.sol";
 import "./libamm/AmmPoolToken.sol";
-import '../../lib/ERC2612.sol';
-import '../../lib/MathUint.sol';
+import '../lib/ERC2612.sol';
+import '../lib/MathUint.sol';
 
 
 abstract contract LoopringPoolToken is ERC2612 {

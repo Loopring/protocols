@@ -5,11 +5,11 @@ pragma experimental ABIEncoderV2;
 
 import "./AmmUtil.sol";
 import "./AmmData.sol";
-import "../../../lib/EIP712.sol";
-import "../../../lib/ERC20SafeTransfer.sol";
-import "../../../lib/MathUint.sol";
-import "../../../lib/MathUint96.sol";
-import "../../../thirdparty/SafeCast.sol";
+import "../../lib/EIP712.sol";
+import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/MathUint96.sol";
+import "../../thirdparty/SafeCast.sol";
 
 
 /// @title AmmJoinRequest

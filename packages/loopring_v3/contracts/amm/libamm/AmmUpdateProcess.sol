@@ -6,14 +6,14 @@ pragma experimental ABIEncoderV2;
 import "./AmmUtil.sol";
 import "./AmmJoinRequest.sol";
 import "./AmmData.sol";
-import "../../../lib/EIP712.sol";
-import "../../../lib/ERC20SafeTransfer.sol";
-import "../../../lib/MathUint.sol";
-import "../../../lib/MathUint96.sol";
-import "../../../thirdparty/SafeCast.sol";
+import "../../lib/EIP712.sol";
+import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/MathUint96.sol";
+import "../../thirdparty/SafeCast.sol";
 
-import "../../../aux/transactions/TransactionReader.sol";
-import "../../../core/impl/libtransactions/AmmUpdateTransaction.sol";
+import "../../aux/transactions/TransactionReader.sol";
+import "../../core/impl/libtransactions/AmmUpdateTransaction.sol";
 /// @title AmmUpdateProcess
 library AmmUpdateProcess
 {

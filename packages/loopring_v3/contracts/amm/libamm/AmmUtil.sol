@@ -3,9 +3,9 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../../lib/AddressUtil.sol";
-import "../../../lib/EIP712.sol";
-import "../../../lib/ERC20SafeTransfer.sol";
+import "../../lib/AddressUtil.sol";
+import "../../lib/EIP712.sol";
+import "../../lib/ERC20SafeTransfer.sol";
 import "./AmmData.sol";
 
 
@@ -27,7 +27,7 @@ library AmmUtil
         uint96 amount,
         uint96 targetAmount
         )
-        internal // inline
+        internal
         pure
         returns (bool)
     {
@@ -45,7 +45,7 @@ library AmmUtil
         uint    amount,
         address to
         )
-        internal // inline
+        internal
     {
         if (token == address(0)) {
             to.sendETHAndVerify(amount, gasleft());

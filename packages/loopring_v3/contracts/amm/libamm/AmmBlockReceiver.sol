@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../../core/impl/libtransactions/BlockReader.sol";
+import "../../core/impl/libtransactions/BlockReader.sol";
 import "./AmmData.sol";
 import "./AmmExitProcess.sol";
 import "./AmmJoinProcess.sol";
