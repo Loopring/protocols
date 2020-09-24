@@ -38,7 +38,6 @@ contract PoolToken is ERC20 {
 
     function totalSupply()
         public
-        virtual
         view
         override
         returns (uint)
@@ -50,7 +49,6 @@ contract PoolToken is ERC20 {
         public
         view
         override
-        virtual
         returns (uint balance)
     {
         return state.balanceOf[owner];

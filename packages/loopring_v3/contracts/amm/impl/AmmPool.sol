@@ -86,7 +86,7 @@ contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
 
     receive() payable external {}
 
-    function setupPool(
+    function init(
         IExchangeV3        _exchange,
         uint32             _accountID,
         address[] calldata _tokens,
