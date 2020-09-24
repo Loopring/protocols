@@ -21,6 +21,14 @@ const ExchangeWithdrawals = artifacts.require("ExchangeWithdrawals");
 const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 const LoopringV3 = artifacts.require("LoopringV3");
 
+const AmmBlockReceiver = artifacts.require("AmmBlockReceiver");
+const AmmExchange = artifacts.require("AmmExchange");
+const AmmExitRequest = artifacts.require("AmmExitRequest");
+const AmmJoinRequest = artifacts.require("AmmJoinRequest");
+const AmmPoolToken = artifacts.require("AmmPoolToken");
+const AmmStatus = artifacts.require("AmmStatus");
+const LoopringAmmPool = artifacts.require("LoopringAmmPool");
+
 module.exports = function(deployer, network, accounts) {
   console.log(">>> deployed to network: " + network);
   console.log("- LRCToken:", LRCToken.address);
@@ -42,4 +50,12 @@ module.exports = function(deployer, network, accounts) {
   console.log("- ExchangeWithdrawals:", ExchangeWithdrawals.address);
   console.log("- ExchangeV3:", ExchangeV3.address);
   console.log("- LoopringV3:", LoopringV3.address);
+
+  console.log("- AmmBlockReceiver:", AmmBlockReceiver.address);
+  console.log("- AmmExchange:", AmmExchange.address);
+  console.log("- AmmExitRequest:", AmmExitRequest.address);
+  console.log("- AmmJoinRequest:", AmmJoinRequest.address);
+  console.log("- AmmPoolToken:", AmmPoolToken.address);
+  console.log("- AmmStatus:", AmmStatus.address);
+  console.log("- LoopringAmmPool:", LoopringAmmPool.address);
 };
