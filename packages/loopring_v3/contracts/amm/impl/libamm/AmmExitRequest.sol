@@ -36,7 +36,7 @@ library AmmExitRequest
         AmmData.State storage S,
         uint                  timestamp
         )
-        external
+        public
     {
         if (timestamp > 0) {
             require(timestamp >= block.timestamp + AmmData.MIN_TIME_TO_UNLOCK(), "TOO_SOON");
@@ -51,7 +51,7 @@ library AmmExitRequest
         uint                  validUntil,
         bytes        calldata signature
         )
-        external
+        public
         returns (uint[] memory withdrawn)
     {
         require(amounts.length == S.tokens.length, "INVALID_DATA");
@@ -110,7 +110,7 @@ library AmmExitRequest
         uint96[]     calldata minAmountsOut,
         bool                  toLayer2
         )
-        external
+        public
     {
         require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
 

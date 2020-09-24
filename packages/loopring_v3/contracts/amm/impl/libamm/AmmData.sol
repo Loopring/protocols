@@ -74,6 +74,12 @@ library AmmData
     }
 
     struct State {
+        string name;
+        string symbol;
+        uint   totalSupply;
+        mapping(address => uint) balanceOf;
+        mapping(address => mapping(address => uint)) allowance;
+
         IExchangeV3 exchange;
         uint32      accountID;
         bytes32     domainSeperator;

@@ -25,7 +25,7 @@ library AmmBlockReceiver
         uint                       txIdx,
         bytes              memory  auxiliaryData
         )
-        external
+        public
         returns (uint)
     {
         AmmData.PoolTransaction[] memory poolTransactions = abi.decode(

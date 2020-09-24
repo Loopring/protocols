@@ -67,7 +67,7 @@ library AmmStatus
         uint96[]  calldata _weights,
         uint8              _feeBips
         )
-        external
+        public
     {
         require(S.tokens.length == 0, "ALREADY_INITIALIZED");
         require(_tokens.length == _weights.length, "INVALID_DATA");

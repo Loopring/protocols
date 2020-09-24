@@ -28,7 +28,7 @@ library AmmJoinRequest
         uint                  poolAmount,
         uint96[]     calldata amounts
         )
-        external
+        public
     {
         require(amounts.length == S.tokens.length, "INVALID_DATA");
         if (S.isExiting[msg.sender]) {
@@ -59,7 +59,7 @@ library AmmJoinRequest
         bool                  fromLayer2,
         uint                  validUntil
         )
-        external
+        public
     {
         require(maxAmountsIn.length == S.tokens.length, "INVALID_DATA");
 

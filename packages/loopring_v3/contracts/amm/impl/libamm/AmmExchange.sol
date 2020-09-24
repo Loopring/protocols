@@ -21,7 +21,7 @@ library AmmExchange
         uint                  poolAmountIn,
         uint                  poolTokenTotalSupply
         )
-        external
+        public
     {
         require(poolAmountIn <= poolTokenTotalSupply, "INVALID_POOL_AMOUNT");
         require(poolTokenTotalSupply > 0, "NO_LP_SUPPLY");

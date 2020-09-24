@@ -3,28 +3,29 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../iface/IAmmPool.sol";
 import "../../aux/access/IBlockReceiver.sol";
 import "../../core/iface/IAgentRegistry.sol";
-import "./libamm/AmmData.sol";
-import './LPToken.sol';
-import "./libamm/AmmExchange.sol";
-import "./libamm/AmmJoinRequest.sol";
-import "./libamm/AmmStatus.sol";
-import "./libamm/AmmExitRequest.sol";
-import "./libamm/AmmBlockReceiver.sol";
 import "../../lib/ReentrancyGuard.sol";
+import "../iface/IAmmPool.sol";
+import "./libamm/AmmBlockReceiver.sol";
+import "./libamm/AmmData.sol";
+import "./libamm/AmmExchange.sol";
+import "./libamm/AmmExitRequest.sol";
+import "./libamm/AmmJoinRequest.sol";
+import "./libamm/AmmPoolToken.sol";
+import "./libamm/AmmStatus.sol";
+import './PoolToken.sol';
+
 
 /// @title AmmPool
-contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
+contract AmmPool is PoolToken, IAmmPool, IAgent, IBlockReceiver, ReentrancyGuard
 {
-    using AmmExchange      for AmmData.State;
-    using AmmJoinRequest   for AmmData.State;
-    using AmmStatus        for AmmData.State;
-    using AmmExitRequest   for AmmData.State;
     using AmmBlockReceiver for AmmData.State;
-
-    AmmData.State state;
+    using AmmExchange      for AmmData.State;
+    using AmmExitRequest   for AmmData.State;
+    using AmmJoinRequest   for AmmData.State;
+    using AmmPoolToken     for AmmData.State;
+    using AmmStatus        for AmmData.State;
 
     event Deposit(
         address  owner,
@@ -90,11 +91,20 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
         uint32             _accountID,
         address[] calldata _tokens,
         uint96[]  calldata _weights,
-        uint8              _feeBips
+        uint8              _feeBips,
+        string    calldata _tokenName,
+        string    calldata _tokenSymbol
         )
         external
         nonReentrant
     {
+        require(
+            bytes(_tokenName).length > 0 && bytes(_tokenSymbol).length > 0,
+            "INVALID_NAME_OR_SYMBOL"
+        );
+        state.name = _tokenName;
+        state.symbol = _tokenSymbol;
+
         state.setupPool(_exchange, _accountID, _tokens, _weights, _feeBips);
     }
 
@@ -116,7 +126,7 @@ contract AmmPool is IAmmPool, IAgent, IBlockReceiver, LPToken, ReentrancyGuard
         nonReentrant
     {
         uint _totalSupply = totalSupply();
-        _burn(msg.sender, poolAmountIn);
+        burn(msg.sender, poolAmountIn);
         state.withdrawFromPoolWhenShutdown(poolAmountIn, _totalSupply);
     }
 

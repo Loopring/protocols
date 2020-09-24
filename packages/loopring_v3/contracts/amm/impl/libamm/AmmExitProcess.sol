@@ -13,12 +13,14 @@ import "../../../thirdparty/SafeCast.sol";
 import "./AmmCommon.sol";
 import "./AmmData.sol";
 import "./AmmExitRequest.sol";
+import "./AmmPoolToken.sol";
 import "./AmmStatus.sol";
 
 
 /// @title AmmExitProcess
 library AmmExitProcess
 {
+    using AmmPoolToken      for AmmData.State;
     using AmmStatus         for AmmData.State;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
@@ -32,7 +34,7 @@ library AmmExitProcess
         AmmData.Token    memory  token,
         uint                     amount
         )
-        external
+        public
     {
         // Check that the withdrawal in the block matches the expected withdrawal
         WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
@@ -84,8 +86,7 @@ library AmmExitProcess
         if (!valid) {
             return false;
         }
-        // TODO
-        // burn(exit.owner, exit.poolAmountIn);
+        S.burn(exit.owner, exit.poolAmountIn);
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
             uint96 amount = amounts[i];

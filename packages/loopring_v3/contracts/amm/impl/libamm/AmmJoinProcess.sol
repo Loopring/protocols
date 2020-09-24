@@ -3,27 +3,29 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./AmmCommon.sol";
-import "./AmmStatus.sol";
-import "./AmmJoinRequest.sol";
-import "./AmmData.sol";
+import "../../../aux/transactions/TransactionReader.sol";
+import "../../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../../lib/EIP712.sol";
 import "../../../lib/ERC20SafeTransfer.sol";
 import "../../../lib/MathUint.sol";
 import "../../../lib/MathUint96.sol";
 import "../../../thirdparty/SafeCast.sol";
+import "./AmmCommon.sol";
+import "./AmmData.sol";
+import "./AmmJoinRequest.sol";
+import "./AmmPoolToken.sol";
+import "./AmmStatus.sol";
 
-import "../../../aux/transactions/TransactionReader.sol";
-import "../../../core/impl/libtransactions/TransferTransaction.sol";
 
 /// @title AmmJoinProcess
 library AmmJoinProcess
 {
+    using AmmPoolToken      for AmmData.State;
+    using AmmStatus         for AmmData.State;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;
-    using AmmStatus         for AmmData.State;
     using TransactionReader for ExchangeData.Block;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
@@ -36,7 +38,7 @@ library AmmJoinProcess
         AmmData.Token    memory  token,
         uint96                   amount
         )
-        external
+        public
     {
         // Check that the deposit in the block matches the expected deposit
         DepositTransaction.Deposit memory _deposit = ctx._block.readDeposit(ctx.txIdx++);
@@ -123,11 +125,9 @@ library AmmJoinProcess
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
         }
 
-        // // Mint liquidity tokens
-        // TODO
-        // mint(join.owner, poolAmountOut);
+        // Mint liquidity tokens
+        S.mint(join.owner, poolAmountOut);
     }
-
 
     function validateJoinAmounts(
         AmmData.Context  memory ctx,
