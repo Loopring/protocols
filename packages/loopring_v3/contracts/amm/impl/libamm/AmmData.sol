@@ -79,6 +79,7 @@ library AmmData
         uint   totalSupply;
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
+        mapping(address => uint) erc2612Nonces; // ERC2612
 
         IExchangeV3 exchange;
         uint32      accountID;

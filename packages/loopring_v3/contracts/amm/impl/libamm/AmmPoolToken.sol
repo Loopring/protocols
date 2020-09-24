@@ -4,17 +4,21 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./AmmData.sol";
+import "../../../lib/EIP712.sol";
 import "../../../lib/MathUint.sol";
+import "../../../lib/SignatureUtil.sol";
 
 
 /// @title AmmPoolToken
 library AmmPoolToken
 {
-    using MathUint for uint;
+    using MathUint      for uint;
+    using SignatureUtil for bytes32;
 
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from,  address indexed to,      uint value);
 
+    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
     function approve(
         AmmData.State storage S,
         address               spender,
@@ -23,8 +27,7 @@ library AmmPoolToken
         internal
         returns (bool)
     {
-        S.allowance[msg.sender][spender] = value;
-        emit Approval(msg.sender, spender, value);
+        _approve(S, msg.sender, spender, value);
         return true;
     }
 
@@ -61,6 +64,69 @@ library AmmPoolToken
         return true;
     }
 
+    function permit(
+        AmmData.State storage S,
+        address               owner,
+        address               spender,
+        uint256               value,
+        uint256               deadline,
+        uint8                 v,
+        bytes32               r,
+        bytes32               s
+        )
+        public
+    {
+        require(deadline >= block.timestamp, 'EXPIRED');
+
+        bytes32 hash = EIP712.hashPacked(
+            S.domainSeperator,
+            keccak256(
+                abi.encodePacked(
+                    PERMIT_TYPEHASH,
+                    owner,
+                    spender,
+                    value,
+                    S.erc2612Nonces[owner]++,
+                    deadline
+                )
+            )
+        );
+
+        address addr = ecrecover(hash, v, r, s);
+        require(addr != address(0) && addr == owner, 'INVALID_SIGNATURE');
+        _approve(S, owner, spender, value);
+    }
+
+    function permit(
+        AmmData.State storage S,
+        address               owner,
+        address               spender,
+        uint256               value,
+        uint256               deadline,
+        bytes        calldata signature
+        )
+        public
+    {
+        require(deadline >= block.timestamp, 'EXPIRED');
+
+        bytes32 hash = EIP712.hashPacked(
+            S.domainSeperator,
+            keccak256(
+                abi.encodePacked(
+                    PERMIT_TYPEHASH,
+                    owner,
+                    spender,
+                    value,
+                    S.erc2612Nonces[owner]++,
+                    deadline
+                )
+            )
+        );
+
+        require(hash.verifySignature(owner, signature), 'INVALID_SIGNATURE');
+        _approve(S, owner, spender, value);
+    }
+
     function mint(
         AmmData.State storage S,
         address               to,
@@ -83,5 +149,17 @@ library AmmPoolToken
         S.balanceOf[from] = S.balanceOf[from].sub(value);
         S.totalSupply = S.totalSupply.sub(value);
         emit Transfer(from, address(0), value);
+    }
+
+    function _approve(
+        AmmData.State storage S,
+        address               owner,
+        address               spender,
+        uint                  value
+        )
+        private
+    {
+        S.allowance[owner][spender] = value;
+        emit Approval(owner, spender, value);
     }
 }

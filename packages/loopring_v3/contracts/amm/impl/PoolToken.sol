@@ -4,15 +4,14 @@ pragma solidity ^0.7.0;
 
 import "./libamm/AmmData.sol";
 import "./libamm/AmmPoolToken.sol";
-import '../../lib/ERC20.sol';
+import '../../lib/ERC2612.sol';
 import '../../lib/MathUint.sol';
 
 
-contract PoolToken is ERC20 {
+contract PoolToken is ERC2612 {
     using MathUint     for uint;
     using AmmPoolToken for AmmData.State;
 
-    // TODO:support permit
     uint   public constant decimals = 18;
 
     AmmData.State state;
@@ -85,6 +84,34 @@ contract PoolToken is ERC20 {
         returns (bool)
     {
        return state.transferFrom(from, to, value);
+    }
+
+    function permit(
+        address               owner,
+        address               spender,
+        uint256               value,
+        uint256               deadline,
+        uint8                 v,
+        bytes32               r,
+        bytes32               s
+        )
+        external
+        override
+    {
+        state.permit(owner, spender, value, deadline, v, r, s);
+    }
+
+    function permit(
+        address               owner,
+        address               spender,
+        uint256               value,
+        uint256               deadline,
+        bytes        calldata signature
+        )
+        external
+        override
+    {
+        state.permit(owner, spender, value, deadline, signature);
     }
 
     function mint(address to, uint value)
