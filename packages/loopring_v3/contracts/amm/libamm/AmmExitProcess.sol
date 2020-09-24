@@ -87,7 +87,7 @@ library AmmExitProcess
         uint96[] memory amounts;
         (valid, amounts) = validateExitAmounts(S, ctx, exit);
 
-        if (!valid) return;
+        if (!valid) { return false; }
 
         S.burn(exit.owner, exit.poolAmountIn);
 

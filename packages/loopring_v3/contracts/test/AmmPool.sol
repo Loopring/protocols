@@ -60,7 +60,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         uint256[] amounts
     );
 
-    event JoinPoolRequested(
+    event PoolJoinRequested(
         address  owner,
         bool     fromLayer2,
         uint     minPoolAmountOut,
@@ -575,7 +575,7 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
         bytes32 txHash = hashPoolJoin(DOMAIN_SEPARATOR, join);
         approvedTx[txHash] = 0xffffffff;
 
-        emit JoinPoolRequested(msg.sender, fromLayer2, minPoolAmountOut, maxAmountsIn, validUntil);
+        emit PoolJoinRequested(msg.sender, fromLayer2, minPoolAmountOut, maxAmountsIn, validUntil);
 
         // Q: 可以直接在事件里面包含PoolJoin
     }

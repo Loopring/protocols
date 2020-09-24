@@ -30,36 +30,12 @@ contract LoopringAmmPool is
     using AmmPoolToken     for AmmData.State;
     using AmmStatus        for AmmData.State;
 
-    event Deposit(
-        address  owner,
-        uint     poolAmount,
-        uint96[] amounts
-    );
+    event Deposit   (address owner, uint poolAmount, uint96[] amounts);
+    event Withdrawal(address owner, uint256[] amounts);
 
-    event Withdrawal(
-        address   owner,
-        uint256[] amounts
-    );
-
-    event JoinPoolRequested(
-        address  owner,
-        bool     fromLayer2,
-        uint     minPoolAmountOut,
-        uint96[] maxAmountsIn,
-        uint     validUntil
-    );
-
-    event LockedUntil(
-        address  owner,
-        uint     timestamp
-    );
-
-    event ExitPoolRequested(
-        address  owner,
-        bool     toLayer2,
-        uint     poolAmountIn,
-        uint96[] minAmountsOut
-    );
+    event PoolJoinRequested(AmmData.PoolJoin join);
+    event PoolExitRequested(AmmData.PoolExit exit);
+    event LockedUntil(address owner, uint timestamp);
 
     modifier onlyExchangeOwner()
     {
@@ -154,14 +130,13 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        state.joinPool(minPoolAmountOut, maxAmountsIn, fromLayer2, validUntil);
-        emit JoinPoolRequested(
-            msg.sender,
-            fromLayer2,
+        AmmData.PoolJoin memory join = state.joinPool(
             minPoolAmountOut,
             maxAmountsIn,
+            fromLayer2,
             validUntil
         );
+        emit PoolJoinRequested(join);
     }
 
     function depositAndJoinPool(
@@ -195,8 +170,12 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        state.exitPool(poolAmountIn, minAmountsOut, toLayer2);
-        emit ExitPoolRequested(msg.sender, toLayer2, poolAmountIn, minAmountsOut);
+        AmmData.PoolExit memory exit = state.exitPool(
+            poolAmountIn,
+            minAmountsOut,
+            toLayer2
+        );
+        emit PoolExitRequested(exit);
     }
 
     function withdraw(

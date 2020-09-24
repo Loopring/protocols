@@ -60,14 +60,14 @@ library AmmJoinRequest
         uint                  validUntil
         )
         public
+        returns(AmmData.PoolJoin memory join)
     {
         require(maxAmountsIn.length == S.tokens.length, "INVALID_DATA");
 
         // Don't check the available funds here, if the operator isn't sure the funds
         // are locked this transaction can simply be dropped.
 
-        // Approve the join
-        AmmData.PoolJoin memory join = AmmData.PoolJoin({
+        join = AmmData.PoolJoin({
             owner: msg.sender,
             fromLayer2: fromLayer2,
             minPoolAmountOut: minPoolAmountOut,
@@ -75,6 +75,8 @@ library AmmJoinRequest
             storageIDs: new uint32[](0),
             validUntil: validUntil
         });
+
+        // Approve the join
         bytes32 txHash = AmmUtil.hashPoolJoin(S.domainSeperator, join);
         S.approvedTx[txHash] = 0xffffffff;
     }
