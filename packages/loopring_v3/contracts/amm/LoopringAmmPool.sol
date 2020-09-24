@@ -192,9 +192,9 @@ contract LoopringAmmPool is
     }
 
     function beforeBlockSubmitted(
-        ExchangeData.Block memory  _block,
-        uint                       txIdx,
-        bytes              memory  auxiliaryData
+        ExchangeData.Block calldata  _block,
+        uint                         txIdx,
+        bytes              calldata  auxiliaryData
         )
         public
         override

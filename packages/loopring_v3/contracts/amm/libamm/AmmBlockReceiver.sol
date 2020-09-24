@@ -38,7 +38,7 @@ library AmmBlockReceiver
         AmmData.Context memory ctx = AmmData.Context({
             _block: _block,
             txIdx: txIdx,
-            domainSeperator: S.domainSeperator,
+            domainSeparator: S.domainSeparator,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
             ammActualL2Balances: new uint96[](size),
             ammExpectedL2Balances: new uint96[](size),

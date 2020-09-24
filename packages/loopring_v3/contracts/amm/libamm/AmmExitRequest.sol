@@ -60,7 +60,7 @@ library AmmExitRequest
         if (signature.length > 0) {
             require(validUntil >= block.timestamp, 'SIGNATURE_EXPIRED');
             bytes32 withdrawHash = EIP712.hashPacked(
-                S.domainSeperator,
+                S.domainSeparator,
                 keccak256(
                     abi.encode(
                         WITHDRAW_TYPEHASH,
@@ -124,7 +124,7 @@ library AmmExitRequest
         });
 
         // Approve the exit
-        bytes32 txHash = AmmUtil.hashPoolExit(S.domainSeperator, exit);
+        bytes32 txHash = AmmUtil.hashPoolExit(S.domainSeparator, exit);
         S.approvedTx[txHash] = block.timestamp;
     }
 

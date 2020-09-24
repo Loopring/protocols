@@ -75,7 +75,7 @@ library AmmPoolToken
         require(deadline >= block.timestamp, 'EXPIRED');
 
         bytes32 hash = EIP712.hashPacked(
-            S.domainSeperator,
+            S.domainSeparator,
             keccak256(
                 abi.encodePacked(
                     PERMIT_TYPEHASH,
@@ -106,7 +106,7 @@ library AmmPoolToken
         require(deadline >= block.timestamp, 'EXPIRED');
 
         bytes32 hash = EIP712.hashPacked(
-            S.domainSeperator,
+            S.domainSeparator,
             keccak256(
                 abi.encodePacked(
                     PERMIT_TYPEHASH,

@@ -78,7 +78,7 @@ library AmmJoinProcess
     {
         S.authenticatePoolTx(
             join.owner,
-            AmmUtil.hashPoolJoin(ctx.domainSeperator, join),
+            AmmUtil.hashPoolJoin(ctx.domainSeparator, join),
             signature
         );
 

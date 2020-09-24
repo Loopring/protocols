@@ -37,7 +37,7 @@ library AmmStatus
         require(_tokens.length == _weights.length, "INVALID_DATA");
         require(_tokens.length >= 2, "INVALID_DATA");
 
-        S.domainSeperator = EIP712.hash(EIP712.Domain("AMM Pool", "1.0.0", address(this)));
+        S.domainSeparator = EIP712.hash(EIP712.Domain("AMM Pool", "1.0.0", address(this)));
 
         S.exchange = _exchange;
         S.accountID = _accountID;

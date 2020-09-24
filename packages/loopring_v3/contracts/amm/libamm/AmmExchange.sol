@@ -30,7 +30,6 @@ library AmmExchange
 
         S.burn(msg.sender, poolAmountIn);
 
-        // Currently commented out to make the contract size smaller...
         uint size = S.tokens.length;
         if (S.exchange.isInWithdrawalMode()) {
             // Check if all tokens were withdrawn using Merkle proofs

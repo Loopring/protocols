@@ -77,12 +77,12 @@ library AmmExitProcess
     {
         S.authenticatePoolTx(
             exit.owner,
-            AmmUtil.hashPoolExit(ctx.domainSeperator, exit),
+            AmmUtil.hashPoolExit(ctx.domainSeparator, exit),
             signature
         );
         if (signature.length == 0) {
             // This is an onchain exit, we're processing it now so stop tracking it.
-            S.isExiting[msg.sender] = false;
+            S.isExiting[exit.owner] = false;
         }
         uint96[] memory amounts;
         (valid, amounts) = validateExitAmounts(S, ctx, exit);
