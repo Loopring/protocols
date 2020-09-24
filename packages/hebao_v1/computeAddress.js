@@ -40,7 +40,7 @@ function computeAddress(owner, salt) {
   return ethUtil.toChecksumAddress(addr);
 }
 
-function scoreString(str, prefix) {
+function scoreString(str) {
   const len = str.length;
   if (len == 0 || len == 1) return 0;
   if (len == 2) return 1;
@@ -63,45 +63,15 @@ function scoreString(str, prefix) {
 
   score += segment * segment;
   score /= (len - 1) * (len - 1);
-
-  if (prefix) {
-    if (
-      str.slice(0, 1) === "6" ||
-      str.slice(0, 1) === "8" ||
-      str.slice(0, 1) === "9"
-    ) {
-      score = score + (1 - score) * 0.05;
-    } else if (str.slice(0, 1) === "4") {
-      score = score * 0.8;
-    }
-  } else {
-    if (
-      str.slice(-1) === "6" ||
-      str.slice(-1) === "8" ||
-      str.slice(-1) === "9"
-    ) {
-      score = score + (1 - score) * 0.05;
-    } else if (str.slice(-1) === "4") {
-      score = score * 0.8;
-    }
-  }
-
   return score;
 }
 
 function calAddress(salt, headSize, tailSize) {
   const addr = computeAddress(zeroAddress, salt);
-  const headStr = addr.slice(2, 2 + headSize);
-  const prefixScore = scoreString(headStr, true);
-  const tailStr = addr.slice(0 - tailSize);
-  const tailScore = scoreString(tailStr, false);
+  const prefixScore = scoreString(addr.slice(2, 2 + headSize));
+  const tailScore = scoreString(addr.slice(0 - tailSize));
 
-  let score = (prefixScore * prefixScore + tailScore * tailScore) / 2.0;
-  // add score when prefix/tail is the same:
-  if (headStr.slice(0, 1) === tailStr.slice(-1)) {
-    score = score + (1 - score) * 0.1;
-  }
-
+  const score = (prefixScore * prefixScore + tailScore * tailScore) / 2.0;
   return { addr, salt, score, prefixScore, tailScore };
 }
 
@@ -184,7 +154,7 @@ function main() {
 // main();
 const batchSize = 1000000;
 const batchIdxStart = 0;
-const batchIdxEnd = 10;
+const batchIdxEnd = 100;
 const select = 1000;
 
 console.log(
