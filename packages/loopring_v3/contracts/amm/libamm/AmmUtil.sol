@@ -36,7 +36,7 @@ library AmmUtil
         } else {
             // Max rounding error for a float24 is 2/100000
             uint ratio = (amount * 100000) / targetAmount;
-            return (100000 - 2) <= ratio && ratio <= (100000 + 2);
+            return (100000 - 2) <= ratio && (100000 + 2) >= ratio;
         }
     }
 

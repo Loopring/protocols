@@ -18,7 +18,7 @@ library AmmPoolToken
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from,  address indexed to,      uint value);
 
-    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     function approve(
         AmmData.State storage S,
@@ -53,7 +53,8 @@ library AmmPoolToken
         internal
         returns (bool)
     {
-        if (S.allowance[from][msg.sender] != uint(-1)) {
+        if (msg.sender != address(this) &&
+            S.allowance[from][msg.sender] != uint(-1)) {
             S.allowance[from][msg.sender] = S.allowance[from][msg.sender].sub(value);
         }
          _transfer(S, from, to, value);
@@ -66,42 +67,9 @@ library AmmPoolToken
         address               spender,
         uint256               value,
         uint256               deadline,
-        uint8                 v,
-        bytes32               r,
-        bytes32               s
-        )
-        public
-    {
-        require(deadline >= block.timestamp, 'EXPIRED');
-
-        bytes32 hash = EIP712.hashPacked(
-            S.domainSeperator,
-            keccak256(
-                abi.encodePacked(
-                    PERMIT_TYPEHASH,
-                    owner,
-                    spender,
-                    value,
-                    S.permitNonces[owner]++,
-                    deadline
-                )
-            )
-        );
-
-        address addr = ecrecover(hash, v, r, s);
-        require(addr != address(0) && addr == owner, 'INVALID_SIGNATURE');
-        _approve(S, owner, spender, value);
-    }
-
-    function permit(
-        AmmData.State storage S,
-        address               owner,
-        address               spender,
-        uint256               value,
-        uint256               deadline,
         bytes        calldata signature
         )
-        public
+        internal
     {
         require(deadline >= block.timestamp, 'EXPIRED');
 
@@ -155,8 +123,10 @@ library AmmPoolToken
         )
         private
     {
-        S.allowance[owner][spender] = value;
-        emit Approval(owner, spender, value);
+        if (spender != address(this)) {
+            S.allowance[owner][spender] = value;
+            emit Approval(owner, spender, value);
+        }
     }
 
     function _transfer(

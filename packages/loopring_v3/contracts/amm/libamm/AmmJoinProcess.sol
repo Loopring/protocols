@@ -22,48 +22,56 @@ library AmmJoinProcess
 {
     using AmmPoolToken      for AmmData.State;
     using AmmStatus         for AmmData.State;
+    using AmmUtil           for uint96;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-    function processDeposit(
+    function proxcessExchangeDeposit(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         AmmData.Token    memory  token,
         uint96                   amount
         )
-        public
+        internal
     {
+        require(amount > 0, "INVALID_DEPOSIT_AMOUNT");
+
         // Check that the deposit in the block matches the expected deposit
-        DepositTransaction.Deposit memory _deposit = ctx._block.readDeposit(ctx.txIdx++);
-        require(_deposit.owner == address(this), "INVALID_TX_DATA");
-        require(_deposit.accountID == S.accountID, "INVALID_TX_DATA");
-        require(_deposit.tokenID == token.tokenID, "INVALID_TX_DATA");
-        require(_deposit.amount == amount, "INVALID_TX_DATA");
+        DepositTransaction.Deposit memory deposit = ctx._block.readDeposit(ctx.txIdx++);
+        ctx.numTransactionsConsumed++;
+
+        require(
+            deposit.owner == address(this) &&
+            deposit.accountID == S.accountID &&
+            deposit.tokenID == token.tokenID &&
+            // deposit.amount.isAlmostEqual(amount),
+            deposit.amount == amount,
+            "INVALID_TX_DATA"
+        );
 
         // Now do this deposit
         uint ethValue = 0;
         if (token.addr == address(0)) {
             ethValue = amount;
         } else {
-            address depositContract = address(S.exchange.getDepositContract());
-            uint allowance = ERC20(token.addr).allowance(address(this), depositContract);
+            uint allowance = ERC20(token.addr).allowance(address(this), ctx.exchangeDepositContract);
             if (allowance < amount) {
                 // Approve the deposit transfer
-                ERC20(token.addr).approve(depositContract, uint(-1));
+                ERC20(token.addr).approve(ctx.exchangeDepositContract, uint(-1));
             }
         }
 
-        S.exchange.deposit{value: ethValue}(
-            _deposit.owner,
-            _deposit.owner,
+        ctx.exchange.deposit{value: ethValue}(
+            deposit.owner,
+            deposit.owner,
             token.addr,
-            uint96(_deposit.amount),
+            deposit.amount,
             new bytes(0)
         );
-        ctx.numTransactionsConsumed++;
+
         // Total balance in this contract decreases by the amount deposited
         S.totalLockedBalance[token.addr] = S.totalLockedBalance[token.addr].sub(amount);
     }
@@ -76,68 +84,96 @@ library AmmJoinProcess
         )
         internal
     {
-        S.authenticatePoolTx(
+        S.validatePoolTransaction(
             join.owner,
             AmmUtil.hashPoolJoin(ctx.domainSeperator, join),
             signature
         );
 
         // Check if the requirements are fulfilled
-        (bool valid, uint poolAmountOut, uint96[] memory amounts) = validateJoinAmounts(ctx, join);
+        (bool slippageRequirementMet, uint poolAmountOut, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
 
-        if (!valid) return;
-
-        S.mint(join.owner, poolAmountOut);
+        if (!slippageRequirementMet) return;
 
         for (uint i = 0; i < ctx.size; i++) {
             uint96 amount = amounts[i];
+
             if (join.fromLayer2) {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
-                require(transfer.from == join.owner, "INVALID_TX_DATA");
-                require(transfer.toAccountID == S.accountID, "INVALID_TX_DATA");
-                require(transfer.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
-                require(AmmUtil.isAlmostEqual(transfer.amount, amount), "INVALID_TX_DATA");
-                require(transfer.fee == 0, "INVALID_TX_DATA");
+                ctx.numTransactionsConsumed++;
 
-                // Replay protection (only necessary when using a signature)
-                if (signature.length > 0) {
-                    require(transfer.storageID == join.storageIDs[i], "INVALID_TX_DATA");
-                }
+                // We do not check these fields: fromAccountID, to, amount, feeTokenID, fee
+                require(
+                    transfer.toAccountID == S.accountID &&
+                    transfer.from == join.owner &&
+                    transfer.tokenID == ctx.tokens[i].tokenID &&
+                    transfer.storageID == (signature.length > 0 ? join.storageIDs[i] : 0), // Question (brecht):is this right?
+                    "INVALID_INBOUND_TX_DATA"
+                );
 
                 // Now approve this transfer
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-                S.exchange.approveTransaction(join.owner, txHash);
+                ctx.exchange.approveTransaction(join.owner, txHash);
 
-                ctx.numTransactionsConsumed++;
-                // Update the amount to the actual amount transferred (which can have some some small rounding errors)
-                amount = transfer.amount;
-                // Update the balances in the account
-                // Q: 为什么更新这个呢？
+                uint96 refundAmount = 0;
+                if (!transfer.amount.isAlmostEqual(amount)) {
+                    refundAmount = transfer.amount.sub(amount);
+                }
+
+                if (refundAmount > 0) { // Process the outbound transfer
+                    transfer = ctx._block.readTransfer(ctx.txIdx++);
+                    ctx.numTransactionsConsumed++;
+
+                    // We do not check these fields: toAccountID
+                    require(
+                        transfer.fromAccountID == S.accountID &&
+                        transfer.from == address(this) &&
+                        transfer.to == join.owner &&
+                        transfer.tokenID == ctx.tokens[i].tokenID &&
+                        transfer.amount.isAlmostEqual(refundAmount) &&
+                        transfer.feeTokenID == 0 &&
+                        transfer.fee == 0 &&
+                        transfer.storageID == 0, // Question (brecht):should we check this?
+                        "INVALID_OUTBOUND_TX_DATA"
+                    );
+
+                   // Now approve this transfer
+                    transfer.validUntil = 0xffffffff;
+                    txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+                    ctx.exchange.approveTransaction(address(this), txHash);
+                    amount = amount.sub(transfer.amount);
+                }
+
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
+
             } else {
                 // Make the amount unavailable for withdrawing
                 address token = ctx.tokens[i].addr;
                 S.lockedBalance[token][join.owner] = S.lockedBalance[token][join.owner].sub(amount);
             }
+
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
         }
+
+        S.mint(join.owner, poolAmountOut);
     }
 
-    function validateJoinAmounts(
+    function _calculateJoinAmounts(
         AmmData.Context  memory ctx,
         AmmData.PoolJoin memory join
         )
         private
         view
         returns(
-            bool            valid,
+            bool            slippageRequirementMet,
             uint            poolAmountOut,
             uint96[] memory amounts
         )
     {
         // Check if we can still use this join
         amounts = new uint96[](ctx.size);
+
         if (block.timestamp > join.validUntil) {
             return (false, 0, amounts);
         }
@@ -147,15 +183,13 @@ library AmmJoinProcess
         }
 
         // Calculate the amount of liquidity tokens that should be minted
-        bool initialValueSet = false;
         for (uint i = 0; i < ctx.size; i++) {
             if (ctx.ammExpectedL2Balances[i] > 0) {
-                uint amountOut = uint(
-                    join.maxAmountsIn[i]).mul(ctx.poolTokenTotalSupply) / uint(ctx.ammExpectedL2Balances[i]
-                );
-                if (!initialValueSet || amountOut < poolAmountOut) {
+                uint amountOut = uint(join.maxAmountsIn[i])
+                    .mul(ctx.poolTokenTotalSupply) / uint(ctx.ammExpectedL2Balances[i]);
+
+                if (poolAmountOut == 0 || amountOut < poolAmountOut) {
                     poolAmountOut = amountOut;
-                    initialValueSet = true;
                 }
             }
         }
@@ -168,10 +202,10 @@ library AmmJoinProcess
         uint ratio = poolAmountOut.mul(ctx.poolTokenBase) / ctx.poolTokenTotalSupply;
 
         for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i]) / ctx.poolTokenBase).toUint96();
+            amounts[i] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();
         }
 
-        valid = (poolAmountOut >= join.minPoolAmountOut);
-        return (valid, poolAmountOut, amounts);
+        slippageRequirementMet = (poolAmountOut >= join.minPoolAmountOut);
+        return (slippageRequirementMet, poolAmountOut, amounts);
     }
 }

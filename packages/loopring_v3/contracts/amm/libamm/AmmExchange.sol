@@ -24,37 +24,27 @@ library AmmExchange
         )
         public
     {
-        uint _totalSupply = S.totalSupply;
-        require(_totalSupply > 0, "NO_LP_SUPPLY");
-        require(poolAmountIn <= S.totalSupply, "INVALID_POOL_AMOUNT");
+        require(poolAmountIn > 0, "INVALID_POOL_AMOUNT");
+        require(S.balanceOf[msg.sender] >= poolAmountIn, "INSUFFCIENT_POOL_AMOUNT");
 
-        S.burn(msg.sender, poolAmountIn);
-
-        // Currently commented out to make the contract size smaller...
         uint size = S.tokens.length;
-        if (S.exchange.isInWithdrawalMode()) {
-            // Check if all tokens were withdrawn using Merkle proofs
-            for (uint i = 0; i < size; i++) {
-                // Question(Brecht): I removed a "!" isWithdrawnInWithdrawalMode, is it now correct?
-                require(
-                    S.exchange.isWithdrawnInWithdrawalMode(S.accountID, S.tokens[i].addr),
-                    "PENDING_WITHDRAWAL_MODE"
-                );
-            }
-        } else {
-            // Check if all forced withdrawals are done
-            for (uint i = 0; i < size; i++) {
-                require(
-                    !S.exchange.isForcedWithdrawalPending(S.accountID, S.tokens[i].addr),
-                    "PENDING_FORCED_WITHDRAWAL"
-                );
-            }
-        }
+        uint32 accountID = S.accountID;
+        IExchangeV3 exchange = S.exchange;
+        bool withdrawalMode = exchange.isInWithdrawalMode();
 
-        // Check that nothing is withdrawable anymore.
         for (uint i = 0; i < size; i++) {
+            address token = S.tokens[i].addr;
+
+            // Question(Brecht): I removed a "!" isWithdrawnInWithdrawalMode, is it now correct?
             require(
-                S.exchange.getAmountWithdrawable(address(this), S.tokens[i].addr) == 0,
+                withdrawalMode && exchange.isWithdrawnInWithdrawalMode(accountID, token) ||
+                !withdrawalMode && !exchange.isForcedWithdrawalPending(accountID, token),
+                "PENDING_WITHDRAWAL"
+            );
+
+            // Check that nothing is withdrawable anymore.
+            require(
+                exchange.getAmountWithdrawable(address(this), token) == 0,
                 "MORE_TO_WITHDRAWAL"
             );
         }
@@ -69,8 +59,10 @@ library AmmExchange
                 ERC20(token).balanceOf(address(this));
 
             // Withdraw the part owned
-            uint amount = balance.mul(poolAmountIn) / _totalSupply;
+            uint amount = balance.mul(poolAmountIn) / S.totalSupply;
             AmmUtil.tranferOut(token, amount, msg.sender);
         }
+
+        S.burn(msg.sender, poolAmountIn);
     }
 }

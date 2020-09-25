@@ -25,76 +25,46 @@ library AmmExitRequest
     using SignatureUtil     for bytes32;
 
     bytes32 constant public WITHDRAW_TYPEHASH = keccak256(
-        "Withdraw(address owner,uint256 poolAmount,uint256[] amounts,uint256 validUntil,uint256 nonce)"
+        "Withdraw(address owner,uint256[] amounts,uint256 validUntil,uint256 nonce)"
     );
 
-    function setLockedUntil(
-        AmmData.State storage S,
-        uint                  timestamp
-        )
-        public
+    function unlock(AmmData.State storage S)
+        internal
+        returns (uint lockedUntil)
     {
-        if (timestamp > 0) {
-            require(
-                timestamp >= block.timestamp + AmmData.MIN_TIME_TO_UNLOCK(),
-                "TOO_SOON"
-            );
-        }
-        S.lockedUntil[msg.sender] = timestamp;
+        require(S.lockedUntil[msg.sender] == 0, "UNLOCKED_ALREADY");
+
+        lockedUntil = block.timestamp + AmmData.MIN_TIME_TO_UNLOCK();
+        S.lockedUntil[msg.sender] = lockedUntil;
     }
 
-    function withdraw(
+    function withdrawFromPool(
         AmmData.State storage S,
-        uint                  poolAmount,
         uint[]       calldata amounts,
-        uint                  validUntil,
-        bytes        calldata signature
+        bytes        calldata signature, // signature from Exchange operator
+        uint                  validUntil
         )
         public
-        returns (uint[] memory withdrawn)
+        returns (uint[] memory amountOuts)
     {
-        require(amounts.length == S.tokens.length, "INVALID_DATA");
+        uint size = S.tokens.length;
+        require(amounts.length == size + 1, "INVALID_DATA");
 
-        // Check if we can withdraw without unlocking
+        _proxcessExchangeWithdrawalApprovedWithdrawals(S);
 
-        if (signature.length > 0) {
-            require(validUntil >= block.timestamp, 'SIGNATURE_EXPIRED');
-            bytes32 withdrawHash = EIP712.hashPacked(
-                S.domainSeperator,
-                keccak256(
-                    abi.encode(
-                        WITHDRAW_TYPEHASH,
-                        msg.sender,
-                        poolAmount,
-                        keccak256(abi.encodePacked(amounts)),
-                        validUntil,
-                        S.nonces[msg.sender]++
-                    )
-                )
+        bool approvedByOperator = _checkOperatorApproval(
+            S, amounts, signature, validUntil
+        );
+
+        amountOuts = new uint[](size + 1);
+        amountOuts[0] = _withdrawToken(
+            S, address(this), amounts[0], approvedByOperator
+        );
+
+        for (uint i = 0; i < size; i++) {
+            amountOuts[i + 1] = _withdrawToken(
+                S, S.tokens[i].addr, amounts[i + 1], approvedByOperator
             );
-            require(
-                withdrawHash.verifySignature(S.exchange.owner(), signature),
-                "INVALID_SIGNATURE"
-            );
-        }
-
-        withdrawFromExchangeWithApprovedWithdrawals(S);
-
-        // Withdraw
-        withdrawn = new uint[](S.tokens.length + 1);
-        for (uint i = 0; i < S.tokens.length + 1; i++) {
-            address token = i < S.tokens.length ? S.tokens[i].addr : address(this);
-            uint amount = i < S.tokens.length ? amounts[i] : poolAmount;
-            uint available = signature.length > 0 ?
-                S.lockedBalance[token][msg.sender] :
-                S.availableBalance(token, msg.sender);
-
-            withdrawn[i] =  amount > available ? available : amount;
-
-            if (withdrawn[i] > 0) {
-                S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].sub(withdrawn[i]);
-                AmmUtil.tranferOut(token, withdrawn[i], msg.sender);
-            }
         }
     }
 
@@ -128,14 +98,74 @@ library AmmExitRequest
         S.approvedTx[txHash] = block.timestamp;
     }
 
+    function _checkOperatorApproval(
+        AmmData.State storage S,
+        uint[]       calldata amounts,
+        bytes        calldata signature, // signature from Exchange operator
+        uint                  validUntil
+        )
+        private
+        returns (bool)
+    {
+
+        // Check if we can withdraw without unlocking with an approval
+        // from the operator.
+        if (signature.length == 0) {
+            require(validUntil == 0, "INVALID_VALUE");
+            return false;
+        }
+
+        require(validUntil >= block.timestamp, 'SIGNATURE_EXPIRED');
+
+        bytes32 withdrawHash = EIP712.hashPacked(
+            S.domainSeperator,
+            keccak256(
+                abi.encode(
+                    WITHDRAW_TYPEHASH,
+                    msg.sender,
+                    keccak256(abi.encodePacked(amounts)),
+                    validUntil,
+                    S.nonces[msg.sender]++
+                )
+            )
+        );
+        require(
+            withdrawHash.verifySignature(S.exchange.owner(), signature),
+            "INVALID_SIGNATURE"
+        );
+        return true;
+    }
+
+    function _withdrawToken(
+        AmmData.State storage S,
+        address               token,
+        uint                  amount,
+        bool                  approvedByOperator
+        )
+        private
+        returns (uint withdrawn)
+    {
+        uint available = approvedByOperator ?
+            S.lockedBalance[token][msg.sender] :
+            S.availableBalance(token, msg.sender);
+
+        withdrawn = (amount > available || amount == 0) ? available : amount;
+
+        if (withdrawn > 0) {
+            S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].sub(withdrawn);
+            AmmUtil.tranferOut(token, withdrawn, msg.sender);
+        }
+    }
+
     // Withdraw any outstanding balances for the pool account on the exchange
-    function withdrawFromExchangeWithApprovedWithdrawals(AmmData.State storage S)
+    function _proxcessExchangeWithdrawalApprovedWithdrawals(AmmData.State storage S)
         private
     {
-        address[] memory owners = new address[](S.tokens.length);
-        address[] memory tokenAddresses = new address[](S.tokens.length);
+        uint size = S.tokens.length;
+        address[] memory owners = new address[](size);
+        address[] memory tokenAddresses = new address[](size);
 
-        for (uint i = 0; i < S.tokens.length; i++) {
+        for (uint i = 0; i < size; i++) {
             owners[i] = address(this);
             tokenAddresses[i] = S.tokens[i].addr;
         }

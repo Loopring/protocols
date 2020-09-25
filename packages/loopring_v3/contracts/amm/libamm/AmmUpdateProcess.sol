@@ -35,6 +35,7 @@ library AmmUpdateProcess
         for (uint i = 0; i < ctx.size; i++) {
             // Check that the AMM update in the block matches the expected update
             AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
+            ctx.numTransactionsConsumed++;
 
             require(update.owner == address(this), "INVALID_TX_DATA");
             require(update.accountID == S.accountID, "INVALID_TX_DATA");
@@ -45,9 +46,7 @@ library AmmUpdateProcess
             // Now approve this AMM update
             update.validUntil = 0xffffffff;
             bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.exchangeDomainSeparator, update);
-            S.exchange.approveTransaction(address(this), txHash);
-
-            ctx.numTransactionsConsumed++;
+            ctx.exchange.approveTransaction(address(this), txHash);
 
             if (opening) {
                 // AMM account balance now available onchain

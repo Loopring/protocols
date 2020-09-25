@@ -59,7 +59,9 @@ abstract contract LoopringPoolToken is ERC2612 {
         override
         returns (uint)
     {
-        return state.allowance[owner][spender];
+        return spender == address(this) ?
+            uint(-1) :
+            state.allowance[owner][spender];
     }
 
     function approve(address spender, uint value)
@@ -84,21 +86,6 @@ abstract contract LoopringPoolToken is ERC2612 {
         returns (bool)
     {
        return state.transferFrom(from, to, value);
-    }
-
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8   v,
-        bytes32 r,
-        bytes32 s
-        )
-        external
-        override
-    {
-        state.permit(owner, spender, value, deadline, v, r, s);
     }
 
     function permit(

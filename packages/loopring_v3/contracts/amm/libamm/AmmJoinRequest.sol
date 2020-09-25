@@ -20,30 +20,31 @@ library AmmJoinRequest
     using MathUint96        for uint96;
     using SafeCast          for uint;
 
-    function deposit(
+    function depositToPool(
         AmmData.State storage S,
-        uint                  poolAmount,
         uint96[]     calldata amounts
         )
         public
     {
         uint size = S.tokens.length;
-        require(amounts.length == size, "INVALID_DATA");
+        require(amounts.length == size + 1, "INVALID_DATA");
 
+        // Question(brecht): I don't understand this part, may be reasonable inside
+        // the withdrawlFromPool function, but I'm not sure it's necessary at all.
         if (S.isExiting[msg.sender]) {
-            // Q: 这个标记的用途？
             // This could suddenly change the amount of liquidity tokens available, which
             // could change how the operator needs to process the exit.
-            require(poolAmount == 0, "CANNOT_DEPOSIT_LIQUIDITY_TOKENS_WHILE_EXITING");
+            require(amounts[0] == 0, "CANNOT_DEPOSIT_LIQUIDITY_TOKENS_WHILE_EXITING");
         }
 
-        if (poolAmount > 0) {
-            address poolToken = address(this);
-            depositAndLockToken(S, poolToken, poolAmount);
-        }
+        S.lockedUntil[msg.sender] = 0;
 
+        // Deposit pool tokens
+        _depositToken(S, address(this), amounts[0]);
+
+        // Deposit AMM tokens
         for (uint i = 0; i < size; i++) {
-            depositAndLockToken(S, S.tokens[i].addr, uint(amounts[i]));
+            _depositToken(S, S.tokens[i].addr, amounts[i + 1]);
         }
     }
 
@@ -57,7 +58,12 @@ library AmmJoinRequest
         public
         returns(AmmData.PoolJoin memory join)
     {
-        require(maxAmountsIn.length == S.tokens.length, "INVALID_DATA");
+        uint size =  S.tokens.length;
+        require(maxAmountsIn.length == size, "INVALID_DATA");
+
+        for (uint i = 0; i < size; i++) {
+            require(maxAmountsIn[i] > 0, "INVALID_JOIN_AMOUNT");
+        }
 
         // Don't check the available funds here, if the operator isn't sure the funds
         // are locked this transaction can simply be dropped.
@@ -76,7 +82,7 @@ library AmmJoinRequest
         S.approvedTx[txHash] = 0xffffffff;
     }
 
-    function depositAndLockToken(
+    function _depositToken(
         AmmData.State storage S,
         address               token,
         uint                  amount
@@ -85,11 +91,13 @@ library AmmJoinRequest
     {
         if (token == address(0)) {
             require(msg.value == amount, "INVALID_ETH_DEPOSIT");
-        } else {
+        } else if (amount > 0) {
             token.safeTransferFromAndVerify(msg.sender, address(this), amount);
         }
 
-        S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].add(amount);
-        S.totalLockedBalance[token] = S.totalLockedBalance[token].add(amount);
+        if (amount > 0) {
+            S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].add(amount);
+            S.totalLockedBalance[token] = S.totalLockedBalance[token].add(amount);
+        }
     }
 }

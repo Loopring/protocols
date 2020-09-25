@@ -22,6 +22,17 @@ library AmmData
         EXIT
     }
 
+    struct PoolConfig
+    {
+        address   exchange;
+        string    poolName;
+        uint32    accountID;
+        address[] tokens;
+        uint96[]  weights;
+        uint8     feeBips;
+        string    tokenSymbol;
+    }
+
     struct PoolJoin
     {
         address  owner;
@@ -59,6 +70,8 @@ library AmmData
     struct Context
     {
         ExchangeData.Block _block;
+        IExchangeV3        exchange;
+        address            exchangeDepositContract;
 
         uint     txIdx;
         bytes32  domainSeperator;
@@ -83,6 +96,7 @@ library AmmData
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
+        // Question: should we use the same `nonces` variable?
         mapping(address => uint) permitNonces; // ERC2612
 
         // AMM pool state variables

@@ -37,6 +37,8 @@ library AmmBlockReceiver
         uint size = S.tokens.length;
         AmmData.Context memory ctx = AmmData.Context({
             _block: _block,
+            exchange: S.exchange,
+            exchangeDepositContract: address(S.exchange.getDepositContract()),
             txIdx: txIdx,
             domainSeperator: S.domainSeperator,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
@@ -51,7 +53,7 @@ library AmmBlockReceiver
         });
 
         BlockReader.BlockHeader memory header = _block.readHeader();
-        require(header.exchange == address(S.exchange), "INVALID_EXCHANGE");
+        require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
         // The openning AMM updates
         // This also pulls the AMM balances onchain.
@@ -59,12 +61,12 @@ library AmmBlockReceiver
 
         // Process all pool transactions
         for (uint i = 0; i < poolTransactions.length; i++) {
-            processPoolTransaction(S, ctx, poolTransactions[i]);
+            _processPoolTransaction(S, ctx, poolTransactions[i]);
         }
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < size; i++) {
-            processPoolBalance(
+            _processPoolBalance(
                 S,
                 ctx,
                 ctx.tokens[i],
@@ -79,7 +81,7 @@ library AmmBlockReceiver
         return ctx.numTransactionsConsumed;
     }
 
-    function processPoolTransaction(
+    function _processPoolTransaction(
         AmmData.State           storage S,
         AmmData.Context         memory  ctx,
         AmmData.PoolTransaction memory  poolTx
@@ -101,7 +103,7 @@ library AmmBlockReceiver
         }
     }
 
-    function processPoolBalance(
+    function _processPoolBalance(
         AmmData.State   storage S,
         AmmData.Context memory  ctx,
         AmmData.Token   memory  token,
@@ -111,13 +113,13 @@ library AmmBlockReceiver
         private
     {
         if (ammExpectedL2Balance > ammActualL2Balance) {
-            S.processDeposit(
+            S.proxcessExchangeDeposit(
                 ctx,
                 token,
                 ammExpectedL2Balance - ammActualL2Balance
             );
         } else if (ammExpectedL2Balance < ammActualL2Balance) {
-            S.processWithdrawal(
+            S.proxcessExchangeWithdrawal(
                 ctx,
                 token,
                 ammActualL2Balance - ammExpectedL2Balance

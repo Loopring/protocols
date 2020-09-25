@@ -13,10 +13,10 @@ import "../../lib/SignatureUtil.sol";
 /// @title LPToken
 library AmmStatus
 {
-    using SignatureUtil     for bytes32;
+    using SignatureUtil for bytes32;
 
     function isOnline(AmmData.State storage S)
-        public
+        internal
         view
         returns (bool)
     {
@@ -24,34 +24,39 @@ library AmmStatus
     }
 
     function setupPool(
-        AmmData.State storage S,
-        IExchangeV3        _exchange,
-        uint32             _accountID,
-        address[] calldata _tokens,
-        uint96[]  calldata _weights,
-        uint8              _feeBips
+        AmmData.State      storage  S,
+        AmmData.PoolConfig calldata config
         )
         public
     {
+        require(
+            bytes(config.poolName).length > 0 && bytes(config.tokenSymbol).length > 0,
+            "INVALID_NAME_OR_SYMBOL"
+        );
+        require(config.tokens.length == config.weights.length, "INVALID_DATA");
+        require(config.tokens.length >= 2, "INVALID_DATA");
+        require(config.exchange != address(0), "INVALID_EXCHANGE");
+        require(config.accountID != 0, "INVALID_ACCOUNT_ID");
         require(S.tokens.length == 0, "ALREADY_INITIALIZED");
-        require(_tokens.length == _weights.length, "INVALID_DATA");
-        require(_tokens.length >= 2, "INVALID_DATA");
 
-        S.domainSeperator = EIP712.hash(EIP712.Domain("AMM Pool", "1.0.0", address(this)));
+        IExchangeV3 exchange = IExchangeV3(config.exchange);
+        S.exchange = exchange;
+        S.accountID = config.accountID;
+        S.feeBips = config.feeBips;
+        S.domainSeperator = EIP712.hash(EIP712.Domain(config.poolName, "1.0.0", address(this)));
 
-        S.exchange = _exchange;
-        S.accountID = _accountID;
-        S.feeBips = _feeBips;
+        S.name = config.poolName;
+        S.symbol = config.tokenSymbol;
 
-        address depositContract = address(S.exchange.getDepositContract());
+        address depositContract = address(exchange.getDepositContract());
 
-        for (uint i = 0; i < _tokens.length; i++) {
-            address token = _tokens[i];
-            uint16 tokenID = S.exchange.getTokenID(token);
+        for (uint i = 0; i < config.tokens.length; i++) {
+            address token = config.tokens[i];
+
             S.tokens.push(AmmData.Token({
                 addr: token,
-                tokenID: tokenID,
-                weight: _weights[i]
+                tokenID: exchange.getTokenID(token),
+                weight: config.weights[i]
             }));
 
             ERC20(token).approve(depositContract, uint(-1));
@@ -66,17 +71,20 @@ library AmmStatus
         public
     {
         require(
-            block.timestamp > S.approvedTx[txHash] +
-                AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
+            block.timestamp > S.approvedTx[txHash] + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
             "REQUEST_NOT_TOO_OLD"
         );
 
         if (!S.exchange.isInWithdrawalMode()) {
-            for (uint i = 0; i < S.tokens.length; i++) {
-                S.exchange.forceWithdraw{value: msg.value/S.tokens.length}(
+            uint size = S.tokens.length;
+            uint32 accountID = S.accountID;
+            IExchangeV3 exchange = S.exchange;
+
+            for (uint i = 0; i < size; i++) {
+                exchange.forceWithdraw{value: msg.value / size}(
                     address(this),
                     S.tokens[i].addr,
-                    S.accountID
+                    accountID
                 );
             }
         }
@@ -89,23 +97,23 @@ library AmmStatus
         address               token,
         address               owner
         )
-        public
+        internal
         view
         returns (uint)
     {
         if (isOnline(S)) {
             uint until = S.lockedUntil[owner];
-            if (until != 0 && block.timestamp > until) {
-                return S.lockedBalance[token][owner];
-            } else {
+            if (until == 0 || block.timestamp <= until) {
                 return 0;
+            } else {
+                return S.lockedBalance[token][owner];
             }
         } else {
             return S.lockedBalance[token][owner];
         }
     }
 
-    function authenticatePoolTx(
+    function validatePoolTransaction(
         AmmData.State storage S,
         address        owner,
         bytes32        poolTxHash,
