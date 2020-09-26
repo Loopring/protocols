@@ -74,7 +74,7 @@ library AmmData
         address            exchangeDepositContract;
 
         uint     txIdx;
-        bytes32  domainSeperator;
+        bytes32  domainSeparator;
         bytes32  exchangeDomainSeparator;
         uint96[] ammActualL2Balances;
         uint96[] ammExpectedL2Balances;
@@ -100,7 +100,7 @@ library AmmData
         // AMM pool state variables
         IExchangeV3 exchange;
         uint32      accountID;
-        bytes32     domainSeperator;
+        bytes32     domainSeparator;
         uint        shutdownTimestamp;
         uint8       feeBips;
         Token[]     tokens;

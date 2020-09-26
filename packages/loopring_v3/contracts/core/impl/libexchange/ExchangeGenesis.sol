@@ -23,7 +23,7 @@ library ExchangeGenesis
         uint    _id,
         address _loopring,
         bytes32 _genesisMerkleRoot,
-        bytes32 _domainSeperator
+        bytes32 _domainSeparator
         )
         public
     {
@@ -34,7 +34,7 @@ library ExchangeGenesis
 
         S.id = _id;
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
-        S.DOMAIN_SEPARATOR = _domainSeperator;
+        S.DOMAIN_SEPARATOR = _domainSeparator;
 
         ILoopringV3 loopring = ILoopringV3(_loopring);
         S.loopring = loopring;

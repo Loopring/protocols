@@ -40,7 +40,7 @@ library AmmBlockReceiver
             exchange: S.exchange,
             exchangeDepositContract: address(S.exchange.getDepositContract()),
             txIdx: txIdx,
-            domainSeperator: S.domainSeperator,
+            domainSeparator: S.domainSeparator,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
             ammActualL2Balances: new uint96[](size),
             ammExpectedL2Balances: new uint96[](size),

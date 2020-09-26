@@ -83,13 +83,13 @@ library AmmExitProcess
     {
         S.validatePoolTransaction(
             exit.owner,
-            AmmUtil.hashPoolExit(ctx.domainSeperator, exit),
+            AmmUtil.hashPoolExit(ctx.domainSeparator, exit),
             signature
         );
 
         if (signature.length == 0) {
             // This is an onchain exit, we're processing it now so stop tracking it.
-            S.isExiting[msg.sender] = false;
+            S.isExiting[exit.owner] = false;
         }
 
         (bool slippageRequirementMet, uint96[] memory amounts) = _validateExitAmounts(S, ctx, exit);

@@ -43,7 +43,7 @@ library AmmStatus
         S.exchange = exchange;
         S.accountID = config.accountID;
         S.feeBips = config.feeBips;
-        S.domainSeperator = EIP712.hash(EIP712.Domain(config.poolName, "1.0.0", address(this)));
+        S.domainSeparator = EIP712.hash(EIP712.Domain(config.poolName, "1.0.0", address(this)));
 
         S.name = config.poolName;
         S.symbol = config.tokenSymbol;

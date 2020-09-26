@@ -78,7 +78,7 @@ library AmmJoinRequest
         });
 
         // Approve the join
-        bytes32 txHash = AmmUtil.hashPoolJoin(S.domainSeperator, join);
+        bytes32 txHash = AmmUtil.hashPoolJoin(S.domainSeparator, join);
         S.approvedTx[txHash] = 0xffffffff;
     }
 
