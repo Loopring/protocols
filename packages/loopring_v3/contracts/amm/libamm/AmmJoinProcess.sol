@@ -75,7 +75,6 @@ library AmmJoinProcess
         S.totalLockedBalance[token.addr] = S.totalLockedBalance[token.addr].sub(amount);
     }
 
-    //TODO: enable join non-zero-fee
     function processJoin(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,

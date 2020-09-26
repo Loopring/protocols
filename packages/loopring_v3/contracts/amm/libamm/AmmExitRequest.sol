@@ -90,8 +90,6 @@ library AmmExitRequest
         public
         returns(AmmData.PoolExit memory exit)
     {
-        require(fee == 0, "DISABLED_FOR_NOW");
-
         require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
 
         // To make the the available liqudity tokens cannot suddenly change

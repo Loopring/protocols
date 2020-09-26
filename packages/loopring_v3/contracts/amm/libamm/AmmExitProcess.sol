@@ -71,7 +71,6 @@ library AmmExitProcess
         S.totalLockedBalance[token.addr] = S.totalLockedBalance[token.addr].add(amount);
     }
 
-    //TODO: enable exit non-zero-fee
     function processExit(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,

@@ -96,8 +96,6 @@ library AmmJoinRequest
         public
         returns(AmmData.PoolJoin memory join)
     {
-        require(fee == 0, "DISABLED_FOR_NOW");
-
         uint size =  S.tokens.length;
         require(maxAmountsIn.length == size, "INVALID_DATA");
 
