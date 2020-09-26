@@ -20,7 +20,6 @@ library AmmBlockReceiver
 
     function beforeBlockSubmitted(
         AmmData.State      storage S,
-        uint                       poolTokenTotalSupply,
         ExchangeData.Block memory  _block,
         uint                       txIdx,
         bytes              memory  auxiliaryData
@@ -47,7 +46,6 @@ library AmmBlockReceiver
             numTransactionsConsumed: 0,
             tokens: S.tokens,
             size: size,
-            poolTokenTotalSupply: poolTokenTotalSupply,
             poolTokenBase: AmmData.LP_TOKEN_BASE(),
             poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY()
         });

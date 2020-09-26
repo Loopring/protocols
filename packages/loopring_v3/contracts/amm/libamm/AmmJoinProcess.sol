@@ -91,7 +91,7 @@ library AmmJoinProcess
         );
 
         // Check if the requirements are fulfilled
-        (bool slippageRequirementMet, uint poolAmountOut, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
+        (bool slippageRequirementMet, uint poolAmountOut, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
 
         if (!slippageRequirementMet) return;
 
@@ -133,8 +133,9 @@ library AmmJoinProcess
     }
 
     function _calculateJoinAmounts(
-        AmmData.Context  memory ctx,
-        AmmData.PoolJoin memory join
+        AmmData.State    storage S,
+        AmmData.Context  memory  ctx,
+        AmmData.PoolJoin memory  join
         )
         private
         view
@@ -146,12 +147,13 @@ library AmmJoinProcess
     {
         // Check if we can still use this join
         amounts = new uint96[](ctx.size);
+        uint _totalSupply = S.totalSupply;
 
         if (block.timestamp > join.validUntil) {
             return (false, 0, amounts);
         }
 
-        if (ctx.poolTokenTotalSupply == 0) {
+        if (_totalSupply == 0) {
             return(true, ctx.poolTokenInitialSupply, join.maxAmountsIn);
         }
 
@@ -159,7 +161,7 @@ library AmmJoinProcess
         for (uint i = 0; i < ctx.size; i++) {
             if (ctx.ammExpectedL2Balances[i] > 0) {
                 uint amountOut = uint(join.maxAmountsIn[i])
-                    .mul(ctx.poolTokenTotalSupply) / uint(ctx.ammExpectedL2Balances[i]);
+                    .mul(_totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
 
                 if (amountOut < poolAmountOut) {
                     poolAmountOut = amountOut;
@@ -172,7 +174,7 @@ library AmmJoinProcess
         }
 
         // Calculate the amounts to deposit
-        uint ratio = poolAmountOut.mul(ctx.poolTokenBase) / ctx.poolTokenTotalSupply;
+        uint ratio = poolAmountOut.mul(ctx.poolTokenBase) / _totalSupply;
 
         for (uint i = 0; i < ctx.size; i++) {
             amounts[i] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();
