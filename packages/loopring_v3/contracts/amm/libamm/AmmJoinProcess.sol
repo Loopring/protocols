@@ -107,44 +107,16 @@ library AmmJoinProcess
                     transfer.toAccountID == S.accountID &&
                     transfer.from == join.owner &&
                     transfer.tokenID == ctx.tokens[i].tokenID &&
+                    transfer.amount.isAlmostEqual(amount) &&
                     transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                    transfer.fee == 0,
-                    "INVALID_INBOUND_TX_DATA"
+                    transfer.fee.isAlmostEqual(join.fee),
+                    "INVALID_TX_DATA"
                 );
 
                 // Now approve this transfer
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(join.owner, txHash);
-
-                uint96 refundAmount = 0;
-                if (!transfer.amount.isAlmostEqual(amount)) {
-                    refundAmount = transfer.amount.sub(amount);
-                }
-
-                if (refundAmount > 0) { // Process the outbound transfer
-                    transfer = ctx._block.readTransfer(ctx.txIdx++);
-                    ctx.numTransactionsConsumed++;
-
-                    // We do not check these fields: toAccountID
-                    require(
-                        transfer.fromAccountID == S.accountID &&
-                        transfer.from == address(this) &&
-                        transfer.to == join.owner &&
-                        transfer.tokenID == ctx.tokens[i].tokenID &&
-                        transfer.amount.isAlmostEqual(refundAmount) &&
-                        transfer.feeTokenID == 0 &&
-                        transfer.fee == 0 &&
-                        transfer.storageID == 0, // Question (brecht):should we check this?
-                        "INVALID_OUTBOUND_TX_DATA"
-                    );
-
-                   // Now approve this transfer
-                    transfer.validUntil = 0xffffffff;
-                    txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-                    ctx.exchange.approveTransaction(address(this), txHash);
-                    amount = amount.sub(transfer.amount);
-                }
 
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
 
