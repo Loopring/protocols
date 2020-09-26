@@ -24,6 +24,9 @@ library AmmJoinRequest
         "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs,uint256 validUntil)"
     );
 
+    event Deposit(address owner, uint96[] amounts);
+    event PoolJoinRequested(AmmData.PoolJoin join);
+
     function depositToPool(
         AmmData.State storage S,
         uint96[]     calldata amounts
@@ -50,6 +53,8 @@ library AmmJoinRequest
         for (uint i = 0; i < size; i++) {
             _depositToken(S, S.tokens[i].addr, amounts[i + 1]);
         }
+
+        emit Deposit(msg.sender, amounts);
     }
 
     function joinPool(
@@ -88,6 +93,8 @@ library AmmJoinRequest
         // Approve the join
         bytes32 txHash = hashPoolJoin(S.domainSeparator, join);
         S.approvedTx[txHash] = 0xffffffff;
+
+        emit PoolJoinRequested(join);
     }
 
     function hashPoolJoin(

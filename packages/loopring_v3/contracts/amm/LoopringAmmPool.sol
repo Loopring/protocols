@@ -99,7 +99,6 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.depositToPool(amounts);
-        emit Deposit(msg.sender, amounts);
     }
 
     function withdraw(
@@ -110,12 +109,7 @@ contract LoopringAmmPool is
         external
         nonReentrant
     {
-        uint[] memory amountOuts = state.withdrawFromPool(
-            amounts,
-            signature,
-            validUntil
-        );
-        emit Withdrawal(msg.sender, amountOuts);
+        state.withdrawFromPool(amounts, signature, validUntil);
     }
 
     function joinPool(
@@ -129,14 +123,7 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        AmmData.PoolJoin memory join = state.joinPool(
-            minPoolAmountOut,
-            maxAmountsIn,
-            fromLayer2,
-            fee,
-            validUntil
-        );
-        emit PoolJoinRequested(join);
+        state.joinPool(minPoolAmountOut, maxAmountsIn, fromLayer2, fee, validUntil);
     }
 
     function exitPool(
@@ -149,21 +136,14 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        AmmData.PoolExit memory exit = state.exitPool(
-            poolAmountIn,
-            minAmountsOut,
-            toLayer2,
-            fee
-        );
-        emit PoolExitRequested(exit);
+        state.exitPool(poolAmountIn, minAmountsOut, toLayer2, fee);
     }
 
     function unlock()
         external
         nonReentrant
     {
-        uint lockedUntil = state.unlock();
-        emit LockedUntil(msg.sender, lockedUntil);
+        state.unlock();
     }
 
     function beforeBlockSubmitted(

@@ -32,6 +32,10 @@ library AmmExitRequest
         "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs,uint256 validUntil)"
     );
 
+    event Withdrawal(address owner, uint[] amountOuts);
+    event PoolExitRequested(AmmData.PoolExit exit);
+    event LockedUntil(address owner, uint timestamp);
+
     function unlock(AmmData.State storage S)
         internal
         returns (uint lockedUntil)
@@ -40,6 +44,8 @@ library AmmExitRequest
 
         lockedUntil = block.timestamp + AmmData.MIN_TIME_TO_UNLOCK();
         S.lockedUntil[msg.sender] = lockedUntil;
+
+        emit LockedUntil(msg.sender, lockedUntil);
     }
 
     function withdrawFromPool(
@@ -70,6 +76,8 @@ library AmmExitRequest
                 S, S.tokens[i].addr, amounts[i + 1], approvedByOperator
             );
         }
+
+        emit Withdrawal(msg.sender, amountOuts);
     }
 
     function exitPool(
@@ -104,6 +112,8 @@ library AmmExitRequest
         // Approve the exit
         bytes32 txHash = hashPoolExit(S.domainSeparator, exit);
         S.approvedTx[txHash] = block.timestamp;
+
+        emit PoolExitRequested(exit);
     }
 
     function hashPoolExit(
