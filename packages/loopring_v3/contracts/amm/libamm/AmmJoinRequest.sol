@@ -94,7 +94,6 @@ library AmmJoinRequest
         uint                  validUntil
         )
         public
-        returns(AmmData.PoolJoin memory join)
     {
         uint size =  S.tokens.length;
         require(maxAmountsIn.length == size, "INVALID_DATA");
@@ -106,7 +105,7 @@ library AmmJoinRequest
         // Don't check the available funds here, if the operator isn't sure the funds
         // are locked this transaction can simply be dropped.
 
-        join = AmmData.PoolJoin({
+        AmmData.PoolJoin memory join = AmmData.PoolJoin({
             owner: msg.sender,
             fromLayer2: fromLayer2,
             minPoolAmountOut: minPoolAmountOut,

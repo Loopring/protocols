@@ -88,7 +88,6 @@ library AmmExitRequest
         uint96                fee
         )
         public
-        returns(AmmData.PoolExit memory exit)
     {
         require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
 
@@ -97,7 +96,7 @@ library AmmExitRequest
         require(S.isExiting[msg.sender] == false, "ALREADY_EXITING");
         S.isExiting[msg.sender] = true;
 
-        exit = AmmData.PoolExit({
+        AmmData.PoolExit memory exit = AmmData.PoolExit({
             owner: msg.sender,
             toLayer2: toLayer2,
             poolAmountIn: poolAmountIn,
