@@ -7,12 +7,14 @@ import "./AmmData.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/ERC20.sol";
+import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
 
 /// @title LPToken
 library AmmStatus
 {
+    using MathUint      for uint;
     using SignatureUtil for bytes32;
 
     event Shutdown(uint timestamp);
@@ -95,6 +97,23 @@ library AmmStatus
         emit Shutdown(block.timestamp);
     }
 
+    function isLocked(
+        AmmData.State storage S,
+        address               owner
+        )
+        internal
+        view
+        returns (bool)
+    {
+        if (isOnline(S)) {
+            uint since = S.lockedSince[owner];
+            uint until = S.lockedUntil[owner];
+            return since <= block.timestamp && (block.timestamp <= until || until == 0);
+        } else {
+            return false;
+        }
+    }
+
     function availableBalance(
         AmmData.State storage S,
         address               token,
@@ -104,29 +123,48 @@ library AmmStatus
         view
         returns (uint)
     {
-        if (isOnline(S)) {
-            uint until = S.lockedUntil[owner];
-            if (until == 0 || block.timestamp <= until) {
-                return 0;
-            } else {
-                return S.lockedBalance[token][owner];
-            }
+        if (isLocked(S, owner)) {
+            return 0;
         } else {
-            return S.lockedBalance[token][owner];
+            return S.userBalance[token][owner];
         }
     }
 
-    // function lockedBalance(
-    //     AmmData.State storage S,
-    //     address               token,
-    //     address               owner
-    //     )
-    //     internal
-    //     view
-    //     returns (uint)
-    // {
-    //    return S.lockedBalance[address(this)][owner].sub(availableBalance(address(this), owner));
-    // }
+    function lockedBalance(
+        AmmData.State storage S,
+        address               token,
+        address               owner
+        )
+        internal
+        view
+        returns (uint)
+    {
+       return S.userBalance[token][owner].sub(availableBalance(S, token, owner));
+    }
+
+    function addUserBalance(
+        AmmData.State storage S,
+        address               token,
+        address               owner,
+        uint                  amount
+        )
+        internal
+    {
+        S.userBalance[token][owner] = S.userBalance[token][owner].add(amount);
+        S.totalUserBalance[token] = S.totalUserBalance[token].add(amount);
+    }
+
+    function removeUserBalance(
+        AmmData.State storage S,
+        address               token,
+        address               owner,
+        uint                  amount
+        )
+        internal
+    {
+        S.userBalance[token][owner] = S.userBalance[token][owner].sub(amount);
+        S.totalUserBalance[token] = S.totalUserBalance[token].sub(amount);
+    }
 
     function validatePoolTransaction(
         AmmData.State storage S,

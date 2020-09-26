@@ -13,7 +13,7 @@ library AmmData
     function LP_TOKEN_BASE() internal pure returns (uint) { return 10 ** 18; }
     function LP_TOKEN_INITIAL_SUPPLY() internal pure returns (uint) { return 100 * LP_TOKEN_BASE(); }
     function MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN() internal pure returns (uint) { return 7 days; }
-    function MIN_TIME_TO_UNLOCK() internal pure returns (uint) { return 1 days; }
+    function LOCK_DELAY() internal pure returns (uint) { return 1 days; }
 
     enum PoolTransactionType
     {
@@ -110,14 +110,16 @@ library AmmData
         mapping (bytes32 => uint) approvedTx;
 
         // A map from an owner to a token to the balance
-        mapping (address => mapping (address => uint)) lockedBalance;
+        mapping (address => mapping (address => uint)) userBalance;
 
+        // A map from an owner to the timestamp from which all funds of the user funds will be locked
+        mapping (address => uint) lockedSince;
         // A map from an owner to the timestamp until all funds of the user are locked
         // A zero value == locked indefinitely.
         mapping (address => uint) lockedUntil;
 
         // A map from a token to the total balance owned directly by LPs (so NOT owned by the pool itself)
-        mapping (address => uint) totalLockedBalance;
+        mapping (address => uint) totalUserBalance;
 
         // A map from an address to a nonce.
         mapping(address => uint) nonces;

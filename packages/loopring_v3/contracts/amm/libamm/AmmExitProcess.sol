@@ -68,7 +68,7 @@ library AmmExitProcess
         ctx.exchange.approveTransaction(address(this), txHash);
 
         // Total balance in this contract increases by the amount withdrawn
-        S.totalLockedBalance[token.addr] = S.totalLockedBalance[token.addr].add(amount);
+        S.totalUserBalance[token.addr] = S.totalUserBalance[token.addr].add(amount);
     }
 
     function processExit(
@@ -111,6 +111,11 @@ library AmmExitProcess
                     "INVALID_TX_DATA"
                 );
 
+                // Replay protection when using a signature (otherwise the approved hash is cleared onchain)
+                if (signature.length > 0) {
+                    require(transfer.storageID == exit.storageIDs[i], "INVALID_TX_DATA");
+                }
+
                 // Now approve this transfer
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
@@ -121,13 +126,14 @@ library AmmExitProcess
             } else {
                 address token = ctx.tokens[i].addr;
                 // Make the amount available for withdrawing
-                S.lockedBalance[token][exit.owner] = S.lockedBalance[token][exit.owner].add(amount);
+                S.userBalance[token][exit.owner] = S.userBalance[token][exit.owner].add(amount);
             }
 
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
         }
 
-        S.burn(exit.owner, exit.poolAmountIn);
+        S.removeUserBalance(address(this), exit.owner, exit.poolAmountIn);
+        S.burn(address(this), exit.poolAmountIn);
     }
 
     function _validateExitAmounts(
@@ -149,8 +155,8 @@ library AmmExitProcess
             return (false, amounts);
         }
 
-        // Check if the user has enough pool tokens
-        if (S.lockedBalance[address(this)][exit.owner] < exit.poolAmountIn) {
+        // Check if the user has enough pool tokens locked
+        if (S.lockedBalance(address(this), exit.owner) < exit.poolAmountIn) {
             return (false, amounts);
         }
 
