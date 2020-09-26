@@ -35,6 +35,7 @@ contract LoopringAmmPool is
     event PoolJoinRequested(AmmData.PoolJoin join);
     event PoolExitRequested(AmmData.PoolExit exit);
     event UnlockScheduled(address owner, uint timestamp);
+    event Shutdown(uint timestamp);
 
     modifier onlyExchangeOwner()
     {

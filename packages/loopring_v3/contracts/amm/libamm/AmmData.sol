@@ -91,7 +91,7 @@ library AmmData
 
     struct State {
         // Pool token state variables
-        string name;
+        string poolName;
         string symbol;
         uint   totalSupply;
 

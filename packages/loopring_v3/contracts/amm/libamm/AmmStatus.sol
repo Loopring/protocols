@@ -15,6 +15,8 @@ library AmmStatus
 {
     using SignatureUtil for bytes32;
 
+    event Shutdown(uint timestamp);
+
     function isOnline(AmmData.State storage S)
         internal
         view
@@ -45,7 +47,7 @@ library AmmStatus
         S.feeBips = config.feeBips;
         S.domainSeparator = EIP712.hash(EIP712.Domain(config.poolName, "1.0.0", address(this)));
 
-        S.name = config.poolName;
+        S.poolName = config.poolName;
         S.symbol = config.tokenSymbol;
 
         address depositContract = address(exchange.getDepositContract());
@@ -90,6 +92,7 @@ library AmmStatus
         }
 
         S.shutdownTimestamp = block.timestamp;
+        emit Shutdown(block.timestamp);
     }
 
     function availableBalance(

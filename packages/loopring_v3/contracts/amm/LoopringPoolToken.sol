@@ -24,7 +24,7 @@ abstract contract LoopringPoolToken is ERC2612 {
         view
         returns (string memory)
     {
-        return state.name;
+        return state.poolName;
     }
 
     function symbol()
