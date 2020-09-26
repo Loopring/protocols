@@ -96,8 +96,6 @@ library AmmData
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
-        // Question: should we use the same `nonces` variable?
-        mapping(address => uint) permitNonces; // ERC2612
 
         // AMM pool state variables
         IExchangeV3 exchange;

@@ -11,6 +11,12 @@ import "./ERC20.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract ERC2612 is ERC20
 {
+    function nonces(address owner)
+        public
+        view
+        virtual
+        returns (uint);
+
     function permit(
         address owner,
         address spender,

@@ -81,7 +81,7 @@ library AmmPoolToken
                     owner,
                     spender,
                     value,
-                    S.permitNonces[owner]++,
+                    S.nonces[owner]++,
                     deadline
                 )
             )

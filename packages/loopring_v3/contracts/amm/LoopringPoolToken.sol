@@ -64,6 +64,15 @@ abstract contract LoopringPoolToken is ERC2612 {
             state.allowance[owner][spender];
     }
 
+    function nonces(address owner)
+        public
+        view
+        override
+        returns (uint)
+    {
+        return state.nonces[owner];
+    }
+
     function approve(address spender, uint value)
         public
         override
