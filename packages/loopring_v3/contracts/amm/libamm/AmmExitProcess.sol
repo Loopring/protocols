@@ -41,21 +41,19 @@ library AmmExitProcess
         WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
         ctx.numTransactionsConsumed++;
 
-        // These fields are not read by readWithdrawal:
+        // These fields are not read by readWithdrawal: storageID
         withdrawal.minGas = 0;
         withdrawal.to = address(this);
         withdrawal.extraData = new bytes(0);
 
         require(
-            withdrawal.withdrawalType == 1 && // Question(brecht): should this be 1?
+            withdrawal.withdrawalType == 1 &&
             withdrawal.owner == address(this) &&
             withdrawal.accountID == S.accountID &&
             withdrawal.tokenID == token.tokenID &&
-            // withdrawal.amount.isAlmostEqual(amount) && // Question(brecht):should we use isAlmostEqual?
-            withdrawal.amount == amount &&
+            withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&
             withdrawal.fee == 0 &&
-            withdrawal.storageID == 0 && // Question(brecht):should we check this ID?
             withdrawal.onchainDataHash == WithdrawTransaction.hashOnchainData(
                 withdrawal.minGas,
                 withdrawal.to,
@@ -109,8 +107,7 @@ library AmmExitProcess
                     transfer.tokenID == ctx.tokens[i].tokenID &&
                     transfer.amount.isAlmostEqual(amount) &&
                     transfer.feeTokenID == 0 &&
-                    transfer.fee == 0 &&
-                    transfer.storageID == (signature.length > 0 ? exit.storageIDs[i] : 0), // Question (brecht):is this right?
+                    transfer.fee == 0,
                     "INVALID_OUTBOUND_TX_DATA"
                 );
 

@@ -149,7 +149,7 @@ library AmmExitRequest
             S.lockedBalance[token][msg.sender] :
             S.availableBalance(token, msg.sender);
 
-        withdrawn = (amount > available || amount == 0) ? available : amount;
+        withdrawn = (amount > available) ? available : amount;
 
         if (withdrawn > 0) {
             S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].sub(withdrawn);

@@ -113,6 +113,18 @@ library AmmStatus
         }
     }
 
+    // function lockedBalance(
+    //     AmmData.State storage S,
+    //     address               token,
+    //     address               owner
+    //     )
+    //     internal
+    //     view
+    //     returns (uint)
+    // {
+    //    return S.lockedBalance[address(this)][owner].sub(availableBalance(address(this), owner));
+    // }
+
     function validatePoolTransaction(
         AmmData.State storage S,
         address        owner,

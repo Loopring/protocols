@@ -47,7 +47,6 @@ library AmmJoinProcess
             deposit.owner == address(this) &&
             deposit.accountID == S.accountID &&
             deposit.tokenID == token.tokenID &&
-            // deposit.amount.isAlmostEqual(amount),
             deposit.amount == amount,
             "INVALID_TX_DATA"
         );
@@ -102,12 +101,12 @@ library AmmJoinProcess
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
 
-                // We do not check these fields: fromAccountID, to, amount, feeTokenID, fee
+                // We do not check these fields: fromAccountID, to, amount, feeTokenID, fee, storageID
                 require(
                     transfer.toAccountID == S.accountID &&
                     transfer.from == join.owner &&
                     transfer.tokenID == ctx.tokens[i].tokenID &&
-                    transfer.storageID == (signature.length > 0 ? join.storageIDs[i] : 0), // Question (brecht):is this right?
+                    transfer.fee == 0,
                     "INVALID_INBOUND_TX_DATA"
                 );
 
@@ -188,7 +187,7 @@ library AmmJoinProcess
                 uint amountOut = uint(join.maxAmountsIn[i])
                     .mul(ctx.poolTokenTotalSupply) / uint(ctx.ammExpectedL2Balances[i]);
 
-                if (poolAmountOut == 0 || amountOut < poolAmountOut) {
+                if (amountOut < poolAmountOut) {
                     poolAmountOut = amountOut;
                 }
             }

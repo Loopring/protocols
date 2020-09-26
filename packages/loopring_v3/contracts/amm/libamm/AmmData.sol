@@ -41,6 +41,8 @@ library AmmData
         uint96[] maxAmountsIn;
         uint32[] storageIDs;
         uint     validUntil;
+        // uint16  feeTokenID; // TODO
+        // uint96  fee;
     }
 
     struct PoolExit

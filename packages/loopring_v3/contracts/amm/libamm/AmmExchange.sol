@@ -35,7 +35,6 @@ library AmmExchange
         for (uint i = 0; i < size; i++) {
             address token = S.tokens[i].addr;
 
-            // Question(Brecht): I removed a "!" isWithdrawnInWithdrawalMode, is it now correct?
             require(
                 withdrawalMode && exchange.isWithdrawnInWithdrawalMode(accountID, token) ||
                 !withdrawalMode && !exchange.isForcedWithdrawalPending(accountID, token),
