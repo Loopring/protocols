@@ -36,9 +36,6 @@ library AmmJoinRequest
         uint size = S.tokens.length;
         require(amounts.length == size + 1, "INVALID_DATA");
 
-        // Question(brecht): I don't understand this part, may be reasonable inside
-        // the withdrawlFromPool function, but I'm not sure it's necessary at all.
-
         // TODO(daniel): fiture this out:
         /*
         An exit depends on how many liquidity tokens the user has locked up, so we need

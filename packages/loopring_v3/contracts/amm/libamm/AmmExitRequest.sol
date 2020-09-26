@@ -34,7 +34,7 @@ library AmmExitRequest
 
     event Withdrawal(address owner, uint[] amountOuts);
     event PoolExitRequested(AmmData.PoolExit exit);
-    event LockedUntil(address owner, uint timestamp);
+    event UnlockScheduled(address owner, uint timestamp);
 
     function unlock(AmmData.State storage S)
         internal
@@ -45,7 +45,7 @@ library AmmExitRequest
         lockedUntil = block.timestamp + AmmData.MIN_TIME_TO_UNLOCK();
         S.lockedUntil[msg.sender] = lockedUntil;
 
-        emit LockedUntil(msg.sender, lockedUntil);
+        emit UnlockScheduled(msg.sender, lockedUntil);
     }
 
     function withdrawFromPool(

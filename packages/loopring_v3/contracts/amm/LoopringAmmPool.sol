@@ -32,10 +32,9 @@ contract LoopringAmmPool is
 
     event Deposit   (address owner, uint96[] amounts);
     event Withdrawal(address owner, uint[] amountOuts);
-
     event PoolJoinRequested(AmmData.PoolJoin join);
     event PoolExitRequested(AmmData.PoolExit exit);
-    event LockedUntil(address owner, uint timestamp);
+    event UnlockScheduled(address owner, uint timestamp);
 
     modifier onlyExchangeOwner()
     {
