@@ -58,7 +58,11 @@ library AmmExchange
                 ERC20(token).balanceOf(address(this));
 
             // Withdraw the part owned
-            uint amount = balance.mul(poolAmountIn) / S.totalSupply;
+            // Question(brecht): please make sure this is correct
+            uint amount = balance
+                .sub(S.totalLockedBalance[address(this)])
+                .mul(poolAmountIn) / S.totalSupply;
+
             AmmUtil.tranferOut(token, amount, msg.sender);
         }
 
