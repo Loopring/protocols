@@ -75,6 +75,7 @@ library AmmJoinProcess
         S.totalLockedBalance[token.addr] = S.totalLockedBalance[token.addr].sub(amount);
     }
 
+    //TODO: enable join non-zero-fee
     function processJoin(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
@@ -101,11 +102,12 @@ library AmmJoinProcess
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
 
-                // We do not check these fields: fromAccountID, to, amount, feeTokenID, fee, storageID
+                // We do not check these fields: fromAccountID, to, amount, fee, storageID
                 require(
                     transfer.toAccountID == S.accountID &&
                     transfer.from == join.owner &&
                     transfer.tokenID == ctx.tokens[i].tokenID &&
+                    transfer.feeTokenID == ctx.tokens[i].tokenID &&
                     transfer.fee == 0,
                     "INVALID_INBOUND_TX_DATA"
                 );

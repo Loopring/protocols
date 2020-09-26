@@ -122,6 +122,7 @@ contract LoopringAmmPool is
         uint              minPoolAmountOut,
         uint96[] calldata maxAmountsIn,
         bool              fromLayer2,
+        uint96            fee,
         uint              validUntil
         )
         external
@@ -132,6 +133,7 @@ contract LoopringAmmPool is
             minPoolAmountOut,
             maxAmountsIn,
             fromLayer2,
+            fee,
             validUntil
         );
         emit PoolJoinRequested(join);
@@ -140,7 +142,8 @@ contract LoopringAmmPool is
     function exitPool(
         uint              poolAmountIn,
         uint96[] calldata minAmountsOut,
-        bool              toLayer2
+        bool              toLayer2,
+        uint96                fee
         )
         external
         onlyWhenOnline
@@ -149,7 +152,8 @@ contract LoopringAmmPool is
         AmmData.PoolExit memory exit = state.exitPool(
             poolAmountIn,
             minAmountsOut,
-            toLayer2
+            toLayer2,
+            fee
         );
         emit PoolExitRequested(exit);
     }

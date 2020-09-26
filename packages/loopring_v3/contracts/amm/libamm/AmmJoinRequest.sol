@@ -53,11 +53,14 @@ library AmmJoinRequest
         uint                  minPoolAmountOut,
         uint96[]     calldata maxAmountsIn,
         bool                  fromLayer2,
+        uint96                fee,
         uint                  validUntil
         )
         public
         returns(AmmData.PoolJoin memory join)
     {
+        require(fee == 0, "DISABLED_FOR_NOW");
+
         uint size =  S.tokens.length;
         require(maxAmountsIn.length == size, "INVALID_DATA");
 
@@ -74,7 +77,8 @@ library AmmJoinRequest
             minPoolAmountOut: minPoolAmountOut,
             maxAmountsIn: maxAmountsIn,
             storageIDs: new uint32[](0),
-            validUntil: validUntil
+            validUntil: validUntil,
+            fee: fee
         });
 
         // Approve the join

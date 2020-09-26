@@ -71,6 +71,7 @@ library AmmExitProcess
         S.totalLockedBalance[token.addr] = S.totalLockedBalance[token.addr].add(amount);
     }
 
+    //TODO: enable exit non-zero-fee
     function processExit(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
@@ -106,7 +107,7 @@ library AmmExitProcess
                     transfer.to == exit.owner &&
                     transfer.tokenID == ctx.tokens[i].tokenID &&
                     transfer.amount.isAlmostEqual(amount) &&
-                    transfer.feeTokenID == 0 &&
+                    transfer.feeTokenID == ctx.tokens[i].tokenID &&
                     transfer.fee == 0,
                     "INVALID_OUTBOUND_TX_DATA"
                 );

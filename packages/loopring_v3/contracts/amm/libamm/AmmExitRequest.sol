@@ -72,11 +72,14 @@ library AmmExitRequest
         AmmData.State storage S,
         uint                  poolAmountIn,
         uint96[]     calldata minAmountsOut,
-        bool                  toLayer2
+        bool                  toLayer2,
+        uint96                fee
         )
         public
         returns(AmmData.PoolExit memory exit)
     {
+        require(fee == 0, "DISABLED_FOR_NOW");
+
         require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
 
         // To make the the available liqudity tokens cannot suddenly change
@@ -90,6 +93,7 @@ library AmmExitRequest
             poolAmountIn: poolAmountIn,
             minAmountsOut: minAmountsOut,
             storageIDs: new uint32[](0),
+            fee: fee,
             validUntil: 0xffffffff
         });
 
@@ -107,7 +111,6 @@ library AmmExitRequest
         private
         returns (bool)
     {
-
         // Check if we can withdraw without unlocking with an approval
         // from the operator.
         if (signature.length == 0) {
