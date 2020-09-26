@@ -38,6 +38,37 @@ library AmmJoinRequest
 
         // Question(brecht): I don't understand this part, may be reasonable inside
         // the withdrawlFromPool function, but I'm not sure it's necessary at all.
+
+        // TODO(daniel): fiture this out:
+        /*
+        An exit depends on how many liquidity tokens the user has locked up, so we need
+        this to keep the locked up balance the same while we are processing the exit.
+        Otherwise the user may have done an exit with poolAmount == 100, but only
+        locked up 50. Then we are processing the exit, create a block + proof, but
+        in the meantime the user could have deposited additional tokens which would
+        make how we process the block invalid. We also cannot just partially process
+        the exit when additional funds are available, because then we could censor
+        exits and lock up user funds in the pool.
+
+        We also cannot check how many liquidity tokens the user has when calling
+        exitPool and reserve them (we could check the balance, but that doesn't mean
+         they will still be there when we actually process it). This could also suddenly
+          change how we need to process a block while we could already have been
+          building a block. Scenario:
+
+        A user requests an offchain exit with `poolAmount == 100
+        We see that the user indeed has 100 liquidity tokens locked up so we start
+        to process it.
+        The user now calls exitPool to force the operator to do the exit.
+        Onchain we see that the user has 100 liquidity tokens, but if we would
+        reserve them for the onchain request the offchain request we are already
+        processing will be rendered invalid.
+        So what we want to do here is still do the offchain request that we are
+        already doing, and then process the onchain request with any remaining
+        liquidity tokens that are still locked up. But the remaining locked amount
+        needs to remain the same, otherwise the processing of the onchain request
+        is not deterministic.
+        */
         if (S.isExiting[msg.sender]) {
             // This could suddenly change the amount of liquidity tokens available, which
             // could change how the operator needs to process the exit.
