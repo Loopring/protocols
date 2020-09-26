@@ -158,6 +158,6 @@ contract LoopringAmmPool is
         nonReentrant
         returns (uint)
     {
-        return state.beforeBlockSubmitted( _block, txIdx, auxiliaryData);
+        return state.beforeBlockSubmitted(_block, txIdx, auxiliaryData);
     }
 }
