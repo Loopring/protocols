@@ -15,14 +15,6 @@ library AmmUtil
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
 
-    bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs,uint256 validUntil)"
-    );
-
-    bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs,uint256 validUntil)"
-    );
-
     function isAlmostEqual(
         uint96 amount,
         uint96 targetAmount
@@ -52,53 +44,5 @@ library AmmUtil
         } else {
             token.safeTransferAndVerify(to, amount);
         }
-    }
-
-    function hashPoolJoin(
-        bytes32                 domainSeparator,
-        AmmData.PoolJoin memory join
-        )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return EIP712.hashPacked(
-            domainSeparator,
-            keccak256(
-                abi.encode(
-                    POOLJOIN_TYPEHASH,
-                    join.owner,
-                    join.fromLayer2,
-                    join.minPoolAmountOut,
-                    keccak256(abi.encodePacked(join.maxAmountsIn)),
-                    keccak256(abi.encodePacked(join.storageIDs)),
-                    join.validUntil
-                )
-            )
-        );
-    }
-
-    function hashPoolExit(
-        bytes32                 domainSeparator,
-        AmmData.PoolExit memory exit
-        )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return EIP712.hashPacked(
-            domainSeparator,
-            keccak256(
-                abi.encode(
-                    POOLEXIT_TYPEHASH,
-                    exit.owner,
-                    exit.toLayer2,
-                    exit.poolAmountIn,
-                    keccak256(abi.encodePacked(exit.minAmountsOut)),
-                    keccak256(abi.encodePacked(exit.storageIDs)),
-                    exit.validUntil
-                )
-            )
-        );
     }
 }

@@ -82,7 +82,7 @@ library AmmExitProcess
     {
         S.validatePoolTransaction(
             exit.owner,
-            AmmUtil.hashPoolExit(ctx.domainSeparator, exit),
+            AmmExitRequest.hashPoolExit(ctx.domainSeparator, exit),
             signature
         );
 

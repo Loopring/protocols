@@ -86,7 +86,7 @@ library AmmJoinProcess
     {
         S.validatePoolTransaction(
             join.owner,
-            AmmUtil.hashPoolJoin(ctx.domainSeparator, join),
+            AmmJoinRequest.hashPoolJoin(ctx.domainSeparator, join),
             signature
         );
 

@@ -20,6 +20,10 @@ library AmmJoinRequest
     using MathUint96        for uint96;
     using SafeCast          for uint;
 
+    bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
+        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs,uint256 validUntil)"
+    );
+
     function depositToPool(
         AmmData.State storage S,
         uint96[]     calldata amounts
@@ -82,8 +86,32 @@ library AmmJoinRequest
         });
 
         // Approve the join
-        bytes32 txHash = AmmUtil.hashPoolJoin(S.domainSeparator, join);
+        bytes32 txHash = hashPoolJoin(S.domainSeparator, join);
         S.approvedTx[txHash] = 0xffffffff;
+    }
+
+    function hashPoolJoin(
+        bytes32                 domainSeparator,
+        AmmData.PoolJoin memory join
+        )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    POOLJOIN_TYPEHASH,
+                    join.owner,
+                    join.fromLayer2,
+                    join.minPoolAmountOut,
+                    keccak256(abi.encodePacked(join.maxAmountsIn)),
+                    keccak256(abi.encodePacked(join.storageIDs)),
+                    join.validUntil
+                )
+            )
+        );
     }
 
     function _depositToken(

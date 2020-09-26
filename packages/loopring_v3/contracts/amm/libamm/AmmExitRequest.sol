@@ -28,6 +28,10 @@ library AmmExitRequest
         "Withdraw(address owner,uint256[] amounts,uint256 validUntil,uint256 nonce)"
     );
 
+    bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
+        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs,uint256 validUntil)"
+    );
+
     function unlock(AmmData.State storage S)
         internal
         returns (uint lockedUntil)
@@ -98,8 +102,32 @@ library AmmExitRequest
         });
 
         // Approve the exit
-        bytes32 txHash = AmmUtil.hashPoolExit(S.domainSeparator, exit);
+        bytes32 txHash = hashPoolExit(S.domainSeparator, exit);
         S.approvedTx[txHash] = block.timestamp;
+    }
+
+    function hashPoolExit(
+        bytes32                 domainSeparator,
+        AmmData.PoolExit memory exit
+        )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    POOLEXIT_TYPEHASH,
+                    exit.owner,
+                    exit.toLayer2,
+                    exit.poolAmountIn,
+                    keccak256(abi.encodePacked(exit.minAmountsOut)),
+                    keccak256(abi.encodePacked(exit.storageIDs)),
+                    exit.validUntil
+                )
+            )
+        );
     }
 
     function _checkOperatorApproval(
