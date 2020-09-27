@@ -4,21 +4,19 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../lib/Create2.sol";
-import "../lib/OwnerManagable.sol";
 import "../lib/ReentrancyGuard.sol";
 import "../lib/SimpleProxy.sol";
 import "./LoopringAmmPool.sol";
 import "./libamm/AmmData.sol";
 
 
-contract LoopringAmmFactory is OwnerManagable, ReentrancyGuard
+contract LoopringAmmFactory is ReentrancyGuard
 {
     event PoolCreated(AmmData.PoolConfig config);
 
     address public poolImplementation;
 
     constructor(address _poolImplementation)
-        OwnerManagable()
     {
         require(_poolImplementation != address(0), "INVALID_IMPL");
         poolImplementation = _poolImplementation;
@@ -26,7 +24,6 @@ contract LoopringAmmFactory is OwnerManagable, ReentrancyGuard
 
     function createPool(AmmData.PoolConfig calldata config)
         external
-        onlyManager
         nonReentrant
         returns (address payable pool)
     {
