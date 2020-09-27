@@ -13,12 +13,12 @@ import "./libamm/AmmExitRequest.sol";
 import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmPoolToken.sol";
 import "./libamm/AmmStatus.sol";
-import './LoopringPoolToken.sol';
+import './PoolToken.sol';
 
 
 /// @title LoopringAmmPool
 contract LoopringAmmPool is
-    LoopringPoolToken,
+    PoolToken,
     IAgent,
     IBlockReceiver,
     ReentrancyGuard
