@@ -12,7 +12,7 @@ import "./libamm/AmmData.sol";
 
 contract LoopringAmmFactory is ReentrancyGuard
 {
-    event PoolCreated(AmmData.PoolConfig config);
+    event PoolCreated(AmmData.PoolConfig config, address pool);
 
     address public poolImplementation;
 
@@ -44,6 +44,6 @@ contract LoopringAmmFactory is ReentrancyGuard
         SimpleProxy(pool).setImplementation(poolImplementation);
         LoopringAmmPool(pool).setupPool(config);
 
-        emit PoolCreated(config);
+        emit PoolCreated(config, pool);
     }
 }
