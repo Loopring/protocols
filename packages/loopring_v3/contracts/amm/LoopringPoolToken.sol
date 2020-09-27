@@ -98,11 +98,11 @@ abstract contract LoopringPoolToken is ERC2612 {
     }
 
     function permit(
-        address               owner,
-        address               spender,
-        uint256               value,
-        uint256               deadline,
-        bytes        calldata signature
+        address        owner,
+        address        spender,
+        uint256        value,
+        uint256        deadline,
+        bytes calldata signature
         )
         external
         override

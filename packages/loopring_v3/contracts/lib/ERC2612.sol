@@ -18,11 +18,11 @@ abstract contract ERC2612 is ERC20
         returns (uint);
 
     function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        bytes   calldata signature
+        address        owner,
+        address        spender,
+        uint256        value,
+        uint256        deadline,
+        bytes calldata signature
         )
         external
         virtual;
