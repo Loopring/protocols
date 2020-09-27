@@ -41,8 +41,11 @@ library AmmExitRequest
         returns (uint lockedUntil)
     {
         require(S.lockedUntil[msg.sender] == 0, "UNLOCKED_ALREADY");
+        require(S.lockedSince[msg.sender] >= block.timestamp, "LOCK_PENDING");
 
-        lockedUntil = block.timestamp + AmmData.MIN_TIME_TO_UNLOCK();
+        lockedUntil = block.timestamp + AmmData.LOCK_DELAY();
+
+        S.lockedSince[msg.sender] = 0;
         S.lockedUntil[msg.sender] = lockedUntil;
 
         emit UnlockScheduled(msg.sender, lockedUntil);
@@ -182,13 +185,13 @@ library AmmExitRequest
         returns (uint withdrawn)
     {
         uint available = approvedByOperator ?
-            S.lockedBalance[token][msg.sender] :
+            S.userBalance[token][msg.sender] :
             S.availableBalance(token, msg.sender);
 
         withdrawn = (amount > available) ? available : amount;
 
         if (withdrawn > 0) {
-            S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].sub(withdrawn);
+            S.removeUserBalance(token, msg.sender, withdrawn);
             AmmUtil.tranferOut(token, withdrawn, msg.sender);
         }
     }

@@ -72,7 +72,7 @@ library AmmJoinProcess
         );
 
         // Total balance in this contract decreases by the amount deposited
-        S.totalLockedBalance[token.addr] = S.totalLockedBalance[token.addr].sub(amount);
+        S.totalUserBalance[token.addr] = S.totalUserBalance[token.addr].sub(amount);
     }
 
     function processJoin(
@@ -112,6 +112,11 @@ library AmmJoinProcess
                     "INVALID_TX_DATA"
                 );
 
+                // Replay protection when using a signature (otherwise the approved hash is cleared onchain)
+                if (signature.length > 0) {
+                    require(transfer.storageID == join.storageIDs[i], "INVALID_TX_DATA");
+                }
+
                 // Now approve this transfer
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
@@ -122,13 +127,14 @@ library AmmJoinProcess
             } else {
                 // Make the amount unavailable for withdrawing
                 address token = ctx.tokens[i].addr;
-                S.lockedBalance[token][join.owner] = S.lockedBalance[token][join.owner].sub(amount);
+                S.userBalance[token][join.owner] = S.userBalance[token][join.owner].sub(amount);
             }
 
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
         }
 
-        S.mint(join.owner, poolAmountOut);
+        S.mint(address(this), poolAmountOut);
+        S.addUserBalance(address(this), join.owner, poolAmountOut);
     }
 
     function _calculateJoinAmounts(

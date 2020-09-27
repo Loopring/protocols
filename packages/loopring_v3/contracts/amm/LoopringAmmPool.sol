@@ -139,6 +139,13 @@ contract LoopringAmmPool is
         state.exitPool(poolAmountIn, minAmountsOut, toLayer2);
     }
 
+    function lock()
+        external
+        nonReentrant
+    {
+        state.lock();
+    }
+
     function unlock()
         external
         nonReentrant

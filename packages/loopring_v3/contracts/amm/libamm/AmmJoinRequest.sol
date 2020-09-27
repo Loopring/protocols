@@ -9,12 +9,14 @@ import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../thirdparty/SafeCast.sol";
 import "./AmmData.sol";
+import "./AmmStatus.sol";
 import "./AmmUtil.sol";
 
 
 /// @title AmmJoinRequest
 library AmmJoinRequest
 {
+    using AmmStatus         for AmmData.State;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
     using MathUint96        for uint96;
@@ -26,6 +28,28 @@ library AmmJoinRequest
 
     event Deposit(address owner, uint96[] amounts);
     event PoolJoinRequested(AmmData.PoolJoin join);
+    event LockScheduled(address owner, uint timestamp);
+
+    function lock(
+        AmmData.State storage S
+        )
+        public
+        returns (uint lockedSince)
+    {
+        require(S.lockedSince[msg.sender] == 0, "LOCKED_ALREADY");
+        require(
+            S.lockedUntil[msg.sender] != 0 &&
+            S.lockedUntil[msg.sender] >= block.timestamp,
+            "UNLOCK_PENDING"
+        );
+
+        lockedSince = block.timestamp + AmmData.LOCK_DELAY();
+
+        S.lockedSince[msg.sender] = lockedSince;
+        S.lockedUntil[msg.sender] = 0;
+
+        emit LockScheduled(msg.sender, lockedSince);
+    }
 
     function depositToPool(
         AmmData.State storage S,
@@ -71,8 +95,6 @@ library AmmJoinRequest
             // could change how the operator needs to process the exit.
             require(amounts[0] == 0, "CANNOT_DEPOSIT_LIQUIDITY_TOKENS_WHILE_EXITING");
         }
-
-        S.lockedUntil[msg.sender] = 0;
 
         // Deposit pool tokens
         _depositToken(S, address(this), amounts[0]);
@@ -160,8 +182,7 @@ library AmmJoinRequest
         }
 
         if (amount > 0) {
-            S.lockedBalance[token][msg.sender] = S.lockedBalance[token][msg.sender].add(amount);
-            S.totalLockedBalance[token] = S.totalLockedBalance[token].add(amount);
+            S.addUserBalance(token, msg.sender, amount);
         }
     }
 }
