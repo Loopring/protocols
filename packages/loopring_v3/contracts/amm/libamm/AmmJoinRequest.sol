@@ -131,6 +131,7 @@ library AmmJoinRequest
                     join.fromLayer2,
                     join.minPoolAmountOut,
                     keccak256(abi.encodePacked(join.maxAmountsIn)),
+                    keccak256(abi.encodePacked(join.fees)),
                     keccak256(abi.encodePacked(join.storageIDs)),
                     join.validUntil
                 )
