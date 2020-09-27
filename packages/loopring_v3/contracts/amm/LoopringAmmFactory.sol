@@ -20,12 +20,11 @@ contract LoopringAmmFactory is OwnerManagable, ReentrancyGuard
     constructor(address _poolImplementation)
         OwnerManagable()
     {
+        require(_poolImplementation != address(0), "INVALID_IMPL");
         poolImplementation = _poolImplementation;
     }
 
-    function createPool(
-        AmmData.PoolConfig calldata config
-        )
+    function createPool(AmmData.PoolConfig calldata config)
         external
         onlyManager
         nonReentrant
@@ -45,9 +44,7 @@ contract LoopringAmmFactory is OwnerManagable, ReentrancyGuard
 
         pool = Create2.deploy(salt, type(SimpleProxy).creationCode);
 
-        SimpleProxy proxy = SimpleProxy(pool);
-        proxy.setImplementation(poolImplementation);
-
+        SimpleProxy(pool).setImplementation(poolImplementation);
         LoopringAmmPool(pool).setupPool(config);
 
         emit PoolCreated(config);
