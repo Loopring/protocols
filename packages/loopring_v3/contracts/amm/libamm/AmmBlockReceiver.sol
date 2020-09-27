@@ -111,7 +111,7 @@ library AmmBlockReceiver
         private
     {
         if (ammExpectedL2Balance > ammActualL2Balance) {
-            S.proxcessExchangeDeposit(
+            S.processExchangeDeposit(
                 ctx,
                 token,
                 ammExpectedL2Balance - ammActualL2Balance

@@ -123,11 +123,7 @@ library AmmStatus
         view
         returns (uint)
     {
-        if (isLocked(S, owner)) {
-            return 0;
-        } else {
-            return S.userBalance[token][owner];
-        }
+        return isLocked(S, owner) ? 0 : S.userBalance[token][owner];
     }
 
     function lockedBalance(
@@ -139,7 +135,7 @@ library AmmStatus
         view
         returns (uint)
     {
-       return S.userBalance[token][owner].sub(availableBalance(S, token, owner));
+        return S.userBalance[token][owner].sub(availableBalance(S, token, owner));
     }
 
     function addUserBalance(

@@ -117,7 +117,6 @@ contract LoopringAmmPool is
         uint96[] calldata maxAmountsIn,
         uint96[] calldata fees,
         bool              fromLayer2,
-        uint96            fee,
         uint              validUntil
         )
         external
