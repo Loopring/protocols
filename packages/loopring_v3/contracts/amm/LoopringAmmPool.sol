@@ -157,7 +157,7 @@ contract LoopringAmmPool is
         uint                        txIdx,
         bytes              calldata auxiliaryData
         )
-        public
+        external
         override
         onlyWhenOnline
         onlyExchangeOwner
