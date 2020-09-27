@@ -21,7 +21,7 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint32[] storageIDs,uint256 validUntil)"
+        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint32[] storageIDs,uint256 validUntil)"
     );
 
     event Deposit(address owner, uint96[] amounts);
@@ -89,8 +89,8 @@ library AmmJoinRequest
         AmmData.State storage S,
         uint                  minPoolAmountOut,
         uint96[]     calldata maxAmountsIn,
+        uint96[]     calldata fees,
         bool                  fromLayer2,
-        uint96                fee,
         uint                  validUntil
         )
         public
@@ -99,7 +99,7 @@ library AmmJoinRequest
         require(maxAmountsIn.length == size, "INVALID_DATA");
 
         for (uint i = 0; i < size; i++) {
-            require(maxAmountsIn[i] > 0, "INVALID_JOIN_AMOUNT");
+            require(maxAmountsIn[i] > fees[i], "INVALID_JOIN_AMOUNT");
         }
 
         // Don't check the available funds here, if the operator isn't sure the funds
@@ -110,9 +110,9 @@ library AmmJoinRequest
             fromLayer2: fromLayer2,
             minPoolAmountOut: minPoolAmountOut,
             maxAmountsIn: maxAmountsIn,
+            fees: fees,
             storageIDs: new uint32[](0),
-            validUntil: validUntil,
-            fee: fee
+            validUntil: validUntil
         });
 
         // Approve the join

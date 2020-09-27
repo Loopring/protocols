@@ -115,6 +115,7 @@ contract LoopringAmmPool is
     function joinPool(
         uint              minPoolAmountOut,
         uint96[] calldata maxAmountsIn,
+        uint96[] calldata fees,
         bool              fromLayer2,
         uint96            fee,
         uint              validUntil
@@ -123,20 +124,19 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        state.joinPool(minPoolAmountOut, maxAmountsIn, fromLayer2, fee, validUntil);
+        state.joinPool(minPoolAmountOut, maxAmountsIn, fees, fromLayer2, validUntil);
     }
 
     function exitPool(
         uint              poolAmountIn,
         uint96[] calldata minAmountsOut,
-        bool              toLayer2,
-        uint96                fee
+        bool              toLayer2
         )
         external
         onlyWhenOnline
         nonReentrant
     {
-        state.exitPool(poolAmountIn, minAmountsOut, toLayer2, fee);
+        state.exitPool(poolAmountIn, minAmountsOut, toLayer2);
     }
 
     function unlock()

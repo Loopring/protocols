@@ -107,7 +107,7 @@ library AmmExitProcess
                     transfer.tokenID == ctx.tokens[i].tokenID &&
                     transfer.amount.isAlmostEqual(amount) &&
                     transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                    transfer.fee.isAlmostEqual(exit.fee),
+                    transfer.fee == 0,
                     "INVALID_TX_DATA"
                 );
 

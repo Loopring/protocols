@@ -84,8 +84,7 @@ library AmmExitRequest
         AmmData.State storage S,
         uint                  poolAmountIn,
         uint96[]     calldata minAmountsOut,
-        bool                  toLayer2,
-        uint96                fee
+        bool                  toLayer2
         )
         public
     {
@@ -102,7 +101,6 @@ library AmmExitRequest
             poolAmountIn: poolAmountIn,
             minAmountsOut: minAmountsOut,
             storageIDs: new uint32[](0),
-            fee: fee,
             validUntil: 0xffffffff
         });
 
