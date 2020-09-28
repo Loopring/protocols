@@ -73,11 +73,11 @@ library AmmJoinRequest
         }
 
         // Deposit pool tokens
-        _depositToken(S, address(this), amounts[0]);
+        S.depositToken(address(this), amounts[0]);
 
         // Deposit AMM tokens
         for (uint i = 0; i < size; i++) {
-            _depositToken(S, S.tokens[i].addr, amounts[i + 1]);
+            S.depositToken(S.tokens[i].addr, amounts[i + 1]);
         }
 
         emit Deposit(msg.sender, amounts);
@@ -126,8 +126,7 @@ library AmmJoinRequest
         AmmData.State storage S,
         uint                  minPoolAmountOut,
         uint96[]     calldata maxAmountsIn,
-        uint96[]     calldata fees,
-        bool                  poolTokenToLayer2
+        uint96[]     calldata fees
         )
         public
     {
@@ -156,17 +155,17 @@ library AmmJoinRequest
         S.approvedTx[txHash] = 0xffffffff;
 
         AmmData.User storage user = S.UserMap[msg.sender];
-        user.records.push(
-            AmmData.JoinRecord({
+        user.lockRecords.push(
+            AmmData.LockRecord({
                 hash:txHash,
-                maxAmountsIn: maxAmountsIn,
+                amounts: maxAmountsIn,
                 validUntil: validUntil
             })
         );
 
         // Deposit AMM tokens
         for (uint i = 0; i < size; i++) {
-            _depositToken(S, S.tokens[i].addr, maxAmountsIn[i]);
+            S.depositToken(S.tokens[i].addr, maxAmountsIn[i]);
         }
 
         emit PoolJoinRequested2(join);
@@ -188,8 +187,8 @@ library AmmJoinRequest
 
         // Delete expired joins
         for (uint i = user.startIndex; i < newStartIndex; i++) {
-            delete S.approvedTx[user.records[i].hash];
-            delete user.records[i];
+            delete S.approvedTx[user.lockRecords[i].hash];
+            delete user.lockRecords[i];
         }
 
         user.startIndex = newStartIndex;
@@ -217,13 +216,13 @@ library AmmJoinRequest
         }
 
         uint idx = user.startIndex;
-        while(idx < user.records.length) {
-            AmmData.JoinRecord storage record = user.records[idx];
+        while(idx < user.lockRecords.length) {
+            AmmData.LockRecord storage record = user.lockRecords[idx];
             if (record.validUntil > block.timestamp) {
                 return (amounts, idx);
             }
             for (uint i = 0; i < size; i++) {
-                amounts[i] = amounts[i].add(record.maxAmountsIn[i]);
+                amounts[i + 1] = amounts[i].add(record.amounts[i]);
             }
         }
         return (amounts, idx);
@@ -277,17 +276,5 @@ library AmmJoinRequest
         );
     }
 
-    function _depositToken(
-        AmmData.State storage S,
-        address               token,
-        uint                  amount
-        )
-        private
-    {
-        if (token == address(0)) {
-            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
-        } else if (amount > 0) {
-            token.safeTransferFromAndVerify(msg.sender, address(this), amount);
-        }
-    }
+
 }

@@ -72,17 +72,17 @@ library AmmData
         bool     toLayer2;
     }
 
-    struct JoinRecord
+    struct LockRecord
     {
         bytes32  hash;
-        uint96[] maxAmountsIn;
+        uint96[] amounts; // the size should be either 1 or tokens.length
         uint     validUntil;
     }
 
     struct User
     {
         uint startIndex;
-        JoinRecord[] records;
+        LockRecord[] lockRecords;
         mapping (address => uint) withdrawable;
     }
 

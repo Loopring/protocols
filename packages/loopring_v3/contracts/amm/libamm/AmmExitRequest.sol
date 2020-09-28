@@ -32,8 +32,14 @@ library AmmExitRequest
         "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs,uint256 validUntil)"
     );
 
+
+    bytes32 constant public POOLEXIT_TYPEHASH2 = keccak256(
+        "PoolExit(address owner,uint256 poolAmountIn,uint256[] minAmountsOut,uint256 validUntil,bool toLayer2)"
+    );
+
     event Withdrawal(address owner, uint[] amountOuts);
     event PoolExitRequested(AmmData.PoolExit exit);
+    event PoolExit2Requested(AmmData.PoolExit2 exit);
     event UnlockScheduled(address owner, uint timestamp);
 
     function unlock(AmmData.State storage S)
@@ -112,6 +118,63 @@ library AmmExitRequest
         S.approvedTx[txHash] = block.timestamp;
 
         emit PoolExitRequested(exit);
+    }
+
+        // address  owner;
+        // uint     poolAmountIn;
+        // uint96[] minAmountsOut;
+        // uint     validUntil;
+        // bool     toLayer2;
+
+
+    function exitPool2(
+        AmmData.State storage S,
+        uint                  poolAmountIn,
+        uint96[]     calldata minAmountsOut,
+        bool                  toLayer2
+        )
+        public
+    {
+        require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
+
+        AmmData.PoolExit2 memory exit = AmmData.PoolExit2({
+            owner: msg.sender,
+            poolAmountIn: poolAmountIn,
+            minAmountsOut: minAmountsOut,
+            validUntil: 0xffffffff,
+            toLayer2: toLayer2
+        });
+
+        // Approve the exit
+        bytes32 txHash = hashPoolExit2(S.domainSeparator, exit);
+        S.approvedTx[txHash] = block.timestamp;
+
+        // S.depositToken(address(0), poolAmountIn);
+
+        emit PoolExit2Requested(exit);
+    }
+
+    function hashPoolExit2(
+        bytes32                 domainSeparator,
+        AmmData.PoolExit2 memory exit
+        )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    POOLEXIT_TYPEHASH2,
+                    exit.owner,
+                    exit.poolAmountIn,
+                    keccak256(abi.encodePacked(exit.minAmountsOut)),
+                    exit.validUntil,
+                    exit.toLayer2
+                )
+            )
+        );
     }
 
     function hashPoolExit(

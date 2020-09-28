@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./AmmData.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
@@ -14,6 +15,7 @@ import "../../lib/SignatureUtil.sol";
 /// @title LPToken
 library AmmStatus
 {
+    using ERC20SafeTransfer for address;
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
@@ -160,6 +162,20 @@ library AmmStatus
     {
         S.userBalance[token][owner] = S.userBalance[token][owner].sub(amount);
         S.totalUserBalance[token] = S.totalUserBalance[token].sub(amount);
+    }
+
+    function depositToken(
+        AmmData.State storage S,
+        address               token,
+        uint                  amount
+        )
+        internal
+    {
+        if (token == address(0)) {
+            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
+        } else if (amount > 0) {
+            token.safeTransferFromAndVerify(msg.sender, address(this), amount);
+        }
     }
 
     function validatePoolTransaction(
