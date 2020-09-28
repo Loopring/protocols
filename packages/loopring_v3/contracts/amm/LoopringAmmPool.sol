@@ -129,13 +129,14 @@ contract LoopringAmmPool is
     function exitPool(
         uint              poolAmountIn,
         uint96[] calldata minAmountsOut,
-        bool              toLayer2
+        bool              toLayer2,
+        uint              validUntil
         )
         external
         onlyWhenOnline
         nonReentrant
     {
-        state.exitPool(poolAmountIn, minAmountsOut, toLayer2);
+        state.exitPool(poolAmountIn, minAmountsOut, toLayer2, validUntil);
     }
 
     function lock()

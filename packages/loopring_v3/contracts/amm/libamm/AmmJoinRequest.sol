@@ -90,6 +90,11 @@ library AmmJoinRequest
         uint size =  S.tokens.length;
         require(maxAmountsIn.length == size, "INVALID_DATA");
 
+        require(
+            validUntil > block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
+            "VALID_UNTIL_TOO_SMALL"
+        );
+
         for (uint i = 0; i < size; i++) {
             require(maxAmountsIn[i] > fees[i], "INVALID_JOIN_AMOUNT");
         }

@@ -87,11 +87,16 @@ library AmmExitRequest
         AmmData.State storage S,
         uint                  poolAmountIn,
         uint96[]     calldata minAmountsOut,
-        bool                  toLayer2
+        bool                  toLayer2,
+        uint                  validUntil
         )
         public
     {
         require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
+        require(
+            validUntil > block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
+            "VALID_UNTIL_TOO_SMALL"
+        );
 
         // To make the the available liqudity tokens cannot suddenly change
         // we keep track of when onchain exits (which need to be processed) are pending.
@@ -104,7 +109,7 @@ library AmmExitRequest
             poolAmountIn: poolAmountIn,
             minAmountsOut: minAmountsOut,
             storageIDs: new uint32[](0),
-            validUntil: 0xffffffff
+            validUntil: validUntil
         });
 
         // Approve the exit
