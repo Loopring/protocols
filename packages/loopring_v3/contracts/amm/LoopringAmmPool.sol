@@ -71,6 +71,7 @@ contract LoopringAmmPool is
         external
         nonReentrant
     {
+        owner = msg.sender;
         state.setupPool(config);
     }
 
