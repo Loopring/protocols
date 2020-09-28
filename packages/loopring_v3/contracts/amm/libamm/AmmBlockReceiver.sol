@@ -98,6 +98,8 @@ library AmmBlockReceiver
                 abi.decode(poolTx.data, (AmmData.PoolExit)),
                 poolTx.signature
             );
+        } else {
+            revert("INVALID_POOL_TX_TYPE");
         }
     }
 
