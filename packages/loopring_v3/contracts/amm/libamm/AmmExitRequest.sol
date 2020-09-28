@@ -29,7 +29,7 @@ library AmmExitRequest
     );
 
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs,uint256 validUntil)"
+        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint256 validUntil)"
     );
 
     event Withdrawal(address owner, uint[] amountOuts);
@@ -103,7 +103,6 @@ library AmmExitRequest
             toLayer2: toLayer2,
             poolAmountIn: poolAmountIn,
             minAmountsOut: minAmountsOut,
-            storageIDs: new uint32[](0),
             validUntil: 0xffffffff
         });
 
@@ -131,7 +130,6 @@ library AmmExitRequest
                     exit.toLayer2,
                     exit.poolAmountIn,
                     keccak256(abi.encodePacked(exit.minAmountsOut)),
-                    keccak256(abi.encodePacked(exit.storageIDs)),
                     exit.validUntil
                 )
             )

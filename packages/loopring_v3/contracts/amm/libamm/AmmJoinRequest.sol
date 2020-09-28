@@ -23,7 +23,7 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint32[] storageIDs,uint256 validUntil)"
+        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint256 validUntil)"
     );
 
     event Deposit(address owner, uint96[] amounts);
@@ -103,7 +103,6 @@ library AmmJoinRequest
             minPoolAmountOut: minPoolAmountOut,
             maxAmountsIn: maxAmountsIn,
             fees: fees,
-            storageIDs: new uint32[](0),
             validUntil: validUntil
         });
 
@@ -132,7 +131,6 @@ library AmmJoinRequest
                     join.minPoolAmountOut,
                     keccak256(abi.encodePacked(join.maxAmountsIn)),
                     keccak256(abi.encodePacked(join.fees)),
-                    keccak256(abi.encodePacked(join.storageIDs)),
                     join.validUntil
                 )
             )

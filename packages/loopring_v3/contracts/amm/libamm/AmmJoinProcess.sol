@@ -112,11 +112,6 @@ library AmmJoinProcess
                     "INVALID_TX_DATA"
                 );
 
-                // Replay protection when using a signature (otherwise the approved hash is cleared onchain)
-                if (signature.length > 0) {
-                    require(transfer.storageID == join.storageIDs[i], "INVALID_TX_DATA");
-                }
-
                 // Now approve this transfer
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);

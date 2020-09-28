@@ -40,7 +40,6 @@ library AmmData
         uint     minPoolAmountOut;
         uint96[] maxAmountsIn;
         uint96[] fees;
-        uint32[] storageIDs;
         uint     validUntil;
     }
 
@@ -50,7 +49,6 @@ library AmmData
         bool     toLayer2;
         uint     poolAmountIn;
         uint96[] minAmountsOut;
-        uint32[] storageIDs;
         uint     validUntil;
     }
 
@@ -125,5 +123,7 @@ library AmmData
 
         // A map from an owner to if a user is currently exiting using an onchain approval.
         mapping (address => bool) isExiting;
+
+        mapping (bytes32 => bool) consumedOffchainTx;
     }
 }

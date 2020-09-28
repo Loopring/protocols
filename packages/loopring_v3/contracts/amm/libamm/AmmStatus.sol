@@ -175,6 +175,8 @@ library AmmStatus
             delete S.approvedTx[poolTxHash];
         } else {
             require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
+            require(!S.consumedOffchainTx[poolTxHash], "CONSUMED_ALREADY");
+            S.consumedOffchainTx[poolTxHash] = true;
         }
     }
 }
