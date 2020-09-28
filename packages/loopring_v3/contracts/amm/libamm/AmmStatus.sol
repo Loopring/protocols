@@ -43,11 +43,13 @@ library AmmStatus
         require(config.tokens.length >= 2, "INVALID_DATA");
         require(config.exchange != address(0), "INVALID_EXCHANGE");
         require(config.accountID != 0, "INVALID_ACCOUNT_ID");
+        require(config.poolTokenID != 0, "INVALID_POOL_TOKEN_ID");
         require(S.tokens.length == 0, "ALREADY_INITIALIZED");
 
         IExchangeV3 exchange = IExchangeV3(config.exchange);
         S.exchange = exchange;
         S.accountID = config.accountID;
+        S.poolTokenID = config.poolTokenID;
         S.feeBips = config.feeBips;
         S.domainSeparator = EIP712.hash(EIP712.Domain(config.poolName, "1.0.0", address(this)));
 

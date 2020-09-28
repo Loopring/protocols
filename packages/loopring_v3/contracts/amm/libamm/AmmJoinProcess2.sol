@@ -75,7 +75,7 @@ library AmmJoinProcess
         S.totalUserBalance[token.addr] = S.totalUserBalance[token.addr].sub(amount);
     }
 
-    function processJoin(
+    function processJoin2(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         AmmData.PoolJoin2 memory  join,
@@ -83,18 +83,19 @@ library AmmJoinProcess
         )
         internal
     {
-       S.validatePoolTransaction2(
+       S.validatePoolTransaction(
             join.owner,
             AmmJoinRequest.hashPoolJoin2(ctx.domainSeparator, join),
             signature
         );
 
         // Check if the requirements are fulfilled
+        // TODO(daniel): change poolAmountOut to uint96
         (bool slippageRequirementMet, uint poolAmountOut, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
 
         if (!slippageRequirementMet) return;
 
-        bool fromLayer2 = signature.length > 0；
+        bool fromLayer2 = signature.length > 0;
 
         for (uint i = 0; i < ctx.size; i++) {
             uint96 amount = amounts[i];
@@ -127,10 +128,14 @@ library AmmJoinProcess
         }
 
         if (fromLayer2) {
-            S.mint(address(this), poolAmountOut);
+             S.mint(address(this), poolAmountOut);
              // Deposit this token to the user
-
-             // processExchangeDeposit(S, ctx, AmmData.Token    memory  token,)
+             AmmData.Token memory poolToken = AmmData.Token({
+                   addr: address(this),
+                   weight:0,
+                   tokenID: S.poolTokenID
+            });
+             processExchangeDeposit(S, ctx, poolToken, poolAmountOut.toUint96());
 
          } else {
             S.mint(join.owner, poolAmountOut);

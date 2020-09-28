@@ -32,6 +32,7 @@ contract LoopringAmmFactory is ReentrancyGuard
                 config.exchange,
                 config.poolName,
                 config.accountID,
+                config.poolTokenID,
                 config.tokens,
                 config.weights,
                 config.feeBips,

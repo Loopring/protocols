@@ -27,6 +27,7 @@ library AmmData
         address   exchange;
         string    poolName;
         uint32    accountID;
+        uint16    poolTokenID;
         address[] tokens;
         uint96[]  weights;
         uint8     feeBips;
@@ -132,6 +133,7 @@ library AmmData
         // AMM pool state variables
         IExchangeV3 exchange;
         uint32      accountID;
+        uint16      poolTokenID;
         bytes32     domainSeparator;
         uint        shutdownTimestamp;
         uint8       feeBips;
