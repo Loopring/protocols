@@ -221,8 +221,11 @@ library AmmJoinRequest
             if (record.validUntil > block.timestamp) {
                 return (amounts, idx);
             }
-            for (uint i = 0; i < size; i++) {
-                amounts[i + 1] = amounts[i].add(record.amounts[i]);
+
+            if (S.approvedTx[record.hash] > 0) {
+                for (uint i = 0; i < size; i++) {
+                    amounts[i + 1] = amounts[i].add(record.amounts[i]);
+                }
             }
         }
         return (amounts, idx);
