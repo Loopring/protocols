@@ -27,7 +27,34 @@ contract LoopringAmmFactory is ReentrancyGuard
         nonReentrant
         returns (address payable pool)
     {
-        bytes32 salt = keccak256(
+        pool = Create2.deploy(
+            _hashConfig(config),
+            type(SimpleProxy).creationCode
+        );
+
+        SimpleProxy(pool).setImplementation(poolImplementation);
+        LoopringAmmPool(pool).setupPool(config);
+
+        emit PoolCreated(config, pool);
+    }
+
+    function getPoolAddress(AmmData.PoolConfig calldata config)
+        public
+        view
+        returns (address)
+    {
+        return Create2.computeAddress(
+            _hashConfig(config),
+            type(SimpleProxy).creationCode
+        );
+    }
+
+    function _hashConfig(AmmData.PoolConfig calldata config)
+        private
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
             abi.encodePacked(
                 config.exchange,
                 config.poolName,
@@ -38,12 +65,5 @@ contract LoopringAmmFactory is ReentrancyGuard
                 config.tokenSymbol
             )
         );
-
-        pool = Create2.deploy(salt, type(SimpleProxy).creationCode);
-
-        SimpleProxy(pool).setImplementation(poolImplementation);
-        LoopringAmmPool(pool).setupPool(config);
-
-        emit PoolCreated(config, pool);
     }
 }
