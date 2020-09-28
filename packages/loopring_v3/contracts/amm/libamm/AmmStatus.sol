@@ -49,7 +49,6 @@ library AmmStatus
         IExchangeV3 exchange = IExchangeV3(config.exchange);
         S.exchange = exchange;
         S.accountID = config.accountID;
-        S.poolTokenID = config.poolTokenID;
         S.feeBips = config.feeBips;
         S.domainSeparator = EIP712.hash(EIP712.Domain(config.poolName, "1.0.0", address(this)));
 
@@ -57,6 +56,12 @@ library AmmStatus
         S.symbol = config.tokenSymbol;
 
         address depositContract = address(exchange.getDepositContract());
+
+        S.tokens.push(AmmData.Token({
+            addr: address(this),
+            tokenID: exchange.getTokenID(address(this)),
+            weight: 0
+        }));
 
         for (uint i = 0; i < config.tokens.length; i++) {
             address token = config.tokens[i];

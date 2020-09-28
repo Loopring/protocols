@@ -41,8 +41,8 @@ library AmmBlockReceiver
             txIdx: txIdx,
             domainSeparator: S.domainSeparator,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
-            ammActualL2Balances: new uint96[](size),
-            ammExpectedL2Balances: new uint96[](size),
+            ammActualL2Balances: new uint96[](size + 1),
+            ammExpectedL2Balances: new uint96[](size + 1),
             numTransactionsConsumed: 0,
             tokens: S.tokens,
             size: size,
@@ -63,7 +63,7 @@ library AmmBlockReceiver
         }
 
         // Deposit/Withdraw to/from the AMM account when necessary
-        for (uint i = 0; i < size; i++) {
+        for (uint i = 0; i < size + 1; i++) {
             _processPoolBalance(
                 S,
                 ctx,

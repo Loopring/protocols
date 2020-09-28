@@ -48,12 +48,15 @@ library AmmUpdateProcess
             bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.exchangeDomainSeparator, update);
             ctx.exchange.approveTransaction(address(this), txHash);
 
+            // ctx.ammActualL2Balances[0] = 0;
+            // ctx.ammExpectedL2Balances[0] = 0;
+
             if (opening) {
                 // AMM account balance now available onchain
-                ctx.ammActualL2Balances[i]   = update.balance;
-                ctx.ammExpectedL2Balances[i] = update.balance;
+                ctx.ammActualL2Balances[i + 1]   = update.balance;
+                ctx.ammExpectedL2Balances[i + 1] = update.balance;
             } else {
-                require(ctx.ammExpectedL2Balances[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
+                require(ctx.ammExpectedL2Balances[i + 1] == update.balance, "UNEXPECTED_AMM_BALANCE");
             }
         }
     }
