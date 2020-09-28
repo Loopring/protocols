@@ -14,7 +14,7 @@ abstract contract IBlockReceiver
         uint                      txIdx,
         bytes              memory auxiliaryData
         )
-        public
+        external
         virtual
         returns (uint numTransactionsConsumed);
 }

@@ -13,8 +13,18 @@ contract SimpleProxy is Proxy
         "org.loopring.protocol.simple.proxy"
     );
 
-    constructor(address _implementation)
+    constructor(address _implementation) {
+        if (_implementation != address(0)) {
+            setImplementation(_implementation);
+        }
+    }
+
+    function setImplementation(address _implementation)
+        public
     {
+        address _impl = implementation();
+        require(_impl == address(0), "INITIALIZED_ALREADY");
+
         bytes32 position = implementationPosition;
         assembly {sstore(position, _implementation) }
     }
@@ -23,9 +33,11 @@ contract SimpleProxy is Proxy
         public
         override
         view
-        returns (address impl)
+        returns (address)
     {
+        address impl;
         bytes32 position = implementationPosition;
         assembly { impl := sload(position) }
+        return impl;
     }
 }

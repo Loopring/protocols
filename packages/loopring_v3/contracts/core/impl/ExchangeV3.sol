@@ -70,7 +70,7 @@ contract ExchangeV3 is IExchangeV3
         return "3.6.0";
     }
 
-    function domainSeperator()
+    function domainSeparator()
         public
         view
         returns (bytes32)
