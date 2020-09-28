@@ -27,9 +27,8 @@ library AmmJoinRequest
     );
 
     bytes32 constant public POOLJOIN_TYPEHASH2 = keccak256(
-        "PoolJoin(address owner,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint256 validUntil,bool poolTokenToLayer2)"
+        "PoolJoin(address owner,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint256 validUntil)"
     );
-
 
 
     event Deposit(address owner, uint96[] amounts);
@@ -148,9 +147,8 @@ library AmmJoinRequest
             owner: msg.sender,
             minPoolAmountOut: minPoolAmountOut,
             maxAmountsIn: maxAmountsIn,
-            fees: fees,
             validUntil: validUntil,
-            poolTokenToLayer2: poolTokenToLayer2
+            fees: fees
         });
 
         bytes32 txHash = hashPoolJoin2(S.domainSeparator, join);
@@ -165,6 +163,11 @@ library AmmJoinRequest
                 validUntil: validUntil
             })
         );
+
+        // Deposit AMM tokens
+        for (uint i = 0; i < size; i++) {
+            _depositToken(S, S.tokens[i].addr, maxAmountsIn[i]);
+        }
 
         emit PoolJoinRequested2(join);
     }
@@ -243,15 +246,11 @@ library AmmJoinRequest
                     join.minPoolAmountOut,
                     keccak256(abi.encodePacked(join.maxAmountsIn)),
                     keccak256(abi.encodePacked(join.fees)),
-                    join.validUntil,
-                    join.poolTokenToLayer2
+                    join.validUntil
                 )
             )
         );
     }
-
-
-
 
     function hashPoolJoin(
         bytes32                 domainSeparator,
@@ -289,10 +288,6 @@ library AmmJoinRequest
             require(msg.value == amount, "INVALID_ETH_DEPOSIT");
         } else if (amount > 0) {
             token.safeTransferFromAndVerify(msg.sender, address(this), amount);
-        }
-
-        if (amount > 0) {
-            S.addUserBalance(token, msg.sender, amount);
         }
     }
 }

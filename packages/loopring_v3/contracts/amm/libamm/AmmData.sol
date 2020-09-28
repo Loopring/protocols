@@ -59,19 +59,17 @@ library AmmData
         address  owner;
         uint     minPoolAmountOut;
         uint96[] maxAmountsIn;
-        uint96[] fees;
         uint     validUntil;
-        bool     poolTokenToLayer2;          // mint pool token to layer-2
+        uint96[] fees;
     }
 
     struct PoolExit2
     {
         address  owner;
-        bool     toLayer2;
         uint     poolAmountIn;
         uint96[] minAmountsOut;
-        uint32[] storageIDs;
         uint     validUntil;
+        bool     toLayer2;
     }
 
     struct JoinRecord
