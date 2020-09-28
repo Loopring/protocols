@@ -122,6 +122,7 @@ library AmmJoinProcess
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(join.owner, txHash);
 
+                amount = transfer.amount;
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
 
             } else {
