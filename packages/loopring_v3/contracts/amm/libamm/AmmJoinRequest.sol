@@ -26,8 +26,15 @@ library AmmJoinRequest
         "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint32[] storageIDs,uint256 validUntil)"
     );
 
+    bytes32 constant public POOLJOIN_TYPEHASH2 = keccak256(
+        "PoolJoin(address owner,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint256 validUntil,bool poolTokenToLayer2)"
+    );
+
+
+
     event Deposit(address owner, uint96[] amounts);
     event PoolJoinRequested(AmmData.PoolJoin join);
+    event PoolJoinRequested2(AmmData.PoolJoin2 join);
     event LockScheduled(address owner, uint timestamp);
 
     function lock(
@@ -113,6 +120,138 @@ library AmmJoinRequest
 
         emit PoolJoinRequested(join);
     }
+
+
+    // Submit a layer-1 join request
+    function joinPool2(
+        AmmData.State storage S,
+        uint                  minPoolAmountOut,
+        uint96[]     calldata maxAmountsIn,
+        uint96[]     calldata fees,
+        bool                  poolTokenToLayer2
+        )
+        public
+    {
+        uint size =  S.tokens.length;
+        require(maxAmountsIn.length == size, "INVALID_DATA");
+
+        for (uint i = 0; i < size; i++) {
+            require(maxAmountsIn[i] > fees[i], "INVALID_JOIN_AMOUNT");
+        }
+
+        // Don't check the available funds here, if the operator isn't sure the funds
+
+        // are locked this transaction can simply be dropped.
+        uint validUntil = block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN();
+
+        AmmData.PoolJoin2 memory join = AmmData.PoolJoin2({
+            owner: msg.sender,
+            minPoolAmountOut: minPoolAmountOut,
+            maxAmountsIn: maxAmountsIn,
+            fees: fees,
+            validUntil: validUntil,
+            poolTokenToLayer2: poolTokenToLayer2
+        });
+
+        bytes32 txHash = hashPoolJoin2(S.domainSeparator, join);
+        // Approve the join
+        S.approvedTx[txHash] = 0xffffffff;
+
+        AmmData.User storage user = S.UserMap[msg.sender];
+        user.records.push(
+            AmmData.JoinRecord({
+                hash:txHash,
+                maxAmountsIn: maxAmountsIn,
+                validUntil: validUntil
+            })
+        );
+
+        emit PoolJoinRequested2(join);
+    }
+
+    function withdraw(AmmData.State storage S)
+        public
+    {
+        (uint[] memory amounts, uint newStartIndex) = getWithdrawables(S);
+        AmmData.User storage user = S.UserMap[msg.sender];
+
+        // Clear pool token withdrawable
+        delete user.withdrawable[address(this)];
+
+        // Clear each token's withdrawable
+        for (uint i = 0; i < S.tokens.length; i++) {
+            delete user.withdrawable[S.tokens[i].addr];
+        }
+
+        // Delete expired joins
+        for (uint i = user.startIndex; i < newStartIndex; i++) {
+            delete S.approvedTx[user.records[i].hash];
+            delete user.records[i];
+        }
+
+        user.startIndex = newStartIndex;
+
+        // TODO: Transfer tokens back to the user
+    }
+
+    function getWithdrawables(AmmData.State storage S)
+        internal
+        view
+        returns (
+            uint[] memory amounts,
+            uint   newStartIndex
+        )
+    {
+        uint size = S.tokens.length;
+        amounts = new uint[](size + 1);
+
+        AmmData.User storage user = S.UserMap[msg.sender];
+
+        amounts[0] = user.withdrawable[address(this)];
+
+        for (uint i = 0; i < size; i++) {
+            amounts[i] = user.withdrawable[S.tokens[i].addr];
+        }
+
+        uint idx = user.startIndex;
+        while(idx < user.records.length) {
+            AmmData.JoinRecord storage record = user.records[idx];
+            if (record.validUntil > block.timestamp) {
+                return (amounts, idx);
+            }
+            for (uint i = 0; i < size; i++) {
+                amounts[i] = amounts[i].add(record.maxAmountsIn[i]);
+            }
+        }
+        return (amounts, idx);
+    }
+
+    function hashPoolJoin2(
+        bytes32                 domainSeparator,
+        AmmData.PoolJoin2 memory join
+        )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    POOLJOIN_TYPEHASH2,
+                    join.owner,
+                    join.minPoolAmountOut,
+                    keccak256(abi.encodePacked(join.maxAmountsIn)),
+                    keccak256(abi.encodePacked(join.fees)),
+                    join.validUntil,
+                    join.poolTokenToLayer2
+                )
+            )
+        );
+    }
+
+
+
 
     function hashPoolJoin(
         bytes32                 domainSeparator,

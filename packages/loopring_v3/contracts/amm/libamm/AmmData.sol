@@ -54,6 +54,40 @@ library AmmData
         uint     validUntil;
     }
 
+    struct PoolJoin2
+    {
+        address  owner;
+        uint     minPoolAmountOut;
+        uint96[] maxAmountsIn;
+        uint96[] fees;
+        uint     validUntil;
+        bool     poolTokenToLayer2;          // mint pool token to layer-2
+    }
+
+    struct PoolExit2
+    {
+        address  owner;
+        bool     toLayer2;
+        uint     poolAmountIn;
+        uint96[] minAmountsOut;
+        uint32[] storageIDs;
+        uint     validUntil;
+    }
+
+    struct JoinRecord
+    {
+        bytes32  hash;
+        uint96[] maxAmountsIn;
+        uint     validUntil;
+    }
+
+    struct User
+    {
+        uint startIndex;
+        JoinRecord[] records;
+        mapping (address => uint) withdrawable;
+    }
+
     struct PoolTransaction
     {
         PoolTransactionType txType;
@@ -104,6 +138,8 @@ library AmmData
         uint        shutdownTimestamp;
         uint8       feeBips;
         Token[]     tokens;
+
+        mapping (address => User) UserMap;
 
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => uint) approvedTx;
