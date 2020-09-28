@@ -92,6 +92,7 @@ library AmmExitRequest
         public
     {
         require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
+        require(toLayer2 || S.layer1ExitEnabled, "EXIT_TO_LAYER1_DISABLED");
 
         // To make the the available liqudity tokens cannot suddenly change
         // we keep track of when onchain exits (which need to be processed) are pending.

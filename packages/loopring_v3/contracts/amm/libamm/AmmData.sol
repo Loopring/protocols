@@ -105,6 +105,8 @@ library AmmData
         uint8       feeBips;
         Token[]     tokens;
 
+        bool        layer1ExitEnabled;
+
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => uint) approvedTx;
 

@@ -17,6 +17,7 @@ library AmmStatus
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
+    event Layer1ExitEnabled(bool enabled);
     event Shutdown(uint timestamp);
 
     function isOnline(AmmData.State storage S)
@@ -65,6 +66,17 @@ library AmmStatus
 
             ERC20(token).approve(depositContract, uint(-1));
         }
+    }
+
+    function enableLayer1Exit(
+        AmmData.State storage  S,
+        bool                   enabled
+        )
+        internal
+    {
+        require(S.layer1ExitEnabled != enabled, "INVALID");
+        S.layer1ExitEnabled = enabled;
+        emit Layer1ExitEnabled(enabled);
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.

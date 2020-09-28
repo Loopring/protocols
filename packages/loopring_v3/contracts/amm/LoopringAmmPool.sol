@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../aux/access/IBlockReceiver.sol";
 import "../core/iface/IAgentRegistry.sol";
+import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 import "./libamm/AmmBlockReceiver.sol";
 import "./libamm/AmmData.sol";
@@ -21,7 +22,8 @@ contract LoopringAmmPool is
     PoolToken,
     IAgent,
     IBlockReceiver,
-    ReentrancyGuard
+    ReentrancyGuard,
+    Claimable
 {
     using AmmBlockReceiver for AmmData.State;
     using AmmExchange      for AmmData.State;
@@ -70,6 +72,14 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.setupPool(config);
+    }
+
+    function enableLayer1Exit(bool enabled)
+        external
+        onlyOwner
+        nonReentrant
+    {
+        state.enableLayer1Exit(enabled);
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
