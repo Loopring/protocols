@@ -37,12 +37,13 @@ library AmmJoinProcess
         )
         internal
     {
-        // Joins using funds on layer-1 must be approved onchain.
-        require(join.joinFromLayer2 || signature.length == 0, "PROHIBITED");
+        if (!join.joinFromLayer2) {
+            require(signature.length == 0, "JOIN_FROM_L1_NEEDS_ONCHAIN_APPROVAL");
+        }
 
         S.validatePoolTransaction(
             join.owner,
-            AmmJoinRequest.hashPoolJoin(ctx.domainSeparator, join),
+            AmmJoinRequest.hash(ctx.domainSeparator, join),
             signature
         );
 

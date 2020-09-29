@@ -119,8 +119,6 @@ library AmmStatus
             delete S.approvedTx[poolTxHash];
         } else {
             require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
-            require(S.consumedTx[poolTxHash] == false, "CONSUMED");
-            S.consumedTx[poolTxHash] = true;
         }
     }
 }

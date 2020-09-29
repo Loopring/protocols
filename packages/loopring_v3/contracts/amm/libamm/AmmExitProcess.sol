@@ -29,43 +29,6 @@ library AmmExitProcess
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-    function processTokenWithdrawal(
-        AmmData.Context  memory  ctx,
-        AmmData.Token    memory  token,
-        uint                     amount
-        )
-        internal
-    {
-        // Check that the withdrawal in the block matches the expected withdrawal
-        WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
-        ctx.numTransactionsConsumed++;
-
-        // These fields are not read by readWithdrawal: storageID
-        withdrawal.minGas = 0;
-        withdrawal.to = address(this);
-        withdrawal.extraData = new bytes(0);
-
-        require(
-            withdrawal.withdrawalType == 1 &&
-            withdrawal.owner == address(this) &&
-            withdrawal.accountID== ctx.accountID &&
-            withdrawal.tokenID == token.tokenID &&
-            withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
-            withdrawal.feeTokenID == 0 &&
-            withdrawal.fee == 0 &&
-            withdrawal.onchainDataHash == WithdrawTransaction.hashOnchainData(
-                withdrawal.minGas,
-                withdrawal.to,
-                withdrawal.extraData
-            ),
-            "INVALID_TX_DATA"
-        );
-
-        // Now approve this withdrawal
-        withdrawal.validUntil = 0xffffffff;
-        bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
-        ctx.exchange.approveTransaction(address(this), txHash);
-    }
 
     function processExit(
         AmmData.State    storage S,
@@ -75,12 +38,13 @@ library AmmExitProcess
         )
         internal
     {
-        // Exits burning pool tokens on layer-1 must be approved onchain.
-        require(exit.burnFromLayer2 || signature.length == 0, "PROHIBITED");
+        if (!exit.burnFromLayer2) {
+            require(signature.length == 0, "BURN_FROM_L1_NEEDS_ONCHAIN_APPROVAL");
+        }
 
         S.validatePoolTransaction(
             exit.owner,
-            AmmExitRequest.hashPoolExit(ctx.domainSeparator, exit),
+            AmmExitRequest.hash(ctx.domainSeparator, exit),
             signature
         );
 
@@ -125,6 +89,44 @@ library AmmExitProcess
             S.burn(address(this), exit.burnAmount);
         }
     }
+
+    function processTokenWithdrawal(
+        AmmData.Context  memory  ctx,
+        AmmData.Token    memory  token,
+        uint                     amount
+        )
+        internal
+    {
+        // Check that the withdrawal in the block matches the expected withdrawal
+        WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
+        ctx.numTransactionsConsumed++;
+
+        // These fields are not read by readWithdrawal: storageID
+        withdrawal.minGas = 0;
+        withdrawal.to = address(this);
+        withdrawal.extraData = new bytes(0);
+
+        require(
+            withdrawal.withdrawalType == 1 &&
+            withdrawal.owner == address(this) &&
+            withdrawal.accountID== ctx.accountID &&
+            withdrawal.tokenID == token.tokenID &&
+            withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
+            withdrawal.feeTokenID == 0 &&
+            withdrawal.fee == 0 &&
+            withdrawal.onchainDataHash == WithdrawTransaction.hashOnchainData(
+                withdrawal.minGas,
+                withdrawal.to,
+                withdrawal.extraData
+            ),
+            "INVALID_TX_DATA"
+        );
+
+        // Now approve this withdrawal
+        withdrawal.validUntil = 0xffffffff;
+        bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
+        ctx.exchange.approveTransaction(address(this), txHash);
+    }        // Exits burning pool tokens on layer-1 must be approved onchain.
 
     function _processPoolTokenWithdrawal(
         AmmData.Context  memory  ctx,

@@ -129,7 +129,6 @@ library AmmData
 
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => uint) approvedTx;
-        mapping (bytes32 => bool) consumedTx;
 
         // A map from an address to a nonce.
         mapping(address => uint) nonces;

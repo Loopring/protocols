@@ -44,8 +44,12 @@ library AmmExitRequest
         )
         public
     {
-        require(exitMinAmounts.length == S.tokens.length, "INVALID_DATA");
-        require(burnFromLayer2 || burnStorageID == 0, "INVALID_STORAGE_ID");
+        uint size = S.tokens.length - 1;
+        require(
+            exitMinAmounts.length == size &&
+            (burnFromLayer2 || burnStorageID == 0),
+            "INVALID_PARAMS"
+        );
 
         AmmData.PoolExit memory exit = AmmData.PoolExit({
             owner: msg.sender,
@@ -58,7 +62,7 @@ library AmmExitRequest
         });
 
         // Approve the exit
-        bytes32 txHash = hashPoolExit(S.domainSeparator, exit);
+        bytes32 txHash = hash(S.domainSeparator, exit);
         S.approvedTx[txHash] = block.timestamp;
 
         if (!burnFromLayer2) {
@@ -68,7 +72,7 @@ library AmmExitRequest
         emit PoolExitRequested(exit);
     }
 
-    function hashPoolExit(
+    function hash(
         bytes32                 domainSeparator,
         AmmData.PoolExit memory exit
         )
@@ -128,20 +132,5 @@ library AmmExitRequest
             "INVALID_SIGNATURE"
         );
         return true;
-    }
-
-    // Withdraw any outstanding balances for the pool account on the exchange
-    function _processTokenWithdrawalApprovedWithdrawals(AmmData.State storage S)
-        private
-    {
-        uint size = S.tokens.length;
-        address[] memory owners = new address[](size);
-        address[] memory tokenAddresses = new address[](size);
-
-        for (uint i = 0; i < size; i++) {
-            owners[i] = address(this);
-            tokenAddresses[i] = S.tokens[i].addr;
-        }
-        S.exchange.withdrawFromApprovedWithdrawals(owners, tokenAddresses);
     }
 }

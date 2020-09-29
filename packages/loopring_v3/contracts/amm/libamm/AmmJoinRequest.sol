@@ -64,7 +64,7 @@ library AmmJoinRequest
             validUntil: validUntil
         });
 
-        bytes32 txHash = hashPoolJoin(S.domainSeparator, join);
+        bytes32 txHash = hash(S.domainSeparator, join);
         S.approvedTx[txHash] = 0xffffffff;
 
         if (!join.joinFromLayer2) {
@@ -85,7 +85,7 @@ library AmmJoinRequest
         emit PoolJoinRequested(join);
     }
 
-    function hashPoolJoin(
+    function hash(
         bytes32                 domainSeparator,
         AmmData.PoolJoin memory join
         )

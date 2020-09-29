@@ -8,6 +8,7 @@ import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../thirdparty/SafeCast.sol";
+import "./AmmExchange.sol";
 import "./AmmData.sol";
 import "./AmmStatus.sol";
 import "./AmmUtil.sol";
@@ -16,6 +17,7 @@ import "./AmmUtil.sol";
 /// @title AmmWithdrawal
 library AmmWithdrawal
 {
+    using AmmExchange       for AmmData.State;
     using AmmStatus         for AmmData.State;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
