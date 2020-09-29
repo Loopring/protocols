@@ -58,8 +58,13 @@ library AmmJoinProcess
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
 
             if (join.joinFromLayer2) {
+
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
+
+                if (i == 1) {
+                    require(transfer.storageID == join.joinStorageID, "REPLAY");
+                }
 
                 // We do not check these fields: fromAccountID, to, amount, fee, storageID
                 require(
