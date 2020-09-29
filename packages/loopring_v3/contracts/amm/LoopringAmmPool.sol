@@ -83,12 +83,12 @@ contract LoopringAmmPool is
     }
 
     function joinPool(
-        uint              minPoolAmountOut,
-        uint96[] calldata maxAmountsIn,
+        uint96[] calldata joinAmounts,
+        uint96[] calldata joinFees,
         bool              joinFromLayer2,
-        bool              mintToLayer2,
-        uint96[] calldata fees
-
+        uint32            joinStorageID,
+        uint              mintMinAmount,
+        bool              mintToLayer2
         )
         external
         onlyWhenOnline
@@ -99,7 +99,14 @@ contract LoopringAmmPool is
             joinFromLayer2 == false && mintToLayer2 == false,
             "temporarily disabled in phase1"
         );
-        state.joinPool(minPoolAmountOut, maxAmountsIn, joinFromLayer2, mintToLayer2, fees);
+        state.joinPool(
+            joinAmounts,
+            joinFees,
+            joinFromLayer2,
+            joinStorageID,
+            mintMinAmount,
+            mintToLayer2
+        );
     }
 
     function exitPool(

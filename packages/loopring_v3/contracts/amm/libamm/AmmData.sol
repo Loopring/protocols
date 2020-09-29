@@ -36,12 +36,13 @@ library AmmData
     struct PoolJoin
     {
         address  owner;
-        uint     minPoolAmountOut;
-        uint96[] maxAmountsIn;
-        uint     validUntil;
+        uint96[] joinAmounts;
+        uint96[] joinFees;
         bool     joinFromLayer2;
+        uint32   joinStorageID;
+        uint     mintMinAmount;
         bool     mintToLayer2;
-        uint96[] fees;
+        uint     validUntil;
     }
 
     struct PoolExit

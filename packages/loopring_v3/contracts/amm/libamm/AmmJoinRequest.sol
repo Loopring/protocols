@@ -23,28 +23,28 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256 validUntil,bool joinFromLayer2,bool mintToLayer2,uint256[] fees)"
+        "PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,bool joinFromLayer2,uint32 joinStorageID,uint256 mintMinAmount,bool mintToLayer2,uint256 validUntil)"
     );
 
     event PoolJoinRequested(AmmData.PoolJoin join);
 
-    // Submit a layer-1 join request
     function joinPool(
         AmmData.State storage S,
-        uint                  minPoolAmountOut,
-        uint96[]     calldata maxAmountsIn,
+        uint96[]     calldata joinAmounts,
+        uint96[]     calldata joinFees,
         bool                  joinFromLayer2,
-        bool                  mintToLayer2,
-        uint96[]     calldata fees
+        uint32                joinStorageID,
+        uint                  mintMinAmount,
+        bool                  mintToLayer2
         )
         public
     {
         uint size = S.tokens.length;
-        require(maxAmountsIn.length == size - 1, "INVALID_DATA");
-        require(fees.length == size - 1, "INVALID_DATA");
+        require(joinAmounts.length == size - 1, "INVALID_DATA");
+        require(joinFees.length == size - 1, "INVALID_DATA");
 
         for (uint i = 0; i < size - 1; i++) {
-            require(maxAmountsIn[i] > fees[i], "INVALID_JOIN_AMOUNT");
+            require(joinAmounts[i] > joinFees[i], "INVALID_JOIN_AMOUNT");
         }
 
         // are locked this transaction can simply be dropped.
@@ -52,12 +52,13 @@ library AmmJoinRequest
 
         AmmData.PoolJoin memory join = AmmData.PoolJoin({
             owner: msg.sender,
-            minPoolAmountOut: minPoolAmountOut,
-            maxAmountsIn: maxAmountsIn,
-            validUntil: validUntil,
+            joinAmounts: joinAmounts,
+            joinFees: joinFees, // TODO: layer1 charge a fee?
             joinFromLayer2: joinFromLayer2,
+            joinStorageID: joinStorageID,
+            mintMinAmount: mintMinAmount,
             mintToLayer2: mintToLayer2,
-            fees: fees // TODO: layer1 charge a fee?
+            validUntil: validUntil
         });
 
         bytes32 txHash = hashPoolJoin(S.domainSeparator, join);
@@ -68,13 +69,13 @@ library AmmJoinRequest
             user.lockRecords.push(
                 AmmData.LockRecord({
                     txHash:txHash,
-                    amounts: maxAmountsIn,
+                    amounts: joinAmounts,
                     validUntil: validUntil
                 })
             );
 
             for (uint i = 1; i < size; i++) {
-                AmmUtil.transferIn(S.tokens[i].addr, maxAmountsIn[i - 1]);
+                AmmUtil.transferIn(S.tokens[i].addr, joinAmounts[i - 1]);
             }
         }
 
@@ -95,12 +96,13 @@ library AmmJoinRequest
                 abi.encode(
                     POOLJOIN_TYPEHASH,
                     join.owner,
-                    join.minPoolAmountOut,
-                    keccak256(abi.encodePacked(join.maxAmountsIn)),
-                    join.validUntil,
+                    keccak256(abi.encodePacked(join.joinAmounts)),
+                    keccak256(abi.encodePacked(join.joinFees)),
                     join.joinFromLayer2,
+                    join.joinStorageID,
+                    join.mintMinAmount,
                     join.mintToLayer2,
-                    keccak256(abi.encodePacked(join.fees))
+                    join.validUntil
                 )
             )
         );

@@ -68,7 +68,7 @@ library AmmJoinProcess
                     transfer.tokenID == ctx.tokens[i].tokenID &&
                     transfer.amount.isAlmostEqual(amount) &&
                     transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                    transfer.fee.isAlmostEqual(join.fees[i]),
+                    transfer.fee.isAlmostEqual(join.joinFees[i]),
                     "INVALID_TX_DATA"
                 );
 
@@ -187,14 +187,14 @@ library AmmJoinProcess
         }
 
         if (_totalSupply == 0) {
-            return(true, ctx.poolTokenInitialSupply, join.maxAmountsIn);
+            return(true, ctx.poolTokenInitialSupply, join.joinAmounts);
         }
 
         // Calculate the amount of pool tokens that should be minted
         bool initialized = false;
         for (uint i = 1; i < ctx.size; i++) {
             if (ctx.ammExpectedL2Balances[i] > 0) {
-                uint amountOut = uint(join.maxAmountsIn[i - 1])
+                uint amountOut = uint(join.joinAmounts[i - 1])
                     .mul(_totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
 
                 if (!initialized) {
@@ -217,7 +217,7 @@ library AmmJoinProcess
             amounts[i - 1] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();
         }
 
-        slippageRequirementMet = (poolAmountOut >= join.minPoolAmountOut);
+        slippageRequirementMet = (poolAmountOut >= join.mintMinAmount);
         return (slippageRequirementMet, poolAmountOut, amounts);
     }
 }
