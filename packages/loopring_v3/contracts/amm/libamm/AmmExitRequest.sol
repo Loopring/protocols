@@ -58,7 +58,9 @@ library AmmExitRequest
         bytes32 txHash = hashPoolExit(S.domainSeparator, exit);
         S.approvedTx[txHash] = block.timestamp;
 
-        // AmmUtil.transferIn(address(0), poolAmountIn);
+        if (!burnFromLayer2) {
+            AmmUtil.transferIn(address(this), poolAmountIn);
+        }
 
         emit PoolExitRequested(exit);
     }

@@ -75,11 +75,8 @@ library AmmExitProcess
         )
         internal
     {
-        if (join.burnFromLayer2) {
-            require(signature.length != 0, "NOT_ALLOWED");
-        } else {
-            require(signature.length == 0, "NOT_ALLOWED");
-        }
+        // Exits burning pool tokens on layer-1 must be approved onchain.
+        require(exit.burnFromLayer2 || signature.length == 0, "PROHIBITED");
 
         S.validatePoolTransaction(
             exit.owner,

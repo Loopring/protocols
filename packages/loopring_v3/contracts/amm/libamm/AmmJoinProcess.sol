@@ -38,11 +38,8 @@ library AmmJoinProcess
         internal
         returns(AmmData.PoolTokenTransfer memory ptt)
     {
-        if (join.joinFromLayer2) {
-            require(signature.length != 0, "NOT_ALLOWED");
-        } else {
-            require(signature.length == 0, "NOT_ALLOWED");
-        }
+        // Joins using funds on layer-1 must be approved onchain.
+        require(join.joinFromLayer2 || signature.length == 0, "PROHIBITED");
 
         S.validatePoolTransaction(
             join.owner,
