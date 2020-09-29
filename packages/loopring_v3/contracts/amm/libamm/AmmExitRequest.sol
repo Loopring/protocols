@@ -29,14 +29,14 @@ library AmmExitRequest
     );
 
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,uint256 burnAmount,bool burnFromLayer2,uint32 burnStorageID,uint96[] exitMinAmounts,bool exitToLayer2,uint256 validUntil)"
+        "PoolExit(address owner,uint96 burnAmount,bool burnFromLayer2,uint32 burnStorageID,uint96[] exitMinAmounts,bool exitToLayer2,uint256 validUntil)"
     );
 
     event PoolExitRequested(AmmData.PoolExit exit);
 
     function exitPool(
         AmmData.State storage S,
-        uint                  burnAmount,
+        uint96                burnAmount,
         bool                  burnFromLayer2,
         uint32                burnStorageID,
         uint96[]     calldata exitMinAmounts,

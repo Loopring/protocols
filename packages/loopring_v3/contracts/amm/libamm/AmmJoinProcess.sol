@@ -48,10 +48,9 @@ library AmmJoinProcess
         );
 
         // Check if the requirements are fulfilled
-        // TODO(daniel): change poolAmountOut to uint96
-        (bool slippageRequirementMet, uint poolAmountOut, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
+        (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
 
-        if (!slippageRequirementMet) return;
+        if (!slippageOK) return;
 
          // Handle liquidity tokens
         for (uint i = 1; i < ctx.size; i++) {
@@ -91,10 +90,10 @@ library AmmJoinProcess
         if (join.mintToLayer2) {
             // The following will trigger a pool token deposit to the user's layer-2 account
             // ammExpectedL2Balances => mint to pool's address
-            ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].add(poolAmountOut.toUint96());
-            _processPoolTokenDeposit(ctx, poolAmountOut.toUint96(), join.owner);
+            ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].add(mintAmount);
+            _processPoolTokenDeposit(ctx, mintAmount, join.owner);
         } else {
-            S.mint(join.owner, poolAmountOut);
+            S.mint(join.owner, mintAmount);
         }
     }
 
@@ -179,8 +178,8 @@ library AmmJoinProcess
         private
         view
         returns(
-            bool            slippageRequirementMet,
-            uint            poolAmountOut,
+            bool            slippageOK,
+            uint96          mintAmount,
             uint96[] memory amounts
         )
     {
@@ -193,7 +192,7 @@ library AmmJoinProcess
         }
 
         if (_totalSupply == 0) {
-            return(true, ctx.poolTokenInitialSupply, join.joinAmounts);
+            return(true, ctx.poolTokenInitialSupply.toUint96(), join.joinAmounts);
         }
 
         // Calculate the amount of pool tokens that should be minted
@@ -205,25 +204,25 @@ library AmmJoinProcess
 
                 if (!initialized) {
                     initialized = true;
-                    poolAmountOut = amountOut;
-                } else if (amountOut < poolAmountOut) {
-                    poolAmountOut = amountOut;
+                    mintAmount = amountOut.toUint96();
+                } else if (amountOut < mintAmount) {
+                    mintAmount = amountOut.toUint96();
                 }
             }
         }
 
-        if (poolAmountOut == 0) {
+        if (mintAmount == 0) {
             return (false, 0, amounts);
         }
 
         // Calculate the amounts to deposit
-        uint ratio = poolAmountOut.mul(ctx.poolTokenBase) / _totalSupply;
+        uint ratio = ctx.poolTokenBase.mul(mintAmount) / _totalSupply;
 
         for (uint i = 1; i < ctx.size; i++) {
             amounts[i - 1] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();
         }
 
-        slippageRequirementMet = (poolAmountOut >= join.mintMinAmount);
-        return (slippageRequirementMet, poolAmountOut, amounts);
+        slippageOK = (mintAmount >= join.mintMinAmount);
+        return (slippageOK, mintAmount, amounts);
     }
 }

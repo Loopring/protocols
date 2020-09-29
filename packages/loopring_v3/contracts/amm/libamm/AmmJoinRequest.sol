@@ -23,7 +23,7 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,bool joinFromLayer2,uint32 joinStorageID,uint256 mintMinAmount,bool mintToLayer2,uint256 validUntil)"
+        "PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,bool joinFromLayer2,uint32 joinStorageID,uint96 mintMinAmount,bool mintToLayer2,uint256 validUntil)"
     );
 
     event PoolJoinRequested(AmmData.PoolJoin join);
@@ -34,7 +34,7 @@ library AmmJoinRequest
         uint96[]     calldata joinFees,
         bool                  joinFromLayer2,
         uint32                joinStorageID,
-        uint                  mintMinAmount,
+        uint96                mintMinAmount,
         bool                  mintToLayer2
         )
         public

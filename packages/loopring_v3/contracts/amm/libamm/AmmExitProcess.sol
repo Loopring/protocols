@@ -48,9 +48,9 @@ library AmmExitProcess
             signature
         );
 
-        (bool slippageRequirementMet, uint96[] memory amounts) = _validateExitAmounts(S, ctx, exit);
+        (bool slippageOK, uint96[] memory amounts) = _validateExitAmounts(S, ctx, exit);
 
-        if (!slippageRequirementMet) return;
+        if (!slippageOK) return;
 
          // Handle liquidity tokens
         for (uint i = 1; i < ctx.size; i++) {
@@ -83,7 +83,7 @@ library AmmExitProcess
 
         // Handle pool token
         if (exit.burnFromLayer2) {
-            ctx.ammActualL2Balances[0] = ctx.ammActualL2Balances[0].add(exit.burnAmount.toUint96());
+            ctx.ammActualL2Balances[0] = ctx.ammActualL2Balances[0].add(exit.burnAmount);
             _processPoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
         } else {
             S.burn(address(this), exit.burnAmount);
@@ -183,7 +183,7 @@ library AmmExitProcess
         private
         view
         returns(
-            bool /* slippageRequirementMet */,
+            bool /* slippageOK */,
             uint96[] memory amounts
         )
     {
@@ -195,7 +195,7 @@ library AmmExitProcess
         }
 
         // Calculate how much will be withdrawn
-        uint ratio = exit.burnAmount.mul(ctx.poolTokenBase) / S.totalSupply;
+        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / S.totalSupply;
 
         for (uint i = 0; i < ctx.size - 1; i++) {
             amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i + 1]) / ctx.poolTokenBase).toUint96();

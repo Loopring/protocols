@@ -40,7 +40,7 @@ library AmmData
         uint96[] joinFees;
         bool     joinFromLayer2;
         uint32   joinStorageID; // for tokens[1]'s' transfer from user to the pool
-        uint     mintMinAmount;
+        uint96   mintMinAmount;
         bool     mintToLayer2;
         uint     validUntil;
     }
@@ -48,7 +48,7 @@ library AmmData
     struct PoolExit
     {
         address  owner;
-        uint     burnAmount;
+        uint96   burnAmount;
         bool     burnFromLayer2;
         uint32   burnStorageID; // for pool token withdrawal from user to the pool
         uint96[] exitMinAmounts;

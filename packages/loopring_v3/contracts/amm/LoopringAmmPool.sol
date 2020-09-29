@@ -87,7 +87,7 @@ contract LoopringAmmPool is
         uint96[] calldata joinFees,
         bool              joinFromLayer2,
         uint32            joinStorageID,
-        uint              mintMinAmount,
+        uint96            mintMinAmount,
         bool              mintToLayer2
         )
         external
@@ -108,7 +108,7 @@ contract LoopringAmmPool is
     }
 
     function exitPool(
-        uint              burnAmount,
+        uint96            burnAmount,
         bool              burnFromLayer2,
         uint32            burnStorageID,
         uint96[] calldata exitMinAmounts,
