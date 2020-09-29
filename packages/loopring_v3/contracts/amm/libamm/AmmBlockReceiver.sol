@@ -31,7 +31,7 @@ library AmmBlockReceiver
         public
         returns (uint)
     {
-        require(S.poolAmountToBurn == 0, "POOL_TOKEN_MUST_BE_BURNED");
+        require(S.poolTokenToBurn == 0, "INVALID_CONDITION");
 
         AmmData.PoolTransaction[] memory poolTransactions = abi.decode(
             auxiliaryData,
@@ -56,14 +56,14 @@ library AmmBlockReceiver
             size: size,
             poolTokenBase: AmmData.LP_TOKEN_BASE(),
             poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY(),
-            poolAmountToBurn: 0
+            totalSupply: S.totalSupply
         });
 
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
         // The openning AMM updates. This also pulls the AMM balances onchain.
-        S.processAmmUpdates(ctx, true);
+        S.approveAmmUpdates(ctx, true);
 
         // Process all pool transactions
         for (uint i = 0; i < poolTransactions.length; i++) {
@@ -81,10 +81,16 @@ library AmmBlockReceiver
         }
 
         // The closing AMM updates
-        S.processAmmUpdates(ctx, false);
+        S.approveAmmUpdates(ctx, false);
 
         // Save the pool tokens to burn
-        S.poolAmountToBurn = ctx.poolAmountToBurn;
+        uint totalSupply = S.totalSupply;
+
+        if (ctx.totalSupply > totalSupply) {
+            S.mint(address(this), ctx.totalSupply - totalSupply);
+        } else {
+            S.poolTokenToBurn = totalSupply - ctx.totalSupply;
+        }
 
         return ctx.numTransactionsConsumed;
     }
@@ -97,10 +103,10 @@ library AmmBlockReceiver
     {
         S.processApprovedWithdrawals(address(this));
 
-        uint poolAmountToBurn = S.poolAmountToBurn;
-        if (poolAmountToBurn > 0) {
-            S.poolAmountToBurn = 0;
-            S.burn(address(this), poolAmountToBurn);
+        uint amountBurn = S.poolTokenToBurn;
+        if (amountBurn > 0) {
+            S.burn(address(this), amountBurn);
+            S.poolTokenToBurn = 0;
         }
     }
 
@@ -137,13 +143,13 @@ library AmmBlockReceiver
         private
     {
         if (ammExpectedL2Balance > ammActualL2Balance) {
-            AmmJoinProcess.processTokenDeposit(
+            AmmJoinProcess.approveTokenDeposit(
                 ctx,
                 token,
                 ammExpectedL2Balance - ammActualL2Balance
             );
         } else if (ammExpectedL2Balance < ammActualL2Balance) {
-            AmmExitProcess.processTokenWithdrawal(
+            AmmExitProcess.approveTokenWithdrawal(
                 ctx,
                 token,
                 ammActualL2Balance - ammExpectedL2Balance

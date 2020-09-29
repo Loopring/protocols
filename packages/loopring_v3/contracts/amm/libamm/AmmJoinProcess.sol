@@ -41,6 +41,12 @@ library AmmJoinProcess
             require(signature.length == 0, "JOIN_FROM_L1_NEEDS_ONCHAIN_APPROVAL");
         }
 
+        if (signature.length > 0) {
+            require(join.index == 0, "INVALID_JOIN_INDEX");
+        } else {
+            require(join.index > 0, "INVALID_JOIN_INDEX");
+        }
+
         S.validatePoolTransaction(
             join.owner,
             AmmJoinRequest.hash(ctx.domainSeparator, join),
@@ -48,9 +54,14 @@ library AmmJoinProcess
         );
 
         // Check if the requirements are fulfilled
-        (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
+        (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
 
         if (!slippageOK) return;
+
+        if (signature.length == 0) {
+            AmmData.User storage user = S.userMap[msg.sender];
+            delete user.lockRecords[join.index - 1];
+        }
 
          // Handle liquidity tokens
         for (uint i = 1; i < ctx.size; i++) {
@@ -58,13 +69,13 @@ library AmmJoinProcess
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
 
             if (join.joinFromLayer2) {
+                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
 
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
 
-                if (i == 1 && signature.length > 0) {
-                    require(transfer.storageID == join.joinStorageID, "INVALID_STORAGE_ID_OR_REPLAY");
-                }
+                // The following fields are not loaded from readTransfer
+                transfer.validUntil = 0xffffffff;
 
                 // We do not check these fields: fromAccountID, to, amount, fee, storageID
                 require(
@@ -77,27 +88,26 @@ library AmmJoinProcess
                     "INVALID_TX_DATA"
                 );
 
-                // Now approve this transfer
-                transfer.validUntil = 0xffffffff;
+
+                if (i == 1 && signature.length > 0) {
+                    require(transfer.storageID == join.joinStorageID, "INVALID_STORAGE_ID_OR_REPLAY");
+                }
+
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(join.owner, txHash);
-
-                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
             }
         }
 
         // Handle pool token
+        ctx.totalSupply = ctx.totalSupply.add(mintAmount);
         if (join.mintToLayer2) {
-            // The following will trigger a pool token deposit to the user's layer-2 account
-            // ammExpectedL2Balances => mint to pool's address
-            ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].add(mintAmount);
-            _processPoolTokenDeposit(ctx, mintAmount, join.owner);
+            _approvePoolTokenDeposit(ctx, mintAmount, join.owner);
         } else {
             S.mint(join.owner, mintAmount);
         }
     }
 
-    function processTokenDeposit(
+    function approveTokenDeposit(
         AmmData.Context  memory  ctx,
         AmmData.Token    memory  token,
         uint96                   amount
@@ -140,7 +150,7 @@ library AmmJoinProcess
         );
     }
 
-    function _processPoolTokenDeposit(
+    function _approvePoolTokenDeposit(
         AmmData.Context  memory  ctx,
         uint96                   amount,
         address                  to
@@ -171,7 +181,6 @@ library AmmJoinProcess
     }
 
     function _calculateJoinAmounts(
-        AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         AmmData.PoolJoin memory  join
         )
@@ -185,13 +194,12 @@ library AmmJoinProcess
     {
         // Check if we can still use this join
         amounts = new uint96[](ctx.size - 1);
-        uint _totalSupply = S.totalSupply.sub(S.poolAmountToBurn);
 
         if (block.timestamp > join.validUntil) {
             return (false, 0, amounts);
         }
 
-        if (_totalSupply == 0) {
+        if (ctx.totalSupply == 0) {
             return(true, ctx.poolTokenInitialSupply.toUint96(), join.joinAmounts);
         }
 
@@ -200,7 +208,7 @@ library AmmJoinProcess
         for (uint i = 1; i < ctx.size; i++) {
             if (ctx.ammExpectedL2Balances[i] > 0) {
                 uint amountOut = uint(join.joinAmounts[i - 1])
-                    .mul(_totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
+                    .mul(ctx.totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
 
                 if (!initialized) {
                     initialized = true;
@@ -216,7 +224,7 @@ library AmmJoinProcess
         }
 
         // Calculate the amounts to deposit
-        uint ratio = ctx.poolTokenBase.mul(mintAmount) / _totalSupply;
+        uint ratio = ctx.poolTokenBase.mul(mintAmount) / ctx.totalSupply;
 
         for (uint i = 1; i < ctx.size; i++) {
             amounts[i - 1] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();

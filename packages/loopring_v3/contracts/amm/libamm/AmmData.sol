@@ -36,6 +36,7 @@ library AmmData
     struct PoolJoin
     {
         address  owner;
+        uint32   index; // for onchain approved join requests
         uint96[] joinAmounts;
         uint96[] joinFees;
         bool     joinFromLayer2;
@@ -58,6 +59,7 @@ library AmmData
 
     struct LockRecord
     {
+        uint     index;
         bytes32  txHash;
         uint96[] amounts; // the size should be either 1 or tokens.length
         uint     validUntil;
@@ -103,7 +105,7 @@ library AmmData
 
         uint     poolTokenBase;
         uint     poolTokenInitialSupply;
-        uint     poolAmountToBurn;
+        uint     totalSupply;
     }
 
     struct State {
@@ -111,6 +113,8 @@ library AmmData
         string poolName;
         string symbol;
         uint   totalSupply;
+
+
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
 
@@ -122,8 +126,7 @@ library AmmData
         uint8       feeBips;
         Token[]     tokens;
 
-        // Pool tokens to be burned from this address.
-        uint        poolAmountToBurn;
+        uint        poolTokenToBurn;
 
         mapping (address => User) userMap;
 

@@ -23,7 +23,7 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,bool joinFromLayer2,uint32 joinStorageID,uint96 mintMinAmount,bool mintToLayer2,uint256 validUntil)"
+        "PoolJoin(address owner,uint32 index,uint96[] joinAmounts,uint96[] joinFees,bool joinFromLayer2,uint32 joinStorageID,uint96 mintMinAmount,bool mintToLayer2,uint256 validUntil)"
     );
 
     event PoolJoinRequested(AmmData.PoolJoin join);
@@ -52,9 +52,11 @@ library AmmJoinRequest
 
         // are locked this transaction can simply be dropped.
         uint validUntil = block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN();
+        AmmData.User storage user = S.userMap[msg.sender];
 
         AmmData.PoolJoin memory join = AmmData.PoolJoin({
             owner: msg.sender,
+            index: uint32(user.lockRecords.length + 1),
             joinAmounts: joinAmounts,
             joinFees: joinFees, // TODO: layer1 charge a fee?
             joinFromLayer2: joinFromLayer2,
@@ -72,9 +74,10 @@ library AmmJoinRequest
                 AmmUtil.transferIn(S.tokens[i + 1].addr, joinAmounts[i]);
             }
 
-            AmmData.User storage user = S.userMap[msg.sender];
+
             user.lockRecords.push(
                 AmmData.LockRecord({
+                    index: uint32(user.lockRecords.length + 1),
                     txHash:txHash,
                     amounts: joinAmounts,
                     validUntil: validUntil
@@ -99,6 +102,7 @@ library AmmJoinRequest
                 abi.encode(
                     POOLJOIN_TYPEHASH,
                     join.owner,
+                    join.index,
                     keccak256(abi.encodePacked(join.joinAmounts)),
                     keccak256(abi.encodePacked(join.joinFees)),
                     join.joinFromLayer2,

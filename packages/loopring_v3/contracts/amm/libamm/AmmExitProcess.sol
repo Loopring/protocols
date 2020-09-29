@@ -48,7 +48,7 @@ library AmmExitProcess
             signature
         );
 
-        (bool slippageOK, uint96[] memory amounts) = _validateExitAmounts(S, ctx, exit);
+        (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
 
         if (!slippageOK) return;
 
@@ -58,8 +58,13 @@ library AmmExitProcess
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
 
             if (exit.exitToLayer2) {
+                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
+
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
+
+                // The following fields are not loaded from readTransfer
+                transfer.validUntil = 0xffffffff;
 
                 require(
                     transfer.fromAccountID== ctx.accountID &&
@@ -72,25 +77,21 @@ library AmmExitProcess
                     "INVALID_TX_DATA"
                 );
 
-                // Now approve this transfer
-                transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(address(this), txHash);
-
-                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
             }
         }
 
         // Handle pool token
+        ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
         if (exit.burnFromLayer2) {
-            ctx.ammActualL2Balances[0] = ctx.ammActualL2Balances[0].add(exit.burnAmount);
-            _processPoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
+            _approvePoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
         } else {
             S.burn(address(this), exit.burnAmount);
         }
     }
 
-    function processTokenWithdrawal(
+    function approveTokenWithdrawal(
         AmmData.Context  memory  ctx,
         AmmData.Token    memory  token,
         uint                     amount
@@ -128,7 +129,7 @@ library AmmExitProcess
         ctx.exchange.approveTransaction(address(this), txHash);
     }        // Exits burning pool tokens on layer-1 must be approved onchain.
 
-    function _processPoolTokenWithdrawal(
+    function _approvePoolTokenWithdrawal(
         AmmData.Context  memory  ctx,
         uint                     amount,
         address                  from,
@@ -175,8 +176,7 @@ library AmmExitProcess
         ctx.exchange.approveTransaction(from, txHash);
     }
 
-    function _validateExitAmounts(
-        AmmData.State    storage S,
+    function _calculateExitAmounts(
         AmmData.Context  memory  ctx,
         AmmData.PoolExit memory  exit
         )
@@ -195,7 +195,7 @@ library AmmExitProcess
         }
 
         // Calculate how much will be withdrawn
-        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / S.totalSupply;
+        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.totalSupply;
 
         for (uint i = 0; i < ctx.size - 1; i++) {
             amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i + 1]) / ctx.poolTokenBase).toUint96();

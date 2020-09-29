@@ -25,7 +25,7 @@ library AmmUpdateProcess
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-    function processAmmUpdates(
+    function approveAmmUpdates(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         bool                     opening
