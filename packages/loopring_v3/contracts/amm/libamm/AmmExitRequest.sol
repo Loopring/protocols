@@ -121,29 +121,8 @@ library AmmExitRequest
         return true;
     }
 
-    function _withdrawToken(
-        AmmData.State storage S,
-        address               token,
-        uint                  amount,
-        bool                  approvedByOperator
-        )
-        private
-        returns (uint withdrawn)
-    {
-        uint available = approvedByOperator ?
-            S.userBalance[token][msg.sender] :
-            S.availableBalance(token, msg.sender);
-
-        withdrawn = (amount > available) ? available : amount;
-
-        if (withdrawn > 0) {
-            S.removeUserBalance(token, msg.sender, withdrawn);
-            AmmUtil.transferOut(token, withdrawn, msg.sender);
-        }
-    }
-
     // Withdraw any outstanding balances for the pool account on the exchange
-    function _proxcessExchangeWithdrawalApprovedWithdrawals(AmmData.State storage S)
+    function _processExchangeWithdrawalApprovedWithdrawals(AmmData.State storage S)
         private
     {
         uint size = S.tokens.length;

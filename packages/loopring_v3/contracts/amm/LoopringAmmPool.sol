@@ -8,11 +8,11 @@ import "../core/iface/IAgentRegistry.sol";
 import "../lib/ReentrancyGuard.sol";
 import "./libamm/AmmBlockReceiver.sol";
 import "./libamm/AmmData.sol";
-import "./libamm/AmmExchange.sol";
 import "./libamm/AmmExitRequest.sol";
 import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmPoolToken.sol";
 import "./libamm/AmmStatus.sol";
+import "./libamm/AmmWithdrawal.sol";
 import './PoolToken.sol';
 
 
@@ -24,11 +24,11 @@ contract LoopringAmmPool is
     ReentrancyGuard
 {
     using AmmBlockReceiver for AmmData.State;
-    using AmmExchange      for AmmData.State;
     using AmmExitRequest   for AmmData.State;
     using AmmJoinRequest   for AmmData.State;
     using AmmPoolToken     for AmmData.State;
     using AmmStatus        for AmmData.State;
+    using AmmWithdrawal    for AmmData.State;
 
     event Deposit   (address owner, uint96[] amounts);
     event Withdrawal(address owner, uint[] amountOuts);

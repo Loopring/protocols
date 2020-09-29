@@ -134,7 +134,7 @@ library AmmBlockReceiver
                 ammExpectedL2Balance - ammActualL2Balance
             );
         } else if (ammExpectedL2Balance < ammActualL2Balance) {
-            S.proxcessExchangeWithdrawal(
+            S.processExchangeWithdrawal(
                 ctx,
                 token,
                 ammActualL2Balance - ammExpectedL2Balance

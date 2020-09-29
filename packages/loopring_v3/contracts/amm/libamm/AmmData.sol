@@ -124,22 +124,7 @@ library AmmData
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => uint) approvedTx;
 
-        // A map from an owner to a token to the balance
-        mapping (address => mapping (address => uint)) userBalance;
-
-        // A map from an owner to the timestamp from which all funds of the user funds will be locked
-        mapping (address => uint) lockedSince;
-        // A map from an owner to the timestamp until all funds of the user are locked
-        // A zero value == locked indefinitely.
-        mapping (address => uint) lockedUntil;
-
-        // A map from a token to the total balance owned directly by LPs (so NOT owned by the pool itself)
-        mapping (address => uint) totalUserBalance;
-
         // A map from an address to a nonce.
         mapping(address => uint) nonces;
-
-        // A map from an owner to if a user is currently exiting using an onchain approval.
-        mapping (address => bool) isExiting;
     }
 }

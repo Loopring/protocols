@@ -29,7 +29,7 @@ library AmmExitProcess
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-    function proxcessExchangeWithdrawal(
+    function processExchangeWithdrawal(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         AmmData.Token    memory  token,
@@ -66,9 +66,6 @@ library AmmExitProcess
         withdrawal.validUntil = 0xffffffff;
         bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
         ctx.exchange.approveTransaction(address(this), txHash);
-
-        // Total balance in this contract increases by the amount withdrawn
-        S.totalUserBalance[token.addr] = S.totalUserBalance[token.addr].add(amount);
     }
 
     function processExit(
@@ -145,11 +142,6 @@ library AmmExitProcess
 
         // Check if we can still use this exit
         if (block.timestamp > exit.validUntil) {
-            return (false, amounts);
-        }
-
-        // Check if the user has enough pool tokens locked
-        if (S.lockedBalance(address(this), exit.owner) < exit.poolAmountIn) {
             return (false, amounts);
         }
 
