@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.31",
-    "bignumber.js": "^4.1.0",
+    "bignumber.js": "^9.0.1",
     "bitwise-xor": "0.0.0",
     "bluebird": "^3.5.1",
     "bn.js": "^5.0.0",
