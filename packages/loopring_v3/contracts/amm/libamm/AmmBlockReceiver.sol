@@ -7,6 +7,7 @@ import "../../core/impl/libtransactions/BlockReader.sol";
 import "./AmmData.sol";
 import "./AmmExitProcess.sol";
 import "./AmmJoinProcess.sol";
+import "./AmmPoolToken.sol";
 import "./AmmUpdateProcess.sol";
 
 
@@ -15,10 +16,12 @@ library AmmBlockReceiver
 {
     using AmmExitProcess    for AmmData.State;
     using AmmJoinProcess    for AmmData.State;
+    using AmmPoolToken      for AmmData.State;
     using AmmUpdateProcess  for AmmData.State;
     using BlockReader       for ExchangeData.Block;
 
-    function beforeBlockSubmitted(
+
+    function beforeBlockSubmission(
         AmmData.State      storage S,
         ExchangeData.Block memory  _block,
         uint                       txIdx,
@@ -78,6 +81,19 @@ library AmmBlockReceiver
         S.processAmmUpdates(ctx, false);
 
         return ctx.numTransactionsConsumed;
+    }
+
+    function afterBlockSubmission(
+        AmmData.State      storage S,
+        ExchangeData.Block memory  /* _block */
+        )
+        public
+    {
+        uint poolTokenToBurn = S.poolTokenToBurn;
+        if (poolTokenToBurn > 0) {
+            S.poolTokenToBurn = 0;
+            S.burn(address(this), poolTokenToBurn);
+        }
     }
 
     function _processPoolTransaction(

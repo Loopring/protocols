@@ -69,6 +69,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
         }
 
         target.fastCallAndVerify(gasleft(), 0, decompressed);
+
+
     }
 
     function openAccessToSubmitBlocks(bool _open)
@@ -111,7 +113,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
             }
             require(callbacks[i].blockIdx >= previousBlockIdx, "INVALID_DATA");
             require(callbacks[i].txIdx >= txIdxLowerBound, "INVALID_DATA");
-            uint numTransactionsConsumed = callbacks[i].target.beforeBlockSubmitted(
+            uint numTransactionsConsumed = callbacks[i].target.beforeBlockSubmission(
                 blocks[callbacks[i].blockIdx],
                 callbacks[i].txIdx,
                 callbacks[i].auxiliaryData

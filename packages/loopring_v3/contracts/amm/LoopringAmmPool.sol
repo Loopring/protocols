@@ -152,7 +152,7 @@ contract LoopringAmmPool is
         state.unlock();
     }
 
-    function beforeBlockSubmitted(
+    function beforeBlockSubmission(
         ExchangeData.Block calldata _block,
         uint                        txIdx,
         bytes              calldata auxiliaryData
@@ -164,6 +164,18 @@ contract LoopringAmmPool is
         nonReentrant
         returns (uint)
     {
-        return state.beforeBlockSubmitted(_block, txIdx, auxiliaryData);
+        return state.beforeBlockSubmission(_block, txIdx, auxiliaryData);
+    }
+
+    function afterBlockSubmission(
+        ExchangeData.Block calldata _block
+        )
+        external
+        override
+        onlyWhenOnline
+        onlyExchangeOwner
+        nonReentrant
+    {
+        state.afterBlockSubmission(_block);
     }
 }
