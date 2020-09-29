@@ -103,11 +103,11 @@ contract LoopringAmmPool is
     }
 
     function exitPool(
-        uint              poolAmountIn,
-        uint96[] calldata minAmountsOut,
-        bool              exitToLayer2,
+        uint              burnAmount,
         bool              burnFromLayer2,
-        uint32            storageID
+        uint32            burnStorageID,
+        uint96[] calldata exitMinAmounts,
+        bool              exitToLayer2
         )
         external
         onlyWhenOnline
@@ -118,7 +118,14 @@ contract LoopringAmmPool is
             exitToLayer2 == false && burnFromLayer2 == false,
             "temporarily disabled in phase1"
         );
-        state.exitPool(poolAmountIn, minAmountsOut, exitToLayer2, burnFromLayer2, storageID);
+
+        state.exitPool(
+            burnAmount,
+            burnFromLayer2,
+            burnStorageID,
+            exitMinAmounts,
+            exitToLayer2
+        );
     }
 
     function beforeBlockSubmission(
@@ -150,11 +157,11 @@ contract LoopringAmmPool is
 
         // Only used to withdraw from the pool when shutdown.
     // Otherwise LPs should withdraw by doing normal queued exit requests.
-    function withdrawFromPoolWhenShutdown(uint poolAmountIn)
+    function withdrawFromPoolWhenShutdown(uint burnAmount)
         external
         onlyWhenOffline
         nonReentrant
     {
-        state.withdrawFromPoolWhenShutdown(poolAmountIn);
+        state.withdrawFromPoolWhenShutdown(burnAmount);
     }
 }

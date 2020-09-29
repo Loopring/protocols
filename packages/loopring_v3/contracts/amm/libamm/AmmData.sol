@@ -47,12 +47,12 @@ library AmmData
     struct PoolExit
     {
         address  owner;
-        uint     poolAmountIn;
-        uint96[] minAmountsOut;
-        uint     validUntil;
-        bool     exitToLayer2;
+        uint     burnAmount;
         bool     burnFromLayer2;
-        uint32   storageID; // if using layer-2 pool token to exit
+        uint32   burnStorageID; // if using layer-2 pool token to exit
+        uint96[] exitMinAmounts;
+        bool     exitToLayer2;
+        uint     validUntil;
     }
 
     struct LockRecord

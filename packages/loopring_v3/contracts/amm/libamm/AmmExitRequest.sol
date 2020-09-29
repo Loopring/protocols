@@ -29,32 +29,32 @@ library AmmExitRequest
     );
 
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,uint256 poolAmountIn,uint256[] minAmountsOut,uint256 validUntil,bool exitToLayer2,burnFromLayer2,uint32 storageID)"
+        "PoolExit(address owner,uint256 burnAmount,bool burnFromLayer2,uint32 burnStorageID,uint96[] exitMinAmounts,bool exitToLayer2,uint256 validUntil)"
     );
 
     event PoolExitRequested(AmmData.PoolExit exit);
 
     function exitPool(
         AmmData.State storage S,
-        uint                  poolAmountIn,
-        uint96[]     calldata minAmountsOut,
-        bool                  exitToLayer2,
+        uint                  burnAmount,
         bool                  burnFromLayer2,
-        uint32                storageID
+        uint32                burnStorageID,
+        uint96[]     calldata exitMinAmounts,
+        bool                  exitToLayer2
         )
         public
     {
-        require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
-        require(burnFromLayer2 || storageID == 0, "INVALID_STORAGE_ID");
+        require(exitMinAmounts.length == S.tokens.length, "INVALID_DATA");
+        require(burnFromLayer2 || burnStorageID == 0, "INVALID_STORAGE_ID");
 
         AmmData.PoolExit memory exit = AmmData.PoolExit({
             owner: msg.sender,
-            poolAmountIn: poolAmountIn,
-            minAmountsOut: minAmountsOut,
-            validUntil: 0xffffffff,
-            exitToLayer2: exitToLayer2,
+            burnAmount: burnAmount,
             burnFromLayer2: burnFromLayer2,
-            storageID: storageID
+            burnStorageID: burnStorageID,
+            exitMinAmounts: exitMinAmounts,
+            exitToLayer2: exitToLayer2,
+            validUntil: 0xffffffff
         });
 
         // Approve the exit
@@ -62,7 +62,7 @@ library AmmExitRequest
         S.approvedTx[txHash] = block.timestamp;
 
         if (!burnFromLayer2) {
-            AmmUtil.transferIn(address(this), poolAmountIn);
+            AmmUtil.transferIn(address(this), burnAmount);
         }
 
         emit PoolExitRequested(exit);
@@ -82,12 +82,12 @@ library AmmExitRequest
                 abi.encode(
                     POOLEXIT_TYPEHASH,
                     exit.owner,
-                    exit.poolAmountIn,
-                    keccak256(abi.encodePacked(exit.minAmountsOut)),
-                    exit.validUntil,
-                    exit.exitToLayer2,
+                    exit.burnAmount,
                     exit.burnFromLayer2,
-                    exit.storageID
+                    exit.burnStorageID,
+                    keccak256(abi.encodePacked(exit.exitMinAmounts)),
+                    exit.exitToLayer2,
+                    exit.validUntil
                 )
             )
         );

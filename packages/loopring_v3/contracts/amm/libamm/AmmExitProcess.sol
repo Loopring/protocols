@@ -119,10 +119,10 @@ library AmmExitProcess
 
         // Handle pool token
         if (exit.burnFromLayer2) {
-            ctx.ammActualL2Balances[0] = ctx.ammActualL2Balances[0].add(exit.poolAmountIn.toUint96());
-            _processPoolTokenWithdrawal(ctx, exit.poolAmountIn, exit.owner, exit.storageID);
+            ctx.ammActualL2Balances[0] = ctx.ammActualL2Balances[0].add(exit.burnAmount.toUint96());
+            _processPoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID);
         } else {
-            S.burn(address(this), exit.poolAmountIn);
+            S.burn(address(this), exit.burnAmount);
         }
     }
 
@@ -130,7 +130,7 @@ library AmmExitProcess
         AmmData.Context  memory  ctx,
         uint                     amount,
         address                  from,
-        uint32                   storageID
+        uint32                   burnStorageID
         )
         internal
     {
@@ -158,7 +158,7 @@ library AmmExitProcess
             withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&
             withdrawal.fee == 0 &&
-            withdrawal.storageID == storageID &&
+            withdrawal.storageID == burnStorageID &&
             withdrawal.onchainDataHash == expectedOnchainDataHash,
             "INVALID_TX_DATA"
         );
@@ -188,11 +188,11 @@ library AmmExitProcess
         }
 
         // Calculate how much will be withdrawn
-        uint ratio = exit.poolAmountIn.mul(ctx.poolTokenBase) / S.totalSupply;
+        uint ratio = exit.burnAmount.mul(ctx.poolTokenBase) / S.totalSupply;
 
         for (uint i = 0; i < ctx.size - 1; i++) {
             amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i + 1]) / ctx.poolTokenBase).toUint96();
-            if (amounts[i] < exit.minAmountsOut[i]) {
+            if (amounts[i] < exit.exitMinAmounts[i]) {
                 return (false, amounts);
             }
         }

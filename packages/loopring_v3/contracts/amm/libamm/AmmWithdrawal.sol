@@ -90,12 +90,12 @@ library AmmWithdrawal
     // TODO:
     function withdrawFromPoolWhenShutdown(
         AmmData.State storage S,
-        uint                  poolAmountIn
+        uint                  burnAmount
         )
         public
     {
-        require(poolAmountIn > 0, "INVALID_POOL_AMOUNT");
-        require(S.balanceOf[msg.sender] >= poolAmountIn, "INSUFFCIENT_POOL_AMOUNT");
+        require(burnAmount > 0, "INVALID_POOL_AMOUNT");
+        require(S.balanceOf[msg.sender] >= burnAmount, "INSUFFCIENT_POOL_AMOUNT");
 
         uint size = S.tokens.length;
         uint32 accountID = S.accountID;
@@ -132,11 +132,11 @@ library AmmWithdrawal
         //     // Withdraw the part owned by the pool
         //     uint amount = balance
         //         .sub(S.totalUserBalance[token])
-        //         .mul(poolAmountIn) / S.totalSupply;
+        //         .mul(burnAmount) / S.totalSupply;
 
         //     AmmUtil.transferOut(token, amount, msg.sender);
         // }
 
-        // S.burn(msg.sender, poolAmountIn);
+        // S.burn(msg.sender, burnAmount);
     }
 }
