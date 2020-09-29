@@ -85,10 +85,8 @@ library AmmExitProcess
 
         if (!slippageRequirementMet) return;
 
-        bool burnPoolTokenOnLayer2 = signature.length > 0;
-
         // Handle pool token
-        if (burnPoolTokenOnLayer2) {
+        if (exit.burnFromLayer2) {
             S.poolAmountToBurn = S.poolAmountToBurn.add(exit.poolAmountIn);
             ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].sub(exit.poolAmountIn.toUint96());
         } else {

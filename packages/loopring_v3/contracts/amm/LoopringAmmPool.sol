@@ -104,19 +104,30 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
+        // TODO(daniel): delete this restriction after phase1
+        require(
+            joinFromLayer2 == false && mintToLayer2 == false,
+            "temporarily disabled in phase1"
+        );
         state.joinPool(minPoolAmountOut, maxAmountsIn, joinFromLayer2, mintToLayer2, fees);
     }
 
     function exitPool(
         uint              poolAmountIn,
         uint96[] calldata minAmountsOut,
-        bool              exitToLayer2
+        bool              exitToLayer2,
+        bool              burnFromLayer2
         )
         external
         onlyWhenOnline
         nonReentrant
     {
-        state.exitPool(poolAmountIn, minAmountsOut, exitToLayer2);
+        // TODO(daniel): delete this restriction after phase1
+        require(
+            exitToLayer2 == false && burnFromLayer2 == false,
+            "temporarily disabled in phase1"
+        );
+        state.exitPool(poolAmountIn, minAmountsOut, exitToLayer2, burnFromLayer2);
     }
 
     function beforeBlockSubmission(

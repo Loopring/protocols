@@ -57,12 +57,11 @@ library AmmBlockReceiver
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
-        // The openning AMM updates
-        // This also pulls the AMM balances onchain.
+        // The openning AMM updates. This also pulls the AMM balances onchain.
         S.processAmmUpdates(ctx, true);
 
-        // Process all pool transactions
-
+        // Process all pool transactions and get a list of pool token transfers from
+        // the pool to newly-joined users.
         uint txCount = poolTransactions.length;
         AmmData.PoolTokenTransfer[] memory poolTokenTransfers = new AmmData.PoolTokenTransfer[](txCount);
 
@@ -70,7 +69,7 @@ library AmmBlockReceiver
             poolTokenTransfers[i] = _processPoolTransaction(S, ctx, poolTransactions[i]);
         }
 
-        // Deposit/Withdraw to/from the AMM account when necessary
+        // Deposit to or withdraw from the AMM account when necessary, this includes the pool token.
         for (uint i = 0; i < size; i++) {
             _processPoolBalance(
                 ctx,
@@ -80,6 +79,8 @@ library AmmBlockReceiver
             );
         }
 
+        // Now that pool tokens may have been deposited to the pool's layer-2 account,
+        // we need to transfer these pool tokens to the user's address.
         for (uint i = 0; i < txCount; i++) {
             AmmJoinProcess.processPoolTokenTransfer(ctx, poolTokenTransfers[i]);
         }
@@ -109,10 +110,10 @@ library AmmBlockReceiver
         AmmData.PoolTransaction memory  poolTx
         )
         private
-        returns(AmmData.PoolTokenTransfer memory ptt)
+        returns(AmmData.PoolTokenTransfer memory poolTokenTransfer)
     {
         if (poolTx.txType == AmmData.PoolTransactionType.JOIN) {
-            ptt = S.processJoin(
+            poolTokenTransfer = S.processJoin(
                 ctx,
                 abi.decode(poolTx.data, (AmmData.PoolJoin)),
                 poolTx.signature

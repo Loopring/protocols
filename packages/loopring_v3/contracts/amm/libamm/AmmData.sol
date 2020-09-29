@@ -51,8 +51,10 @@ library AmmData
         uint96[] minAmountsOut;
         uint     validUntil;
         bool     exitToLayer2;
+        bool     burnFromLayer2;
     }
 
+    // A transfer of the pool token from the pool to a user on layer2
     struct PoolTokenTransfer
     {
         uint96  amount;
