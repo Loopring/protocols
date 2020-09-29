@@ -29,6 +29,8 @@ library AmmBlockReceiver
         public
         returns (uint)
     {
+        require(S.poolAmountToBurn == 0, "POOL_TOKEN_MUST_BE_BURNED");
+
         AmmData.PoolTransaction[] memory poolTransactions = abi.decode(
             auxiliaryData,
             (AmmData.PoolTransaction[])
@@ -51,7 +53,8 @@ library AmmBlockReceiver
             tokens: S.tokens,
             size: size,
             poolTokenBase: AmmData.LP_TOKEN_BASE(),
-            poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY()
+            poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY(),
+            poolAmountToBurn: 0
         });
 
         BlockReader.BlockHeader memory header = _block.readHeader();
@@ -87,6 +90,9 @@ library AmmBlockReceiver
 
         // The closing AMM updates
         S.processAmmUpdates(ctx, false);
+
+        // Save the pool tokens to burn
+        S.poolAmountToBurn = ctx.poolAmountToBurn;
 
         return ctx.numTransactionsConsumed;
     }

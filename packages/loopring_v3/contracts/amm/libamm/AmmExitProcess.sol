@@ -90,7 +90,7 @@ library AmmExitProcess
 
         // Handle pool token
         if (exit.burnFromLayer2) {
-            S.poolAmountToBurn = S.poolAmountToBurn.add(exit.poolAmountIn);
+            ctx.poolAmountToBurn = ctx.poolAmountToBurn.add(exit.poolAmountIn);
             ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].sub(exit.poolAmountIn.toUint96());
         } else {
             S.burn(address(this), exit.poolAmountIn);

@@ -108,6 +108,7 @@ library AmmData
 
         uint     poolTokenBase;
         uint     poolTokenInitialSupply;
+        uint     poolAmountToBurn;
     }
 
     struct State {

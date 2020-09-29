@@ -85,7 +85,6 @@ library AmmWithdrawal
         return (amounts, idx);
     }
 
-
     // Only used to withdraw from the pool when shutdown.
     // Otherwise LPs should withdraw by doing normal queued exit requests.
     // TODO:

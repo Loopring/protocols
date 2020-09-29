@@ -70,7 +70,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
 
         target.fastCallAndVerify(gasleft(), 0, decompressed);
 
-
+        // TODO:
+        // call afterBlockSubmission to burn pool tokens on layer1
     }
 
     function openAccessToSubmitBlocks(bool _open)
