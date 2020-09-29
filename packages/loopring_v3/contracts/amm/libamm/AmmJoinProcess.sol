@@ -62,8 +62,8 @@ library AmmJoinProcess
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
 
-                if (i == 1) {
-                    require(transfer.storageID == join.joinStorageID, "REPLAY");
+                if (i == 1 && signature.length > 0) {
+                    require(transfer.storageID == join.joinStorageID, "INVALID_STORAGE_ID_OR_REPLAY");
                 }
 
                 // We do not check these fields: fromAccountID, to, amount, fee, storageID

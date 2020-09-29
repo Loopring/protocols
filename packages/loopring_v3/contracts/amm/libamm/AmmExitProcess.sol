@@ -120,7 +120,7 @@ library AmmExitProcess
         // Handle pool token
         if (exit.burnFromLayer2) {
             ctx.ammActualL2Balances[0] = ctx.ammActualL2Balances[0].add(exit.burnAmount.toUint96());
-            _processPoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID);
+            _processPoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
         } else {
             S.burn(address(this), exit.burnAmount);
         }
@@ -130,7 +130,8 @@ library AmmExitProcess
         AmmData.Context  memory  ctx,
         uint                     amount,
         address                  from,
-        uint32                   burnStorageID
+        uint32                   burnStorageID,
+        bytes            memory  signature
         )
         internal
     {
@@ -150,6 +151,11 @@ library AmmExitProcess
             withdrawal.extraData
         );
 
+
+        if (signature.length > 0) {
+            require(withdrawal.storageID == burnStorageID, "INVALID_STORAGE_ID_OR_REPLAY");
+        }
+
         require(
             withdrawal.withdrawalType == 1 &&
             withdrawal.owner == from &&
@@ -158,7 +164,6 @@ library AmmExitProcess
             withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&
             withdrawal.fee == 0 &&
-            withdrawal.storageID == burnStorageID &&
             withdrawal.onchainDataHash == expectedOnchainDataHash,
             "INVALID_TX_DATA"
         );
