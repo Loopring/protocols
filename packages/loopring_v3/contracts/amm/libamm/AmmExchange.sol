@@ -26,8 +26,7 @@ library AmmExchange
 
     // Withdraw any outstanding balances for the pool account on the exchange
     function processApprovedWithdrawals(
-        AmmData.State storage S,
-        address               owner
+        AmmData.State storage S
         )
         internal
     {
@@ -36,7 +35,7 @@ library AmmExchange
         address[] memory tokenAddresses = new address[](size);
 
         for (uint i = 0; i < size; i++) {
-            owners[i] = owner;
+            owners[i] = msg.sender;
             tokenAddresses[i] = S.tokens[i].addr;
         }
         S.exchange.withdrawFromApprovedWithdrawals(owners, tokenAddresses);

@@ -54,13 +54,6 @@ library AmmStatus
         S.poolName = config.poolName;
         S.symbol = config.tokenSymbol;
 
-        // The first token is the pool token
-        S.tokens.push(AmmData.Token({
-            addr: address(this),
-            tokenID: exchange.getTokenID(address(this)),
-            weight: 0 // never used
-        }));
-
         address depositContract = address(exchange.getDepositContract());
         for (uint i = 0; i < config.tokens.length; i++) {
             require(config.weights[i] > 0, "INVALID_TOKEN_WEIGHT");
@@ -74,6 +67,13 @@ library AmmStatus
 
             ERC20(token).approve(depositContract, uint(-1));
         }
+
+        // The last token is the pool token
+        S.tokens.push(AmmData.Token({
+            addr: address(this),
+            tokenID: exchange.getTokenID(address(this)),
+            weight: 0 // never used
+        }));
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.

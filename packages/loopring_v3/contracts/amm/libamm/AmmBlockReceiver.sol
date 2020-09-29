@@ -39,7 +39,7 @@ library AmmBlockReceiver
         );
 
         // Cache the domain seperator to save on SLOADs each time it is accessed.
-        uint size = S.tokens.length;
+        uint size = S.tokens.length - 1;
 
         AmmData.Context memory ctx = AmmData.Context({
             _block: _block,
@@ -101,7 +101,7 @@ library AmmBlockReceiver
         )
         public
     {
-        S.processApprovedWithdrawals(address(this));
+        S.processApprovedWithdrawals();
 
         uint amountBurn = S.poolTokenToBurn;
         if (amountBurn > 0) {

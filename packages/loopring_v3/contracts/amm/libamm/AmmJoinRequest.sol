@@ -46,19 +46,20 @@ library AmmJoinRequest
         );
 
         for (uint i = 0; i < size; i++) {
-            require(joinFees[i] < joinAmounts[i], "INVALID_FEES");
+            // require(joinFees[i] < joinAmounts[i], "INVALID_FEES");
+            require(joinFees[i] == 0, "FEATURE_DISABLED");
         }
 
-        // are locked this transaction can simply be dropped.
-        uint validUntil = block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN();
         AmmData.User storage user = S.userMap[msg.sender];
+        uint32 joinIndex = uint32(user.lockRecords.length + 1);
+        uint validUntil = block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN();
 
         AmmData.PoolJoin memory join = AmmData.PoolJoin({
-            index: uint32(user.lockRecords.length + 1),
+            index: joinIndex,
             owner: msg.sender,
             direction:direction,
             joinAmounts: joinAmounts,
-            joinFees: joinFees, // TODO: layer1 charge a fee?
+            joinFees: joinFees,
             joinStorageID: joinStorageID,
             mintMinAmount: mintMinAmount,
             validUntil: validUntil
@@ -71,13 +72,12 @@ library AmmJoinRequest
             join.direction == AmmData.Direction.L1_TO_L2) {
 
             for (uint i = 0; i < size; i++) {
-                AmmUtil.transferIn(S.tokens[i + 1].addr, joinAmounts[i]);
+                AmmUtil.transferIn(S.tokens[i].addr, joinAmounts[i]);
             }
-
 
             user.lockRecords.push(
                 AmmData.LockRecord({
-                    index: uint32(user.lockRecords.length + 1),
+                    index: joinIndex,
                     txHash:txHash,
                     amounts: joinAmounts,
                     validUntil: validUntil
