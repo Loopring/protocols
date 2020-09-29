@@ -23,39 +23,11 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint32[] storageIDs,uint256 validUntil)"
-    );
-
-    bytes32 constant public POOLJOIN_TYPEHASH2 = keccak256(
         "PoolJoin(address owner,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint256 validUntil)"
     );
 
-
     event Deposit(address owner, uint96[] amounts);
     event PoolJoinRequested(AmmData.PoolJoin join);
-    event PoolJoinRequested2(AmmData.PoolJoin2 join);
-    event LockScheduled(address owner, uint timestamp);
-
-    function lock(
-        AmmData.State storage S
-        )
-        public
-        returns (uint lockedSince)
-    {
-        require(S.lockedSince[msg.sender] == 0, "LOCKED_ALREADY");
-        require(
-            S.lockedUntil[msg.sender] != 0 &&
-            S.lockedUntil[msg.sender] >= block.timestamp,
-            "UNLOCK_PENDING"
-        );
-
-        lockedSince = block.timestamp + AmmData.LOCK_DELAY();
-
-        S.lockedSince[msg.sender] = lockedSince;
-        S.lockedUntil[msg.sender] = 0;
-
-        emit LockScheduled(msg.sender, lockedSince);
-    }
 
     function depositToPool(
         AmmData.State storage S,
@@ -73,56 +45,19 @@ library AmmJoinRequest
         }
 
         // Deposit pool tokens
-        S.depositToken(address(this), amounts[0]);
+        AmmUtil.transferIn(address(this), amounts[0]);
 
         // Deposit AMM tokens
         for (uint i = 0; i < size; i++) {
-            S.depositToken(S.tokens[i].addr, amounts[i + 1]);
+            AmmUtil.transferIn(S.tokens[i].addr, amounts[i + 1]);
         }
 
         emit Deposit(msg.sender, amounts);
     }
 
-    function joinPool(
-        AmmData.State storage S,
-        uint                  minPoolAmountOut,
-        uint96[]     calldata maxAmountsIn,
-        uint96[]     calldata fees,
-        bool                  fromLayer2,
-        uint                  validUntil
-        )
-        public
-    {
-        uint size =  S.tokens.length;
-        require(maxAmountsIn.length == size, "INVALID_DATA");
-
-        for (uint i = 0; i < size; i++) {
-            require(maxAmountsIn[i] > fees[i], "INVALID_JOIN_AMOUNT");
-        }
-
-        // Don't check the available funds here, if the operator isn't sure the funds
-        // are locked this transaction can simply be dropped.
-
-        AmmData.PoolJoin memory join = AmmData.PoolJoin({
-            owner: msg.sender,
-            fromLayer2: fromLayer2,
-            minPoolAmountOut: minPoolAmountOut,
-            maxAmountsIn: maxAmountsIn,
-            fees: fees,
-            storageIDs: new uint32[](0),
-            validUntil: validUntil
-        });
-
-        // Approve the join
-        bytes32 txHash = hashPoolJoin(S.domainSeparator, join);
-        S.approvedTx[txHash] = 0xffffffff;
-
-        emit PoolJoinRequested(join);
-    }
-
 
     // Submit a layer-1 join request
-    function joinPool2(
+    function joinPool(
         AmmData.State storage S,
         uint                  minPoolAmountOut,
         uint96[]     calldata maxAmountsIn,
@@ -142,7 +77,7 @@ library AmmJoinRequest
         // are locked this transaction can simply be dropped.
         uint validUntil = block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN();
 
-        AmmData.PoolJoin2 memory join = AmmData.PoolJoin2({
+        AmmData.PoolJoin memory join = AmmData.PoolJoin({
             owner: msg.sender,
             minPoolAmountOut: minPoolAmountOut,
             maxAmountsIn: maxAmountsIn,
@@ -150,7 +85,7 @@ library AmmJoinRequest
             fees: fees
         });
 
-        bytes32 txHash = hashPoolJoin2(S.domainSeparator, join);
+        bytes32 txHash = hashPoolJoin(S.domainSeparator, join);
         // Approve the join
         S.approvedTx[txHash] = 0xffffffff;
 
@@ -165,10 +100,10 @@ library AmmJoinRequest
 
         // Deposit AMM tokens
         for (uint i = 0; i < size; i++) {
-            S.depositToken(S.tokens[i].addr, maxAmountsIn[i]);
+            AmmUtil.transferIn(S.tokens[i].addr, maxAmountsIn[i]);
         }
 
-        emit PoolJoinRequested2(join);
+        emit PoolJoinRequested(join);
     }
 
     function withdraw(AmmData.State storage S)
@@ -178,11 +113,14 @@ library AmmJoinRequest
         AmmData.User storage user = S.UserMap[msg.sender];
 
         // Clear pool token withdrawable
+
         delete user.withdrawable[address(this)];
+        AmmUtil.transferOut(address(this), amounts[0], msg.sender);
 
         // Clear each token's withdrawable
         for (uint i = 0; i < S.tokens.length; i++) {
             delete user.withdrawable[S.tokens[i].addr];
+            AmmUtil.transferOut(S.tokens[i].addr, amounts[i + 1], msg.sender);
         }
 
         // Delete expired joins
@@ -205,7 +143,7 @@ library AmmJoinRequest
         )
     {
         uint size = S.tokens.length;
-        amounts = new uint[](size + 1);
+        amounts = new uint[](size);
 
         AmmData.User storage user = S.UserMap[msg.sender];
 
@@ -231,29 +169,6 @@ library AmmJoinRequest
         return (amounts, idx);
     }
 
-    function hashPoolJoin2(
-        bytes32                 domainSeparator,
-        AmmData.PoolJoin2 memory join
-        )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return EIP712.hashPacked(
-            domainSeparator,
-            keccak256(
-                abi.encode(
-                    POOLJOIN_TYPEHASH2,
-                    join.owner,
-                    join.minPoolAmountOut,
-                    keccak256(abi.encodePacked(join.maxAmountsIn)),
-                    keccak256(abi.encodePacked(join.fees)),
-                    join.validUntil
-                )
-            )
-        );
-    }
-
     function hashPoolJoin(
         bytes32                 domainSeparator,
         AmmData.PoolJoin memory join
@@ -268,16 +183,12 @@ library AmmJoinRequest
                 abi.encode(
                     POOLJOIN_TYPEHASH,
                     join.owner,
-                    join.fromLayer2,
                     join.minPoolAmountOut,
                     keccak256(abi.encodePacked(join.maxAmountsIn)),
                     keccak256(abi.encodePacked(join.fees)),
-                    keccak256(abi.encodePacked(join.storageIDs)),
                     join.validUntil
                 )
             )
         );
     }
-
-
 }

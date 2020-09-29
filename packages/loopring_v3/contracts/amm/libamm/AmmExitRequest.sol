@@ -29,65 +29,10 @@ library AmmExitRequest
     );
 
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs,uint256 validUntil)"
-    );
-
-
-    bytes32 constant public POOLEXIT_TYPEHASH2 = keccak256(
         "PoolExit(address owner,uint256 poolAmountIn,uint256[] minAmountsOut,uint256 validUntil,bool toLayer2)"
     );
 
-    event Withdrawal(address owner, uint[] amountOuts);
     event PoolExitRequested(AmmData.PoolExit exit);
-    event PoolExit2Requested(AmmData.PoolExit2 exit);
-    event UnlockScheduled(address owner, uint timestamp);
-
-    function unlock(AmmData.State storage S)
-        internal
-        returns (uint lockedUntil)
-    {
-        require(S.lockedUntil[msg.sender] == 0, "UNLOCKED_ALREADY");
-        require(S.lockedSince[msg.sender] >= block.timestamp, "LOCK_PENDING");
-
-        lockedUntil = block.timestamp + AmmData.LOCK_DELAY();
-
-        S.lockedSince[msg.sender] = 0;
-        S.lockedUntil[msg.sender] = lockedUntil;
-
-        emit UnlockScheduled(msg.sender, lockedUntil);
-    }
-
-    function withdrawFromPool(
-        AmmData.State storage S,
-        uint[]       calldata amounts,
-        bytes        calldata signature, // signature from Exchange operator
-        uint                  validUntil
-        )
-        public
-        returns (uint[] memory amountOuts)
-    {
-        uint size = S.tokens.length;
-        require(amounts.length == size + 1, "INVALID_DATA");
-
-        _proxcessExchangeWithdrawalApprovedWithdrawals(S);
-
-        bool approvedByOperator = _checkOperatorApproval(
-            S, amounts, signature, validUntil
-        );
-
-        amountOuts = new uint[](size + 1);
-        amountOuts[0] = _withdrawToken(
-            S, address(this), amounts[0], approvedByOperator
-        );
-
-        for (uint i = 0; i < size; i++) {
-            amountOuts[i + 1] = _withdrawToken(
-                S, S.tokens[i].addr, amounts[i + 1], approvedByOperator
-            );
-        }
-
-        emit Withdrawal(msg.sender, amountOuts);
-    }
 
     function exitPool(
         AmmData.State storage S,
@@ -99,45 +44,7 @@ library AmmExitRequest
     {
         require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
 
-        // To make the the available liqudity tokens cannot suddenly change
-        // we keep track of when onchain exits (which need to be processed) are pending.
-        require(S.isExiting[msg.sender] == false, "ALREADY_EXITING");
-        S.isExiting[msg.sender] = true;
-
         AmmData.PoolExit memory exit = AmmData.PoolExit({
-            owner: msg.sender,
-            toLayer2: toLayer2,
-            poolAmountIn: poolAmountIn,
-            minAmountsOut: minAmountsOut,
-            storageIDs: new uint32[](0),
-            validUntil: 0xffffffff
-        });
-
-        // Approve the exit
-        bytes32 txHash = hashPoolExit(S.domainSeparator, exit);
-        S.approvedTx[txHash] = block.timestamp;
-
-        emit PoolExitRequested(exit);
-    }
-
-        // address  owner;
-        // uint     poolAmountIn;
-        // uint96[] minAmountsOut;
-        // uint     validUntil;
-        // bool     toLayer2;
-
-
-    function exitPool2(
-        AmmData.State storage S,
-        uint                  poolAmountIn,
-        uint96[]     calldata minAmountsOut,
-        bool                  toLayer2
-        )
-        public
-    {
-        require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
-
-        AmmData.PoolExit2 memory exit = AmmData.PoolExit2({
             owner: msg.sender,
             poolAmountIn: poolAmountIn,
             minAmountsOut: minAmountsOut,
@@ -146,35 +53,12 @@ library AmmExitRequest
         });
 
         // Approve the exit
-        bytes32 txHash = hashPoolExit2(S.domainSeparator, exit);
+        bytes32 txHash = hashPoolExit(S.domainSeparator, exit);
         S.approvedTx[txHash] = block.timestamp;
 
-        // S.depositToken(address(0), poolAmountIn);
+        // AmmUtil.transferIn(address(0), poolAmountIn);
 
-        emit PoolExit2Requested(exit);
-    }
-
-    function hashPoolExit2(
-        bytes32                 domainSeparator,
-        AmmData.PoolExit2 memory exit
-        )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return EIP712.hashPacked(
-            domainSeparator,
-            keccak256(
-                abi.encode(
-                    POOLEXIT_TYPEHASH2,
-                    exit.owner,
-                    exit.poolAmountIn,
-                    keccak256(abi.encodePacked(exit.minAmountsOut)),
-                    exit.validUntil,
-                    exit.toLayer2
-                )
-            )
-        );
+        emit PoolExitRequested(exit);
     }
 
     function hashPoolExit(
@@ -191,11 +75,10 @@ library AmmExitRequest
                 abi.encode(
                     POOLEXIT_TYPEHASH,
                     exit.owner,
-                    exit.toLayer2,
                     exit.poolAmountIn,
                     keccak256(abi.encodePacked(exit.minAmountsOut)),
-                    keccak256(abi.encodePacked(exit.storageIDs)),
-                    exit.validUntil
+                    exit.validUntil,
+                    exit.toLayer2
                 )
             )
         );
@@ -255,7 +138,7 @@ library AmmExitRequest
 
         if (withdrawn > 0) {
             S.removeUserBalance(token, msg.sender, withdrawn);
-            AmmUtil.tranferOut(token, withdrawn, msg.sender);
+            AmmUtil.transferOut(token, withdrawn, msg.sender);
         }
     }
 

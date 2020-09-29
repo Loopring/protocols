@@ -92,38 +92,17 @@ contract LoopringAmmPool is
         state.withdrawFromPoolWhenShutdown(poolAmountIn);
     }
 
-    function deposit(uint96[] calldata amounts)
-        external
-        payable
-        onlyWhenOnline
-        nonReentrant
-    {
-        state.depositToPool(amounts);
-    }
-
-    function withdraw(
-        uint[] calldata amounts,
-        bytes  calldata signature,
-        uint            validUntil
-        )
-        external
-        nonReentrant
-    {
-        state.withdrawFromPool(amounts, signature, validUntil);
-    }
-
     function joinPool(
         uint              minPoolAmountOut,
         uint96[] calldata maxAmountsIn,
-        uint96[] calldata fees,
-        bool              fromLayer2,
-        uint              validUntil
+        uint96[] calldata fees
+
         )
         external
         onlyWhenOnline
         nonReentrant
     {
-        state.joinPool(minPoolAmountOut, maxAmountsIn, fees, fromLayer2, validUntil);
+        state.joinPool(minPoolAmountOut, maxAmountsIn, fees);
     }
 
     function exitPool(
@@ -136,20 +115,6 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.exitPool(poolAmountIn, minAmountsOut, toLayer2);
-    }
-
-    function lock()
-        external
-        nonReentrant
-    {
-        state.lock();
-    }
-
-    function unlock()
-        external
-        nonReentrant
-    {
-        state.unlock();
     }
 
     function beforeBlockSubmission(

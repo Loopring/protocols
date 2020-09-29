@@ -32,7 +32,20 @@ library AmmUtil
         }
     }
 
-    function tranferOut(
+    function transferIn(
+        address token,
+        uint    amount
+        )
+        internal
+    {
+        if (token == address(0)) {
+            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
+        } else if (amount > 0) {
+            token.safeTransferFromAndVerify(msg.sender, address(this), amount);
+        }
+    }
+
+    function transferOut(
         address token,
         uint    amount,
         address to

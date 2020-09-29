@@ -85,17 +85,25 @@ library AmmExitProcess
             signature
         );
 
-        if (signature.length == 0) {
-            // This is an onchain exit, we're processing it now so stop tracking it.
-            S.isExiting[exit.owner] = false;
-        }
-
         (bool slippageRequirementMet, uint96[] memory amounts) = _validateExitAmounts(S, ctx, exit);
 
         if (!slippageRequirementMet) return;
 
-        for (uint i = 0; i < ctx.size; i++) {
-            uint96 amount = amounts[i];
+        bool burnPoolTokenOnLayer2 = signature.length > 0;
+
+        // Handle pool token
+        if (burnPoolTokenOnLayer2) {
+            S.poolTokenToBurn = S.poolTokenToBurn.add(exit.poolAmountIn);
+            ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].sub(exit.poolAmountIn.toUint96());
+        } else {
+            S.burn(address(this), exit.poolAmountIn);
+        }
+
+         // Handle liquidity tokens
+        for (uint i = 1; i < ctx.size; i++) {
+            uint96 amount = amounts[i - 1];
+            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
+
             if (exit.toLayer2) {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
@@ -111,29 +119,14 @@ library AmmExitProcess
                     "INVALID_TX_DATA"
                 );
 
-                // Replay protection when using a signature (otherwise the approved hash is cleared onchain)
-                if (signature.length > 0) {
-                    require(transfer.storageID == exit.storageIDs[i], "INVALID_TX_DATA");
-                }
-
                 // Now approve this transfer
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(address(this), txHash);
 
-                amount = transfer.amount;
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
-            } else {
-                address token = ctx.tokens[i].addr;
-                // Make the amount available for withdrawing
-                S.userBalance[token][exit.owner] = S.userBalance[token][exit.owner].add(amount);
             }
-
-            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
         }
-
-        S.removeUserBalance(address(this), exit.owner, exit.poolAmountIn);
-        S.burn(address(this), exit.poolAmountIn);
     }
 
     function _validateExitAmounts(
@@ -148,7 +141,7 @@ library AmmExitProcess
             uint96[] memory amounts
         )
     {
-        amounts = new uint96[](ctx.size);
+        amounts = new uint96[](ctx.size - 1);
 
         // Check if we can still use this exit
         if (block.timestamp > exit.validUntil) {
@@ -163,8 +156,8 @@ library AmmExitProcess
         // Calculate how much will be withdrawn
         uint ratio = exit.poolAmountIn.mul(ctx.poolTokenBase) / S.totalSupply;
 
-        for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i]) / ctx.poolTokenBase).toUint96();
+        for (uint i = 0; i < ctx.size - 1; i++) {
+            amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i + 1]) / ctx.poolTokenBase).toUint96();
             if (amounts[i] < exit.minAmountsOut[i]) {
                 return (false, amounts);
             }

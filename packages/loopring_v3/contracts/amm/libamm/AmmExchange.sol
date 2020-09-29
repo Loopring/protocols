@@ -62,7 +62,7 @@ library AmmExchange
                 .sub(S.totalUserBalance[token])
                 .mul(poolAmountIn) / S.totalSupply;
 
-            AmmUtil.tranferOut(token, amount, msg.sender);
+            AmmUtil.transferOut(token, amount, msg.sender);
         }
 
         S.burn(msg.sender, poolAmountIn);

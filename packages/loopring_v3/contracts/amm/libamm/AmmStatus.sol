@@ -169,20 +169,6 @@ library AmmStatus
         S.totalUserBalance[token] = S.totalUserBalance[token].sub(amount);
     }
 
-    function depositToken(
-        AmmData.State storage S,
-        address               token,
-        uint                  amount
-        )
-        internal
-    {
-        if (token == address(0)) {
-            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
-        } else if (amount > 0) {
-            token.safeTransferFromAndVerify(msg.sender, address(this), amount);
-        }
-    }
-
     function validatePoolTransaction(
         AmmData.State storage S,
         address        owner,
