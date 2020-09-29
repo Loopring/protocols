@@ -23,7 +23,7 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256 validUntil,uint256[] fees)"
+        "PoolJoin(address owner,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256 validUntil,bool joinFromLayer2,bool mintToLayer2,uint256[] fees)"
     );
 
     event PoolJoinRequested(AmmData.PoolJoin join);
@@ -33,6 +33,8 @@ library AmmJoinRequest
         AmmData.State storage S,
         uint                  minPoolAmountOut,
         uint96[]     calldata maxAmountsIn,
+        bool                  joinFromLayer2,
+        bool                  mintToLayer2,
         uint96[]     calldata fees
         )
         public
@@ -53,25 +55,27 @@ library AmmJoinRequest
             minPoolAmountOut: minPoolAmountOut,
             maxAmountsIn: maxAmountsIn,
             validUntil: validUntil,
-            fees: fees
+            joinFromLayer2: joinFromLayer2,
+            mintToLayer2: mintToLayer2,
+            fees: fees // TODO: layer1 charge a fee?
         });
 
         bytes32 txHash = hashPoolJoin(S.domainSeparator, join);
-        // Approve the join
         S.approvedTx[txHash] = 0xffffffff;
 
-        AmmData.User storage user = S.userMap[msg.sender];
-        user.lockRecords.push(
-            AmmData.LockRecord({
-                txHash:txHash,
-                amounts: maxAmountsIn,
-                validUntil: validUntil
-            })
-        );
+        if (!join.joinFromLayer2) {
+            AmmData.User storage user = S.userMap[msg.sender];
+            user.lockRecords.push(
+                AmmData.LockRecord({
+                    txHash:txHash,
+                    amounts: maxAmountsIn,
+                    validUntil: validUntil
+                })
+            );
 
-        // Deposit AMM tokens
-        for (uint i = 1; i < size; i++) {
-            AmmUtil.transferIn(S.tokens[i].addr, maxAmountsIn[i - 1]);
+            for (uint i = 1; i < size; i++) {
+                AmmUtil.transferIn(S.tokens[i].addr, maxAmountsIn[i - 1]);
+            }
         }
 
         emit PoolJoinRequested(join);
@@ -94,6 +98,8 @@ library AmmJoinRequest
                     join.minPoolAmountOut,
                     keccak256(abi.encodePacked(join.maxAmountsIn)),
                     join.validUntil,
+                    join.joinFromLayer2,
+                    join.mintToLayer2,
                     keccak256(abi.encodePacked(join.fees))
                 )
             )

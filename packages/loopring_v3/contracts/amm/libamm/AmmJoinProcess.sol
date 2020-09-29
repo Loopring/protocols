@@ -29,8 +29,69 @@ library AmmJoinProcess
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-    function processExchangeDeposit(
+    function processJoin(
         AmmData.State    storage S,
+        AmmData.Context  memory  ctx,
+        AmmData.PoolJoin memory  join,
+        bytes            memory  signature
+        )
+        internal
+        returns(AmmData.PoolTokenTransfer memory ptt)
+    {
+       S.validatePoolTransaction(
+            join.owner,
+            AmmJoinRequest.hashPoolJoin(ctx.domainSeparator, join),
+            signature
+        );
+
+        // Check if the requirements are fulfilled
+        // TODO(daniel): change poolAmountOut to uint96
+        (bool slippageRequirementMet, uint poolAmountOut, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
+
+        if (!slippageRequirementMet) ptt;
+
+        // Handle pool token
+        if (join.mintToLayer2) {
+            S.mint(address(this), poolAmountOut);
+            // The following will trigger a pool token deposit to the user's layer-2 account
+            ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].add(poolAmountOut.toUint96());
+            ptt.amount = poolAmountOut.toUint96();
+            ptt.to = join.owner;
+        } else {
+            S.mint(join.owner, poolAmountOut);
+        }
+
+         // Handle liquidity tokens
+        for (uint i = 1; i < ctx.size; i++) {
+            uint96 amount = amounts[i - 1];
+            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
+
+            if (join.joinFromLayer2) {
+                TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+                ctx.numTransactionsConsumed++;
+
+                // We do not check these fields: fromAccountID, to, amount, fee, storageID
+                require(
+                    transfer.toAccountID== ctx.accountID &&
+                    transfer.from == join.owner &&
+                    transfer.tokenID == ctx.tokens[i].tokenID &&
+                    transfer.amount.isAlmostEqual(amount) &&
+                    transfer.feeTokenID == ctx.tokens[i].tokenID &&
+                    transfer.fee.isAlmostEqual(join.fees[i]),
+                    "INVALID_TX_DATA"
+                );
+
+                // Now approve this transfer
+                transfer.validUntil = 0xffffffff;
+                bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+                ctx.exchange.approveTransaction(join.owner, txHash);
+
+                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
+            }
+        }
+    }
+
+    function processExchangeDeposit(
         AmmData.Context  memory  ctx,
         AmmData.Token    memory  token,
         uint96                   amount
@@ -45,7 +106,7 @@ library AmmJoinProcess
 
         require(
             deposit.owner == address(this) &&
-            deposit.accountID == S.accountID &&
+            deposit.accountID== ctx.accountID &&
             deposit.tokenID == token.tokenID &&
             deposit.amount == amount,
             "INVALID_TX_DATA"
@@ -73,64 +134,31 @@ library AmmJoinProcess
         );
     }
 
-    function processJoin(
-        AmmData.State    storage S,
-        AmmData.Context  memory  ctx,
-        AmmData.PoolJoin memory  join,
-        bytes            memory  signature
+    function processPoolTokenTransfer(
+        AmmData.Context           memory  ctx,
+        AmmData.PoolTokenTransfer memory  poolTokenTransfer
         )
         internal
     {
-       S.validatePoolTransaction(
-            join.owner,
-            AmmJoinRequest.hashPoolJoin(ctx.domainSeparator, join),
-            signature
-        );
+            TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+            ctx.numTransactionsConsumed++;
 
-        // Check if the requirements are fulfilled
-        // TODO(daniel): change poolAmountOut to uint96
-        (bool slippageRequirementMet, uint poolAmountOut, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
+            // We do not check these fields: toAccountID, storageID
+            require(
+                transfer.to == poolTokenTransfer.to &&
+                transfer.from == address(this) &&
+                transfer.fromAccountID == ctx.accountID &&
+                transfer.tokenID == ctx.tokens[0].tokenID &&
+                transfer.amount.isAlmostEqual(poolTokenTransfer.amount) &&
+                transfer.feeTokenID == 0 &&
+                transfer.fee == 0,
+                "INVALID_TX_DATA"
+            );
 
-        if (!slippageRequirementMet) return;
-
-        bool fromLayer2 = signature.length > 0;
-
-        // Handle pool token
-        if (fromLayer2) {
-            S.mint(address(this), poolAmountOut);
-            ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].add(poolAmountOut.toUint96());
-        } else {
-            S.mint(join.owner, poolAmountOut);
-        }
-
-         // Handle liquidity tokens
-        for (uint i = 1; i < ctx.size; i++) {
-            uint96 amount = amounts[i - 1];
-            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
-
-            if (fromLayer2) {
-                TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
-                ctx.numTransactionsConsumed++;
-
-                // We do not check these fields: fromAccountID, to, amount, fee, storageID
-                require(
-                    transfer.toAccountID == S.accountID &&
-                    transfer.from == join.owner &&
-                    transfer.tokenID == ctx.tokens[i].tokenID &&
-                    transfer.amount.isAlmostEqual(amount) &&
-                    transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                    transfer.fee.isAlmostEqual(join.fees[i]),
-                    "INVALID_TX_DATA"
-                );
-
-                // Now approve this transfer
-                transfer.validUntil = 0xffffffff;
-                bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-                ctx.exchange.approveTransaction(join.owner, txHash);
-
-                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
-            }
-        }
+            // Now approve this transfer
+            transfer.validUntil = 0xffffffff;
+            bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+            ctx.exchange.approveTransaction(address(this), txHash);
     }
 
     function _calculateJoinAmounts(
@@ -158,13 +186,17 @@ library AmmJoinProcess
             return(true, ctx.poolTokenInitialSupply, join.maxAmountsIn);
         }
 
-        // Calculate the amount of liquidity tokens that should be minted
+        // Calculate the amount of pool tokens that should be minted
+        bool initialized = false;
         for (uint i = 1; i < ctx.size; i++) {
             if (ctx.ammExpectedL2Balances[i] > 0) {
-                uint amountOut = uint(join.maxAmountsIn[i])
+                uint amountOut = uint(join.maxAmountsIn[i - 1])
                     .mul(_totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
 
-                if (amountOut < poolAmountOut) {
+                if (!initialized) {
+                    initialized = true;
+                    poolAmountOut = amountOut;
+                } else if (amountOut < poolAmountOut) {
                     poolAmountOut = amountOut;
                 }
             }
@@ -177,8 +209,8 @@ library AmmJoinProcess
         // Calculate the amounts to deposit
         uint ratio = poolAmountOut.mul(ctx.poolTokenBase) / _totalSupply;
 
-        for (uint i = 0; i < ctx.size - 1; i++) {
-            amounts[i] = ratio.mul(ctx.ammExpectedL2Balances[i + 1] / ctx.poolTokenBase).toUint96();
+        for (uint i = 1; i < ctx.size; i++) {
+            amounts[i - 1] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();
         }
 
         slippageRequirementMet = (poolAmountOut >= join.minPoolAmountOut);

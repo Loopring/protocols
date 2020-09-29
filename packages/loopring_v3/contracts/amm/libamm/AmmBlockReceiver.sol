@@ -44,6 +44,7 @@ library AmmBlockReceiver
             txIdx: txIdx,
             domainSeparator: S.domainSeparator,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
+            accountID: S.accountID,
             ammActualL2Balances: new uint96[](size),
             ammExpectedL2Balances: new uint96[](size),
             numTransactionsConsumed: 0,
@@ -61,19 +62,26 @@ library AmmBlockReceiver
         S.processAmmUpdates(ctx, true);
 
         // Process all pool transactions
-        for (uint i = 0; i < poolTransactions.length; i++) {
-            _processPoolTransaction(S, ctx, poolTransactions[i]);
+
+        uint txCount = poolTransactions.length;
+        AmmData.PoolTokenTransfer[] memory poolTokenTransfers = new AmmData.PoolTokenTransfer[](txCount);
+
+        for (uint i = 0; i < txCount; i++) {
+            poolTokenTransfers[i] = _processPoolTransaction(S, ctx, poolTransactions[i]);
         }
 
         // Deposit/Withdraw to/from the AMM account when necessary
         for (uint i = 0; i < size; i++) {
             _processPoolBalance(
-                S,
                 ctx,
                 ctx.tokens[i],
                 ctx.ammExpectedL2Balances[i],
                 ctx.ammActualL2Balances[i]
             );
+        }
+
+        for (uint i = 0; i < txCount; i++) {
+            AmmJoinProcess.processPoolTokenTransfer(ctx, poolTokenTransfers[i]);
         }
 
         // The closing AMM updates
@@ -101,9 +109,10 @@ library AmmBlockReceiver
         AmmData.PoolTransaction memory  poolTx
         )
         private
+        returns(AmmData.PoolTokenTransfer memory ptt)
     {
         if (poolTx.txType == AmmData.PoolTransactionType.JOIN) {
-            S.processJoin(
+            ptt = S.processJoin(
                 ctx,
                 abi.decode(poolTx.data, (AmmData.PoolJoin)),
                 poolTx.signature
@@ -120,7 +129,6 @@ library AmmBlockReceiver
     }
 
     function _processPoolBalance(
-        AmmData.State   storage S,
         AmmData.Context memory  ctx,
         AmmData.Token   memory  token,
         uint96                  ammExpectedL2Balance,
@@ -129,13 +137,13 @@ library AmmBlockReceiver
         private
     {
         if (ammExpectedL2Balance > ammActualL2Balance) {
-            S.processExchangeDeposit(
+            AmmJoinProcess.processExchangeDeposit(
                 ctx,
                 token,
                 ammExpectedL2Balance - ammActualL2Balance
             );
         } else if (ammExpectedL2Balance < ammActualL2Balance) {
-            S.processExchangeWithdrawal(
+            AmmExitProcess.processExchangeWithdrawal(
                 ctx,
                 token,
                 ammActualL2Balance - ammExpectedL2Balance

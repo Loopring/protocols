@@ -38,7 +38,7 @@ library AmmUpdateProcess
             ctx.numTransactionsConsumed++;
 
             require(update.owner == address(this), "INVALID_TX_DATA");
-            require(update.accountID == S.accountID, "INVALID_TX_DATA");
+            require(update.accountID== ctx.accountID, "INVALID_TX_DATA");
             require(update.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
             require(update.feeBips == S.feeBips, "INVALID_TX_DATA");
             require(update.tokenWeight == (opening ? 0 : ctx.tokens[i].weight), "INVALID_TX_DATA");

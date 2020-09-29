@@ -30,7 +30,6 @@ library AmmExitProcess
     using TransactionReader for ExchangeData.Block;
 
     function processExchangeWithdrawal(
-        AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         AmmData.Token    memory  token,
         uint                     amount
@@ -49,7 +48,7 @@ library AmmExitProcess
         require(
             withdrawal.withdrawalType == 1 &&
             withdrawal.owner == address(this) &&
-            withdrawal.accountID == S.accountID &&
+            withdrawal.accountID== ctx.accountID &&
             withdrawal.tokenID == token.tokenID &&
             withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&
@@ -101,17 +100,17 @@ library AmmExitProcess
             uint96 amount = amounts[i - 1];
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
 
-            if (exit.toLayer2) {
+            if (exit.exitToLayer2) {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
 
                 require(
-                    transfer.fromAccountID == S.accountID &&
+                    transfer.fromAccountID== ctx.accountID &&
                     transfer.from == address(this) &&
                     transfer.to == exit.owner &&
                     transfer.tokenID == ctx.tokens[i].tokenID &&
                     transfer.amount.isAlmostEqual(amount) &&
-                    transfer.feeTokenID == ctx.tokens[i].tokenID &&
+                    transfer.feeTokenID == 0 &&
                     transfer.fee == 0,
                     "INVALID_TX_DATA"
                 );

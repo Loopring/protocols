@@ -39,6 +39,8 @@ library AmmData
         uint     minPoolAmountOut;
         uint96[] maxAmountsIn;
         uint     validUntil;
+        bool     joinFromLayer2;
+        bool     mintToLayer2;
         uint96[] fees;
     }
 
@@ -48,7 +50,13 @@ library AmmData
         uint     poolAmountIn;
         uint96[] minAmountsOut;
         uint     validUntil;
-        bool     toLayer2;
+        bool     exitToLayer2;
+    }
+
+    struct PoolTokenTransfer
+    {
+        uint96  amount;
+        address to;
     }
 
     struct LockRecord
@@ -88,6 +96,7 @@ library AmmData
         uint     txIdx;
         bytes32  domainSeparator;
         bytes32  exchangeDomainSeparator;
+        uint32   accountID;
         uint96[] ammActualL2Balances;
         uint96[] ammExpectedL2Balances;
         uint     numTransactionsConsumed;
