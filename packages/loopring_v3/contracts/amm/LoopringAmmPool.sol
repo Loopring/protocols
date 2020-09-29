@@ -94,11 +94,9 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        // TODO(daniel): delete this restriction after phase1
-        require(
-            joinFromLayer2 == false && mintToLayer2 == false,
-            "temporarily disabled in phase1"
-        );
+        if (joinFromLayer2 || mintToLayer2) {
+            revert("these options are temporarily disabled");
+        }
         state.joinPool(
             joinAmounts,
             joinFees,
@@ -120,11 +118,9 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        // TODO(daniel): delete this restriction after phase1
-        require(
-            exitToLayer2 == false && burnFromLayer2 == false,
-            "temporarily disabled in phase1"
-        );
+        if (exitToLayer2 || burnFromLayer2) {
+            revert("these options are temporarily disabled");
+        }
 
         state.exitPool(
             burnAmount,

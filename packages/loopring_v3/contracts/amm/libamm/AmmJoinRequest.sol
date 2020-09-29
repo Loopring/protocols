@@ -39,12 +39,15 @@ library AmmJoinRequest
         )
         public
     {
-        uint size = S.tokens.length;
-        require(joinAmounts.length == size - 1, "INVALID_DATA");
-        require(joinFees.length == size - 1, "INVALID_DATA");
+        uint size = S.tokens.length - 1;
+        require(
+            joinAmounts.length == size &&
+            joinFees.length == size,
+            "INVALID_PARAMS"
+        );
 
-        for (uint i = 0; i < size - 1; i++) {
-            require(joinAmounts[i] > joinFees[i], "INVALID_JOIN_AMOUNT");
+        for (uint i = 0; i < size; i++) {
+            require(joinFees[i] < joinAmounts[i], "INVALID_FEES");
         }
 
         // are locked this transaction can simply be dropped.
@@ -65,6 +68,10 @@ library AmmJoinRequest
         S.approvedTx[txHash] = 0xffffffff;
 
         if (!join.joinFromLayer2) {
+            for (uint i = 0; i < size; i++) {
+                AmmUtil.transferIn(S.tokens[i + 1].addr, joinAmounts[i]);
+            }
+
             AmmData.User storage user = S.userMap[msg.sender];
             user.lockRecords.push(
                 AmmData.LockRecord({
@@ -73,10 +80,6 @@ library AmmJoinRequest
                     validUntil: validUntil
                 })
             );
-
-            for (uint i = 1; i < size; i++) {
-                AmmUtil.transferIn(S.tokens[i].addr, joinAmounts[i - 1]);
-            }
         }
 
         emit PoolJoinRequested(join);
