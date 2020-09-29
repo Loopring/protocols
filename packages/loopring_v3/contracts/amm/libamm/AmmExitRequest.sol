@@ -36,38 +36,34 @@ library AmmExitRequest
 
     function exitPool(
         AmmData.State storage S,
+        AmmData.Direction     direction,
         uint96                burnAmount,
-        bool                  burnFromLayer2,
         uint32                burnStorageID,
-        uint96[]     calldata exitMinAmounts,
-        bool                  exitToLayer2
+        uint96[]     calldata exitMinAmounts
         )
         public
     {
         uint size = S.tokens.length - 1;
-        require(
-            exitMinAmounts.length == size &&
-            (burnFromLayer2 || burnStorageID == 0),
-            "INVALID_PARAMS"
-        );
+        require(exitMinAmounts.length == size, "INVALID_AMOUNTS_SIZE");
+
+        if (direction == AmmData.Direction.L1_TO_L1 ||
+            direction == AmmData.Direction.L1_TO_L2) {
+            require(burnStorageID == 0, "INVALID_STORAGE_ID");
+            AmmUtil.transferIn(address(this), burnAmount);
+        }
 
         AmmData.PoolExit memory exit = AmmData.PoolExit({
             owner: msg.sender,
+            direction: direction,
             burnAmount: burnAmount,
-            burnFromLayer2: burnFromLayer2,
             burnStorageID: burnStorageID,
             exitMinAmounts: exitMinAmounts,
-            exitToLayer2: exitToLayer2,
             validUntil: 0xffffffff
         });
 
         // Approve the exit
         bytes32 txHash = hash(S.domainSeparator, exit);
         S.approvedTx[txHash] = block.timestamp;
-
-        if (!burnFromLayer2) {
-            AmmUtil.transferIn(address(this), burnAmount);
-        }
 
         emit PoolExitRequested(exit);
     }
@@ -86,11 +82,10 @@ library AmmExitRequest
                 abi.encode(
                     POOLEXIT_TYPEHASH,
                     exit.owner,
+                    exit.direction,
                     exit.burnAmount,
-                    exit.burnFromLayer2,
                     exit.burnStorageID,
                     keccak256(abi.encodePacked(exit.exitMinAmounts)),
-                    exit.exitToLayer2,
                     exit.validUntil
                 )
             )

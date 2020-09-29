@@ -37,7 +37,8 @@ library AmmJoinProcess
         )
         internal
     {
-        if (!join.joinFromLayer2) {
+        if (join.direction == AmmData.Direction.L1_TO_L1 ||
+            join.direction == AmmData.Direction.L1_TO_L2) {
             require(signature.length == 0, "JOIN_FROM_L1_NEEDS_ONCHAIN_APPROVAL");
         }
 
@@ -68,7 +69,8 @@ library AmmJoinProcess
             uint96 amount = amounts[i - 1];
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
 
-            if (join.joinFromLayer2) {
+        if (join.direction == AmmData.Direction.L2_TO_L1 ||
+            join.direction == AmmData.Direction.L2_TO_L2) {
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
 
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -100,7 +102,8 @@ library AmmJoinProcess
 
         // Handle pool token
         ctx.totalSupply = ctx.totalSupply.add(mintAmount);
-        if (join.mintToLayer2) {
+        if (join.direction == AmmData.Direction.L1_TO_L2 ||
+            join.direction == AmmData.Direction.L2_TO_L2) {
             _approvePoolTokenDeposit(ctx, mintAmount, join.owner);
         } else {
             S.mint(join.owner, mintAmount);

@@ -30,12 +30,11 @@ library AmmJoinRequest
 
     function joinPool(
         AmmData.State storage S,
+        AmmData.Direction     direction,
         uint96[]     calldata joinAmounts,
         uint96[]     calldata joinFees,
-        bool                  joinFromLayer2,
         uint32                joinStorageID,
-        uint96                mintMinAmount,
-        bool                  mintToLayer2
+        uint96                mintMinAmount
         )
         public
     {
@@ -55,21 +54,22 @@ library AmmJoinRequest
         AmmData.User storage user = S.userMap[msg.sender];
 
         AmmData.PoolJoin memory join = AmmData.PoolJoin({
-            owner: msg.sender,
             index: uint32(user.lockRecords.length + 1),
+            owner: msg.sender,
+            direction:direction,
             joinAmounts: joinAmounts,
             joinFees: joinFees, // TODO: layer1 charge a fee?
-            joinFromLayer2: joinFromLayer2,
             joinStorageID: joinStorageID,
             mintMinAmount: mintMinAmount,
-            mintToLayer2: mintToLayer2,
             validUntil: validUntil
         });
 
         bytes32 txHash = hash(S.domainSeparator, join);
         S.approvedTx[txHash] = 0xffffffff;
 
-        if (!join.joinFromLayer2) {
+        if (join.direction == AmmData.Direction.L1_TO_L1 ||
+            join.direction == AmmData.Direction.L1_TO_L2) {
+
             for (uint i = 0; i < size; i++) {
                 AmmUtil.transferIn(S.tokens[i + 1].addr, joinAmounts[i]);
             }
@@ -101,14 +101,13 @@ library AmmJoinRequest
             keccak256(
                 abi.encode(
                     POOLJOIN_TYPEHASH,
-                    join.owner,
                     join.index,
+                    join.owner,
+                    join.direction,
                     keccak256(abi.encodePacked(join.joinAmounts)),
                     keccak256(abi.encodePacked(join.joinFees)),
-                    join.joinFromLayer2,
                     join.joinStorageID,
                     join.mintMinAmount,
-                    join.mintToLayer2,
                     join.validUntil
                 )
             )

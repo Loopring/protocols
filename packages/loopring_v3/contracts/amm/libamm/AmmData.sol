@@ -22,6 +22,14 @@ library AmmData
         EXIT
     }
 
+    enum Direction
+    {
+        L1_TO_L1,
+        L2_TO_L2,
+        L1_TO_L2,
+        L2_TO_L1
+    }
+
     struct PoolConfig
     {
         address   exchange;
@@ -35,25 +43,23 @@ library AmmData
 
     struct PoolJoin
     {
-        address  owner;
-        uint32   index; // for onchain approved join requests
-        uint96[] joinAmounts;
-        uint96[] joinFees;
-        bool     joinFromLayer2;
-        uint32   joinStorageID; // for tokens[1]'s' transfer from user to the pool
-        uint96   mintMinAmount;
-        bool     mintToLayer2;
-        uint     validUntil;
+        uint32    index; // for onchain approved join requests
+        address   owner;
+        Direction direction;
+        uint96[]  joinAmounts;
+        uint96[]  joinFees;
+        uint32    joinStorageID; // for tokens[1]'s' transfer from user to the pool
+        uint96    mintMinAmount;
+        uint      validUntil;
     }
 
     struct PoolExit
     {
         address  owner;
+        Direction direction;
         uint96   burnAmount;
-        bool     burnFromLayer2;
         uint32   burnStorageID; // for pool token withdrawal from user to the pool
         uint96[] exitMinAmounts;
-        bool     exitToLayer2;
         uint     validUntil;
     }
 

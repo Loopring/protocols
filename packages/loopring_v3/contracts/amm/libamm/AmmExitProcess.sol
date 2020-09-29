@@ -38,7 +38,8 @@ library AmmExitProcess
         )
         internal
     {
-        if (!exit.burnFromLayer2) {
+        if (exit.direction == AmmData.Direction.L1_TO_L1 ||
+            exit.direction == AmmData.Direction.L1_TO_L2) {
             require(signature.length == 0, "BURN_FROM_L1_NEEDS_ONCHAIN_APPROVAL");
         }
 
@@ -57,7 +58,9 @@ library AmmExitProcess
             uint96 amount = amounts[i - 1];
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
 
-            if (exit.exitToLayer2) {
+            if (exit.direction == AmmData.Direction.L1_TO_L2 ||
+                exit.direction == AmmData.Direction.L2_TO_L2) {
+
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
 
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -69,7 +72,7 @@ library AmmExitProcess
                 require(
                     transfer.fromAccountID== ctx.accountID &&
                     transfer.from == address(this) &&
-                    transfer.to == exit.owner &&
+                    transfer.to == address(this) &&
                     transfer.tokenID == ctx.tokens[i].tokenID &&
                     transfer.amount.isAlmostEqual(amount) &&
                     transfer.feeTokenID == 0 &&
@@ -79,12 +82,17 @@ library AmmExitProcess
 
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(address(this), txHash);
+            } else {
+                AmmData.User storage user = S.userMap[exit.owner];
+                address token = ctx.tokens[i].addr;
+                user.withdrawable[token] = user.withdrawable[token].add(amount);
             }
         }
 
         // Handle pool token
         ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
-        if (exit.burnFromLayer2) {
+        if (exit.direction == AmmData.Direction.L2_TO_L1 ||
+            exit.direction == AmmData.Direction.L2_TO_L2) {
             _approvePoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
         } else {
             S.burn(address(this), exit.burnAmount);

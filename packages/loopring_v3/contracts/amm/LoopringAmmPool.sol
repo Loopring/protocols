@@ -83,51 +83,49 @@ contract LoopringAmmPool is
     }
 
     function joinPool(
+        AmmData.Direction direction,
         uint96[] calldata joinAmounts,
         uint96[] calldata joinFees,
-        bool              joinFromLayer2,
         uint32            joinStorageID,
-        uint96            mintMinAmount,
-        bool              mintToLayer2
+        uint96            mintMinAmount
         )
         external
         onlyWhenOnline
         nonReentrant
     {
-        if (joinFromLayer2 || mintToLayer2) {
-            revert("these options are temporarily disabled");
-        }
+        require(
+            direction == AmmData.Direction.L1_TO_L1,
+            "OTHER_OPTIONS_DISABLED"
+        );
         state.joinPool(
+            direction,
             joinAmounts,
             joinFees,
-            joinFromLayer2,
             joinStorageID,
-            mintMinAmount,
-            mintToLayer2
+            mintMinAmount
         );
     }
 
     function exitPool(
+        AmmData.Direction direction,
         uint96            burnAmount,
-        bool              burnFromLayer2,
         uint32            burnStorageID,
-        uint96[] calldata exitMinAmounts,
-        bool              exitToLayer2
+        uint96[] calldata exitMinAmounts
         )
         external
         onlyWhenOnline
         nonReentrant
     {
-        if (exitToLayer2 || burnFromLayer2) {
-            revert("these options are temporarily disabled");
-        }
+        require(
+            direction == AmmData.Direction.L1_TO_L1,
+            "OTHER_OPTIONS_DISABLED"
+        );
 
         state.exitPool(
+            direction,
             burnAmount,
-            burnFromLayer2,
             burnStorageID,
-            exitMinAmounts,
-            exitToLayer2
+            exitMinAmounts
         );
     }
 
