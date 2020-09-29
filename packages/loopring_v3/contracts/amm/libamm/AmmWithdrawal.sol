@@ -26,7 +26,7 @@ library AmmWithdrawal
         public
     {
         (uint[] memory amounts, uint newStartIndex) = getWithdrawables(S);
-        AmmData.User storage user = S.UserMap[msg.sender];
+        AmmData.User storage user = S.userMap[msg.sender];
 
         // Clear pool token withdrawable
 
@@ -41,7 +41,7 @@ library AmmWithdrawal
 
         // Delete expired joins
         for (uint i = user.startIndex; i < newStartIndex; i++) {
-            delete S.approvedTx[user.lockRecords[i].hash];
+            delete S.approvedTx[user.lockRecords[i].txHash];
             delete user.lockRecords[i];
         }
 
@@ -61,7 +61,7 @@ library AmmWithdrawal
         uint size = S.tokens.length;
         amounts = new uint[](size);
 
-        AmmData.User storage user = S.UserMap[msg.sender];
+        AmmData.User storage user = S.userMap[msg.sender];
 
         amounts[0] = user.withdrawable[address(this)];
 
@@ -76,7 +76,7 @@ library AmmWithdrawal
                 return (amounts, idx);
             }
 
-            if (S.approvedTx[record.hash] > 0) {
+            if (S.approvedTx[record.txHash] > 0) {
                 for (uint i = 0; i < size; i++) {
                     amounts[i + 1] = amounts[i].add(record.amounts[i]);
                 }
@@ -88,6 +88,7 @@ library AmmWithdrawal
 
     // Only used to withdraw from the pool when shutdown.
     // Otherwise LPs should withdraw by doing normal queued exit requests.
+    // TODO:
     function withdrawFromPoolWhenShutdown(
         AmmData.State storage S,
         uint                  poolAmountIn
@@ -116,6 +117,8 @@ library AmmWithdrawal
                 exchange.getAmountWithdrawable(address(this), token) == 0,
                 "MORE_TO_WITHDRAWAL"
             );
+
+            // TODO: chec
         }
 
         // Withdraw proportionally to the liquidity owned

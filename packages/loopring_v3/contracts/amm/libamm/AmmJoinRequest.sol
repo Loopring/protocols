@@ -23,32 +23,10 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint256 validUntil)"
+        "PoolJoin(address owner,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256 validUntil,uint256[] fees)"
     );
 
-    event Deposit(address owner, uint96[] amounts);
     event PoolJoinRequested(AmmData.PoolJoin join);
-
-    function depositToPool(
-        AmmData.State storage S,
-        uint96[]     calldata amounts
-        )
-        public
-    {
-        uint size = S.tokens.length;
-        require(amounts.length == size + 1, "INVALID_DATA");
-
-        // Deposit pool tokens
-        AmmUtil.transferIn(address(this), amounts[0]);
-
-        // Deposit AMM tokens
-        for (uint i = 0; i < size; i++) {
-            AmmUtil.transferIn(S.tokens[i].addr, amounts[i + 1]);
-        }
-
-        emit Deposit(msg.sender, amounts);
-    }
-
 
     // Submit a layer-1 join request
     function joinPool(
@@ -59,14 +37,13 @@ library AmmJoinRequest
         )
         public
     {
-        uint size =  S.tokens.length;
-        require(maxAmountsIn.length == size, "INVALID_DATA");
+        uint size = S.tokens.length;
+        require(maxAmountsIn.length == size - 1, "INVALID_DATA");
+        require(fees.length == size - 1, "INVALID_DATA");
 
-        for (uint i = 0; i < size; i++) {
+        for (uint i = 0; i < size - 1; i++) {
             require(maxAmountsIn[i] > fees[i], "INVALID_JOIN_AMOUNT");
         }
-
-        // Don't check the available funds here, if the operator isn't sure the funds
 
         // are locked this transaction can simply be dropped.
         uint validUntil = block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN();
@@ -83,84 +60,21 @@ library AmmJoinRequest
         // Approve the join
         S.approvedTx[txHash] = 0xffffffff;
 
-        AmmData.User storage user = S.UserMap[msg.sender];
+        AmmData.User storage user = S.userMap[msg.sender];
         user.lockRecords.push(
             AmmData.LockRecord({
-                hash:txHash,
+                txHash:txHash,
                 amounts: maxAmountsIn,
                 validUntil: validUntil
             })
         );
 
         // Deposit AMM tokens
-        for (uint i = 0; i < size; i++) {
-            AmmUtil.transferIn(S.tokens[i].addr, maxAmountsIn[i]);
+        for (uint i = 1; i < size; i++) {
+            AmmUtil.transferIn(S.tokens[i].addr, maxAmountsIn[i - 1]);
         }
 
         emit PoolJoinRequested(join);
-    }
-
-    function withdraw(AmmData.State storage S)
-        public
-    {
-        (uint[] memory amounts, uint newStartIndex) = getWithdrawables(S);
-        AmmData.User storage user = S.UserMap[msg.sender];
-
-        // Clear pool token withdrawable
-
-        delete user.withdrawable[address(this)];
-        AmmUtil.transferOut(address(this), amounts[0], msg.sender);
-
-        // Clear each token's withdrawable
-        for (uint i = 0; i < S.tokens.length; i++) {
-            delete user.withdrawable[S.tokens[i].addr];
-            AmmUtil.transferOut(S.tokens[i].addr, amounts[i + 1], msg.sender);
-        }
-
-        // Delete expired joins
-        for (uint i = user.startIndex; i < newStartIndex; i++) {
-            delete S.approvedTx[user.lockRecords[i].hash];
-            delete user.lockRecords[i];
-        }
-
-        user.startIndex = newStartIndex;
-
-        // TODO: Transfer tokens back to the user
-    }
-
-    function getWithdrawables(AmmData.State storage S)
-        internal
-        view
-        returns (
-            uint[] memory amounts,
-            uint   newStartIndex
-        )
-    {
-        uint size = S.tokens.length;
-        amounts = new uint[](size);
-
-        AmmData.User storage user = S.UserMap[msg.sender];
-
-        amounts[0] = user.withdrawable[address(this)];
-
-        for (uint i = 0; i < size; i++) {
-            amounts[i] = user.withdrawable[S.tokens[i].addr];
-        }
-
-        uint idx = user.startIndex;
-        while(idx < user.lockRecords.length) {
-            AmmData.LockRecord storage record = user.lockRecords[idx];
-            if (record.validUntil > block.timestamp) {
-                return (amounts, idx);
-            }
-
-            if (S.approvedTx[record.hash] > 0) {
-                for (uint i = 0; i < size; i++) {
-                    amounts[i + 1] = amounts[i].add(record.amounts[i]);
-                }
-            }
-        }
-        return (amounts, idx);
     }
 
     function hashPoolJoin(
@@ -179,8 +93,8 @@ library AmmJoinRequest
                     join.owner,
                     join.minPoolAmountOut,
                     keccak256(abi.encodePacked(join.maxAmountsIn)),
-                    keccak256(abi.encodePacked(join.fees)),
-                    join.validUntil
+                    join.validUntil,
+                    keccak256(abi.encodePacked(join.fees))
                 )
             )
         );

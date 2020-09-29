@@ -148,7 +148,7 @@ library AmmJoinProcess
     {
         // Check if we can still use this join
         amounts = new uint96[](ctx.size - 1);
-        uint _totalSupply = S.totalSupply.sub(S.poolTokenToBurn);
+        uint _totalSupply = S.totalSupply.sub(S.poolAmountToBurn);
 
         if (block.timestamp > join.validUntil) {
             return (false, 0, amounts);

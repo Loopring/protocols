@@ -54,15 +54,17 @@ library AmmStatus
         S.poolName = config.poolName;
         S.symbol = config.tokenSymbol;
 
-        address depositContract = address(exchange.getDepositContract());
-
+        // The first token is the pool token
         S.tokens.push(AmmData.Token({
             addr: address(this),
             tokenID: exchange.getTokenID(address(this)),
-            weight: 0
+            weight: 0 // never used
         }));
 
+        address depositContract = address(exchange.getDepositContract());
         for (uint i = 0; i < config.tokens.length; i++) {
+            require(config.weights[i] > 0, "INVALID_TOKEN_WEIGHT");
+
             address token = config.tokens[i];
             S.tokens.push(AmmData.Token({
                 addr: token,
@@ -117,6 +119,8 @@ library AmmStatus
             delete S.approvedTx[poolTxHash];
         } else {
             require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
+            require(S.consumedTx[poolTxHash] == false, "CONSUMED");
+            S.consumedTx[poolTxHash] = true;
         }
     }
 }

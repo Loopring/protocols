@@ -53,7 +53,7 @@ library AmmData
 
     struct LockRecord
     {
-        bytes32  hash;
+        bytes32  txHash;
         uint96[] amounts; // the size should be either 1 or tokens.length
         uint     validUntil;
     }
@@ -104,7 +104,6 @@ library AmmData
         string poolName;
         string symbol;
         uint   totalSupply;
-
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
 
@@ -117,12 +116,13 @@ library AmmData
         Token[]     tokens;
 
         // Pool tokens to be burned from this address.
-        uint        poolTokenToBurn;
+        uint        poolAmountToBurn;
 
-        mapping (address => User) UserMap;
+        mapping (address => User) userMap;
 
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => uint) approvedTx;
+        mapping (bytes32 => bool) consumedTx;
 
         // A map from an address to a nonce.
         mapping(address => uint) nonces;

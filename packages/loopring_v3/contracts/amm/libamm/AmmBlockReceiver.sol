@@ -20,7 +20,6 @@ library AmmBlockReceiver
     using AmmUpdateProcess  for AmmData.State;
     using BlockReader       for ExchangeData.Block;
 
-
     function beforeBlockSubmission(
         AmmData.State      storage S,
         ExchangeData.Block memory  _block,
@@ -67,7 +66,7 @@ library AmmBlockReceiver
         }
 
         // Deposit/Withdraw to/from the AMM account when necessary
-        for (uint i = 0; i < size + 1; i++) {
+        for (uint i = 0; i < size; i++) {
             _processPoolBalance(
                 S,
                 ctx,
@@ -89,10 +88,10 @@ library AmmBlockReceiver
         )
         public
     {
-        uint poolTokenToBurn = S.poolTokenToBurn;
-        if (poolTokenToBurn > 0) {
-            S.poolTokenToBurn = 0;
-            S.burn(address(this), poolTokenToBurn);
+        uint poolAmountToBurn = S.poolAmountToBurn;
+        if (poolAmountToBurn > 0) {
+            S.poolAmountToBurn = 0;
+            S.burn(address(this), poolAmountToBurn);
         }
     }
 
@@ -115,6 +114,8 @@ library AmmBlockReceiver
                 abi.decode(poolTx.data, (AmmData.PoolExit)),
                 poolTx.signature
             );
+        } else {
+            revert("INVALID_TYPE");
         }
     }
 
