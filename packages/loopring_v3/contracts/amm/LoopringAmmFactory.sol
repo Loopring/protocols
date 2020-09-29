@@ -22,29 +22,30 @@ contract LoopringAmmFactory is ReentrancyGuard
         poolImplementation = _poolImplementation;
     }
 
-    function createPool(AmmData.PoolConfig calldata config)
+    function createPool(
+        uint salt,
+        AmmData.PoolConfig calldata config
+        )
         external
         nonReentrant
         returns (address payable pool)
     {
-        bytes32 salt = keccak256(
-            abi.encodePacked(
-                config.exchange,
-                config.poolName,
-                config.accountID,
-                config.poolTokenID,
-                config.tokens,
-                config.weights,
-                config.feeBips,
-                config.tokenSymbol
-            )
-        );
-
-        pool = Create2.deploy(salt, type(SimpleProxy).creationCode);
+        pool = Create2.deploy(bytes32(salt), type(SimpleProxy).creationCode);
 
         SimpleProxy(pool).setImplementation(poolImplementation);
         LoopringAmmPool(pool).setupPool(config);
 
         emit PoolCreated(config, pool);
+    }
+
+   function getPoolAddress(uint salt)
+        public
+        view
+        returns (address)
+    {
+        return Create2.computeAddress(
+            bytes32(salt),
+            type(SimpleProxy).creationCode
+        );
     }
 }
