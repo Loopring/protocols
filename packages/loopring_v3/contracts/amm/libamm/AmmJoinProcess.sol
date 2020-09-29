@@ -155,7 +155,6 @@ library AmmJoinProcess
         );
     }
 
-    // TODO: do not use deposit, use one deposit and then all transfers.
     function _approvePoolTokenDeposit(
         AmmData.Context  memory  ctx,
         uint96                   amount,
