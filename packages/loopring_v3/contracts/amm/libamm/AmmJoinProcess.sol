@@ -38,7 +38,13 @@ library AmmJoinProcess
         internal
         returns(AmmData.PoolTokenTransfer memory ptt)
     {
-       S.validatePoolTransaction(
+        if (join.joinFromLayer2) {
+            require(signature.length != 0, "NOT_ALLOWED");
+        } else {
+            require(signature.length == 0, "NOT_ALLOWED");
+        }
+
+        S.validatePoolTransaction(
             join.owner,
             AmmJoinRequest.hashPoolJoin(ctx.domainSeparator, join),
             signature

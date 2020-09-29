@@ -82,16 +82,6 @@ contract LoopringAmmPool is
         state.shutdown(txHash);
     }
 
-    // Only used to withdraw from the pool when shutdown.
-    // Otherwise LPs should withdraw by doing normal queued exit requests.
-    function withdrawFromPoolWhenShutdown(uint poolAmountIn)
-        external
-        onlyWhenOffline
-        nonReentrant
-    {
-        state.withdrawFromPoolWhenShutdown(poolAmountIn);
-    }
-
     function joinPool(
         uint              minPoolAmountOut,
         uint96[] calldata maxAmountsIn,
@@ -155,5 +145,15 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.afterBlockSubmission(_block);
+    }
+
+        // Only used to withdraw from the pool when shutdown.
+    // Otherwise LPs should withdraw by doing normal queued exit requests.
+    function withdrawFromPoolWhenShutdown(uint poolAmountIn)
+        external
+        onlyWhenOffline
+        nonReentrant
+    {
+        state.withdrawFromPoolWhenShutdown(poolAmountIn);
     }
 }

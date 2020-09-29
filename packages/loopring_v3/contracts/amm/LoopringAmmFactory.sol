@@ -43,9 +43,6 @@ contract LoopringAmmFactory is ReentrancyGuard
         view
         returns (address)
     {
-        return Create2.computeAddress(
-            bytes32(salt),
-            type(SimpleProxy).creationCode
-        );
+        return Create2.computeAddress(bytes32(salt), type(SimpleProxy).creationCode);
     }
 }

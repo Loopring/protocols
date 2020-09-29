@@ -75,6 +75,12 @@ library AmmExitProcess
         )
         internal
     {
+        if (join.burnFromLayer2) {
+            require(signature.length != 0, "NOT_ALLOWED");
+        } else {
+            require(signature.length == 0, "NOT_ALLOWED");
+        }
+
         S.validatePoolTransaction(
             exit.owner,
             AmmExitRequest.hashPoolExit(ctx.domainSeparator, exit),
