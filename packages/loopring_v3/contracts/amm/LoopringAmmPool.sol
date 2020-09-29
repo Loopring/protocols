@@ -106,7 +106,8 @@ contract LoopringAmmPool is
         uint              poolAmountIn,
         uint96[] calldata minAmountsOut,
         bool              exitToLayer2,
-        bool              burnFromLayer2
+        bool              burnFromLayer2,
+        uint32            storageID
         )
         external
         onlyWhenOnline
@@ -117,7 +118,7 @@ contract LoopringAmmPool is
             exitToLayer2 == false && burnFromLayer2 == false,
             "temporarily disabled in phase1"
         );
-        state.exitPool(poolAmountIn, minAmountsOut, exitToLayer2, burnFromLayer2);
+        state.exitPool(poolAmountIn, minAmountsOut, exitToLayer2, burnFromLayer2, storageID);
     }
 
     function beforeBlockSubmission(

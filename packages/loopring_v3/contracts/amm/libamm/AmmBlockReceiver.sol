@@ -63,13 +63,9 @@ library AmmBlockReceiver
         // The openning AMM updates. This also pulls the AMM balances onchain.
         S.processAmmUpdates(ctx, true);
 
-        // Process all pool transactions and get a list of pool token transfers from
-        // the pool to newly-joined users.
-        uint txCount = poolTransactions.length;
-        AmmData.PoolTokenTransfer[] memory poolTokenTransfers = new AmmData.PoolTokenTransfer[](txCount);
-
-        for (uint i = 0; i < txCount; i++) {
-            poolTokenTransfers[i] = _processPoolTransaction(S, ctx, poolTransactions[i]);
+        // Process all pool transactions
+        for (uint i = 0; i < poolTransactions.length; i++) {
+            _processPoolTransaction(S, ctx, poolTransactions[i]);
         }
 
         // Deposit to or withdraw from the AMM account when necessary, this includes the pool token.
@@ -80,12 +76,6 @@ library AmmBlockReceiver
                 ctx.ammExpectedL2Balances[i],
                 ctx.ammActualL2Balances[i]
             );
-        }
-
-        // Now that pool tokens may have been deposited to the pool's layer-2 account,
-        // we need to transfer these pool tokens to the user's address.
-        for (uint i = 0; i < txCount; i++) {
-            AmmJoinProcess.processPoolTokenTransfer(ctx, poolTokenTransfers[i]);
         }
 
         // The closing AMM updates
@@ -116,10 +106,9 @@ library AmmBlockReceiver
         AmmData.PoolTransaction memory  poolTx
         )
         private
-        returns(AmmData.PoolTokenTransfer memory poolTokenTransfer)
     {
         if (poolTx.txType == AmmData.PoolTransactionType.JOIN) {
-            poolTokenTransfer = S.processJoin(
+            S.processJoin(
                 ctx,
                 abi.decode(poolTx.data, (AmmData.PoolJoin)),
                 poolTx.signature
@@ -144,13 +133,13 @@ library AmmBlockReceiver
         private
     {
         if (ammExpectedL2Balance > ammActualL2Balance) {
-            AmmJoinProcess.processExchangeDeposit(
+            AmmJoinProcess.processTokenDeposit(
                 ctx,
                 token,
                 ammExpectedL2Balance - ammActualL2Balance
             );
         } else if (ammExpectedL2Balance < ammActualL2Balance) {
-            AmmExitProcess.processExchangeWithdrawal(
+            AmmExitProcess.processTokenWithdrawal(
                 ctx,
                 token,
                 ammActualL2Balance - ammExpectedL2Balance

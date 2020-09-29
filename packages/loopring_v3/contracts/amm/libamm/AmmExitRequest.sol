@@ -29,7 +29,7 @@ library AmmExitRequest
     );
 
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,uint256 poolAmountIn,uint256[] minAmountsOut,uint256 validUntil,bool exitToLayer2,burnFromLayer2)"
+        "PoolExit(address owner,uint256 poolAmountIn,uint256[] minAmountsOut,uint256 validUntil,bool exitToLayer2,burnFromLayer2,uint32 storageID)"
     );
 
     event PoolExitRequested(AmmData.PoolExit exit);
@@ -39,11 +39,13 @@ library AmmExitRequest
         uint                  poolAmountIn,
         uint96[]     calldata minAmountsOut,
         bool                  exitToLayer2,
-        bool                  burnFromLayer2
+        bool                  burnFromLayer2,
+        uint32                storageID
         )
         public
     {
         require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
+        require(burnFromLayer2 || storageID == 0, "INVALID_STORAGE_ID");
 
         AmmData.PoolExit memory exit = AmmData.PoolExit({
             owner: msg.sender,
@@ -51,7 +53,8 @@ library AmmExitRequest
             minAmountsOut: minAmountsOut,
             validUntil: 0xffffffff,
             exitToLayer2: exitToLayer2,
-            burnFromLayer2: burnFromLayer2
+            burnFromLayer2: burnFromLayer2,
+            storageID: storageID
         });
 
         // Approve the exit
@@ -83,7 +86,8 @@ library AmmExitRequest
                     keccak256(abi.encodePacked(exit.minAmountsOut)),
                     exit.validUntil,
                     exit.exitToLayer2,
-                    exit.burnFromLayer2
+                    exit.burnFromLayer2,
+                    exit.storageID
                 )
             )
         );
@@ -127,7 +131,7 @@ library AmmExitRequest
     }
 
     // Withdraw any outstanding balances for the pool account on the exchange
-    function _processExchangeWithdrawalApprovedWithdrawals(AmmData.State storage S)
+    function _processTokenWithdrawalApprovedWithdrawals(AmmData.State storage S)
         private
     {
         uint size = S.tokens.length;

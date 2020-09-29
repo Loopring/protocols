@@ -36,7 +36,6 @@ library AmmJoinProcess
         bytes            memory  signature
         )
         internal
-        returns(AmmData.PoolTokenTransfer memory ptt)
     {
         // Joins using funds on layer-1 must be approved onchain.
         require(join.joinFromLayer2 || signature.length == 0, "PROHIBITED");
@@ -51,18 +50,7 @@ library AmmJoinProcess
         // TODO(daniel): change poolAmountOut to uint96
         (bool slippageRequirementMet, uint poolAmountOut, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
 
-        if (!slippageRequirementMet) ptt;
-
-        // Handle pool token
-        if (join.mintToLayer2) {
-            S.mint(address(this), poolAmountOut);
-            // The following will trigger a pool token deposit to the user's layer-2 account
-            ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].add(poolAmountOut.toUint96());
-            ptt.amount = poolAmountOut.toUint96();
-            ptt.to = join.owner;
-        } else {
-            S.mint(join.owner, poolAmountOut);
-        }
+        if (!slippageRequirementMet) return;
 
          // Handle liquidity tokens
         for (uint i = 1; i < ctx.size; i++) {
@@ -92,9 +80,19 @@ library AmmJoinProcess
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
             }
         }
+
+        // Handle pool token
+        if (join.mintToLayer2) {
+            // The following will trigger a pool token deposit to the user's layer-2 account
+            // ammExpectedL2Balances => mint to pool's address
+            ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].add(poolAmountOut.toUint96());
+            _processPoolTokenDeposit(ctx, poolAmountOut.toUint96(), join.owner);
+        } else {
+            S.mint(join.owner, poolAmountOut);
+        }
     }
 
-    function processExchangeDeposit(
+    function processTokenDeposit(
         AmmData.Context  memory  ctx,
         AmmData.Token    memory  token,
         uint96                   amount
@@ -137,31 +135,34 @@ library AmmJoinProcess
         );
     }
 
-    function processPoolTokenTransfer(
-        AmmData.Context           memory  ctx,
-        AmmData.PoolTokenTransfer memory  poolTokenTransfer
+    function _processPoolTokenDeposit(
+        AmmData.Context  memory  ctx,
+        uint96                   amount,
+        address                  to
         )
-        internal
+        private
     {
-            TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
-            ctx.numTransactionsConsumed++;
+        require(amount > 0, "INVALID_DEPOSIT_AMOUNT");
 
-            // We do not check these fields: toAccountID, storageID
-            require(
-                transfer.to == poolTokenTransfer.to &&
-                transfer.from == address(this) &&
-                transfer.fromAccountID == ctx.accountID &&
-                transfer.tokenID == ctx.tokens[0].tokenID &&
-                transfer.amount.isAlmostEqual(poolTokenTransfer.amount) &&
-                transfer.feeTokenID == 0 &&
-                transfer.fee == 0,
-                "INVALID_TX_DATA"
-            );
+        // Check that the deposit in the block matches the expected deposit
+        DepositTransaction.Deposit memory deposit = ctx._block.readDeposit(ctx.txIdx++);
+        ctx.numTransactionsConsumed++;
 
-            // Now approve this transfer
-            transfer.validUntil = 0xffffffff;
-            bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-            ctx.exchange.approveTransaction(address(this), txHash);
+        require(
+            deposit.owner == address(this) &&
+            deposit.accountID== ctx.accountID &&
+            deposit.tokenID == ctx.tokens[0].tokenID &&
+            deposit.amount == amount,
+            "INVALID_TX_DATA"
+        );
+
+        ctx.exchange.deposit{value: 0}(
+            deposit.owner,
+            to,
+            ctx.tokens[0].addr,
+            deposit.amount,
+            new bytes(0)
+        );
     }
 
     function _calculateJoinAmounts(

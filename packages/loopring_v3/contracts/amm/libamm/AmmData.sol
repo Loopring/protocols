@@ -52,13 +52,7 @@ library AmmData
         uint     validUntil;
         bool     exitToLayer2;
         bool     burnFromLayer2;
-    }
-
-    // A transfer of the pool token from the pool to a user on layer2
-    struct PoolTokenTransfer
-    {
-        uint96  amount;
-        address to;
+        uint32   storageID; // if using layer-2 pool token to exit
     }
 
     struct LockRecord

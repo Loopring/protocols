@@ -29,7 +29,7 @@ library AmmExitProcess
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-    function processExchangeWithdrawal(
+    function processTokenWithdrawal(
         AmmData.Context  memory  ctx,
         AmmData.Token    memory  token,
         uint                     amount
@@ -88,14 +88,6 @@ library AmmExitProcess
 
         if (!slippageRequirementMet) return;
 
-        // Handle pool token
-        if (exit.burnFromLayer2) {
-            ctx.poolAmountToBurn = ctx.poolAmountToBurn.add(exit.poolAmountIn);
-            ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].sub(exit.poolAmountIn.toUint96());
-        } else {
-            S.burn(address(this), exit.poolAmountIn);
-        }
-
          // Handle liquidity tokens
         for (uint i = 1; i < ctx.size; i++) {
             uint96 amount = amounts[i - 1];
@@ -124,6 +116,56 @@ library AmmExitProcess
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
             }
         }
+
+        // Handle pool token
+        if (exit.burnFromLayer2) {
+            ctx.ammActualL2Balances[0] = ctx.ammActualL2Balances[0].add(exit.poolAmountIn.toUint96());
+            _processPoolTokenWithdrawal(ctx, exit.poolAmountIn, exit.owner, exit.storageID);
+        } else {
+            S.burn(address(this), exit.poolAmountIn);
+        }
+    }
+
+    function _processPoolTokenWithdrawal(
+        AmmData.Context  memory  ctx,
+        uint                     amount,
+        address                  from,
+        uint32                   storageID
+        )
+        internal
+    {
+        // Check that the withdrawal in the block matches the expected withdrawal
+        WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
+        ctx.numTransactionsConsumed++;
+
+        // These fields are not read by readWithdrawal: to, extraData, minGas, validUntil
+        withdrawal.to = address(this);
+        withdrawal.extraData = new bytes(0);
+        withdrawal.minGas = 0;
+        withdrawal.validUntil = 0xffffffff;
+
+        bytes32 expectedOnchainDataHash = WithdrawTransaction.hashOnchainData(
+            withdrawal.minGas,
+            withdrawal.to,
+            withdrawal.extraData
+        );
+
+        require(
+            withdrawal.withdrawalType == 1 &&
+            withdrawal.owner == from &&
+            withdrawal.accountID == 0 &&
+            withdrawal.tokenID == ctx.tokens[0].tokenID &&
+            withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
+            withdrawal.feeTokenID == 0 &&
+            withdrawal.fee == 0 &&
+            withdrawal.storageID == storageID &&
+            withdrawal.onchainDataHash == expectedOnchainDataHash,
+            "INVALID_TX_DATA"
+        );
+
+        // Now approve this withdrawal
+        bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
+        ctx.exchange.approveTransaction(from, txHash);
     }
 
     function _validateExitAmounts(
