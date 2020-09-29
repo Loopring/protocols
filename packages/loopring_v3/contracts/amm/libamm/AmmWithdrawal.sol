@@ -24,34 +24,36 @@ library AmmWithdrawal
     using MathUint96        for uint96;
     using SafeCast          for uint;
 
+    // TODO: fix logical error and handle exitLocks
     function withdraw(AmmData.State storage S)
         public
     {
-        (uint[] memory amounts, uint newStartIndex) = getWithdrawables(S);
-        AmmData.User storage user = S.userMap[msg.sender];
+        // (uint[] memory amounts, uint newStartIndex) = getWithdrawables(S);
+        // AmmData.User storage user = S.userMap[msg.sender];
 
-        // Clear pool token withdrawable
+        // // Clear pool token withdrawable
 
-        delete user.withdrawable[address(this)];
-        AmmUtil.transferOut(address(this), amounts[0], msg.sender);
+        // delete user.withdrawable[address(this)];
+        // AmmUtil.transferOut(address(this), amounts[0], msg.sender);
 
-        // Clear each token's withdrawable
-        for (uint i = 0; i < S.tokens.length; i++) {
-            delete user.withdrawable[S.tokens[i].addr];
-            AmmUtil.transferOut(S.tokens[i].addr, amounts[i + 1], msg.sender);
-        }
+        // // Clear each token's withdrawable
+        // for (uint i = 0; i < S.tokens.length; i++) {
+        //     delete user.withdrawable[S.tokens[i].addr];
+        //     AmmUtil.transferOut(S.tokens[i].addr, amounts[i + 1], msg.sender);
+        // }
 
-        // Delete expired joins
-        for (uint i = user.startIndex; i < newStartIndex; i++) {
-            delete S.approvedTx[user.lockRecords[i].txHash];
-            delete user.lockRecords[i];
-        }
+        // // Delete expired joins
+        // for (uint i = user.joinStartIdx; i < newStartIndex; i++) {
+        //     delete S.approvedTx[user.joinLocks[i].txHash];
+        //     delete user.joinLocks[i];
+        // }
 
-        user.startIndex = newStartIndex;
+        // user.joinStartIdx = newStartIndex;
 
         // TODO: Transfer tokens back to the user
     }
 
+    // TODO: fix logical error and handle exitLocks
     function getWithdrawables(AmmData.State storage S)
         internal
         view
@@ -60,31 +62,29 @@ library AmmWithdrawal
             uint   newStartIndex
         )
     {
-        uint size = S.tokens.length;
-        amounts = new uint[](size);
+        // uint size = S.tokens.length;
+        // amounts = new uint[](size);
 
-        AmmData.User storage user = S.userMap[msg.sender];
+        // AmmData.User storage user = S.userMap[msg.sender];
 
-        amounts[0] = user.withdrawable[address(this)];
+        // for (uint i = 0; i < size; i++) {
+        //     amounts[i] = user.withdrawable[S.tokens[i].addr];
+        // }
 
-        for (uint i = 0; i < size; i++) {
-            amounts[i] = user.withdrawable[S.tokens[i].addr];
-        }
+        // uint idx = user.joinStartIdx;
+        // while(idx < user.joinLocks.length) {
+        //     AmmData.LockRecord storage record = user.joinLocks[idx];
+        //     if (record.validUntil > block.timestamp) {
+        //         return (amounts, idx);
+        //     }
 
-        uint idx = user.startIndex;
-        while(idx < user.lockRecords.length) {
-            AmmData.LockRecord storage record = user.lockRecords[idx];
-            if (record.validUntil > block.timestamp) {
-                return (amounts, idx);
-            }
-
-            if (S.approvedTx[record.txHash] > 0) {
-                for (uint i = 0; i < size; i++) {
-                    amounts[i + 1] = amounts[i].add(record.amounts[i]);
-                }
-            }
-        }
-        return (amounts, idx);
+        //     if (S.approvedTx[record.txHash] > 0) {
+        //         for (uint i = 0; i < size - 1; i++) {
+        //             amounts[i] = amounts[i].add(record.amounts[i]);
+        //         }
+        //     }
+        // }
+        // return (amounts, idx);
     }
 
     // Only used to withdraw from the pool when shutdown.

@@ -63,7 +63,7 @@ library AmmJoinProcess
             AmmData.User storage user = S.userMap[msg.sender];
 
             // Deleteting the lock record indicates a successful processing of the join.
-            delete user.lockRecords[join.index - 1];
+            delete user.joinLocks[join.index - 1];
         }
 
          // Handle liquidity tokens
@@ -121,7 +121,6 @@ library AmmJoinProcess
     {
         require(amount > 0, "INVALID_DEPOSIT_AMOUNT");
 
-        // Check that the deposit in the block matches the expected deposit
         DepositTransaction.Deposit memory deposit = ctx._block.readDeposit(ctx.txIdx++);
         ctx.numTransactionsConsumed++;
 
@@ -170,7 +169,6 @@ library AmmJoinProcess
 
         AmmData.Token memory poolToken = ctx.tokens[ctx.size];
 
-        // TODO(brecht):we need to read the `to` address of the deposit.
         require(
             deposit.owner == address(this) &&
             deposit.accountID== ctx.accountID &&

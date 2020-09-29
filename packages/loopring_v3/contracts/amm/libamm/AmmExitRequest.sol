@@ -24,10 +24,7 @@ library AmmExitRequest
     using SafeCast          for uint;
     using SignatureUtil     for bytes32;
 
-    bytes32 constant public WITHDRAW_TYPEHASH = keccak256(
-        "Withdraw(address owner,uint256[] amounts,uint256 validUntil,uint256 nonce)"
-    );
-
+    // TODO:fix this string
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
         "PoolExit(address owner,uint96 burnAmount,bool burnFromLayer2,uint32 burnStorageID,uint96[] exitMinAmounts,bool exitToLayer2,uint256 validUntil)"
     );
@@ -46,24 +43,42 @@ library AmmExitRequest
         uint size = S.tokens.length - 1;
         require(exitMinAmounts.length == size, "INVALID_AMOUNTS_SIZE");
 
-        if (direction == AmmData.Direction.L1_TO_L1 ||
-            direction == AmmData.Direction.L1_TO_L2) {
-            require(burnStorageID == 0, "INVALID_STORAGE_ID");
-            AmmUtil.transferIn(address(this), burnAmount);
-        }
+        AmmData.User storage user = S.userMap[msg.sender];
+        uint32 index = uint32(user.exitLocks.length + 1);
+        uint validUntil = 0xffffffff;
 
         AmmData.PoolExit memory exit = AmmData.PoolExit({
+            index: index,
             owner: msg.sender,
             direction: direction,
             burnAmount: burnAmount,
             burnStorageID: burnStorageID,
             exitMinAmounts: exitMinAmounts,
-            validUntil: 0xffffffff
+            validUntil: validUntil
         });
 
         // Approve the exit
         bytes32 txHash = hash(S.domainSeparator, exit);
         S.approvedTx[txHash] = block.timestamp;
+
+        if (direction == AmmData.Direction.L1_TO_L1 ||
+            direction == AmmData.Direction.L1_TO_L2) {
+            require(burnStorageID == 0, "INVALID_STORAGE_ID");
+
+            AmmUtil.transferIn(address(this), burnAmount);
+
+            uint96[] memory amounts = new uint96[](1);
+            amounts[0] = burnAmount;
+
+            user.exitLocks.push(
+                AmmData.LockRecord({
+                    index: index,
+                    txHash:txHash,
+                    amounts: amounts,
+                    validUntil: validUntil
+                })
+            );
+        }
 
         emit PoolExitRequested(exit);
     }
@@ -81,6 +96,7 @@ library AmmExitRequest
             keccak256(
                 abi.encode(
                     POOLEXIT_TYPEHASH,
+                    exit.index,
                     exit.owner,
                     exit.direction,
                     exit.burnAmount,
@@ -92,40 +108,44 @@ library AmmExitRequest
         );
     }
 
-    function _checkOperatorApproval(
-        AmmData.State storage S,
-        uint[]       calldata amounts,
-        bytes        calldata signature, // signature from Exchange operator
-        uint                  validUntil
-        )
-        private
-        returns (bool)
-    {
-        // Check if we can withdraw without unlocking with an approval
-        // from the operator.
-        if (signature.length == 0) {
-            require(validUntil == 0, "INVALID_VALUE");
-            return false;
-        }
+    // bytes32 constant public WITHDRAW_TYPEHASH = keccak256(
+    //     "Withdraw(address owner,uint256[] amounts,uint256 validUntil,uint256 nonce)"
+    // );
 
-        require(validUntil >= block.timestamp, 'SIGNATURE_EXPIRED');
+    // function _checkOperatorApproval(
+    //     AmmData.State storage S,
+    //     uint[]       calldata amounts,
+    //     bytes        calldata signature, // signature from Exchange operator
+    //     uint                  validUntil
+    //     )
+    //     private
+    //     returns (bool)
+    // {
+    //     // Check if we can withdraw without unlocking with an approval
+    //     // from the operator.
+    //     if (signature.length == 0) {
+    //         require(validUntil == 0, "INVALID_VALUE");
+    //         return false;
+    //     }
 
-        bytes32 withdrawHash = EIP712.hashPacked(
-            S.domainSeparator,
-            keccak256(
-                abi.encode(
-                    WITHDRAW_TYPEHASH,
-                    msg.sender,
-                    keccak256(abi.encodePacked(amounts)),
-                    validUntil,
-                    S.nonces[msg.sender]++
-                )
-            )
-        );
-        require(
-            withdrawHash.verifySignature(S.exchange.owner(), signature),
-            "INVALID_SIGNATURE"
-        );
-        return true;
-    }
+    //     require(validUntil >= block.timestamp, 'SIGNATURE_EXPIRED');
+
+    //     bytes32 withdrawHash = EIP712.hashPacked(
+    //         S.domainSeparator,
+    //         keccak256(
+    //             abi.encode(
+    //                 WITHDRAW_TYPEHASH,
+    //                 msg.sender,
+    //                 keccak256(abi.encodePacked(amounts)),
+    //                 validUntil,
+    //                 S.nonces[msg.sender]++
+    //             )
+    //         )
+    //     );
+    //     require(
+    //         withdrawHash.verifySignature(S.exchange.owner(), signature),
+    //         "INVALID_SIGNATURE"
+    //     );
+    //     return true;
+    // }
 }

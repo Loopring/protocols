@@ -38,9 +38,15 @@ library AmmExitProcess
         )
         internal
     {
-        if (exit.direction == AmmData.Direction.L1_TO_L1 ||
-            exit.direction == AmmData.Direction.L1_TO_L2) {
-            require(signature.length == 0, "BURN_FROM_L1_NEEDS_ONCHAIN_APPROVAL");
+        if (signature.length == 0) {
+            require(exit.index > 0, "INDEX_REQUIRED");
+        } else {
+            require(exit.index == 0, "INDEX_DISALLOWED");
+            require(
+                exit.direction == AmmData.Direction.L2_TO_L1 ||
+                exit.direction == AmmData.Direction.L2_TO_L2,
+                "LAYER1_BURN_WITH_OFFCHAIN_APPROVAL_DISALLOWED"
+            );
         }
 
         S.validatePoolTransaction(
@@ -52,6 +58,15 @@ library AmmExitProcess
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
 
         if (!slippageOK) return;
+
+
+        if (signature.length == 0) {
+            AmmData.User storage user = S.userMap[msg.sender];
+
+            // Deleteting the lock record indicates a successful processing of the join.
+            delete user.exitLocks[exit.index - 1];
+        }
+
 
          // Handle liquidity tokens
         for (uint i = 1; i < ctx.size; i++) {

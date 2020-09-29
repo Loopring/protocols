@@ -55,12 +55,13 @@ library AmmData
 
     struct PoolExit
     {
-        address  owner;
+        uint32    index; // for onchain approved exit requests
+        address   owner;
         Direction direction;
-        uint96   burnAmount;
-        uint32   burnStorageID; // for pool token withdrawal from user to the pool
-        uint96[] exitMinAmounts;
-        uint     validUntil;
+        uint96    burnAmount;
+        uint32    burnStorageID; // for pool token withdrawal from user to the pool
+        uint96[]  exitMinAmounts;
+        uint      validUntil;
     }
 
     struct LockRecord
@@ -73,8 +74,12 @@ library AmmData
 
     struct User
     {
-        uint startIndex;
-        LockRecord[] lockRecords;
+        uint joinStartIdx;
+        LockRecord[] joinLocks;
+
+        uint exitStartIdx;
+        LockRecord[] exitLocks;
+
         mapping (address => uint) withdrawable;
     }
 
