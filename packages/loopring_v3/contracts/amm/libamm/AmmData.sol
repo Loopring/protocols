@@ -75,10 +75,10 @@ library AmmData
     struct User
     {
         uint joinStartIdx;
-        LockRecord[] joinLocks;
+        LockRecord[] joinLocks; // joins can be processed out of order.
 
         uint exitStartIdx;
-        LockRecord[] exitLocks;
+        LockRecord[] exitLocks; // exits must be processed in order
 
         mapping (address => uint) withdrawable;
     }
