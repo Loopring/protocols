@@ -56,6 +56,7 @@ library AmmJoinProcess
         if (token.addr == address(0)) {
             ethValue = amount;
         } else {
+            // TODO(daniel): use try-catch?
             uint allowance = ERC20(token.addr).allowance(address(this), ctx.exchangeDepositContract);
             if (allowance < amount) {
                 // Approve the deposit transfer
@@ -70,9 +71,6 @@ library AmmJoinProcess
             deposit.amount,
             new bytes(0)
         );
-
-        // Total balance in this contract decreases by the amount deposited
-        S.totalUserBalance[token.addr] = S.totalUserBalance[token.addr].sub(amount);
     }
 
     function processJoin2(
@@ -97,8 +95,18 @@ library AmmJoinProcess
 
         bool fromLayer2 = signature.length > 0;
 
-        for (uint i = 0; i < ctx.size; i++) {
-            uint96 amount = amounts[i];
+        // Handle pool token
+        if (fromLayer2) {
+            S.mint(address(this), poolAmountOut);
+            ctx.ammExpectedL2Balances[0] = ctx.ammExpectedL2Balances[0].add(poolAmountOut.toUint96());
+        } else {
+            S.mint(join.owner, poolAmountOut);
+        }
+
+         // Handle liquidity tokens
+        for (uint i = 1; i < ctx.size; i++) {
+            uint96 amount = amounts[i - 1];
+            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
 
             if (fromLayer2) {
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -121,25 +129,8 @@ library AmmJoinProcess
                 ctx.exchange.approveTransaction(join.owner, txHash);
 
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
-
             }
-
-            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
         }
-
-        if (fromLayer2) {
-             S.mint(address(this), poolAmountOut);
-             // Deposit this token to the user
-             AmmData.Token memory poolToken = AmmData.Token({
-                   addr: address(this),
-                   weight:0,
-                   tokenID: S.poolTokenID
-            });
-             processExchangeDeposit(S, ctx, poolToken, poolAmountOut.toUint96());
-
-         } else {
-            S.mint(join.owner, poolAmountOut);
-         }
     }
 
     function _calculateJoinAmounts(
@@ -156,8 +147,8 @@ library AmmJoinProcess
         )
     {
         // Check if we can still use this join
-        amounts = new uint96[](ctx.size);
-        uint _totalSupply = S.totalSupply;
+        amounts = new uint96[](ctx.size - 1);
+        uint _totalSupply = S.totalSupply.sub(S.poolTokenToBurn);
 
         if (block.timestamp > join.validUntil) {
             return (false, 0, amounts);
@@ -168,7 +159,7 @@ library AmmJoinProcess
         }
 
         // Calculate the amount of liquidity tokens that should be minted
-        for (uint i = 0; i < ctx.size; i++) {
+        for (uint i = 1; i < ctx.size; i++) {
             if (ctx.ammExpectedL2Balances[i] > 0) {
                 uint amountOut = uint(join.maxAmountsIn[i])
                     .mul(_totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
@@ -186,8 +177,8 @@ library AmmJoinProcess
         // Calculate the amounts to deposit
         uint ratio = poolAmountOut.mul(ctx.poolTokenBase) / _totalSupply;
 
-        for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();
+        for (uint i = 0; i < ctx.size - 1; i++) {
+            amounts[i] = ratio.mul(ctx.ammExpectedL2Balances[i + 1] / ctx.poolTokenBase).toUint96();
         }
 
         slippageRequirementMet = (poolAmountOut >= join.minPoolAmountOut);

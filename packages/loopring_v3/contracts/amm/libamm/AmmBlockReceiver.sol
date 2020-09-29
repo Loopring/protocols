@@ -34,6 +34,7 @@ library AmmBlockReceiver
 
         // Cache the domain seperator to save on SLOADs each time it is accessed.
         uint size = S.tokens.length;
+
         AmmData.Context memory ctx = AmmData.Context({
             _block: _block,
             exchange: S.exchange,
@@ -41,8 +42,8 @@ library AmmBlockReceiver
             txIdx: txIdx,
             domainSeparator: S.domainSeparator,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
-            ammActualL2Balances: new uint96[](size + 1),
-            ammExpectedL2Balances: new uint96[](size + 1),
+            ammActualL2Balances: new uint96[](size),
+            ammExpectedL2Balances: new uint96[](size),
             numTransactionsConsumed: 0,
             tokens: S.tokens,
             size: size,

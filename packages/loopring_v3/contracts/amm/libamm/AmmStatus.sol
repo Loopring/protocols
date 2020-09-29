@@ -43,7 +43,6 @@ library AmmStatus
         require(config.tokens.length >= 2, "INVALID_DATA");
         require(config.exchange != address(0), "INVALID_EXCHANGE");
         require(config.accountID != 0, "INVALID_ACCOUNT_ID");
-        require(config.poolTokenID != 0, "INVALID_POOL_TOKEN_ID");
         require(S.tokens.length == 0, "ALREADY_INITIALIZED");
 
         IExchangeV3 exchange = IExchangeV3(config.exchange);
@@ -65,7 +64,6 @@ library AmmStatus
 
         for (uint i = 0; i < config.tokens.length; i++) {
             address token = config.tokens[i];
-
             S.tokens.push(AmmData.Token({
                 addr: token,
                 tokenID: exchange.getTokenID(token),

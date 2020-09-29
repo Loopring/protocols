@@ -32,7 +32,7 @@ library AmmUpdateProcess
         )
         internal
     {
-        for (uint i = 0; i < ctx.size; i++) {
+        for (uint i = 1; i < ctx.size; i++) {
             // Check that the AMM update in the block matches the expected update
             AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
             ctx.numTransactionsConsumed++;
@@ -48,15 +48,12 @@ library AmmUpdateProcess
             bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.exchangeDomainSeparator, update);
             ctx.exchange.approveTransaction(address(this), txHash);
 
-            // ctx.ammActualL2Balances[0] = 0;
-            // ctx.ammExpectedL2Balances[0] = 0;
-
             if (opening) {
                 // AMM account balance now available onchain
-                ctx.ammActualL2Balances[i + 1]   = update.balance;
-                ctx.ammExpectedL2Balances[i + 1] = update.balance;
+                ctx.ammActualL2Balances[i]   = update.balance;
+                ctx.ammExpectedL2Balances[i] = update.balance;
             } else {
-                require(ctx.ammExpectedL2Balances[i + 1] == update.balance, "UNEXPECTED_AMM_BALANCE");
+                require(ctx.ammExpectedL2Balances[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
             }
         }
     }
