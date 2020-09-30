@@ -48,8 +48,8 @@ library AmmExitProcess
 
         require(
             withdrawal.withdrawalType == 1 &&
-            withdrawal.owner == address(this) &&
-            withdrawal.accountID == S.accountID &&
+            withdrawal.from == address(this) &&
+            withdrawal.fromAccountID == S.accountID &&
             withdrawal.tokenID == token.tokenID &&
             withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&
