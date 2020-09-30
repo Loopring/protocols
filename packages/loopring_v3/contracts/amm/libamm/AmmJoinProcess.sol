@@ -140,7 +140,6 @@ library AmmJoinProcess
 
         AmmData.Token memory poolToken = ctx.tokens[ctx.size];
 
-        // Question(brecht):can we read the `to` address?
         require(
             deposit.owner == address(this) &&
             deposit.accountID== ctx.accountID &&
