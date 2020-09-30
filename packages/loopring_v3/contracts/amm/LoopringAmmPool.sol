@@ -94,8 +94,8 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        // TODO(daniel): enable all options
-        require(joinFromLayer2 && mintToLayer2, "FEATURE_DISABLED_FOR_NOW");
+         // TODO(daniel): remove the revert
+        revert("DISABLED_FOR_NOW");
         state.joinPool(
             joinFromLayer2,
             joinAmounts,
@@ -117,8 +117,8 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        // TODO(daniel): enable all options
-        require(burnFromLayer2 && exitToLayer2, "FEATURE_DISABLED_FOR_NOW");
+        // TODO(daniel): remove the revert
+        revert("DISABLED_FOR_NOW");
         state.exitPool(
             burnFromLayer2,
             burnAmount,

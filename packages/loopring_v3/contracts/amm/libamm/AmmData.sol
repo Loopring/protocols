@@ -56,6 +56,7 @@ library AmmData
         bool      exitToLayer2;
         uint96[]  exitMinAmounts;
         uint      validUntil;
+        uint32    nonce;
     }
 
     struct TokenLock
@@ -119,7 +120,7 @@ library AmmData
 
         uint        poolTokenToBurn;
 
-        mapping (address => uint) exitLockIdx;
+        mapping (address => uint) exitLockNonce;
         TokenLock[] exitLocks;
         uint         exitLocksIndex;
 

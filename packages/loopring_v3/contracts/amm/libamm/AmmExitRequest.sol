@@ -26,7 +26,7 @@ library AmmExitRequest
 
     // TODO:fix this string
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,bool burnFromLayer2,uint96 burnAmount,bool burnFromLayer2,uint32 burnStorageID,bool exitToLayer2,uint96[] exitMinAmounts,uint256 validUntil)"
+        "PoolExit(address owner,bool burnFromLayer2,uint96 burnAmount,bool burnFromLayer2,uint32 burnStorageID,bool exitToLayer2,uint96[] exitMinAmounts,uint256 validUntil,uint32 nonce)"
     );
 
     event PoolExitRequested(AmmData.PoolExit exit);
@@ -45,14 +45,14 @@ library AmmExitRequest
         require(exitMinAmounts.length == size, "INVALID_PARAM_SIZE");
         require(burnAmount > 0, "INVALID_BURN_AMOUNT");
 
-        uint32 lockIdx;
+        uint32 nonce = 0;
         if (!burnFromLayer2) {
             require(burnStorageID == 0, "INVALID_STORAGE_ID");
-            require(S.exitLockIdx[msg.sender] == 0, "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
+            require(S.exitLockNonce[msg.sender] == 0, "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
 
-            lockIdx = uint32(S.exitLocks.length + 1);
+            nonce = uint32(S.exitLocks.length + 1);
             require(
-                lockIdx <= S.exitLocksIndex + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
+                nonce <= S.exitLocksIndex + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
                 "TOO_MANY_LAYER1_EXITS"
             );
 
@@ -66,7 +66,8 @@ library AmmExitRequest
             burnStorageID: burnStorageID,
             exitToLayer2: exitToLayer2,
             exitMinAmounts: exitMinAmounts,
-            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN()
+            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
+            nonce: nonce
         });
 
         // Approve the exit
@@ -79,7 +80,7 @@ library AmmExitRequest
                 amounts: AmmUtil.array(burnAmount)
             }));
 
-            S.exitLockIdx[msg.sender] = lockIdx;
+            S.exitLockNonce[msg.sender] = nonce;
         }
 
         emit PoolExitRequested(exit);
@@ -104,7 +105,8 @@ library AmmExitRequest
                     exit.burnStorageID,
                     exit.exitToLayer2,
                     keccak256(abi.encodePacked(exit.exitMinAmounts)),
-                    exit.validUntil
+                    exit.validUntil,
+                    exit.nonce
                 )
             )
         );

@@ -47,7 +47,7 @@ library AmmExitProcess
         if (!exit.burnFromLayer2) {
             require(signature.length == 0, "LAYER1_EXIT_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
 
-            delete S.exitLockIdx[msg.sender];
+            delete S.exitLockNonce[msg.sender];
             delete S.exitLocks[S.exitLocksIndex];
             S.exitLocksIndex++;
         }
