@@ -49,7 +49,8 @@ library AmmJoinProcess
         );
 
         if (fromLayer1) {
-            require(join.nonce > 0, "INVALID_NONCE");
+            require(signature.length == 0, "LAYER1_JOIN_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
+
             if (join.nonce == S.joinLocks[msg.sender].length) {
                 S.joinLocks[msg.sender].pop();
             } else {
@@ -59,6 +60,8 @@ library AmmJoinProcess
                     S.joinLockIdx[msg.sender]++;
                 }
             }
+        } else {
+            require(join.nonce == 0, "LAYER2_JOIN_WITH_NONCE_DISALLOWED");
         }
 
         // Check if the requirements are fulfilled
@@ -78,8 +81,7 @@ library AmmJoinProcess
         for (uint i = 0; i < ctx.size; i++) {
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amounts[i]);
 
-            if (join.direction == AmmData.Direction.L2_TO_L1 ||
-                join.direction == AmmData.Direction.L2_TO_L2) {
+            if (!fromLayer1) {
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amounts[i]);
 
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -102,7 +104,6 @@ library AmmJoinProcess
 
                 // The following fields are not loaded from readTransfer
                 transfer.validUntil = 0xffffffff;
-
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(join.owner, txHash);
             }
@@ -111,55 +112,16 @@ library AmmJoinProcess
         // Handle pool token
         ctx.totalSupply = ctx.totalSupply.add(mintAmount);
 
-        if (join.direction == AmmData.Direction.L1_TO_L2 ||
-            join.direction == AmmData.Direction.L2_TO_L2) {
+        bool mintToLayer1 = (
+            join.direction == AmmData.Direction.L1_TO_L1 ||
+            join.direction == AmmData.Direction.L2_TO_L1);
+
+        if (mintToLayer1) {
+            S.mint(join.owner, mintAmount);
+        } else {
             // TODO（daniel): optimize this using 1 deposit + multiple L2 transfers.
             _approvePoolTokenDeposit(ctx, mintAmount, join.owner);
-        } else {
-            S.mint(join.owner, mintAmount);
         }
-    }
-
-    function approveTokenDeposit(
-        AmmData.Context  memory  ctx,
-        AmmData.Token    memory  token,
-        uint96                   amount
-        )
-        internal
-    {
-        require(amount > 0, "INVALID_DEPOSIT_AMOUNT");
-
-        DepositTransaction.Deposit memory deposit = ctx._block.readDeposit(ctx.txIdx++);
-        ctx.numTransactionsConsumed++;
-
-        require(
-            deposit.owner == address(this) &&
-            deposit.accountID== ctx.accountID &&
-            deposit.tokenID == token.tokenID &&
-            deposit.amount == amount,
-            "INVALID_TX_DATA"
-        );
-
-        // Now do this deposit
-        uint ethValue = 0;
-        if (token.addr == address(0)) {
-            ethValue = amount;
-        } else {
-            // TODO(daniel): use try-catch?
-            uint allowance = ERC20(token.addr).allowance(address(this), ctx.exchangeDepositContract);
-            if (allowance < amount) {
-                // Approve the deposit transfer
-                ERC20(token.addr).approve(ctx.exchangeDepositContract, uint(-1));
-            }
-        }
-
-        ctx.exchange.deposit{value: ethValue}(
-            deposit.owner,
-            deposit.owner,
-            token.addr,
-            deposit.amount,
-            new bytes(0)
-        );
     }
 
     function _approvePoolTokenDeposit(
@@ -177,6 +139,7 @@ library AmmJoinProcess
 
         AmmData.Token memory poolToken = ctx.tokens[ctx.size];
 
+        // Question(brecht):should we read the `to` address?
         require(
             deposit.owner == address(this) &&
             deposit.accountID== ctx.accountID &&

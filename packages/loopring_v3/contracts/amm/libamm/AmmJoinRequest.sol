@@ -57,8 +57,11 @@ library AmmJoinRequest
             direction == AmmData.Direction.L1_TO_L2
         );
 
+        uint32 nonce = 0;
         if (fromLayer1) {
             require(joinStorageID == 0, "INVALID_STORAGE_ID");
+
+            nonce = uint32(S.joinLocks[msg.sender].length + 1);
 
             for (uint i = 0; i < size; i++) {
                 AmmUtil.transferIn(S.tokens[i].addr, joinAmounts[i]);
@@ -73,9 +76,10 @@ library AmmJoinRequest
             joinStorageID: joinStorageID,
             mintMinAmount: mintMinAmount,
             validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
-            nonce: uint32(S.joinLocks[msg.sender].length + 1)
+            nonce: nonce
         });
 
+        // Approve the join
         bytes32 txHash = hash(S.domainSeparator, join);
         S.approvedTx[txHash] = join.validUntil;
 

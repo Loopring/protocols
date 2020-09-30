@@ -49,14 +49,14 @@ library AmmExitRequest
             direction == AmmData.Direction.L1_TO_L2
         );
 
-        uint exitLocksLength;
+        uint32 lockIdx;
         if (fromLayer1) {
             require(burnStorageID == 0, "INVALID_STORAGE_ID");
             require(S.exitLockIdx[msg.sender] == 0, "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
 
-            exitLocksLength = S.exitLocks.length;
+            lockIdx = uint32(S.exitLocks.length + 1);
             require(
-                exitLocksLength < S.exitLocksIndex + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
+                lockIdx <= S.exitLocksIndex + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
                 "TOO_MANY_LAYER1_EXITS"
             );
 
@@ -82,7 +82,7 @@ library AmmExitRequest
                 amounts: AmmUtil.array(burnAmount)
             }));
 
-            S.exitLockIdx[msg.sender] = uint32(exitLocksLength + 1);
+            S.exitLockIdx[msg.sender] = lockIdx;
         }
 
         emit PoolExitRequested(exit);

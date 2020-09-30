@@ -143,13 +143,13 @@ library AmmBlockReceiver
         private
     {
         if (ammExpectedL2Balance > ammActualL2Balance) {
-            AmmJoinProcess.approveTokenDeposit(
+            AmmExchange.approveTokenDeposit(
                 ctx,
                 token,
                 ammExpectedL2Balance - ammActualL2Balance
             );
         } else if (ammExpectedL2Balance < ammActualL2Balance) {
-            AmmExitProcess.approveTokenWithdrawal(
+            AmmExchange.approveTokenWithdrawal(
                 ctx,
                 token,
                 ammActualL2Balance - ammExpectedL2Balance
