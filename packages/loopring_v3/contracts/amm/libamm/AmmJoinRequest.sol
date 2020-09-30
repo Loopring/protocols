@@ -22,99 +22,77 @@ library AmmJoinRequest
     using MathUint96        for uint96;
     using SafeCast          for uint;
 
+    // TODO:fix this string for enum?
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool fromLayer2,uint256 minPoolAmountOut,uint256[] maxAmountsIn,uint256[] fees,uint32[] storageIDs,uint256 validUntil)"
+        "PoolJoin(address owner,uint256 direction,uint96[] joinAmounts,uint96[] joinFees,uint32 joinStorageID,uint96 mintMinAmount,uint256 validUntil,uint32 nonce)"
     );
 
-    event Deposit(address owner, uint96[] amounts);
     event PoolJoinRequested(AmmData.PoolJoin join);
-    event LockScheduled(address owner, uint timestamp);
-
-    function lock(
-        AmmData.State storage S
-        )
-        public
-        returns (uint lockedSince)
-    {
-        require(S.lockedSince[msg.sender] == 0, "LOCKED_ALREADY");
-        require(
-            S.lockedUntil[msg.sender] != 0 &&
-            S.lockedUntil[msg.sender] >= block.timestamp,
-            "UNLOCK_PENDING"
-        );
-
-        lockedSince = block.timestamp + AmmData.LOCK_DELAY();
-
-        S.lockedSince[msg.sender] = lockedSince;
-        S.lockedUntil[msg.sender] = 0;
-
-        emit LockScheduled(msg.sender, lockedSince);
-    }
-
-    function depositToPool(
-        AmmData.State storage S,
-        uint96[]     calldata amounts
-        )
-        public
-    {
-        uint size = S.tokens.length;
-        require(amounts.length == size + 1, "INVALID_DATA");
-
-        if (S.isExiting[msg.sender]) {
-            // This could suddenly change the amount of liquidity tokens available, which
-            // could change how the operator needs to process the exit.
-            require(amounts[0] == 0, "CANNOT_DEPOSIT_LIQUIDITY_TOKENS_WHILE_EXITING");
-        }
-
-        // Deposit pool tokens
-        _depositToken(S, address(this), amounts[0]);
-
-        // Deposit AMM tokens
-        for (uint i = 0; i < size; i++) {
-            _depositToken(S, S.tokens[i].addr, amounts[i + 1]);
-        }
-
-        emit Deposit(msg.sender, amounts);
-    }
 
     function joinPool(
         AmmData.State storage S,
-        uint                  minPoolAmountOut,
-        uint96[]     calldata maxAmountsIn,
-        uint96[]     calldata fees,
-        bool                  fromLayer2,
-        uint                  validUntil
+        AmmData.Direction     direction,
+        uint96[]     calldata joinAmounts,
+        uint96[]     calldata joinFees,
+        uint32                joinStorageID,
+        uint96                mintMinAmount
         )
         public
     {
-        uint size =  S.tokens.length;
-        require(maxAmountsIn.length == size, "INVALID_DATA");
+        uint size = S.tokens.length - 1;
+        require(
+            joinAmounts.length == size &&
+            joinFees.length == size,
+            "INVALID_PARAM_SIZE"
+        );
 
         for (uint i = 0; i < size; i++) {
-            require(maxAmountsIn[i] > fees[i], "INVALID_JOIN_AMOUNT");
+            // require(joinFees[i] < joinAmounts[i], "INVALID_FEES");
+            require(joinAmounts[i] > 0, "INVALID_VALUE");
+            require(joinFees[i] == 0, "FEATURE_DISABLED");
         }
 
-        // Don't check the available funds here, if the operator isn't sure the funds
-        // are locked this transaction can simply be dropped.
+        bool fromLayer1 = (
+            direction == AmmData.Direction.L1_TO_L1 ||
+            direction == AmmData.Direction.L1_TO_L2
+        );
+
+        uint32 nonce = 0;
+        if (fromLayer1) {
+            require(joinStorageID == 0, "INVALID_STORAGE_ID");
+
+            nonce = uint32(S.joinLocks[msg.sender].length + 1);
+
+            for (uint i = 0; i < size; i++) {
+                AmmUtil.transferIn(S.tokens[i].addr, joinAmounts[i]);
+            }
+        }
 
         AmmData.PoolJoin memory join = AmmData.PoolJoin({
             owner: msg.sender,
-            fromLayer2: fromLayer2,
-            minPoolAmountOut: minPoolAmountOut,
-            maxAmountsIn: maxAmountsIn,
-            fees: fees,
-            storageIDs: new uint32[](0),
-            validUntil: validUntil
+            direction:direction,
+            joinAmounts: joinAmounts,
+            joinFees: joinFees,
+            joinStorageID: joinStorageID,
+            mintMinAmount: mintMinAmount,
+            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
+            nonce: nonce
         });
 
         // Approve the join
-        bytes32 txHash = hashPoolJoin(S.domainSeparator, join);
-        S.approvedTx[txHash] = 0xffffffff;
+        bytes32 txHash = hash(S.domainSeparator, join);
+        S.approvedTx[txHash] = join.validUntil;
+
+        if (fromLayer1) {
+            S.joinLocks[msg.sender].push(AmmData.TokenLock({
+                amounts: joinAmounts
+            }));
+        }
 
         emit PoolJoinRequested(join);
     }
 
-    function hashPoolJoin(
+    function hash(
         bytes32                 domainSeparator,
         AmmData.PoolJoin memory join
         )
@@ -128,32 +106,15 @@ library AmmJoinRequest
                 abi.encode(
                     POOLJOIN_TYPEHASH,
                     join.owner,
-                    join.fromLayer2,
-                    join.minPoolAmountOut,
-                    keccak256(abi.encodePacked(join.maxAmountsIn)),
-                    keccak256(abi.encodePacked(join.fees)),
-                    keccak256(abi.encodePacked(join.storageIDs)),
-                    join.validUntil
+                    join.direction,
+                    keccak256(abi.encodePacked(join.joinAmounts)),
+                    keccak256(abi.encodePacked(join.joinFees)),
+                    join.joinStorageID,
+                    join.mintMinAmount,
+                    join.validUntil,
+                    join.nonce
                 )
             )
         );
-    }
-
-    function _depositToken(
-        AmmData.State storage S,
-        address               token,
-        uint                  amount
-        )
-        private
-    {
-        if (token == address(0)) {
-            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
-        } else if (amount > 0) {
-            token.safeTransferFromAndVerify(msg.sender, address(this), amount);
-        }
-
-        if (amount > 0) {
-            S.addUserBalance(token, msg.sender, amount);
-        }
     }
 }

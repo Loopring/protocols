@@ -29,47 +29,6 @@ library AmmExitProcess
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-    function proxcessExchangeWithdrawal(
-        AmmData.State    storage S,
-        AmmData.Context  memory  ctx,
-        AmmData.Token    memory  token,
-        uint                     amount
-        )
-        internal
-    {
-        // Check that the withdrawal in the block matches the expected withdrawal
-        WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
-        ctx.numTransactionsConsumed++;
-
-        // These fields are not read by readWithdrawal: storageID
-        withdrawal.minGas = 0;
-        withdrawal.to = address(this);
-        withdrawal.extraData = new bytes(0);
-
-        require(
-            withdrawal.withdrawalType == 1 &&
-            withdrawal.owner == address(this) &&
-            withdrawal.accountID == S.accountID &&
-            withdrawal.tokenID == token.tokenID &&
-            withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
-            withdrawal.feeTokenID == 0 &&
-            withdrawal.fee == 0 &&
-            withdrawal.onchainDataHash == WithdrawTransaction.hashOnchainData(
-                withdrawal.minGas,
-                withdrawal.to,
-                withdrawal.extraData
-            ),
-            "INVALID_TX_DATA"
-        );
-
-        // Now approve this withdrawal
-        withdrawal.validUntil = 0xffffffff;
-        bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
-        ctx.exchange.approveTransaction(address(this), txHash);
-
-        // Total balance in this contract increases by the amount withdrawn
-        S.totalUserBalance[token.addr] = S.totalUserBalance[token.addr].add(amount);
-    }
 
     function processExit(
         AmmData.State    storage S,
@@ -79,93 +38,152 @@ library AmmExitProcess
         )
         internal
     {
-        S.validatePoolTransaction(
+        S.checkPoolTxApproval(
             exit.owner,
-            AmmExitRequest.hashPoolExit(ctx.domainSeparator, exit),
+            AmmExitRequest.hash(ctx.domainSeparator, exit),
             signature
         );
 
-        if (signature.length == 0) {
-            // This is an onchain exit, we're processing it now so stop tracking it.
-            S.isExiting[exit.owner] = false;
+        bool burnFromLayer1 = (
+            exit.direction == AmmData.Direction.L1_TO_L1 ||
+            exit.direction == AmmData.Direction.L1_TO_L2
+        );
+
+        if (burnFromLayer1) {
+            require(signature.length == 0, "LAYER1_EXIT_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
+
+            delete S.exitLockIdx[msg.sender];
+            delete S.exitLocks[S.exitLocksIndex];
+            S.exitLocksIndex++;
         }
 
-        (bool slippageRequirementMet, uint96[] memory amounts) = _validateExitAmounts(S, ctx, exit);
+        (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
 
-        if (!slippageRequirementMet) return;
+        if (!slippageOK) {
+            if (burnFromLayer1) {
+                address poolToken = address(this);
+                S.balance[msg.sender][poolToken] = S.balance[msg.sender][poolToken].add(exit.burnAmount);
+            }
+            return;
+        }
+
+        // Handle liquidity tokens
+        bool exitToLayer1 = (
+            exit.direction == AmmData.Direction.L1_TO_L1 ||
+            exit.direction == AmmData.Direction.L2_TO_L1
+        );
 
         for (uint i = 0; i < ctx.size; i++) {
             uint96 amount = amounts[i];
-            if (exit.toLayer2) {
+            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
+
+            if (exitToLayer1) {
+                address token = ctx.tokens[i].addr;
+                S.balance[exit.owner][token] = S.balance[exit.owner][token].add(amount);
+            } else {
+                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
+
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
 
                 require(
-                    transfer.fromAccountID == S.accountID &&
+                    transfer.fromAccountID== ctx.accountID &&
                     transfer.from == address(this) &&
-                    transfer.to == exit.owner &&
+                    transfer.to == address(this) &&
                     transfer.tokenID == ctx.tokens[i].tokenID &&
                     transfer.amount.isAlmostEqual(amount) &&
-                    transfer.feeTokenID == ctx.tokens[i].tokenID &&
+                    transfer.feeTokenID == 0 &&
                     transfer.fee == 0,
                     "INVALID_TX_DATA"
                 );
 
-                // Replay protection when using a signature (otherwise the approved hash is cleared onchain)
-                if (signature.length > 0) {
-                    require(transfer.storageID == exit.storageIDs[i], "INVALID_TX_DATA");
-                }
-
-                // Now approve this transfer
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(address(this), txHash);
-
-                amount = transfer.amount;
-                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
-            } else {
-                address token = ctx.tokens[i].addr;
-                // Make the amount available for withdrawing
-                S.userBalance[token][exit.owner] = S.userBalance[token][exit.owner].add(amount);
             }
-
-            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
         }
 
-        S.removeUserBalance(address(this), exit.owner, exit.poolAmountIn);
-        S.burn(address(this), exit.poolAmountIn);
+        // Handle pool token
+        ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
+
+        if (burnFromLayer1) {
+            S.burn(address(this), exit.burnAmount);
+        } else {
+            _approvePoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
+        }
     }
 
-    function _validateExitAmounts(
-        AmmData.State    storage S,
+    function _approvePoolTokenWithdrawal(
+        AmmData.Context  memory  ctx,
+        uint                     amount,
+        address                  from,
+        uint32                   burnStorageID,
+        bytes            memory  signature
+        )
+        internal
+    {
+        // Check that the withdrawal in the block matches the expected withdrawal
+        WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
+        ctx.numTransactionsConsumed++;
+
+        // These fields are not read by readWithdrawal: to, extraData, minGas, validUntil
+        withdrawal.to = address(this);
+        withdrawal.extraData = new bytes(0);
+        withdrawal.minGas = 0;
+        withdrawal.validUntil = 0xffffffff;
+
+        bytes32 expectedOnchainDataHash = WithdrawTransaction.hashOnchainData(
+            withdrawal.minGas,
+            withdrawal.to,
+            withdrawal.extraData
+        );
+
+
+        if (signature.length > 0) {
+            require(withdrawal.storageID == burnStorageID, "INVALID_STORAGE_ID_OR_REPLAY");
+        }
+
+        require(
+            withdrawal.withdrawalType == 1 &&
+            withdrawal.owner == from &&
+            withdrawal.accountID == 0 &&
+            withdrawal.tokenID == ctx.tokens[0].tokenID &&
+            withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
+            withdrawal.feeTokenID == 0 &&
+            withdrawal.fee == 0 &&
+            withdrawal.onchainDataHash == expectedOnchainDataHash,
+            "INVALID_TX_DATA"
+        );
+
+        // Now approve this withdrawal
+        bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
+        ctx.exchange.approveTransaction(from, txHash);
+    }
+
+    function _calculateExitAmounts(
         AmmData.Context  memory  ctx,
         AmmData.PoolExit memory  exit
         )
         private
         view
         returns(
-            bool /* slippageRequirementMet */,
+            bool /* slippageOK */,
             uint96[] memory amounts
         )
     {
-        amounts = new uint96[](ctx.size);
+        amounts = new uint96[](ctx.size - 1);
 
         // Check if we can still use this exit
         if (block.timestamp > exit.validUntil) {
             return (false, amounts);
         }
 
-        // Check if the user has enough pool tokens locked
-        if (S.lockedBalance(address(this), exit.owner) < exit.poolAmountIn) {
-            return (false, amounts);
-        }
-
         // Calculate how much will be withdrawn
-        uint ratio = exit.poolAmountIn.mul(ctx.poolTokenBase) / S.totalSupply;
+        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.totalSupply;
 
-        for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i]) / ctx.poolTokenBase).toUint96();
-            if (amounts[i] < exit.minAmountsOut[i]) {
+        for (uint i = 0; i < ctx.size - 1; i++) {
+            amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i + 1]) / ctx.poolTokenBase).toUint96();
+            if (amounts[i] < exit.exitMinAmounts[i]) {
                 return (false, amounts);
             }
         }

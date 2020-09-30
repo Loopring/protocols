@@ -24,97 +24,71 @@ library AmmExitRequest
     using SafeCast          for uint;
     using SignatureUtil     for bytes32;
 
-    bytes32 constant public WITHDRAW_TYPEHASH = keccak256(
-        "Withdraw(address owner,uint256[] amounts,uint256 validUntil,uint256 nonce)"
-    );
-
+    // TODO:fix this string
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,bool toLayer2,uint256 poolAmountIn,uint256[] minAmountsOut,uint32[] storageIDs,uint256 validUntil)"
+        "PoolExit(address owner,uint96 burnAmount,bool burnFromLayer2,uint32 burnStorageID,uint96[] exitMinAmounts,bool exitToLayer2,uint256 validUntil)"
     );
 
-    event Withdrawal(address owner, uint[] amountOuts);
     event PoolExitRequested(AmmData.PoolExit exit);
-    event UnlockScheduled(address owner, uint timestamp);
-
-    function unlock(AmmData.State storage S)
-        internal
-        returns (uint lockedUntil)
-    {
-        require(S.lockedUntil[msg.sender] == 0, "UNLOCKED_ALREADY");
-        require(S.lockedSince[msg.sender] >= block.timestamp, "LOCK_PENDING");
-
-        lockedUntil = block.timestamp + AmmData.LOCK_DELAY();
-
-        S.lockedSince[msg.sender] = 0;
-        S.lockedUntil[msg.sender] = lockedUntil;
-
-        emit UnlockScheduled(msg.sender, lockedUntil);
-    }
-
-    function withdrawFromPool(
-        AmmData.State storage S,
-        uint[]       calldata amounts,
-        bytes        calldata signature, // signature from Exchange operator
-        uint                  validUntil
-        )
-        public
-        returns (uint[] memory amountOuts)
-    {
-        uint size = S.tokens.length;
-        require(amounts.length == size + 1, "INVALID_DATA");
-
-        _proxcessExchangeWithdrawalApprovedWithdrawals(S);
-
-        bool approvedByOperator = _checkOperatorApproval(
-            S, amounts, signature, validUntil
-        );
-
-        amountOuts = new uint[](size + 1);
-        amountOuts[0] = _withdrawToken(
-            S, address(this), amounts[0], approvedByOperator
-        );
-
-        for (uint i = 0; i < size; i++) {
-            amountOuts[i + 1] = _withdrawToken(
-                S, S.tokens[i].addr, amounts[i + 1], approvedByOperator
-            );
-        }
-
-        emit Withdrawal(msg.sender, amountOuts);
-    }
 
     function exitPool(
         AmmData.State storage S,
-        uint                  poolAmountIn,
-        uint96[]     calldata minAmountsOut,
-        bool                  toLayer2
+        AmmData.Direction     direction,
+        uint96                burnAmount,
+        uint32                burnStorageID,
+        uint96[]     calldata exitMinAmounts
         )
         public
     {
-        require(minAmountsOut.length == S.tokens.length, "INVALID_DATA");
+        uint size = S.tokens.length - 1;
+        require(exitMinAmounts.length == size, "INVALID_PARAM_SIZE");
+        require(burnAmount > 0, "INVALID_BURN_AMOUNT");
 
-        // To make the the available liqudity tokens cannot suddenly change
-        // we keep track of when onchain exits (which need to be processed) are pending.
-        require(S.isExiting[msg.sender] == false, "ALREADY_EXITING");
-        S.isExiting[msg.sender] = true;
+        bool fromLayer1 = (
+            direction == AmmData.Direction.L1_TO_L1 ||
+            direction == AmmData.Direction.L1_TO_L2
+        );
+
+        uint32 lockIdx;
+        if (fromLayer1) {
+            require(burnStorageID == 0, "INVALID_STORAGE_ID");
+            require(S.exitLockIdx[msg.sender] == 0, "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
+
+            lockIdx = uint32(S.exitLocks.length + 1);
+            require(
+                lockIdx <= S.exitLocksIndex + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
+                "TOO_MANY_LAYER1_EXITS"
+            );
+
+            AmmUtil.transferIn(address(this), burnAmount);
+        }
 
         AmmData.PoolExit memory exit = AmmData.PoolExit({
             owner: msg.sender,
-            toLayer2: toLayer2,
-            poolAmountIn: poolAmountIn,
-            minAmountsOut: minAmountsOut,
-            storageIDs: new uint32[](0),
-            validUntil: 0xffffffff
+            direction: direction,
+            burnAmount: burnAmount,
+            burnStorageID: burnStorageID,
+            exitMinAmounts: exitMinAmounts,
+            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN()
         });
 
         // Approve the exit
-        bytes32 txHash = hashPoolExit(S.domainSeparator, exit);
-        S.approvedTx[txHash] = block.timestamp;
+        bytes32 txHash = hash(S.domainSeparator, exit);
+        S.approvedTx[txHash] = exit.validUntil;
+
+        // Put layer-1 exit into the queue
+        if (fromLayer1) {
+            S.exitLocks.push(AmmData.TokenLock({
+                amounts: AmmUtil.array(burnAmount)
+            }));
+
+            S.exitLockIdx[msg.sender] = lockIdx;
+        }
 
         emit PoolExitRequested(exit);
     }
 
-    function hashPoolExit(
+    function hash(
         bytes32                 domainSeparator,
         AmmData.PoolExit memory exit
         )
@@ -128,86 +102,54 @@ library AmmExitRequest
                 abi.encode(
                     POOLEXIT_TYPEHASH,
                     exit.owner,
-                    exit.toLayer2,
-                    exit.poolAmountIn,
-                    keccak256(abi.encodePacked(exit.minAmountsOut)),
-                    keccak256(abi.encodePacked(exit.storageIDs)),
+                    exit.direction,
+                    exit.burnAmount,
+                    exit.burnStorageID,
+                    keccak256(abi.encodePacked(exit.exitMinAmounts)),
                     exit.validUntil
                 )
             )
         );
     }
 
-    function _checkOperatorApproval(
-        AmmData.State storage S,
-        uint[]       calldata amounts,
-        bytes        calldata signature, // signature from Exchange operator
-        uint                  validUntil
-        )
-        private
-        returns (bool)
-    {
-        // Check if we can withdraw without unlocking with an approval
-        // from the operator.
-        if (signature.length == 0) {
-            require(validUntil == 0, "INVALID_VALUE");
-            return false;
-        }
+    // bytes32 constant public WITHDRAW_TYPEHASH = keccak256(
+    //     "Withdraw(address owner,uint256[] amounts,uint256 validUntil,uint256 nonce)"
+    // );
 
-        require(validUntil >= block.timestamp, 'SIGNATURE_EXPIRED');
+    // function _checkOperatorApproval(
+    //     AmmData.State storage S,
+    //     uint[]       calldata amounts,
+    //     bytes        calldata signature, // signature from Exchange operator
+    //     uint                  validUntil
+    //     )
+    //     private
+    //     returns (bool)
+    // {
+    //     // Check if we can withdraw without unlocking with an approval
+    //     // from the operator.
+    //     if (signature.length == 0) {
+    //         require(validUntil == 0, "INVALID_VALUE");
+    //         return false;
+    //     }
 
-        bytes32 withdrawHash = EIP712.hashPacked(
-            S.domainSeparator,
-            keccak256(
-                abi.encode(
-                    WITHDRAW_TYPEHASH,
-                    msg.sender,
-                    keccak256(abi.encodePacked(amounts)),
-                    validUntil,
-                    S.nonces[msg.sender]++
-                )
-            )
-        );
-        require(
-            withdrawHash.verifySignature(S.exchange.owner(), signature),
-            "INVALID_SIGNATURE"
-        );
-        return true;
-    }
+    //     require(validUntil >= block.timestamp, 'SIGNATURE_EXPIRED');
 
-    function _withdrawToken(
-        AmmData.State storage S,
-        address               token,
-        uint                  amount,
-        bool                  approvedByOperator
-        )
-        private
-        returns (uint withdrawn)
-    {
-        uint available = approvedByOperator ?
-            S.userBalance[token][msg.sender] :
-            S.availableBalance(token, msg.sender);
-
-        withdrawn = (amount > available) ? available : amount;
-
-        if (withdrawn > 0) {
-            S.removeUserBalance(token, msg.sender, withdrawn);
-            AmmUtil.tranferOut(token, withdrawn, msg.sender);
-        }
-    }
-
-    // Withdraw any outstanding balances for the pool account on the exchange
-    function _proxcessExchangeWithdrawalApprovedWithdrawals(AmmData.State storage S)
-        private
-    {
-        uint size = S.tokens.length;
-        address[] memory owners = new address[](size);
-        address[] memory tokenAddresses = new address[](size);
-
-        for (uint i = 0; i < size; i++) {
-            owners[i] = address(this);
-            tokenAddresses[i] = S.tokens[i].addr;
-        }
-        S.exchange.withdrawFromApprovedWithdrawals(owners, tokenAddresses);
-    }
+    //     bytes32 withdrawHash = EIP712.hashPacked(
+    //         S.domainSeparator,
+    //         keccak256(
+    //             abi.encode(
+    //                 WITHDRAW_TYPEHASH,
+    //                 msg.sender,
+    //                 keccak256(abi.encodePacked(amounts)),
+    //                 validUntil,
+    //                 S.nonces[msg.sender]++
+    //             )
+    //         )
+    //     );
+    //     require(
+    //         withdrawHash.verifySignature(S.exchange.owner(), signature),
+    //         "INVALID_SIGNATURE"
+    //     );
+    //     return true;
+    // }
 }

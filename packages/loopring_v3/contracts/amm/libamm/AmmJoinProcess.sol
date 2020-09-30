@@ -29,52 +29,6 @@ library AmmJoinProcess
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-    function processExchangeDeposit(
-        AmmData.State    storage S,
-        AmmData.Context  memory  ctx,
-        AmmData.Token    memory  token,
-        uint96                   amount
-        )
-        internal
-    {
-        require(amount > 0, "INVALID_DEPOSIT_AMOUNT");
-
-        // Check that the deposit in the block matches the expected deposit
-        DepositTransaction.Deposit memory deposit = ctx._block.readDeposit(ctx.txIdx++);
-        ctx.numTransactionsConsumed++;
-
-        require(
-            deposit.owner == address(this) &&
-            deposit.accountID == S.accountID &&
-            deposit.tokenID == token.tokenID &&
-            deposit.amount == amount,
-            "INVALID_TX_DATA"
-        );
-
-        // Now do this deposit
-        uint ethValue = 0;
-        if (token.addr == address(0)) {
-            ethValue = amount;
-        } else {
-            uint allowance = ERC20(token.addr).allowance(address(this), ctx.exchangeDepositContract);
-            if (allowance < amount) {
-                // Approve the deposit transfer
-                ERC20(token.addr).approve(ctx.exchangeDepositContract, uint(-1));
-            }
-        }
-
-        ctx.exchange.deposit{value: ethValue}(
-            deposit.owner,
-            deposit.owner,
-            token.addr,
-            deposit.amount,
-            new bytes(0)
-        );
-
-        // Total balance in this contract decreases by the amount deposited
-        S.totalUserBalance[token.addr] = S.totalUserBalance[token.addr].sub(amount);
-    }
-
     function processJoin(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
@@ -83,109 +37,178 @@ library AmmJoinProcess
         )
         internal
     {
-        S.validatePoolTransaction(
+        S.checkPoolTxApproval(
             join.owner,
-            AmmJoinRequest.hashPoolJoin(ctx.domainSeparator, join),
+            AmmJoinRequest.hash(ctx.domainSeparator, join),
             signature
         );
 
+        bool joinFromLayer1 = (
+            join.direction == AmmData.Direction.L1_TO_L1 ||
+            join.direction == AmmData.Direction.L1_TO_L2
+        );
+
+        if (joinFromLayer1) {
+            require(signature.length == 0, "LAYER1_JOIN_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
+
+            if (join.nonce == S.joinLocks[msg.sender].length) {
+                S.joinLocks[msg.sender].pop();
+            } else {
+                delete S.joinLocks[msg.sender][join.nonce - 1];
+
+                if (S.joinLockIdx[msg.sender] == join.nonce - 1) {
+                    S.joinLockIdx[msg.sender]++;
+                }
+            }
+        } else {
+            require(join.nonce == 0, "LAYER2_JOIN_WITH_NONCE_DISALLOWED");
+        }
+
         // Check if the requirements are fulfilled
-        (bool slippageRequirementMet, uint poolAmountOut, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
+        (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
 
-        if (!slippageRequirementMet) return;
+        if (!slippageOK) {
+            if (joinFromLayer1) {
+                for (uint i = 0; i < ctx.size; i++) {
+                    address token = ctx.tokens[i].addr;
+                    S.balance[msg.sender][token] = S.balance[msg.sender][token].add(join.joinAmounts[i]);
+                }
+            }
+            return;
+        }
 
+         // Handle liquidity tokens
         for (uint i = 0; i < ctx.size; i++) {
-            uint96 amount = amounts[i];
+            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amounts[i]);
 
-            if (join.fromLayer2) {
+            if (joinFromLayer1) {
+                // Do nothing
+            } else {
+                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amounts[i]);
+
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
 
                 // We do not check these fields: fromAccountID, to, amount, fee, storageID
                 require(
-                    transfer.toAccountID == S.accountID &&
+                    transfer.toAccountID== ctx.accountID &&
                     transfer.from == join.owner &&
                     transfer.tokenID == ctx.tokens[i].tokenID &&
-                    transfer.amount.isAlmostEqual(amount) &&
+                    transfer.amount.isAlmostEqual(amounts[i]) &&
                     transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                    transfer.fee.isAlmostEqual(join.fees[i]),
+                    transfer.fee.isAlmostEqual(join.joinFees[i]),
                     "INVALID_TX_DATA"
                 );
 
-                // Replay protection when using a signature (otherwise the approved hash is cleared onchain)
-                if (signature.length > 0) {
-                    require(transfer.storageID == join.storageIDs[i], "INVALID_TX_DATA");
+                if (i == 0 && signature.length > 0) {
+                    require(transfer.storageID == join.joinStorageID, "INVALID_STORAGE_ID_OR_REPLAY");
                 }
 
-                // Now approve this transfer
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(join.owner, txHash);
-
-                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
-
-            } else {
-                // Make the amount unavailable for withdrawing
-                address token = ctx.tokens[i].addr;
-                S.userBalance[token][join.owner] = S.userBalance[token][join.owner].sub(amount);
             }
-
-            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
         }
 
-        S.mint(address(this), poolAmountOut);
-        S.addUserBalance(address(this), join.owner, poolAmountOut);
+        // Handle pool token
+        ctx.totalSupply = ctx.totalSupply.add(mintAmount);
+
+        bool mintToLayer1 = (
+            join.direction == AmmData.Direction.L1_TO_L1 ||
+            join.direction == AmmData.Direction.L2_TO_L1);
+
+        if (mintToLayer1) {
+            S.mint(join.owner, mintAmount);
+        } else {
+            _approvePoolTokenDeposit(ctx, mintAmount, join.owner);
+        }
+    }
+
+    // TODO（daniel): optimize this using 1 deposit + multiple L2 transfers for some cases?
+    function _approvePoolTokenDeposit(
+        AmmData.Context  memory  ctx,
+        uint96                   amount,
+        address                  to
+        )
+        private
+    {
+        require(amount > 0, "INVALID_DEPOSIT_AMOUNT");
+
+        // Check that the deposit in the block matches the expected deposit
+        DepositTransaction.Deposit memory deposit = ctx._block.readDeposit(ctx.txIdx++);
+        ctx.numTransactionsConsumed++;
+
+        AmmData.Token memory poolToken = ctx.tokens[ctx.size];
+
+        // Question(brecht):can we read the `to` address?
+        require(
+            deposit.owner == address(this) &&
+            deposit.accountID== ctx.accountID &&
+            deposit.tokenID == poolToken.tokenID &&
+            deposit.amount == amount,
+            "INVALID_TX_DATA"
+        );
+
+        ctx.exchange.deposit{value: 0}(
+            address(this),
+            to,
+            poolToken.addr,
+            amount,
+            new bytes(0)
+        );
     }
 
     function _calculateJoinAmounts(
-        AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         AmmData.PoolJoin memory  join
         )
         private
         view
         returns(
-            bool            slippageRequirementMet,
-            uint            poolAmountOut,
+            bool            slippageOK,
+            uint96          mintAmount,
             uint96[] memory amounts
         )
     {
         // Check if we can still use this join
-        amounts = new uint96[](ctx.size);
-        uint _totalSupply = S.totalSupply;
+        amounts = new uint96[](ctx.size - 1);
 
         if (block.timestamp > join.validUntil) {
             return (false, 0, amounts);
         }
 
-        if (_totalSupply == 0) {
-            return(true, ctx.poolTokenInitialSupply, join.maxAmountsIn);
+        if (ctx.totalSupply == 0) {
+            return(true, ctx.poolTokenInitialSupply.toUint96(), join.joinAmounts);
         }
 
-        // Calculate the amount of liquidity tokens that should be minted
-        for (uint i = 0; i < ctx.size; i++) {
+        // Calculate the amount of pool tokens that should be minted
+        bool initialized = false;
+        for (uint i = 1; i < ctx.size; i++) {
             if (ctx.ammExpectedL2Balances[i] > 0) {
-                uint amountOut = uint(join.maxAmountsIn[i])
-                    .mul(_totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
+                uint amountOut = uint(join.joinAmounts[i - 1])
+                    .mul(ctx.totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
 
-                if (amountOut < poolAmountOut) {
-                    poolAmountOut = amountOut;
+                if (!initialized) {
+                    initialized = true;
+                    mintAmount = amountOut.toUint96();
+                } else if (amountOut < mintAmount) {
+                    mintAmount = amountOut.toUint96();
                 }
             }
         }
 
-        if (poolAmountOut == 0) {
+        if (mintAmount == 0) {
             return (false, 0, amounts);
         }
 
         // Calculate the amounts to deposit
-        uint ratio = poolAmountOut.mul(ctx.poolTokenBase) / _totalSupply;
+        uint ratio = ctx.poolTokenBase.mul(mintAmount) / ctx.totalSupply;
 
-        for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();
+        for (uint i = 1; i < ctx.size; i++) {
+            amounts[i - 1] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();
         }
 
-        slippageRequirementMet = (poolAmountOut >= join.minPoolAmountOut);
-        return (slippageRequirementMet, poolAmountOut, amounts);
+        slippageOK = (mintAmount >= join.mintMinAmount);
+        return (slippageOK, mintAmount, amounts);
     }
 }

@@ -25,20 +25,20 @@ library AmmUpdateProcess
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-    function processAmmUpdates(
+    function approveAmmUpdates(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         bool                     opening
         )
         internal
     {
-        for (uint i = 0; i < ctx.size; i++) {
+        for (uint i = 1; i < ctx.size; i++) {
             // Check that the AMM update in the block matches the expected update
             AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
             ctx.numTransactionsConsumed++;
 
             require(update.owner == address(this), "INVALID_TX_DATA");
-            require(update.accountID == S.accountID, "INVALID_TX_DATA");
+            require(update.accountID== ctx.accountID, "INVALID_TX_DATA");
             require(update.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
             require(update.feeBips == S.feeBips, "INVALID_TX_DATA");
             require(update.tokenWeight == (opening ? 0 : ctx.tokens[i].weight), "INVALID_TX_DATA");

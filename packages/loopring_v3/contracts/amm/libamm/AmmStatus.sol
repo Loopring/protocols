@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./AmmData.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
@@ -14,6 +15,7 @@ import "../../lib/SignatureUtil.sol";
 /// @title LPToken
 library AmmStatus
 {
+    using ERC20SafeTransfer for address;
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
@@ -53,10 +55,10 @@ library AmmStatus
         S.symbol = config.tokenSymbol;
 
         address depositContract = address(exchange.getDepositContract());
-
         for (uint i = 0; i < config.tokens.length; i++) {
-            address token = config.tokens[i];
+            require(config.weights[i] > 0, "INVALID_TOKEN_WEIGHT");
 
+            address token = config.tokens[i];
             S.tokens.push(AmmData.Token({
                 addr: token,
                 tokenID: exchange.getTokenID(token),
@@ -65,6 +67,13 @@ library AmmStatus
 
             ERC20(token).approve(depositContract, uint(-1));
         }
+
+        // The last token is the pool token
+        S.tokens.push(AmmData.Token({
+            addr: address(this),
+            tokenID: exchange.getTokenID(address(this)),
+            weight: 0 // never used
+        }));
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
@@ -97,81 +106,16 @@ library AmmStatus
         emit Shutdown(block.timestamp);
     }
 
-    function isLocked(
+    function checkPoolTxApproval(
         AmmData.State storage S,
-        address               owner
-        )
-        internal
-        view
-        returns (bool)
-    {
-        if (isOnline(S)) {
-            uint since = S.lockedSince[owner];
-            uint until = S.lockedUntil[owner];
-            return since <= block.timestamp && (block.timestamp <= until || until == 0);
-        } else {
-            return false;
-        }
-    }
-
-    function availableBalance(
-        AmmData.State storage S,
-        address               token,
-        address               owner
-        )
-        internal
-        view
-        returns (uint)
-    {
-        return isLocked(S, owner) ? 0 : S.userBalance[token][owner];
-    }
-
-    function lockedBalance(
-        AmmData.State storage S,
-        address               token,
-        address               owner
-        )
-        internal
-        view
-        returns (uint)
-    {
-        return S.userBalance[token][owner].sub(availableBalance(S, token, owner));
-    }
-
-    function addUserBalance(
-        AmmData.State storage S,
-        address               token,
         address               owner,
-        uint                  amount
-        )
-        internal
-    {
-        S.userBalance[token][owner] = S.userBalance[token][owner].add(amount);
-        S.totalUserBalance[token] = S.totalUserBalance[token].add(amount);
-    }
-
-    function removeUserBalance(
-        AmmData.State storage S,
-        address               token,
-        address               owner,
-        uint                  amount
-        )
-        internal
-    {
-        S.userBalance[token][owner] = S.userBalance[token][owner].sub(amount);
-        S.totalUserBalance[token] = S.totalUserBalance[token].sub(amount);
-    }
-
-    function validatePoolTransaction(
-        AmmData.State storage S,
-        address        owner,
-        bytes32        poolTxHash,
-        bytes   memory signature
+        bytes32               poolTxHash,
+        bytes          memory signature
         )
         internal
     {
         if (signature.length == 0) {
-            require(S.approvedTx[poolTxHash] != 0, "NOT_APPROVED");
+            require(S.approvedTx[poolTxHash] > block.timestamp, "NOT_APPROVED");
             delete S.approvedTx[poolTxHash];
         } else {
             require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
