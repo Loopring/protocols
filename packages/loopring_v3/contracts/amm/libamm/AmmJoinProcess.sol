@@ -93,8 +93,8 @@ library AmmJoinProcess
                     "INVALID_TX_DATA"
                 );
 
-                if (i == 0 && signature.length > 0) {
-                    require(transfer.storageID == join.joinStorageID, "INVALID_STORAGE_ID_OR_REPLAY");
+                if (signature.length > 0) {
+                    require(transfer.storageID == join.joinStorageIDs[i], "INVALID_STORAGE_ID_OR_REPLAY");
                 }
 
                 transfer.validUntil = 0xffffffff;

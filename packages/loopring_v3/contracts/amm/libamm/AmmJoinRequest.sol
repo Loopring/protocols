@@ -23,7 +23,7 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool joinFromLayer2,uint96[] joinAmounts,uint96[] joinFees,uint32 joinStorageID,bool mintToLayer2,uint96 mintMinAmount,uint256 validUntil,uint32 nonce)"
+        "PoolJoin(address owner,bool joinFromLayer2,uint96[] joinAmounts,uint96[] joinFees,uint32[] joinStorageIDs,bool mintToLayer2,uint96 mintMinAmount,uint256 validUntil,uint32 nonce)"
     );
 
     event PoolJoinRequested(AmmData.PoolJoin join);
@@ -33,7 +33,7 @@ library AmmJoinRequest
         bool                  joinFromLayer2,
         uint96[]     calldata joinAmounts,
         uint96[]     calldata joinFees,
-        uint32                joinStorageID,
+        uint32[]     calldata joinStorageIDs,
         bool                  mintToLayer2,
         uint96                mintMinAmount
         )
@@ -42,7 +42,8 @@ library AmmJoinRequest
         uint size = S.tokens.length - 1;
         require(
             joinAmounts.length == size &&
-            joinFees.length == size,
+            joinFees.length == size &&
+            joinStorageIDs.length == size,
             "INVALID_PARAM_SIZE"
         );
 
@@ -55,8 +56,10 @@ library AmmJoinRequest
         }
 
         uint32 nonce = 0;
-        if (!joinFromLayer2) {
-            require(joinStorageID == 0, "INVALID_STORAGE_ID");
+        if (joinFromLayer2) {
+            require(joinStorageIDs.length == size, "INVALID_STORAGE_IDS");
+        } else {
+            require(joinStorageIDs.length == 0, "INVALID_STORAGE_IDS");
 
             nonce = uint32(S.joinLocks[msg.sender].length + 1);
 
@@ -70,7 +73,7 @@ library AmmJoinRequest
             joinFromLayer2:joinFromLayer2,
             joinAmounts: joinAmounts,
             joinFees: joinFees,
-            joinStorageID: joinStorageID,
+            joinStorageIDs: joinStorageIDs,
             mintToLayer2: mintToLayer2,
             mintMinAmount: mintMinAmount,
             validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
@@ -107,7 +110,7 @@ library AmmJoinRequest
                     join.joinFromLayer2,
                     keccak256(abi.encodePacked(join.joinAmounts)),
                     keccak256(abi.encodePacked(join.joinFees)),
-                    join.joinStorageID,
+                    keccak256(abi.encodePacked(join.joinStorageIDs)),
                     join.mintToLayer2,
                     join.mintMinAmount,
                     join.validUntil,

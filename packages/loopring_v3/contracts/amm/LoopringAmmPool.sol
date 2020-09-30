@@ -86,7 +86,7 @@ contract LoopringAmmPool is
         bool              joinFromLayer2,
         uint96[] calldata joinAmounts,
         uint96[] calldata joinFees,
-        uint32            joinStorageID,
+        uint32[] calldata joinStorageIDs,
         bool              mintToLayer2,
         uint96            mintMinAmount
         )
@@ -100,7 +100,7 @@ contract LoopringAmmPool is
             joinFromLayer2,
             joinAmounts,
             joinFees,
-            joinStorageID,
+            joinStorageIDs,
             mintToLayer2,
             mintMinAmount
         );

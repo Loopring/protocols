@@ -40,7 +40,7 @@ library AmmData
         bool      joinFromLayer2;
         uint96[]  joinAmounts;
         uint96[]  joinFees;
-        uint32    joinStorageID; // for tokens[1]'s' transfer from user to the pool
+        uint32[]  joinStorageIDs;
         bool      mintToLayer2;
         uint96    mintMinAmount;
         uint      validUntil;
