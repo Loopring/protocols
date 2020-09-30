@@ -42,24 +42,21 @@ library AmmExitRequest
     {
         uint size = S.tokens.length - 1;
         require(exitMinAmounts.length == size, "INVALID_PARAM_SIZE");
-
         require(burnAmount > 0, "INVALID_BURN_AMOUNT");
-
-        uint exitQueueLength;
-
 
         bool fromLayer1 = (
             direction == AmmData.Direction.L1_TO_L1 ||
             direction == AmmData.Direction.L1_TO_L2
         );
 
+        uint exitLocksLength;
         if (fromLayer1) {
             require(burnStorageID == 0, "INVALID_STORAGE_ID");
-            require(S.exitIndex[msg.sender] == 0, "EXITING");
+            require(S.exitLockIdx[msg.sender] == 0, "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
 
-            exitQueueLength = S.exitQueue.length;
+            exitLocksLength = S.exitLocks.length;
             require(
-                exitQueueLength < S.exitQueueIndex + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
+                exitLocksLength < S.exitLocksIndex + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
                 "TOO_MANY_LAYER1_EXITS"
             );
 
@@ -81,13 +78,11 @@ library AmmExitRequest
 
         // Put layer-1 exit into the queue
         if (fromLayer1) {
-            S.exitIndex[msg.sender] = uint32(exitQueueLength + 1);
-
-            AmmData.TokenLock memory record = AmmData.TokenLock({
-                // txHash:txHash,
+            S.exitLocks.push(AmmData.TokenLock({
                 amounts: AmmUtil.array(burnAmount)
-            });
-            S.exitQueue.push(record);
+            }));
+
+            S.exitLockIdx[msg.sender] = uint32(exitLocksLength + 1);
         }
 
         emit PoolExitRequested(exit);

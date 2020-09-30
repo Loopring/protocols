@@ -50,9 +50,9 @@ library AmmExitProcess
         );
 
         if (fromLayer1) {
-            delete S.exitIndex[msg.sender];
-            delete S.exitQueue[S.exitQueueIndex];
-            S.exitQueueIndex++;
+            delete S.exitLockIdx[msg.sender];
+            delete S.exitLocks[S.exitLocksIndex];
+            S.exitLocksIndex++;
         }
 
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);

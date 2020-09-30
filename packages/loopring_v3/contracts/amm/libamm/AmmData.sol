@@ -125,12 +125,12 @@ library AmmData
 
         uint        poolTokenToBurn;
 
-        mapping (address => uint) exitIndex;
-        TokenLock[] exitQueue;
-        uint         exitQueueIndex;
+        mapping (address => uint) exitLockIdx;
+        TokenLock[] exitLocks;
+        uint         exitLocksIndex;
 
-        mapping (address => TokenLock[]) joinQueue;
-        mapping (address => uint) joinQueueIndex;
+        mapping (address => TokenLock[]) joinLocks;
+        mapping (address => uint) joinLockIdx;
 
         mapping (address => mapping (address => uint96)) balance;
 

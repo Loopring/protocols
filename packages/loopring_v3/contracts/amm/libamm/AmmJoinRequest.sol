@@ -22,9 +22,9 @@ library AmmJoinRequest
     using MathUint96        for uint96;
     using SafeCast          for uint;
 
-// TODO:fix this string
+    // TODO:fix this string for enum?
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,uint32 index,uint96[] joinAmounts,uint96[] joinFees,bool joinFromLayer2,uint32 joinStorageID,uint96 mintMinAmount,bool mintToLayer2,uint256 validUntil)"
+        "PoolJoin(address owner,uint256 direction,uint96[] joinAmounts,uint96[] joinFees,uint32 joinStorageID,uint96 mintMinAmount,uint256 validUntil,uint32 nonce)"
     );
 
     event PoolJoinRequested(AmmData.PoolJoin join);
@@ -73,18 +73,16 @@ library AmmJoinRequest
             joinStorageID: joinStorageID,
             mintMinAmount: mintMinAmount,
             validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
-            nonce: uint32(S.joinQueue[msg.sender].length + 1)
+            nonce: uint32(S.joinLocks[msg.sender].length + 1)
         });
 
         bytes32 txHash = hash(S.domainSeparator, join);
         S.approvedTx[txHash] = join.validUntil;
 
         if (fromLayer1) {
-            AmmData.TokenLock memory record = AmmData.TokenLock({
-                // txHash:txHash,
+            S.joinLocks[msg.sender].push(AmmData.TokenLock({
                 amounts: joinAmounts
-            });
-            S.joinQueue[msg.sender].push(record);
+            }));
         }
 
         emit PoolJoinRequested(join);

@@ -50,13 +50,13 @@ library AmmJoinProcess
 
         if (fromLayer1) {
             require(join.nonce > 0, "INVALID_NONCE");
-            if (join.nonce == S.joinQueue[msg.sender].length) {
-                S.joinQueue[msg.sender].pop();
+            if (join.nonce == S.joinLocks[msg.sender].length) {
+                S.joinLocks[msg.sender].pop();
             } else {
-                delete S.joinQueue[msg.sender][join.nonce - 1];
+                delete S.joinLocks[msg.sender][join.nonce - 1];
 
-                if (S.joinQueueIndex[msg.sender] == join.nonce - 1) {
-                    S.joinQueueIndex[msg.sender]++;
+                if (S.joinLockIdx[msg.sender] == join.nonce - 1) {
+                    S.joinLockIdx[msg.sender]++;
                 }
             }
         }
