@@ -13,6 +13,7 @@ library AmmData
     function LP_TOKEN_BASE() internal pure returns (uint) { return 10 ** 18; }
     function LP_TOKEN_INITIAL_SUPPLY() internal pure returns (uint) { return 100 * LP_TOKEN_BASE(); }
     function MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN() internal pure returns (uint) { return 7 days; }
+    function MAX_NUM_EXITS_FROM_LAYER1() internal pure returns (uint) { return 200; }
     function LOCK_DELAY() internal pure returns (uint) { return 1 days; }
 
     enum PoolTransactionType
@@ -43,7 +44,6 @@ library AmmData
 
     struct PoolJoin
     {
-        uint32    index; // for onchain approved join requests
         address   owner;
         Direction direction;
         uint96[]  joinAmounts;
@@ -51,11 +51,11 @@ library AmmData
         uint32    joinStorageID; // for tokens[1]'s' transfer from user to the pool
         uint96    mintMinAmount;
         uint      validUntil;
+        uint32    nonce; // for onchain approved join requests
     }
 
     struct PoolExit
     {
-        uint32    index; // for onchain approved exit requests
         address   owner;
         Direction direction;
         uint96    burnAmount;
@@ -66,10 +66,8 @@ library AmmData
 
     struct LockRecord
     {
-        uint     index;
         bytes32  txHash;
         uint96[] amounts; // the size should be either 1 or tokens.length
-        uint     validUntil;
     }
 
     struct User
@@ -139,7 +137,14 @@ library AmmData
 
         uint        poolTokenToBurn;
 
-        mapping (address => User) userMap;
+        mapping (address => uint) exitIndex;
+        LockRecord[] exitQueue;
+        uint         exitQueueIndex;
+
+        mapping (address => LockRecord[]) joinQueue;
+        mapping (address => uint) joinQueueIndex;
+
+        mapping (address => mapping (address => uint96)) balance;
 
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => uint) approvedTx;

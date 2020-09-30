@@ -37,33 +37,41 @@ library AmmJoinProcess
         )
         internal
     {
-        if (signature.length == 0) {
-            require(join.index > 0, "INDEX_REQUIRED");
-        } else {
-            require(join.index == 0, "INDEX_DISALLOWED");
-            require(
-                join.direction == AmmData.Direction.L2_TO_L1 ||
-                join.direction == AmmData.Direction.L2_TO_L2,
-                "LAYER1_JOIN_WITH_OFFCHAIN_APPROVAL_DISALLOWED"
-            );
-        }
-
-        S.validatePoolTransaction(
+        S.checkPoolTxApproval(
             join.owner,
             AmmJoinRequest.hash(ctx.domainSeparator, join),
             signature
         );
 
+        bool fromLayer1 = (
+            join.direction == AmmData.Direction.L1_TO_L1 ||
+            join.direction == AmmData.Direction.L1_TO_L2
+        );
+
+        if (fromLayer1) {
+            require(join.nonce > 0, "INVALID_NONCE");
+            if (join.nonce == S.joinQueue[msg.sender].length) {
+                S.joinQueue[msg.sender].pop();
+            } else {
+                delete S.joinQueue[msg.sender][join.nonce - 1];
+
+                if (S.joinQueueIndex[msg.sender] == join.nonce - 1) {
+                    S.joinQueueIndex[msg.sender]++;
+                }
+            }
+        }
+
         // Check if the requirements are fulfilled
         (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
 
-        if (!slippageOK) return;
-
-        if (signature.length == 0) {
-            AmmData.User storage user = S.userMap[msg.sender];
-
-            // Deleteting the lock record indicates a successful processing of the join.
-            delete user.joinLocks[join.index - 1];
+        if (!slippageOK) {
+            if (fromLayer1) {
+                for (uint i = 0; i < ctx.size; i++) {
+                    address token = ctx.tokens[i].addr;
+                    S.balance[msg.sender][token] = S.balance[msg.sender][token].add(join.joinAmounts[i]);
+                }
+            }
+            return;
         }
 
          // Handle liquidity tokens

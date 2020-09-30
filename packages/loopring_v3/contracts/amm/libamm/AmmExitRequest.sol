@@ -41,43 +41,53 @@ library AmmExitRequest
         public
     {
         uint size = S.tokens.length - 1;
-        require(exitMinAmounts.length == size, "INVALID_AMOUNTS_SIZE");
+        require(exitMinAmounts.length == size, "INVALID_PARAM_SIZE");
 
-        AmmData.User storage user = S.userMap[msg.sender];
-        uint32 index = uint32(user.exitLocks.length + 1);
-        uint validUntil = 0xffffffff;
+        require(burnAmount > 0, "INVALID_BURN_AMOUNT");
+
+        uint exitQueueLength;
+
+
+        bool fromLayer1 = (
+            direction == AmmData.Direction.L1_TO_L1 ||
+            direction == AmmData.Direction.L1_TO_L2
+        );
+
+        if (fromLayer1) {
+            require(burnStorageID == 0, "INVALID_STORAGE_ID");
+            require(S.exitIndex[msg.sender] == 0, "EXITING");
+
+            exitQueueLength = S.exitQueue.length;
+            require(
+                exitQueueLength < S.exitQueueIndex + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
+                "TOO_MANY_LAYER1_EXITS"
+            );
+
+            AmmUtil.transferIn(address(this), burnAmount);
+        }
 
         AmmData.PoolExit memory exit = AmmData.PoolExit({
-            index: index,
             owner: msg.sender,
             direction: direction,
             burnAmount: burnAmount,
             burnStorageID: burnStorageID,
             exitMinAmounts: exitMinAmounts,
-            validUntil: validUntil
+            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN()
         });
 
         // Approve the exit
         bytes32 txHash = hash(S.domainSeparator, exit);
-        S.approvedTx[txHash] = block.timestamp;
+        S.approvedTx[txHash] = exit.validUntil;
 
-        if (direction == AmmData.Direction.L1_TO_L1 ||
-            direction == AmmData.Direction.L1_TO_L2) {
-            require(burnStorageID == 0, "INVALID_STORAGE_ID");
+        // Put layer-1 exit into the queue
+        if (fromLayer1) {
+            S.exitIndex[msg.sender] = uint32(exitQueueLength + 1);
 
-            AmmUtil.transferIn(address(this), burnAmount);
-
-            uint96[] memory amounts = new uint96[](1);
-            amounts[0] = burnAmount;
-
-            user.exitLocks.push(
-                AmmData.LockRecord({
-                    index: index,
-                    txHash:txHash,
-                    amounts: amounts,
-                    validUntil: validUntil
-                })
-            );
+            AmmData.LockRecord memory record = AmmData.LockRecord({
+                txHash:txHash,
+                amounts: AmmUtil.array(burnAmount)
+            });
+            S.exitQueue.push(record);
         }
 
         emit PoolExitRequested(exit);
@@ -96,7 +106,6 @@ library AmmExitRequest
             keccak256(
                 abi.encode(
                     POOLEXIT_TYPEHASH,
-                    exit.index,
                     exit.owner,
                     exit.direction,
                     exit.burnAmount,
