@@ -130,8 +130,7 @@ library AmmJoinProcess
         AmmData.Token memory poolToken = ctx.tokens[ctx.size];
 
         require(
-            deposit.owner == address(this) &&
-            deposit.accountID== ctx.accountID &&
+            deposit.owner == to &&
             deposit.tokenID == poolToken.tokenID &&
             deposit.amount == amount,
             "INVALID_TX_DATA"
