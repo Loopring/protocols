@@ -43,12 +43,9 @@ library AmmJoinProcess
             signature
         );
 
-        bool joinFromLayer1 = (
-            join.direction == AmmData.Direction.L1_TO_L1 ||
-            join.direction == AmmData.Direction.L1_TO_L2
-        );
-
-        if (joinFromLayer1) {
+        if (join.joinFromLayer2) {
+            require(join.nonce == 0, "LAYER2_JOIN_WITH_NONCE_DISALLOWED");
+        } else {
             require(signature.length == 0, "LAYER1_JOIN_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
 
             if (join.nonce == S.joinLocks[msg.sender].length) {
@@ -60,15 +57,13 @@ library AmmJoinProcess
                     S.joinLockIdx[msg.sender]++;
                 }
             }
-        } else {
-            require(join.nonce == 0, "LAYER2_JOIN_WITH_NONCE_DISALLOWED");
         }
 
         // Check if the requirements are fulfilled
         (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
 
         if (!slippageOK) {
-            if (joinFromLayer1) {
+            if (!join.joinFromLayer2) {
                 for (uint i = 0; i < ctx.size; i++) {
                     address token = ctx.tokens[i].addr;
                     S.balance[msg.sender][token] = S.balance[msg.sender][token].add(join.joinAmounts[i]);
@@ -81,9 +76,7 @@ library AmmJoinProcess
         for (uint i = 0; i < ctx.size; i++) {
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amounts[i]);
 
-            if (joinFromLayer1) {
-                // Do nothing
-            } else {
+            if (join.joinFromLayer2) {
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amounts[i]);
 
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -113,14 +106,10 @@ library AmmJoinProcess
         // Handle pool token
         ctx.totalSupply = ctx.totalSupply.add(mintAmount);
 
-        bool mintToLayer1 = (
-            join.direction == AmmData.Direction.L1_TO_L1 ||
-            join.direction == AmmData.Direction.L2_TO_L1);
-
-        if (mintToLayer1) {
-            S.mint(join.owner, mintAmount);
-        } else {
+        if (join.mintToLayer2) {
             _approvePoolTokenDeposit(ctx, mintAmount, join.owner);
+        } else {
+            S.mint(join.owner, mintAmount);
         }
     }
 

@@ -26,16 +26,17 @@ library AmmExitRequest
 
     // TODO:fix this string
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,uint96 burnAmount,bool burnFromLayer2,uint32 burnStorageID,uint96[] exitMinAmounts,bool exitToLayer2,uint256 validUntil)"
+        "PoolExit(address owner,bool burnFromLayer2,uint96 burnAmount,bool burnFromLayer2,uint32 burnStorageID,bool exitToLayer2,uint96[] exitMinAmounts,uint256 validUntil)"
     );
 
     event PoolExitRequested(AmmData.PoolExit exit);
 
     function exitPool(
         AmmData.State storage S,
-        AmmData.Direction     direction,
+        bool                  burnFromLayer2,
         uint96                burnAmount,
         uint32                burnStorageID,
+        bool                  exitToLayer2,
         uint96[]     calldata exitMinAmounts
         )
         public
@@ -44,13 +45,8 @@ library AmmExitRequest
         require(exitMinAmounts.length == size, "INVALID_PARAM_SIZE");
         require(burnAmount > 0, "INVALID_BURN_AMOUNT");
 
-        bool fromLayer1 = (
-            direction == AmmData.Direction.L1_TO_L1 ||
-            direction == AmmData.Direction.L1_TO_L2
-        );
-
         uint32 lockIdx;
-        if (fromLayer1) {
+        if (!burnFromLayer2) {
             require(burnStorageID == 0, "INVALID_STORAGE_ID");
             require(S.exitLockIdx[msg.sender] == 0, "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
 
@@ -65,9 +61,10 @@ library AmmExitRequest
 
         AmmData.PoolExit memory exit = AmmData.PoolExit({
             owner: msg.sender,
-            direction: direction,
+            burnFromLayer2: burnFromLayer2,
             burnAmount: burnAmount,
             burnStorageID: burnStorageID,
+            exitToLayer2: exitToLayer2,
             exitMinAmounts: exitMinAmounts,
             validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN()
         });
@@ -77,7 +74,7 @@ library AmmExitRequest
         S.approvedTx[txHash] = exit.validUntil;
 
         // Put layer-1 exit into the queue
-        if (fromLayer1) {
+        if (!burnFromLayer2) {
             S.exitLocks.push(AmmData.TokenLock({
                 amounts: AmmUtil.array(burnAmount)
             }));
@@ -102,9 +99,10 @@ library AmmExitRequest
                 abi.encode(
                     POOLEXIT_TYPEHASH,
                     exit.owner,
-                    exit.direction,
+                    exit.burnFromLayer2,
                     exit.burnAmount,
                     exit.burnStorageID,
+                    exit.exitToLayer2,
                     keccak256(abi.encodePacked(exit.exitMinAmounts)),
                     exit.validUntil
                 )

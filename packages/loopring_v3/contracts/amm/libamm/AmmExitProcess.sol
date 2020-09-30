@@ -44,12 +44,7 @@ library AmmExitProcess
             signature
         );
 
-        bool burnFromLayer1 = (
-            exit.direction == AmmData.Direction.L1_TO_L1 ||
-            exit.direction == AmmData.Direction.L1_TO_L2
-        );
-
-        if (burnFromLayer1) {
+        if (!exit.burnFromLayer2) {
             require(signature.length == 0, "LAYER1_EXIT_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
 
             delete S.exitLockIdx[msg.sender];
@@ -60,7 +55,7 @@ library AmmExitProcess
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
 
         if (!slippageOK) {
-            if (burnFromLayer1) {
+            if (!exit.burnFromLayer2) {
                 address poolToken = address(this);
                 S.balance[msg.sender][poolToken] = S.balance[msg.sender][poolToken].add(exit.burnAmount);
             }
@@ -68,19 +63,11 @@ library AmmExitProcess
         }
 
         // Handle liquidity tokens
-        bool exitToLayer1 = (
-            exit.direction == AmmData.Direction.L1_TO_L1 ||
-            exit.direction == AmmData.Direction.L2_TO_L1
-        );
-
         for (uint i = 0; i < ctx.size; i++) {
             uint96 amount = amounts[i];
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
 
-            if (exitToLayer1) {
-                address token = ctx.tokens[i].addr;
-                S.balance[exit.owner][token] = S.balance[exit.owner][token].add(amount);
-            } else {
+            if (exit.exitToLayer2) {
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
 
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
@@ -100,16 +87,19 @@ library AmmExitProcess
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(address(this), txHash);
+            } else {
+                address token = ctx.tokens[i].addr;
+                S.balance[exit.owner][token] = S.balance[exit.owner][token].add(amount);
             }
         }
 
         // Handle pool token
         ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
 
-        if (burnFromLayer1) {
-            S.burn(address(this), exit.burnAmount);
-        } else {
+        if (exit.burnFromLayer2) {
             _approvePoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
+        } else {
+            S.burn(address(this), exit.burnAmount);
         }
     }
 
