@@ -44,12 +44,12 @@ library AmmExitProcess
             signature
         );
 
-        bool fromLayer1 = (
+        bool burnFromLayer1 = (
             exit.direction == AmmData.Direction.L1_TO_L1 ||
             exit.direction == AmmData.Direction.L1_TO_L2
         );
 
-        if (fromLayer1) {
+        if (burnFromLayer1) {
             require(signature.length == 0, "LAYER1_EXIT_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
 
             delete S.exitLockIdx[msg.sender];
@@ -60,27 +60,31 @@ library AmmExitProcess
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
 
         if (!slippageOK) {
-            if (fromLayer1) {
-                S.balance[msg.sender][address(this)] = S.balance[msg.sender][address(this)].add(exit.burnAmount);
+            if (burnFromLayer1) {
+                address poolToken = address(this);
+                S.balance[msg.sender][poolToken] = S.balance[msg.sender][poolToken].add(exit.burnAmount);
             }
             return;
         }
 
-         // Handle liquidity tokens
-        for (uint i = 1; i < ctx.size; i++) {
-            uint96 amount = amounts[i - 1];
+        // Handle liquidity tokens
+        bool exitToLayer1 = (
+            exit.direction == AmmData.Direction.L1_TO_L1 ||
+            exit.direction == AmmData.Direction.L2_TO_L1
+        );
+
+        for (uint i = 0; i < ctx.size; i++) {
+            uint96 amount = amounts[i];
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
 
-            if (exit.direction == AmmData.Direction.L1_TO_L2 ||
-                exit.direction == AmmData.Direction.L2_TO_L2) {
-
+            if (exitToLayer1) {
+                address token = ctx.tokens[i].addr;
+                S.balance[exit.owner][token] = S.balance[exit.owner][token].add(amount);
+            } else {
                 ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
 
                 TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
                 ctx.numTransactionsConsumed++;
-
-                // The following fields are not loaded from readTransfer
-                transfer.validUntil = 0xffffffff;
 
                 require(
                     transfer.fromAccountID== ctx.accountID &&
@@ -93,21 +97,19 @@ library AmmExitProcess
                     "INVALID_TX_DATA"
                 );
 
+                transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(address(this), txHash);
-            } else {
-                address token = ctx.tokens[i].addr;
-                S.balance[exit.owner][token] = S.balance[exit.owner][token].add(amount);
             }
         }
 
         // Handle pool token
         ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
-        if (exit.direction == AmmData.Direction.L2_TO_L1 ||
-            exit.direction == AmmData.Direction.L2_TO_L2) {
-            _approvePoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
-        } else {
+
+        if (burnFromLayer1) {
             S.burn(address(this), exit.burnAmount);
+        } else {
+            _approvePoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
         }
     }
 
