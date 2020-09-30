@@ -73,7 +73,7 @@ library AmmWithdrawal
 
         // uint idx = user.joinStartIdx;
         // while(idx < user.joinLocks.length) {
-        //     AmmData.LockRecord storage record = user.joinLocks[idx];
+        //     AmmData.TokenLock storage record = user.joinLocks[idx];
         //     if (record.validUntil > block.timestamp) {
         //         return (amounts, idx);
         //     }

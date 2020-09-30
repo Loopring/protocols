@@ -64,21 +64,9 @@ library AmmData
         uint      validUntil;
     }
 
-    struct LockRecord
+    struct TokenLock
     {
-        bytes32  txHash;
-        uint96[] amounts; // the size should be either 1 or tokens.length
-    }
-
-    struct User
-    {
-        uint joinStartIdx;
-        LockRecord[] joinLocks; // joins can be processed out of order.
-
-        uint exitStartIdx;
-        LockRecord[] exitLocks; // exits must be processed in order
-
-        mapping (address => uint) withdrawable;
+        uint96[] amounts; // the size should be either 1 or tokens.length - 1
     }
 
     struct PoolTransaction
@@ -138,10 +126,10 @@ library AmmData
         uint        poolTokenToBurn;
 
         mapping (address => uint) exitIndex;
-        LockRecord[] exitQueue;
+        TokenLock[] exitQueue;
         uint         exitQueueIndex;
 
-        mapping (address => LockRecord[]) joinQueue;
+        mapping (address => TokenLock[]) joinQueue;
         mapping (address => uint) joinQueueIndex;
 
         mapping (address => mapping (address => uint96)) balance;

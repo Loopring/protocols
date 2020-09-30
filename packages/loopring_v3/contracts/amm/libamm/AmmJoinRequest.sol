@@ -80,8 +80,8 @@ library AmmJoinRequest
         S.approvedTx[txHash] = join.validUntil;
 
         if (fromLayer1) {
-            AmmData.LockRecord memory record = AmmData.LockRecord({
-                txHash:txHash,
+            AmmData.TokenLock memory record = AmmData.TokenLock({
+                // txHash:txHash,
                 amounts: joinAmounts
             });
             S.joinQueue[msg.sender].push(record);

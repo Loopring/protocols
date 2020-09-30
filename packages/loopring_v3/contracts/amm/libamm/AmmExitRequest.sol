@@ -83,8 +83,8 @@ library AmmExitRequest
         if (fromLayer1) {
             S.exitIndex[msg.sender] = uint32(exitQueueLength + 1);
 
-            AmmData.LockRecord memory record = AmmData.LockRecord({
-                txHash:txHash,
+            AmmData.TokenLock memory record = AmmData.TokenLock({
+                // txHash:txHash,
                 amounts: AmmUtil.array(burnAmount)
             });
             S.exitQueue.push(record);
