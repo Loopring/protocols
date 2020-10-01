@@ -102,7 +102,7 @@ library AmmData
         uint96[] ammActualL2Balances;
         uint96[] ammExpectedL2Balances;
         uint     numTransactionsConsumed;
-        uint     effectiveTotalSupply;
+        uint     totalSupply;
     }
 
     struct State {

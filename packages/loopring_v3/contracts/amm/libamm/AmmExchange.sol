@@ -122,7 +122,7 @@ library AmmExchange
         address[] memory tokens = new address[](size);
 
         if (onlyWithdrawPoolToken) {
-            owners[0] = address(this)
+            owners[0] = address(this);
             tokens[0] = address(this);
         } else {
             for (uint i = 0; i < size; i++) {

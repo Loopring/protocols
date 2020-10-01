@@ -172,7 +172,7 @@ library AmmJoinProcess
             return (false, 0, amounts);
         }
 
-        if (ctx.effectiveTotalSupply == 0) {
+        if (ctx.totalSupply == 0) {
             return(true, ctx.poolTokenInitialSupply.toUint96(), join.joinAmounts);
         }
 
@@ -181,7 +181,7 @@ library AmmJoinProcess
         for (uint i = 1; i < ctx.size; i++) {
             if (ctx.ammExpectedL2Balances[i] > 0) {
                 uint amountOut = uint(join.joinAmounts[i - 1])
-                    .mul(ctx.effectiveTotalSupply) / uint(ctx.ammExpectedL2Balances[i]);
+                    .mul(ctx.totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
 
                 if (!initialized) {
                     initialized = true;
@@ -197,7 +197,7 @@ library AmmJoinProcess
         }
 
         // Calculate the amounts to deposit
-        uint ratio = ctx.poolTokenBase.mul(mintAmount) / ctx.effectiveTotalSupply;
+        uint ratio = ctx.poolTokenBase.mul(mintAmount) / ctx.totalSupply;
 
         for (uint i = 1; i < ctx.size; i++) {
             amounts[i - 1] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();

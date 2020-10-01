@@ -179,7 +179,7 @@ library AmmExitProcess
         }
 
         // Calculate how much will be withdrawn
-        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.effectiveTotalSupply;
+        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.totalSupply;
 
         for (uint i = 0; i < ctx.size - 1; i++) {
             amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i + 1]) / ctx.poolTokenBase).toUint96();

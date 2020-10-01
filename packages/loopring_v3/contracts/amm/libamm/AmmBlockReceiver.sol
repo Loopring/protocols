@@ -91,7 +91,7 @@ library AmmBlockReceiver
             ammActualL2Balances: new uint96[](size),
             ammExpectedL2Balances: new uint96[](size),
             numTransactionsConsumed: 0,
-            effectiveTotalSupply: S.totalSupply.sub(S.poolSupplyToBurn)
+            totalSupply: S.totalSupply_()
         });
     }
     function processPoolTx(
