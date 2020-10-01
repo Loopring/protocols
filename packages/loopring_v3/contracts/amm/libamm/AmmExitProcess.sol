@@ -153,11 +153,11 @@ library AmmExitProcess
         )
         private
     {
-        require(S.exitLocksIndex + 1 == exit.nonce, "INVALID_EXIT_NONCE");
+        require(S.exitLocksStartIdx + 1 == exit.nonce, "INVALID_EXIT_NONCE");
 
         S.isExiting[exit.owner] = false;
-        delete S.exitLocks[S.exitLocksIndex];
-        S.exitLocksIndex++;
+        delete S.exitLocks[S.exitLocksStartIdx];
+        S.exitLocksStartIdx++;
     }
 
     function _calculateExitAmounts(

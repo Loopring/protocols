@@ -29,7 +29,6 @@ library AmmExchange
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-
     function approveTokenDeposit(
         AmmData.Context  memory  ctx,
         AmmData.Token    memory  token,

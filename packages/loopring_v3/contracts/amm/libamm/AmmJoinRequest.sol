@@ -87,6 +87,7 @@ library AmmJoinRequest
 
         if (!joinFromLayer2) {
             S.joinLocks[msg.sender].push(AmmData.TokenLock({
+                txHash: txHash,
                 amounts: totalAmounts
             }));
         }
@@ -95,7 +96,7 @@ library AmmJoinRequest
     }
 
     function hash(
-        bytes32                 domainSeparator,
+        bytes32 domainSeparator,
         AmmData.PoolJoin memory join
         )
         internal

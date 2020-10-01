@@ -24,7 +24,6 @@ library AmmExitRequest
     using SafeCast          for uint;
     using SignatureUtil     for bytes32;
 
-    // TODO:fix this string
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
         "PoolExit(address owner,bool burnFromLayer2,uint96 burnAmount,bool burnFromLayer2,uint32 burnStorageID,bool exitToLayer2,uint96[] exitMinAmounts,uint256 validUntil,uint32 nonce)"
     );
@@ -52,7 +51,7 @@ library AmmExitRequest
 
             nonce = uint32(S.exitLocks.length + 1);
             require(
-                nonce <= S.exitLocksIndex + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
+                nonce <= S.exitLocksStartIdx + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
                 "TOO_MANY_LAYER1_EXITS"
             );
 
@@ -77,6 +76,7 @@ library AmmExitRequest
         // Put layer-1 exit into the queue
         if (!burnFromLayer2) {
             S.exitLocks.push(AmmData.TokenLock({
+                txHash: txHash,
                 amounts: AmmUtil.array(burnAmount)
             }));
 
@@ -87,7 +87,7 @@ library AmmExitRequest
     }
 
     function hash(
-        bytes32                 domainSeparator,
+        bytes32 domainSeparator,
         AmmData.PoolExit memory exit
         )
         internal
@@ -112,44 +112,4 @@ library AmmExitRequest
         );
     }
 
-    // bytes32 constant public WITHDRAW_TYPEHASH = keccak256(
-    //     "Withdraw(address owner,uint256[] amounts,uint256 validUntil,uint256 nonce)"
-    // );
-
-    // function _checkOperatorApproval(
-    //     AmmData.State storage S,
-    //     uint[]       calldata amounts,
-    //     bytes        calldata signature, // signature from Exchange operator
-    //     uint                  validUntil
-    //     )
-    //     private
-    //     returns (bool)
-    // {
-    //     // Check if we can withdraw without unlocking with an approval
-    //     // from the operator.
-    //     if (signature.length == 0) {
-    //         require(validUntil == 0, "INVALID_VALUE");
-    //         return false;
-    //     }
-
-    //     require(validUntil >= block.timestamp, 'SIGNATURE_EXPIRED');
-
-    //     bytes32 withdrawHash = EIP712.hashPacked(
-    //         S.domainSeparator,
-    //         keccak256(
-    //             abi.encode(
-    //                 WITHDRAW_TYPEHASH,
-    //                 msg.sender,
-    //                 keccak256(abi.encodePacked(amounts)),
-    //                 validUntil,
-    //                 S.nonces[msg.sender]++
-    //             )
-    //         )
-    //     );
-    //     require(
-    //         withdrawHash.verifySignature(S.exchange.owner(), signature),
-    //         "INVALID_SIGNATURE"
-    //     );
-    //     return true;
-    // }
 }

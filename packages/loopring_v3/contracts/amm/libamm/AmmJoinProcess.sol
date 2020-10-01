@@ -147,8 +147,8 @@ library AmmJoinProcess
             joinLocks.pop();
         } else {
             delete joinLocks[join.nonce - 1];
-            if (S.joinLockStartIdx[join.owner] == join.nonce - 1) {
-                S.joinLockStartIdx[join.owner]++;
+            if (S.joinLocksStartIdx[join.owner] == join.nonce - 1) {
+                S.joinLocksStartIdx[join.owner]++;
             }
         }
     }

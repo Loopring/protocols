@@ -73,13 +73,13 @@ contract LoopringAmmPool is
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
-    function shutdown(bytes32 txHash)
+    function shutdown()
         external
         payable
         onlyWhenOnline
         nonReentrant
     {
-        state.shutdown(txHash);
+        state.shutdown();
     }
 
     function joinPool(
@@ -151,13 +151,29 @@ contract LoopringAmmPool is
         state.afterAllBlocksSubmitted(blocks);
     }
 
-        // Only used to withdraw from the pool when shutdown.
-    // Otherwise LPs should withdraw by doing normal queued exit requests.
-    function withdrawFromPoolWhenShutdown(uint burnAmount)
+    function getWithdrawableAmounts(address user)
+        public
+        view
+        onlyWhenOnline
+        returns (uint96[] memory amounts)
+    {
+        (, amounts) = state.getWithdrawableAmounts(user);
+    }
+
+    function withdraw()
+        external
+        onlyWhenOnline
+        nonReentrant
+    {
+        state.withdraw();
+    }
+
+    //
+    function withdrawInShutdown()
         external
         onlyWhenOffline
         nonReentrant
     {
-        state.withdrawFromPoolWhenShutdown(burnAmount);
+        state.withdrawInShutdown();
     }
 }

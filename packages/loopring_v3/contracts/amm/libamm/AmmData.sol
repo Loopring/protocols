@@ -63,6 +63,7 @@ library AmmData
 
     struct TokenLock
     {
+        bytes32  txHash;
         uint96[] amounts; // the size should be either 1 or tokens.length - 1
     }
 
@@ -124,12 +125,15 @@ library AmmData
 
         mapping (address => bool) isExiting;
         TokenLock[] exitLocks;
-        uint         exitLocksIndex;
+        uint        exitLocksStartIdx;
 
         mapping (address => TokenLock[]) joinLocks;
-        mapping (address => uint) joinLockStartIdx;
+        mapping (address => uint) joinLocksStartIdx;
 
         mapping (address => mapping (address => uint96)) balance;
+
+        // The amount per token that belongs to the users, not the pool
+        mapping (address => uint) userTokenBalances;
 
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => uint) approvedTx;
