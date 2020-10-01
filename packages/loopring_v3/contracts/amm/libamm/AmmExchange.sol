@@ -64,10 +64,10 @@ library AmmExchange
         }
 
         ctx.exchange.deposit{value: ethValue}(
-            deposit.owner,
-            deposit.owner,
+            address(this),
+            address(this),
             token.addr,
-            deposit.amount,
+            amount,
             new bytes(0)
         );
     }

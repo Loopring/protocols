@@ -25,8 +25,8 @@ library AmmBlockReceiver
     function beforeBlockSubmission(
         AmmData.State      storage S,
         ExchangeData.Block memory  _block,
-        uint                       txIdx,
-        bytes              memory  auxiliaryData
+        bytes              memory  data,
+        uint                       txIdx
         )
         public
         returns (uint)
@@ -34,7 +34,7 @@ library AmmBlockReceiver
         require(S.poolTokenToBurn == 0, "INVALID_CONDITION");
 
         AmmData.PoolTransaction[] memory poolTransactions = abi.decode(
-            auxiliaryData,
+            data,
             (AmmData.PoolTransaction[])
         );
 
@@ -95,9 +95,9 @@ library AmmBlockReceiver
         return ctx.numTransactionsConsumed;
     }
 
-    function afterBlockSubmission(
-        AmmData.State      storage S,
-        ExchangeData.Block memory  /* _block */
+    function afterAllBlocksSubmitted(
+        AmmData.State        storage S,
+        ExchangeData.Block[] memory
         )
         public
     {

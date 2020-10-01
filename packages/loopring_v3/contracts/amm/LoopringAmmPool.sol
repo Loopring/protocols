@@ -129,9 +129,9 @@ contract LoopringAmmPool is
     }
 
     function beforeBlockSubmission(
-        ExchangeData.Block calldata _block,
-        uint                        txIdx,
-        bytes              calldata auxiliaryData
+        ExchangeData.Block memory _block,
+        bytes              memory data,
+        uint                      txIdx
         )
         external
         override
@@ -140,11 +140,11 @@ contract LoopringAmmPool is
         nonReentrant
         returns (uint)
     {
-        return state.beforeBlockSubmission(_block, txIdx, auxiliaryData);
+        return state.beforeBlockSubmission(_block, data, txIdx);
     }
 
-    function afterBlockSubmission(
-        ExchangeData.Block calldata _block
+    function afterAllBlocksSubmitted(
+        ExchangeData.Block[] memory blocks
         )
         external
         override
@@ -152,7 +152,7 @@ contract LoopringAmmPool is
         onlyExchangeOwner
         nonReentrant
     {
-        state.afterBlockSubmission(_block);
+        state.afterAllBlocksSubmitted(blocks);
     }
 
         // Only used to withdraw from the pool when shutdown.
