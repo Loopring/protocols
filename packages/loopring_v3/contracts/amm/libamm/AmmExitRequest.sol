@@ -49,9 +49,6 @@ library AmmExitRequest
         uint32 nonce = 0;
         if (!burnFromLayer2) {
             require(msg.value >= S.onchainExitFeeETH, "INSUFFICIENT_FEE");
-            if (msg.value > 0) {
-                S.exchange.owner().sendETHAndVerify(msg.value, gasleft());
-            }
 
             require(burnStorageID == 0, "INVALID_STORAGE_ID");
             require(!S.isExiting[msg.sender], "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
@@ -88,6 +85,10 @@ library AmmExitRequest
             }));
 
             S.isExiting[msg.sender] = true;
+
+            if (msg.value > 0) {
+                S.exchange.owner().sendETHAndVerify(msg.value, gasleft());
+            }
         }
 
         emit PoolExitRequested(exit);

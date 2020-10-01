@@ -91,7 +91,6 @@ library AmmData
         // Exchange state variables
         IExchangeV3 exchange;
         bytes32     exchangeDomainSeparator;
-        address     feeRecipient;
 
         // AMM pool state variables
         bytes32 domainSeparator;

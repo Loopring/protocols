@@ -57,7 +57,7 @@ library AmmJoinProcess
             if (!join.joinFromLayer2) {
                 for (uint i = 0; i < ctx.size; i++) {
                     address token =  ctx.tokens[i].addr;
-                    S.addUserBalance(ctx.feeRecipient, token, join.joinFees[i]);
+                    S.addUserBalance(ctx.exchange.owner(), token, join.joinFees[i]);
                     S.addUserBalance(join.owner, token, join.joinAmounts[i]);
                 }
             }
@@ -94,7 +94,7 @@ library AmmJoinProcess
             } else {
                 for (uint j = 0; j < ctx.size; j++) {
                     address token =  ctx.tokens[j].addr;
-                    S.addUserBalance(ctx.feeRecipient,token, join.joinFees[j]);
+                    S.addUserBalance(ctx.exchange.owner(), token, join.joinFees[j]);
                     S.addUserBalance(join.owner, token, join.joinAmounts[j].sub(amounts[j]));
                 }
             }

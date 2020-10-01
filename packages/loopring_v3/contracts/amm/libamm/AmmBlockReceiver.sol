@@ -82,7 +82,6 @@ library AmmBlockReceiver
             txIdx: txIdx,
             exchange: S.exchange,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
-            feeRecipient:S.exchange.owner(),
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             tokens: S.tokens,
