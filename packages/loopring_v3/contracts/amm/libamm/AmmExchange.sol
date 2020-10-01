@@ -122,11 +122,11 @@ library AmmExchange
         address[] memory tokens = new address[](size);
 
         if (onlyWithdrawPoolToken) {
-            owners[0] = msg.sender;
+            owners[0] = address(this)
             tokens[0] = address(this);
         } else {
             for (uint i = 0; i < size; i++) {
-                owners[i] = msg.sender;
+                owners[i] = address(this);
                 tokens[i] = S.tokens[i].addr;
             }
         }
