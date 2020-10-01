@@ -112,19 +112,25 @@ library AmmExchange
     }
 
     // Withdraw any outstanding balances for the pool account on the exchange
-    function processApprovedWithdrawals(
-        AmmData.State storage S
+    function withdrawFromApprovedWithdrawals(
+        AmmData.State storage S,
+        bool                  onlyWithdrawPoolToken
         )
         internal
     {
-        uint size = S.tokens.length;
+        uint size = onlyWithdrawPoolToken? 1 : S.tokens.length;
         address[] memory owners = new address[](size);
-        address[] memory tokenAddresses = new address[](size);
+        address[] memory tokens = new address[](size);
 
-        for (uint i = 0; i < size; i++) {
-            owners[i] = msg.sender;
-            tokenAddresses[i] = S.tokens[i].addr;
+        if (onlyWithdrawPoolToken) {
+            owners[0] = msg.sender;
+            tokens[0] = address(this);
+        } else {
+            for (uint i = 0; i < size; i++) {
+                owners[i] = msg.sender;
+                tokens[i] = S.tokens[i].addr;
+            }
         }
-        S.exchange.withdrawFromApprovedWithdrawals(owners, tokenAddresses);
+        S.exchange.withdrawFromApprovedWithdrawals(owners, tokens);
     }
 }

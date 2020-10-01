@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../core/impl/libtransactions/BlockReader.sol";
+import "../../lib/MathUint.sol";
 import "./AmmData.sol";
 import "./AmmExchange.sol";
 import "./AmmExitProcess.sol";
@@ -21,6 +22,7 @@ library AmmBlockReceiver
     using AmmPoolToken      for AmmData.State;
     using AmmUpdateProcess  for AmmData.State;
     using BlockReader       for ExchangeData.Block;
+    using MathUint          for uint;
 
     function beforeBlockSubmission(
         AmmData.State      storage S,
@@ -56,12 +58,12 @@ library AmmBlockReceiver
         )
         public
     {
-        S.processApprovedWithdrawals();
+        S.withdrawFromApprovedWithdrawals(true);
 
-        uint amountBurn = S.poolTokenToBurn;
-        if (amountBurn > 0) {
-            S.burn(address(this), amountBurn);
-            S.poolTokenToBurn = 0;
+        uint poolSupplyToBurn = S.poolSupplyToBurn;
+        if (poolSupplyToBurn > 0) {
+            S.burn(address(this), poolSupplyToBurn);
+            S.poolSupplyToBurn = 0;
         }
     }
 
@@ -74,9 +76,7 @@ library AmmBlockReceiver
         view
         returns (AmmData.Context memory)
     {
-        // Cache the domain seperator to save on SLOADs each time it is accessed.
         uint size = S.tokens.length - 1;
-
         return AmmData.Context({
             _block: _block,
             txIdx: txIdx,
@@ -91,7 +91,7 @@ library AmmBlockReceiver
             ammActualL2Balances: new uint96[](size),
             ammExpectedL2Balances: new uint96[](size),
             numTransactionsConsumed: 0,
-            totalSupply: S.totalSupply
+            effectiveTotalSupply: S.totalSupply.sub(S.poolSupplyToBurn)
         });
     }
     function processPoolTx(

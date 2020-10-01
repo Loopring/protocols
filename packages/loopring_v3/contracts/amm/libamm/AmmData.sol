@@ -101,7 +101,7 @@ library AmmData
         uint96[] ammActualL2Balances;
         uint96[] ammExpectedL2Balances;
         uint     numTransactionsConsumed;
-        uint     totalSupply;
+        uint     effectiveTotalSupply;
     }
 
     struct State {
@@ -109,6 +109,7 @@ library AmmData
         string poolName;
         string symbol;
         uint   totalSupply;
+        uint   poolSupplyToBurn;
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
@@ -120,8 +121,6 @@ library AmmData
         uint        shutdownTimestamp;
         uint8       feeBips;
         Token[]     tokens;
-
-        uint        poolTokenToBurn;
 
         mapping (address => bool) isExiting;
         TokenLock[] exitLocks;

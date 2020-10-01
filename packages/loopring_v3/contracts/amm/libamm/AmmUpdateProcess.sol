@@ -32,14 +32,6 @@ library AmmUpdateProcess
         )
         internal
     {
-        // if (opening) {
-        //     require(ctx.poolTokenToBurn == 0, "INVALID_PRECONDITION");
-        // } else {
-        //     if (ctx.poolTokenToBurn > 0) {
-        //          S.poolTokenToBurn = ctx.poolTokenToBurn;
-        //     }
-        // }
-
         for (uint i = 1; i < ctx.size; i++) {
             // Check that the AMM update in the block matches the expected update
             AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);

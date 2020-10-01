@@ -43,15 +43,7 @@ library AmmExitProcess
             signature
         );
 
-        if (exit.burnFromLayer2) {
-            _approvePoolTokenWithdrawal(
-                ctx,
-                exit.burnAmount,
-                exit.owner,
-                exit.burnStorageID,
-                signature
-            );
-        } else {
+        if (!exit.burnFromLayer2) {
             require(signature.length == 0, "LAYER1_EXIT_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
             _removeExitLock(S, exit);
         }
@@ -64,6 +56,18 @@ library AmmExitProcess
             }
             return;
         }
+
+        // Handle pool tokens
+        if (exit.burnFromLayer2) {
+            _approvePoolTokenWithdrawal(
+                ctx,
+                exit.burnAmount,
+                exit.owner,
+                exit.burnStorageID,
+                signature
+            );
+        }
+        S.poolSupplyToBurn = S.poolSupplyToBurn.add(exit.burnAmount);
 
         // Handle liquidity tokens
         for (uint i = 0; i < ctx.size; i++) {
@@ -96,8 +100,6 @@ library AmmExitProcess
                 S.addUserBalance(exit.owner, ctx.tokens[i].addr, amount);
             }
         }
-
-        ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
     }
 
     function _approvePoolTokenWithdrawal(
@@ -177,7 +179,7 @@ library AmmExitProcess
         }
 
         // Calculate how much will be withdrawn
-        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.totalSupply;
+        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.effectiveTotalSupply;
 
         for (uint i = 0; i < ctx.size - 1; i++) {
             amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i + 1]) / ctx.poolTokenBase).toUint96();
