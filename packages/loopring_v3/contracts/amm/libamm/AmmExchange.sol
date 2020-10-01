@@ -43,8 +43,8 @@ library AmmExchange
         ctx.numTransactionsConsumed++;
 
         require(
-            deposit.owner == address(this) &&
-            deposit.accountID== ctx.accountID &&
+            deposit.to == address(this) &&
+            deposit.toAccountID== ctx.accountID &&
             deposit.tokenID == token.tokenID &&
             deposit.amount == amount,
             "INVALID_TX_DATA"
@@ -90,8 +90,8 @@ library AmmExchange
 
         require(
             withdrawal.withdrawalType == 1 &&
-            withdrawal.owner == address(this) &&
-            withdrawal.accountID== ctx.accountID &&
+            withdrawal.from == address(this) &&
+            withdrawal.fromAccountID== ctx.accountID &&
             withdrawal.tokenID == token.tokenID &&
             withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&

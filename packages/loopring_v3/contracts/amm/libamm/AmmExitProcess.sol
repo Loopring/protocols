@@ -117,7 +117,6 @@ library AmmExitProcess
         ctx.numTransactionsConsumed++;
 
         // These fields are not read by readWithdrawal: to, extraData, minGas, validUntil
-        withdrawal.to = address(this);
         withdrawal.extraData = new bytes(0);
         withdrawal.minGas = 0;
         withdrawal.validUntil = 0xffffffff;
@@ -128,15 +127,14 @@ library AmmExitProcess
             withdrawal.extraData
         );
 
-
         if (signature.length > 0) {
             require(withdrawal.storageID == burnStorageID, "INVALID_STORAGE_ID_OR_REPLAY");
         }
 
         require(
             withdrawal.withdrawalType == 1 &&
-            withdrawal.owner == from &&
-            withdrawal.accountID == 0 &&
+            withdrawal.from == from &&
+            withdrawal.fromAccountID == 0 &&
             withdrawal.tokenID == ctx.tokens[0].tokenID &&
             withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&

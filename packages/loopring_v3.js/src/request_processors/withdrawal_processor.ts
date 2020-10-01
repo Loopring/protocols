@@ -6,8 +6,8 @@ import { BlockContext, ExchangeState } from "../types";
 
 interface Withdrawal {
   type?: number;
-  owner?: string;
-  accountID?: number;
+  from?: string;
+  fromAccountID?: number;
   tokenID?: number;
   amount?: BN;
   feeTokenID?: number;
@@ -30,7 +30,7 @@ export class WithdrawalProcessor {
   ) {
     const withdrawal = this.extractData(txData);
 
-    const account = state.getAccount(withdrawal.accountID);
+    const account = state.getAccount(withdrawal.fromAccountID);
     let amount = withdrawal.amount;
     if (withdrawal.type === 2) {
       amount = account.getBalance(withdrawal.tokenID).balance;
@@ -62,9 +62,9 @@ export class WithdrawalProcessor {
 
     withdrawal.type = data.extractUint8(offset);
     offset += 1;
-    withdrawal.owner = data.extractAddress(offset);
+    withdrawal.from = data.extractAddress(offset);
     offset += 20;
-    withdrawal.accountID = data.extractUint32(offset);
+    withdrawal.fromAccountID = data.extractUint32(offset);
     offset += 4;
     withdrawal.tokenID = data.extractUint16(offset);
     offset += 2;

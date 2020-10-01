@@ -39,8 +39,8 @@ library WithdrawTransaction
     struct Withdrawal
     {
         uint    withdrawalType;
-        address owner;
-        uint32  accountID;
+        address from;
+        uint32  fromAccountID;
         uint16  tokenID;
         uint96  amount;
         uint16  feeTokenID;
@@ -109,12 +109,12 @@ library WithdrawTransaction
             // Calculate the tx hash
             bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, withdrawal);
             // Check onchain authorization
-            S.requireAuthorizedTx(withdrawal.owner, auxData.signature, txHash);
+            S.requireAuthorizedTx(withdrawal.from, auxData.signature, txHash);
         } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
             // Forced withdrawals cannot make use of certain features because the
             // necessary data is not authorized by the account owner.
             // For protocol fee withdrawals, `owner` and `to` are both address(0).
-            require(withdrawal.owner == withdrawal.to, "INVALID_WITHDRAWAL_ADDRESS");
+            require(withdrawal.from == withdrawal.to, "INVALID_WITHDRAWAL_ADDRESS");
 
             // Forced withdrawal fees are charged when the request is submitted.
             require(withdrawal.fee == 0, "FEE_NOT_ZERO");
@@ -122,22 +122,22 @@ library WithdrawTransaction
             require(withdrawal.extraData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
 
             ExchangeData.ForcedWithdrawal memory forcedWithdrawal =
-                S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
+                S.pendingForcedWithdrawals[withdrawal.fromAccountID][withdrawal.tokenID];
 
             if (forcedWithdrawal.timestamp != 0) {
                 if (withdrawal.withdrawalType == 2) {
-                    require(withdrawal.owner == forcedWithdrawal.owner, "INCONSISENT_OWNER");
+                    require(withdrawal.from == forcedWithdrawal.owner, "INCONSISENT_OWNER");
                 } else { //withdrawal.withdrawalType == 3
-                    require(withdrawal.owner != forcedWithdrawal.owner, "INCONSISENT_OWNER");
+                    require(withdrawal.from != forcedWithdrawal.owner, "INCONSISENT_OWNER");
                     require(withdrawal.amount == 0, "UNAUTHORIZED_WITHDRAWAL");
                 }
 
                 // delete the withdrawal request and free a slot
-                delete S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
+                delete S.pendingForcedWithdrawals[withdrawal.fromAccountID][withdrawal.tokenID];
                 S.numPendingForcedTransactions--;
 
                 /*emit ForcedWithdrawalProcessed(
-                    withdrawal.accountID,
+                    withdrawal.fromAccountID,
                     withdrawal.tokenID,
                     withdrawal.amount
                 );*/
@@ -146,7 +146,7 @@ library WithdrawTransaction
                 // - when in shutdown mode
                 // - to withdraw protocol fees
                 require(
-                    withdrawal.accountID == ExchangeData.ACCOUNTID_PROTOCOLFEE() ||
+                    withdrawal.fromAccountID == ExchangeData.ACCOUNTID_PROTOCOLFEE() ||
                     S.isShutdown(),
                     "FULL_WITHDRAWAL_UNAUTHORIZED"
                 );
@@ -156,7 +156,7 @@ library WithdrawTransaction
         }
 
         // Check if there is a withdrawal recipient
-        address recipient = S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.storageID];
+        address recipient = S.withdrawalRecipient[withdrawal.from][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.storageID];
         if (recipient != address(0)) {
             // Auxiliary data is not supported
             require (withdrawal.extraData.length == 0, "AUXILIARY_DATA_NOT_ALLOWED");
@@ -171,7 +171,7 @@ library WithdrawTransaction
         } else if (auxData.storeRecipient) {
             // Store the destination address to mark the withdrawal as done
             require(withdrawal.to != address(0), "INVALID_DESTINATION_ADDRESS");
-            S.withdrawalRecipient[withdrawal.owner][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.storageID] = withdrawal.to;
+            S.withdrawalRecipient[withdrawal.from][withdrawal.to][withdrawal.tokenID][withdrawal.amount][withdrawal.storageID] = withdrawal.to;
         }
 
         // Validate gas provided
@@ -179,7 +179,7 @@ library WithdrawTransaction
 
         // Try to transfer the tokens with the provided gas limit
         S.distributeWithdrawal(
-            withdrawal.owner,
+            withdrawal.from,
             withdrawal.to,
             withdrawal.tokenID,
             withdrawal.amount,
@@ -202,9 +202,9 @@ library WithdrawTransaction
         // bytes the circuit would also have to hash.
         withdrawal.withdrawalType = data.toUint8(_offset);
         _offset += 1;
-        withdrawal.owner = data.toAddress(_offset);
+        withdrawal.from = data.toAddress(_offset);
         _offset += 20;
-        withdrawal.accountID = data.toUint32(_offset);
+        withdrawal.fromAccountID = data.toUint32(_offset);
         _offset += 4;
         withdrawal.tokenID = data.toUint16(_offset);
         _offset += 2;
@@ -233,8 +233,8 @@ library WithdrawTransaction
             keccak256(
                 abi.encode(
                     WITHDRAWAL_TYPEHASH,
-                    withdrawal.owner,
-                    withdrawal.accountID,
+                    withdrawal.from,
+                    withdrawal.fromAccountID,
                     withdrawal.tokenID,
                     withdrawal.amount,
                     withdrawal.feeTokenID,

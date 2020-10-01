@@ -4,8 +4,8 @@ import { Constants } from "../constants";
 import { Account, BlockContext, ExchangeState } from "../types";
 
 interface Deposit {
-  owner?: string;
-  accountID?: number;
+  to?: string;
+  toAccountID?: number;
   tokenID?: number;
   amount?: BN;
 }
@@ -14,11 +14,15 @@ interface Deposit {
  * Processes deposit requests.
  */
 export class DepositProcessor {
-  public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
+  public static process(
+    state: ExchangeState,
+    block: BlockContext,
+    txData: Bitstream
+  ) {
     const deposit = this.extractData(txData);
 
-    const account = state.getAccount(deposit.accountID);
-    account.owner = deposit.owner;
+    const account = state.getAccount(deposit.toAccountID);
+    account.owner = deposit.to;
 
     const balance = account.getBalance(deposit.tokenID);
     balance.balance.iadd(deposit.amount);
@@ -31,9 +35,9 @@ export class DepositProcessor {
     let offset = 1;
 
     // Read in the deposit data
-    deposit.owner = data.extractAddress(offset);
+    deposit.to = data.extractAddress(offset);
     offset += 20;
-    deposit.accountID = data.extractUint32(offset);
+    deposit.toAccountID = data.extractUint32(offset);
     offset += 4;
     deposit.tokenID = data.extractUint16(offset);
     offset += 2;

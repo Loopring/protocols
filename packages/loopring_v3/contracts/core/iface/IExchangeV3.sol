@@ -87,15 +87,14 @@ abstract contract IExchangeV3 is IExchange
 
     // events from libraries
     /*event DepositProcessed(
-        address owner,
-        uint32  accountId,
+        address to,
+        uint32  toAccountId,
         uint16  token,
-        uint    amount,
-        uint    index
+        uint    amount
     );*/
 
     /*event ForcedWithdrawalProcessed(
-        uint32 accountID,
+        uint32 fromAccountID,
         uint16 tokenID,
         uint   amount
     );*/
