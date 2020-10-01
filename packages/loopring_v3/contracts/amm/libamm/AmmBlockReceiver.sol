@@ -25,67 +25,27 @@ library AmmBlockReceiver
     function beforeBlockSubmission(
         AmmData.State      storage S,
         ExchangeData.Block memory  _block,
-        bytes              memory  data,
+        bytes              memory  poolTxData,
         uint                       txIdx
         )
         public
         returns (uint)
     {
-        require(S.poolTokenToBurn == 0, "INVALID_CONDITION");
+        AmmData.Context memory ctx = getContext(S, _block, txIdx);
 
-        AmmData.PoolTx memory poolTx = abi.decode(data, (AmmData.PoolTx));
+        // Question(brecht): is it OK not to check the following for every poolTx?
 
-        // Cache the domain seperator to save on SLOADs each time it is accessed.
-        uint size = S.tokens.length - 1;
-
-        AmmData.Context memory ctx = AmmData.Context({
-            _block: _block,
-            exchange: S.exchange,
-            exchangeDepositContract: address(S.exchange.getDepositContract()),
-            txIdx: txIdx,
-            domainSeparator: S.domainSeparator,
-            exchangeDomainSeparator: S.exchange.getDomainSeparator(),
-            accountID: S.accountID,
-            ammActualL2Balances: new uint96[](size),
-            ammExpectedL2Balances: new uint96[](size),
-            numTransactionsConsumed: 0,
-            tokens: S.tokens,
-            size: size,
-            poolTokenBase: AmmData.LP_TOKEN_BASE(),
-            poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY(),
-            totalSupply: S.totalSupply
-        });
-
-        BlockReader.BlockHeader memory header = _block.readHeader();
-        require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
+        // BlockReader.BlockHeader memory header = _block.readHeader();
+        // require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
         // The openning AMM updates. This also pulls the AMM balances onchain.
         S.approveAmmUpdates(ctx, true);
 
-        // Process all pool transactions
-        _processPoolTx(S, ctx, poolTx);
+        processPoolTx(S, ctx, poolTxData);
 
-        // Deposit to or withdraw from the AMM account when necessary, this includes the pool token.
-        for (uint i = 0; i < size; i++) {
-            _processPoolBalance(
-                ctx,
-                ctx.tokens[i],
-                ctx.ammExpectedL2Balances[i],
-                ctx.ammActualL2Balances[i]
-            );
-        }
+        processDepositsAndWithdrawals(ctx);
 
-        // The closing AMM updates
         S.approveAmmUpdates(ctx, false);
-
-        // Save the pool tokens to burn
-        uint totalSupply = S.totalSupply;
-
-        if (ctx.totalSupply > totalSupply) {
-            S.mint(address(this), ctx.totalSupply - totalSupply);
-        } else {
-            S.poolTokenToBurn = totalSupply - ctx.totalSupply;
-        }
 
         return ctx.numTransactionsConsumed;
     }
@@ -105,13 +65,44 @@ library AmmBlockReceiver
         }
     }
 
-    function _processPoolTx(
+    function getContext(
+        AmmData.State      storage S,
+        ExchangeData.Block memory  _block,
+        uint                       txIdx
+        )
+        private
+        view
+        returns (AmmData.Context memory)
+    {
+        // Cache the domain seperator to save on SLOADs each time it is accessed.
+        uint size = S.tokens.length - 1;
+
+        return AmmData.Context({
+            _block: _block,
+            exchange: S.exchange,
+            exchangeDepositContract: address(S.exchange.getDepositContract()),
+            txIdx: txIdx,
+            domainSeparator: S.domainSeparator,
+            exchangeDomainSeparator: S.exchange.getDomainSeparator(),
+            accountID: S.accountID,
+            ammActualL2Balances: new uint96[](size),
+            ammExpectedL2Balances: new uint96[](size),
+            numTransactionsConsumed: 0,
+            tokens: S.tokens,
+            size: size,
+            poolTokenBase: AmmData.LP_TOKEN_BASE(),
+            poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY(),
+            totalSupply: S.totalSupply
+        });
+    }
+    function processPoolTx(
         AmmData.State           storage S,
         AmmData.Context         memory  ctx,
-        AmmData.PoolTx memory  poolTx
+        bytes                   memory  poolTxData
         )
         private
     {
+        AmmData.PoolTx memory poolTx = abi.decode(poolTxData, (AmmData.PoolTx));
         if (poolTx.txType == AmmData.PoolTxType.JOIN) {
             S.processJoin(
                 ctx,
@@ -125,30 +116,24 @@ library AmmBlockReceiver
                 poolTx.signature
             );
         } else {
-            revert("INVALID_TYPE");
+            revert("INVALID_POOL_TX_TYPE");
         }
     }
 
-    function _processPoolBalance(
-        AmmData.Context memory  ctx,
-        AmmData.Token   memory  token,
-        uint96                  ammExpectedL2Balance,
-        uint96                  ammActualL2Balance
+    function processDepositsAndWithdrawals(
+        AmmData.Context memory ctx
         )
         private
     {
-        if (ammExpectedL2Balance > ammActualL2Balance) {
-            AmmExchange.approveTokenDeposit(
-                ctx,
-                token,
-                ammExpectedL2Balance - ammActualL2Balance
-            );
-        } else if (ammExpectedL2Balance < ammActualL2Balance) {
-            AmmExchange.approveTokenWithdrawal(
-                ctx,
-                token,
-                ammActualL2Balance - ammExpectedL2Balance
-            );
+        for (uint i = 0; i < ctx.size; i++) {
+            uint96 expected = ctx.ammExpectedL2Balances[i];
+            uint96 actual = ctx.ammActualL2Balances[i];
+
+            if (expected > actual) {
+                AmmExchange.approveTokenDeposit(ctx, ctx.tokens[i], expected - actual);
+            } else if (expected < actual) {
+                AmmExchange.approveTokenWithdrawal(ctx, ctx.tokens[i], actual - expected);
+            }
         }
     }
 }

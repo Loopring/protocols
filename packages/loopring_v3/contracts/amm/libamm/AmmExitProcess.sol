@@ -29,7 +29,6 @@ library AmmExitProcess
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
-
     function processExit(
         AmmData.State    storage S,
         AmmData.Context  memory  ctx,
@@ -44,20 +43,24 @@ library AmmExitProcess
             signature
         );
 
-        if (!exit.burnFromLayer2) {
+        if (exit.burnFromLayer2) {
+            _approvePoolTokenOffchainWithdrawalFromUser(
+                ctx,
+                exit.burnAmount,
+                exit.owner,
+                exit.burnStorageID,
+                signature
+            );
+        } else {
             require(signature.length == 0, "LAYER1_EXIT_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
-
-            delete S.exitLockNonce[msg.sender];
-            delete S.exitLocks[S.exitLocksIndex];
-            S.exitLocksIndex++;
+            _removeExitLock(S, exit);
         }
 
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
 
         if (!slippageOK) {
             if (!exit.burnFromLayer2) {
-                address poolToken = address(this);
-                S.balance[msg.sender][poolToken] = S.balance[msg.sender][poolToken].add(exit.burnAmount);
+                S.addUserBalance(exit.owner, address(this), exit.burnAmount);
             }
             return;
         }
@@ -75,8 +78,10 @@ library AmmExitProcess
 
                 require(
                     transfer.fromAccountID== ctx.accountID &&
+                    // transfer.toAccountID == UNKNOWN &&
+                    // transfer.storageID == UNKNOWN &&
                     transfer.from == address(this) &&
-                    transfer.to == address(this) &&
+                    transfer.to == exit.owner &&
                     transfer.tokenID == ctx.tokens[i].tokenID &&
                     transfer.amount.isAlmostEqual(amount) &&
                     transfer.feeTokenID == 0 &&
@@ -88,22 +93,14 @@ library AmmExitProcess
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(address(this), txHash);
             } else {
-                address token = ctx.tokens[i].addr;
-                S.balance[exit.owner][token] = S.balance[exit.owner][token].add(amount);
+                S.addUserBalance(exit.owner, ctx.tokens[i].addr, amount);
             }
         }
 
-        // Handle pool token
         ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
-
-        if (exit.burnFromLayer2) {
-            _approvePoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
-        } else {
-            S.burn(address(this), exit.burnAmount);
-        }
     }
 
-    function _approvePoolTokenWithdrawal(
+    function _approvePoolTokenOffchainWithdrawalFromUser(
         AmmData.Context  memory  ctx,
         uint                     amount,
         address                  from,
@@ -146,6 +143,19 @@ library AmmExitProcess
         // Now approve this withdrawal
         bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
         ctx.exchange.approveTransaction(from, txHash);
+    }
+
+    function _removeExitLock(
+        AmmData.State    storage S,
+        AmmData.PoolExit memory  exit
+        )
+        private
+    {
+        require(S.exitLocksIndex + 1 == exit.nonce, "INVALID_EXIT_NONCE");
+
+        S.isExiting[exit.owner] = false;
+        delete S.exitLocks[S.exitLocksIndex];
+        S.exitLocksIndex++;
     }
 
     function _calculateExitAmounts(

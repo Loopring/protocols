@@ -48,7 +48,7 @@ library AmmExitRequest
         uint32 nonce = 0;
         if (!burnFromLayer2) {
             require(burnStorageID == 0, "INVALID_STORAGE_ID");
-            require(S.exitLockNonce[msg.sender] == 0, "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
+            require(!S.isExiting[msg.sender], "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
 
             nonce = uint32(S.exitLocks.length + 1);
             require(
@@ -80,7 +80,7 @@ library AmmExitRequest
                 amounts: AmmUtil.array(burnAmount)
             }));
 
-            S.exitLockNonce[msg.sender] = nonce;
+            S.isExiting[msg.sender] = true;
         }
 
         emit PoolExitRequested(exit);

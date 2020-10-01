@@ -9,6 +9,7 @@ import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/MathUint96.sol";
 import "../../lib/SignatureUtil.sol";
 
 
@@ -17,6 +18,7 @@ library AmmStatus
 {
     using ERC20SafeTransfer for address;
     using MathUint      for uint;
+    using MathUint96        for uint96;
     using SignatureUtil for bytes32;
 
     event Shutdown(uint timestamp);
@@ -115,10 +117,32 @@ library AmmStatus
         internal
     {
         if (signature.length == 0) {
-            require(S.approvedTx[poolTxHash] > block.timestamp, "NOT_APPROVED");
+            require(S.approvedTx[poolTxHash] > block.timestamp, "INVALID_ONCHAIN_APPROVAL");
             delete S.approvedTx[poolTxHash];
         } else {
-            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
+            require(poolTxHash.verifySignature(owner, signature), "INVALID_OFFCHAIN_APPROVAL");
         }
+    }
+
+    function addUserBalance(
+        AmmData.State storage S,
+        address               owner,
+        address               token,
+        uint96                amount
+        )
+        internal
+    {
+        S.balance[owner][token] = S.balance[owner][token].add(amount);
+    }
+
+    function removeUserBalance(
+        AmmData.State storage S,
+        address               owner,
+        address               token,
+        uint96                amount
+        )
+        internal
+    {
+        S.balance[owner][token] = S.balance[owner][token].sub(amount);
     }
 }

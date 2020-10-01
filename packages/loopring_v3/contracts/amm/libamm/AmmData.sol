@@ -44,7 +44,8 @@ library AmmData
         bool      mintToLayer2;
         uint96    mintMinAmount;
         uint      validUntil;
-        uint32    nonce; // for onchain approved join requests
+        uint32    nonce; // For a layer2 join, the nonce must be 0;
+                         // For a layer1 join, the nonce is index of the user's TokenLock in joinLocks plus 1.
     }
 
     struct PoolExit
@@ -56,7 +57,8 @@ library AmmData
         bool      exitToLayer2;
         uint96[]  exitMinAmounts;
         uint      validUntil;
-        uint32    nonce;
+        uint32    nonce; // For a layer2 exit, the nonce must be 0;
+                         // For a layer1 exit, the nonce is index of the TokenLock in exitLocks plus 1.
     }
 
     struct TokenLock
@@ -120,12 +122,12 @@ library AmmData
 
         uint        poolTokenToBurn;
 
-        mapping (address => uint) exitLockNonce;
+        mapping (address => bool) isExiting;
         TokenLock[] exitLocks;
         uint         exitLocksIndex;
 
         mapping (address => TokenLock[]) joinLocks;
-        mapping (address => uint) joinLockIdx;
+        mapping (address => uint) joinLockStartIdx;
 
         mapping (address => mapping (address => uint96)) balance;
 
