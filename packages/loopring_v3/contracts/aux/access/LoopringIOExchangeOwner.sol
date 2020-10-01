@@ -158,19 +158,21 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
         )
         private
     {
-        int lastTxIdx = -1;
+        uint cursor = 0;
+
         for (uint i = 0; i < txCallbacks.length; i++) {
             TxCallback calldata txCallback = txCallbacks[i];
 
-            uint16 txIdx = txCallback.txIdx;
-            require(txIdx > lastTxIdx, "BLOCK_INDEX_OUT_OF_ORDER");
-            lastTxIdx = int(txIdx);
+            uint txIdx = uint(txCallback.txIdx);
+            require(txIdx >= cursor, "BLOCK_INDEX_OUT_OF_ORDER");
 
             uint16 receiverIdx = txCallback.receiverIdx;
             require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
 
-            IBlockReceiver(receivers[receiverIdx])
+            uint numTransactionsConsumed = IBlockReceiver(receivers[receiverIdx])
                 .beforeBlockSubmission(_block, txCallback.data, txIdx);
+
+            cursor = txIdx + numTransactionsConsumed + 1;
         }
     }
 }

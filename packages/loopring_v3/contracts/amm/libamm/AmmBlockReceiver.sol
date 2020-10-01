@@ -33,10 +33,7 @@ library AmmBlockReceiver
     {
         require(S.poolTokenToBurn == 0, "INVALID_CONDITION");
 
-        AmmData.PoolTransaction[] memory poolTransactions = abi.decode(
-            data,
-            (AmmData.PoolTransaction[])
-        );
+        AmmData.PoolTx memory poolTx = abi.decode(data, (AmmData.PoolTx));
 
         // Cache the domain seperator to save on SLOADs each time it is accessed.
         uint size = S.tokens.length - 1;
@@ -66,9 +63,7 @@ library AmmBlockReceiver
         S.approveAmmUpdates(ctx, true);
 
         // Process all pool transactions
-        for (uint i = 0; i < poolTransactions.length; i++) {
-            _processPoolTransaction(S, ctx, poolTransactions[i]);
-        }
+        _processPoolTx(S, ctx, poolTx);
 
         // Deposit to or withdraw from the AMM account when necessary, this includes the pool token.
         for (uint i = 0; i < size; i++) {
@@ -110,20 +105,20 @@ library AmmBlockReceiver
         }
     }
 
-    function _processPoolTransaction(
+    function _processPoolTx(
         AmmData.State           storage S,
         AmmData.Context         memory  ctx,
-        AmmData.PoolTransaction memory  poolTx
+        AmmData.PoolTx memory  poolTx
         )
         private
     {
-        if (poolTx.txType == AmmData.PoolTransactionType.JOIN) {
+        if (poolTx.txType == AmmData.PoolTxType.JOIN) {
             S.processJoin(
                 ctx,
                 abi.decode(poolTx.data, (AmmData.PoolJoin)),
                 poolTx.signature
             );
-        } else if (poolTx.txType == AmmData.PoolTransactionType.EXIT) {
+        } else if (poolTx.txType == AmmData.PoolTxType.EXIT) {
             S.processExit(
                 ctx,
                 abi.decode(poolTx.data, (AmmData.PoolExit)),

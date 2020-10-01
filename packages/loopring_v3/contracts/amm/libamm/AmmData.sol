@@ -16,7 +16,7 @@ library AmmData
     function MAX_NUM_EXITS_FROM_LAYER1() internal pure returns (uint) { return 200; }
     function LOCK_DELAY() internal pure returns (uint) { return 1 days; }
 
-    enum PoolTransactionType
+    enum PoolTxType
     {
         NOOP,
         JOIN,
@@ -64,9 +64,9 @@ library AmmData
         uint96[] amounts; // the size should be either 1 or tokens.length - 1
     }
 
-    struct PoolTransaction
+    struct PoolTx
     {
-        PoolTransactionType txType;
+        PoolTxType txType;
         bytes               data;
         bytes               signature;
     }
