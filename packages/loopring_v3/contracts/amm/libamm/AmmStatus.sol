@@ -9,6 +9,7 @@ import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/MathUint96.sol";
 import "../../lib/SignatureUtil.sol";
 
 
@@ -17,6 +18,7 @@ library AmmStatus
 {
     using ERC20SafeTransfer for address;
     using MathUint      for uint;
+    using MathUint96        for uint96;
     using SignatureUtil for bytes32;
 
     event Shutdown(uint timestamp);
@@ -77,19 +79,24 @@ library AmmStatus
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
-    function shutdown(
-        AmmData.State storage S,
-        bytes32               txHash
-        )
+    function shutdown(AmmData.State storage S)
         public
     {
-        require(
-            block.timestamp > S.approvedTx[txHash] + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
-            "REQUEST_NOT_TOO_OLD"
-        );
+        bytes32 firstExitHash = S.exitLocks[S.exitLocksStartIdx].txHash;
+        uint validUntil = S.approvedTx[firstExitHash];
+        require(validUntil > 0 && validUntil <= block.timestamp, "REQUEST_NOT_TOO_OLD");
+
+        uint size = S.tokens.length;
+
+        // remember the part owned by users collectively
+        for (uint i = 0; i < size; i++) {
+            address token = S.tokens[i].addr;
+            S.withdrawableBeforeShutdown[token] = (token == address(0)) ?
+                address(this).balance :
+                ERC20(token).balanceOf(address(this));
+        }
 
         if (!S.exchange.isInWithdrawalMode()) {
-            uint size = S.tokens.length;
             uint32 accountID = S.accountID;
             IExchangeV3 exchange = S.exchange;
 
@@ -115,10 +122,32 @@ library AmmStatus
         internal
     {
         if (signature.length == 0) {
-            require(S.approvedTx[poolTxHash] > block.timestamp, "NOT_APPROVED");
+            require(S.approvedTx[poolTxHash] > block.timestamp, "INVALID_ONCHAIN_APPROVAL");
             delete S.approvedTx[poolTxHash];
         } else {
-            require(poolTxHash.verifySignature(owner, signature), "INVALID_SIGNATURE");
+            require(poolTxHash.verifySignature(owner, signature), "INVALID_OFFCHAIN_APPROVAL");
         }
+    }
+
+    function addUserBalance(
+        AmmData.State storage S,
+        address               owner,
+        address               token,
+        uint96                amount
+        )
+        internal
+    {
+        S.withdrawable[token][owner] = S.withdrawable[token][owner].add(amount);
+    }
+
+    function removeUserBalance(
+        AmmData.State storage S,
+        address               owner,
+        address               token,
+        uint96                amount
+        )
+        internal
+    {
+        S.withdrawable[token][owner] = S.withdrawable[token][owner].sub(amount);
     }
 }

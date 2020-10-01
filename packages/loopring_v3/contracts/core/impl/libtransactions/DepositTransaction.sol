@@ -19,15 +19,15 @@ library DepositTransaction
 
     struct Deposit
     {
-        address owner;
-        uint32  accountID;
+        address to;
+        uint32  toAccountID;
         uint16  tokenID;
         uint96  amount;
     }
 
     /*event DepositProcessed(
-        address owner,
-        uint32  accountId,
+        address to,
+        uint32  toAccountId,
         uint16  token,
         uint    amount
     );*/
@@ -45,7 +45,7 @@ library DepositTransaction
         Deposit memory deposit = readTx(data, offset);
 
         // Process the deposit
-        ExchangeData.Deposit memory pendingDeposit = S.pendingDeposits[deposit.owner][deposit.tokenID];
+        ExchangeData.Deposit memory pendingDeposit = S.pendingDeposits[deposit.to][deposit.tokenID];
         // Make sure the deposit was actually done
         require(pendingDeposit.timestamp > 0, "DEPOSIT_DOESNT_EXIST");
         // Processing partial amounts of the deposited amount is allowed.
@@ -61,12 +61,12 @@ library DepositTransaction
         // If the deposit was fully consumed, reset it so the storage is freed up
         // and the owner receives a gas refund.
         if (pendingDeposit.amount == 0) {
-            delete S.pendingDeposits[deposit.owner][deposit.tokenID];
+            delete S.pendingDeposits[deposit.to][deposit.tokenID];
         } else {
-            S.pendingDeposits[deposit.owner][deposit.tokenID] = pendingDeposit;
+            S.pendingDeposits[deposit.to][deposit.tokenID] = pendingDeposit;
         }
 
-        //emit DepositProcessed(owner, accountID, tokenID, amount);
+        //emit DepositProcessed(deposit.to, deposit.toAccountID, deposit.tokenID, deposit.amount);
     }
 
     function readTx(
@@ -80,9 +80,9 @@ library DepositTransaction
         uint _offset = offset;
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        deposit.owner = data.toAddress(_offset);
+        deposit.to = data.toAddress(_offset);
         _offset += 20;
-        deposit.accountID = data.toUint32(_offset);
+        deposit.toAccountID = data.toUint32(_offset);
         _offset += 4;
         deposit.tokenID = data.toUint16(_offset);
         _offset += 2;

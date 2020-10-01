@@ -22,19 +22,19 @@ library AmmJoinRequest
     using MathUint96        for uint96;
     using SafeCast          for uint;
 
-    // TODO:fix this string for enum?
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,uint256 direction,uint96[] joinAmounts,uint96[] joinFees,uint32 joinStorageID,uint96 mintMinAmount,uint256 validUntil,uint32 nonce)"
+        "PoolJoin(address owner,bool joinFromLayer2,uint96[] joinAmounts,uint96[] joinFees,uint32[] joinStorageIDs,bool mintToLayer2,uint96 mintMinAmount,uint256 validUntil,uint32 nonce)"
     );
 
     event PoolJoinRequested(AmmData.PoolJoin join);
 
     function joinPool(
         AmmData.State storage S,
-        AmmData.Direction     direction,
+        bool                  joinFromLayer2,
         uint96[]     calldata joinAmounts,
         uint96[]     calldata joinFees,
-        uint32                joinStorageID,
+        uint32[]     calldata joinStorageIDs,
+        bool                  mintToLayer2,
         uint96                mintMinAmount
         )
         public
@@ -42,38 +42,40 @@ library AmmJoinRequest
         uint size = S.tokens.length - 1;
         require(
             joinAmounts.length == size &&
-            joinFees.length == size,
+            joinFees.length == size &&
+            joinStorageIDs.length == size,
             "INVALID_PARAM_SIZE"
         );
 
+        uint96[] memory totalAmounts = new uint96[](size);
+
         for (uint i = 0; i < size; i++) {
-            // require(joinFees[i] < joinAmounts[i], "INVALID_FEES");
             require(joinAmounts[i] > 0, "INVALID_VALUE");
-            require(joinFees[i] == 0, "FEATURE_DISABLED");
+            require(joinFees[i] < joinAmounts[i], "INVALID_FEES");
+            totalAmounts[i] = joinAmounts[i];
         }
 
-        bool fromLayer1 = (
-            direction == AmmData.Direction.L1_TO_L1 ||
-            direction == AmmData.Direction.L1_TO_L2
-        );
-
         uint32 nonce = 0;
-        if (fromLayer1) {
-            require(joinStorageID == 0, "INVALID_STORAGE_ID");
+        if (joinFromLayer2) {
+            require(joinStorageIDs.length == size, "INVALID_STORAGE_IDS");
+        } else {
+            require(joinStorageIDs.length == 0, "INVALID_STORAGE_IDS");
 
             nonce = uint32(S.joinLocks[msg.sender].length + 1);
 
             for (uint i = 0; i < size; i++) {
-                AmmUtil.transferIn(S.tokens[i].addr, joinAmounts[i]);
+                totalAmounts[i] = totalAmounts[i].add(joinFees[i]);
+                AmmUtil.transferIn(S.tokens[i].addr, totalAmounts[i]);
             }
         }
 
         AmmData.PoolJoin memory join = AmmData.PoolJoin({
             owner: msg.sender,
-            direction:direction,
+            joinFromLayer2:joinFromLayer2,
             joinAmounts: joinAmounts,
             joinFees: joinFees,
-            joinStorageID: joinStorageID,
+            joinStorageIDs: joinStorageIDs,
+            mintToLayer2: mintToLayer2,
             mintMinAmount: mintMinAmount,
             validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
             nonce: nonce
@@ -83,9 +85,10 @@ library AmmJoinRequest
         bytes32 txHash = hash(S.domainSeparator, join);
         S.approvedTx[txHash] = join.validUntil;
 
-        if (fromLayer1) {
+        if (!joinFromLayer2) {
             S.joinLocks[msg.sender].push(AmmData.TokenLock({
-                amounts: joinAmounts
+                txHash: txHash,
+                amounts: totalAmounts
             }));
         }
 
@@ -93,7 +96,7 @@ library AmmJoinRequest
     }
 
     function hash(
-        bytes32                 domainSeparator,
+        bytes32 domainSeparator,
         AmmData.PoolJoin memory join
         )
         internal
@@ -106,10 +109,11 @@ library AmmJoinRequest
                 abi.encode(
                     POOLJOIN_TYPEHASH,
                     join.owner,
-                    join.direction,
+                    join.joinFromLayer2,
                     keccak256(abi.encodePacked(join.joinAmounts)),
                     keccak256(abi.encodePacked(join.joinFees)),
-                    join.joinStorageID,
+                    keccak256(abi.encodePacked(join.joinStorageIDs)),
+                    join.mintToLayer2,
                     join.mintMinAmount,
                     join.validUntil,
                     join.nonce

@@ -17,7 +17,6 @@ import "./AmmStatus.sol";
 import "./AmmUtil.sol";
 
 
-
 /// @title AmmExchange
 library AmmExchange
 {
@@ -29,7 +28,6 @@ library AmmExchange
     using MathUint96        for uint96;
     using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
-
 
     function approveTokenDeposit(
         AmmData.Context  memory  ctx,
@@ -44,8 +42,8 @@ library AmmExchange
         ctx.numTransactionsConsumed++;
 
         require(
-            deposit.owner == address(this) &&
-            deposit.accountID== ctx.accountID &&
+            deposit.to == address(this) &&
+            deposit.toAccountID== ctx.accountID &&
             deposit.tokenID == token.tokenID &&
             deposit.amount == amount,
             "INVALID_TX_DATA"
@@ -56,19 +54,20 @@ library AmmExchange
         if (token.addr == address(0)) {
             ethValue = amount;
         } else {
+            address exchangeDepositContract = address(ctx.exchange.getDepositContract());
             // TODO(daniel): use try-catch?
-            uint allowance = ERC20(token.addr).allowance(address(this), ctx.exchangeDepositContract);
+            uint allowance = ERC20(token.addr).allowance(address(this), exchangeDepositContract);
             if (allowance < amount) {
                 // Approve the deposit transfer
-                ERC20(token.addr).approve(ctx.exchangeDepositContract, uint(-1));
+                ERC20(token.addr).approve(exchangeDepositContract, uint(-1));
             }
         }
 
         ctx.exchange.deposit{value: ethValue}(
-            deposit.owner,
-            deposit.owner,
+            address(this),
+            address(this),
             token.addr,
-            deposit.amount,
+            amount,
             new bytes(0)
         );
     }
@@ -91,8 +90,8 @@ library AmmExchange
 
         require(
             withdrawal.withdrawalType == 1 &&
-            withdrawal.owner == address(this) &&
-            withdrawal.accountID== ctx.accountID &&
+            withdrawal.from == address(this) &&
+            withdrawal.fromAccountID== ctx.accountID &&
             withdrawal.tokenID == token.tokenID &&
             withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&
@@ -112,19 +111,25 @@ library AmmExchange
     }
 
     // Withdraw any outstanding balances for the pool account on the exchange
-    function processApprovedWithdrawals(
-        AmmData.State storage S
+    function withdrawFromApprovedWithdrawals(
+        AmmData.State storage S,
+        bool                  onlyWithdrawPoolToken
         )
         internal
     {
-        uint size = S.tokens.length;
+        uint size = onlyWithdrawPoolToken? 1 : S.tokens.length;
         address[] memory owners = new address[](size);
-        address[] memory tokenAddresses = new address[](size);
+        address[] memory tokens = new address[](size);
 
-        for (uint i = 0; i < size; i++) {
-            owners[i] = msg.sender;
-            tokenAddresses[i] = S.tokens[i].addr;
+        if (onlyWithdrawPoolToken) {
+            owners[0] = msg.sender;
+            tokens[0] = address(this);
+        } else {
+            for (uint i = 0; i < size; i++) {
+                owners[i] = msg.sender;
+                tokens[i] = S.tokens[i].addr;
+            }
         }
-        S.exchange.withdrawFromApprovedWithdrawals(owners, tokenAddresses);
+        S.exchange.withdrawFromApprovedWithdrawals(owners, tokens);
     }
 }

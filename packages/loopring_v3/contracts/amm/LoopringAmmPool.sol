@@ -73,66 +73,61 @@ contract LoopringAmmPool is
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
-    function shutdown(bytes32 txHash)
+    function shutdown()
         external
         payable
         onlyWhenOnline
         nonReentrant
     {
-        state.shutdown(txHash);
+        state.shutdown();
     }
 
     function joinPool(
-        AmmData.Direction direction,
+        bool              joinFromLayer2,
         uint96[] calldata joinAmounts,
         uint96[] calldata joinFees,
-        uint32            joinStorageID,
+        uint32[] calldata joinStorageIDs,
+        bool              mintToLayer2,
         uint96            mintMinAmount
         )
         external
         onlyWhenOnline
         nonReentrant
     {
-        require(
-            direction == AmmData.Direction.L1_TO_L1,
-            "OTHER_OPTIONS_DISABLED"
-        );
         state.joinPool(
-            direction,
+            joinFromLayer2,
             joinAmounts,
             joinFees,
-            joinStorageID,
+            joinStorageIDs,
+            mintToLayer2,
             mintMinAmount
         );
     }
 
     function exitPool(
-        AmmData.Direction direction,
+        bool              burnFromLayer2,
         uint96            burnAmount,
         uint32            burnStorageID,
+        bool              exitToLayer2,
         uint96[] calldata exitMinAmounts
         )
         external
         onlyWhenOnline
         nonReentrant
     {
-        require(
-            direction == AmmData.Direction.L1_TO_L1,
-            "OTHER_OPTIONS_DISABLED"
-        );
-
         state.exitPool(
-            direction,
+            burnFromLayer2,
             burnAmount,
             burnStorageID,
+            exitToLayer2,
             exitMinAmounts
         );
     }
 
     function beforeBlockSubmission(
-        ExchangeData.Block calldata _block,
-        uint                        txIdx,
-        bytes              calldata auxiliaryData
+        ExchangeData.Block memory _block,
+        bytes              memory data,
+        uint                      txIdx
         )
         external
         override
@@ -141,11 +136,11 @@ contract LoopringAmmPool is
         nonReentrant
         returns (uint)
     {
-        return state.beforeBlockSubmission(_block, txIdx, auxiliaryData);
+        return state.beforeBlockSubmission(_block, data, txIdx);
     }
 
-    function afterBlockSubmission(
-        ExchangeData.Block calldata _block
+    function afterAllBlocksSubmitted(
+        ExchangeData.Block[] memory blocks
         )
         external
         override
@@ -153,16 +148,32 @@ contract LoopringAmmPool is
         onlyExchangeOwner
         nonReentrant
     {
-        state.afterBlockSubmission(_block);
+        state.afterAllBlocksSubmitted(blocks);
     }
 
-        // Only used to withdraw from the pool when shutdown.
-    // Otherwise LPs should withdraw by doing normal queued exit requests.
-    function withdrawFromPoolWhenShutdown(uint burnAmount)
+    function getWithdrawableAmounts(address user)
+        public
+        view
+        onlyWhenOnline
+        returns (uint96[] memory amounts)
+    {
+        (, amounts) = state.getWithdrawableAmounts(user);
+    }
+
+    function withdraw()
+        external
+        onlyWhenOnline
+        nonReentrant
+    {
+        state.withdraw();
+    }
+
+    //
+    function withdrawInShutdown()
         external
         onlyWhenOffline
         nonReentrant
     {
-        state.withdrawFromPoolWhenShutdown(burnAmount);
+        state.withdrawInShutdown();
     }
 }

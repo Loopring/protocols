@@ -11,15 +11,15 @@ abstract contract IBlockReceiver
 {
     function beforeBlockSubmission(
         ExchangeData.Block memory _block,
-        uint                      txIdx,
-        bytes              memory auxiliaryData
+        bytes              memory data,
+        uint                      txIdx
         )
         external
         virtual
         returns (uint numTransactionsConsumed);
 
-    function afterBlockSubmission(
-        ExchangeData.Block memory _block
+    function afterAllBlocksSubmitted(
+        ExchangeData.Block[] memory blocks
         )
         external
         virtual;
