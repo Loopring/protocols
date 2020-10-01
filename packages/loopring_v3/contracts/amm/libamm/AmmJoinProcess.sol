@@ -56,7 +56,10 @@ library AmmJoinProcess
         if (!slippageOK) {
             if (!join.joinFromLayer2) {
                 for (uint i = 0; i < ctx.size; i++) {
-                    S.addUserBalance(join.owner, ctx.tokens[i].addr, join.joinAmounts[i]);
+                    S.addUserBalance(
+                        join.owner,
+                        ctx.tokens[i].addr,
+                        join.joinAmounts[i].add(join.joinFees[i]));
                 }
             }
             return;

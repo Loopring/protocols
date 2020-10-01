@@ -82,23 +82,25 @@ library AmmData
 
     struct Context
     {
+        // functional parameters
         ExchangeData.Block _block;
-        IExchangeV3        exchange;
-        address            exchangeDepositContract;
+        uint               txIdx;
 
-        uint     txIdx;
-        bytes32  domainSeparator;
-        bytes32  exchangeDomainSeparator;
-        uint32   accountID;
+        // Exchange state variables
+        IExchangeV3 exchange;
+        bytes32     exchangeDomainSeparator;
+
+        // AMM pool state variables
+        bytes32 domainSeparator;
+        uint32  accountID;
+        Token[] tokens;
+        uint    poolTokenBase;
+        uint    poolTokenInitialSupply;
+        uint    size; // == token.length;
+
         uint96[] ammActualL2Balances;
         uint96[] ammExpectedL2Balances;
         uint     numTransactionsConsumed;
-
-        Token[]  tokens;
-        uint     size; // == token.length;
-
-        uint     poolTokenBase;
-        uint     poolTokenInitialSupply;
         uint     totalSupply;
     }
 
@@ -107,7 +109,6 @@ library AmmData
         string poolName;
         string symbol;
         uint   totalSupply;
-
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;

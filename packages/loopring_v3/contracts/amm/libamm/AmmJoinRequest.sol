@@ -47,12 +47,12 @@ library AmmJoinRequest
             "INVALID_PARAM_SIZE"
         );
 
+        uint96[] memory totalAmounts = new uint96[](size);
+
         for (uint i = 0; i < size; i++) {
             require(joinAmounts[i] > 0, "INVALID_VALUE");
             require(joinFees[i] < joinAmounts[i], "INVALID_FEES");
-
-            // TODO(daniel): Enable fees
-            require(joinFees[i] == 0, "FEATURE_DISABLED_FOR_NOW");
+            totalAmounts[i] = joinAmounts[i];
         }
 
         uint32 nonce = 0;
@@ -64,7 +64,8 @@ library AmmJoinRequest
             nonce = uint32(S.joinLocks[msg.sender].length + 1);
 
             for (uint i = 0; i < size; i++) {
-                AmmUtil.transferIn(S.tokens[i].addr, joinAmounts[i]);
+                totalAmounts[i] = totalAmounts[i].add(joinFees[i]);
+                AmmUtil.transferIn(S.tokens[i].addr, totalAmounts[i]);
             }
         }
 
@@ -86,7 +87,7 @@ library AmmJoinRequest
 
         if (!joinFromLayer2) {
             S.joinLocks[msg.sender].push(AmmData.TokenLock({
-                amounts: joinAmounts
+                amounts: totalAmounts
             }));
         }
 

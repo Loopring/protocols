@@ -35,15 +35,15 @@ library AmmBlockReceiver
 
         // Question(brecht): is it OK not to check the following for every poolTx?
 
-        // BlockReader.BlockHeader memory header = _block.readHeader();
-        // require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
+        BlockReader.BlockHeader memory header = _block.readHeader();
+        require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
-        // The openning AMM updates. This also pulls the AMM balances onchain.
+        // The openning AMM updates will pull the latest AMM layer2 balances onchain.
         S.approveAmmUpdates(ctx, true);
 
         processPoolTx(S, ctx, poolTxData);
 
-        processDepositsAndWithdrawals(ctx);
+        appproveDepositOrWithdrawal(ctx);
 
         S.approveAmmUpdates(ctx, false);
 
@@ -79,19 +79,18 @@ library AmmBlockReceiver
 
         return AmmData.Context({
             _block: _block,
-            exchange: S.exchange,
-            exchangeDepositContract: address(S.exchange.getDepositContract()),
             txIdx: txIdx,
-            domainSeparator: S.domainSeparator,
+            exchange: S.exchange,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
+            domainSeparator: S.domainSeparator,
             accountID: S.accountID,
+            tokens: S.tokens,
+            poolTokenBase: AmmData.LP_TOKEN_BASE(),
+            poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY(),
+            size: size,
             ammActualL2Balances: new uint96[](size),
             ammExpectedL2Balances: new uint96[](size),
             numTransactionsConsumed: 0,
-            tokens: S.tokens,
-            size: size,
-            poolTokenBase: AmmData.LP_TOKEN_BASE(),
-            poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY(),
             totalSupply: S.totalSupply
         });
     }
@@ -120,7 +119,7 @@ library AmmBlockReceiver
         }
     }
 
-    function processDepositsAndWithdrawals(
+    function appproveDepositOrWithdrawal(
         AmmData.Context memory ctx
         )
         private

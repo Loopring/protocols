@@ -55,11 +55,12 @@ library AmmExchange
         if (token.addr == address(0)) {
             ethValue = amount;
         } else {
+            address exchangeDepositContract = address(ctx.exchange.getDepositContract());
             // TODO(daniel): use try-catch?
-            uint allowance = ERC20(token.addr).allowance(address(this), ctx.exchangeDepositContract);
+            uint allowance = ERC20(token.addr).allowance(address(this), exchangeDepositContract);
             if (allowance < amount) {
                 // Approve the deposit transfer
-                ERC20(token.addr).approve(ctx.exchangeDepositContract, uint(-1));
+                ERC20(token.addr).approve(exchangeDepositContract, uint(-1));
             }
         }
 
