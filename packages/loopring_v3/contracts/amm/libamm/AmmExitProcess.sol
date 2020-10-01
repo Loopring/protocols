@@ -44,7 +44,7 @@ library AmmExitProcess
         );
 
         if (exit.burnFromLayer2) {
-            _approvePoolTokenOffchainWithdrawalFromUser(
+            _approvePoolTokenWithdrawal(
                 ctx,
                 exit.burnAmount,
                 exit.owner,
@@ -100,7 +100,7 @@ library AmmExitProcess
         ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
     }
 
-    function _approvePoolTokenOffchainWithdrawalFromUser(
+    function _approvePoolTokenWithdrawal(
         AmmData.Context  memory  ctx,
         uint                     amount,
         address                  from,

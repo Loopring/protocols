@@ -94,8 +94,6 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-         // TODO(daniel): remove the revert
-        revert("DISABLED_FOR_NOW");
         state.joinPool(
             joinFromLayer2,
             joinAmounts,
@@ -117,8 +115,6 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        // TODO(daniel): remove the revert
-        revert("DISABLED_FOR_NOW");
         state.exitPool(
             burnFromLayer2,
             burnAmount,

@@ -96,14 +96,14 @@ library AmmJoinProcess
 
         if (join.mintToLayer2) {
             S.mint(address(this), mintAmount);
-            _approvePoolTokenDepositToUser(ctx, mintAmount, join.owner);
+            _approvePoolTokenDeposit(ctx, mintAmount, join.owner);
         } else {
             S.mint(join.owner, mintAmount);
         }
 
     }
 
-    function _approvePoolTokenDepositToUser(
+    function _approvePoolTokenDeposit(
         AmmData.Context  memory  ctx,
         uint96                   amount,
         address                  to
