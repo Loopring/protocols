@@ -114,6 +114,7 @@ library AmmData
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
+        mapping(address => uint) nonces;
 
         // AMM pool state variables
         IExchangeV3 exchange;
@@ -123,22 +124,30 @@ library AmmData
         uint8       feeBips;
         Token[]     tokens;
 
-        mapping (address => bool) isExiting;
-        TokenLock[] exitLocks;
-        uint        exitLocksStartIdx;
+        // A map from a token address to a user address to the balance the user can be
+        // withdrawan from this pool account on layer-1.
+        mapping (address => mapping (address => uint96)) withdrawable;
 
-        mapping (address => TokenLock[]) joinLocks;
-        mapping (address => uint) joinLocksStartIdx;
-
-        mapping (address => mapping (address => uint96)) balance;
-
-        // The amount per token that belongs to the users, not the pool
-        mapping (address => uint) userTokenBalances;
+        // A map from a token address to the amount owned collectively by all users
+        // on layer1 before the pool is shutdown.
+        mapping (address => uint) withdrawableBeforeShutdown;
 
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => uint) approvedTx;
 
-        // A map from an address to a nonce.
-        mapping(address => uint) nonces;
+        // A map from a user address to whether it has a pending onchain exit.
+        mapping (address => bool) isExiting;
+
+        // A list of global onchain exit locks
+        TokenLock[] exitLocks;
+
+        // The index of the first pending onchain exit lock.
+        uint exitLocksStartIdx;
+
+        // A map from a user address to a list of join locks.
+        mapping (address => TokenLock[]) joinLocks;
+
+        // A map from a user to the index of his/her first pending onchain join lock.
+        mapping (address => uint) joinLocksStartIdx;
     }
 }

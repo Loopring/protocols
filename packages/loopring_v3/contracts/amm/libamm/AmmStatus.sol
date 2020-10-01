@@ -91,7 +91,7 @@ library AmmStatus
         // remember the part owned by users collectively
         for (uint i = 0; i < size; i++) {
             address token = S.tokens[i].addr;
-            S.userTokenBalances[token] = token == address(0) ?
+            S.withdrawableBeforeShutdown[token] = (token == address(0)) ?
                 address(this).balance :
                 ERC20(token).balanceOf(address(this));
         }
@@ -137,7 +137,7 @@ library AmmStatus
         )
         internal
     {
-        S.balance[owner][token] = S.balance[owner][token].add(amount);
+        S.withdrawable[token][owner] = S.withdrawable[token][owner].add(amount);
     }
 
     function removeUserBalance(
@@ -148,6 +148,6 @@ library AmmStatus
         )
         internal
     {
-        S.balance[owner][token] = S.balance[owner][token].sub(amount);
+        S.withdrawable[token][owner] = S.withdrawable[token][owner].sub(amount);
     }
 }

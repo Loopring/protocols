@@ -48,7 +48,7 @@ library AmmWithdrawal
 
         for (uint i = 0; i < S.tokens.length; i++) {
             address token = S.tokens[i].addr;
-            delete S.balance[msg.sender][token];
+            delete S.withdrawable[token][msg.sender];
             AmmUtil.transferOut(token, amounts[i], msg.sender);
         }
     }
@@ -91,7 +91,7 @@ library AmmWithdrawal
 
             // Withdraw the part owned by the pool
             uint amount = balance
-                .sub(S.userTokenBalances[token])
+                .sub(S.withdrawableBeforeShutdown[token])
                 .mul(burnAmount) / S.totalSupply;
 
             AmmUtil.transferOut(token, amount, msg.sender);
@@ -114,7 +114,7 @@ library AmmWithdrawal
         uint96[] memory amounts = new uint96[](size);
 
         for (uint i = 0; i < size; i++) {
-            amounts[i] = S.balance[owner][S.tokens[i].addr];
+            amounts[i] = S.withdrawable[S.tokens[i].addr][owner];
         }
 
         AmmData.TokenLock[] storage joinLocks = S.joinLocks[owner];
