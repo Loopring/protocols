@@ -133,7 +133,7 @@ library AmmExitProcess
         require(
             withdrawal.withdrawalType == 1 &&
             withdrawal.from == from &&
-            withdrawal.fromAccountID == 0 &&
+            // withdrawal.fromAccountID == UNKNOWN &&
             withdrawal.tokenID == ctx.tokens[ctx.size].tokenID &&
             withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&

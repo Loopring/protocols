@@ -56,10 +56,9 @@ library AmmJoinProcess
         if (!slippageOK) {
             if (!join.joinFromLayer2) {
                 for (uint i = 0; i < ctx.size; i++) {
-                    S.addUserBalance(
-                        join.owner,
-                        ctx.tokens[i].addr,
-                        join.joinAmounts[i].add(join.joinFees[i]));
+                    address token =  ctx.tokens[i].addr;
+                    S.addUserBalance(ctx.feeRecipient, token, join.joinFees[i]);
+                    S.addUserBalance(join.owner, token, join.joinAmounts[i]);
                 }
             }
             return;
@@ -92,6 +91,12 @@ library AmmJoinProcess
                 transfer.validUntil = 0xffffffff;
                 bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
                 ctx.exchange.approveTransaction(join.owner, txHash);
+            } else {
+                for (uint j = 0; j < ctx.size; j++) {
+                    address token =  ctx.tokens[j].addr;
+                    S.addUserBalance(ctx.feeRecipient,token, join.joinFees[j]);
+                    S.addUserBalance(join.owner, token, join.joinAmounts[j].sub(amounts[j]));
+                }
             }
         }
 

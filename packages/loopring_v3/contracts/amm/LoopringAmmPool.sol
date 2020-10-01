@@ -37,7 +37,7 @@ contract LoopringAmmPool is
     event UnlockScheduled(address owner, uint timestamp);
     event Shutdown(uint timestamp);
 
-    modifier onlyExchangeOwner()
+    modifier onlyFromExchangeOwner()
     {
         require(msg.sender == state.exchange.owner(), "UNAUTHORIZED");
         _;
@@ -132,7 +132,7 @@ contract LoopringAmmPool is
         external
         override
         onlyWhenOnline
-        onlyExchangeOwner
+        onlyFromExchangeOwner
         nonReentrant
         returns (uint)
     {
@@ -145,7 +145,7 @@ contract LoopringAmmPool is
         external
         override
         onlyWhenOnline
-        onlyExchangeOwner
+        onlyFromExchangeOwner
         nonReentrant
     {
         state.afterAllBlocksSubmitted(blocks);
@@ -168,12 +168,28 @@ contract LoopringAmmPool is
         state.withdraw();
     }
 
-    //
     function withdrawInShutdown()
         external
         onlyWhenOffline
         nonReentrant
     {
         state.withdrawInShutdown();
+    }
+
+    function onchainExitFeeETH()
+        public
+        view
+        returns (uint)
+    {
+        return state.onchainExitFeeETH;
+    }
+
+    function setOnchainExitFeeETH(uint fee)
+        external
+        onlyWhenOnline
+        onlyFromExchangeOwner
+        nonReentrant
+    {
+        state.onchainExitFeeETH = fee;
     }
 }

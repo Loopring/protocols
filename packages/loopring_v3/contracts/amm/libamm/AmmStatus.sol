@@ -55,6 +55,7 @@ library AmmStatus
 
         S.poolName = config.poolName;
         S.symbol = config.tokenSymbol;
+        S.onchainExitFeeETH = config.onchainExitFeeETH;
 
         address depositContract = address(exchange.getDepositContract());
         for (uint i = 0; i < config.tokens.length; i++) {

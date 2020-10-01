@@ -32,6 +32,7 @@ library AmmData
         uint96[]  weights;
         uint8     feeBips;
         string    tokenSymbol;
+        uint      onchainExitFeeETH;
     }
 
     struct PoolJoin
@@ -90,11 +91,14 @@ library AmmData
         // Exchange state variables
         IExchangeV3 exchange;
         bytes32     exchangeDomainSeparator;
+        address     feeRecipient;
 
         // AMM pool state variables
         bytes32 domainSeparator;
         uint32  accountID;
+
         Token[] tokens;
+
         uint    poolTokenBase;
         uint    poolTokenInitialSupply;
         uint    size; // == token.length;
@@ -119,6 +123,7 @@ library AmmData
         // AMM pool state variables
         IExchangeV3 exchange;
         uint32      accountID;
+        uint        onchainExitFeeETH;
         bytes32     domainSeparator;
         uint        shutdownTimestamp;
         uint8       feeBips;

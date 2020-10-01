@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
@@ -17,6 +18,7 @@ import "./AmmUtil.sol";
 /// @title AmmExitRequest
 library AmmExitRequest
 {
+    using AddressUtil       for address;
     using AmmStatus         for AmmData.State;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
@@ -46,6 +48,11 @@ library AmmExitRequest
 
         uint32 nonce = 0;
         if (!burnFromLayer2) {
+            require(msg.value >= S.onchainExitFeeETH, "INSUFFICIENT_FEE");
+            if (msg.value > 0) {
+                S.exchange.owner().sendETHAndVerify(msg.value, gasleft());
+            }
+
             require(burnStorageID == 0, "INVALID_STORAGE_ID");
             require(!S.isExiting[msg.sender], "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
 
