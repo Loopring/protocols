@@ -134,7 +134,7 @@ library AmmExitProcess
             withdrawal.withdrawalType == 1 &&
             withdrawal.from == from &&
             withdrawal.fromAccountID == 0 &&
-            withdrawal.tokenID == ctx.tokens[0].tokenID &&
+            withdrawal.tokenID == ctx.tokens[ctx.size].tokenID &&
             withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&
             withdrawal.fee == 0 &&
