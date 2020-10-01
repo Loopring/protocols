@@ -44,8 +44,8 @@ library AmmJoinProcess
         ctx.numTransactionsConsumed++;
 
         require(
-            deposit.owner == address(this) &&
-            deposit.accountID == S.accountID &&
+            deposit.to == address(this) &&
+            deposit.toAccountID == S.accountID &&
             deposit.tokenID == token.tokenID &&
             deposit.amount == amount,
             "INVALID_TX_DATA"
@@ -64,8 +64,8 @@ library AmmJoinProcess
         }
 
         ctx.exchange.deposit{value: ethValue}(
-            deposit.owner,
-            deposit.owner,
+            deposit.to,
+            deposit.to,
             token.addr,
             deposit.amount,
             new bytes(0)

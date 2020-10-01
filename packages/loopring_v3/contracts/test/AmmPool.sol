@@ -848,8 +848,8 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
     {
         // Check that the deposit in the block matches the expected deposit
         DepositTransaction.Deposit memory _deposit = ctx._block.readDeposit(ctx.txIdx++);
-        require(_deposit.owner == address(this), "INVALID_TX_DATA");
-        require(_deposit.accountID == accountID, "INVALID_TX_DATA");
+        require(_deposit.to == address(this), "INVALID_TX_DATA");
+        require(_deposit.toAccountID == accountID, "INVALID_TX_DATA");
         require(_deposit.tokenID == token.tokenID, "INVALID_TX_DATA");
         require(_deposit.amount == amount, "INVALID_TX_DATA");
 
@@ -866,8 +866,8 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
             }
         }
         exchange.deposit{value: ethValue}(
-            _deposit.owner,
-            _deposit.owner,
+            _deposit.to,
+            _deposit.to,
             token.addr,
             uint96(_deposit.amount),
             new bytes(0)
@@ -886,8 +886,8 @@ contract AmmPool is LPERC20, IBlockReceiver, IAgent {
     {
         // Check that the withdrawal in the block matches the expected withdrawal
         WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
-        require(withdrawal.owner == address(this), "INVALID_TX_DATA");
-        require(withdrawal.accountID == accountID, "INVALID_TX_DATA");
+        require(withdrawal.from == address(this), "INVALID_TX_DATA");
+        require(withdrawal.fromAccountID == accountID, "INVALID_TX_DATA");
         require(withdrawal.tokenID == token.tokenID, "INVALID_TX_DATA");
         require(withdrawal.amount == amount, "INVALID_TX_DATA");
         require(withdrawal.feeTokenID == withdrawal.tokenID, "INVALID_TX_DATA");
