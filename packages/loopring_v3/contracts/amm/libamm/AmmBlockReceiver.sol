@@ -45,8 +45,6 @@ library AmmBlockReceiver
 
         processPoolTx(S, ctx, poolTxData);
 
-        appproveDepositOrWithdrawal(ctx);
-
         S.approveAmmUpdates(ctx, false);
 
         return ctx.numTransactionsConsumed;
@@ -88,8 +86,7 @@ library AmmBlockReceiver
             poolTokenBase: AmmData.LP_TOKEN_BASE(),
             poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY(),
             size: size,
-            ammActualL2Balances: new uint96[](size),
-            ammExpectedL2Balances: new uint96[](size),
+            layer2Balances: new uint96[](size),
             numTransactionsConsumed: 0,
             totalSupply: S.totalSupply_()
         });
@@ -116,23 +113,6 @@ library AmmBlockReceiver
             );
         } else {
             revert("INVALID_POOL_TX_TYPE");
-        }
-    }
-
-    function appproveDepositOrWithdrawal(
-        AmmData.Context memory ctx
-        )
-        private
-    {
-        for (uint i = 0; i < ctx.size; i++) {
-            uint96 expected = ctx.ammExpectedL2Balances[i];
-            uint96 actual = ctx.ammActualL2Balances[i];
-
-            if (expected > actual) {
-                AmmExchange.approveTokenDeposit(ctx, ctx.tokens[i], expected - actual);
-            } else if (expected < actual) {
-                AmmExchange.approveTokenWithdrawal(ctx, ctx.tokens[i], actual - expected);
-            }
         }
     }
 }

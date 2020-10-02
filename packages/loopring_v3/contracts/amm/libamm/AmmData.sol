@@ -94,8 +94,7 @@ library AmmData
         uint    poolTokenInitialSupply;
         uint    size; // == token.length;
 
-        uint96[] ammActualL2Balances;
-        uint96[] ammExpectedL2Balances;
+        uint96[] layer2Balances;
         uint     numTransactionsConsumed;
         uint     totalSupply;
     }

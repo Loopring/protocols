@@ -51,8 +51,7 @@ library AmmJoinProcess
          // Handle liquidity tokens
         for (uint i = 0; i < ctx.size; i++) {
             uint96 amount = amounts[i];
-            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
-            ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
+            ctx.layer2Balances[i] = ctx.layer2Balances[i].add(amount);
 
             TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
             ctx.numTransactionsConsumed++;
@@ -138,9 +137,9 @@ library AmmJoinProcess
         // Calculate the amount of pool tokens that should be minted
         bool initialized = false;
         for (uint i = 1; i < ctx.size; i++) {
-            if (ctx.ammExpectedL2Balances[i] > 0) {
+            if (ctx.layer2Balances[i] > 0) {
                 uint amountOut = uint(join.joinAmounts[i - 1])
-                    .mul(ctx.totalSupply) / uint(ctx.ammExpectedL2Balances[i]);
+                    .mul(ctx.totalSupply) / uint(ctx.layer2Balances[i]);
 
                 if (!initialized) {
                     initialized = true;
@@ -159,7 +158,7 @@ library AmmJoinProcess
         uint ratio = ctx.poolTokenBase.mul(mintAmount) / ctx.totalSupply;
 
         for (uint i = 1; i < ctx.size; i++) {
-            amounts[i - 1] = ratio.mul(ctx.ammExpectedL2Balances[i] / ctx.poolTokenBase).toUint96();
+            amounts[i - 1] = ratio.mul(ctx.layer2Balances[i] / ctx.poolTokenBase).toUint96();
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

@@ -62,9 +62,7 @@ library AmmExitProcess
         // Handle liquidity tokens
         for (uint i = 0; i < ctx.size; i++) {
             uint96 amount = amounts[i];
-            ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
-
-            ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
+            ctx.layer2Balances[i] = ctx.layer2Balances[i].sub(amount);
 
             TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
             ctx.numTransactionsConsumed++;
@@ -155,7 +153,7 @@ library AmmExitProcess
         uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.totalSupply;
 
         for (uint i = 0; i < ctx.size - 1; i++) {
-            amounts[i] = (ratio.mul(ctx.ammExpectedL2Balances[i + 1]) / ctx.poolTokenBase).toUint96();
+            amounts[i] = (ratio.mul(ctx.layer2Balances[i + 1]) / ctx.poolTokenBase).toUint96();
             if (amounts[i] < exit.exitMinAmounts[i]) {
                 return (false, amounts);
             }
