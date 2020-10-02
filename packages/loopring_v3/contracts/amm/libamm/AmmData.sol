@@ -110,11 +110,10 @@ library AmmData
         uint8       feeBips;
         Token[]     tokens;
 
-        // A map from a token address to the amount owned collectively by all users
-        // on layer1 before the pool is shutdown.
-        mapping (address => uint) withdrawableBeforeShutdown;
-
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => PoolExit) forcedExit;
+
+        // A map from a user to the hash of the forced exit.
+        mapping (address => bytes32) isExiting;
     }
 }

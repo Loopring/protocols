@@ -52,6 +52,7 @@ library AmmExitProcess
             );
 
             delete S.forcedExit[txHash];
+            delete S.isExiting[exit.owner];
             isForcedExit = true;
         } else {
             require(txHash.verifySignature(exit.owner, signature), "INVALID_EXIT_APPROVAL");

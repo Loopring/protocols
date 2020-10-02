@@ -3,7 +3,6 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./AmmData.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
@@ -11,15 +10,18 @@ import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../lib/SignatureUtil.sol";
+import "./AmmData.sol";
+import "./AmmPoolToken.sol";
 
 
 /// @title LPToken
 library AmmStatus
 {
+    using AmmPoolToken      for AmmData.State;
     using ERC20SafeTransfer for address;
-    using MathUint      for uint;
+    using MathUint          for uint;
     using MathUint96        for uint96;
-    using SignatureUtil for bytes32;
+    using SignatureUtil     for bytes32;
 
     event Shutdown(uint timestamp);
 
@@ -84,6 +86,11 @@ library AmmStatus
     {
         uint64 validUntil = S.forcedExit[exitHash].validUntil;
         require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLANGE");
+
+        if (S.poolSupplyToBurn > 0) {
+            S.burn(address(this), S.poolSupplyToBurn);
+            S.poolSupplyToBurn = 0;
+        }
 
         uint size = S.tokens.length;
         if (!S.exchange.isInWithdrawalMode()) {

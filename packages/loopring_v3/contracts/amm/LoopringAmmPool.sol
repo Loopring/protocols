@@ -108,23 +108,6 @@ contract LoopringAmmPool is
         return state.beforeBlockSubmission(_block, data, txIdx);
     }
 
-    function getWithdrawableAmounts(address user)
-        public
-        view
-        onlyWhenOnline
-        returns (uint96[] memory amounts)
-    {
-        (, amounts) = state.getWithdrawableAmounts(user);
-    }
-
-    function withdraw()
-        external
-        onlyWhenOnline
-        nonReentrant
-    {
-        state.withdraw();
-    }
-
     function withdrawInShutdown()
         external
         onlyWhenOffline

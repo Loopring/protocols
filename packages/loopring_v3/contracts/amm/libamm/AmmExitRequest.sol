@@ -52,11 +52,13 @@ library AmmExitRequest
 
         bytes32 txHash = hash(S.domainSeparator, exit);
         require(S.forcedExit[txHash].validUntil == 0, "DUPLICATE");
+        require(S.isExiting[msg.sender] == 0, "USER_EXSTING");
 
         AmmUtil.transferIn(address(this), burnAmount);
 
         exit.exitMinAmounts = new uint96[](0);
         S.forcedExit[txHash] = exit;
+        S.isExiting[msg.sender] = txHash;
 
         emit PoolExitRequested(exit);
     }
