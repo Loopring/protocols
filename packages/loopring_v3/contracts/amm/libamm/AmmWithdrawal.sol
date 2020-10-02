@@ -9,7 +9,6 @@ import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/SafeCast.sol";
-import "./AmmExchange.sol";
 import "./AmmData.sol";
 import "./AmmPoolToken.sol";
 import "./AmmStatus.sol";
@@ -19,7 +18,6 @@ import "./AmmUtil.sol";
 /// @title AmmWithdrawal
 library AmmWithdrawal
 {
-    using AmmExchange       for AmmData.State;
     using AmmPoolToken      for AmmData.State;
     using AmmStatus         for AmmData.State;
     using ERC20SafeTransfer for address;
@@ -45,6 +43,8 @@ library AmmWithdrawal
         }
 
         require(burnAmount > 0, "INVALID_POOL_AMOUNT");
+
+        _withdrawFromApprovedWithdrawals(S);
 
         // Withdraw proportionally to the liquidity owned, including the pool token itself
         uint size = S.tokens.length;
@@ -86,5 +86,21 @@ library AmmWithdrawal
                 "MORE_TO_WITHDRAWAL"
             );
         }
+    }
+
+    function _withdrawFromApprovedWithdrawals(
+        AmmData.State storage S
+        )
+        private
+    {
+        uint size = S.tokens.length;
+        address[] memory owners = new address[](size);
+        address[] memory tokens = new address[](size);
+
+        for (uint i = 0; i < size; i++) {
+            owners[i] = address(this);
+            tokens[i] = S.tokens[i].addr;
+        }
+        S.exchange.withdrawFromApprovedWithdrawals(owners, tokens);
     }
 }

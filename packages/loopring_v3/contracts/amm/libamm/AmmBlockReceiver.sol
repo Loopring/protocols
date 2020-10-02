@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "../../core/impl/libtransactions/BlockReader.sol";
 import "../../lib/MathUint.sol";
 import "./AmmData.sol";
-import "./AmmExchange.sol";
 import "./AmmExitProcess.sol";
 import "./AmmJoinProcess.sol";
 import "./AmmPoolToken.sol";
@@ -16,7 +15,6 @@ import "./AmmUpdateProcess.sol";
 /// @title AmmBlockReceiver
 library AmmBlockReceiver
 {
-    using AmmExchange       for AmmData.State;
     using AmmExitProcess    for AmmData.State;
     using AmmJoinProcess    for AmmData.State;
     using AmmPoolToken      for AmmData.State;
