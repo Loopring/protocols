@@ -43,70 +43,42 @@ library AmmJoinProcess
             signature
         );
 
-        if (join.joinFromLayer2) {
-            require(join.nonce == 0, "LAYER2_JOIN_WITH_NONCE_DISALLOWED");
-        } else {
-            require(signature.length == 0, "LAYER1_JOIN_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
-            _removeJoinLock(S, join);
-        }
-
         // Check if the requirements are fulfilled
         (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
 
-        if (!slippageOK) {
-            if (!join.joinFromLayer2) {
-                for (uint i = 0; i < ctx.size; i++) {
-                    address token =  ctx.tokens[i].addr;
-                    S.addUserBalance(ctx.exchange.owner(), token, join.joinFees[i]);
-                    S.addUserBalance(join.owner, token, join.joinAmounts[i]);
-                }
-            }
-            return;
-        }
+        if (!slippageOK) return;
 
          // Handle liquidity tokens
         for (uint i = 0; i < ctx.size; i++) {
             uint96 amount = amounts[i];
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].add(amount);
+            ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
 
-            if (join.joinFromLayer2) {
-                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].add(amount);
+            TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+            ctx.numTransactionsConsumed++;
 
-                TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
-                ctx.numTransactionsConsumed++;
+            require(
+                // transfer.fromAccountID == UNKNOWN &&
+                transfer.toAccountID== ctx.accountID &&
+                transfer.from == join.owner &&
+                transfer.to == address(this) &&
+                transfer.tokenID == ctx.tokens[i].tokenID &&
+                transfer.amount.isAlmostEqual(amount) &&
+                transfer.feeTokenID == ctx.tokens[i].tokenID &&
+                transfer.fee.isAlmostEqual(join.joinFees[i]) &&
+                (signature.length == 0 || transfer.storageID == join.joinStorageIDs[i]),
+                "INVALID_TX_DATA"
+            );
 
-                require(
-                    // transfer.fromAccountID == UNKNOWN &&
-                    transfer.toAccountID== ctx.accountID &&
-                    transfer.from == join.owner &&
-                    transfer.to == address(this) &&
-                    transfer.tokenID == ctx.tokens[i].tokenID &&
-                    transfer.amount.isAlmostEqual(amount) &&
-                    transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                    transfer.fee.isAlmostEqual(join.joinFees[i]) &&
-                    (signature.length == 0 || transfer.storageID == join.joinStorageIDs[i]),
-                    "INVALID_TX_DATA"
-                );
-
-                transfer.validUntil = 0xffffffff;
-                bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-                ctx.exchange.approveTransaction(join.owner, txHash);
-            } else {
-                for (uint j = 0; j < ctx.size; j++) {
-                    address token =  ctx.tokens[j].addr;
-                    S.addUserBalance(ctx.exchange.owner(), token, join.joinFees[j]);
-                    S.addUserBalance(join.owner, token, join.joinAmounts[j].sub(amounts[j]));
-                }
-            }
+            transfer.validUntil = 0xffffffff;
+            bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+            ctx.exchange.approveTransaction(join.owner, txHash);
         }
 
         // Handle pool tokens
-        if (join.mintToLayer2) {
-            S.mint(address(this), mintAmount);
-            _approvePoolTokenDeposit(ctx, mintAmount, join.owner);
-        } else {
-            S.mint(join.owner, mintAmount);
-        }
+        S.mint(address(this), mintAmount);
+
+        _approvePoolTokenDeposit(ctx, mintAmount, join.owner);
     }
 
     function _approvePoolTokenDeposit(
@@ -138,24 +110,6 @@ library AmmJoinProcess
             amount,
             new bytes(0)
         );
-    }
-
-    function _removeJoinLock(
-        AmmData.State    storage S,
-        AmmData.PoolJoin memory  join
-        )
-        private
-    {
-        AmmData.TokenLock[] storage joinLocks = S.joinLocks[join.owner];
-
-        if (join.nonce == joinLocks.length) {
-            joinLocks.pop();
-        } else {
-            delete joinLocks[join.nonce - 1];
-            if (S.joinLocksStartIdx[join.owner] == join.nonce - 1) {
-                S.joinLocksStartIdx[join.owner]++;
-            }
-        }
     }
 
     function _calculateJoinAmounts(

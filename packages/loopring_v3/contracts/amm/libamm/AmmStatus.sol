@@ -83,35 +83,35 @@ library AmmStatus
     function shutdown(AmmData.State storage S)
         public
     {
-        bytes32 firstExitHash = S.exitLocks[S.exitLocksStartIdx].txHash;
-        uint validUntil = S.approvedTx[firstExitHash];
-        require(validUntil > 0 && validUntil <= block.timestamp, "REQUEST_NOT_TOO_OLD");
+        // bytes32 firstExitHash = S.exitLocks[S.exitLocksStartIdx].txHash;
+        // uint validUntil = S.approvedTx[firstExitHash];
+        // require(validUntil > 0 && validUntil <= block.timestamp, "REQUEST_NOT_TOO_OLD");
 
-        uint size = S.tokens.length;
+        // uint size = S.tokens.length;
 
-        // remember the part owned by users collectively
-        for (uint i = 0; i < size; i++) {
-            address token = S.tokens[i].addr;
-            S.withdrawableBeforeShutdown[token] = (token == address(0)) ?
-                address(this).balance :
-                ERC20(token).balanceOf(address(this));
-        }
+        // // remember the part owned by users collectively
+        // for (uint i = 0; i < size; i++) {
+        //     address token = S.tokens[i].addr;
+        //     S.withdrawableBeforeShutdown[token] = (token == address(0)) ?
+        //         address(this).balance :
+        //         ERC20(token).balanceOf(address(this));
+        // }
 
-        if (!S.exchange.isInWithdrawalMode()) {
-            uint32 accountID = S.accountID;
-            IExchangeV3 exchange = S.exchange;
+        // if (!S.exchange.isInWithdrawalMode()) {
+        //     uint32 accountID = S.accountID;
+        //     IExchangeV3 exchange = S.exchange;
 
-            for (uint i = 0; i < size; i++) {
-                exchange.forceWithdraw{value: msg.value / size}(
-                    address(this),
-                    S.tokens[i].addr,
-                    accountID
-                );
-            }
-        }
+        //     for (uint i = 0; i < size; i++) {
+        //         exchange.forceWithdraw{value: msg.value / size}(
+        //             address(this),
+        //             S.tokens[i].addr,
+        //             accountID
+        //         );
+        //     }
+        // }
 
-        S.shutdownTimestamp = block.timestamp;
-        emit Shutdown(block.timestamp);
+        // S.shutdownTimestamp = block.timestamp;
+        // emit Shutdown(block.timestamp);
     }
 
     function checkPoolTxApproval(

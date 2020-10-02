@@ -43,30 +43,20 @@ library AmmExitProcess
             signature
         );
 
-        if (!exit.burnFromLayer2) {
-            require(signature.length == 0, "LAYER1_EXIT_WITH_OFFCHAIN_APPROVAL_DISALLOWED");
-            _removeExitLock(S, exit);
-        }
-
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
 
         if (!slippageOK) {
-            if (!exit.burnFromLayer2) {
-                S.addUserBalance(exit.owner, address(this), exit.burnAmount);
-            }
             return;
         }
 
         // Handle pool tokens
-        if (exit.burnFromLayer2) {
-            _approvePoolTokenWithdrawal(
-                ctx,
-                exit.burnAmount,
-                exit.owner,
-                exit.burnStorageID,
-                signature
-            );
-        }
+        _approvePoolTokenWithdrawal(
+            ctx,
+            exit.burnAmount,
+            exit.owner,
+            exit.burnStorageID,
+            signature
+        );
         S.poolSupplyToBurn = S.poolSupplyToBurn.add(exit.burnAmount);
 
         // Handle liquidity tokens
@@ -74,31 +64,27 @@ library AmmExitProcess
             uint96 amount = amounts[i];
             ctx.ammExpectedL2Balances[i] = ctx.ammExpectedL2Balances[i].sub(amount);
 
-            if (exit.exitToLayer2) {
-                ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
+            ctx.ammActualL2Balances[i] = ctx.ammActualL2Balances[i].sub(amount);
 
-                TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
-                ctx.numTransactionsConsumed++;
+            TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+            ctx.numTransactionsConsumed++;
 
-                require(
-                    transfer.fromAccountID== ctx.accountID &&
-                    // transfer.toAccountID == UNKNOWN &&
-                    // transfer.storageID == UNKNOWN &&
-                    transfer.from == address(this) &&
-                    transfer.to == exit.owner &&
-                    transfer.tokenID == ctx.tokens[i].tokenID &&
-                    transfer.amount.isAlmostEqual(amount) &&
-                    transfer.feeTokenID == 0 &&
-                    transfer.fee == 0,
-                    "INVALID_TX_DATA"
-                );
+            require(
+                transfer.fromAccountID== ctx.accountID &&
+                // transfer.toAccountID == UNKNOWN &&
+                // transfer.storageID == UNKNOWN &&
+                transfer.from == address(this) &&
+                transfer.to == exit.owner &&
+                transfer.tokenID == ctx.tokens[i].tokenID &&
+                transfer.amount.isAlmostEqual(amount) &&
+                transfer.feeTokenID == 0 &&
+                transfer.fee == 0,
+                "INVALID_TX_DATA"
+            );
 
-                transfer.validUntil = 0xffffffff;
-                bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-                ctx.exchange.approveTransaction(address(this), txHash);
-            } else {
-                S.addUserBalance(exit.owner, ctx.tokens[i].addr, amount);
-            }
+            transfer.validUntil = 0xffffffff;
+            bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+            ctx.exchange.approveTransaction(address(this), txHash);
         }
     }
 
@@ -145,19 +131,6 @@ library AmmExitProcess
         // Now approve this withdrawal
         bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
         ctx.exchange.approveTransaction(from, txHash);
-    }
-
-    function _removeExitLock(
-        AmmData.State    storage S,
-        AmmData.PoolExit memory  exit
-        )
-        private
-    {
-        require(S.exitLocksStartIdx + 1 == exit.nonce, "INVALID_EXIT_NONCE");
-
-        S.isExiting[exit.owner] = false;
-        delete S.exitLocks[S.exitLocksStartIdx];
-        S.exitLocksStartIdx++;
     }
 
     function _calculateExitAmounts(

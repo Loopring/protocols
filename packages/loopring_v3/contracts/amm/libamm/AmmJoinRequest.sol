@@ -23,18 +23,16 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,bool joinFromLayer2,uint96[] joinAmounts,uint96[] joinFees,uint32[] joinStorageIDs,bool mintToLayer2,uint96 mintMinAmount,uint256 validUntil,uint32 nonce)"
+        "PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,uint32[] joinStorageIDs,uint96 mintMinAmount,uint256 validUntil)"
     );
 
     event PoolJoinRequested(AmmData.PoolJoin join);
 
     function joinPool(
         AmmData.State storage S,
-        bool                  joinFromLayer2,
         uint96[]     calldata joinAmounts,
         uint96[]     calldata joinFees,
         uint32[]     calldata joinStorageIDs,
-        bool                  mintToLayer2,
         uint96                mintMinAmount
         )
         public
@@ -55,43 +53,19 @@ library AmmJoinRequest
             totalAmounts[i] = joinAmounts[i];
         }
 
-        uint32 nonce = 0;
-        if (joinFromLayer2) {
-            require(joinStorageIDs.length == size, "INVALID_STORAGE_IDS");
-        } else {
-            require(joinStorageIDs.length == 0, "INVALID_STORAGE_IDS");
-
-            nonce = uint32(S.joinLocks[msg.sender].length + 1);
-
-            for (uint i = 0; i < size; i++) {
-                totalAmounts[i] = totalAmounts[i].add(joinFees[i]);
-                AmmUtil.transferIn(S.tokens[i].addr, totalAmounts[i]);
-            }
-        }
+        require(joinStorageIDs.length == size, "INVALID_STORAGE_IDS");
 
         AmmData.PoolJoin memory join = AmmData.PoolJoin({
             owner: msg.sender,
-            joinFromLayer2:joinFromLayer2,
             joinAmounts: joinAmounts,
             joinFees: joinFees,
             joinStorageIDs: joinStorageIDs,
-            mintToLayer2: mintToLayer2,
             mintMinAmount: mintMinAmount,
-            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
-            nonce: nonce
+            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN()
         });
 
         // Approve the join
-        bytes32 txHash = hash(S.domainSeparator, join);
-        S.approvedTx[txHash] = join.validUntil;
-
-        if (!joinFromLayer2) {
-            S.joinLocks[msg.sender].push(AmmData.TokenLock({
-                txHash: txHash,
-                amounts: totalAmounts
-            }));
-        }
-
+        S.approvedTx[hash(S.domainSeparator, join)] = join.validUntil;
         emit PoolJoinRequested(join);
     }
 
@@ -109,14 +83,11 @@ library AmmJoinRequest
                 abi.encode(
                     POOLJOIN_TYPEHASH,
                     join.owner,
-                    join.joinFromLayer2,
                     keccak256(abi.encodePacked(join.joinAmounts)),
                     keccak256(abi.encodePacked(join.joinFees)),
                     keccak256(abi.encodePacked(join.joinStorageIDs)),
-                    join.mintToLayer2,
                     join.mintMinAmount,
-                    join.validUntil,
-                    join.nonce
+                    join.validUntil
                 )
             )
         );

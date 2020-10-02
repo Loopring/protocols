@@ -83,11 +83,9 @@ contract LoopringAmmPool is
     }
 
     function joinPool(
-        bool              joinFromLayer2,
         uint96[] calldata joinAmounts,
         uint96[] calldata joinFees,
         uint32[] calldata joinStorageIDs,
-        bool              mintToLayer2,
         uint96            mintMinAmount
         )
         external
@@ -95,20 +93,16 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.joinPool(
-            joinFromLayer2,
             joinAmounts,
             joinFees,
             joinStorageIDs,
-            mintToLayer2,
             mintMinAmount
         );
     }
 
     function exitPool(
-        bool              burnFromLayer2,
         uint96            burnAmount,
         uint32            burnStorageID,
-        bool              exitToLayer2,
         uint96[] calldata exitMinAmounts
         )
         external
@@ -116,10 +110,8 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.exitPool(
-            burnFromLayer2,
             burnAmount,
             burnStorageID,
-            exitToLayer2,
             exitMinAmounts
         );
     }
@@ -139,17 +131,17 @@ contract LoopringAmmPool is
         return state.beforeBlockSubmission(_block, data, txIdx);
     }
 
-    function afterAllBlocksSubmitted(
-        ExchangeData.Block[] memory blocks
-        )
-        external
-        override
-        onlyWhenOnline
-        onlyFromExchangeOwner
-        nonReentrant
-    {
-        state.afterAllBlocksSubmitted(blocks);
-    }
+    // function afterAllBlocksSubmitted(
+    //     ExchangeData.Block[] memory blocks
+    //     )
+    //     external
+    //     override
+    //     onlyWhenOnline
+    //     onlyFromExchangeOwner
+    //     nonReentrant
+    // {
+    //     state.afterAllBlocksSubmitted(blocks);
+    // }
 
     function getWithdrawableAmounts(address user)
         public

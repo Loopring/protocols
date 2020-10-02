@@ -27,17 +27,15 @@ library AmmExitRequest
     using SignatureUtil     for bytes32;
 
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,bool burnFromLayer2,uint96 burnAmount,bool burnFromLayer2,uint32 burnStorageID,bool exitToLayer2,uint96[] exitMinAmounts,uint256 validUntil,uint32 nonce)"
+        "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint256 validUntil)"
     );
 
     event PoolExitRequested(AmmData.PoolExit exit);
 
     function exitPool(
         AmmData.State storage S,
-        bool                  burnFromLayer2,
         uint96                burnAmount,
         uint32                burnStorageID,
-        bool                  exitToLayer2,
         uint96[]     calldata exitMinAmounts
         )
         public
@@ -46,51 +44,16 @@ library AmmExitRequest
         require(exitMinAmounts.length == size, "INVALID_PARAM_SIZE");
         require(burnAmount > 0, "INVALID_BURN_AMOUNT");
 
-        uint32 nonce = 0;
-        if (!burnFromLayer2) {
-            require(msg.value >= S.onchainExitFeeETH, "INSUFFICIENT_FEE");
-
-            require(burnStorageID == 0, "INVALID_STORAGE_ID");
-            require(!S.isExiting[msg.sender], "ONLY_ONE_LAYER1_EXIT_PER_USER_ALLOWED");
-
-            nonce = uint32(S.exitLocks.length + 1);
-            require(
-                nonce <= S.exitLocksStartIdx + AmmData.MAX_NUM_EXITS_FROM_LAYER1(),
-                "TOO_MANY_LAYER1_EXITS"
-            );
-
-            AmmUtil.transferIn(address(this), burnAmount);
-        }
-
         AmmData.PoolExit memory exit = AmmData.PoolExit({
             owner: msg.sender,
-            burnFromLayer2: burnFromLayer2,
             burnAmount: burnAmount,
             burnStorageID: burnStorageID,
-            exitToLayer2: exitToLayer2,
             exitMinAmounts: exitMinAmounts,
-            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN(),
-            nonce: nonce
+            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN()
         });
 
         // Approve the exit
-        bytes32 txHash = hash(S.domainSeparator, exit);
-        S.approvedTx[txHash] = exit.validUntil;
-
-        // Put layer-1 exit into the queue
-        if (!burnFromLayer2) {
-            S.exitLocks.push(AmmData.TokenLock({
-                txHash: txHash,
-                amounts: AmmUtil.array(burnAmount)
-            }));
-
-            S.isExiting[msg.sender] = true;
-
-            if (msg.value > 0) {
-                S.exchange.owner().sendETHAndVerify(msg.value, gasleft());
-            }
-        }
-
+        S.approvedTx[hash(S.domainSeparator, exit)] = exit.validUntil;
         emit PoolExitRequested(exit);
     }
 
@@ -108,13 +71,10 @@ library AmmExitRequest
                 abi.encode(
                     POOLEXIT_TYPEHASH,
                     exit.owner,
-                    exit.burnFromLayer2,
                     exit.burnAmount,
                     exit.burnStorageID,
-                    exit.exitToLayer2,
                     keccak256(abi.encodePacked(exit.exitMinAmounts)),
-                    exit.validUntil,
-                    exit.nonce
+                    exit.validUntil
                 )
             )
         );

@@ -111,12 +111,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
             ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
 
             _beforeBlockSubmission(blocks, callbackConfig);
-            target.fastCallAndVerify(gasleft(), 0, decompressed);
-            _afterAllBlocksSubmitted(blocks, callbackConfig);
-
-        } else {
-            target.fastCallAndVerify(gasleft(), 0, decompressed);
         }
+
+        target.fastCallAndVerify(gasleft(), 0, decompressed);
     }
 
     function _beforeBlockSubmission(
@@ -140,16 +137,16 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
         }
     }
 
-    function _afterAllBlocksSubmitted(
-        ExchangeData.Block[] memory   blocks,
-        CallbackConfig       calldata callbackConfig
-        )
-        private
-    {
-        for (uint i = 0; i <callbackConfig.receivers.length; i++) {
-            IBlockReceiver(callbackConfig.receivers[i]).afterAllBlocksSubmitted(blocks);
-        }
-    }
+    // function _afterAllBlocksSubmitted(
+    //     ExchangeData.Block[] memory   blocks,
+    //     CallbackConfig       calldata callbackConfig
+    //     )
+    //     private
+    // {
+    //     for (uint i = 0; i <callbackConfig.receivers.length; i++) {
+    //         IBlockReceiver(callbackConfig.receivers[i]).afterAllBlocksSubmitted(blocks);
+    //     }
+    // }
 
     function _processTxCallbacks(
         ExchangeData.Block memory _block,

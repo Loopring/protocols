@@ -52,20 +52,20 @@ library AmmBlockReceiver
         return ctx.numTransactionsConsumed;
     }
 
-    function afterAllBlocksSubmitted(
-        AmmData.State        storage S,
-        ExchangeData.Block[] memory
-        )
-        public
-    {
-        S.withdrawFromApprovedWithdrawals(true);
+    // function afterAllBlocksSubmitted(
+    //     AmmData.State        storage S,
+    //     ExchangeData.Block[] memory
+    //     )
+    //     public
+    // {
+    //     S.withdrawFromApprovedWithdrawals(true);
 
-        uint poolSupplyToBurn = S.poolSupplyToBurn;
-        if (poolSupplyToBurn > 0) {
-            S.burn(address(this), poolSupplyToBurn);
-            S.poolSupplyToBurn = 0;
-        }
-    }
+    //     uint poolSupplyToBurn = S.poolSupplyToBurn;
+    //     if (poolSupplyToBurn > 0) {
+    //         S.burn(address(this), poolSupplyToBurn);
+    //         S.poolSupplyToBurn = 0;
+    //     }
+    // }
 
     function getContext(
         AmmData.State      storage S,

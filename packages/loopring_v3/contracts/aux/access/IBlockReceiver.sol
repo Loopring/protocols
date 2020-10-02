@@ -18,9 +18,9 @@ abstract contract IBlockReceiver
         virtual
         returns (uint numTransactionsConsumed);
 
-    function afterAllBlocksSubmitted(
-        ExchangeData.Block[] memory blocks
-        )
-        external
-        virtual;
+    // function afterAllBlocksSubmitted(
+    //     ExchangeData.Block[] memory blocks
+    //     )
+    //     external
+    //     virtual;
 }
