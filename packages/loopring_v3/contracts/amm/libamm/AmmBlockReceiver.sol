@@ -54,7 +54,7 @@ library AmmBlockReceiver
         view
         returns (AmmData.Context memory)
     {
-        uint size = S.tokens.length - 1;
+        uint size = S.tokens.length;
         return AmmData.Context({
             _block: _block,
             txIdx: txIdx,

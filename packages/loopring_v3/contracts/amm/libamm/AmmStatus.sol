@@ -68,13 +68,6 @@ library AmmStatus
                 weight: config.weights[i]
             }));
         }
-
-        // The last token is the pool token
-        S.tokens.push(AmmData.Token({
-            addr: address(this),
-            tokenID: exchange.getTokenID(address(this)),
-            weight: 0 // never used
-        }));
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.

@@ -46,10 +46,7 @@ library AmmWithdrawal
 
         _withdrawFromApprovedWithdrawals(S);
 
-        // Withdraw proportionally to the liquidity owned, including the pool token itself
-        uint size = S.tokens.length;
-
-        for (uint i = 0; i < size; i++) {
+        for (uint i = 0; i < S.tokens.length; i++) {
             address token = S.tokens[i].addr;
             uint balance = token == address(0) ?
                 address(this).balance :
@@ -70,8 +67,7 @@ library AmmWithdrawal
         IExchangeV3 exchange = S.exchange;
         bool withdrawalMode = exchange.isInWithdrawalMode();
 
-        uint size = S.tokens.length;
-        for (uint i = 0; i < size; i++) {
+        for (uint i = 0; i < S.tokens.length; i++) {
             address token = S.tokens[i].addr;
 
             require(
