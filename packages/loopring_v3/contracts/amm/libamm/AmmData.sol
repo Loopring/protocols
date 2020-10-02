@@ -79,6 +79,7 @@ library AmmData
         // AMM pool state variables
         bytes32 domainSeparator;
         uint32  accountID;
+        uint16  poolTokenID;
 
         Token[] tokens;
 
@@ -87,7 +88,8 @@ library AmmData
         uint    size; // == token.length;
 
         uint96[] layer2Balances;
-        uint     effectiveTotalSupply;
+        uint     totalSupply;
+        uint96   poolBalanceL2;
     }
 
     struct State {
@@ -95,7 +97,7 @@ library AmmData
         string poolName;
         string symbol;
         uint   totalSupply;
-        uint   poolSupplyToBurn;
+        uint96 poolBalanceL2;
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
@@ -109,6 +111,7 @@ library AmmData
         uint8       feeBips;
         uint16      forcedExitCount;
         Token[]     tokens;
+        uint16      poolTokenID;
 
         // A map of approved transaction hashes to the timestamp it was created
         mapping (bytes32 => PoolExit) forcedExit;

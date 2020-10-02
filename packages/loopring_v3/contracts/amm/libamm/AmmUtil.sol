@@ -5,6 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
+import "./AmmData.sol";
 
 
 /// @title AmmUtil
@@ -12,6 +14,17 @@ library AmmUtil
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
+    using MathUint          for uint;
+
+    function effectiveTotalSupply(
+        AmmData.Context  memory  ctx
+        )
+        internal
+        pure
+        returns (uint)
+    {
+        return ctx.totalSupply.sub(ctx.poolBalanceL2);
+    }
 
     function isAlmostEqual(
         uint96 amount,

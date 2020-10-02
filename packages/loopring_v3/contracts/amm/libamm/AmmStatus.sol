@@ -66,6 +66,19 @@ library AmmStatus
                 weight: config.weights[i]
             }));
         }
+
+        S.poolTokenID = exchange.getTokenID(address(this));
+
+        // Mint all liquidity tokens to the pool account on L2
+        S.poolBalanceL2 = uint96(-1);
+        S.mint(address(this), S.poolBalanceL2);
+        exchange.deposit{value: 0}(
+            address(this), // from
+            address(this), // to
+            address(this), // token
+            uint96(S.poolBalanceL2),
+            new bytes(0)
+        );
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
@@ -77,11 +90,6 @@ library AmmStatus
     {
         uint64 validUntil = S.forcedExit[exitHash].validUntil;
         require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLANGE");
-
-        if (S.poolSupplyToBurn > 0) {
-            S.burn(address(this), S.poolSupplyToBurn);
-            S.poolSupplyToBurn = 0;
-        }
 
         uint size = S.tokens.length;
         if (!S.exchange.isInWithdrawalMode()) {

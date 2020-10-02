@@ -27,7 +27,7 @@ library AmmPoolToken
         view
         returns (uint)
     {
-        return S.totalSupply.sub(S.poolSupplyToBurn);
+        return S.totalSupply.sub(S.poolBalanceL2);
     }
 
     function approve(
