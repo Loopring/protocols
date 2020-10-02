@@ -30,11 +30,7 @@ contract LoopringAmmPool is
     using AmmStatus        for AmmData.State;
     using AmmWithdrawal    for AmmData.State;
 
-    event Deposit   (address owner, uint96[] amounts);
-    event Withdrawal(address owner, uint[] amountOuts);
-    event PoolJoinRequested(AmmData.PoolJoin join);
     event PoolExitRequested(AmmData.PoolExit exit);
-    event UnlockScheduled(address owner, uint timestamp);
     event Shutdown(uint timestamp);
 
     modifier onlyFromExchangeOwner()
@@ -61,6 +57,20 @@ contract LoopringAmmPool is
         returns (bool)
     {
         return state.isOnline();
+    }
+
+    function constants()
+        public
+        pure
+        returns(
+            uint poolTokenInitialSupply,
+            uint maxForcedExitAge,
+            uint maxForcedExitCount
+        )
+    {
+        poolTokenInitialSupply = AmmData.POOL_TOKEN_INITIAL_SUPPLY();
+        maxForcedExitAge = AmmData. MAX_FORCED_EXIT_AGE();
+        maxForcedExitCount = AmmData.MAX_FORCED_EXIT_COUNT();
     }
 
     receive() payable external {}

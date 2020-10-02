@@ -10,11 +10,10 @@ import "../../core/iface/IExchangeV3.sol";
 /// @title AmmData
 library AmmData
 {
-    function LP_TOKEN_BASE() internal pure returns (uint) { return 10 ** 18; }
-    function LP_TOKEN_INITIAL_SUPPLY() internal pure returns (uint) { return 100 * LP_TOKEN_BASE(); }
-    function MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN() internal pure returns (uint) { return 7 days; }
-    function MAX_NUM_EXITS_FROM_LAYER1() internal pure returns (uint) { return 200; }
-    function LOCK_DELAY() internal pure returns (uint) { return 1 days; }
+    function POOL_TOKEN_BASE() internal pure returns (uint) { return 10 ** 18; }
+    function POOL_TOKEN_INITIAL_SUPPLY() internal pure returns (uint) { return 100 * POOL_TOKEN_BASE(); }
+    function MAX_FORCED_EXIT_AGE() internal pure returns (uint) { return 7 days; }
+    function MAX_FORCED_EXIT_COUNT() internal pure returns (uint) { return 200; }
 
     enum PoolTxType
     {
@@ -108,6 +107,7 @@ library AmmData
         bytes32     domainSeparator;
         uint        shutdownTimestamp;
         uint8       feeBips;
+        uint16      forcedExitCount;
         Token[]     tokens;
 
         // A map of approved transaction hashes to the timestamp it was created

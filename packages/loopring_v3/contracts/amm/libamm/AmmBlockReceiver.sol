@@ -63,8 +63,8 @@ library AmmBlockReceiver
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             tokens: S.tokens,
-            poolTokenBase: AmmData.LP_TOKEN_BASE(),
-            poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY(),
+            poolTokenBase: AmmData.POOL_TOKEN_BASE(),
+            poolTokenInitialSupply: AmmData.POOL_TOKEN_INITIAL_SUPPLY(),
             size: size,
             layer2Balances: new uint96[](size),
             effectiveTotalSupply: S.effectiveTotalSupply()
