@@ -13,7 +13,7 @@ library AmmData
     function POOL_TOKEN_BASE() internal pure returns (uint) { return 10 ** 18; }
     function POOL_TOKEN_INITIAL_SUPPLY() internal pure returns (uint) { return 100 * POOL_TOKEN_BASE(); }
     function MAX_FORCED_EXIT_AGE() internal pure returns (uint) { return 7 days; }
-    function MAX_FORCED_EXIT_COUNT() internal pure returns (uint) { return 200; }
+    function MAX_FORCED_EXIT_COUNT() internal pure returns (uint) { return 100; }
 
     enum PoolTxType
     {
