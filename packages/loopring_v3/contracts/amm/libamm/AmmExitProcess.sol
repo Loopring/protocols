@@ -65,7 +65,6 @@ library AmmExitProcess
             ctx.layer2Balances[i] = ctx.layer2Balances[i].sub(amount);
 
             TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
-            ctx.numTransactionsConsumed++;
 
             require(
                 transfer.fromAccountID== ctx.accountID &&
@@ -97,7 +96,6 @@ library AmmExitProcess
     {
         // Check that the withdrawal in the block matches the expected withdrawal
         WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
-        ctx.numTransactionsConsumed++;
 
         // These fields are not read by readWithdrawal: to, extraData, minGas, validUntil
         withdrawal.extraData = new bytes(0);

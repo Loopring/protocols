@@ -54,7 +54,6 @@ library AmmJoinProcess
             ctx.layer2Balances[i] = ctx.layer2Balances[i].add(amount);
 
             TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
-            ctx.numTransactionsConsumed++;
 
             require(
                 // transfer.fromAccountID == UNKNOWN &&
@@ -91,7 +90,6 @@ library AmmJoinProcess
 
         // Check that the deposit in the block matches the expected deposit
         DepositTransaction.Deposit memory deposit = ctx._block.readDeposit(ctx.txIdx++);
-        ctx.numTransactionsConsumed++;
 
         AmmData.Token memory poolToken = ctx.tokens[ctx.size];
 

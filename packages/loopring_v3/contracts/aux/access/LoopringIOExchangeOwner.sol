@@ -137,17 +137,6 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
         }
     }
 
-    // function _afterAllBlocksSubmitted(
-    //     ExchangeData.Block[] memory   blocks,
-    //     CallbackConfig       calldata callbackConfig
-    //     )
-    //     private
-    // {
-    //     for (uint i = 0; i <callbackConfig.receivers.length; i++) {
-    //         IBlockReceiver(callbackConfig.receivers[i]).afterAllBlocksSubmitted(blocks);
-    //     }
-    // }
-
     function _processTxCallbacks(
         ExchangeData.Block memory _block,
         TxCallback[]       calldata txCallbacks,

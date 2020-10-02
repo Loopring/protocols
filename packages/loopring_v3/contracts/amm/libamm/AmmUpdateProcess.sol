@@ -35,7 +35,6 @@ library AmmUpdateProcess
         for (uint i = 1; i < ctx.size; i++) {
             // Check that the AMM update in the block matches the expected update
             AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
-            ctx.numTransactionsConsumed++;
 
             require(update.owner == address(this), "INVALID_TX_DATA");
             require(update.accountID== ctx.accountID, "INVALID_TX_DATA");

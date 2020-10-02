@@ -35,35 +35,17 @@ library AmmBlockReceiver
     {
         AmmData.Context memory ctx = getContext(S, _block, txIdx);
 
-        // Question(brecht): is it OK not to check the following for every poolTx?
-
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
-        // The openning AMM updates will pull the latest AMM layer2 balances onchain.
         S.approveAmmUpdates(ctx, true);
 
         processPoolTx(S, ctx, poolTxData);
 
         S.approveAmmUpdates(ctx, false);
 
-        return ctx.numTransactionsConsumed;
+        return ctx.txIdx - txIdx;
     }
-
-    // function afterAllBlocksSubmitted(
-    //     AmmData.State        storage S,
-    //     ExchangeData.Block[] memory
-    //     )
-    //     public
-    // {
-    //     S.withdrawFromApprovedWithdrawals(true);
-
-    //     uint poolSupplyToBurn = S.poolSupplyToBurn;
-    //     if (poolSupplyToBurn > 0) {
-    //         S.burn(address(this), poolSupplyToBurn);
-    //         S.poolSupplyToBurn = 0;
-    //     }
-    // }
 
     function getContext(
         AmmData.State      storage S,
@@ -87,7 +69,6 @@ library AmmBlockReceiver
             poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY(),
             size: size,
             layer2Balances: new uint96[](size),
-            numTransactionsConsumed: 0,
             totalSupply: S.totalSupply_()
         });
     }

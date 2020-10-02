@@ -131,18 +131,6 @@ contract LoopringAmmPool is
         return state.beforeBlockSubmission(_block, data, txIdx);
     }
 
-    // function afterAllBlocksSubmitted(
-    //     ExchangeData.Block[] memory blocks
-    //     )
-    //     external
-    //     override
-    //     onlyWhenOnline
-    //     onlyFromExchangeOwner
-    //     nonReentrant
-    // {
-    //     state.afterAllBlocksSubmitted(blocks);
-    // }
-
     function getWithdrawableAmounts(address user)
         public
         view
@@ -166,22 +154,5 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.withdrawInShutdown();
-    }
-
-    function onchainExitFeeETH()
-        public
-        view
-        returns (uint)
-    {
-        return state.onchainExitFeeETH;
-    }
-
-    function setOnchainExitFeeETH(uint fee)
-        external
-        onlyWhenOnline
-        onlyFromExchangeOwner
-        nonReentrant
-    {
-        state.onchainExitFeeETH = fee;
     }
 }

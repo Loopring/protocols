@@ -32,7 +32,6 @@ library AmmData
         uint96[]  weights;
         uint8     feeBips;
         string    tokenSymbol;
-        uint      onchainExitFeeETH;
     }
 
     struct PoolJoin
@@ -53,12 +52,6 @@ library AmmData
         uint96[]  exitMinAmounts;
         uint      validUntil;
     }
-
-    // struct TokenLock
-    // {
-    //     bytes32  txHash;
-    //     uint96[] amounts; // the size should be either 1 or tokens.length - 1
-    // }
 
     struct PoolTx
     {
@@ -95,7 +88,6 @@ library AmmData
         uint    size; // == token.length;
 
         uint96[] layer2Balances;
-        uint     numTransactionsConsumed;
         uint     totalSupply;
     }
 
@@ -113,7 +105,6 @@ library AmmData
         // AMM pool state variables
         IExchangeV3 exchange;
         uint32      accountID;
-        uint        onchainExitFeeETH;
         bytes32     domainSeparator;
         uint        shutdownTimestamp;
         uint8       feeBips;
