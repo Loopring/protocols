@@ -5,24 +5,12 @@ pragma experimental ABIEncoderV2;
 
 import "../../aux/transactions/TransactionReader.sol";
 import "../../core/impl/libtransactions/AmmUpdateTransaction.sol";
-import "../../lib/EIP712.sol";
-import "../../lib/ERC20SafeTransfer.sol";
-import "../../lib/MathUint.sol";
-import "../../lib/MathUint96.sol";
-import "../../thirdparty/SafeCast.sol";
 import "./AmmData.sol";
-import "./AmmJoinRequest.sol";
-import "./AmmUtil.sol";
 
 
 /// @title AmmUpdateProcess
 library AmmUpdateProcess
 {
-    using AmmUtil           for AmmData.State;
-    using ERC20SafeTransfer for address;
-    using MathUint          for uint;
-    using MathUint96        for uint96;
-    using SafeCast          for uint;
     using TransactionReader for ExchangeData.Block;
 
     function approveAmmUpdates(

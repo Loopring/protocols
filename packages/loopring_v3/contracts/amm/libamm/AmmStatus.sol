@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "../../core/iface/IExchangeV3.sol";
 import "../../lib/EIP712.sol";
-import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
@@ -18,7 +17,6 @@ import "./AmmPoolToken.sol";
 library AmmStatus
 {
     using AmmPoolToken      for AmmData.State;
-    using ERC20SafeTransfer for address;
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SignatureUtil     for bytes32;

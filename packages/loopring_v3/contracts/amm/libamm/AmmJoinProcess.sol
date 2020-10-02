@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "../../aux/transactions/TransactionReader.sol";
 import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../lib/EIP712.sol";
-import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../lib/SignatureUtil.sol";
@@ -14,7 +13,6 @@ import "../../thirdparty/SafeCast.sol";
 import "./AmmData.sol";
 import "./AmmJoinRequest.sol";
 import "./AmmPoolToken.sol";
-import "./AmmStatus.sol";
 import "./AmmUtil.sol";
 
 
@@ -22,9 +20,7 @@ import "./AmmUtil.sol";
 library AmmJoinProcess
 {
     using AmmPoolToken      for AmmData.State;
-    using AmmStatus         for AmmData.State;
     using AmmUtil           for uint96;
-    using ERC20SafeTransfer for address;
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;

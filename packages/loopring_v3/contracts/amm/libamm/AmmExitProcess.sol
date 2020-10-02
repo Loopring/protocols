@@ -15,14 +15,12 @@ import "./AmmUtil.sol";
 import "./AmmData.sol";
 import "./AmmExitRequest.sol";
 import "./AmmPoolToken.sol";
-import "./AmmStatus.sol";
 
 
 /// @title AmmExitProcess
 library AmmExitProcess
 {
     using AmmPoolToken      for AmmData.State;
-    using AmmStatus         for AmmData.State;
     using AmmUtil           for uint96;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;

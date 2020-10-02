@@ -20,7 +20,6 @@ library AmmBlockReceiver
     using AmmPoolToken      for AmmData.State;
     using AmmUpdateProcess  for AmmData.State;
     using BlockReader       for ExchangeData.Block;
-    using MathUint          for uint;
 
     function beforeBlockSubmission(
         AmmData.State      storage S,

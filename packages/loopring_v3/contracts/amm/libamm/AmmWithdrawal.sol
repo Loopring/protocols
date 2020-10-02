@@ -3,15 +3,10 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/EIP712.sol";
-import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/MathUint96.sol";
-import "../../lib/SignatureUtil.sol";
-import "../../thirdparty/SafeCast.sol";
 import "./AmmData.sol";
 import "./AmmPoolToken.sol";
-import "./AmmStatus.sol";
 import "./AmmUtil.sol";
 
 
@@ -19,12 +14,23 @@ import "./AmmUtil.sol";
 library AmmWithdrawal
 {
     using AmmPoolToken      for AmmData.State;
-    using AmmStatus         for AmmData.State;
-    using ERC20SafeTransfer for address;
     using MathUint          for uint;
-    using MathUint96        for uint96;
-    using SafeCast          for uint;
-    using SignatureUtil     for bytes32;
+
+    function withdrawFromApprovedWithdrawals(
+        AmmData.State storage S
+        )
+        public
+    {
+        uint size = S.tokens.length;
+        address[] memory owners = new address[](size);
+        address[] memory tokens = new address[](size);
+
+        for (uint i = 0; i < size; i++) {
+            owners[i] = address(this);
+            tokens[i] = S.tokens[i].addr;
+        }
+        S.exchange.withdrawFromApprovedWithdrawals(owners, tokens);
+    }
 
     function withdrawWhenOffline(
         AmmData.State storage S
@@ -58,7 +64,9 @@ library AmmWithdrawal
         S.burn(msg.sender, burnAmount);
     }
 
-    function _checkWithdrawalConditionInShutdown(AmmData.State storage S)
+    function _checkWithdrawalConditionInShutdown(
+        AmmData.State storage S
+        )
         private
         view
     {
@@ -80,21 +88,5 @@ library AmmWithdrawal
                 "MORE_TO_WITHDRAWAL"
             );
         }
-    }
-
-    function withdrawFromApprovedWithdrawals(
-        AmmData.State storage S
-        )
-        public
-    {
-        uint size = S.tokens.length;
-        address[] memory owners = new address[](size);
-        address[] memory tokens = new address[](size);
-
-        for (uint i = 0; i < size; i++) {
-            owners[i] = address(this);
-            tokens[i] = S.tokens[i].addr;
-        }
-        S.exchange.withdrawFromApprovedWithdrawals(owners, tokens);
     }
 }

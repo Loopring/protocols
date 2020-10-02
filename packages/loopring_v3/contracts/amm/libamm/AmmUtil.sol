@@ -4,9 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
-import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
-import "./AmmData.sol";
 
 
 /// @title AmmUtil
