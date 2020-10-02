@@ -40,12 +40,12 @@ library AmmWithdrawal
         _checkWithdrawalConditionInShutdown(S);
 
         uint burnAmount = S.balanceOf[msg.sender];
-        bytes32 exitHash = S.isExiting[msg.sender];
+        AmmData.PoolExit storage exit = S.forcedExit[msg.sender];
 
-        if (exitHash != 0) {
-            burnAmount = burnAmount.add(S.forcedExit[exitHash].burnAmount);
-            delete S.forcedExit[exitHash];
-            delete S.isExiting[msg.sender];
+        if (exit.burnAmount != 0) {
+            S.burn(address(this), exit.burnAmount);
+            burnAmount = burnAmount.add(exit.burnAmount);
+            delete S.forcedExit[msg.sender];
         }
 
         require(burnAmount > 0, "INVALID_POOL_AMOUNT");
