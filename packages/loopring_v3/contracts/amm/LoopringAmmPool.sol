@@ -73,13 +73,13 @@ contract LoopringAmmPool is
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
-    function shutdown()
+    function shutdown(bytes32 exitHash)
         external
         payable
         onlyWhenOnline
         nonReentrant
     {
-        state.shutdown();
+        state.shutdown(exitHash);
     }
 
     function exitPool(

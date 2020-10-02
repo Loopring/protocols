@@ -23,7 +23,7 @@ library AmmJoinRequest
     using SafeCast          for uint;
 
     bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,uint32[] joinStorageIDs,uint96 mintMinAmount,uint256 validUntil)"
+        "PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,uint32[] joinStorageIDs,uint96 mintMinAmount,uint64 validUntil)"
     );
 
     function hash(

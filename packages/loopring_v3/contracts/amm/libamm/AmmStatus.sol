@@ -56,7 +56,6 @@ library AmmStatus
         S.poolName = config.poolName;
         S.symbol = config.tokenSymbol;
 
-        address depositContract = address(exchange.getDepositContract());
         for (uint i = 0; i < config.tokens.length; i++) {
             require(config.weights[i] > 0, "INVALID_TOKEN_WEIGHT");
 
@@ -77,37 +76,26 @@ library AmmStatus
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
-    function shutdown(AmmData.State storage S)
+    function shutdown(
+        AmmData.State storage S,
+        bytes32               exitHash
+        )
         public
     {
-        // bytes32 firstExitHash = S.exitLocks[S.exitLocksStartIdx].txHash;
-        // uint validUntil = S.forcedExit[firstExitHash];
-        // require(validUntil > 0 && validUntil <= block.timestamp, "REQUEST_NOT_TOO_OLD");
+        uint64 validUntil = S.forcedExit[exitHash].validUntil;
+        require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLANGE");
 
-        // uint size = S.tokens.length;
-
-        // // remember the part owned by users collectively
-        // for (uint i = 0; i < size; i++) {
-        //     address token = S.tokens[i].addr;
-        //     S.withdrawableBeforeShutdown[token] = (token == address(0)) ?
-        //         address(this).balance :
-        //         ERC20(token).balanceOf(address(this));
-        // }
-
-        // if (!S.exchange.isInWithdrawalMode()) {
-        //     uint32 accountID = S.accountID;
-        //     IExchangeV3 exchange = S.exchange;
-
-        //     for (uint i = 0; i < size; i++) {
-        //         exchange.forceWithdraw{value: msg.value / size}(
-        //             address(this),
-        //             S.tokens[i].addr,
-        //             accountID
-        //         );
-        //     }
-        // }
-
-        // S.shutdownTimestamp = block.timestamp;
-        // emit Shutdown(block.timestamp);
+        uint size = S.tokens.length;
+        if (!S.exchange.isInWithdrawalMode()) {
+            for (uint i = 0; i < size; i++) {
+                S.exchange.forceWithdraw{value: msg.value / size}(
+                    address(this),
+                    S.tokens[i].addr,
+                    S.accountID
+                );
+            }
+        }
+        S.shutdownTimestamp = block.timestamp;
+        emit Shutdown(block.timestamp);
     }
 }

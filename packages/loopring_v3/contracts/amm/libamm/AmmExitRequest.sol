@@ -27,7 +27,7 @@ library AmmExitRequest
     using SignatureUtil     for bytes32;
 
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint256 validUntil)"
+        "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint64 validUntil)"
     );
 
     event PoolExitRequested(AmmData.PoolExit exit);
@@ -47,7 +47,7 @@ library AmmExitRequest
             burnAmount: burnAmount,
             burnStorageID: 0,
             exitMinAmounts: exitMinAmounts,
-            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN()
+            validUntil: uint64(block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN())
         });
 
         bytes32 txHash = hash(S.domainSeparator, exit);

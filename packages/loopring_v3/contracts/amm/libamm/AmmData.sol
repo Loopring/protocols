@@ -41,7 +41,7 @@ library AmmData
         uint96[]  joinFees;
         uint32[]  joinStorageIDs;
         uint96    mintMinAmount;
-        uint      validUntil;
+        uint64    validUntil;
     }
 
     struct PoolExit
@@ -50,7 +50,7 @@ library AmmData
         uint96    burnAmount;
         uint32    burnStorageID; // for pool token withdrawal from user to the pool
         uint96[]  exitMinAmounts;
-        uint      validUntil;
+        uint64    validUntil;
     }
 
     struct PoolTx
