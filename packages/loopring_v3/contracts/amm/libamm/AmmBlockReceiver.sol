@@ -33,21 +33,21 @@ library AmmBlockReceiver
         public
         returns (uint)
     {
-        AmmData.Context memory ctx = getContext(S, _block, txIdx);
+        AmmData.Context memory ctx = _getContext(S, _block, txIdx);
 
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
         S.approveAmmUpdates(ctx, true);
 
-        processPoolTx(S, ctx, poolTxData);
+        _processPoolTx(S, ctx, poolTxData);
 
         S.approveAmmUpdates(ctx, false);
 
         return ctx.txIdx - txIdx;
     }
 
-    function getContext(
+    function _getContext(
         AmmData.State      storage S,
         ExchangeData.Block memory  _block,
         uint                       txIdx
@@ -69,10 +69,11 @@ library AmmBlockReceiver
             poolTokenInitialSupply: AmmData.LP_TOKEN_INITIAL_SUPPLY(),
             size: size,
             layer2Balances: new uint96[](size),
-            totalSupply: S.totalSupply_()
+            effectiveTotalSupply: S.effectiveTotalSupply()
         });
     }
-    function processPoolTx(
+
+    function _processPoolTx(
         AmmData.State           storage S,
         AmmData.Context         memory  ctx,
         bytes                   memory  poolTxData

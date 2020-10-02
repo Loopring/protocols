@@ -9,6 +9,7 @@ import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
+import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/SafeCast.sol";
 import "./AmmUtil.sol";
 import "./AmmData.sol";
@@ -27,7 +28,10 @@ library AmmExitProcess
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;
+    using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
+
+    event ExitProcessed(address owner, uint96 burnAmount, uint96[] amounts, bool forced);
 
     function processExit(
         AmmData.State    storage S,
@@ -37,33 +41,39 @@ library AmmExitProcess
         )
         internal
     {
-        S.checkPoolTxApproval(
-            exit.owner,
-            AmmExitRequest.hash(ctx.domainSeparator, exit),
-            signature
-        );
+        bytes32 txHash = AmmExitRequest.hash(ctx.domainSeparator, exit);
+        bool isForcedExit = false;
+
+        if (signature.length == 0) {
+            AmmData.PoolExit storage forceExit = S.forcedExit[txHash];
+            require(
+                forceExit.validUntil > 0 && forceExit.validUntil <= block.timestamp,
+                "FORCED_EXIT_NOT_FOUND"
+            );
+
+            delete S.forcedExit[txHash];
+            isForcedExit = true;
+        } else {
+            require(txHash.verifySignature(exit.owner, signature), "INVALID_EXIT_APPROVAL");
+        }
 
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
 
-        if (!slippageOK) {
-            return;
+        if (isForcedExit) {
+            if (!slippageOK) {
+                emit ExitProcessed(exit.owner, 0, new uint96[](0), isForcedExit);
+                return;
+            }
+            S.burn(address(this), exit.burnAmount);
+        } else {
+            require(slippageOK, "EXIT_SLIPPAGE_INVALID");
+            S.poolSupplyToBurn = S.poolSupplyToBurn.add(exit.burnAmount);
+            // withdraw the pool token from the user to the pool account.
+            _approvePoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
         }
-
-        // Handle pool tokens
-        _approvePoolTokenWithdrawal(
-            ctx,
-            exit.burnAmount,
-            exit.owner,
-            exit.burnStorageID,
-            signature
-        );
-        S.poolSupplyToBurn = S.poolSupplyToBurn.add(exit.burnAmount);
 
         // Handle liquidity tokens
         for (uint i = 0; i < ctx.size; i++) {
-            uint96 amount = amounts[i];
-            ctx.layer2Balances[i] = ctx.layer2Balances[i].sub(amount);
-
             TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
 
             require(
@@ -73,16 +83,20 @@ library AmmExitProcess
                 transfer.from == address(this) &&
                 transfer.to == exit.owner &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
-                transfer.amount.isAlmostEqual(amount) &&
+                transfer.amount.isAlmostEqual(amounts[i]) &&
                 transfer.feeTokenID == 0 &&
                 transfer.fee == 0,
                 "INVALID_TX_DATA"
             );
 
             transfer.validUntil = 0xffffffff;
-            bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-            ctx.exchange.approveTransaction(address(this), txHash);
+            bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+            ctx.exchange.approveTransaction(address(this), hash);
+
+            ctx.layer2Balances[i] = ctx.layer2Balances[i].sub(transfer.amount);
         }
+
+        emit ExitProcessed(exit.owner, exit.burnAmount, amounts, isForcedExit);
     }
 
     function _approvePoolTokenWithdrawal(
@@ -125,8 +139,8 @@ library AmmExitProcess
         );
 
         // Now approve this withdrawal
-        bytes32 txHash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
-        ctx.exchange.approveTransaction(from, txHash);
+        bytes32 hash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
+        ctx.exchange.approveTransaction(from, hash);
     }
 
     function _calculateExitAmounts(
@@ -148,7 +162,7 @@ library AmmExitProcess
         }
 
         // Calculate how much will be withdrawn
-        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.totalSupply;
+        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.effectiveTotalSupply;
 
         for (uint i = 0; i < ctx.size - 1; i++) {
             amounts[i] = (ratio.mul(ctx.layer2Balances[i + 1]) / ctx.poolTokenBase).toUint96();

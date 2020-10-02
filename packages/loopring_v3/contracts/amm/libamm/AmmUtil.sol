@@ -58,13 +58,4 @@ library AmmUtil
             token.safeTransferAndVerify(to, amount);
         }
     }
-
-    function array(uint96 v)
-        internal
-        pure
-        returns (uint96[] memory a)
-    {
-        a = new uint96[](1);
-        a[0] = v;
-    }
 }

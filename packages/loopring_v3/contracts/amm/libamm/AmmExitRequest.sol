@@ -35,25 +35,29 @@ library AmmExitRequest
     function exitPool(
         AmmData.State storage S,
         uint96                burnAmount,
-        uint32                burnStorageID,
         uint96[]     calldata exitMinAmounts
         )
         public
     {
-        uint size = S.tokens.length - 1;
-        require(exitMinAmounts.length == size, "INVALID_PARAM_SIZE");
         require(burnAmount > 0, "INVALID_BURN_AMOUNT");
+        require(exitMinAmounts.length == S.tokens.length - 1, "INVALID_EXIT_AMOUNTS");
 
         AmmData.PoolExit memory exit = AmmData.PoolExit({
             owner: msg.sender,
             burnAmount: burnAmount,
-            burnStorageID: burnStorageID,
+            burnStorageID: 0,
             exitMinAmounts: exitMinAmounts,
             validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN()
         });
 
-        // Approve the exit
-        S.approvedTx[hash(S.domainSeparator, exit)] = exit.validUntil;
+        bytes32 txHash = hash(S.domainSeparator, exit);
+        require(S.forcedExit[txHash].validUntil == 0, "DUPLICATE");
+
+        AmmUtil.transferIn(address(this), burnAmount);
+
+        exit.exitMinAmounts = new uint96[](0);
+        S.forcedExit[txHash] = exit;
+
         emit PoolExitRequested(exit);
     }
 

@@ -82,38 +82,15 @@ contract LoopringAmmPool is
         state.shutdown();
     }
 
-    function joinPool(
-        uint96[] calldata joinAmounts,
-        uint96[] calldata joinFees,
-        uint32[] calldata joinStorageIDs,
-        uint96            mintMinAmount
-        )
-        external
-        onlyWhenOnline
-        nonReentrant
-    {
-        state.joinPool(
-            joinAmounts,
-            joinFees,
-            joinStorageIDs,
-            mintMinAmount
-        );
-    }
-
     function exitPool(
         uint96            burnAmount,
-        uint32            burnStorageID,
         uint96[] calldata exitMinAmounts
         )
         external
         onlyWhenOnline
         nonReentrant
     {
-        state.exitPool(
-            burnAmount,
-            burnStorageID,
-            exitMinAmounts
-        );
+        state.exitPool(burnAmount, exitMinAmounts);
     }
 
     function beforeBlockSubmission(

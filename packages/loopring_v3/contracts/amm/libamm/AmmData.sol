@@ -56,8 +56,8 @@ library AmmData
     struct PoolTx
     {
         PoolTxType txType;
-        bytes               data;
-        bytes               signature;
+        bytes      data;
+        bytes      signature;
     }
 
     struct Token
@@ -88,7 +88,7 @@ library AmmData
         uint    size; // == token.length;
 
         uint96[] layer2Balances;
-        uint     totalSupply;
+        uint     effectiveTotalSupply;
     }
 
     struct State {
@@ -110,30 +110,11 @@ library AmmData
         uint8       feeBips;
         Token[]     tokens;
 
-        // A map from a token address to a user address to the balance the user can be
-        // withdrawan from this pool account on layer-1.
-        mapping (address => mapping (address => uint96)) withdrawable;
-
         // A map from a token address to the amount owned collectively by all users
         // on layer1 before the pool is shutdown.
         mapping (address => uint) withdrawableBeforeShutdown;
 
         // A map of approved transaction hashes to the timestamp it was created
-        mapping (bytes32 => uint) approvedTx;
-
-        // A map from a user address to whether it has a pending onchain exit.
-        mapping (address => bool) isExiting;
-
-        // A list of global onchain exit locks
-        // TokenLock[] exitLocks;
-
-        // The index of the first pending onchain exit lock.
-        // uint exitLocksStartIdx;
-
-        // A map from a user address to a list of join locks.
-        // mapping (address => TokenLock[]) joinLocks;
-
-        // A map from a user to the index of his/her first pending onchain join lock.
-        mapping (address => uint) joinLocksStartIdx;
+        mapping (bytes32 => PoolExit) forcedExit;
     }
 }

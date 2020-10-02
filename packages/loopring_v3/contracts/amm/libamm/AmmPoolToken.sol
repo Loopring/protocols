@@ -20,7 +20,7 @@ library AmmPoolToken
 
     bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
-    function totalSupply_(
+    function effectiveTotalSupply(
         AmmData.State storage S
         )
         internal

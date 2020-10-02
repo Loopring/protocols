@@ -26,49 +26,6 @@ library AmmJoinRequest
         "PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,uint32[] joinStorageIDs,uint96 mintMinAmount,uint256 validUntil)"
     );
 
-    event PoolJoinRequested(AmmData.PoolJoin join);
-
-    function joinPool(
-        AmmData.State storage S,
-        uint96[]     calldata joinAmounts,
-        uint96[]     calldata joinFees,
-        uint32[]     calldata joinStorageIDs,
-        uint96                mintMinAmount
-        )
-        public
-    {
-        uint size = S.tokens.length - 1;
-        require(
-            joinAmounts.length == size &&
-            joinFees.length == size &&
-            joinStorageIDs.length == size,
-            "INVALID_PARAM_SIZE"
-        );
-
-        uint96[] memory totalAmounts = new uint96[](size);
-
-        for (uint i = 0; i < size; i++) {
-            require(joinAmounts[i] > 0, "INVALID_VALUE");
-            require(joinFees[i] < joinAmounts[i], "INVALID_FEES");
-            totalAmounts[i] = joinAmounts[i];
-        }
-
-        require(joinStorageIDs.length == size, "INVALID_STORAGE_IDS");
-
-        AmmData.PoolJoin memory join = AmmData.PoolJoin({
-            owner: msg.sender,
-            joinAmounts: joinAmounts,
-            joinFees: joinFees,
-            joinStorageIDs: joinStorageIDs,
-            mintMinAmount: mintMinAmount,
-            validUntil: block.timestamp + AmmData.MAX_AGE_REQUEST_UNTIL_POOL_SHUTDOWN()
-        });
-
-        // Approve the join
-        S.approvedTx[hash(S.domainSeparator, join)] = join.validUntil;
-        emit PoolJoinRequested(join);
-    }
-
     function hash(
         bytes32 domainSeparator,
         AmmData.PoolJoin memory join

@@ -9,6 +9,7 @@ import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
+import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/SafeCast.sol";
 import "./AmmData.sol";
 import "./AmmJoinRequest.sol";
@@ -27,7 +28,10 @@ library AmmJoinProcess
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;
+    using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
+
+    event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);
 
     function processJoin(
         AmmData.State    storage S,
@@ -37,22 +41,15 @@ library AmmJoinProcess
         )
         internal
     {
-        S.checkPoolTxApproval(
-            join.owner,
-            AmmJoinRequest.hash(ctx.domainSeparator, join),
-            signature
-        );
+        bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
+        require(txHash.verifySignature(join.owner, signature), "INVALID_JOIN_APPROVAL");
 
         // Check if the requirements are fulfilled
         (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
-
-        if (!slippageOK) return;
+        require(slippageOK, "JOIN_SLIPPAGE_INVALID");
 
          // Handle liquidity tokens
         for (uint i = 0; i < ctx.size; i++) {
-            uint96 amount = amounts[i];
-            ctx.layer2Balances[i] = ctx.layer2Balances[i].add(amount);
-
             TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
 
             require(
@@ -61,7 +58,7 @@ library AmmJoinProcess
                 transfer.from == join.owner &&
                 transfer.to == address(this) &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
-                transfer.amount.isAlmostEqual(amount) &&
+                transfer.amount.isAlmostEqual(amounts[i]) &&
                 transfer.feeTokenID == ctx.tokens[i].tokenID &&
                 transfer.fee.isAlmostEqual(join.joinFees[i]) &&
                 (signature.length == 0 || transfer.storageID == join.joinStorageIDs[i]),
@@ -69,14 +66,18 @@ library AmmJoinProcess
             );
 
             transfer.validUntil = 0xffffffff;
-            bytes32 txHash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-            ctx.exchange.approveTransaction(join.owner, txHash);
+            bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+            ctx.exchange.approveTransaction(join.owner, hash);
+
+            ctx.layer2Balances[i] = ctx.layer2Balances[i].add(transfer.amount);
         }
 
         // Handle pool tokens
         S.mint(address(this), mintAmount);
 
         _approvePoolTokenDeposit(ctx, mintAmount, join.owner);
+
+        emit JoinProcessed(join.owner, mintAmount, amounts);
     }
 
     function _approvePoolTokenDeposit(
@@ -128,7 +129,7 @@ library AmmJoinProcess
             return (false, 0, amounts);
         }
 
-        if (ctx.totalSupply == 0) {
+        if (ctx.effectiveTotalSupply == 0) {
             return(true, ctx.poolTokenInitialSupply.toUint96(), join.joinAmounts);
         }
 
@@ -137,7 +138,7 @@ library AmmJoinProcess
         for (uint i = 1; i < ctx.size; i++) {
             if (ctx.layer2Balances[i] > 0) {
                 uint amountOut = uint(join.joinAmounts[i - 1])
-                    .mul(ctx.totalSupply) / uint(ctx.layer2Balances[i]);
+                    .mul(ctx.effectiveTotalSupply) / uint(ctx.layer2Balances[i]);
 
                 if (!initialized) {
                     initialized = true;
@@ -153,7 +154,7 @@ library AmmJoinProcess
         }
 
         // Calculate the amounts to deposit
-        uint ratio = ctx.poolTokenBase.mul(mintAmount) / ctx.totalSupply;
+        uint ratio = ctx.poolTokenBase.mul(mintAmount) / ctx.effectiveTotalSupply;
 
         for (uint i = 1; i < ctx.size; i++) {
             amounts[i - 1] = ratio.mul(ctx.layer2Balances[i] / ctx.poolTokenBase).toUint96();

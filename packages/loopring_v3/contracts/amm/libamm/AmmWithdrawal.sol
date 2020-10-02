@@ -42,7 +42,7 @@ library AmmWithdrawal
     //     S.joinLocksStartIdx[msg.sender] = newJoinLocksStartIdx;
 
     //     for (uint i = oldJoinLocksStartIdx; i < newJoinLocksStartIdx; i++) {
-    //         delete S.approvedTx[joinLocks[i].txHash];
+    //         delete S.forcedExit[joinLocks[i].txHash];
     //         delete joinLocks[i];
     //     }
 
@@ -120,7 +120,7 @@ library AmmWithdrawal
         // AmmData.TokenLock[] storage joinLocks = S.joinLocks[owner];
         // for (uint i = newJoinLocksStartIdx; i < joinLocks.length; i++) {
         //     AmmData.TokenLock storage lock = joinLocks[i];
-        //     uint validUntil = S.approvedTx[lock.txHash];
+        //     uint validUntil = S.forcedExit[lock.txHash];
 
         //     if (validUntil <= block.timestamp) {
         //         newJoinLocksStartIdx++;

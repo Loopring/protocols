@@ -41,7 +41,7 @@ abstract contract PoolToken is ERC2612 {
         override
         returns (uint)
     {
-        return state.totalSupply_();
+        return state.effectiveTotalSupply();
     }
 
     function balanceOf(address owner)

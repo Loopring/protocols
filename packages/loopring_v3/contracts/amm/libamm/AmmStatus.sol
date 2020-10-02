@@ -66,8 +66,6 @@ library AmmStatus
                 tokenID: exchange.getTokenID(token),
                 weight: config.weights[i]
             }));
-
-            ERC20(token).approve(depositContract, uint(-1));
         }
 
         // The last token is the pool token
@@ -83,7 +81,7 @@ library AmmStatus
         public
     {
         // bytes32 firstExitHash = S.exitLocks[S.exitLocksStartIdx].txHash;
-        // uint validUntil = S.approvedTx[firstExitHash];
+        // uint validUntil = S.forcedExit[firstExitHash];
         // require(validUntil > 0 && validUntil <= block.timestamp, "REQUEST_NOT_TOO_OLD");
 
         // uint size = S.tokens.length;
@@ -111,43 +109,5 @@ library AmmStatus
 
         // S.shutdownTimestamp = block.timestamp;
         // emit Shutdown(block.timestamp);
-    }
-
-    function checkPoolTxApproval(
-        AmmData.State storage S,
-        address               owner,
-        bytes32               poolTxHash,
-        bytes          memory signature
-        )
-        internal
-    {
-        if (signature.length == 0) {
-            require(S.approvedTx[poolTxHash] > block.timestamp, "INVALID_ONCHAIN_APPROVAL");
-            delete S.approvedTx[poolTxHash];
-        } else {
-            require(poolTxHash.verifySignature(owner, signature), "INVALID_OFFCHAIN_APPROVAL");
-        }
-    }
-
-    function addUserBalance(
-        AmmData.State storage S,
-        address               owner,
-        address               token,
-        uint96                amount
-        )
-        internal
-    {
-        S.withdrawable[token][owner] = S.withdrawable[token][owner].add(amount);
-    }
-
-    function removeUserBalance(
-        AmmData.State storage S,
-        address               owner,
-        address               token,
-        uint96                amount
-        )
-        internal
-    {
-        S.withdrawable[token][owner] = S.withdrawable[token][owner].sub(amount);
     }
 }
