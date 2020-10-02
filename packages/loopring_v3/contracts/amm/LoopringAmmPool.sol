@@ -118,11 +118,18 @@ contract LoopringAmmPool is
         return state.beforeBlockSubmission(_block, data, txIdx);
     }
 
-    function withdrawInShutdown()
+    function withdrawFromApprovedWithdrawals()
+        external
+        nonReentrant
+    {
+        state.withdrawFromApprovedWithdrawals();
+    }
+
+    function withdrawWhenOffline()
         external
         onlyWhenOffline
         nonReentrant
     {
-        state.withdrawInShutdown();
+        state.withdrawWhenOffline();
     }
 }

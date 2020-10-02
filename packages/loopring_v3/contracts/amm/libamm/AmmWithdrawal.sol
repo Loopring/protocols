@@ -26,7 +26,7 @@ library AmmWithdrawal
     using SafeCast          for uint;
     using SignatureUtil     for bytes32;
 
-    function withdrawInShutdown(
+    function withdrawWhenOffline(
         AmmData.State storage S
         )
         public
@@ -43,8 +43,6 @@ library AmmWithdrawal
         }
 
         require(burnAmount > 0, "INVALID_POOL_AMOUNT");
-
-        _withdrawFromApprovedWithdrawals(S);
 
         for (uint i = 0; i < S.tokens.length; i++) {
             address token = S.tokens[i].addr;
@@ -84,10 +82,10 @@ library AmmWithdrawal
         }
     }
 
-    function _withdrawFromApprovedWithdrawals(
+    function withdrawFromApprovedWithdrawals(
         AmmData.State storage S
         )
-        private
+        public
     {
         uint size = S.tokens.length;
         address[] memory owners = new address[](size);
