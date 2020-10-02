@@ -135,9 +135,9 @@ library AmmJoinProcess
 
         // Calculate the amount of pool tokens that should be minted
         bool initialized = false;
-        for (uint i = 1; i < ctx.size; i++) {
+        for (uint i = 0; i < ctx.size; i++) {
             if (ctx.layer2Balances[i] > 0) {
-                uint amountOut = uint(join.joinAmounts[i - 1])
+                uint amountOut = uint(join.joinAmounts[i])
                     .mul(ctx.effectiveTotalSupply) / uint(ctx.layer2Balances[i]);
 
                 if (!initialized) {
@@ -156,8 +156,8 @@ library AmmJoinProcess
         // Calculate the amounts to deposit
         uint ratio = ctx.poolTokenBase.mul(mintAmount) / ctx.effectiveTotalSupply;
 
-        for (uint i = 1; i < ctx.size; i++) {
-            amounts[i - 1] = ratio.mul(ctx.layer2Balances[i] / ctx.poolTokenBase).toUint96();
+        for (uint i = 0; i < ctx.size; i++) {
+            amounts[i] = ratio.mul(ctx.layer2Balances[i] / ctx.poolTokenBase).toUint96();
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

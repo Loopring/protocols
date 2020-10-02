@@ -167,7 +167,7 @@ library AmmExitProcess
         uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.effectiveTotalSupply;
 
         for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = (ratio.mul(ctx.layer2Balances[i + 1]) / ctx.poolTokenBase).toUint96();
+            amounts[i] = (ratio.mul(ctx.layer2Balances[i]) / ctx.poolTokenBase).toUint96();
             if (amounts[i] < exit.exitMinAmounts[i]) {
                 return (false, amounts);
             }
