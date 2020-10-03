@@ -40,7 +40,7 @@ library AmmData
         uint96[]  joinFees;
         uint32[]  joinStorageIDs;
         uint96    mintMinAmount;
-        uint64    validUntil;
+        uint32    validUntil;
     }
 
     struct PoolExit
@@ -49,7 +49,7 @@ library AmmData
         uint96    burnAmount;
         uint32    burnStorageID; // for pool token withdrawal from user to the pool
         uint96[]  exitMinAmounts;
-        uint64    validUntil;
+        uint32    validUntil;
     }
 
     struct PoolTx
@@ -79,6 +79,7 @@ library AmmData
         // AMM pool state variables
         bytes32 domainSeparator;
         uint32  accountID;
+        uint16  poolTokenID;
 
         Token[] tokens;
 
@@ -104,6 +105,7 @@ library AmmData
         // AMM pool state variables
         IExchangeV3 exchange;
         uint32      accountID;
+        uint16      poolTokenID;
         bytes32     domainSeparator;
         uint        shutdownTimestamp;
         uint8       feeBips;

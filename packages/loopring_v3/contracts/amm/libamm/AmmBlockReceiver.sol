@@ -61,6 +61,7 @@ library AmmBlockReceiver
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
+            poolTokenID: S.poolTokenID,
             tokens: S.tokens,
             poolTokenBase: AmmData.POOL_TOKEN_BASE(),
             poolTokenInitialSupply: AmmData.POOL_TOKEN_INITIAL_SUPPLY(),

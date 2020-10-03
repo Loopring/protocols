@@ -29,7 +29,7 @@ library AmmExitProcess
     using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
 
-    event ExitProcessed(address owner, uint96 burnAmount, uint96[] amounts, bool forced);
+    event ExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
 
     function processExit(
         AmmData.State    storage S,
@@ -61,7 +61,7 @@ library AmmExitProcess
 
         if (isForcedExit) {
             if (!slippageOK) {
-                emit ExitProcessed(exit.owner, 0, new uint96[](0), isForcedExit);
+                emit ExitProcessed(exit.owner, 0, new uint96[](0));
                 return;
             }
             S.burn(address(this), exit.burnAmount);
@@ -96,7 +96,9 @@ library AmmExitProcess
             ctx.layer2Balances[i] = ctx.layer2Balances[i].sub(transfer.amount);
         }
 
-        emit ExitProcessed(exit.owner, exit.burnAmount, amounts, isForcedExit);
+        if (isForcedExit) {
+            emit ExitProcessed(exit.owner, exit.burnAmount, amounts);
+        }
     }
 
     function _approvePoolTokenWithdrawal(
@@ -130,7 +132,7 @@ library AmmExitProcess
             withdrawal.withdrawalType == 1 &&
             withdrawal.from == from &&
             // withdrawal.fromAccountID == UNKNOWN &&
-            withdrawal.tokenID == ctx.tokens[ctx.size].tokenID &&
+            withdrawal.tokenID == ctx.poolTokenID &&
             withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
             withdrawal.feeTokenID == 0 &&
             withdrawal.fee == 0 &&

@@ -12,7 +12,7 @@ import "./AmmUtil.sol";
 library AmmExitRequest
 {
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint64 validUntil)"
+        "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint32 validUntil)"
     );
 
     event PoolExitRequested(AmmData.PoolExit exit);
@@ -32,7 +32,7 @@ library AmmExitRequest
             burnAmount: burnAmount,
             burnStorageID: 0,
             exitMinAmounts: exitMinAmounts,
-            validUntil: uint64(block.timestamp + AmmData.MAX_FORCED_EXIT_AGE())
+            validUntil: uint32(block.timestamp + AmmData.MAX_FORCED_EXIT_AGE())
         });
 
         bytes32 txHash = hash(S.domainSeparator, exit);

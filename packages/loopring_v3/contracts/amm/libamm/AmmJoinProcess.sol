@@ -27,7 +27,7 @@ library AmmJoinProcess
     using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
 
-    event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);
+    // event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);
 
     function processJoin(
         AmmData.State    storage S,
@@ -73,7 +73,7 @@ library AmmJoinProcess
 
         _approvePoolTokenDeposit(ctx, mintAmount, join.owner);
 
-        emit JoinProcessed(join.owner, mintAmount, amounts);
+        // emit JoinProcessed(join.owner, mintAmount, amounts);
     }
 
     function _approvePoolTokenDeposit(
@@ -88,11 +88,9 @@ library AmmJoinProcess
         // Check that the deposit in the block matches the expected deposit
         DepositTransaction.Deposit memory deposit = ctx._block.readDeposit(ctx.txIdx++);
 
-        AmmData.Token memory poolToken = ctx.tokens[ctx.size];
-
         require(
             deposit.to == to &&
-            deposit.tokenID == poolToken.tokenID &&
+            deposit.tokenID == ctx.poolTokenID &&
             deposit.amount == amount,
             "INVALID_TX_DATA"
         );
@@ -100,7 +98,7 @@ library AmmJoinProcess
         ctx.exchange.deposit{value: 0}(
             address(this), // from
             to,
-            poolToken.addr,
+            address(this), // token
             amount,
             new bytes(0)
         );
