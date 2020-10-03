@@ -82,6 +82,7 @@ contract LoopringAmmPool is
         uint96[] calldata exitMinAmounts
         )
         external
+        payable
         onlyWhenOnline
         nonReentrant
     {
