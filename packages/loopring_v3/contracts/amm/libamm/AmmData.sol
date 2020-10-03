@@ -40,7 +40,7 @@ library AmmData
         uint96[]  joinFees;
         uint32[]  joinStorageIDs;
         uint96    mintMinAmount;
-        uint64    validUntil;
+        uint32    validUntil;
     }
 
     struct PoolExit
@@ -49,7 +49,7 @@ library AmmData
         uint96    burnAmount;
         uint32    burnStorageID; // for pool token withdrawal from user to the pool
         uint96[]  exitMinAmounts;
-        uint64    validUntil;
+        uint32    validUntil;
     }
 
     struct PoolTx
@@ -81,11 +81,12 @@ library AmmData
         uint32  accountID;
         uint16  poolTokenID;
 
-        Token[] tokens;
 
+        uint16  poolTokenID;
         uint    poolTokenBase;
         uint    poolTokenInitialSupply;
         uint    size; // == token.length;
+        Token[] tokens;
 
         uint96[] balancesL2;
         uint     totalMintedSupply;
@@ -106,6 +107,7 @@ library AmmData
         // AMM pool state variables
         IExchangeV3 exchange;
         uint32      accountID;
+        uint16      poolTokenID;
         bytes32     domainSeparator;
         uint        shutdownTimestamp;
         uint8       feeBips;
@@ -113,10 +115,7 @@ library AmmData
         Token[]     tokens;
         uint16      poolTokenID;
 
-        // A map of approved transaction hashes to the timestamp it was created
-        mapping (bytes32 => PoolExit) forcedExit;
-
-        // A map from a user to the hash of the forced exit.
-        mapping (address => bytes32) isExiting;
+        // A map from a user to the forced exit.
+        mapping (address => PoolExit) forcedExit;
     }
 }

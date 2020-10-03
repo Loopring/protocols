@@ -65,11 +65,11 @@ library AmmBlockReceiver
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
-            tokens: S.tokens,
             poolTokenID: S.poolTokenID,
-            poolTokenBase: AmmData.POOL_TOKEN_BASE(),
+            poolTokenBase: AmmData.POOL_TOKEN_BASE(),   
             poolTokenInitialSupply: AmmData.POOL_TOKEN_INITIAL_SUPPLY(),
             size: size,
+            tokens: S.tokens,
             balancesL2: new uint96[](size),
             totalMintedSupply: S.totalMintedSupply,
             poolBalanceL2: S.poolBalanceL2

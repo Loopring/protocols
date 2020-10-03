@@ -50,6 +50,7 @@ library AmmStatus
         IExchangeV3 exchange = IExchangeV3(config.exchange);
         S.exchange = exchange;
         S.accountID = config.accountID;
+        S.poolTokenID = exchange.getTokenID(address(this));
         S.feeBips = config.feeBips;
         S.domainSeparator = EIP712.hash(EIP712.Domain(config.poolName, "1.0.0", address(this)));
 
@@ -84,12 +85,12 @@ library AmmStatus
     // Anyone is able to shut down the pool when requests aren't being processed any more.
     function shutdown(
         AmmData.State storage S,
-        bytes32               exitHash
+        address               exitOwner
         )
         public
     {
-        uint64 validUntil = S.forcedExit[exitHash].validUntil;
-        require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLANGE");
+        uint64 validUntil = S.forcedExit[exitOwner].validUntil;
+        require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLENGE");
 
         uint size = S.tokens.length;
         if (!S.exchange.isInWithdrawalMode()) {

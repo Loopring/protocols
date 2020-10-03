@@ -28,7 +28,7 @@ library AmmJoinProcess
     using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
 
-    event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);
+    // event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);
 
     function processJoin(
         AmmData.State    storage /*S*/,
@@ -71,7 +71,7 @@ library AmmJoinProcess
 
         _mintL2(ctx, mintAmount, join.owner);
 
-        emit JoinProcessed(join.owner, mintAmount, amounts);
+        // emit JoinProcessed(join.owner, mintAmount, amounts);
     }
 
     function _mintL2(
@@ -81,6 +81,7 @@ library AmmJoinProcess
         )
         private
     {
+        require(amount > 0, "INVALID_DEPOSIT_AMOUNT");
         TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
 
         require(
@@ -117,7 +118,7 @@ library AmmJoinProcess
         )
     {
         // Check if we can still use this join
-        amounts = new uint96[](ctx.size - 1);
+        amounts = new uint96[](ctx.size);
 
         if (block.timestamp > join.validUntil) {
             return (false, 0, amounts);
