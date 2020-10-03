@@ -11,6 +11,7 @@ import "../../lib/MathUint96.sol";
 import "../../lib/SignatureUtil.sol";
 import "./AmmData.sol";
 import "./AmmPoolToken.sol";
+import "./AmmSharedConfig.sol";
 
 
 /// @title LPToken
@@ -41,12 +42,14 @@ library AmmStatus
             bytes(config.poolName).length > 0 && bytes(config.tokenSymbol).length > 0,
             "INVALID_NAME_OR_SYMBOL"
         );
+        require(config.sharedConfig != address(0), "INVALID_SHARED_CONFIG");
         require(config.tokens.length == config.weights.length, "INVALID_DATA");
         require(config.tokens.length >= 2, "INVALID_DATA");
         require(config.exchange != address(0), "INVALID_EXCHANGE");
         require(config.accountID != 0, "INVALID_ACCOUNT_ID");
         require(S.tokens.length == 0, "ALREADY_INITIALIZED");
 
+        S.sharedConfig = AmmSharedConfig(config.sharedConfig);
         IExchangeV3 exchange = IExchangeV3(config.exchange);
         S.exchange = exchange;
         S.accountID = config.accountID;

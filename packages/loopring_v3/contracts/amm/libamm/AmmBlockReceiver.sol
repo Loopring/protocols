@@ -67,7 +67,6 @@ library AmmBlockReceiver
             accountID: S.accountID,
             poolTokenID: S.poolTokenID,
             poolTokenBase: AmmData.POOL_TOKEN_BASE(),
-            poolTokenInitialSupply: AmmData.POOL_TOKEN_INITIAL_SUPPLY(),
             poolTokenMintedSupply: S.poolTokenMintedSupply,
             poolTokenInPoolL2: S.poolTokenInPoolL2,
             size: size,

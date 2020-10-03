@@ -32,11 +32,11 @@ library AmmExitRequest
             burnAmount: burnAmount,
             burnStorageID: 0,
             exitMinAmounts: exitMinAmounts,
-            validUntil: uint32(block.timestamp + AmmData.MAX_FORCED_EXIT_AGE())
+            validUntil: uint32(block.timestamp + S.sharedConfig.maxForcedExitAge())
         });
 
         require(S.forcedExit[msg.sender].validUntil == 0, "DUPLICATE");
-        require(S.forcedExitCount < AmmData.MAX_FORCED_EXIT_COUNT(), "TOO_MANY_FORCED_EXITS");
+        require(S.forcedExitCount < S.sharedConfig.maxForcedExitCount(), "TOO_MANY_FORCED_EXITS");
 
         AmmUtil.transferIn(address(this), burnAmount);
 

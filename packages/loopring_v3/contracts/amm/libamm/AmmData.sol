@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../core/iface/ExchangeData.sol";
 import "../../core/iface/IExchangeV3.sol";
+import "./AmmSharedConfig.sol";
 
 
 /// @title AmmData
@@ -12,8 +13,7 @@ library AmmData
 {
     function POOL_TOKEN_BASE() internal pure returns (uint) { return 10 ** 18; }
     function POOL_TOKEN_INITIAL_SUPPLY() internal pure returns (uint) { return 100 * POOL_TOKEN_BASE(); }
-    function MAX_FORCED_EXIT_AGE() internal pure returns (uint) { return 7 days; }
-    function MAX_FORCED_EXIT_COUNT() internal pure returns (uint) { return 100; }
+
 
     enum PoolTxType
     {
@@ -24,6 +24,7 @@ library AmmData
 
     struct PoolConfig
     {
+        address   sharedConfig;
         address   exchange;
         string    poolName;
         uint32    accountID;
@@ -82,7 +83,6 @@ library AmmData
 
         uint16  poolTokenID;
         uint    poolTokenBase;
-        uint    poolTokenInitialSupply;
         uint    poolTokenMintedSupply;
         uint96  poolTokenInPoolL2;
 
@@ -103,6 +103,8 @@ library AmmData
         mapping(address => uint) nonces;
 
         // AMM pool state variables
+        AmmSharedConfig sharedConfig;
+
         IExchangeV3 exchange;
         uint32      accountID;
         uint16      poolTokenID;

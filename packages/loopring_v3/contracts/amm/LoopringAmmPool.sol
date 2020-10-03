@@ -59,20 +59,6 @@ contract LoopringAmmPool is
         return state.isOnline();
     }
 
-    function constants()
-        public
-        pure
-        returns(
-            uint poolTokenInitialSupply,
-            uint maxForcedExitAge,
-            uint maxForcedExitCount
-        )
-    {
-        poolTokenInitialSupply = AmmData.POOL_TOKEN_INITIAL_SUPPLY();
-        maxForcedExitAge = AmmData. MAX_FORCED_EXIT_AGE();
-        maxForcedExitCount = AmmData.MAX_FORCED_EXIT_COUNT();
-    }
-
     receive() payable external {}
 
     function setupPool(AmmData.PoolConfig calldata config)

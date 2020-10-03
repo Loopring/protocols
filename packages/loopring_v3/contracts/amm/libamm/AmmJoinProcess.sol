@@ -125,7 +125,7 @@ library AmmJoinProcess
         }
 
         if (ctx.effectiveTotalSupply() == 0) {
-            return(true, ctx.poolTokenInitialSupply.toUint96(), join.joinAmounts);
+            return(true, AmmData.POOL_TOKEN_INITIAL_SUPPLY().toUint96(), join.joinAmounts);
         }
 
         // Calculate the amount of pool tokens that should be minted
