@@ -30,7 +30,7 @@ library AmmExitProcess
     using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
 
-    event ExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
+    event ForcedExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
 
     function processExit(
         AmmData.State    storage S,
@@ -63,7 +63,7 @@ library AmmExitProcess
         if (isForcedExit) {
             if (!slippageOK) {
                 AmmUtil.transferOut(address(this), exit.burnAmount, exit.owner);
-                emit ExitProcessed(exit.owner, 0, new uint96[](0));
+                emit ForcedExitProcessed(exit.owner, 0, new uint96[](0));
                 return;
             }
 
@@ -100,7 +100,7 @@ library AmmExitProcess
         }
 
         if (isForcedExit) {
-            emit ExitProcessed(exit.owner, exit.burnAmount, amounts);
+            emit ForcedExitProcessed(exit.owner, exit.burnAmount, amounts);
         }
     }
 
