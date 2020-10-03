@@ -7,6 +7,7 @@ import "../../aux/compression/ZeroDecompressor.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../lib/AddressUtil.sol";
+import "../../lib/Drainable.sol";
 import "../../lib/ERC1271.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
@@ -14,7 +15,7 @@ import "./SelectorBasedAccessManager.sol";
 import "./IBlockReceiver.sol";
 
 
-contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
+contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainable
 {
     using AddressUtil     for address;
     using BytesUtil       for bytes;
@@ -74,6 +75,14 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
         ) ? ERC1271_MAGICVALUE : bytes4(0);
     }
 
+    function canDrain(address drainer)
+        public
+        override
+        view
+        returns (bool)
+    {
+        return hasAccessTo(drainer, this.drain.selector);
+    }
 
     function submitBlocksWithCallbacks(
         bool                     isDataCompressed,
@@ -123,7 +132,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
         private
     {
         int lastBlockIdx = -1;
-        for (uint i = 0; i <callbackConfig.blockCallbacks.length; i++) {
+        for (uint i = 0; i < callbackConfig.blockCallbacks.length; i++) {
             BlockCallback calldata blockCallback = callbackConfig.blockCallbacks[i];
 
             uint16 blockIdx = blockCallback.blockIdx;
