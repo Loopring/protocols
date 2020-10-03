@@ -71,13 +71,13 @@ library AmmStatus
         S.poolTokenID = exchange.getTokenID(address(this));
 
         // Mint all liquidity tokens to the pool account on L2
-        S.poolBalanceL2 = uint96(-1);
-        S.mint(address(this), S.poolBalanceL2);
+        S.poolTokenInPoolL2 = uint96(-1);
+        S.mint(address(this), S.poolTokenInPoolL2);
         exchange.deposit{value: 0}(
             address(this), // from
             address(this), // to
             address(this), // token
-            uint96(S.poolBalanceL2),
+            uint96(S.poolTokenInPoolL2),
             new bytes(0)
         );
     }

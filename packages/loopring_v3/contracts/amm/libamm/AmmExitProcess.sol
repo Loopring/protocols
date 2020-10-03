@@ -65,6 +65,7 @@ library AmmExitProcess
                 emit ExitProcessed(exit.owner, 0, new uint96[](0));
                 return;
             }
+
             S.burn(address(this), exit.burnAmount);
             ctx.poolTokenMintedSupply = ctx.poolTokenMintedSupply.sub(exit.burnAmount);
             assert(ctx.poolTokenMintedSupply == S.poolTokenMintedSupply);
@@ -130,7 +131,7 @@ library AmmExitProcess
         ctx.exchange.approveTransaction(from, hash);
 
         // Update pool balance
-        ctx.poolBalanceL2 = ctx.poolBalanceL2.add(transfer.amount);
+        ctx.poolTokenInPoolL2 = ctx.poolTokenInPoolL2.add(transfer.amount);
     }
 
     function _calculateExitAmounts(

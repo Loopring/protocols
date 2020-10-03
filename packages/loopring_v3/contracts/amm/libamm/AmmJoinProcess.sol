@@ -102,7 +102,7 @@ library AmmJoinProcess
         ctx.exchange.approveTransaction(address(this), hash);
 
         // Update pool balance
-        ctx.poolBalanceL2 = ctx.poolBalanceL2.sub(transfer.amount);
+        ctx.poolTokenInPoolL2 = ctx.poolTokenInPoolL2.sub(transfer.amount);
     }
 
     function _calculateJoinAmounts(

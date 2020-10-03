@@ -84,11 +84,11 @@ library AmmData
         uint    poolTokenBase;
         uint    poolTokenInitialSupply;
         uint    poolTokenMintedSupply;
+        uint96  poolTokenInPoolL2;
         uint    size; // == token.length;
         Token[] tokens;
 
         uint96[] tokenBalancesL2;
-        uint96   poolBalanceL2;
     }
 
     struct State {
@@ -96,7 +96,7 @@ library AmmData
         string poolName;
         string symbol;
         uint   poolTokenMintedSupply;
-        uint96 poolBalanceL2;
+        uint96 poolTokenInPoolL2;
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;

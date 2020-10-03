@@ -43,7 +43,7 @@ library AmmBlockReceiver
 
         // Update state
         S.poolTokenMintedSupply = ctx.poolTokenMintedSupply;
-        S.poolBalanceL2 = ctx.poolBalanceL2;
+        S.poolTokenInPoolL2 = ctx.poolTokenInPoolL2;
 
         return ctx.txIdx - txIdx;
     }
@@ -68,11 +68,11 @@ library AmmBlockReceiver
             poolTokenID: S.poolTokenID,
             poolTokenBase: AmmData.POOL_TOKEN_BASE(),
             poolTokenInitialSupply: AmmData.POOL_TOKEN_INITIAL_SUPPLY(),
+            poolTokenMintedSupply: S.poolTokenMintedSupply,
+            poolTokenInPoolL2: S.poolTokenInPoolL2,
             size: size,
             tokens: S.tokens,
-            tokenBalancesL2: new uint96[](size),
-            poolTokenMintedSupply: S.poolTokenMintedSupply,
-            poolBalanceL2: S.poolBalanceL2
+            tokenBalancesL2: new uint96[](size)
         });
     }
 
