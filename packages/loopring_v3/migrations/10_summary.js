@@ -20,6 +20,7 @@ const ExchangeTokens = artifacts.require("ExchangeTokens");
 const ExchangeWithdrawals = artifacts.require("ExchangeWithdrawals");
 const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 const LoopringV3 = artifacts.require("LoopringV3");
+const LoopringAmmPool = artifacts.require("LoopringAmmPool");
 
 module.exports = function(deployer, network, accounts) {
   console.log(">>> deployed to network: " + network);
@@ -42,4 +43,5 @@ module.exports = function(deployer, network, accounts) {
   console.log("- ExchangeWithdrawals:", ExchangeWithdrawals.address);
   console.log("- ExchangeV3:", ExchangeV3.address);
   console.log("- LoopringV3:", LoopringV3.address);
+  console.log("- LoopringAmmPool:", LoopringAmmPool.address);
 };

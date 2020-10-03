@@ -22,7 +22,7 @@ library AmmExitRequest
         uint96                burnAmount,
         uint96[]     calldata exitMinAmounts
         )
-        public
+        internal
     {
         require(burnAmount > 0, "INVALID_BURN_AMOUNT");
         require(exitMinAmounts.length == S.tokens.length, "INVALID_EXIT_AMOUNTS");

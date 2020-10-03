@@ -36,7 +36,7 @@ library AmmStatus
         AmmData.State      storage  S,
         AmmData.PoolConfig calldata config
         )
-        public
+        internal
     {
         require(
             bytes(config.poolName).length > 0 && bytes(config.tokenSymbol).length > 0,
@@ -90,7 +90,7 @@ library AmmStatus
         AmmData.State storage S,
         address               exitOwner
         )
-        public
+        internal
     {
         uint64 validUntil = S.forcedExit[exitOwner].validUntil;
         require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLENGE");

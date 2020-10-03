@@ -10,7 +10,7 @@ import "./AmmData.sol";
 /// @title AmmJoinRequest
 library AmmJoinRequest
 {
-    bytes32 constant public POOLJOIN_TYPEHASH = keccak256(
+    bytes32 constant private POOLJOIN_TYPEHASH = keccak256(
         "PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,uint32[] joinStorageIDs,uint96 mintMinAmount,uint32 validUntil)"
     );
 
