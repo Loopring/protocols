@@ -27,7 +27,7 @@ library AmmPoolToken
         view
         returns (uint)
     {
-        return S.totalMintedSupply.sub(S.poolBalanceL2);
+        return S.poolTokenMintedSupply.sub(S.poolBalanceL2);
     }
 
     function approve(
@@ -108,7 +108,7 @@ library AmmPoolToken
         )
         internal
     {
-        S.totalMintedSupply = S.totalMintedSupply.add(value);
+        S.poolTokenMintedSupply = S.poolTokenMintedSupply.add(value);
         S.balanceOf[to] = S.balanceOf[to].add(value);
         emit Transfer(address(0), to, value);
     }
@@ -121,7 +121,7 @@ library AmmPoolToken
         internal
     {
         S.balanceOf[from] = S.balanceOf[from].sub(value);
-        S.totalMintedSupply = S.totalMintedSupply.sub(value);
+        S.poolTokenMintedSupply = S.poolTokenMintedSupply.sub(value);
         emit Transfer(from, address(0), value);
     }
 

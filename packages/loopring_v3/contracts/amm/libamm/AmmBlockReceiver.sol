@@ -42,7 +42,7 @@ library AmmBlockReceiver
         S.approveAmmUpdates(ctx, false);
 
         // Update state
-        S.totalMintedSupply = ctx.totalMintedSupply;
+        S.poolTokenMintedSupply = ctx.poolTokenMintedSupply;
         S.poolBalanceL2 = ctx.poolBalanceL2;
 
         return ctx.txIdx - txIdx;
@@ -66,12 +66,12 @@ library AmmBlockReceiver
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             poolTokenID: S.poolTokenID,
-            poolTokenBase: AmmData.POOL_TOKEN_BASE(),   
+            poolTokenBase: AmmData.POOL_TOKEN_BASE(),
             poolTokenInitialSupply: AmmData.POOL_TOKEN_INITIAL_SUPPLY(),
             size: size,
             tokens: S.tokens,
-            balancesL2: new uint96[](size),
-            totalMintedSupply: S.totalMintedSupply,
+            tokenBalancesL2: new uint96[](size),
+            poolTokenMintedSupply: S.poolTokenMintedSupply,
             poolBalanceL2: S.poolBalanceL2
         });
     }

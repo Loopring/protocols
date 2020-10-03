@@ -66,8 +66,8 @@ library AmmExitProcess
                 return;
             }
             S.burn(address(this), exit.burnAmount);
-            ctx.totalMintedSupply = ctx.totalMintedSupply.sub(exit.burnAmount);
-            assert(ctx.totalMintedSupply == S.totalMintedSupply);
+            ctx.poolTokenMintedSupply = ctx.poolTokenMintedSupply.sub(exit.burnAmount);
+            assert(ctx.poolTokenMintedSupply == S.poolTokenMintedSupply);
         } else {
             require(slippageOK, "EXIT_SLIPPAGE_INVALID");
             _burnL2(ctx, exit.burnAmount, exit.owner, exit.burnStorageID);
@@ -94,7 +94,7 @@ library AmmExitProcess
             bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
             ctx.exchange.approveTransaction(address(this), hash);
 
-            ctx.balancesL2[i] = ctx.balancesL2[i].sub(transfer.amount);
+            ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].sub(transfer.amount);
         }
 
         if (isForcedExit) {
@@ -155,7 +155,7 @@ library AmmExitProcess
         uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.effectiveTotalSupply();
 
         for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = (ratio.mul(ctx.balancesL2[i]) / ctx.poolTokenBase).toUint96();
+            amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / ctx.poolTokenBase).toUint96();
             if (amounts[i] < exit.exitMinAmounts[i]) {
                 return (false, amounts);
             }

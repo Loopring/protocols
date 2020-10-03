@@ -66,7 +66,7 @@ library AmmJoinProcess
             bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
             ctx.exchange.approveTransaction(join.owner, hash);
 
-            ctx.balancesL2[i] = ctx.balancesL2[i].add(transfer.amount);
+            ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(transfer.amount);
         }
 
         _mintL2(ctx, mintAmount, join.owner);
@@ -131,9 +131,9 @@ library AmmJoinProcess
         // Calculate the amount of pool tokens that should be minted
         bool initialized = false;
         for (uint i = 0; i < ctx.size; i++) {
-            if (ctx.balancesL2[i] > 0) {
+            if (ctx.tokenBalancesL2[i] > 0) {
                 uint amountOut = uint(join.joinAmounts[i])
-                    .mul(ctx.effectiveTotalSupply()) / uint(ctx.balancesL2[i]);
+                    .mul(ctx.effectiveTotalSupply()) / uint(ctx.tokenBalancesL2[i]);
 
                 if (!initialized) {
                     initialized = true;
@@ -152,7 +152,7 @@ library AmmJoinProcess
         uint ratio = ctx.poolTokenBase.mul(mintAmount) / ctx.effectiveTotalSupply();
 
         for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = ratio.mul(ctx.balancesL2[i] / ctx.poolTokenBase).toUint96();
+            amounts[i] = ratio.mul(ctx.tokenBalancesL2[i] / ctx.poolTokenBase).toUint96();
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

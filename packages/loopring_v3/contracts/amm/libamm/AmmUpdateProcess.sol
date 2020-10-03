@@ -36,9 +36,9 @@ library AmmUpdateProcess
             ctx.exchange.approveTransaction(address(this), txHash);
 
             if (opening) {
-                ctx.balancesL2[i] = update.balance;
+                ctx.tokenBalancesL2[i] = update.balance;
             } else {
-                require(ctx.balancesL2[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
+                require(ctx.tokenBalancesL2[i] == update.balance, "UNEXPECTED_AMM_BALANCE");
             }
         }
     }

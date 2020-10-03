@@ -23,7 +23,7 @@ library AmmUtil
         pure
         returns (uint)
     {
-        return ctx.totalMintedSupply.sub(ctx.poolBalanceL2);
+        return ctx.poolTokenMintedSupply.sub(ctx.poolBalanceL2);
     }
 
     function isAlmostEqual(
