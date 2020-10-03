@@ -79,13 +79,13 @@ library AmmData
         // AMM pool state variables
         bytes32 domainSeparator;
         uint32  accountID;
+
+
         uint16  poolTokenID;
-
-        Token[] tokens;
-
         uint    poolTokenBase;
         uint    poolTokenInitialSupply;
         uint    size; // == token.length;
+        Token[] tokens;
 
         uint96[] layer2Balances;
         uint     effectiveTotalSupply;
