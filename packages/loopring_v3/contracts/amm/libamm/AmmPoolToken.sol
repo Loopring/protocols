@@ -20,6 +20,16 @@ library AmmPoolToken
 
     bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
+    function totalSupply(
+        AmmData.State storage S
+        )
+        internal
+        view
+        returns (uint)
+    {
+        return S.poolTokenMintedSupply.sub(S.poolTokenInPoolL2);
+    }
+
     function approve(
         AmmData.State storage S,
         address               spender,
@@ -98,7 +108,7 @@ library AmmPoolToken
         )
         internal
     {
-        S.totalSupply = S.totalSupply.add(value);
+        S.poolTokenMintedSupply = S.poolTokenMintedSupply.add(value);
         S.balanceOf[to] = S.balanceOf[to].add(value);
         emit Transfer(address(0), to, value);
     }
@@ -111,7 +121,7 @@ library AmmPoolToken
         internal
     {
         S.balanceOf[from] = S.balanceOf[from].sub(value);
-        S.totalSupply = S.totalSupply.sub(value);
+        S.poolTokenMintedSupply = S.poolTokenMintedSupply.sub(value);
         emit Transfer(from, address(0), value);
     }
 

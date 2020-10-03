@@ -26,49 +26,28 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
 
     event SubmitBlocksAccessOpened(bool open);
 
-    struct BlockCallback {
-        IBlockReceiver target;
-        uint           blockIdx;
-        uint           txIdx;
-        bytes          auxiliaryData;
+    struct TxCallback
+    {
+        uint16 txIdx;
+        uint16 receiverIdx;
+        bytes  data;
+    }
+
+    struct BlockCallback
+    {
+        uint16        blockIdx;
+        TxCallback[]  txCallbacks;
+    }
+
+    struct CallbackConfig
+    {
+        BlockCallback[] blockCallbacks;
+        address[]       receivers;
     }
 
     constructor(address _exchange)
         SelectorBasedAccessManager(_exchange)
     {
-    }
-
-    function submitBlocksWithCallbacks(
-        bool              isDataCompressed,
-        bytes             calldata data,
-        BlockCallback[]   calldata callbacks
-        )
-        external
-    {
-        require(
-            hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
-            "PERMISSION_DENIED"
-        );
-        bytes memory decompressed = isDataCompressed ?
-            ZeroDecompressor.decompress(data, 1):
-            data;
-
-        require(
-            decompressed.toBytes4(0) == SUBMITBLOCKS_SELECTOR,
-            "INVALID_DATA"
-        );
-
-        // Process the callback logic.
-        if (callbacks.length > 0) {
-            bytes memory blockData;
-            assembly {
-                blockData := add(decompressed, 4)
-            }
-            ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
-            processCallbacks(blocks, callbacks);
-        }
-
-        target.fastCallAndVerify(gasleft(), 0, decompressed);
     }
 
     function openAccessToSubmitBlocks(bool _open)
@@ -96,28 +75,90 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271
     }
 
 
-    function processCallbacks(
-        ExchangeData.Block[] memory   blocks,
-        BlockCallback[]      calldata callbacks
+    function submitBlocksWithCallbacks(
+        bool                     isDataCompressed,
+        bytes           calldata data,
+        CallbackConfig  calldata callbackConfig
         )
-        internal
+        external
     {
-        // Make sure all txs can only be used once
-        uint txIdxLowerBound = 0;
-        uint previousBlockIdx = 0;
-        for (uint i = 0; i < callbacks.length; i++) {
-            if (callbacks[i].blockIdx > previousBlockIdx) {
-                txIdxLowerBound = 0;
+        bool performCallback;
+        if (callbackConfig.blockCallbacks.length > 0) {
+            require(callbackConfig.receivers.length > 0, "MISSING_RECEIVERS");
+            performCallback = true;
+        }
+
+        require(
+            hasAccessTo(msg.sender, SUBMITBLOCKS_SELECTOR) || open,
+            "PERMISSION_DENIED"
+        );
+        bytes memory decompressed = isDataCompressed ?
+            ZeroDecompressor.decompress(data, 1):
+            data;
+
+        require(
+            decompressed.toBytes4(0) == SUBMITBLOCKS_SELECTOR,
+            "INVALID_DATA"
+        );
+
+        // Process the callback logic.
+
+        if (performCallback) {
+            bytes memory blockData;
+            assembly {
+                blockData := add(decompressed, 4)
             }
-            require(callbacks[i].blockIdx >= previousBlockIdx, "INVALID_DATA");
-            require(callbacks[i].txIdx >= txIdxLowerBound, "INVALID_DATA");
-            uint numTransactionsConsumed = callbacks[i].target.beforeBlockSubmitted(
-                blocks[callbacks[i].blockIdx],
-                callbacks[i].txIdx,
-                callbacks[i].auxiliaryData
-            );
-            previousBlockIdx = callbacks[i].blockIdx;
-            txIdxLowerBound = callbacks[i].txIdx.add(numTransactionsConsumed);
+            ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
+
+            _beforeBlockSubmission(blocks, callbackConfig);
+        }
+
+        target.fastCallAndVerify(gasleft(), 0, decompressed);
+    }
+
+    function _beforeBlockSubmission(
+        ExchangeData.Block[] memory   blocks,
+        CallbackConfig       calldata callbackConfig
+        )
+        private
+    {
+        int lastBlockIdx = -1;
+        for (uint i = 0; i <callbackConfig.blockCallbacks.length; i++) {
+            BlockCallback calldata blockCallback = callbackConfig.blockCallbacks[i];
+
+            uint16 blockIdx = blockCallback.blockIdx;
+            require(blockIdx > lastBlockIdx, "BLOCK_INDEX_OUT_OF_ORDER");
+            lastBlockIdx = int(blockIdx);
+
+            require(blockIdx < blocks.length, "INVALID_BLOCKIDX");
+            ExchangeData.Block memory _block = blocks[blockIdx];
+
+            _processTxCallbacks(_block, blockCallback.txCallbacks, callbackConfig.receivers);
+        }
+    }
+
+    function _processTxCallbacks(
+        ExchangeData.Block memory _block,
+        TxCallback[]       calldata txCallbacks,
+        address[]          calldata receivers
+        )
+        private
+    {
+        uint cursor = 0;
+
+        for (uint i = 0; i < txCallbacks.length; i++) {
+            TxCallback calldata txCallback = txCallbacks[i];
+
+            uint txIdx = uint(txCallback.txIdx);
+            require(txIdx >= cursor, "BLOCK_INDEX_OUT_OF_ORDER");
+
+            uint16 receiverIdx = txCallback.receiverIdx;
+            require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
+
+            uint numTransactionsConsumed = IBlockReceiver(receivers[receiverIdx])
+                .beforeBlockSubmission(_block, txCallback.data, txIdx);
+
+            cursor = txIdx + numTransactionsConsumed + 1;
         }
     }
 }

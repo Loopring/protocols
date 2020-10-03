@@ -9,10 +9,10 @@ import "../../core/iface/ExchangeData.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 abstract contract IBlockReceiver
 {
-    function beforeBlockSubmitted(
+    function beforeBlockSubmission(
         ExchangeData.Block memory _block,
-        uint                      txIdx,
-        bytes              memory auxiliaryData
+        bytes              memory data,
+        uint                      txIdx
         )
         external
         virtual

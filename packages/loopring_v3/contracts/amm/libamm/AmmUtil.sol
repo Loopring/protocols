@@ -4,8 +4,8 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
-import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
 import "./AmmData.sol";
 
 
@@ -14,6 +14,17 @@ library AmmUtil
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
+    using MathUint          for uint;
+
+    function effectiveTotalSupply(
+        AmmData.Context  memory  ctx
+        )
+        internal
+        pure
+        returns (uint)
+    {
+        return ctx.poolTokenMintedSupply.sub(ctx.poolTokenInPoolL2);
+    }
 
     function isAlmostEqual(
         uint96 amount,
@@ -32,7 +43,20 @@ library AmmUtil
         }
     }
 
-    function tranferOut(
+    function transferIn(
+        address token,
+        uint    amount
+        )
+        internal
+    {
+        if (token == address(0)) {
+            require(msg.value == amount, "INVALID_ETH_VALUE");
+        } else if (amount > 0) {
+            token.safeTransferFromAndVerify(msg.sender, address(this), amount);
+        }
+    }
+
+    function transferOut(
         address token,
         uint    amount,
         address to
