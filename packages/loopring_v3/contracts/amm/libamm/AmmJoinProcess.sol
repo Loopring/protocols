@@ -119,7 +119,7 @@ library AmmJoinProcess
         )
     {
         // Check if we can still use this join
-        amounts = new uint96[](ctx.size - 1);
+        amounts = new uint96[](ctx.size);
 
         if (block.timestamp > join.validUntil) {
             return (false, 0, amounts);
