@@ -40,6 +40,14 @@ library AmmExitRequest
 
         AmmUtil.transferIn(address(this), burnAmount);
 
+        uint feeAmount = S.sharedConfig.forcedExitFee();
+        if (feeAmount == 0) {
+            require(msg.value == 0, "INVALID_ETH_VALUE");
+        } else {
+            AmmUtil.transferIn(address(0), feeAmount);
+            AmmUtil.transferOut(address(0), feeAmount, S.exchange.owner());
+        }
+
         S.forcedExit[msg.sender] = exit;
         S.forcedExitCount++;
 

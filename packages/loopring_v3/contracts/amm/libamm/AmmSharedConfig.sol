@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 interface AmmSharedConfig
 {
-    function maxForcedExitAge() external pure returns (uint);
-    function maxForcedExitCount() external pure returns (uint);
+    function maxForcedExitAge() external view returns (uint);
+    function maxForcedExitCount() external view returns (uint);
+    function forcedExitFee() external view returns (uint);
 }

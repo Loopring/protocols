@@ -50,7 +50,7 @@ library AmmUtil
         internal
     {
         if (token == address(0)) {
-            require(msg.value == amount, "INVALID_ETH_DEPOSIT");
+            require(msg.value == amount, "INVALID_ETH_VALUE");
         } else if (amount > 0) {
             token.safeTransferFromAndVerify(msg.sender, address(this), amount);
         }
