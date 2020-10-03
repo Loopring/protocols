@@ -70,7 +70,7 @@ library AmmBlockReceiver
             poolTokenBase: AmmData.POOL_TOKEN_BASE(),
             poolTokenInitialSupply: AmmData.POOL_TOKEN_INITIAL_SUPPLY(),
             size: size,
-            layer2Balances: new uint96[](size),
+            balancesL2: new uint96[](size),
             totalMintedSupply: S.totalMintedSupply,
             poolBalanceL2: S.poolBalanceL2
         });

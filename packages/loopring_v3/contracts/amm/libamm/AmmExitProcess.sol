@@ -94,7 +94,7 @@ library AmmExitProcess
             bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
             ctx.exchange.approveTransaction(address(this), hash);
 
-            ctx.layer2Balances[i] = ctx.layer2Balances[i].sub(transfer.amount);
+            ctx.balancesL2[i] = ctx.balancesL2[i].sub(transfer.amount);
         }
 
         emit ExitProcessed(exit.owner, exit.burnAmount, amounts, isForcedExit);
@@ -153,7 +153,7 @@ library AmmExitProcess
         uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.effectiveTotalSupply();
 
         for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = (ratio.mul(ctx.layer2Balances[i]) / ctx.poolTokenBase).toUint96();
+            amounts[i] = (ratio.mul(ctx.balancesL2[i]) / ctx.poolTokenBase).toUint96();
             if (amounts[i] < exit.exitMinAmounts[i]) {
                 return (false, amounts);
             }
