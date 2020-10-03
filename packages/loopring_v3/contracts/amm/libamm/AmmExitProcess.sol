@@ -66,8 +66,8 @@ library AmmExitProcess
                 return;
             }
             S.burn(address(this), exit.burnAmount);
-            ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
-            assert(ctx.totalSupply == S.totalSupply);
+            ctx.totalMintedSupply = ctx.totalMintedSupply.sub(exit.burnAmount);
+            assert(ctx.totalMintedSupply == S.totalMintedSupply);
         } else {
             require(slippageOK, "EXIT_SLIPPAGE_INVALID");
             _burnL2(ctx, exit.burnAmount, exit.owner, exit.burnStorageID);

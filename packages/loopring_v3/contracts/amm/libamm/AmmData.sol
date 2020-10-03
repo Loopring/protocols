@@ -88,7 +88,7 @@ library AmmData
         uint    size; // == token.length;
 
         uint96[] layer2Balances;
-        uint     totalSupply;
+        uint     totalMintedSupply;
         uint96   poolBalanceL2;
     }
 
@@ -96,7 +96,7 @@ library AmmData
         // Pool token state variables
         string poolName;
         string symbol;
-        uint   totalSupply;
+        uint   totalMintedSupply;
         uint96 poolBalanceL2;
 
         mapping(address => uint) balanceOf;
