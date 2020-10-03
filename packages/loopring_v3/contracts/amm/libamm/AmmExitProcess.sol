@@ -62,6 +62,7 @@ library AmmExitProcess
 
         if (isForcedExit) {
             if (!slippageOK) {
+                AmmUtil.transferOut(address(this), exit.burnAmount, exit.owner);
                 emit ExitProcessed(exit.owner, 0, new uint96[](0));
                 return;
             }
