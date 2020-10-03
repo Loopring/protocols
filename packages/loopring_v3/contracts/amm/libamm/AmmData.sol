@@ -85,9 +85,9 @@ library AmmData
         uint    poolTokenInitialSupply;
         uint    poolTokenMintedSupply;
         uint96  poolTokenInPoolL2;
-        uint    size; // == token.length;
-        Token[] tokens;
 
+        uint     size; // == token.length;
+        Token[]  tokens;
         uint96[] tokenBalancesL2;
     }
 
