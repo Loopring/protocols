@@ -27,7 +27,7 @@ library AmmBlockReceiver
         bytes              memory  poolTxData,
         uint                       txIdx
         )
-        public
+        internal
         returns (uint)
     {
         AmmData.Context memory ctx = _getContext(S, _block, txIdx);

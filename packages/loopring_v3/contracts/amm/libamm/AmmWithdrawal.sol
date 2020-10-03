@@ -19,7 +19,7 @@ library AmmWithdrawal
     function withdrawFromApprovedWithdrawals(
         AmmData.State storage S
         )
-        public
+        internal
     {
         uint size = S.tokens.length;
         address[] memory owners = new address[](size);
@@ -35,7 +35,7 @@ library AmmWithdrawal
     function withdrawWhenOffline(
         AmmData.State storage S
         )
-        public
+        internal
     {
         _checkWithdrawalConditionInShutdown(S);
 

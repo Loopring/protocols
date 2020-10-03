@@ -25,7 +25,6 @@ contract LoopringAmmPool is
 {
     using AmmBlockReceiver for AmmData.State;
     using AmmExitRequest   for AmmData.State;
-    using AmmJoinRequest   for AmmData.State;
     using AmmPoolToken     for AmmData.State;
     using AmmStatus        for AmmData.State;
     using AmmWithdrawal    for AmmData.State;
