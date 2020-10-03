@@ -35,16 +35,12 @@ library AmmExitRequest
             validUntil: uint32(block.timestamp + AmmData.MAX_FORCED_EXIT_AGE())
         });
 
-        bytes32 txHash = hash(S.domainSeparator, exit);
-        require(S.forcedExit[txHash].validUntil == 0, "DUPLICATE");
-        require(S.isExiting[msg.sender] == 0, "USER_EXSTING");
+        require(S.forcedExit[msg.sender].validUntil == 0, "DUPLICATE");
         require(S.forcedExitCount < AmmData.MAX_FORCED_EXIT_COUNT(), "TOO_MANY_FORCED_EXITS");
 
         AmmUtil.transferIn(address(this), burnAmount);
 
-        exit.exitMinAmounts = new uint96[](0);
-        S.forcedExit[txHash] = exit;
-        S.isExiting[msg.sender] = txHash;
+        S.forcedExit[msg.sender] = exit;
         S.forcedExitCount++;
 
         emit PoolExitRequested(exit);

@@ -43,14 +43,14 @@ library AmmExitProcess
         bool isForcedExit = false;
 
         if (signature.length == 0) {
-            AmmData.PoolExit storage forceExit = S.forcedExit[txHash];
+            bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
             require(
-                forceExit.validUntil > 0 && forceExit.validUntil <= block.timestamp,
+                txHash == forcedExitHash &&
+                exit.validUntil > 0 && exit.validUntil <= block.timestamp,
                 "FORCED_EXIT_NOT_FOUND"
             );
 
-            delete S.forcedExit[txHash];
-            delete S.isExiting[exit.owner];
+            delete S.forcedExit[exit.owner];
             S.forcedExitCount--;
             isForcedExit = true;
         } else {
@@ -77,7 +77,7 @@ library AmmExitProcess
             TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
 
             require(
-                transfer.fromAccountID== ctx.accountID &&
+                transfer.fromAccountID == ctx.accountID &&
                 // transfer.toAccountID == UNKNOWN &&
                 // transfer.storageID == UNKNOWN &&
                 transfer.from == address(this) &&
@@ -156,7 +156,7 @@ library AmmExitProcess
             uint96[] memory amounts
         )
     {
-        amounts = new uint96[](ctx.size - 1);
+        amounts = new uint96[](ctx.size);
 
         // Check if we can still use this exit
         if (block.timestamp > exit.validUntil) {

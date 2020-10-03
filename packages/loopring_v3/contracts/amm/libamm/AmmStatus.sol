@@ -67,17 +67,19 @@ library AmmStatus
                 weight: config.weights[i]
             }));
         }
+
+        S.approve(address(exchange.getDepositContract()), uint(-1));
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
     function shutdown(
         AmmData.State storage S,
-        bytes32               exitHash
+        address               exitOwner
         )
         public
     {
-        uint64 validUntil = S.forcedExit[exitHash].validUntil;
-        require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLANGE");
+        uint64 validUntil = S.forcedExit[exitOwner].validUntil;
+        require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLENGE");
 
         if (S.poolSupplyToBurn > 0) {
             S.burn(address(this), S.poolSupplyToBurn);

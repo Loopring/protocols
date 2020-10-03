@@ -112,10 +112,7 @@ library AmmData
         uint16      forcedExitCount;
         Token[]     tokens;
 
-        // A map of approved transaction hashes to the timestamp it was created
-        mapping (bytes32 => PoolExit) forcedExit;
-
-        // A map from a user to the hash of the forced exit.
-        mapping (address => bytes32) isExiting;
+        // A map from a user to the forced exit.
+        mapping (address => PoolExit) forcedExit;
     }
 }
