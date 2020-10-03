@@ -21,6 +21,7 @@ import "./AmmPoolToken.sol";
 library AmmExitProcess
 {
     using AmmPoolToken      for AmmData.State;
+    using AmmUtil           for AmmData.Context;
     using AmmUtil           for uint96;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
@@ -65,11 +66,11 @@ library AmmExitProcess
                 return;
             }
             S.burn(address(this), exit.burnAmount);
+            ctx.totalMintedSupply = ctx.totalMintedSupply.sub(exit.burnAmount);
+            assert(ctx.totalMintedSupply == S.totalMintedSupply);
         } else {
             require(slippageOK, "EXIT_SLIPPAGE_INVALID");
-            S.poolSupplyToBurn = S.poolSupplyToBurn.add(exit.burnAmount);
-            // withdraw the pool token from the user to the pool account.
-            _approvePoolTokenWithdrawal(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
+            _burnL2(ctx, exit.burnAmount, exit.owner, exit.burnStorageID);
         }
 
         // Handle liquidity tokens
@@ -93,7 +94,7 @@ library AmmExitProcess
             bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
             ctx.exchange.approveTransaction(address(this), hash);
 
-            ctx.layer2Balances[i] = ctx.layer2Balances[i].sub(transfer.amount);
+            ctx.balancesL2[i] = ctx.balancesL2[i].sub(transfer.amount);
         }
 
         if (isForcedExit) {
@@ -101,48 +102,35 @@ library AmmExitProcess
         }
     }
 
-    function _approvePoolTokenWithdrawal(
+    function _burnL2(
         AmmData.Context  memory  ctx,
-        uint                     amount,
+        uint96                   amount,
         address                  from,
-        uint32                   burnStorageID,
-        bytes            memory  signature
+        uint32                   burnStorageID
         )
         internal
     {
-        // Check that the withdrawal in the block matches the expected withdrawal
-        WithdrawTransaction.Withdrawal memory withdrawal = ctx._block.readWithdrawal(ctx.txIdx++);
-
-        // These fields are not read by readWithdrawal: to, extraData, minGas, validUntil
-        withdrawal.extraData = new bytes(0);
-        withdrawal.minGas = 0;
-        withdrawal.validUntil = 0xffffffff;
-
-        bytes32 expectedOnchainDataHash = WithdrawTransaction.hashOnchainData(
-            withdrawal.minGas,
-            withdrawal.to,
-            withdrawal.extraData
-        );
-
-        if (signature.length > 0) {
-            require(withdrawal.storageID == burnStorageID, "INVALID_STORAGE_ID_OR_REPLAY");
-        }
+        TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
 
         require(
-            withdrawal.withdrawalType == 1 &&
-            withdrawal.from == from &&
-            // withdrawal.fromAccountID == UNKNOWN &&
-            withdrawal.tokenID == ctx.poolTokenID &&
-            withdrawal.amount == amount && //No rounding errors because we put in the complete uint96 in the DA.
-            withdrawal.feeTokenID == 0 &&
-            withdrawal.fee == 0 &&
-            withdrawal.onchainDataHash == expectedOnchainDataHash,
+            // transfer.fromAccountID == UNKNOWN &&
+            transfer.toAccountID == ctx.accountID &&
+            transfer.from == from &&
+            transfer.to == address(this) &&
+            transfer.tokenID == ctx.poolTokenID &&
+            transfer.amount.isAlmostEqual(amount) &&
+            transfer.feeTokenID == 0 &&
+            transfer.fee == 0 &&
+            transfer.storageID == burnStorageID,
             "INVALID_TX_DATA"
         );
 
-        // Now approve this withdrawal
-        bytes32 hash = WithdrawTransaction.hashTx(ctx.exchangeDomainSeparator, withdrawal);
+        transfer.validUntil = 0xffffffff;
+        bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
         ctx.exchange.approveTransaction(from, hash);
+
+        // Update pool balance
+        ctx.poolBalanceL2 = ctx.poolBalanceL2.add(transfer.amount);
     }
 
     function _calculateExitAmounts(
@@ -164,10 +152,10 @@ library AmmExitProcess
         }
 
         // Calculate how much will be withdrawn
-        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.effectiveTotalSupply;
+        uint ratio = ctx.poolTokenBase.mul(exit.burnAmount) / ctx.effectiveTotalSupply();
 
         for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = (ratio.mul(ctx.layer2Balances[i]) / ctx.poolTokenBase).toUint96();
+            amounts[i] = (ratio.mul(ctx.balancesL2[i]) / ctx.poolTokenBase).toUint96();
             if (amounts[i] < exit.exitMinAmounts[i]) {
                 return (false, amounts);
             }

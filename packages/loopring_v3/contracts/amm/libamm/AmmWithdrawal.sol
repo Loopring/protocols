@@ -57,7 +57,7 @@ library AmmWithdrawal
                 ERC20(token).balanceOf(address(this));
 
             // Withdraw the part owned by the pool
-            uint amount = balance.mul(burnAmount) / S.effectiveTotalSupply();
+            uint amount = balance.mul(burnAmount) / S.totalSupply();
             AmmUtil.transferOut(token, amount, msg.sender);
         }
 

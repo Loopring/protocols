@@ -79,6 +79,7 @@ library AmmData
         // AMM pool state variables
         bytes32 domainSeparator;
         uint32  accountID;
+        uint16  poolTokenID;
 
 
         uint16  poolTokenID;
@@ -87,16 +88,17 @@ library AmmData
         uint    size; // == token.length;
         Token[] tokens;
 
-        uint96[] layer2Balances;
-        uint     effectiveTotalSupply;
+        uint96[] balancesL2;
+        uint     totalMintedSupply;
+        uint96   poolBalanceL2;
     }
 
     struct State {
         // Pool token state variables
         string poolName;
         string symbol;
-        uint   totalSupply;
-        uint   poolSupplyToBurn;
+        uint   totalMintedSupply;
+        uint96 poolBalanceL2;
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
@@ -111,6 +113,7 @@ library AmmData
         uint8       feeBips;
         uint16      forcedExitCount;
         Token[]     tokens;
+        uint16      poolTokenID;
 
         // A map from a user to the forced exit.
         mapping (address => PoolExit) forcedExit;
