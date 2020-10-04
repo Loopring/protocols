@@ -11,9 +11,8 @@ import "./AmmSharedConfig.sol";
 /// @title AmmData
 library AmmData
 {
-    function POOL_TOKEN_BASE() internal pure returns (uint) { return 10 ** 18; }
-    function POOL_TOKEN_INITIAL_SUPPLY() internal pure returns (uint) { return 100 * POOL_TOKEN_BASE(); }
-
+    function POOL_TOKEN_BASE() internal pure returns (uint) { return 10 ** 10; }
+    function POOL_TOKEN_MINTED_SUPPLY() internal pure returns (uint) { return uint96(-1); }
 
     enum PoolTxType
     {
@@ -82,9 +81,7 @@ library AmmData
         uint32  accountID;
 
         uint16  poolTokenID;
-        uint    poolTokenBase;
-        uint    poolTokenMintedSupply;
-        uint96  poolTokenInPoolL2;
+        uint    poolTokenBurnedSupply;
 
         uint     size; // == token.length;
         Token[]  tokens;
@@ -95,8 +92,7 @@ library AmmData
         // Pool token state variables
         string poolName;
         string symbol;
-        uint   poolTokenMintedSupply;
-        uint96 poolTokenInPoolL2;
+        uint poolTokenBurnedSupply;
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;

@@ -39,34 +39,34 @@ library AmmWithdrawal
     {
         _checkWithdrawalConditionInShutdown(S);
 
-        // Cache the total supply before we start burning pool tokens
-        uint totalSupply = S.totalSupply();
-
         // Burn the full balance
-        uint burnAmount = S.balanceOf[msg.sender];
+        uint poolAmount = S.balanceOf[msg.sender];
+        if (poolAmount > 0) {
+            S.transfer(address(this), poolAmount);
+        }
 
         // Burn any additional pool tokens stuck in forced exits
         AmmData.PoolExit storage exit = S.forcedExit[msg.sender];
-        if (exit.burnAmount != 0) {
-            S.burn(address(this), exit.burnAmount);
-            burnAmount = burnAmount.add(exit.burnAmount);
+        if (exit.burnAmount > 0) {
             delete S.forcedExit[msg.sender];
+            poolAmount = poolAmount.add(exit.burnAmount);
         }
 
-        require(burnAmount > 0, "INVALID_POOL_AMOUNT");
+        require(poolAmount > 0, "ZERO_POOL_AMOUNT");
 
         // Withdraw the part owned of the pool
+        uint totalSupply = S.totalSupply();
         for (uint i = 0; i < S.tokens.length; i++) {
             address token = S.tokens[i].addr;
             uint balance = token == address(0) ?
                 address(this).balance :
                 ERC20(token).balanceOf(address(this));
 
-            uint amount = balance.mul(burnAmount) / totalSupply;
+            uint amount = balance.mul(poolAmount) / totalSupply;
             AmmUtil.transferOut(token, amount, msg.sender);
         }
 
-        S.burn(msg.sender, burnAmount);
+        S.poolTokenBurnedSupply = S.poolTokenBurnedSupply.add(poolAmount);
     }
 
     function _checkWithdrawalConditionInShutdown(
