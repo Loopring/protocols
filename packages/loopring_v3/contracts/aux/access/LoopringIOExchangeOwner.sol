@@ -164,6 +164,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         }
     }
 
+    // Question(brecht): is `calldata` used correctly here?
     function _processTransactions(
         ExchangeData.Block  memory   _block,
         AmmData.Context[]   memory   ctxs,
