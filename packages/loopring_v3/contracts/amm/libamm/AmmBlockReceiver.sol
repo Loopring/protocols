@@ -32,7 +32,7 @@ library AmmBlockReceiver
         returns (uint numTxConsumed, bytes memory newContext)
     {
         AmmData.Context memory ctx = context.length == 0 ?
-            _getContext(S, _block, txIdx) :
+            _getContext(S, txIdx) :
             abi.decode(context, (AmmData.Context));
 
         if (poolTxData.length == 0) {
@@ -46,11 +46,11 @@ library AmmBlockReceiver
             return (0, new bytes(0));
         }
 
-        S.approveAmmUpdates(ctx, true);
+        S.approveAmmUpdates(_block, ctx, true);
 
-        _processPoolTx(S, ctx, poolTxData);
+        _processPoolTx(S, _block, ctx, poolTxData);
 
-        S.approveAmmUpdates(ctx, false);
+        S.approveAmmUpdates(_block, ctx, false);
 
         numTxConsumed = ctx.txIdx - txIdx;
         newContext = abi.encode(ctx);
@@ -58,7 +58,6 @@ library AmmBlockReceiver
 
     function _getContext(
         AmmData.State      storage S,
-        ExchangeData.Block memory  _block,
         uint                       txIdx
         )
         private
@@ -67,7 +66,6 @@ library AmmBlockReceiver
     {
         uint size = S.tokens.length;
         return AmmData.Context({
-            _block: _block,
             txIdx: txIdx,
             exchange: S.exchange,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
@@ -84,21 +82,24 @@ library AmmBlockReceiver
     }
 
     function _processPoolTx(
-        AmmData.State           storage S,
-        AmmData.Context         memory  ctx,
-        bytes                   memory  poolTxData
+        AmmData.State      storage S,
+        ExchangeData.Block memory  _block,
+        AmmData.Context    memory  ctx,
+        bytes              memory  poolTxData
         )
         private
     {
         AmmData.PoolTx memory poolTx = abi.decode(poolTxData, (AmmData.PoolTx));
         if (poolTx.txType == AmmData.PoolTxType.JOIN) {
             S.processJoin(
+                _block,
                 ctx,
                 abi.decode(poolTx.data, (AmmData.PoolJoin)),
                 poolTx.signature
             );
         } else if (poolTx.txType == AmmData.PoolTxType.EXIT) {
             S.processExit(
+                _block,
                 ctx,
                 abi.decode(poolTx.data, (AmmData.PoolExit)),
                 poolTx.signature

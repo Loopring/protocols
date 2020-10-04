@@ -33,10 +33,11 @@ library AmmExitProcess
     event ForcedExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
 
     function processExit(
-        AmmData.State    storage S,
-        AmmData.Context  memory  ctx,
-        AmmData.PoolExit memory  exit,
-        bytes            memory  signature
+        AmmData.State      storage S,
+        ExchangeData.Block memory  _block,
+        AmmData.Context    memory  ctx,
+        AmmData.PoolExit   memory  exit,
+        bytes              memory  signature
         )
         internal
     {
@@ -72,12 +73,12 @@ library AmmExitProcess
             assert(ctx.poolTokenMintedSupply == S.poolTokenMintedSupply);
         } else {
             require(slippageOK, "EXIT_SLIPPAGE_INVALID");
-            _burnL2(ctx, exit.burnAmount, exit.owner, exit.burnStorageID);
+            _burnL2(_block, ctx, exit.burnAmount, exit.owner, exit.burnStorageID);
         }
 
         // Handle liquidity tokens
         for (uint i = 0; i < ctx.size; i++) {
-            TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+            TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
 
             require(
                 transfer.fromAccountID == ctx.accountID &&
@@ -103,14 +104,15 @@ library AmmExitProcess
     }
 
     function _burnL2(
-        AmmData.Context  memory  ctx,
-        uint96                   amount,
-        address                  from,
-        uint32                   burnStorageID
+        ExchangeData.Block memory _block,
+        AmmData.Context    memory ctx,
+        uint96                    amount,
+        address                   from,
+        uint32                    burnStorageID
         )
         internal
     {
-        TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+        TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
 
         require(
             // transfer.fromAccountID == UNKNOWN &&

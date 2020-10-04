@@ -31,10 +31,11 @@ library AmmJoinProcess
     // event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);
 
     function processJoin(
-        AmmData.State    storage /*S*/,
-        AmmData.Context  memory  ctx,
-        AmmData.PoolJoin memory  join,
-        bytes            memory  signature
+        AmmData.State     storage /*S*/,
+        ExchangeData.Block memory _block,
+        AmmData.Context   memory  ctx,
+        AmmData.PoolJoin  memory  join,
+        bytes             memory  signature
         )
         internal
     {
@@ -47,7 +48,7 @@ library AmmJoinProcess
 
         // Handle liquidity tokens
         for (uint i = 0; i < ctx.size; i++) {
-            TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+            TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
 
             require(
                 // transfer.fromAccountID == UNKNOWN &&
@@ -67,19 +68,20 @@ library AmmJoinProcess
             ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(transfer.amount);
         }
 
-        _mintL2(ctx, mintAmount, join.owner);
+        _mintL2(_block, ctx, mintAmount, join.owner);
 
         // emit JoinProcessed(join.owner, mintAmount, amounts);
     }
 
     function _mintL2(
-        AmmData.Context  memory  ctx,
-        uint96                   amount,
-        address                  to
+        ExchangeData.Block memory _block,
+        AmmData.Context    memory ctx,
+        uint96                    amount,
+        address                   to
         )
         private
     {
-        TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
+        TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
 
         require(
             transfer.fromAccountID == ctx.accountID &&

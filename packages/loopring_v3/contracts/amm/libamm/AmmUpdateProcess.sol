@@ -14,15 +14,16 @@ library AmmUpdateProcess
     using TransactionReader for ExchangeData.Block;
 
     function approveAmmUpdates(
-        AmmData.State    storage S,
-        AmmData.Context  memory  ctx,
-        bool                     opening
+        AmmData.State      storage S,
+        ExchangeData.Block memory  _block,
+        AmmData.Context    memory  ctx,
+        bool                       opening
         )
         internal
     {
         for (uint i = 0; i < ctx.size; i++) {
             // Check that the AMM update in the block matches the expected update
-            AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
+            AmmUpdateTransaction.AmmUpdate memory update = _block.readAmmUpdate(ctx.txIdx++);
 
             require(update.owner == address(this), "INVALID_TX_DATA");
             require(update.accountID == ctx.accountID, "INVALID_TX_DATA");

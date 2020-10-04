@@ -70,8 +70,7 @@ library AmmData
     struct Context
     {
         // functional parameters
-        ExchangeData.Block _block;
-        uint               txIdx;
+        uint        txIdx;
 
         // Exchange state variables
         IExchangeV3 exchange;
