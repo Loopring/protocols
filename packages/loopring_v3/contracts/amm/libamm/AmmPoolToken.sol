@@ -138,8 +138,8 @@ library AmmPoolToken
     {
         if (spender != address(this)) {
             S.allowance[owner][spender] = value;
+            emit Approval(owner, spender, value);
         }
-        emit Approval(owner, spender, value);
     }
 
     function _transfer(
