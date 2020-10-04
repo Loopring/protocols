@@ -42,9 +42,7 @@ library AmmPoolToken
         view
         returns (uint balance)
     {
-        return owner == address(this) ?
-          uint96(-1) :
-          S.balanceOf[owner];
+        return owner == address(this) ? uint96(-1) : S.balanceOf[owner];
     }
 
     function _allowance(
@@ -56,9 +54,7 @@ library AmmPoolToken
         view
         returns (uint)
     {
-        return spender == address(this) ?
-            uint(-1) :
-            S.allowance[owner][spender];
+        return spender == address(this) ? uint(-1) : S.allowance[owner][spender];
     }
 
     function approve(
