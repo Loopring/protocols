@@ -12,7 +12,6 @@ import "./AmmSharedConfig.sol";
 library AmmData
 {
     function POOL_TOKEN_BASE() internal pure returns (uint) { return 10 ** 10; }
-    function POOL_TOKEN_INITIAL_SUPPLY() internal pure returns (uint) { return 1 * POOL_TOKEN_BASE(); }
     function POOL_TOKEN_MINTED_SUPPLY() internal pure returns (uint) { return uint96(-1); }
 
     enum PoolTxType
