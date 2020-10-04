@@ -45,26 +45,24 @@ library AmmJoinProcess
         (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
         require(slippageOK, "JOIN_SLIPPAGE_INVALID");
 
-         // Handle liquidity tokens
+        // Handle liquidity tokens
         for (uint i = 0; i < ctx.size; i++) {
             TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
 
             require(
                 // transfer.fromAccountID == UNKNOWN &&
-                transfer.toAccountID== ctx.accountID &&
+                transfer.toAccountID == ctx.accountID &&
                 transfer.from == join.owner &&
                 transfer.to == address(this) &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
-                transfer.amount.isAlmostEqual(amounts[i]) &&
+                transfer.amount.isAlmostEqualAmount(amounts[i]) &&
                 transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                transfer.fee.isAlmostEqual(join.joinFees[i]) &&
+                transfer.fee.isAlmostEqualFee(join.joinFees[i]) &&
                 (signature.length == 0 || transfer.storageID == join.joinStorageIDs[i]),
                 "INVALID_TX_DATA"
             );
 
-            transfer.validUntil = 0xffffffff;
-            bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-            ctx.exchange.approveTransaction(join.owner, hash);
+            ctx.approveTransfer(transfer);
 
             ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(transfer.amount);
         }
@@ -81,7 +79,6 @@ library AmmJoinProcess
         )
         private
     {
-        require(amount > 0, "INVALID_DEPOSIT_AMOUNT");
         TransferTransaction.Transfer memory transfer = ctx._block.readTransfer(ctx.txIdx++);
 
         require(
@@ -90,16 +87,14 @@ library AmmJoinProcess
             transfer.from == address(this) &&
             transfer.to == to &&
             transfer.tokenID == ctx.poolTokenID &&
-            transfer.amount.isAlmostEqual(amount) &&
+            transfer.amount.isAlmostEqualAmount(amount) &&
             transfer.feeTokenID == 0 &&
             transfer.fee == 0,
             // transfer.storageID == UNKNOWN &&
             "INVALID_TX_DATA"
         );
 
-        transfer.validUntil = 0xffffffff;
-        bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-        ctx.exchange.approveTransaction(address(this), hash);
+        ctx.approveTransfer(transfer);
 
         // Update pool balance
         ctx.poolTokenInPoolL2 = ctx.poolTokenInPoolL2.sub(transfer.amount);

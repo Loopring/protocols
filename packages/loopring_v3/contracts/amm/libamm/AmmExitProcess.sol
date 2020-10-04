@@ -86,15 +86,13 @@ library AmmExitProcess
                 transfer.from == address(this) &&
                 transfer.to == exit.owner &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
-                transfer.amount.isAlmostEqual(amounts[i]) &&
+                transfer.amount.isAlmostEqualAmount(amounts[i]) &&
                 transfer.feeTokenID == 0 &&
                 transfer.fee == 0,
                 "INVALID_TX_DATA"
             );
 
-            transfer.validUntil = 0xffffffff;
-            bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-            ctx.exchange.approveTransaction(address(this), hash);
+            ctx.approveTransfer(transfer);
 
             ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].sub(transfer.amount);
         }
@@ -120,16 +118,14 @@ library AmmExitProcess
             transfer.from == from &&
             transfer.to == address(this) &&
             transfer.tokenID == ctx.poolTokenID &&
-            transfer.amount.isAlmostEqual(amount) &&
+            transfer.amount.isAlmostEqualAmount(amount) &&
             transfer.feeTokenID == 0 &&
             transfer.fee == 0 &&
             transfer.storageID == burnStorageID,
             "INVALID_TX_DATA"
         );
 
-        transfer.validUntil = 0xffffffff;
-        bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-        ctx.exchange.approveTransaction(from, hash);
+        ctx.approveTransfer(transfer);
 
         // Update pool balance
         ctx.poolTokenInPoolL2 = ctx.poolTokenInPoolL2.add(transfer.amount);

@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
@@ -16,6 +17,17 @@ library AmmUtil
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
+    function approveTransfer(
+        AmmData.Context  memory  ctx,
+        TransferTransaction.Transfer memory transfer
+        )
+        internal
+    {
+        transfer.validUntil = 0xffffffff;
+        bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
+        ctx.exchange.approveTransaction(transfer.from, hash);
+    }
+
     function effectiveTotalSupply(
         AmmData.Context  memory  ctx
         )
@@ -26,7 +38,7 @@ library AmmUtil
         return ctx.poolTokenMintedSupply.sub(ctx.poolTokenInPoolL2);
     }
 
-    function isAlmostEqual(
+    function isAlmostEqualAmount(
         uint96 amount,
         uint96 targetAmount
         )
@@ -39,7 +51,24 @@ library AmmUtil
         } else {
             // Max rounding error for a float24 is 2/100000
             uint ratio = (amount * 100000) / targetAmount;
-            return (100000 - 2) <= ratio && (100000 + 2) >= ratio;
+            return (100000 - 2) <= ratio && ratio <= (100000 + 2);
+        }
+    }
+
+    function isAlmostEqualFee(
+        uint96 amount,
+        uint96 targetAmount
+        )
+        internal
+        pure
+        returns (bool)
+    {
+        if (targetAmount == 0) {
+            return amount == 0;
+        } else {
+            // Max rounding error for a float16 is 5/1000
+            uint ratio = (amount * 1000) / targetAmount;
+            return (1000 - 5) <= ratio && ratio <= (1000 + 5);
         }
     }
 

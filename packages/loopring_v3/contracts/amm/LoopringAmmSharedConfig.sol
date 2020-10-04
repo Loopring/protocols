@@ -3,12 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../lib/Create2.sol";
-import "../lib/ReentrancyGuard.sol";
-import "../lib/SimpleProxy.sol";
-import "./LoopringAmmPool.sol";
-import "./libamm/AmmData.sol";
-
+import "../lib/Claimable.sol";
+import "./libamm/AmmSharedConfig.sol";
 
 contract LoopringAmmSharedConfig is Claimable, AmmSharedConfig
 {
