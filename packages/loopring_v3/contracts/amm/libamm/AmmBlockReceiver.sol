@@ -36,7 +36,7 @@ library AmmBlockReceiver
             abi.decode(context, (AmmData.Context));
 
         if (poolTxData.length == 0) {
-
+            // Check header only once per block per receiver
             BlockReader.BlockHeader memory header = _block.readHeader();
             require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
