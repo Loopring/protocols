@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { Constants } from "loopringv3.js";
+import { Constants } from "loopringV3.js";
 import { AuthMethod, OrderInfo, SpotTrade } from "./types";
 
 contract("LoopringAmmPool", (accounts: string[]) => {
