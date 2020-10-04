@@ -21,52 +21,14 @@ library AmmBlockReceiver
     using AmmUpdateProcess  for AmmData.State;
     using BlockReader       for ExchangeData.Block;
 
-    function beforeBlockSubmission(
-        AmmData.State      storage S,
-        bytes              memory  context,
-        ExchangeData.Block memory  _block,
-        bytes              memory  poolTxData,
-        uint                       txIdx
-        )
+    function beforeAllBlocks(AmmData.State storage S)
         internal
-        returns (uint numTxConsumed, bytes memory newContext)
-    {
-        AmmData.Context memory ctx = context.length == 0 ?
-            _getContext(S, txIdx) :
-            abi.decode(context, (AmmData.Context));
-
-        if (poolTxData.length == 0) {
-            // Check header only once per block per receiver
-            BlockReader.BlockHeader memory header = _block.readHeader();
-            require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
-
-            // This marks end of all pool transactions for this block.
-            S.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply;
-            S.exchange.approveTransactions(ctx.pendingTxOwners, ctx.pendingTxHashes);
-            return (0, new bytes(0));
-        }
-
-        S.approveAmmUpdates(_block, ctx, true);
-
-        _processPoolTx(S, _block, ctx, poolTxData);
-
-        S.approveAmmUpdates(_block, ctx, false);
-
-        numTxConsumed = ctx.txIdx - txIdx;
-        newContext = abi.encode(ctx);
-    }
-
-    function _getContext(
-        AmmData.State      storage S,
-        uint                       txIdx
-        )
-        private
         view
         returns (AmmData.Context memory)
     {
         uint size = S.tokens.length;
         return AmmData.Context({
-            txIdx: txIdx,
+            txIdx: 0,
             exchange: S.exchange,
             exchangeDomainSeparator: S.exchange.getDomainSeparator(),
             domainSeparator: S.domainSeparator,
@@ -79,6 +41,46 @@ library AmmBlockReceiver
             pendingTxOwners: new address[](size * 3),
             pendingTxHashes: new bytes32[](size * 3)
         });
+    }
+
+    function afterAllBlocks(
+        AmmData.State   storage S,
+        AmmData.Context memory  ctx
+        )
+        internal
+    {
+        S.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply;
+        S.exchange.approveTransactions(ctx.pendingTxOwners, ctx.pendingTxHashes);
+    }
+
+    function beforeEachBlock(
+        ExchangeData.Block memory _block,
+        AmmData.Context    memory ctx
+        )
+        internal
+        pure
+    {
+        BlockReader.BlockHeader memory header = _block.readHeader();
+        require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
+    }
+
+    function onReceiveTransaction(
+        AmmData.State      storage S,
+        AmmData.Context    memory  ctx,
+        ExchangeData.Block memory  _block,
+        bytes              memory  poolTxData,
+        uint                       txIdx
+        )
+        internal
+        returns (uint numTxConsumed)
+    {
+        ctx.txIdx = txIdx;
+
+        S.approveAmmUpdates(_block, ctx, true);
+        _processPoolTx(S, _block, ctx, poolTxData);
+        S.approveAmmUpdates(_block, ctx, false);
+
+        numTxConsumed = ctx.txIdx - txIdx;
     }
 
     function _processPoolTx(

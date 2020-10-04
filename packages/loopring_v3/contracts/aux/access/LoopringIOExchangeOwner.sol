@@ -3,6 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../amm/libamm/AmmData.sol";
+import "../../amm/libamm/IAmmBlockReceiver.sol";
 import "../../aux/compression/ZeroDecompressor.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
@@ -12,7 +14,6 @@ import "../../lib/ERC1271.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "./SelectorBasedAccessManager.sol";
-import "./IBlockReceiver.sol";
 
 
 contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainable
@@ -29,7 +30,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
     struct TxCallback
     {
-        uint16 txIdx;
+        uint16 exchangeTxIdx;
         uint16 receiverIdx;
         bytes  data;
     }
@@ -37,13 +38,13 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     struct BlockCallback
     {
         uint16        blockIdx;
-        TxCallback[]  txCallbacks;
+        TxCallback[]  txs;
     }
 
     struct CallbackConfig
     {
-        BlockCallback[] blockCallbacks;
-        address[]       receivers;
+        BlockCallback[]  blocks;
+        IAmmBlockReceiver[] receivers;
     }
 
     constructor(address _exchange)
@@ -87,13 +88,13 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     function submitBlocksWithCallbacks(
         bool                     isDataCompressed,
         bytes           calldata data,
-        CallbackConfig  calldata callbackConfig
+        CallbackConfig  calldata config
         )
         external
     {
         bool performCallback;
-        if (callbackConfig.blockCallbacks.length > 0) {
-            require(callbackConfig.receivers.length > 0, "MISSING_RECEIVERS");
+        if (config.blocks.length > 0) {
+            require(config.receivers.length > 0, "MISSING_RECEIVERS");
             performCallback = true;
         }
 
@@ -118,21 +119,27 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
                 blockData := add(decompressed, 4)
             }
             ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
-            _beforeBlockSubmission(blocks, callbackConfig);
+            _processReceivers(blocks, config);
         }
 
         target.fastCallAndVerify(gasleft(), 0, decompressed);
     }
 
-    function _beforeBlockSubmission(
+    function _processReceivers(
         ExchangeData.Block[] memory   blocks,
-        CallbackConfig       calldata callbackConfig
+        CallbackConfig       calldata config
         )
         private
     {
+
+        AmmData.Context[] memory ctxs = new AmmData.Context[](config.receivers.length);
+        for (uint j = 0; j < ctxs.length; j++) {
+            ctxs[j] = config.receivers[j].beforeAllBlocks();
+        }
+
         int lastBlockIdx = -1;
-        for (uint i = 0; i < callbackConfig.blockCallbacks.length; i++) {
-            BlockCallback calldata blockCallback = callbackConfig.blockCallbacks[i];
+        for (uint i = 0; i < config.blocks.length; i++) {
+            BlockCallback calldata blockCallback = config.blocks[i];
 
             uint16 blockIdx = blockCallback.blockIdx;
             require(blockIdx > lastBlockIdx, "BLOCK_INDEX_OUT_OF_ORDER");
@@ -141,34 +148,48 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             require(blockIdx < blocks.length, "INVALID_BLOCKIDX");
             ExchangeData.Block memory _block = blocks[blockIdx];
 
-            _processTxCallbacks(_block, blockCallback.txCallbacks, callbackConfig.receivers);
+            for (uint j = 0; j < ctxs.length; j++) {
+               config.receivers[j].beforeEachBlock(_block, ctxs[j]);
+            }
+
+            _processTransactions(_block, ctxs, blockCallback.txs, config.receivers);
+
+            for (uint j = 0; j < ctxs.length; j++) {
+                config.receivers[j].afterEachBlock(_block, ctxs[j]);
+            }
+        }
+
+        for (uint i = 0; i < config.receivers.length; i++) {
+            config.receivers[i].afterAllBlocks(ctxs[i]);
         }
     }
 
-    function _processTxCallbacks(
-        ExchangeData.Block memory _block,
-        TxCallback[]       calldata txCallbacks,
-        address[]          calldata receivers
+    function _processTransactions(
+        ExchangeData.Block  memory   _block,
+        AmmData.Context[]   memory   ctxs,
+        TxCallback[]        calldata txs,
+        IAmmBlockReceiver[] calldata receivers
         )
         private
     {
         uint cursor = 0;
 
-        for (uint i = 0; i < txCallbacks.length; i++) {
-            TxCallback calldata txCallback = txCallbacks[i];
+        for (uint i = 0; i < txs.length; i++) {
+            TxCallback calldata _tx = txs[i];
 
-            uint txIdx = uint(txCallback.txIdx);
-            require(txIdx >= cursor, "BLOCK_INDEX_OUT_OF_ORDER");
+            uint exchangeTxIdx = uint(_tx.exchangeTxIdx);
+            require(exchangeTxIdx >= cursor, "BLOCK_INDEX_OUT_OF_ORDER");
 
-            uint16 receiverIdx = txCallback.receiverIdx;
-            require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
+            uint16 idx = _tx.receiverIdx;
+            require(idx < receivers.length, "INVALID_RECEIVER_INDEX");
 
-            bytes memory context = new bytes(0);
-            uint numTxConsumed = 0;
-            (numTxConsumed, context) = IBlockReceiver(receivers[receiverIdx])
-                .beforeBlockSubmission(context, _block, txCallback.data, txIdx);
-
-            cursor = txIdx + numTxConsumed + 1;
+            uint numTxConsumed = receivers[idx].onReceiveTransaction(
+                _block,
+                ctxs[idx],
+                _tx.data,
+                exchangeTxIdx
+            );
+            cursor = exchangeTxIdx + numTxConsumed + 1;
         }
     }
 }

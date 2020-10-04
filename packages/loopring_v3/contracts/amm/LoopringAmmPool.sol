@@ -3,7 +3,6 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../aux/access/IBlockReceiver.sol";
 import "../core/iface/IAgentRegistry.sol";
 import "../lib/ReentrancyGuard.sol";
 import "./libamm/AmmBlockReceiver.sol";
@@ -13,6 +12,7 @@ import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmPoolToken.sol";
 import "./libamm/AmmStatus.sol";
 import "./libamm/AmmWithdrawal.sol";
+import "./libamm/IAmmBlockReceiver.sol";
 import './PoolToken.sol';
 
 
@@ -20,7 +20,7 @@ import './PoolToken.sol';
 contract LoopringAmmPool is
     PoolToken,
     IAgent,
-    IBlockReceiver,
+    IAmmBlockReceiver,
     ReentrancyGuard
 {
     using AmmBlockReceiver for AmmData.State;
@@ -89,9 +89,43 @@ contract LoopringAmmPool is
         state.exitPool(burnAmount, exitMinAmounts);
     }
 
-    function beforeBlockSubmission(
-        bytes              memory context,
+    function beforeAllBlocks()
+        external
+        override
+        onlyWhenOnline
+        onlyFromExchangeOwner
+        nonReentrant
+        returns (AmmData.Context memory)
+    {
+        return state.beforeAllBlocks();
+    }
+
+    function afterAllBlocks(AmmData.Context memory ctx)
+        external
+        override
+        onlyWhenOnline
+        onlyFromExchangeOwner
+        nonReentrant
+    {
+        state.afterAllBlocks(ctx);
+    }
+
+    function beforeEachBlock(
         ExchangeData.Block memory _block,
+        AmmData.Context    memory ctx
+        )
+        external
+        override
+        onlyWhenOnline
+        onlyFromExchangeOwner
+        nonReentrant
+    {
+        // state.beforeEachBlock(_block, ctx);
+    }
+
+    function onReceiveTransaction(
+        ExchangeData.Block memory _block,
+        AmmData.Context    memory ctx,
         bytes              memory data,
         uint                      txIdx
         )
@@ -100,9 +134,9 @@ contract LoopringAmmPool is
         onlyWhenOnline
         onlyFromExchangeOwner
         nonReentrant
-        returns (uint, bytes memory)
+        returns (uint)
     {
-        return state.beforeBlockSubmission(context, _block, data, txIdx);
+        return state.onReceiveTransaction(ctx, _block, data, txIdx);
     }
 
     function withdrawFromApprovedWithdrawals()
