@@ -686,7 +686,8 @@ export class ExchangeV3 {
         [
           "bool",
           "bytes",
-          {
+          "bytes"
+          /*{
             "struct CallbackConfig": {
               "struct BlockCallback[]": {
                 "struct TxCallback[]": {
@@ -698,7 +699,7 @@ export class ExchangeV3 {
               },
               receivers: "address[]"
             }
-          }
+          }*/
         ],
         "0x" + transaction.input.slice(2 + 4 * 2)
       );
