@@ -72,7 +72,8 @@ library AmmStatus
         }
 
         // Mint all liquidity tokens to the pool account on L2
-        S.poolTokenBurnedSupply = uint96(-1);
+        state.balanceOf[address(this)] = AmmData.POOL_TOKEN_MINTED_SUPPLY();
+        S.poolTokenBurnedSupply = AmmData.POOL_TOKEN_MINTED_SUPPLY();
         S.approve(address(exchange.getDepositContract()), uint96(-1));
         exchange.deposit(
             address(this), // from
