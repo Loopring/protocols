@@ -66,11 +66,6 @@ library AmmData
         uint16  tokenID;
     }
 
-    struct PendingExchangeTx
-    {
-        address from;
-        bytes32 txHash;
-    }
     struct Context
     {
         // functional parameters
