@@ -120,7 +120,7 @@ contract LoopringAmmPool is
         onlyFromExchangeOwner
         nonReentrant
     {
-        // state.beforeEachBlock(_block, ctx);
+        state.beforeEachBlock(_block, ctx);
     }
 
     function onReceiveTransaction(

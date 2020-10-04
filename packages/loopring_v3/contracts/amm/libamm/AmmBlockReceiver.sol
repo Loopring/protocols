@@ -54,8 +54,9 @@ library AmmBlockReceiver
     }
 
     function beforeEachBlock(
-        ExchangeData.Block memory _block,
-        AmmData.Context    memory ctx
+        AmmData.State      storage /* S */,
+        ExchangeData.Block memory  _block,
+        AmmData.Context    memory  ctx
         )
         internal
         pure
@@ -72,7 +73,7 @@ library AmmBlockReceiver
         uint                       txIdx
         )
         internal
-        returns (uint numTxConsumed)
+        returns (uint)
     {
         ctx.txIdx = txIdx;
 
@@ -80,7 +81,7 @@ library AmmBlockReceiver
         _processPoolTx(S, _block, ctx, poolTxData);
         S.approveAmmUpdates(_block, ctx, false);
 
-        numTxConsumed = ctx.txIdx - txIdx;
+        return = ctx.txIdx - txIdx;
     }
 
     function _processPoolTx(
