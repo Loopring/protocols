@@ -23,14 +23,24 @@ library AmmBlockReceiver
 
     function beforeBlockSubmission(
         AmmData.State      storage S,
+        bytes              memory  context,
         ExchangeData.Block memory  _block,
         bytes              memory  poolTxData,
         uint                       txIdx
         )
         internal
-        returns (uint)
+        returns (uint numTxConsumed, bytes memory newContext)
     {
-        AmmData.Context memory ctx = _getContext(S, _block, txIdx);
+        AmmData.Context memory ctx = context.length == 0 ?
+            _getContext(S, _block, txIdx) :
+            abi.decode(context, (AmmData.Context));
+
+        if (poolTxData.length == 0) {
+            // This marks end of all pool transactions for this block.
+            S.poolTokenMintedSupply = ctx.poolTokenMintedSupply;
+            S.poolTokenInPoolL2 = ctx.poolTokenInPoolL2;
+            return (0, new bytes(0));
+        }
 
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
@@ -41,11 +51,8 @@ library AmmBlockReceiver
 
         S.approveAmmUpdates(ctx, false);
 
-        // Update state
-        S.poolTokenMintedSupply = ctx.poolTokenMintedSupply;
-        S.poolTokenInPoolL2 = ctx.poolTokenInPoolL2;
-
-        return ctx.txIdx - txIdx;
+        numTxConsumed = ctx.txIdx - txIdx;
+        newContext = abi.encode(ctx);
     }
 
     function _getContext(

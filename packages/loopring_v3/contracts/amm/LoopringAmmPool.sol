@@ -90,6 +90,7 @@ contract LoopringAmmPool is
     }
 
     function beforeBlockSubmission(
+        bytes              memory context,
         ExchangeData.Block memory _block,
         bytes              memory data,
         uint                      txIdx
@@ -99,9 +100,9 @@ contract LoopringAmmPool is
         onlyWhenOnline
         onlyFromExchangeOwner
         nonReentrant
-        returns (uint)
+        returns (uint, bytes memory)
     {
-        return state.beforeBlockSubmission(_block, data, txIdx);
+        return state.beforeBlockSubmission(context, _block, data, txIdx);
     }
 
     function withdrawFromApprovedWithdrawals()

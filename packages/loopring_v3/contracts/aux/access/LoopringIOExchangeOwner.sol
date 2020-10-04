@@ -118,7 +118,6 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
                 blockData := add(decompressed, 4)
             }
             ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
-
             _beforeBlockSubmission(blocks, callbackConfig);
         }
 
@@ -164,10 +163,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             uint16 receiverIdx = txCallback.receiverIdx;
             require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
 
-            uint numTransactionsConsumed = IBlockReceiver(receivers[receiverIdx])
-                .beforeBlockSubmission(_block, txCallback.data, txIdx);
+            bytes memory context = new bytes(0);
+            uint numTxConsumed = 0;
+            (numTxConsumed, context) = IBlockReceiver(receivers[receiverIdx])
+                .beforeBlockSubmission(context, _block, txCallback.data, txIdx);
 
-            cursor = txIdx + numTransactionsConsumed + 1;
+            cursor = txIdx + numTxConsumed + 1;
         }
     }
 }

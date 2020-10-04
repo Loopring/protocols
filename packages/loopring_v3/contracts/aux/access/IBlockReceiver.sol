@@ -10,11 +10,15 @@ import "../../core/iface/ExchangeData.sol";
 abstract contract IBlockReceiver
 {
     function beforeBlockSubmission(
+        bytes              memory context,
         ExchangeData.Block memory _block,
         bytes              memory data,
         uint                      txIdx
         )
         external
         virtual
-        returns (uint numTransactionsConsumed);
+        returns (
+            uint  numTxConsumed,
+            bytes memory newContext
+        );
 }
