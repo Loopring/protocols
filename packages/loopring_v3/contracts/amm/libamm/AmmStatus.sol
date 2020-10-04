@@ -72,13 +72,12 @@ library AmmStatus
         }
 
         // Mint all liquidity tokens to the pool account on L2
-        S.balanceOf[msg.sender] = AmmData.POOL_TOKEN_MINTED_SUPPLY();
+        S.balanceOf[address(this)] = AmmData.POOL_TOKEN_MINTED_SUPPLY();
         S.poolTokenBurnedSupply = AmmData.POOL_TOKEN_MINTED_SUPPLY();
-        S.approve(address(exchange.getDepositContract()), uint(-1));
+        S.allowance[address(this)][address(exchange.getDepositContract())] = uint(-1);
 
-        // AmmPool contract should be a agent of msg.sender in exchange:
         exchange.deposit(
-            msg.sender, // from
+            address(this), // from
             address(this), // to
             address(this), // token
             uint96(AmmData.POOL_TOKEN_MINTED_SUPPLY()),
