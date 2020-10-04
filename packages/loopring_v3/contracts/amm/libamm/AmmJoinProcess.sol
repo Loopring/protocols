@@ -97,7 +97,7 @@ library AmmJoinProcess
         ctx.approveTransfer(transfer);
 
         // Update pool balance
-        ctx.poolTokenInPoolL2 = ctx.poolTokenInPoolL2.sub(transfer.amount);
+        ctx.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply.sub(transfer.amount);
     }
 
     function _calculateJoinAmounts(
@@ -119,7 +119,7 @@ library AmmJoinProcess
             return (false, 0, amounts);
         }
 
-        if (ctx.effectiveTotalSupply() == 0) {
+        if (ctx.totalSupply() == 0) {
             return(true, AmmData.POOL_TOKEN_INITIAL_SUPPLY().toUint96(), join.joinAmounts);
         }
 
@@ -128,7 +128,7 @@ library AmmJoinProcess
         for (uint i = 0; i < ctx.size; i++) {
             if (ctx.tokenBalancesL2[i] > 0) {
                 uint amountOut = uint(join.joinAmounts[i])
-                    .mul(ctx.effectiveTotalSupply()) / uint(ctx.tokenBalancesL2[i]);
+                    .mul(ctx.totalSupply()) / uint(ctx.tokenBalancesL2[i]);
 
                 if (!initialized) {
                     initialized = true;
@@ -144,10 +144,10 @@ library AmmJoinProcess
         }
 
         // Calculate the amounts to deposit
-        uint ratio = ctx.poolTokenBase.mul(mintAmount) / ctx.effectiveTotalSupply();
+        uint ratio = uint(AmmData.POOL_TOKEN_BASE()).mul(mintAmount) / ctx.totalSupply();
 
         for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = ratio.mul(ctx.tokenBalancesL2[i] / ctx.poolTokenBase).toUint96();
+            amounts[i] = ratio.mul(ctx.tokenBalancesL2[i] / AmmData.POOL_TOKEN_BASE()).toUint96();
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

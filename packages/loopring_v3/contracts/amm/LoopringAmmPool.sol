@@ -65,6 +65,7 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.setupPool(config);
+        state.balanceOf[address(this)] = AmmData.POOL_TOKEN_MINTED_SUPPLY();
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.

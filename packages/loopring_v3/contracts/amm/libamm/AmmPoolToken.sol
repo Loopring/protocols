@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "./AmmData.sol";
 import "../../lib/EIP712.sol";
-import "../../lib/MathUint.sol";
+import "../../lib/MathUint96.sol";
 import "../../lib/SignatureUtil.sol";
 
 
@@ -13,6 +13,7 @@ import "../../lib/SignatureUtil.sol";
 library AmmPoolToken
 {
     using MathUint      for uint;
+    using MathUint96    for uint96;
     using SignatureUtil for bytes32;
 
     event Approval(address indexed owner, address indexed spender, uint value);
@@ -27,7 +28,7 @@ library AmmPoolToken
         view
         returns (uint)
     {
-        return S.poolTokenMintedSupply.sub(S.poolTokenInPoolL2);
+        return AmmData.POOL_TOKEN_MINTED_SUPPLY().sub(S.poolTokenBurnedSupply);
     }
 
     function approve(
@@ -99,30 +100,6 @@ library AmmPoolToken
 
         require(hash.verifySignature(owner, signature), 'INVALID_SIGNATURE');
         _approve(S, owner, spender, value);
-    }
-
-    function mint(
-        AmmData.State storage S,
-        address               to,
-        uint                  value
-        )
-        internal
-    {
-        S.poolTokenMintedSupply = S.poolTokenMintedSupply.add(value);
-        S.balanceOf[to] = S.balanceOf[to].add(value);
-        emit Transfer(address(0), to, value);
-    }
-
-    function burn(
-        AmmData.State storage S,
-        address               from,
-        uint                  value
-        )
-        internal
-    {
-        S.balanceOf[from] = S.balanceOf[from].sub(value);
-        S.poolTokenMintedSupply = S.poolTokenMintedSupply.sub(value);
-        emit Transfer(from, address(0), value);
     }
 
     function _approve(

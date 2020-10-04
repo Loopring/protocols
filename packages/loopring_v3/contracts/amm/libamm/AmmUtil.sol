@@ -7,6 +7,7 @@ import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/MathUint96.sol";
 import "./AmmData.sol";
 
 
@@ -16,6 +17,7 @@ library AmmUtil
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
+    using MathUint96        for uint96;
 
     function approveTransfer(
         AmmData.Context  memory  ctx,
@@ -28,14 +30,14 @@ library AmmUtil
         ctx.exchange.approveTransaction(transfer.from, hash);
     }
 
-    function effectiveTotalSupply(
+    function totalSupply(
         AmmData.Context  memory  ctx
         )
         internal
         pure
         returns (uint)
     {
-        return ctx.poolTokenMintedSupply.sub(ctx.poolTokenInPoolL2);
+        return AmmData.POOL_TOKEN_MINTED_SUPPLY().sub(ctx.poolTokenBurnedSupply);
     }
 
     function isAlmostEqualAmount(
