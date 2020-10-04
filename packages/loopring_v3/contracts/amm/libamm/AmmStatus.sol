@@ -75,7 +75,6 @@ library AmmStatus
         S.balanceOf[address(this)] = AmmData.POOL_TOKEN_MINTED_SUPPLY();
         S.poolTokenBurnedSupply = AmmData.POOL_TOKEN_MINTED_SUPPLY();
         S.allowance[address(this)][address(exchange.getDepositContract())] = uint(-1);
-
         exchange.deposit(
             address(this), // from
             address(this), // to
