@@ -22,6 +22,7 @@ library AmmUtil
         TransferTransaction.Transfer memory transfer
         )
         internal
+        pure
     {
         transfer.validUntil = 0xffffffff;
         bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
@@ -30,15 +31,15 @@ library AmmUtil
 
     function approveExchangeTransaction(
         AmmData.Context  memory  ctx,
-        address                  from,
+        address                  owner,
         bytes32                  txHash
         )
         internal
+        pure
     {
-        ctx.dexTransactions[ctx.dexTransactionCount++] = AmmData.PendingExchangeTx({
-            from: from,
-            txHash: txHash
-        });
+        ctx.pendingTxOwners[ctx.pendingTxIdx] = owner;
+        ctx.pendingTxHashes[ctx.pendingTxIdx] = txHash;
+        ctx.pendingTxIdx++;
     }
 
     function totalSupply(

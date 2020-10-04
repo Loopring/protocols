@@ -42,6 +42,7 @@ library AmmBlockReceiver
 
             // This marks end of all pool transactions for this block.
             S.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply;
+            S.exchange.approveTransactions(ctx.pendingTxOwners, ctx.pendingTxHashes);
             return (0, new bytes(0));
         }
 
@@ -74,8 +75,9 @@ library AmmBlockReceiver
             tokens: S.tokens,
             tokenBalancesL2: new uint96[](size),
             poolTokenBurnedSupply: S.poolTokenBurnedSupply,
-            dexTransactionCount: 0,
-            dexTransactions: new AmmData.PendingExchangeTx[](size * 3)
+            pendingTxIdx: 0,
+            pendingTxOwners: new address[](size * 3),
+            pendingTxHashes: new bytes32[](size * 3)
         });
     }
 

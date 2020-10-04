@@ -80,9 +80,9 @@ abstract contract IExchangeV3 is IExchange
         uint8 previousMakerFeeBips
     );
 
-    event TransactionsApproved(
+    event TransactionApproved(
         address owner,
-        bytes32[] transactionHashes
+        bytes32 transactionHash
     );
 
     // events from libraries
@@ -654,10 +654,10 @@ abstract contract IExchangeV3 is IExchange
     ///
     ///      This function can only be called by an agent.
     ///
-    /// @param owner The owner of the account
+    /// @param owners The account owners
     /// @param txHashes The hashes of the transactions
     function approveTransactions(
-        address            owner,
+        address[] calldata owners,
         bytes32[] calldata txHashes
         )
         external

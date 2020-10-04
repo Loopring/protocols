@@ -22,6 +22,7 @@ library AmmUpdateProcess
         bool                       opening
         )
         internal
+        view
     {
         for (uint i = 0; i < ctx.tokens.length; i++) {
             // Check that the AMM update in the block matches the expected update
@@ -37,7 +38,6 @@ library AmmUpdateProcess
             update.validUntil = 0xffffffff;
             bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.exchangeDomainSeparator, update);
             ctx.approveExchangeTransaction(address(this), txHash);
-            // ctx.exchange.approveTransaction(address(this), txHash);
 
             if (opening) {
                 ctx.tokenBalancesL2[i] = update.balance;

@@ -828,11 +828,11 @@ export class ExchangeTestUtil {
       // Check the event
       const event = await this.assertEventEmitted(
         this.exchange,
-        "TransactionsApproved"
+        "TransactionApproved"
       );
       assert.equal(event.owner, signer, "unexpected tx owner");
       assert.equal(
-        event.transactionHashes[0],
+        event.transactionHash,
         "0x" + txHash.toString("hex"),
         "unexpected tx hash"
       );

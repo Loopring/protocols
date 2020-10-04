@@ -90,8 +90,9 @@ library AmmData
         uint96[] tokenBalancesL2;
 
         uint      poolTokenBurnedSupply;
-        uint      dexTransactionCount;
-        PendingExchangeTx[] dexTransactions;
+        uint      pendingTxIdx;
+        address[] pendingTxOwners;
+        bytes32[] pendingTxHashes;
     }
 
     struct State {

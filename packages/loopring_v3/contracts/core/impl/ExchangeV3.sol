@@ -49,12 +49,7 @@ contract ExchangeV3 is IExchangeV3
 
     modifier onlyFromUserOrAgent(address owner)
     {
-        require(
-            owner == msg.sender ||
-            state.agentRegistry != IAgentRegistry(address(0)) &&
-            state.agentRegistry.isAgent(owner, msg.sender),
-            "UNAUTHORIZED"
-        );
+        require(isUserOrAgent(owner), "UNAUTHORIZED");
         _;
     }
 
@@ -160,6 +155,16 @@ contract ExchangeV3 is IExchangeV3
             uint amount = ERC20(token).balanceOf(address(this));
             token.safeTransferAndVerify(recipient, amount);
         }
+    }
+
+    function isUserOrAgent(address owner)
+        public
+        view
+        returns (bool)
+    {
+         return owner == msg.sender ||
+            state.agentRegistry != IAgentRegistry(address(0)) &&
+            state.agentRegistry.isAgent(owner, msg.sender);
     }
 
     // -- Constants --
@@ -549,9 +554,7 @@ contract ExchangeV3 is IExchangeV3
         bytes32 txHash = TransferTransaction.hashTx(state.DOMAIN_SEPARATOR, transfer);
         state.approvedTx[transfer.from][txHash] = true;
 
-        bytes32[] memory txHashes = new bytes32[](1);
-        txHashes[0] = txHash;
-        emit TransactionsApproved(transfer.from, txHashes);
+        emit TransactionApproved(transfer.from, txHash);
     }
 
     function setWithdrawalRecipient(
@@ -613,14 +616,11 @@ contract ExchangeV3 is IExchangeV3
         onlyFromUserOrAgent(owner)
     {
         state.approvedTx[owner][transactionHash] = true;
-
-        bytes32[] memory transactionHashes = new bytes32[](1);
-        transactionHashes[0] = transactionHash;
-        emit TransactionsApproved(owner, transactionHashes);
+        emit TransactionApproved(owner, transactionHash);
     }
 
     function approveTransactions(
-        address            owner,
+        address[] calldata owners,
         bytes32[] calldata transactionHashes
         )
         external
@@ -628,10 +628,12 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyFromUserOrAgent(owner)
     {
-        for (uint i = 0; i < transactionHashes.length; i++) {
-            state.approvedTx[owner][transactionHashes[i]] = true;
+        require(owners.length == transactionHashes.length, "INVALID_DATA");
+        for (uint i = 0; i < owners.length; i++) {
+            require(isUserOrAgent(owners[i]), "UNAUTHORIZED");
+            state.approvedTx[owners[i]][transactionHashes[i]] = true;
+            emit TransactionApproved(owners[i], transactionHashes[i]);
         }
-        emit TransactionsApproved(owner, transactionHashes);
     }
 
     function isTransactionApproved(

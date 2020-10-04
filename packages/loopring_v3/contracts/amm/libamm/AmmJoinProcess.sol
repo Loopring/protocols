@@ -38,6 +38,7 @@ library AmmJoinProcess
         bytes             memory  signature
         )
         internal
+        view
     {
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
         require(txHash.verifySignature(join.owner, signature), "INVALID_JOIN_APPROVAL");
@@ -68,18 +69,19 @@ library AmmJoinProcess
             ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(transfer.amount);
         }
 
-        _mintL2(_block, ctx, mintAmount, join.owner);
+        _mintPoolTokenOnL2(_block, ctx, mintAmount, join.owner);
 
         // emit JoinProcessed(join.owner, mintAmount, amounts);
     }
 
-    function _mintL2(
+    function _mintPoolTokenOnL2(
         ExchangeData.Block memory _block,
         AmmData.Context    memory ctx,
         uint96                    amount,
         address                   to
         )
         private
+        view
     {
         TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
 

@@ -71,7 +71,7 @@ library AmmExitProcess
             ctx.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply.add(exit.burnAmount);
         } else {
             require(slippageOK, "EXIT_SLIPPAGE_INVALID");
-            _burnL2(_block, ctx, exit.burnAmount, exit.owner, exit.burnStorageID);
+            _burnPoolTokenOnL2(_block, ctx, exit.burnAmount, exit.owner, exit.burnStorageID);
         }
 
         // Handle liquidity tokens
@@ -101,14 +101,15 @@ library AmmExitProcess
         }
     }
 
-    function _burnL2(
+    function _burnPoolTokenOnL2(
         ExchangeData.Block memory _block,
         AmmData.Context    memory ctx,
         uint96                    amount,
         address                   from,
         uint32                    burnStorageID
         )
-        internal
+        private
+        view
     {
         TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
 
