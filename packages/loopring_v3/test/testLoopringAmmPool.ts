@@ -124,7 +124,43 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
 
+      const ammBalancesInAccount: BN[] = [];
+      const ammBalances: BN[] = [];
+      for (let i = 0; i < poolConfig.tokens.length; i++) {
+        await exchangeTestUtil.requestAmmUpdate(
+          loopringAmmPool.address,
+          poolConfig.tokens[i],
+          poolConfig.feeBips,
+          /*this.weights[i]*/ new BN(0),
+          { authMethod: AuthMethod.NONE }
+        );
+
+        ammBalancesInAccount.push(
+          await exchangeTestUtil.getOffchainBalance(
+            loopringAmmPool.address,
+            poolConfig.tokens[i]
+          )
+        );
+        ammBalances.push(
+          await exchangeTestUtil.getOffchainBalance(
+            loopringAmmPool.address,
+            poolConfig.tokens[i]
+          )
+        );
+      }
+
       // joinPool on L2: (3 internal-transfers)
+
+      // Re-enable weights
+      for (let i = 0; i < poolConfig.tokens.length; i++) {
+        await exchangeTestUtil.requestAmmUpdate(
+          loopringAmmPool.address,
+          poolConfig.tokens[i],
+          poolConfig.feeBips,
+          new BN(poolConfig.weights[i]),
+          { authMethod: AuthMethod.NONE }
+        );
+      }
 
       /// swap with ammPool:
       // const ring: SpotTrade = {
