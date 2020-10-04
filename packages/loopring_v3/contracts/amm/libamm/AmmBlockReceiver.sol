@@ -36,14 +36,15 @@ library AmmBlockReceiver
             abi.decode(context, (AmmData.Context));
 
         if (poolTxData.length == 0) {
+
+            BlockReader.BlockHeader memory header = _block.readHeader();
+            require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
+
             // This marks end of all pool transactions for this block.
             S.poolTokenMintedSupply = ctx.poolTokenMintedSupply;
             S.poolTokenInPoolL2 = ctx.poolTokenInPoolL2;
             return (0, new bytes(0));
         }
-
-        BlockReader.BlockHeader memory header = _block.readHeader();
-        require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
         S.approveAmmUpdates(ctx, true);
 
