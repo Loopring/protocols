@@ -35,6 +35,7 @@ export interface PoolExit {
   exitMinAmounts: BN[];
   validUntil: number;
   signature?: string;
+  authMethod: AuthMethod;
 }
 
 export interface PoolTransaction {
@@ -148,6 +149,7 @@ export namespace PoolExitUtils {
 export class AmmPool {
   public ctx: ExchangeTestUtil;
   public contract: any;
+  public sharedConfig: any;
 
   public feeBips: number;
   public tokens: string[];
@@ -165,11 +167,12 @@ export class AmmPool {
   }
 
   public async setupPool(
-    sharedConfig: string,
+    sharedConfig: any,
     tokens: string[],
     weights: BN[],
     feeBips: number
   ) {
+    this.sharedConfig = sharedConfig;
     this.feeBips = feeBips;
     this.tokens = tokens;
     this.weights = weights;
@@ -212,7 +215,7 @@ export class AmmPool {
 
     // Setup the pool
     const poolConfig = {
-      sharedConfig,
+      sharedConfig: sharedConfig.address,
       exchange: this.ctx.exchange.address,
       poolName: "AMM Pool",
       accountID: deposit.accountID,
@@ -291,14 +294,21 @@ export class AmmPool {
       burnAmount,
       burnStorageID: 0,
       exitMinAmounts,
-      validUntil
+      validUntil,
+      authMethod
     };
 
-    if (authMethod === AuthMethod.APPROVE) {
-      assert(false, "unsupported");
-      /*await this.contract.exitPool(poolAmountIn, minAmountsOut, toLayer2, {
-        from: owner
-      });*/
+    if (authMethod === AuthMethod.FORCE) {
+      const exitFee = await this.sharedConfig.forcedExitFee();
+      await this.contract.exitPool(burnAmount, exitMinAmounts, {
+        from: owner,
+        value: exitFee
+      });
+      const event = await this.ctx.assertEventEmitted(
+        this.contract,
+        "ForcedPoolExitRequested"
+      );
+      exit.validUntil = Number(event.exit.validUntil);
     } else if (authMethod === AuthMethod.ECDSA) {
       exit.burnStorageID = this.ctx.reserveStorageID();
       const hash = PoolExitUtils.getHash(exit, this.contract.address);
@@ -382,10 +392,7 @@ export class AmmPool {
 
       // Deposit
       for (let i = 0; i < this.tokens.length; i++) {
-        const amount = roundToFloatValue(
-          amounts[i],
-          Constants.Float24Encoding
-        );
+        const amount = roundToFloatValue(amounts[i], Constants.Float24Encoding);
         const storageID =
           join.joinStorageIDs.length > 0 ? join.joinStorageIDs[i] : undefined;
         await this.ctx.transfer(
@@ -435,24 +442,28 @@ export class AmmPool {
       const poolTotal = this.totalSupply;
       const ratio = exit.burnAmount.mul(this.POOL_TOKEN_BASE).div(poolTotal);
 
-      // Burn
-      await this.ctx.transfer(
-        exit.owner,
-        owner,
-        owner,
-        exit.burnAmount,
-        "ETH",
-        new BN(0),
-        {
-          authMethod: AuthMethod.NONE,
-          amountToDeposit: new BN(0),
-          storageID: exit.burnStorageID
-        }
-      );
+      if (exit.authMethod !== AuthMethod.FORCE) {
+        // Burn
+        await this.ctx.transfer(
+          exit.owner,
+          owner,
+          owner,
+          exit.burnAmount,
+          "ETH",
+          new BN(0),
+          {
+            authMethod: AuthMethod.NONE,
+            amountToDeposit: new BN(0),
+            storageID: exit.burnStorageID
+          }
+        );
+      }
 
       // Withdraw
       for (let i = 0; i < this.tokens.length; i++) {
-        let amount = this.tokenBalancesL2[i].mul(ratio).div(this.POOL_TOKEN_BASE);
+        let amount = this.tokenBalancesL2[i]
+          .mul(ratio)
+          .div(this.POOL_TOKEN_BASE);
         amount = roundToFloatValue(amount, Constants.Float24Encoding);
         await this.ctx.transfer(
           owner,
@@ -620,7 +631,7 @@ contract.only("LoopringAmmPool", (accounts: string[]) => {
       }
 
       const pool = new AmmPool(ctx);
-      await pool.setupPool(sharedConfig.address, tokens, weights, feeBipsAMM);
+      await pool.setupPool(sharedConfig, tokens, weights, feeBipsAMM);
 
       await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
         from: registryOwner
@@ -701,7 +712,31 @@ contract.only("LoopringAmmPool", (accounts: string[]) => {
         { authMethod: AuthMethod.ECDSA }
       );
       await ctx.submitTransactions(16);
+      await ctx.submitPendingBlocks();
 
+      // Withdraw some liquidity tokens
+      await ctx.requestWithdrawal(
+        ownerA,
+        pool.contract.address,
+        pool.POOL_TOKEN_BASE.div(new BN(10)),
+        "ETH",
+        new BN(0)
+      );
+      await ctx.submitTransactions();
+      await ctx.submitPendingBlocks();
+
+      // Force exit
+      await pool.prePoolTransactions();
+      await pool.exit(
+        ownerA,
+        pool.POOL_TOKEN_BASE.div(new BN(10)),
+        [
+          new BN(web3.utils.toWei("100", "ether")),
+          new BN(web3.utils.toWei("100", "ether"))
+        ],
+        { authMethod: AuthMethod.FORCE }
+      );
+      await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
     });
   });

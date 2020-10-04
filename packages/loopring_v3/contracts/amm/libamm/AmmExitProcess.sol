@@ -47,7 +47,7 @@ library AmmExitProcess
             bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
             require(
                 txHash == forcedExitHash &&
-                exit.validUntil > 0 && exit.validUntil <= block.timestamp,
+                exit.validUntil > 0 && exit.validUntil >= block.timestamp,
                 "FORCED_EXIT_NOT_FOUND"
             );
 
