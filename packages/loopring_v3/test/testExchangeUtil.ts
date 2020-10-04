@@ -1957,7 +1957,7 @@ export class ExchangeTestUtil {
     );
 
     // Check the current state against the explorer state
-    await this.checkExplorerState();
+    // await this.checkExplorerState();
   }
 
   public async submitPendingBlocks(

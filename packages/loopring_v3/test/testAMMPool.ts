@@ -499,7 +499,7 @@ export class AmmPool {
       auxiliaryData
     });
     await this.ctx.submitTransactions();
-    await this.ctx.submitPendingBlocks(blockCallbacks);
+    // await this.ctx.submitPendingBlocks(blockCallbacks);
   }
 
   public getPoolJoinAuxData(join: PoolJoin) {
