@@ -2,6 +2,7 @@ import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Constants } from "loopringv3.js";
+import { AuthMethod, OrderInfo, SpotTrade } from "./types";
 
 contract("LoopringAmmPool", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -13,7 +14,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
   let loopringAmmPool: any;
   let loopringAmmSharedConfig: any;
   let exchange: any;
+  let ownerContract: any;
   let depositContractAddr: string;
+  let ownerA: string;
+  let ownerB: string;
 
   before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
@@ -31,6 +35,9 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     await loopringAmmSharedConfig.setForcedExitFee(
       web3.utils.toWei("0.001", "ether")
     );
+
+    ownerA = exchangeTestUtil.testContext.orderOwners[0];
+    ownerB = exchangeTestUtil.testContext.orderOwners[1];
   });
 
   after(async () => {
@@ -41,28 +48,39 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     // Fresh Exchange for each test
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      { setupTestState: true, useOwnerContract: false }
+      { setupTestState: true, useOwnerContract: true }
     );
     operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
     operator = exchangeTestUtil.getAccount(operatorAccountID).owner;
     exchange = exchangeTestUtil.exchange;
-    // console.log("exchange address:", exchange.address);
+    const ownerContractAddress = await exchange.owner();
+    ownerContract = await artifacts
+      .require("LoopringIOExchangeOwner")
+      .at(ownerContractAddress);
+
+    // grant registerToken to exchangeOwner:
+    await ownerContract.grantAccess(
+      exchangeTestUtil.exchangeOwner,
+      web3.eth.abi.encodeFunctionSignature("registerToken(address)"),
+      true,
+      { from: exchangeTestUtil.exchangeOwner }
+    );
 
     // register LP token:
-    await exchange.registerToken(loopringAmmPool.address, {
-      from: exchangeTestUtil.testContext.stateOwners[0]
+    const registerTokenData = exchange.contract.methods
+      .registerToken(loopringAmmPool.address)
+      .encodeABI();
+    await ownerContract.transact(registerTokenData, {
+      from: exchangeTestUtil.exchangeOwner
     });
 
     depositContractAddr = await exchange.getDepositContract();
-    // console.log("depositContractAddr:", depositContractAddr);
-    // const tokenId = await exchangeTestUtil.exchange.getTokenID(loopringAmmPool.address);
-    // console.log("tokenId", tokenId);
   });
 
   describe("LoopringAmmPool", function() {
     this.timeout(0);
 
-    it.only("Should be able to setup and mint all LP token to exchange", async () => {
+    it("Successful swap (AMM maker)", async () => {
       const ethAddr = exchangeTestUtil.testContext.tokenSymbolAddrMap.get(
         "ETH"
       );
@@ -83,7 +101,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
       const poolConfig = {
         sharedConfig: loopringAmmSharedConfig.address,
-        exchange: exchangeTestUtil.exchange.address,
+        exchange: exchange.address,
         poolName: "LRC-ETH",
         accountID: 10,
         tokens: [lrcAddr, ethAddr],
@@ -93,6 +111,42 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       };
 
       await loopringAmmPool.setupPool(poolConfig);
+
+      // joinPool on L2:
+
+      // const ring: SpotTrade = {
+      //   orderA: {
+      //     owner: loopringAmmPool.contract.address,
+      //     tokenS: "WETH",
+      //     tokenB: "GTO",
+      //     amountS: new BN(web3.utils.toWei("98", "ether")),
+      //     amountB: new BN(web3.utils.toWei("200", "ether")),
+      //     feeBips: 0,
+      //     amm: true
+      //   },
+      //   orderB: {
+      //     tokenS: "GTO",
+      //     tokenB: "WETH",
+      //     amountS: new BN(web3.utils.toWei("200", "ether")),
+      //     amountB: new BN(web3.utils.toWei("98", "ether"))
+      //   },
+      //   expected: {
+      //     orderA: { filledFraction: 1.0, spread: new BN(0) },
+      //     orderB: { filledFraction: 1.0 }
+      //   }
+      // };
+      // await exchangeTestUtil.setupRing(ring, true, true, false, true);
+
+      // await exchangeTestUtil.deposit(
+      //   exchangeTestUtil.exchangeOperator,
+      //   exchangeTestUtil.exchangeOperator,
+      //   ring.orderA.tokenB,
+      //   ring.orderA.amountB
+      // );
+
+      // await exchangeTestUtil.sendRing(ring);
+      // await exchangeTestUtil.submitTransactions();
+      // await exchangeTestUtil.submitPendingBlocks();
     });
   });
 });
