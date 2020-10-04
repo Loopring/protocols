@@ -79,7 +79,7 @@ library AmmStatus
             address(this), // from
             address(this), // to
             address(this), // token
-            uint96(S.poolTokenBurnedSupply),
+            uint96(AmmData.POOL_TOKEN_MINTED_SUPPLY()),
             new bytes(0)
         );
     }
