@@ -80,7 +80,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
   describe("LoopringAmmPool", function() {
     this.timeout(0);
 
-    it("Successful swap (AMM maker)", async () => {
+    it.only("Successful swap (AMM maker)", async () => {
       const ethAddr = exchangeTestUtil.testContext.tokenSymbolAddrMap.get(
         "ETH"
       );
@@ -89,7 +89,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       );
 
       // register AmmPool as an account in exchange:
-      await exchangeTestUtil.deposit(
+      const depositRes = await exchangeTestUtil.deposit(
         exchangeTestUtil.testContext.operators[0],
         loopringAmmPool.address,
         Constants.zeroAddress,
@@ -103,7 +103,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         sharedConfig: loopringAmmSharedConfig.address,
         exchange: exchange.address,
         poolName: "LRC-ETH",
-        accountID: 10,
+        accountID: depositRes.accountID,
         tokens: [lrcAddr, ethAddr],
         weights: [1, 1],
         feeBips: 10,
@@ -112,8 +112,21 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
       await loopringAmmPool.setupPool(poolConfig);
 
-      // joinPool on L2:
+      // ownerA: deposit 10ETH, 10000LRC
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const balanceLrc = new BN(web3.utils.toWei("10000", "ether"));
+      const balanceEth = new BN(web3.utils.toWei("10", "ether"));
 
+      await exchangeTestUtil.deposit(ownerA, ownerA, lrcAddr, balanceLrc);
+
+      await exchangeTestUtil.deposit(ownerA, ownerA, ethAddr, balanceEth);
+
+      await exchangeTestUtil.submitTransactions();
+      await exchangeTestUtil.submitPendingBlocks();
+
+      // joinPool on L2: (3 internal-transfers)
+
+      /// swap with ammPool:
       // const ring: SpotTrade = {
       //   orderA: {
       //     owner: loopringAmmPool.contract.address,
