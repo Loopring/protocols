@@ -112,7 +112,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
       await loopringAmmPool.setupPool(poolConfig);
 
-      // ownerA: deposit 10ETH, 10000LRC
+      // ownerA: poolJoin: 10ETH, 10000LRC
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
       const balanceLrc = new BN(web3.utils.toWei("10000", "ether"));
       const balanceEth = new BN(web3.utils.toWei("10", "ether"));
