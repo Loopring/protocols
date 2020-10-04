@@ -153,9 +153,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
             _processTransactions(_block, ctxs, blockCallback.txs, config.receivers);
 
-            for (uint j = 0; j < ctxs.length; j++) {
-                config.receivers[j].afterEachBlock(_block, ctxs[j]);
-            }
+            // for (uint j = 0; j < ctxs.length; j++) {
+            //     config.receivers[j].afterEachBlock(_block, ctxs[j]);
+            // }
         }
 
         for (uint i = 0; i < config.receivers.length; i++) {

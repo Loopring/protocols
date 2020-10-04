@@ -25,25 +25,25 @@ abstract contract IAmmBlockReceiver
         AmmData.Context    memory ctx
         )
         external
-        virtual
-    {
-    }
+        virtual;
 
-    function afterEachBlock(
-        ExchangeData.Block memory /* _block */,
-        AmmData.Context    memory ctx
-        )
-        external
-        virtual
-    {
-    }
+    // function afterEachBlock(
+    //     ExchangeData.Block memory /* _block */,
+    //     AmmData.Context    memory ctx
+    //     )
+    //     external
+    //     virtual
+    // {
+    // }
 
     function beforeAllBlocks()
         external
         virtual
         returns(AmmData.Context memory ctx);
 
-    function afterAllBlocks(AmmData.Context memory ctx)
+    function afterAllBlocks(
+        AmmData.Context memory ctx
+        )
         external
         virtual
     {
