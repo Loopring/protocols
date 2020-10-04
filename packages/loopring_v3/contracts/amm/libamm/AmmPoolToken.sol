@@ -10,6 +10,9 @@ import "../../lib/SignatureUtil.sol";
 
 
 /// @title AmmPoolToken
+///        This contract do not maintain the following data to save gas:
+///        S.balanceOf[address(this)], and
+///        S.allowance[*][address(this)]
 library AmmPoolToken
 {
     using MathUint      for uint;
@@ -29,6 +32,33 @@ library AmmPoolToken
         returns (uint)
     {
         return AmmData.POOL_TOKEN_MINTED_SUPPLY().sub(S.poolTokenBurnedSupply);
+    }
+
+    function _balanceOf(
+        AmmData.State storage S,
+        address               owner
+        )
+        internal
+        view
+        returns (uint balance)
+    {
+        return owner == address(this) ?
+          uint96(-1) :
+          S.balanceOf[owner];
+    }
+
+    function _allowance(
+         AmmData.State storage S,
+         address               owner,
+         address               spender
+         )
+        internal
+        view
+        returns (uint)
+    {
+        return spender == address(this) ?
+            uint(-1) :
+            S.allowance[owner][spender];
     }
 
     function approve(
@@ -112,8 +142,8 @@ library AmmPoolToken
     {
         if (spender != address(this)) {
             S.allowance[owner][spender] = value;
-            emit Approval(owner, spender, value);
         }
+        emit Approval(owner, spender, value);
     }
 
     function _transfer(
@@ -124,8 +154,12 @@ library AmmPoolToken
         )
         private
     {
-        S.balanceOf[from] = S.balanceOf[from].sub(value);
-        S.balanceOf[to] = S.balanceOf[to].add(value);
+        if (from != address(this)) {
+            S.balanceOf[from] = S.balanceOf[from].sub(value);
+        }
+        if (to != address(this)) {
+            S.balanceOf[to] = S.balanceOf[to].add(value);
+        }
         emit Transfer(from, to, value);
     }
 }

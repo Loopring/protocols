@@ -50,7 +50,7 @@ abstract contract PoolToken is ERC2612 {
         override
         returns (uint balance)
     {
-        return state.balanceOf[owner];
+        return state._balanceOf(owner);
     }
 
     function allowance(address owner, address spender)
@@ -59,9 +59,7 @@ abstract contract PoolToken is ERC2612 {
         override
         returns (uint)
     {
-        return spender == address(this) ?
-            uint(-1) :
-            state.allowance[owner][spender];
+        return state._allowance(owner, spender);
     }
 
     function nonces(address owner)
