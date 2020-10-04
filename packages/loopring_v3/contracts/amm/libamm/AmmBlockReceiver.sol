@@ -65,7 +65,7 @@ library AmmBlockReceiver
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
     }
 
-    function onReceiveTransaction(
+    function onAmmTransaction(
         AmmData.State      storage S,
         AmmData.Context    memory  ctx,
         ExchangeData.Block memory  _block,
@@ -81,7 +81,7 @@ library AmmBlockReceiver
         _processPoolTx(S, _block, ctx, poolTxData);
         S.approveAmmUpdates(_block, ctx, false);
 
-        return = ctx.txIdx - txIdx;
+        return ctx.txIdx - txIdx;
     }
 
     function _processPoolTx(

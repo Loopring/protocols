@@ -123,7 +123,7 @@ contract LoopringAmmPool is
         state.beforeEachBlock(_block, ctx);
     }
 
-    function onReceiveTransaction(
+    function onAmmTransaction(
         ExchangeData.Block memory _block,
         AmmData.Context    memory ctx,
         bytes              memory data,
@@ -136,7 +136,7 @@ contract LoopringAmmPool is
         nonReentrant
         returns (uint)
     {
-        return state.onReceiveTransaction(ctx, _block, data, txIdx);
+        return state.onAmmTransaction(ctx, _block, data, txIdx);
     }
 
     function withdrawFromApprovedWithdrawals()

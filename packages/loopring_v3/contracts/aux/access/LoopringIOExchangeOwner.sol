@@ -183,7 +183,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             uint16 idx = _tx.receiverIdx;
             require(idx < receivers.length, "INVALID_RECEIVER_INDEX");
 
-            uint numTxConsumed = receivers[idx].onReceiveTransaction(
+            uint numTxConsumed = receivers[idx].onAmmTransaction(
                 _block,
                 ctxs[idx],
                 _tx.data,

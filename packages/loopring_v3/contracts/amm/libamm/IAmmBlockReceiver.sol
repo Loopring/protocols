@@ -6,11 +6,11 @@ pragma experimental ABIEncoderV2;
 import "../../core/iface/ExchangeData.sol";
 import "./AmmData.sol";
 
-/// @title IBlockReceiver
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title IAmmBlockReceiver
+/// @author Daniel Wang - <daniel@loopring.org>
 abstract contract IAmmBlockReceiver
 {
-    function onReceiveTransaction(
+    function onAmmTransaction(
         ExchangeData.Block memory _block,
         AmmData.Context    memory ctx,
         bytes              memory data,

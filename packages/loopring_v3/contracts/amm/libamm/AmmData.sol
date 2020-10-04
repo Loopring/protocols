@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../core/iface/ExchangeData.sol";
 import "../../core/iface/IExchangeV3.sol";
-import "./AmmSharedConfig.sol";
+import "./IAmmSharedConfig.sol";
 
 
 /// @title AmmData
@@ -106,7 +106,7 @@ library AmmData
         mapping(address => uint) nonces;
 
         // AMM pool state variables
-        AmmSharedConfig sharedConfig;
+        IAmmSharedConfig sharedConfig;
 
         IExchangeV3 exchange;
         uint32      accountID;

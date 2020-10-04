@@ -11,10 +11,10 @@ import "../../lib/MathUint96.sol";
 import "../../lib/SignatureUtil.sol";
 import "./AmmData.sol";
 import "./AmmPoolToken.sol";
-import "./AmmSharedConfig.sol";
+import "./IAmmSharedConfig.sol";
 
 
-/// @title LPToken
+/// @title AmmStatus
 library AmmStatus
 {
     using AmmPoolToken      for AmmData.State;
@@ -49,7 +49,7 @@ library AmmStatus
         require(config.accountID != 0, "INVALID_ACCOUNT_ID");
         require(S.tokens.length == 0, "ALREADY_INITIALIZED");
 
-        S.sharedConfig = AmmSharedConfig(config.sharedConfig);
+        S.sharedConfig = IAmmSharedConfig(config.sharedConfig);
         IExchangeV3 exchange = IExchangeV3(config.exchange);
         S.exchange = exchange;
         S.accountID = config.accountID;
