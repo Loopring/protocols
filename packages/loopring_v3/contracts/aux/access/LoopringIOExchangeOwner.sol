@@ -112,7 +112,6 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         );
 
         // Process the callback logic.
-
         if (performCallback) {
             bytes memory blockData;
             assembly {
