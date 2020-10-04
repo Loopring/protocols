@@ -41,8 +41,7 @@ library AmmBlockReceiver
             require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
             // This marks end of all pool transactions for this block.
-            S.poolTokenMintedSupply = ctx.poolTokenMintedSupply;
-            S.poolTokenInPoolL2 = ctx.poolTokenInPoolL2;
+            S.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply;
             return (0, new bytes(0));
         }
 
@@ -64,7 +63,6 @@ library AmmBlockReceiver
         view
         returns (AmmData.Context memory)
     {
-        uint size = S.tokens.length;
         return AmmData.Context({
             txIdx: txIdx,
             exchange: S.exchange,
@@ -72,12 +70,9 @@ library AmmBlockReceiver
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             poolTokenID: S.poolTokenID,
-            poolTokenBase: AmmData.POOL_TOKEN_BASE(),
-            poolTokenMintedSupply: S.poolTokenMintedSupply,
-            poolTokenInPoolL2: S.poolTokenInPoolL2,
-            size: size,
+            poolTokenBurnedSupply: S.poolTokenBurnedSupply,
             tokens: S.tokens,
-            tokenBalancesL2: new uint96[](size)
+            tokenBalancesL2: new uint96[](S.tokens.length)
         });
     }
 

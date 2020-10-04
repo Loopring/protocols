@@ -28,14 +28,14 @@ library AmmUtil
         ctx.exchange.approveTransaction(transfer.from, hash);
     }
 
-    function effectiveTotalSupply(
+    function totalSupply(
         AmmData.Context  memory  ctx
         )
         internal
         pure
         returns (uint)
     {
-        return ctx.poolTokenMintedSupply.sub(ctx.poolTokenInPoolL2);
+        return AmmData.POOL_TOKEN_MINTED_SUPPLY().sub(ctx.poolTokenBurnedSupply);
     }
 
     function isAlmostEqualAmount(
