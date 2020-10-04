@@ -548,7 +548,10 @@ contract ExchangeV3 is IExchangeV3
         });
         bytes32 txHash = TransferTransaction.hashTx(state.DOMAIN_SEPARATOR, transfer);
         state.approvedTx[transfer.from][txHash] = true;
-        emit TransactionApproved(transfer.from, txHash);
+
+        bytes32[] memory txHashes = new bytes32[](1);
+        txHashes[0] = txHash;
+        emit TransactionsApproved(transfer.from, txHashes);
     }
 
     function setWithdrawalRecipient(
@@ -610,7 +613,25 @@ contract ExchangeV3 is IExchangeV3
         onlyFromUserOrAgent(owner)
     {
         state.approvedTx[owner][transactionHash] = true;
-        emit TransactionApproved(owner, transactionHash);
+
+        bytes32[] memory transactionHashes = new bytes32[](1);
+        transactionHashes[0] = transactionHash;
+        emit TransactionsApproved(owner, transactionHashes);
+    }
+
+    function approveTransactions(
+        address            owner,
+        bytes32[] calldata transactionHashes
+        )
+        external
+        override
+        nonReentrant
+        onlyFromUserOrAgent(owner)
+    {
+        for (uint i = 0; i < transactionHashes.length; i++) {
+            state.approvedTx[owner][transactionHashes[i]] = true;
+        }
+        emit TransactionsApproved(owner, transactionHashes);
     }
 
     function isTransactionApproved(

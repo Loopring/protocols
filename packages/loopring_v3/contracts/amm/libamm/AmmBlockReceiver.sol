@@ -63,6 +63,7 @@ library AmmBlockReceiver
         view
         returns (AmmData.Context memory)
     {
+        uint size = S.tokens.length;
         return AmmData.Context({
             txIdx: txIdx,
             exchange: S.exchange,
@@ -70,9 +71,11 @@ library AmmBlockReceiver
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             poolTokenID: S.poolTokenID,
-            poolTokenBurnedSupply: S.poolTokenBurnedSupply,
             tokens: S.tokens,
-            tokenBalancesL2: new uint96[](S.tokens.length)
+            tokenBalancesL2: new uint96[](size),
+            poolTokenBurnedSupply: S.poolTokenBurnedSupply,
+            dexTransactionCount: 0,
+            dexTransactions: new AmmData.PendingExchangeTx[](size * 3)
         });
     }
 

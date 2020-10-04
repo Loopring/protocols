@@ -109,9 +109,9 @@ contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress
         forwardCall();
     }
 
-    function approveTransaction(
+    function approveTransactions(
         address owner,
-        bytes32 /* transactionHash */
+        bytes32[] calldata /* transactionHashes */
         )
         external
         onlyFrom(owner)

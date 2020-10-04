@@ -66,6 +66,11 @@ library AmmData
         uint16  tokenID;
     }
 
+    struct PendingExchangeTx
+    {
+        address from;
+        bytes32 txHash;
+    }
     struct Context
     {
         // functional parameters
@@ -80,10 +85,13 @@ library AmmData
         uint32  accountID;
 
         uint16  poolTokenID;
-        uint    poolTokenBurnedSupply;
 
         Token[]  tokens;
         uint96[] tokenBalancesL2;
+
+        uint      poolTokenBurnedSupply;
+        uint      dexTransactionCount;
+        PendingExchangeTx[] dexTransactions;
     }
 
     struct State {

@@ -25,7 +25,20 @@ library AmmUtil
     {
         transfer.validUntil = 0xffffffff;
         bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-        ctx.exchange.approveTransaction(transfer.from, hash);
+        approveExchangeTransaction(ctx, transfer.from, hash);
+    }
+
+    function approveExchangeTransaction(
+        AmmData.Context  memory  ctx,
+        address                  from,
+        bytes32                  txHash
+        )
+        internal
+    {
+        ctx.dexTransactions[ctx.dexTransactionCount++] = AmmData.PendingExchangeTx({
+            from: from,
+            txHash: txHash
+        });
     }
 
     function totalSupply(

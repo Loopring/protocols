@@ -6,11 +6,13 @@ pragma experimental ABIEncoderV2;
 import "../../aux/transactions/TransactionReader.sol";
 import "../../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "./AmmData.sol";
+import "./AmmUtil.sol";
 
 
 /// @title AmmUpdateProcess
 library AmmUpdateProcess
 {
+    using AmmUtil           for AmmData.Context;
     using TransactionReader for ExchangeData.Block;
 
     function approveAmmUpdates(
@@ -34,7 +36,8 @@ library AmmUpdateProcess
             // Now approve this AMM update
             update.validUntil = 0xffffffff;
             bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.exchangeDomainSeparator, update);
-            ctx.exchange.approveTransaction(address(this), txHash);
+            ctx.approveExchangeTransaction(address(this), txHash);
+            // ctx.exchange.approveTransaction(address(this), txHash);
 
             if (opening) {
                 ctx.tokenBalancesL2[i] = update.balance;

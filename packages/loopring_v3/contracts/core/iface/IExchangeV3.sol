@@ -80,9 +80,9 @@ abstract contract IExchangeV3 is IExchange
         uint8 previousMakerFeeBips
     );
 
-    event TransactionApproved(
+    event TransactionsApproved(
         address owner,
-        bytes32 transactionHash
+        bytes32[] transactionHashes
     );
 
     // events from libraries
@@ -642,10 +642,23 @@ abstract contract IExchangeV3 is IExchange
     ///      This function can only be called by an agent.
     ///
     /// @param owner The owner of the account
-    /// @param txHash The hash of the transaction
+    /// @param txHash The hashes of the transactions
     function approveTransaction(
         address owner,
         bytes32 txHash
+        )
+        external
+        virtual;
+
+    /// @dev Allows an agent to approve multiple rollup txs.
+    ///
+    ///      This function can only be called by an agent.
+    ///
+    /// @param owner The owner of the account
+    /// @param txHashes The hashes of the transactions
+    function approveTransactions(
+        address            owner,
+        bytes32[] calldata txHashes
         )
         external
         virtual;
