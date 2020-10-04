@@ -7,7 +7,6 @@ import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/MathUint96.sol";
 import "./AmmData.sol";
 
 
@@ -17,7 +16,6 @@ library AmmUtil
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
-    using MathUint96        for uint96;
 
     function approveTransfer(
         AmmData.Context  memory  ctx,

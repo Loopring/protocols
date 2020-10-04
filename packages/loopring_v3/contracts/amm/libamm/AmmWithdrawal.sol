@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/MathUint96.sol";
 import "./AmmData.sol";
 import "./AmmPoolToken.sol";
 import "./AmmUtil.sol";
@@ -16,7 +15,6 @@ library AmmWithdrawal
 {
     using AmmPoolToken      for AmmData.State;
     using MathUint          for uint;
-    using MathUint96        for uint96;
 
     function withdrawFromApprovedWithdrawals(
         AmmData.State storage S
