@@ -63,11 +63,11 @@ library AmmPoolToken
         internal
         returns (bool)
     {
-        if (msg.sender != address(this) &&
-            S.allowance[from][msg.sender] != uint(-1)) {
-            S.allowance[from][msg.sender] = S.allowance[from][msg.sender].sub(value);
+        if (to != address(this) &&
+            S.allowance[from][to] != uint(-1)) {
+            S.allowance[from][to] = S.allowance[from][to].sub(value);
         }
-         _transfer(S, from, to, value);
+        _transfer(S, from, to, value);
         return true;
     }
 
