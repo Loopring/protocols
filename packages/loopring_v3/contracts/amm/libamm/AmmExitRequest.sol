@@ -70,7 +70,7 @@ library AmmExitRequest
                     exit.owner,
                     exit.burnAmount,
                     exit.burnStorageID,
-                    keccak256(abi.encodePacked(exit.exitMinAmounts)),
+                    keccak256(abi.encode(exit.exitMinAmounts)),
                     exit.validUntil
                 )
             )

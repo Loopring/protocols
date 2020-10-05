@@ -28,9 +28,9 @@ library AmmJoinRequest
                 abi.encode(
                     POOLJOIN_TYPEHASH,
                     join.owner,
-                    keccak256(abi.encodePacked(join.joinAmounts)),
-                    keccak256(abi.encodePacked(join.joinFees)),
-                    keccak256(abi.encodePacked(join.joinStorageIDs)),
+                    keccak256(abi.encode(join.joinAmounts)),
+                    keccak256(abi.encode(join.joinFees)),
+                    keccak256(abi.encode(join.joinStorageIDs)),
                     join.mintMinAmount,
                     join.validUntil
                 )
