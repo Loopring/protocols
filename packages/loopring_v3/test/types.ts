@@ -207,6 +207,12 @@ export interface TxBlock {
   signature?: Signature;
 }
 
+export interface BlockCallback {
+  target: string;
+  txIdx: number;
+  auxiliaryData: any;
+}
+
 export interface Block {
   blockIdx: number;
   filename: string;
@@ -228,6 +234,7 @@ export interface Block {
   transactionHash: string;
   internalBlock: TxBlock;
   shutdown?: boolean;
+  callbacks?: BlockCallback[];
 }
 
 export interface Account {
