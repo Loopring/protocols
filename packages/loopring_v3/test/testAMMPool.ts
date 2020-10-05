@@ -376,10 +376,12 @@ export class AmmPool {
             }
           }
         }
-        assert(
-          poolAmountOut.gte(join.mintMinAmount),
-          "min pool amounts out not achieved"
-        );
+        if (poolAmountOut.isZero()) {
+          logDebug("Nothing to mint!");
+        }
+        if (!poolAmountOut.gte(join.mintMinAmount)) {
+          logDebug("Min pool amount out not achieved!");
+        }
 
         // Calculate the amounts to deposit
         let ratio = poolAmountOut.mul(this.POOL_TOKEN_BASE).div(poolTotal);
@@ -401,10 +403,11 @@ export class AmmPool {
           this.tokens[i],
           amount,
           this.tokens[i],
-          new BN(0),
+          join.joinFees[i],
           {
             authMethod: AuthMethod.NONE,
             amountToDeposit: new BN(0),
+            feeToDeposit: new BN(0),
             storageID
           }
         );
@@ -442,44 +445,64 @@ export class AmmPool {
       const poolTotal = this.totalSupply;
       const ratio = exit.burnAmount.mul(this.POOL_TOKEN_BASE).div(poolTotal);
 
-      if (exit.authMethod !== AuthMethod.FORCE) {
-        // Burn
-        await this.ctx.transfer(
-          exit.owner,
-          owner,
-          owner,
-          exit.burnAmount,
-          "ETH",
-          new BN(0),
-          {
-            authMethod: AuthMethod.NONE,
-            amountToDeposit: new BN(0),
-            storageID: exit.burnStorageID
-          }
-        );
-      }
-
-      // Withdraw
+      let valid = true;
+      let amounts: BN[] = [];
       for (let i = 0; i < this.tokens.length; i++) {
-        let amount = this.tokenBalancesL2[i]
+        amounts[i] = this.tokenBalancesL2[i]
           .mul(ratio)
           .div(this.POOL_TOKEN_BASE);
-        amount = roundToFloatValue(amount, Constants.Float24Encoding);
-        await this.ctx.transfer(
-          owner,
-          exit.owner,
-          this.tokens[i],
-          amount,
-          "ETH",
-          new BN(0),
-          {
-            authMethod: AuthMethod.NONE,
-            amountToDeposit: new BN(0),
-            transferToNew: true
-          }
-        );
-        this.tokenBalancesL2[i].isub(amount);
-        logDebug("pool exit: " + amount.toString(10));
+        valid = valid && amounts[i].gte(exit.exitMinAmounts[i]);
+      }
+      if (!valid) {
+        logDebug("Exit min amounts not reached!");
+      }
+
+      if (exit.authMethod !== AuthMethod.FORCE) {
+        if (!valid) {
+          logDebug("Invalid slippage!");
+        }
+      }
+
+      if (valid) {
+        if (exit.authMethod !== AuthMethod.FORCE) {
+          // Burn
+          await this.ctx.transfer(
+            exit.owner,
+            owner,
+            owner,
+            exit.burnAmount,
+            "ETH",
+            new BN(0),
+            {
+              authMethod: AuthMethod.NONE,
+              amountToDeposit: new BN(0),
+              storageID: exit.burnStorageID
+            }
+          );
+        }
+
+        // Withdraw
+        for (let i = 0; i < this.tokens.length; i++) {
+          const amount = roundToFloatValue(
+            amounts[i],
+            Constants.Float24Encoding
+          );
+          await this.ctx.transfer(
+            owner,
+            exit.owner,
+            this.tokens[i],
+            amount,
+            "ETH",
+            new BN(0),
+            {
+              authMethod: AuthMethod.NONE,
+              amountToDeposit: new BN(0),
+              transferToNew: true
+            }
+          );
+          this.tokenBalancesL2[i].isub(amount);
+          logDebug("pool exit: " + amount.toString(10));
+        }
       }
 
       poolTransaction = {
@@ -488,7 +511,10 @@ export class AmmPool {
         signature: exit.signature
       };
       poolTotal.isub(
-        roundToFloatValue(exit.burnAmount, Constants.Float24Encoding)
+        roundToFloatValue(
+          valid ? exit.burnAmount : new BN(0),
+          Constants.Float24Encoding
+        )
       );
     }
 
@@ -557,16 +583,22 @@ export class AmmPool {
   }
 }
 
-contract.only("LoopringAmmPool", (accounts: string[]) => {
+contract("LoopringAmmPool", (accounts: string[]) => {
   let ctx: ExchangeTestUtil;
 
   let sharedConfig: any;
   let agentRegistry: any;
   let registryOwner: string;
 
+  let ownerA: string;
+  let ownerB: string;
+
   before(async () => {
     ctx = new ExchangeTestUtil();
     await ctx.initialize(accounts);
+
+    ownerA = ctx.testContext.orderOwners[10];
+    ownerB = ctx.testContext.orderOwners[11];
 
     const loopringAmmSharedConfig = artifacts.require(
       "LoopringAmmSharedConfig"
@@ -604,9 +636,6 @@ contract.only("LoopringAmmPool", (accounts: string[]) => {
     this.timeout(0);
 
     it("Successful swap (AMM maker)", async () => {
-      const ownerA = ctx.testContext.orderOwners[10];
-      const ownerB = ctx.testContext.orderOwners[11];
-
       const feeBipsAMM = 30;
       const tokens = ["WETH", "GTO"];
       const weights = [
@@ -620,12 +649,7 @@ contract.only("LoopringAmmPool", (accounts: string[]) => {
             owner,
             owner,
             token,
-            new BN(
-              web3.utils.toWei(
-                token === "WETH" ? "10000.123456" : "20000.654321",
-                "ether"
-              )
-            )
+            new BN(web3.utils.toWei("1000000", "ether"))
           );
         }
       }
@@ -645,17 +669,23 @@ contract.only("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("10000.123456", "ether")),
           new BN(web3.utils.toWei("20000.654321", "ether"))
         ],
-        [new BN(0), new BN(0)],
+        [
+          new BN(web3.utils.toWei("123.456789", "ether")),
+          new BN(web3.utils.toWei("456.789", "ether"))
+        ],
         { authMethod: AuthMethod.ECDSA }
       );
       await pool.join(
         ownerB,
-        pool.POOL_TOKEN_BASE,
+        pool.POOL_TOKEN_BASE.div(new BN(11)),
         [
-          new BN(web3.utils.toWei("10000.123456", "ether")),
-          new BN(web3.utils.toWei("20000.654321", "ether"))
+          new BN(web3.utils.toWei("1000", "ether")),
+          new BN(web3.utils.toWei("2000", "ether"))
         ],
-        [new BN(0), new BN(0)],
+        [
+          new BN(web3.utils.toWei("0", "ether")),
+          new BN(web3.utils.toWei("789", "ether"))
+        ],
         { authMethod: AuthMethod.ECDSA }
       );
       await ctx.submitTransactions(16);
@@ -704,10 +734,10 @@ contract.only("LoopringAmmPool", (accounts: string[]) => {
       );
       await pool.exit(
         ownerB,
-        pool.POOL_TOKEN_BASE.mul(new BN(6)).div(new BN(10)),
+        pool.POOL_TOKEN_BASE.mul(new BN(6)).div(new BN(100)),
         [
-          new BN(web3.utils.toWei("5000", "ether")),
-          new BN(web3.utils.toWei("10000", "ether"))
+          new BN(web3.utils.toWei("500", "ether")),
+          new BN(web3.utils.toWei("1000", "ether"))
         ],
         { authMethod: AuthMethod.ECDSA }
       );
@@ -738,6 +768,141 @@ contract.only("LoopringAmmPool", (accounts: string[]) => {
       );
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
+    });
+
+    it("Invalid join slippage", async () => {
+      const feeBipsAMM = 30;
+      const tokens = ["WETH", "GTO"];
+      const weights = [
+        new BN(web3.utils.toWei("1", "ether")),
+        new BN(web3.utils.toWei("1", "ether"))
+      ];
+
+      for (const owner of [ownerA, ownerB]) {
+        for (const token of tokens) {
+          await ctx.deposit(
+            owner,
+            owner,
+            token,
+            new BN(web3.utils.toWei("1000000", "ether"))
+          );
+        }
+      }
+
+      const pool = new AmmPool(ctx);
+      await pool.setupPool(sharedConfig, tokens, weights, feeBipsAMM);
+
+      await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
+        from: registryOwner
+      });
+
+      await pool.prePoolTransactions();
+      await pool.join(
+        ownerA,
+        pool.POOL_TOKEN_BASE,
+        [
+          new BN(web3.utils.toWei("10000.123456", "ether")),
+          new BN(web3.utils.toWei("20000.654321", "ether"))
+        ],
+        [
+          new BN(web3.utils.toWei("123.456789", "ether")),
+          new BN(web3.utils.toWei("456.789", "ether"))
+        ],
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(10)),
+        [
+          new BN(web3.utils.toWei("1000", "ether")),
+          new BN(web3.utils.toWei("2000", "ether"))
+        ],
+        [
+          new BN(web3.utils.toWei("0", "ether")),
+          new BN(web3.utils.toWei("789", "ether"))
+        ],
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await ctx.submitTransactions(16);
+      await expectThrow(ctx.submitPendingBlocks(), "JOIN_SLIPPAGE_INVALID");
+    });
+
+    it("Invalid exit slippage", async () => {
+      const feeBipsAMM = 30;
+      const tokens = ["WETH", "GTO"];
+      const weights = [
+        new BN(web3.utils.toWei("1", "ether")),
+        new BN(web3.utils.toWei("1", "ether"))
+      ];
+
+      for (const owner of [ownerA, ownerB]) {
+        for (const token of tokens) {
+          await ctx.deposit(
+            owner,
+            owner,
+            token,
+            new BN(web3.utils.toWei("1000000", "ether"))
+          );
+        }
+      }
+
+      const pool = new AmmPool(ctx);
+      await pool.setupPool(sharedConfig, tokens, weights, feeBipsAMM);
+
+      await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
+        from: registryOwner
+      });
+
+      await pool.prePoolTransactions();
+      await pool.join(
+        ownerA,
+        pool.POOL_TOKEN_BASE,
+        [
+          new BN(web3.utils.toWei("10000.123456", "ether")),
+          new BN(web3.utils.toWei("20000.654321", "ether"))
+        ],
+        [
+          new BN(web3.utils.toWei("123.456789", "ether")),
+          new BN(web3.utils.toWei("456.789", "ether"))
+        ],
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(11)),
+        [
+          new BN(web3.utils.toWei("1000", "ether")),
+          new BN(web3.utils.toWei("2000", "ether"))
+        ],
+        [
+          new BN(web3.utils.toWei("0", "ether")),
+          new BN(web3.utils.toWei("789", "ether"))
+        ],
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await ctx.submitTransactions(16);
+
+      await pool.prePoolTransactions();
+      await pool.exit(
+        ownerA,
+        pool.POOL_TOKEN_BASE.mul(new BN(6)).div(new BN(10)),
+        [
+          new BN(web3.utils.toWei("5000", "ether")),
+          new BN(web3.utils.toWei("10000", "ether"))
+        ],
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await pool.exit(
+        ownerB,
+        pool.POOL_TOKEN_BASE.mul(new BN(6)).div(new BN(100)),
+        [
+          new BN(web3.utils.toWei("5000", "ether")),
+          new BN(web3.utils.toWei("10000", "ether"))
+        ],
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await ctx.submitTransactions(16);
+      await expectThrow(ctx.submitPendingBlocks(), "EXIT_SLIPPAGE_INVALID");
     });
   });
 });
