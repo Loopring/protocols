@@ -675,7 +675,7 @@ export class ExchangeV3 {
 
     // Get the block data from the transaction data
     //const submitBlocksFunctionSignature = "0x8dadd3af"; // submitBlocks
-    const submitBlocksFunctionSignature = "0x78e9a4f3"; // submitBlocksWithCallbacks
+    const submitBlocksFunctionSignature = "0xebc8c7ee"; // submitBlocksWithCallbacks
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
@@ -686,14 +686,20 @@ export class ExchangeV3 {
         [
           "bool",
           "bytes",
-          {
-            "struct BlockCallback[]": {
-              target: "address",
-              blockIdx: "uint",
-              txIdx: "uint",
-              auxiliaryData: "bytes"
+          "bytes"
+          /*{
+            "struct CallbackConfig": {
+              "struct BlockCallback[]": {
+                "struct TxCallback[]": {
+                  txIdx: "uint16",
+                  receiverIdx: "uint16",
+                  data: "bytes"
+                },
+                blockIdx: "uint16"
+              },
+              receivers: "address[]"
             }
-          }
+          }*/
         ],
         "0x" + transaction.input.slice(2 + 4 * 2)
       );
