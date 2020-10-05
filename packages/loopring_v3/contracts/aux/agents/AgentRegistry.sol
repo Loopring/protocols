@@ -12,9 +12,6 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
 {
     bytes32 internal constant UNIVERSAL_AGENTS = keccak256("__UNVERSAL_AGENTS__");
 
-    // By default all users trust the universal agents.
-    mapping (address => bool) noTrustInUniversalAgents;
-
     event AgentRegistered(
         address indexed user,
         address indexed agent,
@@ -37,9 +34,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         view
         returns (bool)
     {
-        return isUniversalAgent(agent) &&
-            !noTrustInUniversalAgents[user] ||
-            isUserAgent(user, agent);
+        return isUniversalAgent(agent) || isUserAgent(user, agent);
     }
 
     function registerUniversalAgent(
@@ -59,14 +54,6 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         returns (bool)
     {
         return isAddressInSet(UNIVERSAL_AGENTS, agent);
-    }
-
-    function trustUniversalAgents(bool trust)
-        external
-    {
-        require(noTrustInUniversalAgents[msg.sender] == trust, "INVALID_VALUE");
-        noTrustInUniversalAgents[msg.sender] = !trust;
-        emit TrustUniversalAgents(msg.sender, trust);
     }
 
     function registerUserAgent(
