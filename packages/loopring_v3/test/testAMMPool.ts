@@ -20,6 +20,7 @@ export interface PoolJoin {
   txType?: "Join";
   owner: string;
   joinAmounts: BN[];
+  joinFees: BN[];
   joinStorageIDs: number[];
   mintMinAmount: BN;
   validUntil: number;
@@ -72,6 +73,7 @@ export namespace PoolJoinUtils {
         PoolJoin: [
           { name: "owner", type: "address" },
           { name: "joinAmounts", type: "uint96[]" },
+          { name: "joinFees", type: "uint96[]" },
           { name: "joinStorageIDs", type: "uint32[]" },
           { name: "mintMinAmount", type: "uint96" },
           { name: "validUntil", type: "uint32" }
@@ -87,6 +89,7 @@ export namespace PoolJoinUtils {
       message: {
         owner: join.owner,
         joinAmounts: join.joinAmounts,
+        joinFees: join.joinFees,
         joinStorageIDs: join.joinStorageIDs,
         mintMinAmount: join.mintMinAmount,
         validUntil: join.validUntil
@@ -231,6 +234,7 @@ export class AmmPool {
     owner: string,
     mintMinAmount: BN,
     joinAmounts: BN[],
+    joinFees: BN[],
     options: JoinOptions = {}
   ) {
     // Fill in defaults
@@ -243,6 +247,7 @@ export class AmmPool {
       txType: "Join",
       owner,
       joinAmounts,
+      joinFees,
       joinStorageIDs: [],
       mintMinAmount,
       validUntil
@@ -398,6 +403,7 @@ export class AmmPool {
           this.tokens[i],
           amount,
           this.tokens[i],
+          join.joinFees[i],
           {
             authMethod: AuthMethod.NONE,
             amountToDeposit: new BN(0),
@@ -534,11 +540,16 @@ export class AmmPool {
     for (const amount of join.joinAmounts) {
       amounts.push(amount.toString(10));
     }
+    const fees: string[] = [];
+    for (const fee of join.joinFees) {
+      fees.push(fee.toString(10));
+    }
     return web3.eth.abi.encodeParameter(
       "tuple(address,uint96[],uint96[],uint32[],uint96,uint32)",
       [
         join.owner,
         amounts,
+        fees,
         join.joinStorageIDs,
         join.mintMinAmount.toString(10),
         join.validUntil

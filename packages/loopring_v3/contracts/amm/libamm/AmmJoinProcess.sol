@@ -63,8 +63,8 @@ library AmmJoinProcess
                 transfer.to == address(this) &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
                 transfer.amount.isAlmostEqualAmount(amounts[i]) &&
-                transfer.feeTokenID == 0 &&
-                transfer.fee == 0 &&
+                transfer.feeTokenID == ctx.tokens[i].tokenID &&
+                transfer.fee.isAlmostEqualFee(join.joinFees[i]) &&
                 (signature.length == 0 || transfer.storageID == join.joinStorageIDs[i]),
                 "INVALID_TX_DATA"
             );
