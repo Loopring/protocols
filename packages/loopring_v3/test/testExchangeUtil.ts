@@ -63,7 +63,9 @@ function replacer(name: any, val: any) {
     name === "amount" ||
     name === "fee" ||
     name === "maxFee" ||
-    name === "tokenWeight"
+    name === "tokenWeight" ||
+    name === "mintMinAmount" ||
+    name === "burnAmount"
   ) {
     return new BN(val, 16).toString(10);
   } else if (
@@ -78,6 +80,16 @@ function replacer(name: any, val: any) {
     name === "onchainDataHash"
   ) {
     return new BN(val.slice(2), 16).toString(10);
+  } else if (
+    name === "joinAmounts" ||
+    name === "joinFees" ||
+    name === "exitMinAmounts"
+  ) {
+    const array: string[] = [];
+    for (const v of val) {
+      array.push(new BN(v, 16).toString(10));
+    }
+    return array;
   } else {
     return val;
   }
@@ -2218,9 +2230,15 @@ export class ExchangeTestUtil {
         logDebug(tx.txType);
       }
 
+      const ammTransactions: any[] = [];
+      for (const callback of this.pendingBlockCallbacks[this.exchangeId]) {
+        ammTransactions.push(callback.tx);
+      }
+
       const operator = await this.getActiveOperator(exchangeID);
       const txBlock: TxBlock = {
         transactions,
+        ammTransactions,
         timestamp,
         protocolTakerFeeBips,
         protocolMakerFeeBips,
