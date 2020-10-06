@@ -28,7 +28,7 @@ library AmmPoolToken
         view
         returns (uint)
     {
-        return AmmData.POOL_TOKEN_MINTED_SUPPLY().sub(S.poolTokenBurnedSupply);
+        return S._totalSupply;
     }
 
     function approve(

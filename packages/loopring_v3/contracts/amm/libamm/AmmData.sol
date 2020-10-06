@@ -81,7 +81,7 @@ library AmmData
         uint32  accountID;
 
         uint16  poolTokenID;
-        uint    poolTokenBurnedSupply;
+        uint    totalSupply;
 
         uint     size; // == token.length;
         Token[]  tokens;
@@ -92,7 +92,7 @@ library AmmData
         // Pool token state variables
         string poolName;
         string symbol;
-        uint poolTokenBurnedSupply;
+        uint _totalSupply;
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
