@@ -32,6 +32,7 @@ import {
   AmmUpdate,
   AuthMethod,
   Block,
+  BlockCallback,
   Deposit,
   Transfer,
   Noop,
@@ -141,13 +142,6 @@ export interface OnchainBlock {
   storeBlockInfoOnchain: boolean;
   auxiliaryData?: any;
   offchainData?: any;
-}
-
-export interface BlockCallback {
-  target: string;
-  blockIdx: number;
-  txIdx: number;
-  auxiliaryData: any;
 }
 
 export interface AuxiliaryData {
@@ -507,6 +501,7 @@ export class ExchangeTestUtil {
   public deterministic: boolean = false;
 
   private pendingTransactions: TxType[][] = [];
+  private pendingBlockCallbacks: BlockCallback[][] = [];
 
   private storageIDGenerator: number = 0;
 
@@ -558,6 +553,7 @@ export class ExchangeTestUtil {
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       this.pendingTransactions.push([]);
+      this.pendingBlockCallbacks.push([]);
       this.pendingBlocks.push([]);
       this.blocks.push([]);
 
@@ -1289,16 +1285,12 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.FORCE) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
-        const numAvailableSlotsBefore = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         await this.exchange.forceWithdraw(signer, token, accountID, {
           from: signer,
           value: withdrawalFee
         });
-        const numAvailableSlotsAfter = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         assert.equal(
           numAvailableSlotsAfter,
           numAvailableSlotsBefore - 1,
@@ -1626,7 +1618,8 @@ export class ExchangeTestUtil {
       blockFee: new BN(0),
       timestamp: 0,
       transactionHash: "0",
-      internalBlock: txBlock
+      internalBlock: txBlock,
+      callbacks: this.pendingBlockCallbacks[this.exchangeId]
     };
     this.pendingBlocks[this.exchangeId].push(block);
     this.blocks[this.exchangeId].push(block);
@@ -1725,11 +1718,7 @@ export class ExchangeTestUtil {
     }
   }
 
-  public async submitBlocks(
-    blocks: Block[],
-    blockCallbacks?: BlockCallback[],
-    testCallback?: any
-  ) {
+  public async submitBlocks(blocks: Block[], testCallback?: any) {
     if (blocks.length === 0) {
       return;
     }
@@ -1823,14 +1812,10 @@ export class ExchangeTestUtil {
       testCallback(onchainBlocks, blocks);
     }
 
-    const numBlocksSubmittedBefore = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
 
     // Forced requests
-    const numAvailableSlotsBefore = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
 
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
@@ -1843,11 +1828,67 @@ export class ExchangeTestUtil {
     //console.log(txData);
     //console.log(compressed);
 
+    interface TxCallback {
+      txIdx: number;
+      receiverIdx: number;
+      data: string;
+    }
+
+    interface OnchainBlockCallback {
+      blockIdx: number;
+      txCallbacks: TxCallback[];
+    }
+
+    interface CallbackConfig {
+      blockCallbacks: OnchainBlockCallback[];
+      receivers: string[];
+    }
+
+    const callbackConfig: CallbackConfig = {
+      blockCallbacks: [],
+      receivers: []
+    };
+
+    //console.log("Block callbacks: ");
+    for (const [blockIdx, block] of blocks.entries()) {
+      //console.log(blockIdx);
+      //console.log(block.callbacks);
+      if (block.callbacks.length > 0) {
+        const onchainBlockCallback: OnchainBlockCallback = {
+          blockIdx,
+          txCallbacks: []
+        };
+        callbackConfig.blockCallbacks.push(onchainBlockCallback);
+
+        for (const blockCallback of block.callbacks) {
+          // Find receiver index
+          let receiverIdx = callbackConfig.receivers.findIndex(
+            target => target === blockCallback.target
+          );
+          if (receiverIdx === -1) {
+            receiverIdx = callbackConfig.receivers.length;
+            callbackConfig.receivers.push(blockCallback.target);
+          }
+          // Add the block callback to the list
+          onchainBlockCallback.txCallbacks.push({
+            txIdx: blockCallback.txIdx,
+            receiverIdx,
+            data: blockCallback.auxiliaryData
+          });
+        }
+        //console.log(onchainBlockCallback);
+      }
+    }
+    //console.log(callbackConfig);
+    //for (const bc of callbackConfig.blockCallbacks) {
+    //  console.log(bc);
+    //}
+
     let tx: any = undefined;
     tx = await operatorContract.submitBlocksWithCallbacks(
       true,
       web3.utils.hexToBytes(compressed),
-      blockCallbacks,
+      callbackConfig,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
     );
@@ -1880,9 +1921,7 @@ export class ExchangeTestUtil {
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     // Check number of blocks submitted
-    const numBlocksSubmittedAfter = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedAfter = (await this.exchange.getBlockHeight()).toNumber();
     assert.equal(
       numBlocksSubmittedAfter,
       numBlocksSubmittedBefore + blocks.length,
@@ -1946,9 +1985,7 @@ export class ExchangeTestUtil {
     }
 
     // Forced requests
-    const numAvailableSlotsAfter = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
     let numForcedRequestsProcessed = 0;
     for (const block of blocks) {
       for (const tx of block.internalBlock.transactions) {
@@ -1967,15 +2004,18 @@ export class ExchangeTestUtil {
     await this.checkExplorerState();
   }
 
-  public async submitPendingBlocks(
-    blockCallbacks: BlockCallback[] = [],
-    testCallback?: any
-  ) {
-    await this.submitBlocks(
-      this.pendingBlocks[this.exchangeId],
-      blockCallbacks,
-      testCallback
-    );
+  public addBlockCallback(target: string) {
+    const blockCallback: BlockCallback = {
+      target,
+      auxiliaryData: Constants.emptyBytes,
+      txIdx: this.pendingTransactions[this.exchangeId].length
+    };
+    this.pendingBlockCallbacks[this.exchangeId].push(blockCallback);
+    return blockCallback;
+  }
+
+  public async submitPendingBlocks(testCallback?: any) {
+    await this.submitBlocks(this.pendingBlocks[this.exchangeId], testCallback);
     this.pendingBlocks[this.exchangeId] = [];
   }
 
@@ -2329,7 +2369,15 @@ export class ExchangeTestUtil {
     }
 
     this.pendingTransactions[exchangeID] = [];
+    this.pendingBlockCallbacks[exchangeID] = [];
     return blocks;
+  }
+
+  public async registerToken(tokenAddress: string) {
+    const tx = await this.exchange.registerToken(tokenAddress, {
+      from: this.exchangeOwner
+    });
+    // logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
   }
 
   public async registerTokens() {
@@ -2340,18 +2388,17 @@ export class ExchangeTestUtil {
       // console.log(symbol + ": " + tokenAddress);
 
       if (symbol !== "ETH" && symbol !== "LRC") {
-        // Register the token
-        const tx = await this.exchange.registerToken(tokenAddress, {
-          from: this.exchangeOwner
-        });
-        // logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
+        await this.registerToken(tokenAddress);
       }
-
-      const tokenID = await this.getTokenID(tokenAddress);
-      this.tokenAddressToIDMap.set(tokenAddress, tokenID);
-      this.tokenIDToAddressMap.set(tokenID, tokenAddress);
+      await this.addTokenToMaps(tokenAddress);
     }
     // console.log(this.tokenIDMap);
+  }
+
+  public async addTokenToMaps(tokenAddress: string) {
+    const tokenID = await this.getTokenID(tokenAddress);
+    this.tokenAddressToIDMap.set(tokenAddress, tokenID);
+    this.tokenIDToAddressMap.set(tokenID, tokenAddress);
   }
 
   public async getTokenID(token: string) {
@@ -2646,14 +2693,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const previousTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const currentTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -3221,27 +3268,19 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [
-      eth,
-      weth,
-      lrc,
-      gto,
-      rdn,
-      rep,
-      inda,
-      indb,
-      test
-    ] = await Promise.all([
-      null,
-      this.contracts.WETHToken.deployed(),
-      this.contracts.LRCToken.deployed(),
-      this.contracts.GTOToken.deployed(),
-      this.contracts.RDNToken.deployed(),
-      this.contracts.REPToken.deployed(),
-      this.contracts.INDAToken.deployed(),
-      this.contracts.INDBToken.deployed(),
-      this.contracts.TESTToken.deployed()
-    ]);
+    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
+      [
+        null,
+        this.contracts.WETHToken.deployed(),
+        this.contracts.LRCToken.deployed(),
+        this.contracts.GTOToken.deployed(),
+        this.contracts.RDNToken.deployed(),
+        this.contracts.REPToken.deployed(),
+        this.contracts.INDAToken.deployed(),
+        this.contracts.INDBToken.deployed(),
+        this.contracts.TESTToken.deployed()
+      ]
+    );
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 

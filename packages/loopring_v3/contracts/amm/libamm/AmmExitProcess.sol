@@ -44,7 +44,7 @@ library AmmExitProcess
         bool isForcedExit = false;
 
         if (signature.length == 0) {
-            require(exit.validUntil > 0 && exit.validUntil <= block.timestamp, "EXIT_NOT_FOUND_OR_EXPIRED");
+            require(exit.validUntil >= block.timestamp, "EXIT_NOT_FOUND_OR_EXPIRED");
 
             bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
             if (txHash == forcedExitHash) {

@@ -159,7 +159,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             TxCallback calldata txCallback = txCallbacks[i];
 
             uint txIdx = uint(txCallback.txIdx);
-            require(txIdx >= cursor, "BLOCK_INDEX_OUT_OF_ORDER");
+            require(txIdx >= cursor, "TX_INDEX_OUT_OF_ORDER");
 
             uint16 receiverIdx = txCallback.receiverIdx;
             require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
@@ -167,7 +167,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             uint numTransactionsConsumed = IBlockReceiver(receivers[receiverIdx])
                 .beforeBlockSubmission(_block, txCallback.data, txIdx);
 
-            cursor = txIdx + numTransactionsConsumed + 1;
+            cursor = txIdx + numTransactionsConsumed;
         }
     }
 }
