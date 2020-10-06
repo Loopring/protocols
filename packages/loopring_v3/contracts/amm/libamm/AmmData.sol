@@ -37,7 +37,6 @@ library AmmData
     {
         address   owner;
         uint96[]  joinAmounts;
-        uint96[]  joinFees;
         uint32[]  joinStorageIDs;
         uint96    mintMinAmount;
         uint32    validUntil;
@@ -112,5 +111,7 @@ library AmmData
 
         // A map from a user to the forced exit.
         mapping (address => PoolExit) forcedExit;
+        mapping (bytes32 => uint) approvedTx;
+
     }
 }
