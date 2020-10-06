@@ -300,7 +300,7 @@ export class AmmPool {
 
     if (authMethod === AuthMethod.FORCE) {
       const exitFee = await this.sharedConfig.forcedExitFee();
-      await this.contract.exitPool(burnAmount, exitMinAmounts, {
+      await this.contract.forceExitPool(burnAmount, exitMinAmounts, {
         from: owner,
         value: exitFee
       });
