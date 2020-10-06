@@ -1558,7 +1558,11 @@ export class ExchangeTestUtil {
       await this.validateBlock(outputFilename);
     }
 
-    return { blockIdx: nextBlockIdx, blockFilename: outputFilename };
+    return {
+      blockIdx: nextBlockIdx,
+      infoFilename: inputFilename,
+      blockFilename: outputFilename
+    };
   }
 
   public hashToFieldElement(hash: string) {
@@ -2193,33 +2197,6 @@ export class ExchangeTestUtil {
       assert(transactions.length === blockSize);
       numTransactionsDone += blockSize;
 
-      // Create the auxiliary data
-      const auxiliaryData: any[] = [];
-      for (const [i, transaction] of transactions.entries()) {
-        if (transaction.txType === "Transfer") {
-          if (transaction.type > 0) {
-            const encodedTransferData = this.getTransferAuxData(transaction);
-            auxiliaryData.push([i, encodedTransferData]);
-          }
-        } else if (transaction.txType === "Withdraw") {
-          const encodedWithdrawalData = this.getWithdrawalAuxData(transaction);
-          auxiliaryData.push([i, encodedWithdrawalData]);
-        } else if (transaction.txType === "Deposit") {
-          auxiliaryData.push([i, "0x"]);
-        } else if (transaction.txType === "AccountUpdate") {
-          if (transaction.type > 0) {
-            const encodedAccountUpdateData = this.getAccountUpdateAuxData(
-              transaction
-            );
-            auxiliaryData.push([i, encodedAccountUpdateData]);
-          }
-        } else if (transaction.txType === "AmmUpdate") {
-          const encodedAmmUpdateData = this.getAmmUpdateAuxData(transaction);
-          auxiliaryData.push([i, encodedAmmUpdateData]);
-        }
-      }
-      logDebug("numConditionalTransactions: " + auxiliaryData.length);
-
       const currentBlockIdx = this.blocks[exchangeID].length - 1;
 
       const protocolFees = await this.exchange.getProtocolFeeValues();
@@ -2253,14 +2230,18 @@ export class ExchangeTestUtil {
       );
 
       // Create the block
-      const { blockIdx, blockFilename } = await this.createBlock(
+      const { blockIdx, infoFilename, blockFilename } = await this.createBlock(
         exchangeID,
         0,
         JSON.stringify(txBlock, replacer, 4),
         false
       );
 
+      const blockInfoData = JSON.parse(fs.readFileSync(infoFilename, "ascii"));
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+
+      // Create the auxiliary data
+      const auxiliaryData = this.getBlockAuxiliaryData(blockInfoData);
       const blockData = this.getBlockData(block, auxiliaryData.length);
 
       // Write the block signature
@@ -2319,6 +2300,35 @@ export class ExchangeTestUtil {
     this.pendingTransactions[exchangeID] = [];
     this.pendingBlockCallbacks[exchangeID] = [];
     return blocks;
+  }
+
+  public getBlockAuxiliaryData(block: any) {
+    const auxiliaryData: any[] = [];
+    for (const [i, transaction] of block.transactions.entries()) {
+      if (transaction.txType === "Transfer") {
+        if (transaction.type > 0) {
+          const encodedTransferData = this.getTransferAuxData(transaction);
+          auxiliaryData.push([i, encodedTransferData]);
+        }
+      } else if (transaction.txType === "Withdraw") {
+        const encodedWithdrawalData = this.getWithdrawalAuxData(transaction);
+        auxiliaryData.push([i, encodedWithdrawalData]);
+      } else if (transaction.txType === "Deposit") {
+        auxiliaryData.push([i, "0x"]);
+      } else if (transaction.txType === "AccountUpdate") {
+        if (transaction.type > 0) {
+          const encodedAccountUpdateData = this.getAccountUpdateAuxData(
+            transaction
+          );
+          auxiliaryData.push([i, encodedAccountUpdateData]);
+        }
+      } else if (transaction.txType === "AmmUpdate") {
+        const encodedAmmUpdateData = this.getAmmUpdateAuxData(transaction);
+        auxiliaryData.push([i, encodedAmmUpdateData]);
+      }
+    }
+    logDebug("numConditionalTransactions: " + auxiliaryData.length);
+    return auxiliaryData;
   }
 
   public getBlockData(block: any, numConditionalTransactions: number) {

@@ -22,22 +22,22 @@ contract("Exchange", (accounts: string[]) => {
     it.skip("submitBlocks tx data", async () => {
       const blockDirectory = "./blocks/";
 
-      const blockNames = ["block_2_3", "block_2_4"];
+      const blockNames = ["block_2_1", "block_2_2", "block_2_3", "block_2_4"];
       const outputFilename = "./blocks/result.json";
 
       const onchainBlocks: OnchainBlock[] = [];
       const blockCallbacks: BlockCallback[][] = [];
       for (const blockName of blockNames) {
         const baseFilename = blockDirectory + blockName;
-        const auxDataFilename = baseFilename + "_auxiliaryData.json";
+        //const auxDataFilename = baseFilename + "_auxiliaryData.json";
         //const callbacksFilename = baseFilename + "_callbacks.json";
         const proofFilename = baseFilename + "_proof.json";
         const blockInfoFilename = baseFilename + "_info.json";
         const blockFilename = baseFilename + ".json";
 
-        const auxiliaryData = JSON.parse(
+        /*const auxiliaryDataReference = JSON.parse(
           fs.readFileSync(auxDataFilename, "ascii")
-        );
+        );*/
         /*const callbacksReference = JSON.parse(
           fs.readFileSync(callbacksFilename, "ascii")
         );*/
@@ -51,7 +51,11 @@ contract("Exchange", (accounts: string[]) => {
         const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
         // Create the block data
+        const auxiliaryData = ctx.getBlockAuxiliaryData(blockInfo);
         const blockData = ctx.getBlockData(block, auxiliaryData.length);
+
+        //console.log(auxiliaryDataReference);
+        //console.log(auxiliaryData);
 
         const onchainBlock = ctx.getOnchainBlock(
           block,
