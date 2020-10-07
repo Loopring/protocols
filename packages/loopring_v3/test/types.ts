@@ -197,6 +197,7 @@ export interface AmmUpdate {
 
 export interface TxBlock {
   transactions: any[];
+  ammTransactions: any[];
   protocolTakerFeeBips?: number;
   protocolMakerFeeBips?: number;
 
@@ -211,6 +212,7 @@ export interface BlockCallback {
   target: string;
   txIdx: number;
   auxiliaryData: any;
+  tx?: any;
 }
 
 export interface Block {
