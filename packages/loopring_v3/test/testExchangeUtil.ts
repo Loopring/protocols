@@ -1798,7 +1798,8 @@ export class ExchangeTestUtil {
   }
 
   public getOnchainBlock(
-    block: any,
+    blockType: number,
+    blockSize: number,
     data: string,
     auxiliaryData: any[],
     proof: any,
@@ -1807,8 +1808,8 @@ export class ExchangeTestUtil {
     blockVersion: number = 0
   ) {
     const onchainBlock: OnchainBlock = {
-      blockType: block.blockType,
-      blockSize: block.blockSize,
+      blockType,
+      blockSize,
       blockVersion,
       data,
       proof,
@@ -1932,7 +1933,8 @@ export class ExchangeTestUtil {
     for (const block of blocks) {
       //console.log(block.blockIdx);
       const onchainBlock = this.getOnchainBlock(
-        JSON.parse(fs.readFileSync(block.filename, "ascii")),
+        block.blockType,
+        block.blockSize,
         block.data,
         block.auxiliaryData,
         block.proof,
@@ -2361,10 +2363,10 @@ export class ExchangeTestUtil {
     for (const tx of block.transactions) {
       //console.log(tx);
       const da = new Bitstream();
-      if (tx.noop) {
+      if (tx.noop || tx.txType === "Noop") {
         da.addNumber(TransactionType.NOOP, 1);
-      } else if (tx.spotTrade) {
-        const spotTrade = tx.spotTrade;
+      } else if (tx.spotTrade || tx.txType === "SpotTrade") {
+        const spotTrade = tx.spotTrade ? tx.spotTrade : tx;
         const orderA = spotTrade.orderA;
         const orderB = spotTrade.orderB;
 
@@ -2373,18 +2375,18 @@ export class ExchangeTestUtil {
         da.addNumber(orderB.storageID, 4);
         da.addNumber(orderA.accountID, 4);
         da.addNumber(orderB.accountID, 4);
-        da.addNumber(orderA.tokenS, 2);
-        da.addNumber(orderB.tokenS, 2);
-        da.addNumber(spotTrade.fFillS_A, 3);
-        da.addNumber(spotTrade.fFillS_B, 3);
+        da.addNumber(orderA.tokenIdS ? orderA.tokenIdS : orderA.tokenS, 2);
+        da.addNumber(orderB.tokenIdS ? orderB.tokenIdS : orderB.tokenS, 2);
+        da.addNumber(spotTrade.fFillS_A ? spotTrade.fFillS_A : 0, 3);
+        da.addNumber(spotTrade.fFillS_B ? spotTrade.fFillS_B : 0, 3);
 
         let limitMask = orderA.fillAmountBorS ? 0b10000000 : 0;
         da.addNumber(limitMask + orderA.feeBips, 1);
 
         limitMask = orderB.fillAmountBorS ? 0b10000000 : 0;
         da.addNumber(limitMask + orderB.feeBips, 1);
-      } else if (tx.transfer) {
-        const transfer = tx.transfer;
+      } else if (tx.transfer || tx.txType === "Transfer") {
+        const transfer = tx.transfer ? tx.transfer : tx;
         da.addNumber(TransactionType.TRANSFER, 1);
         da.addNumber(transfer.type, 1);
         da.addNumber(transfer.fromAccountID, 4);
@@ -2407,8 +2409,8 @@ export class ExchangeTestUtil {
         da.addBN(new BN(needsToAddress ? transfer.to : "0"), 20);
         const needsFromAddress = transfer.type > 0 || transfer.putAddressesInDA;
         da.addBN(new BN(needsFromAddress ? transfer.from : "0"), 20);
-      } else if (tx.withdraw) {
-        const withdraw = tx.withdraw;
+      } else if (tx.withdraw || tx.txType === "Withdraw") {
+        const withdraw = tx.withdraw ? tx.withdraw : tx;
         da.addNumber(TransactionType.WITHDRAWAL, 1);
         da.addNumber(withdraw.type, 1);
         da.addBN(new BN(withdraw.owner), 20);
@@ -2422,15 +2424,15 @@ export class ExchangeTestUtil {
         );
         da.addNumber(withdraw.storageID, 4);
         da.addBN(new BN(withdraw.onchainDataHash), 20);
-      } else if (tx.deposit) {
-        const deposit = tx.deposit;
+      } else if (tx.deposit || tx.txType === "Deposit") {
+        const deposit = tx.deposit ? tx.deposit : tx;
         da.addNumber(TransactionType.DEPOSIT, 1);
         da.addBN(new BN(deposit.owner), 20);
         da.addNumber(deposit.accountID, 4);
         da.addNumber(deposit.tokenID, 2);
         da.addBN(new BN(deposit.amount), 12);
-      } else if (tx.accountUpdate) {
-        const update = tx.accountUpdate;
+      } else if (tx.accountUpdate || tx.txType === "AccountUpdate") {
+        const update = tx.accountUpdate ? tx.accountUpdate : tx;
         da.addNumber(TransactionType.ACCOUNT_UPDATE, 1);
         da.addNumber(update.type, 1);
         da.addBN(new BN(update.owner), 20);
@@ -2442,8 +2444,8 @@ export class ExchangeTestUtil {
           32
         );
         da.addNumber(update.nonce, 4);
-      } else if (tx.ammUpdate) {
-        const update = tx.ammUpdate;
+      } else if (tx.ammUpdate || tx.txType === "AmmUpdate") {
+        const update = tx.ammUpdate ? tx.ammUpdate : tx;
         da.addNumber(TransactionType.AMM_UPDATE, 1);
         da.addBN(new BN(update.owner), 20);
         da.addNumber(update.accountID, 4);
@@ -2471,10 +2473,10 @@ export class ExchangeTestUtil {
     const size1 = 29;
     const size2 = 39;
     assert.equal(size1 + size2, size, "invalid transform sizes");
-    for (let i = 0; i < block.blockSize; i++) {
+    for (let i = 0; i < block.transactions.length; i++) {
       transformedDa.addHex(allDa.extractData(i * size, size1));
     }
-    for (let i = 0; i < block.blockSize; i++) {
+    for (let i = 0; i < block.transactions.length; i++) {
       transformedDa.addHex(allDa.extractData(i * size + size1, size2));
     }
     bs.addHex(transformedDa.getData());

@@ -25,6 +25,9 @@ contract("Exchange", (accounts: string[]) => {
       const blockNames = ["block_2_1", "block_2_2", "block_2_3", "block_2_4"];
       const outputFilename = "./blocks/result.json";
 
+      const onlyUseInfoFile = true;
+      const useCompression = false;
+
       const onchainBlocks: OnchainBlock[] = [];
       const blockCallbacks: BlockCallback[][] = [];
       for (const blockName of blockNames) {
@@ -45,20 +48,33 @@ contract("Exchange", (accounts: string[]) => {
           fs.readFileSync(blockInfoFilename, "ascii")
         );
         //console.log(callbacksReference);
-        const proof = ctx.readProof(proofFilename);
-
-        // Read in the block
-        const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+        const dummyProof: string[] = [];
+        for (let i = 0; i < 8; i++) {
+          dummyProof.push("0x" + "0".repeat(64));
+        }
+        const proof = onlyUseInfoFile
+          ? dummyProof
+          : ctx.readProof(proofFilename);
+        //console.log(proof);
 
         // Create the block data
         const auxiliaryData = ctx.getBlockAuxiliaryData(blockInfo);
-        const blockData = ctx.getBlockData(block, auxiliaryData.length);
+
+        let blockData: string;
+        if (onlyUseInfoFile) {
+          blockData = ctx.getBlockData(blockInfo, auxiliaryData.length);
+        } else {
+          // Read in the block
+          const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+          blockData = ctx.getBlockData(block, auxiliaryData.length);
+        }
 
         //console.log(auxiliaryDataReference);
         //console.log(auxiliaryData);
 
         const onchainBlock = ctx.getOnchainBlock(
-          block,
+          0,
+          blockInfo.transactions.length,
           blockData,
           auxiliaryData,
           proof
@@ -81,7 +97,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // LoopringIOExchangeOwner.submitBlocksWithCallbacks
       const withCallbacksParameters = ctx.getSubmitBlocksWithCallbacksData(
-        true,
+        useCompression,
         submitBlocksTxData,
         blockCallbacks
       );
