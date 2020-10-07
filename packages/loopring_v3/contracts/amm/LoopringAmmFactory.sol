@@ -3,20 +3,22 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../lib/Claimable.sol";
 import "../lib/Create2.sol";
 import "../lib/ReentrancyGuard.sol";
-import "../lib/SimpleProxy.sol";
+import "../thirdparty/proxies/OwnedUpgradabilityProxy.sol";
 import "./LoopringAmmPool.sol";
 import "./libamm/AmmData.sol";
 
 
-contract LoopringAmmFactory is ReentrancyGuard
+contract LoopringAmmFactory is ReentrancyGuard, Claimable
 {
     event PoolCreated(AmmData.PoolConfig config, address pool);
 
     address public poolImplementation;
 
     constructor(address _poolImplementation)
+        Claimable()
     {
         require(_poolImplementation != address(0), "INVALID_IMPL");
         poolImplementation = _poolImplementation;
@@ -30,9 +32,10 @@ contract LoopringAmmFactory is ReentrancyGuard
         nonReentrant
         returns (address payable pool)
     {
-        pool = Create2.deploy(bytes32(salt), type(SimpleProxy).creationCode);
+        pool = Create2.deploy(bytes32(salt), type(OwnedUpgradabilityProxy).creationCode);
 
-        SimpleProxy(pool).setImplementation(poolImplementation);
+        OwnedUpgradabilityProxy(pool).transferProxyOwnership(owner);
+        OwnedUpgradabilityProxy(pool).upgradeTo(poolImplementation);
         LoopringAmmPool(pool).setupPool(config);
 
         emit PoolCreated(config, pool);
@@ -43,6 +46,6 @@ contract LoopringAmmFactory is ReentrancyGuard
         view
         returns (address)
     {
-        return Create2.computeAddress(bytes32(salt), type(SimpleProxy).creationCode);
+        return Create2.computeAddress(bytes32(salt), type(OwnedUpgradabilityProxy).creationCode);
     }
 }
