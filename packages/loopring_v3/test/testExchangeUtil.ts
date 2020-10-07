@@ -32,6 +32,7 @@ import {
   AmmUpdate,
   AuthMethod,
   Block,
+  BlockCallback,
   Deposit,
   Transfer,
   Noop,
@@ -62,7 +63,9 @@ function replacer(name: any, val: any) {
     name === "amount" ||
     name === "fee" ||
     name === "maxFee" ||
-    name === "tokenWeight"
+    name === "tokenWeight" ||
+    name === "mintMinAmount" ||
+    name === "burnAmount"
   ) {
     return new BN(val, 16).toString(10);
   } else if (
@@ -77,6 +80,16 @@ function replacer(name: any, val: any) {
     name === "onchainDataHash"
   ) {
     return new BN(val.slice(2), 16).toString(10);
+  } else if (
+    name === "joinAmounts" ||
+    name === "joinFees" ||
+    name === "exitMinAmounts"
+  ) {
+    const array: string[] = [];
+    for (const v of val) {
+      array.push(new BN(v, 16).toString(10));
+    }
+    return array;
   } else {
     return val;
   }
@@ -141,13 +154,6 @@ export interface OnchainBlock {
   storeBlockInfoOnchain: boolean;
   auxiliaryData?: any;
   offchainData?: any;
-}
-
-export interface BlockCallback {
-  target: string;
-  blockIdx: number;
-  txIdx: number;
-  auxiliaryData: any;
 }
 
 export interface AuxiliaryData {
@@ -507,6 +513,7 @@ export class ExchangeTestUtil {
   public deterministic: boolean = false;
 
   private pendingTransactions: TxType[][] = [];
+  private pendingBlockCallbacks: BlockCallback[][] = [];
 
   private storageIDGenerator: number = 0;
 
@@ -558,6 +565,7 @@ export class ExchangeTestUtil {
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       this.pendingTransactions.push([]);
+      this.pendingBlockCallbacks.push([]);
       this.pendingBlocks.push([]);
       this.blocks.push([]);
 
@@ -1546,7 +1554,11 @@ export class ExchangeTestUtil {
       await this.validateBlock(outputFilename);
     }
 
-    return { blockIdx: nextBlockIdx, blockFilename: outputFilename };
+    return {
+      blockIdx: nextBlockIdx,
+      infoFilename: inputFilename,
+      blockFilename: outputFilename
+    };
   }
 
   public hashToFieldElement(hash: string) {
@@ -1622,7 +1634,8 @@ export class ExchangeTestUtil {
       blockFee: new BN(0),
       timestamp: 0,
       transactionHash: "0",
-      internalBlock: txBlock
+      internalBlock: txBlock,
+      callbacks: this.pendingBlockCallbacks[this.exchangeId]
     };
     this.pendingBlocks[this.exchangeId].push(block);
     this.blocks[this.exchangeId].push(block);
@@ -1721,11 +1734,126 @@ export class ExchangeTestUtil {
     }
   }
 
-  public async submitBlocks(
-    blocks: Block[],
-    blockCallbacks?: BlockCallback[],
-    testCallback?: any
+  public getCallbackConfig(blockCallbacks: BlockCallback[][]) {
+    interface TxCallback {
+      txIdx: number;
+      receiverIdx: number;
+      data: string;
+    }
+
+    interface OnchainBlockCallback {
+      blockIdx: number;
+      txCallbacks: TxCallback[];
+    }
+
+    interface CallbackConfig {
+      blockCallbacks: OnchainBlockCallback[];
+      receivers: string[];
+    }
+
+    const callbackConfig: CallbackConfig = {
+      blockCallbacks: [],
+      receivers: []
+    };
+
+    //console.log("Block callbacks: ");
+    for (const [blockIdx, callbacks] of blockCallbacks.entries()) {
+      //console.log(blockIdx);
+      //console.log(block.callbacks);
+      if (callbacks.length > 0) {
+        const onchainBlockCallback: OnchainBlockCallback = {
+          blockIdx,
+          txCallbacks: []
+        };
+        callbackConfig.blockCallbacks.push(onchainBlockCallback);
+
+        for (const blockCallback of callbacks) {
+          // Find receiver index
+          let receiverIdx = callbackConfig.receivers.findIndex(
+            target => target === blockCallback.target
+          );
+          if (receiverIdx === -1) {
+            receiverIdx = callbackConfig.receivers.length;
+            callbackConfig.receivers.push(blockCallback.target);
+          }
+          // Add the block callback to the list
+          onchainBlockCallback.txCallbacks.push({
+            txIdx: blockCallback.txIdx,
+            receiverIdx,
+            data: blockCallback.auxiliaryData
+          });
+        }
+        //console.log(onchainBlockCallback);
+      }
+    }
+    //console.log(callbackConfig);
+    //for (const bc of callbackConfig.blockCallbacks) {
+    //  console.log(bc);
+    //}
+    return callbackConfig;
+  }
+
+  public getOnchainBlock(
+    blockType: number,
+    blockSize: number,
+    data: string,
+    auxiliaryData: any[],
+    proof: any,
+    offchainData: string = "0x",
+    storeBlockInfoOnchain: boolean = false,
+    blockVersion: number = 0
   ) {
+    const onchainBlock: OnchainBlock = {
+      blockType,
+      blockSize,
+      blockVersion,
+      data,
+      proof,
+      storeBlockInfoOnchain,
+      offchainData: offchainData,
+      auxiliaryData: auxiliaryData
+    };
+    return onchainBlock;
+  }
+
+  public getSubmitCallbackData(blocks: OnchainBlock[]) {
+    return this.exchange.contract.methods.submitBlocks(blocks).encodeABI();
+  }
+
+  public getSubmitBlocksWithCallbacks(parameters: any) {
+    const operatorContract = this.operator ? this.operator : this.exchange;
+    return operatorContract.contract.methods
+      .submitBlocksWithCallbacks(
+        parameters.isDataCompressed,
+        parameters.data,
+        parameters.callbackConfig
+      )
+      .encodeABI();
+  }
+
+  public getSubmitBlocksWithCallbacksData(
+    isDataCompressed: boolean,
+    txData: string,
+    blockCallbacks: BlockCallback[][]
+  ) {
+    const data = isDataCompressed ? compressZeros(txData) : txData;
+    //console.log(data);
+
+    // Block callbacks
+    const callbackConfig = this.getCallbackConfig(blockCallbacks);
+
+    return {
+      isDataCompressed,
+      data,
+      callbackConfig
+    };
+  }
+
+  public readProof(filename: string) {
+    return this.flattenProof(JSON.parse(fs.readFileSync(filename, "ascii")));
+  }
+
+  public async submitBlocks(blocks: Block[], testCallback?: any) {
     if (blocks.length === 0) {
       return;
     }
@@ -1791,27 +1919,27 @@ export class ExchangeTestUtil {
       }
 
       // Read the proof
-      block.proof = this.flattenProof(
-        JSON.parse(fs.readFileSync(proofFilename, "ascii"))
-      );
+      block.proof = this.readProof(proofFilename);
       // console.log(proof);
     }
 
     // Prepare block data
     const onchainBlocks: OnchainBlock[] = [];
-    for (const [i, block] of blocks.entries()) {
+    const blockCallbacks: BlockCallback[][] = [];
+    for (const block of blocks) {
       //console.log(block.blockIdx);
-      const onchainBlock: OnchainBlock = {
-        blockType: block.blockType,
-        blockSize: block.blockSize,
-        blockVersion: block.blockVersion,
-        data: web3.utils.hexToBytes(block.data),
-        proof: block.proof,
-        storeBlockInfoOnchain: this.getRandomBool(),
-        offchainData: web3.utils.hexToBytes(block.offchainData),
-        auxiliaryData: block.auxiliaryData
-      };
+      const onchainBlock = this.getOnchainBlock(
+        block.blockType,
+        block.blockSize,
+        block.data,
+        block.auxiliaryData,
+        block.proof,
+        block.offchainData,
+        this.getRandomBool(),
+        block.blockVersion
+      );
       onchainBlocks.push(onchainBlock);
+      blockCallbacks.push(block.callbacks);
     }
 
     // Callback that allows modifying the blocks
@@ -1824,22 +1952,23 @@ export class ExchangeTestUtil {
     // Forced requests
     const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
 
+    // SubmitBlocks raw tx data
+    const txData = this.getSubmitCallbackData(onchainBlocks);
+    //console.log(txData);
+
+    const parameters = this.getSubmitBlocksWithCallbacksData(
+      true,
+      txData,
+      blockCallbacks
+    );
+
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
-
-    // Compress the data
-    const txData = this.exchange.contract.methods
-      .submitBlocks(onchainBlocks)
-      .encodeABI();
-    const compressed = compressZeros(txData);
-    //console.log(txData);
-    //console.log(compressed);
-
     let tx: any = undefined;
     tx = await operatorContract.submitBlocksWithCallbacks(
-      true,
-      web3.utils.hexToBytes(compressed),
-      blockCallbacks,
+      parameters.isDataCompressed,
+      parameters.data,
+      parameters.callbackConfig,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
     );
@@ -1955,15 +2084,18 @@ export class ExchangeTestUtil {
     await this.checkExplorerState();
   }
 
-  public async submitPendingBlocks(
-    blockCallbacks: BlockCallback[] = [],
-    testCallback?: any
-  ) {
-    await this.submitBlocks(
-      this.pendingBlocks[this.exchangeId],
-      blockCallbacks,
-      testCallback
-    );
+  public addBlockCallback(target: string) {
+    const blockCallback: BlockCallback = {
+      target,
+      auxiliaryData: Constants.emptyBytes,
+      txIdx: this.pendingTransactions[this.exchangeId].length
+    };
+    this.pendingBlockCallbacks[this.exchangeId].push(blockCallback);
+    return blockCallback;
+  }
+
+  public async submitPendingBlocks(testCallback?: any) {
+    await this.submitBlocks(this.pendingBlocks[this.exchangeId], testCallback);
     this.pendingBlocks[this.exchangeId] = [];
   }
 
@@ -2009,6 +2141,10 @@ export class ExchangeTestUtil {
   }
 
   public getWithdrawalAuxData(withdrawal: WithdrawalRequest) {
+    // Hack: fix json deserializing when the to address is serialized as a decimal string
+    if (!withdrawal.to.startsWith("0x")) {
+      withdrawal.to = "0x" + new BN(withdrawal.to).toString(16, 20);
+    }
     return web3.eth.abi.encodeParameter(
       "tuple(bool,uint256,bytes,uint256,address,bytes,uint32)",
       [
@@ -2066,42 +2202,6 @@ export class ExchangeTestUtil {
       assert(transactions.length === blockSize);
       numTransactionsDone += blockSize;
 
-      // Create the auxiliary data
-      const auxiliaryData: any[] = [];
-      let numConditionalTransactions = 0;
-      for (const [i, transaction] of transactions.entries()) {
-        if (transaction.txType === "Transfer") {
-          if (transaction.type > 0) {
-            numConditionalTransactions++;
-            const encodedTransferData = this.getTransferAuxData(transaction);
-            auxiliaryData.push([i, web3.utils.hexToBytes(encodedTransferData)]);
-          }
-        } else if (transaction.txType === "Withdraw") {
-          numConditionalTransactions++;
-          const encodedWithdrawalData = this.getWithdrawalAuxData(transaction);
-          auxiliaryData.push([i, web3.utils.hexToBytes(encodedWithdrawalData)]);
-        } else if (transaction.txType === "Deposit") {
-          numConditionalTransactions++;
-          auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
-        } else if (transaction.txType === "AccountUpdate") {
-          if (transaction.type > 0) {
-            numConditionalTransactions++;
-            const encodedAccountUpdateData = this.getAccountUpdateAuxData(
-              transaction
-            );
-            auxiliaryData.push([
-              i,
-              web3.utils.hexToBytes(encodedAccountUpdateData)
-            ]);
-          }
-        } else if (transaction.txType === "AmmUpdate") {
-          numConditionalTransactions++;
-          const encodedAmmUpdateData = this.getAmmUpdateAuxData(transaction);
-          auxiliaryData.push([i, web3.utils.hexToBytes(encodedAmmUpdateData)]);
-        }
-      }
-      logDebug("numConditionalTransactions: " + numConditionalTransactions);
-
       const currentBlockIdx = this.blocks[exchangeID].length - 1;
 
       const protocolFees = await this.exchange.getProtocolFeeValues();
@@ -2112,9 +2212,15 @@ export class ExchangeTestUtil {
         logDebug(tx.txType);
       }
 
+      const ammTransactions: any[] = [];
+      for (const callback of this.pendingBlockCallbacks[this.exchangeId]) {
+        ammTransactions.push(callback.tx);
+      }
+
       const operator = await this.getActiveOperator(exchangeID);
       const txBlock: TxBlock = {
         transactions,
+        ammTransactions,
         timestamp,
         protocolTakerFeeBips,
         protocolMakerFeeBips,
@@ -2129,158 +2235,24 @@ export class ExchangeTestUtil {
       );
 
       // Create the block
-      const { blockIdx, blockFilename } = await this.createBlock(
+      const { blockIdx, infoFilename, blockFilename } = await this.createBlock(
         exchangeID,
         0,
         JSON.stringify(txBlock, replacer, 4),
         false
       );
 
-      // Read in the block
+      const blockInfoData = JSON.parse(fs.readFileSync(infoFilename, "ascii"));
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
-      // Pack the data that needs to be committed onchain
-      const bs = new Bitstream();
-      bs.addBN(new BN(block.exchange), 20);
-      bs.addBN(new BN(block.merkleRootBefore, 10), 32);
-      bs.addBN(new BN(block.merkleRootAfter, 10), 32);
-      bs.addNumber(txBlock.timestamp, 4);
-      bs.addNumber(txBlock.protocolTakerFeeBips, 1);
-      bs.addNumber(txBlock.protocolMakerFeeBips, 1);
-      bs.addNumber(numConditionalTransactions, 4);
-      bs.addNumber(block.operatorAccountID, 4);
-      const allDa = new Bitstream();
-      for (const tx of block.transactions) {
-        //console.log(tx);
-        const da = new Bitstream();
-        if (tx.noop) {
-          da.addNumber(TransactionType.NOOP, 1);
-        } else if (tx.spotTrade) {
-          const spotTrade = tx.spotTrade;
-          const orderA = spotTrade.orderA;
-          const orderB = spotTrade.orderB;
-
-          da.addNumber(TransactionType.SPOT_TRADE, 1);
-          da.addNumber(orderA.storageID, 4);
-          da.addNumber(orderB.storageID, 4);
-          da.addNumber(orderA.accountID, 4);
-          da.addNumber(orderB.accountID, 4);
-          da.addNumber(orderA.tokenS, 2);
-          da.addNumber(orderB.tokenS, 2);
-          da.addNumber(spotTrade.fFillS_A, 3);
-          da.addNumber(spotTrade.fFillS_B, 3);
-
-          let limitMask = orderA.fillAmountBorS ? 0b10000000 : 0;
-          da.addNumber(limitMask + orderA.feeBips, 1);
-
-          limitMask = orderB.fillAmountBorS ? 0b10000000 : 0;
-          da.addNumber(limitMask + orderB.feeBips, 1);
-        } else if (tx.transfer) {
-          const transfer = tx.transfer;
-          da.addNumber(TransactionType.TRANSFER, 1);
-          da.addNumber(transfer.type, 1);
-          da.addNumber(transfer.fromAccountID, 4);
-          da.addNumber(transfer.toAccountID, 4);
-          da.addNumber(transfer.tokenID, 2);
-          da.addNumber(
-            toFloat(new BN(transfer.amount), Constants.Float24Encoding),
-            3
-          );
-          da.addNumber(transfer.feeTokenID, 2);
-          da.addNumber(
-            toFloat(new BN(transfer.fee), Constants.Float16Encoding),
-            2
-          );
-          da.addNumber(transfer.storageID, 4);
-          const needsToAddress =
-            transfer.type > 0 ||
-            transfer.toNewAccount ||
-            transfer.putAddressesInDA;
-          da.addBN(new BN(needsToAddress ? transfer.to : "0"), 20);
-          const needsFromAddress =
-            transfer.type > 0 || transfer.putAddressesInDA;
-          da.addBN(new BN(needsFromAddress ? transfer.from : "0"), 20);
-        } else if (tx.withdraw) {
-          const withdraw = tx.withdraw;
-          da.addNumber(TransactionType.WITHDRAWAL, 1);
-          da.addNumber(withdraw.type, 1);
-          da.addBN(new BN(withdraw.owner), 20);
-          da.addNumber(withdraw.accountID, 4);
-          da.addNumber(withdraw.tokenID, 2);
-          da.addBN(new BN(withdraw.amount), 12);
-          da.addNumber(withdraw.feeTokenID, 2);
-          da.addNumber(
-            toFloat(new BN(withdraw.fee), Constants.Float16Encoding),
-            2
-          );
-          da.addNumber(withdraw.storageID, 4);
-          da.addBN(new BN(withdraw.onchainDataHash), 20);
-        } else if (tx.deposit) {
-          const deposit = tx.deposit;
-          da.addNumber(TransactionType.DEPOSIT, 1);
-          da.addBN(new BN(deposit.owner), 20);
-          da.addNumber(deposit.accountID, 4);
-          da.addNumber(deposit.tokenID, 2);
-          da.addBN(new BN(deposit.amount), 12);
-        } else if (tx.accountUpdate) {
-          const update = tx.accountUpdate;
-          da.addNumber(TransactionType.ACCOUNT_UPDATE, 1);
-          da.addNumber(update.type, 1);
-          da.addBN(new BN(update.owner), 20);
-          da.addNumber(update.accountID, 4);
-          da.addNumber(update.feeTokenID, 2);
-          da.addNumber(
-            toFloat(new BN(update.fee), Constants.Float16Encoding),
-            2
-          );
-          da.addBN(
-            new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
-            32
-          );
-          da.addNumber(update.nonce, 4);
-        } else if (tx.ammUpdate) {
-          const update = tx.ammUpdate;
-          da.addNumber(TransactionType.AMM_UPDATE, 1);
-          da.addBN(new BN(update.owner), 20);
-          da.addNumber(update.accountID, 4);
-          da.addNumber(update.tokenID, 2);
-          da.addNumber(update.feeBips, 1);
-          da.addBN(new BN(update.tokenWeight), 12);
-          da.addNumber(update.nonce, 4);
-          da.addBN(new BN(update.balance), 12);
-        }
-        // console.log("type: " + da.extractUint8(0));
-        // console.log("da.length(): " + da.length());
-        assert(
-          da.length() <= Constants.TX_DATA_AVAILABILITY_SIZE,
-          "tx uses too much da"
-        );
-        while (da.length() < Constants.TX_DATA_AVAILABILITY_SIZE) {
-          da.addNumber(0, 1);
-        }
-        allDa.addHex(da.getData());
-      }
-
-      // Transform DA
-      const transformedDa = new Bitstream();
-      const size = Constants.TX_DATA_AVAILABILITY_SIZE;
-      const size1 = 29;
-      const size2 = 39;
-      assert.equal(size1 + size2, size, "invalid transform sizes");
-      for (let i = 0; i < blockSize; i++) {
-        transformedDa.addHex(allDa.extractData(i * size, size1));
-      }
-      for (let i = 0; i < blockSize; i++) {
-        transformedDa.addHex(allDa.extractData(i * size + size1, size2));
-      }
-      bs.addHex(transformedDa.getData());
+      // Create the auxiliary data
+      const auxiliaryData = this.getBlockAuxiliaryData(blockInfoData);
+      const blockData = this.getBlockData(block, auxiliaryData.length);
 
       // Write the block signature
-      const publicDataHashAndInput = this.getPublicDataHashAndInput(
-        bs.getData()
-      );
+      const publicDataHashAndInput = this.getPublicDataHashAndInput(blockData);
 
-      logDebug("[EVM]PublicData: " + bs.getData());
+      logDebug("[EVM]PublicData: " + blockData);
       logDebug("[EVM]PublicDataHash: " + publicDataHashAndInput.publicDataHash);
       logDebug("[EVM]PublicInput: " + publicDataHashAndInput.publicInput);
 
@@ -2308,16 +2280,203 @@ export class ExchangeTestUtil {
         operator,
         0,
         blockSize,
-        bs.getData(),
+        blockData,
         blockFilename,
         txBlock,
         auxiliaryData
       );
       blocks.push(blockInfo);
+
+      // Write auxiliary data
+      fs.writeFileSync(
+        blockFilename.slice(0, -5) + "_auxiliaryData.json",
+        JSON.stringify(blockInfo.auxiliaryData, undefined, 4),
+        "utf8"
+      );
+
+      // Write callbacks
+      fs.writeFileSync(
+        blockFilename.slice(0, -5) + "_callbacks.json",
+        JSON.stringify(blockInfo.callbacks, undefined, 4),
+        "utf8"
+      );
     }
 
     this.pendingTransactions[exchangeID] = [];
+    this.pendingBlockCallbacks[exchangeID] = [];
     return blocks;
+  }
+
+  public getBlockAuxiliaryData(block: any) {
+    const auxiliaryData: any[] = [];
+    for (const [i, transaction] of block.transactions.entries()) {
+      if (transaction.txType === "Transfer") {
+        if (transaction.type > 0) {
+          const encodedTransferData = this.getTransferAuxData(transaction);
+          auxiliaryData.push([i, encodedTransferData]);
+        }
+      } else if (transaction.txType === "Withdraw") {
+        const encodedWithdrawalData = this.getWithdrawalAuxData(transaction);
+        auxiliaryData.push([i, encodedWithdrawalData]);
+      } else if (transaction.txType === "Deposit") {
+        auxiliaryData.push([i, "0x"]);
+      } else if (transaction.txType === "AccountUpdate") {
+        if (transaction.type > 0) {
+          const encodedAccountUpdateData = this.getAccountUpdateAuxData(
+            transaction
+          );
+          auxiliaryData.push([i, encodedAccountUpdateData]);
+        }
+      } else if (transaction.txType === "AmmUpdate") {
+        const encodedAmmUpdateData = this.getAmmUpdateAuxData(transaction);
+        auxiliaryData.push([i, encodedAmmUpdateData]);
+      }
+    }
+    logDebug("numConditionalTransactions: " + auxiliaryData.length);
+    return auxiliaryData;
+  }
+
+  public getBlockData(block: any, numConditionalTransactions: number) {
+    // Pack the data that needs to be committed onchain
+    const bs = new Bitstream();
+    bs.addBN(new BN(block.exchange), 20);
+    bs.addBN(new BN(block.merkleRootBefore, 10), 32);
+    bs.addBN(new BN(block.merkleRootAfter, 10), 32);
+    bs.addNumber(block.timestamp, 4);
+    bs.addNumber(block.protocolTakerFeeBips, 1);
+    bs.addNumber(block.protocolMakerFeeBips, 1);
+    bs.addNumber(numConditionalTransactions, 4);
+    bs.addNumber(block.operatorAccountID, 4);
+    const allDa = new Bitstream();
+    for (const tx of block.transactions) {
+      //console.log(tx);
+      const da = new Bitstream();
+      if (tx.noop || tx.txType === "Noop") {
+        da.addNumber(TransactionType.NOOP, 1);
+      } else if (tx.spotTrade || tx.txType === "SpotTrade") {
+        const spotTrade = tx.spotTrade ? tx.spotTrade : tx;
+        const orderA = spotTrade.orderA;
+        const orderB = spotTrade.orderB;
+
+        da.addNumber(TransactionType.SPOT_TRADE, 1);
+        da.addNumber(orderA.storageID, 4);
+        da.addNumber(orderB.storageID, 4);
+        da.addNumber(orderA.accountID, 4);
+        da.addNumber(orderB.accountID, 4);
+        da.addNumber(orderA.tokenIdS ? orderA.tokenIdS : orderA.tokenS, 2);
+        da.addNumber(orderB.tokenIdS ? orderB.tokenIdS : orderB.tokenS, 2);
+        da.addNumber(spotTrade.fFillS_A ? spotTrade.fFillS_A : 0, 3);
+        da.addNumber(spotTrade.fFillS_B ? spotTrade.fFillS_B : 0, 3);
+
+        let limitMask = orderA.fillAmountBorS ? 0b10000000 : 0;
+        da.addNumber(limitMask + orderA.feeBips, 1);
+
+        limitMask = orderB.fillAmountBorS ? 0b10000000 : 0;
+        da.addNumber(limitMask + orderB.feeBips, 1);
+      } else if (tx.transfer || tx.txType === "Transfer") {
+        const transfer = tx.transfer ? tx.transfer : tx;
+        da.addNumber(TransactionType.TRANSFER, 1);
+        da.addNumber(transfer.type, 1);
+        da.addNumber(transfer.fromAccountID, 4);
+        da.addNumber(transfer.toAccountID, 4);
+        da.addNumber(transfer.tokenID, 2);
+        da.addNumber(
+          toFloat(new BN(transfer.amount), Constants.Float24Encoding),
+          3
+        );
+        da.addNumber(transfer.feeTokenID, 2);
+        da.addNumber(
+          toFloat(new BN(transfer.fee), Constants.Float16Encoding),
+          2
+        );
+        da.addNumber(transfer.storageID, 4);
+        const needsToAddress =
+          transfer.type > 0 ||
+          transfer.toNewAccount ||
+          transfer.putAddressesInDA;
+        da.addBN(new BN(needsToAddress ? transfer.to : "0"), 20);
+        const needsFromAddress = transfer.type > 0 || transfer.putAddressesInDA;
+        da.addBN(new BN(needsFromAddress ? transfer.from : "0"), 20);
+      } else if (tx.withdraw || tx.txType === "Withdraw") {
+        const withdraw = tx.withdraw ? tx.withdraw : tx;
+        da.addNumber(TransactionType.WITHDRAWAL, 1);
+        da.addNumber(withdraw.type, 1);
+        da.addBN(new BN(withdraw.owner), 20);
+        da.addNumber(withdraw.accountID, 4);
+        da.addNumber(withdraw.tokenID, 2);
+        da.addBN(new BN(withdraw.amount), 12);
+        da.addNumber(withdraw.feeTokenID, 2);
+        da.addNumber(
+          toFloat(new BN(withdraw.fee), Constants.Float16Encoding),
+          2
+        );
+        da.addNumber(withdraw.storageID, 4);
+        da.addBN(new BN(withdraw.onchainDataHash), 20);
+      } else if (tx.deposit || tx.txType === "Deposit") {
+        const deposit = tx.deposit ? tx.deposit : tx;
+        da.addNumber(TransactionType.DEPOSIT, 1);
+        da.addBN(new BN(deposit.owner), 20);
+        da.addNumber(deposit.accountID, 4);
+        da.addNumber(deposit.tokenID, 2);
+        da.addBN(new BN(deposit.amount), 12);
+      } else if (tx.accountUpdate || tx.txType === "AccountUpdate") {
+        const update = tx.accountUpdate ? tx.accountUpdate : tx;
+        da.addNumber(TransactionType.ACCOUNT_UPDATE, 1);
+        da.addNumber(update.type, 1);
+        da.addBN(new BN(update.owner), 20);
+        da.addNumber(update.accountID, 4);
+        da.addNumber(update.feeTokenID, 2);
+        da.addNumber(toFloat(new BN(update.fee), Constants.Float16Encoding), 2);
+        da.addBN(
+          new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
+          32
+        );
+        da.addNumber(update.nonce, 4);
+      } else if (tx.ammUpdate || tx.txType === "AmmUpdate") {
+        const update = tx.ammUpdate ? tx.ammUpdate : tx;
+        da.addNumber(TransactionType.AMM_UPDATE, 1);
+        da.addBN(new BN(update.owner), 20);
+        da.addNumber(update.accountID, 4);
+        da.addNumber(update.tokenID, 2);
+        da.addNumber(update.feeBips, 1);
+        da.addBN(new BN(update.tokenWeight), 12);
+        da.addNumber(update.nonce, 4);
+        da.addBN(new BN(update.balance), 12);
+      }
+      // console.log("type: " + da.extractUint8(0));
+      // console.log("da.length(): " + da.length());
+      assert(
+        da.length() <= Constants.TX_DATA_AVAILABILITY_SIZE,
+        "tx uses too much da"
+      );
+      while (da.length() < Constants.TX_DATA_AVAILABILITY_SIZE) {
+        da.addNumber(0, 1);
+      }
+      allDa.addHex(da.getData());
+    }
+
+    // Transform DA
+    const transformedDa = new Bitstream();
+    const size = Constants.TX_DATA_AVAILABILITY_SIZE;
+    const size1 = 29;
+    const size2 = 39;
+    assert.equal(size1 + size2, size, "invalid transform sizes");
+    for (let i = 0; i < block.transactions.length; i++) {
+      transformedDa.addHex(allDa.extractData(i * size, size1));
+    }
+    for (let i = 0; i < block.transactions.length; i++) {
+      transformedDa.addHex(allDa.extractData(i * size + size1, size2));
+    }
+    bs.addHex(transformedDa.getData());
+
+    return bs.getData();
+  }
+
+  public async registerToken(tokenAddress: string) {
+    const tx = await this.exchange.registerToken(tokenAddress, {
+      from: this.exchangeOwner
+    });
+    // logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
   }
 
   public async registerTokens() {
@@ -2328,18 +2487,17 @@ export class ExchangeTestUtil {
       // console.log(symbol + ": " + tokenAddress);
 
       if (symbol !== "ETH" && symbol !== "LRC") {
-        // Register the token
-        const tx = await this.exchange.registerToken(tokenAddress, {
-          from: this.exchangeOwner
-        });
-        // logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
+        await this.registerToken(tokenAddress);
       }
-
-      const tokenID = await this.getTokenID(tokenAddress);
-      this.tokenAddressToIDMap.set(tokenAddress, tokenID);
-      this.tokenIDToAddressMap.set(tokenID, tokenAddress);
+      await this.addTokenToMaps(tokenAddress);
     }
     // console.log(this.tokenIDMap);
+  }
+
+  public async addTokenToMaps(tokenAddress: string) {
+    const tokenID = await this.getTokenID(tokenAddress);
+    this.tokenAddressToIDMap.set(tokenAddress, tokenID);
+    this.tokenIDToAddressMap.set(tokenID, tokenAddress);
   }
 
   public async getTokenID(token: string) {

@@ -40,6 +40,8 @@ library AmmJoinProcess
         internal
         view
     {
+        require(join.validUntil >= block.timestamp, "EXPIRED");
+
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
         require(txHash.verifySignature(join.owner, signature), "INVALID_JOIN_APPROVAL");
 
