@@ -39,8 +39,19 @@ library AmmWithdrawal
         internal
     {
         require(tokens.length > 0, "INVALID_TOKENS");
+
+        address recipient = S.exchange.owner();
+
         for (uint i = 0; i < tokens.length; i++) {
-            S.exchange.withdrawFromDepositRequest(address(this), tokens[i]);
+            address token = tokens[i];
+            S.exchange.withdrawFromDepositRequest(address(this), token);
+            if (token != address(this)) {
+                uint balance = token == address(0) ?
+                    address(this).balance :
+                    ERC20(token).balanceOf(address(this));
+
+                AmmUtil.transferOut(token, balance, recipient);
+            }
         }
     }
 
