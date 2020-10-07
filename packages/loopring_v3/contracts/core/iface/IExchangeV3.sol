@@ -50,7 +50,6 @@ abstract contract IExchangeV3 is IExchange
         address from,
         address to,
         address token,
-        uint16  tokenId,
         uint96  amount
     );
 
