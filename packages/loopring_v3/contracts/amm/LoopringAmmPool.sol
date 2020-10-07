@@ -105,6 +105,15 @@ contract LoopringAmmPool is
         return state.beforeBlockSubmission(_block, data, txIdx);
     }
 
+    function withdrawFromDepositRequests(
+        address[] calldata tokens
+        )
+        external
+        nonReentrant
+    {
+        state.withdrawFromDepositRequests(tokens);
+    }
+
     function withdrawFromApprovedWithdrawals()
         external
         nonReentrant

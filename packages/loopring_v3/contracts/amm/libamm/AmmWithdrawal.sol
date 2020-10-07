@@ -32,6 +32,18 @@ library AmmWithdrawal
         S.exchange.withdrawFromApprovedWithdrawals(owners, tokens);
     }
 
+    function withdrawFromDepositRequests(
+        AmmData.State storage  S,
+        address[]     calldata tokens
+        )
+        internal
+    {
+        require(tokens.length > 0, "INVALID_TOKENS");
+        for (uint i = 0; i < tokens.length; i++) {
+            S.exchange.withdrawFromDepositRequest(address(this), tokens[i]);
+        }
+    }
+
     function withdrawWhenOffline(
         AmmData.State storage S
         )
