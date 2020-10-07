@@ -159,6 +159,7 @@ export namespace PoolExitUtils {
 export class AmmPool {
   public ctx: ExchangeTestUtil;
   public contract: any;
+  public accountID: number;
   public sharedConfig: any;
 
   public feeBips: number;
@@ -202,6 +203,8 @@ export class AmmPool {
       { autoSetKeys: false }
     );
 
+    this.accountID = deposit.accountID;
+
     // Collect token addresses
     const tokenAddresses: string[] = [];
     for (const token of tokens) {
@@ -228,7 +231,7 @@ export class AmmPool {
       sharedConfig: sharedConfig.address,
       exchange: this.ctx.exchange.address,
       poolName: "AMM Pool",
-      accountID: deposit.accountID,
+      accountID: this.accountID,
       tokens: tokenAddresses,
       weights: strWeights,
       feeBips,

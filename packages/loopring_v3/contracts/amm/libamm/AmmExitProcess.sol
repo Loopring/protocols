@@ -132,18 +132,13 @@ library AmmExitProcess
         AmmData.PoolExit memory  exit
         )
         private
-        view
+        pure
         returns(
             bool /* slippageOK */,
             uint96[] memory amounts
         )
     {
         amounts = new uint96[](ctx.size);
-
-        // Check if we can still use this exit
-        if (block.timestamp > exit.validUntil) {
-            return (false, amounts);
-        }
 
         // Calculate how much will be withdrawn
         uint ratio = uint(AmmData.POOL_TOKEN_BASE()).mul(exit.burnAmount) / ctx.totalSupply;

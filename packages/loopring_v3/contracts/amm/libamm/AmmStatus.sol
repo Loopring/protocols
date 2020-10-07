@@ -90,11 +90,13 @@ library AmmStatus
         )
         internal
     {
-        uint64 validUntil = S.forcedExit[exitOwner].validUntil;
-        require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLENGE");
-
-        uint size = S.tokens.length;
+        // If the exchange is in withdrawal mode allow the pool to be shutdown immediately
         if (!S.exchange.isInWithdrawalMode()) {
+            uint64 validUntil = S.forcedExit[exitOwner].validUntil;
+            require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLENGE");
+
+            uint size = S.tokens.length;
+
             for (uint i = 0; i < size; i++) {
                 S.exchange.forceWithdraw{value: msg.value / size}(
                     address(this),

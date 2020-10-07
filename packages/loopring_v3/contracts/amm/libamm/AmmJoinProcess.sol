@@ -107,7 +107,7 @@ library AmmJoinProcess
         AmmData.PoolJoin memory  join
         )
         private
-        view
+        pure
         returns(
             bool            slippageOK,
             uint96          mintAmount,
@@ -116,10 +116,6 @@ library AmmJoinProcess
     {
         // Check if we can still use this join
         amounts = new uint96[](ctx.size);
-
-        if (block.timestamp > join.validUntil) {
-            return (false, 0, amounts);
-        }
 
         if (ctx.totalSupply == 0) {
             return(true, AmmData.POOL_TOKEN_BASE().toUint96(), join.joinAmounts);
@@ -149,7 +145,7 @@ library AmmJoinProcess
         uint ratio = uint(AmmData.POOL_TOKEN_BASE()).mul(mintAmount) / ctx.totalSupply;
 
         for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = ratio.mul(ctx.tokenBalancesL2[i] / AmmData.POOL_TOKEN_BASE()).toUint96();
+            amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE()).toUint96();
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

@@ -90,7 +90,7 @@ library AmmWithdrawal
             // Check that nothing is withdrawable anymore.
             require(
                 exchange.getAmountWithdrawable(address(this), token) == 0,
-                "MORE_TO_WITHDRAWAL"
+                "MORE_TO_WITHDRAW"
             );
         }
     }
