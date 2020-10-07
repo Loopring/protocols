@@ -1823,6 +1823,17 @@ export class ExchangeTestUtil {
     return this.exchange.contract.methods.submitBlocks(blocks).encodeABI();
   }
 
+  public getSubmitBlocksWithCallbacks(parameters: any) {
+    const operatorContract = this.operator ? this.operator : this.exchange;
+    return operatorContract.contract.methods
+      .submitBlocksWithCallbacks(
+        parameters.isDataCompressed,
+        parameters.data,
+        parameters.callbackConfig
+      )
+      .encodeABI();
+  }
+
   public getSubmitBlocksWithCallbacksData(
     isDataCompressed: boolean,
     txData: string,

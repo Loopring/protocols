@@ -87,6 +87,11 @@ contract("Exchange", (accounts: string[]) => {
       );
       console.log(withCallbacksParameters);
 
+      const submitBlocksWithCallbacksBlocksTxData = ctx.getSubmitBlocksWithCallbacks(
+        withCallbacksParameters
+      );
+      console.log(submitBlocksWithCallbacksBlocksTxData);
+
       // Write the  output to a file as well
       fs.writeFileSync(
         outputFilename,
@@ -94,7 +99,8 @@ contract("Exchange", (accounts: string[]) => {
           {
             blocks: onchainBlocks,
             txData: submitBlocksTxData,
-            withCallbacksParameters
+            withCallbacksParameters,
+            txDataWithCallbacks: submitBlocksWithCallbacksBlocksTxData
           },
           undefined,
           4
