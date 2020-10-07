@@ -16,6 +16,8 @@ library AmmWithdrawal
     using AmmPoolToken      for AmmData.State;
     using MathUint          for uint;
 
+    // Question(brecht): since all joins/exits are using transfers now, shall we
+    // delete this function?
     function withdrawFromApprovedWithdrawals(
         AmmData.State storage S
         )
@@ -32,6 +34,7 @@ library AmmWithdrawal
         S.exchange.withdrawFromApprovedWithdrawals(owners, tokens);
     }
 
+    // This is to claim other people depositing into this AMM pool.
     function withdrawFromDepositRequests(
         AmmData.State storage  S,
         address[]     calldata tokens
