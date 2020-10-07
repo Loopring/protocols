@@ -45,7 +45,7 @@ contract("Exchange", (accounts: string[]) => {
       exchange,
       "DepositRequested"
     );
-    assert.equal(event.owner, to, "owner unexpected");
+    assert.equal(event.to, to, "owner unexpected");
     assert.equal(
       event.token,
       exchangeTestUtil.getTokenAddress(token),
