@@ -682,7 +682,7 @@ export class ExchangeV3 {
     );
     //console.log(transaction.input);
     if (transaction.input.startsWith(submitBlocksFunctionSignature)) {
-      const decodedCompressedInput = this.web3.eth.abi.decodeParameters(
+      const decodedInput = this.web3.eth.abi.decodeParameters(
         [
           "bool",
           "bytes",
@@ -703,7 +703,10 @@ export class ExchangeV3 {
         ],
         "0x" + transaction.input.slice(2 + 4 * 2)
       );
-      const data = decompressZeros(decodedCompressedInput[1]);
+
+      const data = decodedInput[0]
+        ? decompressZeros(decodedInput[1])
+        : decodedInput[1];
       // Get the inputs to commitBlock
       const decodedInputs = this.web3.eth.abi.decodeParameters(
         [

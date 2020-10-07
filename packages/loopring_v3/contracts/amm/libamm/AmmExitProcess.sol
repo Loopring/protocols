@@ -40,12 +40,12 @@ library AmmExitProcess
         )
         internal
     {
+        require(exit.validUntil >= block.timestamp, "EXPIRED");
+
         bytes32 txHash = AmmExitRequest.hash(ctx.domainSeparator, exit);
         bool isForcedExit = false;
 
         if (signature.length == 0) {
-            require(exit.validUntil >= block.timestamp, "EXIT_NOT_FOUND_OR_EXPIRED");
-
             bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
             if (txHash == forcedExitHash) {
                 delete S.forcedExit[exit.owner];
