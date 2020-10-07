@@ -24,6 +24,7 @@ library ExchangeDeposits
         address from,
         address to,
         address token,
+        uint16  tokenId,
         uint96  amount
     );
 
@@ -63,6 +64,7 @@ library ExchangeDeposits
             from,
             to,
             tokenAddress,
+            tokenID,
             amountDeposited
         );
     }
