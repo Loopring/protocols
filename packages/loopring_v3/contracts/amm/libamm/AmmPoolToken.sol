@@ -87,7 +87,7 @@ library AmmPoolToken
         bytes32 hash = EIP712.hashPacked(
             S.domainSeparator,
             keccak256(
-                abi.encodePacked(
+                abi.encode(
                     PERMIT_TYPEHASH,
                     owner,
                     spender,

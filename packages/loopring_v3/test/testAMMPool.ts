@@ -1,9 +1,10 @@
 import BN = require("bn.js");
-import { AmmPool, PoolJoinUtils } from "./ammUtils";
+import { AmmPool, Permit, PermitUtils } from "./ammUtils";
 import { expectThrow } from "./expectThrow";
 import { Constants } from "loopringV3.js";
 import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
 import { AuthMethod, SpotTrade } from "./types";
+import { SignatureType, sign, verifySignature } from "../util/Signature";
 
 const AgentRegistry = artifacts.require("AgentRegistry");
 
@@ -16,6 +17,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
   let ownerA: string;
   let ownerB: string;
+  let ownerC: string;
 
   let amountsA: BN[];
   let amountsB: BN[];
@@ -58,6 +60,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
     ownerA = ctx.testContext.orderOwners[10];
     ownerB = ctx.testContext.orderOwners[11];
+    ownerC = ctx.testContext.orderOwners[12];
 
     amountsA = [
       new BN(web3.utils.toWei("10000.123456", "ether")),
@@ -763,6 +766,144 @@ contract("LoopringAmmPool", (accounts: string[]) => {
             pool.verifySupply(new BN(0));
           }
         }
+      );
+    });
+  });
+
+  describe("Pool ERC20", function() {
+    this.timeout(0);
+
+    let pool: AmmPool;
+
+    beforeEach(async () => {
+      pool = await setupDefaultPool();
+
+      await pool.prePoolTransactions();
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+        authMethod: AuthMethod.ECDSA
+      });
+
+      // Withdraw some liquidity tokens
+      await ctx.requestWithdrawal(
+        ownerA,
+        pool.contract.address,
+        pool.POOL_TOKEN_BASE,
+        "ETH",
+        new BN(0)
+      );
+      await ctx.submitTransactions();
+      await ctx.submitPendingBlocks();
+    });
+
+    it("approve", async () => {
+      const spender = ctx.exchange.address;
+      const value = new BN(web3.utils.toWei("123", "ether"));
+
+      const allowanceBefore = await pool.contract.allowance(ownerA, spender);
+      await pool.contract.approve(spender, value, { from: ownerA });
+      const allowanceAfter = await pool.contract.allowance(ownerA, spender);
+      assert(
+        allowanceAfter.eq(allowanceBefore.add(value)),
+        "allowance expected"
+      );
+    });
+
+    it("transfer", async () => {
+      const value = pool.POOL_TOKEN_BASE.div(new BN(2));
+      const from = ownerA;
+      const to = ownerB;
+
+      const snapshot = new BalanceSnapshot(ctx);
+      await snapshot.transfer(from, to, pool.contract.address, value);
+      await pool.contract.transfer(to, value, { from: ownerA });
+      await snapshot.verifyBalances();
+
+      await expectThrow(
+        pool.contract.transfer(to, pool.POOL_TOKEN_BASE, { from: ownerA }),
+        "SUB_UNDERFLOW"
+      );
+    });
+
+    it("transferFrom", async () => {
+      const value = pool.POOL_TOKEN_BASE.div(new BN(2));
+      const from = ownerA;
+      const to = ownerB;
+      const spender = ownerC;
+
+      await pool.contract.approve(spender, value, { from: ownerA });
+
+      // Use up allowance
+      const snapshot = new BalanceSnapshot(ctx);
+      await snapshot.transfer(from, to, pool.contract.address, value);
+      await pool.contract.transferFrom(from, to, value, { from: spender });
+      await snapshot.verifyBalances();
+
+      const allowanceAfter = await pool.contract.allowance(ownerA, spender);
+      assert(allowanceAfter.eq(new BN(0)), "allowance unexpected");
+
+      // Try to spend more
+      await expectThrow(
+        pool.contract.transferFrom(from, to, value, { from: spender }),
+        "SUB_UNDERFLOW"
+      );
+    });
+
+    it("permit", async () => {
+      const spender = ctx.exchange.address;
+      const value = new BN(web3.utils.toWei("123", "ether"));
+
+      const nonceBefore = await pool.contract.nonces(ownerA);
+      const allowanceBefore = await pool.contract.allowance(ownerA, spender);
+
+      const permit: Permit = {
+        owner: ownerA,
+        spender,
+        value,
+        nonce: await pool.contract.nonces(ownerA),
+        deadline: new BN(0xffffffff)
+      };
+      const hash = PermitUtils.getHash(permit, pool.contract.address);
+      const signature = await sign(ownerA, hash, SignatureType.EIP_712);
+      await verifySignature(ownerA, hash, signature);
+      await pool.contract.permit(
+        permit.owner,
+        permit.spender,
+        permit.value,
+        permit.deadline,
+        signature
+      );
+
+      const nonceAfter = await pool.contract.nonces(ownerA);
+      const allowanceAfter = await pool.contract.allowance(ownerA, spender);
+      assert(nonceAfter.eq(nonceBefore.add(new BN(1))), "nonce expected");
+      assert(
+        allowanceAfter.eq(allowanceBefore.add(value)),
+        "allowance expected"
+      );
+
+      // Try to use the permit again
+      await expectThrow(
+        pool.contract.permit(
+          permit.owner,
+          permit.spender,
+          permit.value,
+          permit.deadline,
+          signature
+        ),
+        "INVALID_SIGNATURE"
+      );
+
+      // Try to use an expired permit
+      permit.deadline = new BN(1);
+      await expectThrow(
+        pool.contract.permit(
+          permit.owner,
+          permit.spender,
+          permit.value,
+          permit.deadline,
+          signature
+        ),
+        "EXPIRED"
       );
     });
   });
