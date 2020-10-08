@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../aux/access/IBlockReceiver.sol";
 import "../core/iface/IAgentRegistry.sol";
+import "../lib/Drainable.sol";
 import "../lib/ReentrancyGuard.sol";
 import "./libamm/AmmBlockReceiver.sol";
 import "./libamm/AmmData.sol";
@@ -21,6 +22,7 @@ contract LoopringAmmPool is
     PoolToken,
     IAgent,
     IBlockReceiver,
+    Drainable,
     ReentrancyGuard
 {
     using AmmBlockReceiver for AmmData.State;
@@ -127,5 +129,23 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.withdrawWhenOffline();
+    }
+
+    function canDrain(address drainer, address token)
+        public
+        override
+        view
+        returns (bool)
+    {
+        if (drainer != state.exchange.owner()) {
+            return false;
+        }
+
+        for (uint i = 0; i < state.tokens.length; i++) {
+            if (token == state.tokens[i].addr) {
+                return false;
+            }
+        }
+        return true;
     }
 }
