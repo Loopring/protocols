@@ -374,7 +374,7 @@ A transfer can also be approved using an on-chain signature or by approving the 
 
 ```
 bytes32 constant public TRANSFER_TYPEHASH = keccak256(
-    "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint32 validUntil,uint32 storageID)"
+    "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 maxFee,uint32 validUntil,uint32 storageID)"
 );
 ```
 
@@ -469,7 +469,7 @@ A withdrawal can also be approved using an on-chain signature or by approving th
 
 ```
 bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
-  "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes extraData,uint minGas,uint32 validUntil,uint32 nonce)"
+  "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 maxFee,address to,bytes extraData,uint minGas,uint32 validUntil,uint32 nonce)"
 );
 ```
 
@@ -519,7 +519,7 @@ An account update can also be approved using an on-chain signature or by approvi
 
 ```
 bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
-    "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint256 fee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
+    "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint256 maxFee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
 );
 ```
 
