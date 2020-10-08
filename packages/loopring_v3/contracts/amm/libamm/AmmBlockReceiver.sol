@@ -35,11 +35,9 @@ library AmmBlockReceiver
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
-        S.approveAmmUpdates(ctx, true);
+        S.approveAmmUpdates(ctx);
 
         _processPoolTx(S, ctx, poolTxData);
-
-        S.approveAmmUpdates(ctx, false);
 
         // Update state
         S._totalSupply = ctx.totalSupply;
