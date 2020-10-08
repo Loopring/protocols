@@ -24,6 +24,7 @@ library AmmUtil
         internal
     {
         transfer.validUntil = 0xffffffff;
+        transfer.maxFee = transfer.fee;
         bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
         ctx.exchange.approveTransaction(transfer.from, hash);
     }

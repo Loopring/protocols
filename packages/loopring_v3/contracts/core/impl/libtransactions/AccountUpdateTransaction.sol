@@ -19,7 +19,7 @@ library AccountUpdateTransaction
     using ExchangeSignatures   for ExchangeData.State;
 
     bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
-        "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint256 fee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
+        "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint256 maxFee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
     );
 
     /*event AccountUpdated(
@@ -32,6 +32,7 @@ library AccountUpdateTransaction
         address owner;
         uint32  accountID;
         uint16  feeTokenID;
+        uint96  maxFee;
         uint96  fee;
         uint    publicKey;
         uint32  validUntil;
@@ -42,6 +43,7 @@ library AccountUpdateTransaction
     struct AccountUpdateAuxiliaryData
     {
         bytes  signature;
+        uint96 maxFee;
         uint32 validUntil;
     }
 
@@ -58,9 +60,12 @@ library AccountUpdateTransaction
         AccountUpdate memory accountUpdate = readTx(data, offset);
         AccountUpdateAuxiliaryData memory auxData = abi.decode(auxiliaryData, (AccountUpdateAuxiliaryData));
 
-        // Check validUntil
-        require(ctx.timestamp < auxData.validUntil, "ACCOUNT_UPDATE_EXPIRED");
+        // Fill in withdrawal data missing from DA
         accountUpdate.validUntil = auxData.validUntil;
+        accountUpdate.maxFee = auxData.maxFee;
+        // Validate
+        require(ctx.timestamp < accountUpdate.validUntil, "ACCOUNT_UPDATE_EXPIRED");
+        require(accountUpdate.fee <= accountUpdate.maxFee, "ACCOUNT_UPDATE_FEE_TOO_HIGH");
 
         // Calculate the tx hash
         bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, accountUpdate);
@@ -117,7 +122,7 @@ library AccountUpdateTransaction
                     accountUpdate.owner,
                     accountUpdate.accountID,
                     accountUpdate.feeTokenID,
-                    accountUpdate.fee,
+                    accountUpdate.maxFee,
                     accountUpdate.publicKey,
                     accountUpdate.validUntil,
                     accountUpdate.nonce

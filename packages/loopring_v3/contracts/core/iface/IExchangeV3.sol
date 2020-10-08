@@ -551,32 +551,6 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual;
 
-    /// @dev Approves an offchain transfer. Helper function around `approveTransaction`.
-    ///      Important! This is just an approval, the owner has full control
-    ///      whether the transfer will actally be done!
-    ///
-    ///      This function can only be called by an agent.
-    ///
-    /// @param from The address of the account that sends the tokens.
-    /// @param to The address to which 'amount' tokens are transferred.
-    /// @param token The address of the token to transfer ('0x0' for ETH).
-    /// @param amount The amount of tokens to be transferred.
-    /// @param feeToken The address of the token used for the fee ('0x0' for ETH).
-    /// @param fee The fee for the transfer.
-    /// @param storageID The storageID.
-    function approveOffchainTransfer(
-        address from,
-        address to,
-        address token,
-        uint96  amount,
-        address feeToken,
-        uint96  fee,
-        uint32  validUntil,
-        uint32  storageID
-        )
-        external
-        virtual;
-
     /// @dev Allows a withdrawal to be done to an adddresss that is different
     ///      than initialy specified in the withdrawal request. This can be used to
     ///      implement functionality like fast withdrawals.

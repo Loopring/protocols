@@ -188,23 +188,6 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.approveOffchainTransfer(
-          ownerA,
-          ownerB,
-          token,
-          new BN(0),
-          token,
-          new BN(0),
-          0xffffffff,
-          new BN(1),
-          {
-            from: agent
-          }
-        ),
-        "UNAUTHORIZED"
-      );
-
-      await expectThrow(
         exchange.setWithdrawalRecipient(
           ownerA,
           ownerB,
@@ -238,20 +221,6 @@ contract("Exchange", (accounts: string[]) => {
       await exchange.approveTransaction(ownerA, Buffer.from("FF"), {
         from: agent
       });
-
-      await exchange.approveOffchainTransfer(
-        ownerA,
-        ownerB,
-        token,
-        new BN(0),
-        token,
-        new BN(0),
-        0xfffffff,
-        new BN(1),
-        {
-          from: agent
-        }
-      );
 
       await exchange.setWithdrawalRecipient(
         ownerA,

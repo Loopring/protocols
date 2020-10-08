@@ -370,7 +370,7 @@ It is also possible to sign a transfer to an unspecified `to` address. This is d
 
 Transfers (like orders) use the storage tree instead of the account nonce for replay protection. This allows for more flexibility by e.g., allowing transfers to be executed out-of-order. We do this by requiring the storage slot data to be 0 for the transfer, and after the transaction is executed, the storage slot is set to 1, so the transfer cannot be executed a second time.
 
-A transfer can also be approved using an on-chain signature or by approving the hash of the transaction using `approveTransaction` or the helper function `approveOffchainTransfer`.
+A transfer can also be approved using an on-chain signature or by approving the hash of the transaction using `approveTransaction`.
 
 ```
 bytes32 constant public TRANSFER_TYPEHASH = keccak256(
