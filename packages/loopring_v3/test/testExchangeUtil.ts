@@ -132,6 +132,7 @@ export interface WithdrawOptions {
   storageID?: number;
   maxFee?: BN;
   storeRecipient?: boolean;
+  skipForcedAuthentication?: boolean;
 }
 
 export interface AccountUpdateOptions {
@@ -1271,6 +1272,10 @@ export class ExchangeTestUtil {
         : this.storageIDGenerator++;
     let storeRecipient =
       options.storeRecipient !== undefined ? options.storeRecipient : false;
+    let skipForcedAuthentication =
+      options.skipForcedAuthentication !== undefined
+        ? options.skipForcedAuthentication
+        : false;
 
     let type = 1;
     if (authMethod === AuthMethod.EDDSA) {
@@ -1294,7 +1299,7 @@ export class ExchangeTestUtil {
     }
 
     let accountID = this.getAccountID(owner);
-    if (authMethod === AuthMethod.FORCE) {
+    if (authMethod === AuthMethod.FORCE && !skipForcedAuthentication) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
         const numAvailableSlotsBefore = (
