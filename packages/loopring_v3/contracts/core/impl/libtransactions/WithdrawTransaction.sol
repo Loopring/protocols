@@ -100,7 +100,7 @@ library WithdrawTransaction
         withdrawal.to = auxData.to;
         withdrawal.minGas = auxData.minGas;
         withdrawal.extraData = auxData.extraData;
-        withdrawal.maxFee = auxData.maxFee;
+        withdrawal.maxFee = auxData.maxFee == 0 ? withdrawal.fee : auxData.maxFee;
         withdrawal.validUntil = auxData.validUntil;
 
         if (withdrawal.withdrawalType == 0) {

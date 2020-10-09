@@ -69,7 +69,7 @@ library TransferTransaction
 
         // Fill in withdrawal data missing from DA
         transfer.validUntil = auxData.validUntil;
-        transfer.maxFee = auxData.maxFee;
+        transfer.maxFee = auxData.maxFee == 0 ? transfer.fee : auxData.maxFee;
         // Validate
         require(ctx.timestamp < transfer.validUntil, "TRANSFER_EXPIRED");
         require(transfer.fee <= transfer.maxFee, "TRANSFER_FEE_TOO_HIGH");
