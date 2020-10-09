@@ -21,7 +21,7 @@ library TransferTransaction
     using ExchangeSignatures   for ExchangeData.State;
 
     bytes32 constant public TRANSFER_TYPEHASH = keccak256(
-        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint32 validUntil,uint32 storageID)"
+        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 maxFee,uint32 validUntil,uint32 storageID)"
     );
 
     struct Transfer
@@ -33,6 +33,7 @@ library TransferTransaction
         uint16  tokenID;
         uint96  amount;
         uint16  feeTokenID;
+        uint96  maxFee;
         uint96  fee;
         uint32  validUntil;
         uint32  storageID;
@@ -42,6 +43,7 @@ library TransferTransaction
     struct TransferAuxiliaryData
     {
         bytes  signature;
+        uint96 maxFee;
         uint32 validUntil;
     }
 
@@ -65,9 +67,12 @@ library TransferTransaction
         Transfer memory transfer = readTx(data, offset);
         TransferAuxiliaryData memory auxData = abi.decode(auxiliaryData, (TransferAuxiliaryData));
 
-        // Check validUntil
-        require(ctx.timestamp < auxData.validUntil, "TRANSFER_EXPIRED");
+        // Fill in withdrawal data missing from DA
         transfer.validUntil = auxData.validUntil;
+        transfer.maxFee = auxData.maxFee == 0 ? transfer.fee : auxData.maxFee;
+        // Validate
+        require(ctx.timestamp < transfer.validUntil, "TRANSFER_EXPIRED");
+        require(transfer.fee <= transfer.maxFee, "TRANSFER_FEE_TOO_HIGH");
 
         // Calculate the tx hash
         bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, transfer);
@@ -132,7 +137,7 @@ library TransferTransaction
                     transfer.tokenID,
                     transfer.amount,
                     transfer.feeTokenID,
-                    transfer.fee,
+                    transfer.maxFee,
                     transfer.validUntil,
                     transfer.storageID
                 )

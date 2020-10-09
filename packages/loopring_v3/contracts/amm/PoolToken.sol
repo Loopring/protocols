@@ -12,7 +12,7 @@ abstract contract PoolToken is ERC2612 {
     using MathUint     for uint;
     using AmmPoolToken for AmmData.State;
 
-    uint   public constant decimals = 18;
+    uint   public constant decimals = 8;
 
     AmmData.State state;
 

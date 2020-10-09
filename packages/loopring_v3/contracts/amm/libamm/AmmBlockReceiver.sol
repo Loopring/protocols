@@ -35,14 +35,12 @@ library AmmBlockReceiver
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
-        S.approveAmmUpdates(ctx, true);
+        S.approveAmmUpdates(ctx);
 
         _processPoolTx(S, ctx, poolTxData);
 
-        S.approveAmmUpdates(ctx, false);
-
         // Update state
-        S.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply;
+        S._totalSupply = ctx.totalSupply;
 
         return ctx.txIdx - txIdx;
     }
@@ -65,7 +63,7 @@ library AmmBlockReceiver
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             poolTokenID: S.poolTokenID,
-            poolTokenBurnedSupply: S.poolTokenBurnedSupply,
+            totalSupply: S._totalSupply,
             size: size,
             tokens: S.tokens,
             tokenBalancesL2: new uint96[](size)

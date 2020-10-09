@@ -4,7 +4,6 @@ import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { AuthMethod, OrderInfo, SpotTrade } from "./types";
 
-
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
 
@@ -26,7 +25,7 @@ contract("Exchange", (accounts: string[]) => {
     // Fresh Exchange for each test
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {setupTestState: true}
+      { setupTestState: true }
     );
     operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
     operator = exchangeTestUtil.getAccount(operatorAccountID).owner;
@@ -55,44 +54,53 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.deposit(owner, owner, token, balance);
 
       // Send some funds over to the new account
-      await exchangeTestUtil.transfer(owner, ammOwner, token, fee.mul(new BN(10)), token, fee, {transferToNew: true});
+      await exchangeTestUtil.transfer(
+        owner,
+        ammOwner,
+        token,
+        fee.mul(new BN(10)),
+        token,
+        fee,
+        { transferToNew: true }
+      );
 
       // Setup the AMM
-      await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenA, 15, tokenWeightA);
-      await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenB, 15, tokenWeightB, {authMethod: AuthMethod.ECDSA});
-      await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenC, 15, tokenWeightC, {authMethod: AuthMethod.APPROVE});
+      await exchangeTestUtil.requestAmmUpdate(
+        ammOwner,
+        tokenA,
+        15,
+        tokenWeightA
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ammOwner,
+        tokenB,
+        15,
+        tokenWeightB,
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ammOwner,
+        tokenC,
+        15,
+        tokenWeightC,
+        { authMethod: AuthMethod.APPROVE }
+      );
       // Change some of the parameters
-      await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenA, 20, tokenWeightC);
-      await exchangeTestUtil.requestAmmUpdate(ammOwner, tokenC, 25, tokenWeightA);
+      await exchangeTestUtil.requestAmmUpdate(
+        ammOwner,
+        tokenA,
+        20,
+        tokenWeightC
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ammOwner,
+        tokenC,
+        25,
+        tokenWeightA
+      );
 
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks();
-    });
-
-    it("Should not be possible to transfer tokens to non-zero token weight", async () => {
-      const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
-
-      const token = "LRC";
-      const tokenWeight = new BN(web3.utils.toWei("1", "ether"));
-
-      // Create the AMM account
-      await exchangeTestUtil.deposit(owner, owner, token, new BN(123));
-
-      // Create the transferrer
-      await exchangeTestUtil.deposit(ownerB, ownerB, token, new BN(123));
-
-      // Setup the AMM
-      await exchangeTestUtil.requestAmmUpdate(owner, token, 15, tokenWeight);
-
-      // Request forced withdrawal
-      await exchangeTestUtil.transfer(ownerB, owner, token, new BN(1), token, new BN(0));
-
-      // Commit the transfers
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
     });
 
     it("Forced withdrawals should reset the AMM token weight", async () => {
@@ -158,8 +166,18 @@ contract("Exchange", (accounts: string[]) => {
       const feeBipsAMM = 30;
       const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
       const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
-      await exchangeTestUtil.requestAmmUpdate(ring.orderA.owner, ring.orderA.tokenS, feeBipsAMM, tokenWeightS);
-      await exchangeTestUtil.requestAmmUpdate(ring.orderA.owner, ring.orderA.tokenB, feeBipsAMM, tokenWeightB);
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenS,
+        feeBipsAMM,
+        tokenWeightS
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenB,
+        feeBipsAMM,
+        tokenWeightB
+      );
 
       await exchangeTestUtil.sendRing(ring);
       await exchangeTestUtil.submitTransactions();
@@ -202,8 +220,18 @@ contract("Exchange", (accounts: string[]) => {
       const feeBipsAMM = 30;
       const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
       const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
-      await exchangeTestUtil.requestAmmUpdate(ring.orderB.owner, ring.orderB.tokenS, feeBipsAMM, tokenWeightS);
-      await exchangeTestUtil.requestAmmUpdate(ring.orderB.owner, ring.orderB.tokenB, feeBipsAMM, tokenWeightB);
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderB.owner,
+        ring.orderB.tokenS,
+        feeBipsAMM,
+        tokenWeightS
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderB.owner,
+        ring.orderB.tokenB,
+        feeBipsAMM,
+        tokenWeightB
+      );
 
       await exchangeTestUtil.sendRing(ring);
       await exchangeTestUtil.submitTransactions();
@@ -257,10 +285,30 @@ contract("Exchange", (accounts: string[]) => {
       const feeBipsAMM = 30;
       const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
       const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
-      await exchangeTestUtil.requestAmmUpdate(ring.orderA.owner, ring.orderA.tokenS, feeBipsAMM, tokenWeightS);
-      await exchangeTestUtil.requestAmmUpdate(ring.orderA.owner, ring.orderA.tokenB, feeBipsAMM, tokenWeightB);
-      await exchangeTestUtil.requestAmmUpdate(ring.orderB.owner, ring.orderB.tokenS, feeBipsAMM, tokenWeightS);
-      await exchangeTestUtil.requestAmmUpdate(ring.orderB.owner, ring.orderB.tokenB, feeBipsAMM, tokenWeightB);
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenS,
+        feeBipsAMM,
+        tokenWeightS
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenB,
+        feeBipsAMM,
+        tokenWeightB
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderB.owner,
+        ring.orderB.tokenS,
+        feeBipsAMM,
+        tokenWeightS
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderB.owner,
+        ring.orderB.tokenB,
+        feeBipsAMM,
+        tokenWeightB
+      );
 
       await exchangeTestUtil.sendRing(ring);
       await exchangeTestUtil.submitTransactions();
@@ -304,14 +352,21 @@ contract("Exchange", (accounts: string[]) => {
       const feeBipsAMM = 30;
       const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
       const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
-      await exchangeTestUtil.requestAmmUpdate(ring.orderA.owner, ring.orderA.tokenS, feeBipsAMM, tokenWeightS);
-      await exchangeTestUtil.requestAmmUpdate(ring.orderA.owner, ring.orderA.tokenB, feeBipsAMM, tokenWeightB);
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenS,
+        feeBipsAMM,
+        tokenWeightS
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenB,
+        feeBipsAMM,
+        tokenWeightB
+      );
 
       await exchangeTestUtil.sendRing(ring);
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("Weights not set", async () => {
@@ -350,13 +405,15 @@ contract("Exchange", (accounts: string[]) => {
       // Only set the weight of a single token
       const feeBipsAMM = 0;
       const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
-      await exchangeTestUtil.requestAmmUpdate(ring.orderA.owner, ring.orderA.tokenS, feeBipsAMM, tokenWeightS);
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenS,
+        feeBipsAMM,
+        tokenWeightS
+      );
 
       await exchangeTestUtil.sendRing(ring);
-      await expectThrow(
-        exchangeTestUtil.submitTransactions(),
-        "invalid block"
-      );
+      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
   });
 });

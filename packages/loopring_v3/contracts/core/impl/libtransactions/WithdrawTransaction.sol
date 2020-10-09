@@ -33,7 +33,7 @@ library WithdrawTransaction
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
-        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,address to,bytes extraData,uint256 minGas,uint32 validUntil,uint32 storageID)"
+        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 maxFee,address to,bytes extraData,uint256 minGas,uint32 validUntil,uint32 storageID)"
     );
 
     struct Withdrawal
@@ -44,6 +44,7 @@ library WithdrawTransaction
         uint16  tokenID;
         uint96  amount;
         uint16  feeTokenID;
+        uint96  maxFee;
         uint96  fee;
         address to;
         bytes   extraData;
@@ -63,6 +64,7 @@ library WithdrawTransaction
         uint    minGas;
         address to;
         bytes   extraData;
+        uint96  maxFee;
         uint32  validUntil;
     }
 
@@ -98,13 +100,16 @@ library WithdrawTransaction
         withdrawal.to = auxData.to;
         withdrawal.minGas = auxData.minGas;
         withdrawal.extraData = auxData.extraData;
+        withdrawal.maxFee = auxData.maxFee == 0 ? withdrawal.fee : auxData.maxFee;
         withdrawal.validUntil = auxData.validUntil;
 
         if (withdrawal.withdrawalType == 0) {
             // Signature checked offchain, nothing to do
         } else if (withdrawal.withdrawalType == 1) {
-            // Check validUntil
+            // Validate
             require(ctx.timestamp < withdrawal.validUntil, "WITHDRAWAL_EXPIRED");
+            require(withdrawal.fee <= withdrawal.maxFee, "WITHDRAWAL_FEE_TOO_HIGH");
+
             // Check appproval onchain
             // Calculate the tx hash
             bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, withdrawal);
@@ -238,7 +243,7 @@ library WithdrawTransaction
                     withdrawal.tokenID,
                     withdrawal.amount,
                     withdrawal.feeTokenID,
-                    withdrawal.fee,
+                    withdrawal.maxFee,
                     withdrawal.to,
                     keccak256(withdrawal.extraData),
                     withdrawal.minGas,
