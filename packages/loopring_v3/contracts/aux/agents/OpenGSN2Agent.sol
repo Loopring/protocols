@@ -82,21 +82,6 @@ contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress
         forwardCall();
     }
 
-    function approveOffchainTransfer(
-        address from,
-        address /* to */,
-        address /* token */,
-        uint96  /* amount */,
-        address /* feeToken */,
-        uint96  /* fee */,
-        uint32  /* nonce */
-        )
-        external
-        onlyFrom(from)
-    {
-        forwardCall();
-    }
-
     function onchainTransferFrom(
         address from,
         address /* to */,

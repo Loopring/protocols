@@ -63,6 +63,7 @@ function replacer(name: any, val: any) {
     name === "amount" ||
     name === "fee" ||
     name === "maxFee" ||
+    name === "originalMaxFee" ||
     name === "tokenWeight" ||
     name === "mintMinAmount" ||
     name === "burnAmount"
@@ -132,6 +133,7 @@ export interface WithdrawOptions {
   storageID?: number;
   maxFee?: BN;
   storeRecipient?: boolean;
+  skipForcedAuthentication?: boolean;
 }
 
 export interface AccountUpdateOptions {
@@ -178,7 +180,7 @@ export namespace AccountUpdateUtils {
           { name: "owner", type: "address" },
           { name: "accountID", type: "uint32" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "fee", type: "uint256" },
+          { name: "maxFee", type: "uint256" },
           { name: "publicKey", type: "uint256" },
           { name: "validUntil", type: "uint32" },
           { name: "nonce", type: "uint32" }
@@ -195,7 +197,7 @@ export namespace AccountUpdateUtils {
         owner: update.owner,
         accountID: update.accountID,
         feeTokenID: update.feeTokenID,
-        fee: update.fee,
+        maxFee: update.maxFee,
         publicKey: new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
         validUntil: update.validUntil,
         nonce: update.nonce
@@ -257,7 +259,7 @@ export namespace WithdrawalUtils {
           { name: "tokenID", type: "uint16" },
           { name: "amount", type: "uint256" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "fee", type: "uint256" },
+          { name: "maxFee", type: "uint256" },
           { name: "to", type: "address" },
           { name: "extraData", type: "bytes" },
           { name: "minGas", type: "uint256" },
@@ -278,7 +280,7 @@ export namespace WithdrawalUtils {
         tokenID: withdrawal.tokenID,
         amount: withdrawal.amount,
         feeTokenID: withdrawal.feeTokenID,
-        fee: withdrawal.fee,
+        maxFee: withdrawal.maxFee,
         to: withdrawal.to,
         extraData: withdrawal.extraData,
         minGas: withdrawal.minGas,
@@ -341,7 +343,7 @@ export namespace TransferUtils {
           { name: "tokenID", type: "uint16" },
           { name: "amount", type: "uint256" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "fee", type: "uint256" },
+          { name: "maxFee", type: "uint256" },
           { name: "validUntil", type: "uint32" },
           { name: "storageID", type: "uint32" }
         ]
@@ -359,7 +361,7 @@ export namespace TransferUtils {
         tokenID: transfer.tokenID,
         amount: transfer.amount,
         feeTokenID: transfer.feeTokenID,
-        fee: transfer.fee,
+        maxFee: transfer.maxFee,
         validUntil: transfer.validUntil,
         storageID: transfer.storageID
       }
@@ -775,6 +777,7 @@ export class ExchangeTestUtil {
       feeTokenID,
       fee,
       maxFee,
+      originalMaxFee: maxFee,
       from,
       to,
       type: authMethod === AuthMethod.EDDSA ? 0 : 1,
@@ -813,25 +816,11 @@ export class ExchangeTestUtil {
     } else if (authMethod === AuthMethod.APPROVE) {
       const txHash = TransferUtils.getHash(transfer, this.exchange.address);
 
-      // Randomly approve using approveOffchainTransfer/approveTransaction
-      const toggle = transfer.from == signer ? this.getRandomBool() : false;
-      if (toggle) {
-        await this.exchange.approveOffchainTransfer(
-          signer,
-          transfer.to,
-          token,
-          transfer.amount,
-          feeToken,
-          transfer.fee,
-          transfer.validUntil,
-          transfer.storageID,
-          { from: signer }
-        );
-      } else {
-        await this.exchange.approveTransaction(signer, txHash, {
-          from: signer
-        });
-      }
+      // Approve
+      await this.exchange.approveTransaction(signer, txHash, {
+        from: signer
+      });
+
       // Verify the transaction has been approved
       // Check the event
       const event = await this.assertEventEmitted(
@@ -850,6 +839,11 @@ export class ExchangeTestUtil {
         txHash
       );
       assert(isApproved, "tx not approved");
+    }
+
+    if (authMethod !== AuthMethod.EDDSA) {
+      // Set the max fee to the fee so that it can always pass through the circuit
+      transfer.maxFee = transfer.fee;
     }
 
     this.pendingTransactions[this.exchangeId].push(transfer);
@@ -1271,6 +1265,10 @@ export class ExchangeTestUtil {
         : this.storageIDGenerator++;
     let storeRecipient =
       options.storeRecipient !== undefined ? options.storeRecipient : false;
+    let skipForcedAuthentication =
+      options.skipForcedAuthentication !== undefined
+        ? options.skipForcedAuthentication
+        : false;
 
     let type = 1;
     if (authMethod === AuthMethod.EDDSA) {
@@ -1294,15 +1292,19 @@ export class ExchangeTestUtil {
     }
 
     let accountID = this.getAccountID(owner);
-    if (authMethod === AuthMethod.FORCE) {
+    if (authMethod === AuthMethod.FORCE && !skipForcedAuthentication) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
-        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+        const numAvailableSlotsBefore = (
+          await this.exchange.getNumAvailableForcedSlots()
+        ).toNumber();
         await this.exchange.forceWithdraw(signer, token, accountID, {
           from: signer,
           value: withdrawalFee
         });
-        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+        const numAvailableSlotsAfter = (
+          await this.exchange.getNumAvailableForcedSlots()
+        ).toNumber();
         assert.equal(
           numAvailableSlotsAfter,
           numAvailableSlotsBefore - 1,
@@ -1345,6 +1347,7 @@ export class ExchangeTestUtil {
       feeTokenID,
       fee,
       maxFee,
+      originalMaxFee: maxFee,
       to,
       storeRecipient,
       extraData,
@@ -1373,6 +1376,11 @@ export class ExchangeTestUtil {
         this.exchange.address
       );
       await this.exchange.approveTransaction(owner, hash, { from: owner });
+    }
+
+    if (authMethod !== AuthMethod.EDDSA) {
+      // Set the max fee to the fee so that it can always pass through the circuit
+      withdrawalRequest.maxFee = withdrawalRequest.fee;
     }
 
     this.pendingTransactions[this.exchangeId].push(withdrawalRequest);
@@ -1420,7 +1428,8 @@ export class ExchangeTestUtil {
       publicKeyY: keyPair.publicKeyY,
       feeTokenID,
       fee,
-      maxFee
+      maxFee,
+      originalMaxFee: maxFee
     };
 
     // Sign the public key update
@@ -1443,6 +1452,11 @@ export class ExchangeTestUtil {
         this.exchange.address
       );
       await this.exchange.approveTransaction(owner, hash, { from: owner });
+    }
+
+    if (authMethod !== AuthMethod.EDDSA) {
+      // Set the max fee to the fee so that it can always pass through the circuit
+      accountUpdate.maxFee = accountUpdate.fee;
     }
 
     this.pendingTransactions[this.exchangeId].push(accountUpdate);
@@ -1947,10 +1961,14 @@ export class ExchangeTestUtil {
       testCallback(onchainBlocks, blocks);
     }
 
-    const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksSubmittedBefore = (
+      await this.exchange.getBlockHeight()
+    ).toNumber();
 
     // Forced requests
-    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+    const numAvailableSlotsBefore = (
+      await this.exchange.getNumAvailableForcedSlots()
+    ).toNumber();
 
     // SubmitBlocks raw tx data
     const txData = this.getSubmitCallbackData(onchainBlocks);
@@ -2001,7 +2019,9 @@ export class ExchangeTestUtil {
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     // Check number of blocks submitted
-    const numBlocksSubmittedAfter = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksSubmittedAfter = (
+      await this.exchange.getBlockHeight()
+    ).toNumber();
     assert.equal(
       numBlocksSubmittedAfter,
       numBlocksSubmittedBefore + blocks.length,
@@ -2065,7 +2085,9 @@ export class ExchangeTestUtil {
     }
 
     // Forced requests
-    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+    const numAvailableSlotsAfter = (
+      await this.exchange.getNumAvailableForcedSlots()
+    ).toNumber();
     let numForcedRequestsProcessed = 0;
     for (const block of blocks) {
       for (const tx of block.internalBlock.transactions) {
@@ -2114,28 +2136,26 @@ export class ExchangeTestUtil {
   }
 
   public getTransferAuxData(transfer: Transfer) {
-    return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
-      web3.utils.hexToBytes(
-        transfer.onchainSignature ? transfer.onchainSignature : "0x"
-      ),
+    return web3.eth.abi.encodeParameter("tuple(bytes,uint96,uint32)", [
+      transfer.onchainSignature ? transfer.onchainSignature : "0x",
+      transfer.originalMaxFee ? transfer.originalMaxFee : transfer.maxFee,
       transfer.validUntil
     ]);
   }
 
   public getAccountUpdateAuxData(accountUpdate: AccountUpdate) {
-    return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
-      web3.utils.hexToBytes(
-        accountUpdate.onchainSignature ? accountUpdate.onchainSignature : "0x"
-      ),
+    return web3.eth.abi.encodeParameter("tuple(bytes,uint96,uint32)", [
+      accountUpdate.onchainSignature ? accountUpdate.onchainSignature : "0x",
+      accountUpdate.originalMaxFee
+        ? accountUpdate.originalMaxFee
+        : accountUpdate.maxFee,
       accountUpdate.validUntil
     ]);
   }
 
   public getAmmUpdateAuxData(ammUpdate: AmmUpdate) {
     return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
-      web3.utils.hexToBytes(
-        ammUpdate.onchainSignature ? ammUpdate.onchainSignature : "0x"
-      ),
+      ammUpdate.onchainSignature ? ammUpdate.onchainSignature : "0x",
       ammUpdate.validUntil
     ]);
   }
@@ -2146,18 +2166,17 @@ export class ExchangeTestUtil {
       withdrawal.to = "0x" + new BN(withdrawal.to).toString(16, 20);
     }
     return web3.eth.abi.encodeParameter(
-      "tuple(bool,uint256,bytes,uint256,address,bytes,uint32)",
+      "tuple(bool,uint256,bytes,uint256,address,bytes,uint96,uint32)",
       [
         withdrawal.storeRecipient,
         withdrawal.gas,
-        web3.utils.hexToBytes(
-          withdrawal.onchainSignature ? withdrawal.onchainSignature : "0x"
-        ),
+        withdrawal.onchainSignature ? withdrawal.onchainSignature : "0x",
         withdrawal.minGas,
         withdrawal.to,
-        withdrawal.extraData
-          ? web3.utils.hexToBytes(withdrawal.extraData)
-          : web3.utils.hexToBytes("0x"),
+        withdrawal.extraData ? withdrawal.extraData : "0x",
+        withdrawal.originalMaxFee
+          ? withdrawal.originalMaxFee
+          : withdrawal.maxFee,
         withdrawal.validUntil
       ]
     );
@@ -2792,14 +2811,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (await web3.eth.getBlock(
-      await web3.eth.getBlockNumber()
-    )).timestamp;
+    const previousTimestamp = (
+      await web3.eth.getBlock(await web3.eth.getBlockNumber())
+    ).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (await web3.eth.getBlock(
-      await web3.eth.getBlockNumber()
-    )).timestamp;
+    const currentTimestamp = (
+      await web3.eth.getBlock(await web3.eth.getBlockNumber())
+    ).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -3367,19 +3386,27 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
-      [
-        null,
-        this.contracts.WETHToken.deployed(),
-        this.contracts.LRCToken.deployed(),
-        this.contracts.GTOToken.deployed(),
-        this.contracts.RDNToken.deployed(),
-        this.contracts.REPToken.deployed(),
-        this.contracts.INDAToken.deployed(),
-        this.contracts.INDBToken.deployed(),
-        this.contracts.TESTToken.deployed()
-      ]
-    );
+    const [
+      eth,
+      weth,
+      lrc,
+      gto,
+      rdn,
+      rep,
+      inda,
+      indb,
+      test
+    ] = await Promise.all([
+      null,
+      this.contracts.WETHToken.deployed(),
+      this.contracts.LRCToken.deployed(),
+      this.contracts.GTOToken.deployed(),
+      this.contracts.RDNToken.deployed(),
+      this.contracts.REPToken.deployed(),
+      this.contracts.INDAToken.deployed(),
+      this.contracts.INDBToken.deployed(),
+      this.contracts.TESTToken.deployed()
+    ]);
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 

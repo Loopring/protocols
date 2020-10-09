@@ -25,6 +25,7 @@ library AmmUtil
         pure
     {
         transfer.validUntil = 0xffffffff;
+        transfer.maxFee = transfer.fee;
         bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
         approveExchangeTransaction(ctx, transfer.from, hash);
     }
@@ -40,16 +41,6 @@ library AmmUtil
         ctx.pendingTxOwners[ctx.pendingTxIdx] = owner;
         ctx.pendingTxHashes[ctx.pendingTxIdx] = txHash;
         ctx.pendingTxIdx++;
-    }
-
-    function totalSupply(
-        AmmData.Context  memory  ctx
-        )
-        internal
-        pure
-        returns (uint)
-    {
-        return AmmData.POOL_TOKEN_MINTED_SUPPLY().sub(ctx.poolTokenBurnedSupply);
     }
 
     function isAlmostEqualAmount(

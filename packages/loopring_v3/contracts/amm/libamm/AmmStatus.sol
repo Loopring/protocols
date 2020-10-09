@@ -73,7 +73,6 @@ library AmmStatus
 
         // Mint all liquidity tokens to the pool account on L2
         S.balanceOf[address(this)] = AmmData.POOL_TOKEN_MINTED_SUPPLY();
-        S.poolTokenBurnedSupply = AmmData.POOL_TOKEN_MINTED_SUPPLY();
         S.allowance[address(this)][address(exchange.getDepositContract())] = uint(-1);
         exchange.deposit(
             address(this), // from
@@ -91,11 +90,13 @@ library AmmStatus
         )
         internal
     {
-        uint64 validUntil = S.forcedExit[exitOwner].validUntil;
-        require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLENGE");
-
-        uint size = S.tokens.length;
+        // If the exchange is in withdrawal mode allow the pool to be shutdown immediately
         if (!S.exchange.isInWithdrawalMode()) {
+            uint64 validUntil = S.forcedExit[exitOwner].validUntil;
+            require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLENGE");
+
+            uint size = S.tokens.length;
+
             for (uint i = 0; i < size; i++) {
                 S.exchange.forceWithdraw{value: msg.value / size}(
                     address(this),

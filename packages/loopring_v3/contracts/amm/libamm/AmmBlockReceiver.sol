@@ -36,7 +36,7 @@ library AmmBlockReceiver
             poolTokenID: S.poolTokenID,
             tokens: S.tokens,
             tokenBalancesL2: new uint96[](size),
-            poolTokenBurnedSupply: S.poolTokenBurnedSupply,
+            totalSupply: S._totalSupply,
             pendingTxIdx: 0,
             pendingTxOwners: new address[](size * 3),
             pendingTxHashes: new bytes32[](size * 3)
@@ -49,7 +49,7 @@ library AmmBlockReceiver
         )
         internal
     {
-        S.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply;
+        S._totalSupply = ctx.totalSupply;
         S.exchange.approveTransactions(ctx.pendingTxOwners, ctx.pendingTxHashes);
     }
 
@@ -77,9 +77,8 @@ library AmmBlockReceiver
     {
         ctx.txIdx = txIdx;
 
-        S.approveAmmUpdates(_block, ctx, true);
+        S.approveAmmUpdates(_block, ctx);
         _processPoolTx(S, _block, ctx, poolTxData);
-        S.approveAmmUpdates(_block, ctx, false);
 
         return ctx.txIdx - txIdx;
     }
