@@ -37,6 +37,26 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         return isUniversalAgent(agent) || isUserAgent(user, agent);
     }
 
+    function isAgent(
+        address[] calldata users,
+        address            agent
+        )
+        external
+        override
+        view
+        returns (bool)
+    {
+        if (isUniversalAgent(agent)) {
+            return true;
+        }
+        for (uint i = 0; i < users.length; i++) {
+            if (!isUserAgent(users[i], agent)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     function registerUniversalAgent(
         address agent,
         bool    toRegister

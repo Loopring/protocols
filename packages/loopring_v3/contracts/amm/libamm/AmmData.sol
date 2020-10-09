@@ -69,8 +69,7 @@ library AmmData
     struct Context
     {
         // functional parameters
-        ExchangeData.Block _block;
-        uint               txIdx;
+        uint txIdx;
 
         // Exchange state variables
         IExchangeV3 exchange;
@@ -83,9 +82,17 @@ library AmmData
         uint16  poolTokenID;
         uint    totalSupply;
 
-        uint     size; // == token.length;
         Token[]  tokens;
         uint96[] tokenBalancesL2;
+
+        TransactionBuffer transactionBuffer;
+    }
+
+    struct TransactionBuffer
+    {
+        uint      size;
+        address[] owners;
+        bytes32[] txHashes;
     }
 
     struct State {

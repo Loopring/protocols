@@ -14,7 +14,7 @@ import "./AmmPoolToken.sol";
 import "./AmmSharedConfig.sol";
 
 
-/// @title LPToken
+/// @title AmmStatus
 library AmmStatus
 {
     using AmmPoolToken      for AmmData.State;

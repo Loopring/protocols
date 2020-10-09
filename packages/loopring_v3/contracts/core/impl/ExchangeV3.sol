@@ -49,12 +49,7 @@ contract ExchangeV3 is IExchangeV3
 
     modifier onlyFromUserOrAgent(address owner)
     {
-        require(
-            owner == msg.sender ||
-            state.agentRegistry != IAgentRegistry(address(0)) &&
-            state.agentRegistry.isAgent(owner, msg.sender),
-            "UNAUTHORIZED"
-        );
+        require(isUserOrAgent(owner), "UNAUTHORIZED");
         _;
     }
 
@@ -160,6 +155,16 @@ contract ExchangeV3 is IExchangeV3
             uint amount = ERC20(token).balanceOf(address(this));
             token.safeTransferAndVerify(recipient, amount);
         }
+    }
+
+    function isUserOrAgent(address owner)
+        public
+        view
+        returns (bool)
+    {
+         return owner == msg.sender ||
+            state.agentRegistry != IAgentRegistry(address(0)) &&
+            state.agentRegistry.isAgent(owner, msg.sender);
     }
 
     // -- Constants --
@@ -577,6 +582,22 @@ contract ExchangeV3 is IExchangeV3
     {
         state.approvedTx[owner][transactionHash] = true;
         emit TransactionApproved(owner, transactionHash);
+    }
+
+    function approveTransactions(
+        address[] calldata owners,
+        bytes32[] calldata transactionHashes
+        )
+        external
+        override
+        nonReentrant
+    {
+        require(owners.length == transactionHashes.length, "INVALID_DATA");
+        require(state.agentRegistry.isAgent(owners, msg.sender), "UNAUTHORIZED");
+        for (uint i = 0; i < owners.length; i++) {
+            state.approvedTx[owners[i]][transactionHashes[i]] = true;
+            emit TransactionApproved(owners[i], transactionHashes[i]);
+        }
     }
 
     function isTransactionApproved(

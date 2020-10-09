@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../aux/compression/ZeroDecompressor.sol";
+import "../../aux/transactions/TransactionReader.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../lib/AddressUtil.sol";
@@ -17,10 +18,11 @@ import "./IBlockReceiver.sol";
 
 contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainable
 {
-    using AddressUtil     for address;
-    using BytesUtil       for bytes;
-    using MathUint        for uint;
-    using SignatureUtil   for bytes32;
+    using AddressUtil       for address;
+    using BytesUtil         for bytes;
+    using MathUint          for uint;
+    using SignatureUtil     for bytes32;
+    using TransactionReader for ExchangeData.Block;
 
     bytes4 private constant SUBMITBLOCKS_SELECTOR  = IExchangeV3.submitBlocks.selector;
     bool   public  open;
@@ -30,6 +32,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     struct TxCallback
     {
         uint16 txIdx;
+        uint16 numTxs;
         uint16 receiverIdx;
         bytes  data;
     }
@@ -164,10 +167,15 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             uint16 receiverIdx = txCallback.receiverIdx;
             require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
 
-            uint numTransactionsConsumed = IBlockReceiver(receivers[receiverIdx])
-                .beforeBlockSubmission(_block, txCallback.data, txIdx);
+            ExchangeData.Block memory minimalBlock = _block.createMinimalBlock(txIdx, txCallback.numTxs);
+            AmmData.TransactionBuffer memory ctx = IBlockReceiver(receivers[receiverIdx])
+                .beforeBlockSubmission(minimalBlock, txCallback.data, 0);
 
-            cursor = txIdx + numTransactionsConsumed;
+            /*uint numTransactionsConsumed = IBlockReceiver(receivers[receiverIdx])
+                .beforeBlockSubmission(_block, txCallback.data, txIdx);
+            require(numTransactionsConsumed == txCallback.numTxs, "UNEXPECTED_NUM_TXS_CONSUMED");*/
+
+            cursor = txIdx + txCallback.numTxs;
         }
     }
 }

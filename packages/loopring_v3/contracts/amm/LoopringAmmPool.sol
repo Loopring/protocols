@@ -100,7 +100,7 @@ contract LoopringAmmPool is
         onlyWhenOnline
         onlyFromExchangeOwner
         nonReentrant
-        returns (uint)
+        returns (AmmData.TransactionBuffer memory)
     {
         return state.beforeBlockSubmission(_block, data, txIdx);
     }
@@ -109,7 +109,7 @@ contract LoopringAmmPool is
         external
         nonReentrant
     {
-        state.withdrawFromApprovedWithdrawals();
+        //state.withdrawFromApprovedWithdrawals();
     }
 
     function withdrawWhenOffline()
@@ -117,6 +117,6 @@ contract LoopringAmmPool is
         onlyWhenOffline
         nonReentrant
     {
-        state.withdrawWhenOffline();
+        //state.withdrawWhenOffline();
     }
 }
