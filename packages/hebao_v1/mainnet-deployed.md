@@ -179,3 +179,31 @@
   "0x" + "00".repeat(20),
   "0xAC2f2A0Dc9B133ddff9c7b4712C3114C71Afcf4A"
   ```
+
+### hebao-1.1.6 patch-1 [20201009]
+- SignedRequest: 0x353e18fa10E73d307d1F5804bF2866e3555396F3
+- FinalSecurityModule: 0x1AaFc323b4711c6278105A653faC56aBc58804a6
+```
+    - Params:
+      0x188d315b1c698Ca678c8E3891Ac21E097763Afde
+      0xAF25B62B1AfF8fe3Fc72d0d7F3CF1cc6941eAFB2      
+      86400
+      30758400
+      86400
+```
+- FinalTransferModule: 0xC475C56388B2Ae3d82D71224c8E2eb433E484baE
+```
+    - Params:
+      0x188d315b1c698Ca678c8E3891Ac21E097763Afde
+      0xAF25B62B1AfF8fe3Fc72d0d7F3CF1cc6941eAFB2
+      86400
+```      
+- UpgraderModule: 0x06eaabfE640E2c5202eeBA9a4aD7Be66050DdFfc
+```
+      [  // add
+        "0x1AaFc323b4711c6278105A653faC56aBc58804a6",
+        "0xC475C56388B2Ae3d82D71224c8E2eb433E484baE"
+      ],
+      [ // delete
+      ],
+```
