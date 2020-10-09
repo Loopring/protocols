@@ -24,18 +24,9 @@ library AmmUtil
         internal
     {
         transfer.validUntil = 0xffffffff;
+        transfer.maxFee = transfer.fee;
         bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
         ctx.exchange.approveTransaction(transfer.from, hash);
-    }
-
-    function totalSupply(
-        AmmData.Context  memory  ctx
-        )
-        internal
-        pure
-        returns (uint)
-    {
-        return AmmData.POOL_TOKEN_MINTED_SUPPLY().sub(ctx.poolTokenBurnedSupply);
     }
 
     function isAlmostEqualAmount(

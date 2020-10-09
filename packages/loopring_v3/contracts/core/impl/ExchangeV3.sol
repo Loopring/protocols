@@ -517,40 +517,6 @@ contract ExchangeV3 is IExchangeV3
         emit WithdrawalModeActivated(state.withdrawalModeStartTime);
     }
 
-    function approveOffchainTransfer(
-        address from,
-        address to,
-        address token,
-        uint96  amount,
-        address feeToken,
-        uint96  fee,
-        uint32  validUntil,
-        uint32  storageID
-        )
-        external
-        override
-        nonReentrant
-        onlyFromUserOrAgent(from)
-    {
-        uint16 tokenID = state.getTokenID(token);
-        uint16 feeTokenID = state.getTokenID(feeToken);
-        TransferTransaction.Transfer memory transfer = TransferTransaction.Transfer({
-            from: from,
-            to: to,
-            tokenID: tokenID,
-            amount: amount,
-            feeTokenID: feeTokenID,
-            fee: fee,
-            validUntil: validUntil,
-            storageID: storageID,
-            fromAccountID: 0,       // Not used in hash
-            toAccountID: 0          // Not used in hash
-        });
-        bytes32 txHash = TransferTransaction.hashTx(state.DOMAIN_SEPARATOR, transfer);
-        state.approvedTx[transfer.from][txHash] = true;
-        emit TransactionApproved(transfer.from, txHash);
-    }
-
     function setWithdrawalRecipient(
         address from,
         address to,

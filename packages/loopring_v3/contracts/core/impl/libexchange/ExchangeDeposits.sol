@@ -21,7 +21,8 @@ library ExchangeDeposits
     using ExchangeTokens    for ExchangeData.State;
 
     event DepositRequested(
-        address owner,
+        address from,
+        address to,
         address token,
         uint16  tokenId,
         uint96  amount
@@ -60,6 +61,7 @@ library ExchangeDeposits
         S.pendingDeposits[to][tokenID] = _deposit;
 
         emit DepositRequested(
+            from,
             to,
             tokenAddress,
             tokenID,
