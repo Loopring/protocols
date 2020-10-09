@@ -198,9 +198,10 @@
       0xAF25B62B1AfF8fe3Fc72d0d7F3CF1cc6941eAFB2
       86400
 ```      
-- UpgraderModule: 0x06eaabfE640E2c5202eeBA9a4aD7Be66050DdFfc
+- UpgraderModule: 0x75bA2e145Bf6B02dD013fbe9DECAcC3abe71737b
 ```
       [  // add
+        "0xAF25B62B1AfF8fe3Fc72d0d7F3CF1cc6941eAFB2",
         "0x1AaFc323b4711c6278105A653faC56aBc58804a6",
         "0xC475C56388B2Ae3d82D71224c8E2eb433E484baE"
       ],
