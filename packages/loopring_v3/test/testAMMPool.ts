@@ -1,8 +1,10 @@
 import BN = require("bn.js");
-import { AmmPool } from "./ammUtils";
+import { AmmPool, Permit, PermitUtils } from "./ammUtils";
 import { expectThrow } from "./expectThrow";
-import { ExchangeTestUtil } from "./testExchangeUtil";
+import { Constants } from "loopringV3.js";
+import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
 import { AuthMethod, SpotTrade } from "./types";
+import { SignatureType, sign, verifySignature } from "../util/Signature";
 
 const AgentRegistry = artifacts.require("AgentRegistry");
 
@@ -15,6 +17,42 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
   let ownerA: string;
   let ownerB: string;
+  let ownerC: string;
+
+  let amountsA: BN[];
+  let amountsB: BN[];
+
+  let feesA: BN[];
+  let feesB: BN[];
+
+  const setupDefaultPool = async () => {
+    const feeBipsAMM = 30;
+    const tokens = ["WETH", "GTO"];
+    const weights = [
+      new BN(web3.utils.toWei("1", "ether")),
+      new BN(web3.utils.toWei("1", "ether"))
+    ];
+
+    for (const owner of [ownerA, ownerB]) {
+      for (const token of tokens) {
+        await ctx.deposit(
+          owner,
+          owner,
+          token,
+          new BN(web3.utils.toWei("1000000", "ether"))
+        );
+      }
+    }
+
+    const pool = new AmmPool(ctx);
+    await pool.setupPool(sharedConfig, tokens, weights, feeBipsAMM);
+
+    await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
+      from: registryOwner
+    });
+
+    return pool;
+  };
 
   before(async () => {
     ctx = new ExchangeTestUtil();
@@ -22,6 +60,25 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
     ownerA = ctx.testContext.orderOwners[10];
     ownerB = ctx.testContext.orderOwners[11];
+    ownerC = ctx.testContext.orderOwners[12];
+
+    amountsA = [
+      new BN(web3.utils.toWei("10000.123456", "ether")),
+      new BN(web3.utils.toWei("20000.654321", "ether"))
+    ];
+    amountsB = [
+      new BN(web3.utils.toWei("1000", "ether")),
+      new BN(web3.utils.toWei("2000", "ether"))
+    ];
+
+    feesA = [
+      new BN(web3.utils.toWei("123.456789", "ether")),
+      new BN(web3.utils.toWei("456.789", "ether"))
+    ];
+    feesB = [
+      new BN(web3.utils.toWei("0", "ether")),
+      new BN(web3.utils.toWei("789", "ether"))
+    ];
 
     const loopringAmmSharedConfig = artifacts.require(
       "LoopringAmmSharedConfig"
@@ -59,30 +116,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     this.timeout(0);
 
     it("Successful swap (AMM maker)", async () => {
-      const feeBipsAMM = 30;
-      const tokens = ["WETH", "GTO"];
-      const weights = [
-        new BN(web3.utils.toWei("1", "ether")),
-        new BN(web3.utils.toWei("1", "ether"))
-      ];
-
-      for (const owner of [ownerA, ownerB]) {
-        for (const token of tokens) {
-          await ctx.deposit(
-            owner,
-            owner,
-            token,
-            new BN(web3.utils.toWei("1000000", "ether"))
-          );
-        }
-      }
-
-      const pool = new AmmPool(ctx);
-      await pool.setupPool(sharedConfig, tokens, weights, feeBipsAMM);
-
-      await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
-        from: registryOwner
-      });
+      const pool = await setupDefaultPool();
 
       await pool.prePoolTransactions();
       await pool.join(
@@ -166,6 +200,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       );
       await ctx.submitTransactions(16);
       await ctx.submitPendingBlocks();
+      await pool.verifySupply();
 
       // Withdraw some liquidity tokens
       await ctx.requestWithdrawal(
@@ -177,73 +212,211 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       );
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
+      await pool.verifySupply();
 
       // Force exit
       await pool.prePoolTransactions();
-      await pool.exit(
-        ownerA,
-        pool.POOL_TOKEN_BASE.div(new BN(10)),
-        [
-          new BN(web3.utils.toWei("100", "ether")),
-          new BN(web3.utils.toWei("100", "ether"))
-        ],
-        { authMethod: AuthMethod.FORCE }
+      // Try to send too low an exit fee
+      const forcedExitFee = await sharedConfig.forcedExitFee();
+      await expectThrow(
+        pool.exit(
+          ownerA,
+          pool.POOL_TOKEN_BASE.div(new BN(10)),
+          [
+            new BN(web3.utils.toWei("100", "ether")),
+            new BN(web3.utils.toWei("100", "ether"))
+          ],
+          { authMethod: AuthMethod.FORCE, forcedExitFee: new BN(0) }
+        ),
+        "INVALID_ETH_VALUE"
       );
-      await ctx.submitTransactions();
-      await ctx.submitPendingBlocks();
-    });
-
-    it("Invalid join slippage", async () => {
-      const feeBipsAMM = 30;
-      const tokens = ["WETH", "GTO"];
-      const weights = [
-        new BN(web3.utils.toWei("1", "ether")),
-        new BN(web3.utils.toWei("1", "ether"))
-      ];
-
-      for (const owner of [ownerA, ownerB]) {
-        for (const token of tokens) {
-          await ctx.deposit(
-            owner,
-            owner,
-            token,
-            new BN(web3.utils.toWei("1000000", "ether"))
+      await expectThrow(
+        pool.exit(
+          ownerA,
+          pool.POOL_TOKEN_BASE.div(new BN(10)),
+          [
+            new BN(web3.utils.toWei("100", "ether")),
+            new BN(web3.utils.toWei("100", "ether"))
+          ],
+          {
+            authMethod: AuthMethod.FORCE,
+            forcedExitFee: forcedExitFee.sub(new BN(1))
+          }
+        ),
+        "INVALID_ETH_VALUE"
+      );
+      // Try to burn more than the owner owns
+      await expectThrow(
+        pool.exit(
+          ownerA,
+          pool.POOL_TOKEN_BASE,
+          [
+            new BN(web3.utils.toWei("100", "ether")),
+            new BN(web3.utils.toWei("100", "ether"))
+          ],
+          { authMethod: AuthMethod.FORCE }
+        ),
+        "TRANSFER_FAILURE"
+      );
+      // Everything Okay
+      {
+        // Simulate the fee transfer
+        const snapshot = new BalanceSnapshot(ctx);
+        await snapshot.transfer(
+          ownerA,
+          await ctx.exchange.owner(),
+          "ETH",
+          forcedExitFee,
+          "owner",
+          "operator"
+        );
+        const exit = await pool.exit(
+          ownerA,
+          pool.POOL_TOKEN_BASE.div(new BN(20)),
+          [
+            new BN(web3.utils.toWei("100", "ether")),
+            new BN(web3.utils.toWei("100", "ether"))
+          ],
+          { authMethod: AuthMethod.FORCE }
+        );
+        // Verify balances
+        await snapshot.verifyBalances();
+        // Try do another forced withdrawal from the same owner
+        await expectThrow(
+          pool.exit(
+            ownerA,
+            pool.POOL_TOKEN_BASE.div(new BN(20)),
+            [
+              new BN(web3.utils.toWei("100", "ether")),
+              new BN(web3.utils.toWei("100", "ether"))
+            ],
+            {
+              authMethod: AuthMethod.FORCE,
+              forcedExitFee: forcedExitFee.sub(new BN(1))
+            }
+          ),
+          "DUPLICATE"
+        );
+        await ctx.submitTransactions();
+        await ctx.submitPendingBlocks();
+        // Check ForcedExitProcessed event
+        const event = await ctx.assertEventEmitted(
+          pool.contract,
+          "ForcedExitProcessed"
+        );
+        assert.equal(event.owner, exit.owner, "unexpected exit owner");
+        assert(
+          event.burnAmount.eq(exit.burnAmount),
+          "unexpected exit burn amount"
+        );
+        assert.equal(
+          event.amounts.length,
+          pool.tokens.length,
+          "unexpected exit num amounts"
+        );
+        for (let i = 0; i < event.amounts.length; i++) {
+          assert(
+            new BN(event.burnAmount, 10).eq(exit.burnAmount),
+            "unexpected exit amount"
           );
         }
       }
+      await pool.verifySupply();
 
-      const pool = new AmmPool(ctx);
-      await pool.setupPool(sharedConfig, tokens, weights, feeBipsAMM);
+      // Do another forced exit with min amounts that are not achieved.
+      // Exit should be processed, but the exit should not go through.
+      {
+        const exit = await pool.exit(
+          ownerA,
+          pool.POOL_TOKEN_BASE.div(new BN(20)),
+          [
+            new BN(web3.utils.toWei("10000", "ether")),
+            new BN(web3.utils.toWei("10000", "ether"))
+          ],
+          { authMethod: AuthMethod.FORCE }
+        );
+        // The user should have received his liquidity tokens back
+        const snapshot = new BalanceSnapshot(ctx);
+        await snapshot.transfer(
+          pool.contract.address,
+          exit.owner,
+          pool.contract.address,
+          exit.burnAmount,
+          "pool",
+          "owner"
+        );
+        await ctx.submitTransactions();
+        await ctx.submitPendingBlocks();
+        // Verify balances
+        await snapshot.verifyBalances();
+        // Check ForcedExitProcessed event
+        const event = await ctx.assertEventEmitted(
+          pool.contract,
+          "ForcedExitProcessed"
+        );
+        assert.equal(event.owner, exit.owner, "unexpected exit owner");
+        assert(event.burnAmount.eq(new BN(0)), "unexpected exit burn amount");
+        assert.equal(event.amounts.length, 0, "unexpected exit num amounts");
+      }
+      await pool.verifySupply();
+    });
 
-      await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
-        from: registryOwner
+    it("No join signature", async () => {
+      const pool = await setupDefaultPool();
+      await pool.prePoolTransactions();
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+        authMethod: AuthMethod.NONE
       });
+      await ctx.submitTransactions();
+      await expectThrow(ctx.submitPendingBlocks(), "SUB_UNDERFLOW");
+    });
+
+    it("Invalid join signature", async () => {
+      const pool = await setupDefaultPool();
+      await pool.prePoolTransactions();
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+        authMethod: AuthMethod.ECDSA,
+        signer: ownerB
+      });
+      await ctx.submitTransactions();
+      await expectThrow(ctx.submitPendingBlocks(), "INVALID_JOIN_APPROVAL");
+    });
+
+    it("No exit signature", async () => {
+      const pool = await setupDefaultPool();
+      pool.totalSupply = pool.POOL_TOKEN_BASE;
+      await pool.prePoolTransactions();
+      await pool.exit(ownerA, pool.POOL_TOKEN_BASE, amountsB, {
+        authMethod: AuthMethod.NONE
+      });
+      await ctx.submitTransactions();
+      await expectThrow(ctx.submitPendingBlocks(), "FORCED_EXIT_NOT_FOUND");
+    });
+
+    it("Invalid exit signature", async () => {
+      const pool = await setupDefaultPool();
+      pool.totalSupply = pool.POOL_TOKEN_BASE;
+      await pool.prePoolTransactions();
+      await pool.exit(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
+        authMethod: AuthMethod.ECDSA,
+        signer: ownerB
+      });
+      await ctx.submitTransactions();
+      await expectThrow(ctx.submitPendingBlocks(), "INVALID_EXIT_APPROVAL");
+    });
+
+    it("Invalid join slippage", async () => {
+      const pool = await setupDefaultPool();
 
       await pool.prePoolTransactions();
-      await pool.join(
-        ownerA,
-        pool.POOL_TOKEN_BASE,
-        [
-          new BN(web3.utils.toWei("10000.123456", "ether")),
-          new BN(web3.utils.toWei("20000.654321", "ether"))
-        ],
-        [
-          new BN(web3.utils.toWei("123.456789", "ether")),
-          new BN(web3.utils.toWei("456.789", "ether"))
-        ],
-        { authMethod: AuthMethod.ECDSA }
-      );
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+        authMethod: AuthMethod.ECDSA
+      });
       await pool.join(
         ownerB,
         pool.POOL_TOKEN_BASE.div(new BN(10)),
-        [
-          new BN(web3.utils.toWei("1000", "ether")),
-          new BN(web3.utils.toWei("2000", "ether"))
-        ],
-        [
-          new BN(web3.utils.toWei("0", "ether")),
-          new BN(web3.utils.toWei("789", "ether"))
-        ],
+        amountsB,
+        feesB,
         { authMethod: AuthMethod.ECDSA }
       );
       await ctx.submitTransactions(16);
@@ -251,56 +424,17 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     });
 
     it("Invalid exit slippage", async () => {
-      const feeBipsAMM = 30;
-      const tokens = ["WETH", "GTO"];
-      const weights = [
-        new BN(web3.utils.toWei("1", "ether")),
-        new BN(web3.utils.toWei("1", "ether"))
-      ];
-
-      for (const owner of [ownerA, ownerB]) {
-        for (const token of tokens) {
-          await ctx.deposit(
-            owner,
-            owner,
-            token,
-            new BN(web3.utils.toWei("1000000", "ether"))
-          );
-        }
-      }
-
-      const pool = new AmmPool(ctx);
-      await pool.setupPool(sharedConfig, tokens, weights, feeBipsAMM);
-
-      await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
-        from: registryOwner
-      });
+      const pool = await setupDefaultPool();
 
       await pool.prePoolTransactions();
-      await pool.join(
-        ownerA,
-        pool.POOL_TOKEN_BASE,
-        [
-          new BN(web3.utils.toWei("10000.123456", "ether")),
-          new BN(web3.utils.toWei("20000.654321", "ether"))
-        ],
-        [
-          new BN(web3.utils.toWei("123.456789", "ether")),
-          new BN(web3.utils.toWei("456.789", "ether"))
-        ],
-        { authMethod: AuthMethod.ECDSA }
-      );
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+        authMethod: AuthMethod.ECDSA
+      });
       await pool.join(
         ownerB,
         pool.POOL_TOKEN_BASE.div(new BN(11)),
-        [
-          new BN(web3.utils.toWei("1000", "ether")),
-          new BN(web3.utils.toWei("2000", "ether"))
-        ],
-        [
-          new BN(web3.utils.toWei("0", "ether")),
-          new BN(web3.utils.toWei("789", "ether"))
-        ],
+        amountsA,
+        feesB,
         { authMethod: AuthMethod.ECDSA }
       );
       await ctx.submitTransactions(16);
@@ -309,23 +443,468 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await pool.exit(
         ownerA,
         pool.POOL_TOKEN_BASE.mul(new BN(6)).div(new BN(10)),
-        [
-          new BN(web3.utils.toWei("5000", "ether")),
-          new BN(web3.utils.toWei("10000", "ether"))
-        ],
+        amountsA,
         { authMethod: AuthMethod.ECDSA }
       );
       await pool.exit(
         ownerB,
         pool.POOL_TOKEN_BASE.mul(new BN(6)).div(new BN(100)),
-        [
-          new BN(web3.utils.toWei("5000", "ether")),
-          new BN(web3.utils.toWei("10000", "ether"))
-        ],
+        amountsB,
         { authMethod: AuthMethod.ECDSA }
       );
       await ctx.submitTransactions(16);
       await expectThrow(ctx.submitPendingBlocks(), "EXIT_SLIPPAGE_INVALID");
+    });
+
+    it("Expired join", async () => {
+      const pool = await setupDefaultPool();
+
+      await pool.prePoolTransactions();
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+        authMethod: AuthMethod.ECDSA
+      });
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(10)),
+        amountsB,
+        feesB,
+        { authMethod: AuthMethod.ECDSA, validUntil: 123 }
+      );
+      await ctx.submitTransactions(16);
+      await expectThrow(ctx.submitPendingBlocks(), "EXPIRED");
+    });
+
+    it("Expired exit", async () => {
+      const pool = await setupDefaultPool();
+
+      await pool.prePoolTransactions();
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+        authMethod: AuthMethod.ECDSA
+      });
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(11)),
+        amountsB,
+        feesB,
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await ctx.submitTransactions(16);
+
+      await pool.prePoolTransactions();
+      await pool.exit(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
+        authMethod: AuthMethod.ECDSA,
+        validUntil: 456
+      });
+      await pool.exit(ownerB, pool.POOL_TOKEN_BASE.div(new BN(11)), amountsB, {
+        authMethod: AuthMethod.ECDSA
+      });
+      await ctx.submitTransactions(16);
+      await expectThrow(ctx.submitPendingBlocks(), "EXPIRED");
+    });
+
+    [false, true].forEach(function(withForcedWithdrawals) {
+      it(
+        "Shutdown " +
+          (withForcedWithdrawals ? "(forced withdrawal)" : "(withdrawal mode)"),
+        async () => {
+          const pool = await setupDefaultPool();
+
+          const amountsA = [
+            new BN(web3.utils.toWei("10000", "ether")),
+            new BN(web3.utils.toWei("20000", "ether"))
+          ];
+          const amountsB = [
+            new BN(web3.utils.toWei("1000", "ether")),
+            new BN(web3.utils.toWei("2000", "ether"))
+          ];
+
+          // Deposit to the pool
+          await pool.prePoolTransactions();
+          const joinA = await pool.join(
+            ownerA,
+            pool.POOL_TOKEN_BASE,
+            amountsA,
+            [
+              new BN(web3.utils.toWei("123", "ether")),
+              new BN(web3.utils.toWei("456", "ether"))
+            ],
+            { authMethod: AuthMethod.ECDSA }
+          );
+          const joinB = await pool.join(
+            ownerB,
+            pool.POOL_TOKEN_BASE.div(new BN(10)),
+            amountsB,
+            [
+              new BN(web3.utils.toWei("0", "ether")),
+              new BN(web3.utils.toWei("789", "ether"))
+            ],
+            { authMethod: AuthMethod.ECDSA }
+          );
+          await ctx.submitTransactions(16);
+          await ctx.submitPendingBlocks();
+          await pool.verifySupply();
+
+          // Withdraw ownerA's liquidity tokens
+          await ctx.requestWithdrawal(
+            ownerA,
+            pool.contract.address,
+            pool.POOL_TOKEN_BASE,
+            "ETH",
+            new BN(0)
+          );
+          await ctx.submitTransactions();
+          await ctx.submitPendingBlocks();
+          await pool.verifySupply();
+
+          // Try to shutdown without any pending forced exit
+          await expectThrow(
+            pool.contract.shutdown(ownerA),
+            "INVALID_CHALLENGE"
+          );
+
+          let forcedExitAmountA = new BN(0);
+          if (withForcedWithdrawals) {
+            // Force exit
+            await pool.prePoolTransactions();
+            const exitA = await pool.exit(
+              ownerA,
+              joinA.actualMintAmount.div(new BN(2)),
+              amountsA,
+              {
+                authMethod: AuthMethod.FORCE,
+                skip: true
+              }
+            );
+
+            // Try to shutdown too soon
+            await expectThrow(
+              pool.contract.shutdown(ownerA),
+              "INVALID_CHALLENGE"
+            );
+
+            const maxForcedExitAge = (
+              await sharedConfig.maxForcedExitAge()
+            ).toNumber();
+            // Wait
+            await ctx.advanceBlockTimestamp(maxForcedExitAge - 100);
+
+            // Try to shutdown too soon
+            await expectThrow(
+              pool.contract.shutdown(ownerA),
+              "INVALID_CHALLENGE"
+            );
+
+            // Wait some more
+            await ctx.advanceBlockTimestamp(200);
+
+            // Try to withdraw before the pool is shutdown
+            await expectThrow(
+              pool.contract.withdrawWhenOffline(),
+              "NOT_OFFLINE"
+            );
+
+            // Shutdown
+            await pool.contract.shutdown(ownerA, {
+              value: new BN(web3.utils.toWei("1", "ether"))
+            });
+            await ctx.assertEventEmitted(pool.contract, "Shutdown");
+
+            // Try to shutdown again
+            await expectThrow(pool.contract.shutdown(ownerA), "NOT_ONLINE");
+
+            // Try to withdraw before the forced withdrawals are processed
+            await expectThrow(
+              pool.contract.withdrawWhenOffline(),
+              "PENDING_WITHDRAWAL"
+            );
+
+            // Process the forced withdrawals
+            for (const token of pool.tokens) {
+              await ctx.requestWithdrawal(
+                pool.contract.address,
+                token,
+                new BN(0),
+                "ETH",
+                new BN(0),
+                {
+                  authMethod: AuthMethod.FORCE,
+                  skipForcedAuthentication: true,
+                  gas: 0
+                }
+              );
+            }
+            await ctx.submitTransactions();
+            await ctx.submitPendingBlocks();
+
+            // Try to withdraw before the approved withdrawals have
+            // actually been withdrawn to the pool contract.
+            await expectThrow(
+              pool.contract.withdrawWhenOffline(),
+              "MORE_TO_WITHDRAW"
+            );
+
+            // Withdraw the approved withdrawals
+            await pool.contract.withdrawFromApprovedWithdrawals();
+
+            forcedExitAmountA = exitA.burnAmount;
+          } else {
+            // Force the exchange into withdrawal mode
+            const withdrawal = await ctx.requestWithdrawal(
+              ownerA,
+              "ETH",
+              new BN(1),
+              "ETH",
+              new BN(0),
+              { authMethod: AuthMethod.FORCE }
+            );
+
+            // Wait
+            await ctx.advanceBlockTimestamp(
+              ctx.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE + 100
+            );
+
+            // Activate withdrawal mode
+            await ctx.exchange.notifyForcedRequestTooOld(
+              withdrawal.accountID,
+              Constants.zeroAddress
+            );
+            const inWithdrawalMode = await ctx.exchange.isInWithdrawalMode();
+            assert(inWithdrawalMode, "exchange not in withdrawal mode");
+
+            // Can immediately shutdown the pool
+            await pool.contract.shutdown(Constants.zeroAddress);
+            await ctx.assertEventEmitted(pool.contract, "Shutdown");
+
+            // Try to withdraw before funds have been withdrawn to the pool contract
+            await expectThrow(
+              pool.contract.withdrawWhenOffline(),
+              "PENDING_WITHDRAWAL"
+            );
+
+            // Withdraw from the Merkle tree
+            for (const token of pool.tokens) {
+              await ctx.withdrawFromMerkleTree(pool.accountID, token);
+            }
+          }
+
+          // Withdraw for ownerA
+          {
+            const snapshot = new BalanceSnapshot(ctx);
+            for (const [i, token] of pool.tokens.entries()) {
+              await snapshot.transfer(
+                pool.contract.address,
+                ownerA,
+                token,
+                amountsA[i],
+                "pool",
+                "owner"
+              );
+            }
+            await snapshot.transfer(
+              ownerA,
+              pool.contract.address,
+              pool.contract.address,
+              joinA.actualMintAmount.sub(forcedExitAmountA),
+              "owner",
+              "pool"
+            );
+            // Do the withdrawal
+            await pool.contract.withdrawWhenOffline({ from: ownerA });
+            // Verify balances
+            await snapshot.verifyBalances();
+
+            // Check if the expected amount was burned
+            pool.totalSupply.isub(joinA.actualMintAmount);
+            pool.verifySupply();
+
+            // Try to withdraw again, nothing should be withdrawn
+            await expectThrow(
+              pool.contract.withdrawWhenOffline({ from: ownerA }),
+              "ZERO_POOL_AMOUNT"
+            );
+          }
+
+          // Withdraw ownerB's liquidity tokens
+          if (withForcedWithdrawals) {
+            await ctx.requestWithdrawal(
+              ownerB,
+              pool.contract.address,
+              joinB.actualMintAmount,
+              "ETH",
+              new BN(0)
+            );
+            await ctx.submitTransactions();
+            await ctx.submitPendingBlocks();
+          } else {
+            await ctx.withdrawFromMerkleTree(
+              ctx.getAccountID(ownerB),
+              pool.contract.address
+            );
+          }
+          await pool.verifySupply();
+
+          // Withdraw for ownerB
+          {
+            const snapshot = new BalanceSnapshot(ctx);
+            for (const [i, token] of pool.tokens.entries()) {
+              await snapshot.transfer(
+                pool.contract.address,
+                ownerB,
+                token,
+                amountsB[i],
+                "pool",
+                "owner"
+              );
+            }
+            // Do the withdrawal
+            await pool.contract.withdrawWhenOffline({ from: ownerB });
+            // Verify balances
+            await snapshot.verifyBalances();
+
+            // Check if the expected amount was burned
+            pool.totalSupply.isub(joinB.actualMintAmount);
+            pool.verifySupply(new BN(0));
+          }
+        }
+      );
+    });
+  });
+
+  describe("Pool ERC20", function() {
+    this.timeout(0);
+
+    let pool: AmmPool;
+
+    beforeEach(async () => {
+      pool = await setupDefaultPool();
+
+      await pool.prePoolTransactions();
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+        authMethod: AuthMethod.ECDSA
+      });
+
+      // Withdraw some liquidity tokens
+      await ctx.requestWithdrawal(
+        ownerA,
+        pool.contract.address,
+        pool.POOL_TOKEN_BASE,
+        "ETH",
+        new BN(0)
+      );
+      await ctx.submitTransactions();
+      await ctx.submitPendingBlocks();
+    });
+
+    it("approve", async () => {
+      const spender = ctx.exchange.address;
+      const value = new BN(web3.utils.toWei("123", "ether"));
+
+      const allowanceBefore = await pool.contract.allowance(ownerA, spender);
+      await pool.contract.approve(spender, value, { from: ownerA });
+      const allowanceAfter = await pool.contract.allowance(ownerA, spender);
+      assert(
+        allowanceAfter.eq(allowanceBefore.add(value)),
+        "allowance expected"
+      );
+    });
+
+    it("transfer", async () => {
+      const value = pool.POOL_TOKEN_BASE.div(new BN(2));
+      const from = ownerA;
+      const to = ownerB;
+
+      const snapshot = new BalanceSnapshot(ctx);
+      await snapshot.transfer(from, to, pool.contract.address, value);
+      await pool.contract.transfer(to, value, { from: ownerA });
+      await snapshot.verifyBalances();
+
+      await expectThrow(
+        pool.contract.transfer(to, pool.POOL_TOKEN_BASE, { from: ownerA }),
+        "SUB_UNDERFLOW"
+      );
+    });
+
+    it("transferFrom", async () => {
+      const value = pool.POOL_TOKEN_BASE.div(new BN(2));
+      const from = ownerA;
+      const to = ownerB;
+      const spender = ownerC;
+
+      await pool.contract.approve(spender, value, { from: ownerA });
+
+      // Use up allowance
+      const snapshot = new BalanceSnapshot(ctx);
+      await snapshot.transfer(from, to, pool.contract.address, value);
+      await pool.contract.transferFrom(from, to, value, { from: spender });
+      await snapshot.verifyBalances();
+
+      const allowanceAfter = await pool.contract.allowance(ownerA, spender);
+      assert(allowanceAfter.eq(new BN(0)), "allowance unexpected");
+
+      // Try to spend more
+      await expectThrow(
+        pool.contract.transferFrom(from, to, value, { from: spender }),
+        "SUB_UNDERFLOW"
+      );
+    });
+
+    it("permit", async () => {
+      const spender = ctx.exchange.address;
+      const value = new BN(web3.utils.toWei("123", "ether"));
+
+      const nonceBefore = await pool.contract.nonces(ownerA);
+      const allowanceBefore = await pool.contract.allowance(ownerA, spender);
+
+      const permit: Permit = {
+        owner: ownerA,
+        spender,
+        value,
+        nonce: await pool.contract.nonces(ownerA),
+        deadline: new BN(0xffffffff)
+      };
+      const hash = PermitUtils.getHash(permit, pool.contract.address);
+      const signature = await sign(ownerA, hash, SignatureType.EIP_712);
+      await verifySignature(ownerA, hash, signature);
+      await pool.contract.permit(
+        permit.owner,
+        permit.spender,
+        permit.value,
+        permit.deadline,
+        signature
+      );
+
+      const nonceAfter = await pool.contract.nonces(ownerA);
+      const allowanceAfter = await pool.contract.allowance(ownerA, spender);
+      assert(nonceAfter.eq(nonceBefore.add(new BN(1))), "nonce expected");
+      assert(
+        allowanceAfter.eq(allowanceBefore.add(value)),
+        "allowance expected"
+      );
+
+      // Try to use the permit again
+      await expectThrow(
+        pool.contract.permit(
+          permit.owner,
+          permit.spender,
+          permit.value,
+          permit.deadline,
+          signature
+        ),
+        "INVALID_SIGNATURE"
+      );
+
+      // Try to use an expired permit
+      permit.deadline = new BN(1);
+      await expectThrow(
+        pool.contract.permit(
+          permit.owner,
+          permit.spender,
+          permit.value,
+          permit.deadline,
+          signature
+        ),
+        "EXPIRED"
+      );
     });
   });
 });

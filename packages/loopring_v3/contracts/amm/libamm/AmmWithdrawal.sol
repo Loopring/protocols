@@ -48,8 +48,8 @@ library AmmWithdrawal
         // Burn any additional pool tokens stuck in forced exits
         AmmData.PoolExit storage exit = S.forcedExit[msg.sender];
         if (exit.burnAmount > 0) {
-            delete S.forcedExit[msg.sender];
             poolAmount = poolAmount.add(exit.burnAmount);
+            delete S.forcedExit[msg.sender];
         }
 
         require(poolAmount > 0, "ZERO_POOL_AMOUNT");
@@ -66,7 +66,7 @@ library AmmWithdrawal
             AmmUtil.transferOut(token, amount, msg.sender);
         }
 
-        S.poolTokenBurnedSupply = S.poolTokenBurnedSupply.add(poolAmount);
+        S._totalSupply = S._totalSupply.sub(poolAmount);
     }
 
     function _checkWithdrawalConditionInShutdown(
@@ -90,7 +90,7 @@ library AmmWithdrawal
             // Check that nothing is withdrawable anymore.
             require(
                 exchange.getAmountWithdrawable(address(this), token) == 0,
-                "MORE_TO_WITHDRAWAL"
+                "MORE_TO_WITHDRAW"
             );
         }
     }
