@@ -68,6 +68,14 @@ export interface ExitOptions {
   skip?: boolean;
 }
 
+export interface Permit {
+  owner: string;
+  spender: string;
+  value: BN;
+  nonce: BN;
+  deadline: BN;
+}
+
 type TxType = PoolJoin | PoolExit;
 
 export namespace PoolJoinUtils {
@@ -152,6 +160,48 @@ export namespace PoolExitUtils {
 
   export function getHash(exit: PoolExit, verifyingContract: string) {
     const typedData = this.toTypedData(exit, verifyingContract);
+    return sigUtil.TypedDataUtils.sign(typedData);
+  }
+}
+
+export namespace PermitUtils {
+  export function toTypedData(permit: Permit, verifyingContract: string) {
+    const typedData = {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" }
+        ],
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" }
+        ]
+      },
+      primaryType: "Permit",
+      domain: {
+        name: "AMM Pool",
+        version: "1.0.0",
+        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
+        verifyingContract
+      },
+      message: {
+        owner: permit.owner,
+        spender: permit.spender,
+        value: permit.value,
+        nonce: permit.nonce,
+        deadline: permit.deadline
+      }
+    };
+    return typedData;
+  }
+
+  export function getHash(permit: Permit, verifyingContract: string) {
+    const typedData = this.toTypedData(permit, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
   }
 }
