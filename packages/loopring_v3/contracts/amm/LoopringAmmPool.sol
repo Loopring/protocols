@@ -141,11 +141,18 @@ contract LoopringAmmPool is
             return false;
         }
 
+        // When online, owner can claim all tokens, as we do not allow layer-1 joins.
+        if (state.isOnline()) {
+            return true;
+        }
+
+        // When offline those tokens can be stored in this contract for use in withdrawWhenOffline
         for (uint i = 0; i < state.tokens.length; i++) {
             if (token == state.tokens[i].addr) {
                 return false;
             }
         }
+
         return true;
     }
 }
