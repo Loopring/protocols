@@ -7,6 +7,7 @@ import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "./AmmData.sol";
 import "./AmmPoolToken.sol";
+import "./AmmStatus.sol";
 import "./AmmUtil.sol";
 
 
@@ -14,6 +15,7 @@ import "./AmmUtil.sol";
 library AmmWithdrawal
 {
     using AmmPoolToken      for AmmData.State;
+    using AmmStatus         for AmmData.State;
     using MathUint          for uint;
 
     // Question(brecht): since all joins/exits are using transfers now, shall we
@@ -93,6 +95,35 @@ library AmmWithdrawal
         }
 
         S.poolTokenBurnedSupply = S.poolTokenBurnedSupply.add(poolAmount);
+    }
+
+    function canDrain(
+        AmmData.State storage S,
+        address               drainer,
+        address               token
+        )
+        internal
+        view
+        returns (bool)
+    {
+        // Never allow draining the pool token, these can be stored in this contract for forced exits at all times
+        if (token == address(this) || drainer != S.exchange.owner()) {
+            return false;
+        }
+
+        // When online, owner can claim all tokens, as we do not allow layer-1 joins.
+        if (S.isOnline()) {
+            return true;
+        }
+
+        // When offline those tokens can be stored in this contract for use in withdrawWhenOffline
+        for (uint i = 0; i < S.tokens.length; i++) {
+            if (token == S.tokens[i].addr) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     function _checkWithdrawalConditionInShutdown(
