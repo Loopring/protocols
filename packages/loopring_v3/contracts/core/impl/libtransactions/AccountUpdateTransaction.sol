@@ -62,7 +62,7 @@ library AccountUpdateTransaction
 
         // Fill in withdrawal data missing from DA
         accountUpdate.validUntil = auxData.validUntil;
-        accountUpdate.maxFee = auxData.maxFee;
+        accountUpdate.maxFee = auxData.maxFee == 0 ? accountUpdate.fee : auxData.maxFee;
         // Validate
         require(ctx.timestamp < accountUpdate.validUntil, "ACCOUNT_UPDATE_EXPIRED");
         require(accountUpdate.fee <= accountUpdate.maxFee, "ACCOUNT_UPDATE_FEE_TOO_HIGH");
