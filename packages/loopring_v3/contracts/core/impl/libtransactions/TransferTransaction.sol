@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../../../lib/EIP712.sol";
 import "../../../lib/FloatUtil.sol";
 import "../../../lib/MathUint.sol";
+import "../../../lib/MathUint96.sol";
 import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 import "../libexchange/ExchangeSignatures.sol";
@@ -18,6 +19,7 @@ library TransferTransaction
     using BytesUtil            for bytes;
     using FloatUtil            for uint;
     using MathUint             for uint;
+    using MathUint96           for uint96;
     using ExchangeSignatures   for ExchangeData.State;
 
     bytes32 constant public TRANSFER_TYPEHASH = keccak256(
@@ -43,7 +45,7 @@ library TransferTransaction
     struct TransferAuxiliaryData
     {
         bytes  signature;
-        uint96 maxFee;
+        uint16 feeDiscount;
         uint32 validUntil;
     }
 
@@ -69,7 +71,7 @@ library TransferTransaction
 
         // Fill in withdrawal data missing from DA
         transfer.validUntil = auxData.validUntil;
-        transfer.maxFee = auxData.maxFee;
+        transfer.maxFee = transfer.fee.add(uint(auxData.feeDiscount).decodeFloat(16));
         // Validate
         require(ctx.timestamp < transfer.validUntil, "TRANSFER_EXPIRED");
         require(transfer.fee <= transfer.maxFee, "TRANSFER_FEE_TOO_HIGH");

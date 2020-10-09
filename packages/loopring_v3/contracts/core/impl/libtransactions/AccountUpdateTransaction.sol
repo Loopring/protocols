@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../../lib/EIP712.sol";
 import "../../../lib/FloatUtil.sol";
+import "../../../lib/MathUint96.sol";
 import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 import "../libexchange/ExchangeSignatures.sol";
@@ -16,6 +17,7 @@ library AccountUpdateTransaction
 {
     using BytesUtil            for bytes;
     using FloatUtil            for uint;
+    using MathUint96           for uint96;
     using ExchangeSignatures   for ExchangeData.State;
 
     bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
@@ -43,7 +45,7 @@ library AccountUpdateTransaction
     struct AccountUpdateAuxiliaryData
     {
         bytes  signature;
-        uint96 maxFee;
+        uint16 feeDiscount;
         uint32 validUntil;
     }
 
@@ -62,7 +64,7 @@ library AccountUpdateTransaction
 
         // Fill in withdrawal data missing from DA
         accountUpdate.validUntil = auxData.validUntil;
-        accountUpdate.maxFee = auxData.maxFee;
+        accountUpdate.maxFee = accountUpdate.fee.add(uint(auxData.feeDiscount).decodeFloat(16));
         // Validate
         require(ctx.timestamp < accountUpdate.validUntil, "ACCOUNT_UPDATE_EXPIRED");
         require(accountUpdate.fee <= accountUpdate.maxFee, "ACCOUNT_UPDATE_FEE_TOO_HIGH");

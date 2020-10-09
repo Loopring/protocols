@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../../../lib/EIP712.sol";
 import "../../../lib/FloatUtil.sol";
 import "../../../lib/MathUint.sol";
+import "../../../lib/MathUint96.sol";
 import "../../../lib/SignatureUtil.sol";
 import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
@@ -28,6 +29,7 @@ library WithdrawTransaction
     using BytesUtil            for bytes;
     using FloatUtil            for uint;
     using MathUint             for uint;
+    using MathUint96           for uint96;
     using ExchangeMode         for ExchangeData.State;
     using ExchangeSignatures   for ExchangeData.State;
     using ExchangeWithdrawals  for ExchangeData.State;
@@ -64,7 +66,7 @@ library WithdrawTransaction
         uint    minGas;
         address to;
         bytes   extraData;
-        uint96  maxFee;
+        uint16  feeDiscount;
         uint32  validUntil;
     }
 
@@ -100,7 +102,7 @@ library WithdrawTransaction
         withdrawal.to = auxData.to;
         withdrawal.minGas = auxData.minGas;
         withdrawal.extraData = auxData.extraData;
-        withdrawal.maxFee = auxData.maxFee;
+        withdrawal.maxFee = withdrawal.fee.add(uint(auxData.feeDiscount).decodeFloat(16));
         withdrawal.validUntil = auxData.validUntil;
 
         if (withdrawal.withdrawalType == 0) {
