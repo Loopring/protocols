@@ -63,6 +63,7 @@ function replacer(name: any, val: any) {
     name === "amount" ||
     name === "fee" ||
     name === "maxFee" ||
+    name === "originalMaxFee" ||
     name === "tokenWeight" ||
     name === "mintMinAmount" ||
     name === "burnAmount"
@@ -179,7 +180,7 @@ export namespace AccountUpdateUtils {
           { name: "owner", type: "address" },
           { name: "accountID", type: "uint32" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "fee", type: "uint256" },
+          { name: "maxFee", type: "uint256" },
           { name: "publicKey", type: "uint256" },
           { name: "validUntil", type: "uint32" },
           { name: "nonce", type: "uint32" }
@@ -196,7 +197,7 @@ export namespace AccountUpdateUtils {
         owner: update.owner,
         accountID: update.accountID,
         feeTokenID: update.feeTokenID,
-        fee: update.fee,
+        maxFee: update.maxFee,
         publicKey: new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
         validUntil: update.validUntil,
         nonce: update.nonce
@@ -258,7 +259,7 @@ export namespace WithdrawalUtils {
           { name: "tokenID", type: "uint16" },
           { name: "amount", type: "uint256" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "fee", type: "uint256" },
+          { name: "maxFee", type: "uint256" },
           { name: "to", type: "address" },
           { name: "extraData", type: "bytes" },
           { name: "minGas", type: "uint256" },
@@ -279,7 +280,7 @@ export namespace WithdrawalUtils {
         tokenID: withdrawal.tokenID,
         amount: withdrawal.amount,
         feeTokenID: withdrawal.feeTokenID,
-        fee: withdrawal.fee,
+        maxFee: withdrawal.maxFee,
         to: withdrawal.to,
         extraData: withdrawal.extraData,
         minGas: withdrawal.minGas,
@@ -342,7 +343,7 @@ export namespace TransferUtils {
           { name: "tokenID", type: "uint16" },
           { name: "amount", type: "uint256" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "fee", type: "uint256" },
+          { name: "maxFee", type: "uint256" },
           { name: "validUntil", type: "uint32" },
           { name: "storageID", type: "uint32" }
         ]
@@ -360,7 +361,7 @@ export namespace TransferUtils {
         tokenID: transfer.tokenID,
         amount: transfer.amount,
         feeTokenID: transfer.feeTokenID,
-        fee: transfer.fee,
+        maxFee: transfer.maxFee,
         validUntil: transfer.validUntil,
         storageID: transfer.storageID
       }
@@ -776,6 +777,7 @@ export class ExchangeTestUtil {
       feeTokenID,
       fee,
       maxFee,
+      originalMaxFee: maxFee,
       from,
       to,
       type: authMethod === AuthMethod.EDDSA ? 0 : 1,
@@ -814,25 +816,11 @@ export class ExchangeTestUtil {
     } else if (authMethod === AuthMethod.APPROVE) {
       const txHash = TransferUtils.getHash(transfer, this.exchange.address);
 
-      // Randomly approve using approveOffchainTransfer/approveTransaction
-      const toggle = transfer.from == signer ? this.getRandomBool() : false;
-      if (toggle) {
-        await this.exchange.approveOffchainTransfer(
-          signer,
-          transfer.to,
-          token,
-          transfer.amount,
-          feeToken,
-          transfer.fee,
-          transfer.validUntil,
-          transfer.storageID,
-          { from: signer }
-        );
-      } else {
-        await this.exchange.approveTransaction(signer, txHash, {
-          from: signer
-        });
-      }
+      // Approve
+      await this.exchange.approveTransaction(signer, txHash, {
+        from: signer
+      });
+
       // Verify the transaction has been approved
       // Check the event
       const event = await this.assertEventEmitted(
@@ -851,6 +839,11 @@ export class ExchangeTestUtil {
         txHash
       );
       assert(isApproved, "tx not approved");
+    }
+
+    if (authMethod !== AuthMethod.EDDSA) {
+      // Set the max fee to the fee so that it can always pass through the circuit
+      transfer.maxFee = transfer.fee;
     }
 
     this.pendingTransactions[this.exchangeId].push(transfer);
@@ -1354,6 +1347,7 @@ export class ExchangeTestUtil {
       feeTokenID,
       fee,
       maxFee,
+      originalMaxFee: maxFee,
       to,
       storeRecipient,
       extraData,
@@ -1382,6 +1376,11 @@ export class ExchangeTestUtil {
         this.exchange.address
       );
       await this.exchange.approveTransaction(owner, hash, { from: owner });
+    }
+
+    if (authMethod !== AuthMethod.EDDSA) {
+      // Set the max fee to the fee so that it can always pass through the circuit
+      withdrawalRequest.maxFee = withdrawalRequest.fee;
     }
 
     this.pendingTransactions[this.exchangeId].push(withdrawalRequest);
@@ -1429,7 +1428,8 @@ export class ExchangeTestUtil {
       publicKeyY: keyPair.publicKeyY,
       feeTokenID,
       fee,
-      maxFee
+      maxFee,
+      originalMaxFee: maxFee
     };
 
     // Sign the public key update
@@ -1452,6 +1452,11 @@ export class ExchangeTestUtil {
         this.exchange.address
       );
       await this.exchange.approveTransaction(owner, hash, { from: owner });
+    }
+
+    if (authMethod !== AuthMethod.EDDSA) {
+      // Set the max fee to the fee so that it can always pass through the circuit
+      accountUpdate.maxFee = accountUpdate.fee;
     }
 
     this.pendingTransactions[this.exchangeId].push(accountUpdate);
@@ -2131,28 +2136,26 @@ export class ExchangeTestUtil {
   }
 
   public getTransferAuxData(transfer: Transfer) {
-    return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
-      web3.utils.hexToBytes(
-        transfer.onchainSignature ? transfer.onchainSignature : "0x"
-      ),
+    return web3.eth.abi.encodeParameter("tuple(bytes,uint96,uint32)", [
+      transfer.onchainSignature ? transfer.onchainSignature : "0x",
+      transfer.originalMaxFee ? transfer.originalMaxFee : transfer.maxFee,
       transfer.validUntil
     ]);
   }
 
   public getAccountUpdateAuxData(accountUpdate: AccountUpdate) {
-    return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
-      web3.utils.hexToBytes(
-        accountUpdate.onchainSignature ? accountUpdate.onchainSignature : "0x"
-      ),
+    return web3.eth.abi.encodeParameter("tuple(bytes,uint96,uint32)", [
+      accountUpdate.onchainSignature ? accountUpdate.onchainSignature : "0x",
+      accountUpdate.originalMaxFee
+        ? accountUpdate.originalMaxFee
+        : accountUpdate.maxFee,
       accountUpdate.validUntil
     ]);
   }
 
   public getAmmUpdateAuxData(ammUpdate: AmmUpdate) {
     return web3.eth.abi.encodeParameter("tuple(bytes,uint32)", [
-      web3.utils.hexToBytes(
-        ammUpdate.onchainSignature ? ammUpdate.onchainSignature : "0x"
-      ),
+      ammUpdate.onchainSignature ? ammUpdate.onchainSignature : "0x",
       ammUpdate.validUntil
     ]);
   }
@@ -2163,18 +2166,17 @@ export class ExchangeTestUtil {
       withdrawal.to = "0x" + new BN(withdrawal.to).toString(16, 20);
     }
     return web3.eth.abi.encodeParameter(
-      "tuple(bool,uint256,bytes,uint256,address,bytes,uint32)",
+      "tuple(bool,uint256,bytes,uint256,address,bytes,uint96,uint32)",
       [
         withdrawal.storeRecipient,
         withdrawal.gas,
-        web3.utils.hexToBytes(
-          withdrawal.onchainSignature ? withdrawal.onchainSignature : "0x"
-        ),
+        withdrawal.onchainSignature ? withdrawal.onchainSignature : "0x",
         withdrawal.minGas,
         withdrawal.to,
-        withdrawal.extraData
-          ? web3.utils.hexToBytes(withdrawal.extraData)
-          : web3.utils.hexToBytes("0x"),
+        withdrawal.extraData ? withdrawal.extraData : "0x",
+        withdrawal.originalMaxFee
+          ? withdrawal.originalMaxFee
+          : withdrawal.maxFee,
         withdrawal.validUntil
       ]
     );

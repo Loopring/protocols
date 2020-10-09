@@ -90,7 +90,8 @@ contract("Exchange", (accounts: string[]) => {
       // Enable EdDSA signature again
       newKeyPair = ctx.getKeyPairEDDSA();
       await ctx.requestAccountUpdate(ownerB, token, fee, newKeyPair, {
-        authMethod: AuthMethod.ECDSA
+        authMethod: AuthMethod.ECDSA,
+        maxFee: fee.mul(new BN(3))
       });
 
       // Submit
@@ -107,24 +108,40 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(ctx.submitPendingBlocks(), "TX_NOT_APPROVED");
     });
 
-    it("Should not be able to update an account with fee > maxFee", async () => {
-      await createExchange();
+    [AuthMethod.EDDSA, AuthMethod.ECDSA].forEach(function(authMethod) {
+      it(
+        "Should not be able to update an account with fee > maxFee (" +
+          authMethod +
+          ")",
+        async () => {
+          await createExchange();
 
-      const balance = new BN(web3.utils.toWei("5484.24", "ether"));
-      const token = ctx.getTokenAddress("LRC");
-      const fee = ctx.getRandomFee();
+          const balance = new BN(web3.utils.toWei("5484.24", "ether"));
+          const token = ctx.getTokenAddress("LRC");
+          const fee = ctx.getRandomFee();
 
-      // Fund the payer
-      await ctx.deposit(ownerA, ownerA, token, balance);
+          // Fund the payer
+          await ctx.deposit(ownerA, ownerA, token, balance);
 
-      // Update the key pair of the new account
-      let newKeyPair = ctx.getKeyPairEDDSA();
-      await ctx.requestAccountUpdate(ownerA, token, fee, newKeyPair, {
-        maxFee: fee.div(new BN(2))
-      });
+          // Update the key pair of the new account
+          let newKeyPair = ctx.getKeyPairEDDSA();
+          await ctx.requestAccountUpdate(ownerA, token, fee, newKeyPair, {
+            maxFee: fee.div(new BN(2)),
+            authMethod
+          });
 
-      // Submit
-      await expectThrow(ctx.submitTransactions(), "invalid block");
+          // Commit the transfers
+          if (authMethod === AuthMethod.EDDSA) {
+            await expectThrow(ctx.submitTransactions(), "invalid block");
+          } else {
+            await ctx.submitTransactions();
+            await expectThrow(
+              ctx.submitPendingBlocks(),
+              "ACCOUNT_UPDATE_FEE_TOO_HIGH"
+            );
+          }
+        }
+      );
     });
   });
 });
