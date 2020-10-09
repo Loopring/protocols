@@ -67,8 +67,8 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       new BN(web3.utils.toWei("20000.654321", "ether"))
     ];
     amountsB = [
-      new BN(web3.utils.toWei("10000", "ether")),
-      new BN(web3.utils.toWei("20000", "ether"))
+      new BN(web3.utils.toWei("1000", "ether")),
+      new BN(web3.utils.toWei("2000", "ether"))
     ];
 
     feesA = [

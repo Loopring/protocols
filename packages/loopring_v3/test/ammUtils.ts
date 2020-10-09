@@ -421,12 +421,10 @@ export class AmmPool {
         owner,
         this.tokens[i],
         this.feeBips,
-        /*this.weights[i]*/ new BN(0),
+        this.weights[i],
         { authMethod: AuthMethod.NONE }
       );
     }
-
-    let poolTransaction: PoolTransaction;
 
     // Process the transaction
     if (transaction.txType === "Join") {
@@ -583,17 +581,6 @@ export class AmmPool {
           valid ? exit.burnAmount : new BN(0),
           Constants.Float24Encoding
         )
-      );
-    }
-
-    // Re-enable weights
-    for (let i = 0; i < this.tokens.length; i++) {
-      await this.ctx.requestAmmUpdate(
-        owner,
-        this.tokens[i],
-        this.feeBips,
-        this.weights[i],
-        { authMethod: AuthMethod.NONE }
       );
     }
 
