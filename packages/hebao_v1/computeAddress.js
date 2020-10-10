@@ -75,37 +75,58 @@ function calAddress(salt, headSize, tailSize) {
   return { addr, salt, score, prefixScore, tailScore };
 }
 
-function findTopAddressesInBatch(batchSize, batchIdx, select) {
+function findTopAddressesInBatch(oneMillion, batchIdx, select, findUglyOnes) {
   const addresses = [];
-  const base = batchIdx * batchSize;
-  for (let i = 0; i < batchSize; i++) {
-    addresses.push(calAddress(i + base, 6, 6));
+  const base = batchIdx * oneMillion;
+  for (let i = 0; i < oneMillion; i++) {
+    addresses.push(calAddress(i + base, 8, 8));
   }
 
   const prettyOnes = addresses
     .sort((a, b) => b.score - a.score)
     .slice(0, select);
-  const uglyOnes = addresses.sort((a, b) => a.score - b.score).slice(0, select);
+
+  const uglyOnes = findUglyOnes ?  addresses.sort((a, b) => a.score - b.score).slice(0, select) : [];
 
   return [prettyOnes, uglyOnes];
 }
 
-function findTopAddresses(batchSize, batchIdxStart, batchIdxEnd, select) {
+function findTopAddresses(oneMillion, batchIdxStart, batchIdxEnd, select, findUglyOnes) {
   let prettyOnes = [];
   let uglyOnes = [];
 
   for (let batchIdx = batchIdxStart; batchIdx < batchIdxEnd; batchIdx++) {
     const startTime = new Date().getTime();
-    let res = findTopAddressesInBatch(batchSize, batchIdx, select);
+    let res = findTopAddressesInBatch(oneMillion, batchIdx, select, findUglyOnes);
 
     prettyOnes = prettyOnes
       .concat(res[0])
       .sort((a, b) => b.score - a.score)
       .slice(0, select);
-    uglyOnes = uglyOnes
-      .concat(res[1])
-      .sort((a, b) => a.score - b.score)
-      .slice(0, select);
+
+    if (findUglyOnes) {
+      uglyOnes = uglyOnes
+        .concat(res[1])
+        .sort((a, b) => a.score - b.score)
+        .slice(0, select);
+    }
+
+      // write to file:
+
+    if (!fs.existsSync(`wallet_addr`)) {
+      fs.mkdirSync(`wallet_addr`);
+    }
+
+    const prefix = `wallet_addr/batch_${batchIdxStart}m_${batchIdxEnd}m_select${select}_`;
+
+    fs.writeFileSync(prefix + "pretty.json", JSON.stringify(prettyOnes, undefined, 2));
+    // console.log(`file written:`, prettyFile);
+
+    if (findUglyOnes) {
+
+    fs.writeFileSync(prefix + "ugly.json", JSON.stringify(uglyOnes, undefined, 2));
+    // console.log(`file written:`, uglyFile);
+  }
 
     const endTime = new Date().getTime();
 
@@ -121,23 +142,6 @@ function findTopAddresses(batchSize, batchIdxStart, batchIdxEnd, select) {
       "seconds"
     );
   }
-
-  // write to file:
-
-  if (!fs.existsSync(`wallet_addr`)) {
-    fs.mkdirSync(`wallet_addr`);
-  }
-
-  const prefix = `wallet_addr/batch_${batchIdxStart * batchSize}_${batchIdxEnd *
-    batchSize}_select${select}_`;
-  const prettyFile = prefix + "pretty.json";
-  const uglyFile = prefix + "ugly.json";
-
-  fs.writeFileSync(prettyFile, JSON.stringify(prettyOnes, undefined, 2));
-  console.log(`file written:`, prettyFile);
-
-  fs.writeFileSync(uglyFile, JSON.stringify(uglyOnes, undefined, 2));
-  console.log(`file written:`, uglyFile);
 }
 
 function main() {
@@ -152,21 +156,19 @@ function main() {
 }
 
 // main();
-const batchSize = 1000000;
-const batchIdxStart = 0;
-const batchIdxEnd = 100;
+const oneMillion = 1000 * 1000;
+const batchIdxStart = 100;
+const batchIdxEnd = 10000;
 const select = 1000;
 
 console.log(
   "Start scoring",
-  ((batchIdxEnd - batchIdxStart) * batchSize * 1.0) / 1000000,
-  "million addresses in",
-  batchIdxEnd - batchIdxStart,
-  "batches with salt range = [",
-  batchIdxStart * batchSize,
-  ",",
-  batchIdxEnd * batchSize,
+  (batchIdxEnd - batchIdxStart),
+  "million addresses [#",
+  batchIdxStart,
+  ",#",
+  batchIdxEnd,
   "):"
 );
 console.log(select, "best/worst addresses will be selected");
-findTopAddresses(batchSize, batchIdxStart, batchIdxEnd, select);
+findTopAddresses(oneMillion, batchIdxStart, batchIdxEnd, select, true);
