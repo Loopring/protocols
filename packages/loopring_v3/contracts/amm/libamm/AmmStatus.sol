@@ -52,6 +52,7 @@ library AmmStatus
         S.sharedConfig = AmmSharedConfig(config.sharedConfig);
         IExchangeV3 exchange = IExchangeV3(config.exchange);
         S.exchange = exchange;
+        S.exchangeDomainSeparator = exchange.getDomainSeparator();
         S.accountID = config.accountID;
         S.poolTokenID = exchange.getTokenID(address(this));
         S.feeBips = config.feeBips;

@@ -19,6 +19,7 @@ import "./IBlockReceiver.sol";
 contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainable
 {
     using AddressUtil       for address;
+    using AddressUtil       for address payable;
     using BytesUtil         for bytes;
     using MathUint          for uint;
     using SignatureUtil     for bytes32;
@@ -114,15 +115,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         );
 
         // Process the callback logic.
-
         if (performCallback) {
-            bytes memory blockData;
-            assembly {
-                blockData := add(decompressed, 4)
-            }
-            ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
-
-            _beforeBlockSubmission(blocks, callbackConfig);
+            _beforeBlockSubmission(_decodeBlocks(decompressed), callbackConfig);
         }
 
         target.fastCallAndVerify(gasleft(), 0, decompressed);
@@ -177,5 +171,46 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
             cursor = txIdx + txCallback.numTxs;
         }
+    }
+
+    function _decodeBlocks(bytes memory data)
+        private
+        pure
+        returns (ExchangeData.Block[] memory)
+    {
+        // This copies the data (expensive) instead of just pointing to the correct address
+        //bytes memory blockData;
+        //assembly {
+        //    blockData := add(data, 4)
+        //}
+        //ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
+
+        // Points the block data to the aOnly sets the data necessary in the callbacks!
+        // 36 := 4 (function selector) + 32 (offset to blocks)
+        uint numBlocks = data.toUint(36);
+        ExchangeData.Block[] memory blocks = new ExchangeData.Block[](numBlocks);
+        for (uint i = 0; i < numBlocks; i++) {
+            ExchangeData.Block memory _block = blocks[i];
+
+            // 68 := 36 (see above) + 32 (blocks length)
+            uint blockOffset = 68 + data.toUint(68 + i*32);
+
+            uint offset = blockOffset;
+            //_block.blockType = uint8(data.toUint(offset));
+            offset += 32;
+            _block.blockSize = uint16(data.toUint(offset));
+            offset += 32;
+            //_block.blockVersion = uint8(data.toUint(offset));
+            offset += 32;
+            uint blockDataOffset = data.toUint(offset);
+            offset += 32;
+
+            bytes memory blockData;
+            assembly {
+                blockData := add(data, add(32, add(blockOffset, blockDataOffset)))
+            }
+            _block.data = blockData;
+        }
+        return blocks;
     }
 }

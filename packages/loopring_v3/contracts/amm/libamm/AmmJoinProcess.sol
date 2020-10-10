@@ -38,6 +38,7 @@ library AmmJoinProcess
         bytes               memory  signature
         )
         internal
+        view
     {
         require(join.validUntil >= block.timestamp, "EXPIRED");
 

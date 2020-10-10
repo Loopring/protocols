@@ -63,7 +63,7 @@ library AmmBlockReceiver
         return AmmData.Context({
             txIdx: txIdx,
             exchange: S.exchange,
-            exchangeDomainSeparator: S.exchange.getDomainSeparator(),
+            exchangeDomainSeparator: S.exchangeDomainSeparator,
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             poolTokenID: S.poolTokenID,
