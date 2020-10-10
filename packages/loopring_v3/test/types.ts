@@ -97,6 +97,7 @@ export interface AccountUpdate {
   feeTokenID: number;
   fee: BN;
   maxFee: BN;
+  originalMaxFee?: BN;
 
   signature?: Signature;
   onchainSignature?: any;
@@ -117,6 +118,7 @@ export class Transfer {
   feeTokenID: number;
   fee: BN;
   maxFee: BN;
+  originalMaxFee?: BN;
 
   from: string;
   to: string;
@@ -156,6 +158,7 @@ export interface WithdrawalRequest {
   feeTokenID?: number;
   fee?: BN;
   maxFee: BN;
+  originalMaxFee?: BN;
 
   storeRecipient: boolean;
 
@@ -197,6 +200,7 @@ export interface AmmUpdate {
 
 export interface TxBlock {
   transactions: any[];
+  ammTransactions: any[];
   protocolTakerFeeBips?: number;
   protocolMakerFeeBips?: number;
 
@@ -211,6 +215,7 @@ export interface BlockCallback {
   target: string;
   txIdx: number;
   auxiliaryData: any;
+  tx?: any;
 }
 
 export interface Block {

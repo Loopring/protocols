@@ -40,16 +40,14 @@ library AmmExitProcess
         )
         internal
     {
+        require(exit.validUntil >= block.timestamp, "EXPIRED");
+
         bytes32 txHash = AmmExitRequest.hash(ctx.domainSeparator, exit);
         bool isForcedExit = false;
 
         if (signature.length == 0) {
             bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
-            require(
-                txHash == forcedExitHash &&
-                exit.validUntil > 0 && exit.validUntil >= block.timestamp,
-                "FORCED_EXIT_NOT_FOUND"
-            );
+            require(txHash == forcedExitHash, "FORCED_EXIT_NOT_FOUND");
 
             delete S.forcedExit[exit.owner];
             S.forcedExitCount--;
@@ -67,7 +65,7 @@ library AmmExitProcess
                 return;
             }
 
-            ctx.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply.add(exit.burnAmount);
+            ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
         } else {
             require(slippageOK, "EXIT_SLIPPAGE_INVALID");
             _burnL2(ctx, exit.burnAmount, exit.owner, exit.burnStorageID);
@@ -126,7 +124,7 @@ library AmmExitProcess
         ctx.approveTransfer(transfer);
 
         // Update pool balance
-        ctx.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply.add(transfer.amount);
+        ctx.totalSupply = ctx.totalSupply.sub(transfer.amount);
     }
 
     function _calculateExitAmounts(
@@ -134,7 +132,7 @@ library AmmExitProcess
         AmmData.PoolExit memory  exit
         )
         private
-        view
+        pure
         returns(
             bool /* slippageOK */,
             uint96[] memory amounts
@@ -142,13 +140,8 @@ library AmmExitProcess
     {
         amounts = new uint96[](ctx.size);
 
-        // Check if we can still use this exit
-        if (block.timestamp > exit.validUntil) {
-            return (false, amounts);
-        }
-
         // Calculate how much will be withdrawn
-        uint ratio = uint(AmmData.POOL_TOKEN_BASE()).mul(exit.burnAmount) / ctx.totalSupply();
+        uint ratio = uint(AmmData.POOL_TOKEN_BASE()).mul(exit.burnAmount) / ctx.totalSupply;
 
         for (uint i = 0; i < ctx.size; i++) {
             amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE()).toUint96();

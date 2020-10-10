@@ -38,6 +38,8 @@ library AmmJoinProcess
         )
         internal
     {
+        require(join.validUntil >= block.timestamp, "EXPIRED");
+
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
         require(txHash.verifySignature(join.owner, signature), "INVALID_JOIN_APPROVAL");
 
@@ -97,7 +99,7 @@ library AmmJoinProcess
         ctx.approveTransfer(transfer);
 
         // Update pool balance
-        ctx.poolTokenBurnedSupply = ctx.poolTokenBurnedSupply.sub(transfer.amount);
+        ctx.totalSupply = ctx.totalSupply.add(transfer.amount);
     }
 
     function _calculateJoinAmounts(
@@ -105,7 +107,7 @@ library AmmJoinProcess
         AmmData.PoolJoin memory  join
         )
         private
-        view
+        pure
         returns(
             bool            slippageOK,
             uint96          mintAmount,
@@ -115,11 +117,7 @@ library AmmJoinProcess
         // Check if we can still use this join
         amounts = new uint96[](ctx.size);
 
-        if (block.timestamp > join.validUntil) {
-            return (false, 0, amounts);
-        }
-
-        if (ctx.totalSupply() == 0) {
+        if (ctx.totalSupply == 0) {
             return(true, AmmData.POOL_TOKEN_BASE().toUint96(), join.joinAmounts);
         }
 
@@ -128,7 +126,7 @@ library AmmJoinProcess
         for (uint i = 0; i < ctx.size; i++) {
             if (ctx.tokenBalancesL2[i] > 0) {
                 uint amountOut = uint(join.joinAmounts[i])
-                    .mul(ctx.totalSupply()) / uint(ctx.tokenBalancesL2[i]);
+                    .mul(ctx.totalSupply) / uint(ctx.tokenBalancesL2[i]);
 
                 if (!initialized) {
                     initialized = true;
@@ -144,10 +142,10 @@ library AmmJoinProcess
         }
 
         // Calculate the amounts to deposit
-        uint ratio = uint(AmmData.POOL_TOKEN_BASE()).mul(mintAmount) / ctx.totalSupply();
+        uint ratio = uint(AmmData.POOL_TOKEN_BASE()).mul(mintAmount) / ctx.totalSupply;
 
         for (uint i = 0; i < ctx.size; i++) {
-            amounts[i] = ratio.mul(ctx.tokenBalancesL2[i] / AmmData.POOL_TOKEN_BASE()).toUint96();
+            amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE()).toUint96();
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

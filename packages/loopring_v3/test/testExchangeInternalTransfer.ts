@@ -173,6 +173,15 @@ contract("Exchange", (accounts: string[]) => {
         { maxFee: fee.mul(new BN(3)) }
       );
       await exchangeTestUtil.transfer(
+        ownerA,
+        ownerD,
+        token,
+        amount.mul(new BN(2)),
+        feeToken,
+        fee.mul(new BN(2)),
+        { maxFee: fee.mul(new BN(4)), authMethod: AuthMethod.ECDSA }
+      );
+      await exchangeTestUtil.transfer(
         ownerB,
         ownerA,
         token,
@@ -384,27 +393,45 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitPendingBlocks();
     });
 
-    it("should not be able to do transfer with fee > maxFee", async () => {
-      await createExchange();
+    [AuthMethod.EDDSA, AuthMethod.ECDSA].forEach(function(authMethod) {
+      it(
+        "should not be able to do transfer with fee > maxFee (" +
+          authMethod +
+          ")",
+        async () => {
+          await createExchange();
 
-      const token = "ETH";
-      const feeToken = "LRC";
-      const amount = new BN(web3.utils.toWei("1", "ether"));
-      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+          const token = "ETH";
+          const feeToken = "LRC";
+          const amount = new BN(web3.utils.toWei("1", "ether"));
+          const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
-      // Do some transfers transfer
-      await exchangeTestUtil.transfer(
-        ownerA,
-        ownerD,
-        token,
-        amount,
-        feeToken,
-        fee,
-        { maxFee: fee.div(new BN(2)) }
+          // Do some transfers transfer
+          await exchangeTestUtil.transfer(
+            ownerA,
+            ownerD,
+            token,
+            amount,
+            feeToken,
+            fee,
+            { maxFee: fee.div(new BN(2)), authMethod }
+          );
+
+          // Commit the transfers
+          if (authMethod === AuthMethod.EDDSA) {
+            await expectThrow(
+              exchangeTestUtil.submitTransactions(),
+              "invalid block"
+            );
+          } else {
+            await exchangeTestUtil.submitTransactions();
+            await expectThrow(
+              exchangeTestUtil.submitPendingBlocks(),
+              "TRANSFER_FEE_TOO_HIGH"
+            );
+          }
+        }
       );
-
-      // Commit the transfers
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
     });
 
     it("should be able to transfer to a new account", async () => {

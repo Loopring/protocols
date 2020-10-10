@@ -19,10 +19,10 @@ contract("Exchange", (accounts: string[]) => {
   let ownerD: string;
 
   const createExchange = async (setupTestState: boolean = true) => {
-    await ctx.createExchange(
-      ctx.testContext.stateOwners[0],
-      {setupTestState, useOwnerContract: false}
-    );
+    await ctx.createExchange(ctx.testContext.stateOwners[0], {
+      setupTestState,
+      useOwnerContract: false
+    });
     exchange = ctx.exchange;
     exchangeOwner = ctx.exchangeOwner;
 
@@ -145,9 +145,9 @@ contract("Exchange", (accounts: string[]) => {
       await registerUniversalAgentChecked(ownerA, false, registryOwner);
 
       // User stops trusting universal agents
-      await agentRegistry.trustUniversalAgents(false, { from: ownerB });
-      const isAgent = await agentRegistry.isAgent(ownerB, ownerD);
-      assert.equal(isAgent, false, "isAgent unexpected");
+      // await agentRegistry.trustUniversalAgents(false, { from: ownerB });
+      // const isAgent = await agentRegistry.isAgent(ownerB, ownerD);
+      // assert.equal(isAgent, false, "isAgent unexpected");
     });
 
     it("should be able to authorize and deauthorize an agent", async () => {
@@ -188,23 +188,6 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.approveOffchainTransfer(
-          ownerA,
-          ownerB,
-          token,
-          new BN(0),
-          token,
-          new BN(0),
-          0xffffffff,
-          new BN(1),
-          {
-            from: agent
-          }
-        ),
-        "UNAUTHORIZED"
-      );
-
-      await expectThrow(
         exchange.setWithdrawalRecipient(
           ownerA,
           ownerB,
@@ -238,20 +221,6 @@ contract("Exchange", (accounts: string[]) => {
       await exchange.approveTransaction(ownerA, Buffer.from("FF"), {
         from: agent
       });
-
-      await exchange.approveOffchainTransfer(
-        ownerA,
-        ownerB,
-        token,
-        new BN(0),
-        token,
-        new BN(0),
-        0xfffffff,
-        new BN(1),
-        {
-          from: agent
-        }
-      );
 
       await exchange.setWithdrawalRecipient(
         ownerA,
