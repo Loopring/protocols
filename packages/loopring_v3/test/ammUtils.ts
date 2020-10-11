@@ -633,7 +633,7 @@ export class AmmPool {
     let poolTx: PoolTransaction;
     // Hack: fix json deserializing when the owner address is serialized as a decimal string
     if (!transaction.owner.startsWith("0x")) {
-      transaction.owner = "0x" + new BN(transaction.owner).toString(16, 20);
+      transaction.owner = "0x" + new BN(transaction.owner).toString(16, 40);
     }
     if (transaction.txType === "Join") {
       poolTx = {

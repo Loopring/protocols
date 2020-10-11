@@ -2163,7 +2163,7 @@ export class ExchangeTestUtil {
   public getWithdrawalAuxData(withdrawal: WithdrawalRequest) {
     // Hack: fix json deserializing when the to address is serialized as a decimal string
     if (!withdrawal.to.startsWith("0x")) {
-      withdrawal.to = "0x" + new BN(withdrawal.to).toString(16, 20);
+      withdrawal.to = "0x" + new BN(withdrawal.to).toString(16, 40);
     }
     return web3.eth.abi.encodeParameter(
       "tuple(bool,uint256,bytes,uint256,address,bytes,uint96,uint32)",
