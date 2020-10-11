@@ -47,7 +47,7 @@
     "types-bn": "0.0.1",
     "typescript": "3.9.7",
     "web3-typescript-typings": "0.10.2",
-    "webpack": "^4.0.0"
+    "webpack": "^5.0.0"
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.31",
