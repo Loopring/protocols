@@ -127,7 +127,7 @@ function main() {
 
     while (true) {
         const startTime = new Date().getTime();
-        console.log(">>> batch:", config.nextBatch, ", select per million:", config.selectPerMillion, ", pretty:", prettyOnes.length, ", ugly:", uglyOnes.length);
+        console.log(">>> batch:", config.nextBatch, " select per million:", config.selectPerMillion, " pretty:", prettyOnes.length, " ugly:", uglyOnes.length, " time used:", config.timeUsedLastBatch/1000);
 
 
         let res = findTopAddressesInBatch(config.nextBatch);
@@ -146,10 +146,10 @@ function main() {
         config.nextBatch++;
 
         const endTime = new Date().getTime();
+        config.timeUsedLastBatch = endTime - startTime;
 
         let result = {
             config: config,
-            timeUsedLastBatch: (endTime - startTime),
             prettyCount: prettyOnes.length,
             uglyCount: uglyOnes.length,
             pretty: prettyOnes,
