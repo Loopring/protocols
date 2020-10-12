@@ -18,9 +18,8 @@ library AccountUpdateTransaction
     using FloatUtil            for uint;
     using ExchangeSignatures   for ExchangeData.State;
 
-    bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
-        "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint256 maxFee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
-    );
+    bytes32 constant public ACCOUNTUPDATE_TYPEHASH = 0x7e739997bf13cbd55cabab1d9a1ea6ce825e47221449077bb06755c1de1d8715;
+    // keccak256("AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint256 maxFee,uint256 publicKey,uint32 validUntil,uint32 nonce)");
 
     /*event AccountUpdated(
         uint32 owner,

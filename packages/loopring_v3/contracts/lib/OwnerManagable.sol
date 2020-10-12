@@ -8,7 +8,8 @@ import "./Claimable.sol";
 
 contract OwnerManagable is Claimable, AddressSet
 {
-    bytes32 internal constant MANAGER = keccak256("__MANAGED__");
+    bytes32 internal constant MANAGER = 0xae79206ff8d89355a31a27bc7df0c55f5fe15ce3ae94530629cd19b6712ea1f8;
+    // keccak256("__MANAGED__");
 
     event ManagerAdded  (address indexed manager);
     event ManagerRemoved(address indexed manager);

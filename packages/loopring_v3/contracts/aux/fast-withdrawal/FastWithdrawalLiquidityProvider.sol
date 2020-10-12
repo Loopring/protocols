@@ -36,9 +36,8 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
         bytes   signature;  // signer's signature
     }
 
-    bytes32 constant public FASTWITHDRAWAL_APPROVAL_TYPEHASH = keccak256(
-        "FastWithdrawalApproval(address exchange,address from,address to,address token,uint96 amount,uint32 storageID,uint64 validUntil)"
-    );
+    bytes32 constant public FASTWITHDRAWAL_APPROVAL_TYPEHASH = 0x097093a2c43187d8d6eeaadafaf6f4c587a0912d9d4e26988122df77d493a291;
+    // keccak256("FastWithdrawalApproval(address exchange,address from,address to,address token,uint96 amount,uint32 storageID,uint64 validUntil)");
 
     bytes32 public DOMAIN_SEPARATOR;
 

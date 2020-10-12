@@ -20,9 +20,8 @@ library TransferTransaction
     using MathUint             for uint;
     using ExchangeSignatures   for ExchangeData.State;
 
-    bytes32 constant public TRANSFER_TYPEHASH = keccak256(
-        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 maxFee,uint32 validUntil,uint32 storageID)"
-    );
+    bytes32 constant public TRANSFER_TYPEHASH = 0x248acb7d951b5527519dcc5bd6d0a0ad0b3a56f00b3f044c6b2104661af03673;
+    // keccak256("Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 maxFee,uint32 validUntil,uint32 storageID)");
 
     struct Transfer
     {

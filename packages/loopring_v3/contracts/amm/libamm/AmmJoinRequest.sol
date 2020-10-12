@@ -10,9 +10,8 @@ import "./AmmData.sol";
 /// @title AmmJoinRequest
 library AmmJoinRequest
 {
-    bytes32 constant private POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,uint32[] joinStorageIDs,uint96 mintMinAmount,uint32 validUntil)"
-    );
+    bytes32 constant private POOLJOIN_TYPEHASH = 0x6ae0467421cf1a8f2591b09e11baf3a1c023d2921f60d386c86e9bd3c2fbd3c5;
+    // keccak256("PoolJoin(address owner,uint96[] joinAmounts,uint96[] joinFees,uint32[] joinStorageIDs,uint96 mintMinAmount,uint32 validUntil)");
 
     function hash(
         bytes32 domainSeparator,

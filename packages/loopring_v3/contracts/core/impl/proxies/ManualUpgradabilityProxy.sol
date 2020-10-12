@@ -14,9 +14,8 @@ contract ManualUpgradabilityProxy is IExchangeProxy
 {
     event Upgraded(address indexed implementation);
 
-    bytes32 private constant implementationPosition = keccak256(
-        "org.loopring.protocol.v3.implementation"
-    );
+    bytes32 private constant implementationPosition = 0x8b9cd0c29d32ba655a8b61171bdffdd0678bfa67e05741b48f4336d96b0c72a0;
+    // keccak256("org.loopring.protocol.v3.implementation");
 
     modifier onlyUnderlyingOwner()
     {

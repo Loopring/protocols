@@ -32,9 +32,8 @@ library WithdrawTransaction
     using ExchangeSignatures   for ExchangeData.State;
     using ExchangeWithdrawals  for ExchangeData.State;
 
-    bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
-        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 maxFee,address to,bytes extraData,uint256 minGas,uint32 validUntil,uint32 storageID)"
-    );
+    bytes32 constant public WITHDRAWAL_TYPEHASH = 0xbd7ab272293c89296ff38e2c408d221fb405afd58755a6c418ab828b1d4a6027;
+    // keccak256("Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 maxFee,address to,bytes extraData,uint256 minGas,uint32 validUntil,uint32 storageID)");
 
     struct Withdrawal
     {

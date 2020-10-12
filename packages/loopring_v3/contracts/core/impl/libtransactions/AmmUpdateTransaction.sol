@@ -19,9 +19,8 @@ library AmmUpdateTransaction
     using MathUint             for uint;
     using ExchangeSignatures   for ExchangeData.State;
 
-    bytes32 constant public AMMUPDATE_TYPEHASH = keccak256(
-        "AmmUpdate(address owner,uint32 accountID,uint16 tokenID,uint8 feeBips,uint256 tokenWeight,uint32 validUntil,uint32 nonce)"
-    );
+    bytes32 constant public AMMUPDATE_TYPEHASH = 0xbbd9e41021eed5e17fe80b17eade04a44183140dfbc4d650a772f691bc522bf9;
+     // keccak256("AmmUpdate(address owner,uint32 accountID,uint16 tokenID,uint8 feeBips,uint256 tokenWeight,uint32 validUntil,uint32 nonce)");
 
     struct AmmUpdate
     {

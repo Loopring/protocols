@@ -9,9 +9,8 @@ import "../thirdparty/proxies/Proxy.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract SimpleProxy is Proxy
 {
-    bytes32 private constant implementationPosition = keccak256(
-        "org.loopring.protocol.simple.proxy"
-    );
+    bytes32 private constant implementationPosition = 0x49e52b53564741f5cdd331b330c04deb825a37506ec265623007d3f13f9371f8;
+    // keccak256("org.loopring.protocol.simple.proxy");
 
     constructor(address _implementation) {
         if (_implementation != address(0)) {

@@ -11,9 +11,8 @@ import "./AmmUtil.sol";
 /// @title AmmExitRequest
 library AmmExitRequest
 {
-    bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint32 validUntil)"
-    );
+    bytes32 constant public POOLEXIT_TYPEHASH = 0x96f897052bcc4bcf5b339d22732080e008f9f973550dd8220fe96086935f4400;
+    // keccak256("PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint32 validUntil)");
 
     event ForcedPoolExitRequested(AmmData.PoolExit exit);
 

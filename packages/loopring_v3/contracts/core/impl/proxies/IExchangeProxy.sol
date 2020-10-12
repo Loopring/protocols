@@ -11,9 +11,8 @@ import "../../iface/IUniversalRegistry.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 abstract contract IExchangeProxy is Proxy
 {
-    bytes32 private constant registryPosition = keccak256(
-        "org.loopring.protocol.v3.registry"
-    );
+    bytes32 private constant registryPosition = 0xaef4e41a5329749c7fea18a0eb8fc44fcfe86be73ad91d38498d06b0c2641650;
+     // keccak256("org.loopring.protocol.v3.registry");
 
     constructor(address _registry)
     {

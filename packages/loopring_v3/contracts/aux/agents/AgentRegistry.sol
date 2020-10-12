@@ -10,7 +10,8 @@ import "../../lib/Claimable.sol";
 
 contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
 {
-    bytes32 internal constant UNIVERSAL_AGENTS = keccak256("__UNVERSAL_AGENTS__");
+    bytes32 internal constant UNIVERSAL_AGENTS = 0xc71d5d67d681893bca2ba1c050bc8ca13e6ba24d4dfed8baa4047b6f2b60d764;
+    // keccak256("__UNVERSAL_AGENTS__");
 
     event AgentRegistered(
         address indexed user,

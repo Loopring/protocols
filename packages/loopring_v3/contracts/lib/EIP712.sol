@@ -12,9 +12,8 @@ library EIP712
         address verifyingContract;
     }
 
-    bytes32 constant internal EIP712_DOMAIN_TYPEHASH = keccak256(
-        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-    );
+    bytes32 constant internal EIP712_DOMAIN_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
+    // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     string constant internal EIP191_HEADER = "\x19\x01";
 
