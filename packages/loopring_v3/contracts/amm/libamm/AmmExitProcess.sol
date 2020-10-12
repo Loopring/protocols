@@ -83,7 +83,6 @@ library AmmExitProcess
                 transfer.to == exit.owner &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
                 transfer.amount.isAlmostEqualAmount(amounts[i]),
-                // transfer.feeTokenID == ctx.tokens[i].tokenID && // The relayer can use 0 to save gas
                 "INVALID_TX_DATA"
             );
 
