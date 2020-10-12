@@ -20,8 +20,7 @@ library AmmExitRequest
     function exitPool(
         AmmData.State storage S,
         uint96                burnAmount,
-        uint96[]     calldata exitMinAmounts,
-        uint96                fee
+        uint96[]     calldata exitMinAmounts
         )
         internal
     {
@@ -33,7 +32,7 @@ library AmmExitRequest
             burnAmount: burnAmount,
             burnStorageID: 0,
             exitMinAmounts: exitMinAmounts,
-            fee: fee,
+            fee: 0,
             validUntil: uint32(block.timestamp + S.sharedConfig.maxForcedExitAge())
         });
 
