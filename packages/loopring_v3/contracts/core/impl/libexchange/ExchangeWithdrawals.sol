@@ -273,24 +273,13 @@ library ExchangeWithdrawals
         require(allowFailure || success, "TRANSFER_FAILURE");
 
         if (success) {
-            emit WithdrawalCompleted(
-                category,
-                from,
-                to,
-                token,
-                amount
-            );
+            emit WithdrawalCompleted(category, from, to, token, amount);
+
             if (from == address(0)) {
                 S.protocolFeeLastWithdrawnTime[token] = block.timestamp;
             }
         } else {
-            emit WithdrawalFailed(
-                category,
-                from,
-                to,
-                token,
-                amount
-            );
+            emit WithdrawalFailed(category, from, to, token, amount);
         }
     }
 }
