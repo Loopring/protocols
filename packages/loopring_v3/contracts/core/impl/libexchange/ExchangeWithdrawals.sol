@@ -268,7 +268,6 @@ library ExchangeWithdrawals
                 S.protocolFeeLastWithdrawnTime[token] = block.timestamp;
             }
         } else {
-            // TODO
             emit WithdrawalFailed(
                 from,
                 to,
