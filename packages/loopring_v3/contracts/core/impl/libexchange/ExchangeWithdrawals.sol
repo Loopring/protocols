@@ -16,6 +16,14 @@ import "./ExchangeTokens.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeWithdrawals
 {
+    enum WithdrawalCategory
+    {
+        DISTRIBUTION,
+        FROM_MERKLE_TREE,
+        FROM_DEPOSIT_REQUEST,
+        FROM_APPROVED_WITHDRAWAL
+    }
+
     using AddressUtil       for address;
     using AddressUtil       for address payable;
     using BytesUtil         for bytes;
@@ -31,6 +39,7 @@ library ExchangeWithdrawals
     );
 
     event WithdrawalCompleted(
+        uint8   category,
         address from,
         address to,
         address token,
@@ -38,6 +47,7 @@ library ExchangeWithdrawals
     );
 
     event WithdrawalFailed(
+        uint8   category,
         address from,
         address to,
         address token,
@@ -115,6 +125,7 @@ library ExchangeWithdrawals
         // Transfer the tokens
         transferTokens(
             S,
+            uint8(WithdrawalCategory.FROM_MERKLE_TREE),
             owner,
             owner,
             tokenID,
@@ -151,6 +162,7 @@ library ExchangeWithdrawals
         // Transfer the tokens
         transferTokens(
             S,
+            uint8(WithdrawalCategory.FROM_DEPOSIT_REQUEST),
             owner,
             owner,
             tokenID,
@@ -180,6 +192,7 @@ library ExchangeWithdrawals
             // Transfer the tokens
             transferTokens(
                 S,
+                uint8(WithdrawalCategory.FROM_APPROVED_WITHDRAWAL),
                 owner,
                 owner,
                 tokenID,
@@ -205,6 +218,7 @@ library ExchangeWithdrawals
         // Try to transfer the tokens
         bool success = transferTokens(
             S,
+            uint8(WithdrawalCategory.DISTRIBUTION),
             from,
             to,
             tokenID,
@@ -228,6 +242,7 @@ library ExchangeWithdrawals
     // as much gas as needed, otherwise it throws. The function always returns true.
     function transferTokens(
         ExchangeData.State storage S,
+        uint8   category,
         address from,
         address to,
         uint16  tokenID,
@@ -259,6 +274,7 @@ library ExchangeWithdrawals
 
         if (success) {
             emit WithdrawalCompleted(
+                category,
                 from,
                 to,
                 token,
@@ -269,6 +285,7 @@ library ExchangeWithdrawals
             }
         } else {
             emit WithdrawalFailed(
+                category,
                 from,
                 to,
                 token,
