@@ -37,7 +37,6 @@ library AmmData
     {
         address   owner;
         uint96[]  joinAmounts;
-        uint96[]  joinFees;
         uint32[]  joinStorageIDs;
         uint96    mintMinAmount;
         uint32    validUntil;
