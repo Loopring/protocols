@@ -596,7 +596,7 @@ export class AmmPool {
       amounts.push(amount.toString(10));
     }
     return web3.eth.abi.encodeParameter(
-      "tuple(address,uint96[],uint96[],uint32[],uint96,uint32)",
+      "tuple(address,uint96[],uint32[],uint96,uint32)",
       [
         join.owner,
         amounts,
