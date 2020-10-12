@@ -80,14 +80,15 @@ contract LoopringAmmPool is
 
     function exitPool(
         uint96            burnAmount,
-        uint96[] calldata exitMinAmounts
+        uint96[] calldata exitMinAmounts,
+        uint96            fee
         )
         external
         payable
         onlyWhenOnline
         nonReentrant
     {
-        state.exitPool(burnAmount, exitMinAmounts);
+        state.exitPool(burnAmount, exitMinAmounts, fee);
     }
 
     function beforeBlockSubmission(

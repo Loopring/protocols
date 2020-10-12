@@ -49,6 +49,7 @@ library AmmData
         uint96    burnAmount;
         uint32    burnStorageID; // for pool token withdrawal from user to the pool
         uint96[]  exitMinAmounts;
+        uint96    fee;
         uint32    validUntil;
     }
 

@@ -27,7 +27,7 @@ library ExchangeWithdrawals
     event ForcedWithdrawalRequested(
         address owner,
         address token,
-        uint32   accountID
+        uint32  accountID
     );
 
     event WithdrawalCompleted(

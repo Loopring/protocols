@@ -373,7 +373,7 @@ export class AmmPool {
     };
 
     if (authMethod === AuthMethod.FORCE) {
-      await this.contract.exitPool(burnAmount, exitMinAmounts, {
+      await this.contract.exitPool(burnAmount, exitMinAmounts, 0, {
         from: owner,
         value: forcedExitFee,
         gasPrice: 0

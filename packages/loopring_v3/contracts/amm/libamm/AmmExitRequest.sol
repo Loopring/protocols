@@ -12,7 +12,7 @@ import "./AmmUtil.sol";
 library AmmExitRequest
 {
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
-        "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint32 validUntil)"
+        "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint96 fee,uint32 validUntil)"
     );
 
     event ForcedPoolExitRequested(AmmData.PoolExit exit);
@@ -20,7 +20,8 @@ library AmmExitRequest
     function exitPool(
         AmmData.State storage S,
         uint96                burnAmount,
-        uint96[]     calldata exitMinAmounts
+        uint96[]     calldata exitMinAmounts,
+        uint96                fee
         )
         internal
     {
@@ -32,6 +33,7 @@ library AmmExitRequest
             burnAmount: burnAmount,
             burnStorageID: 0,
             exitMinAmounts: exitMinAmounts,
+            fee: fee,
             validUntil: uint32(block.timestamp + S.sharedConfig.maxForcedExitAge())
         });
 
@@ -71,10 +73,10 @@ library AmmExitRequest
                     exit.burnAmount,
                     exit.burnStorageID,
                     keccak256(abi.encodePacked(exit.exitMinAmounts)),
+                    exit.fee,
                     exit.validUntil
                 )
             )
         );
     }
-
 }
