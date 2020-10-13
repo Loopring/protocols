@@ -82,7 +82,7 @@ library AmmExitProcess
                 transfer.from == address(this) &&
                 transfer.to == exit.owner &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
-                transfer.amount.isAlmostEqualAmount(amounts[i]),
+                transfer.amount.add(transfer.fee).isAlmostEqualAmount(amounts[i]),
                 "INVALID_TX_DATA"
             );
 
@@ -90,8 +90,7 @@ library AmmExitProcess
                 require(
                     i == ctx.size - 1 &&
                     transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                    transfer.fee.isAlmostEqualFee(exit.fee) &&
-                    transfer.fee.add(transfer.amount) >= amounts[i],
+                    transfer.fee.isAlmostEqualFee(exit.fee),
                     "INVALID_FEES"
                 );
             }
