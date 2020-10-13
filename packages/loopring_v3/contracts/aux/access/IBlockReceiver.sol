@@ -13,9 +13,9 @@ abstract contract IBlockReceiver
     function beforeBlockSubmission(
         ExchangeData.Block memory _block,
         bytes              memory data,
-        uint                      txIdx
+        uint                      txIdx,
+        uint                      numTxs
         )
         external
-        virtual
-        returns (AmmData.TransactionBuffer memory);
+        virtual;
 }

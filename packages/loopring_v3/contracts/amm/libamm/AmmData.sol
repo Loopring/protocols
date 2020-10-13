@@ -99,7 +99,7 @@ library AmmData
         // Pool token state variables
         string poolName;
         string symbol;
-        uint _totalSupply;
+        uint   _totalSupply;
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
@@ -108,14 +108,17 @@ library AmmData
         // AMM pool state variables
         AmmSharedConfig sharedConfig;
 
+        Token[]     tokens;
+
+        bytes32     exchangeDomainSeparator;
+        bytes32     domainSeparator;
         IExchangeV3 exchange;
         uint32      accountID;
         uint16      poolTokenID;
-        bytes32     domainSeparator;
-        uint        shutdownTimestamp;
         uint8       feeBips;
+
+        uint64      shutdownTimestamp;
         uint16      forcedExitCount;
-        Token[]     tokens;
 
         // A map from a user to the forced exit.
         mapping (address => PoolExit) forcedExit;

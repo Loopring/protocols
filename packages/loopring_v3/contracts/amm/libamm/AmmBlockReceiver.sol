@@ -22,33 +22,30 @@ library AmmBlockReceiver
     using BlockReader       for ExchangeData.Block;
 
     function beforeBlockSubmission(
-        AmmData.State      storage S,
-        ExchangeData.Block memory  _block,
-        bytes              memory  poolTxData,
-        uint                       txIdx
+        AmmData.State      storage   S,
+        ExchangeData.Block memory   _block,
+        bytes              calldata data,
+        uint                        txIdx,
+        uint                        numTxs
         )
         internal
-        returns (AmmData.TransactionBuffer memory)
     {
         AmmData.Context memory ctx = _getContext(S, txIdx);
+
+        require(numTxs == ctx.tokens.length * 2 + 1, "INVALID_NUM_TXS");
 
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
         S.approveAmmUpdates(ctx, _block);
 
-        _processPoolTx(S, ctx, _block, poolTxData);
+        _processPoolTx(S, ctx, _block, data);
 
         // Approve transactions
         ctx.exchange.approveTransactions(ctx.transactionBuffer.owners, ctx.transactionBuffer.txHashes);
 
         // Update state
         S._totalSupply = ctx.totalSupply;
-
-        ctx.tokens = new AmmData.Token[](0);
-        ctx.tokenBalancesL2 = new uint96[](0);
-
-        return ctx.transactionBuffer;
     }
 
     function _getContext(
@@ -79,10 +76,10 @@ library AmmBlockReceiver
     }
 
     function _processPoolTx(
-        AmmData.State           storage S,
-        AmmData.Context         memory  ctx,
-        ExchangeData.Block      memory  _block,
-        bytes                   memory  poolTxData
+        AmmData.State           storage   S,
+        AmmData.Context         memory    ctx,
+        ExchangeData.Block      memory    _block,
+        bytes                   calldata  poolTxData
         )
         private
     {

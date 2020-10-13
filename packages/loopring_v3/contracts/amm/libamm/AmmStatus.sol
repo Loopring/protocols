@@ -106,7 +106,7 @@ library AmmStatus
                 );
             }
         }
-        S.shutdownTimestamp = block.timestamp;
+        S.shutdownTimestamp = uint64(block.timestamp);
         emit Shutdown(block.timestamp);
     }
 }

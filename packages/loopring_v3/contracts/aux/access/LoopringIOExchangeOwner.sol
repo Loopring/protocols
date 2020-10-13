@@ -162,12 +162,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
 
             ExchangeData.Block memory minimalBlock = _block.createMinimalBlock(txIdx, txCallback.numTxs);
-            AmmData.TransactionBuffer memory ctx = IBlockReceiver(receivers[receiverIdx])
-                .beforeBlockSubmission(minimalBlock, txCallback.data, 0);
-
-            /*uint numTransactionsConsumed = IBlockReceiver(receivers[receiverIdx])
-                .beforeBlockSubmission(_block, txCallback.data, txIdx);
-            require(numTransactionsConsumed == txCallback.numTxs, "UNEXPECTED_NUM_TXS_CONSUMED");*/
+            IBlockReceiver(receivers[receiverIdx]).beforeBlockSubmission(
+                minimalBlock,
+                txCallback.data,
+                0,
+                txCallback.numTxs
+            );
 
             cursor = txIdx + txCallback.numTxs;
         }
@@ -185,7 +185,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         //}
         //ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
 
-        // Points the block data to the aOnly sets the data necessary in the callbacks!
+        // Points the block data to the data in the abi encoded data.
+        // Only sets the data necessary in the callbacks!
         // 36 := 4 (function selector) + 32 (offset to blocks)
         uint numBlocks = data.toUint(36);
         ExchangeData.Block[] memory blocks = new ExchangeData.Block[](numBlocks);

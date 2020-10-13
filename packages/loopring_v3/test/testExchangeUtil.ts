@@ -1982,6 +1982,9 @@ export class ExchangeTestUtil {
       blockCallbacks
     );
 
+    //console.log(onchainBlocks);
+    //console.log(txData);
+
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
     let tx: any = undefined;
@@ -2577,7 +2580,7 @@ export class ExchangeTestUtil {
     });
 
     // randomely support upgradability
-    const forgeMode = this.deterministic ? 0 : new Date().getMilliseconds() % 4;
+    const forgeMode = this.deterministic ? 1 : new Date().getMilliseconds() % 4;
     // Create the new exchange
     const tx = await this.universalRegistry.forgeExchange(
       forgeMode,

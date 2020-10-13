@@ -91,25 +91,26 @@ contract LoopringAmmPool is
     }
 
     function beforeBlockSubmission(
-        ExchangeData.Block memory _block,
-        bytes              memory data,
-        uint                      txIdx
+        ExchangeData.Block memory   _block,
+        bytes              calldata data,
+        uint                        txIdx,
+        uint                        numTxs
         )
         external
         override
         onlyWhenOnline
         onlyFromExchangeOwner
-        nonReentrant
-        returns (AmmData.TransactionBuffer memory)
+        // nonReentrant     // Not needed, does not do any external calls (except to the exchange)
+                            // and can only be called by the exchange owner.
     {
-        return state.beforeBlockSubmission(_block, data, txIdx);
+        state.beforeBlockSubmission(_block, data, txIdx, numTxs);
     }
 
     function withdrawFromApprovedWithdrawals()
         external
         nonReentrant
     {
-        //state.withdrawFromApprovedWithdrawals();
+        state.withdrawFromApprovedWithdrawals();
     }
 
     function withdrawWhenOffline()
@@ -117,6 +118,6 @@ contract LoopringAmmPool is
         onlyWhenOffline
         nonReentrant
     {
-        //state.withdrawWhenOffline();
+        state.withdrawWhenOffline();
     }
 }
