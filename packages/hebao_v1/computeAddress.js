@@ -68,7 +68,7 @@ function scoreString(str) {
     }
   }
   var score = 10 + (90.0 * (str.length - uniql.length)) / (str.length - 1);
-  score *= (uniql.length - p) / uniql.length;
+  score *= (20 - p) / 20;
 
   return score;
 }
@@ -108,11 +108,11 @@ function findTopAddressesInBatch(nextBatch) {
   for (let i = 0; i < batchSize; i++) {
     const addr = calAddress(nextBatch, i + base);
 
-    if (addr.score >= 0.2) {
+    if (addr.score >= 0.48) {
       console.log(addr);
       prettyOnes.push(addr);
-    } else if (addr.score <= 0.0004) {
-      console.log("\t", addr);
+    } else if (addr.score <= 0.0037) {
+      // console.log("\t", addr);
       uglyOnes.push(addr);
     }
   }
@@ -161,8 +161,8 @@ function main() {
     let res = findTopAddressesInBatch(config.nextBatch);
 
     var select = config.selectPerMillion * (config.nextBatch + 1);
-    if (select < 100) {
-      select = 100;
+    if (select < 10) {
+      select = 10;
     }
 
     prettyOnes = prettyOnes
