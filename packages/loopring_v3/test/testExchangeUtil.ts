@@ -2300,6 +2300,7 @@ export class ExchangeTestUtil {
         txBlock,
         auxiliaryData
       );
+      blockInfo.blockInfoData = blockInfoData;
       blocks.push(blockInfo);
 
       // Write auxiliary data

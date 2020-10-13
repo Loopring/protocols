@@ -64,6 +64,7 @@ export interface ExitOptions {
   authMethod?: AuthMethod;
   signer?: string;
   validUntil?: number;
+  fee?: BN;
   forcedExitFee?: BN;
   skip?: boolean;
 }
@@ -353,12 +354,12 @@ export class AmmPool {
     const signer = options.signer !== undefined ? options.signer : owner;
     const validUntil =
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+    const fee = options.fee !== undefined ? options.fee : new BN(0);
     const forcedExitFee =
       options.forcedExitFee !== undefined
         ? options.forcedExitFee
         : await this.sharedConfig.forcedExitFee();
     const skip = options.skip !== undefined ? options.skip : false;
-    const fee = new BN(0);
 
     const exit: PoolExit = {
       txType: "Exit",
@@ -560,12 +561,15 @@ export class AmmPool {
             owner,
             exit.owner,
             this.tokens[i],
-            amount,
-            "ETH",
-            new BN(0),
+            i === this.tokens.length - 1 ? amount.sub(exit.fee) : amount,
+            i === this.tokens.length - 1
+              ? this.tokens[this.tokens.length - 1]
+              : "ETH",
+            i === this.tokens.length - 1 ? exit.fee : new BN(0),
             {
               authMethod: AuthMethod.NONE,
               amountToDeposit: new BN(0),
+              feeToDeposit: new BN(0),
               transferToNew: true
             }
           );
@@ -613,12 +617,13 @@ export class AmmPool {
       amounts.push(amount.toString(10));
     }
     return web3.eth.abi.encodeParameter(
-      "tuple(address,uint96,uint32,uint96[],uint32)",
+      "tuple(address,uint96,uint32,uint96[],uint96,uint32)",
       [
         exit.owner,
         exit.burnAmount.toString(10),
         exit.burnStorageID,
         amounts,
+        exit.fee.toString(10),
         exit.validUntil
       ]
     );

@@ -175,7 +175,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("5000", "ether")),
           new BN(web3.utils.toWei("10000", "ether"))
         ],
-        { authMethod: AuthMethod.ECDSA }
+        {
+          authMethod: AuthMethod.ECDSA,
+          fee: new BN(web3.utils.toWei("100.1234", "ether"))
+        }
       );
       await pool.exit(
         ownerB,
