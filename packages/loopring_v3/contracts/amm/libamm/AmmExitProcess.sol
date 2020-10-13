@@ -82,14 +82,15 @@ library AmmExitProcess
                 transfer.from == address(this) &&
                 transfer.to == exit.owner &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
-                transfer.amount.isAlmostEqualAmount(amounts[i]),
+                transfer.fee.add(transfer.amount) == amounts[i] &&
+                transfer.amount.isAlmostEqualAmount(amounts[i] - transfer.fee),
                 "INVALID_TX_DATA"
             );
 
             if (transfer.fee > 0) {
                 require(
                     i == ctx.size - 1 &&
-                    transfer.fee.isAlmostEqualAmount(exit.fee) &&
+                    transfer.fee.isAlmostEqualFee(exit.fee) &&
                     transfer.feeTokenID == ctx.tokens[i].tokenID,
                     "INVALID_FEES"
                 );
