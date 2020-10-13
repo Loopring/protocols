@@ -91,7 +91,7 @@ library AmmExitProcess
                     i == ctx.size - 1 &&
                     transfer.feeTokenID == ctx.tokens[i].tokenID &&
                     transfer.fee.isAlmostEqualFee(exit.fee) &&
-                    transfer.fee.add(transfer.amount) <= amounts[i],
+                    transfer.fee.add(transfer.amount) >= amounts[i],
                     "INVALID_FEES"
                 );
             }
