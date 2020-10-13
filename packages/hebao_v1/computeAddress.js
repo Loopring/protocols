@@ -9,7 +9,8 @@ const codeHash = ethUtil.keccak(Buffer.from(creationCode, "hex"));
 const zeroAddress = "0x" + "00".repeat(20);
 const walletFactory = "0x339703fb41DF4049B02DFcE624Fa516fCfB31c46";
 const batchSize = 1000000;
-const ENDING_SIZE = 8;
+const endingSize = 8;
+const location = "./";
 console.log("Using WalletFactory:", walletFactory);
 
 function computeAddress(owner, salt) {
@@ -49,47 +50,21 @@ function scoreString(str) {
             uniql += str[x];
         }
     }
-    return (ENDING_SIZE - uniql.length) / (ENDING_SIZE - 1);
-
-
-    // const len = str.length;
-    // if (len == 0 || len == 1) return 0;
-    // if (len == 2) return 1;
-
-    // let score = 0.0;
-
-    // let diff = str.charCodeAt(1) - str.charCodeAt(0);
-    // let segment = 1 - Math.abs(diff) / 25.0;
-
-    // for (let i = 2; i < len; i++) {
-    //     let diff2 = str.charCodeAt(i) - str.charCodeAt(i - 1);
-    //     if (diff2 == diff) {
-    //         segment += 1 - Math.abs(diff) / 25.0;
-    //     } else {
-    //         score += segment * segment;
-    //         diff = diff2;
-    //         segment = 1 - Math.abs(diff) / 25.0;
-    //     }
-    // }
-
-    // score += segment * segment;
-    // score /= (len - 1) * (len - 1);
-    // return score;
+    let score = (str.length - uniql.length) / (str.length - 1);
+    if (score >=0.75) {
+        console.log("\t", str, str.length, uniql, uniql.length, score);
+    }
+    return score;
 }
 
 function calAddress(batch, salt) {
     const addr = computeAddress(zeroAddress, salt);
-    const prefixScore = scoreString(addr.slice(2, 2 + ENDING_SIZE));
-    const tailScore = scoreString(addr.slice(0 - ENDING_SIZE));
-
-    const score = (prefixScore * prefixScore + tailScore * tailScore) / 2.0;
+    const score = scoreString(addr.slice(2, 2 + endingSize) + addr.slice(0 - endingSize));
     return {
         addr,
         batch,
         salt,
-        score,
-        prefixScore,
-        tailScore
+        score
     };
 }
 
@@ -102,7 +77,7 @@ function findTopAddressesInBatch(nextBatch) {
     for (let i = 0; i < batchSize; i++) {
         const addr = calAddress(nextBatch, i + base);
 
-        if (addr.score >= 0.45) {
+        if (addr.score >= 0.75) {
             prettyOnes.push(addr);
         }
         if (addr.score == 0) {
@@ -115,21 +90,22 @@ function findTopAddressesInBatch(nextBatch) {
 
 function main() {
 
-    if (!fs.existsSync(`wallet_addr`)) {
-        fs.mkdirSync(`wallet_addr`);
-    }
+    // if (!fs.existsSync(`wallet_addr`)) {
+    //     fs.mkdirSync(`wallet_addr`);
+    // }
 
     let config = {
         nextBatch: 0,
         selectPerMillion: 10
     }
 
+    let file = location + "result.json";
     let prettyOnes = [];
     let uglyOnes = [];
 
-    if (fs.existsSync(`wallet_addr/result.json`)) {
+    if (fs.existsSync(file)) {
         try {
-            const result = JSON.parse(fs.readFileSync(`wallet_addr/result.json`));
+            const result = JSON.parse(fs.readFileSync(file));
             config = result.config || config;
             prettyOnes = result.pretty || [];
             uglyOnes = result.ugly || [];
@@ -171,7 +147,7 @@ function main() {
             ugly: uglyOnes
         }
 
-        fs.writeFileSync(`wallet_addr/result.json`, JSON.stringify(result, undefined, 2));
+        fs.writeFileSync(file, JSON.stringify(result, undefined, 2));
     }
 }
 
