@@ -44,12 +44,31 @@ function computeAddress(owner, salt) {
 
 function scoreString(str) {
   var uniql = "";
+  var p = 0;
   for (var x = 0; x < str.length; x++) {
     if (uniql.indexOf(str.charAt(x)) == -1) {
       uniql += str[x];
+      if ((str[x] >= "A" && str[x] <= "z") || str[x] == "4") {
+        p += 1;
+      } else if (
+        str[x] == "1" ||
+        str[x] == "2" ||
+        str[x] == "3" ||
+        str[x] == "5" ||
+        str[x] == "7"
+      ) {
+        p += 0.3;
+      } else if (str[x] == "9") {
+        p += 0.2;
+      } else if (str[x] == "6" || str[x] == "8") {
+        p += 0.1;
+      }
     }
   }
-  return (100.0 * (str.length - uniql.length)) / (str.length - 1);
+  var score = 10 + (90.0 * (str.length - uniql.length)) / (str.length - 1);
+  score *= (uniql.length - p) / uniql.length;
+
+  return score;
 }
 
 function calAddress(batch, salt) {
@@ -87,11 +106,11 @@ function findTopAddressesInBatch(nextBatch) {
   for (let i = 0; i < batchSize; i++) {
     const addr = calAddress(nextBatch, i + base);
 
-    if (addr.score >= 0.5) {
+    if (addr.score >= 0.4) {
       console.log(addr);
       prettyOnes.push(addr);
-    } else if (addr.score == 0) {
-      // console.log("\t", addr);
+    } else if (addr.score <= 0.0004) {
+      console.log("\t", addr);
       uglyOnes.push(addr);
     }
   }
