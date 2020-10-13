@@ -143,7 +143,11 @@ function main() {
 
         let res = findTopAddressesInBatch(config.nextBatch);
 
-        let select = config.selectPerMillion * (config.nextBatch + 1);
+        var select = config.selectPerMillion * (config.nextBatch + 1);
+        if (select < 100) {
+            select = 100;
+        }
+
         prettyOnes = prettyOnes
             .concat(res[0])
             .sort((a, b) => b.score - a.score)
