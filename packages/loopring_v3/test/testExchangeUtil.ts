@@ -1982,9 +1982,6 @@ export class ExchangeTestUtil {
       blockCallbacks
     );
 
-    //console.log(onchainBlocks);
-    //console.log(txData);
-
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
     let tx: any = undefined;

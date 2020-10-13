@@ -115,7 +115,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
   describe("AMM", function() {
     this.timeout(0);
 
-    it.only("Benchmark", async () => {
+    it("Benchmark", async () => {
       const pool = await setupDefaultPool();
       await ctx.submitTransactions(16);
       await ctx.submitPendingBlocks();
