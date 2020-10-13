@@ -21,7 +21,7 @@ library TransferTransaction
     using ExchangeSignatures   for ExchangeData.State;
 
     bytes32 constant public TRANSFER_TYPEHASH = keccak256(
-        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 maxFee,uint32 validUntil,uint32 storageID)"
+        "Transfer(address from,address to,uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID)"
     );
 
     struct Transfer

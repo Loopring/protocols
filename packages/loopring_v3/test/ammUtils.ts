@@ -18,7 +18,6 @@ export interface PoolJoin {
   poolAddress: string;
   owner: string;
   joinAmounts: BN[];
-  joinFees: BN[];
   joinStorageIDs: number[];
   mintMinAmount: BN;
   validUntil: number;
@@ -36,6 +35,7 @@ export interface PoolExit {
   burnAmount: BN;
   burnStorageID: number;
   exitMinAmounts: BN[];
+  fee: BN;
   validUntil: number;
 
   signature?: string;
@@ -91,7 +91,6 @@ export namespace PoolJoinUtils {
         PoolJoin: [
           { name: "owner", type: "address" },
           { name: "joinAmounts", type: "uint96[]" },
-          { name: "joinFees", type: "uint96[]" },
           { name: "joinStorageIDs", type: "uint32[]" },
           { name: "mintMinAmount", type: "uint96" },
           { name: "validUntil", type: "uint32" }
@@ -107,7 +106,6 @@ export namespace PoolJoinUtils {
       message: {
         owner: join.owner,
         joinAmounts: join.joinAmounts,
-        joinFees: join.joinFees,
         joinStorageIDs: join.joinStorageIDs,
         mintMinAmount: join.mintMinAmount,
         validUntil: join.validUntil
@@ -137,6 +135,7 @@ export namespace PoolExitUtils {
           { name: "burnAmount", type: "uint96" },
           { name: "burnStorageID", type: "uint32" },
           { name: "exitMinAmounts", type: "uint96[]" },
+          { name: "fee", type: "uint96" },
           { name: "validUntil", type: "uint32" }
         ]
       },
@@ -152,6 +151,7 @@ export namespace PoolExitUtils {
         burnAmount: exit.burnAmount,
         burnStorageID: exit.burnStorageID,
         exitMinAmounts: exit.exitMinAmounts,
+        fee: exit.fee,
         validUntil: exit.validUntil
       }
     };
@@ -297,7 +297,6 @@ export class AmmPool {
     owner: string,
     mintMinAmount: BN,
     joinAmounts: BN[],
-    joinFees: BN[],
     options: JoinOptions = {}
   ) {
     // Fill in defaults
@@ -312,7 +311,6 @@ export class AmmPool {
       poolAddress: this.contract.address,
       owner,
       joinAmounts,
-      joinFees,
       joinStorageIDs: [],
       mintMinAmount,
       validUntil
@@ -360,6 +358,7 @@ export class AmmPool {
         ? options.forcedExitFee
         : await this.sharedConfig.forcedExitFee();
     const skip = options.skip !== undefined ? options.skip : false;
+    const fee = new BN(0);
 
     const exit: PoolExit = {
       txType: "Exit",
@@ -368,6 +367,7 @@ export class AmmPool {
       burnAmount,
       burnStorageID: 0,
       exitMinAmounts,
+      fee,
       validUntil,
       authMethod
     };
@@ -479,7 +479,7 @@ export class AmmPool {
           this.tokens[i],
           amount,
           this.tokens[i],
-          join.joinFees[i],
+          new BN(0),
           {
             authMethod: AuthMethod.NONE,
             amountToDeposit: new BN(0),
@@ -595,16 +595,11 @@ export class AmmPool {
     for (const amount of join.joinAmounts) {
       amounts.push(amount.toString(10));
     }
-    const fees: string[] = [];
-    for (const fee of join.joinFees) {
-      fees.push(fee.toString(10));
-    }
     return web3.eth.abi.encodeParameter(
-      "tuple(address,uint96[],uint96[],uint32[],uint96,uint32)",
+      "tuple(address,uint96[],uint32[],uint96,uint32)",
       [
         join.owner,
         amounts,
-        fees,
         join.joinStorageIDs,
         join.mintMinAmount.toString(10),
         join.validUntil

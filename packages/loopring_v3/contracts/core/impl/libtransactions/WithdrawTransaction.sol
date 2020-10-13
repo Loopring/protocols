@@ -33,7 +33,7 @@ library WithdrawTransaction
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
-        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 maxFee,address to,bytes extraData,uint256 minGas,uint32 validUntil,uint32 storageID)"
+        "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,address to,bytes extraData,uint256 minGas,uint32 validUntil,uint32 storageID)"
     );
 
     struct Withdrawal
