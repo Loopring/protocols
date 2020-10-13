@@ -48,8 +48,10 @@ function scoreString(str) {
   for (var x = 0; x < str.length; x++) {
     if (uniql.indexOf(str.charAt(x)) == -1) {
       uniql += str[x];
-      if ((str[x] >= "A" && str[x] <= "z") || str[x] == "4") {
+      if (str[x] >= "A" && str[x] <= "z") {
         p += 1;
+      } else if (str[x] == "4") {
+        p += 0.4;
       } else if (
         str[x] == "1" ||
         str[x] == "2" ||
@@ -106,7 +108,7 @@ function findTopAddressesInBatch(nextBatch) {
   for (let i = 0; i < batchSize; i++) {
     const addr = calAddress(nextBatch, i + base);
 
-    if (addr.score >= 0.4) {
+    if (addr.score >= 0.2) {
       console.log(addr);
       prettyOnes.push(addr);
     } else if (addr.score <= 0.0004) {
