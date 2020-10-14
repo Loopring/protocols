@@ -2586,7 +2586,7 @@ export class ExchangeTestUtil {
     // Create a deposit contract impl
     const depositContractImpl = await this.contracts.DefaultDepositContract.new();
     // Create the proxy contract for the exchange using the implementation
-    const depositContractProxy = await this.contracts.OwnedUpgradeabilityProxy.new(
+    const depositContractProxy = await this.contracts.OwnedUpgradabilityProxy.new(
       { from: owner }
     );
     await depositContractProxy.upgradeTo(depositContractImpl.address, {

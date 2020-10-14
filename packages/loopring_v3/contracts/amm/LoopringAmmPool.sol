@@ -32,7 +32,8 @@ contract LoopringAmmPool is
     using AmmStatus        for AmmData.State;
     using AmmWithdrawal    for AmmData.State;
 
-    event ForcedPoolExitRequested(AmmData.PoolExit exit);
+    event PoolJoinRequested(AmmData.PoolJoin join);
+    event ForcedPoolExitRequested(AmmData.PoolExit exit, bool force);
     event ForcedExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
     event Shutdown(uint timestamp);
 

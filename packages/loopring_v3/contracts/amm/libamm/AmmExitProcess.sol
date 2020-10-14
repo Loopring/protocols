@@ -71,7 +71,7 @@ library AmmExitProcess
             ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
         } else {
             require(slippageOK, "EXIT_SLIPPAGE_INVALID");
-            _burnL2(ctx, exit.burnAmount, exit.owner, exit.burnStorageID);
+            _burnL2(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
         }
 
         // Handle liquidity tokens
@@ -112,7 +112,8 @@ library AmmExitProcess
         AmmData.Context  memory  ctx,
         uint96                   amount,
         address                  from,
-        uint32                   burnStorageID
+        uint32                   burnStorageID,
+        bytes            memory  signature
         )
         internal
     {
@@ -127,7 +128,7 @@ library AmmExitProcess
             transfer.amount.isAlmostEqualAmount(amount) &&
             transfer.feeTokenID == 0 &&
             transfer.fee == 0 &&
-            transfer.storageID == burnStorageID,
+            (signature.length == 0 || transfer.storageID == burnStorageID),
             "INVALID_TX_DATA"
         );
 

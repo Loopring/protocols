@@ -23,7 +23,7 @@ export class Artifacts {
   public DelayedOwnerContract: any;
   public DelayedTargetContract: any;
   public DefaultDepositContract: any;
-  public OwnedUpgradeabilityProxy: any;
+  public OwnedUpgradabilityProxy: any;
 
   constructor(artifacts: any) {
     this.MockContract = artifacts.require("MockContract");
@@ -49,8 +49,6 @@ export class Artifacts {
     this.DelayedOwnerContract = artifacts.require("DelayedOwnerContract");
     this.DelayedTargetContract = artifacts.require("DelayedTargetContract");
     this.DefaultDepositContract = artifacts.require("DefaultDepositContract");
-    this.OwnedUpgradeabilityProxy = artifacts.require(
-      "OwnedUpgradeabilityProxy"
-    );
+    this.OwnedUpgradabilityProxy = artifacts.require("OwnedUpgradabilityProxy");
   }
 }
