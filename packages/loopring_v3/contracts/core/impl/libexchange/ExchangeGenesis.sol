@@ -43,8 +43,8 @@ library ExchangeGenesis
 
         // Get the protocol fees for this exchange
         S.protocolFeeData.syncedAt = uint32(0);
-        S.protocolFeeData.takerFeeBips = S.loopring.maxProtocolTakerFeeBips();
-        S.protocolFeeData.makerFeeBips = S.loopring.maxProtocolMakerFeeBips();
+        S.protocolFeeData.takerFeeBips = S.loopring.protocolTakerFeeBips();
+        S.protocolFeeData.makerFeeBips = S.loopring.protocolMakerFeeBips();
         S.protocolFeeData.previousTakerFeeBips = S.protocolFeeData.takerFeeBips;
         S.protocolFeeData.previousMakerFeeBips = S.protocolFeeData.makerFeeBips;
 

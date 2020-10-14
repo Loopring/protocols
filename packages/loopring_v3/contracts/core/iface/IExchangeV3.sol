@@ -271,18 +271,6 @@ abstract contract IExchangeV3 is IExchange
         virtual
         returns (uint amountLRC);
 
-    /// @dev Withdraws the amount staked for this exchange.
-    ///      This can always be called.
-    ///      Can only be called by the exchange owner.
-    /// @param  recipient The recipient of the withdrawn LRC
-    /// @param  amount The amount of LRC that needs to be withdrawn
-    function withdrawProtocolFeeStake(
-        address recipient,
-        uint    amount
-        )
-        external
-        virtual;
-
     /// @dev Can by called by anyone to burn the stake of the exchange when certain
     ///      conditions are fulfilled.
     ///

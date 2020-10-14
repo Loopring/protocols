@@ -276,17 +276,6 @@ contract ExchangeV3 is IExchangeV3
         return state.withdrawExchangeStake(recipient);
     }
 
-    function withdrawProtocolFeeStake(
-        address recipient,
-        uint    amount
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.loopring.withdrawProtocolFeeStake(recipient, amount);
-    }
 
     function getProtocolFeeLastWithdrawnTime(
         address tokenAddress

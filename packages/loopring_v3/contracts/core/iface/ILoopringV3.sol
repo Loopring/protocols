@@ -15,8 +15,6 @@ abstract contract ILoopringV3 is ILoopring
     event ExchangeStakeDeposited(address exchangeAddr, uint amount);
     event ExchangeStakeWithdrawn(address exchangeAddr, uint amount);
     event ExchangeStakeBurned(address exchangeAddr, uint amount);
-    event ProtocolFeeStakeDeposited(address exchangeAddr, uint amount);
-    event ProtocolFeeStakeWithdrawn(address exchangeAddr, uint amount);
     event SettingsUpdated(uint time);
 
     // == Public Variables ==
@@ -24,7 +22,6 @@ abstract contract ILoopringV3 is ILoopring
     {
         address exchangeAddr;
         uint    exchangeStake;
-        uint    protocolFeeStake;
     }
 
     mapping (address => Exchange) internal exchanges;
@@ -35,12 +32,8 @@ abstract contract ILoopringV3 is ILoopring
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
     uint    public stakePerThousandBlocks;
-    uint8   public minProtocolTakerFeeBips;
-    uint8   public maxProtocolTakerFeeBips;
-    uint8   public minProtocolMakerFeeBips;
-    uint8   public maxProtocolMakerFeeBips;
-    uint    public targetProtocolTakerFeeStake;
-    uint    public targetProtocolMakerFeeStake;
+    uint8   public protocolTakerFeeBips;
+    uint8   public protocolMakerFeeBips;
 
     address payable public protocolFeeVault;
 
@@ -75,12 +68,8 @@ abstract contract ILoopringV3 is ILoopring
     ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateProtocolFeeSettings(
-        uint8 _minProtocolTakerFeeBips,
-        uint8 _maxProtocolTakerFeeBips,
-        uint8 _minProtocolMakerFeeBips,
-        uint8 _maxProtocolMakerFeeBips,
-        uint  _targetProtocolTakerFeeStake,
-        uint  _targetProtocolMakerFeeStake
+        uint8 _protocolTakerFeeBips,
+        uint8 _protocolMakerFeeBips
         )
         external
         virtual;
@@ -132,52 +121,16 @@ abstract contract ILoopringV3 is ILoopring
         virtual
         returns (uint amountLRC);
 
-    /// @dev Stakes more LRC for an exchange.
-    /// @param  exchangeAddr The address of the exchange
-    /// @param  amountLRC The amount of LRC to stake
-    /// @return stakedLRC The total amount of LRC staked for the exchange
-    function depositProtocolFeeStake(
-        address exchangeAddr,
-        uint    amountLRC
-        )
-        external
-        virtual
-        returns (uint stakedLRC);
-
-    /// @dev Withdraws a certain amount of staked LRC for an exchange to the given address.
-    ///      This function is meant to be called only from within exchange contracts.
-    /// @param  recipient The address to receive LRC
-    /// @param  amount The amount of LRC to withdraw
-    function withdrawProtocolFeeStake(
-        address recipient,
-        uint    amount
-        )
-        external
-        virtual;
-
     /// @dev Gets the protocol fee values for an exchange.
-    /// @param exchangeAddr The address of the exchange
     /// @return takerFeeBips The protocol taker fee
     /// @return makerFeeBips The protocol maker fee
     function getProtocolFeeValues(
-        address exchangeAddr
         )
-        external
+        public
         virtual
         view
         returns (
             uint8 takerFeeBips,
             uint8 makerFeeBips
         );
-
-    /// @dev Returns the exchange's protocol fee stake.
-    /// @param  exchangeAddr The address of the exchange
-    /// @return protocolFeeStake The exchange's protocol fee stake.
-    function getProtocolFeeStake(
-        address exchangeAddr
-        )
-        external
-        virtual
-        view
-        returns (uint protocolFeeStake);
 }

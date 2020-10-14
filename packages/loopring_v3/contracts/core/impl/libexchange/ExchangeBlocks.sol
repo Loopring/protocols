@@ -334,7 +334,7 @@ library ExchangeBlocks
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;
             // Get the latest protocol fees for this exchange
-            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues(address(this));
+            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues();
             data.syncedAt = uint32(block.timestamp);
 
             if (data.takerFeeBips != data.previousTakerFeeBips ||

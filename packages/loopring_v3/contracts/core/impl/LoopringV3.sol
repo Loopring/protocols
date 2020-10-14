@@ -72,7 +72,7 @@ contract LoopringV3 is ILoopringV3
             genesisMerkleRoot
         );
 
-        exchanges[exchangeAddr] = Exchange(exchangeAddr, 0, 0);
+        exchanges[exchangeAddr] = Exchange(exchangeAddr, 0);
 
         emit ExchangeInitialized(
             exchangeAddr,
@@ -104,24 +104,16 @@ contract LoopringV3 is ILoopringV3
     }
 
     function updateProtocolFeeSettings(
-        uint8 _minProtocolTakerFeeBips,
-        uint8 _maxProtocolTakerFeeBips,
-        uint8 _minProtocolMakerFeeBips,
-        uint8 _maxProtocolMakerFeeBips,
-        uint  _targetProtocolTakerFeeStake,
-        uint  _targetProtocolMakerFeeStake
+        uint8 _protocolTakerFeeBips,
+        uint8 _protocolMakerFeeBips
         )
         external
         override
         nonReentrant
         onlyOwner
     {
-        minProtocolTakerFeeBips = _minProtocolTakerFeeBips;
-        maxProtocolTakerFeeBips = _maxProtocolTakerFeeBips;
-        minProtocolMakerFeeBips = _minProtocolMakerFeeBips;
-        maxProtocolMakerFeeBips = _maxProtocolMakerFeeBips;
-        targetProtocolTakerFeeStake = _targetProtocolTakerFeeStake;
-        targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
+        protocolTakerFeeBips = _protocolTakerFeeBips;
+        protocolMakerFeeBips = _protocolMakerFeeBips;
 
         emit SettingsUpdated(block.timestamp);
     }
@@ -210,53 +202,8 @@ contract LoopringV3 is ILoopringV3
         emit ExchangeStakeWithdrawn(msg.sender, amountLRC);
     }
 
-    function depositProtocolFeeStake(
-        address exchangeAddr,
-        uint amountLRC
-        )
-        external
-        override
-        nonReentrant
-        returns (uint stakedLRC)
-    {
-        require(amountLRC > 0, "ZERO_VALUE");
-
-        Exchange storage exchange = exchanges[exchangeAddr];
-        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
-
-        lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amountLRC);
-
-        stakedLRC = exchange.protocolFeeStake.add(amountLRC);
-        exchange.protocolFeeStake = stakedLRC;
-        totalStake = totalStake.add(amountLRC);
-
-        emit ProtocolFeeStakeDeposited(exchangeAddr, amountLRC);
-    }
-
-    function withdrawProtocolFeeStake(
-        address recipient,
-        uint    amountLRC
-        )
-        external
-        override
-        nonReentrant
-    {
-        Exchange storage exchange = exchanges[msg.sender];
-        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
-        require(amountLRC <= exchange.protocolFeeStake, "INSUFFICIENT_STAKE");
-
-        if (amountLRC > 0) {
-            lrcAddress.safeTransferAndVerify(recipient, amountLRC);
-            exchange.protocolFeeStake = exchange.protocolFeeStake.sub(amountLRC);
-            totalStake = totalStake.sub(amountLRC);
-        }
-        emit ProtocolFeeStakeWithdrawn(msg.sender, amountLRC);
-    }
-
-    function getProtocolFeeValues(
-        address exchangeAddr
-        )
-        external
+    function getProtocolFeeValues()
+        public
         override
         view
         returns (
@@ -264,36 +211,7 @@ contract LoopringV3 is ILoopringV3
             uint8 makerFeeBips
         )
     {
-        Exchange storage exchange = exchanges[exchangeAddr];
-        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
-
-        // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
-        // The total stake used here is the exchange stake + the protocol fee stake, but
-        // the protocol fee stake has a reduced weight of 50%.
-
-        uint protocolFeeStake = exchange.exchangeStake
-            .add(exchange.protocolFeeStake / 2)
-            .sub(IExchangeV3(exchange.exchangeAddr).getRequiredExchangeStake());
-
-        takerFeeBips = calculateProtocolFee(
-            minProtocolTakerFeeBips, maxProtocolTakerFeeBips, protocolFeeStake, targetProtocolTakerFeeStake
-        );
-        makerFeeBips = calculateProtocolFee(
-            minProtocolMakerFeeBips, maxProtocolMakerFeeBips, protocolFeeStake, targetProtocolMakerFeeStake
-        );
-    }
-
-    function getProtocolFeeStake(
-        address exchangeAddr
-        )
-        external
-        override
-        view
-        returns (uint)
-    {
-        Exchange storage exchange = exchanges[exchangeAddr];
-        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
-        return exchange.protocolFeeStake;
+        return (protocolTakerFeeBips, protocolMakerFeeBips);
     }
 
     // == Internal Functions ==
@@ -316,28 +234,5 @@ contract LoopringV3 is ILoopringV3
         stakePerThousandBlocks = _stakePerThousandBlocks;
 
         emit SettingsUpdated(block.timestamp);
-    }
-
-    function calculateProtocolFee(
-        uint minFee,
-        uint maxFee,
-        uint stake,
-        uint targetStake
-        )
-        internal
-        pure
-        returns (uint8)
-    {
-        if (targetStake > 0) {
-            // Simple linear interpolation between 2 points
-            uint maxReduction = maxFee.sub(minFee);
-            uint reduction = maxReduction.mul(stake) / targetStake;
-            if (reduction > maxReduction) {
-                reduction = maxReduction;
-            }
-            return uint8(maxFee.sub(reduction));
-        } else {
-            return uint8(minFee);
-        }
     }
 }
