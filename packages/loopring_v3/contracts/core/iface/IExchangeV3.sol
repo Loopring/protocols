@@ -108,6 +108,20 @@ abstract contract IExchangeV3 is Claimable
         uint   publicKey
     );*/
 
+
+    // -- Initialization --
+    /// @dev Create a new exchange by using a proxy. This method can only be called once.
+    /// @param  loopring The LoopringV3 contract address.
+    /// @param  owner The owner of this exchange.
+    /// @param  genesisMerkleRoot The initial Merkle tree state.
+    function initialize(
+        address loopring,
+        address owner,
+        bytes32 genesisMerkleRoot
+        )
+        virtual
+        external;
+
     // -- Initialization --
     /// @dev Create a new exchange by using a proxy. This method can only be called once.
     /// @param  owner The owner of this exchange.

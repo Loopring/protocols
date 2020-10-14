@@ -42,7 +42,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     using ExchangeWithdrawals   for ExchangeData.State;
 
     ExchangeData.State public state;
-    address loopringAddr;
+    address public loopringAddr;
 
     modifier onlyWhenUninitialized()
     {
@@ -62,11 +62,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     }
 
     /// @dev The constructor must do NOTHING to support proxy.
-    constructor(address _loopringAddr)
-    {
-        require(_loopringAddr != address(0), "INVALID_LOOPRING_ADDRESS");
-        loopringAddr = _loopringAddr;
-    }
+    constructor() {}
 
     function version()
         public
@@ -84,6 +80,28 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.DOMAIN_SEPARATOR;
     }
 
+    // -- Initialization --
+    function initialize(
+        address _loopring,
+        address _owner,
+        bytes32 _genesisMerkleRoot
+        )
+        external
+        override
+        nonReentrant
+        onlyWhenUninitialized
+    {
+        require(address(0) != _owner, "ZERO_ADDRESS");
+        owner = _owner;
+        loopringAddr = _loopring;
+
+        state.initializeGenesisBlock(
+            _loopring,
+            _genesisMerkleRoot,
+            EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
+        );
+    }
+
     function cloneExchange(
         address _owner,
         bytes32 _genesisMerkleRoot
@@ -96,16 +114,17 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         require(address(0) != _owner, "ZERO_ADDRESS");
 
         OwnedUpgradabilityProxy proxy = new OwnedUpgradabilityProxy();
-        proxy.transferProxyOwnership(_owner);
         proxy.upgradeTo(address(this));
 
-        owner = _owner;
+        ExchangeV3 newExchange = ExchangeV3(address(proxy));
 
-        state.initializeGenesisBlock(
+        newExchange.initialize(
             loopringAddr,
-            _genesisMerkleRoot,
-            EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
+            _owner,
+            _genesisMerkleRoot
         );
+        proxy.transferProxyOwnership(_owner);
+
         return address(proxy);
     }
 
