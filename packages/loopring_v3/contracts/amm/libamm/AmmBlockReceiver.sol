@@ -32,8 +32,6 @@ library AmmBlockReceiver
     {
         AmmData.Context memory ctx = _getContext(S, txIdx);
 
-        require(numTxs == ctx.tokens.length * 2 + 1, "INVALID_NUM_TXS");
-
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
@@ -46,6 +44,9 @@ library AmmBlockReceiver
 
         // Update state
         S._totalSupply = ctx.totalSupply;
+
+        // Make sure we haven't consumed more transactions than expected
+        require(numTxs >= (ctx.txIdx - txIdx), "INVALID_NUM_TXS");
     }
 
     function _getContext(

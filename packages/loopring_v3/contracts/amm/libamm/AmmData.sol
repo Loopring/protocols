@@ -110,12 +110,15 @@ library AmmData
 
         Token[]     tokens;
 
+        // The order of the following variables important to minimize loads
         bytes32     exchangeDomainSeparator;
         bytes32     domainSeparator;
         IExchangeV3 exchange;
         uint32      accountID;
         uint16      poolTokenID;
         uint8       feeBips;
+
+        address     exchangeOwner;
 
         uint64      shutdownTimestamp;
         uint16      forcedExitCount;

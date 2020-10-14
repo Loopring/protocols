@@ -35,7 +35,7 @@ contract LoopringAmmPool is
 
     modifier onlyFromExchangeOwner()
     {
-        require(msg.sender == state.exchange.owner(), "UNAUTHORIZED");
+        require(msg.sender == state.exchangeOwner, "UNAUTHORIZED");
         _;
     }
 
@@ -119,5 +119,12 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.withdrawWhenOffline();
+    }
+
+    function updateExchangeOwner()
+        external
+        nonReentrant
+    {
+        state.updateExchangeOwner();
     }
 }

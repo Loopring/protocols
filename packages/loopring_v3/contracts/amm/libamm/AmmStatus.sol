@@ -52,6 +52,7 @@ library AmmStatus
         S.sharedConfig = IAmmSharedConfig(config.sharedConfig);
         IExchangeV3 exchange = IExchangeV3(config.exchange);
         S.exchange = exchange;
+        S.exchangeOwner = exchange.owner();
         S.exchangeDomainSeparator = exchange.getDomainSeparator();
         S.accountID = config.accountID;
         S.poolTokenID = exchange.getTokenID(address(this));
@@ -108,5 +109,12 @@ library AmmStatus
         }
         S.shutdownTimestamp = uint64(block.timestamp);
         emit Shutdown(block.timestamp);
+    }
+
+    // Anyone is able to update the cached exchange owner to the current owner.
+    function updateExchangeOwner(AmmData.State storage S)
+        internal
+    {
+        S.exchangeOwner = S.exchange.owner();
     }
 }
