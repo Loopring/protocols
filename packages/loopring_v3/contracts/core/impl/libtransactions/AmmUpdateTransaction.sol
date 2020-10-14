@@ -20,7 +20,7 @@ library AmmUpdateTransaction
     using ExchangeSignatures   for ExchangeData.State;
 
     bytes32 constant public AMMUPDATE_TYPEHASH = keccak256(
-        "AmmUpdate(address owner,uint32 accountID,uint16 tokenID,uint8 feeBips,uint256 tokenWeight,uint32 validUntil,uint32 nonce)"
+        "AmmUpdate(address owner,uint32 accountID,uint16 tokenID,uint8 feeBips,uint96 tokenWeight,uint32 validUntil,uint32 nonce)"
     );
 
     struct AmmUpdate

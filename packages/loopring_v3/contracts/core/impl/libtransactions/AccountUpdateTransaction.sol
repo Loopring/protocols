@@ -19,7 +19,7 @@ library AccountUpdateTransaction
     using ExchangeSignatures   for ExchangeData.State;
 
     bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
-        "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint256 maxFee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
+        "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint96 maxFee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
     );
 
     /*event AccountUpdated(

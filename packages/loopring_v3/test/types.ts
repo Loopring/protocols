@@ -238,6 +238,7 @@ export interface Block {
   timestamp: number;
   transactionHash: string;
   internalBlock: TxBlock;
+  blockInfoData?: any;
   shutdown?: boolean;
   callbacks?: BlockCallback[];
 }

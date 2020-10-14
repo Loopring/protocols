@@ -379,31 +379,15 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.submitPendingBlocks(
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
-                let auxiliaryData: any[] = [];
-                for (const [
-                  i,
-                  tx
-                ] of blocks[0].internalBlock.transactions.entries()) {
-                  if (tx.txType === "Deposit") {
-                    auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
-                  } else if (tx.txType === "Transfer" && tx.type > 0) {
-                    auxiliaryData.push([
-                      i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getTransferAuxData(tx)
-                      )
-                    ]);
-                  } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
-                    auxiliaryData.push([
-                      i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getAccountUpdateAuxData(tx)
-                      )
-                    ]);
-                  }
-                }
-                auxiliaryData = auxiliaryData.reverse();
-                onchainBlocks[0].auxiliaryData = auxiliaryData;
+                console.log(blocks[0]);
+                onchainBlocks[0].auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
+                  blocks[0].blockInfoData
+                );
+                // Swap tx 0 and 1
+                const temp = onchainBlocks[0].auxiliaryData[1];
+                onchainBlocks[0].auxiliaryData[1] =
+                  onchainBlocks[0].auxiliaryData[0];
+                onchainBlocks[0].auxiliaryData[0] = temp;
               }
             ),
             "AUXILIARYDATA_INVALID_ORDER"
@@ -414,31 +398,12 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.submitPendingBlocks(
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
-                let auxiliaryData: any[] = [];
-                for (const [
-                  i,
-                  tx
-                ] of blocks[0].internalBlock.transactions.entries()) {
-                  if (tx.txType === "Deposit") {
-                    auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
-                  } else if (tx.txType === "Transfer" && tx.type > 0) {
-                    auxiliaryData.push([
-                      i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getTransferAuxData(tx)
-                      )
-                    ]);
-                  } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
-                    auxiliaryData.push([
-                      i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getAccountUpdateAuxData(tx)
-                      )
-                    ]);
-                  }
-                }
-                auxiliaryData[1][0] = auxiliaryData[0][0];
-                onchainBlocks[0].auxiliaryData = auxiliaryData;
+                onchainBlocks[0].auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
+                  blocks[0].blockInfoData
+                );
+                // Set the idx of tx 0 on tx 1
+                onchainBlocks[0].auxiliaryData[1][0] =
+                  onchainBlocks[0].auxiliaryData[0][0];
               }
             ),
             "AUXILIARYDATA_INVALID_ORDER"
@@ -449,31 +414,13 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.submitPendingBlocks(
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
-                const auxiliaryData: any[] = [];
-                for (const [
-                  i,
-                  tx
-                ] of blocks[0].internalBlock.transactions.entries()) {
-                  if (tx.txType === "Deposit") {
-                    auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
-                  } else if (tx.txType === "Transfer" && tx.type > 0) {
-                    auxiliaryData.push([
-                      i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getTransferAuxData(tx)
-                      )
-                    ]);
-                  } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
-                    auxiliaryData.push([
-                      i,
-                      web3.utils.hexToBytes(
-                        exchangeTestUtil.getAccountUpdateAuxData(tx)
-                      )
-                    ]);
-                  }
-                }
-                auxiliaryData.push([99, web3.utils.hexToBytes("0x")]);
-                onchainBlocks[0].auxiliaryData = auxiliaryData;
+                onchainBlocks[0].auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
+                  blocks[0].blockInfoData
+                );
+                onchainBlocks[0].auxiliaryData.push([
+                  99,
+                  web3.utils.hexToBytes("0x")
+                ]);
               }
             ),
             "AUXILIARYDATA_INVALID_LENGTH"
@@ -483,31 +430,9 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.submitPendingBlocks(
             (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
               assert(blocks.length === 1, "unexpected number of blocks");
-              const auxiliaryData: any[] = [];
-              for (const [
-                i,
-                tx
-              ] of blocks[0].internalBlock.transactions.entries()) {
-                if (tx.txType === "Deposit") {
-                  auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
-                } else if (tx.txType === "Transfer" && tx.type > 0) {
-                  auxiliaryData.push([
-                    i,
-                    web3.utils.hexToBytes(
-                      exchangeTestUtil.getTransferAuxData(tx)
-                    )
-                  ]);
-                } else if (tx.txType === "AccountUpdate" && tx.type > 0) {
-                  auxiliaryData.push([
-                    i,
-                    web3.utils.hexToBytes(
-                      exchangeTestUtil.getAccountUpdateAuxData(tx)
-                    )
-                  ]);
-                }
-
-                onchainBlocks[0].auxiliaryData = auxiliaryData;
-              }
+              onchainBlocks[0].auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
+                blocks[0].blockInfoData
+              );
             }
           );
         });
@@ -562,10 +487,9 @@ contract("Exchange", (accounts: string[]) => {
               const blockToModify = exchangeTestUtil.getRandomInt(
                 blocks.length
               );
-              blocks[blockToModify].data = [
-                ...blocks[blockToModify].data,
-                ...web3.utils.hexToBytes(web3.utils.randomHex(1))
-              ];
+              blocks[blockToModify].data = web3.utils.hexToBytes(
+                blocks[blockToModify].data + web3.utils.randomHex(1).slice(2)
+              );
             }),
             "INVALID_PROOF"
           );
