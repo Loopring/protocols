@@ -19,7 +19,6 @@ library AmmJoinRequest
     function joinPool(
         AmmData.State storage S,
         uint96[]     calldata joinAmounts,
-        uint96[]     calldata joinFees,
         uint96                mintMinAmount
         )
         public
@@ -33,7 +32,6 @@ library AmmJoinRequest
         AmmData.PoolJoin memory join = AmmData.PoolJoin({
             owner: msg.sender,
             joinAmounts: joinAmounts,
-            joinFees: joinFees,
             joinStorageIDs: new uint32[](0),
             mintMinAmount: mintMinAmount,
             validUntil: uint32(block.timestamp + S.sharedConfig.maxForcedExitAge())

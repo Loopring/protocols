@@ -83,7 +83,6 @@ contract LoopringAmmPool is
 
     function joinPool(
         uint96[]     calldata joinAmounts,
-        uint96[]     calldata joinFees,
         uint96                mintMinAmount
         )
         external
@@ -91,7 +90,7 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        state.joinPool(joinAmounts, joinFees, mintMinAmount);
+        state.joinPool(joinAmounts, mintMinAmount);
     }
 
     function exitPool(
