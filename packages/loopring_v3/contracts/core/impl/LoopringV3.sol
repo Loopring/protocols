@@ -15,11 +15,6 @@ import "../iface/ILoopringV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LoopringV3 is ILoopringV3
 {
-    event ExchangeRegistered(
-        address indexed exchangeAddr,
-        address         exchangeImpl
-    );
-
     using AddressUtil       for address payable;
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
@@ -36,27 +31,7 @@ contract LoopringV3 is ILoopringV3
 
         lrcAddress = _lrcAddress;
 
-        updateSettingsInternal(
-            _protocolFeeVault,
-            _blockVerifierAddress,
-            0
-        );
-    }
-
-    function registerExchange(
-        address exchangeAddr,
-        address exchangeImpl
-        )
-        external
-        override
-        nonReentrant
-    {
-        require(exchangeAddr != address(0), "ZERO_ADDRESS");
-        require(exchanges[exchangeAddr].exchangeAddr == address(0), "ID_USED_ALREADY");
-
-        exchanges[exchangeAddr] = Exchange(exchangeAddr, exchangeImpl, 0);
-
-        emit ExchangeRegistered(exchangeAddr, exchangeImpl);
+        updateSettingsInternal(_protocolFeeVault, _blockVerifierAddress, 0);
     }
 
     // == Public Functions ==
@@ -100,9 +75,7 @@ contract LoopringV3 is ILoopringV3
         view
         returns (uint)
     {
-        Exchange storage exchange = exchanges[exchangeAddr];
-        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
-        return exchange.exchangeStake;
+        return exchangeStake[exchangeAddr];
     }
 
     function burnExchangeStake(
@@ -113,17 +86,14 @@ contract LoopringV3 is ILoopringV3
         nonReentrant
         returns (uint burnedLRC)
     {
-        Exchange storage exchange = exchanges[msg.sender];
-        require(exchange.exchangeAddr == msg.sender, "INVALID_EXCHANGE");
-
-        burnedLRC = exchange.exchangeStake;
+        burnedLRC = exchangeStake[msg.sender];
 
         if (amount < burnedLRC) {
             burnedLRC = amount;
         }
         if (burnedLRC > 0) {
             lrcAddress.safeTransferAndVerify(protocolFeeVault, burnedLRC);
-            exchange.exchangeStake = exchange.exchangeStake.sub(burnedLRC);
+            exchangeStake[msg.sender] = exchangeStake[msg.sender].sub(burnedLRC);
             totalStake = totalStake.sub(burnedLRC);
         }
         emit ExchangeStakeBurned(msg.sender, burnedLRC);
@@ -140,13 +110,10 @@ contract LoopringV3 is ILoopringV3
     {
         require(amountLRC > 0, "ZERO_VALUE");
 
-        Exchange storage exchange = exchanges[exchangeAddr];
-        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
-
         lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amountLRC);
 
-        stakedLRC = exchange.exchangeStake.add(amountLRC);
-        exchange.exchangeStake = stakedLRC;
+        stakedLRC = exchangeStake[exchangeAddr].add(amountLRC);
+        exchangeStake[exchangeAddr] = stakedLRC;
         totalStake = totalStake.add(amountLRC);
 
         emit ExchangeStakeDeposited(exchangeAddr, amountLRC);
@@ -161,15 +128,12 @@ contract LoopringV3 is ILoopringV3
         nonReentrant
         returns (uint amountLRC)
     {
-        Exchange storage exchange = exchanges[msg.sender];
-        require(exchange.exchangeAddr == msg.sender, "INVALID_EXCHANGE_ADDRESS");
-
-        amountLRC = (exchange.exchangeStake > requestedAmount) ?
-            requestedAmount : exchange.exchangeStake;
+        uint stake = exchangeStake[msg.sender];
+        amountLRC = (stake > requestedAmount) ? requestedAmount : stake;
 
         if (amountLRC > 0) {
             lrcAddress.safeTransferAndVerify(recipient, amountLRC);
-            exchange.exchangeStake = exchange.exchangeStake.sub(amountLRC);
+            exchangeStake[msg.sender] = exchangeStake[msg.sender].sub(amountLRC);
             totalStake = totalStake.sub(amountLRC);
         }
 

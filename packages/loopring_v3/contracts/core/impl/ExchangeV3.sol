@@ -45,7 +45,7 @@ contract ExchangeV3 is IExchangeV3
 
     modifier onlyWhenUninitialized()
     {
-        require(owner == address(0) && state.id == 0, "INITIALIZED");
+        require(owner == address(0), "INITIALIZED");
         _;
     }
 
@@ -83,15 +83,13 @@ contract ExchangeV3 is IExchangeV3
         return state.DOMAIN_SEPARATOR;
     }
 
-    // -- Initialization --
-    function createExchange(
+    function cloneExchange(
         address _owner,
         bytes32 _genesisMerkleRoot
         )
         external
         override
         nonReentrant
-        onlyWhenUninitialized
         returns (address)
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
@@ -104,7 +102,6 @@ contract ExchangeV3 is IExchangeV3
 
         state.initializeGenesisBlock(
             loopringAddr,
-            address(this),
             _genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );

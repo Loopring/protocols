@@ -18,14 +18,7 @@ abstract contract ILoopringV3 is Claimable, ReentrancyGuard
     event SettingsUpdated(uint time);
 
     // == Public Variables ==
-    struct Exchange
-    {
-        address exchangeAddr;
-        address exchangeImpl;
-        uint    exchangeStake;
-    }
-
-    mapping (address => Exchange) internal exchanges;
+    mapping (address => uint) internal exchangeStake;
 
     address public lrcAddress;
     uint    public totalStake;
@@ -39,16 +32,6 @@ abstract contract ILoopringV3 is Claimable, ReentrancyGuard
     address payable public protocolFeeVault;
 
     // == Public Functions ==
-    /// @dev Registers an exchange.
-    /// @param  exchangeAddr The address of the exchange.
-    /// @param  exchangeImpl The address of the exchange implementation.
-    function registerExchange(
-        address exchangeAddr,
-        address exchangeImpl
-        )
-        external
-        virtual;
-
     /// @dev Updates the global exchange settings.
     ///      This function can only be called by the owner of this contract.
     ///

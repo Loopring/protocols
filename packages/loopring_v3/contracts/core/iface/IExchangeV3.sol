@@ -110,11 +110,11 @@ abstract contract IExchangeV3 is Claimable, ReentrancyGuard
     );*/
 
     // -- Initialization --
-    /// @dev Create a new exchange. This method can only be called once.
+    /// @dev Create a new exchange by using a proxy. This method can only be called once.
     /// @param  owner The owner of this exchange.
     /// @param  genesisMerkleRoot The initial Merkle tree state.
     /// @return exchangeAddr The address of the new exchange.
-    function createExchange(
+    function cloneExchange(
         address owner,
         bytes32 genesisMerkleRoot
         )

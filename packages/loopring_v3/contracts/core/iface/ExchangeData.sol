@@ -165,7 +165,6 @@ library ExchangeData
     // Represents the entire exchange state except the owner of the exchange.
     struct State
     {
-        uint    id;
         uint32  maxAgeDepositUntilWithdrawable;
         bytes32 DOMAIN_SEPARATOR;
 
