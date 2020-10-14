@@ -11,7 +11,6 @@ import "./ILoopring.sol";
 abstract contract ILoopringV3 is ILoopring
 {
     // == Events ==
-
     event ExchangeStakeDeposited(address exchangeAddr, uint amount);
     event ExchangeStakeWithdrawn(address exchangeAddr, uint amount);
     event ExchangeStakeBurned(address exchangeAddr, uint amount);
@@ -21,6 +20,7 @@ abstract contract ILoopringV3 is ILoopring
     struct Exchange
     {
         address exchangeAddr;
+        address exchangeImpl;
         uint    exchangeStake;
     }
 

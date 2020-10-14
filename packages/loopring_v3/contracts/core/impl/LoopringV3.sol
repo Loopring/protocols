@@ -15,23 +15,25 @@ import "../iface/ILoopringV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LoopringV3 is ILoopringV3
 {
+    event ExchangeRegistered(
+        address indexed exchangeAddr,
+        address         exchangeImpl
+    );
+
     using AddressUtil       for address payable;
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
     // -- Constructor --
     constructor(
-        address _universalRegistry,
         address _lrcAddress,
         address payable _protocolFeeVault,
         address _blockVerifierAddress
         )
         Claimable()
     {
-        require(address(0) != _universalRegistry, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
 
-        universalRegistry = _universalRegistry;
         lrcAddress = _lrcAddress;
 
         updateSettingsInternal(
@@ -41,44 +43,20 @@ contract LoopringV3 is ILoopringV3
         );
     }
 
-    // === ILoopring methods ===
-
-    modifier onlyUniversalRegistry()
-    {
-        require(msg.sender == universalRegistry, "UNAUTHORIZED");
-        _;
-    }
-
-    function initializeExchange(
+    function registerExchange(
         address exchangeAddr,
-        address owner,
-        bytes32 genesisMerkleRoot
+        address exchangeImpl
         )
         external
         override
         nonReentrant
-        onlyUniversalRegistry
     {
         require(exchangeAddr != address(0), "ZERO_ADDRESS");
-        require(owner != address(0), "ZERO_ADDRESS");
         require(exchanges[exchangeAddr].exchangeAddr == address(0), "ID_USED_ALREADY");
 
-        IExchangeV3 exchange = IExchangeV3(exchangeAddr);
+        exchanges[exchangeAddr] = Exchange(exchangeAddr, exchangeImpl, 0);
 
-        // If the exchange has already been initialized, the following function will throw.
-        exchange.initialize(
-            address(this),
-            owner,
-            genesisMerkleRoot
-        );
-
-        exchanges[exchangeAddr] = Exchange(exchangeAddr, 0);
-
-        emit ExchangeInitialized(
-            exchangeAddr,
-            owner,
-            genesisMerkleRoot
-        );
+        emit ExchangeRegistered(exchangeAddr, exchangeImpl);
     }
 
     // == Public Functions ==
@@ -153,7 +131,7 @@ contract LoopringV3 is ILoopringV3
 
     function depositExchangeStake(
         address exchangeAddr,
-        uint amountLRC
+        uint    amountLRC
         )
         external
         override

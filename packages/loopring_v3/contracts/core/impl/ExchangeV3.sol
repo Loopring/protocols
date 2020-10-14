@@ -7,6 +7,7 @@ import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+import "../../thirdparty/proxies/OwnedUpgradabilityProxy.sol";
 import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
 import "./libexchange/ExchangeAdmins.sol";
@@ -40,6 +41,7 @@ contract ExchangeV3 is IExchangeV3
     using ExchangeWithdrawals   for ExchangeData.State;
 
     ExchangeData.State public state;
+    address loopringAddr;
 
     modifier onlyWhenUninitialized()
     {
@@ -59,7 +61,11 @@ contract ExchangeV3 is IExchangeV3
     }
 
     /// @dev The constructor must do NOTHING to support proxy.
-    constructor() {}
+    constructor(address _loopringAddr)
+    {
+        require(_loopringAddr != address(0), "INVALID_LOOPRING_ADDRESS");
+        loopringAddr = _loopringAddr;
+    }
 
     function version()
         public
@@ -79,8 +85,7 @@ contract ExchangeV3 is IExchangeV3
     }
 
     // -- Initialization --
-    function initialize(
-        address _loopring,
+    function createExchange(
         address _owner,
         bytes32 _genesisMerkleRoot
         )
@@ -88,15 +93,23 @@ contract ExchangeV3 is IExchangeV3
         override
         nonReentrant
         onlyWhenUninitialized
+        returns (address)
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
+
+        OwnedUpgradabilityProxy proxy = new OwnedUpgradabilityProxy();
+        proxy.transferProxyOwnership(_owner);
+        proxy.upgradeTo(address(this));
+
         owner = _owner;
 
         state.initializeGenesisBlock(
-            _loopring,
+            loopringAddr,
+            address(this),
             _genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );
+        return address(proxy);
     }
 
     function setAgentRegistry(address _agentRegistry)

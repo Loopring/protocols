@@ -20,19 +20,23 @@ library ExchangeGenesis
 
     function initializeGenesisBlock(
         ExchangeData.State storage S,
-        address _loopring,
+        address _loopringAddr,
+        address _exchangeImpl,
         bytes32 _genesisMerkleRoot,
         bytes32 _domainSeparator
         )
         public
     {
-        require(address(0) != _loopring, "INVALID_LOOPRING_ADDRESS");
+        require(address(0) != _loopringAddr, "INVALID_LOOPRING_ADDRESS");
+        require(address(0) != _exchangeImpl, "INVALID_LOOPRING_ADDRESS");
         require(_genesisMerkleRoot != 0, "INVALID_GENESIS_MERKLE_ROOT");
 
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
         S.DOMAIN_SEPARATOR = _domainSeparator;
 
-        ILoopringV3 loopring = ILoopringV3(_loopring);
+        ILoopringV3 loopring = ILoopringV3(_loopringAddr);
+        loopring.registerExchange(address(this), _exchangeImpl);
+
         S.loopring = loopring;
 
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());

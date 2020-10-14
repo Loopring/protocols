@@ -109,17 +109,17 @@ abstract contract IExchangeV3 is IExchange
     );*/
 
     // -- Initialization --
-    /// @dev Initializes this exchange. This method can only be called once.
+    /// @dev Create a new exchange. This method can only be called once.
     /// @param  owner The owner of this exchange.
-    /// @param  loopring The corresponding ILoopring contract address.
     /// @param  genesisMerkleRoot The initial Merkle tree state.
-    function initialize(
-        address loopring,
+    /// @return exchangeAddr The address of the new exchange.
+    function createExchange(
         address owner,
         bytes32 genesisMerkleRoot
         )
         external
-        virtual;
+        virtual
+        returns (address exchangeAddr);
 
     /// @dev Initialized the agent registry contract used by the exchange.
     ///      Can only be called by the exchange owner once.

@@ -13,12 +13,6 @@ abstract contract ILoopring is Claimable, ReentrancyGuard
     address public universalRegistry;
     address public lrcAddress;
 
-    event ExchangeInitialized(
-        address indexed exchangeAddr,
-        address indexed owner,
-        bytes32         genesisMerkleRoot
-    );
-
     /// @dev Returns the exchange version
     /// @return The exchange version
     function version()
@@ -27,16 +21,12 @@ abstract contract ILoopring is Claimable, ReentrancyGuard
         view
         returns (string memory);
 
-    /// @dev Initializes and registers an exchange.
-    ///      This function should only be callable by the UniversalRegistry contract.
-    ///      Also note that this function can only be called once per exchange instance.
-    /// @param  exchangeAddr The address of the exchange to initialize and register.
-    /// @param  owner The owner of the exchange.
-    /// @param  genesisMerkleRoot The initial Merkle tree state.
-    function initializeExchange(
+    /// @dev Registers an exchange.
+    /// @param  exchangeAddr The address of the exchange.
+    /// @param  exchangeImpl The address of the exchange implementation.
+    function registerExchange(
         address exchangeAddr,
-        address owner,
-        bytes32 genesisMerkleRoot
+        address exchangeImpl
         )
         external
         virtual;
