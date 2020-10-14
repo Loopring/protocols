@@ -10,7 +10,6 @@ import "../../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 abstract contract ILoopring is Claimable, ReentrancyGuard
 {
-    uint    public exchangeCreationCostLRC;
     address public universalRegistry;
     address public lrcAddress;
 

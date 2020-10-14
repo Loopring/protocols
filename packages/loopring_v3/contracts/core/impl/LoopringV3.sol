@@ -37,7 +37,7 @@ contract LoopringV3 is ILoopringV3
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            0, 0, 0
+            0
         );
     }
 
@@ -85,9 +85,7 @@ contract LoopringV3 is ILoopringV3
     function updateSettings(
         address payable _protocolFeeVault,
         address _blockVerifierAddress,
-        uint    _exchangeCreationCostLRC,
-        uint    _forcedWithdrawalFee,
-        uint    _stakePerThousandBlocks
+        uint    _forcedWithdrawalFee
         )
         external
         override
@@ -97,9 +95,7 @@ contract LoopringV3 is ILoopringV3
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            _exchangeCreationCostLRC,
-            _forcedWithdrawalFee,
-            _stakePerThousandBlocks
+            _forcedWithdrawalFee
         );
     }
 
@@ -218,9 +214,7 @@ contract LoopringV3 is ILoopringV3
     function updateSettingsInternal(
         address payable  _protocolFeeVault,
         address _blockVerifierAddress,
-        uint    _exchangeCreationCostLRC,
-        uint    _forcedWithdrawalFee,
-        uint    _stakePerThousandBlocks
+        uint    _forcedWithdrawalFee
         )
         private
     {
@@ -229,9 +223,7 @@ contract LoopringV3 is ILoopringV3
 
         protocolFeeVault = _protocolFeeVault;
         blockVerifierAddress = _blockVerifierAddress;
-        exchangeCreationCostLRC = _exchangeCreationCostLRC;
         forcedWithdrawalFee = _forcedWithdrawalFee;
-        stakePerThousandBlocks = _stakePerThousandBlocks;
 
         emit SettingsUpdated(block.timestamp);
     }

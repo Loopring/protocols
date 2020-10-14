@@ -45,50 +45,6 @@ library ExchangeBlocks
         uint8 previousMakerFeeBips
     );
 
-    function getRequiredExchangeStake(
-        ExchangeData.State   storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        uint numStakingUnit = S.numBlocks / 1000;
-
-        // waive fee for the first 10K blocks.
-        if (numStakingUnit <= 10) {
-            return 0;
-        }
-
-        // Cap at 1 million blocks
-        if (numStakingUnit > 1000) {
-            numStakingUnit = 1000;
-        }
-
-        return numStakingUnit.mul(S.loopring.stakePerThousandBlocks());
-    }
-
-    function canSubmitBlocks(
-        ExchangeData.State   storage S
-        )
-        public
-        view
-        returns (bool)
-    {
-        uint numStakingUnit = S.numBlocks / 1000;
-
-        // waive fee for the first 10K blocks.
-        if (numStakingUnit <= 10) {
-            return true;
-        }
-
-        // Cap at 1 million blocks
-        if (numStakingUnit > 1000) {
-            numStakingUnit = 1000;
-        }
-
-        return S.loopring.getExchangeStake(address(this)) >= getRequiredExchangeStake(S);
-    }
-
     function submitBlocks(
         ExchangeData.State   storage S,
         ExchangeData.Block[] memory  blocks
@@ -97,8 +53,6 @@ library ExchangeBlocks
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-
-        require(canSubmitBlocks(S), "INSUFFICIENT_EXCHANGE_STAKE");
 
         // Commit the blocks
         bytes32[] memory publicDataHashes = new bytes32[](blocks.length);
