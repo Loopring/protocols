@@ -18,8 +18,6 @@ library AmmWithdrawal
     using AmmStatus         for AmmData.State;
     using MathUint          for uint;
 
-    // Question(brecht): since all joins/exits are using transfers now, shall we
-    // delete this function?
     function withdrawFromApprovedWithdrawals(
         AmmData.State storage S
         )
