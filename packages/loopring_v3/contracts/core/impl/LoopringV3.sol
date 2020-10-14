@@ -5,6 +5,7 @@ pragma solidity ^0.7.0;
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/ReentrancyGuard.sol";
 import "../iface/IExchangeV3.sol";
 import "../iface/ILoopringV3.sol";
 
@@ -13,7 +14,7 @@ import "../iface/ILoopringV3.sol";
 /// @dev This contract does NOT support proxy.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract LoopringV3 is ILoopringV3
+contract LoopringV3 is ILoopringV3, ReentrancyGuard
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;

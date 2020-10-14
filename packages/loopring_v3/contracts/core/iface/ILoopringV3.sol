@@ -3,13 +3,12 @@
 pragma solidity ^0.7.0;
 
 import "../../lib/Claimable.sol";
-import "../../lib/ReentrancyGuard.sol";
 
 
 /// @title ILoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-abstract contract ILoopringV3 is Claimable, ReentrancyGuard
+abstract contract ILoopringV3 is Claimable
 {
     // == Events ==
     event ExchangeStakeDeposited(address exchangeAddr, uint amount);

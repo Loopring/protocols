@@ -7,6 +7,7 @@ import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/ReentrancyGuard.sol";
 import "../../thirdparty/proxies/OwnedUpgradabilityProxy.sol";
 import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
@@ -26,7 +27,7 @@ import "./libtransactions/TransferTransaction.sol";
 ///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeV3 is IExchangeV3
+contract ExchangeV3 is IExchangeV3, ReentrancyGuard
 {
     using AddressUtil           for address;
     using ERC20SafeTransfer     for address;
