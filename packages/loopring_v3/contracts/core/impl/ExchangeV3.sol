@@ -69,7 +69,6 @@ contract ExchangeV3 is IExchangeV3
 
     function version()
         public
-        override
         pure
         returns (string memory)
     {

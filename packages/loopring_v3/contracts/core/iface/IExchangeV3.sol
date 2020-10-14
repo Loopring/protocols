@@ -3,7 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./IExchange.sol";
+import "../../lib/Claimable.sol";
+import "../../lib/ReentrancyGuard.sol";
 import "./ExchangeData.sol";
 
 
@@ -17,7 +18,7 @@ import "./ExchangeData.sol";
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-abstract contract IExchangeV3 is IExchange
+abstract contract IExchangeV3 is Claimable, ReentrancyGuard
 {
     // -- Events --
 
