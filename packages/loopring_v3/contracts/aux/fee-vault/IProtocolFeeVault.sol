@@ -30,7 +30,7 @@ abstract contract IProtocolFeeVault
     event TokenSold(address token, uint amount);
     event SettingsUpdated(uint time);
 
-    /// @dev Sets depdending contract address. All these addresses can be zero.
+    /// @dev Sets depending contract addresses. All these addresses can be zero.
     /// @param _userStakingPoolAddress The address of the user staking pool.
     /// @param _tokenSellerAddress The address of the token seller.
     /// @param _daoAddress The address of the DAO contract.

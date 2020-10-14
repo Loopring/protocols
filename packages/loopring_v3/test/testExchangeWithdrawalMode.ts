@@ -8,7 +8,6 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
   let loopring: any;
-  let exchangeID = 0;
 
   const checkWithdrawalMode = async (expectedInWithdrawalMode: boolean) => {
     const inWithdrawalMode = await exchange.isInWithdrawalMode();
@@ -38,10 +37,13 @@ contract("Exchange", (accounts: string[]) => {
     }
   };
 
-  const createExchange = async (setupTestState: boolean = true, useOwnerContract: boolean = true) => {
-    exchangeID = await exchangeTestUtil.createExchange(
+  const createExchange = async (
+    setupTestState: boolean = true,
+    useOwnerContract: boolean = true
+  ) => {
+    await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {setupTestState, useOwnerContract}
+      { setupTestState, useOwnerContract }
     );
     exchange = exchangeTestUtil.exchange;
   };
@@ -51,7 +53,6 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
     exchange = exchangeTestUtil.exchange;
     loopring = exchangeTestUtil.loopringV3;
-    exchangeID = 1;
   });
 
   after(async () => {

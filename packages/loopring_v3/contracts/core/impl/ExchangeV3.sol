@@ -128,6 +128,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         );
         proxy.transferProxyOwnership(_owner);
 
+        emit ExchangeCloned(address(newExchange), _owner, _genesisMerkleRoot);
+
         return address(proxy);
     }
 

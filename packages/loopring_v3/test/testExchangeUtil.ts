@@ -467,7 +467,9 @@ export class ExchangeTestUtil {
   public depositContract: any;
   public exchangeOwner: string;
   public exchangeOperator: string;
-  public exchangeId: number = 0;
+
+  public exchangeIdGenerator: number = 0;
+  public exchangeId: number;
 
   public operator: any;
   public activeOperator: number;
@@ -1282,12 +1284,16 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.FORCE && !skipForcedAuthentication) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
-        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+        const numAvailableSlotsBefore = (
+          await this.exchange.getNumAvailableForcedSlots()
+        ).toNumber();
         await this.exchange.forceWithdraw(signer, token, accountID, {
           from: signer,
           value: withdrawalFee
         });
-        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+        const numAvailableSlotsAfter = (
+          await this.exchange.getNumAvailableForcedSlots()
+        ).toNumber();
         assert.equal(
           numAvailableSlotsAfter,
           numAvailableSlotsBefore - 1,
@@ -1944,10 +1950,14 @@ export class ExchangeTestUtil {
       testCallback(onchainBlocks, blocks);
     }
 
-    const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksSubmittedBefore = (
+      await this.exchange.getBlockHeight()
+    ).toNumber();
 
     // Forced requests
-    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+    const numAvailableSlotsBefore = (
+      await this.exchange.getNumAvailableForcedSlots()
+    ).toNumber();
 
     // SubmitBlocks raw tx data
     const txData = this.getSubmitCallbackData(onchainBlocks);
@@ -1998,7 +2008,9 @@ export class ExchangeTestUtil {
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     // Check number of blocks submitted
-    const numBlocksSubmittedAfter = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksSubmittedAfter = (
+      await this.exchange.getBlockHeight()
+    ).toNumber();
     assert.equal(
       numBlocksSubmittedAfter,
       numBlocksSubmittedBefore + blocks.length,
@@ -2062,7 +2074,9 @@ export class ExchangeTestUtil {
     }
 
     // Forced requests
-    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+    const numAvailableSlotsAfter = (
+      await this.exchange.getNumAvailableForcedSlots()
+    ).toNumber();
     let numForcedRequestsProcessed = 0;
     for (const block of blocks) {
       for (const tx of block.internalBlock.transactions) {
@@ -2538,47 +2552,32 @@ export class ExchangeTestUtil {
       options.useOwnerContract !== undefined ? options.useOwnerContract : true;
 
     this.deterministic = deterministic;
-    const operator = this.testContext.operators[0];
 
-    // const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
-    // // Send enough tokens to the owner so the Exchange can be created
-    // const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
-    // const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
-    // await LRC.addBalance(owner, exchangeCreationCostLRC);
-    // await LRC.approve(this.universalRegistry.address, exchangeCreationCostLRC, {
-    //   from: owner
-    // });
-
-    // randomely support upgradability
-    // const forgeMode = this.deterministic ? 0 : new Date().getMilliseconds() % 4;
-    // // Create the new exchange
-    // const tx = await this.universalRegistry.forgeExchange(
-    //   forgeMode,
-    //   Constants.zeroAddress,
-    //   Constants.zeroAddress,
-    //   this.emptyMerkleRoot,
-    //   { from: owner }
-    // );
-
-    // logInfo(
-    //   "\x1b[46m%s\x1b[0m",
-    //   "[CreateExchange] Gas used: " + tx.receipt.gasUsed
-    // );
-
-    // const event = await this.assertEventEmitted(
-    //   this.universalRegistry,
-    //   "ExchangeForged"
-    // );
-    // const exchangeAddress = event.exchangeAddress;
-    // const exchangeId = event.exchangeId.toNumber();
-    const emptyMerkleRoot =
-      "0x1efe4f31c90f89eb9b139426a95e5e87f6e0c9e8dab9ddf295e3f9d651f54698";
-    this.exchange = await this.contracts.ExchangeV3.new();
-    await this.exchange.initialize(
+    const exchangePrototype = await this.contracts.ExchangeV3.new();
+    await exchangePrototype.initialize(
       this.loopringV3.address,
       owner,
-      emptyMerkleRoot
+      this.emptyMerkleRoot
     );
+
+    const tx = await exchangePrototype.cloneExchange(
+      owner,
+      this.emptyMerkleRoot
+    );
+    logInfo(
+      "\x1b[46m%s\x1b[0m",
+      "[CreateExchange] Gas used: " + tx.receipt.gasUsed
+    );
+    const event = await this.assertEventEmitted(
+      exchangePrototype,
+      "ExchangeCloned"
+    );
+    const exchangeAddress = event.exchangeAddress;
+
+    this.exchange = await this.contracts.ExchangeV3.at(exchangeAddress);
+    const exchangeId = this.exchangeIdGenerator++;
+
+    await this.explorer.addExchange(this.exchange.address, owner);
 
     // Create a deposit contract impl
     const depositContractImpl = await this.contracts.DefaultDepositContract.new();
@@ -2610,7 +2609,6 @@ export class ExchangeTestUtil {
 
     this.exchangeOwner = owner;
     this.exchangeOperator = owner;
-    const exchangeId = this.exchangeId + 1;
     this.exchangeId = exchangeId;
     this.activeOperator = undefined;
 
@@ -2649,19 +2647,23 @@ export class ExchangeTestUtil {
     }
 
     // Deposit some LRC to stake for the exchange
-    // const depositer = this.testContext.operators[2];
-    // const stakeAmount = await this.loopringV3.stakePerThousandBlocks();
-    // await this.setBalanceAndApprove(
-    //   depositer,
-    //   "LRC",
-    //   stakeAmount,
-    //   this.loopringV3.address
-    // );
+    const depositer = this.testContext.operators[2];
+    const stakeAmount = new BN(web3.utils.toWei("" + this.getRandomInt(1000)));
+    await this.setBalanceAndApprove(
+      depositer,
+      "LRC",
+      stakeAmount,
+      this.loopringV3.address
+    );
 
-    // // Stake it
-    // await this.loopringV3.depositExchangeStake(exchangeId, stakeAmount, {
-    //   from: depositer
-    // });
+    // Stake it
+    await this.loopringV3.depositExchangeStake(
+      this.exchange.address,
+      stakeAmount,
+      {
+        from: depositer
+      }
+    );
 
     // Set the owner
     if (useOwnerContract) {
@@ -2709,7 +2711,9 @@ export class ExchangeTestUtil {
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
     await this.syncExplorer();
-    const explorerExchange = this.explorer.getExchangeById(this.exchangeId);
+    const explorerExchange = this.explorer.getExchangeByAddress(
+      this.exchange.address
+    );
     explorerExchange.buildMerkleTreeForWithdrawalMode();
     return explorerExchange.getWithdrawFromMerkleTreeData(accountID, tokenID);
   }
@@ -2794,14 +2798,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (await web3.eth.getBlock(
-      await web3.eth.getBlockNumber()
-    )).timestamp;
+    const previousTimestamp = (
+      await web3.eth.getBlock(await web3.eth.getBlockNumber())
+    ).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (await web3.eth.getBlock(
-      await web3.eth.getBlockNumber()
-    )).timestamp;
+    const currentTimestamp = (
+      await web3.eth.getBlock(await web3.eth.getBlockNumber())
+    ).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -2938,7 +2942,7 @@ export class ExchangeTestUtil {
     );
 
     await this.syncExplorer();
-    const exchange = this.explorer.getExchangeById(this.exchangeId);
+    const exchange = this.explorer.getExchangeByAddress(this.exchange.address);
 
     // Compare accounts
     assert.equal(
@@ -2963,8 +2967,8 @@ export class ExchangeTestUtil {
       const explorerBlock = exchange.getBlock(blockIdx);
       const testBlock = this.blocks[this.exchangeId][blockIdx];
       assert.equal(
-        explorerBlock.exchangeId,
-        this.exchangeId,
+        explorerBlock.exchange,
+        this.exchange.address,
         "unexpected exchangeId"
       );
       assert.equal(
@@ -3149,7 +3153,7 @@ export class ExchangeTestUtil {
     const stakeBefore = await this.exchange.getExchangeStake();
     const totalStakeBefore = await this.loopringV3.totalStake();
 
-    await this.loopringV3.depositExchangeStake(this.exchangeId, amount, {
+    await this.loopringV3.depositExchangeStake(this.exchange.address, amount, {
       from: owner
     });
 
@@ -3173,9 +3177,9 @@ export class ExchangeTestUtil {
       "ExchangeStakeDeposited"
     );
     assert.equal(
-      event.exchangeId.toNumber(),
-      this.exchangeId,
-      "exchangeId should match"
+      event.exchangeAddr,
+      this.exchange.address,
+      "exchange should match"
     );
     assert(event.amount.eq(amount), "amount should match");
   }
@@ -3218,9 +3222,9 @@ export class ExchangeTestUtil {
       "ExchangeStakeWithdrawn"
     );
     assert.equal(
-      event.exchangeId.toNumber(),
-      this.exchangeId,
-      "exchangeId should match"
+      event.exchangeAddr,
+      this.exchange.address,
+      "exchange should match"
     );
     assert(event.amount.eq(amount), "amount should match");
   }
@@ -3366,19 +3370,27 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
-      [
-        null,
-        this.contracts.WETHToken.deployed(),
-        this.contracts.LRCToken.deployed(),
-        this.contracts.GTOToken.deployed(),
-        this.contracts.RDNToken.deployed(),
-        this.contracts.REPToken.deployed(),
-        this.contracts.INDAToken.deployed(),
-        this.contracts.INDBToken.deployed(),
-        this.contracts.TESTToken.deployed()
-      ]
-    );
+    const [
+      eth,
+      weth,
+      lrc,
+      gto,
+      rdn,
+      rep,
+      inda,
+      indb,
+      test
+    ] = await Promise.all([
+      null,
+      this.contracts.WETHToken.deployed(),
+      this.contracts.LRCToken.deployed(),
+      this.contracts.GTOToken.deployed(),
+      this.contracts.RDNToken.deployed(),
+      this.contracts.REPToken.deployed(),
+      this.contracts.INDAToken.deployed(),
+      this.contracts.INDBToken.deployed(),
+      this.contracts.TESTToken.deployed()
+    ]);
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 

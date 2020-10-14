@@ -21,6 +21,12 @@ abstract contract IExchangeV3 is Claimable
 {
     // -- Events --
 
+    event ExchangeCloned(
+        address exchangeAddress,
+        address owner,
+        bytes32 genesisMerkleRoot
+    );
+
     event TokenRegistered(
         address token,
         uint16  tokenId
@@ -110,7 +116,7 @@ abstract contract IExchangeV3 is Claimable
 
 
     // -- Initialization --
-    /// @dev Create a new exchange by using a proxy. This method can only be called once.
+    /// @dev Initializes this exchange. This method can only be called once.
     /// @param  loopring The LoopringV3 contract address.
     /// @param  owner The owner of this exchange.
     /// @param  genesisMerkleRoot The initial Merkle tree state.

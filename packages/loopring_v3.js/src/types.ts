@@ -37,7 +37,7 @@ export enum ForgeMode {
  */
 export interface Block {
   /** The exchange the block was committed on. */
-  exchangeId: number;
+  exchange: string;
   /** The block index of the block. */
   blockIdx: number;
 
@@ -81,7 +81,7 @@ export interface Block {
  */
 export interface Token {
   /** The exchange of the token. */
-  exchangeId: number;
+  exchange: string;
   /** The tokenID of the token. */
   tokenID: number;
   /** The address of the token contract. */
@@ -95,7 +95,7 @@ export interface Token {
  */
 export interface Deposit {
   /** The exchange this deposit is on. */
-  exchangeId: number;
+  exchange: string;
   /** If the request was processed: The block this deposit was pocessed in. */
   blockIdx?: number;
   /** If the request was processed: The request index of this deposit in the processed requests list. */
@@ -122,7 +122,7 @@ export interface Deposit {
  */
 export interface OnchainWithdrawal {
   /** The exchange this on-chain withdrawal is on. */
-  exchangeId: number;
+  exchange: string;
   /** If the request was processed: The block this on-chain withdrawal was pocessed in. */
   blockIdx?: number;
   /** If the request was processed: The request index of this on-chain withdrawal in the processed requests list (@see getProcessedRequest). */
@@ -151,7 +151,7 @@ export interface OnchainWithdrawal {
  */
 export interface SpotTrade {
   /** The exchange the trade was made on. */
-  exchangeId: number;
+  exchange: string;
   /** The block this trade was pocessed in. */
   blockIdx: number;
   /** The request index of this trade in the processed requests list (@see getProcessedRequest). */
@@ -193,7 +193,7 @@ export interface SpotTrade {
  */
 export interface OffchainWithdrawal {
   /** The exchange the off-chain withdrawal request was made on. */
-  exchangeId: number;
+  exchange: string;
   /** The block this off-chain withdrawal request was pocessed in. */
   blockIdx: number;
   /** The request index of this off-chain withdrawal in the processed requests list (@see getProcessedRequest). */
@@ -216,7 +216,7 @@ export interface OffchainWithdrawal {
  */
 export interface OrderCancellation {
   /** The exchange the order cancellation request was made on. */
-  exchangeId: number;
+  exchange: string;
   /** The block this order cancellation request was pocessed in. */
   blockIdx: number;
   /** The request index of this oorder cancellation in the processed requests list (@see getProcessedRequest). */
@@ -239,7 +239,7 @@ export interface OrderCancellation {
  */
 export interface InternalTransfer {
   /** The exchange the internal transfer request was made on. */
-  exchangeId: number;
+  exchange: string;
   /** The block this internal transfer request was pocessed in. */
   blockIdx: number;
   /** The request index of this internal transfer in the processed requests list (@see getProcessedRequest). */
@@ -290,7 +290,7 @@ export interface Balance {
  */
 export interface Account {
   /** The exchange the account is on. */
-  exchangeId: number;
+  exchange: string;
   /** The account ID of the account. */
   accountId: number;
 
@@ -313,7 +313,7 @@ export interface Account {
  */
 export interface ProtocolFees {
   /** The exchange with these fees. */
-  exchangeId: number;
+  exchange: string;
 
   /** The fee charged (in bips of amount bought) for taker orders. */
   takerFeeBips: number;
@@ -429,7 +429,7 @@ export class BalanceLeaf implements Balance {
 }
 
 export class AccountLeaf implements Account {
-  exchangeId: number;
+  exchange: string;
   accountId: number;
 
   owner: string;
@@ -442,7 +442,7 @@ export class AccountLeaf implements Account {
   balancesMerkleTree?: SparseMerkleTree;
 
   constructor(accountId: number) {
-    this.exchangeId = 0;
+    this.exchange = Constants.zeroAddress;
     this.accountId = accountId;
     this.owner = Constants.zeroAddress;
     this.publicKeyX = "0";
@@ -460,7 +460,7 @@ export class AccountLeaf implements Account {
     feeBipsAMM: number,
     balances: { [key: number]: BalanceLeaf } = {}
   ) {
-    this.exchangeId = 0;
+    this.exchange = Constants.zeroAddress;
     this.accountId = 0;
     this.owner = owner;
     this.publicKeyX = publicKeyX;
@@ -479,12 +479,11 @@ export class AccountLeaf implements Account {
 }
 
 export class ExchangeState {
-  exchangeId: number;
+  exchange: string;
   accounts: AccountLeaf[];
 
-  constructor(exchangeId: number, accounts: AccountLeaf[] = []) {
-    this.exchangeId = exchangeId;
-
+  constructor(exchange: string, accounts: AccountLeaf[] = []) {
+    this.exchange = exchange;
     this.accounts = accounts;
 
     this.accountIdToOwner = {};
