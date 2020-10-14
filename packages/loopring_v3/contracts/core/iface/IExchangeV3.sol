@@ -61,6 +61,7 @@ abstract contract IExchangeV3 is IExchange
     );
 
     event WithdrawalCompleted(
+        uint8   category,
         address from,
         address to,
         address token,
@@ -68,6 +69,7 @@ abstract contract IExchangeV3 is IExchange
     );
 
     event WithdrawalFailed(
+        uint8   category,
         address from,
         address to,
         address token,

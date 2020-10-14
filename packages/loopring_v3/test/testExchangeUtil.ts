@@ -81,11 +81,7 @@ function replacer(name: any, val: any) {
     name === "onchainDataHash"
   ) {
     return new BN(val.slice(2), 16).toString(10);
-  } else if (
-    name === "joinAmounts" ||
-    name === "joinFees" ||
-    name === "exitMinAmounts"
-  ) {
+  } else if (name === "joinAmounts" || name === "exitMinAmounts") {
     const array: string[] = [];
     for (const v of val) {
       array.push(new BN(v, 16).toString(10));
@@ -180,7 +176,7 @@ export namespace AccountUpdateUtils {
           { name: "owner", type: "address" },
           { name: "accountID", type: "uint32" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "maxFee", type: "uint256" },
+          { name: "maxFee", type: "uint96" },
           { name: "publicKey", type: "uint256" },
           { name: "validUntil", type: "uint32" },
           { name: "nonce", type: "uint32" }
@@ -257,9 +253,9 @@ export namespace WithdrawalUtils {
           { name: "owner", type: "address" },
           { name: "accountID", type: "uint32" },
           { name: "tokenID", type: "uint16" },
-          { name: "amount", type: "uint256" },
+          { name: "amount", type: "uint96" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "maxFee", type: "uint256" },
+          { name: "maxFee", type: "uint96" },
           { name: "to", type: "address" },
           { name: "extraData", type: "bytes" },
           { name: "minGas", type: "uint256" },
@@ -341,9 +337,9 @@ export namespace TransferUtils {
           { name: "from", type: "address" },
           { name: "to", type: "address" },
           { name: "tokenID", type: "uint16" },
-          { name: "amount", type: "uint256" },
+          { name: "amount", type: "uint96" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "maxFee", type: "uint256" },
+          { name: "maxFee", type: "uint96" },
           { name: "validUntil", type: "uint32" },
           { name: "storageID", type: "uint32" }
         ]
@@ -422,7 +418,7 @@ export namespace AmmUpdateUtils {
           { name: "accountID", type: "uint32" },
           { name: "tokenID", type: "uint16" },
           { name: "feeBips", type: "uint8" },
-          { name: "tokenWeight", type: "uint256" },
+          { name: "tokenWeight", type: "uint96" },
           { name: "validUntil", type: "uint32" },
           { name: "nonce", type: "uint32" }
         ]
@@ -2163,7 +2159,7 @@ export class ExchangeTestUtil {
   public getWithdrawalAuxData(withdrawal: WithdrawalRequest) {
     // Hack: fix json deserializing when the to address is serialized as a decimal string
     if (!withdrawal.to.startsWith("0x")) {
-      withdrawal.to = "0x" + new BN(withdrawal.to).toString(16, 20);
+      withdrawal.to = "0x" + new BN(withdrawal.to).toString(16, 40);
     }
     return web3.eth.abi.encodeParameter(
       "tuple(bool,uint256,bytes,uint256,address,bytes,uint96,uint32)",
@@ -2304,6 +2300,7 @@ export class ExchangeTestUtil {
         txBlock,
         auxiliaryData
       );
+      blockInfo.blockInfoData = blockInfoData;
       blocks.push(blockInfo);
 
       // Write auxiliary data
