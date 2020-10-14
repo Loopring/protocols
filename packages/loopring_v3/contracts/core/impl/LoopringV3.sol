@@ -162,7 +162,7 @@ contract LoopringV3 is ILoopringV3
         returns (uint amountLRC)
     {
         Exchange storage exchange = exchanges[msg.sender];
-        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
+        require(exchange.exchangeAddr == msg.sender, "INVALID_EXCHANGE_ADDRESS");
 
         amountLRC = (exchange.exchangeStake > requestedAmount) ?
             requestedAmount : exchange.exchangeStake;
