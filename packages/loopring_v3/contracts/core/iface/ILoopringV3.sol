@@ -2,13 +2,14 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "./ILoopring.sol";
+import "../../lib/Claimable.sol";
+import "../../lib/ReentrancyGuard.sol";
 
 
 /// @title ILoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-abstract contract ILoopringV3 is ILoopring
+abstract contract ILoopringV3 is Claimable, ReentrancyGuard
 {
     // == Events ==
     event ExchangeStakeDeposited(address exchangeAddr, uint amount);
@@ -26,6 +27,7 @@ abstract contract ILoopringV3 is ILoopring
 
     mapping (address => Exchange) internal exchanges;
 
+    address public lrcAddress;
     uint    public totalStake;
     address public blockVerifierAddress;
     uint    public forcedWithdrawalFee;
@@ -37,14 +39,15 @@ abstract contract ILoopringV3 is ILoopring
     address payable public protocolFeeVault;
 
     // == Public Functions ==
-    function version()
-        public
-        override
-        pure
-        returns (string memory)
-    {
-        return "3.6";
-    }
+    /// @dev Registers an exchange.
+    /// @param  exchangeAddr The address of the exchange.
+    /// @param  exchangeImpl The address of the exchange implementation.
+    function registerExchange(
+        address exchangeAddr,
+        address exchangeImpl
+        )
+        external
+        virtual;
 
     /// @dev Updates the global exchange settings.
     ///      This function can only be called by the owner of this contract.
