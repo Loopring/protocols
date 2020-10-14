@@ -46,7 +46,10 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
 
     modifier onlyWhenUninitialized()
     {
-        require(owner == address(0), "INITIALIZED");
+        require(
+            loopringAddr == address(0) && state.merkleRoot == bytes32(0),
+            "INITIALIZED"
+        );
         _;
     }
 

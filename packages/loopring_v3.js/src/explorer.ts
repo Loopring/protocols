@@ -11,10 +11,6 @@ import * as log from "./logs";
 export class Explorer {
   private web3: Web3;
 
-  private universalRegistryAbi: string;
-
-  private universalRegistryAddress: string;
-  private universalRegistry: any;
   private owner: string;
 
   private syncedToEthereumBlockIdx: number;
@@ -29,28 +25,12 @@ export class Explorer {
    * @param   web3                       The web3 instance that will be used to get the necessary data from Ethereum
    * @param   universalRegistryAddress   The address of the universal registry address
    */
-  public async initialize(
-    web3: Web3,
-    universalRegistryAddress: string,
-    ethereumBlockFrom: number = 0
-  ) {
+  public async initialize(web3: Web3, ethereumBlockFrom: number = 0) {
     this.web3 = web3;
-    this.universalRegistryAddress = universalRegistryAddress;
     this.syncedToEthereumBlockIdx = ethereumBlockFrom;
 
-    const ABIPath = "ABI/version36/";
-    this.universalRegistryAbi = fs.readFileSync(
-      ABIPath + "IUniversalRegistry.abi",
-      "ascii"
-    );
-
-    this.universalRegistry = new web3.eth.Contract(
-      JSON.parse(this.universalRegistryAbi)
-    );
-    this.universalRegistry.options.address = this.universalRegistryAddress.toLowerCase();
-
     // Get the latest owner
-    this.owner = await this.universalRegistry.methods.owner().call();
+    // this.owner = await this.universalRegistry.methods.owner().call();
   }
 
   /**
@@ -66,25 +46,25 @@ export class Explorer {
     log.DEBUG("sync to block:", ethereumBlockTo);
 
     // Process the events
-    const events = await this.universalRegistry.getPastEvents("allEvents", {
-      fromBlock: this.syncedToEthereumBlockIdx + 1,
-      toBlock: ethereumBlockTo
-    });
-    for (const event of events) {
-      if (event.event === "ProtocolRegistered") {
-        await this.processProtocolRegistered(event);
-      } else if (event.event === "ProtocolEnabled") {
-        await this.processProtocolEnabled(event);
-      } else if (event.event === "ProtocolDisabled") {
-        await this.processProtocolDisabled(event);
-      } else if (event.event === "DefaultProtocolChanged") {
-        await this.processDefaultProtocolChanged(event);
-      } else if (event.event === "ExchangeForged") {
-        await this.processExchangeForged(event);
-      } else if (event.event === "OwnershipTransferred") {
-        await this.processOwnershipTransferred(event);
-      }
-    }
+    // const events = await this.universalRegistry.getPastEvents("allEvents", {
+    //   fromBlock: this.syncedToEthereumBlockIdx + 1,
+    //   toBlock: ethereumBlockTo
+    // });
+    // for (const event of events) {
+    //   if (event.event === "ProtocolRegistered") {
+    //     await this.processProtocolRegistered(event);
+    //   } else if (event.event === "ProtocolEnabled") {
+    //     await this.processProtocolEnabled(event);
+    //   } else if (event.event === "ProtocolDisabled") {
+    //     await this.processProtocolDisabled(event);
+    //   } else if (event.event === "DefaultProtocolChanged") {
+    //     await this.processDefaultProtocolChanged(event);
+    //   } else if (event.event === "ExchangeForged") {
+    //     await this.processExchangeForged(event);
+    //   } else if (event.event === "OwnershipTransferred") {
+    //     await this.processOwnershipTransferred(event);
+    //   }
+    // }
 
     // Sync the exchange
     for (const exchange of this.exchanges) {
@@ -113,25 +93,25 @@ export class Explorer {
     log.DEBUG("sync to block:", ethereumBlockTo);
 
     // Process the events
-    const events = await this.universalRegistry.getPastEvents("allEvents", {
-      fromBlock: this.syncedToEthereumBlockIdx + 1,
-      toBlock: ethereumBlockTo
-    });
-    for (const event of events) {
-      if (event.event === "ProtocolRegistered") {
-        await this.processProtocolRegistered(event);
-      } else if (event.event === "ProtocolEnabled") {
-        await this.processProtocolEnabled(event);
-      } else if (event.event === "ProtocolDisabled") {
-        await this.processProtocolDisabled(event);
-      } else if (event.event === "DefaultProtocolChanged") {
-        await this.processDefaultProtocolChanged(event);
-      } else if (event.event === "ExchangeForged") {
-        await this.processExchangeForged(event);
-      } else if (event.event === "OwnershipTransferred") {
-        await this.processOwnershipTransferred(event);
-      }
-    }
+    // const events = await this.universalRegistry.getPastEvents("allEvents", {
+    //   fromBlock: this.syncedToEthereumBlockIdx + 1,
+    //   toBlock: ethereumBlockTo
+    // });
+    // for (const event of events) {
+    //   if (event.event === "ProtocolRegistered") {
+    //     await this.processProtocolRegistered(event);
+    //   } else if (event.event === "ProtocolEnabled") {
+    //     await this.processProtocolEnabled(event);
+    //   } else if (event.event === "ProtocolDisabled") {
+    //     await this.processProtocolDisabled(event);
+    //   } else if (event.event === "DefaultProtocolChanged") {
+    //     await this.processDefaultProtocolChanged(event);
+    //   } else if (event.event === "ExchangeForged") {
+    //     await this.processExchangeForged(event);
+    //   } else if (event.event === "OwnershipTransferred") {
+    //     await this.processOwnershipTransferred(event);
+    //   }
+    // }
 
     // Sync the exchange
     for (const exchange of this.exchanges) {

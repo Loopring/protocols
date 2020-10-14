@@ -341,7 +341,7 @@ contract("Exchange", (accounts: string[]) => {
       await depositChecked(from, owner, token, amount);
     });
 
-    it("Withdrawal (multiple authentication methods)", async () => {
+    it.only("Withdrawal (multiple authentication methods)", async () => {
       await createExchange();
 
       const token = "ETH";

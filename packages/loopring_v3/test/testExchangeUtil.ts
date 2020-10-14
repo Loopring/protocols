@@ -467,7 +467,7 @@ export class ExchangeTestUtil {
   public depositContract: any;
   public exchangeOwner: string;
   public exchangeOperator: string;
-  public exchangeId: number;
+  public exchangeId: number = 0;
 
   public operator: any;
   public activeOperator: number;
@@ -475,7 +475,6 @@ export class ExchangeTestUtil {
   public userStakingPool: any;
   public protocolFeeVault: any;
   public protocolFeeVaultContract: any;
-  public universalRegistry: any;
 
   public blocks: Block[][] = [];
   public accounts: Account[][] = [];
@@ -528,7 +527,7 @@ export class ExchangeTestUtil {
     this.testContext = await this.createExchangeTestContext(accounts);
 
     this.explorer = new Explorer();
-    await this.explorer.initialize(web3, this.universalRegistry.address);
+    await this.explorer.initialize(web3, 0);
 
     // Initialize LoopringV3
     this.protocolFeeVault = this.testContext.orderOwners[
@@ -538,9 +537,7 @@ export class ExchangeTestUtil {
     await this.loopringV3.updateSettings(
       this.protocolFeeVault,
       this.blockVerifier.address,
-      new BN(web3.utils.toWei("10000", "ether")),
       new BN(web3.utils.toWei("0.02", "ether")),
-      new BN(web3.utils.toWei("250000", "ether")),
       { from: this.testContext.deployer }
     );
 
@@ -551,15 +548,9 @@ export class ExchangeTestUtil {
     //   { from: this.testContext.deployer }
     // );
 
-    await this.loopringV3.updateProtocolFeeSettings(
-      25,
-      50,
-      10,
-      25,
-      new BN(web3.utils.toWei("25000000", "ether")),
-      new BN(web3.utils.toWei("10000000", "ether")),
-      { from: this.testContext.deployer }
-    );
+    await this.loopringV3.updateProtocolFeeSettings(50, 0, {
+      from: this.testContext.deployer
+    });
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       this.pendingTransactions.push([]);
@@ -1291,16 +1282,12 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.FORCE && !skipForcedAuthentication) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
-        const numAvailableSlotsBefore = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         await this.exchange.forceWithdraw(signer, token, accountID, {
           from: signer,
           value: withdrawalFee
         });
-        const numAvailableSlotsAfter = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         assert.equal(
           numAvailableSlotsAfter,
           numAvailableSlotsBefore - 1,
@@ -1957,14 +1944,10 @@ export class ExchangeTestUtil {
       testCallback(onchainBlocks, blocks);
     }
 
-    const numBlocksSubmittedBefore = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
 
     // Forced requests
-    const numAvailableSlotsBefore = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
 
     // SubmitBlocks raw tx data
     const txData = this.getSubmitCallbackData(onchainBlocks);
@@ -2015,9 +1998,7 @@ export class ExchangeTestUtil {
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     // Check number of blocks submitted
-    const numBlocksSubmittedAfter = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedAfter = (await this.exchange.getBlockHeight()).toNumber();
     assert.equal(
       numBlocksSubmittedAfter,
       numBlocksSubmittedBefore + blocks.length,
@@ -2081,9 +2062,7 @@ export class ExchangeTestUtil {
     }
 
     // Forced requests
-    const numAvailableSlotsAfter = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
     let numForcedRequestsProcessed = 0;
     for (const block of blocks) {
       for (const tx of block.internalBlock.transactions) {
@@ -2560,40 +2539,46 @@ export class ExchangeTestUtil {
 
     this.deterministic = deterministic;
     const operator = this.testContext.operators[0];
-    const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
 
-    // Send enough tokens to the owner so the Exchange can be created
-    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
-    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
-    await LRC.addBalance(owner, exchangeCreationCostLRC);
-    await LRC.approve(this.universalRegistry.address, exchangeCreationCostLRC, {
-      from: owner
-    });
+    // const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
+    // // Send enough tokens to the owner so the Exchange can be created
+    // const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
+    // const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
+    // await LRC.addBalance(owner, exchangeCreationCostLRC);
+    // await LRC.approve(this.universalRegistry.address, exchangeCreationCostLRC, {
+    //   from: owner
+    // });
 
     // randomely support upgradability
-    const forgeMode = this.deterministic ? 0 : new Date().getMilliseconds() % 4;
-    // Create the new exchange
-    const tx = await this.universalRegistry.forgeExchange(
-      forgeMode,
-      Constants.zeroAddress,
-      Constants.zeroAddress,
-      this.emptyMerkleRoot,
-      { from: owner }
-    );
+    // const forgeMode = this.deterministic ? 0 : new Date().getMilliseconds() % 4;
+    // // Create the new exchange
+    // const tx = await this.universalRegistry.forgeExchange(
+    //   forgeMode,
+    //   Constants.zeroAddress,
+    //   Constants.zeroAddress,
+    //   this.emptyMerkleRoot,
+    //   { from: owner }
+    // );
 
     // logInfo(
     //   "\x1b[46m%s\x1b[0m",
     //   "[CreateExchange] Gas used: " + tx.receipt.gasUsed
     // );
 
-    const event = await this.assertEventEmitted(
-      this.universalRegistry,
-      "ExchangeForged"
+    // const event = await this.assertEventEmitted(
+    //   this.universalRegistry,
+    //   "ExchangeForged"
+    // );
+    // const exchangeAddress = event.exchangeAddress;
+    // const exchangeId = event.exchangeId.toNumber();
+    const emptyMerkleRoot =
+      "0x1efe4f31c90f89eb9b139426a95e5e87f6e0c9e8dab9ddf295e3f9d651f54698";
+    this.exchange = await this.contracts.ExchangeV3.new();
+    await this.exchange.initialize(
+      this.loopringV3.address,
+      owner,
+      emptyMerkleRoot
     );
-    const exchangeAddress = event.exchangeAddress;
-    const exchangeId = event.exchangeId.toNumber();
-
-    this.exchange = await this.contracts.ExchangeV3.at(exchangeAddress);
 
     // Create a deposit contract impl
     const depositContractImpl = await this.contracts.DefaultDepositContract.new();
@@ -2625,6 +2610,7 @@ export class ExchangeTestUtil {
 
     this.exchangeOwner = owner;
     this.exchangeOperator = owner;
+    const exchangeId = this.exchangeId + 1;
     this.exchangeId = exchangeId;
     this.activeOperator = undefined;
 
@@ -2663,19 +2649,19 @@ export class ExchangeTestUtil {
     }
 
     // Deposit some LRC to stake for the exchange
-    const depositer = this.testContext.operators[2];
-    const stakeAmount = await this.loopringV3.stakePerThousandBlocks();
-    await this.setBalanceAndApprove(
-      depositer,
-      "LRC",
-      stakeAmount,
-      this.loopringV3.address
-    );
+    // const depositer = this.testContext.operators[2];
+    // const stakeAmount = await this.loopringV3.stakePerThousandBlocks();
+    // await this.setBalanceAndApprove(
+    //   depositer,
+    //   "LRC",
+    //   stakeAmount,
+    //   this.loopringV3.address
+    // );
 
-    // Stake it
-    await this.loopringV3.depositExchangeStake(exchangeId, stakeAmount, {
-      from: depositer
-    });
+    // // Stake it
+    // await this.loopringV3.depositExchangeStake(exchangeId, stakeAmount, {
+    //   from: depositer
+    // });
 
     // Set the owner
     if (useOwnerContract) {
@@ -2808,14 +2794,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const previousTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const currentTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -3340,14 +3326,12 @@ export class ExchangeTestUtil {
   // private functions:
   private async createContractContext() {
     const [
-      universalRegistry,
       loopringV3,
       exchange,
       blockVerifier,
       lrcToken,
       wethToken
     ] = await Promise.all([
-      this.contracts.UniversalRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
       this.contracts.ExchangeV3.deployed(),
       this.contracts.BlockVerifier.deployed(),
@@ -3363,7 +3347,6 @@ export class ExchangeTestUtil {
     this.userStakingPool = userStakingPool;
     this.protocolFeeVaultContract = protocolFeeVaultContract;
 
-    this.universalRegistry = universalRegistry;
     this.loopringV3 = loopringV3;
     this.exchange = exchange;
     this.blockVerifier = blockVerifier;
@@ -3383,27 +3366,19 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [
-      eth,
-      weth,
-      lrc,
-      gto,
-      rdn,
-      rep,
-      inda,
-      indb,
-      test
-    ] = await Promise.all([
-      null,
-      this.contracts.WETHToken.deployed(),
-      this.contracts.LRCToken.deployed(),
-      this.contracts.GTOToken.deployed(),
-      this.contracts.RDNToken.deployed(),
-      this.contracts.REPToken.deployed(),
-      this.contracts.INDAToken.deployed(),
-      this.contracts.INDBToken.deployed(),
-      this.contracts.TESTToken.deployed()
-    ]);
+    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
+      [
+        null,
+        this.contracts.WETHToken.deployed(),
+        this.contracts.LRCToken.deployed(),
+        this.contracts.GTOToken.deployed(),
+        this.contracts.RDNToken.deployed(),
+        this.contracts.REPToken.deployed(),
+        this.contracts.INDAToken.deployed(),
+        this.contracts.INDBToken.deployed(),
+        this.contracts.TESTToken.deployed()
+      ]
+    );
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 

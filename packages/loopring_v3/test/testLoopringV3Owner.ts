@@ -4,10 +4,10 @@ import { Constants } from "loopringV3.js";
 import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
-const LoopringV3Owner = artifacts.require("LoopringV3Owner");
-const ChainlinkTokenPriceOracle = artifacts.require(
-  "ChainlinkTokenPriceProvider"
-);
+const LoopringV3Owner = artifacts.require("LoopringIOExchangeOwner");
+// const ChainlinkTokenPriceOracle = artifacts.require(
+//   "ChainlinkTokenPriceProvider"
+// );
 
 contract("LoopringV3Owner", (accounts: string[]) => {
   let contracts: Artifacts;
@@ -15,7 +15,7 @@ contract("LoopringV3Owner", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
   let loopring: any;
-  let chainlinkTokenPriceOracle: any;
+  // let chainlinkTokenPriceOracle: any;
 
   // USD values
   let stakePerThousandBlocks = new BN(web3.utils.toWei("10000", "ether"));
@@ -27,66 +27,66 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
     loopring = exchangeTestUtil.loopringV3;
     // Create a dummy oracle contract that we can use to setup the mock contract
-    chainlinkTokenPriceOracle = await ChainlinkTokenPriceOracle.new(
-      Constants.zeroAddress,
-      Constants.zeroAddress
-    );
+    // chainlinkTokenPriceOracle = await ChainlinkTokenPriceOracle.new(
+    //   Constants.zeroAddress,
+    //   Constants.zeroAddress
+    // );
   });
 
   after(async () => {
     await exchangeTestUtil.stop();
   });
 
-  const doLrcPriceChange = async (
-    loopringV3Owner: any,
-    mockChainlink: any,
-    priceFactor: number
-  ) => {
-    const startStakePerThousandBlocks = await loopring.stakePerThousandBlocks();
+  // const doLrcPriceChange = async (
+  //   loopringV3Owner: any,
+  //   mockChainlink: any,
+  //   priceFactor: number
+  // ) => {
+  //   const startStakePerThousandBlocks = await loopring.stakePerThousandBlocks();
 
-    const transformPrice = (value: BN) => {
-      return priceFactor > 1
-        ? value.mul(new BN(priceFactor))
-        : value.div(new BN(1 / priceFactor));
-    };
-    const expectedStakePerThousandBlocks = transformPrice(
-      startStakePerThousandBlocks
-    );
+  //   const transformPrice = (value: BN) => {
+  //     return priceFactor > 1
+  //       ? value.mul(new BN(priceFactor))
+  //       : value.div(new BN(1 / priceFactor));
+  //   };
+  //   const expectedStakePerThousandBlocks = transformPrice(
+  //     startStakePerThousandBlocks
+  //   );
 
-    // Set the conversion so the expected LRC amounts are returned by the oracle
-    const setConversion = async (mockContract: any, usd: BN, lrc: BN) => {
-      const calldata = chainlinkTokenPriceOracle.contract.methods
-        .usd2lrc("0x" + usd.toString(16))
-        .encodeABI();
-      await mockContract.givenCalldataReturnUint(calldata, lrc);
-    };
-    await setConversion(
-      mockChainlink,
-      stakePerThousandBlocks,
-      expectedStakePerThousandBlocks
-    );
+  //   // Set the conversion so the expected LRC amounts are returned by the oracle
+  //   const setConversion = async (mockContract: any, usd: BN, lrc: BN) => {
+  //     const calldata = chainlinkTokenPriceOracle.contract.methods
+  //       .usd2lrc("0x" + usd.toString(16))
+  //       .encodeABI();
+  //     await mockContract.givenCalldataReturnUint(calldata, lrc);
+  //   };
+  //   await setConversion(
+  //     mockChainlink,
+  //     stakePerThousandBlocks,
+  //     expectedStakePerThousandBlocks
+  //   );
 
-    // Update the LRC amounts
-    await loopringV3Owner.updateValuesInLRC();
+  //   // Update the LRC amounts
+  //   await loopringV3Owner.updateValuesInLRC();
 
-    // Check against the contract values
-    assert(
-      expectedStakePerThousandBlocks.eq(
-        await loopring.stakePerThousandBlocks()
-      ),
-      "unexpected currentstakePerThousandBlocksLrc"
-    );
+  //   // Check against the contract values
+  //   assert(
+  //     expectedStakePerThousandBlocks.eq(
+  //       await loopring.stakePerThousandBlocks()
+  //     ),
+  //     "unexpected currentstakePerThousandBlocksLrc"
+  //   );
 
-    // Check the LRCValuesUpdated event
-    const updateEvent = await exchangeTestUtil.assertEventEmitted(
-      loopringV3Owner,
-      "LRCValuesUpdated"
-    );
-    assert(
-      updateEvent.stakePerThousandBlocks.eq(expectedStakePerThousandBlocks),
-      "unexpected currentstakePerThousandBlocksLrc"
-    );
-  };
+  //   // Check the LRCValuesUpdated event
+  //   const updateEvent = await exchangeTestUtil.assertEventEmitted(
+  //     loopringV3Owner,
+  //     "LRCValuesUpdated"
+  //   );
+  //   assert(
+  //     updateEvent.stakePerThousandBlocks.eq(expectedStakePerThousandBlocks),
+  //     "unexpected currentstakePerThousandBlocksLrc"
+  //   );
+  // };
 
   it("should work as expected as the owner", async () => {
     const mockProvider = await MockContract.new();
@@ -107,12 +107,12 @@ contract("LoopringV3Owner", (accounts: string[]) => {
       await loopringV3Owner.transact(loopring.address, calldata);
     }
 
-    // Change the LRC price (double the LRC needed) and go throught the MA steps
-    await doLrcPriceChange(loopringV3Owner, mockProvider, 2);
-    // Change the LRC price (tripple the LRC needed) and go throught the MA steps
-    await doLrcPriceChange(loopringV3Owner, mockProvider, 3);
-    // Change the LRC price (back to the original LRC needed) and go throught the MA steps
-    await doLrcPriceChange(loopringV3Owner, mockProvider, 1 / 6);
+    // // Change the LRC price (double the LRC needed) and go throught the MA steps
+    // await doLrcPriceChange(loopringV3Owner, mockProvider, 2);
+    // // Change the LRC price (tripple the LRC needed) and go throught the MA steps
+    // await doLrcPriceChange(loopringV3Owner, mockProvider, 3);
+    // // Change the LRC price (back to the original LRC needed) and go throught the MA steps
+    // await doLrcPriceChange(loopringV3Owner, mockProvider, 1 / 6);
 
     // Create a new owner contract that we'll transfer ownership to
     const loopringV3Owner2 = await LoopringV3Owner.new(
