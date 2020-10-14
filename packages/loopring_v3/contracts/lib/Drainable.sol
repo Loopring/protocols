@@ -28,7 +28,7 @@ abstract contract Drainable
         external
         returns (uint amount)
     {
-        require(canDrain(msg.sender), "UNAUTHORIZED");
+        require(canDrain(msg.sender, token), "UNAUTHORIZED");
 
         if (token == address(0)) {
             amount = address(this).balance;
@@ -42,7 +42,7 @@ abstract contract Drainable
     }
 
     // Needs to return if the address is authorized to call drain.
-    function canDrain(address drainer)
+    function canDrain(address drainer, address token)
         public
         virtual
         view
