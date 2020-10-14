@@ -50,8 +50,7 @@ contract LoopringV3 is ILoopringV3
     }
 
     function initializeExchange(
-        address exchangeAddress,
-        uint    exchangeId,
+        address exchangeAddr,
         address owner,
         bytes32 genesisMerkleRoot
         )
@@ -60,26 +59,23 @@ contract LoopringV3 is ILoopringV3
         nonReentrant
         onlyUniversalRegistry
     {
-        require(exchangeId != 0, "ZERO_ID");
-        require(exchangeAddress != address(0), "ZERO_ADDRESS");
+        require(exchangeAddr != address(0), "ZERO_ADDRESS");
         require(owner != address(0), "ZERO_ADDRESS");
-        require(exchanges[exchangeId].exchangeAddress == address(0), "ID_USED_ALREADY");
+        require(exchanges[exchangeAddr].exchangeAddr == address(0), "ID_USED_ALREADY");
 
-        IExchangeV3 exchange = IExchangeV3(exchangeAddress);
+        IExchangeV3 exchange = IExchangeV3(exchangeAddr);
 
         // If the exchange has already been initialized, the following function will throw.
         exchange.initialize(
             address(this),
             owner,
-            exchangeId,
             genesisMerkleRoot
         );
 
-        exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);
+        exchanges[exchangeAddr] = Exchange(exchangeAddr, 0, 0);
 
         emit ExchangeInitialized(
-            exchangeId,
-            exchangeAddress,
+            exchangeAddr,
             owner,
             genesisMerkleRoot
         );
@@ -131,20 +127,19 @@ contract LoopringV3 is ILoopringV3
     }
 
     function getExchangeStake(
-        uint exchangeId
+        address exchangeAddr
         )
         public
         override
         view
         returns (uint)
     {
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
+        Exchange storage exchange = exchanges[exchangeAddr];
+        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
         return exchange.exchangeStake;
     }
 
     function burnExchangeStake(
-        uint exchangeId,
         uint amount
         )
         external
@@ -152,11 +147,8 @@ contract LoopringV3 is ILoopringV3
         nonReentrant
         returns (uint burnedLRC)
     {
-        Exchange storage exchange = exchanges[exchangeId];
-        address exchangeAddress = exchange.exchangeAddress;
-
-        require(exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-        require(exchangeAddress == msg.sender, "UNAUTHORIZED");
+        Exchange storage exchange = exchanges[msg.sender];
+        require(exchange.exchangeAddr == msg.sender, "INVALID_EXCHANGE");
 
         burnedLRC = exchange.exchangeStake;
 
@@ -168,11 +160,11 @@ contract LoopringV3 is ILoopringV3
             exchange.exchangeStake = exchange.exchangeStake.sub(burnedLRC);
             totalStake = totalStake.sub(burnedLRC);
         }
-        emit ExchangeStakeBurned(exchangeId, burnedLRC);
+        emit ExchangeStakeBurned(msg.sender, burnedLRC);
     }
 
     function depositExchangeStake(
-        uint exchangeId,
+        address exchangeAddr,
         uint amountLRC
         )
         external
@@ -182,8 +174,8 @@ contract LoopringV3 is ILoopringV3
     {
         require(amountLRC > 0, "ZERO_VALUE");
 
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
+        Exchange storage exchange = exchanges[exchangeAddr];
+        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
 
         lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amountLRC);
 
@@ -191,11 +183,10 @@ contract LoopringV3 is ILoopringV3
         exchange.exchangeStake = stakedLRC;
         totalStake = totalStake.add(amountLRC);
 
-        emit ExchangeStakeDeposited(exchangeId, amountLRC);
+        emit ExchangeStakeDeposited(exchangeAddr, amountLRC);
     }
 
     function withdrawExchangeStake(
-        uint    exchangeId,
         address recipient,
         uint    requestedAmount
         )
@@ -204,9 +195,8 @@ contract LoopringV3 is ILoopringV3
         nonReentrant
         returns (uint amountLRC)
     {
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-        require(exchange.exchangeAddress == msg.sender, "UNAUTHORIZED");
+        Exchange storage exchange = exchanges[msg.sender];
+        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
 
         amountLRC = (exchange.exchangeStake > requestedAmount) ?
             requestedAmount : exchange.exchangeStake;
@@ -217,11 +207,11 @@ contract LoopringV3 is ILoopringV3
             totalStake = totalStake.sub(amountLRC);
         }
 
-        emit ExchangeStakeWithdrawn(exchangeId, amountLRC);
+        emit ExchangeStakeWithdrawn(msg.sender, amountLRC);
     }
 
     function depositProtocolFeeStake(
-        uint exchangeId,
+        address exchangeAddr,
         uint amountLRC
         )
         external
@@ -231,8 +221,8 @@ contract LoopringV3 is ILoopringV3
     {
         require(amountLRC > 0, "ZERO_VALUE");
 
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
+        Exchange storage exchange = exchanges[exchangeAddr];
+        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
 
         lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amountLRC);
 
@@ -240,11 +230,10 @@ contract LoopringV3 is ILoopringV3
         exchange.protocolFeeStake = stakedLRC;
         totalStake = totalStake.add(amountLRC);
 
-        emit ProtocolFeeStakeDeposited(exchangeId, amountLRC);
+        emit ProtocolFeeStakeDeposited(exchangeAddr, amountLRC);
     }
 
     function withdrawProtocolFeeStake(
-        uint    exchangeId,
         address recipient,
         uint    amountLRC
         )
@@ -252,9 +241,8 @@ contract LoopringV3 is ILoopringV3
         override
         nonReentrant
     {
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-        require(exchange.exchangeAddress == msg.sender, "UNAUTHORIZED");
+        Exchange storage exchange = exchanges[msg.sender];
+        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
         require(amountLRC <= exchange.protocolFeeStake, "INSUFFICIENT_STAKE");
 
         if (amountLRC > 0) {
@@ -262,11 +250,11 @@ contract LoopringV3 is ILoopringV3
             exchange.protocolFeeStake = exchange.protocolFeeStake.sub(amountLRC);
             totalStake = totalStake.sub(amountLRC);
         }
-        emit ProtocolFeeStakeWithdrawn(exchangeId, amountLRC);
+        emit ProtocolFeeStakeWithdrawn(msg.sender, amountLRC);
     }
 
     function getProtocolFeeValues(
-        uint exchangeId
+        address exchangeAddr
         )
         external
         override
@@ -276,8 +264,8 @@ contract LoopringV3 is ILoopringV3
             uint8 makerFeeBips
         )
     {
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
+        Exchange storage exchange = exchanges[exchangeAddr];
+        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
         // The total stake used here is the exchange stake + the protocol fee stake, but
@@ -285,7 +273,7 @@ contract LoopringV3 is ILoopringV3
 
         uint protocolFeeStake = exchange.exchangeStake
             .add(exchange.protocolFeeStake / 2)
-            .sub(IExchangeV3(exchange.exchangeAddress).getRequiredExchangeStake());
+            .sub(IExchangeV3(exchange.exchangeAddr).getRequiredExchangeStake());
 
         takerFeeBips = calculateProtocolFee(
             minProtocolTakerFeeBips, maxProtocolTakerFeeBips, protocolFeeStake, targetProtocolTakerFeeStake
@@ -296,15 +284,15 @@ contract LoopringV3 is ILoopringV3
     }
 
     function getProtocolFeeStake(
-        uint exchangeId
+        address exchangeAddr
         )
         external
         override
         view
         returns (uint)
     {
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
+        Exchange storage exchange = exchanges[exchangeAddr];
+        require(exchange.exchangeAddr != address(0), "INVALID_EXCHANGE_ADDRESS");
         return exchange.protocolFeeStake;
     }
 

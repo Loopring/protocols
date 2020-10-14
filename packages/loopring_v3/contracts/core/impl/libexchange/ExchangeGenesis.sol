@@ -20,19 +20,15 @@ library ExchangeGenesis
 
     function initializeGenesisBlock(
         ExchangeData.State storage S,
-        uint    _id,
         address _loopring,
         bytes32 _genesisMerkleRoot,
         bytes32 _domainSeparator
         )
         public
     {
-        require(0 != _id, "INVALID_ID");
         require(address(0) != _loopring, "INVALID_LOOPRING_ADDRESS");
         require(_genesisMerkleRoot != 0, "INVALID_GENESIS_MERKLE_ROOT");
-        require(S.id == 0, "INITIALIZED_ALREADY");
 
-        S.id = _id;
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
         S.DOMAIN_SEPARATOR = _domainSeparator;
 

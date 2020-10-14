@@ -12,44 +12,22 @@ abstract contract ILoopringV3 is ILoopring
 {
     // == Events ==
 
-    event ExchangeStakeDeposited(
-        uint    indexed exchangeId,
-        uint            amount
-    );
-
-    event ExchangeStakeWithdrawn(
-        uint    indexed exchangeId,
-        uint            amount
-    );
-
-    event ExchangeStakeBurned(
-        uint    indexed exchangeId,
-        uint            amount
-    );
-
-    event ProtocolFeeStakeDeposited(
-        uint    indexed exchangeId,
-        uint            amount
-    );
-
-    event ProtocolFeeStakeWithdrawn(
-        uint    indexed exchangeId,
-        uint            amount
-    );
-
-    event SettingsUpdated(
-        uint            time
-    );
+    event ExchangeStakeDeposited(address exchangeAddr, uint amount);
+    event ExchangeStakeWithdrawn(address exchangeAddr, uint amount);
+    event ExchangeStakeBurned(address exchangeAddr, uint amount);
+    event ProtocolFeeStakeDeposited(address exchangeAddr, uint amount);
+    event ProtocolFeeStakeWithdrawn(address exchangeAddr, uint amount);
+    event SettingsUpdated(uint time);
 
     // == Public Variables ==
     struct Exchange
     {
-        address exchangeAddress;
+        address exchangeAddr;
         uint    exchangeStake;
         uint    protocolFeeStake;
     }
 
-    mapping (uint => Exchange) internal exchanges;
+    mapping (address => Exchange) internal exchanges;
 
     uint    public totalStake;
     address public blockVerifierAddress;
@@ -108,10 +86,10 @@ abstract contract ILoopringV3 is ILoopring
         virtual;
 
     /// @dev Gets the amount of staked LRC for an exchange.
-    /// @param exchangeId The id of the exchange
+    /// @param exchangeAddr The address of the exchange
     /// @return stakedLRC The amount of LRC
     function getExchangeStake(
-        uint exchangeId
+        address exchangeAddr
         )
         public
         virtual
@@ -120,11 +98,9 @@ abstract contract ILoopringV3 is ILoopring
 
     /// @dev Burns a certain amount of staked LRC for a specific exchange.
     ///      This function is meant to be called only from exchange contracts.
-    /// @param  exchangeId The id of the exchange
     /// @return burnedLRC The amount of LRC burned. If the amount is greater than
     ///         the staked amount, all staked LRC will be burned.
     function burnExchangeStake(
-        uint exchangeId,
         uint amount
         )
         external
@@ -132,12 +108,12 @@ abstract contract ILoopringV3 is ILoopring
         returns (uint burnedLRC);
 
     /// @dev Stakes more LRC for an exchange.
-    /// @param  exchangeId The id of the exchange
+    /// @param  exchangeAddr The address of the exchange
     /// @param  amountLRC The amount of LRC to stake
     /// @return stakedLRC The total amount of LRC staked for the exchange
     function depositExchangeStake(
-        uint exchangeId,
-        uint amountLRC
+        address exchangeAddr,
+        uint    amountLRC
         )
         external
         virtual
@@ -145,12 +121,10 @@ abstract contract ILoopringV3 is ILoopring
 
     /// @dev Withdraws a certain amount of staked LRC for an exchange to the given address.
     ///      This function is meant to be called only from within exchange contracts.
-    /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
     /// @param  requestedAmount The amount of LRC to withdraw
     /// @return amountLRC The amount of LRC withdrawn
     function withdrawExchangeStake(
-        uint    exchangeId,
         address recipient,
         uint    requestedAmount
         )
@@ -159,12 +133,12 @@ abstract contract ILoopringV3 is ILoopring
         returns (uint amountLRC);
 
     /// @dev Stakes more LRC for an exchange.
-    /// @param  exchangeId The id of the exchange
+    /// @param  exchangeAddr The address of the exchange
     /// @param  amountLRC The amount of LRC to stake
     /// @return stakedLRC The total amount of LRC staked for the exchange
     function depositProtocolFeeStake(
-        uint exchangeId,
-        uint amountLRC
+        address exchangeAddr,
+        uint    amountLRC
         )
         external
         virtual
@@ -172,11 +146,9 @@ abstract contract ILoopringV3 is ILoopring
 
     /// @dev Withdraws a certain amount of staked LRC for an exchange to the given address.
     ///      This function is meant to be called only from within exchange contracts.
-    /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
     /// @param  amount The amount of LRC to withdraw
     function withdrawProtocolFeeStake(
-        uint    exchangeId,
         address recipient,
         uint    amount
         )
@@ -184,11 +156,11 @@ abstract contract ILoopringV3 is ILoopring
         virtual;
 
     /// @dev Gets the protocol fee values for an exchange.
-    /// @param exchangeId The id of the exchange
+    /// @param exchangeAddr The address of the exchange
     /// @return takerFeeBips The protocol taker fee
     /// @return makerFeeBips The protocol maker fee
     function getProtocolFeeValues(
-        uint exchangeId
+        address exchangeAddr
         )
         external
         virtual
@@ -199,10 +171,10 @@ abstract contract ILoopringV3 is ILoopring
         );
 
     /// @dev Returns the exchange's protocol fee stake.
-    /// @param  exchangeId The exchange's id.
+    /// @param  exchangeAddr The address of the exchange
     /// @return protocolFeeStake The exchange's protocol fee stake.
     function getProtocolFeeStake(
-        uint exchangeId
+        address exchangeAddr
         )
         external
         virtual

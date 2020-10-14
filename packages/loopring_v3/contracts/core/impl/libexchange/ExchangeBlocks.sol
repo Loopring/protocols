@@ -86,7 +86,7 @@ library ExchangeBlocks
             numStakingUnit = 1000;
         }
 
-        return S.loopring.getExchangeStake(S.id) >= getRequiredExchangeStake(S);
+        return S.loopring.getExchangeStake(address(this)) >= getRequiredExchangeStake(S);
     }
 
     function submitBlocks(
@@ -334,9 +334,7 @@ library ExchangeBlocks
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;
             // Get the latest protocol fees for this exchange
-            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues(
-                S.id
-            );
+            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues(address(this));
             data.syncedAt = uint32(block.timestamp);
 
             if (data.takerFeeBips != data.previousTakerFeeBips ||

@@ -82,7 +82,6 @@ contract ExchangeV3 is IExchangeV3
     function initialize(
         address _loopring,
         address _owner,
-        uint    _id,
         bytes32 _genesisMerkleRoot
         )
         external
@@ -94,7 +93,6 @@ contract ExchangeV3 is IExchangeV3
         owner = _owner;
 
         state.initializeGenesisBlock(
-            _id,
             _loopring,
             _genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
@@ -263,7 +261,7 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (uint)
     {
-        return state.loopring.getExchangeStake(state.id);
+        return state.loopring.getExchangeStake(address(this));
     }
 
     function withdrawExchangeStake(
@@ -280,14 +278,14 @@ contract ExchangeV3 is IExchangeV3
 
     function withdrawProtocolFeeStake(
         address recipient,
-        uint amount
+        uint    amount
         )
         external
         override
         nonReentrant
         onlyOwner
     {
-        state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
+        state.loopring.withdrawProtocolFeeStake(recipient, amount);
     }
 
     function getProtocolFeeLastWithdrawnTime(
@@ -307,10 +305,10 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
     {
         // Allow burning the complete exchange stake when the exchange gets into withdrawal mode
-        if(state.isInWithdrawalMode()) {
+        if (state.isInWithdrawalMode()) {
             // Burn the complete stake of the exchange
-            uint stake = state.loopring.getExchangeStake(state.id);
-            state.loopring.burnExchangeStake(state.id, stake);
+            uint stake = state.loopring.getExchangeStake(address(this));
+            state.loopring.burnExchangeStake(stake);
         }
     }
 

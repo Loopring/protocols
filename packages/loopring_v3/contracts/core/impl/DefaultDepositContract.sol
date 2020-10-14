@@ -136,7 +136,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
         if (isETHInternal(token)) {
             to.sendETHAndVerify(amount, gasleft());
         } else {
-            if(!token.safeTransfer(to, amount)){
+            if (!token.safeTransfer(to, amount)){
                 uint amountPaid = ERC20(token).balanceOf(address(this));
                 require(amountPaid < amount, "UNEXPECTED");
                 token.safeTransferAndVerify(to, amountPaid);

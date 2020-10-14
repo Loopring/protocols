@@ -26,12 +26,6 @@ abstract contract IExchangeV3 is IExchange
         uint16  tokenId
     );
 
-    event OperatorChanged(
-        uint    indexed exchangeId,
-        address         oldOperator,
-        address         newOperator
-    );
-
     event Shutdown(
         uint timestamp
     );
@@ -117,13 +111,11 @@ abstract contract IExchangeV3 is IExchange
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.
     /// @param  owner The owner of this exchange.
-    /// @param  exchangeId The id of this exchange.
     /// @param  loopring The corresponding ILoopring contract address.
     /// @param  genesisMerkleRoot The initial Merkle tree state.
     function initialize(
         address loopring,
         address owner,
-        uint    exchangeId,
         bytes32 genesisMerkleRoot
         )
         external
