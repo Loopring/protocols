@@ -112,5 +112,6 @@ library AmmData
 
         // A map from a user to the forced exit.
         mapping (address => PoolExit) forcedExit;
+        mapping (bytes32 => uint) approvedTx;
     }
 }

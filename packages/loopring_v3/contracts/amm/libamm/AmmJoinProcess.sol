@@ -31,7 +31,7 @@ library AmmJoinProcess
     // event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);
 
     function processJoin(
-        AmmData.State    storage /*S*/,
+        AmmData.State    storage S,
         AmmData.Context  memory  ctx,
         AmmData.PoolJoin memory  join,
         bytes            memory  signature
@@ -41,7 +41,14 @@ library AmmJoinProcess
         require(join.validUntil >= block.timestamp, "EXPIRED");
 
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
-        require(txHash.verifySignature(join.owner, signature), "INVALID_JOIN_APPROVAL");
+
+        if (signature.length == 0) {
+            require(join.validUntil >= block.timestamp, "JOIN_NOT_FOUND_OR_EXPIRED");
+            require(S.approvedTx[txHash] == join.validUntil, "INVALID_ONCHAIN_APPROVAL");
+            delete S.approvedTx[txHash];
+        } else {
+            require(txHash.verifySignature(join.owner, signature), "INVALID_OFFCHAIN_APPROVAL");
+        }
 
         // Check if the requirements are fulfilled
         (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);

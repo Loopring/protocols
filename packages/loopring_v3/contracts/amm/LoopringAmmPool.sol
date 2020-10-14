@@ -26,6 +26,7 @@ contract LoopringAmmPool is
     ReentrancyGuard
 {
     using AmmBlockReceiver for AmmData.State;
+    using AmmJoinRequest   for AmmData.State;
     using AmmExitRequest   for AmmData.State;
     using AmmPoolToken     for AmmData.State;
     using AmmStatus        for AmmData.State;
@@ -80,6 +81,18 @@ contract LoopringAmmPool is
         state.shutdown(exitOwner);
     }
 
+    function joinPool(
+        uint96[]     calldata joinAmounts,
+        uint96                mintMinAmount
+        )
+        external
+        payable
+        onlyWhenOnline
+        nonReentrant
+    {
+        state.joinPool(joinAmounts, mintMinAmount);
+    }
+
     function exitPool(
         uint96            burnAmount,
         uint96[] calldata exitMinAmounts
@@ -89,7 +102,19 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        state.exitPool(burnAmount, exitMinAmounts);
+        state.exitPool(burnAmount, exitMinAmounts, false);
+    }
+
+    function forceExitPool(
+        uint96            burnAmount,
+        uint96[] calldata exitMinAmounts
+        )
+        external
+        payable
+        onlyWhenOnline
+        nonReentrant
+    {
+        state.exitPool(burnAmount, exitMinAmounts, true);
     }
 
     function beforeBlockSubmission(

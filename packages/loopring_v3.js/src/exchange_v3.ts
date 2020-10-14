@@ -102,9 +102,9 @@ export class ExchangeV3 {
     this.exchange = new web3.eth.Contract(JSON.parse(this.exchangeV3Abi));
     this.exchange.options.address = this.exchangeAddress;
 
-    const exchangeCreationTimestamp = (
-      await this.exchange.methods.getBlockInfo(0).call()
-    ).timestamp;
+    const exchangeCreationTimestamp = (await this.exchange.methods
+      .getBlockInfo(0)
+      .call()).timestamp;
     const genesisMerkleRoot = new BN(
       (await this.exchange.methods.getMerkleRoot().call()).slice(2),
       16

@@ -15,14 +15,15 @@ library AmmExitRequest
         "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint96 fee,uint32 validUntil)"
     );
 
-    event ForcedPoolExitRequested(AmmData.PoolExit exit);
+    event ForcedPoolExitRequested(AmmData.PoolExit exit, bool force);
 
     function exitPool(
         AmmData.State storage S,
         uint96                burnAmount,
-        uint96[]     calldata exitMinAmounts
+        uint96[]     calldata exitMinAmounts,
+        bool                  force
         )
-        internal
+        public
     {
         require(burnAmount > 0, "INVALID_BURN_AMOUNT");
         require(exitMinAmounts.length == S.tokens.length, "INVALID_EXIT_AMOUNTS");
@@ -36,23 +37,26 @@ library AmmExitRequest
             validUntil: uint32(block.timestamp + S.sharedConfig.maxForcedExitAge())
         });
 
-        require(S.forcedExit[msg.sender].validUntil == 0, "DUPLICATE");
-        require(S.forcedExitCount < S.sharedConfig.maxForcedExitCount(), "TOO_MANY_FORCED_EXITS");
+        if (force) {
+            require(S.forcedExit[msg.sender].validUntil == 0, "DUPLICATE");
+            require(S.forcedExitCount < S.sharedConfig.maxForcedExitCount(), "TOO_MANY_FORCED_EXITS");
 
-        AmmUtil.transferIn(address(this), burnAmount);
+            AmmUtil.transferIn(address(this), burnAmount);
 
-        uint feeAmount = S.sharedConfig.forcedExitFee();
-        if (feeAmount == 0) {
-            require(msg.value == 0, "INVALID_ETH_VALUE");
-        } else {
+            uint feeAmount = S.sharedConfig.forcedExitFee();
             AmmUtil.transferIn(address(0), feeAmount);
             AmmUtil.transferOut(address(0), feeAmount, S.exchange.owner());
+
+            S.forcedExit[msg.sender] = exit;
+            S.forcedExitCount++;
+        } else {
+            AmmUtil.transferIn(address(0), 0);
+
+            bytes32 txHash = hash(S.domainSeparator, exit);
+            S.approvedTx[txHash] = exit.validUntil;
         }
 
-        S.forcedExit[msg.sender] = exit;
-        S.forcedExitCount++;
-
-        emit ForcedPoolExitRequested(exit);
+        emit ForcedPoolExitRequested(exit, force);
     }
 
     function hash(

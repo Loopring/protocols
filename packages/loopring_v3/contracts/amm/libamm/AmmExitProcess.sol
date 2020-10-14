@@ -47,13 +47,16 @@ library AmmExitProcess
 
         if (signature.length == 0) {
             bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
-            require(txHash == forcedExitHash, "FORCED_EXIT_NOT_FOUND");
-
-            delete S.forcedExit[exit.owner];
-            S.forcedExitCount--;
-            isForcedExit = true;
+            if (txHash == forcedExitHash) {
+                delete S.forcedExit[exit.owner];
+                S.forcedExitCount--;
+                isForcedExit = true;
+            } else {
+                require(S.approvedTx[txHash] == exit.validUntil, "INVALID_ONCHAIN_APPROVAL");
+                delete S.approvedTx[txHash];
+            }
         } else {
-            require(txHash.verifySignature(exit.owner, signature), "INVALID_EXIT_APPROVAL");
+            require(txHash.verifySignature(exit.owner, signature), "INVALID_OFFCHAIN_APPROVAL");
         }
 
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
