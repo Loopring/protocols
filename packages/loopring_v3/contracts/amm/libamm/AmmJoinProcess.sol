@@ -67,7 +67,7 @@ library AmmJoinProcess
                 transfer.amount.isAlmostEqualAmount(amounts[i]) &&
                 transfer.fee == 0 &&
                 (signature.length == 0 || transfer.storageID == join.joinStorageIDs[i]),
-                "INVALID_TX_DATA"
+                "INVALID_JOIN_TRANSFER_TX_DATA"
             );
 
             ctx.approveTransfer(transfer);
@@ -101,7 +101,7 @@ library AmmJoinProcess
             transfer.feeTokenID == 0 &&
             transfer.fee == 0,
             // transfer.storageID == UNKNOWN &&
-            "INVALID_TX_DATA"
+            "INVALID_MINT_TX_DATA"
         );
 
         ctx.approveTransfer(transfer);

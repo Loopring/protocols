@@ -625,7 +625,9 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               "INVALID_CHALLENGE"
             );
 
-            const maxForcedExitAge = (await sharedConfig.maxForcedExitAge()).toNumber();
+            const maxForcedExitAge = (
+              await sharedConfig.maxForcedExitAge()
+            ).toNumber();
             // Wait
             await ctx.advanceBlockTimestamp(maxForcedExitAge - 100);
 
@@ -684,8 +686,11 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               "MORE_TO_WITHDRAW"
             );
 
-            // Withdraw the approved withdrawals
-            await pool.contract.withdrawFromApprovedWithdrawals();
+            // Withdraw the approved withdrawals to the pool contract
+            await ctx.exchange.withdrawFromApprovedWithdrawals(
+              new Array(pool.tokens.length).fill(pool.contract.address),
+              pool.tokens.map(token => ctx.getTokenAddress(token))
+            );
 
             forcedExitAmountA = exitA.burnAmount;
           } else {

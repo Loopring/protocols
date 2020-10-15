@@ -22,7 +22,6 @@ contract LoopringAmmPool is
     PoolToken,
     IAgent,
     IBlockReceiver,
-    // Drainable,
     ReentrancyGuard
 {
     using AmmBlockReceiver for AmmData.State;
@@ -148,31 +147,4 @@ contract LoopringAmmPool is
     {
         state.updateExchangeOwner();
     }
-
-    // function withdrawFromDepositRequests(
-    //     address[] calldata tokens
-    //     )
-    //     external
-    //     nonReentrant
-    // {
-    //     state.withdrawFromDepositRequests(tokens);
-    // }
-
-    // function withdrawFromApprovedWithdrawals()
-    //     external
-    //     nonReentrant
-    // {
-    //     state.withdrawFromApprovedWithdrawals();
-    // }
-
-
-
-    // function canDrain(address drainer, address token)
-    //     public
-    //     override
-    //     view
-    //     returns (bool)
-    // {
-    //     return state.canDrain(drainer, token);
-    // }
 }

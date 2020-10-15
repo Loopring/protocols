@@ -27,11 +27,14 @@ library AmmUpdateProcess
             // Check that the AMM update in the block matches the expected update
             AmmUpdateTransaction.AmmUpdate memory update = _block.readAmmUpdate(ctx.txIdx++);
 
-            require(update.owner == address(this), "INVALID_TX_DATA");
-            require(update.accountID == ctx.accountID, "INVALID_TX_DATA");
-            require(update.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
-            require(update.feeBips == S.feeBips, "INVALID_TX_DATA");
-            require(update.tokenWeight == ctx.tokens[i].weight, "INVALID_TX_DATA");
+            require(
+                update.owner == address(this) &&
+                update.accountID == ctx.accountID &&
+                update.tokenID == ctx.tokens[i].tokenID &&
+                update.feeBips == S.feeBips &&
+                update.tokenWeight == ctx.tokens[i].weight,
+                "INVALID_AMM_UPDATE_TX_DATA"
+            );
 
             // Now approve this AMM update
             update.validUntil = 0xffffffff;

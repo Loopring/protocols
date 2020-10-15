@@ -87,7 +87,7 @@ library AmmExitProcess
                 transfer.to == exit.owner &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
                 transfer.amount.add(transfer.fee).isAlmostEqualAmount(amounts[i]),
-                "INVALID_TX_DATA"
+                "INVALID_EXIT_TRANSFER_TX_DATA"
             );
 
             if (transfer.fee > 0) {
@@ -132,7 +132,7 @@ library AmmExitProcess
             transfer.feeTokenID == 0 &&
             transfer.fee == 0 &&
             (signature.length == 0 || transfer.storageID == burnStorageID),
-            "INVALID_TX_DATA"
+            "INVALID_BURN_TX_DATA"
         );
 
         ctx.approveTransfer(transfer);
