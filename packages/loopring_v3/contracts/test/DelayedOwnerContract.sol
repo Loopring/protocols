@@ -20,6 +20,7 @@ contract DelayedOwnerContract is DelayedOwner
             DelayedTargetContract delayedTarget = DelayedTargetContract(delayedTargetAddress);
             setFunctionDelay(delayedTarget.delayedFunctionPayable.selector, 1 days);
             setFunctionDelay(delayedTarget.delayedFunctionRevert.selector, 2 days);
+            setFunctionDelay(delayedTarget.transferOwnership.selector, 3 days);
         }
     }
 

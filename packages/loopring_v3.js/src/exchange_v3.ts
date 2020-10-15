@@ -41,9 +41,6 @@ export class ExchangeV3 {
   private exchangeV3Abi: string;
   private exchangeAddress: string;
   private exchange: any;
-  private forgeMode: ForgeMode;
-  private protocol: ProtocolV3;
-  private implementationAddress: string;
 
   private syncedToEthereumBlockIdx: number;
 
@@ -71,28 +68,13 @@ export class ExchangeV3 {
    * Initializes an Exchange
    * @param   web3                      The web3 instance that will be used to get the necessary data from Ethereum
    * @param   exchangeAddress           The address of the exchange
-   * @param   exchangeId                The exchange ID
    * @param   owner                     The owner of the exchange
-   * @param   forgeMode                 The forge mode the exchange was created with
-   * @param   protocol                  The protocol of the exchange
-   * @param   implementationAddress     The address of the implementation
    */
-  public async initialize(
-    web3: Web3,
-    exchangeAddress: string,
-    exchangeId: number,
-    owner: string,
-    forgeMode: ForgeMode,
-    protocol: ProtocolV3,
-    implementationAddress: string
-  ) {
+  public async initialize(web3: Web3, exchangeAddress: string, owner: string) {
     this.web3 = web3;
     this.exchangeAddress = exchangeAddress;
     this.owner = owner;
     this.operator = owner;
-    this.forgeMode = forgeMode;
-    this.protocol = protocol;
-    this.implementationAddress = implementationAddress;
 
     this.syncedToEthereumBlockIdx = 0;
 
@@ -116,11 +98,11 @@ export class ExchangeV3 {
     this.withdrawalModeStartTime = 0;
 
     // Reset state
-    this.state = new ExchangeState(exchangeId, []);
+    this.state = new ExchangeState(exchangeAddress, []);
 
     // Create the genesis block
     const genesisBlock: Block = {
-      exchangeId,
+      exchange: exchangeAddress,
       blockIdx: 0,
 
       blockType: 0,
@@ -149,7 +131,7 @@ export class ExchangeV3 {
       .getProtocolFeeValues()
       .call();
     this.protocolFees = {
-      exchangeId,
+      exchange: exchangeAddress,
       takerFeeBips: parseInt(protocolFeeValues.takerFeeBips),
       makerFeeBips: parseInt(protocolFeeValues.makerFeeBips),
       previousTakerFeeBips: parseInt(protocolFeeValues.previousTakerFeeBips),
@@ -552,14 +534,6 @@ export class ExchangeV3 {
   /// Meta
 
   /**
-   * Gets the ID of the exchange
-   * @return  The exchange ID
-   */
-  public getExchangeId() {
-    return this.state.exchangeId;
-  }
-
-  /**
    * Gets the address of the contract
    * @return  The address of the contract
    */
@@ -584,35 +558,11 @@ export class ExchangeV3 {
   }
 
   /**
-   * Gets the forge mode of the exchange
-   * @return  The forge mode of the exchange
-   */
-  public getForgeMode() {
-    return this.forgeMode;
-  }
-
-  /**
-   * Gets the protocol of the exchange
-   * @return  The exchange's protocol
-   */
-  public getProtocol() {
-    return this.protocol;
-  }
-
-  /**
-   * Gets the implementaton address of the exchange
-   * @return  The exchange's implementation
-   */
-  public getImplementationAddress() {
-    return this.implementationAddress;
-  }
-
-  /**
    * Returns the exchange stake amount (in LRC)
    * @return  The amount staked in LRC
    */
   public getExchangeStake() {
-    return this.protocol.getExchangeStake(this.state.exchangeId);
+    return this.exchange.getExchangeStake();
   }
 
   /**
@@ -620,7 +570,7 @@ export class ExchangeV3 {
    * @return  The amount staked in LRC
    */
   public getProtocolFeeStake() {
-    return this.protocol.getProtocolFeeStake(this.state.exchangeId);
+    return this.exchange.getProtocolFeeStake();
   }
 
   /**
@@ -754,7 +704,7 @@ export class ExchangeV3 {
 
         // Create the block
         const newBlock: Block = {
-          exchangeId: this.state.exchangeId,
+          exchange: this.exchangeAddress,
           blockIdx: blockIdx + i,
 
           blockType,
@@ -802,7 +752,7 @@ export class ExchangeV3 {
     const timestamp = Number(ethereumBlock.timestamp);
 
     const deposit: Deposit = {
-      exchangeId: this.state.exchangeId,
+      exchange: this.exchangeAddress,
       timestamp,
 
       owner: event.returnValues.owner,
@@ -823,7 +773,7 @@ export class ExchangeV3 {
     const timestamp = Number(ethereumBlock.timestamp);
 
     const onchainWithdrawal: OnchainWithdrawal = {
-      exchangeId: this.state.exchangeId,
+      exchange: this.exchangeAddress,
       withdrawalIdx: parseInt(event.returnValues.withdrawalIdx),
       timestamp,
 
@@ -844,7 +794,7 @@ export class ExchangeV3 {
       "Unexpected tokenId"
     );
     const token: Token = {
-      exchangeId: this.state.exchangeId,
+      exchange: this.exchangeAddress,
       tokenID: this.tokens.length,
       address: event.returnValues.token,
       enabled: true

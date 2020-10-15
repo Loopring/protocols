@@ -1,5 +1,6 @@
 import BN = require("bn.js");
 import { Artifacts } from "../util/Artifacts";
+import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { expectThrow } from "./expectThrow";
 
@@ -490,5 +491,54 @@ contract("DelayedOwner", (accounts: string[]) => {
       balanceAfter.eq(balanceBefore),
       "ETH balance target contract incorrect"
     );
+  });
+
+  it("should work as expected as the owner", async () => {
+    const ownerContract = await contracts.DelayedOwnerContract.new(
+      targetContract.address,
+      true
+    );
+
+    // Set the owner to the newly created owner contract
+    await targetContract.transferOwnership(ownerContract.address);
+
+    // Claim ownership of the target contract
+    {
+      const calldata = await ownerContract.contract.methods
+        .claimOwnership()
+        .encodeABI();
+      await ownerContract.transact(targetContract.address, calldata);
+    }
+
+    // Create a new owner contract that we'll transfer ownership to
+    const ownerContract2 = await contracts.DelayedOwnerContract.new(
+      targetContract.address,
+      true
+    );
+
+    // Now transfer the ownership to the new contract (this operation is delayed)
+    {
+      const calldata = await ownerContract.contract.methods
+        .transferOwnership(ownerContract2.address)
+        .encodeABI();
+      await ownerContract.transact(targetContract.address, calldata);
+      // Check the TransactionDelayed event
+      const delayedEvent = await exchangeTestUtil.assertEventEmitted(
+        ownerContract,
+        "TransactionDelayed"
+      );
+      // Skip forward the enforced delay
+      await advanceTimeAndBlockAsync(delayedEvent.delay.toNumber());
+      // Actually transfer the ownership now
+      await ownerContract.executeTransaction(delayedEvent.id);
+    }
+
+    // The new owner should be able to claim ownership now
+    {
+      const calldata = await ownerContract2.contract.methods
+        .claimOwnership()
+        .encodeABI();
+      await ownerContract2.transact(targetContract.address, calldata);
+    }
   });
 });
