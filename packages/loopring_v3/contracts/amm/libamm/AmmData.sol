@@ -37,7 +37,6 @@ library AmmData
     {
         address   owner;
         uint96[]  joinAmounts;
-        uint96[]  joinFees;
         uint32[]  joinStorageIDs;
         uint96    mintMinAmount;
         uint32    validUntil;
@@ -48,7 +47,8 @@ library AmmData
         address   owner;
         uint96    burnAmount;
         uint32    burnStorageID; // for pool token withdrawal from user to the pool
-        uint96[]  exitMinAmounts;
+        uint96[]  exitMinAmounts; // the amount to receive BEFORE paying the fee.
+        uint96    fee;
         uint32    validUntil;
     }
 

@@ -7,6 +7,8 @@ import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/ReentrancyGuard.sol";
+import "../../thirdparty/proxies/OwnedUpgradabilityProxy.sol";
 import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
 import "./libexchange/ExchangeAdmins.sol";
@@ -25,7 +27,7 @@ import "./libtransactions/TransferTransaction.sol";
 ///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeV3 is IExchangeV3
+contract ExchangeV3 is IExchangeV3, ReentrancyGuard
 {
     using AddressUtil           for address;
     using ERC20SafeTransfer     for address;
@@ -40,10 +42,14 @@ contract ExchangeV3 is IExchangeV3
     using ExchangeWithdrawals   for ExchangeData.State;
 
     ExchangeData.State public state;
+    address public loopringAddr;
 
     modifier onlyWhenUninitialized()
     {
-        require(owner == address(0) && state.id == 0, "INITIALIZED");
+        require(
+            loopringAddr == address(0) && state.merkleRoot == bytes32(0),
+            "INITIALIZED"
+        );
         _;
     }
 
@@ -58,7 +64,6 @@ contract ExchangeV3 is IExchangeV3
 
     function version()
         public
-        override
         pure
         returns (string memory)
     {
@@ -77,7 +82,6 @@ contract ExchangeV3 is IExchangeV3
     function initialize(
         address _loopring,
         address _owner,
-        uint    _id,
         bytes32 _genesisMerkleRoot
         )
         external
@@ -87,13 +91,41 @@ contract ExchangeV3 is IExchangeV3
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
+        loopringAddr = _loopring;
 
         state.initializeGenesisBlock(
-            _id,
             _loopring,
             _genesisMerkleRoot,
             EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
         );
+    }
+
+    function cloneExchange(
+        address _owner,
+        bytes32 _genesisMerkleRoot
+        )
+        external
+        override
+        nonReentrant
+        returns (address)
+    {
+        require(address(0) != _owner, "ZERO_ADDRESS");
+
+        OwnedUpgradabilityProxy proxy = new OwnedUpgradabilityProxy();
+        proxy.upgradeTo(address(this));
+
+        ExchangeV3 newExchange = ExchangeV3(address(proxy));
+
+        newExchange.initialize(
+            loopringAddr,
+            _owner,
+            _genesisMerkleRoot
+        );
+        proxy.transferProxyOwnership(_owner);
+
+        emit ExchangeCloned(address(newExchange), _owner, _genesisMerkleRoot);
+
+        return address(proxy);
     }
 
     function setAgentRegistry(address _agentRegistry)
@@ -207,24 +239,6 @@ contract ExchangeV3 is IExchangeV3
         return state.isShutdown();
     }
 
-    function getRequiredExchangeStake()
-        public
-        override
-        view
-        returns (uint)
-    {
-        return state.getRequiredExchangeStake();
-    }
-
-    function canSubmitBlocks()
-        external
-        override
-        view
-        returns (bool)
-    {
-        return state.canSubmitBlocks();
-    }
-
     // -- Tokens --
 
     function registerToken(
@@ -268,7 +282,7 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (uint)
     {
-        return state.loopring.getExchangeStake(state.id);
+        return state.loopring.getExchangeStake(address(this));
     }
 
     function withdrawExchangeStake(
@@ -283,17 +297,6 @@ contract ExchangeV3 is IExchangeV3
         return state.withdrawExchangeStake(recipient);
     }
 
-    function withdrawProtocolFeeStake(
-        address recipient,
-        uint amount
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
-    }
 
     function getProtocolFeeLastWithdrawnTime(
         address tokenAddress
@@ -312,10 +315,10 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
     {
         // Allow burning the complete exchange stake when the exchange gets into withdrawal mode
-        if(state.isInWithdrawalMode()) {
+        if (state.isInWithdrawalMode()) {
             // Burn the complete stake of the exchange
-            uint stake = state.loopring.getExchangeStake(state.id);
-            state.loopring.burnExchangeStake(state.id, stake);
+            uint stake = state.loopring.getExchangeStake(address(this));
+            state.loopring.burnExchangeStake(stake);
         }
     }
 

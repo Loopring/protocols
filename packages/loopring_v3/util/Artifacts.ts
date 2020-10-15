@@ -1,6 +1,5 @@
 export class Artifacts {
   public MockContract: any;
-  public UniversalRegistry: any;
   public LoopringV3: any;
   public ExchangeV3: any;
   public BlockVerifier: any;
@@ -27,7 +26,6 @@ export class Artifacts {
 
   constructor(artifacts: any) {
     this.MockContract = artifacts.require("MockContract");
-    this.UniversalRegistry = artifacts.require("UniversalRegistry");
     this.LoopringV3 = artifacts.require("LoopringV3");
     this.ExchangeV3 = artifacts.require("ExchangeV3");
     this.BlockVerifier = artifacts.require("BlockVerifier");
@@ -50,7 +48,7 @@ export class Artifacts {
     this.DelayedTargetContract = artifacts.require("DelayedTargetContract");
     this.DefaultDepositContract = artifacts.require("DefaultDepositContract");
     this.OwnedUpgradeabilityProxy = artifacts.require(
-      "OwnedUpgradeabilityProxy"
+      "OwnedUpgradabilityProxy"
     );
   }
 }

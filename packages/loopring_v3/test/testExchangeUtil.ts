@@ -81,11 +81,7 @@ function replacer(name: any, val: any) {
     name === "onchainDataHash"
   ) {
     return new BN(val.slice(2), 16).toString(10);
-  } else if (
-    name === "joinAmounts" ||
-    name === "joinFees" ||
-    name === "exitMinAmounts"
-  ) {
+  } else if (name === "joinAmounts" || name === "exitMinAmounts") {
     const array: string[] = [];
     for (const v of val) {
       array.push(new BN(v, 16).toString(10));
@@ -180,7 +176,7 @@ export namespace AccountUpdateUtils {
           { name: "owner", type: "address" },
           { name: "accountID", type: "uint32" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "maxFee", type: "uint256" },
+          { name: "maxFee", type: "uint96" },
           { name: "publicKey", type: "uint256" },
           { name: "validUntil", type: "uint32" },
           { name: "nonce", type: "uint32" }
@@ -257,9 +253,9 @@ export namespace WithdrawalUtils {
           { name: "owner", type: "address" },
           { name: "accountID", type: "uint32" },
           { name: "tokenID", type: "uint16" },
-          { name: "amount", type: "uint256" },
+          { name: "amount", type: "uint96" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "maxFee", type: "uint256" },
+          { name: "maxFee", type: "uint96" },
           { name: "to", type: "address" },
           { name: "extraData", type: "bytes" },
           { name: "minGas", type: "uint256" },
@@ -341,9 +337,9 @@ export namespace TransferUtils {
           { name: "from", type: "address" },
           { name: "to", type: "address" },
           { name: "tokenID", type: "uint16" },
-          { name: "amount", type: "uint256" },
+          { name: "amount", type: "uint96" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "maxFee", type: "uint256" },
+          { name: "maxFee", type: "uint96" },
           { name: "validUntil", type: "uint32" },
           { name: "storageID", type: "uint32" }
         ]
@@ -422,7 +418,7 @@ export namespace AmmUpdateUtils {
           { name: "accountID", type: "uint32" },
           { name: "tokenID", type: "uint16" },
           { name: "feeBips", type: "uint8" },
-          { name: "tokenWeight", type: "uint256" },
+          { name: "tokenWeight", type: "uint96" },
           { name: "validUntil", type: "uint32" },
           { name: "nonce", type: "uint32" }
         ]
@@ -471,6 +467,8 @@ export class ExchangeTestUtil {
   public depositContract: any;
   public exchangeOwner: string;
   public exchangeOperator: string;
+
+  public exchangeIdGenerator: number = 0;
   public exchangeId: number;
 
   public operator: any;
@@ -479,7 +477,6 @@ export class ExchangeTestUtil {
   public userStakingPool: any;
   public protocolFeeVault: any;
   public protocolFeeVaultContract: any;
-  public universalRegistry: any;
 
   public blocks: Block[][] = [];
   public accounts: Account[][] = [];
@@ -532,7 +529,7 @@ export class ExchangeTestUtil {
     this.testContext = await this.createExchangeTestContext(accounts);
 
     this.explorer = new Explorer();
-    await this.explorer.initialize(web3, this.universalRegistry.address);
+    await this.explorer.initialize(web3, 0);
 
     // Initialize LoopringV3
     this.protocolFeeVault = this.testContext.orderOwners[
@@ -542,9 +539,7 @@ export class ExchangeTestUtil {
     await this.loopringV3.updateSettings(
       this.protocolFeeVault,
       this.blockVerifier.address,
-      new BN(web3.utils.toWei("10000", "ether")),
       new BN(web3.utils.toWei("0.02", "ether")),
-      new BN(web3.utils.toWei("250000", "ether")),
       { from: this.testContext.deployer }
     );
 
@@ -555,15 +550,9 @@ export class ExchangeTestUtil {
     //   { from: this.testContext.deployer }
     // );
 
-    await this.loopringV3.updateProtocolFeeSettings(
-      25,
-      50,
-      10,
-      25,
-      new BN(web3.utils.toWei("25000000", "ether")),
-      new BN(web3.utils.toWei("10000000", "ether")),
-      { from: this.testContext.deployer }
-    );
+    await this.loopringV3.updateProtocolFeeSettings(50, 0, {
+      from: this.testContext.deployer
+    });
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       this.pendingTransactions.push([]);
@@ -2166,7 +2155,7 @@ export class ExchangeTestUtil {
   public getWithdrawalAuxData(withdrawal: WithdrawalRequest) {
     // Hack: fix json deserializing when the to address is serialized as a decimal string
     if (!withdrawal.to.startsWith("0x")) {
-      withdrawal.to = "0x" + new BN(withdrawal.to).toString(16, 20);
+      withdrawal.to = "0x" + new BN(withdrawal.to).toString(16, 40);
     }
     return web3.eth.abi.encodeParameter(
       "tuple(bool,uint256,bytes,uint256,address,bytes,uint96,uint32)",
@@ -2307,6 +2296,7 @@ export class ExchangeTestUtil {
         txBlock,
         auxiliaryData
       );
+      blockInfo.blockInfoData = blockInfoData;
       blocks.push(blockInfo);
 
       // Write auxiliary data
@@ -2565,41 +2555,32 @@ export class ExchangeTestUtil {
       options.useOwnerContract !== undefined ? options.useOwnerContract : true;
 
     this.deterministic = deterministic;
-    const operator = this.testContext.operators[0];
-    const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
 
-    // Send enough tokens to the owner so the Exchange can be created
-    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
-    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
-    await LRC.addBalance(owner, exchangeCreationCostLRC);
-    await LRC.approve(this.universalRegistry.address, exchangeCreationCostLRC, {
-      from: owner
-    });
-
-    // randomely support upgradability
-    const forgeMode = this.deterministic ? 1 : new Date().getMilliseconds() % 4;
-    // Create the new exchange
-    const tx = await this.universalRegistry.forgeExchange(
-      forgeMode,
-      Constants.zeroAddress,
-      Constants.zeroAddress,
-      this.emptyMerkleRoot,
-      { from: owner }
+    const exchangePrototype = await this.contracts.ExchangeV3.new();
+    await exchangePrototype.initialize(
+      this.loopringV3.address,
+      owner,
+      this.emptyMerkleRoot
     );
 
-    // logInfo(
-    //   "\x1b[46m%s\x1b[0m",
-    //   "[CreateExchange] Gas used: " + tx.receipt.gasUsed
-    // );
-
+    const tx = await exchangePrototype.cloneExchange(
+      owner,
+      this.emptyMerkleRoot
+    );
+    logInfo(
+      "\x1b[46m%s\x1b[0m",
+      "[CreateExchange] Gas used: " + tx.receipt.gasUsed
+    );
     const event = await this.assertEventEmitted(
-      this.universalRegistry,
-      "ExchangeForged"
+      exchangePrototype,
+      "ExchangeCloned"
     );
     const exchangeAddress = event.exchangeAddress;
-    const exchangeId = event.exchangeId.toNumber();
 
     this.exchange = await this.contracts.ExchangeV3.at(exchangeAddress);
+    const exchangeId = this.exchangeIdGenerator++;
+
+    await this.explorer.addExchange(this.exchange.address, owner);
 
     // Create a deposit contract impl
     const depositContractImpl = await this.contracts.DefaultDepositContract.new();
@@ -2670,7 +2651,9 @@ export class ExchangeTestUtil {
 
     // Deposit some LRC to stake for the exchange
     const depositer = this.testContext.operators[2];
-    const stakeAmount = await this.loopringV3.stakePerThousandBlocks();
+    const stakeAmount = new BN(
+      web3.utils.toWei("" + (1 + this.getRandomInt(1000)))
+    );
     await this.setBalanceAndApprove(
       depositer,
       "LRC",
@@ -2679,9 +2662,13 @@ export class ExchangeTestUtil {
     );
 
     // Stake it
-    await this.loopringV3.depositExchangeStake(exchangeId, stakeAmount, {
-      from: depositer
-    });
+    await this.loopringV3.depositExchangeStake(
+      this.exchange.address,
+      stakeAmount,
+      {
+        from: depositer
+      }
+    );
 
     // Set the owner
     if (useOwnerContract) {
@@ -2729,7 +2716,9 @@ export class ExchangeTestUtil {
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
     await this.syncExplorer();
-    const explorerExchange = this.explorer.getExchangeById(this.exchangeId);
+    const explorerExchange = this.explorer.getExchangeByAddress(
+      this.exchange.address
+    );
     explorerExchange.buildMerkleTreeForWithdrawalMode();
     return explorerExchange.getWithdrawFromMerkleTreeData(accountID, tokenID);
   }
@@ -2900,9 +2889,7 @@ export class ExchangeTestUtil {
     await this.loopringV3.updateSettings(
       await this.loopringV3.protocolFeeVault(),
       await this.loopringV3.blockVerifierAddress(),
-      await this.loopringV3.exchangeCreationCostLRC(),
       this.getRandomFee(),
-      await this.loopringV3.stakePerThousandBlocks(),
       { from: this.testContext.deployer }
     );
   }
@@ -2958,7 +2945,7 @@ export class ExchangeTestUtil {
     );
 
     await this.syncExplorer();
-    const exchange = this.explorer.getExchangeById(this.exchangeId);
+    const exchange = this.explorer.getExchangeByAddress(this.exchange.address);
 
     // Compare accounts
     assert.equal(
@@ -2983,8 +2970,8 @@ export class ExchangeTestUtil {
       const explorerBlock = exchange.getBlock(blockIdx);
       const testBlock = this.blocks[this.exchangeId][blockIdx];
       assert.equal(
-        explorerBlock.exchangeId,
-        this.exchangeId,
+        explorerBlock.exchange,
+        this.exchange.address,
         "unexpected exchangeId"
       );
       assert.equal(
@@ -3169,7 +3156,7 @@ export class ExchangeTestUtil {
     const stakeBefore = await this.exchange.getExchangeStake();
     const totalStakeBefore = await this.loopringV3.totalStake();
 
-    await this.loopringV3.depositExchangeStake(this.exchangeId, amount, {
+    await this.loopringV3.depositExchangeStake(this.exchange.address, amount, {
       from: owner
     });
 
@@ -3193,9 +3180,9 @@ export class ExchangeTestUtil {
       "ExchangeStakeDeposited"
     );
     assert.equal(
-      event.exchangeId.toNumber(),
-      this.exchangeId,
-      "exchangeId should match"
+      event.exchangeAddr,
+      this.exchange.address,
+      "exchange should match"
     );
     assert(event.amount.eq(amount), "amount should match");
   }
@@ -3238,9 +3225,9 @@ export class ExchangeTestUtil {
       "ExchangeStakeWithdrawn"
     );
     assert.equal(
-      event.exchangeId.toNumber(),
-      this.exchangeId,
-      "exchangeId should match"
+      event.exchangeAddr,
+      this.exchange.address,
+      "exchange should match"
     );
     assert(event.amount.eq(amount), "amount should match");
   }
@@ -3346,14 +3333,12 @@ export class ExchangeTestUtil {
   // private functions:
   private async createContractContext() {
     const [
-      universalRegistry,
       loopringV3,
       exchange,
       blockVerifier,
       lrcToken,
       wethToken
     ] = await Promise.all([
-      this.contracts.UniversalRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
       this.contracts.ExchangeV3.deployed(),
       this.contracts.BlockVerifier.deployed(),
@@ -3369,7 +3354,6 @@ export class ExchangeTestUtil {
     this.userStakingPool = userStakingPool;
     this.protocolFeeVaultContract = protocolFeeVaultContract;
 
-    this.universalRegistry = universalRegistry;
     this.loopringV3 = loopringV3;
     this.exchange = exchange;
     this.blockVerifier = blockVerifier;

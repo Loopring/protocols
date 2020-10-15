@@ -22,9 +22,6 @@ contract("LoopringAmmPool", (accounts: string[]) => {
   let amountsA: BN[];
   let amountsB: BN[];
 
-  let feesA: BN[];
-  let feesB: BN[];
-
   const setupDefaultPool = async () => {
     const feeBipsAMM = 30;
     const tokens = ["WETH", "GTO"];
@@ -69,15 +66,6 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     amountsB = [
       new BN(web3.utils.toWei("1000", "ether")),
       new BN(web3.utils.toWei("2000", "ether"))
-    ];
-
-    feesA = [
-      new BN(web3.utils.toWei("123.456789", "ether")),
-      new BN(web3.utils.toWei("456.789", "ether"))
-    ];
-    feesB = [
-      new BN(web3.utils.toWei("0", "ether")),
-      new BN(web3.utils.toWei("789", "ether"))
     ];
 
     const loopringAmmSharedConfig = artifacts.require(
@@ -164,10 +152,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("10000.123456", "ether")),
           new BN(web3.utils.toWei("20000.654321", "ether"))
         ],
-        [
-          new BN(web3.utils.toWei("123.456789", "ether")),
-          new BN(web3.utils.toWei("456.789", "ether"))
-        ],
+        // [
+        //   new BN(web3.utils.toWei("123.456789", "ether")),
+        //   new BN(web3.utils.toWei("456.789", "ether"))
+        // ],
         { authMethod: AuthMethod.ECDSA }
       );
       await pool.join(
@@ -177,10 +165,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("1000", "ether")),
           new BN(web3.utils.toWei("2000", "ether"))
         ],
-        [
-          new BN(web3.utils.toWei("0", "ether")),
-          new BN(web3.utils.toWei("789", "ether"))
-        ],
+        // [
+        //   new BN(web3.utils.toWei("0", "ether")),
+        //   new BN(web3.utils.toWei("789", "ether"))
+        // ],
         { authMethod: AuthMethod.ECDSA }
       );
       await ctx.submitTransactions(16);
@@ -225,7 +213,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("5000", "ether")),
           new BN(web3.utils.toWei("10000", "ether"))
         ],
-        { authMethod: AuthMethod.ECDSA }
+        {
+          authMethod: AuthMethod.ECDSA,
+          fee: new BN(web3.utils.toWei("100.1234", "ether"))
+        }
       );
       await pool.exit(
         ownerB,
@@ -402,7 +393,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     it("No join signature", async () => {
       const pool = await setupDefaultPool();
       await pool.prePoolTransactions();
-      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.NONE
       });
       await ctx.submitTransactions();
@@ -412,7 +403,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     it("Invalid join signature", async () => {
       const pool = await setupDefaultPool();
       await pool.prePoolTransactions();
-      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.ECDSA,
         signer: ownerB
       });
@@ -447,16 +438,12 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       const pool = await setupDefaultPool();
 
       await pool.prePoolTransactions();
-      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.ECDSA
       });
-      await pool.join(
-        ownerB,
-        pool.POOL_TOKEN_BASE.div(new BN(10)),
-        amountsB,
-        feesB,
-        { authMethod: AuthMethod.ECDSA }
-      );
+      await pool.join(ownerB, pool.POOL_TOKEN_BASE.div(new BN(10)), amountsB, {
+        authMethod: AuthMethod.ECDSA
+      });
       await ctx.submitTransactions(16);
       await expectThrow(ctx.submitPendingBlocks(), "JOIN_SLIPPAGE_INVALID");
     });
@@ -465,16 +452,12 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       const pool = await setupDefaultPool();
 
       await pool.prePoolTransactions();
-      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.ECDSA
       });
-      await pool.join(
-        ownerB,
-        pool.POOL_TOKEN_BASE.div(new BN(11)),
-        amountsA,
-        feesB,
-        { authMethod: AuthMethod.ECDSA }
-      );
+      await pool.join(ownerB, pool.POOL_TOKEN_BASE.div(new BN(11)), amountsA, {
+        authMethod: AuthMethod.ECDSA
+      });
       await ctx.submitTransactions(16);
 
       await pool.prePoolTransactions();
@@ -498,16 +481,13 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       const pool = await setupDefaultPool();
 
       await pool.prePoolTransactions();
-      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.ECDSA
       });
-      await pool.join(
-        ownerB,
-        pool.POOL_TOKEN_BASE.div(new BN(10)),
-        amountsB,
-        feesB,
-        { authMethod: AuthMethod.ECDSA, validUntil: 123 }
-      );
+      await pool.join(ownerB, pool.POOL_TOKEN_BASE.div(new BN(10)), amountsB, {
+        authMethod: AuthMethod.ECDSA,
+        validUntil: 123
+      });
       await ctx.submitTransactions(16);
       await expectThrow(ctx.submitPendingBlocks(), "EXPIRED");
     });
@@ -516,16 +496,12 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       const pool = await setupDefaultPool();
 
       await pool.prePoolTransactions();
-      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.ECDSA
       });
-      await pool.join(
-        ownerB,
-        pool.POOL_TOKEN_BASE.div(new BN(11)),
-        amountsB,
-        feesB,
-        { authMethod: AuthMethod.ECDSA }
-      );
+      await pool.join(ownerB, pool.POOL_TOKEN_BASE.div(new BN(11)), amountsB, {
+        authMethod: AuthMethod.ECDSA
+      });
       await ctx.submitTransactions(16);
 
       await pool.prePoolTransactions();
@@ -562,20 +538,14 @@ contract("LoopringAmmPool", (accounts: string[]) => {
             ownerA,
             pool.POOL_TOKEN_BASE,
             amountsA,
-            [
-              new BN(web3.utils.toWei("123", "ether")),
-              new BN(web3.utils.toWei("456", "ether"))
-            ],
+
             { authMethod: AuthMethod.ECDSA }
           );
           const joinB = await pool.join(
             ownerB,
             pool.POOL_TOKEN_BASE.div(new BN(10)),
             amountsB,
-            [
-              new BN(web3.utils.toWei("0", "ether")),
-              new BN(web3.utils.toWei("789", "ether"))
-            ],
+
             { authMethod: AuthMethod.ECDSA }
           );
           await ctx.submitTransactions(16);
@@ -817,7 +787,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       pool = await setupDefaultPool();
 
       await pool.prePoolTransactions();
-      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, feesA, {
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.ECDSA
       });
 

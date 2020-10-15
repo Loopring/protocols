@@ -19,14 +19,8 @@ library ExchangeAdmins
     using ExchangeMode      for ExchangeData.State;
     using MathUint          for uint;
 
-    event OperatorChanged(
-        uint    indexed exchangeId,
-        address         oldOperator,
-        address         newOperator
-    );
-
     event MaxAgeDepositUntilWithdrawableChanged(
-        uint    indexed exchangeId,
+        address indexed exchangeAddr,
         uint32          oldValue,
         uint32          newValue
     );
@@ -48,7 +42,7 @@ library ExchangeAdmins
         S.maxAgeDepositUntilWithdrawable = newValue;
 
         emit MaxAgeDepositUntilWithdrawableChanged(
-            S.id,
+            address(this),
             oldValue,
             newValue
         );
@@ -69,7 +63,7 @@ library ExchangeAdmins
         require(block.timestamp >= S.shutdownModeStartTime + ExchangeData.MIN_TIME_IN_SHUTDOWN(), "TOO_EARLY");
 
         // Withdraw the complete stake
-        uint amount = S.loopring.getExchangeStake(S.id);
-        return S.loopring.withdrawExchangeStake(S.id, recipient, amount);
+        uint amount = S.loopring.getExchangeStake(address(this));
+        return S.loopring.withdrawExchangeStake(recipient, amount);
     }
 }

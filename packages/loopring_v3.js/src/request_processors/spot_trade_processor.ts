@@ -136,7 +136,7 @@ export class SpotTradeProcessor {
 
     // Create struct
     const trade: SpotTrade = {
-      exchangeId: state.exchangeId,
+      exchange: state.exchange,
       requestIdx: state.processedRequests.length,
       blockIdx: /*block.blockIdx*/ 0,
 
