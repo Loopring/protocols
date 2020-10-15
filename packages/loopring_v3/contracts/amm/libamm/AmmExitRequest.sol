@@ -15,7 +15,7 @@ library AmmExitRequest
         "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint96 fee,uint32 validUntil)"
     );
 
-    event ForcedPoolExitRequested(AmmData.PoolExit exit, bool force);
+    event PoolExitRequested(AmmData.PoolExit exit, bool force);
 
     function exitPool(
         AmmData.State storage S,
@@ -56,7 +56,7 @@ library AmmExitRequest
             S.approvedTx[txHash] = true;
         }
 
-        emit ForcedPoolExitRequested(exit, force);
+        emit PoolExitRequested(exit, force);
     }
 
     function hash(

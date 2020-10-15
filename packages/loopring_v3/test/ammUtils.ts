@@ -379,8 +379,9 @@ export class AmmPool {
       });
       const event = await this.ctx.assertEventEmitted(
         this.contract,
-        "ForcedPoolExitRequested"
+        "PoolExitRequested"
       );
+
       exit.validUntil = Number(event.exit.validUntil);
     } else if (authMethod === AuthMethod.APPROVE) {
       await this.contract.exitPool(burnAmount, exitMinAmounts, {
@@ -389,7 +390,7 @@ export class AmmPool {
       });
       const event = await this.ctx.assertEventEmitted(
         this.contract,
-        "ForcedPoolExitRequested"
+        "PoolExitRequested"
       );
       exit.validUntil = Number(event.exit.validUntil);
     } else if (authMethod === AuthMethod.ECDSA) {
