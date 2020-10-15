@@ -128,19 +128,6 @@ abstract contract IExchangeV3 is Claimable
         virtual
         external;
 
-    // -- Initialization --
-    /// @dev Create a new exchange by using a proxy. This method can only be called once.
-    /// @param  owner The owner of this exchange.
-    /// @param  genesisMerkleRoot The initial Merkle tree state.
-    /// @return exchangeAddr The address of the new exchange.
-    function cloneExchange(
-        address owner,
-        bytes32 genesisMerkleRoot
-        )
-        external
-        virtual
-        returns (address exchangeAddr);
-
     /// @dev Initialized the agent registry contract used by the exchange.
     ///      Can only be called by the exchange owner once.
     /// @param agentRegistry The agent registry contract to be used
