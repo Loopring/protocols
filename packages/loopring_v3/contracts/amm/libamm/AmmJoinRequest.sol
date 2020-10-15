@@ -21,7 +21,7 @@ library AmmJoinRequest
         uint96[]     calldata joinAmounts,
         uint96                mintMinAmount
         )
-        public
+        internal
     {
         require(joinAmounts.length == S.tokens.length,"INVALID_PARAM_SIZE");
 
