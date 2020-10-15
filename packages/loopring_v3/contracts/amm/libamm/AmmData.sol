@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../core/iface/ExchangeData.sol";
 import "../../core/iface/IExchangeV3.sol";
-import "./AmmSharedConfig.sol";
+import "./IAmmSharedConfig.sol";
 
 
 /// @title AmmData
@@ -69,8 +69,7 @@ library AmmData
     struct Context
     {
         // functional parameters
-        ExchangeData.Block _block;
-        uint               txIdx;
+        uint txIdx;
 
         // Exchange state variables
         IExchangeV3 exchange;
@@ -83,32 +82,46 @@ library AmmData
         uint16  poolTokenID;
         uint    totalSupply;
 
-        uint     size; // == token.length;
         Token[]  tokens;
         uint96[] tokenBalancesL2;
+
+        TransactionBuffer transactionBuffer;
+    }
+
+    struct TransactionBuffer
+    {
+        uint      size;
+        address[] owners;
+        bytes32[] txHashes;
     }
 
     struct State {
         // Pool token state variables
         string poolName;
         string symbol;
-        uint _totalSupply;
+        uint   _totalSupply;
 
         mapping(address => uint) balanceOf;
         mapping(address => mapping(address => uint)) allowance;
         mapping(address => uint) nonces;
 
         // AMM pool state variables
-        AmmSharedConfig sharedConfig;
+        IAmmSharedConfig sharedConfig;
 
+        Token[]     tokens;
+
+        // The order of the following variables important to minimize loads
+        bytes32     exchangeDomainSeparator;
+        bytes32     domainSeparator;
         IExchangeV3 exchange;
         uint32      accountID;
         uint16      poolTokenID;
-        bytes32     domainSeparator;
-        uint        shutdownTimestamp;
         uint8       feeBips;
+
+        address     exchangeOwner;
+
+        uint64      shutdownTimestamp;
         uint16      forcedExitCount;
-        Token[]     tokens;
 
         // A map from a user to the forced exit.
         mapping (address => PoolExit) forcedExit;

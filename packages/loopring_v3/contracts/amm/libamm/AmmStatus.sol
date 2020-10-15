@@ -11,10 +11,10 @@ import "../../lib/MathUint96.sol";
 import "../../lib/SignatureUtil.sol";
 import "./AmmData.sol";
 import "./AmmPoolToken.sol";
-import "./AmmSharedConfig.sol";
+import "./IAmmSharedConfig.sol";
 
 
-/// @title LPToken
+/// @title AmmStatus
 library AmmStatus
 {
     using AmmPoolToken      for AmmData.State;
@@ -49,9 +49,11 @@ library AmmStatus
         require(config.accountID != 0, "INVALID_ACCOUNT_ID");
         require(S.tokens.length == 0, "ALREADY_INITIALIZED");
 
-        S.sharedConfig = AmmSharedConfig(config.sharedConfig);
+        S.sharedConfig = IAmmSharedConfig(config.sharedConfig);
         IExchangeV3 exchange = IExchangeV3(config.exchange);
         S.exchange = exchange;
+        S.exchangeOwner = exchange.owner();
+        S.exchangeDomainSeparator = exchange.getDomainSeparator();
         S.accountID = config.accountID;
         S.poolTokenID = exchange.getTokenID(address(this));
         S.feeBips = config.feeBips;
@@ -105,7 +107,14 @@ library AmmStatus
                 );
             }
         }
-        S.shutdownTimestamp = block.timestamp;
+        S.shutdownTimestamp = uint64(block.timestamp);
         emit Shutdown(block.timestamp);
+    }
+
+    // Anyone is able to update the cached exchange owner to the current owner.
+    function updateExchangeOwner(AmmData.State storage S)
+        internal
+    {
+        S.exchangeOwner = S.exchange.owner();
     }
 }

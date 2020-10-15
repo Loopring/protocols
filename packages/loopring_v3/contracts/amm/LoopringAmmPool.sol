@@ -35,7 +35,7 @@ contract LoopringAmmPool is
 
     modifier onlyFromExchangeOwner()
     {
-        require(msg.sender == state.exchange.owner(), "UNAUTHORIZED");
+        require(msg.sender == state.exchangeOwner, "UNAUTHORIZED");
         _;
     }
 
@@ -91,18 +91,19 @@ contract LoopringAmmPool is
     }
 
     function beforeBlockSubmission(
-        ExchangeData.Block memory _block,
-        bytes              memory data,
-        uint                      txIdx
+        ExchangeData.Block memory   _block,
+        bytes              calldata data,
+        uint                        txIdx,
+        uint                        numTxs
         )
         external
         override
         onlyWhenOnline
         onlyFromExchangeOwner
-        nonReentrant
-        returns (uint)
+        // nonReentrant     // Not needed, does not do any external calls (except to the exchange)
+                            // and can only be called by the exchange owner.
     {
-        return state.beforeBlockSubmission(_block, data, txIdx);
+        state.beforeBlockSubmission(_block, data, txIdx, numTxs);
     }
 
     function withdrawFromApprovedWithdrawals()
@@ -118,5 +119,12 @@ contract LoopringAmmPool is
         nonReentrant
     {
         state.withdrawWhenOffline();
+    }
+
+    function updateExchangeOwner()
+        external
+        nonReentrant
+    {
+        state.updateExchangeOwner();
     }
 }

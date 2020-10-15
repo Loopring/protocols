@@ -22,32 +22,35 @@ library AmmBlockReceiver
     using BlockReader       for ExchangeData.Block;
 
     function beforeBlockSubmission(
-        AmmData.State      storage S,
-        ExchangeData.Block memory  _block,
-        bytes              memory  poolTxData,
-        uint                       txIdx
+        AmmData.State      storage   S,
+        ExchangeData.Block memory   _block,
+        bytes              calldata data,
+        uint                        txIdx,
+        uint                        numTxs
         )
         internal
-        returns (uint)
     {
-        AmmData.Context memory ctx = _getContext(S, _block, txIdx);
+        AmmData.Context memory ctx = _getContext(S, txIdx);
 
         BlockReader.BlockHeader memory header = _block.readHeader();
         require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
 
-        S.approveAmmUpdates(ctx);
+        S.approveAmmUpdates(ctx, _block);
 
-        _processPoolTx(S, ctx, poolTxData);
+        _processPoolTx(S, ctx, _block, data);
+
+        // Approve transactions
+        ctx.exchange.approveTransactions(ctx.transactionBuffer.owners, ctx.transactionBuffer.txHashes);
 
         // Update state
         S._totalSupply = ctx.totalSupply;
 
-        return ctx.txIdx - txIdx;
+        // Make sure we haven't consumed more transactions than expected
+        require(numTxs >= (ctx.txIdx - txIdx), "INVALID_NUM_TXS");
     }
 
     function _getContext(
         AmmData.State      storage S,
-        ExchangeData.Block memory  _block,
         uint                       txIdx
         )
         private
@@ -56,24 +59,28 @@ library AmmBlockReceiver
     {
         uint size = S.tokens.length;
         return AmmData.Context({
-            _block: _block,
             txIdx: txIdx,
             exchange: S.exchange,
-            exchangeDomainSeparator: S.exchange.getDomainSeparator(),
+            exchangeDomainSeparator: S.exchangeDomainSeparator,
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             poolTokenID: S.poolTokenID,
             totalSupply: S._totalSupply,
-            size: size,
             tokens: S.tokens,
-            tokenBalancesL2: new uint96[](size)
+            tokenBalancesL2: new uint96[](size),
+            transactionBuffer: AmmData.TransactionBuffer({
+                size: 0,
+                owners: new address[](size*2 + 1),
+                txHashes: new bytes32[](size*2 + 1)
+            })
         });
     }
 
     function _processPoolTx(
-        AmmData.State           storage S,
-        AmmData.Context         memory  ctx,
-        bytes                   memory  poolTxData
+        AmmData.State           storage   S,
+        AmmData.Context         memory    ctx,
+        ExchangeData.Block      memory    _block,
+        bytes                   calldata  poolTxData
         )
         private
     {
@@ -81,12 +88,14 @@ library AmmBlockReceiver
         if (poolTx.txType == AmmData.PoolTxType.JOIN) {
             S.processJoin(
                 ctx,
+                _block,
                 abi.decode(poolTx.data, (AmmData.PoolJoin)),
                 poolTx.signature
             );
         } else if (poolTx.txType == AmmData.PoolTxType.EXIT) {
             S.processExit(
                 ctx,
+                _block,
                 abi.decode(poolTx.data, (AmmData.PoolExit)),
                 poolTx.signature
             );

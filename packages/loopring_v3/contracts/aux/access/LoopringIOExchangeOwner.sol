@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../aux/compression/ZeroDecompressor.sol";
+import "../../aux/transactions/TransactionReader.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../lib/AddressUtil.sol";
@@ -17,10 +18,12 @@ import "./IBlockReceiver.sol";
 
 contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainable
 {
-    using AddressUtil     for address;
-    using BytesUtil       for bytes;
-    using MathUint        for uint;
-    using SignatureUtil   for bytes32;
+    using AddressUtil       for address;
+    using AddressUtil       for address payable;
+    using BytesUtil         for bytes;
+    using MathUint          for uint;
+    using SignatureUtil     for bytes32;
+    using TransactionReader for ExchangeData.Block;
 
     bytes4 private constant SUBMITBLOCKS_SELECTOR  = IExchangeV3.submitBlocks.selector;
     bool   public  open;
@@ -30,6 +33,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     struct TxCallback
     {
         uint16 txIdx;
+        uint16 numTxs;
         uint16 receiverIdx;
         bytes  data;
     }
@@ -87,13 +91,13 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     function submitBlocksWithCallbacks(
         bool                     isDataCompressed,
         bytes           calldata data,
-        CallbackConfig  calldata callbackConfig
+        CallbackConfig  calldata config
         )
         external
     {
         bool performCallback;
-        if (callbackConfig.blockCallbacks.length > 0) {
-            require(callbackConfig.receivers.length > 0, "MISSING_RECEIVERS");
+        if (config.blockCallbacks.length > 0) {
+            require(config.receivers.length > 0, "MISSING_RECEIVERS");
             performCallback = true;
         }
 
@@ -111,15 +115,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         );
 
         // Process the callback logic.
-
         if (performCallback) {
-            bytes memory blockData;
-            assembly {
-                blockData := add(decompressed, 4)
-            }
-            ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
-
-            _beforeBlockSubmission(blocks, callbackConfig);
+            _beforeBlockSubmission(_decodeBlocks(decompressed), config);
         }
 
         target.fastCallAndVerify(gasleft(), 0, decompressed);
@@ -127,13 +124,13 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
     function _beforeBlockSubmission(
         ExchangeData.Block[] memory   blocks,
-        CallbackConfig       calldata callbackConfig
+        CallbackConfig       calldata config
         )
         private
     {
         int lastBlockIdx = -1;
-        for (uint i = 0; i < callbackConfig.blockCallbacks.length; i++) {
-            BlockCallback calldata blockCallback = callbackConfig.blockCallbacks[i];
+        for (uint i = 0; i < config.blockCallbacks.length; i++) {
+            BlockCallback calldata blockCallback = config.blockCallbacks[i];
 
             uint16 blockIdx = blockCallback.blockIdx;
             require(blockIdx > lastBlockIdx, "BLOCK_INDEX_OUT_OF_ORDER");
@@ -142,7 +139,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             require(blockIdx < blocks.length, "INVALID_BLOCKIDX");
             ExchangeData.Block memory _block = blocks[blockIdx];
 
-            _processTxCallbacks(_block, blockCallback.txCallbacks, callbackConfig.receivers);
+            _processTxCallbacks(_block, blockCallback.txCallbacks, config.receivers);
         }
     }
 
@@ -164,10 +161,57 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             uint16 receiverIdx = txCallback.receiverIdx;
             require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
 
-            uint numTransactionsConsumed = IBlockReceiver(receivers[receiverIdx])
-                .beforeBlockSubmission(_block, txCallback.data, txIdx);
+            ExchangeData.Block memory minimalBlock = _block.createMinimalBlock(txIdx, txCallback.numTxs);
+            IBlockReceiver(receivers[receiverIdx]).beforeBlockSubmission(
+                minimalBlock,
+                txCallback.data,
+                0,
+                txCallback.numTxs
+            );
 
-            cursor = txIdx + numTransactionsConsumed;
+            cursor = txIdx + txCallback.numTxs;
         }
+    }
+
+    function _decodeBlocks(bytes memory data)
+        private
+        pure
+        returns (ExchangeData.Block[] memory)
+    {
+        // This copies the data (expensive) instead of just pointing to the correct address
+        //bytes memory blockData;
+        //assembly {
+        //    blockData := add(data, 4)
+        //}
+        //ExchangeData.Block[] memory blocks = abi.decode(blockData, (ExchangeData.Block[]));
+
+        // Points the block data to the data in the abi encoded data.
+        // Only sets the data necessary in the callbacks!
+        // 36 := 4 (function selector) + 32 (offset to blocks)
+        uint numBlocks = data.toUint(36);
+        ExchangeData.Block[] memory blocks = new ExchangeData.Block[](numBlocks);
+        for (uint i = 0; i < numBlocks; i++) {
+            ExchangeData.Block memory _block = blocks[i];
+
+            // 68 := 36 (see above) + 32 (blocks length)
+            uint blockOffset = 68 + data.toUint(68 + i*32);
+
+            uint offset = blockOffset;
+            //_block.blockType = uint8(data.toUint(offset));
+            offset += 32;
+            _block.blockSize = uint16(data.toUint(offset));
+            offset += 32;
+            //_block.blockVersion = uint8(data.toUint(offset));
+            offset += 32;
+            uint blockDataOffset = data.toUint(offset);
+            offset += 32;
+
+            bytes memory blockData;
+            assembly {
+                blockData := add(data, add(32, add(blockOffset, blockDataOffset)))
+            }
+            _block.data = blockData;
+        }
+        return blocks;
     }
 }
