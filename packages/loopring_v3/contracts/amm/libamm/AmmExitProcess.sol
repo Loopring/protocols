@@ -89,7 +89,7 @@ library AmmExitProcess
 
             if (transfer.fee > 0) {
                 require(
-                    i == ctx.size - 1 &&
+                    i == ctx.tokens.length - 1 &&
                     transfer.feeTokenID == ctx.tokens[i].tokenID &&
                     transfer.fee.isAlmostEqualFee(exit.fee),
                     "INVALID_FEES"
