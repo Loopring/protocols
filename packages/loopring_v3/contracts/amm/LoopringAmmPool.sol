@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../aux/access/IBlockReceiver.sol";
 import "../core/iface/IAgentRegistry.sol";
-import "../lib/Drainable.sol";
+// import "../lib/Drainable.sol";
 import "../lib/ReentrancyGuard.sol";
 import "./libamm/AmmBlockReceiver.sol";
 import "./libamm/AmmData.sol";
@@ -22,7 +22,7 @@ contract LoopringAmmPool is
     PoolToken,
     IAgent,
     IBlockReceiver,
-    Drainable,
+    // Drainable,
     ReentrancyGuard
 {
     using AmmBlockReceiver for AmmData.State;
@@ -133,21 +133,21 @@ contract LoopringAmmPool is
         return state.beforeBlockSubmission(_block, data, txIdx);
     }
 
-    function withdrawFromDepositRequests(
-        address[] calldata tokens
-        )
-        external
-        nonReentrant
-    {
-        state.withdrawFromDepositRequests(tokens);
-    }
+    // function withdrawFromDepositRequests(
+    //     address[] calldata tokens
+    //     )
+    //     external
+    //     nonReentrant
+    // {
+    //     state.withdrawFromDepositRequests(tokens);
+    // }
 
-    function withdrawFromApprovedWithdrawals()
-        external
-        nonReentrant
-    {
-        state.withdrawFromApprovedWithdrawals();
-    }
+    // function withdrawFromApprovedWithdrawals()
+    //     external
+    //     nonReentrant
+    // {
+    //     state.withdrawFromApprovedWithdrawals();
+    // }
 
     function withdrawWhenOffline()
         external
@@ -157,12 +157,12 @@ contract LoopringAmmPool is
         state.withdrawWhenOffline();
     }
 
-    function canDrain(address drainer, address token)
-        public
-        override
-        view
-        returns (bool)
-    {
-        return state.canDrain(drainer, token);
-    }
+    // function canDrain(address drainer, address token)
+    //     public
+    //     override
+    //     view
+    //     returns (bool)
+    // {
+    //     return state.canDrain(drainer, token);
+    // }
 }

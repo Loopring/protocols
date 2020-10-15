@@ -18,45 +18,45 @@ library AmmWithdrawal
     using AmmStatus         for AmmData.State;
     using MathUint          for uint;
 
-    function withdrawFromApprovedWithdrawals(
-        AmmData.State storage S
-        )
-        internal
-    {
-        uint size = S.tokens.length;
-        address[] memory owners = new address[](size);
-        address[] memory tokens = new address[](size);
+    // function withdrawFromApprovedWithdrawals(
+    //     AmmData.State storage S
+    //     )
+    //     internal
+    // {
+    //     uint size = S.tokens.length;
+    //     address[] memory owners = new address[](size);
+    //     address[] memory tokens = new address[](size);
 
-        for (uint i = 0; i < size; i++) {
-            owners[i] = address(this);
-            tokens[i] = S.tokens[i].addr;
-        }
-        S.exchange.withdrawFromApprovedWithdrawals(owners, tokens);
-    }
+    //     for (uint i = 0; i < size; i++) {
+    //         owners[i] = address(this);
+    //         tokens[i] = S.tokens[i].addr;
+    //     }
+    //     S.exchange.withdrawFromApprovedWithdrawals(owners, tokens);
+    // }
 
     // This is to claim other people depositing into this AMM pool.
-    function withdrawFromDepositRequests(
-        AmmData.State storage  S,
-        address[]     calldata tokens
-        )
-        internal
-    {
-        require(tokens.length > 0, "INVALID_TOKENS");
+    // function withdrawFromDepositRequests(
+    //     AmmData.State storage  S,
+    //     address[]     calldata tokens
+    //     )
+    //     internal
+    // {
+    //     require(tokens.length > 0, "INVALID_TOKENS");
 
-        address recipient = S.exchange.owner();
+    //     address recipient = S.exchange.owner();
 
-        for (uint i = 0; i < tokens.length; i++) {
-            address token = tokens[i];
-            S.exchange.withdrawFromDepositRequest(address(this), token);
-            if (token != address(this)) {
-                uint balance = token == address(0) ?
-                    address(this).balance :
-                    ERC20(token).balanceOf(address(this));
+    //     for (uint i = 0; i < tokens.length; i++) {
+    //         address token = tokens[i];
+    //         S.exchange.withdrawFromDepositRequest(address(this), token);
+    //         if (token != address(this)) {
+    //             uint balance = token == address(0) ?
+    //                 address(this).balance :
+    //                 ERC20(token).balanceOf(address(this));
 
-                AmmUtil.transferOut(token, balance, recipient);
-            }
-        }
-    }
+    //             AmmUtil.transferOut(token, balance, recipient);
+    //         }
+    //     }
+    // }
 
     function withdrawWhenOffline(
         AmmData.State storage S
@@ -95,34 +95,34 @@ library AmmWithdrawal
         S._totalSupply = S._totalSupply.sub(poolAmount);
     }
 
-    function canDrain(
-        AmmData.State storage S,
-        address               drainer,
-        address               token
-        )
-        internal
-        view
-        returns (bool)
-    {
-        // Never allow draining the pool token, these can be stored in this contract for forced exits at all times
-        if (token == address(this) || drainer != S.exchange.owner()) {
-            return false;
-        }
+    // function canDrain(
+    //     AmmData.State storage S,
+    //     address               drainer,
+    //     address               token
+    //     )
+    //     internal
+    //     view
+    //     returns (bool)
+    // {
+    //     // Never allow draining the pool token, these can be stored in this contract for forced exits at all times
+    //     if (token == address(this) || drainer != S.exchange.owner()) {
+    //         return false;
+    //     }
 
-        // When online, owner can claim all tokens, as we do not allow layer-1 joins.
-        if (S.isOnline()) {
-            return true;
-        }
+    //     // When online, owner can claim all tokens, as we do not allow layer-1 joins.
+    //     if (S.isOnline()) {
+    //         return true;
+    //     }
 
-        // When offline those tokens can be stored in this contract for use in withdrawWhenOffline
-        for (uint i = 0; i < S.tokens.length; i++) {
-            if (token == S.tokens[i].addr) {
-                return false;
-            }
-        }
+    //     // When offline those tokens can be stored in this contract for use in withdrawWhenOffline
+    //     for (uint i = 0; i < S.tokens.length; i++) {
+    //         if (token == S.tokens[i].addr) {
+    //             return false;
+    //         }
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
     function _checkWithdrawalConditionInShutdown(
         AmmData.State storage S
