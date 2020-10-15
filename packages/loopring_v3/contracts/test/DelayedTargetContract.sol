@@ -2,9 +2,12 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+import "../lib/Claimable.sol";
+
+
 /// @title DelayedTargetContract
 /// @author Brecht Devos - <brecht@loopring.org>
-contract DelayedTargetContract
+contract DelayedTargetContract is Claimable
 {
     uint public constant MAGIC_VALUE = 0xFEDCBA987654321;
     uint public value = 7;

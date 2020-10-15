@@ -20,23 +20,19 @@ library ExchangeGenesis
 
     function initializeGenesisBlock(
         ExchangeData.State storage S,
-        uint    _id,
-        address _loopring,
+        address _loopringAddr,
         bytes32 _genesisMerkleRoot,
         bytes32 _domainSeparator
         )
         public
     {
-        require(0 != _id, "INVALID_ID");
-        require(address(0) != _loopring, "INVALID_LOOPRING_ADDRESS");
+        require(address(0) != _loopringAddr, "INVALID_LOOPRING_ADDRESS");
         require(_genesisMerkleRoot != 0, "INVALID_GENESIS_MERKLE_ROOT");
-        require(S.id == 0, "INITIALIZED_ALREADY");
 
-        S.id = _id;
         S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
         S.DOMAIN_SEPARATOR = _domainSeparator;
 
-        ILoopringV3 loopring = ILoopringV3(_loopring);
+        ILoopringV3 loopring = ILoopringV3(_loopringAddr);
         S.loopring = loopring;
 
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
@@ -47,8 +43,8 @@ library ExchangeGenesis
 
         // Get the protocol fees for this exchange
         S.protocolFeeData.syncedAt = uint32(0);
-        S.protocolFeeData.takerFeeBips = S.loopring.maxProtocolTakerFeeBips();
-        S.protocolFeeData.makerFeeBips = S.loopring.maxProtocolMakerFeeBips();
+        S.protocolFeeData.takerFeeBips = S.loopring.protocolTakerFeeBips();
+        S.protocolFeeData.makerFeeBips = S.loopring.protocolMakerFeeBips();
         S.protocolFeeData.previousTakerFeeBips = S.protocolFeeData.takerFeeBips;
         S.protocolFeeData.previousMakerFeeBips = S.protocolFeeData.makerFeeBips;
 

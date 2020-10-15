@@ -268,9 +268,7 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion,
             new Array(18).fill(1)
           );
-          const protocolFees = await loopring.getProtocolFeeValues(
-            exchangeTestUtil.exchangeId
-          );
+          const protocolFees = await loopring.getProtocolFeeValues();
           const timestamp = (
             await web3.eth.getBlock(await web3.eth.getBlockNumber())
           ).timestamp;

@@ -10,7 +10,7 @@ async function main() {
   const web3 = new Web3(new Web3.providers.HttpProvider(ethNodeUrl));
   const universalRegistryAddress = "0x4c2103152a1A402af283fa52903569f05477611f";
   const blockFrom = 8967526;
-  explorer.initialize(web3, universalRegistryAddress, blockFrom);
+  explorer.initialize(web3, blockFrom);
 
   const blockTo = 9252045;
   const step = 200;

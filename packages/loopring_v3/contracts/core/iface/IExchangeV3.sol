@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./IExchange.sol";
+import "../../lib/Claimable.sol";
 import "./ExchangeData.sol";
 
 
@@ -17,19 +17,19 @@ import "./ExchangeData.sol";
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-abstract contract IExchangeV3 is IExchange
+abstract contract IExchangeV3 is Claimable
 {
     // -- Events --
+
+    event ExchangeCloned(
+        address exchangeAddress,
+        address owner,
+        bytes32 genesisMerkleRoot
+    );
 
     event TokenRegistered(
         address token,
         uint16  tokenId
-    );
-
-    event OperatorChanged(
-        uint    indexed exchangeId,
-        address         oldOperator,
-        address         newOperator
     );
 
     event Shutdown(
@@ -114,20 +114,32 @@ abstract contract IExchangeV3 is IExchange
         uint   publicKey
     );*/
 
+
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.
+    /// @param  loopring The LoopringV3 contract address.
     /// @param  owner The owner of this exchange.
-    /// @param  exchangeId The id of this exchange.
-    /// @param  loopring The corresponding ILoopring contract address.
     /// @param  genesisMerkleRoot The initial Merkle tree state.
     function initialize(
         address loopring,
         address owner,
-        uint    exchangeId,
+        bytes32 genesisMerkleRoot
+        )
+        virtual
+        external;
+
+    // -- Initialization --
+    /// @dev Create a new exchange by using a proxy. This method can only be called once.
+    /// @param  owner The owner of this exchange.
+    /// @param  genesisMerkleRoot The initial Merkle tree state.
+    /// @return exchangeAddr The address of the new exchange.
+    function cloneExchange(
+        address owner,
         bytes32 genesisMerkleRoot
         )
         external
-        virtual;
+        virtual
+        returns (address exchangeAddr);
 
     /// @dev Initialized the agent registry contract used by the exchange.
     ///      Can only be called by the exchange owner once.
@@ -189,22 +201,6 @@ abstract contract IExchangeV3 is IExchange
     /// @dev Returns whether the exchange is shutdown.
     /// @return Returns true if the exchange is shutdown, else false.
     function isShutdown()
-        external
-        virtual
-        view
-        returns (bool);
-
-    /// @dev Returns the number of LRC token required as exchange stake.
-    /// @return The number of LRC token required as stake.
-    function getRequiredExchangeStake()
-        public
-        virtual
-        view
-        returns (uint);
-
-    /// @dev Returns whether the Exchange has staked enough to submit blocks.
-    /// @return True if the exchange has staked enough, else false
-    function canSubmitBlocks()
         external
         virtual
         view
@@ -278,18 +274,6 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual
         returns (uint amountLRC);
-
-    /// @dev Withdraws the amount staked for this exchange.
-    ///      This can always be called.
-    ///      Can only be called by the exchange owner.
-    /// @param  recipient The recipient of the withdrawn LRC
-    /// @param  amount The amount of LRC that needs to be withdrawn
-    function withdrawProtocolFeeStake(
-        address recipient,
-        uint    amount
-        )
-        external
-        virtual;
 
     /// @dev Can by called by anyone to burn the stake of the exchange when certain
     ///      conditions are fulfilled.

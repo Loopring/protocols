@@ -9,8 +9,6 @@ const UniswapTokenSeller = artifacts.require("UniswapTokenSeller");
 const BatchVerifier = artifacts.require("BatchVerifier");
 const BlockVerifier = artifacts.require("BlockVerifier");
 
-const UniversalRegistry = artifacts.require("UniversalRegistry");
-
 const ExchangeAdmins = artifacts.require("ExchangeAdmins");
 const ExchangeBalances = artifacts.require("ExchangeBalances");
 const ExchangeBlocks = artifacts.require("ExchangeBlocks");
@@ -33,7 +31,6 @@ module.exports = function(deployer, network, accounts) {
   // console.log("- UniswapTokenSeller:", UniswapTokenSeller.address);
   console.log("- BatchVerifier:", BatchVerifier.address);
   console.log("- BlockVerifier:", BlockVerifier.address);
-  console.log("- UniversalRegistry:", UniversalRegistry.address);
   console.log("- ExchangeAdmins:", ExchangeAdmins.address);
   console.log("- ExchangeBalances:", ExchangeBalances.address);
   console.log("- ExchangeBlocks:", ExchangeBlocks.address);

@@ -5,6 +5,7 @@ pragma solidity ^0.7.0;
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/ReentrancyGuard.sol";
 import "../iface/IExchangeV3.sol";
 import "../iface/ILoopringV3.sol";
 
@@ -13,7 +14,7 @@ import "../iface/ILoopringV3.sol";
 /// @dev This contract does NOT support proxy.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract LoopringV3 is ILoopringV3
+contract LoopringV3 is ILoopringV3, ReentrancyGuard
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
@@ -21,77 +22,24 @@ contract LoopringV3 is ILoopringV3
 
     // -- Constructor --
     constructor(
-        address _universalRegistry,
         address _lrcAddress,
         address payable _protocolFeeVault,
         address _blockVerifierAddress
         )
         Claimable()
     {
-        require(address(0) != _universalRegistry, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
 
-        universalRegistry = _universalRegistry;
         lrcAddress = _lrcAddress;
 
-        updateSettingsInternal(
-            _protocolFeeVault,
-            _blockVerifierAddress,
-            0, 0, 0
-        );
-    }
-
-    // === ILoopring methods ===
-
-    modifier onlyUniversalRegistry()
-    {
-        require(msg.sender == universalRegistry, "UNAUTHORIZED");
-        _;
-    }
-
-    function initializeExchange(
-        address exchangeAddress,
-        uint    exchangeId,
-        address owner,
-        bytes32 genesisMerkleRoot
-        )
-        external
-        override
-        nonReentrant
-        onlyUniversalRegistry
-    {
-        require(exchangeId != 0, "ZERO_ID");
-        require(exchangeAddress != address(0), "ZERO_ADDRESS");
-        require(owner != address(0), "ZERO_ADDRESS");
-        require(exchanges[exchangeId].exchangeAddress == address(0), "ID_USED_ALREADY");
-
-        IExchangeV3 exchange = IExchangeV3(exchangeAddress);
-
-        // If the exchange has already been initialized, the following function will throw.
-        exchange.initialize(
-            address(this),
-            owner,
-            exchangeId,
-            genesisMerkleRoot
-        );
-
-        exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);
-
-        emit ExchangeInitialized(
-            exchangeId,
-            exchangeAddress,
-            owner,
-            genesisMerkleRoot
-        );
+        updateSettingsInternal(_protocolFeeVault, _blockVerifierAddress, 0);
     }
 
     // == Public Functions ==
     function updateSettings(
         address payable _protocolFeeVault,
         address _blockVerifierAddress,
-        uint    _exchangeCreationCostLRC,
-        uint    _forcedWithdrawalFee,
-        uint    _stakePerThousandBlocks
+        uint    _forcedWithdrawalFee
         )
         external
         override
@@ -101,50 +49,37 @@ contract LoopringV3 is ILoopringV3
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            _exchangeCreationCostLRC,
-            _forcedWithdrawalFee,
-            _stakePerThousandBlocks
+            _forcedWithdrawalFee
         );
     }
 
     function updateProtocolFeeSettings(
-        uint8 _minProtocolTakerFeeBips,
-        uint8 _maxProtocolTakerFeeBips,
-        uint8 _minProtocolMakerFeeBips,
-        uint8 _maxProtocolMakerFeeBips,
-        uint  _targetProtocolTakerFeeStake,
-        uint  _targetProtocolMakerFeeStake
+        uint8 _protocolTakerFeeBips,
+        uint8 _protocolMakerFeeBips
         )
         external
         override
         nonReentrant
         onlyOwner
     {
-        minProtocolTakerFeeBips = _minProtocolTakerFeeBips;
-        maxProtocolTakerFeeBips = _maxProtocolTakerFeeBips;
-        minProtocolMakerFeeBips = _minProtocolMakerFeeBips;
-        maxProtocolMakerFeeBips = _maxProtocolMakerFeeBips;
-        targetProtocolTakerFeeStake = _targetProtocolTakerFeeStake;
-        targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
+        protocolTakerFeeBips = _protocolTakerFeeBips;
+        protocolMakerFeeBips = _protocolMakerFeeBips;
 
         emit SettingsUpdated(block.timestamp);
     }
 
     function getExchangeStake(
-        uint exchangeId
+        address exchangeAddr
         )
         public
         override
         view
         returns (uint)
     {
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-        return exchange.exchangeStake;
+        return exchangeStake[exchangeAddr];
     }
 
     function burnExchangeStake(
-        uint exchangeId,
         uint amount
         )
         external
@@ -152,28 +87,22 @@ contract LoopringV3 is ILoopringV3
         nonReentrant
         returns (uint burnedLRC)
     {
-        Exchange storage exchange = exchanges[exchangeId];
-        address exchangeAddress = exchange.exchangeAddress;
-
-        require(exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-        require(exchangeAddress == msg.sender, "UNAUTHORIZED");
-
-        burnedLRC = exchange.exchangeStake;
+        burnedLRC = exchangeStake[msg.sender];
 
         if (amount < burnedLRC) {
             burnedLRC = amount;
         }
         if (burnedLRC > 0) {
             lrcAddress.safeTransferAndVerify(protocolFeeVault, burnedLRC);
-            exchange.exchangeStake = exchange.exchangeStake.sub(burnedLRC);
+            exchangeStake[msg.sender] = exchangeStake[msg.sender].sub(burnedLRC);
             totalStake = totalStake.sub(burnedLRC);
         }
-        emit ExchangeStakeBurned(exchangeId, burnedLRC);
+        emit ExchangeStakeBurned(msg.sender, burnedLRC);
     }
 
     function depositExchangeStake(
-        uint exchangeId,
-        uint amountLRC
+        address exchangeAddr,
+        uint    amountLRC
         )
         external
         override
@@ -182,20 +111,16 @@ contract LoopringV3 is ILoopringV3
     {
         require(amountLRC > 0, "ZERO_VALUE");
 
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-
         lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amountLRC);
 
-        stakedLRC = exchange.exchangeStake.add(amountLRC);
-        exchange.exchangeStake = stakedLRC;
+        stakedLRC = exchangeStake[exchangeAddr].add(amountLRC);
+        exchangeStake[exchangeAddr] = stakedLRC;
         totalStake = totalStake.add(amountLRC);
 
-        emit ExchangeStakeDeposited(exchangeId, amountLRC);
+        emit ExchangeStakeDeposited(exchangeAddr, amountLRC);
     }
 
     function withdrawExchangeStake(
-        uint    exchangeId,
         address recipient,
         uint    requestedAmount
         )
@@ -204,71 +129,20 @@ contract LoopringV3 is ILoopringV3
         nonReentrant
         returns (uint amountLRC)
     {
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-        require(exchange.exchangeAddress == msg.sender, "UNAUTHORIZED");
-
-        amountLRC = (exchange.exchangeStake > requestedAmount) ?
-            requestedAmount : exchange.exchangeStake;
+        uint stake = exchangeStake[msg.sender];
+        amountLRC = (stake > requestedAmount) ? requestedAmount : stake;
 
         if (amountLRC > 0) {
             lrcAddress.safeTransferAndVerify(recipient, amountLRC);
-            exchange.exchangeStake = exchange.exchangeStake.sub(amountLRC);
+            exchangeStake[msg.sender] = exchangeStake[msg.sender].sub(amountLRC);
             totalStake = totalStake.sub(amountLRC);
         }
 
-        emit ExchangeStakeWithdrawn(exchangeId, amountLRC);
+        emit ExchangeStakeWithdrawn(msg.sender, amountLRC);
     }
 
-    function depositProtocolFeeStake(
-        uint exchangeId,
-        uint amountLRC
-        )
-        external
-        override
-        nonReentrant
-        returns (uint stakedLRC)
-    {
-        require(amountLRC > 0, "ZERO_VALUE");
-
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-
-        lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amountLRC);
-
-        stakedLRC = exchange.protocolFeeStake.add(amountLRC);
-        exchange.protocolFeeStake = stakedLRC;
-        totalStake = totalStake.add(amountLRC);
-
-        emit ProtocolFeeStakeDeposited(exchangeId, amountLRC);
-    }
-
-    function withdrawProtocolFeeStake(
-        uint    exchangeId,
-        address recipient,
-        uint    amountLRC
-        )
-        external
-        override
-        nonReentrant
-    {
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-        require(exchange.exchangeAddress == msg.sender, "UNAUTHORIZED");
-        require(amountLRC <= exchange.protocolFeeStake, "INSUFFICIENT_STAKE");
-
-        if (amountLRC > 0) {
-            lrcAddress.safeTransferAndVerify(recipient, amountLRC);
-            exchange.protocolFeeStake = exchange.protocolFeeStake.sub(amountLRC);
-            totalStake = totalStake.sub(amountLRC);
-        }
-        emit ProtocolFeeStakeWithdrawn(exchangeId, amountLRC);
-    }
-
-    function getProtocolFeeValues(
-        uint exchangeId
-        )
-        external
+    function getProtocolFeeValues()
+        public
         override
         view
         returns (
@@ -276,45 +150,14 @@ contract LoopringV3 is ILoopringV3
             uint8 makerFeeBips
         )
     {
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-
-        // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
-        // The total stake used here is the exchange stake + the protocol fee stake, but
-        // the protocol fee stake has a reduced weight of 50%.
-
-        uint protocolFeeStake = exchange.exchangeStake
-            .add(exchange.protocolFeeStake / 2)
-            .sub(IExchangeV3(exchange.exchangeAddress).getRequiredExchangeStake());
-
-        takerFeeBips = calculateProtocolFee(
-            minProtocolTakerFeeBips, maxProtocolTakerFeeBips, protocolFeeStake, targetProtocolTakerFeeStake
-        );
-        makerFeeBips = calculateProtocolFee(
-            minProtocolMakerFeeBips, maxProtocolMakerFeeBips, protocolFeeStake, targetProtocolMakerFeeStake
-        );
-    }
-
-    function getProtocolFeeStake(
-        uint exchangeId
-        )
-        external
-        override
-        view
-        returns (uint)
-    {
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-        return exchange.protocolFeeStake;
+        return (protocolTakerFeeBips, protocolMakerFeeBips);
     }
 
     // == Internal Functions ==
     function updateSettingsInternal(
         address payable  _protocolFeeVault,
         address _blockVerifierAddress,
-        uint    _exchangeCreationCostLRC,
-        uint    _forcedWithdrawalFee,
-        uint    _stakePerThousandBlocks
+        uint    _forcedWithdrawalFee
         )
         private
     {
@@ -323,33 +166,8 @@ contract LoopringV3 is ILoopringV3
 
         protocolFeeVault = _protocolFeeVault;
         blockVerifierAddress = _blockVerifierAddress;
-        exchangeCreationCostLRC = _exchangeCreationCostLRC;
         forcedWithdrawalFee = _forcedWithdrawalFee;
-        stakePerThousandBlocks = _stakePerThousandBlocks;
 
         emit SettingsUpdated(block.timestamp);
-    }
-
-    function calculateProtocolFee(
-        uint minFee,
-        uint maxFee,
-        uint stake,
-        uint targetStake
-        )
-        internal
-        pure
-        returns (uint8)
-    {
-        if (targetStake > 0) {
-            // Simple linear interpolation between 2 points
-            uint maxReduction = maxFee.sub(minFee);
-            uint reduction = maxReduction.mul(stake) / targetStake;
-            if (reduction > maxReduction) {
-                reduction = maxReduction;
-            }
-            return uint8(maxFee.sub(reduction));
-        } else {
-            return uint8(minFee);
-        }
     }
 }
