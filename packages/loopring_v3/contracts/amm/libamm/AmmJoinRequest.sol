@@ -39,7 +39,7 @@ library AmmJoinRequest
 
         // Approve the join
         bytes32 txHash = hash(S.domainSeparator, join);
-        S.approvedTx[txHash] = join.validUntil;
+        S.approvedTx[txHash] = true;
 
         emit PoolJoinRequested(join);
     }

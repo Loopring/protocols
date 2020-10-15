@@ -52,7 +52,7 @@ library AmmExitProcess
                 S.forcedExitCount--;
                 isForcedExit = true;
             } else {
-                require(S.approvedTx[txHash] == exit.validUntil, "INVALID_ONCHAIN_APPROVAL");
+                require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
                 delete S.approvedTx[txHash];
             }
         } else {

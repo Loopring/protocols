@@ -43,8 +43,7 @@ library AmmJoinProcess
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
 
         if (signature.length == 0) {
-            require(join.validUntil >= block.timestamp, "JOIN_NOT_FOUND_OR_EXPIRED");
-            require(S.approvedTx[txHash] == join.validUntil, "INVALID_ONCHAIN_APPROVAL");
+            require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
             delete S.approvedTx[txHash];
         } else {
             require(txHash.verifySignature(join.owner, signature), "INVALID_OFFCHAIN_APPROVAL");

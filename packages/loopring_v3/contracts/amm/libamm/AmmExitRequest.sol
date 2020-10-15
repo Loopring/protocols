@@ -53,7 +53,7 @@ library AmmExitRequest
             AmmUtil.transferIn(address(0), 0);
 
             bytes32 txHash = hash(S.domainSeparator, exit);
-            S.approvedTx[txHash] = exit.validUntil;
+            S.approvedTx[txHash] = true;
         }
 
         emit ForcedPoolExitRequested(exit, force);
