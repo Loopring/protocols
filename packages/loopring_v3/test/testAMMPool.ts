@@ -117,10 +117,6 @@ contract("LoopringAmmPool", (accounts: string[]) => {
             new BN(web3.utils.toWei("10000", "ether")),
             new BN(web3.utils.toWei("20000", "ether"))
           ],
-          [
-            new BN(web3.utils.toWei("123", "ether")),
-            new BN(web3.utils.toWei("456", "ether"))
-          ],
           { authMethod: AuthMethod.ECDSA }
         );
         await pool.join(
@@ -129,10 +125,6 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           [
             new BN(web3.utils.toWei("1000", "ether")),
             new BN(web3.utils.toWei("2000", "ether"))
-          ],
-          [
-            new BN(web3.utils.toWei("0", "ether")),
-            new BN(web3.utils.toWei("789", "ether"))
           ],
           { authMethod: AuthMethod.ECDSA }
         );
