@@ -9,6 +9,7 @@ const UniswapTokenSeller = artifacts.require("UniswapTokenSeller");
 const BatchVerifier = artifacts.require("BatchVerifier");
 const BlockVerifier = artifacts.require("BlockVerifier");
 const AgentRegistry = artifacts.require("AgentRegistry");
+const FastWithdrawalAgent = artifacts.require("FastWithdrawalAgent");
 
 const ExchangeAdmins = artifacts.require("ExchangeAdmins");
 const ExchangeBalances = artifacts.require("ExchangeBalances");
@@ -39,6 +40,7 @@ module.exports = function(deployer, network, accounts) {
   console.log("- BatchVerifier:", BatchVerifier.address);
   console.log("- BlockVerifier:", BlockVerifier.address);
   console.log("- AgentRegistry:", AgentRegistry.address);
+  console.log("- FastWithdrawalAgent:", FastWithdrawalAgent.address);
 
   console.log("- LoopringV3:", LoopringV3.address);
   console.log("- ExchangeAdmins:", ExchangeAdmins.address);

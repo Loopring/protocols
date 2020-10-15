@@ -7,6 +7,7 @@ const BatchVerifier = artifacts.require("BatchVerifier");
 const BlockVerifier = artifacts.require("BlockVerifier");
 const LRCToken = artifacts.require("./test/tokens/LRC.sol");
 const AgentRegistry = artifacts.require("AgentRegistry");
+const FastWithdrawalAgent = artifacts.require("FastWithdrawalAgent");
 
 module.exports = function(deployer, network, accounts) {
   if (network != "live" && network != "live-fork") {
@@ -17,6 +18,7 @@ module.exports = function(deployer, network, accounts) {
       await deployer.link(BatchVerifier, BlockVerifier);
       await deployer.deploy(BlockVerifier);
       await deployer.deploy(AgentRegistry);
+      await deployer.deploy(FastWithdrawalAgent);
     });
   }
 };
