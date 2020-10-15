@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-interface AmmSharedConfig
+interface IAmmSharedConfig
 {
     function maxForcedExitAge() external view returns (uint);
     function maxForcedExitCount() external view returns (uint);

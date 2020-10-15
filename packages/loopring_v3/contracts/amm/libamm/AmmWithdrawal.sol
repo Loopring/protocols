@@ -18,6 +18,69 @@ library AmmWithdrawal
     using AmmStatus         for AmmData.State;
     using MathUint          for uint;
 
+    function withdrawWhenOffline(
+        AmmData.State storage S
+        )
+        internal
+    {
+        _checkWithdrawalConditionInShutdown(S);
+
+        // Burn the full balance
+        uint poolAmount = S.balanceOf[msg.sender];
+        if (poolAmount > 0) {
+            S.transfer(address(this), poolAmount);
+        }
+
+        // Burn any additional pool tokens stuck in forced exits
+        AmmData.PoolExit storage exit = S.forcedExit[msg.sender];
+        if (exit.burnAmount > 0) {
+            poolAmount = poolAmount.add(exit.burnAmount);
+            delete S.forcedExit[msg.sender];
+        }
+
+        require(poolAmount > 0, "ZERO_POOL_AMOUNT");
+
+        // Withdraw the part owned of the pool
+        uint totalSupply = S.totalSupply();
+        for (uint i = 0; i < S.tokens.length; i++) {
+            address token = S.tokens[i].addr;
+            uint balance = token == address(0) ?
+                address(this).balance :
+                ERC20(token).balanceOf(address(this));
+
+            uint amount = balance.mul(poolAmount) / totalSupply;
+            AmmUtil.transferOut(token, amount, msg.sender);
+        }
+
+        S._totalSupply = S._totalSupply.sub(poolAmount);
+    }
+
+    function _checkWithdrawalConditionInShutdown(
+        AmmData.State storage S
+        )
+        private
+        view
+    {
+        IExchangeV3 exchange = S.exchange;
+        bool withdrawalMode = exchange.isInWithdrawalMode();
+
+        for (uint i = 0; i < S.tokens.length; i++) {
+            address token = S.tokens[i].addr;
+
+            require(
+                withdrawalMode && exchange.isWithdrawnInWithdrawalMode(S.accountID, token) ||
+                !withdrawalMode && !exchange.isForcedWithdrawalPending(S.accountID, token),
+                "PENDING_WITHDRAWAL"
+            );
+
+            // Check that nothing is withdrawable anymore.
+            require(
+                exchange.getAmountWithdrawable(address(this), token) == 0,
+                "MORE_TO_WITHDRAW"
+            );
+        }
+    }
+
     // function withdrawFromApprovedWithdrawals(
     //     AmmData.State storage S
     //     )
@@ -58,43 +121,6 @@ library AmmWithdrawal
     //     }
     // }
 
-    function withdrawWhenOffline(
-        AmmData.State storage S
-        )
-        internal
-    {
-        _checkWithdrawalConditionInShutdown(S);
-
-        // Burn the full balance
-        uint poolAmount = S.balanceOf[msg.sender];
-        if (poolAmount > 0) {
-            S.transfer(address(this), poolAmount);
-        }
-
-        // Burn any additional pool tokens stuck in forced exits
-        AmmData.PoolExit storage exit = S.forcedExit[msg.sender];
-        if (exit.burnAmount > 0) {
-            poolAmount = poolAmount.add(exit.burnAmount);
-            delete S.forcedExit[msg.sender];
-        }
-
-        require(poolAmount > 0, "ZERO_POOL_AMOUNT");
-
-        // Withdraw the part owned of the pool
-        uint totalSupply = S.totalSupply();
-        for (uint i = 0; i < S.tokens.length; i++) {
-            address token = S.tokens[i].addr;
-            uint balance = token == address(0) ?
-                address(this).balance :
-                ERC20(token).balanceOf(address(this));
-
-            uint amount = balance.mul(poolAmount) / totalSupply;
-            AmmUtil.transferOut(token, amount, msg.sender);
-        }
-
-        S._totalSupply = S._totalSupply.sub(poolAmount);
-    }
-
     // function canDrain(
     //     AmmData.State storage S,
     //     address               drainer,
@@ -123,30 +149,4 @@ library AmmWithdrawal
 
     //     return true;
     // }
-
-    function _checkWithdrawalConditionInShutdown(
-        AmmData.State storage S
-        )
-        private
-        view
-    {
-        IExchangeV3 exchange = S.exchange;
-        bool withdrawalMode = exchange.isInWithdrawalMode();
-
-        for (uint i = 0; i < S.tokens.length; i++) {
-            address token = S.tokens[i].addr;
-
-            require(
-                withdrawalMode && exchange.isWithdrawnInWithdrawalMode(S.accountID, token) ||
-                !withdrawalMode && !exchange.isForcedWithdrawalPending(S.accountID, token),
-                "PENDING_WITHDRAWAL"
-            );
-
-            // Check that nothing is withdrawable anymore.
-            require(
-                exchange.getAmountWithdrawable(address(this), token) == 0,
-                "MORE_TO_WITHDRAW"
-            );
-        }
-    }
 }

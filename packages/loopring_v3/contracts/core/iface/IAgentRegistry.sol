@@ -17,4 +17,16 @@ interface IAgentRegistry
         external
         view
         returns (bool);
+
+    /// @dev Returns whether an agent address is an agent of all account owners
+    /// @param owners The account owners.
+    /// @param agent The agent address
+    /// @return True if the agent address is an agent for the account owner, else false
+    function isAgent(
+        address[] calldata owners,
+        address            agent
+        )
+        external
+        view
+        returns (bool);
 }

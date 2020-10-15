@@ -6,22 +6,26 @@ pragma experimental ABIEncoderV2;
 import "../../aux/transactions/TransactionReader.sol";
 import "../../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "./AmmData.sol";
+import "./AmmUtil.sol";
 
 
 /// @title AmmUpdateProcess
 library AmmUpdateProcess
 {
+    using AmmUtil           for AmmData.TransactionBuffer;
     using TransactionReader for ExchangeData.Block;
 
     function approveAmmUpdates(
-        AmmData.State    storage S,
-        AmmData.Context  memory  ctx
+        AmmData.State      storage S,
+        AmmData.Context    memory  ctx,
+        ExchangeData.Block memory  _block
         )
         internal
+        view
     {
-        for (uint i = 0; i < ctx.size; i++) {
+        for (uint i = 0; i < ctx.tokens.length; i++) {
             // Check that the AMM update in the block matches the expected update
-            AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
+            AmmUpdateTransaction.AmmUpdate memory update = _block.readAmmUpdate(ctx.txIdx++);
 
             require(update.owner == address(this), "INVALID_TX_DATA");
             require(update.accountID == ctx.accountID, "INVALID_TX_DATA");
@@ -32,7 +36,7 @@ library AmmUpdateProcess
             // Now approve this AMM update
             update.validUntil = 0xffffffff;
             bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.exchangeDomainSeparator, update);
-            ctx.exchange.approveTransaction(address(this), txHash);
+            ctx.transactionBuffer.approveExchangeTransaction(address(this), txHash);
 
             ctx.tokenBalancesL2[i] = update.balance;
         }

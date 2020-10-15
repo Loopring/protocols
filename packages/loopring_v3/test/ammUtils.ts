@@ -26,6 +26,7 @@ export interface PoolJoin {
   actualMintAmount?: BN;
   actualAmounts?: BN[];
   txIdx?: number;
+  numTxs?: number;
 }
 
 export interface PoolExit {
@@ -42,6 +43,7 @@ export interface PoolExit {
   authMethod: AuthMethod;
   actualAmounts?: BN[];
   txIdx?: number;
+  numTxs?: number;
 }
 
 export interface PoolTransaction {
@@ -600,8 +602,10 @@ export class AmmPool {
 
     // Set the pool transaction data on the callback
     blockCallback.auxiliaryData = AmmPool.getAuxiliaryData(transaction);
+    blockCallback.numTxs = this.tokens.length * 2 + 1;
     blockCallback.tx = transaction;
     blockCallback.tx.txIdx = blockCallback.txIdx;
+    blockCallback.tx.numTxs = blockCallback.numTxs;
   }
 
   public static getPoolJoinAuxData(join: PoolJoin) {
@@ -671,6 +675,7 @@ export class AmmPool {
     const blockCallback: BlockCallback = {
       target: transaction.poolAddress,
       txIdx: transaction.txIdx,
+      numTxs: transaction.numTxs,
       auxiliaryData: AmmPool.getAuxiliaryData(transaction),
       tx: transaction
     };

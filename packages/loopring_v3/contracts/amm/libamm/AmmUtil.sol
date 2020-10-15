@@ -22,11 +22,25 @@ library AmmUtil
         TransferTransaction.Transfer memory transfer
         )
         internal
+        pure
     {
         transfer.validUntil = 0xffffffff;
         transfer.maxFee = transfer.fee;
         bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-        ctx.exchange.approveTransaction(transfer.from, hash);
+        approveExchangeTransaction(ctx.transactionBuffer, transfer.from, hash);
+    }
+
+    function approveExchangeTransaction(
+        AmmData.TransactionBuffer memory buffer,
+        address                          owner,
+        bytes32                          txHash
+        )
+        internal
+        pure
+    {
+        buffer.owners[buffer.size] = owner;
+        buffer.txHashes[buffer.size] = txHash;
+        buffer.size++;
     }
 
     function isAlmostEqualAmount(

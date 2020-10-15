@@ -1736,6 +1736,7 @@ export class ExchangeTestUtil {
   public getCallbackConfig(blockCallbacks: BlockCallback[][]) {
     interface TxCallback {
       txIdx: number;
+      numTxs: number;
       receiverIdx: number;
       data: string;
     }
@@ -1778,6 +1779,7 @@ export class ExchangeTestUtil {
           // Add the block callback to the list
           onchainBlockCallback.txCallbacks.push({
             txIdx: blockCallback.txIdx,
+            numTxs: blockCallback.numTxs,
             receiverIdx,
             data: blockCallback.auxiliaryData
           });
@@ -2087,7 +2089,8 @@ export class ExchangeTestUtil {
     const blockCallback: BlockCallback = {
       target,
       auxiliaryData: Constants.emptyBytes,
-      txIdx: this.pendingTransactions[this.exchangeId].length
+      txIdx: this.pendingTransactions[this.exchangeId].length,
+      numTxs: 0
     };
     this.pendingBlockCallbacks[this.exchangeId].push(blockCallback);
     return blockCallback;
