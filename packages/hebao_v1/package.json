@@ -80,7 +80,7 @@
     "truffle-flattener": "^1.5.0",
     "types-bn": "0.0.1",
     "typescript": "3.9.7",
-    "webpack": "^4.41.0"
+    "webpack": "^5.1.2"
   },
   "dependencies": {
     "@ensdomains/ens": "^0.4.0",
