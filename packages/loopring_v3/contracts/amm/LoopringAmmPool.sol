@@ -14,7 +14,7 @@ import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmPoolToken.sol";
 import "./libamm/AmmStatus.sol";
 import "./libamm/AmmWithdrawal.sol";
-import './PoolToken.sol';
+import "./PoolToken.sol";
 
 
 /// @title LoopringAmmPool

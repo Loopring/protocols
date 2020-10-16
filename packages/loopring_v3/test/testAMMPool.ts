@@ -625,9 +625,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               "INVALID_CHALLENGE"
             );
 
-            const maxForcedExitAge = (
-              await sharedConfig.maxForcedExitAge()
-            ).toNumber();
+            const maxForcedExitAge = (await sharedConfig.maxForcedExitAge()).toNumber();
             // Wait
             await ctx.advanceBlockTimestamp(maxForcedExitAge - 100);
 

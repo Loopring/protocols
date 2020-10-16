@@ -2544,28 +2544,27 @@ export class ExchangeTestUtil {
 
     this.deterministic = deterministic;
 
-    const exchangePrototype = await this.contracts.ExchangeV3.new();
-    await exchangePrototype.initialize(
+    const newExchange = await this.contracts.ExchangeV3.new();
+    await newExchange.initialize(
       this.loopringV3.address,
       owner,
       this.emptyMerkleRoot
     );
 
-    const tx = await exchangePrototype.cloneExchange(
-      owner,
-      this.emptyMerkleRoot
-    );
-    logInfo(
-      "\x1b[46m%s\x1b[0m",
-      "[CreateExchange] Gas used: " + tx.receipt.gasUsed
-    );
-    const event = await this.assertEventEmitted(
-      exchangePrototype,
-      "ExchangeCloned"
-    );
-    const exchangeAddress = event.exchangeAddress;
-
-    this.exchange = await this.contracts.ExchangeV3.at(exchangeAddress);
+    // const tx = await exchangePrototype.cloneExchange(
+    //   owner,
+    //   this.emptyMerkleRoot
+    // );
+    // logInfo(
+    //   "\x1b[46m%s\x1b[0m",
+    //   "[CreateExchange] Gas used: " + tx.receipt.gasUsed
+    // );
+    // const event = await this.assertEventEmitted(
+    //   exchangePrototype,
+    //   "ExchangeCloned"
+    // );
+    const exchangeAddress = newExchange.address;
+    this.exchange = newExchange;
     const exchangeId = this.exchangeIdGenerator++;
 
     await this.explorer.addExchange(this.exchange.address, owner);
