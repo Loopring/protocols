@@ -81,7 +81,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         )
         external
         onlyFromFactory
-        nonReentrant
     {
         require(controller != Controller(0), "NO_CONTROLLER");
         require(_owner == address(0), "INITIALIZED_ALREADY");
@@ -101,7 +100,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         Controller _controller
         )
         external
-        nonReentrant
     {
         require(
             _owner == address(0) &&
@@ -125,7 +123,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function setOwner(address newOwner)
         external
         override
-        nonReentrant
         onlyFromModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
@@ -137,7 +134,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
 
     function setController(Controller newController)
         external
-        nonReentrant
         onlyFromModule
     {
         require(newController != controller, "SAME_CONTROLLER");
@@ -209,13 +205,8 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         onlyFromFactoryOrModule
         returns (bytes memory returnData)
     {
-        require(
-            !controller.moduleRegistry().isModuleRegistered(to),
-            "TRANSACT_ON_MODULE_DISALLOWED"
-        );
-
         bool success;
-        (success, returnData) = nonReentrantCall(mode, to, value, data);
+        (success, returnData) = _call(mode, to, value, data);
 
         if (!success) {
             assembly {
@@ -263,16 +254,13 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         }
     }
 
-    // This call is introduced to support reentrany check.
-    // The caller shall NOT have the nonReentrant modifier.
-    function nonReentrantCall(
+    function _call(
         uint8          mode,
         address        target,
         uint           value,
         bytes calldata data
         )
         private
-        nonReentrant
         returns (
             bool success,
             bytes memory returnData

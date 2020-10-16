@@ -94,7 +94,7 @@ abstract contract BaseTransferModule is SecurityModule
 
         // Disallow general calls to token contracts (for tokens that have price data
         // so the quota is actually used).
-        require(controller().priceOracle().tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
+        require(controllerCache.priceOracle.tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
 
         returnData = transactCall(wallet, to, value, txData);
         emit ContractCalled(wallet, to, value, txData);
@@ -103,9 +103,8 @@ abstract contract BaseTransferModule is SecurityModule
     function isTargetWhitelisted(address wallet, address to)
         internal
         view
-        returns (bool res)
+        returns (bool)
     {
-        (res,) = controller().whitelistStore().isWhitelisted(wallet, to);
-        res = res || controller().dappAddressStore().isDapp(to);
+        return controllerCache.whitelistStore.isDappOrWhitelisted(wallet, to);
     }
 }

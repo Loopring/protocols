@@ -104,7 +104,7 @@ abstract contract TransferModule is BaseTransferModule
         )
         external
         nonReentrant
-        txAwareHashNotAllowed()
+        //txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         if (amount > 0 && !isTargetWhitelisted(wallet, to)) {

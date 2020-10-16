@@ -4,12 +4,15 @@ pragma solidity ^0.7.0;
 
 import "../base/DataStore.sol";
 import "../lib/AddressSet.sol";
+import "../lib/OwnerManagable.sol";
 
 
 /// @title WhitelistStore
 /// @dev This store maintains a wallet's whitelisted addresses.
-contract WhitelistStore is DataStore, AddressSet
+contract WhitelistStore is DataStore, AddressSet, OwnerManagable
 {
+    bytes32 internal constant DAPPS = keccak256("__DAPPS__");
+
     // wallet => whitelisted_addr => effective_since
     mapping(address => mapping(address => uint)) public effectiveTimeMap;
 
@@ -18,6 +21,11 @@ contract WhitelistStore is DataStore, AddressSet
         address addr,
         bool    whitelisted,
         uint    effectiveTime
+    );
+
+    event Whitelisted(
+        address addr,
+        bool    whitelisted
     );
 
     constructor() DataStore() {}
@@ -92,5 +100,61 @@ contract WhitelistStore is DataStore, AddressSet
         returns (bytes32)
     {
         return keccak256(abi.encodePacked("__WHITELIST__", addr));
+    }
+
+    function addDapp(address addr)
+        public
+        onlyManager
+    {
+        addAddressToSet(DAPPS, addr, true);
+        emit Whitelisted(addr, true);
+    }
+
+    function removeDapp(address addr)
+        public
+        onlyManager
+    {
+        removeAddressFromSet(DAPPS, addr);
+        emit Whitelisted(addr, false);
+    }
+
+    function dapps()
+        public
+        view
+        returns (
+            address[] memory addresses
+        )
+    {
+        return addressesInSet(DAPPS);
+    }
+
+    function isDapp(
+        address addr
+        )
+        public
+        view
+        returns (bool)
+    {
+        return isAddressInSet(DAPPS, addr);
+    }
+
+    function numDapps()
+        public
+        view
+        returns (uint)
+    {
+        return numAddressesInSet(DAPPS);
+    }
+
+    function isDappOrWhitelisted(
+        address wallet,
+        address addr
+        )
+        public
+        view
+        returns (bool res)
+    {
+        (res,) = isWhitelisted(wallet, addr);
+        return res || isAddressInSet(DAPPS, addr);
     }
 }

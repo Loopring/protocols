@@ -26,15 +26,14 @@ abstract contract ForwarderModule is BaseModule
     uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 165000;
     bytes32 public FORWARDER_DOMAIN_SEPARATOR;
 
+    mapping(address => uint) public nonces;
+
     event MetaTxExecuted(
         address relayer,
         address from,
         uint    nonce,
         bytes32 txAwareHash,
         bool    success,
-        address gasToken,
-        uint    gasPrice,
-        uint    gasLimit,
         uint    gasUsed
     );
 
@@ -72,7 +71,7 @@ abstract contract ForwarderModule is BaseModule
         // so no Store can be used as 'to'.
         require(
             (to != address(this)) &&
-            controller().moduleRegistry().isModuleRegistered(to) ||
+            controllerCache.moduleRegistry.isModuleRegistered(to) ||
 
             // We only allow the wallet to call itself to addModule
             (to == from) &&
@@ -103,7 +102,14 @@ abstract contract ForwarderModule is BaseModule
         );
 
         bytes32 metaTxHash = EIP712.hashPacked(FORWARDER_DOMAIN_SEPARATOR, encoded);
-        require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
+
+        // Instead of always taking the expensive path through ER1271,
+        // skip directly to the wallet owner here (which could still be another contract).
+        //require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
+        address walletOwner = Wallet(from).owner();
+        (uint _lock,) = controllerCache.securityStore.getLock(from);
+        require(_lock <= block.timestamp, "WALLET_LOCKED");
+        require(metaTxHash.verifySignature(walletOwner, signature), "INVALID_SIGNATURE");
     }
 
     function executeMetaTx(
@@ -111,7 +117,6 @@ abstract contract ForwarderModule is BaseModule
         bytes  calldata signature
         )
         external
-        nonReentrant
         returns (
             bool         success,
             bytes memory ret
@@ -119,6 +124,11 @@ abstract contract ForwarderModule is BaseModule
     {
         uint gasLeft = gasleft();
         checkSufficientGas(metaTx);
+
+        // Update the nonce before the call to protect agains reentrancy
+        if (metaTx.nonce != 0) {
+            verifyAndUpdateNonce(metaTx.from, metaTx.nonce);
+        }
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
@@ -140,11 +150,6 @@ abstract contract ForwarderModule is BaseModule
             metaTx.data,
             signature
         );
-
-        // Nonce update must come after the real transaction in case of new wallet creation.
-        if (metaTx.nonce != 0) {
-            controller().nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
-        }
 
         uint gasUsed = gasLeft - gasleft() +
             (signature.length + metaTx.data.length + 7 * 32) * 16 + // data input cost
@@ -187,7 +192,7 @@ abstract contract ForwarderModule is BaseModule
 
             reimburseGasFee(
                 metaTx.from,
-                controller().collectTo(),
+                controllerCache.collectTo,
                 metaTx.gasToken,
                 metaTx.gasPrice,
                 gasToReimburse,
@@ -201,11 +206,31 @@ abstract contract ForwarderModule is BaseModule
             metaTx.nonce,
             metaTx.txAwareHash,
             success,
-            metaTx.gasToken,
-            metaTx.gasPrice,
-            metaTx.gasLimit,
             gasUsed
         );
+    }
+
+    function lastNonce(address wallet)
+        public
+        view
+        returns (uint)
+    {
+        return nonces[wallet];
+    }
+
+    function isNonceValid(address wallet, uint nonce)
+        public
+        view
+        returns (bool)
+    {
+        return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
+    }
+
+    function verifyAndUpdateNonce(address wallet, uint nonce)
+        internal
+    {
+        require(isNonceValid(wallet, nonce), "INVALID_NONCE");
+        nonces[wallet] = nonce;
     }
 
     function checkSufficientGas(

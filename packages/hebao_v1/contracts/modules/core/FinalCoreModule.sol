@@ -24,6 +24,7 @@ contract FinalCoreModule is
         );
 
         controller_ = _controller;
+        updateControllerCache();
     }
 
     function controller()

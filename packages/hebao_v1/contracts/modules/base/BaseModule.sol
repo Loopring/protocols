@@ -28,6 +28,19 @@ abstract contract BaseModule is ReentrancyGuard, Module
     event Activated   (address wallet);
     event Deactivated (address wallet);
 
+    struct ControllerCache
+    {
+        ModuleRegistry moduleRegistry;
+        SecurityStore securityStore;
+        WhitelistStore whitelistStore;
+        QuotaStore quotaStore;
+        DappAddressStore dappAddressStore;
+        PriceOracle priceOracle;
+        address collectTo;
+    }
+
+    ControllerCache public controllerCache;
+
     function logicalSender()
         internal
         view
@@ -61,7 +74,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         internal
         view
         virtual
-        returns(ControllerImpl);
+        returns (ControllerImpl);
 
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()
@@ -95,6 +108,19 @@ abstract contract BaseModule is ReentrancyGuard, Module
         pure
         virtual
         returns (bytes4[] memory methods);
+
+    function updateControllerCache()
+        public
+    {
+        ControllerImpl _controller = controller();
+        controllerCache.moduleRegistry = _controller.moduleRegistry();
+        controllerCache.securityStore = _controller.securityStore();
+        controllerCache.whitelistStore = _controller.whitelistStore();
+        controllerCache.dappAddressStore = _controller.dappAddressStore();
+        controllerCache.quotaStore = _controller.quotaStore();
+        controllerCache.priceOracle = _controller.priceOracle();
+        controllerCache.collectTo = _controller.collectTo();
+    }
 
     // ===== internal & private methods =====
 
@@ -216,9 +242,10 @@ abstract contract BaseModule is ReentrancyGuard, Module
         uint gasCost = gasAmount.mul(gasPrice);
 
         if (!skipQuota) {
-            uint value = controller().priceOracle().tokenValue(gasToken, gasCost);
+            ControllerImpl _controller = controller();
+            uint value = _controller.priceOracle().tokenValue(gasToken, gasCost);
             if (value > 0) {
-              controller().quotaStore().checkAndAddToSpent(wallet, value);
+              _controller.quotaStore().checkAndAddToSpent(wallet, value);
             }
         }
 

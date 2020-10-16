@@ -848,6 +848,9 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     defaultCtx = await getContext();
     priceOracleMock = await defaultCtx.contracts.MockContract.new();
     await defaultCtx.controllerImpl.setPriceOracle(priceOracleMock.address);
+
+    await defaultCtx.finalTransferModule.updateControllerCache();
+    await defaultCtx.finalCoreModule.updateControllerCache();
   });
 
   beforeEach(async () => {
@@ -857,6 +860,47 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       await ctx.finalTransferModule.transferDelayPeriod()
     ).toNumber();
     defaultQuota = await ctx.quotaStore.defaultQuota();
+  });
+
+  [true].forEach(function(metaTx) {
+    describe(description("Benchmark TransferToken", metaTx), () => {
+      it.only(
+        description(
+          "owner should be able to transfer tokens using daily quota",
+          metaTx
+        ),
+        async () => {
+          useMetaTx = metaTx;
+          const owner = ctx.owners[0];
+          const to = ctx.miscAddresses[0];
+          const { wallet } = await createWallet(ctx, owner);
+
+          const quota = await ctx.quotaStore.currentQuota(wallet);
+
+          // Use up the quota in multiple transfers
+          const transferValue = quota.div(new BN(3));
+          await transferTokenChecked(
+            owner,
+            wallet,
+            "ETH",
+            to,
+            transferValue,
+            "0x1234",
+            { assetValue: transferValue }
+          );
+
+          await transferTokenChecked(
+            owner,
+            wallet,
+            "ETH",
+            to,
+            transferValue,
+            "0x1234",
+            { assetValue: transferValue }
+          );
+        }
+      );
+    });
   });
 
   [false, true].forEach(function(metaTx) {

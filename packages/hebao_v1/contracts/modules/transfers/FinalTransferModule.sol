@@ -23,6 +23,7 @@ contract FinalTransferModule is TransferModule
         TransferModule(_transferDelayPeriod)
     {
         controller_ = _controller;
+        updateControllerCache();
     }
 
     function controller()
