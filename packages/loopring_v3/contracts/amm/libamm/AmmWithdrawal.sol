@@ -7,6 +7,7 @@ import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "./AmmData.sol";
 import "./AmmPoolToken.sol";
+import "./AmmStatus.sol";
 import "./AmmUtil.sol";
 
 
@@ -14,23 +15,8 @@ import "./AmmUtil.sol";
 library AmmWithdrawal
 {
     using AmmPoolToken      for AmmData.State;
+    using AmmStatus         for AmmData.State;
     using MathUint          for uint;
-
-    function withdrawFromApprovedWithdrawals(
-        AmmData.State storage S
-        )
-        internal
-    {
-        uint size = S.tokens.length;
-        address[] memory owners = new address[](size);
-        address[] memory tokens = new address[](size);
-
-        for (uint i = 0; i < size; i++) {
-            owners[i] = address(this);
-            tokens[i] = S.tokens[i].addr;
-        }
-        S.exchange.withdrawFromApprovedWithdrawals(owners, tokens);
-    }
 
     function withdrawWhenOffline(
         AmmData.State storage S

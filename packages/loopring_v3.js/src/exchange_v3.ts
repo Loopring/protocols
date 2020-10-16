@@ -84,9 +84,9 @@ export class ExchangeV3 {
     this.exchange = new web3.eth.Contract(JSON.parse(this.exchangeV3Abi));
     this.exchange.options.address = this.exchangeAddress;
 
-    const exchangeCreationTimestamp = (
-      await this.exchange.methods.getBlockInfo(0).call()
-    ).timestamp;
+    const exchangeCreationTimestamp = (await this.exchange.methods
+      .getBlockInfo(0)
+      .call()).timestamp;
     const genesisMerkleRoot = new BN(
       (await this.exchange.methods.getMerkleRoot().call()).slice(2),
       16
@@ -625,7 +625,7 @@ export class ExchangeV3 {
 
     // Get the block data from the transaction data
     //const submitBlocksFunctionSignature = "0x8dadd3af"; // submitBlocks
-    const submitBlocksFunctionSignature = "0xebc8c7ee"; // submitBlocksWithCallbacks
+    const submitBlocksFunctionSignature = "0xdcb2aa31"; // submitBlocksWithCallbacks
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash

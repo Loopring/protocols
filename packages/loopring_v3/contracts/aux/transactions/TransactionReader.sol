@@ -78,4 +78,43 @@ library TransactionReader {
         data = _block.readTransactionData(txIdx);
         require(txType == ExchangeData.TransactionType(data.toUint8(0)), "UNEXPTECTED_TX_TYPE");
     }
+
+    function createMinimalBlock(
+        ExchangeData.Block memory _block,
+        uint txIdx,
+        uint16 numTransactions
+        )
+        internal
+        pure
+        returns (ExchangeData.Block memory)
+    {
+        ExchangeData.Block memory minimalBlock = ExchangeData.Block({
+            blockType: _block.blockType,
+            blockSize: numTransactions,
+            blockVersion: _block.blockVersion,
+            data: new bytes(0),
+            proof: _block.proof,
+            storeBlockInfoOnchain: _block.storeBlockInfoOnchain,
+            auxiliaryData: new ExchangeData.AuxiliaryData[](0),
+            offchainData: new bytes(0)
+        });
+
+        bytes memory header = _block.data.slice(0, BlockReader.OFFSET_TO_TRANSACTIONS);
+
+        // Extract the data of the transactions we want
+        // Part 1
+        uint txDataOffset = BlockReader.OFFSET_TO_TRANSACTIONS +
+            txIdx * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1();
+        bytes memory dataPart1 = _block.data.slice(txDataOffset, numTransactions * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1());
+        // Part 2
+        txDataOffset = BlockReader.OFFSET_TO_TRANSACTIONS +
+            _block.blockSize * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1() +
+            txIdx * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_2();
+        bytes memory dataPart2 = _block.data.slice(txDataOffset, numTransactions * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_2());
+
+        // Set the data on the block in the standard format
+        minimalBlock.data = header.concat(dataPart1).concat(dataPart2);
+
+        return minimalBlock;
+    }
 }

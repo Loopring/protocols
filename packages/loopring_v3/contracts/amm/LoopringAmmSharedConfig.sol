@@ -4,9 +4,9 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../lib/Claimable.sol";
-import "./libamm/AmmSharedConfig.sol";
+import "./libamm/IAmmSharedConfig.sol";
 
-contract LoopringAmmSharedConfig is Claimable, AmmSharedConfig
+contract LoopringAmmSharedConfig is Claimable, IAmmSharedConfig
 {
     uint _maxForcedExitAge;
     uint _maxForcedExitCount;

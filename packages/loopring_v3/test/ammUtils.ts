@@ -26,6 +26,7 @@ export interface PoolJoin {
   actualMintAmount?: BN;
   actualAmounts?: BN[];
   txIdx?: number;
+  numTxs?: number;
 }
 
 export interface PoolExit {
@@ -42,6 +43,7 @@ export interface PoolExit {
   authMethod: AuthMethod;
   actualAmounts?: BN[];
   txIdx?: number;
+  numTxs?: number;
 }
 
 export interface PoolTransaction {
@@ -318,16 +320,12 @@ export class AmmPool {
     };
 
     if (authMethod === AuthMethod.APPROVE) {
-      assert(false, "unsupported");
-      /*await this.contract.joinPool(
-        minPoolAmountOut,
-        maxAmountsIn,
-        fromLayer2,
-        validUntil,
-        {
-          from: owner
-        }
-      );*/
+      await this.contract.joinPool(joinAmounts, mintMinAmount, { from: owner });
+      const event = await this.ctx.assertEventEmitted(
+        this.contract,
+        "PoolJoinRequested"
+      );
+      join.validUntil = Number(event.join.validUntil);
     } else if (authMethod === AuthMethod.ECDSA) {
       for (const token of this.tokens) {
         join.joinStorageIDs.push(this.ctx.reserveStorageID());
@@ -374,14 +372,25 @@ export class AmmPool {
     };
 
     if (authMethod === AuthMethod.FORCE) {
-      await this.contract.exitPool(burnAmount, exitMinAmounts, {
+      await this.contract.forceExitPool(burnAmount, exitMinAmounts, {
         from: owner,
         value: forcedExitFee,
         gasPrice: 0
       });
       const event = await this.ctx.assertEventEmitted(
         this.contract,
-        "ForcedPoolExitRequested"
+        "PoolExitRequested"
+      );
+
+      exit.validUntil = Number(event.exit.validUntil);
+    } else if (authMethod === AuthMethod.APPROVE) {
+      await this.contract.exitPool(burnAmount, exitMinAmounts, {
+        from: owner,
+        gasPrice: 0
+      });
+      const event = await this.ctx.assertEventEmitted(
+        this.contract,
+        "PoolExitRequested"
       );
       exit.validUntil = Number(event.exit.validUntil);
     } else if (authMethod === AuthMethod.ECDSA) {
@@ -535,6 +544,10 @@ export class AmmPool {
 
       if (valid) {
         if (exit.authMethod !== AuthMethod.FORCE) {
+          const storageID =
+            exit.authMethod === AuthMethod.ECDSA
+              ? exit.burnStorageID
+              : undefined;
           // Burn
           await this.ctx.transfer(
             exit.owner,
@@ -546,7 +559,7 @@ export class AmmPool {
             {
               authMethod: AuthMethod.NONE,
               amountToDeposit: new BN(0),
-              storageID: exit.burnStorageID
+              storageID
             }
           );
         }
@@ -590,8 +603,10 @@ export class AmmPool {
 
     // Set the pool transaction data on the callback
     blockCallback.auxiliaryData = AmmPool.getAuxiliaryData(transaction);
+    blockCallback.numTxs = this.tokens.length * 2 + 1;
     blockCallback.tx = transaction;
     blockCallback.tx.txIdx = blockCallback.txIdx;
+    blockCallback.tx.numTxs = blockCallback.numTxs;
   }
 
   public static getPoolJoinAuxData(join: PoolJoin) {
@@ -661,6 +676,7 @@ export class AmmPool {
     const blockCallback: BlockCallback = {
       target: transaction.poolAddress,
       txIdx: transaction.txIdx,
+      numTxs: transaction.numTxs,
       auxiliaryData: AmmPool.getAuxiliaryData(transaction),
       tx: transaction
     };

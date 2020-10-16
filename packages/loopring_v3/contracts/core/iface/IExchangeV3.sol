@@ -598,6 +598,19 @@ abstract contract IExchangeV3 is Claimable
         external
         virtual;
 
+    /// @dev Allows an agent to approve multiple rollup txs.
+    ///
+    ///      This function can only be called by an agent.
+    ///
+    /// @param owners The account owners
+    /// @param txHashes The hashes of the transactions
+    function approveTransactions(
+        address[] calldata owners,
+        bytes32[] calldata txHashes
+        )
+        external
+        virtual;
+
     /// @dev Checks if a rollup tx is approved using the tx's hash.
     ///
     /// @param owner The owner of the account that needs to authorize the tx

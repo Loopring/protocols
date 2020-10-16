@@ -57,7 +57,7 @@
     "types-bn": "0.0.1",
     "typescript": "3.9.7",
     "web3-typescript-typings": "0.10.2",
-    "webpack": "^4.35.0"
+    "webpack": "^5.1.2"
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.31",
@@ -84,7 +84,7 @@
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
     "snarkjs": "0.1.31",
-    "truffle": "5.1.44",
+    "truffle": "5.1.49",
     "truffle-hdwallet-provider": "web3-one",
     "typedarray-to-buffer": "^3.1.5"
   }

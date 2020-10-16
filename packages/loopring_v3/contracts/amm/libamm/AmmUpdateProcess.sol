@@ -6,33 +6,40 @@ pragma experimental ABIEncoderV2;
 import "../../aux/transactions/TransactionReader.sol";
 import "../../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "./AmmData.sol";
+import "./AmmUtil.sol";
 
 
 /// @title AmmUpdateProcess
 library AmmUpdateProcess
 {
+    using AmmUtil           for AmmData.TransactionBuffer;
     using TransactionReader for ExchangeData.Block;
 
     function approveAmmUpdates(
-        AmmData.State    storage S,
-        AmmData.Context  memory  ctx
+        AmmData.State      storage S,
+        AmmData.Context    memory  ctx,
+        ExchangeData.Block memory  _block
         )
         internal
+        view
     {
-        for (uint i = 0; i < ctx.size; i++) {
+        for (uint i = 0; i < ctx.tokens.length; i++) {
             // Check that the AMM update in the block matches the expected update
-            AmmUpdateTransaction.AmmUpdate memory update = ctx._block.readAmmUpdate(ctx.txIdx++);
+            AmmUpdateTransaction.AmmUpdate memory update = _block.readAmmUpdate(ctx.txIdx++);
 
-            require(update.owner == address(this), "INVALID_TX_DATA");
-            require(update.accountID == ctx.accountID, "INVALID_TX_DATA");
-            require(update.tokenID == ctx.tokens[i].tokenID, "INVALID_TX_DATA");
-            require(update.feeBips == S.feeBips, "INVALID_TX_DATA");
-            require(update.tokenWeight == ctx.tokens[i].weight, "INVALID_TX_DATA");
+            require(
+                update.owner == address(this) &&
+                update.accountID == ctx.accountID &&
+                update.tokenID == ctx.tokens[i].tokenID &&
+                update.feeBips == S.feeBips &&
+                update.tokenWeight == ctx.tokens[i].weight,
+                "INVALID_AMM_UPDATE_TX_DATA"
+            );
 
             // Now approve this AMM update
             update.validUntil = 0xffffffff;
             bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.exchangeDomainSeparator, update);
-            ctx.exchange.approveTransaction(address(this), txHash);
+            ctx.transactionBuffer.approveExchangeTransaction(address(this), txHash);
 
             ctx.tokenBalancesL2[i] = update.balance;
         }

@@ -214,6 +214,7 @@ export interface TxBlock {
 export interface BlockCallback {
   target: string;
   txIdx: number;
+  numTxs: number;
   auxiliaryData: any;
   tx?: any;
 }

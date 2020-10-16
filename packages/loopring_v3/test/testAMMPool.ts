@@ -103,6 +103,36 @@ contract("LoopringAmmPool", (accounts: string[]) => {
   describe("AMM", function() {
     this.timeout(0);
 
+    it("Benchmark", async () => {
+      const pool = await setupDefaultPool();
+      await ctx.submitTransactions(16);
+      await ctx.submitPendingBlocks();
+
+      await pool.prePoolTransactions();
+      for (let i = 0; i < 1; i++) {
+        await pool.join(
+          ownerA,
+          pool.POOL_TOKEN_BASE,
+          [
+            new BN(web3.utils.toWei("10000", "ether")),
+            new BN(web3.utils.toWei("20000", "ether"))
+          ],
+          { authMethod: AuthMethod.ECDSA }
+        );
+        await pool.join(
+          ownerB,
+          new BN(0),
+          [
+            new BN(web3.utils.toWei("1000", "ether")),
+            new BN(web3.utils.toWei("2000", "ether"))
+          ],
+          { authMethod: AuthMethod.ECDSA }
+        );
+        await ctx.submitTransactions(16);
+      }
+      await ctx.submitPendingBlocks();
+    });
+
     it("Successful swap (AMM maker)", async () => {
       const pool = await setupDefaultPool();
 
@@ -114,10 +144,6 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("10000.123456", "ether")),
           new BN(web3.utils.toWei("20000.654321", "ether"))
         ],
-        // [
-        //   new BN(web3.utils.toWei("123.456789", "ether")),
-        //   new BN(web3.utils.toWei("456.789", "ether"))
-        // ],
         { authMethod: AuthMethod.ECDSA }
       );
       await pool.join(
@@ -127,11 +153,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("1000", "ether")),
           new BN(web3.utils.toWei("2000", "ether"))
         ],
-        // [
-        //   new BN(web3.utils.toWei("0", "ether")),
-        //   new BN(web3.utils.toWei("789", "ether"))
-        // ],
-        { authMethod: AuthMethod.ECDSA }
+        { authMethod: AuthMethod.APPROVE }
       );
       await ctx.submitTransactions(16);
 
@@ -187,7 +209,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("500", "ether")),
           new BN(web3.utils.toWei("1000", "ether"))
         ],
-        { authMethod: AuthMethod.ECDSA }
+        { authMethod: AuthMethod.APPROVE }
       );
       await ctx.submitTransactions(16);
       await ctx.submitPendingBlocks();
@@ -359,7 +381,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         authMethod: AuthMethod.NONE
       });
       await ctx.submitTransactions();
-      await expectThrow(ctx.submitPendingBlocks(), "SUB_UNDERFLOW");
+      await expectThrow(ctx.submitPendingBlocks(), "INVALID_ONCHAIN_APPROVAL");
     });
 
     it("Invalid join signature", async () => {
@@ -370,7 +392,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         signer: ownerB
       });
       await ctx.submitTransactions();
-      await expectThrow(ctx.submitPendingBlocks(), "INVALID_JOIN_APPROVAL");
+      await expectThrow(ctx.submitPendingBlocks(), "INVALID_OFFCHAIN_APPROVAL");
     });
 
     it("No exit signature", async () => {
@@ -381,7 +403,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         authMethod: AuthMethod.NONE
       });
       await ctx.submitTransactions();
-      await expectThrow(ctx.submitPendingBlocks(), "FORCED_EXIT_NOT_FOUND");
+      await expectThrow(ctx.submitPendingBlocks(), "INVALID_ONCHAIN_APPROVAL");
     });
 
     it("Invalid exit signature", async () => {
@@ -393,7 +415,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         signer: ownerB
       });
       await ctx.submitTransactions();
-      await expectThrow(ctx.submitPendingBlocks(), "INVALID_EXIT_APPROVAL");
+      await expectThrow(ctx.submitPendingBlocks(), "INVALID_OFFCHAIN_APPROVAL");
     });
 
     it("Invalid join slippage", async () => {
@@ -437,6 +459,57 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       );
       await ctx.submitTransactions(16);
       await expectThrow(ctx.submitPendingBlocks(), "EXIT_SLIPPAGE_INVALID");
+    });
+
+    it("Unsatisfied forced exit", async () => {
+      const pool = await setupDefaultPool();
+
+      await pool.prePoolTransactions();
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
+        authMethod: AuthMethod.ECDSA
+      });
+      await ctx.submitTransactions();
+
+      // Withdraw ownerA's liquidity tokens
+      await ctx.requestWithdrawal(
+        ownerA,
+        pool.contract.address,
+        pool.POOL_TOKEN_BASE,
+        "ETH",
+        new BN(0)
+      );
+      await ctx.submitTransactions();
+      await ctx.submitPendingBlocks();
+      await pool.verifySupply();
+
+      await pool.prePoolTransactions();
+      const exit = await pool.exit(
+        ownerA,
+        pool.POOL_TOKEN_BASE,
+        [amountsA[0].mul(new BN(2)), amountsA[1].mul(new BN(2))],
+        { authMethod: AuthMethod.FORCE }
+      );
+
+      // Simulate the transfer back of the pool token
+      const snapshot = new BalanceSnapshot(ctx);
+      await snapshot.transfer(
+        pool.contract.address,
+        exit.owner,
+        pool.contract.address,
+        exit.burnAmount,
+        "pool",
+        "owner"
+      );
+      await ctx.submitTransactions();
+      await ctx.submitPendingBlocks();
+      // Verify balances
+      await snapshot.verifyBalances();
+      // Check ForcedExitProcessed event
+      const event = await ctx.assertEventEmitted(
+        pool.contract,
+        "ForcedExitProcessed"
+      );
+      assert(event.burnAmount.eq(new BN(0)), "unexpected burn amount");
     });
 
     it("Expired join", async () => {
@@ -552,9 +625,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               "INVALID_CHALLENGE"
             );
 
-            const maxForcedExitAge = (
-              await sharedConfig.maxForcedExitAge()
-            ).toNumber();
+            const maxForcedExitAge = (await sharedConfig.maxForcedExitAge()).toNumber();
             // Wait
             await ctx.advanceBlockTimestamp(maxForcedExitAge - 100);
 
@@ -613,8 +684,11 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               "MORE_TO_WITHDRAW"
             );
 
-            // Withdraw the approved withdrawals
-            await pool.contract.withdrawFromApprovedWithdrawals();
+            // Withdraw the approved withdrawals to the pool contract
+            await ctx.exchange.withdrawFromApprovedWithdrawals(
+              new Array(pool.tokens.length).fill(pool.contract.address),
+              pool.tokens.map(token => ctx.getTokenAddress(token))
+            );
 
             forcedExitAmountA = exitA.burnAmount;
           } else {

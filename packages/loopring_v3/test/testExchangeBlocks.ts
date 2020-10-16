@@ -159,9 +159,9 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion,
             new Array(18).fill(1)
           );
-          let timestamp = (
-            await web3.eth.getBlock(await web3.eth.getBlockNumber())
-          ).timestamp;
+          let timestamp = (await web3.eth.getBlock(
+            await web3.eth.getBlockNumber()
+          )).timestamp;
           timestamp -=
             exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
           const bs = new Bitstream();
@@ -199,9 +199,9 @@ contract("Exchange", (accounts: string[]) => {
           );
           // Timestamp too early
           {
-            let timestamp = (
-              await web3.eth.getBlock(await web3.eth.getBlockNumber())
-            ).timestamp;
+            let timestamp = (await web3.eth.getBlock(
+              await web3.eth.getBlockNumber()
+            )).timestamp;
             timestamp -=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
             const bs = new Bitstream();
@@ -229,9 +229,9 @@ contract("Exchange", (accounts: string[]) => {
           }
           // Timestamp too late
           {
-            let timestamp = (
-              await web3.eth.getBlock(await web3.eth.getBlockNumber())
-            ).timestamp;
+            let timestamp = (await web3.eth.getBlock(
+              await web3.eth.getBlockNumber()
+            )).timestamp;
             timestamp +=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
             const bs = new Bitstream();
@@ -269,9 +269,9 @@ contract("Exchange", (accounts: string[]) => {
             new Array(18).fill(1)
           );
           const protocolFees = await loopring.getProtocolFeeValues();
-          const timestamp = (
-            await web3.eth.getBlock(await web3.eth.getBlockNumber())
-          ).timestamp;
+          const timestamp = (await web3.eth.getBlock(
+            await web3.eth.getBlockNumber()
+          )).timestamp;
           // Invalid taker protocol fee
           {
             const bs = new Bitstream();
