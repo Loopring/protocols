@@ -36,6 +36,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         QuotaStore quotaStore;
         DappAddressStore dappAddressStore;
         PriceOracle priceOracle;
+        address walletFactory;
         address collectTo;
     }
 
@@ -119,6 +120,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         controllerCache.dappAddressStore = _controller.dappAddressStore();
         controllerCache.quotaStore = _controller.quotaStore();
         controllerCache.priceOracle = _controller.priceOracle();
+        controllerCache.walletFactory = _controller.walletFactory();
         controllerCache.collectTo = _controller.collectTo();
     }
 

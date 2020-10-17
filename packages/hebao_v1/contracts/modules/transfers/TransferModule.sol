@@ -103,7 +103,7 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata logdata
         )
         external
-        nonReentrant
+        //nonReentrant
         //txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {

@@ -877,15 +877,24 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
           const quota = await ctx.quotaStore.currentQuota(wallet);
 
+          const TestPriceOracle = artifacts.require("TestPriceOracle");
+          const testPriceOracle = await TestPriceOracle.new();
+          await defaultCtx.controllerImpl.setPriceOracle(
+            testPriceOracle.address
+          );
+
+          await defaultCtx.finalTransferModule.updateControllerCache();
+          await defaultCtx.finalCoreModule.updateControllerCache();
+
           // Use up the quota in multiple transfers
-          const transferValue = quota.div(new BN(3));
+          const transferValue = quota.div(new BN(5));
           await transferTokenChecked(
             owner,
             wallet,
             "ETH",
             to,
             transferValue,
-            "0x1234",
+            "0x",
             { assetValue: transferValue }
           );
 
@@ -895,7 +904,27 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
             "ETH",
             to,
             transferValue,
-            "0x1234",
+            "0x",
+            { assetValue: transferValue }
+          );
+
+          await transferTokenChecked(
+            owner,
+            wallet,
+            "LRC",
+            to,
+            transferValue,
+            "0x",
+            { assetValue: transferValue }
+          );
+
+          await transferTokenChecked(
+            owner,
+            wallet,
+            "LRC",
+            to,
+            transferValue,
+            "0x",
             { assetValue: transferValue }
           );
         }

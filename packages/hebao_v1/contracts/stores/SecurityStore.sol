@@ -281,6 +281,18 @@ contract SecurityStore is DataStore
         wallets[wallet].lastActive = uint64(block.timestamp);
     }
 
+    function touchLastActiveWhenRequired(
+        address wallet,
+        uint    minInternval
+        )
+        public
+    {
+        if (block.timestamp > lastActive(wallet) + minInternval) {
+            requireWalletModule(wallet);
+            wallets[wallet].lastActive = uint64(block.timestamp);
+        }
+    }
+
     function inheritor(address wallet)
         public
         view

@@ -41,10 +41,7 @@ abstract contract SecurityModule is MetaTxModule
             (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
-        SecurityStore ss = controllerCache.securityStore;
-        if (block.timestamp > ss.lastActive(wallet) + MIN_TOUCH_INTERVAL) {
-            ss.touchLastActive(wallet);
-        }
+        controllerCache.securityStore.touchLastActiveWhenRequired(wallet, MIN_TOUCH_INTERVAL);
         _;
     }
 
@@ -152,9 +149,10 @@ abstract contract SecurityModule is MetaTxModule
         )
         internal
     {
-        if (amount > 0 && controllerCache.quotaStore != QuotaStore(0)) {
+        QuotaStore _quotaStore = controllerCache.quotaStore;
+        if (amount > 0 && _quotaStore != QuotaStore(0)) {
             uint value = (token == address(0)) ? amount : controllerCache.priceOracle.tokenValue(token, amount);
-            controllerCache.quotaStore.checkAndAddToSpent(wallet, value);
+            _quotaStore.checkAndAddToSpent(wallet, value);
         }
     }
 }

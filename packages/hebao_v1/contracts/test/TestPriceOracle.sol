@@ -15,6 +15,6 @@ contract TestPriceOracle is PriceOracle
         override
         returns (uint value)
     {
-        value = amount * 10;
+        value = amount;
     }
 }
