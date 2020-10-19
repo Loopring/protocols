@@ -85,7 +85,15 @@ export async function createContext(context?: Context) {
   await context.controllerImpl.initWalletFactory(walletFactory.address);
   context.walletFactory = walletFactory;
 
+  await updateControllerCache(context);
+
   return context;
+}
+
+export async function updateControllerCache(ctx: Context) {
+  await ctx.finalCoreModule.updateControllerCache();
+  await ctx.finalSecurityModule.updateControllerCache();
+  await ctx.finalTransferModule.updateControllerCache();
 }
 
 export function getAllModuleAddresses(ctx: Context) {

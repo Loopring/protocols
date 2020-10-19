@@ -113,7 +113,10 @@ contract QuotaStore is DataStore, Claimable
     function pendingQuota(address wallet)
         public
         view
-        returns (uint, uint)
+        returns (
+            uint __pendingQuota,
+            uint __pendingUntil
+        )
     {
         return _pendingQuota(quotas[wallet]);
     }

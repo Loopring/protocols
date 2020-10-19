@@ -25,6 +25,7 @@ contract AddOfficialGuardianModule is BaseModule {
         )
     {
         controller_ = _controller;
+        updateControllerCache();
         officialGuardian = _officialGuardian;
         officialGuardianGroup = _officialGuardianGroup;
     }

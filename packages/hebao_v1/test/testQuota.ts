@@ -79,13 +79,13 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
       {
         const pendingQuotaData = await ctx.quotaStore.pendingQuota(wallet);
         assert(
-          pendingQuotaData._pendingQuota.eq(newQuota),
+          pendingQuotaData.__pendingQuota.eq(newQuota),
           "pending quota incorrect"
         );
 
         if (!useMetaTx) {
           assert.equal(
-            pendingQuotaData._pendingUntil.toNumber(),
+            pendingQuotaData.__pendingUntil.toNumber(),
             blockTime + delayPeriod,
             "pending time incorrect"
           );
@@ -104,7 +104,7 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
       {
         const pendingQuotaData = await ctx.quotaStore.pendingQuota(wallet);
         assert.equal(
-          pendingQuotaData._pendingUntil,
+          pendingQuotaData.__pendingUntil,
           0,
           "pending time incorrect"
         );

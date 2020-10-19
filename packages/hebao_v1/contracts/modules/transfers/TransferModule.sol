@@ -104,7 +104,7 @@ abstract contract TransferModule is BaseTransferModule
         )
         external
         //nonReentrant
-        //txAwareHashNotAllowed()
+        txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         if (amount > 0 && !isTargetWhitelisted(wallet, to)) {
@@ -121,7 +121,7 @@ abstract contract TransferModule is BaseTransferModule
         bytes     calldata data
         )
         external
-        nonReentrant
+        //nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
@@ -140,7 +140,7 @@ abstract contract TransferModule is BaseTransferModule
         uint    amount
         )
         external
-        nonReentrant
+        //nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
@@ -160,7 +160,7 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
-        nonReentrant
+        //nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)

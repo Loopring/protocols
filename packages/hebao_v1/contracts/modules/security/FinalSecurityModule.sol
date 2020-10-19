@@ -32,6 +32,7 @@ contract FinalSecurityModule is
         WhitelistModule(_whitelistDelayPeriod)
     {
         controller_ = _controller;
+        updateControllerCache();
     }
 
     function controller()

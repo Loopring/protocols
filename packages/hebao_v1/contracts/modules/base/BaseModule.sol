@@ -37,6 +37,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         DappAddressStore dappAddressStore;
         PriceOracle priceOracle;
         address walletFactory;
+        WalletRegistry walletRegistry;
         address collectTo;
     }
 
@@ -120,6 +121,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         controllerCache.dappAddressStore = _controller.dappAddressStore();
         controllerCache.quotaStore = _controller.quotaStore();
         controllerCache.priceOracle = _controller.priceOracle();
+        controllerCache.walletRegistry = _controller.walletRegistry();
         controllerCache.walletFactory = _controller.walletFactory();
         controllerCache.collectTo = _controller.collectTo();
     }
@@ -244,10 +246,9 @@ abstract contract BaseModule is ReentrancyGuard, Module
         uint gasCost = gasAmount.mul(gasPrice);
 
         if (!skipQuota) {
-            ControllerImpl _controller = controller();
-            uint value = _controller.priceOracle().tokenValue(gasToken, gasCost);
+            uint value = (gasToken == address(0)) ? gasCost : controllerCache.priceOracle.tokenValue(gasToken, gasCost);
             if (value > 0) {
-              _controller.quotaStore().checkAndAddToSpent(wallet, value);
+              controllerCache.quotaStore.checkAndAddToSpent(wallet, value);
             }
         }
 
