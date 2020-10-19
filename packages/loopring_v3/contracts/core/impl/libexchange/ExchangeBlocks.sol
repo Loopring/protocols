@@ -16,7 +16,7 @@ import "../libtransactions/TransferTransaction.sol";
 import "../libtransactions/WithdrawTransaction.sol";
 import "./ExchangeMode.sol";
 import "./ExchangeWithdrawals.sol";
-
+import "@nomiclabs/buidler/console.sol";
 
 /// @title ExchangeBlocks.
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -79,19 +79,25 @@ library ExchangeBlocks
         // Read the block header
         BlockReader.BlockHeader memory header = _block.readHeader();
 
+	console.log("validating EXCHANGE ...");
         // Validate the exchange
         require(header.exchange == address(this), "INVALID_EXCHANGE");
         // Validate the Merkle roots
+	console.log("validating MERKLE_ROOT_BEFORE ...");	
         require(header.merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
+	console.log("validating EMPTY_BLOCK ...");		
         require(header.merkleRootAfter != header.merkleRootBefore, "EMPTY_BLOCK_DISABLED");
+	console.log("validating MERKEL_ROOT ...");			
         require(uint(header.merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
         // Validate the timestamp
+	console.log("validating timestamp ...");				
         require(
             header.timestamp > block.timestamp - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
             header.timestamp < block.timestamp + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
             "INVALID_TIMESTAMP"
         );
         // Validate the protocol fee values
+	console.log("validating protocolFee ...");					
         require(
             validateAndSyncProtocolFees(S, header.protocolTakerFeeBips, header.protocolMakerFeeBips),
             "INVALID_PROTOCOL_FEES"
@@ -128,6 +134,7 @@ library ExchangeBlocks
         private
         view
     {
+	console.log("enter verifyBlocks");
         IBlockVerifier blockVerifier = S.blockVerifier;
         uint numBlocksVerified = 0;
         bool[] memory blockVerified = new bool[](blocks.length);
@@ -185,6 +192,7 @@ library ExchangeBlocks
 
             numBlocksVerified += batchLength;
         }
+	console.log("exit verifyBlocks function");
     }
 
     function processConditionalTransactions(
@@ -194,6 +202,7 @@ library ExchangeBlocks
         )
         private
     {
+	console.log("enter processConditionalTransactions function");
         if (header.numConditionalTransactions > 0) {
             // Cache the domain seperator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
@@ -201,6 +210,7 @@ library ExchangeBlocks
                 timestamp: header.timestamp
             });
 
+	    console.log("check AUXILIARYDATA_INVALID_LENGTH");
             require(
                 _block.auxiliaryData.length == header.numConditionalTransactions,
                 "AUXILIARYDATA_INVALID_LENGTH"
@@ -221,6 +231,12 @@ library ExchangeBlocks
                     txData.toUint8(0)
                 );
                 uint txDataOffset = 1;
+		
+		console.logString("transaction info:");
+		console.logUint(i);
+		console.logUint(uint(txType));
+		console.logBytes(txData);
+		console.logBytes(auxiliaryData.data);
 
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
                     DepositTransaction.process(

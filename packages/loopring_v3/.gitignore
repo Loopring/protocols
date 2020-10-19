@@ -21,3 +21,5 @@ __pycache__
 genkeys/
 EDDSA_KeyPair.json
 *.deployed
+cache/
+artifacts/

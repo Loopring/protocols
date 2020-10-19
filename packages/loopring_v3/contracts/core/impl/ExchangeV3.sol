@@ -20,7 +20,7 @@ import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
 import "./libtransactions/TransferTransaction.sol";
-
+import "@nomiclabs/buidler/console.sol";
 
 /// @title An Implementation of IExchangeV3.
 /// @dev This contract supports upgradability proxy, therefore its constructor
@@ -355,6 +355,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyFromUserOrAgent(from)
     {
+        console.log(from, to, tokenAddress, amount);
         state.deposit(from, to, tokenAddress, amount, extraData);
     }
 
