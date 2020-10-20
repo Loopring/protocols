@@ -1,4 +1,3 @@
-const DappAddressStore = artifacts.require("DappAddressStore");
 const ModuleRegistryImpl = artifacts.require("ModuleRegistryImpl");
 const WalletRegistryImpl = artifacts.require("WalletRegistryImpl");
 const BaseENSManager = artifacts.require("BaseENSManager");
@@ -37,7 +36,6 @@ module.exports = function(deployer, network, accounts) {
     const controllerImpl = await ControllerImpl.deployed();
     return Promise.all([
       controllerImpl.initStores(
-        DappAddressStore.address,
         HashStore.address,
         QuotaStore.address,
         SecurityStore.address,

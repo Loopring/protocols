@@ -5,7 +5,6 @@ pragma solidity ^0.7.0;
 import "../base/Controller.sol";
 import "../iface/PriceOracle.sol";
 import "../lib/Claimable.sol";
-import "../stores/DappAddressStore.sol";
 import "../stores/HashStore.sol";
 import "../stores/QuotaStore.sol";
 import "../stores/SecurityStore.sol";
@@ -23,7 +22,6 @@ contract ControllerImpl is Claimable, Controller
     uint                public defaultLockPeriod;
     BaseENSManager      public ensManager;
     PriceOracle         public priceOracle;
-    DappAddressStore    public dappAddressStore;
     HashStore           public hashStore;
     QuotaStore          public quotaStore;
     SecurityStore       public securityStore;
@@ -63,7 +61,6 @@ contract ControllerImpl is Claimable, Controller
     }
 
     function initStores(
-        DappAddressStore  _dappAddressStore,
         HashStore         _hashStore,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
@@ -72,18 +69,6 @@ contract ControllerImpl is Claimable, Controller
         external
         onlyOwner
     {
-        require(
-            address(_dappAddressStore) != address(0),
-            "ZERO_ADDRESS"
-        );
-
-        // Make sure this function can only invoked once.
-        require(
-            address(dappAddressStore) == address(0),
-            "INITIALIZED_ALREADY"
-        );
-
-        dappAddressStore = _dappAddressStore;
         hashStore = _hashStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
