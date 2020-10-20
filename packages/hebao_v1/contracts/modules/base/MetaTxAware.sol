@@ -30,7 +30,7 @@ abstract contract MetaTxAware
 
     modifier txAwareHashNotAllowed()
     {
-        // require(txAwareHash() == 0, "INVALID_TX_AWARE_HASH");
+        //require(txAwareHash() == 0, "INVALID_TX_AWARE_HASH");
         _;
     }
 
