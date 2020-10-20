@@ -48,7 +48,7 @@ abstract contract SecurityModule is MetaTxModule
     modifier onlyFromGuardian(address wallet)
     {
         require(
-            controller().securityStore().isGuardian(wallet, logicalSender()),
+            controllerCache.securityStore.isGuardian(wallet, logicalSender()),
             "NOT_FROM_GUARDIAN"
         );
         _;
@@ -68,20 +68,20 @@ abstract contract SecurityModule is MetaTxModule
 
     modifier onlyWalletGuardian(address wallet, address guardian)
     {
-        require(controller().securityStore().isGuardian(wallet, guardian), "NOT_GUARDIAN");
+        require(controllerCache.securityStore.isGuardian(wallet, guardian), "NOT_GUARDIAN");
         _;
     }
 
     modifier notWalletGuardian(address wallet, address guardian)
     {
-        require(!controller().securityStore().isGuardian(wallet, guardian), "IS_GUARDIAN");
+        require(!controllerCache.securityStore.isGuardian(wallet, guardian), "IS_GUARDIAN");
         _;
     }
 
     modifier onlyHaveEnoughGuardians(address wallet)
     {
         require(
-            controller().securityStore().numGuardians(wallet) >= MIN_ACTIVE_GUARDIANS,
+            controllerCache.securityStore.numGuardians(wallet) >= MIN_ACTIVE_GUARDIANS,
             "NO_ENOUGH_ACTIVE_GUARDIANS"
         );
         _;
@@ -110,17 +110,17 @@ abstract contract SecurityModule is MetaTxModule
         // cannot lock the wallet twice by different modules.
         require(_lockPeriod > 0, "ZERO_VALUE");
         uint lock = block.timestamp + _lockPeriod;
-        controller().securityStore().setLock(wallet, lock);
+        controllerCache.securityStore.setLock(wallet, lock);
         emit WalletLock(wallet, lock);
     }
 
     function unlockWallet(address wallet, bool forceUnlock)
         internal
     {
-        (uint _lock, address _lockedBy) = controller().securityStore().getLock(wallet);
+        (uint _lock, address _lockedBy) = controllerCache.securityStore.getLock(wallet);
         if (_lock > block.timestamp) {
             require(forceUnlock || _lockedBy == address(this), "UNABLE_TO_UNLOCK");
-            controller().securityStore().setLock(wallet, 0);
+            controllerCache.securityStore.setLock(wallet, 0);
         }
         emit WalletLock(wallet, 0);
     }
@@ -130,7 +130,7 @@ abstract contract SecurityModule is MetaTxModule
         view
         returns (uint _lock, address _lockedBy)
     {
-        return controller().securityStore().getLock(wallet);
+        return controllerCache.securityStore.getLock(wallet);
     }
 
     function isWalletLocked(address wallet)
@@ -138,7 +138,7 @@ abstract contract SecurityModule is MetaTxModule
         view
         returns (bool)
     {
-        (uint _lock,) = controller().securityStore().getLock(wallet);
+        (uint _lock,) = controllerCache.securityStore.getLock(wallet);
         return _lock > block.timestamp;
     }
 

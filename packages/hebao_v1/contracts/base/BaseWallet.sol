@@ -267,8 +267,16 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         )
     {
         if (mode == 1) {
+            if (data.length > 0) {
+                closeEntrance();
+            }
+
             // solium-disable-next-line security/no-call-value
             (success, returnData) = target.call{value: value}(data);
+
+            if (data.length > 0) {
+                openEntrance();
+            }
         } else if (mode == 2) {
             // solium-disable-next-line security/no-call-value
             (success, returnData) = target.delegatecall(data);

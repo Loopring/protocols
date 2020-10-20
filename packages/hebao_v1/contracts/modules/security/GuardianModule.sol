@@ -50,7 +50,6 @@ abstract contract GuardianModule is SecurityModule
         uint    group
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         notWalletOwner(wallet, guardian)
@@ -58,14 +57,14 @@ abstract contract GuardianModule is SecurityModule
         require(guardian != wallet, "INVALID_ADDRESS");
         require(guardian != address(0), "ZERO_ADDRESS");
         require(group < GuardianUtils.MAX_NUM_GROUPS, "INVALID_GROUP");
-        uint numGuardians = controller().securityStore().numGuardiansWithPending(wallet);
+        uint numGuardians = controllerCache.securityStore.numGuardiansWithPending(wallet);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         uint effectiveTime = block.timestamp;
         if (numGuardians >= MIN_ACTIVE_GUARDIANS) {
             effectiveTime = block.timestamp + recoveryPendingPeriod;
         }
-        controller().securityStore().addGuardian(wallet, guardian, group, effectiveTime);
+        controllerCache.securityStore.addGuardian(wallet, guardian, group, effectiveTime);
         emit GuardianAdded(wallet, guardian, group, effectiveTime);
     }
 
@@ -74,11 +73,10 @@ abstract contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller().securityStore().cancelGuardianAddition(wallet, guardian);
+        controllerCache.securityStore.cancelGuardianAddition(wallet, guardian);
         emit GuardianAdditionCancelled(wallet, guardian);
     }
 
@@ -87,12 +85,11 @@ abstract contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
     {
-        controller().securityStore().removeGuardian(wallet, guardian, block.timestamp + recoveryPendingPeriod);
+        controllerCache.securityStore.removeGuardian(wallet, guardian, block.timestamp + recoveryPendingPeriod);
         emit GuardianRemoved(wallet, guardian, block.timestamp + recoveryPendingPeriod);
     }
 
@@ -101,17 +98,15 @@ abstract contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller().securityStore().cancelGuardianRemoval(wallet, guardian);
+        controllerCache.securityStore.cancelGuardianRemoval(wallet, guardian);
         emit GuardianRemovalCancelled(wallet, guardian);
     }
 
     function lock(address wallet)
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
         onlyHaveEnoughGuardians(wallet)
@@ -121,7 +116,6 @@ abstract contract GuardianModule is SecurityModule
 
     function unlock(address wallet)
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
     {
@@ -137,7 +131,6 @@ abstract contract GuardianModule is SecurityModule
         address newOwner
         )
         external
-        nonReentrant
         notWalletOwner(request.wallet, newOwner)
         eligibleWalletOwner(newOwner)
         onlyHaveEnoughGuardians(request.wallet)
@@ -155,9 +148,8 @@ abstract contract GuardianModule is SecurityModule
             )
         );
 
-        SecurityStore securityStore = controller().securityStore();
-        if (securityStore.isGuardianOrPendingAddition(request.wallet, newOwner)) {
-            securityStore.removeGuardian(request.wallet, newOwner, block.timestamp);
+        if (controllerCache.securityStore.isGuardianOrPendingAddition(request.wallet, newOwner)) {
+            controllerCache.securityStore.removeGuardian(request.wallet, newOwner, block.timestamp);
         }
 
         Wallet(request.wallet).setOwner(newOwner);
