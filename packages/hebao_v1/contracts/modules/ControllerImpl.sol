@@ -6,7 +6,6 @@ import "../base/Controller.sol";
 import "../iface/PriceOracle.sol";
 import "../lib/Claimable.sol";
 import "../stores/HashStore.sol";
-import "../stores/NonceStore.sol";
 import "../stores/QuotaStore.sol";
 import "../stores/SecurityStore.sol";
 import "../stores/WhitelistStore.sol";
@@ -24,7 +23,6 @@ contract ControllerImpl is Claimable, Controller
     BaseENSManager      public ensManager;
     PriceOracle         public priceOracle;
     HashStore           public hashStore;
-    NonceStore          public nonceStore;
     QuotaStore          public quotaStore;
     SecurityStore       public securityStore;
     WhitelistStore      public whitelistStore;
@@ -64,7 +62,6 @@ contract ControllerImpl is Claimable, Controller
 
     function initStores(
         HashStore         _hashStore,
-        NonceStore        _nonceStore,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore
@@ -73,7 +70,6 @@ contract ControllerImpl is Claimable, Controller
         onlyOwner
     {
         hashStore = _hashStore;
-        nonceStore = _nonceStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
