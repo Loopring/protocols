@@ -16,21 +16,9 @@ contract ReentrancyGuard
 
     modifier nonReentrant()
     {
-        closeEntrance();
-        _;
-        openEntrance();
-    }
-
-    function closeEntrance()
-        internal
-    {
         require(_guardValue == 0, "REENTRANCY");
         _guardValue = 1;
-    }
-
-    function openEntrance()
-        internal
-    {
+        _;
         _guardValue = 0;
     }
 }

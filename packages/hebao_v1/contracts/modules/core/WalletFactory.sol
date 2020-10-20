@@ -8,7 +8,6 @@ import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
 import "../../lib/OwnerManagable.sol";
 import "../../lib/SimpleProxy.sol";
-import "../../lib/ReentrancyGuard.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../thirdparty/Create2.sol";
@@ -26,7 +25,7 @@ import "../ControllerImpl.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactory is ReentrancyGuard, MetaTxAware
+contract WalletFactory is MetaTxAware
 {
     using AddressUtil for address;
     using SignatureUtil for bytes32;

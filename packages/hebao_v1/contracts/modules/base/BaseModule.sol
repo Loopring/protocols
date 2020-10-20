@@ -8,7 +8,6 @@ import "../../iface/Wallet.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/ReentrancyGuard.sol";
 import "../ControllerImpl.sol";
 
 
@@ -20,7 +19,7 @@ import "../ControllerImpl.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-abstract contract BaseModule is ReentrancyGuard, Module
+abstract contract BaseModule is Module
 {
     using MathUint      for uint;
     using AddressUtil   for address;

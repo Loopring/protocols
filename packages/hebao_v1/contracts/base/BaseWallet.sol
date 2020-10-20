@@ -5,7 +5,6 @@ pragma solidity ^0.7.0;
 import "../iface/Module.sol";
 import "../iface/Wallet.sol";
 import "../lib/ERC20.sol";
-import "../lib/ReentrancyGuard.sol";
 import "./Controller.sol";
 
 
@@ -16,7 +15,7 @@ import "./Controller.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-abstract contract BaseWallet is ReentrancyGuard, Wallet
+abstract contract BaseWallet is Wallet
 {
     // WARNING: do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -267,16 +266,8 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         )
     {
         if (mode == 1) {
-            if (data.length > 0) {
-                closeEntrance();
-            }
-
             // solium-disable-next-line security/no-call-value
             (success, returnData) = target.call{value: value}(data);
-
-            if (data.length > 0) {
-                openEntrance();
-            }
         } else if (mode == 2) {
             // solium-disable-next-line security/no-call-value
             (success, returnData) = target.delegatecall(data);
