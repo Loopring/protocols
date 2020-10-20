@@ -151,7 +151,10 @@ abstract contract SecurityModule is MetaTxModule
     {
         QuotaStore _quotaStore = controllerCache.quotaStore;
         if (amount > 0 && _quotaStore != QuotaStore(0)) {
-            uint value = (token == address(0)) ? amount : controllerCache.priceOracle.tokenValue(token, amount);
+            uint value = (token == address(0)) ?
+                amount :
+                controllerCache.priceOracle.tokenValue(token, amount);
+
             if (value > 0) {
                 _quotaStore.checkAndAddToSpent(wallet, value);
             }
