@@ -38,11 +38,10 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller().whitelistStore().addToWhitelist(wallet, addr, block.timestamp.add(whitelistDelayPeriod));
+        controllerCache.whitelistStore.addToWhitelist(wallet, addr, block.timestamp.add(whitelistDelayPeriod));
     }
 
     function addToWhitelistImmediately(
@@ -50,7 +49,6 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
@@ -66,7 +64,7 @@ abstract contract WhitelistModule is SecurityModule
             )
         );
 
-        controller().whitelistStore().addToWhitelist(request.wallet, addr, block.timestamp);
+        controllerCache.whitelistStore.addToWhitelist(request.wallet, addr, block.timestamp);
     }
 
     function removeFromWhitelist(
@@ -74,11 +72,10 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller().whitelistStore().removeFromWhitelist(wallet, addr);
+        controllerCache.whitelistStore.removeFromWhitelist(wallet, addr);
     }
 
     function getWhitelist(address wallet)
@@ -89,7 +86,7 @@ abstract contract WhitelistModule is SecurityModule
             uint[]    memory effectiveTimes
         )
     {
-        return controller().whitelistStore().whitelist(wallet);
+        return controllerCache.whitelistStore.whitelist(wallet);
     }
 
     function isWhitelisted(
@@ -102,6 +99,6 @@ abstract contract WhitelistModule is SecurityModule
             uint effectiveTime
         )
     {
-        return controller().whitelistStore().isWhitelisted(wallet, addr);
+        return controllerCache.whitelistStore.isWhitelisted(wallet, addr);
     }
 }

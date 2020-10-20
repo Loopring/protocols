@@ -56,11 +56,10 @@ abstract contract TransferModule is BaseTransferModule
         uint    newQuota
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        QuotaStore qs = controller().quotaStore();
+        QuotaStore qs = controllerCache.quotaStore;
         uint _newQuota = newQuota == 0 ? qs.defaultQuota(): newQuota;
         uint _currentQuota = qs.currentQuota(wallet);
 
@@ -76,7 +75,6 @@ abstract contract TransferModule is BaseTransferModule
         uint newQuota
         )
         external
-        nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
@@ -92,7 +90,7 @@ abstract contract TransferModule is BaseTransferModule
             )
         );
 
-        controller().quotaStore().changeQuota(request.wallet, newQuota, block.timestamp);
+        controllerCache.quotaStore.changeQuota(request.wallet, newQuota, block.timestamp);
     }
 
     function transferToken(
@@ -103,7 +101,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata logdata
         )
         external
-        //nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
@@ -121,7 +118,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes     calldata data
         )
         external
-        //nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
@@ -140,7 +136,6 @@ abstract contract TransferModule is BaseTransferModule
         uint    amount
         )
         external
-        //nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
@@ -160,7 +155,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
-        //nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
@@ -184,9 +178,9 @@ abstract contract TransferModule is BaseTransferModule
             uint available
         )
     {
-        total = controller().quotaStore().currentQuota(wallet);
-        spent = controller().quotaStore().spentQuota(wallet);
-        available = controller().quotaStore().availableQuota(wallet);
+        total = controllerCache.quotaStore.currentQuota(wallet);
+        spent = controllerCache.quotaStore.spentQuota(wallet);
+        available = controllerCache.quotaStore.availableQuota(wallet);
     }
 
     function transferTokenWithApproval(
@@ -197,7 +191,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata logdata
         )
         external
-        nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
@@ -226,7 +219,6 @@ abstract contract TransferModule is BaseTransferModule
         uint    amount
         )
         external
-        nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
@@ -254,7 +246,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
-        nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
@@ -285,7 +276,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
-        nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {

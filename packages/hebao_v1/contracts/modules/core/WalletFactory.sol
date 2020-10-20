@@ -8,7 +8,6 @@ import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
 import "../../lib/OwnerManagable.sol";
 import "../../lib/SimpleProxy.sol";
-import "../../lib/ReentrancyGuard.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../thirdparty/Create2.sol";
@@ -26,7 +25,7 @@ import "../ControllerImpl.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactory is ReentrancyGuard, MetaTxAware
+contract WalletFactory is MetaTxAware
 {
     using AddressUtil for address;
     using SignatureUtil for bytes32;
@@ -79,7 +78,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         uint[]    calldata salts
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
     {
         for (uint i = 0; i < salts.length; i++) {
@@ -107,7 +105,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         )
         external
         payable
-        nonReentrant
         // txAwareHashNotAllowed()
         returns (address _wallet)
     {
@@ -153,7 +150,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         )
         external
         payable
-        nonReentrant
         // txAwareHashNotAllowed()
         returns (address _wallet)
     {
@@ -187,7 +183,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         bool            _ensRegisterReverse
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
     {
         registerENS_(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
