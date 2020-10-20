@@ -37,8 +37,8 @@ abstract contract SecurityModule is MetaTxModule
         address payable _logicalSender = logicalSender();
         // If the wallet's signature verfication passes, the wallet must be unlocked.
         require(
-            _logicalSender == wallet ||
-            (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
+            (_logicalSender == wallet || _logicalSender == Wallet(wallet).owner()) &&
+            !isWalletLocked(wallet),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
         controllerCache.securityStore.touchLastActiveWhenRequired(wallet, MIN_TOUCH_INTERVAL);
