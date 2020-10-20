@@ -429,10 +429,15 @@ contract("WalletFactory", () => {
         .keccak(web3.eth.abi.encodeParameters(["address[]"], [modules]))
         .toString("hex");
 
-    await ctx.walletFactory.createBlanks(
+    const tx = await ctx.walletFactory.createBlanks(
       modules,
       [...Array(10).keys()], // [0, ..., 9]
       { from: sender }
+    );
+
+    console.log(
+      "\x1b[46m%s\x1b[0m",
+      "[executeMetaTx] Gas used: " + tx.receipt.gasUsed
     );
 
     await assertEventsEmitted(
