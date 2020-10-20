@@ -30,15 +30,15 @@ abstract contract BaseModule is ReentrancyGuard, Module
 
     struct ControllerCache
     {
-        ModuleRegistry moduleRegistry;
-        SecurityStore securityStore;
-        WhitelistStore whitelistStore;
-        QuotaStore quotaStore;
+        ModuleRegistry   moduleRegistry;
+        SecurityStore    securityStore;
+        WhitelistStore   whitelistStore;
+        QuotaStore       quotaStore;
         DappAddressStore dappAddressStore;
-        PriceOracle priceOracle;
-        address walletFactory;
-        WalletRegistry walletRegistry;
-        address collectTo;
+        PriceOracle      priceOracle;
+        address          walletFactory;
+        WalletRegistry   walletRegistry;
+        address          collectTo;
     }
 
     ControllerCache public controllerCache;

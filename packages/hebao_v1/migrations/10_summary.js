@@ -17,7 +17,6 @@ const AddOfficialGuardianModule = artifacts.require(
 
 const DappAddressStore = artifacts.require("DappAddressStore");
 const HashStore = artifacts.require("HashStore");
-const NonceStore = artifacts.require("NonceStore");
 const QuotaStore = artifacts.require("QuotaStore");
 const SecurityStore = artifacts.require("SecurityStore");
 const WhitelistStore = artifacts.require("WhitelistStore");
@@ -37,7 +36,6 @@ module.exports = function(deployer, network, accounts) {
   console.log("- WalletFactory:", WalletFactory.address);
   console.log("- DappAddressStore:", DappAddressStore.address);
   console.log("- HashStore:", HashStore.address);
-  console.log("- NonceStore:", NonceStore.address);
   console.log("- QuotaStore:", QuotaStore.address);
   console.log("- SecurityStore:", SecurityStore.address);
   console.log("- WhitelistStore:", WhitelistStore.address);
