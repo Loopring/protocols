@@ -39,10 +39,10 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     event WalletSetup           (address owner);
 
     event Transacted(
+        uint8   mode,
         address module,
         address to,
-        uint    value,
-        bytes   data
+        uint    value
     );
 
     modifier onlyFromModule
@@ -221,7 +221,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
                 revert(0, returndatasize())
             }
         }
-        emit Transacted(msg.sender, to, value, data);
+        emit Transacted(mode, msg.sender, to, value);
     }
 
     function addModuleInternal(address _module, ModuleRegistry moduleRegistry)
