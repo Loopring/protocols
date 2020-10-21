@@ -87,6 +87,7 @@ contract WalletFactory is MetaTxAware
     }
 
     /// @dev Create a new wallet by deploying a proxy.
+    ///      This function supports tx-aware hash.
     /// @param _owner The wallet's owner.
     /// @param _salt A salt to adjust address.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
@@ -106,7 +107,6 @@ contract WalletFactory is MetaTxAware
         )
         external
         payable
-        // txAwareHashNotAllowed()
         returns (address _wallet)
     {
         validateRequest_(
@@ -132,6 +132,7 @@ contract WalletFactory is MetaTxAware
     }
 
     /// @dev Create a new wallet by using a pre-deployed blank.
+    ///      This function supports tx-aware hash.
     /// @param _owner The wallet's owner.
     /// @param _blank The address of the blank to use.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
@@ -151,7 +152,6 @@ contract WalletFactory is MetaTxAware
         )
         external
         payable
-        // txAwareHashNotAllowed()
         returns (address _wallet)
     {
         validateRequest_(
