@@ -21,7 +21,7 @@ abstract contract WhitelistModule is SecurityModule
         "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
     );
 
-    uint public constant WHITELIST_WAITING_PERIOD = 1 days;
+    uint public constant WHITELIST_PENDING_PERIOD = 1 days;
 
     constructor()
     {
@@ -38,7 +38,7 @@ abstract contract WhitelistModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controllerCache.whitelistStore.addToWhitelist(wallet, addr, block.timestamp.add(WHITELIST_WAITING_PERIOD));
+        controllerCache.whitelistStore.addToWhitelist(wallet, addr, block.timestamp.add(WHITELIST_PENDING_PERIOD));
     }
 
     function addToWhitelistImmediately(

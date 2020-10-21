@@ -83,7 +83,7 @@ export async function addToWhitelist(
   useMetaTx: boolean = true
 ) {
   const delayPeriod = (
-    await ctx.finalSecurityModule.WHITELIST_WAITING_PERIOD()
+    await ctx.finalSecurityModule.WHITELIST_PENDING_PERIOD()
   ).toNumber();
 
   let whitelistBefore = toPrettyList(
