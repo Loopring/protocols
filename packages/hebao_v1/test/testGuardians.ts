@@ -48,7 +48,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
       await defaultCtx.finalSecurityModule.MAX_GUARDIANS()
     ).toNumber();
     recoverWaitingPeriod = (
-      await defaultCtx.finalSecurityModule.RECOVER_WAITING_PERIOD()
+      await defaultCtx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()
     ).toNumber();
   });
 

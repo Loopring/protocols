@@ -19,7 +19,7 @@ abstract contract GuardianModule is SecurityModule
     bytes32 public GUARDIAN_DOMAIN_SEPERATOR;
 
     uint constant public MAX_GUARDIANS = 20;
-    uint public constant RECOVER_WAITING_PERIOD = 1 days;
+    uint public constant GUARDIAN_PENDING_PERIOD = 1 days;
 
     event GuardianAdded             (address indexed wallet, address guardian, uint group, uint effectiveTime);
     event GuardianAdditionCancelled (address indexed wallet, address guardian);
@@ -60,7 +60,7 @@ abstract contract GuardianModule is SecurityModule
 
         uint effectiveTime = block.timestamp;
         if (numGuardians >= MIN_ACTIVE_GUARDIANS) {
-            effectiveTime = block.timestamp + RECOVER_WAITING_PERIOD;
+            effectiveTime = block.timestamp + GUARDIAN_PENDING_PERIOD;
         }
         controllerCache.securityStore.addGuardian(wallet, guardian, group, effectiveTime);
         emit GuardianAdded(wallet, guardian, group, effectiveTime);
@@ -87,8 +87,8 @@ abstract contract GuardianModule is SecurityModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
     {
-        controllerCache.securityStore.removeGuardian(wallet, guardian, block.timestamp + RECOVER_WAITING_PERIOD);
-        emit GuardianRemoved(wallet, guardian, block.timestamp + RECOVER_WAITING_PERIOD);
+        controllerCache.securityStore.removeGuardian(wallet, guardian, block.timestamp + GUARDIAN_PENDING_PERIOD);
+        emit GuardianRemoved(wallet, guardian, block.timestamp + GUARDIAN_PENDING_PERIOD);
     }
 
     function cancelGuardianRemoval(

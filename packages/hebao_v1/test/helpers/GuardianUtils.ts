@@ -17,7 +17,7 @@ export async function addGuardian(
   useMetaTx: boolean = true
 ) {
   const recoverWaitingPeriod = (
-    await ctx.finalSecurityModule.RECOVER_WAITING_PERIOD()
+    await ctx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()
   ).toNumber();
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);
@@ -120,7 +120,7 @@ export async function removeGuardian(
   useMetaTx: boolean = true
 ) {
   const recoverWaitingPeriod = (
-    await ctx.finalSecurityModule.RECOVER_WAITING_PERIOD()
+    await ctx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()
   ).toNumber();
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);

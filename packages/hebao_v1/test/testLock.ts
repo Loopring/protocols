@@ -116,10 +116,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     ctx = await createContext(defaultCtx);
     finalSecurityModule2 = await defaultCtx.contracts.FinalSecurityModule.new(
       defaultCtx.controllerImpl.address,
-      defaultCtx.finalCoreModule.address,
-      3600 * 24,
-      3600 * 24 * 365,
-      3600 * 24
+      defaultCtx.finalCoreModule.address
     );
     await defaultCtx.moduleRegistryImpl.registerModule(
       finalSecurityModule2.address

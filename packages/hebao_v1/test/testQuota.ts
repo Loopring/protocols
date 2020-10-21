@@ -125,7 +125,7 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
     delayPeriod = (
-      await ctx.finalTransferModule.transferDelayPeriod()
+      await ctx.finalTransferModule.QUOTA_WAITING_PERIOD()
     ).toNumber();
     defaultQuota = await ctx.quotaStore.defaultQuota();
   });
