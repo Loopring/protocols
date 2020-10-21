@@ -70,7 +70,12 @@ contract ControllerImpl is Claimable, Controller
         onlyOwner
     {
         // Make sure this function can only invoked once.
-        require(hashStore == address(0) && _hashStore != address(0), "INVALID_INIT");
+        require(
+            address(hashStore) == address(0) &&
+            address(_hashStore) != address(0),
+            "INVALID_INIT"
+        );
+
         hashStore = _hashStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
@@ -106,5 +111,4 @@ contract ControllerImpl is Claimable, Controller
         priceOracle = _priceOracle;
         emit AddressChanged("PriceOracle", address(priceOracle));
     }
-
 }
