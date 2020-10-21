@@ -4,7 +4,7 @@
 
 ### Period parameters:
 
-- ControllerImpl.defaultLockPeriod: 86400
+- ControllerImpl.lockPeriod: 86400
 - guardianPendingPeriod: 86400
 - inheritanceWaitingPeriod: 31536000
 - whitelistDelayPeriod: 86400
