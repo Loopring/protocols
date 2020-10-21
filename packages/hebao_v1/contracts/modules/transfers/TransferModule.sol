@@ -39,7 +39,7 @@ abstract contract TransferModule is BaseTransferModule
         "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
-    uint public constant QUOTA_WAITING_PERIOD = 1 days;
+    uint public constant QUOTA_PENDING_PERIOD = 1 days;
 
     constructor()
     {
@@ -63,7 +63,7 @@ abstract contract TransferModule is BaseTransferModule
         if (_currentQuota >= _newQuota) {
             qs.changeQuota(wallet, _newQuota, block.timestamp);
         } else {
-            qs.changeQuota(wallet, _newQuota, block.timestamp.add(QUOTA_WAITING_PERIOD));
+            qs.changeQuota(wallet, _newQuota, block.timestamp.add(QUOTA_PENDING_PERIOD));
         }
     }
 
