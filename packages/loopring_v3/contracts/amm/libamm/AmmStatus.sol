@@ -36,7 +36,7 @@ library AmmStatus
         AmmData.State      storage  S,
         AmmData.PoolConfig calldata config
         )
-        internal
+        public
     {
         require(
             bytes(config.poolName).length > 0 && bytes(config.tokenSymbol).length > 0,
@@ -90,7 +90,7 @@ library AmmStatus
         AmmData.State storage S,
         address               exitOwner
         )
-        internal
+        public
     {
         // If the exchange is in withdrawal mode allow the pool to be shutdown immediately
         if (!S.exchange.isInWithdrawalMode()) {
@@ -113,7 +113,7 @@ library AmmStatus
 
     // Anyone is able to update the cached exchange owner to the current owner.
     function updateExchangeOwner(AmmData.State storage S)
-        internal
+        public
     {
         S.exchangeOwner = S.exchange.owner();
     }

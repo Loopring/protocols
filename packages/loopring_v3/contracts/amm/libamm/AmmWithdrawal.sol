@@ -21,7 +21,7 @@ library AmmWithdrawal
     function withdrawWhenOffline(
         AmmData.State storage S
         )
-        internal
+        public
     {
         _checkWithdrawalConditionInShutdown(S);
 
