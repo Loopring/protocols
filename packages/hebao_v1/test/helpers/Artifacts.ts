@@ -28,7 +28,6 @@ export class Artifacts {
   public WhitelistStore: any;
   public QuotaStore: any;
   public PriceCacheStore: any;
-  public NonceStore: any;
 
   constructor(artifacts: any) {
     this.MockContract = artifacts.require("thirdparty/MockContract.sol");
@@ -64,6 +63,5 @@ export class Artifacts {
     this.SecurityStore = artifacts.require("SecurityStore");
     this.WhitelistStore = artifacts.require("WhitelistStore");
     this.QuotaStore = artifacts.require("QuotaStore");
-    this.NonceStore = artifacts.require("NonceStore");
   }
 }
