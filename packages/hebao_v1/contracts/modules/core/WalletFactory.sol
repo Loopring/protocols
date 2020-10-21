@@ -80,9 +80,8 @@ contract WalletFactory is MetaTxAware
         external
         txAwareHashNotAllowed()
     {
-        address _walletImplementation = walletImplementation;
         for (uint i = 0; i < salts.length; i++) {
-            createBlank_(_walletImplementation, modules, salts[i]);
+            createBlank_(walletImplementation, modules, salts[i]);
         }
     }
 
@@ -205,7 +204,7 @@ contract WalletFactory is MetaTxAware
         return computeAddress_(address(0), salt);
     }
 
-    function getProxyCreationCode()
+    function getWalletCreationCode()
         public
         view
         returns (bytes memory)
