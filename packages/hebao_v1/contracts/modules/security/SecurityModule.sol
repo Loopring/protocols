@@ -41,7 +41,11 @@ abstract contract SecurityModule is MetaTxModule
             (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
-        controllerCache.securityStore.touchLastActiveWhenRequired(wallet, MIN_TOUCH_INTERVAL);
+        SecurityStore ss = controllerCache.securityStore;
+        if (block.timestamp > ss.lastActive(wallet) + MIN_TOUCH_INTERVAL) {
+            ss.touchLastActive(wallet);
+        }
+        // controllerCache.securityStore.touchLastActiveWhenRequired(wallet, MIN_TOUCH_INTERVAL);
         _;
     }
 
