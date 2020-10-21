@@ -16,8 +16,8 @@ export async function addGuardian(
   group: number,
   useMetaTx: boolean = true
 ) {
-  const pendingPeriod = (
-    await ctx.finalSecurityModule.recoveryPendingPeriod()
+  const recoverWaitingPeriod = (
+    await ctx.finalSecurityModule.RECOVER_WAITING_PERIOD()
   ).toNumber();
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);
@@ -65,8 +65,8 @@ export async function addGuardian(
     // The first guardian can be added immediately
   } else {
     // Subsequent guardians can be added with a delay
-    // Skip forward `pendingPeriod + 1` seconds
-    await advanceTimeAndBlockAsync(pendingPeriod + 1);
+    // Skip forward `recoverWaitingPeriod + 1` seconds
+    await advanceTimeAndBlockAsync(recoverWaitingPeriod + 1);
   }
 
   // Check if now guardian
@@ -119,8 +119,8 @@ export async function removeGuardian(
   guardian: string,
   useMetaTx: boolean = true
 ) {
-  const pendingPeriod = (
-    await ctx.finalSecurityModule.recoveryPendingPeriod()
+  const recoverWaitingPeriod = (
+    await ctx.finalSecurityModule.RECOVER_WAITING_PERIOD()
   ).toNumber();
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);
@@ -160,8 +160,8 @@ export async function removeGuardian(
     }
   );
 
-  // Skip forward `pendingPeriod + 1` seconds
-  await advanceTimeAndBlockAsync(pendingPeriod + 1);
+  // Skip forward `recoverWaitingPeriod + 1` seconds
+  await advanceTimeAndBlockAsync(recoverWaitingPeriod + 1);
 
   // Check if not guardian anymore
   assert(

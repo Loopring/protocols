@@ -21,14 +21,12 @@ contract FinalSecurityModule is
 
     constructor(
         ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _recoveryPendingPeriod,
-        uint           _whitelistDelayPeriod
+        address        _trustedForwarder
         )
         SecurityModule(_trustedForwarder)
-        GuardianModule(_recoveryPendingPeriod)
+        GuardianModule()
         InheritanceModule()
-        WhitelistModule(_whitelistDelayPeriod)
+        WhitelistModule()
     {
         controller_ = _controller;
         updateControllerCache();

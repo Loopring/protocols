@@ -39,16 +39,13 @@ abstract contract TransferModule is BaseTransferModule
         "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
-    uint public transferDelayPeriod;
+    uint public constant QUOTA_WAITING_PERIOD = 1 days;
 
-    constructor(uint _transferDelayPeriod)
+    constructor()
     {
-        require(_transferDelayPeriod > 0, "INVALID_DELAY");
-
         TRANSFER_DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("TransferModule", "1.2.0", address(this))
         );
-        transferDelayPeriod = _transferDelayPeriod;
     }
 
     function changeDailyQuota(
@@ -66,7 +63,7 @@ abstract contract TransferModule is BaseTransferModule
         if (_currentQuota >= _newQuota) {
             qs.changeQuota(wallet, _newQuota, block.timestamp);
         } else {
-            qs.changeQuota(wallet, _newQuota, block.timestamp.add(transferDelayPeriod));
+            qs.changeQuota(wallet, _newQuota, block.timestamp.add(QUOTA_WAITING_PERIOD));
         }
     }
 

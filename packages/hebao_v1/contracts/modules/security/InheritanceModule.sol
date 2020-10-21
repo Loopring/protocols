@@ -14,7 +14,7 @@ abstract contract InheritanceModule is SecurityModule
     using AddressUtil   for address;
     using SignatureUtil for bytes32;
 
-    uint public constant INHERIT_WAITING_PERIOD = 365 days + MIN_TOUCH_INTERVAL;
+    uint public constant INHERIT_WAITING_PERIOD = 365 days + TOUCH_GRACE_PERIOD;
 
     event Inherited(
         address indexed wallet,

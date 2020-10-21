@@ -19,7 +19,7 @@ abstract contract GuardianModule is SecurityModule
     bytes32 public GUARDIAN_DOMAIN_SEPERATOR;
 
     uint constant public MAX_GUARDIANS = 20;
-    uint public recoveryPendingPeriod;
+    uint public constant RECOVER_WAITING_PERIOD = 1 days;
 
     event GuardianAdded             (address indexed wallet, address guardian, uint group, uint effectiveTime);
     event GuardianAdditionCancelled (address indexed wallet, address guardian);
@@ -35,13 +35,11 @@ abstract contract GuardianModule is SecurityModule
         "recover(address wallet,uint256 validUntil,address newOwner)"
     );
 
-    constructor(uint _recoveryPendingPeriod)
+    constructor()
     {
         GUARDIAN_DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("GuardianModule", "1.2.0", address(this))
         );
-        require(_recoveryPendingPeriod > 0, "INVALID_DELAY");
-        recoveryPendingPeriod = _recoveryPendingPeriod;
     }
 
     function addGuardian(
@@ -62,7 +60,7 @@ abstract contract GuardianModule is SecurityModule
 
         uint effectiveTime = block.timestamp;
         if (numGuardians >= MIN_ACTIVE_GUARDIANS) {
-            effectiveTime = block.timestamp + recoveryPendingPeriod;
+            effectiveTime = block.timestamp + RECOVER_WAITING_PERIOD;
         }
         controllerCache.securityStore.addGuardian(wallet, guardian, group, effectiveTime);
         emit GuardianAdded(wallet, guardian, group, effectiveTime);
@@ -89,8 +87,8 @@ abstract contract GuardianModule is SecurityModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
     {
-        controllerCache.securityStore.removeGuardian(wallet, guardian, block.timestamp + recoveryPendingPeriod);
-        emit GuardianRemoved(wallet, guardian, block.timestamp + recoveryPendingPeriod);
+        controllerCache.securityStore.removeGuardian(wallet, guardian, block.timestamp + RECOVER_WAITING_PERIOD);
+        emit GuardianRemoved(wallet, guardian, block.timestamp + RECOVER_WAITING_PERIOD);
     }
 
     function cancelGuardianRemoval(

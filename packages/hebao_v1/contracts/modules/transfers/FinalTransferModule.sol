@@ -16,11 +16,10 @@ contract FinalTransferModule is TransferModule
 
     constructor(
         ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _transferDelayPeriod
+        address        _trustedForwarder
         )
         SecurityModule(_trustedForwarder)
-        TransferModule(_transferDelayPeriod)
+        TransferModule()
     {
         controller_ = _controller;
         updateControllerCache();
