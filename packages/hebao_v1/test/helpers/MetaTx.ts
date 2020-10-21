@@ -60,7 +60,7 @@ function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
     primaryType: "MetaTx",
     domain: {
       name: "ForwarderModule",
-      version: "1.1.0",
+      version: "1.2.0",
       chainId: new BN(metaTx.chainId),
       verifyingContract: forwardModuleAddr
     },

@@ -69,6 +69,8 @@ contract ControllerImpl is Claimable, Controller
         external
         onlyOwner
     {
+        // Make sure this function can only invoked once.
+        require(hashStore == address(0) && _hashStore != address(0), "INVALID_INIT");
         hashStore = _hashStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
