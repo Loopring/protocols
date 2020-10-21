@@ -50,6 +50,7 @@ abstract contract GuardianModule is SecurityModule
         uint    group
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         notWalletOwner(wallet, guardian)
@@ -73,6 +74,7 @@ abstract contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
@@ -85,6 +87,7 @@ abstract contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
@@ -98,6 +101,7 @@ abstract contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
@@ -107,6 +111,7 @@ abstract contract GuardianModule is SecurityModule
 
     function lock(address wallet)
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
         onlyHaveEnoughGuardians(wallet)
@@ -116,6 +121,7 @@ abstract contract GuardianModule is SecurityModule
 
     function unlock(address wallet)
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
     {

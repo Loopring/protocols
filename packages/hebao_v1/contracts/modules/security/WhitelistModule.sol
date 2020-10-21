@@ -38,10 +38,15 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controllerCache.whitelistStore.addToWhitelist(wallet, addr, block.timestamp.add(whitelistDelayPeriod));
+        controllerCache.whitelistStore.addToWhitelist(
+            wallet,
+            addr,
+            block.timestamp.add(whitelistDelayPeriod)
+        );
     }
 
     function addToWhitelistImmediately(
@@ -72,6 +77,7 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {

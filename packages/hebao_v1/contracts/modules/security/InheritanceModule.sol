@@ -47,6 +47,7 @@ abstract contract InheritanceModule is SecurityModule
         address newOwner
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         eligibleWalletOwner(newOwner)
         notWalletOwner(wallet, newOwner)
@@ -71,6 +72,7 @@ abstract contract InheritanceModule is SecurityModule
         address _inheritor
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {

@@ -56,6 +56,7 @@ abstract contract TransferModule is BaseTransferModule
         uint    newQuota
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
@@ -101,6 +102,7 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata logdata
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
@@ -118,6 +120,7 @@ abstract contract TransferModule is BaseTransferModule
         bytes     calldata data
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
@@ -136,6 +139,7 @@ abstract contract TransferModule is BaseTransferModule
         uint    amount
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
@@ -155,6 +159,7 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
+        notDirectlyFromWallet(wallet)
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)

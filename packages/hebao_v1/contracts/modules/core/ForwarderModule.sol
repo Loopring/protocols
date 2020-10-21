@@ -122,6 +122,7 @@ abstract contract ForwarderModule is BaseModule
         bytes   calldata signature
         )
         external
+        notDirectlyFromWallet(from)
         returns (
             bool         success
         )

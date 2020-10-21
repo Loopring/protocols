@@ -34,6 +34,7 @@ library SignedRequest {
         )
         public
     {
+        require(msg.sender != request.wallet, "SENDER_CANNOT_BE_WALLET");
         require(block.timestamp <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
 
         bytes32 _txAwareHash = EIP712.hashPacked(domainSeperator, encodedRequest);

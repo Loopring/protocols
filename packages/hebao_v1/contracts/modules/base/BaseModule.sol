@@ -57,6 +57,12 @@ abstract contract BaseModule is Module
         _;
     }
 
+    modifier notDirectlyFromWallet(address wallet)
+    {
+        require(msg.sender != wallet, "TRANSACTION_FROM_WALLET_DISALLOWED");
+        _;
+    }
+
     modifier notWalletOwner(address wallet, address addr)
         virtual
     {
