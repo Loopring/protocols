@@ -58,8 +58,6 @@ interface Wallet
     ///      wallet can use this method to transact on any third-party contract with
     ///      msg.sender as this wallet itself.
     ///
-    ///      This method will emit `Transacted` event if it doesn't throw.
-    ///
     ///      Note: 1) this method must ONLY allow invocations from a module that has
     ///      been added to this wallet. The wallet owner shall NOT be permitted
     ///      to call this method directly. 2) Reentrancy inside this function should
