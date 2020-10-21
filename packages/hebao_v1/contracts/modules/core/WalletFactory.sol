@@ -47,6 +47,16 @@ contract WalletFactory is MetaTxAware
     ControllerImpl public controller;
     bytes32        public DOMAIN_SEPERATOR;
 
+    struct ControllerCache
+    {
+        WalletRegistry      walletRegistry;
+        BaseENSManager      ensManager;
+        address             ensResolver;
+        ENSReverseRegistrar ensReverseRegistrar;
+    }
+
+    ControllerCache public controllerCache;
+
     constructor(
         ControllerImpl _controller,
         address        _walletImplementation,
@@ -58,6 +68,7 @@ contract WalletFactory is MetaTxAware
             EIP712.Domain("WalletFactory", "1.2.0", address(this))
         );
         controller = _controller;
+        updateControllerCache();
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
     }
@@ -213,6 +224,16 @@ contract WalletFactory is MetaTxAware
         return CloneFactory.getByteCode(walletImplementation);
     }
 
+    function updateControllerCache()
+        public
+    {
+        ControllerImpl _controller = controller;
+        controllerCache.walletRegistry = _controller.walletRegistry();
+        controllerCache.ensManager = controller.ensManager();
+        controllerCache.ensResolver = controllerCache.ensManager.ensResolver();
+        controllerCache.ensReverseRegistrar = controllerCache.ensManager.getENSReverseRegistrar();
+    }
+
     // ---- internal functions ---
 
     function consumeBlank_(
@@ -298,10 +319,6 @@ contract WalletFactory is MetaTxAware
         );
 
         bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
-
-        bytes32 txAwareHash_ = txAwareHash();
-        require(txAwareHash_ == 0 || txAwareHash_ == signHash, "INVALID_TX_AWARE_HASH");
-
         require(signHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
     }
 
@@ -316,7 +333,7 @@ contract WalletFactory is MetaTxAware
         private
     {
         BaseWallet(_wallet.toPayable()).initOwner(_owner);
-        controller.walletRegistry().registerWallet(_wallet);
+        controllerCache.walletRegistry.registerWallet(_wallet);
 
         if (bytes(_ensLabel).length > 0) {
             registerENS_(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
@@ -356,19 +373,19 @@ contract WalletFactory is MetaTxAware
             "INVALID_LABEL_OR_SIGNATURE"
         );
 
-        BaseENSManager ensManager = controller.ensManager();
+        BaseENSManager ensManager = controllerCache.ensManager;
         ensManager.register(wallet, owner, ensLabel, ensApproval);
 
         if (ensRegisterReverse) {
             bytes memory data = abi.encodeWithSelector(
                 ENSReverseRegistrar.claimWithResolver.selector,
                 address(0), // the owner of the reverse record
-                ensManager.ensResolver()
+                controllerCache.ensResolver
             );
 
             Wallet(wallet).transact(
                 uint8(1),
-                address(ensManager.getENSReverseRegistrar()),
+                address(controllerCache.ensReverseRegistrar),
                 0, // value
                 data
             );
