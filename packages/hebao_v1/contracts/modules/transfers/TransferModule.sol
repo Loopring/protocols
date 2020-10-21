@@ -46,7 +46,7 @@ abstract contract TransferModule is BaseTransferModule
         require(_transferDelayPeriod > 0, "INVALID_DELAY");
 
         TRANSFER_DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("TransferModule", "1.1.0", address(this))
+            EIP712.Domain("TransferModule", "1.2.0", address(this))
         );
         transferDelayPeriod = _transferDelayPeriod;
     }

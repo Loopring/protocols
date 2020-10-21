@@ -28,7 +28,7 @@ abstract contract WhitelistModule is SecurityModule
         require(_whitelistDelayPeriod > 0, "INVALID_DELAY");
 
         WHITELIST_DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("WhitelistModule", "1.1.0", address(this))
+            EIP712.Domain("WhitelistModule", "1.2.0", address(this))
         );
         whitelistDelayPeriod = _whitelistDelayPeriod;
     }

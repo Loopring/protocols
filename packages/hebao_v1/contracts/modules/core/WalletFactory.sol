@@ -55,7 +55,7 @@ contract WalletFactory is MetaTxAware
         MetaTxAware(address(0))
     {
         DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("WalletFactory", "1.1.0", address(this))
+            EIP712.Domain("WalletFactory", "1.2.0", address(this))
         );
         controller = _controller;
         walletImplementation = _walletImplementation;

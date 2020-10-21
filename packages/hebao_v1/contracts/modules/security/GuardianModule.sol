@@ -38,7 +38,7 @@ abstract contract GuardianModule is SecurityModule
     constructor(uint _recoveryPendingPeriod)
     {
         GUARDIAN_DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("GuardianModule", "1.1.0", address(this))
+            EIP712.Domain("GuardianModule", "1.2.0", address(this))
         );
         require(_recoveryPendingPeriod > 0, "INVALID_DELAY");
         recoveryPendingPeriod = _recoveryPendingPeriod;
