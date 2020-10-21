@@ -90,14 +90,16 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         emit WalletSetup(_initialOwner);
     }
 
-    /// @dev Set up this wallet by assigning an controller.
+    /// @dev Set up this wallet by assigning a controller and initial modules.
     ///
     ///      Note that calling this method more than once will throw.
     ///      And this method must be invoked before owner is initialized
     ///
     /// @param _controller The Controller instance.
-    function initController(
-        Controller _controller
+    /// @param _modules The initial modules.
+    function init(
+        Controller _controller,
+        address[]  calldata _modules
         )
         external
     {
@@ -109,6 +111,11 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         );
 
         controller = _controller;
+
+        ModuleRegistry moduleRegistry = controller.moduleRegistry();
+        for (uint i = 0; i < _modules.length; i++) {
+            addModuleInternal(_modules[i], moduleRegistry);
+        }
     }
 
     function owner()
@@ -147,7 +154,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         override
         onlyFromFactoryOrModule
     {
-        addModuleInternal(_module);
+        addModuleInternal(_module, controller.moduleRegistry());
     }
 
     function removeModule(address _module)
@@ -217,13 +224,13 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         emit Transacted(msg.sender, to, value, data);
     }
 
-    function addModuleInternal(address _module)
+    function addModuleInternal(address _module, ModuleRegistry moduleRegistry)
         internal
     {
         require(_module != address(0), "NULL_MODULE");
         require(modules[_module] == false, "MODULE_EXISTS");
         require(
-            controller.moduleRegistry().isModuleEnabled(_module),
+            moduleRegistry.isModuleEnabled(_module),
             "INVALID_MODULE"
         );
         modules[_module] = true;
