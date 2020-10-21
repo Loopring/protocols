@@ -20,7 +20,7 @@ abstract contract SecurityModule is MetaTxModule
 
     // The minimal number of guardians for recovery and locking.
     uint constant public MIN_ACTIVE_GUARDIANS = 2;
-    uint constant public MIN_TOUCH_INTERVAL   = 7 days;
+    uint constant public MIN_TOUCH_INTERVAL   = 30 days;
 
     event WalletLock(
         address indexed wallet,

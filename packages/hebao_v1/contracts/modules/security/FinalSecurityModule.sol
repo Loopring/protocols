@@ -23,12 +23,11 @@ contract FinalSecurityModule is
         ControllerImpl _controller,
         address        _trustedForwarder,
         uint           _recoveryPendingPeriod,
-        uint           _inheritWaitingPeriod,
         uint           _whitelistDelayPeriod
         )
         SecurityModule(_trustedForwarder)
         GuardianModule(_recoveryPendingPeriod)
-        InheritanceModule(_inheritWaitingPeriod)
+        InheritanceModule()
         WhitelistModule(_whitelistDelayPeriod)
     {
         controller_ = _controller;
