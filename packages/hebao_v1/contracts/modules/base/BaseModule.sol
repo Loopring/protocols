@@ -59,7 +59,7 @@ abstract contract BaseModule is Module
 
     modifier notDirectlyFromWallet(address wallet)
     {
-        require(msg.sender != wallet, "TRANSACTION_FROM_WALLET_DISALLOWED");
+        require(msg.sender != wallet, "WALLET_TO_MODULE_TX_DISALLOWED");
         _;
     }
 
