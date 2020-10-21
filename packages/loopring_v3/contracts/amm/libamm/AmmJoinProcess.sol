@@ -31,19 +31,24 @@ library AmmJoinProcess
     // event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);
 
     function processJoin(
-        AmmData.State       storage /*S*/,
+        AmmData.State       storage S,
         AmmData.Context     memory  ctx,
         ExchangeData.Block  memory  _block,
         AmmData.PoolJoin    memory  join,
         bytes               memory  signature
         )
         internal
-        view
     {
         require(join.validUntil >= block.timestamp, "EXPIRED");
 
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
-        require(txHash.verifySignature(join.owner, signature), "INVALID_JOIN_APPROVAL");
+
+        if (signature.length == 0) {
+            require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
+            delete S.approvedTx[txHash];
+        } else {
+            require(txHash.verifySignature(join.owner, signature), "INVALID_OFFCHAIN_APPROVAL");
+        }
 
         // Check if the requirements are fulfilled
         (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
@@ -62,7 +67,7 @@ library AmmJoinProcess
                 transfer.amount.isAlmostEqualAmount(amounts[i]) &&
                 transfer.fee == 0 &&
                 (signature.length == 0 || transfer.storageID == join.joinStorageIDs[i]),
-                "INVALID_TX_DATA"
+                "INVALID_JOIN_TRANSFER_TX_DATA"
             );
 
             ctx.approveTransfer(transfer);
@@ -96,7 +101,7 @@ library AmmJoinProcess
             transfer.feeTokenID == 0 &&
             transfer.fee == 0,
             // transfer.storageID == UNKNOWN &&
-            "INVALID_TX_DATA"
+            "INVALID_MINT_TX_DATA"
         );
 
         ctx.approveTransfer(transfer);

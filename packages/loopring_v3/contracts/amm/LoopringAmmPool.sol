@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../aux/access/IBlockReceiver.sol";
 import "../core/iface/IAgentRegistry.sol";
+// import "../lib/Drainable.sol";
 import "../lib/ReentrancyGuard.sol";
 import "./libamm/AmmBlockReceiver.sol";
 import "./libamm/AmmData.sol";
@@ -13,7 +14,7 @@ import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmPoolToken.sol";
 import "./libamm/AmmStatus.sol";
 import "./libamm/AmmWithdrawal.sol";
-import './PoolToken.sol';
+import "./PoolToken.sol";
 
 
 /// @title LoopringAmmPool
@@ -24,12 +25,14 @@ contract LoopringAmmPool is
     ReentrancyGuard
 {
     using AmmBlockReceiver for AmmData.State;
+    using AmmJoinRequest   for AmmData.State;
     using AmmExitRequest   for AmmData.State;
     using AmmPoolToken     for AmmData.State;
     using AmmStatus        for AmmData.State;
     using AmmWithdrawal    for AmmData.State;
 
-    event ForcedPoolExitRequested(AmmData.PoolExit exit);
+    event PoolJoinRequested(AmmData.PoolJoin join);
+    event PoolExitRequested(AmmData.PoolExit exit, bool force);
     event ForcedExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
     event Shutdown(uint timestamp);
 
@@ -78,6 +81,18 @@ contract LoopringAmmPool is
         state.shutdown(exitOwner);
     }
 
+    function joinPool(
+        uint96[]     calldata joinAmounts,
+        uint96                mintMinAmount
+        )
+        external
+        payable
+        onlyWhenOnline
+        nonReentrant
+    {
+        state.joinPool(joinAmounts, mintMinAmount);
+    }
+
     function exitPool(
         uint96            burnAmount,
         uint96[] calldata exitMinAmounts
@@ -87,7 +102,19 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        state.exitPool(burnAmount, exitMinAmounts);
+        state.exitPool(burnAmount, exitMinAmounts, false);
+    }
+
+    function forceExitPool(
+        uint96            burnAmount,
+        uint96[] calldata exitMinAmounts
+        )
+        external
+        payable
+        onlyWhenOnline
+        nonReentrant
+    {
+        state.exitPool(burnAmount, exitMinAmounts, true);
     }
 
     function beforeBlockSubmission(
@@ -104,13 +131,6 @@ contract LoopringAmmPool is
                             // and can only be called by the exchange owner.
     {
         state.beforeBlockSubmission(_block, data, txIdx, numTxs);
-    }
-
-    function withdrawFromApprovedWithdrawals()
-        external
-        nonReentrant
-    {
-        state.withdrawFromApprovedWithdrawals();
     }
 
     function withdrawWhenOffline()

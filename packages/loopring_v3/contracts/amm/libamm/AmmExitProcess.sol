@@ -48,13 +48,16 @@ library AmmExitProcess
 
         if (signature.length == 0) {
             bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
-            require(txHash == forcedExitHash, "FORCED_EXIT_NOT_FOUND");
-
-            delete S.forcedExit[exit.owner];
-            S.forcedExitCount--;
-            isForcedExit = true;
+            if (txHash == forcedExitHash) {
+                delete S.forcedExit[exit.owner];
+                S.forcedExitCount--;
+                isForcedExit = true;
+            } else {
+                require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
+                delete S.approvedTx[txHash];
+            }
         } else {
-            require(txHash.verifySignature(exit.owner, signature), "INVALID_EXIT_APPROVAL");
+            require(txHash.verifySignature(exit.owner, signature), "INVALID_OFFCHAIN_APPROVAL");
         }
 
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
@@ -69,7 +72,7 @@ library AmmExitProcess
             ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
         } else {
             require(slippageOK, "EXIT_SLIPPAGE_INVALID");
-            _burnPoolTokenOnL2(ctx, _block, exit.burnAmount, exit.owner, exit.burnStorageID);
+            _burnPoolTokenOnL2(ctx, _block, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
         }
 
         // Handle liquidity tokens
@@ -84,7 +87,7 @@ library AmmExitProcess
                 transfer.to == exit.owner &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
                 transfer.amount.add(transfer.fee).isAlmostEqualAmount(amounts[i]),
-                "INVALID_TX_DATA"
+                "INVALID_EXIT_TRANSFER_TX_DATA"
             );
 
             if (transfer.fee > 0) {
@@ -111,7 +114,8 @@ library AmmExitProcess
         ExchangeData.Block  memory  _block,
         uint96                      amount,
         address                     from,
-        uint32                      burnStorageID
+        uint32                      burnStorageID,
+        bytes               memory  signature
         )
         internal
         view
@@ -127,8 +131,8 @@ library AmmExitProcess
             transfer.amount.isAlmostEqualAmount(amount) &&
             transfer.feeTokenID == 0 &&
             transfer.fee == 0 &&
-            transfer.storageID == burnStorageID,
-            "INVALID_TX_DATA"
+            (signature.length == 0 || transfer.storageID == burnStorageID),
+            "INVALID_BURN_TX_DATA"
         );
 
         ctx.approveTransfer(transfer);

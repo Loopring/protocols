@@ -100,34 +100,6 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         );
     }
 
-    function cloneExchange(
-        address _owner,
-        bytes32 _genesisMerkleRoot
-        )
-        external
-        override
-        nonReentrant
-        returns (address)
-    {
-        require(address(0) != _owner, "ZERO_ADDRESS");
-
-        OwnedUpgradabilityProxy proxy = new OwnedUpgradabilityProxy();
-        proxy.upgradeTo(address(this));
-
-        ExchangeV3 newExchange = ExchangeV3(address(proxy));
-
-        newExchange.initialize(
-            loopringAddr,
-            _owner,
-            _genesisMerkleRoot
-        );
-        proxy.transferProxyOwnership(_owner);
-
-        emit ExchangeCloned(address(newExchange), _owner, _genesisMerkleRoot);
-
-        return address(proxy);
-    }
-
     function setAgentRegistry(address _agentRegistry)
         external
         override

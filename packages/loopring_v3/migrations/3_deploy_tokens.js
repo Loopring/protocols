@@ -20,6 +20,17 @@ module.exports = function(deployer, network, accounts) {
       await deployer.deploy(TESTToken);
       await deployer.deploy(INDAToken);
       await deployer.deploy(INDBToken);
+
+      const lrcToken = await LRCToken.deployed();
+      const gtoToken = await GTOToken.deployed();
+
+      if (process.env.TEST_ENV == "docker") {
+        for (const account of accounts) {
+          console.log("feed tokens for:", account);
+          await lrcToken.setBalance(account, "1" + "0".repeat(28));
+          await gtoToken.setBalance(account, "1" + "0".repeat(28));
+        }
+      }
     });
   }
 };

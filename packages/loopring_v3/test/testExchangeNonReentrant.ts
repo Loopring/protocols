@@ -11,7 +11,7 @@ contract("Exchange", (accounts: string[]) => {
   const createExchange = async (setupTestState: boolean = true) => {
     await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {setupTestState}
+      { setupTestState }
     );
     exchange = exchangeTestUtil.exchange;
   };
@@ -94,6 +94,8 @@ contract("Exchange", (accounts: string[]) => {
             values.push(web3.utils.hexToBytes("0x"));
           } else if (input.type === "bytes32") {
             values.push("0x0");
+          } else if (input.type === "bytes32[]") {
+            values.push(["0x0"]);
           } else if (
             input.internalType.startsWith("struct ExchangeData.Block[]")
           ) {

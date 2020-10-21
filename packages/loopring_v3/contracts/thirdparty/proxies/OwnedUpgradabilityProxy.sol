@@ -25,7 +25,7 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
   * @dev the constructor sets the original owner of the contract to the sender account.
   */
   constructor() {
-    setUpgradeabilityOwner(msg.sender);
+    setUpgradabilityOwner(msg.sender);
   }
 
   /**
@@ -50,7 +50,7 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
   /**
    * @dev Sets the address of the owner
    */
-  function setUpgradeabilityOwner(address newProxyOwner) internal {
+  function setUpgradabilityOwner(address newProxyOwner) internal {
     bytes32 position = proxyOwnerPosition;
     assembly {
       sstore(position, newProxyOwner)
@@ -64,7 +64,7 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
   function transferProxyOwnership(address newOwner) public onlyProxyOwner {
     require(newOwner != address(0));
     emit ProxyOwnershipTransferred(proxyOwner(), newOwner);
-    setUpgradeabilityOwner(newOwner);
+    setUpgradabilityOwner(newOwner);
   }
 
   /**

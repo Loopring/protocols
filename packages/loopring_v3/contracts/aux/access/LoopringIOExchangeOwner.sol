@@ -79,7 +79,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         ) ? ERC1271_MAGICVALUE : bytes4(0);
     }
 
-    function canDrain(address drainer)
+    function canDrain(address drainer, address /* token */)
         public
         override
         view
