@@ -1,6 +1,5 @@
 const SignedRequest = artifacts.require("SignedRequest");
 
-const WalletRegistryImpl = artifacts.require("WalletRegistryImpl");
 const ModuleRegistryImpl = artifacts.require("ModuleRegistryImpl");
 const BaseENSManager = artifacts.require("BaseENSManager");
 
@@ -28,7 +27,6 @@ module.exports = function(deployer, network, accounts) {
   }
   console.log("- ensManagerAddr:", ensManagerAddr);
   console.log("- SignedRequest:", SignedRequest.address);
-  console.log("- WalletRegistryImpl:", WalletRegistryImpl.address);
   console.log("- ModuleRegistryImpl:", ModuleRegistryImpl.address);
   console.log("- ControllerImpl:", ControllerImpl.address);
   console.log("- WalletImpl:", WalletImpl.address);

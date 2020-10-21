@@ -316,7 +316,6 @@ contract WalletFactory is MetaTxAware
         private
     {
         BaseWallet(_wallet.toPayable()).initOwner(_owner);
-        controller.walletRegistry().registerWallet(_wallet);
 
         if (bytes(_ensLabel).length > 0) {
             registerENS_(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);

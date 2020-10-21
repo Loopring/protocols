@@ -89,7 +89,6 @@ async function batchDeploySimpleContracts() {
 
   const targetContractNames = [
     "SignedRequest",
-    "WalletRegistryImpl",
     "ModuleRegistryImpl",
     "DappAddressStore",
     "HashStore",
@@ -137,7 +136,6 @@ async function deployController() {
   const { abi, bin } = getAbiAndBin(releaseDir, contractName);
 
   const moduleRegistryImplAddr = "";
-  const walletRegistryImplAddr = "";
   const lockPeriod = "";
   const collectTo = "";
   const ensManager = "";
@@ -147,7 +145,6 @@ async function deployController() {
     abi,
     bin,
     moduleRegistryImplAddr,
-    walletRegistryImplAddr,
     lockPeriod,
     collectTo,
     ensManager,

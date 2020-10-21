@@ -74,7 +74,6 @@ abstract contract InheritanceModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        require(controllerCache.walletRegistry.isWalletRegistered(_inheritor), "NOT_A_WALLET");
         (address existingInheritor,) = controllerCache.securityStore.inheritor(wallet);
         require(existingInheritor != _inheritor, "SAME_INHERITOR");
 

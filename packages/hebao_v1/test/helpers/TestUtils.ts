@@ -18,7 +18,6 @@ export interface Context {
 
   controllerImpl: any;
   walletFactory: any;
-  walletRegistryImpl: any;
   moduleRegistryImpl: any;
   baseENSManager: any;
 
@@ -50,7 +49,6 @@ export async function getContext() {
 
     controllerImpl: await contracts.ControllerImpl.deployed(),
     walletFactory: await contracts.WalletFactory.deployed(),
-    walletRegistryImpl: await contracts.WalletRegistryImpl.deployed(),
     moduleRegistryImpl: await contracts.ModuleRegistryImpl.deployed(),
     baseENSManager: await contracts.BaseENSManager.deployed(),
 
@@ -80,7 +78,6 @@ export async function createContext(context?: Context) {
   );
 
   await walletFactory.initTrustedForwarder(context.finalCoreModule.address);
-  await context.walletRegistryImpl.setWalletFactory(walletFactory.address);
   await context.baseENSManager.addManager(walletFactory.address);
   await context.controllerImpl.initWalletFactory(walletFactory.address);
   context.walletFactory = walletFactory;

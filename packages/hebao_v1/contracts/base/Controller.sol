@@ -3,7 +3,6 @@
 pragma solidity ^0.7.0;
 
 import "../iface/ModuleRegistry.sol";
-import "../iface/WalletRegistry.sol";
 
 
 /// @title Controller
@@ -12,6 +11,5 @@ import "../iface/WalletRegistry.sol";
 abstract contract Controller
 {
     ModuleRegistry public moduleRegistry;
-    WalletRegistry public walletRegistry;
     address        public walletFactory;
 }

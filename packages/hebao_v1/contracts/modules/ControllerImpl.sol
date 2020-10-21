@@ -39,7 +39,6 @@ contract ControllerImpl is Claimable, Controller
 
     constructor(
         ModuleRegistry    _moduleRegistry,
-        WalletRegistry    _walletRegistry,
         uint              _defaultLockPeriod,
         address           _collectTo,
         BaseENSManager    _ensManager,
@@ -48,7 +47,6 @@ contract ControllerImpl is Claimable, Controller
         )
     {
         moduleRegistry = _moduleRegistry;
-        walletRegistry = _walletRegistry;
 
         defaultLockPeriod = _defaultLockPeriod;
 
