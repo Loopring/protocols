@@ -157,20 +157,10 @@ abstract contract GuardianModule is SecurityModule
         _lockWallet(wallet, true);
     }
 
-    function unlock(address wallet)
-        external
-        txAwareHashNotAllowed()
-        onlyFromGuardian(wallet)
-    {
-        _lockWallet(wallet, false);
-    }
-
-    // TODO(daniel): test this method after initial review
     function unlock(
         SignedRequest.Request calldata request
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,

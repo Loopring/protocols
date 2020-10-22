@@ -156,7 +156,7 @@ abstract contract ForwarderModule is BaseModule
             metaTx.to,
             metaTx.nonce,
             metaTx.txAwareHash,
-            metaTx.gasToken,
+            met taTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
             data,
