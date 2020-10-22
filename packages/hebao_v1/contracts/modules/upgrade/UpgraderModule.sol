@@ -56,14 +56,6 @@ contract UpgraderModule is BaseModule {
         return ControllerImpl(controller_);
     }
 
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-    }
-
     function upgradeWalletImplementation(address payable wallet)
         external
     {

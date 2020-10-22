@@ -33,13 +33,5 @@ contract FinalTransferModule is TransferModule
     {
         return ControllerImpl(controller_);
     }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-    }
 }
 

@@ -106,7 +106,9 @@ abstract contract BaseModule is Module
         public
         pure
         virtual
-        returns (bytes4[] memory methods);
+        returns (bytes4[] memory methods)
+    {
+    }
 
     function updateControllerCache()
         public

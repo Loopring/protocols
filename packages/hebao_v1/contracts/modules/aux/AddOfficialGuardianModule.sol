@@ -39,14 +39,6 @@ contract AddOfficialGuardianModule is BaseModule {
         return ControllerImpl(controller_);
     }
 
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-    }
-
     function activate()
         external
         override
