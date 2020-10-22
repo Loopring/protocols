@@ -72,7 +72,6 @@ abstract contract TransferModule is BaseTransferModule
         uint newQuota
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
@@ -174,7 +173,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata logdata
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
@@ -202,7 +200,6 @@ abstract contract TransferModule is BaseTransferModule
         uint    amount
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
@@ -229,7 +226,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
         returns (bytes memory returnData)
     {
         controller().verifyRequest(
@@ -259,7 +255,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
         returns (bytes memory returnData)
     {
         bytes memory encoded = abi.encode(

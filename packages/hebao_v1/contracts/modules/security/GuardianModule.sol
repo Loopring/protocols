@@ -92,7 +92,6 @@ abstract contract GuardianModule is SecurityModule
         uint    group
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
@@ -116,7 +115,6 @@ abstract contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
@@ -150,7 +148,6 @@ abstract contract GuardianModule is SecurityModule
         external
         txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
-        onlyHaveEnoughGuardians(wallet)
     {
         lockWallet(wallet);
     }
@@ -174,7 +171,6 @@ abstract contract GuardianModule is SecurityModule
         external
         notWalletOwner(request.wallet, newOwner)
         eligibleWalletOwner(newOwner)
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
@@ -234,7 +230,7 @@ abstract contract GuardianModule is SecurityModule
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         uint effectiveTime = block.timestamp;
-        if (numGuardians >= MIN_ACTIVE_GUARDIANS) {
+        if (numGuardians >= 2) {
             effectiveTime = block.timestamp + pendingPeriod;
         }
         controllerCache.securityStore.addGuardian(wallet, guardian, group, effectiveTime);

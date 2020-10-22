@@ -19,7 +19,6 @@ abstract contract SecurityModule is MetaTxModule
     using SignedRequest for ControllerImpl;
 
     // The minimal number of guardians for recovery and locking.
-    uint constant public MIN_ACTIVE_GUARDIANS = 1;
     uint constant public TOUCH_GRACE_PERIOD   = 30 days;
     uint constant public LOCK_PERIOD          = 3  days;
 
@@ -80,15 +79,6 @@ abstract contract SecurityModule is MetaTxModule
     modifier notWalletGuardian(address wallet, address guardian)
     {
         require(!controllerCache.securityStore.isGuardian(wallet, guardian), "IS_GUARDIAN");
-        _;
-    }
-
-    modifier onlyHaveEnoughGuardians(address wallet)
-    {
-        require(
-            controllerCache.securityStore.numGuardians(wallet) >= MIN_ACTIVE_GUARDIANS,
-            "NO_ENOUGH_ACTIVE_GUARDIANS"
-        );
         _;
     }
 

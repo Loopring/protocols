@@ -49,7 +49,6 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             WHITELIST_DOMAIN_SEPERATOR,
@@ -72,7 +71,6 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             WHITELIST_DOMAIN_SEPERATOR,
