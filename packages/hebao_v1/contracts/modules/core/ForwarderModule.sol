@@ -136,7 +136,7 @@ abstract contract ForwarderModule is BaseModule
         );
 
         uint gasLeft = gasleft();
-        require(gasleft() >= metaTx.gasLimit.mul(64) / 63, "OPERATOR_INSUFFICIENT_GAS");
+        require(gasleft >= metaTx.gasLimit.mul(64) / 63, "OPERATOR_INSUFFICIENT_GAS");
 
         // Update the nonce before the call to protect against reentrancy
         if (metaTx.nonce != 0) {
