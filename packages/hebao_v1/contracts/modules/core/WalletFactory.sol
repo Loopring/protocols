@@ -317,7 +317,7 @@ contract WalletFactory is MetaTxAware
             _ensRegisterReverse,
             keccak256(abi.encode(_modules))
         );
-        // txAwareHash replay attach is impossible because the same wallet can only be created once.
+        // txAwareHash replay attack is impossible because the same wallet can only be created once.
         // bytes32 txAwareHash_ = txAwareHash();
         // require(txAwareHash_ == 0 || txAwareHash_ == signHash, "INVALID_TX_AWARE_HASH");
 
