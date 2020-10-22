@@ -98,7 +98,7 @@ abstract contract GuardianModule is SecurityModule
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.OwnerAllowed,
             request,
             abi.encode(
                 ADD_GUARDIAN_IMMEDIATELY_TYPEHASH,
