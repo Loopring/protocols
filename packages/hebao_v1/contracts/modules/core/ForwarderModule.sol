@@ -26,7 +26,7 @@ abstract contract ForwarderModule is BaseModule
     uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 165000;
     bytes32 public FORWARDER_DOMAIN_SEPARATOR;
 
-    bytes32 constant public META_TX_TYPEHASH = keccak256(
+    bytes32 public constant META_TX_TYPEHASH = keccak256(
         "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
     );
 
@@ -104,8 +104,7 @@ abstract contract ForwarderModule is BaseModule
         // Instead of always taking the expensive path through ER1271,
         // skip directly to the wallet owner here (which could still be another contract).
         //require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
-        (uint _lock,) = controllerCache.securityStore.getLock(from);
-        require(_lock <= block.timestamp, "WALLET_LOCKED");
+        require(!controllerCache.securityStore.isLocked(from), "WALLET_LOCKED");
         require(metaTxHash.verifySignature(Wallet(from).owner(), signature), "INVALID_SIGNATURE");
     }
 
@@ -122,7 +121,7 @@ abstract contract ForwarderModule is BaseModule
         )
         external
         returns (
-            bool         success
+            bool success
         )
     {
         MetaTx memory metaTx = MetaTx(
@@ -136,7 +135,7 @@ abstract contract ForwarderModule is BaseModule
         );
 
         uint gasLeft = gasleft();
-        require(gasleft >= metaTx.gasLimit.mul(64) / 63, "OPERATOR_INSUFFICIENT_GAS");
+        require(gasLeft >= (gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
 
         // Update the nonce before the call to protect against reentrancy
         if (metaTx.nonce != 0) {

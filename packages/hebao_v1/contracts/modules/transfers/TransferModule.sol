@@ -24,23 +24,18 @@ abstract contract TransferModule is BaseTransferModule
     bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH = keccak256(
         "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
     );
-
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
         "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
-
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
         "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     );
-
     bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
         "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     );
-
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
         "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
-
 
     constructor()
     {
@@ -57,15 +52,7 @@ abstract contract TransferModule is BaseTransferModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        QuotaStore qs = controllerCache.quotaStore;
-        uint _newQuota = newQuota == 0 ? qs.defaultQuota(): newQuota;
-        uint _currentQuota = qs.currentQuota(wallet);
-
-        if (_currentQuota >= _newQuota) {
-            qs.changeQuota(wallet, _newQuota, block.timestamp);
-        } else {
-            qs.changeQuota(wallet, _newQuota, block.timestamp.add(QUOTA_PENDING_PERIOD));
-        }
+        _changeQuota(wallet, newQuota, QUOTA_PENDING_PERIOD);
     }
 
     function changeDailyQuotaWA(
@@ -86,8 +73,7 @@ abstract contract TransferModule is BaseTransferModule
                 newQuota
             )
         );
-
-        controllerCache.quotaStore.changeQuota(request.wallet, newQuota, block.timestamp);
+        _changeQuota(request.wallet, newQuota, 0);
     }
 
     function transferToken(
@@ -102,7 +88,7 @@ abstract contract TransferModule is BaseTransferModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         if (amount > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, amount);
+            _updateQuota(wallet, token, amount);
         }
 
         transferInternal(wallet, token, to, amount, logdata);
@@ -148,7 +134,7 @@ abstract contract TransferModule is BaseTransferModule
         returns (bytes memory returnData)
     {
         if (value > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, address(0), value);
+            _updateQuota(wallet, address(0), value);
         }
 
         return callContractInternal(wallet, to, value, data);
@@ -194,7 +180,7 @@ abstract contract TransferModule is BaseTransferModule
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
         if (additionalAllowance > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, additionalAllowance);
+            _updateQuota(wallet, token, additionalAllowance);
         }
     }
 
@@ -240,8 +226,8 @@ abstract contract TransferModule is BaseTransferModule
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
         if ((additionalAllowance > 0 || value > 0) && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, additionalAllowance);
-            updateQuota(wallet, address(0), value);
+            _updateQuota(wallet, token, additionalAllowance);
+            _updateQuota(wallet, address(0), value);
         }
 
         return callContractInternal(wallet, to, value, data);
@@ -293,5 +279,23 @@ abstract contract TransferModule is BaseTransferModule
         total = controllerCache.quotaStore.currentQuota(wallet);
         spent = controllerCache.quotaStore.spentQuota(wallet);
         available = controllerCache.quotaStore.availableQuota(wallet);
+    }
+
+    function _changeQuota(
+        address wallet,
+        uint    newQuota,
+        uint    pendingPeriod
+        )
+        private
+    {
+        QuotaStore qs = controllerCache.quotaStore;
+        uint _newQuota = newQuota == 0 ? qs.defaultQuota(): newQuota;
+        uint _currentQuota = qs.currentQuota(wallet);
+
+        if (_newQuota < _currentQuota) {
+            qs.changeQuota(wallet, _newQuota, block.timestamp);
+        } else if (_newQuota > _currentQuota) {
+            qs.changeQuota(wallet, _newQuota, block.timestamp.add(pendingPeriod));
+        }
     }
 }

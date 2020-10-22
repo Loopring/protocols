@@ -18,8 +18,8 @@ abstract contract GuardianModule is SecurityModule
 
     bytes32 public GUARDIAN_DOMAIN_SEPERATOR;
 
-    uint constant public MAX_GUARDIANS = 20;
-    uint public constant GUARDIAN_PENDING_PERIOD = 3 days;
+    uint public constant MAX_GUARDIANS           = 10;
+    uint public constant GUARDIAN_PENDING_PERIOD = 7 days;
 
     bytes32 public constant ADD_GUARDIAN_TYPEHASH = keccak256(
         "addGuardian(address wallet,uint256 validUntil,address guardian,uint256 group)"
@@ -30,16 +30,15 @@ abstract contract GuardianModule is SecurityModule
     bytes32 public constant RECOVER_TYPEHASH = keccak256(
         "recover(address wallet,uint256 validUntil,address newOwner)"
     );
+    bytes32 public constant UNLOCK_TYPEHASH = keccak256(
+        "unlock(address wallet,uint256 validUntil)"
+    );
 
     event GuardianAdded             (address indexed wallet, address guardian, uint group, uint effectiveTime);
     event GuardianAdditionCancelled (address indexed wallet, address guardian);
     event GuardianRemoved           (address indexed wallet, address guardian, uint removalEffectiveTime);
     event GuardianRemovalCancelled  (address indexed wallet, address guardian);
-
-    event Recovered(
-        address indexed wallet,
-        address         newOwner
-    );
+    event Recovered                 (address indexed wallet, address newOwner);
 
     constructor()
     {
@@ -148,17 +147,32 @@ abstract contract GuardianModule is SecurityModule
     function lock(address wallet)
         external
         txAwareHashNotAllowed()
-        onlyFromGuardian(wallet)
     {
-        lockWallet(wallet);
+        address payable _logicalSender = logicalSender();
+        if (_logicalSender == wallet ||
+            _logicalSender == Wallet(wallet).owner()) {
+            _lockWallet(wallet, address(0), true);
+        } else if (controllerCache.securityStore.isGuardian(wallet, _logicalSender)) {
+            _lockWallet(wallet, _logicalSender, true);
+        } else {
+            revert("NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN");
+        }
     }
 
-    function unlock(address wallet)
+    function unlock(
+        SignedRequest.Request calldata request
+        )
         external
-        txAwareHashNotAllowed()
-        onlyFromGuardian(wallet)
     {
-        unlockWallet(wallet, false);
+        controller().verifyRequest(
+            GUARDIAN_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(UNLOCK_TYPEHASH)
+        );
+
+        _lockWallet(request.wallet, address(this), false);
     }
 
     /// @dev Recover a wallet by setting a new owner.
@@ -191,30 +205,21 @@ abstract contract GuardianModule is SecurityModule
         }
 
         Wallet(request.wallet).setOwner(newOwner);
-
-        // solium-disable-next-line
-        unlockWallet(request.wallet, true /*force*/);
+        _lockWallet(request.wallet, address(this), false);
+        // TODO(kongliang): cancel or pending guardian addition and removal.
 
         emit Recovered(request.wallet, newOwner);
     }
-
-    function getLock(address wallet)
-        public
-        view
-        returns (uint _lock, address _lockedBy)
-    {
-        return getWalletLock(wallet);
-    }
-
-    // ---- internal functions ---
 
     function isLocked(address wallet)
         public
         view
         returns (bool)
     {
-        return isWalletLocked(wallet);
+        return _isWalletLocked(wallet);
     }
+
+    // ---- internal functions ---
 
     function _addGuardian(
         address wallet,

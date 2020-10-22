@@ -16,7 +16,7 @@ contract ENSConsumer {
     using strings for *;
 
     // namehash('addr.reverse')
-    bytes32 constant public ADDR_REVERSE_NODE = 0x91d1777781884d03a6757a803996e38de2a42967fb37eeaca72729271025a9e2;
+    bytes32 public constant ADDR_REVERSE_NODE = 0x91d1777781884d03a6757a803996e38de2a42967fb37eeaca72729271025a9e2;
 
     // the address of the ENS registry
     address ensRegistry;

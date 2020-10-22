@@ -10,7 +10,7 @@ import "../../iface/Wallet.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library GuardianUtils
 {
-    uint constant public MAX_NUM_GROUPS = 16;
+    uint public constant MAX_NUM_GROUPS = 16;
 
     enum SigRequirement
     {

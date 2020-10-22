@@ -41,7 +41,11 @@ abstract contract WhitelistModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controllerCache.whitelistStore.addToWhitelist(wallet, addr, block.timestamp.add(WHITELIST_PENDING_PERIOD));
+        controllerCache.whitelistStore.addToWhitelist(
+            wallet,
+            addr,
+            block.timestamp.add(WHITELIST_PENDING_PERIOD)
+        );
     }
 
     function addToWhitelistWA(
@@ -63,7 +67,11 @@ abstract contract WhitelistModule is SecurityModule
             )
         );
 
-        controllerCache.whitelistStore.addToWhitelist(request.wallet, addr, block.timestamp);
+        controllerCache.whitelistStore.addToWhitelist(
+            request.wallet,
+            addr,
+            block.timestamp
+        );
     }
 
     function removeFromWhitelist(
