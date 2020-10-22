@@ -54,7 +54,6 @@ abstract contract InheritanceModule is SecurityModule
         Wallet(wallet).setOwner(newOwner);
 
         lockWallet(wallet, false);
-        // TODO(daniel): cancel all pending security operations.
 
         emit Inherited(wallet, _inheritor, newOwner);
     }

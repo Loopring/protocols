@@ -58,17 +58,9 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       }
     );
 
-    const getWalletLock = await ctx.finalSecurityModule.getLock(wallet);
     const blockTime = await getBlockTime(tx.blockNumber);
 
     assert(await isLocked(wallet), "wallet needs to be locked");
-    // Check the lock data
-    const lockData = await ctx.finalSecurityModule.getLock(wallet);
-    assert.equal(
-      lockData._lockedBy,
-      ctx.finalSecurityModule.address,
-      "wallet locker unexpected"
-    );
   };
 
   const unlockChecked = async (
@@ -97,7 +89,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
         finalSecurityModule,
         "WalletLock",
         (event: any) => {
-          return event.wallet == wallet && event.lock == 0;
+          return event.wallet == wallet && event.locked == false;
         }
       );
     }
