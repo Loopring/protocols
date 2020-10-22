@@ -72,7 +72,6 @@ abstract contract TransferModule is BaseTransferModule
         uint newQuota
         )
         external
-        onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,

@@ -46,7 +46,6 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
             WHITELIST_DOMAIN_SEPERATOR,
