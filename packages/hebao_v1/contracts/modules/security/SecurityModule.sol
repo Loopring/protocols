@@ -45,18 +45,6 @@ abstract contract SecurityModule is MetaTxModule
         _;
     }
 
-    modifier onlyWhenWalletLocked(address wallet)
-    {
-        require(_isWalletLocked(wallet), "NOT_LOCKED");
-        _;
-    }
-
-    modifier onlyWhenWalletUnlocked(address wallet)
-    {
-        require(!_isWalletLocked(wallet), "LOCKED");
-        _;
-    }
-
     modifier onlyWalletGuardian(address wallet, address guardian)
     {
         require(controllerCache.securityStore.isGuardian(wallet, guardian), "NOT_GUARDIAN");

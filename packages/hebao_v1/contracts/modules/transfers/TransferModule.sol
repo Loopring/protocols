@@ -24,19 +24,15 @@ abstract contract TransferModule is BaseTransferModule
     bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH = keccak256(
         "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
     );
-
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
         "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
-
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
         "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     );
-
     bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
         "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     );
-
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
         "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );

@@ -22,7 +22,6 @@ abstract contract WhitelistModule is SecurityModule
     bytes32 public constant ADD_TO_WHITELIST_TYPEHASH = keccak256(
         "addToWhitelist(address wallet,uint256 validUntil,address addr)"
     );
-
     bytes32 public constant REMOVE_FROM_WHITELIST_TYPEHASH = keccak256(
         "removeFromWhitelist(address wallet,uint256 validUntil,address addr)"
     );

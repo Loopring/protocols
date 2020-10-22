@@ -14,25 +14,9 @@ abstract contract BaseTransferModule is SecurityModule
 {
     using MathUint      for uint;
 
-    event Transfered(
-        address wallet,
-        address token,
-        address to,
-        uint    amount,
-        bytes   logdata
-    );
-    event Approved(
-        address wallet,
-        address token,
-        address spender,
-        uint    amount
-    );
-    event ContractCalled(
-        address wallet,
-        address to,
-        uint    value,
-        bytes   data
-    );
+    event Transfered    (address wallet, address token, address to,      uint amount, bytes logdata);
+    event Approved      (address wallet, address token, address spender, uint amount);
+    event ContractCalled(address wallet, address to,    uint    value,   bytes data);
 
     function transferInternal(
         address wallet,
