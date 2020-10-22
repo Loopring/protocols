@@ -38,11 +38,7 @@ abstract contract GuardianModule is SecurityModule
     event GuardianAdditionCancelled (address indexed wallet, address guardian);
     event GuardianRemoved           (address indexed wallet, address guardian, uint removalEffectiveTime);
     event GuardianRemovalCancelled  (address indexed wallet, address guardian);
-
-    event Recovered(
-        address indexed wallet,
-        address         newOwner
-    );
+    event Recovered                 (address indexed wallet, address newOwner);
 
     constructor()
     {
