@@ -1,5 +1,4 @@
 const ModuleRegistryImpl = artifacts.require("ModuleRegistryImpl");
-const WalletRegistryImpl = artifacts.require("WalletRegistryImpl");
 const BaseENSManager = artifacts.require("BaseENSManager");
 const TestPriceOracle = artifacts.require("TestPriceOracle");
 const HashStore = artifacts.require("HashStore");
@@ -24,7 +23,6 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(
       ControllerImpl,
       ModuleRegistryImpl.address,
-      WalletRegistryImpl.address,
       collecTo,
       ensManagerAddr,
       TestPriceOracle.address,

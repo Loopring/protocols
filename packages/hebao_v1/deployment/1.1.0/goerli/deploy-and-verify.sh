@@ -3,7 +3,6 @@
 echo "deploying all contract to goerli testnet ..."
 
 declare -a all_contracts=(
-    "base/WalletRegistryImpl.sol"
     "base/ModuleRegistryImpl.sol"
     "stores/DappAddressStore.sol"
     "stores/HashStore.sol"

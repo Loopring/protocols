@@ -1,6 +1,5 @@
 var SignedRequest = artifacts.require("SignedRequest");
 
-const WalletRegistryImpl = artifacts.require("WalletRegistryImpl");
 const ModuleRegistryImpl = artifacts.require("ModuleRegistryImpl");
 const BaseENSManager = artifacts.require("BaseENSManager");
 
@@ -51,15 +50,13 @@ module.exports = function(deployer, network, accounts) {
     );
 
     const moduleRegistry = await ModuleRegistryImpl.deployed();
-    const walletRegistry = await WalletRegistryImpl.deployed();
     const walletFactory = await WalletFactory.deployed();
     const ensManager = await BaseENSManager.deployed();
 
     let setupFuncList = [
       moduleRegistry.registerModule(FinalCoreModule.address),
       moduleRegistry.registerModule(FinalSecurityModule.address),
-      moduleRegistry.registerModule(FinalTransferModule.address),
-      walletRegistry.setWalletFactory(WalletFactory.address)
+      moduleRegistry.registerModule(FinalTransferModule.address)
     ];
 
     if (!web3.utils.isAddress(ensManagerAddr.toLowerCase())) {

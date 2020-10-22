@@ -209,6 +209,8 @@ abstract contract GuardianModule is SecurityModule
         return getWalletLock(wallet);
     }
 
+    // ---- internal functions ---
+
     function isLocked(address wallet)
         public
         view

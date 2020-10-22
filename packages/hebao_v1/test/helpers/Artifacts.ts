@@ -15,7 +15,6 @@ export class Artifacts {
   public WalletImpl: any;
   public WalletFactory: any;
   public UpgraderModule: any;
-  public WalletRegistryImpl: any;
   public ModuleRegistryImpl: any;
   public BaseENSManager: any;
   public ENSRegistryImpl: any;
@@ -47,9 +46,6 @@ export class Artifacts {
     this.WalletImpl = artifacts.require("./base/WalletImpl.sol");
     this.WalletFactory = artifacts.require("WalletFactory");
     this.UpgraderModule = artifacts.require("UpgraderModule");
-    this.WalletRegistryImpl = artifacts.require(
-      "./base/WalletRegistryImpl.sol"
-    );
     this.ModuleRegistryImpl = artifacts.require(
       "./base/ModuleRegistryImpl.sol"
     );
