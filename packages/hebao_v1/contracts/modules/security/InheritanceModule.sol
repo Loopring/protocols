@@ -48,8 +48,9 @@ abstract contract InheritanceModule is SecurityModule
         SecurityStore ss = controllerCache.securityStore;
         (address _inheritor, uint _effectiveTimestamp) = ss.inheritor(wallet);
 
-        require(_effectiveTimestamp > 0 && _effectiveTimestamp <= block.timestamp, "NEED_TO_WAIT");
-        require(logicalSender() == _inheritor, "NOT_ALLOWED");
+        require(_effectiveTimestamp != 0 && _inheritor != address(0), "NO_INHERITOR");
+        require(_effectiveTimestamp <= block.timestamp, "TOO_EARLY");
+        require(_inheritor == logicalSender(), "UNAUTHORIZED");
 
         ss.removeAllGuardians(wallet);
         ss.setInheritor(wallet, address(0), 0);
