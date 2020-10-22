@@ -16,9 +16,7 @@ export async function addGuardian(
   group: number,
   useMetaTx: boolean = true
 ) {
-  const guardianPendingPeriod = (
-    await ctx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()
-  ).toNumber();
+  const guardianPendingPeriod = (await ctx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()).toNumber();
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);
 
@@ -62,7 +60,7 @@ export async function addGuardian(
     }
   );
   if (guardiansBefore.length === 0) {
-    // The first guardian can be added immediately
+    // The first guardian can be added WA
   } else {
     // Subsequent guardians can be added with a delay
     // Skip forward `guardianPendingPeriod + 1` seconds
@@ -82,9 +80,9 @@ export async function addGuardian(
 
   // Check if the guardian list stored is correct
   let guardiansAfter = await ctx.securityStore.guardians(wallet);
-  const numGuardians = (
-    await ctx.securityStore.numGuardians(wallet)
-  ).toNumber();
+  const numGuardians = (await ctx.securityStore.numGuardians(
+    wallet
+  )).toNumber();
   guardiansBefore.push({ addr: guardian, group });
   guardiansBefore = sortGuardians(guardiansBefore);
   guardiansAfter = sortGuardians(guardiansAfter);
@@ -119,9 +117,7 @@ export async function removeGuardian(
   guardian: string,
   useMetaTx: boolean = true
 ) {
-  const guardianPendingPeriod = (
-    await ctx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()
-  ).toNumber();
+  const guardianPendingPeriod = (await ctx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()).toNumber();
 
   let guardiansBefore = await ctx.securityStore.guardians(wallet);
 

@@ -52,25 +52,20 @@ export function signCreateWallet(
   return { txSignature, hash };
 }
 
-export function signAddToWhitelistImmediately(
+export function signAddToWhitelistWA(
   request: SignedRequest,
   addr: string,
   moduleAddr: string
 ) {
   const domainSeprator = eip712.hash("WhitelistModule", "1.2.0", moduleAddr);
-  const ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH = ethUtil.keccak(
+  const ADD_TO_WHITELIST_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
+      "addToWhitelist(address wallet,uint256 validUntil,address addr)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
     ["bytes32", "address", "uint256", "address"],
-    [
-      ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH,
-      request.wallet,
-      request.validUntil,
-      addr
-    ]
+    [ADD_TO_WHITELIST_TYPEHASH, request.wallet, request.validUntil, addr]
   );
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
   // console.log(`hash: ${hash}`);
@@ -105,21 +100,21 @@ export function signRecover(
   }
 }
 
-export function signChangeDailyQuotaImmediately(
+export function signChangeDailyQuotaWA(
   request: SignedRequest,
   newQuota: BN,
   moduleAddr: string
 ) {
   const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
-  const CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = ethUtil.keccak(
+  const CHANGE_DAILY_QUOTE_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
+      "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
     ["bytes32", "address", "uint256", "uint256"],
     [
-      CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH,
+      CHANGE_DAILY_QUOTE_TYPEHASH,
       request.wallet,
       request.validUntil,
       newQuota.toString(10)
@@ -143,7 +138,7 @@ export function signTransferTokenApproved(
   const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const TRANSFER_TOKEN_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "transferTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+      "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
@@ -183,7 +178,7 @@ export function signApproveTokenApproved(
   const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const APPROVE_TOKEN_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "approveTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
+      "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
@@ -214,7 +209,7 @@ export function signCallContractApproved(
   const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "callContractWithApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+      "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
@@ -247,7 +242,7 @@ export function signApproveThenCallContractApproved(
   const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const APPROVE_THEN_CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+      "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(

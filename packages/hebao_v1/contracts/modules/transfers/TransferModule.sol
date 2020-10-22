@@ -19,27 +19,28 @@ abstract contract TransferModule is BaseTransferModule
 
     bytes32 public TRANSFER_DOMAIN_SEPERATOR;
 
-    bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = keccak256(
-        "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
+    uint public constant QUOTA_PENDING_PERIOD = 1 days;
+
+    bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH = keccak256(
+        "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
     );
 
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
-        "transferTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+        "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
 
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
-        "approveTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
+        "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     );
 
     bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
-        "callContractWithApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+        "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     );
 
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
-        "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+        "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
-    uint public constant QUOTA_PENDING_PERIOD = 1 days;
 
     constructor()
     {
@@ -67,12 +68,11 @@ abstract contract TransferModule is BaseTransferModule
         }
     }
 
-    function changeDailyQuotaImmediately(
+    function changeDailyQuotaWA(
         SignedRequest.Request calldata request,
         uint newQuota
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
@@ -80,7 +80,7 @@ abstract contract TransferModule is BaseTransferModule
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
-                CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH,
+                CHANGE_DAILY_QUOTE_TYPEHASH,
                 request.wallet,
                 request.validUntil,
                 newQuota
@@ -108,6 +108,34 @@ abstract contract TransferModule is BaseTransferModule
         transferInternal(wallet, token, to, amount, logdata);
     }
 
+    function transferTokenWA(
+        SignedRequest.Request calldata request,
+        address        token,
+        address        to,
+        uint           amount,
+        bytes calldata logdata
+        )
+        external
+    {
+        controller().verifyRequest(
+            TRANSFER_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                TRANSFER_TOKEN_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                token,
+                to,
+                amount,
+                keccak256(logdata)
+            )
+        );
+
+        transferInternal(request.wallet, token, to, amount, logdata);
+    }
+
     function callContract(
         address            wallet,
         address            to,
@@ -126,6 +154,33 @@ abstract contract TransferModule is BaseTransferModule
         return callContractInternal(wallet, to, value, data);
     }
 
+    function callContractWA(
+        SignedRequest.Request calldata request,
+        address        to,
+        uint           value,
+        bytes calldata data
+        )
+        external
+        returns (bytes memory returnData)
+    {
+        controller().verifyRequest(
+            TRANSFER_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                CALL_CONTRACT_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                to,
+                value,
+                keccak256(data)
+            )
+        );
+
+        return callContractInternal(request.wallet, to, value, data);
+    }
+
     function approveToken(
         address wallet,
         address token,
@@ -141,6 +196,32 @@ abstract contract TransferModule is BaseTransferModule
         if (additionalAllowance > 0 && !isTargetWhitelisted(wallet, to)) {
             _updateQuota(wallet, token, additionalAllowance);
         }
+    }
+
+    function approveTokenWA(
+        SignedRequest.Request calldata request,
+        address token,
+        address to,
+        uint    amount
+        )
+        external
+    {
+        controller().verifyRequest(
+            TRANSFER_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                APPROVE_TOKEN_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                token,
+                to,
+                amount
+            )
+        );
+
+        approveInternal(request.wallet, token, to, amount);
     }
 
     function approveThenCallContract(
@@ -166,91 +247,7 @@ abstract contract TransferModule is BaseTransferModule
         return callContractInternal(wallet, to, value, data);
     }
 
-    function transferTokenWithApproval(
-        SignedRequest.Request calldata request,
-        address        token,
-        address        to,
-        uint           amount,
-        bytes calldata logdata
-        )
-        external
-        onlyHaveEnoughGuardians(request.wallet)
-    {
-        controller().verifyRequest(
-            TRANSFER_DOMAIN_SEPERATOR,
-            txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
-            request,
-            abi.encode(
-                TRANSFER_TOKEN_TYPEHASH,
-                request.wallet,
-                request.validUntil,
-                token,
-                to,
-                amount,
-                keccak256(logdata)
-            )
-        );
-
-        transferInternal(request.wallet, token, to, amount, logdata);
-    }
-
-    function approveTokenWithApproval(
-        SignedRequest.Request calldata request,
-        address token,
-        address to,
-        uint    amount
-        )
-        external
-        onlyHaveEnoughGuardians(request.wallet)
-    {
-        controller().verifyRequest(
-            TRANSFER_DOMAIN_SEPERATOR,
-            txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
-            request,
-            abi.encode(
-                APPROVE_TOKEN_TYPEHASH,
-                request.wallet,
-                request.validUntil,
-                token,
-                to,
-                amount
-            )
-        );
-
-        approveInternal(request.wallet, token, to, amount);
-    }
-
-    function callContractWithApproval(
-        SignedRequest.Request calldata request,
-        address        to,
-        uint           value,
-        bytes calldata data
-        )
-        external
-        onlyHaveEnoughGuardians(request.wallet)
-        returns (bytes memory returnData)
-    {
-        controller().verifyRequest(
-            TRANSFER_DOMAIN_SEPERATOR,
-            txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
-            request,
-            abi.encode(
-                CALL_CONTRACT_TYPEHASH,
-                request.wallet,
-                request.validUntil,
-                to,
-                value,
-                keccak256(data)
-            )
-        );
-
-        return callContractInternal(request.wallet, to, value, data);
-    }
-
-    function approveThenCallContractWithApproval(
+    function approveThenCallContractWA(
         SignedRequest.Request calldata request,
         address        token,
         address        to,
@@ -259,7 +256,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
         returns (bytes memory returnData)
     {
         bytes memory encoded = abi.encode(

@@ -17,14 +17,14 @@ abstract contract WhitelistModule is SecurityModule
 
     bytes32 public WHITELIST_DOMAIN_SEPERATOR;
 
-    bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH = keccak256(
-        "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
-    );
-    bytes32 public constant REMOVE_FROM_WHITELIST_IMMEDIATELY_TYPEHASH = keccak256(
-        "removeFromWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
-    );
-
     uint public constant WHITELIST_PENDING_PERIOD = 1 days;
+
+    bytes32 public constant ADD_TO_WHITELIST_TYPEHASH = keccak256(
+        "addToWhitelist(address wallet,uint256 validUntil,address addr)"
+    );
+    bytes32 public constant REMOVE_FROM_WHITELIST_TYPEHASH = keccak256(
+        "removeFromWhitelist(address wallet,uint256 validUntil,address addr)"
+    );
 
     constructor()
     {
@@ -45,12 +45,11 @@ abstract contract WhitelistModule is SecurityModule
     }
 
     // TODO(daniel): test this method after initial review
-    function addToWhitelistImmediately(
+    function addToWhitelistWA(
         SignedRequest.Request calldata request,
         address addr
         )
         external
-        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             WHITELIST_DOMAIN_SEPERATOR,
@@ -58,7 +57,7 @@ abstract contract WhitelistModule is SecurityModule
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
-                ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH,
+                ADD_TO_WHITELIST_TYPEHASH,
                 request.wallet,
                 request.validUntil,
                 addr
@@ -66,30 +65,6 @@ abstract contract WhitelistModule is SecurityModule
         );
 
         controllerCache.whitelistStore.addToWhitelist(request.wallet, addr, block.timestamp);
-    }
-
-    // TODO(daniel): test this method after initial review
-    function removeFromWhitelistImmediately(
-        SignedRequest.Request calldata request,
-        address addr
-        )
-        external
-        onlyHaveEnoughGuardians(request.wallet)
-    {
-        controller().verifyRequest(
-            WHITELIST_DOMAIN_SEPERATOR,
-            txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
-            request,
-            abi.encode(
-                REMOVE_FROM_WHITELIST_IMMEDIATELY_TYPEHASH,
-                request.wallet,
-                request.validUntil,
-                addr
-            )
-        );
-
-        controllerCache.whitelistStore.removeFromWhitelist(request.wallet, addr);
     }
 
     function removeFromWhitelist(
@@ -101,6 +76,29 @@ abstract contract WhitelistModule is SecurityModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         controllerCache.whitelistStore.removeFromWhitelist(wallet, addr);
+    }
+
+    // TODO(daniel): test this method after initial review
+    function removeFromWhitelistWA(
+        SignedRequest.Request calldata request,
+        address addr
+        )
+        external
+    {
+        controller().verifyRequest(
+            WHITELIST_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                REMOVE_FROM_WHITELIST_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                addr
+            )
+        );
+
+        controllerCache.whitelistStore.removeFromWhitelist(request.wallet, addr);
     }
 
     function getWhitelist(address wallet)

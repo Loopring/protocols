@@ -26,6 +26,10 @@ abstract contract ForwarderModule is BaseModule
     uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 165000;
     bytes32 public FORWARDER_DOMAIN_SEPARATOR;
 
+    bytes32 constant public META_TX_TYPEHASH = keccak256(
+        "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
+    );
+
     mapping(address => uint) public nonces;
 
     event MetaTxExecuted(
@@ -46,10 +50,6 @@ abstract contract ForwarderModule is BaseModule
         uint    gasPrice;
         uint    gasLimit;
     }
-
-    bytes32 constant public META_TX_TYPEHASH = keccak256(
-        "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
-    );
 
     function validateMetaTx(
         address from, // the wallet
@@ -121,7 +121,7 @@ abstract contract ForwarderModule is BaseModule
         )
         external
         returns (
-            bool         success
+            bool success
         )
     {
         MetaTx memory metaTx = MetaTx(
@@ -135,7 +135,7 @@ abstract contract ForwarderModule is BaseModule
         );
 
         uint gasLeft = gasleft();
-        checkSufficientGas(metaTx);
+        require(gasLeft >= (gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
 
         // Update the nonce before the call to protect against reentrancy
         if (metaTx.nonce != 0) {
@@ -156,7 +156,7 @@ abstract contract ForwarderModule is BaseModule
             metaTx.to,
             metaTx.nonce,
             metaTx.txAwareHash,
-            met taTx.gasToken,
+            metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
             data,
@@ -243,34 +243,5 @@ abstract contract ForwarderModule is BaseModule
     {
         require(isNonceValid(wallet, nonce), "INVALID_NONCE");
         nonces[wallet] = nonce;
-    }
-
-    function checkSufficientGas(
-        MetaTx memory metaTx
-        )
-        private
-        view
-    {
-        // Check the relayer has enough Ether gas
-        uint gasLimit = metaTx.gasLimit.mul(64) / 63;
-
-        require(gasleft() >= gasLimit, "OPERATOR_INSUFFICIENT_GAS");
-
-        // Operator should off-chain check the wallet has enough meta tx gas.
-        // if (metaTx.gasPrice > 0) {
-        //     uint gasCost = metaTx.gasLimit.mul(metaTx.gasPrice);
-
-        //     if (metaTx.gasToken == address(0)) {
-        //         require(
-        //             metaTx.from.balance >= gasCost,
-        //             "WALLET_INSUFFICIENT_ETH_GAS"
-        //         );
-        //     } else {
-        //         require(
-        //             ERC20(metaTx.gasToken).balanceOf(metaTx.from) >= gasCost,
-        //             "WALLET_INSUFFICIENT_TOKEN_GAS"
-        //         );
-        //     }
-        // }
     }
 }

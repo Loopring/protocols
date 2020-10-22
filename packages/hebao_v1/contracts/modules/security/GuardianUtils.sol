@@ -19,6 +19,7 @@ library GuardianUtils
         OwnerRequired
     }
 
+    // TODO(kongliang): please make sure there is at least 1 guardian in all cases
     function requireMajority(
         SecurityStore   securityStore,
         address         wallet,
