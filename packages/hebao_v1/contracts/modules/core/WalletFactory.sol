@@ -226,10 +226,10 @@ contract WalletFactory is MetaTxAware
     function updateControllerCache()
         public
     {
-        ControllerImpl _controller = controller;
-        controllerCache.ensManager = _controller.ensManager();
-        controllerCache.ensResolver = controllerCache.ensManager.ensResolver();
-        controllerCache.ensReverseRegistrar = controllerCache.ensManager.getENSReverseRegistrar();
+        BaseENSManager ensManager = controller.ensManager();
+        controllerCache.ensManager = ensManager;
+        controllerCache.ensResolver = ensManager.ensResolver();
+        controllerCache.ensReverseRegistrar = ensManager.getENSReverseRegistrar();
     }
 
     // ---- internal functions ---
