@@ -93,6 +93,7 @@ abstract contract GuardianModule is SecurityModule
         uint    group
         )
         external
+        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
@@ -115,6 +116,7 @@ abstract contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
@@ -215,14 +217,13 @@ abstract contract GuardianModule is SecurityModule
         return isWalletLocked(wallet);
     }
 
-
     function _addGuardian(
         address wallet,
         address guardian,
-        uint group,
-        uint pendingPeriod
+        uint    group,
+        uint    pendingPeriod
         )
-        internal
+        private
     {
         require(guardian != wallet, "INVALID_ADDRESS");
         require(guardian != address(0), "ZERO_ADDRESS");
@@ -238,15 +239,14 @@ abstract contract GuardianModule is SecurityModule
         emit GuardianAdded(wallet, guardian, group, effectiveTime);
     }
 
-
     function _removeGuardian(
         address wallet,
         address guardian,
-        uint pendingPeriod
+        uint    pendingPeriod
         )
-        internal
+        private
     {
-        uint effectiveTime = block.timestamp +pendingPeriod;
+        uint effectiveTime = block.timestamp + pendingPeriod;
         controllerCache.securityStore.removeGuardian(wallet, guardian, effectiveTime);
         emit GuardianRemoved(wallet, guardian, effectiveTime);
     }
