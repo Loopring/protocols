@@ -24,13 +24,14 @@ abstract contract InheritanceModule is SecurityModule
 
     event InheritorChanged(
         address indexed wallet,
-        address         inheritor
+        address         inheritor,
+        uint32          waitingPeriod
     );
 
     function inheritor(address wallet)
         public
         view
-        returns (address _inheritor, uint lastActive)
+        returns (address _inheritor, uint _effectiveTimestamp)
     {
         return controllerCache.securityStore.inheritor(wallet);
     }
@@ -44,32 +45,40 @@ abstract contract InheritanceModule is SecurityModule
         eligibleWalletOwner(newOwner)
         notWalletOwner(wallet, newOwner)
     {
-        (address _inheritor, uint lastActive) = controllerCache.securityStore.inheritor(wallet);
-        require(logicalSender() == _inheritor, "NOT_ALLOWED");
+        SecurityStore ss = controllerCache.securityStore;
+        (address _inheritor, uint _effectiveTimestamp) = ss.inheritor(wallet);
 
-        require(lastActive > 0 && block.timestamp >= lastActive + INHERIT_WAITING_PERIOD, "NEED_TO_WAIT");
+        require(_effectiveTimestamp != 0 && _inheritor != address(0), "NO_INHERITOR");
+        require(_effectiveTimestamp <= block.timestamp, "TOO_EARLY");
+        require(_inheritor == logicalSender(), "UNAUTHORIZED");
 
-        controllerCache.securityStore.removeAllGuardians(wallet);
-        controllerCache.securityStore.setInheritor(wallet, address(0));
-        Wallet(wallet).setOwner(newOwner);
-
+        ss.removeAllGuardians(wallet);
+        ss.setInheritor(wallet, address(0), 0);
         _lockWallet(wallet, address(this), false);
+
+        Wallet(wallet).setOwner(newOwner);
 
         emit Inherited(wallet, _inheritor, newOwner);
     }
 
     function setInheritor(
         address wallet,
-        address _inheritor
+        address _inheritor,
+        uint32  _waitingPeriod
         )
         external
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        (address existingInheritor,) = controllerCache.securityStore.inheritor(wallet);
-        require(existingInheritor != _inheritor, "SAME_INHERITOR");
+        require(
+            _inheritor == address(0) && _waitingPeriod == 0 ||
+            _inheritor != address(0) &&
+            _waitingPeriod >= TOUCH_GRACE_PERIOD * 2 &&
+            _waitingPeriod <= 3650 days,
+            "INVALID_INHERITOR_OR_WAITING_PERIOD"
+        );
 
-        controllerCache.securityStore.setInheritor(wallet, _inheritor);
-        emit InheritorChanged(wallet, _inheritor);
+        controllerCache.securityStore.setInheritor(wallet, _inheritor, _waitingPeriod);
+        emit InheritorChanged(wallet, _inheritor, _waitingPeriod);
     }
 }

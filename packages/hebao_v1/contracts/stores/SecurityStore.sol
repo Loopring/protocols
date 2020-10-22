@@ -23,6 +23,7 @@ contract SecurityStore is DataStore
     struct Wallet
     {
         address    inheritor;
+        uint32     inheritWaitingPeriod;
         uint64     lastActive; // the latest timestamp the owner is considered to be active
         bool       locked;
 
@@ -293,18 +294,39 @@ contract SecurityStore is DataStore
         view
         returns (
             address _who,
-            uint    _lastActive
+            uint    _effectiveTimestamp
         )
     {
-        _who = wallets[wallet].inheritor;
-        _lastActive = wallets[wallet].lastActive;
+        address _inheritor = wallets[wallet].inheritor;
+        if (_inheritor == address(0)) {
+             return (address(0), 0);
+        }
+
+        uint32 _inheritWaitingPeriod = wallets[wallet].inheritWaitingPeriod;
+        if (_inheritWaitingPeriod == 0) {
+            return (address(0), 0);
+        }
+
+        uint64 _lastActive = wallets[wallet].lastActive;
+
+        if (_lastActive == 0) {
+            _lastActive = uint64(block.timestamp);
+        }
+
+        _who = _inheritor;
+        _effectiveTimestamp = _lastActive + _inheritWaitingPeriod;
     }
 
-    function setInheritor(address wallet, address who)
+    function setInheritor(
+        address wallet,
+        address who,
+        uint32 _inheritWaitingPeriod
+        )
         public
         onlyWalletModule(wallet)
     {
         wallets[wallet].inheritor = who;
+        wallets[wallet].inheritWaitingPeriod = _inheritWaitingPeriod;
         wallets[wallet].lastActive = uint64(block.timestamp);
     }
 

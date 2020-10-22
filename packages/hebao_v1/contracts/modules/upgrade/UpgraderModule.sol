@@ -92,7 +92,7 @@ contract UpgraderModule is BaseModule {
 
         (address inheritor,) = oldSecurityStore.inheritor(wallet);
         if (inheritor != address(0)) {
-            newSecurityStore.setInheritor(wallet, inheritor);
+            newSecurityStore.setInheritor(wallet, inheritor, 365 days);
         }
     }
 
