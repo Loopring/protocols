@@ -144,25 +144,34 @@ abstract contract GuardianModule is SecurityModule
         emit GuardianRemovalCancelled(wallet, guardian);
     }
 
+        modifier onlyFromWalletOrOwnerOrGuardianon(address wallet)
+    {
+        address payable _logicalSender = logicalSender();
+        require(
+            _logicalSender == wallet ||
+            _logicalSender == Wallet(wallet).owner() ||
+            controllerCache.securityStore.isGuardian(wallet, _logicalSender),
+            "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
+        );
+        _;
+    }
+
     function lock(address wallet)
         external
         txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerOrGuardianon(wallet)
     {
-        _lockWallet(wallet, msg.sender, true);
+        address payable _logicalSender = logicalSender();
+        if (_logicalSender == wallet ||
+            _logicalSender == Wallet(wallet).owner()) {
+            _lockWallet(wallet, address(0), true);
+        } else if (controllerCache.securityStore.isGuardian(wallet, _logicalSender)) {
+            _lockWallet(wallet, _logicalSender, true);
+        } else {
+            revert("NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN");
+        }
     }
 
-    // TODO(daniel): remove this function
-    function unlock(address wallet)
-        external
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerOrGuardianon(wallet)
-    {
-        _lockWallet(wallet, msg.sender, false);
-    }
-
-    // TODO(daniel): rename to unlock
-    function unlockWA(
+    function unlock(
         SignedRequest.Request calldata request
         )
         external
@@ -209,6 +218,7 @@ abstract contract GuardianModule is SecurityModule
 
         Wallet(request.wallet).setOwner(newOwner);
         _lockWallet(request.wallet, address(this), false);
+        // TODO(kongliang): cancel or pending guardian addition and removal.
 
         emit Recovered(request.wallet, newOwner);
     }

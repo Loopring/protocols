@@ -45,18 +45,6 @@ abstract contract SecurityModule is MetaTxModule
         _;
     }
 
-    modifier onlyFromWalletOrOwnerOrGuardianon(address wallet)
-    {
-        address payable _logicalSender = logicalSender();
-        require(
-            _logicalSender == wallet ||
-            _logicalSender == Wallet(wallet).owner() ||
-            controllerCache.securityStore.isGuardian(wallet, _logicalSender),
-            "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
-        );
-        _;
-    }
-
     modifier onlyWhenWalletLocked(address wallet)
     {
         require(_isWalletLocked(wallet), "NOT_LOCKED");
