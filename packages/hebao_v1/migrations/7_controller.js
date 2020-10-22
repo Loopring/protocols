@@ -15,7 +15,6 @@ module.exports = function(deployer, network, accounts) {
     ensManagerAddr = BaseENSManager.address;
   }
 
-  const lockPeriod = Number(process.env.controllerLockPeriod) || 1 * 24 * 3600;
   const collecTo = process.env.collectTo || accounts[1];
 
   let priceOracle;
@@ -26,7 +25,6 @@ module.exports = function(deployer, network, accounts) {
       ControllerImpl,
       ModuleRegistryImpl.address,
       WalletRegistryImpl.address,
-      lockPeriod,
       collecTo,
       ensManagerAddr,
       TestPriceOracle.address,

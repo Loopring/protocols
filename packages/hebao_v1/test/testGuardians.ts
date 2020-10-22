@@ -16,7 +16,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
   let ctx: Context;
 
   let MAX_GUARDIANS: number;
-  let recoveryPendingPeriod: number;
+  let guardianPendingPeriod: number;
 
   let useMetaTx: boolean = false;
 
@@ -47,8 +47,8 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
     MAX_GUARDIANS = (
       await defaultCtx.finalSecurityModule.MAX_GUARDIANS()
     ).toNumber();
-    recoveryPendingPeriod = (
-      await defaultCtx.finalSecurityModule.recoveryPendingPeriod()
+    guardianPendingPeriod = (
+      await defaultCtx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()
     ).toNumber();
   });
 
@@ -198,8 +198,8 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
           );
         }
 
-        // Skip forward `recoveryPendingPeriod` seconds
-        await advanceTimeAndBlockAsync(recoveryPendingPeriod);
+        // Skip forward `guardianPendingPeriod` seconds
+        await advanceTimeAndBlockAsync(guardianPendingPeriod);
 
         // Make sure the cancelled guardian isn't a guardian
         assert(
@@ -276,8 +276,8 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
           );
         }
 
-        // Skip forward `recoveryPendingPeriod` seconds
-        await advanceTimeAndBlockAsync(recoveryPendingPeriod);
+        // Skip forward `guardianPendingPeriod` seconds
+        await advanceTimeAndBlockAsync(guardianPendingPeriod);
 
         // Make sure the cancelled guardian is still a guardian
         assert(

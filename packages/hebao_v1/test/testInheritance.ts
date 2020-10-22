@@ -33,7 +33,7 @@ contract("InheritanceModule", (accounts: string[]) => {
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
     inheritWaitingPeriod = (
-      await ctx.finalSecurityModule.inheritWaitingPeriod()
+      await ctx.finalSecurityModule.INHERIT_WAITING_PERIOD()
     ).toNumber();
   });
 
