@@ -18,7 +18,7 @@ abstract contract GuardianModule is SecurityModule
 
     bytes32 public GUARDIAN_DOMAIN_SEPERATOR;
 
-    uint constant public MAX_GUARDIANS = 20;
+    uint public constant MAX_GUARDIANS = 20;
     uint public constant GUARDIAN_PENDING_PERIOD = 3 days;
 
     bytes32 public constant ADD_GUARDIAN_TYPEHASH = keccak256(

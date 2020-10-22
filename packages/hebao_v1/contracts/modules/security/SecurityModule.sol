@@ -19,7 +19,7 @@ abstract contract SecurityModule is MetaTxModule
     using SignedRequest for ControllerImpl;
 
     // The minimal number of guardians for recovery and locking.
-    uint constant public TOUCH_GRACE_PERIOD   = 30 days;
+    uint public constant TOUCH_GRACE_PERIOD   = 30 days;
 
     event WalletLock(
         address indexed wallet,

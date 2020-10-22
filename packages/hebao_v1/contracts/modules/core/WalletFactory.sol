@@ -34,7 +34,7 @@ contract WalletFactory is MetaTxAware
     event BlankConsumed (address blank);
     event WalletCreated (address wallet, string ensLabel, address owner, bool blankUsed);
 
-    string constant public WALLET_CREATION = "WALLET_CREATION";
+    string public constant WALLET_CREATION = "WALLET_CREATION";
 
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
         "createWallet(address owner,uint256 salt,address blankAddress,string ensLabel,bool ensRegisterReverse,address[] modules)"
