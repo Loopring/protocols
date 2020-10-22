@@ -60,7 +60,6 @@ async function batchDeploy() {
   // ../build/flattened_DappAddressStore_flat_sol_DappAddressStore.abi
   const targetContractNames = [
     "SignedRequest",
-    "WalletRegistryImpl",
     "ModuleRegistryImpl",
     "DappAddressStore",
     "HashStore",

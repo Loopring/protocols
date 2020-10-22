@@ -38,7 +38,6 @@ contract ControllerImpl is Claimable, Controller
 
     constructor(
         ModuleRegistry    _moduleRegistry,
-        WalletRegistry    _walletRegistry,
         address           _collectTo,
         BaseENSManager    _ensManager,
         PriceOracle       _priceOracle,
@@ -46,7 +45,6 @@ contract ControllerImpl is Claimable, Controller
         )
     {
         moduleRegistry = _moduleRegistry;
-        walletRegistry = _walletRegistry;
 
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;

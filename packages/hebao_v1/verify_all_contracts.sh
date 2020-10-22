@@ -6,7 +6,6 @@ declare -a ALL_CONTRACTS=( \
               # BaseENSResolver \
               # ENSRegistryImpl \
               # ENSReverseRegistrarImpl \
-              # WalletRegistryImpl \
               # ModuleRegistryImpl \
               # QuotaStore \
               # SecurityStore \

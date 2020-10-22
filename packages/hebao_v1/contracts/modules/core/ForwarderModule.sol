@@ -74,8 +74,7 @@ abstract contract ForwarderModule is BaseModule
 
             // We only allow the wallet to call itself to addModule
             (to == from) &&
-            data.toBytes4(0) == Wallet.addModule.selector &&
-            controllerCache.walletRegistry.isWalletRegistered(from) ||
+            data.toBytes4(0) == Wallet.addModule.selector ||
 
             to == controllerCache.walletFactory,
             "INVALID_DESTINATION_OR_METHOD"

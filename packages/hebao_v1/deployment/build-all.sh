@@ -5,7 +5,6 @@ BASE_PATH="../../contracts/"
 BUILD_DEST="build"
 
 declare -a all_contracts=(
-    "base/WalletRegistryImpl.sol"
     "base/ModuleRegistryImpl.sol"
     "stores/DappAddressStore.sol"
     "stores/HashStore.sol"
