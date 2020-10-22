@@ -298,17 +298,23 @@ contract SecurityStore is DataStore
         )
     {
         address _inheritor = wallets[wallet].inheritor;
+        if (_inheritor == address(0)) {
+             return (address(0), 0);
+        }
+
         uint32 _inheritWaitingPeriod = wallets[wallet].inheritWaitingPeriod;
+        if (_inheritWaitingPeriod == 0) {
+            return (address(0), 0);
+        }
+
         uint64 _lastActive = wallets[wallet].lastActive;
 
         if (_lastActive == 0) {
             _lastActive = uint64(block.timestamp);
         }
 
-        if (_inheritor != address(0) && _inheritWaitingPeriod != 0){
-            _who = _inheritor;
-            _effectiveTimestamp = _lastActive + _inheritWaitingPeriod;
-        }
+        _who = _inheritor;
+        _effectiveTimestamp = _lastActive + _inheritWaitingPeriod;
     }
 
     function setInheritor(
