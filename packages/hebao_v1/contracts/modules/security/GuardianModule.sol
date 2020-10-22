@@ -18,8 +18,8 @@ abstract contract GuardianModule is SecurityModule
 
     bytes32 public GUARDIAN_DOMAIN_SEPERATOR;
 
-    uint public constant MAX_GUARDIANS = 20;
-    uint public constant GUARDIAN_PENDING_PERIOD = 3 days;
+    uint public constant MAX_GUARDIANS           = 10;
+    uint public constant GUARDIAN_PENDING_PERIOD = 7 days;
 
     bytes32 public constant ADD_GUARDIAN_TYPEHASH = keccak256(
         "addGuardian(address wallet,uint256 validUntil,address guardian,uint256 group)"
@@ -149,7 +149,7 @@ abstract contract GuardianModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
     {
-        _lockWallet(wallet, true);
+        _lockWallet(wallet, msg.sender, true);
     }
 
     function unlock(address wallet)
@@ -157,7 +157,7 @@ abstract contract GuardianModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
     {
-        _lockWallet(wallet, false);
+        _lockWallet(wallet, msg.sender, false);
     }
 
     function unlockWA(
@@ -173,7 +173,7 @@ abstract contract GuardianModule is SecurityModule
             abi.encode(UNLOCK_TYPEHASH)
         );
 
-        _lockWallet(request.wallet, false);
+        _lockWallet(request.wallet, address(this), false);
     }
 
     /// @dev Recover a wallet by setting a new owner.
@@ -206,7 +206,7 @@ abstract contract GuardianModule is SecurityModule
         }
 
         Wallet(request.wallet).setOwner(newOwner);
-        _lockWallet(request.wallet, false);
+        _lockWallet(request.wallet, address(this), false);
 
         emit Recovered(request.wallet, newOwner);
     }

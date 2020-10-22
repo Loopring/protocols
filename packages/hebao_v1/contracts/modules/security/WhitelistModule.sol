@@ -22,6 +22,7 @@ abstract contract WhitelistModule is SecurityModule
     bytes32 public constant ADD_TO_WHITELIST_TYPEHASH = keccak256(
         "addToWhitelist(address wallet,uint256 validUntil,address addr)"
     );
+
     bytes32 public constant REMOVE_FROM_WHITELIST_TYPEHASH = keccak256(
         "removeFromWhitelist(address wallet,uint256 validUntil,address addr)"
     );
@@ -41,10 +42,13 @@ abstract contract WhitelistModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controllerCache.whitelistStore.addToWhitelist(wallet, addr, block.timestamp.add(WHITELIST_PENDING_PERIOD));
+        controllerCache.whitelistStore.addToWhitelist(
+            wallet,
+            addr,
+            block.timestamp.add(WHITELIST_PENDING_PERIOD)
+        );
     }
 
-    // TODO(daniel): test this method after initial review
     function addToWhitelistWA(
         SignedRequest.Request calldata request,
         address addr
@@ -64,7 +68,11 @@ abstract contract WhitelistModule is SecurityModule
             )
         );
 
-        controllerCache.whitelistStore.addToWhitelist(request.wallet, addr, block.timestamp);
+        controllerCache.whitelistStore.addToWhitelist(
+            request.wallet,
+            addr,
+            block.timestamp
+        );
     }
 
     function removeFromWhitelist(
@@ -78,7 +86,6 @@ abstract contract WhitelistModule is SecurityModule
         controllerCache.whitelistStore.removeFromWhitelist(wallet, addr);
     }
 
-    // TODO(daniel): test this method after initial review
     function removeFromWhitelistWA(
         SignedRequest.Request calldata request,
         address addr

@@ -41,7 +41,6 @@ abstract contract TransferModule is BaseTransferModule
         "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
-
     constructor()
     {
         TRANSFER_DOMAIN_SEPERATOR = EIP712.hash(
@@ -57,15 +56,7 @@ abstract contract TransferModule is BaseTransferModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        QuotaStore qs = controllerCache.quotaStore;
-        uint _newQuota = newQuota == 0 ? qs.defaultQuota(): newQuota;
-        uint _currentQuota = qs.currentQuota(wallet);
-
-        if (_currentQuota >= _newQuota) {
-            qs.changeQuota(wallet, _newQuota, block.timestamp);
-        } else {
-            qs.changeQuota(wallet, _newQuota, block.timestamp.add(QUOTA_PENDING_PERIOD));
-        }
+        _changeQuota(wallet, newQuota, QUOTA_PENDING_PERIOD);
     }
 
     function changeDailyQuotaWA(
@@ -86,8 +77,7 @@ abstract contract TransferModule is BaseTransferModule
                 newQuota
             )
         );
-
-        controllerCache.quotaStore.changeQuota(request.wallet, newQuota, block.timestamp);
+        _changeQuota(request.wallet, newQuota, 0);
     }
 
     function transferToken(
@@ -293,5 +283,23 @@ abstract contract TransferModule is BaseTransferModule
         total = controllerCache.quotaStore.currentQuota(wallet);
         spent = controllerCache.quotaStore.spentQuota(wallet);
         available = controllerCache.quotaStore.availableQuota(wallet);
+    }
+
+    function _changeQuota(
+        address wallet,
+        uint    newQuota,
+        uint    pendingPeriod
+        )
+        private
+    {
+        QuotaStore qs = controllerCache.quotaStore;
+        uint _newQuota = newQuota == 0 ? qs.defaultQuota(): newQuota;
+        uint _currentQuota = qs.currentQuota(wallet);
+
+        if (_newQuota < _currentQuota) {
+            qs.changeQuota(wallet, _newQuota, block.timestamp);
+        } else if (_newQuota > _currentQuota) {
+            qs.changeQuota(wallet, _newQuota, block.timestamp.add(pendingPeriod));
+        }
     }
 }

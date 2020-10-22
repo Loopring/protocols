@@ -19,10 +19,11 @@ abstract contract SecurityModule is MetaTxModule
     using SignedRequest for ControllerImpl;
 
     // The minimal number of guardians for recovery and locking.
-    uint public constant TOUCH_GRACE_PERIOD   = 30 days;
+    uint public constant TOUCH_GRACE_PERIOD = 30 days;
 
     event WalletLock(
         address indexed wallet,
+        address         by,
         bool            locked
     );
 
@@ -79,11 +80,11 @@ abstract contract SecurityModule is MetaTxModule
 
     // ----- internal methods -----
 
-    function _lockWallet(address wallet, bool locked)
+    function _lockWallet(address wallet, address by, bool locked)
         internal
     {
         controllerCache.securityStore.setLock(wallet, locked);
-        emit WalletLock(wallet, locked);
+        emit WalletLock(wallet, by, locked);
     }
 
     function _isWalletLocked(address wallet)
@@ -101,15 +102,17 @@ abstract contract SecurityModule is MetaTxModule
         )
         internal
     {
-        QuotaStore qs = controllerCache.quotaStore;
-        if (amount > 0 && qs != QuotaStore(0)) {
-            uint value = (token == address(0)) ?
-                amount :
-                controllerCache.priceOracle.tokenValue(token, amount);
+        if (amount == 0) return;
 
-            if (value > 0) {
-                qs.checkAndAddToSpent(wallet, value);
-            }
-        }
+        QuotaStore qs = controllerCache.quotaStore;
+        if (qs == QuotaStore(0)) return;
+
+        uint value = (token == address(0)) ?
+            amount :
+            controllerCache.priceOracle.tokenValue(token, amount);
+
+        if (value == 0) return;
+
+        qs.checkAndAddToSpent(wallet, value);
     }
 }
