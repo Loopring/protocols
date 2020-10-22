@@ -17,15 +17,6 @@ const AddOfficialGuardianModule = artifacts.require(
 );
 
 module.exports = function(deployer, network, accounts) {
-  const guardianPendingPeriod =
-    Number(process.env.guardianPendingPeriod) || 1 * 24 * 3600;
-  const inheritanceWaitingPeriod =
-    Number(process.env.inheritanceWaitingPeriod) || 365 * 24 * 3600;
-  const whitelistDelayPeriod =
-    Number(process.env.whitelistDelayPeriod) || 1 * 24 * 3600;
-  const quotaDelayPeriod =
-    Number(process.env.quotaDelayPeriod) || 1 * 24 * 3600;
-
   const ensOperator = process.env.ensOperator || accounts[1];
   const ensManagerAddr = process.env.ENSManager || "";
 
@@ -41,16 +32,12 @@ module.exports = function(deployer, network, accounts) {
       FinalSecurityModule,
       ControllerImpl.address,
       FinalCoreModule.address,
-      guardianPendingPeriod,
-      inheritanceWaitingPeriod,
-      whitelistDelayPeriod,
       { gas: 6700000 }
     );
     await deployer.deploy(
       FinalTransferModule,
       ControllerImpl.address,
       FinalCoreModule.address,
-      quotaDelayPeriod,
       { gas: 6700000 }
     );
 

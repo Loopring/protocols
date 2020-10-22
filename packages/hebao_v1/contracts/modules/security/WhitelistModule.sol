@@ -21,16 +21,13 @@ abstract contract WhitelistModule is SecurityModule
         "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
     );
 
-    uint public whitelistDelayPeriod;
+    uint public constant WHITELIST_PENDING_PERIOD = 1 days;
 
-    constructor(uint _whitelistDelayPeriod)
+    constructor()
     {
-        require(_whitelistDelayPeriod > 0, "INVALID_DELAY");
-
         WHITELIST_DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("WhitelistModule", "1.2.0", address(this))
         );
-        whitelistDelayPeriod = _whitelistDelayPeriod;
     }
 
     function addToWhitelist(
@@ -41,7 +38,7 @@ abstract contract WhitelistModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controllerCache.whitelistStore.addToWhitelist(wallet, addr, block.timestamp.add(whitelistDelayPeriod));
+        controllerCache.whitelistStore.addToWhitelist(wallet, addr, block.timestamp.add(WHITELIST_PENDING_PERIOD));
     }
 
     function addToWhitelistImmediately(

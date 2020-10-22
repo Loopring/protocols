@@ -20,7 +20,8 @@ abstract contract SecurityModule is MetaTxModule
 
     // The minimal number of guardians for recovery and locking.
     uint constant public MIN_ACTIVE_GUARDIANS = 2;
-    uint constant public MIN_TOUCH_INTERVAL   = 7 days;
+    uint constant public TOUCH_GRACE_PERIOD   = 30 days;
+    uint constant public LOCK_PERIOD          = 1  days;
 
     event WalletLock(
         address indexed wallet,
@@ -42,10 +43,10 @@ abstract contract SecurityModule is MetaTxModule
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
         SecurityStore ss = controllerCache.securityStore;
-        if (block.timestamp > ss.lastActive(wallet) + MIN_TOUCH_INTERVAL) {
+        if (block.timestamp > ss.lastActive(wallet) + TOUCH_GRACE_PERIOD) {
             ss.touchLastActive(wallet);
         }
-        // controllerCache.securityStore.touchLastActiveWhenRequired(wallet, MIN_TOUCH_INTERVAL);
+        // controllerCache.securityStore.touchLastActiveWhenRequired(wallet, TOUCH_GRACE_PERIOD);
         _;
     }
 
@@ -104,7 +105,7 @@ abstract contract SecurityModule is MetaTxModule
     function lockWallet(address wallet)
         internal
     {
-        lockWallet(wallet, controller().defaultLockPeriod());
+        lockWallet(wallet, LOCK_PERIOD);
     }
 
     function lockWallet(address wallet, uint _lockPeriod)

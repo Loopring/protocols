@@ -17,7 +17,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
   let ctx: Context;
   let finalSecurityModule2: any;
 
-  let defaultLockPeriod: number;
+  let lockPeriod: number;
 
   let useMetaTx: boolean = false;
   let wallet: any;
@@ -116,10 +116,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     ctx = await createContext(defaultCtx);
     finalSecurityModule2 = await defaultCtx.contracts.FinalSecurityModule.new(
       defaultCtx.controllerImpl.address,
-      defaultCtx.finalCoreModule.address,
-      3600 * 24,
-      3600 * 24 * 365,
-      3600 * 24
+      defaultCtx.finalCoreModule.address
     );
     await defaultCtx.moduleRegistryImpl.registerModule(
       finalSecurityModule2.address
@@ -148,9 +145,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       guardians = _wallet.guardians;
     }
 
-    defaultLockPeriod = (
-      await ctx.controllerImpl.defaultLockPeriod()
-    ).toNumber();
+    lockPeriod = (await ctx.finalSecurityModule.LOCK_PERIOD()).toNumber();
   });
 
   [false, true].forEach(function(metaTx) {
@@ -203,19 +198,17 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     );
 
     it(
-      description(
-        "wallet lock should automatically expire after `defaultLockPeriod`"
-      ),
+      description("wallet lock should automatically expire after `lockPeriod`"),
       async () => {
         const owner = ctx.owners[0];
         // Lock the wallet
         await lockChecked(wallet, guardians[0], undefined, guardianWallet1);
-        // Skip forward `defaultLockPeriod` / 2 seconds
-        await advanceTimeAndBlockAsync(defaultLockPeriod / 2);
+        // Skip forward `lockPeriod` / 2 seconds
+        await advanceTimeAndBlockAsync(lockPeriod / 2);
         // Check if the wallet is still locked
         assert(await isLocked(wallet), "wallet still needs to be locked");
-        // Skip forward the complete `defaultLockPeriod`
-        await advanceTimeAndBlockAsync(defaultLockPeriod / 2);
+        // Skip forward the complete `lockPeriod`
+        await advanceTimeAndBlockAsync(lockPeriod / 2);
         // Check if the wallet is now unlocked
         assert(!(await isLocked(wallet)), "wallet needs to be unlocked");
         // Lock the wallet again

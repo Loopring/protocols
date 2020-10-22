@@ -19,7 +19,6 @@ import "../thirdparty/ens/BaseENSManager.sol";
 contract ControllerImpl is Claimable, Controller
 {
     address             public collectTo;
-    uint                public defaultLockPeriod;
     BaseENSManager      public ensManager;
     PriceOracle         public priceOracle;
     HashStore           public hashStore;
@@ -39,7 +38,6 @@ contract ControllerImpl is Claimable, Controller
 
     constructor(
         ModuleRegistry    _moduleRegistry,
-        uint              _defaultLockPeriod,
         address           _collectTo,
         BaseENSManager    _ensManager,
         PriceOracle       _priceOracle,
@@ -47,8 +45,6 @@ contract ControllerImpl is Claimable, Controller
         )
     {
         moduleRegistry = _moduleRegistry;
-
-        defaultLockPeriod = _defaultLockPeriod;
 
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;
