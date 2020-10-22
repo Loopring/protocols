@@ -156,7 +156,15 @@ abstract contract GuardianModule is SecurityModule
         _lockWallet(wallet, true);
     }
 
-    function unlock(
+    function unlock(address wallet)
+        external
+        txAwareHashNotAllowed()
+        onlyFromGuardian(wallet)
+    {
+        _lockWallet(wallet, false);
+    }
+
+    function unlockWA(
         SignedRequest.Request calldata request
         )
         external
