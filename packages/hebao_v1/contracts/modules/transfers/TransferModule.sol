@@ -166,20 +166,6 @@ abstract contract TransferModule is BaseTransferModule
         return callContractInternal(wallet, to, value, data);
     }
 
-    function getDailyQuota(address wallet)
-        public
-        view
-        returns (
-            uint total,
-            uint spent,
-            uint available
-        )
-    {
-        total = controllerCache.quotaStore.currentQuota(wallet);
-        spent = controllerCache.quotaStore.spentQuota(wallet);
-        available = controllerCache.quotaStore.availableQuota(wallet);
-    }
-
     function transferTokenWithApproval(
         SignedRequest.Request calldata request,
         address        token,
@@ -297,5 +283,19 @@ abstract contract TransferModule is BaseTransferModule
 
         approveInternal(request.wallet, token, to, amount);
         return callContractInternal(request.wallet, to, value, data);
+    }
+
+    function getDailyQuota(address wallet)
+        public
+        view
+        returns (
+            uint total,
+            uint spent,
+            uint available
+        )
+    {
+        total = controllerCache.quotaStore.currentQuota(wallet);
+        spent = controllerCache.quotaStore.spentQuota(wallet);
+        available = controllerCache.quotaStore.availableQuota(wallet);
     }
 }
