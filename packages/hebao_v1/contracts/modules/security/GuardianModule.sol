@@ -104,7 +104,8 @@ abstract contract GuardianModule is SecurityModule
                 ADD_GUARDIAN_IMMEDIATELY_TYPEHASH,
                 request.wallet,
                 request.validUntil,
-                guardian
+                guardian,
+                group
             )
         );
 
