@@ -104,8 +104,7 @@ abstract contract ForwarderModule is BaseModule
         // Instead of always taking the expensive path through ER1271,
         // skip directly to the wallet owner here (which could still be another contract).
         //require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
-        (uint _lock,) = controllerCache.securityStore.getLock(from);
-        require(_lock <= block.timestamp, "WALLET_LOCKED");
+        require(!controllerCache.securityStore.isLocked(from), "WALLET_LOCKED");
         require(metaTxHash.verifySignature(Wallet(from).owner(), signature), "INVALID_SIGNATURE");
     }
 

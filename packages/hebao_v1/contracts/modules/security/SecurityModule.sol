@@ -21,11 +21,10 @@ abstract contract SecurityModule is MetaTxModule
     // The minimal number of guardians for recovery and locking.
     uint constant public MIN_ACTIVE_GUARDIANS = 1;
     uint constant public TOUCH_GRACE_PERIOD   = 30 days;
-    uint constant public LOCK_PERIOD          = 3  days;
 
     event WalletLock(
         address indexed wallet,
-        uint            lock
+        bool            locked
     );
 
     constructor(address _trustedForwarder)
@@ -42,11 +41,7 @@ abstract contract SecurityModule is MetaTxModule
             (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
-        SecurityStore ss = controllerCache.securityStore;
-        if (block.timestamp > ss.lastActive(wallet) + TOUCH_GRACE_PERIOD) {
-            ss.touchLastActive(wallet);
-        }
-        // controllerCache.securityStore.touchLastActiveWhenRequired(wallet, TOUCH_GRACE_PERIOD);
+        controllerCache.securityStore.touchLastActiveWhenRequired(wallet, TOUCH_GRACE_PERIOD);
         _;
     }
 
@@ -102,40 +97,11 @@ abstract contract SecurityModule is MetaTxModule
         return address(controllerCache.quotaStore);
     }
 
-    function lockWallet(address wallet)
+    function lockWallet(address wallet, bool locked)
         internal
     {
-        lockWallet(wallet, LOCK_PERIOD);
-    }
-
-    function lockWallet(address wallet, uint _lockPeriod)
-        internal
-        onlyWhenWalletUnlocked(wallet)
-    {
-        // cannot lock the wallet twice by different modules.
-        require(_lockPeriod > 0, "ZERO_VALUE");
-        uint lock = block.timestamp + _lockPeriod;
-        controllerCache.securityStore.setLock(wallet, lock);
-        emit WalletLock(wallet, lock);
-    }
-
-    function unlockWallet(address wallet, bool forceUnlock)
-        internal
-    {
-        (uint _lock, address _lockedBy) = controllerCache.securityStore.getLock(wallet);
-        if (_lock > block.timestamp) {
-            require(forceUnlock || _lockedBy == address(this), "UNABLE_TO_UNLOCK");
-            controllerCache.securityStore.setLock(wallet, 0);
-        }
-        emit WalletLock(wallet, 0);
-    }
-
-    function getWalletLock(address wallet)
-        internal
-        view
-        returns (uint _lock, address _lockedBy)
-    {
-        return controllerCache.securityStore.getLock(wallet);
+        controllerCache.securityStore.setLock(wallet, locked);
+        emit WalletLock(wallet, locked);
     }
 
     function isWalletLocked(address wallet)
@@ -143,8 +109,7 @@ abstract contract SecurityModule is MetaTxModule
         view
         returns (bool)
     {
-        (uint _lock,) = controllerCache.securityStore.getLock(wallet);
-        return _lock > block.timestamp;
+        return controllerCache.securityStore.isLocked(wallet);
     }
 
     function updateQuota(

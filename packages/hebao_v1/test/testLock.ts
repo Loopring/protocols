@@ -17,8 +17,6 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
   let ctx: Context;
   let finalSecurityModule2: any;
 
-  let lockPeriod: number;
-
   let useMetaTx: boolean = false;
   let wallet: any;
   let guardians: any;
@@ -144,8 +142,6 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       wallet = _wallet.wallet;
       guardians = _wallet.guardians;
     }
-
-    lockPeriod = (await ctx.finalSecurityModule.LOCK_PERIOD()).toNumber();
   });
 
   [false, true].forEach(function(metaTx) {
@@ -194,25 +190,6 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
         await unlockChecked(wallet, guardians[1], undefined, guardianWallet2);
         // Try to unlock the wallet again (should not throw)
         await unlockChecked(wallet, guardians[0], undefined, guardianWallet1);
-      }
-    );
-
-    it(
-      description("wallet lock should automatically expire after `lockPeriod`"),
-      async () => {
-        const owner = ctx.owners[0];
-        // Lock the wallet
-        await lockChecked(wallet, guardians[0], undefined, guardianWallet1);
-        // Skip forward `lockPeriod` / 2 seconds
-        await advanceTimeAndBlockAsync(lockPeriod / 2);
-        // Check if the wallet is still locked
-        assert(await isLocked(wallet), "wallet still needs to be locked");
-        // Skip forward the complete `lockPeriod`
-        await advanceTimeAndBlockAsync(lockPeriod / 2);
-        // Check if the wallet is now unlocked
-        assert(!(await isLocked(wallet)), "wallet needs to be unlocked");
-        // Lock the wallet again
-        await lockChecked(wallet, guardians[0], undefined, guardianWallet1);
       }
     );
 

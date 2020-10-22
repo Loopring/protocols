@@ -152,7 +152,7 @@ abstract contract GuardianModule is SecurityModule
         onlyFromGuardian(wallet)
         onlyHaveEnoughGuardians(wallet)
     {
-        lockWallet(wallet);
+        lockWallet(wallet, true);
     }
 
     function unlock(address wallet)
@@ -160,7 +160,7 @@ abstract contract GuardianModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
     {
-        unlockWallet(wallet, false);
+        lockWallet(wallet, false);
     }
 
     /// @dev Recover a wallet by setting a new owner.
@@ -196,20 +196,10 @@ abstract contract GuardianModule is SecurityModule
         Wallet(request.wallet).setOwner(newOwner);
 
         // solium-disable-next-line
-        unlockWallet(request.wallet, true /*force*/);
+        lockWallet(request.wallet, false);
 
         emit Recovered(request.wallet, newOwner);
     }
-
-    function getLock(address wallet)
-        public
-        view
-        returns (uint _lock, address _lockedBy)
-    {
-        return getWalletLock(wallet);
-    }
-
-    // ---- internal functions ---
 
     function isLocked(address wallet)
         public
@@ -218,6 +208,8 @@ abstract contract GuardianModule is SecurityModule
     {
         return isWalletLocked(wallet);
     }
+
+    // ---- internal functions ---
 
     function _addGuardian(
         address wallet,

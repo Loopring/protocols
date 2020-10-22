@@ -53,8 +53,7 @@ abstract contract InheritanceModule is SecurityModule
         controllerCache.securityStore.setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(newOwner);
 
-        // solium-disable-next-line
-        unlockWallet(wallet, true /*force*/);
+        lockWallet(wallet, false);
 
         emit Inherited(wallet, _inheritor, newOwner);
     }

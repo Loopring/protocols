@@ -24,8 +24,7 @@ contract SecurityStore is DataStore
     {
         address    inheritor;
         uint64     lastActive; // the latest timestamp the owner is considered to be active
-        address    lockedBy;   // the module that locked the wallet.
-        uint64     lock;
+        bool       locked;
 
         Data.Guardian[]            guardians;
         mapping (address => uint)  guardianIdx;
@@ -244,26 +243,22 @@ contract SecurityStore is DataStore
         w.guardians[idx - 1].validUntil = 0;
     }
 
-    function getLock(address wallet)
+    function isLocked(address wallet)
         public
         view
-        returns (uint _lock, address _lockedBy)
+        returns (bool)
     {
-        _lock = wallets[wallet].lock;
-        _lockedBy = wallets[wallet].lockedBy;
+        return wallets[wallet].locked;
     }
 
     function setLock(
         address wallet,
-        uint    lock
+        bool    locked
         )
         public
         onlyWalletModule(wallet)
     {
-        require(lock == 0 || lock > block.timestamp, "INVALID_LOCK_TIME");
-
-        wallets[wallet].lock = lock.toUint64();
-        wallets[wallet].lockedBy = msg.sender;
+        wallets[wallet].locked = locked;
     }
 
     function lastActive(address wallet)
@@ -281,17 +276,17 @@ contract SecurityStore is DataStore
         wallets[wallet].lastActive = uint64(block.timestamp);
     }
 
-    // function touchLastActiveWhenRequired(
-    //     address wallet,
-    //     uint    minInternval
-    //     )
-    //     public
-    // {
-    //     if (block.timestamp > lastActive(wallet) + minInternval) {
-    //         requireWalletModule(wallet);
-    //         wallets[wallet].lastActive = uint64(block.timestamp);
-    //     }
-    // }
+    function touchLastActiveWhenRequired(
+        address wallet,
+        uint    minInternval
+        )
+        public
+    {
+        if (block.timestamp > lastActive(wallet) + minInternval) {
+            requireWalletModule(wallet);
+            wallets[wallet].lastActive = uint64(block.timestamp);
+        }
+    }
 
     function inheritor(address wallet)
         public

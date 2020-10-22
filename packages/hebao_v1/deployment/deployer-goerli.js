@@ -136,7 +136,6 @@ async function deployController() {
   const { abi, bin } = getAbiAndBin(releaseDir, contractName);
 
   const moduleRegistryImplAddr = "";
-  const lockPeriod = "";
   const collectTo = "";
   const ensManager = "";
   const priceOracle = "";
@@ -145,7 +144,6 @@ async function deployController() {
     abi,
     bin,
     moduleRegistryImplAddr,
-    lockPeriod,
     collectTo,
     ensManager,
     priceOracle,
