@@ -19,27 +19,28 @@ abstract contract TransferModule is BaseTransferModule
 
     bytes32 public TRANSFER_DOMAIN_SEPERATOR;
 
-    bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = keccak256(
-        "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
+    uint public constant QUOTA_PENDING_PERIOD = 1 days;
+
+    bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH = keccak256(
+        "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
     );
 
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
-        "transferTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+        "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
 
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
-        "approveTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
+        "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     );
 
     bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
-        "callContractWithApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+        "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     );
 
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
-        "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+        "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
-    uint public constant QUOTA_PENDING_PERIOD = 1 days;
 
     constructor()
     {
@@ -67,7 +68,7 @@ abstract contract TransferModule is BaseTransferModule
         }
     }
 
-    function changeDailyQuotaImmediately(
+    function changeDailyQuotaWA(
         SignedRequest.Request calldata request,
         uint newQuota
         )
@@ -79,7 +80,7 @@ abstract contract TransferModule is BaseTransferModule
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
-                CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH,
+                CHANGE_DAILY_QUOTE_TYPEHASH,
                 request.wallet,
                 request.validUntil,
                 newQuota
@@ -107,65 +108,7 @@ abstract contract TransferModule is BaseTransferModule
         transferInternal(wallet, token, to, amount, logdata);
     }
 
-    function callContract(
-        address            wallet,
-        address            to,
-        uint               value,
-        bytes     calldata data
-        )
-        external
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerWhenUnlocked(wallet)
-        returns (bytes memory returnData)
-    {
-        if (value > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, address(0), value);
-        }
-
-        return callContractInternal(wallet, to, value, data);
-    }
-
-    function approveToken(
-        address wallet,
-        address token,
-        address to,
-        uint    amount
-        )
-        external
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerWhenUnlocked(wallet)
-    {
-        uint additionalAllowance = approveInternal(wallet, token, to, amount);
-
-        if (additionalAllowance > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, additionalAllowance);
-        }
-    }
-
-    function approveThenCallContract(
-        address        wallet,
-        address        token,
-        address        to,
-        uint           amount,
-        uint           value,
-        bytes calldata data
-        )
-        external
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerWhenUnlocked(wallet)
-        returns (bytes memory returnData)
-    {
-        uint additionalAllowance = approveInternal(wallet, token, to, amount);
-
-        if ((additionalAllowance > 0 || value > 0) && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, additionalAllowance);
-            updateQuota(wallet, address(0), value);
-        }
-
-        return callContractInternal(wallet, to, value, data);
-    }
-
-    function transferTokenWithApproval(
+    function transferTokenWA(
         SignedRequest.Request calldata request,
         address        token,
         address        to,
@@ -193,33 +136,25 @@ abstract contract TransferModule is BaseTransferModule
         transferInternal(request.wallet, token, to, amount, logdata);
     }
 
-    function approveTokenWithApproval(
-        SignedRequest.Request calldata request,
-        address token,
-        address to,
-        uint    amount
+    function callContract(
+        address            wallet,
+        address            to,
+        uint               value,
+        bytes     calldata data
         )
         external
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
+        returns (bytes memory returnData)
     {
-        controller().verifyRequest(
-            TRANSFER_DOMAIN_SEPERATOR,
-            txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
-            request,
-            abi.encode(
-                APPROVE_TOKEN_TYPEHASH,
-                request.wallet,
-                request.validUntil,
-                token,
-                to,
-                amount
-            )
-        );
+        if (value > 0 && !isTargetWhitelisted(wallet, to)) {
+            updateQuota(wallet, address(0), value);
+        }
 
-        approveInternal(request.wallet, token, to, amount);
+        return callContractInternal(wallet, to, value, data);
     }
 
-    function callContractWithApproval(
+    function callContractWA(
         SignedRequest.Request calldata request,
         address        to,
         uint           value,
@@ -246,7 +181,73 @@ abstract contract TransferModule is BaseTransferModule
         return callContractInternal(request.wallet, to, value, data);
     }
 
-    function approveThenCallContractWithApproval(
+    function approveToken(
+        address wallet,
+        address token,
+        address to,
+        uint    amount
+        )
+        external
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
+    {
+        uint additionalAllowance = approveInternal(wallet, token, to, amount);
+
+        if (additionalAllowance > 0 && !isTargetWhitelisted(wallet, to)) {
+            updateQuota(wallet, token, additionalAllowance);
+        }
+    }
+
+    function approveTokenWA(
+        SignedRequest.Request calldata request,
+        address token,
+        address to,
+        uint    amount
+        )
+        external
+    {
+        controller().verifyRequest(
+            TRANSFER_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                APPROVE_TOKEN_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                token,
+                to,
+                amount
+            )
+        );
+
+        approveInternal(request.wallet, token, to, amount);
+    }
+
+    function approveThenCallContract(
+        address        wallet,
+        address        token,
+        address        to,
+        uint           amount,
+        uint           value,
+        bytes calldata data
+        )
+        external
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
+        returns (bytes memory returnData)
+    {
+        uint additionalAllowance = approveInternal(wallet, token, to, amount);
+
+        if ((additionalAllowance > 0 || value > 0) && !isTargetWhitelisted(wallet, to)) {
+            updateQuota(wallet, token, additionalAllowance);
+            updateQuota(wallet, address(0), value);
+        }
+
+        return callContractInternal(wallet, to, value, data);
+    }
+
+    function approveThenCallContractWA(
         SignedRequest.Request calldata request,
         address        token,
         address        to,

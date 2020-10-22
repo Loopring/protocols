@@ -44,12 +44,8 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
   before(async () => {
     defaultCtx = await getContext();
 
-    MAX_GUARDIANS = (
-      await defaultCtx.finalSecurityModule.MAX_GUARDIANS()
-    ).toNumber();
-    guardianPendingPeriod = (
-      await defaultCtx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()
-    ).toNumber();
+    MAX_GUARDIANS = (await defaultCtx.finalSecurityModule.MAX_GUARDIANS()).toNumber();
+    guardianPendingPeriod = (await defaultCtx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()).toNumber();
   });
 
   beforeEach(async () => {
@@ -104,7 +100,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
         const { wallet } = await createWallet(ctx, owner);
         const group = 0;
 
-        // The first two guardian is added immediately (so cannot be cancelled)
+        // The first two guardian is added WA (so cannot be cancelled)
         await addGuardianChecked(owner, wallet, ctx.guardians[0], group);
         await addGuardianChecked(owner, wallet, ctx.guardians[1], group);
 
@@ -217,7 +213,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
         const { wallet } = await createWallet(ctx, owner);
         const group = 0;
 
-        // The first guardian is added immediately (so cannot be cancelled)
+        // The first guardian is added WA (so cannot be cancelled)
         await addGuardianChecked(owner, wallet, ctx.guardians[0], group);
         await addGuardianChecked(owner, wallet, ctx.guardians[1], group);
 

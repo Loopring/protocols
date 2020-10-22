@@ -19,10 +19,7 @@ import { expectThrow } from "../util/expectThrow";
 import BN = require("bn.js");
 import { SignatureType } from "./helpers/Signature";
 import { addGuardian } from "./helpers/GuardianUtils";
-import {
-  SignedRequest,
-  signAddToWhitelistImmediately
-} from "./helpers/SignatureUtils";
+import { SignedRequest, signAddToWhitelistWA } from "./helpers/SignatureUtils";
 
 contract("ForwarderModule", () => {
   let defaultCtx: Context;
@@ -107,17 +104,10 @@ contract("ForwarderModule", () => {
       validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
       wallet
     };
-    signAddToWhitelistImmediately(
-      request,
-      addr,
-      ctx.finalSecurityModule.address
-    );
+    signAddToWhitelistWA(request, addr, ctx.finalSecurityModule.address);
 
     await executeTransaction(
-      ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
-        request,
-        addr
-      ),
+      ctx.finalSecurityModule.contract.methods.addToWhitelistWA(request, addr),
       ctx,
       true,
       wallet,
@@ -141,14 +131,10 @@ contract("ForwarderModule", () => {
       validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
       wallet
     };
-    signAddToWhitelistImmediately(
-      request,
-      addr,
-      ctx.finalSecurityModule.address
-    );
+    signAddToWhitelistWA(request, addr, ctx.finalSecurityModule.address);
 
     await executeTransaction(
-      ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
+      ctx.finalSecurityModule.contract.methods.addToWhitelistWA(
         request,
         ctx.miscAddresses[0]
       ),
@@ -175,7 +161,7 @@ contract("ForwarderModule", () => {
   //     signatureTypes = signatureTypes.reverse();
   //   }
   //   await executeTransaction(
-  //     ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
+  //     ctx.finalSecurityModule.contract.methods.addToWhitelistWA(
   //       walletA,
   //       ctx.miscAddresses[0]
   //     ),
@@ -199,16 +185,12 @@ contract("ForwarderModule", () => {
       validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
       wallet
     };
-    signAddToWhitelistImmediately(
-      request,
-      addr,
-      ctx.finalSecurityModule.address
-    );
+    signAddToWhitelistWA(request, addr, ctx.finalSecurityModule.address);
 
     // The current nonce
     const nonce = new Date().getTime();
     await executeTransaction(
-      ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
+      ctx.finalSecurityModule.contract.methods.addToWhitelistWA(
         request,
         ctx.miscAddresses[0]
       ),
@@ -220,7 +202,7 @@ contract("ForwarderModule", () => {
     );
     await expectThrow(
       executeTransaction(
-        ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
+        ctx.finalSecurityModule.contract.methods.addToWhitelistWA(
           request,
           ctx.miscAddresses[0]
         ),
@@ -246,15 +228,11 @@ contract("ForwarderModule", () => {
       validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
       wallet
     };
-    signAddToWhitelistImmediately(
-      request,
-      addr,
-      ctx.finalSecurityModule.address
-    );
+    signAddToWhitelistWA(request, addr, ctx.finalSecurityModule.address);
 
     await expectThrow(
       executeTransaction(
-        ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
+        ctx.finalSecurityModule.contract.methods.addToWhitelistWA(
           request,
           ctx.miscAddresses[0]
         ),
@@ -274,7 +252,7 @@ contract("ForwarderModule", () => {
   //   const signers = [owner, ...guardians].sort();
   //   await expectThrow(
   //     executeTransaction(
-  //       ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
+  //       ctx.finalSecurityModule.contract.methods.addToWhitelistWA(
   //         wallet,
   //         ctx.miscAddresses[0]
   //       ),
@@ -327,14 +305,10 @@ contract("ForwarderModule", () => {
           wallet
         };
         const addr = ctx.miscAddresses[0];
-        signAddToWhitelistImmediately(
-          request,
-          addr,
-          ctx.finalSecurityModule.address
-        );
+        signAddToWhitelistWA(request, addr, ctx.finalSecurityModule.address);
 
         const tx = await executeTransaction(
-          ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
+          ctx.finalSecurityModule.contract.methods.addToWhitelistWA(
             request,
             addr
           ),

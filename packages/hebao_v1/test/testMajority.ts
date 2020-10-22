@@ -8,10 +8,7 @@ import {
 } from "./helpers/TestUtils";
 import { addGuardian } from "./helpers/GuardianUtils";
 import { expectThrow } from "../util/expectThrow";
-import {
-  SignedRequest,
-  signAddToWhitelistImmediately
-} from "./helpers/SignatureUtils";
+import { SignedRequest, signAddToWhitelistWA } from "./helpers/SignatureUtils";
 
 const tests = [
   {
@@ -186,15 +183,11 @@ contract("GuardianUtils", (accounts: string[]) => {
       wallet
     };
 
-    signAddToWhitelistImmediately(
-      request,
-      addr,
-      ctx.finalSecurityModule.address
-    );
+    signAddToWhitelistWA(request, addr, ctx.finalSecurityModule.address);
 
     await expectThrow(
       executeTransaction(
-        ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
+        ctx.finalSecurityModule.contract.methods.addToWhitelistWA(
           request,
           addr
         ),
@@ -229,14 +222,10 @@ contract("GuardianUtils", (accounts: string[]) => {
       };
 
       const addr = ctx.miscAddresses[0];
-      signAddToWhitelistImmediately(
-        request,
-        addr,
-        ctx.finalSecurityModule.address
-      );
+      signAddToWhitelistWA(request, addr, ctx.finalSecurityModule.address);
 
       const transaction = executeTransaction(
-        ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
+        ctx.finalSecurityModule.contract.methods.addToWhitelistWA(
           request,
           ctx.miscAddresses[0]
         ),

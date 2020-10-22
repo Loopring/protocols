@@ -21,11 +21,14 @@ abstract contract GuardianModule is SecurityModule
     uint constant public MAX_GUARDIANS = 20;
     uint public constant GUARDIAN_PENDING_PERIOD = 3 days;
 
-    bytes32 public constant ADD_GUARDIAN_IMMEDIATELY_TYPEHASH = keccak256(
-        "addGuardianImmediately(address wallet,uint256 validUntil,address guardian,uint256 group)"
+    bytes32 public constant ADD_GUARDIAN_TYPEHASH = keccak256(
+        "addGuardian(address wallet,uint256 validUntil,address guardian,uint256 group)"
     );
-    bytes32 public constant REMOVE_GUARDIAN_IMMEDIATELY_TYPEHASH = keccak256(
-        "removeGuardianImmediately(address wallet,uint256 validUntil,address guardian)"
+    bytes32 public constant REMOVE_GUARDIAN_TYPEHASH = keccak256(
+        "removeGuardian(address wallet,uint256 validUntil,address guardian)"
+    );
+    bytes32 public constant RECOVER_TYPEHASH = keccak256(
+        "recover(address wallet,uint256 validUntil,address newOwner)"
     );
 
     event GuardianAdded             (address indexed wallet, address guardian, uint group, uint effectiveTime);
@@ -36,10 +39,6 @@ abstract contract GuardianModule is SecurityModule
     event Recovered(
         address indexed wallet,
         address         newOwner
-    );
-
-    bytes32 public constant RECOVER_TYPEHASH = keccak256(
-        "recover(address wallet,uint256 validUntil,address newOwner)"
     );
 
     constructor()
@@ -62,16 +61,28 @@ abstract contract GuardianModule is SecurityModule
         _addGuardian(wallet, guardian, group, GUARDIAN_PENDING_PERIOD);
     }
 
-    function cancelGuardianAddition(
-        address wallet,
-        address guardian
+    function addGuardianWA(
+        SignedRequest.Request calldata request,
+        address guardian,
+        uint    group
         )
         external
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controllerCache.securityStore.cancelGuardianAddition(wallet, guardian);
-        emit GuardianAdditionCancelled(wallet, guardian);
+        controller().verifyRequest(
+            GUARDIAN_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerAllowed,
+            request,
+            abi.encode(
+                ADD_GUARDIAN_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                guardian,
+                group
+            )
+        );
+
+        _addGuardian(request.wallet, guardian, group, 0);
     }
 
     function removeGuardian(
@@ -86,31 +97,7 @@ abstract contract GuardianModule is SecurityModule
         _removeGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD);
     }
 
-    function addGuardianImmediately(
-        SignedRequest.Request calldata request,
-        address guardian,
-        uint    group
-        )
-        external
-    {
-        controller().verifyRequest(
-            GUARDIAN_DOMAIN_SEPERATOR,
-            txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerAllowed,
-            request,
-            abi.encode(
-                ADD_GUARDIAN_IMMEDIATELY_TYPEHASH,
-                request.wallet,
-                request.validUntil,
-                guardian,
-                group
-            )
-        );
-
-        _addGuardian(request.wallet, guardian, group, 0);
-    }
-
-    function removeGuardianImmediately(
+    function removeGuardianWA(
         SignedRequest.Request calldata request,
         address guardian
         )
@@ -122,7 +109,7 @@ abstract contract GuardianModule is SecurityModule
             GuardianUtils.SigRequirement.OwnerAllowed,
             request,
             abi.encode(
-                REMOVE_GUARDIAN_IMMEDIATELY_TYPEHASH,
+                REMOVE_GUARDIAN_TYPEHASH,
                 request.wallet,
                 request.validUntil,
                 guardian
@@ -132,6 +119,20 @@ abstract contract GuardianModule is SecurityModule
         _removeGuardian(request.wallet, guardian, 0);
     }
 
+    // TODO(kongliang): delete this function
+    function cancelGuardianAddition(
+        address wallet,
+        address guardian
+        )
+        external
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
+    {
+        controllerCache.securityStore.cancelGuardianAddition(wallet, guardian);
+        emit GuardianAdditionCancelled(wallet, guardian);
+    }
+
+    // TODO(kongliang): delete this function
     function cancelGuardianRemoval(
         address wallet,
         address guardian

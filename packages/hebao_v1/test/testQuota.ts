@@ -14,7 +14,7 @@ import { assertEventEmitted } from "../util/Events";
 import BN = require("bn.js");
 import {
   SignedRequest,
-  signChangeDailyQuotaImmediately
+  signChangeDailyQuotaWA
 } from "./helpers/SignatureUtils";
 
 contract("TransferModule - changeQuota", (accounts: string[]) => {
@@ -110,7 +110,7 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
         );
       }
     } else {
-      // Quota will be the newQuota immediately.
+      // Quota will be the newQuota WA.
       assert(
         (await ctx.quotaStore.currentQuota(wallet)).eq(newQuota),
         "quota incorrect"
@@ -124,9 +124,7 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
 
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
-    delayPeriod = (
-      await ctx.finalTransferModule.QUOTA_PENDING_PERIOD()
-    ).toNumber();
+    delayPeriod = (await ctx.finalTransferModule.QUOTA_PENDING_PERIOD()).toNumber();
     defaultQuota = await ctx.quotaStore.defaultQuota();
   });
 
@@ -160,16 +158,14 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
   });
 
   it(
-    description(
-      "should be able to change the daily quota immediately with majority"
-    ),
+    description("should be able to change the daily quota WA with majority"),
     async () => {
       const owner = ctx.owners[0];
       const { wallet, guardians } = await createWallet(ctx, owner, 3);
 
       const newQuota = toAmount("9");
 
-      // Change the daily quota immediately
+      // Change the daily quota WA
       const numSignersRequired = Math.floor(1 + guardians.length / 2 + 1);
       for (let i = 0; i < numSignersRequired; i++) {
         const signers = [owner, ...guardians.slice(0, i)].sort();
@@ -180,14 +176,14 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
           validUntil: Math.floor(new Date().getTime()),
           wallet
         };
-        signChangeDailyQuotaImmediately(
+        signChangeDailyQuotaWA(
           request,
           newQuota,
           ctx.finalTransferModule.address
         );
 
         const transaction = executeTransaction(
-          ctx.finalTransferModule.contract.methods.changeDailyQuotaImmediately(
+          ctx.finalTransferModule.contract.methods.changeDailyQuotaWA(
             request,
             newQuota.toString(10)
           ),
@@ -203,7 +199,7 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
           const blockTime = await getBlockTime(tx.blockNumber);
           // console.log('tx', tx);
 
-          // The quota needs to be changed immediately
+          // The quota needs to be changed WA
           assert(
             (await ctx.quotaStore.currentQuota(wallet)).eq(newQuota),
             "quota incorrect"
