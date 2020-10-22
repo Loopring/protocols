@@ -27,6 +27,9 @@ abstract contract GuardianModule is SecurityModule
     bytes32 public constant REMOVE_GUARDIAN_IMMEDIATELY_TYPEHASH = keccak256(
         "removeGuardianImmediately(address wallet,uint256 validUntil,address guardian)"
     );
+    bytes32 public constant UNLOCK_TYPEHASH = keccak256(
+        "unlock(address wallet,uint256 validUntil)"
+    );
 
     event GuardianAdded             (address indexed wallet, address guardian, uint group, uint effectiveTime);
     event GuardianAdditionCancelled (address indexed wallet, address guardian);
@@ -150,9 +153,8 @@ abstract contract GuardianModule is SecurityModule
         external
         txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
-        onlyHaveEnoughGuardians(wallet)
     {
-        lockWallet(wallet, true);
+        _lockWallet(wallet, true);
     }
 
     function unlock(address wallet)
@@ -160,7 +162,25 @@ abstract contract GuardianModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromGuardian(wallet)
     {
-        lockWallet(wallet, false);
+        _lockWallet(wallet, false);
+    }
+
+    // TODO(daniel): test this method after initial review
+    function unlock(
+        SignedRequest.Request calldata request
+        )
+        external
+        onlyHaveEnoughGuardians(request.wallet)
+    {
+        controller().verifyRequest(
+            GUARDIAN_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(UNLOCK_TYPEHASH)
+        );
+
+        _lockWallet(request.wallet, false);
     }
 
     /// @dev Recover a wallet by setting a new owner.
@@ -194,7 +214,7 @@ abstract contract GuardianModule is SecurityModule
         }
 
         Wallet(request.wallet).setOwner(newOwner);
-        lockWallet(request.wallet, false);
+        _lockWallet(request.wallet, false);
 
         emit Recovered(request.wallet, newOwner);
     }
@@ -204,7 +224,7 @@ abstract contract GuardianModule is SecurityModule
         view
         returns (bool)
     {
-        return isWalletLocked(wallet);
+        return _isWalletLocked(wallet);
     }
 
     // ---- internal functions ---

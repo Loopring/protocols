@@ -38,7 +38,7 @@ abstract contract SecurityModule is MetaTxModule
         // If the wallet's signature verfication passes, the wallet must be unlocked.
         require(
             _logicalSender == wallet ||
-            (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
+            (_logicalSender == Wallet(wallet).owner() && !_isWalletLocked(wallet)),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
         controllerCache.securityStore.touchLastActiveWhenRequired(wallet, TOUCH_GRACE_PERIOD);
@@ -56,13 +56,13 @@ abstract contract SecurityModule is MetaTxModule
 
     modifier onlyWhenWalletLocked(address wallet)
     {
-        require(isWalletLocked(wallet), "NOT_LOCKED");
+        require(_isWalletLocked(wallet), "NOT_LOCKED");
         _;
     }
 
     modifier onlyWhenWalletUnlocked(address wallet)
     {
-        require(!isWalletLocked(wallet), "LOCKED");
+        require(!_isWalletLocked(wallet), "LOCKED");
         _;
     }
 
@@ -89,22 +89,14 @@ abstract contract SecurityModule is MetaTxModule
 
     // ----- internal methods -----
 
-    function quotaStore()
-        internal
-        view
-        returns (address)
-    {
-        return address(controllerCache.quotaStore);
-    }
-
-    function lockWallet(address wallet, bool locked)
+    function _lockWallet(address wallet, bool locked)
         internal
     {
         controllerCache.securityStore.setLock(wallet, locked);
         emit WalletLock(wallet, locked);
     }
 
-    function isWalletLocked(address wallet)
+    function _isWalletLocked(address wallet)
         internal
         view
         returns (bool)
@@ -112,21 +104,21 @@ abstract contract SecurityModule is MetaTxModule
         return controllerCache.securityStore.isLocked(wallet);
     }
 
-    function updateQuota(
+    function _updateQuota(
         address wallet,
         address token,
         uint    amount
         )
         internal
     {
-        QuotaStore _quotaStore = controllerCache.quotaStore;
-        if (amount > 0 && _quotaStore != QuotaStore(0)) {
+        QuotaStore qs = controllerCache.quotaStore;
+        if (amount > 0 && qs != QuotaStore(0)) {
             uint value = (token == address(0)) ?
                 amount :
                 controllerCache.priceOracle.tokenValue(token, amount);
 
             if (value > 0) {
-                _quotaStore.checkAndAddToSpent(wallet, value);
+                qs.checkAndAddToSpent(wallet, value);
             }
         }
     }

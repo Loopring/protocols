@@ -44,6 +44,7 @@ abstract contract WhitelistModule is SecurityModule
         controllerCache.whitelistStore.addToWhitelist(wallet, addr, block.timestamp.add(WHITELIST_PENDING_PERIOD));
     }
 
+    // TODO(daniel): test this method after initial review
     function addToWhitelistImmediately(
         SignedRequest.Request calldata request,
         address addr
@@ -67,6 +68,7 @@ abstract contract WhitelistModule is SecurityModule
         controllerCache.whitelistStore.addToWhitelist(request.wallet, addr, block.timestamp);
     }
 
+    // TODO(daniel): test this method after initial review
     function removeFromWhitelistImmediately(
         SignedRequest.Request calldata request,
         address addr

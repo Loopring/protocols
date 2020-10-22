@@ -102,7 +102,7 @@ abstract contract TransferModule is BaseTransferModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         if (amount > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, amount);
+            _updateQuota(wallet, token, amount);
         }
 
         transferInternal(wallet, token, to, amount, logdata);
@@ -120,7 +120,7 @@ abstract contract TransferModule is BaseTransferModule
         returns (bytes memory returnData)
     {
         if (value > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, address(0), value);
+            _updateQuota(wallet, address(0), value);
         }
 
         return callContractInternal(wallet, to, value, data);
@@ -139,7 +139,7 @@ abstract contract TransferModule is BaseTransferModule
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
         if (additionalAllowance > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, additionalAllowance);
+            _updateQuota(wallet, token, additionalAllowance);
         }
     }
 
@@ -159,8 +159,8 @@ abstract contract TransferModule is BaseTransferModule
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
         if ((additionalAllowance > 0 || value > 0) && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, additionalAllowance);
-            updateQuota(wallet, address(0), value);
+            _updateQuota(wallet, token, additionalAllowance);
+            _updateQuota(wallet, address(0), value);
         }
 
         return callContractInternal(wallet, to, value, data);
