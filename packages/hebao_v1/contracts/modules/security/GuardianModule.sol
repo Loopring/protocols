@@ -194,8 +194,6 @@ abstract contract GuardianModule is SecurityModule
         }
 
         Wallet(request.wallet).setOwner(newOwner);
-
-        // solium-disable-next-line
         lockWallet(request.wallet, false);
 
         emit Recovered(request.wallet, newOwner);
