@@ -147,19 +147,21 @@ abstract contract GuardianModule is SecurityModule
     function lock(address wallet)
         external
         txAwareHashNotAllowed()
-        onlyFromGuardian(wallet)
+        onlyFromWalletOrOwnerOrGuardianon(wallet)
     {
         _lockWallet(wallet, msg.sender, true);
     }
 
+    // TODO(daniel): remove this function
     function unlock(address wallet)
         external
         txAwareHashNotAllowed()
-        onlyFromGuardian(wallet)
+        onlyFromWalletOrOwnerOrGuardianon(wallet)
     {
         _lockWallet(wallet, msg.sender, false);
     }
 
+    // TODO(daniel): rename to unlock
     function unlockWA(
         SignedRequest.Request calldata request
         )
