@@ -14,7 +14,7 @@ abstract contract InheritanceModule is SecurityModule
     using AddressUtil   for address;
     using SignatureUtil for bytes32;
 
-    uint public inheritWaitingPeriod;
+    uint public constant INHERIT_WAITING_PERIOD = 365 days + TOUCH_GRACE_PERIOD;
 
     event Inherited(
         address indexed wallet,
@@ -26,13 +26,6 @@ abstract contract InheritanceModule is SecurityModule
         address indexed wallet,
         address         inheritor
     );
-
-    constructor(uint _inheritWaitingPeriod)
-    {
-        require(_inheritWaitingPeriod > 0, "INVALID_DELAY");
-
-        inheritWaitingPeriod = _inheritWaitingPeriod;
-    }
 
     function inheritor(address wallet)
         public
@@ -54,7 +47,7 @@ abstract contract InheritanceModule is SecurityModule
         (address _inheritor, uint lastActive) = controllerCache.securityStore.inheritor(wallet);
         require(logicalSender() == _inheritor, "NOT_ALLOWED");
 
-        require(lastActive > 0 && block.timestamp >= lastActive + inheritWaitingPeriod, "NEED_TO_WAIT");
+        require(lastActive > 0 && block.timestamp >= lastActive + INHERIT_WAITING_PERIOD, "NEED_TO_WAIT");
 
         controllerCache.securityStore.removeAllGuardians(wallet);
         controllerCache.securityStore.setInheritor(wallet, address(0));
@@ -74,7 +67,6 @@ abstract contract InheritanceModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        require(controllerCache.walletRegistry.isWalletRegistered(_inheritor), "NOT_A_WALLET");
         (address existingInheritor,) = controllerCache.securityStore.inheritor(wallet);
         require(existingInheritor != _inheritor, "SAME_INHERITOR");
 

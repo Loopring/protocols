@@ -50,7 +50,9 @@ contract("ERC1271Module", () => {
       const hash = ethUtil.keccak("1234");
       const sig = sign(owner, hash);
 
-      const defaultLockPeriod = (await ctx.controllerImpl.defaultLockPeriod()).toNumber();
+      const lockPeriod = (
+        await ctx.finalSecurityModule.LOCK_PERIOD()
+      ).toNumber();
 
       const walletContract = await ctx.contracts.FinalCoreModule.at(wallet);
 
@@ -74,7 +76,7 @@ contract("ERC1271Module", () => {
       );
 
       // unlock
-      await advanceTimeAndBlockAsync(defaultLockPeriod);
+      await advanceTimeAndBlockAsync(lockPeriod);
 
       // verify agian:
       const isValidAfter = await walletContract.contract.methods[

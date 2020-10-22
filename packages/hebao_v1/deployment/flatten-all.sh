@@ -17,7 +17,6 @@ PRAGMA_EXPR_FILTER="pragma experimental"
 PRAGMA_EXPR_LINE="pragma experimental ABIEncoderV2;"
 
 declare -a all_contracts=(
-    "contracts/base/WalletRegistryImpl.sol"
     "contracts/base/ModuleRegistryImpl.sol"
     "contracts/stores/DappAddressStore.sol"
     "contracts/stores/HashStore.sol"

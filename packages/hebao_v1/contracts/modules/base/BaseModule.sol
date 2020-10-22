@@ -35,7 +35,6 @@ abstract contract BaseModule is Module
         QuotaStore       quotaStore;
         PriceOracle      priceOracle;
         address          walletFactory;
-        WalletRegistry   walletRegistry;
         address          collectTo;
     }
 
@@ -118,7 +117,6 @@ abstract contract BaseModule is Module
         controllerCache.whitelistStore = _controller.whitelistStore();
         controllerCache.quotaStore = _controller.quotaStore();
         controllerCache.priceOracle = _controller.priceOracle();
-        controllerCache.walletRegistry = _controller.walletRegistry();
         controllerCache.walletFactory = _controller.walletFactory();
         controllerCache.collectTo = _controller.collectTo();
     }

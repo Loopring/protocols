@@ -1,5 +1,4 @@
 const ModuleRegistryImpl = artifacts.require("ModuleRegistryImpl");
-const WalletRegistryImpl = artifacts.require("WalletRegistryImpl");
 const BaseENSManager = artifacts.require("BaseENSManager");
 const TestPriceOracle = artifacts.require("TestPriceOracle");
 const HashStore = artifacts.require("HashStore");
@@ -15,7 +14,6 @@ module.exports = function(deployer, network, accounts) {
     ensManagerAddr = BaseENSManager.address;
   }
 
-  const lockPeriod = Number(process.env.controllerLockPeriod) || 1 * 24 * 3600;
   const collecTo = process.env.collectTo || accounts[1];
 
   let priceOracle;
@@ -25,8 +23,6 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(
       ControllerImpl,
       ModuleRegistryImpl.address,
-      WalletRegistryImpl.address,
-      lockPeriod,
       collecTo,
       ensManagerAddr,
       TestPriceOracle.address,
