@@ -24,9 +24,6 @@ abstract contract GuardianModule is SecurityModule
     bytes32 public constant ADD_GUARDIAN_TYPEHASH = keccak256(
         "addGuardian(address wallet,uint256 validUntil,address guardian,uint256 group)"
     );
-    bytes32 public constant ADD_GUARDIAN_TYPEHASH2 = keccak256(
-        "addGuardian(address wallet,uint256 validUntil,uint256 group)"
-    );
     bytes32 public constant REMOVE_GUARDIAN_TYPEHASH = keccak256(
         "removeGuardian(address wallet,uint256 validUntil,address guardian)"
     );
@@ -73,8 +70,9 @@ abstract contract GuardianModule is SecurityModule
         bytes32 _txAwareHash = EIP712.hashPacked(
             GUARDIAN_DOMAIN_SEPERATOR,
             abi.encode(
-                ADD_GUARDIAN_TYPEHASH2,
+                ADD_GUARDIAN_TYPEHASH,
                 request.wallet,
+                address(0),
                 request.validUntil,
                 group
             )
