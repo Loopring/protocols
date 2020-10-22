@@ -72,7 +72,7 @@ abstract contract TransferModule is BaseTransferModule
         uint newQuota
         )
         external
-        onlyWhenWalletUnlocked(request.wallet)
+        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
@@ -166,20 +166,6 @@ abstract contract TransferModule is BaseTransferModule
         return callContractInternal(wallet, to, value, data);
     }
 
-    function getDailyQuota(address wallet)
-        public
-        view
-        returns (
-            uint total,
-            uint spent,
-            uint available
-        )
-    {
-        total = controllerCache.quotaStore.currentQuota(wallet);
-        spent = controllerCache.quotaStore.spentQuota(wallet);
-        available = controllerCache.quotaStore.availableQuota(wallet);
-    }
-
     function transferTokenWithApproval(
         SignedRequest.Request calldata request,
         address        token,
@@ -188,7 +174,7 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata logdata
         )
         external
-        onlyWhenWalletUnlocked(request.wallet)
+        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
@@ -216,7 +202,7 @@ abstract contract TransferModule is BaseTransferModule
         uint    amount
         )
         external
-        onlyWhenWalletUnlocked(request.wallet)
+        onlyHaveEnoughGuardians(request.wallet)
     {
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
@@ -243,7 +229,7 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
-        onlyWhenWalletUnlocked(request.wallet)
+        onlyHaveEnoughGuardians(request.wallet)
         returns (bytes memory returnData)
     {
         controller().verifyRequest(
@@ -273,7 +259,7 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
-        onlyWhenWalletUnlocked(request.wallet)
+        onlyHaveEnoughGuardians(request.wallet)
         returns (bytes memory returnData)
     {
         bytes memory encoded = abi.encode(
@@ -297,5 +283,19 @@ abstract contract TransferModule is BaseTransferModule
 
         approveInternal(request.wallet, token, to, amount);
         return callContractInternal(request.wallet, to, value, data);
+    }
+
+    function getDailyQuota(address wallet)
+        public
+        view
+        returns (
+            uint total,
+            uint spent,
+            uint available
+        )
+    {
+        total = controllerCache.quotaStore.currentQuota(wallet);
+        spent = controllerCache.quotaStore.spentQuota(wallet);
+        available = controllerCache.quotaStore.availableQuota(wallet);
     }
 }
