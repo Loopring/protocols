@@ -35,9 +35,7 @@ abstract contract GuardianModule is SecurityModule
     );
 
     event GuardianAdded             (address indexed wallet, address guardian, uint group, uint effectiveTime);
-    event GuardianAdditionCancelled (address indexed wallet, address guardian);
     event GuardianRemoved           (address indexed wallet, address guardian, uint removalEffectiveTime);
-    event GuardianRemovalCancelled  (address indexed wallet, address guardian);
     event Recovered                 (address indexed wallet, address newOwner);
 
     constructor()
@@ -116,32 +114,6 @@ abstract contract GuardianModule is SecurityModule
         );
 
         _removeGuardian(request.wallet, guardian, 0);
-    }
-
-    // TODO(kongliang): delete this function
-    function cancelGuardianAddition(
-        address wallet,
-        address guardian
-        )
-        external
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerWhenUnlocked(wallet)
-    {
-        controllerCache.securityStore.cancelGuardianAddition(wallet, guardian);
-        emit GuardianAdditionCancelled(wallet, guardian);
-    }
-
-    // TODO(kongliang): delete this function
-    function cancelGuardianRemoval(
-        address wallet,
-        address guardian
-        )
-        external
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerWhenUnlocked(wallet)
-    {
-        controllerCache.securityStore.cancelGuardianRemoval(wallet, guardian);
-        emit GuardianRemovalCancelled(wallet, guardian);
     }
 
     function lock(address wallet)
