@@ -20,7 +20,8 @@ abstract contract SecurityModule is MetaTxModule
 
     // The minimal number of guardians for recovery and locking.
     uint constant public MIN_ACTIVE_GUARDIANS = 2;
-    uint constant public MIN_TOUCH_INTERVAL   = 7 days;
+    uint constant public TOUCH_GRACE_PERIOD   = 30 days;
+    uint constant public LOCK_PERIOD          = 1  days;
 
     event WalletLock(
         address indexed wallet,
@@ -41,17 +42,18 @@ abstract contract SecurityModule is MetaTxModule
             (_logicalSender == Wallet(wallet).owner() && !isWalletLocked(wallet)),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
-        SecurityStore ss = controller().securityStore();
-        if (block.timestamp > ss.lastActive(wallet) + MIN_TOUCH_INTERVAL) {
+        SecurityStore ss = controllerCache.securityStore;
+        if (block.timestamp > ss.lastActive(wallet) + TOUCH_GRACE_PERIOD) {
             ss.touchLastActive(wallet);
         }
+        // controllerCache.securityStore.touchLastActiveWhenRequired(wallet, TOUCH_GRACE_PERIOD);
         _;
     }
 
     modifier onlyFromGuardian(address wallet)
     {
         require(
-            controller().securityStore().isGuardian(wallet, logicalSender()),
+            controllerCache.securityStore.isGuardian(wallet, logicalSender()),
             "NOT_FROM_GUARDIAN"
         );
         _;
@@ -71,20 +73,20 @@ abstract contract SecurityModule is MetaTxModule
 
     modifier onlyWalletGuardian(address wallet, address guardian)
     {
-        require(controller().securityStore().isGuardian(wallet, guardian), "NOT_GUARDIAN");
+        require(controllerCache.securityStore.isGuardian(wallet, guardian), "NOT_GUARDIAN");
         _;
     }
 
     modifier notWalletGuardian(address wallet, address guardian)
     {
-        require(!controller().securityStore().isGuardian(wallet, guardian), "IS_GUARDIAN");
+        require(!controllerCache.securityStore.isGuardian(wallet, guardian), "IS_GUARDIAN");
         _;
     }
 
     modifier onlyHaveEnoughGuardians(address wallet)
     {
         require(
-            controller().securityStore().numGuardians(wallet) >= MIN_ACTIVE_GUARDIANS,
+            controllerCache.securityStore.numGuardians(wallet) >= MIN_ACTIVE_GUARDIANS,
             "NO_ENOUGH_ACTIVE_GUARDIANS"
         );
         _;
@@ -97,13 +99,13 @@ abstract contract SecurityModule is MetaTxModule
         view
         returns (address)
     {
-        return address(controller().quotaStore());
+        return address(controllerCache.quotaStore);
     }
 
     function lockWallet(address wallet)
         internal
     {
-        lockWallet(wallet, controller().defaultLockPeriod());
+        lockWallet(wallet, LOCK_PERIOD);
     }
 
     function lockWallet(address wallet, uint _lockPeriod)
@@ -113,17 +115,17 @@ abstract contract SecurityModule is MetaTxModule
         // cannot lock the wallet twice by different modules.
         require(_lockPeriod > 0, "ZERO_VALUE");
         uint lock = block.timestamp + _lockPeriod;
-        controller().securityStore().setLock(wallet, lock);
+        controllerCache.securityStore.setLock(wallet, lock);
         emit WalletLock(wallet, lock);
     }
 
     function unlockWallet(address wallet, bool forceUnlock)
         internal
     {
-        (uint _lock, address _lockedBy) = controller().securityStore().getLock(wallet);
+        (uint _lock, address _lockedBy) = controllerCache.securityStore.getLock(wallet);
         if (_lock > block.timestamp) {
             require(forceUnlock || _lockedBy == address(this), "UNABLE_TO_UNLOCK");
-            controller().securityStore().setLock(wallet, 0);
+            controllerCache.securityStore.setLock(wallet, 0);
         }
         emit WalletLock(wallet, 0);
     }
@@ -133,7 +135,7 @@ abstract contract SecurityModule is MetaTxModule
         view
         returns (uint _lock, address _lockedBy)
     {
-        return controller().securityStore().getLock(wallet);
+        return controllerCache.securityStore.getLock(wallet);
     }
 
     function isWalletLocked(address wallet)
@@ -141,7 +143,7 @@ abstract contract SecurityModule is MetaTxModule
         view
         returns (bool)
     {
-        (uint _lock,) = controller().securityStore().getLock(wallet);
+        (uint _lock,) = controllerCache.securityStore.getLock(wallet);
         return _lock > block.timestamp;
     }
 
@@ -152,9 +154,15 @@ abstract contract SecurityModule is MetaTxModule
         )
         internal
     {
-        if (amount > 0 && quotaStore() != address(0)) {
-            uint value = controller().priceOracle().tokenValue(token, amount);
-            QuotaStore(quotaStore()).checkAndAddToSpent(wallet, value);
+        QuotaStore _quotaStore = controllerCache.quotaStore;
+        if (amount > 0 && _quotaStore != QuotaStore(0)) {
+            uint value = (token == address(0)) ?
+                amount :
+                controllerCache.priceOracle.tokenValue(token, amount);
+
+            if (value > 0) {
+                _quotaStore.checkAndAddToSpent(wallet, value);
+            }
         }
     }
 }

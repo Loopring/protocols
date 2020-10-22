@@ -38,6 +38,7 @@ contract UpgraderModule is BaseModule {
         )
     {
         controller_ = _controller;
+        updateControllerCache();
         walletImplementation = _walletImplementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;

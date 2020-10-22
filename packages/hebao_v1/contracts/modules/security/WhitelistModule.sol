@@ -21,16 +21,13 @@ abstract contract WhitelistModule is SecurityModule
         "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
     );
 
-    uint public whitelistDelayPeriod;
+    uint public constant WHITELIST_PENDING_PERIOD = 1 days;
 
-    constructor(uint _whitelistDelayPeriod)
+    constructor()
     {
-        require(_whitelistDelayPeriod > 0, "INVALID_DELAY");
-
         WHITELIST_DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("WhitelistModule", "1.1.0", address(this))
+            EIP712.Domain("WhitelistModule", "1.2.0", address(this))
         );
-        whitelistDelayPeriod = _whitelistDelayPeriod;
     }
 
     function addToWhitelist(
@@ -38,11 +35,10 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller().whitelistStore().addToWhitelist(wallet, addr, block.timestamp.add(whitelistDelayPeriod));
+        controllerCache.whitelistStore.addToWhitelist(wallet, addr, block.timestamp.add(WHITELIST_PENDING_PERIOD));
     }
 
     function addToWhitelistImmediately(
@@ -50,7 +46,6 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
         controller().verifyRequest(
@@ -66,7 +61,7 @@ abstract contract WhitelistModule is SecurityModule
             )
         );
 
-        controller().whitelistStore().addToWhitelist(request.wallet, addr, block.timestamp);
+        controllerCache.whitelistStore.addToWhitelist(request.wallet, addr, block.timestamp);
     }
 
     function removeFromWhitelist(
@@ -74,11 +69,10 @@ abstract contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controller().whitelistStore().removeFromWhitelist(wallet, addr);
+        controllerCache.whitelistStore.removeFromWhitelist(wallet, addr);
     }
 
     function getWhitelist(address wallet)
@@ -89,7 +83,7 @@ abstract contract WhitelistModule is SecurityModule
             uint[]    memory effectiveTimes
         )
     {
-        return controller().whitelistStore().whitelist(wallet);
+        return controllerCache.whitelistStore.whitelist(wallet);
     }
 
     function isWhitelisted(
@@ -102,6 +96,6 @@ abstract contract WhitelistModule is SecurityModule
             uint effectiveTime
         )
     {
-        return controller().whitelistStore().isWhitelisted(wallet, addr);
+        return controllerCache.whitelistStore.isWhitelisted(wallet, addr);
     }
 }

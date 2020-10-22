@@ -5,7 +5,8 @@ import {
   createWallet,
   executeTransaction,
   toAmount,
-  sortAddresses
+  sortAddresses,
+  updateControllerCache
 } from "./helpers/TestUtils";
 import {
   transferFrom,
@@ -37,6 +38,7 @@ contract("ForwarderModule", () => {
     defaultCtx = await getContext();
     priceOracleMock = await defaultCtx.contracts.MockContract.new();
     await defaultCtx.controllerImpl.setPriceOracle(priceOracleMock.address);
+    await updateControllerCache(defaultCtx);
   });
 
   beforeEach(async () => {
@@ -299,13 +301,14 @@ contract("ForwarderModule", () => {
         const feeRecipient = await ctx.controllerImpl.collectTo();
         const gasOverhead = 100000;
         const gasPrice = new BN(7);
-        const assetValue = new BN(3);
+        const amount = toAmount("1");
+        const assetValue = gasToken == "ETH" ? amount : new BN(3);
 
         // Set the value of the transfer on the price oracle
         await setOraclePrice(assetValue);
 
         // Transfer enough tokens to pay for the meta tx
-        await addBalance(ctx, wallet, gasToken, toAmount("1"));
+        await addBalance(ctx, wallet, gasToken, amount);
 
         // Balances
         const oldBalanceWallet = await getBalance(ctx, gasToken, wallet);
@@ -372,8 +375,10 @@ contract("ForwarderModule", () => {
         );
         // Quota
         const newSpentQuota = await ctx.quotaStore.spentQuota(wallet);
+        const quotaDelta =
+          gasToken === "ETH" ? event.gasUsed.mul(gasPrice) : assetValue;
         assert(
-          newSpentQuota.eq(oldSpentQuota.add(assetValue)),
+          newSpentQuota.eq(oldSpentQuota.add(quotaDelta)),
           "incorrect spent quota"
         );
       }

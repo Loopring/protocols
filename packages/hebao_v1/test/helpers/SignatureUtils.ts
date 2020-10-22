@@ -21,7 +21,7 @@ export function signCreateWallet(
   ensRegisterReverse: boolean,
   modules: string[]
 ) {
-  const domainSeprator = eip712.hash("WalletFactory", "1.1.0", moduleAddress);
+  const domainSeprator = eip712.hash("WalletFactory", "1.2.0", moduleAddress);
 
   const TYPE_STR =
     "createWallet(address owner,uint256 salt,address blankAddress,string ensLabel,bool ensRegisterReverse,address[] modules)";
@@ -57,7 +57,7 @@ export function signAddToWhitelistImmediately(
   addr: string,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("WhitelistModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("WhitelistModule", "1.2.0", moduleAddr);
   const ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH = ethUtil.keccak(
     Buffer.from(
       "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
@@ -89,7 +89,7 @@ export function signRecover(
   newOwner: string,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("GuardianModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("GuardianModule", "1.2.0", moduleAddr);
   const RECOVER_TYPEHASH = ethUtil.keccak(
     Buffer.from("recover(address wallet,uint256 validUntil,address newOwner)")
   );
@@ -110,7 +110,7 @@ export function signChangeDailyQuotaImmediately(
   newQuota: BN,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = ethUtil.keccak(
     Buffer.from(
       "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
@@ -140,7 +140,7 @@ export function signTransferTokenApproved(
   logdata: string,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const TRANSFER_TOKEN_TYPEHASH = ethUtil.keccak(
     Buffer.from(
       "transferTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
@@ -180,7 +180,7 @@ export function signApproveTokenApproved(
   amount: BN,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const APPROVE_TOKEN_TYPEHASH = ethUtil.keccak(
     Buffer.from(
       "approveTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
@@ -211,7 +211,7 @@ export function signCallContractApproved(
   data: string,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
     Buffer.from(
       "callContractWithApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
@@ -244,7 +244,7 @@ export function signApproveThenCallContractApproved(
   data: string,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const APPROVE_THEN_CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
     Buffer.from(
       "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
@@ -280,7 +280,7 @@ export function signApproveThenCallContractApproved(
 }
 
 export function getMetaTxHash(metaTx: MetaTx, moduleAddr: string) {
-  const domainSeprator = eip712.hash("ForwarderModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("ForwarderModule", "1.2.0", moduleAddr);
 
   const META_TX_TYPEHASH = ethUtil.keccak(
     Buffer.from(

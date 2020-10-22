@@ -38,13 +38,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     event MethodBound           (bytes4  method, address module);
     event WalletSetup           (address owner);
 
-    event Transacted(
-        address module,
-        address to,
-        uint    value,
-        bytes   data
-    );
-
     modifier onlyFromModule
     {
         require(modules[msg.sender], "MODULE_UNAUTHORIZED");
@@ -81,7 +74,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         )
         external
         onlyFromFactory
-        nonReentrant
     {
         require(controller != Controller(0), "NO_CONTROLLER");
         require(_owner == address(0), "INITIALIZED_ALREADY");
@@ -91,17 +83,18 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         emit WalletSetup(_initialOwner);
     }
 
-    /// @dev Set up this wallet by assigning an controller.
+    /// @dev Set up this wallet by assigning a controller and initial modules.
     ///
     ///      Note that calling this method more than once will throw.
     ///      And this method must be invoked before owner is initialized
     ///
     /// @param _controller The Controller instance.
-    function initController(
-        Controller _controller
+    /// @param _modules The initial modules.
+    function init(
+        Controller _controller,
+        address[]  calldata _modules
         )
         external
-        nonReentrant
     {
         require(
             _owner == address(0) &&
@@ -111,6 +104,11 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         );
 
         controller = _controller;
+
+        ModuleRegistry moduleRegistry = controller.moduleRegistry();
+        for (uint i = 0; i < _modules.length; i++) {
+            addModuleInternal(_modules[i], moduleRegistry);
+        }
     }
 
     function owner()
@@ -125,7 +123,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function setOwner(address newOwner)
         external
         override
-        nonReentrant
         onlyFromModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
@@ -137,7 +134,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
 
     function setController(Controller newController)
         external
-        nonReentrant
         onlyFromModule
     {
         require(newController != controller, "SAME_CONTROLLER");
@@ -151,7 +147,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         override
         onlyFromFactoryOrModule
     {
-        addModuleInternal(_module);
+        addModuleInternal(_module, controller.moduleRegistry());
     }
 
     function removeModule(address _module)
@@ -209,13 +205,8 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         onlyFromFactoryOrModule
         returns (bytes memory returnData)
     {
-        require(
-            !controller.moduleRegistry().isModuleRegistered(to),
-            "TRANSACT_ON_MODULE_DISALLOWED"
-        );
-
         bool success;
-        (success, returnData) = nonReentrantCall(mode, to, value, data);
+        (success, returnData) = _call(mode, to, value, data);
 
         if (!success) {
             assembly {
@@ -223,16 +214,15 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
                 revert(0, returndatasize())
             }
         }
-        emit Transacted(msg.sender, to, value, data);
     }
 
-    function addModuleInternal(address _module)
+    function addModuleInternal(address _module, ModuleRegistry moduleRegistry)
         internal
     {
         require(_module != address(0), "NULL_MODULE");
         require(modules[_module] == false, "MODULE_EXISTS");
         require(
-            controller.moduleRegistry().isModuleEnabled(_module),
+            moduleRegistry.isModuleEnabled(_module),
             "INVALID_MODULE"
         );
         modules[_module] = true;
@@ -263,16 +253,13 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         }
     }
 
-    // This call is introduced to support reentrany check.
-    // The caller shall NOT have the nonReentrant modifier.
-    function nonReentrantCall(
+    function _call(
         uint8          mode,
         address        target,
         uint           value,
         bytes calldata data
         )
         private
-        nonReentrant
         returns (
             bool success,
             bytes memory returnData

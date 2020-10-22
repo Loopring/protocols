@@ -60,7 +60,7 @@ function toTypedData(metaTx: MetaTx, forwardModuleAddr: string) {
     primaryType: "MetaTx",
     domain: {
       name: "ForwarderModule",
-      version: "1.1.0",
+      version: "1.2.0",
       chainId: new BN(metaTx.chainId),
       verifyingContract: forwardModuleAddr
     },
@@ -118,11 +118,27 @@ export async function executeMetaTx(
   const hash: Buffer = getMetaTxHash(metaTx, ctx.finalCoreModule.address);
   const signature = sign(options.owner, hash);
 
-  const tx = await ctx.finalCoreModule.executeMetaTx(metaTx, signature, {
-    from,
-    gas,
-    gasPrice: gasPrice.toString()
-  });
+  const tx = await ctx.finalCoreModule.executeMetaTx(
+    metaTx.from,
+    metaTx.to,
+    metaTx.nonce,
+    metaTx.txAwareHash,
+    metaTx.gasToken,
+    metaTx.gasPrice,
+    metaTx.gasLimit,
+    metaTx.data,
+    signature,
+    {
+      from,
+      gas,
+      gasPrice: gasPrice.toString()
+    }
+  );
+
+  console.log(
+    "\x1b[44m%s\x1b[0m",
+    "[executeMetaTx] Gas used: " + tx.receipt.gasUsed
+  );
 
   // console.log("tx:", tx);
   // console.log("tx.reciept.logs:", tx.receipt.logs);

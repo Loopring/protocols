@@ -21,17 +21,15 @@ contract FinalSecurityModule is
 
     constructor(
         ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _recoveryPendingPeriod,
-        uint           _inheritWaitingPeriod,
-        uint           _whitelistDelayPeriod
+        address        _trustedForwarder
         )
         SecurityModule(_trustedForwarder)
-        GuardianModule(_recoveryPendingPeriod)
-        InheritanceModule(_inheritWaitingPeriod)
-        WhitelistModule(_whitelistDelayPeriod)
+        GuardianModule()
+        InheritanceModule()
+        WhitelistModule()
     {
         controller_ = _controller;
+        updateControllerCache();
     }
 
     function controller()

@@ -14,7 +14,7 @@ abstract contract InheritanceModule is SecurityModule
     using AddressUtil   for address;
     using SignatureUtil for bytes32;
 
-    uint public inheritWaitingPeriod;
+    uint public constant INHERIT_WAITING_PERIOD = 365 days + TOUCH_GRACE_PERIOD;
 
     event Inherited(
         address indexed wallet,
@@ -27,19 +27,12 @@ abstract contract InheritanceModule is SecurityModule
         address         inheritor
     );
 
-    constructor(uint _inheritWaitingPeriod)
-    {
-        require(_inheritWaitingPeriod > 0, "INVALID_DELAY");
-
-        inheritWaitingPeriod = _inheritWaitingPeriod;
-    }
-
     function inheritor(address wallet)
         public
         view
         returns (address _inheritor, uint lastActive)
     {
-        return controller().securityStore().inheritor(wallet);
+        return controllerCache.securityStore.inheritor(wallet);
     }
 
     function inherit(
@@ -47,21 +40,17 @@ abstract contract InheritanceModule is SecurityModule
         address newOwner
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         eligibleWalletOwner(newOwner)
         notWalletOwner(wallet, newOwner)
     {
-        (address _inheritor, uint lastActive) = controller().securityStore().inheritor(wallet);
+        (address _inheritor, uint lastActive) = controllerCache.securityStore.inheritor(wallet);
         require(logicalSender() == _inheritor, "NOT_ALLOWED");
 
-        require(lastActive > 0 && block.timestamp >= lastActive + inheritWaitingPeriod, "NEED_TO_WAIT");
+        require(lastActive > 0 && block.timestamp >= lastActive + INHERIT_WAITING_PERIOD, "NEED_TO_WAIT");
 
-        SecurityStore securityStore = controller().securityStore();
-
-        securityStore.removeAllGuardians(wallet);
-
-        securityStore.setInheritor(wallet, address(0));
+        controllerCache.securityStore.removeAllGuardians(wallet);
+        controllerCache.securityStore.setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(newOwner);
 
         // solium-disable-next-line
@@ -75,15 +64,13 @@ abstract contract InheritanceModule is SecurityModule
         address _inheritor
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        require(controller().walletRegistry().isWalletRegistered(_inheritor), "NOT_A_WALLET");
-        (address existingInheritor,) = controller().securityStore().inheritor(wallet);
+        (address existingInheritor,) = controllerCache.securityStore.inheritor(wallet);
         require(existingInheritor != _inheritor, "SAME_INHERITOR");
 
-        controller().securityStore().setInheritor(wallet, _inheritor);
+        controllerCache.securityStore.setInheritor(wallet, _inheritor);
         emit InheritorChanged(wallet, _inheritor);
     }
 }

@@ -25,6 +25,7 @@ contract AddOfficialGuardianModule is BaseModule {
         )
     {
         controller_ = _controller;
+        updateControllerCache();
         officialGuardian = _officialGuardian;
         officialGuardianGroup = _officialGuardianGroup;
     }
@@ -52,7 +53,7 @@ contract AddOfficialGuardianModule is BaseModule {
     {
         address payable wallet = msg.sender;
 
-        SecurityStore ss = controller().securityStore();
+        SecurityStore ss = controllerCache.securityStore;
         require(
             ss.numGuardiansWithPending(wallet) == 0,
             "NOT_THE_FIRST_GUARDIAN"

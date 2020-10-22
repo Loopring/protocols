@@ -5,9 +5,7 @@ pragma solidity ^0.7.0;
 import "../base/Controller.sol";
 import "../iface/PriceOracle.sol";
 import "../lib/Claimable.sol";
-import "../stores/DappAddressStore.sol";
 import "../stores/HashStore.sol";
-import "../stores/NonceStore.sol";
 import "../stores/QuotaStore.sol";
 import "../stores/SecurityStore.sol";
 import "../stores/WhitelistStore.sol";
@@ -21,12 +19,9 @@ import "../thirdparty/ens/BaseENSManager.sol";
 contract ControllerImpl is Claimable, Controller
 {
     address             public collectTo;
-    uint                public defaultLockPeriod;
     BaseENSManager      public ensManager;
     PriceOracle         public priceOracle;
-    DappAddressStore    public dappAddressStore;
     HashStore           public hashStore;
-    NonceStore          public nonceStore;
     QuotaStore          public quotaStore;
     SecurityStore       public securityStore;
     WhitelistStore      public whitelistStore;
@@ -43,8 +38,6 @@ contract ControllerImpl is Claimable, Controller
 
     constructor(
         ModuleRegistry    _moduleRegistry,
-        WalletRegistry    _walletRegistry,
-        uint              _defaultLockPeriod,
         address           _collectTo,
         BaseENSManager    _ensManager,
         PriceOracle       _priceOracle,
@@ -52,9 +45,6 @@ contract ControllerImpl is Claimable, Controller
         )
     {
         moduleRegistry = _moduleRegistry;
-        walletRegistry = _walletRegistry;
-
-        defaultLockPeriod = _defaultLockPeriod;
 
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;
@@ -65,9 +55,7 @@ contract ControllerImpl is Claimable, Controller
     }
 
     function initStores(
-        DappAddressStore  _dappAddressStore,
         HashStore         _hashStore,
-        NonceStore        _nonceStore,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore
@@ -75,20 +63,14 @@ contract ControllerImpl is Claimable, Controller
         external
         onlyOwner
     {
-        require(
-            address(_dappAddressStore) != address(0),
-            "ZERO_ADDRESS"
-        );
-
         // Make sure this function can only invoked once.
         require(
-            address(dappAddressStore) == address(0),
-            "INITIALIZED_ALREADY"
+            address(hashStore) == address(0) &&
+            address(_hashStore) != address(0),
+            "INVALID_INIT"
         );
 
-        dappAddressStore = _dappAddressStore;
         hashStore = _hashStore;
-        nonceStore = _nonceStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
@@ -123,5 +105,4 @@ contract ControllerImpl is Claimable, Controller
         priceOracle = _priceOracle;
         emit AddressChanged("PriceOracle", address(priceOracle));
     }
-
 }

@@ -7,13 +7,12 @@ import "../../base/BaseWallet.sol";
 import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
 import "../../lib/OwnerManagable.sol";
-import "../../lib/SimpleProxy.sol";
-import "../../lib/ReentrancyGuard.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../thirdparty/Create2.sol";
 import "../../thirdparty/ens/BaseENSManager.sol";
 import "../../thirdparty/ens/ENS.sol";
+import "../../thirdparty/proxy/CloneFactory.sol";
 import "../base/MetaTxAware.sol";
 import "../ControllerImpl.sol";
 
@@ -26,7 +25,7 @@ import "../ControllerImpl.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactory is ReentrancyGuard, MetaTxAware
+contract WalletFactory is MetaTxAware
 {
     using AddressUtil for address;
     using SignatureUtil for bytes32;
@@ -48,6 +47,16 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
     ControllerImpl public controller;
     bytes32        public DOMAIN_SEPERATOR;
 
+    struct ControllerCache
+    {
+        WalletRegistry      walletRegistry;
+        BaseENSManager      ensManager;
+        address             ensResolver;
+        ENSReverseRegistrar ensReverseRegistrar;
+    }
+
+    ControllerCache public controllerCache;
+
     constructor(
         ControllerImpl _controller,
         address        _walletImplementation,
@@ -56,9 +65,10 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         MetaTxAware(address(0))
     {
         DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("WalletFactory", "1.1.0", address(this))
+            EIP712.Domain("WalletFactory", "1.2.0", address(this))
         );
         controller = _controller;
+        updateControllerCache();
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
     }
@@ -79,15 +89,16 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         uint[]    calldata salts
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
     {
+        address _walletImplementation = walletImplementation;
         for (uint i = 0; i < salts.length; i++) {
-            createBlank_(modules, salts[i]);
+            createBlank_(_walletImplementation, modules, salts[i]);
         }
     }
 
     /// @dev Create a new wallet by deploying a proxy.
+    ///      This function supports tx-aware hash.
     /// @param _owner The wallet's owner.
     /// @param _salt A salt to adjust address.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
@@ -107,8 +118,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         )
         external
         payable
-        nonReentrant
-        // txAwareHashNotAllowed()
         returns (address _wallet)
     {
         validateRequest_(
@@ -134,6 +143,7 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
     }
 
     /// @dev Create a new wallet by using a pre-deployed blank.
+    ///      This function supports tx-aware hash.
     /// @param _owner The wallet's owner.
     /// @param _blank The address of the blank to use.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
@@ -153,8 +163,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         )
         external
         payable
-        nonReentrant
-        // txAwareHashNotAllowed()
         returns (address _wallet)
     {
         validateRequest_(
@@ -187,7 +195,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         bool            _ensRegisterReverse
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
     {
         registerENS_(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
@@ -209,12 +216,22 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         return computeAddress_(address(0), salt);
     }
 
-    function getSimpleProxyCreationCode()
+    function getWalletCreationCode()
         public
-        pure
+        view
         returns (bytes memory)
     {
-        return type(SimpleProxy).creationCode;
+        return CloneFactory.getByteCode(walletImplementation);
+    }
+
+    function updateControllerCache()
+        public
+    {
+        ControllerImpl _controller = controller;
+        controllerCache.walletRegistry = _controller.walletRegistry();
+        controllerCache.ensManager = controller.ensManager();
+        controllerCache.ensResolver = controllerCache.ensManager.ensResolver();
+        controllerCache.ensReverseRegistrar = controllerCache.ensManager.getENSReverseRegistrar();
     }
 
     // ---- internal functions ---
@@ -234,13 +251,14 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
     }
 
     function createBlank_(
+        address   _walletImplementation,
         address[] calldata modules,
         uint      salt
         )
         internal
         returns (address blank)
     {
-        blank = deploy_(modules, address(0), salt);
+        blank = deploy_(_walletImplementation, modules, address(0), salt);
         bytes32 version = keccak256(abi.encode(modules));
         blanks[blank] = version;
 
@@ -255,10 +273,11 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         internal
         returns (address wallet)
     {
-        return deploy_(modules, owner, salt);
+        return deploy_(walletImplementation, modules, owner, salt);
     }
 
     function deploy_(
+        address            _walletImplementation,
         address[] calldata modules,
         address            owner,
         uint               salt
@@ -268,17 +287,10 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
     {
         wallet = Create2.deploy(
             keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
-            type(SimpleProxy).creationCode
+            CloneFactory.getByteCode(_walletImplementation)
         );
 
-        SimpleProxy proxy = SimpleProxy(wallet);
-        proxy.setImplementation(walletImplementation);
-
-        BaseWallet w = BaseWallet(wallet);
-        w.initController(controller);
-        for (uint i = 0; i < modules.length; i++) {
-            w.addModule(modules[i]);
-        }
+        BaseWallet(wallet).init(controller, modules);
     }
 
     function validateRequest_(
@@ -305,12 +317,11 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
             _ensRegisterReverse,
             keccak256(abi.encode(_modules))
         );
+        // txAwareHash replay attack is impossible because the same wallet can only be created once.
+        // bytes32 txAwareHash_ = txAwareHash();
+        // require(txAwareHash_ == 0 || txAwareHash_ == signHash, "INVALID_TX_AWARE_HASH");
 
         bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
-
-        bytes32 txAwareHash_ = txAwareHash();
-        require(txAwareHash_ == 0 || txAwareHash_ == signHash, "INVALID_TX_AWARE_HASH");
-
         require(signHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
     }
 
@@ -325,7 +336,6 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
         private
     {
         BaseWallet(_wallet.toPayable()).initOwner(_owner);
-        controller.walletRegistry().registerWallet(_wallet);
 
         if (bytes(_ensLabel).length > 0) {
             registerENS_(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
@@ -346,7 +356,7 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
     {
         return Create2.computeAddress(
             keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
-            type(SimpleProxy).creationCode
+            CloneFactory.getByteCode(walletImplementation)
         );
     }
 
@@ -365,19 +375,19 @@ contract WalletFactory is ReentrancyGuard, MetaTxAware
             "INVALID_LABEL_OR_SIGNATURE"
         );
 
-        BaseENSManager ensManager = controller.ensManager();
+        BaseENSManager ensManager = controllerCache.ensManager;
         ensManager.register(wallet, owner, ensLabel, ensApproval);
 
         if (ensRegisterReverse) {
             bytes memory data = abi.encodeWithSelector(
                 ENSReverseRegistrar.claimWithResolver.selector,
                 address(0), // the owner of the reverse record
-                ensManager.ensResolver()
+                controllerCache.ensResolver
             );
 
             Wallet(wallet).transact(
                 uint8(1),
-                address(ensManager.getENSReverseRegistrar()),
+                address(controllerCache.ensReverseRegistrar),
                 0, // value
                 data
             );

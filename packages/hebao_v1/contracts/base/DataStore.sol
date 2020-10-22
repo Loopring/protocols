@@ -17,7 +17,12 @@ abstract contract DataStore
 {
     modifier onlyWalletModule(address wallet)
     {
-        require(Wallet(wallet).hasModule(msg.sender), "UNAUTHORIZED");
+        requireWalletModule(wallet);
         _;
+    }
+
+    function requireWalletModule(address wallet) view internal
+    {
+        require(Wallet(wallet).hasModule(msg.sender), "UNAUTHORIZED");
     }
 }
