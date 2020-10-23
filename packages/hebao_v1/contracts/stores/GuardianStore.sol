@@ -13,7 +13,7 @@ import "../thirdparty/SafeCast.sol";
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 
-contract GuardianStore is DataStore
+abstract contract GuardianStore is DataStore
 {
     using MathUint      for uint;
     using SafeCast      for uint;
