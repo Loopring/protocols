@@ -241,14 +241,16 @@ abstract contract GuardianModule is SecurityModule
     {
         require(guardian != wallet, "INVALID_ADDRESS");
         require(guardian != address(0), "ZERO_ADDRESS");
-        uint numGuardians = controllerCache.securityStore.numGuardiansWithPending(wallet);
+
+        SecurityStore ss = controllerCache.securityStore;
+        uint numGuardians = ss.numGuardiansWithPending(wallet);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         uint effectiveTime = block.timestamp;
         if (numGuardians >= 2) {
             effectiveTime = block.timestamp + pendingPeriod;
         }
-        controllerCache.securityStore.addGuardian(wallet, guardian, effectiveTime);
+        ss.addGuardian(wallet, guardian, effectiveTime);
         emit GuardianAdded(wallet, guardian, effectiveTime);
     }
 
