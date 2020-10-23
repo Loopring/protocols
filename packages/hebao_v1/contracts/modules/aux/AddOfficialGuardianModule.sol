@@ -44,7 +44,7 @@ contract AddOfficialGuardianModule is BaseModule {
 
         SecurityStore ss = controllerCache.securityStore;
         require(
-            ss.numGuardiansWithPending(wallet) == 0,
+            ss.numGuardians(wallet, true /* with pending */) == 0,
             "NOT_THE_FIRST_GUARDIAN"
         );
 

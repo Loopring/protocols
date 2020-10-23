@@ -9,16 +9,14 @@ import "../stores/Data.sol";
 import "../thirdparty/SafeCast.sol";
 
 
-/// @title SecurityStore
+/// @title GuardianStore
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
+
 contract GuardianStore is DataStore
 {
-    using MathUint for uint;
-    using SafeCast for uint;
+    using MathUint      for uint;
+    using SafeCast      for uint;
 
     struct Wallet
     {
@@ -101,11 +99,16 @@ contract GuardianStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-        // Wallet storage w = wallets[wallet];
-        // for (uint i = 0; i < w.guardians.length; i++) {
-        //     delete w.guardianIdx[w.guardians[i].addr];
-        // }
-        // delete w.guardians;
+        Wallet storage w = wallets[wallet];
+        for (uint i = 0; i < w.guardians.length; i++) {
+            Data.Guardian memory g = w.guardians[i];
+            if (_isPendingExpire(g)) {
+                w.guardians[i].validUntil = 0;
+            }
+            if (_isPendingActivation(g)) {
+                w.guardians[i].validSince = 0;
+            }
+        }
     }
 
     function addGuardian(
@@ -135,10 +138,30 @@ contract GuardianStore is DataStore
             Data.Guardian memory g = w.guardians[pos - 1];
             if (_isPendingExpire(g)) {
                 w.guardians[pos - 1].validUntil = 0;
-            } else if (_isExpired(g)) {
-                w.guardians[pos - 1].validUntil = 0;
+            } else {
                 w.guardians[pos - 1].validSince = validSince.toUint40();
+                w.guardians[pos - 1].validUntil = 0;
             }
+        }
+    }
+
+    function removeGuardian(
+        address wallet,
+        address addr,
+        uint    validUntil
+        )
+        public
+        onlyWalletModule(wallet)
+    {
+        Wallet storage w = wallets[wallet];
+        uint pos = w.guardianIdx[addr];
+        require(pos > 0, "GUARDIAN_NOT_EXISTS");
+
+        Data.Guardian memory g = w.guardians[pos - 1];
+        if (_isPendingActivation(g)) {
+            w.guardians[pos - 1].validSince = 0;
+        } else {
+            w.guardians[pos - 1].validUntil = validUntil.toUint40();
         }
     }
 

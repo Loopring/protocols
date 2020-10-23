@@ -15,9 +15,7 @@ import "./SecurityStore_1_0_2.sol";
 ///      removes itself.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
+
 contract UpgraderModule is BaseModule {
     ControllerImpl private controller_;
 

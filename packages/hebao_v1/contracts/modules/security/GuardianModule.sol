@@ -159,7 +159,7 @@ abstract contract GuardianModule is SecurityModule
         if (_logicalSender == wallet ||
             _logicalSender == Wallet(wallet).owner()) {
             _lockWallet(wallet, address(0), true);
-        } else if (controllerCache.securityStore.isGuardian(wallet, _logicalSender)) {
+        } else if (controllerCache.securityStore.isGuardian(wallet, _logicalSender, false)) {
             _lockWallet(wallet, _logicalSender, true);
         } else {
             revert("NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN");
@@ -211,7 +211,7 @@ abstract contract GuardianModule is SecurityModule
             )
         );
 
-        if (controllerCache.securityStore.isGuardianOrPendingAddition(request.wallet, newOwner)) {
+        if (controllerCache.securityStore.isGuardian(request.wallet, newOwner, true)) {
             controllerCache.securityStore.removeGuardian(request.wallet, newOwner, block.timestamp);
         }
 
@@ -243,7 +243,7 @@ abstract contract GuardianModule is SecurityModule
         require(guardian != address(0), "ZERO_ADDRESS");
 
         SecurityStore ss = controllerCache.securityStore;
-        uint numGuardians = ss.numGuardiansWithPending(wallet);
+        uint numGuardians = ss.numGuardians(wallet, true);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         uint effectiveTime = block.timestamp;

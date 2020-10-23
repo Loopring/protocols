@@ -16,9 +16,7 @@ import "../ControllerImpl.sol";
 ///      be useful for all modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
+
 abstract contract BaseModule is Module
 {
     using MathUint      for uint;
