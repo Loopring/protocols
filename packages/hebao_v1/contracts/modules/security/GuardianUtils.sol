@@ -35,28 +35,19 @@ library GuardianUtils
         // Calculate total group sizes
         Data.Guardian[] memory allGuardians = securityStore.guardians(wallet);
 
-        bool walletOwnerSigned = false;
-        address walletOwner = Wallet(wallet).owner();
-
-        uint numSigners = allGuardians.length;
-        uint numGuardianApprovals = signers.length;
-
         address lastSigner;
+        bool walletOwnerSigned = false;
+        address owner = Wallet(wallet).owner();
         for (uint i = 0; i < signers.length; i++) {
             // Check for duplicates
             require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
             lastSigner = signers[i];
 
-            if (signers[i] == walletOwner) {
+            if (signers[i] == owner) {
                 walletOwnerSigned = true;
             } else {
                 require(isWalletGuardian(allGuardians, signers[i]), "SIGNER_NOT_GUARDIAN");
             }
-        }
-
-        if (walletOwnerSigned) {
-            numSigners += 1;
-            numGuardianApprovals -= 1;
         }
 
         // Check owner requirements
@@ -66,7 +57,13 @@ library GuardianUtils
             require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
         }
 
-        return hasMajority(numGuardianApprovals, numSigners);
+        uint numExtendedSigners = allGuardians.length;
+        uint numGuardianApprovals = signers.length;
+        if (walletOwnerSigned) {
+            numExtendedSigners += 1;
+        }
+
+        return hasMajority(numGuardianApprovals, numExtendedSigners);
     }
 
     function isWalletGuardian(
@@ -86,13 +83,13 @@ library GuardianUtils
     }
 
     function hasMajority(
-        uint numGuardianApprovals,
-        uint numSigners
+        uint signed,
+        uint total
         )
-        internal
+        private
         pure
         returns (bool)
     {
-        return numSigners > 0 && numGuardianApprovals >= (numSigners >> 1) + 1;
+        return total > 0 && signed >= (total >> 1) + 1;
     }
 }
