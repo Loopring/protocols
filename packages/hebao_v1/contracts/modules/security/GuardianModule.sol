@@ -173,13 +173,14 @@ abstract contract GuardianModule is SecurityModule
             )
         );
 
-        if (controllerCache.securityStore.isGuardian(request.wallet, newOwner, true)) {
-            controllerCache.securityStore.removeGuardian(request.wallet, newOwner, block.timestamp);
+        SecurityStore ss = controllerCache.securityStore;
+        if (ss.isGuardian(request.wallet, newOwner, true)) {
+            ss.removeGuardian(request.wallet, newOwner, block.timestamp);
         }
 
         Wallet(request.wallet).setOwner(newOwner);
         _lockWallet(request.wallet, address(this), false);
-        // TODO(kongliang): cancel or pending guardian addition and removal.
+        ss.cancelPendingGuardians(request.wallet);
 
         emit Recovered(request.wallet, newOwner);
     }

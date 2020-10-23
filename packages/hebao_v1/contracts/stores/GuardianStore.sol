@@ -95,7 +95,7 @@ abstract contract GuardianStore is DataStore
         delete w.guardians;
     }
 
-    function removeAllPendingGuardians(address wallet)
+    function cancelPendingGuardians(address wallet)
         public
         onlyWalletModule(wallet)
     {
@@ -109,6 +109,7 @@ abstract contract GuardianStore is DataStore
                 w.guardians[i].validSince = 0;
             }
         }
+        _cleanExpiredGuardians(wallet);
     }
 
     function addGuardian(
