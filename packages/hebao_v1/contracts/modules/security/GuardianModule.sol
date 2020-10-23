@@ -70,8 +70,8 @@ abstract contract GuardianModule is SecurityModule
             abi.encode(
                 ADD_GUARDIAN_TYPEHASH,
                 request.wallet,
-                address(0),
-                request.validUntil
+                request.validUntil,
+                address(0)
             )
         );
 
