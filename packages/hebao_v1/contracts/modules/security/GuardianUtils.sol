@@ -34,6 +34,7 @@ library GuardianUtils
 
         // Calculate total group sizes
         Data.Guardian[] memory allGuardians = securityStore.guardians(wallet);
+        require(allGuardians.length > 0, "NO_GUARDIANS");
 
         address lastSigner;
         bool walletOwnerSigned = false;
