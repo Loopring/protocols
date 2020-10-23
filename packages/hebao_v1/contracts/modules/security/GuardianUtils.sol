@@ -59,6 +59,7 @@ library GuardianUtils
 
         uint numExtendedSigners = allGuardians.length;
         uint numGuardianApprovals = signers.length;
+
         if (walletOwnerSigned) {
             numExtendedSigners += 1;
         }
@@ -86,7 +87,7 @@ library GuardianUtils
         uint signed,
         uint total
         )
-        private
+        internal
         pure
         returns (bool)
     {
