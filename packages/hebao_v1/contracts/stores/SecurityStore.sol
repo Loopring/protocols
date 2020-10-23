@@ -155,42 +155,22 @@ contract SecurityStore is DataStore
         Wallet storage w = wallets[wallet];
 
         uint pos = w.guardianIdx[guardianAddr];
-        require(pos == 0, "GUARDIAN_EXISTS");
-
-        // Add the new guardian
-        Data.Guardian memory g = Data.Guardian(
-            guardianAddr,
-            validSince.toUint40(),
-            uint40(0)
-        );
-        w.guardians.push(g);
-        w.guardianIdx[guardianAddr] = w.guardians.length;
-    }
-
-    function cancelGuardianAddition(
-        address wallet,
-        address guardianAddr
-        )
-        public
-        onlyWalletModule(wallet)
-    {
-        cleanRemovedGuardians(wallet);
-
-        Wallet storage w = wallets[wallet];
-        uint idx = w.guardianIdx[guardianAddr];
-        require(idx > 0, "GUARDIAN_NOT_EXISTS");
-        require(
-            isGuardianPendingAddition(w.guardians[idx - 1]),
-            "NOT_PENDING_ADDITION"
-        );
-
-        Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
-        if (guardianAddr != lastGuardian.addr) {
-            w.guardians[idx - 1] = lastGuardian;
-            w.guardianIdx[lastGuardian.addr] = idx;
+        if (pos == 0) {
+            // Add the new guardian
+            Data.Guardian memory g = Data.Guardian(
+                guardianAddr,
+                validSince.toUint40(),
+                uint40(0)
+            );
+            w.guardians.push(g);
+            w.guardianIdx[guardianAddr] = w.guardians.length;
+        } else {
+            require(
+                isGuardianPendingRemoval(w.guardians[pos - 1]),
+                "NOT_PENDING_REMOVAL"
+            );
+            w.guardians[pos - 1].validUntil = 0;
         }
-        w.guardians.pop();
-        delete w.guardianIdx[guardianAddr];
     }
 
     function removeGuardian(
@@ -207,7 +187,17 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardians[idx - 1].validUntil = validUntil.toUint40();
+        if (isGuardianPendingAddition(w.guardians[idx - 1])) {
+            Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
+            if (guardianAddr != lastGuardian.addr) {
+                w.guardians[idx - 1] = lastGuardian;
+                w.guardianIdx[lastGuardian.addr] = idx;
+            }
+            w.guardians.pop();
+            delete w.guardianIdx[guardianAddr];
+        } else {
+            w.guardians[idx - 1].validUntil = validUntil.toUint40();
+        }
     }
 
     function removeAllGuardians(address wallet)
@@ -219,27 +209,6 @@ contract SecurityStore is DataStore
             delete w.guardianIdx[w.guardians[i].addr];
         }
         delete w.guardians;
-    }
-
-    function cancelGuardianRemoval(
-        address wallet,
-        address guardianAddr
-        )
-        public
-        onlyWalletModule(wallet)
-    {
-        cleanRemovedGuardians(wallet);
-
-        Wallet storage w = wallets[wallet];
-        uint idx = w.guardianIdx[guardianAddr];
-        require(idx > 0, "GUARDIAN_NOT_EXISTS");
-
-        require(
-            isGuardianPendingRemoval(w.guardians[idx - 1]),
-            "NOT_PENDING_REMOVAL"
-        );
-
-        w.guardians[idx - 1].validUntil = 0;
     }
 
     function isLocked(address wallet)
@@ -328,26 +297,6 @@ contract SecurityStore is DataStore
         wallets[wallet].lastActive = uint64(block.timestamp);
     }
 
-    function cleanRemovedGuardians(address wallet)
-        private
-    {
-        Wallet storage w = wallets[wallet];
-
-        for (int i = int(w.guardians.length) - 1; i >= 0; i--) {
-            Data.Guardian memory g = w.guardians[uint(i)];
-            if (isGuardianExpired(g)) {
-                Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
-
-                if (g.addr != lastGuardian.addr) {
-                    w.guardians[uint(i)] = lastGuardian;
-                    w.guardianIdx[lastGuardian.addr] = uint(i) + 1;
-                }
-                w.guardians.pop();
-                delete w.guardianIdx[g.addr];
-            }
-        }
-    }
-
     function isGuardianActive(Data.Guardian memory guardian)
         private
         view
@@ -381,4 +330,25 @@ contract SecurityStore is DataStore
         return guardian.validUntil > 0 &&
             guardian.validUntil <= block.timestamp;
     }
+
+    function cleanRemovedGuardians(address wallet)
+        private
+    {
+        Wallet storage w = wallets[wallet];
+
+        for (int i = int(w.guardians.length) - 1; i >= 0; i--) {
+            Data.Guardian memory g = w.guardians[uint(i)];
+            if (isGuardianExpired(g)) {
+                Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
+
+                if (g.addr != lastGuardian.addr) {
+                    w.guardians[uint(i)] = lastGuardian;
+                    w.guardianIdx[lastGuardian.addr] = uint(i) + 1;
+                }
+                w.guardians.pop();
+                delete w.guardianIdx[g.addr];
+            }
+        }
+    }
+
 }
