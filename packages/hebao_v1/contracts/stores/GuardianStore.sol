@@ -119,7 +119,9 @@ contract GuardianStore is DataStore
         public
         onlyWalletModule(wallet)
     {
+        require(validSince > 0, "INVALID_VALID_SINCE");
         require(addr != address(0), "ZERO_ADDRESS");
+
         Wallet storage w = wallets[wallet];
         uint pos = w.guardianIdx[addr];
 
@@ -136,9 +138,10 @@ contract GuardianStore is DataStore
             _cleanExpiredGuardians(wallet);
         } else {
             Data.Guardian memory g = w.guardians[pos - 1];
-            if (_isPendingExpire(g)) {
-                w.guardians[pos - 1].validUntil = 0;
-            } else {
+            bool isGuardianActive = _isActivated(g) && !_isExpired(g);
+
+            // If this wallet is active, do nothing.
+            if (!isGuardianActive) {
                 w.guardians[pos - 1].validSince = validSince.toUint40();
                 w.guardians[pos - 1].validUntil = 0;
             }
@@ -153,14 +156,20 @@ contract GuardianStore is DataStore
         public
         onlyWalletModule(wallet)
     {
+        require(validUntil > 0, "INVALID_VALID_UNTIL");
+        require(addr != address(0), "ZERO_ADDRESS");
+
         Wallet storage w = wallets[wallet];
         uint pos = w.guardianIdx[addr];
         require(pos > 0, "GUARDIAN_NOT_EXISTS");
 
         Data.Guardian memory g = w.guardians[pos - 1];
+
         if (_isPendingActivation(g)) {
             w.guardians[pos - 1].validSince = 0;
-        } else {
+        }
+
+        if (!_isExpired(g)) {
             w.guardians[pos - 1].validUntil = validUntil.toUint40();
         }
     }
@@ -171,7 +180,7 @@ contract GuardianStore is DataStore
         address wallet,
         address addr
         )
-        internal
+        private
         view
         returns (Data.Guardian memory)
     {
@@ -183,7 +192,7 @@ contract GuardianStore is DataStore
     }
 
     function _isActivated(Data.Guardian memory guardian)
-        internal
+        private
         view
         returns (bool)
     {
@@ -192,7 +201,7 @@ contract GuardianStore is DataStore
     }
 
     function _isPendingActivation(Data.Guardian memory guardian)
-        internal
+        private
         view
         returns (bool)
     {
@@ -200,7 +209,7 @@ contract GuardianStore is DataStore
     }
 
     function _isExpired(Data.Guardian memory guardian)
-        internal
+        private
         view
         returns (bool)
     {
@@ -209,7 +218,7 @@ contract GuardianStore is DataStore
     }
 
     function _isPendingExpire(Data.Guardian memory guardian)
-        internal
+        private
         view
         returns (bool)
     {
