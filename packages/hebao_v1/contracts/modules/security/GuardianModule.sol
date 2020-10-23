@@ -72,8 +72,8 @@ abstract contract GuardianModule is SecurityModule
             abi.encode(
                 ADD_GUARDIAN_TYPEHASH,
                 request.wallet,
-                address(0),
                 request.validUntil,
+                address(0),
                 group
             )
         );
@@ -109,7 +109,7 @@ abstract contract GuardianModule is SecurityModule
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerAllowed,
+            GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
                 ADD_GUARDIAN_TYPEHASH,
@@ -144,7 +144,7 @@ abstract contract GuardianModule is SecurityModule
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerAllowed,
+            GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
                 REMOVE_GUARDIAN_TYPEHASH,
@@ -182,7 +182,11 @@ abstract contract GuardianModule is SecurityModule
             txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
-            abi.encode(UNLOCK_TYPEHASH)
+            abi.encode(
+                UNLOCK_TYPEHASH,
+                request.wallet,
+                request.validUntil
+            )
         );
 
         _lockWallet(request.wallet, address(this), false);
