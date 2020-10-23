@@ -121,7 +121,7 @@ contract("WhitelistModule", (accounts: string[]) => {
       // Should be effective WA
       assert(
         await isWhitelisted(ctx, wallet, addr),
-        "should be whitelisted WA"
+        "should be whitelisted immediately"
       );
     }
   );
