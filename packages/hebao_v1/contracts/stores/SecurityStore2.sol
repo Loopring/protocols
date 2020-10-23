@@ -7,7 +7,7 @@ import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
 import "../stores/Data.sol";
 import "../thirdparty/SafeCast.sol";
-
+import "./GuardianStore.sol";
 
 /// @title SecurityStore
 ///
@@ -15,119 +15,96 @@ import "../thirdparty/SafeCast.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract SecurityStore2 is DataStore
+contract SecurityStore2 is GuardianStore
 {
     using MathUint for uint;
     using SafeCast for uint;
 
-    struct Wallet
-    {
-        address    inheritor;
-        uint32     inheritWaitingPeriod;
-        uint64     lastActive; // the latest timestamp the owner is considered to be active
-        bool       locked;
+    constructor() GuardianStore() {}
 
-        Data.Guardian[]            guardians;
-        mapping (address => uint)  guardianIdx;
-    }
-
-    mapping (address => Wallet) public wallets;
-
-    constructor() DataStore() {}
-
-    function isGuardian(
-        address wallet,
-        address addr,
-        bool    includePendingActive
-        )
+    function isLocked(address wallet)
         public
         view
         returns (bool)
     {
-        Data.Guardian memory g = _getGuardian(wallet, addr);
-        return g.addr != address(0) &&
-            (_isActive(g) || includePendingActive && _isPendingActive(g));
+        return wallets[wallet].locked;
     }
 
-    function guardians(
+    function setLock(
         address wallet,
-        bool    includePendingActive
+        bool    locked
         )
         public
-        view
-        returns (Data.Guardian[] memory _guardians)
+        onlyWalletModule(wallet)
     {
-        Wallet storage w = wallets[wallet];
-        _guardians = new Data.Guardian[](w.guardians.length);
-        uint index = 0;
-        for (uint i = 0; i < w.guardians.length; i++) {
-            Data.Guardian memory g = w.guardians[i];
-            if (_isActive(g) || includePendingActive && _isPendingActive(g)) {
-                _guardians[index] = g;
-                index++;
-            }
-        }
-        assembly { mstore(_guardians, index) }
+        wallets[wallet].locked = locked;
     }
 
-    function numGuardians(
-        address wallet,
-        bool    includePendingActive
-        )
+    function lastActive(address wallet)
         public
         view
-        returns (uint count)
+        returns (uint)
     {
-        Wallet storage w = wallets[wallet];
-        for (uint i = 0; i < w.guardians.length; i++) {
-            Data.Guardian memory g = w.guardians[i];
-            if (_isActive(g) || includePendingActive && _isPendingActive(g)) {
-                count++;
-            }
-        }
+        return wallets[wallet].lastActive;
     }
 
-    // ---- internal functions ---
+    function touchLastActive(address wallet)
+        public
+        onlyWalletModule(wallet)
+    {
+        wallets[wallet].lastActive = uint64(block.timestamp);
+    }
 
-    function _getGuardian(
+    function touchLastActiveWhenRequired(
         address wallet,
-        address addr
+        uint    minInternval
         )
-        internal
-        view
-        returns (Data.Guardian memory)
+        public
     {
-        Wallet storage w = wallets[wallet];
-        uint index = w.guardianIdx[addr];
-        if (index > 0) {
-            return w.guardians[index-1];
+        if (block.timestamp > lastActive(wallet) + minInternval) {
+            requireWalletModule(wallet);
+            wallets[wallet].lastActive = uint64(block.timestamp);
         }
     }
 
-    function _isActive(Data.Guardian memory guardian)
-        internal
+    function inheritor(address wallet)
+        public
         view
-        returns (bool)
+        returns (
+            address _who,
+            uint    _effectiveTimestamp
+        )
     {
-        return guardian.validSince > 0 &&
-            guardian.validSince <= block.timestamp &&
-            !_isExpired(guardian);
+        address _inheritor = wallets[wallet].inheritor;
+        if (_inheritor == address(0)) {
+             return (address(0), 0);
+        }
+
+        uint32 _inheritWaitingPeriod = wallets[wallet].inheritWaitingPeriod;
+        if (_inheritWaitingPeriod == 0) {
+            return (address(0), 0);
+        }
+
+        uint64 _lastActive = wallets[wallet].lastActive;
+
+        if (_lastActive == 0) {
+            _lastActive = uint64(block.timestamp);
+        }
+
+        _who = _inheritor;
+        _effectiveTimestamp = _lastActive + _inheritWaitingPeriod;
     }
 
-    function _isExpired(Data.Guardian memory guardian)
-        internal
-        view
-        returns (bool)
+    function setInheritor(
+        address wallet,
+        address who,
+        uint32 _inheritWaitingPeriod
+        )
+        public
+        onlyWalletModule(wallet)
     {
-        return guardian.validUntil > 0 &&
-            guardian.validUntil <= block.timestamp;
-    }
-
-    function _isPendingActive(Data.Guardian memory guardian)
-        internal
-        view
-        returns (bool)
-    {
-        return guardian.validSince > block.timestamp;
+        wallets[wallet].inheritor = who;
+        wallets[wallet].inheritWaitingPeriod = _inheritWaitingPeriod;
+        wallets[wallet].lastActive = uint64(block.timestamp);
     }
 }
