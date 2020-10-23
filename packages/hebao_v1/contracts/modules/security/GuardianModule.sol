@@ -57,44 +57,6 @@ abstract contract GuardianModule is SecurityModule
         _addGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD);
     }
 
-    function addGuardiansWithTheirApproval(
-        SignedRequest.Request memory request
-        )
-        external
-    {
-        require(block.timestamp <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
-        require(request.signers.length > 0, "EMPTY_SIGNERS");
-
-        bytes32 _txAwareHash = EIP712.hashPacked(
-            GUARDIAN_DOMAIN_SEPERATOR,
-            abi.encode(
-                ADD_GUARDIAN_TYPEHASH,
-                request.wallet,
-                request.validUntil,
-                address(0)
-            )
-        );
-
-        require(_txAwareHash == txAwareHash(), "TX_INNER_HASH_MISMATCH");
-        controllerCache.hashStore.verifyAndUpdate(request.wallet, _txAwareHash);
-
-        require(
-            _txAwareHash.verifySignatures(request.signers, request.signatures),
-            "INVALID_SIGNATURES"
-        );
-
-        address owner = Wallet(request.wallet).owner();
-        for (uint i = 0; i < request.signers.length; i++) {
-            if (request.signers[i] != owner) {
-                _addGuardian(
-                    request.wallet,
-                    request.signers[i],
-                    GUARDIAN_PENDING_PERIOD
-                );
-            }
-        }
-    }
-
     function addGuardianWA(
         SignedRequest.Request calldata request,
         address guardian
