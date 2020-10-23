@@ -51,7 +51,8 @@ contract AddOfficialGuardianModule is BaseModule {
         ss.addGuardian(
             wallet,
             officialGuardian,
-            block.timestamp
+            block.timestamp,
+            true
         );
 
         BaseWallet(wallet).removeModule(address(this));

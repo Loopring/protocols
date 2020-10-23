@@ -7,9 +7,8 @@ library Data
 {
     // Optimized to fit into 32 bytes (1 slot)
     enum GuardianStatus {
-        INVALID,
-        ADD,
-        REMOVE
+        REMOVE,    // Being removed or removed after validUntil timestamp
+        ADD        // Being added or added after validSince timestamp.
     }
 
     struct Guardian
