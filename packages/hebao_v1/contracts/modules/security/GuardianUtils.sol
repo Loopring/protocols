@@ -10,8 +10,6 @@ import "../../iface/Wallet.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library GuardianUtils
 {
-    uint public constant MAX_NUM_GROUPS = 16;
-
     enum SigRequirement
     {
         OwnerNotAllowed,
@@ -19,7 +17,6 @@ library GuardianUtils
         OwnerRequired
     }
 
-    // TODO(kongliang): please make sure there is at least 1 guardian in all cases
     function requireMajority(
         SecurityStore   securityStore,
         address         wallet,
@@ -37,24 +34,20 @@ library GuardianUtils
 
         // Calculate total group sizes
         Data.Guardian[] memory allGuardians = securityStore.guardians(wallet);
-        uint[MAX_NUM_GROUPS] memory total = countGuardians(allGuardians);
+        require(allGuardians.length > 0, "NO_GUARDIANS");
 
-        // Calculate how many signers are in each group
-        bool walletOwnerSigned = false;
-        Data.Guardian[] memory signingGuardians = new Data.Guardian[](signers.length);
-        address walletOwner = Wallet(wallet).owner();
-        uint numGuardians = 0;
         address lastSigner;
+        bool walletOwnerSigned = false;
+        address owner = Wallet(wallet).owner();
         for (uint i = 0; i < signers.length; i++) {
             // Check for duplicates
             require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
             lastSigner = signers[i];
 
-            if (signers[i] == walletOwner) {
+            if (signers[i] == owner) {
                 walletOwnerSigned = true;
             } else {
-                require(securityStore.isGuardian(wallet, signers[i]), "SIGNER_NOT_GUARDIAN");
-                signingGuardians[numGuardians++] = securityStore.getGuardian(wallet, signers[i]);
+                require(isWalletGuardian(allGuardians, signers[i]), "SIGNER_NOT_GUARDIAN");
             }
         }
 
@@ -65,76 +58,38 @@ library GuardianUtils
             require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
         }
 
-        // Update the signingGuardians array with the actual number of guardians that have signed
-        // (could be 1 less than the length if the owner signed as well)
-        assembly { mstore(signingGuardians, numGuardians) }
-        uint[MAX_NUM_GROUPS] memory signed = countGuardians(signingGuardians);
-
-        // Count the number of votes
-        uint totalNumVotes = 0;
-        uint numVotes = 0;
-        if (requirement != SigRequirement.OwnerNotAllowed) {
-            totalNumVotes += 1;
-            numVotes += walletOwnerSigned ? 1 : 0;
-        }
-        if (total[0] > 0) {
-            // Group 0: No grouping
-            totalNumVotes += total[0];
-            numVotes += signed[0];
-        }
-        for (uint i = 1; i < MAX_NUM_GROUPS; i++) {
-            if (total[i] > 0) {
-                totalNumVotes += 1;
-                if (i < 6) {
-                    // Groups [1, 5]: Single guardian needed per group
-                    numVotes += signed[i] > 0 ? 1 : 0;
-                } else if (i < 11) {
-                    // Groups [6, 10]: Half the guardians needed per group
-                    numVotes += hasHalf(signed[i], total[i]) ? 1 : 0;
-                } else {
-                    // Groups [11, 15]: A majority of guardians needed per group
-                    numVotes += hasMajority(signed[i], total[i]) ? 1 : 0;
-                }
-            }
+        uint numExtendedSigners = allGuardians.length;
+        if (walletOwnerSigned) {
+            numExtendedSigners += 1;
         }
 
-        // We need a majority of votes
-        require(hasMajority(numVotes, totalNumVotes), "NOT_ENOUGH_SIGNERS");
-
-        return true;
+        return hasMajority(signers.length, numExtendedSigners);
     }
 
-    function hasHalf(
-        uint count,
-        uint total
+    function isWalletGuardian(
+        Data.Guardian[] memory allGuardians,
+        address signer
         )
         internal
         pure
         returns (bool)
     {
-        return (count >= (total + 1) / 2);
+        for (uint i = 0; i < allGuardians.length; i++) {
+            if (allGuardians[i].addr == signer) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function hasMajority(
-        uint count,
+        uint signed,
         uint total
         )
         internal
         pure
         returns (bool)
     {
-        return (count >= (total / 2) + 1);
-    }
-
-    function countGuardians(
-        Data.Guardian[] memory guardians
-        )
-        internal
-        pure
-        returns (uint[MAX_NUM_GROUPS] memory total)
-    {
-        for (uint i = 0; i < guardians.length; i++) {
-            total[guardians[i].group]++;
-        }
+        return total > 0 && signed >= (total >> 1) + 1;
     }
 }

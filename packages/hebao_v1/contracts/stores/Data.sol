@@ -9,7 +9,6 @@ library Data
     struct Guardian
     {
         address addr;
-        uint16  group;
         uint40  validSince;
         uint40  validUntil;
     }

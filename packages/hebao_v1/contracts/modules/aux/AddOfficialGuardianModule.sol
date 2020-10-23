@@ -16,18 +16,15 @@ import "../base/BaseModule.sol";
 contract AddOfficialGuardianModule is BaseModule {
     ControllerImpl private controller_;
     address        public  officialGuardian;
-    uint           public  officialGuardianGroup;
 
     constructor(
         ControllerImpl   _controller,
-        address          _officialGuardian,
-        uint             _officialGuardianGroup
+        address          _officialGuardian
         )
     {
         controller_ = _controller;
         updateControllerCache();
         officialGuardian = _officialGuardian;
-        officialGuardianGroup = _officialGuardianGroup;
     }
 
     function controller()
@@ -54,7 +51,6 @@ contract AddOfficialGuardianModule is BaseModule {
         ss.addGuardian(
             wallet,
             officialGuardian,
-            officialGuardianGroup,
             block.timestamp
         );
 

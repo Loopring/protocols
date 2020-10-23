@@ -144,7 +144,6 @@ contract SecurityStore is DataStore
     function addGuardian(
         address wallet,
         address guardianAddr,
-        uint    group,
         uint    validSince
         )
         public
@@ -161,7 +160,6 @@ contract SecurityStore is DataStore
         // Add the new guardian
         Data.Guardian memory g = Data.Guardian(
             guardianAddr,
-            group.toUint16(),
             validSince.toUint40(),
             uint40(0)
         );

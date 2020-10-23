@@ -22,7 +22,7 @@ abstract contract GuardianModule is SecurityModule
     uint public constant GUARDIAN_PENDING_PERIOD = 7 days;
 
     bytes32 public constant ADD_GUARDIAN_TYPEHASH = keccak256(
-        "addGuardian(address wallet,uint256 validUntil,address guardian,uint256 group)"
+        "addGuardian(address wallet,uint256 validUntil,address guardian)"
     );
     bytes32 public constant REMOVE_GUARDIAN_TYPEHASH = keccak256(
         "removeGuardian(address wallet,uint256 validUntil,address guardian)"
@@ -34,9 +34,9 @@ abstract contract GuardianModule is SecurityModule
         "unlock(address wallet,uint256 validUntil)"
     );
 
-    event GuardianAdded             (address indexed wallet, address guardian, uint group, uint effectiveTime);
-    event GuardianRemoved           (address indexed wallet, address guardian, uint removalEffectiveTime);
-    event Recovered                 (address indexed wallet, address newOwner);
+    event GuardianAdded   (address indexed wallet, address guardian, uint effectiveTime);
+    event GuardianRemoved (address indexed wallet, address guardian, uint effectiveTime);
+    event Recovered       (address indexed wallet, address newOwner);
 
     constructor()
     {
@@ -47,21 +47,19 @@ abstract contract GuardianModule is SecurityModule
 
     function addGuardian(
         address wallet,
-        address guardian,
-        uint    group
+        address guardian
         )
         external
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         notWalletOwner(wallet, guardian)
     {
-        _addGuardian(wallet, guardian, group, GUARDIAN_PENDING_PERIOD);
+        _addGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD);
     }
 
     function addGuardianWA(
         SignedRequest.Request calldata request,
-        address guardian,
-        uint    group
+        address guardian
         )
         external
     {
@@ -74,12 +72,11 @@ abstract contract GuardianModule is SecurityModule
                 ADD_GUARDIAN_TYPEHASH,
                 request.wallet,
                 request.validUntil,
-                guardian,
-                group
+                guardian
             )
         );
 
-        _addGuardian(request.wallet, guardian, group, 0);
+        _addGuardian(request.wallet, guardian, 0);
     }
 
     function removeGuardian(
@@ -200,23 +197,23 @@ abstract contract GuardianModule is SecurityModule
     function _addGuardian(
         address wallet,
         address guardian,
-        uint    group,
         uint    pendingPeriod
         )
         private
     {
         require(guardian != wallet, "INVALID_ADDRESS");
         require(guardian != address(0), "ZERO_ADDRESS");
-        require(group < GuardianUtils.MAX_NUM_GROUPS, "INVALID_GROUP");
-        uint numGuardians = controllerCache.securityStore.numGuardiansWithPending(wallet);
+
+        SecurityStore ss = controllerCache.securityStore;
+        uint numGuardians = ss.numGuardiansWithPending(wallet);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         uint effectiveTime = block.timestamp;
         if (numGuardians >= 2) {
             effectiveTime = block.timestamp + pendingPeriod;
         }
-        controllerCache.securityStore.addGuardian(wallet, guardian, group, effectiveTime);
-        emit GuardianAdded(wallet, guardian, group, effectiveTime);
+        ss.addGuardian(wallet, guardian, effectiveTime);
+        emit GuardianAdded(wallet, guardian, effectiveTime);
     }
 
     function _removeGuardian(
