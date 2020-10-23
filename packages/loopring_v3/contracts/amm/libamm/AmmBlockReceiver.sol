@@ -40,7 +40,12 @@ library AmmBlockReceiver
         _processPoolTx(S, ctx, _block, data);
 
         // Approve transactions
-        ctx.exchange.approveTransactions(ctx.transactionBuffer.owners, ctx.transactionBuffer.txHashes);
+        ExchangeData.ApprovalType[] memory types =
+            new ExchangeData.ApprovalType[](ctx.transactionBuffer.owners.length);
+        for (uint i = 0; i < types.length; i++) {
+            types[i] = ExchangeData.ApprovalType.AMM_POOL;
+        }
+        ctx.exchange.approveTransactions(ctx.transactionBuffer.owners, ctx.transactionBuffer.txHashes, types);
 
         // Update state
         S._totalSupply = ctx.totalSupply;

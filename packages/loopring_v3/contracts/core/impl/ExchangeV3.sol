@@ -548,7 +548,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
 
     function approveTransaction(
         address owner,
-        bytes32 transactionHash
+        bytes32 transactionHash,
+        ExchangeData.ApprovalType approvalType
         )
         external
         override
@@ -556,22 +557,27 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         onlyFromUserOrAgent(owner)
     {
         state.approvedTx[owner][transactionHash] = true;
-        emit TransactionApproved(owner, transactionHash);
+        emit TransactionApproved(owner, transactionHash, approvalType);
     }
 
     function approveTransactions(
         address[] calldata owners,
-        bytes32[] calldata transactionHashes
+        bytes32[] calldata transactionHashes,
+        ExchangeData.ApprovalType[] calldata types
         )
         external
         override
         nonReentrant
     {
-        require(owners.length == transactionHashes.length, "INVALID_DATA");
+        require(
+            owners.length == transactionHashes.length &&
+            owners.length == types.length,
+            "INVALID_DATA"
+        );
         require(state.agentRegistry.isAgent(owners, msg.sender), "UNAUTHORIZED");
         for (uint i = 0; i < owners.length; i++) {
             state.approvedTx[owners[i]][transactionHashes[i]] = true;
-            emit TransactionApproved(owners[i], transactionHashes[i]);
+            emit TransactionApproved(owners[i], transactionHashes[i], types[i]);
         }
     }
 

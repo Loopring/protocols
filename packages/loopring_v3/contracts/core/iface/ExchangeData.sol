@@ -28,6 +28,12 @@ library ExchangeData
         AMM_UPDATE
     }
 
+    enum ApprovalType
+    {
+     USER,
+     AMM_POOL
+    }
+
     // -- Structs --
     struct Token
     {

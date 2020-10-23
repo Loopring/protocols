@@ -806,7 +806,7 @@ export class ExchangeTestUtil {
       const txHash = TransferUtils.getHash(transfer, this.exchange.address);
 
       // Approve
-      await this.exchange.approveTransaction(signer, txHash, {
+      await this.exchange.approveTransaction(signer, txHash, 0, {
         from: signer
       });
 
@@ -1360,7 +1360,7 @@ export class ExchangeTestUtil {
         withdrawalRequest,
         this.exchange.address
       );
-      await this.exchange.approveTransaction(owner, hash, { from: owner });
+      await this.exchange.approveTransaction(owner, hash, 0, { from: owner });
     }
 
     if (authMethod !== AuthMethod.EDDSA) {
@@ -1436,7 +1436,7 @@ export class ExchangeTestUtil {
         accountUpdate,
         this.exchange.address
       );
-      await this.exchange.approveTransaction(owner, hash, { from: owner });
+      await this.exchange.approveTransaction(owner, hash, 0, { from: owner });
     }
 
     if (authMethod !== AuthMethod.EDDSA) {
@@ -1497,7 +1497,7 @@ export class ExchangeTestUtil {
       await verifySignature(owner, hash, ammUpdate.onchainSignature);
     } else if (authMethod === AuthMethod.APPROVE) {
       const hash = AmmUpdateUtils.getHash(ammUpdate, this.exchange.address);
-      await this.exchange.approveTransaction(owner, hash, { from: owner });
+      await this.exchange.approveTransaction(owner, hash, 0, { from: owner });
     }
 
     this.pendingTransactions[this.exchangeId].push(ammUpdate);

@@ -85,7 +85,8 @@ abstract contract IExchangeV3 is Claimable
 
     event TransactionApproved(
         address owner,
-        bytes32 transactionHash
+        bytes32 transactionHash,
+        ExchangeData.ApprovalType approvalType
     );
 
     // events from libraries
@@ -591,9 +592,11 @@ abstract contract IExchangeV3 is Claimable
     ///
     /// @param owner The owner of the account
     /// @param txHash The hash of the transaction
+    /// @param approvalType The approval type
     function approveTransaction(
         address owner,
-        bytes32 txHash
+        bytes32 txHash,
+        ExchangeData.ApprovalType approvalType
         )
         external
         virtual;
@@ -604,9 +607,11 @@ abstract contract IExchangeV3 is Claimable
     ///
     /// @param owners The account owners
     /// @param txHashes The hashes of the transactions
+    /// @param types The apprval types
     function approveTransactions(
         address[] calldata owners,
-        bytes32[] calldata txHashes
+        bytes32[] calldata txHashes,
+        ExchangeData.ApprovalType[] calldata types
         )
         external
         virtual;

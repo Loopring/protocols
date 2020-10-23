@@ -181,7 +181,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.approveTransaction(ownerA, Buffer.from("FF"), {
+        exchange.approveTransaction(ownerA, Buffer.from("FF"), 0, {
           from: agent
         }),
         "UNAUTHORIZED"
@@ -218,7 +218,7 @@ contract("Exchange", (accounts: string[]) => {
         value: withdrawalFee
       });
 
-      await exchange.approveTransaction(ownerA, Buffer.from("FF"), {
+      await exchange.approveTransaction(ownerA, Buffer.from("FF"), 0, {
         from: agent
       });
 
