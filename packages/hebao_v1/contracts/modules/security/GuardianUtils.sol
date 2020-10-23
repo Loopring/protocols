@@ -58,13 +58,11 @@ library GuardianUtils
         }
 
         uint numExtendedSigners = allGuardians.length;
-        uint numGuardianApprovals = signers.length;
-
         if (walletOwnerSigned) {
             numExtendedSigners += 1;
         }
 
-        return hasMajority(numGuardianApprovals, numExtendedSigners);
+        return hasMajority(signers.length, numExtendedSigners);
     }
 
     function isWalletGuardian(
