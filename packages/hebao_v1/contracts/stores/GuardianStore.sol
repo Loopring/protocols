@@ -36,19 +36,20 @@ abstract contract GuardianStore is DataStore
     function isGuardian(
         address wallet,
         address addr,
-        bool    includePendingActive
+        bool    includePendingAddition
         )
         public
         view
         returns (bool)
     {
         Data.Guardian memory g = _getGuardian(wallet, addr);
-        return g.addr != address(0) && _isActivatedOrPendingActivation(g, includePendingActive);
+        return g.addr != address(0) &&
+            _isActiveOrPendingAddition(g, includePendingAddition);
     }
 
     function guardians(
         address wallet,
-        bool    includePendingActive
+        bool    includePendingAddition
         )
         public
         view
@@ -59,7 +60,8 @@ abstract contract GuardianStore is DataStore
         uint index = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (_isActivatedOrPendingActivation(g,includePendingActive)) {
+            if (g.addr != address(0) &&
+                _isActiveOrPendingAddition(g, includePendingAddition)) {
                 _guardians[index] = g;
                 index++;
             }
@@ -69,7 +71,7 @@ abstract contract GuardianStore is DataStore
 
     function numGuardians(
         address wallet,
-        bool    includePendingActive
+        bool    includePendingAddition
         )
         public
         view
@@ -78,7 +80,8 @@ abstract contract GuardianStore is DataStore
         Wallet storage w = wallets[wallet];
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (_isActivatedOrPendingActivation(g, includePendingActive)) {
+            if (g.addr != address(0) &&
+                _isActiveOrPendingAddition(g, includePendingAddition)) {
                 count++;
             }
         }
@@ -102,11 +105,12 @@ abstract contract GuardianStore is DataStore
         Wallet storage w = wallets[wallet];
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (_isPendingExpire(g)) {
-                w.guardians[i].validUntil = 0;
+            if (_isPendingAddition(g) && ) {
+                w.guardians[i].status = uint8(Data.GuardianStatus.INVALID);
             }
-            if (_isPendingActivation(g)) {
-                w.guardians[i].validSince = 0;
+            if (_isPendingRemoval(g)) {
+                w.guardians[i].status = uint8(Data.GuardianStatus.ADD);
+                w.guardians[i].timestamp = 0;
             }
         }
         _cleanExpiredGuardians(wallet);
@@ -115,10 +119,12 @@ abstract contract GuardianStore is DataStore
     function addGuardian(
         address wallet,
         address addr,
-        uint    validSince
+        uint    validSince,
+        bool    alwaysOverride
         )
         public
         onlyWalletModule(wallet)
+        returns (uint _validSince, uint _validUntil)
     {
         require(validSince > 0, "INVALID_VALID_SINCE");
         require(addr != address(0), "ZERO_ADDRESS");
@@ -152,10 +158,12 @@ abstract contract GuardianStore is DataStore
     function removeGuardian(
         address wallet,
         address addr,
-        uint    validUntil
+        uint    validUntil,
+        bool    alwaysOverride
         )
         public
         onlyWalletModule(wallet)
+        returns (uint _validSince, uint _validUntil)
     {
         require(validUntil > 0, "INVALID_VALID_UNTIL");
         require(addr != address(0), "ZERO_ADDRESS");
@@ -166,12 +174,10 @@ abstract contract GuardianStore is DataStore
 
         Data.Guardian memory g = w.guardians[pos - 1];
 
-        if (_isPendingActivation(g)) {
-            w.guardians[pos - 1].validSince = 0;
-        }
+        if (alwaysOverride) {
 
-        if (!_isExpired(g)) {
-            w.guardians[pos - 1].validUntil = validUntil.toUint40();
+        } else {
+
         }
     }
 
@@ -192,50 +198,59 @@ abstract contract GuardianStore is DataStore
         }
     }
 
-    function _isActivated(Data.Guardian memory guardian)
+    function _isAdded(Data.Guardian memory guardian)
         private
         view
         returns (bool)
     {
-        return guardian.validSince > 0 &&
-            guardian.validSince <= block.timestamp;
+        return guardian.status == uint8(Data.GuardianStatus.ADD) &&
+            guardian.timestamp <= block.timestamp;
     }
 
-    function _isPendingActivation(Data.Guardian memory guardian)
+    function _isPendingAddition(Data.Guardian memory guardian)
         private
         view
         returns (bool)
     {
-        return guardian.validSince > block.timestamp;
+        return guardian.status == uint8(Data.GuardianStatus.ADD) &&
+            guardian.timestamp > block.timestamp;
     }
 
-    function _isExpired(Data.Guardian memory guardian)
+    function _isRemoved(Data.Guardian memory guardian)
         private
         view
         returns (bool)
     {
-        return guardian.validUntil > 0 &&
-            guardian.validUntil <= block.timestamp;
+        return guardian.status == uint8(Data.GuardianStatus.REMOVE) &&
+            guardian.timestamp <= block.timestamp;
     }
 
-    function _isPendingExpire(Data.Guardian memory guardian)
+    function _isPendingRemoval(Data.Guardian memory guardian)
         private
         view
         returns (bool)
     {
-        return guardian.validUntil > block.timestamp;
+         return guardian.status == uint8(Data.GuardianStatus.REMOVE) &&
+            guardian.timestamp > block.timestamp;
     }
 
-    function _isActivatedOrPendingActivation(
+    function _isActive(Data.Guardian memory guardian)
+        private
+        view
+        returns (bool)
+    {
+        return _isAdded(guardian) || _isPendingRemoval(guardian);
+    }
+
+    function _isActiveOrPendingAddition(
         Data.Guardian memory guardian,
-        bool includePendingActive
+        bool includePendingAddition
         )
         private
         view
         returns (bool)
     {
-        if (_isExpired(guardian)) return false;
-        return _isActivated(guardian) || includePendingActive && _isPendingActivation(guardian);
+        return _isActive(guardian) || includePendingAddition && _isPendingAddition(guardian);
     }
 
     function _cleanExpiredGuardians(address wallet)
