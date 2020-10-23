@@ -37,7 +37,9 @@ library GuardianUtils
 
         bool walletOwnerSigned = false;
         address walletOwner = Wallet(wallet).owner();
-        uint totalNumVotes = allGuardians.length;
+
+        uint numSigners = allGuardians.length;
+        uint numGuardianApprovals = signers.length;
 
         address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
@@ -53,9 +55,8 @@ library GuardianUtils
         }
 
         if (walletOwnerSigned) {
-            totalNumVotes += 1;
-            // We always need at least one guardian signer
-            require(signers.length > 1, "NO_GUARDIAN_SIGNER");
+            numSigners += 1;
+            numGuardianApprovals -= 1;
         }
 
         // Check owner requirements
@@ -65,10 +66,7 @@ library GuardianUtils
             require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
         }
 
-        // We need a majority of votes
-        require(hasMajority(signers.length, totalNumVotes), "NOT_ENOUGH_SIGNERS");
-
-        return true;
+        return hasMajority(numGuardianApprovals, numSigners);
     }
 
     function isWalletGuardian(
@@ -88,14 +86,13 @@ library GuardianUtils
     }
 
     function hasMajority(
-        uint count,
-        uint total
+        uint numGuardianApprovals,
+        uint numSigners
         )
         internal
         pure
         returns (bool)
     {
-        return (count >= (total / 2) + 1);
+        return numSigners > 0 && numGuardianApprovals >= (numSigners >> 1) + 1;
     }
-
 }
