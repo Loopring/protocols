@@ -34,9 +34,9 @@ abstract contract GuardianModule is SecurityModule
         "unlock(address wallet,uint256 validUntil)"
     );
 
-    event GuardianAdded             (address indexed wallet, address guardian, uint effectiveTime);
-    event GuardianRemoved           (address indexed wallet, address guardian, uint removalEffectiveTime);
-    event Recovered                 (address indexed wallet, address newOwner);
+    event GuardianAdded   (address indexed wallet, address guardian, uint effectiveTime);
+    event GuardianRemoved (address indexed wallet, address guardian, uint effectiveTime);
+    event Recovered       (address indexed wallet, address newOwner);
 
     constructor()
     {
