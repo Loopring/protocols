@@ -54,7 +54,7 @@ abstract contract GuardianModule is SecurityModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         notWalletOwner(wallet, guardian)
     {
-        _addGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD);
+        _addGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD, false);
     }
 
     function addGuardianWA(
@@ -76,7 +76,7 @@ abstract contract GuardianModule is SecurityModule
             )
         );
 
-        _addGuardian(request.wallet, guardian, 0);
+        _addGuardian(request.wallet, guardian, 0, true);
     }
 
     function removeGuardian(
@@ -88,7 +88,7 @@ abstract contract GuardianModule is SecurityModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
     {
-        _removeGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD);
+        _removeGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD, false);
     }
 
     function removeGuardianWA(
@@ -110,7 +110,7 @@ abstract contract GuardianModule is SecurityModule
             )
         );
 
-        _removeGuardian(request.wallet, guardian, 0);
+        _removeGuardian(request.wallet, guardian, 0, true);
     }
 
     function lock(address wallet)
@@ -175,7 +175,7 @@ abstract contract GuardianModule is SecurityModule
 
         SecurityStore ss = controllerCache.securityStore;
         if (ss.isGuardian(request.wallet, newOwner, true)) {
-            ss.removeGuardian(request.wallet, newOwner, block.timestamp);
+            ss.removeGuardian(request.wallet, newOwner, block.timestamp, true);
         }
 
         Wallet(request.wallet).setOwner(newOwner);
@@ -198,7 +198,8 @@ abstract contract GuardianModule is SecurityModule
     function _addGuardian(
         address wallet,
         address guardian,
-        uint    pendingPeriod
+        uint    pendingPeriod,
+        bool    alwaysOverride
         )
         private
     {
@@ -209,23 +210,25 @@ abstract contract GuardianModule is SecurityModule
         uint numGuardians = ss.numGuardians(wallet, true);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
-        uint effectiveTime = block.timestamp;
+        uint validSince = block.timestamp;
         if (numGuardians >= 2) {
-            effectiveTime = block.timestamp + pendingPeriod;
+            validSince = block.timestamp + pendingPeriod;
         }
-        ss.addGuardian(wallet, guardian, effectiveTime);
-        emit GuardianAdded(wallet, guardian, effectiveTime);
+        validSince = ss.addGuardian(wallet, guardian, validSince, alwaysOverride);
+        emit GuardianAdded(wallet, guardian, validSince);
     }
 
     function _removeGuardian(
         address wallet,
         address guardian,
-        uint    pendingPeriod
+        uint    pendingPeriod,
+        bool    alwaysOverride
         )
         private
     {
-        uint effectiveTime = block.timestamp + pendingPeriod;
-        controllerCache.securityStore.removeGuardian(wallet, guardian, effectiveTime);
-        emit GuardianRemoved(wallet, guardian, effectiveTime);
+        uint validUntil = block.timestamp + pendingPeriod;
+        SecurityStore ss = controllerCache.securityStore;
+        validUntil = ss.removeGuardian(wallet, guardian, validUntil, alwaysOverride);
+        emit GuardianRemoved(wallet, guardian, validUntil);
     }
 }
