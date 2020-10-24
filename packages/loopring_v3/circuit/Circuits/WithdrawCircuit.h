@@ -87,10 +87,12 @@ class WithdrawCircuit : public BaseTransactionCircuit
     ArrayTernaryGadget merkleTreeAccountA;
 
     // Update the nonce storage (unless it's a forced withdrawal)
-    NonceGadget nonce;
     OrGadget isForcedWithdrawal;
+    NotGadget isNotForcedWithdrawal;
+    AndGadget doCheckNonce;
+    NonceGadget nonce;
     TernaryGadget storageDataValue;
-    IfThenRequireEqualGadget ifrequireSameStorageID;
+    TernaryGadget storageIdValue;
 
     // Disable AMM for the token when doing a forced withdrawal
     NotGadget isNotProtocolFeeWithdrawal;
@@ -219,29 +221,31 @@ class WithdrawCircuit : public BaseTransactionCircuit
             FMT(prefix, ".merkleTreeAccountA")),
 
           // Update the nonce storage (unless it's a forced withdrawal)
+          isForcedWithdrawal(
+            pb,
+            {validFullWithdrawalType.result(), invalidFullWithdrawalType.result()},
+            FMT(prefix, ".isForcedWithdrawal")),
+          isNotForcedWithdrawal(pb, isForcedWithdrawal.result(), FMT(prefix, ".isNotForcedWithdrawal")),
+          doCheckNonce(pb, {isWithdrawalTx.result(), isNotForcedWithdrawal.result()}, FMT(prefix, ".doCheckNonce")),
           nonce( //
             pb,
             state.constants,
             state.accountA.storage,
             storageID,
-            isWithdrawalTx.result(),
+            doCheckNonce.result(),
             FMT(prefix, ".nonce")),
-          isForcedWithdrawal(
-            pb,
-            {validFullWithdrawalType.result(), invalidFullWithdrawalType.result()},
-            FMT(prefix, ".isForcedWithdrawal")),
           storageDataValue(
             pb,
             isForcedWithdrawal.result(),
             state.accountA.storage.data,
             nonce.getData(),
             FMT(prefix, ".storageDataValue")),
-          ifrequireSameStorageID(
+          storageIdValue(
             pb,
             isForcedWithdrawal.result(),
-            storageID.packed,
             state.accountA.storage.storageID,
-            FMT(prefix, ".ifrequireSameStorageID")),
+            storageID.packed,
+            FMT(prefix, ".storageIdValue")),
 
           // Disable AMM for the token when doing a forced withdrawal
           // (but not if it's a protocol fee withdrawal)
@@ -259,6 +263,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
             state.constants._0,
             state.accountA.balanceS.weightAMM,
             FMT(prefix, ".newTokenWeightAMM")),
+
           // Increase the number of conditional transactions
           numConditionalTransactionsAfter(
             pb,
@@ -294,7 +299,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
         // Nonce
         setArrayOutput(TXV_STORAGE_A_ADDRESS, subArray(storageID.bits, 0, NUM_BITS_STORAGE_ADDRESS));
         setOutput(TXV_STORAGE_A_DATA, storageDataValue.result());
-        setOutput(TXV_STORAGE_A_STORAGEID, storageID.packed);
+        setOutput(TXV_STORAGE_A_STORAGEID, storageIdValue.result());
     }
 
     void generate_r1cs_witness(const Withdrawal &withdrawal)
@@ -358,10 +363,12 @@ class WithdrawCircuit : public BaseTransactionCircuit
         merkleTreeAccountA.generate_r1cs_witness();
 
         // Update the nonce storage (unless it's a forced withdrawal)
-        nonce.generate_r1cs_witness();
         isForcedWithdrawal.generate_r1cs_witness();
+        isNotForcedWithdrawal.generate_r1cs_witness();
+        doCheckNonce.generate_r1cs_witness();
+        nonce.generate_r1cs_witness();
         storageDataValue.generate_r1cs_witness();
-        ifrequireSameStorageID.generate_r1cs_witness();
+        storageIdValue.generate_r1cs_witness();
 
         // Disable AMM for the token when doing a forced withdrawal
         isNotProtocolFeeWithdrawal.generate_r1cs_witness();
@@ -433,10 +440,12 @@ class WithdrawCircuit : public BaseTransactionCircuit
         merkleTreeAccountA.generate_r1cs_constraints();
 
         // Update the nonce storage (unless it's a forced withdrawal)
-        nonce.generate_r1cs_constraints();
         isForcedWithdrawal.generate_r1cs_constraints();
+        isNotForcedWithdrawal.generate_r1cs_constraints();
+        doCheckNonce.generate_r1cs_constraints();
+        nonce.generate_r1cs_constraints();
         storageDataValue.generate_r1cs_constraints();
-        ifrequireSameStorageID.generate_r1cs_constraints();
+        storageIdValue.generate_r1cs_constraints();
 
         // Disable AMM for the token when doing a forced withdrawal
         isNotProtocolFeeWithdrawal.generate_r1cs_constraints();

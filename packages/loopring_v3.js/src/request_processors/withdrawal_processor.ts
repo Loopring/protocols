@@ -31,14 +31,10 @@ export class WithdrawalProcessor {
     const withdrawal = this.extractData(txData);
 
     const account = state.getAccount(withdrawal.fromAccountID);
-    let amount = withdrawal.amount;
     if (withdrawal.type === 2) {
-      amount = account.getBalance(withdrawal.tokenID).balance;
       account.getBalance(withdrawal.tokenID).weightAMM = new BN(0);
-    } else if (withdrawal.type === 3) {
-      amount = new BN(0);
     }
-    account.getBalance(withdrawal.tokenID).balance.isub(amount);
+    account.getBalance(withdrawal.tokenID).balance.isub(withdrawal.amount);
     account.getBalance(withdrawal.feeTokenID).balance.isub(withdrawal.fee);
 
     const operator = state.getAccount(block.operatorAccountID);
