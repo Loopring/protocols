@@ -16,9 +16,9 @@ contract FinalTransferModule is TransferModule
 
     constructor(
         ControllerImpl _controller,
-        address        _trustedForwarder
+        address        _metaTxForwarder
         )
-        SecurityModule(_trustedForwarder)
+        SecurityModule(_metaTxForwarder)
         TransferModule()
     {
         controller_ = _controller;

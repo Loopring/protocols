@@ -20,8 +20,8 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
 {
     using SignatureUtil for bytes32;
 
-    constructor(address _trustedForwarder)
-        MetaTxAware(_trustedForwarder)
+    constructor(address _metaTxForwarder)
+        MetaTxAware(_metaTxForwarder)
     {
     }
 

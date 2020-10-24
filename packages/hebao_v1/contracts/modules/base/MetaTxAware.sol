@@ -21,11 +21,11 @@ abstract contract MetaTxAware
     using AddressUtil for address;
     using BytesUtil   for bytes;
 
-    address public trustedForwarder;
+    address public metaTxForwarder;
 
-    constructor(address _trustedForwarder)
+    constructor(address _metaTxForwarder)
     {
-        trustedForwarder = _trustedForwarder;
+        metaTxForwarder = _metaTxForwarder;
     }
 
     modifier txAwareHashNotAllowed()
@@ -41,7 +41,7 @@ abstract contract MetaTxAware
         view
         returns (address payable)
     {
-        if (msg.data.length >= 56 && msg.sender == trustedForwarder) {
+        if (msg.data.length >= 56 && msg.sender == metaTxForwarder) {
             return msg.data.toAddress(msg.data.length - 52).toPayable();
         } else {
             return msg.sender;
@@ -53,7 +53,7 @@ abstract contract MetaTxAware
         view
         returns (bytes32)
     {
-        if (msg.data.length >= 56 && msg.sender == trustedForwarder) {
+        if (msg.data.length >= 56 && msg.sender == metaTxForwarder) {
             return msg.data.toBytes32(msg.data.length - 32);
         } else {
             return 0;

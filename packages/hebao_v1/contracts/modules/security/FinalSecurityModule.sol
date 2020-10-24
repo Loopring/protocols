@@ -21,9 +21,9 @@ contract FinalSecurityModule is
 
     constructor(
         ControllerImpl _controller,
-        address        _trustedForwarder
+        address        _metaTxForwarder
         )
-        SecurityModule(_trustedForwarder)
+        SecurityModule(_metaTxForwarder)
         GuardianModule()
         InheritanceModule()
         WhitelistModule()
