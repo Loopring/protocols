@@ -27,8 +27,8 @@ abstract contract SecurityModule is MetaTxModule
         bool            locked
     );
 
-    constructor(address _trustedForwarder)
-        MetaTxModule(_trustedForwarder)
+    constructor(address _metaTxForwarder)
+        MetaTxModule(_metaTxForwarder)
     {
     }
 

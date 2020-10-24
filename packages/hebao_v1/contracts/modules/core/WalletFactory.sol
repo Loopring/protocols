@@ -72,12 +72,12 @@ contract WalletFactory is MetaTxAware
         allowEmptyENS = _allowEmptyENS;
     }
 
-    function initTrustedForwarder(address _trustedForwarder)
+    function initTrustedForwarder(address _metaTxForwarder)
         external
     {
-        require(trustedForwarder == address(0), "INITIALIZED_ALREADY");
-        require(_trustedForwarder != address(0), "INVALID_ADDRESS");
-        trustedForwarder = _trustedForwarder;
+        require(metaTxForwarder == address(0), "INITIALIZED_ALREADY");
+        require(_metaTxForwarder != address(0), "INVALID_ADDRESS");
+        metaTxForwarder = _metaTxForwarder;
     }
 
     /// @dev Create a set of new wallet blanks to be used in the future.
