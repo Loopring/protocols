@@ -31,7 +31,7 @@
   "dependencies": {
     "@types/ethereumjs-abi": "^0.6.3",
     "async-validator": "3.3.0",
-    "axios": "^0.19.0",
+    "axios": "^0.21.0",
     "bignumber.js": "^9.0.0",
     "bip39": "3.0.2",
     "blake-hash": "^2.0.0",
