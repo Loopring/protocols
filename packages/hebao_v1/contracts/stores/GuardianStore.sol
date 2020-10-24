@@ -111,7 +111,7 @@ abstract contract GuardianStore is DataStore
                 w.guardians[i].timestamp = 0;
             }
         }
-        _cleanExpiredGuardians(wallet);
+        _cleanRemovedGuardians(wallet);
     }
 
     function addGuardian(
@@ -140,7 +140,7 @@ abstract contract GuardianStore is DataStore
             w.guardians.push(g);
             w.guardianIdx[addr] = w.guardians.length;
 
-            _cleanExpiredGuardians(wallet);
+            _cleanRemovedGuardians(wallet);
             return validSince;
         }
 
@@ -283,7 +283,7 @@ abstract contract GuardianStore is DataStore
         return _isActive(guardian) || includePendingAddition && _isPendingAddition(guardian);
     }
 
-    function _cleanExpiredGuardians(address wallet)
+    function _cleanRemovedGuardians(address wallet)
         private
     {
         Wallet storage w = wallets[wallet];
