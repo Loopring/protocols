@@ -70,20 +70,8 @@ abstract contract ForwarderModule is SecurityModule
         public
         view
     {
-        // Since this contract is a module, we need to prevent wallet from interacting with
-        // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
-        // so no Store can be used as 'to'.
-        require(
-            (to != address(this)) &&
-            controllerCache.moduleRegistry.isModuleRegistered(to) ||
+        verifyTo(to, from, data);
 
-            // We only allow the wallet to call itself to addModule
-            (to == from) &&
-            data.toBytes4(0) == Wallet.addModule.selector ||
-
-            to == controllerCache.walletFactory,
-            "INVALID_DESTINATION_OR_METHOD"
-        );
         require(
             nonce == 0 && txAwareHash != 0 ||
             nonce != 0 && txAwareHash == 0,
@@ -239,6 +227,7 @@ abstract contract ForwarderModule is SecurityModule
         require(to.length == data.length, "INVALID_DATA");
 
         for (uint i = 0; i < to.length; i++) {
+            verifyTo(to[i], wallet, data[i]);
             // The trick is to append the really logical message sender and the
             // transaction-aware hash to the end of the call data.
             (bool success, ) = to[i].call(
@@ -262,6 +251,29 @@ abstract contract ForwarderModule is SecurityModule
         returns (bool)
     {
         return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
+    }
+
+    function verifyTo(
+        address to,
+        address wallet,
+        bytes memory data
+        )
+        internal
+        view
+    {
+        // Since this contract is a module, we need to prevent wallet from interacting with
+        // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
+        // so no Store can be used as 'to'.
+        require(
+            controllerCache.moduleRegistry.isModuleRegistered(to) ||
+
+            // We only allow the wallet to call itself to addModule
+            (to == wallet) &&
+            data.toBytes4(0) == Wallet.addModule.selector ||
+
+            to == controllerCache.walletFactory,
+            "INVALID_DESTINATION_OR_METHOD"
+        );
     }
 
     function verifyAndUpdateNonce(address wallet, uint nonce)
