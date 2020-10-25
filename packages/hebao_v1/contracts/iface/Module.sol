@@ -10,9 +10,7 @@ import "./Wallet.sol";
 /// @dev Base contract for all smart wallet modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
+
 interface Module
 {
     /// @dev Activates the module for the given wallet (msg.sender) after the module is added.

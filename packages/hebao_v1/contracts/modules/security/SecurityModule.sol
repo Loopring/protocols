@@ -11,9 +11,7 @@ import "./SignedRequest.sol";
 /// @title SecurityStore
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
+
 abstract contract SecurityModule is MetaTxModule
 {
     using SignedRequest for ControllerImpl;
@@ -47,13 +45,13 @@ abstract contract SecurityModule is MetaTxModule
 
     modifier onlyWalletGuardian(address wallet, address guardian)
     {
-        require(controllerCache.securityStore.isGuardian(wallet, guardian), "NOT_GUARDIAN");
+        require(controllerCache.securityStore.isGuardian(wallet, guardian, false), "NOT_GUARDIAN");
         _;
     }
 
     modifier notWalletGuardian(address wallet, address guardian)
     {
-        require(!controllerCache.securityStore.isGuardian(wallet, guardian), "IS_GUARDIAN");
+        require(!controllerCache.securityStore.isGuardian(wallet, guardian, false), "IS_GUARDIAN");
         _;
     }
 

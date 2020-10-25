@@ -22,9 +22,7 @@ import "../ControllerImpl.sol";
 ///      in front of a real wallet.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
+
 contract WalletFactory is MetaTxAware
 {
     using AddressUtil for address;

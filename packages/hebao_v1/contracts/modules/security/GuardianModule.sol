@@ -54,7 +54,7 @@ abstract contract GuardianModule is SecurityModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         notWalletOwner(wallet, guardian)
     {
-        _addGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD);
+        _addGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD, false);
     }
 
     function addGuardianWA(
@@ -76,7 +76,7 @@ abstract contract GuardianModule is SecurityModule
             )
         );
 
-        _addGuardian(request.wallet, guardian, 0);
+        _addGuardian(request.wallet, guardian, 0, true);
     }
 
     function removeGuardian(
@@ -88,7 +88,7 @@ abstract contract GuardianModule is SecurityModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
     {
-        _removeGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD);
+        _removeGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD, false);
     }
 
     function removeGuardianWA(
@@ -110,7 +110,7 @@ abstract contract GuardianModule is SecurityModule
             )
         );
 
-        _removeGuardian(request.wallet, guardian, 0);
+        _removeGuardian(request.wallet, guardian, 0, true);
     }
 
     function lock(address wallet)
@@ -121,7 +121,7 @@ abstract contract GuardianModule is SecurityModule
         if (_logicalSender == wallet ||
             _logicalSender == Wallet(wallet).owner()) {
             _lockWallet(wallet, address(0), true);
-        } else if (controllerCache.securityStore.isGuardian(wallet, _logicalSender)) {
+        } else if (controllerCache.securityStore.isGuardian(wallet, _logicalSender, false)) {
             _lockWallet(wallet, _logicalSender, true);
         } else {
             revert("NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN");
@@ -173,13 +173,14 @@ abstract contract GuardianModule is SecurityModule
             )
         );
 
-        if (controllerCache.securityStore.isGuardianOrPendingAddition(request.wallet, newOwner)) {
-            controllerCache.securityStore.removeGuardian(request.wallet, newOwner, block.timestamp);
+        SecurityStore ss = controllerCache.securityStore;
+        if (ss.isGuardian(request.wallet, newOwner, true)) {
+            ss.removeGuardian(request.wallet, newOwner, block.timestamp, true);
         }
 
         Wallet(request.wallet).setOwner(newOwner);
         _lockWallet(request.wallet, address(this), false);
-        // TODO(kongliang): cancel or pending guardian addition and removal.
+        ss.cancelPendingGuardians(request.wallet);
 
         emit Recovered(request.wallet, newOwner);
     }
@@ -197,7 +198,8 @@ abstract contract GuardianModule is SecurityModule
     function _addGuardian(
         address wallet,
         address guardian,
-        uint    pendingPeriod
+        uint    pendingPeriod,
+        bool    alwaysOverride
         )
         private
     {
@@ -205,26 +207,28 @@ abstract contract GuardianModule is SecurityModule
         require(guardian != address(0), "ZERO_ADDRESS");
 
         SecurityStore ss = controllerCache.securityStore;
-        uint numGuardians = ss.numGuardiansWithPending(wallet);
+        uint numGuardians = ss.numGuardians(wallet, true);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
-        uint effectiveTime = block.timestamp;
+        uint validSince = block.timestamp;
         if (numGuardians >= 2) {
-            effectiveTime = block.timestamp + pendingPeriod;
+            validSince = block.timestamp + pendingPeriod;
         }
-        ss.addGuardian(wallet, guardian, effectiveTime);
-        emit GuardianAdded(wallet, guardian, effectiveTime);
+        validSince = ss.addGuardian(wallet, guardian, validSince, alwaysOverride);
+        emit GuardianAdded(wallet, guardian, validSince);
     }
 
     function _removeGuardian(
         address wallet,
         address guardian,
-        uint    pendingPeriod
+        uint    pendingPeriod,
+        bool    alwaysOverride
         )
         private
     {
-        uint effectiveTime = block.timestamp + pendingPeriod;
-        controllerCache.securityStore.removeGuardian(wallet, guardian, effectiveTime);
-        emit GuardianRemoved(wallet, guardian, effectiveTime);
+        uint validUntil = block.timestamp + pendingPeriod;
+        SecurityStore ss = controllerCache.securityStore;
+        validUntil = ss.removeGuardian(wallet, guardian, validUntil, alwaysOverride);
+        emit GuardianRemoved(wallet, guardian, validUntil);
     }
 }

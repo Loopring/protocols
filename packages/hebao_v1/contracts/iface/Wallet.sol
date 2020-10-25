@@ -11,9 +11,7 @@ pragma solidity ^0.7.0;
 ///      saving gas.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
+
 interface Wallet
 {
     function version() external pure returns (string memory);

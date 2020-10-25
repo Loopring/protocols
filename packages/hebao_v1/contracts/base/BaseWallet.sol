@@ -13,9 +13,7 @@ import "./Controller.sol";
 /// @dev This contract provides basic implementation for a Wallet.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
+
 abstract contract BaseWallet is ReentrancyGuard, Wallet
 {
     // WARNING: do not delete wallet state data to make this implementation
