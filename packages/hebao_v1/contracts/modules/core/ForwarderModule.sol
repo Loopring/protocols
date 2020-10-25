@@ -9,14 +9,14 @@ import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../base/BaseModule.sol";
+import "../security/SecurityModule.sol";
 import "./WalletFactory.sol";
 
 /// @title ForwarderModule
 /// @dev A module to support wallet meta-transactions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract ForwarderModule is BaseModule
+abstract contract ForwarderModule is SecurityModule
 {
     using AddressUtil   for address;
     using BytesUtil     for bytes;
@@ -49,6 +49,11 @@ abstract contract ForwarderModule is BaseModule
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
+    }
+
+    constructor()
+        SecurityModule(address(this))
+    {
     }
 
     function validateMetaTx(
@@ -220,6 +225,27 @@ abstract contract ForwarderModule is BaseModule
             success,
             gasUsed
         );
+    }
+
+    function batchCall(
+        address   wallet,
+        address[] calldata to,
+        bytes[]   calldata data
+        )
+        external
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
+    {
+        require(to.length == data.length, "INVALID_DATA");
+
+        for (uint i = 0; i < to.length; i++) {
+            // The trick is to append the really logical message sender and the
+            // transaction-aware hash to the end of the call data.
+            (bool success, ) = to[i].call(
+                abi.encodePacked(data[i], wallet, bytes32(0))
+            );
+            require(success, "BATCHED_CALL_FAILED");
+        }
     }
 
     function lastNonce(address wallet)
