@@ -71,6 +71,11 @@ abstract contract ForwarderModule is SecurityModule
         view
     {
         verifyTo(to, from, data);
+        require(
+            msg.sender != address(this) ||
+            data.toBytes4(0) == ForwarderModule.batchCall.selector,
+            "INVALID_TARGET"
+        );
 
         require(
             nonce == 0 && txAwareHash != 0 ||
@@ -227,6 +232,7 @@ abstract contract ForwarderModule is SecurityModule
         require(to.length == data.length, "INVALID_DATA");
 
         for (uint i = 0; i < to.length; i++) {
+            require(to[i] != address(this), "INVALID_TARGET");
             verifyTo(to[i], wallet, data[i]);
             // The trick is to append the really logical message sender and the
             // transaction-aware hash to the end of the call data.
@@ -256,7 +262,7 @@ abstract contract ForwarderModule is SecurityModule
     function verifyTo(
         address to,
         address wallet,
-        bytes memory data
+        bytes   memory data
         )
         internal
         view
