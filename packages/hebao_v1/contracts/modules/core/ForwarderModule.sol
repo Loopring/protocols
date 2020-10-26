@@ -9,14 +9,14 @@ import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../base/BaseModule.sol";
+import "../security/SecurityModule.sol";
 import "./WalletFactory.sol";
 
 /// @title ForwarderModule
 /// @dev A module to support wallet meta-transactions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract ForwarderModule is BaseModule
+abstract contract ForwarderModule is SecurityModule
 {
     using AddressUtil   for address;
     using BytesUtil     for bytes;
@@ -51,6 +51,11 @@ abstract contract ForwarderModule is BaseModule
         uint    gasLimit;
     }
 
+    constructor()
+        SecurityModule(address(this))
+    {
+    }
+
     function validateMetaTx(
         address from, // the wallet
         address to,
@@ -65,20 +70,13 @@ abstract contract ForwarderModule is BaseModule
         public
         view
     {
-        // Since this contract is a module, we need to prevent wallet from interacting with
-        // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
-        // so no Store can be used as 'to'.
+        verifyTo(to, from, data);
         require(
-            (to != address(this)) &&
-            controllerCache.moduleRegistry.isModuleRegistered(to) ||
-
-            // We only allow the wallet to call itself to addModule
-            (to == from) &&
-            data.toBytes4(0) == Wallet.addModule.selector ||
-
-            to == controllerCache.walletFactory,
-            "INVALID_DESTINATION_OR_METHOD"
+            msg.sender != address(this) ||
+            data.toBytes4(0) == ForwarderModule.batchCall.selector,
+            "INVALID_TARGET"
         );
+
         require(
             nonce == 0 && txAwareHash != 0 ||
             nonce != 0 && txAwareHash == 0,
@@ -222,6 +220,29 @@ abstract contract ForwarderModule is BaseModule
         );
     }
 
+    function batchCall(
+        address   wallet,
+        address[] calldata to,
+        bytes[]   calldata data
+        )
+        external
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
+    {
+        require(to.length == data.length, "INVALID_DATA");
+
+        for (uint i = 0; i < to.length; i++) {
+            require(to[i] != address(this), "INVALID_TARGET");
+            verifyTo(to[i], wallet, data[i]);
+            // The trick is to append the really logical message sender and the
+            // transaction-aware hash to the end of the call data.
+            (bool success, ) = to[i].call(
+                abi.encodePacked(data[i], wallet, bytes32(0))
+            );
+            require(success, "BATCHED_CALL_FAILED");
+        }
+    }
+
     function lastNonce(address wallet)
         public
         view
@@ -236,6 +257,29 @@ abstract contract ForwarderModule is BaseModule
         returns (bool)
     {
         return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
+    }
+
+    function verifyTo(
+        address to,
+        address wallet,
+        bytes   memory data
+        )
+        internal
+        view
+    {
+        // Since this contract is a module, we need to prevent wallet from interacting with
+        // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
+        // so no Store can be used as 'to'.
+        require(
+            controllerCache.moduleRegistry.isModuleRegistered(to) ||
+
+            // We only allow the wallet to call itself to addModule
+            (to == wallet) &&
+            data.toBytes4(0) == Wallet.addModule.selector ||
+
+            to == controllerCache.walletFactory,
+            "INVALID_DESTINATION_OR_METHOD"
+        );
     }
 
     function verifyAndUpdateNonce(address wallet, uint nonce)
