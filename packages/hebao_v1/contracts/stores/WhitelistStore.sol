@@ -23,7 +23,7 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         uint    effectiveTime
     );
 
-    event Whitelisted(
+    event DappWhitelisted(
         address addr,
         bool    whitelisted
     );
@@ -107,7 +107,7 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         onlyManager
     {
         addAddressToSet(DAPPS, addr, true);
-        emit Whitelisted(addr, true);
+        emit DappWhitelisted(addr, true);
     }
 
     function removeDapp(address addr)
@@ -115,7 +115,7 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         onlyManager
     {
         removeAddressFromSet(DAPPS, addr);
-        emit Whitelisted(addr, false);
+        emit DappWhitelisted(addr, false);
     }
 
     function dapps()
