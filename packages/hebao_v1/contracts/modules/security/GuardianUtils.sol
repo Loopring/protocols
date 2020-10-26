@@ -61,6 +61,7 @@ library GuardianUtils
         uint numExtendedSigners = allGuardians.length;
         if (walletOwnerSigned) {
             numExtendedSigners += 1;
+            require(signers.length > 1, "NO_GUARDIAN_SIGNED_BESIDES_OWNER");
         }
 
         return hasMajority(signers.length, numExtendedSigners);
