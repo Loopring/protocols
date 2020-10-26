@@ -131,7 +131,7 @@ abstract contract GuardianModule is SecurityModule
         _lockWallet(wallet, _logicalSender, true);
     }
 
-    function lock(
+    function lock2(
         SignedRequest.Request calldata request
         )
         external
