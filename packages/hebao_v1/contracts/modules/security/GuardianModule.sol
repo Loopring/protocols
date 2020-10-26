@@ -116,6 +116,21 @@ abstract contract GuardianModule is SecurityModule
         _removeGuardian(request.wallet, guardian, 0, true);
     }
 
+    function lock(address wallet)
+        external
+        txAwareHashNotAllowed()
+    {
+        address payable _logicalSender = logicalSender();
+        require(
+            _logicalSender == wallet ||
+            _logicalSender == Wallet(wallet).owner() ||
+            controllerCache.securityStore.isGuardian(wallet, _logicalSender, false),
+            "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
+        );
+
+        _lockWallet(wallet, _logicalSender, true);
+    }
+
     function lock(
         SignedRequest.Request calldata request
         )
