@@ -65,7 +65,7 @@ module.exports = function(deployer, network, accounts) {
       const exchangeV3 = await ExchangeV3.deployed();
       await exchangeV3.initialize(
         LoopringV3.address,
-        accounts[0],
+        process.env.FROM,
         emptyMerkleRoot
       );
       await exchangeV3.setAgentRegistry(AgentRegistry.address);
@@ -87,6 +87,17 @@ module.exports = function(deployer, network, accounts) {
         LoopringAmmPoolCopy.address,
         true
       );
+      
+      // set ownerContract:
+      const ownerContract = await LoopringIOExchangeOwner.deployed();
+      await exchangeV3.transferOwnership(ownerContract.address);
+      const claimData = exchangeV3.contract.methods
+        .claimOwnership()
+        .encodeABI();
+      // console.log("claimData:", claimData);
+      await ownerContract.transact(claimData);
+      await ownerContract.openAccessToSubmitBlocks(true);
+      
       // do setup:
       const poolConfig1 = {
         sharedConfig: LoopringAmmSharedConfig.address,
@@ -117,16 +128,6 @@ module.exports = function(deployer, network, accounts) {
       await ammPool2.setupPool(poolConfig2);
       console.log("poolConfig2:", poolConfig2);
       console.log("ammPool2.address:", ammPool2.address);
-
-      // set ownerContract:
-      const ownerContract = await LoopringIOExchangeOwner.deployed();
-      await exchangeV3.transferOwnership(ownerContract.address);
-      const claimData = exchangeV3.contract.methods
-        .claimOwnership()
-        .encodeABI();
-      // console.log("claimData:", claimData);
-      await ownerContract.transact(claimData);
-      await ownerContract.openAccessToSubmitBlocks(true);
 
       const lrcToken = await LRCToken.deployed();
       const gtoToken = await GTOToken.deployed();
