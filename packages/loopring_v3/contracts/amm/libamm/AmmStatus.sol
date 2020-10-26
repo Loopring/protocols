@@ -22,7 +22,7 @@ library AmmStatus
     using MathUint96        for uint96;
     using SignatureUtil     for bytes32;
 
-    event AmmShutdown(uint timestamp);
+    event Shutdown(uint timestamp);
 
     function isOnline(AmmData.State storage S)
         internal
@@ -108,7 +108,7 @@ library AmmStatus
             }
         }
         S.shutdownTimestamp = uint64(block.timestamp);
-        emit AmmShutdown(block.timestamp);
+        emit Shutdown(block.timestamp);
     }
 
     // Anyone is able to update the cached exchange owner to the current owner.
