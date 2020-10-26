@@ -44,6 +44,10 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     ExchangeData.State public state;
     address public loopringAddr;
 
+    event Shutdown               (uint timestamp);
+    event WithdrawalModeActivated(uint timestamp);
+    event TransactionApproved    (address owner, bytes32 transactionHash);
+
     modifier onlyWhenUninitialized()
     {
         require(

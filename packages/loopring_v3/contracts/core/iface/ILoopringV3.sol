@@ -10,12 +10,6 @@ import "../../lib/Claimable.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 abstract contract ILoopringV3 is Claimable
 {
-    // == Events ==
-    event ExchangeStakeDeposited(address exchangeAddr, uint amount);
-    event ExchangeStakeWithdrawn(address exchangeAddr, uint amount);
-    event ExchangeStakeBurned(address exchangeAddr, uint amount);
-    event SettingsUpdated(uint time);
-
     // == Public Variables ==
     mapping (address => uint) internal exchangeStake;
 

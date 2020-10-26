@@ -20,6 +20,11 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
+    event ExchangeStakeDeposited(address exchangeAddr, uint amount);
+    event ExchangeStakeWithdrawn(address exchangeAddr, uint amount);
+    event ExchangeStakeBurned(address exchangeAddr, uint amount);
+    event SettingsUpdated(uint time);
+
     // -- Constructor --
     constructor(
         address _lrcAddress,
