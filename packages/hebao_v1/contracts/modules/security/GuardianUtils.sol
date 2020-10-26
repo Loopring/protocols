@@ -15,7 +15,8 @@ library GuardianUtils
         MAJORITY_OWNER_NOT_ALLOWED,
         MAJORITY_OWNER_ALLOWED,
         MAJORITY_OWNER_REQUIRED,
-        OWNER_OR_ANY_GUARDIAN
+        OWNER_OR_ANY_GUARDIAN,
+        ANY_GUARDIAN
     }
 
     function requireMajority(
@@ -53,6 +54,9 @@ library GuardianUtils
         }
 
         if (requirement == SigRequirement.OWNER_OR_ANY_GUARDIAN) {
+            return signers.length == 1;
+        } else if (requirement == SigRequirement.ANY_GUARDIAN) {
+            require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
             return signers.length == 1;
         }
 
