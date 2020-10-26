@@ -46,7 +46,7 @@ library GuardianUtils
             require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
             lastSigner = signers[i];
 
-            if (signers[i] == owner) {
+            if (signers[i] == owner || signers[i] == wallet) {
                 walletOwnerSigned = true;
             } else {
                 require(isWalletGuardian(allGuardians, signers[i]), "SIGNER_NOT_GUARDIAN");
