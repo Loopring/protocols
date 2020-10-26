@@ -52,7 +52,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
 
     await assertEventEmitted(
       ctx.finalSecurityModule,
-      "WalletLock",
+      "WalletLocked",
       (event: any) => {
         return event.wallet == wallet;
       }
@@ -87,7 +87,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     if (wasLocked && useMetaTx) {
       await assertEventEmitted(
         finalSecurityModule,
-        "WalletLock",
+        "WalletLocked",
         (event: any) => {
           return event.wallet == wallet && event.locked == false;
         }

@@ -19,7 +19,7 @@ abstract contract SecurityModule is MetaTxModule
     // The minimal number of guardians for recovery and locking.
     uint public constant TOUCH_GRACE_PERIOD = 30 days;
 
-    event WalletLock(
+    event WalletLocked(
         address indexed wallet,
         address         by,
         bool            locked
@@ -61,7 +61,7 @@ abstract contract SecurityModule is MetaTxModule
         internal
     {
         controllerCache.securityStore.setLock(wallet, locked);
-        emit WalletLock(wallet, by, locked);
+        emit WalletLocked(wallet, by, locked);
     }
 
     function _isWalletLocked(address wallet)
