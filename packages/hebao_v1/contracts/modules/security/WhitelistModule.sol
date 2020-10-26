@@ -57,7 +57,7 @@ abstract contract WhitelistModule is SecurityModule
         controller().verifyRequest(
             WHITELIST_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 ADD_TO_WHITELIST_TYPEHASH,
@@ -94,7 +94,7 @@ abstract contract WhitelistModule is SecurityModule
         controller().verifyRequest(
             WHITELIST_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 REMOVE_FROM_WHITELIST_TYPEHASH,
