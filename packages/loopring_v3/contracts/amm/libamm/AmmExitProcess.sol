@@ -66,6 +66,12 @@ library AmmExitProcess
             if (!slippageOK) {
                 AmmUtil.transferOut(address(this), exit.burnAmount, exit.owner);
                 emit ForcedExitProcessed(exit.owner, 0, new uint96[](0));
+                // check no pool tokens are transfered on L2:
+                for (uint i = 0; i < ctx.tokens.length; i++) {
+                    TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
+                    require(transfer.amount == 0, "INVALID_AMM_EXIT_AMOUNT");
+                }
+                
                 return;
             }
 
