@@ -12,9 +12,11 @@ library GuardianUtils
 {
     enum SigRequirement
     {
-        OwnerNotAllowed,
-        OwnerAllowed,
-        OwnerRequired
+        MAJORITY_OWNER_NOT_ALLOWED,
+        MAJORITY_OWNER_ALLOWED,
+        MAJORITY_OWNER_REQUIRED,
+        OWNER_OR_ANY_GUARDIAN,
+        ANY_GUARDIAN
     }
 
     function requireMajority(
@@ -51,10 +53,17 @@ library GuardianUtils
             }
         }
 
+        if (requirement == SigRequirement.OWNER_OR_ANY_GUARDIAN) {
+            return signers.length == 1;
+        } else if (requirement == SigRequirement.ANY_GUARDIAN) {
+            require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
+            return signers.length == 1;
+        }
+
         // Check owner requirements
-        if (requirement == SigRequirement.OwnerRequired) {
+        if (requirement == SigRequirement.MAJORITY_OWNER_REQUIRED) {
             require(walletOwnerSigned, "WALLET_OWNER_SIGNATURE_REQUIRED");
-        } else if (requirement == SigRequirement.OwnerNotAllowed) {
+        } else if (requirement == SigRequirement.MAJORITY_OWNER_NOT_ALLOWED) {
             require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
         }
 

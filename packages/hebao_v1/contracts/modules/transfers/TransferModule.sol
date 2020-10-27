@@ -64,7 +64,7 @@ abstract contract TransferModule is BaseTransferModule
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 CHANGE_DAILY_QUOTE_TYPEHASH,
@@ -106,7 +106,7 @@ abstract contract TransferModule is BaseTransferModule
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 TRANSFER_TOKEN_TYPEHASH,
@@ -152,7 +152,7 @@ abstract contract TransferModule is BaseTransferModule
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 CALL_CONTRACT_TYPEHASH,
@@ -195,7 +195,7 @@ abstract contract TransferModule is BaseTransferModule
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 APPROVE_TOKEN_TYPEHASH,
@@ -258,7 +258,7 @@ abstract contract TransferModule is BaseTransferModule
         controller().verifyRequest(
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             encoded
         );

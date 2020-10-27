@@ -30,6 +30,9 @@ abstract contract GuardianModule is SecurityModule
     bytes32 public constant RECOVER_TYPEHASH = keccak256(
         "recover(address wallet,uint256 validUntil,address newOwner)"
     );
+    bytes32 public constant LOCK_TYPEHASH = keccak256(
+        "lock(address wallet,uint256 validUntil)"
+    );
     bytes32 public constant UNLOCK_TYPEHASH = keccak256(
         "unlock(address wallet,uint256 validUntil)"
     );
@@ -66,7 +69,7 @@ abstract contract GuardianModule is SecurityModule
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 ADD_GUARDIAN_TYPEHASH,
@@ -100,7 +103,7 @@ abstract contract GuardianModule is SecurityModule
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 REMOVE_GUARDIAN_TYPEHASH,
@@ -118,14 +121,34 @@ abstract contract GuardianModule is SecurityModule
         txAwareHashNotAllowed()
     {
         address payable _logicalSender = logicalSender();
-        if (_logicalSender == wallet ||
-            _logicalSender == Wallet(wallet).owner()) {
-            _lockWallet(wallet, address(0), true);
-        } else if (controllerCache.securityStore.isGuardian(wallet, _logicalSender, false)) {
-            _lockWallet(wallet, _logicalSender, true);
-        } else {
-            revert("NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN");
-        }
+        require(
+            _logicalSender == wallet ||
+            _logicalSender == Wallet(wallet).owner() ||
+            controllerCache.securityStore.isGuardian(wallet, _logicalSender, false),
+            "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
+        );
+
+        _lockWallet(wallet, _logicalSender, true);
+    }
+
+    function lockWA(
+        SignedRequest.Request calldata request
+        )
+        external
+    {
+        controller().verifyRequest(
+            GUARDIAN_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.OWNER_OR_ANY_GUARDIAN,
+            request,
+            abi.encode(
+                LOCK_TYPEHASH,
+                request.wallet,
+                request.validUntil
+            )
+        );
+
+        _lockWallet(request.wallet, request.signers[0], true);
     }
 
     function unlock(
@@ -136,7 +159,7 @@ abstract contract GuardianModule is SecurityModule
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 UNLOCK_TYPEHASH,
@@ -163,7 +186,7 @@ abstract contract GuardianModule is SecurityModule
         controller().verifyRequest(
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerNotAllowed,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
             request,
             abi.encode(
                 RECOVER_TYPEHASH,
