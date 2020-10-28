@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
+pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
@@ -71,10 +72,11 @@ contract QuotaStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-        uint available = availableQuota(wallet);
+        Quota memory q = quotas[wallet];
+        uint available = _availableQuota(q);
         if (available != MAX_QUOTA) {
             require(available >= amount, "QUOTA_EXCEEDED");
-            addToSpent(wallet, amount);
+            _addToSpent(wallet, q, amount);
         }
     }
 
@@ -85,9 +87,7 @@ contract QuotaStore is DataStore
         public
         onlyWalletModule(wallet)
     {
-        Quota storage q = quotas[wallet];
-        q.spentAmount = spentQuota(wallet).add(amount).toUint128();
-        q.spentTimestamp = uint64(block.timestamp);
+        _addToSpent(wallet, quotas[wallet], amount);
     }
 
     // Returns 0 to indiciate unlimited quota
@@ -96,8 +96,7 @@ contract QuotaStore is DataStore
         view
         returns (uint)
     {
-        Quota storage q = quotas[wallet];
-        return q.pendingUntil <= block.timestamp ? q.pendingQuota : q.currentQuota;
+        return _currentQuota(quotas[wallet]);
     }
 
     // Returns 0 to indiciate unlimited quota
@@ -105,15 +104,11 @@ contract QuotaStore is DataStore
         public
         view
         returns (
-            uint _pendingQuota,
-            uint _pendingUntil
+            uint __pendingQuota,
+            uint __pendingUntil
         )
     {
-        Quota storage q = quotas[wallet];
-        if (q.pendingUntil > 0 && q.pendingUntil > block.timestamp) {
-            _pendingQuota = q.pendingQuota;
-            _pendingUntil = q.pendingUntil;
-        }
+        return _pendingQuota(quotas[wallet]);
     }
 
     function spentQuota(address wallet)
@@ -121,13 +116,7 @@ contract QuotaStore is DataStore
         view
         returns (uint)
     {
-        Quota storage q = quotas[wallet];
-        uint timeSinceLastSpent = block.timestamp.sub(q.spentTimestamp);
-        if (timeSinceLastSpent < 1 days) {
-            return uint(q.spentAmount).sub(timeSinceLastSpent.mul(q.spentAmount) / 1 days);
-        } else {
-            return 0;
-        }
+        return _spentQuota(quotas[wallet]);
     }
 
     function availableQuota(address wallet)
@@ -135,12 +124,7 @@ contract QuotaStore is DataStore
         view
         returns (uint)
     {
-        uint quota = currentQuota(wallet);
-        if (quota == 0) {
-            return MAX_QUOTA;
-        }
-        uint spent = spentQuota(wallet);
-        return quota > spent ? quota - spent : 0;
+        return _availableQuota(quotas[wallet]);
     }
 
     function hasEnoughQuota(
@@ -151,6 +135,79 @@ contract QuotaStore is DataStore
         view
         returns (bool)
     {
-        return availableQuota(wallet) >= requiredAmount;
+        return _hasEnoughQuota(quotas[wallet], requiredAmount);
+    }
+
+    // Internal
+
+    function _currentQuota(Quota memory q)
+        internal
+        view
+        returns (uint)
+    {
+        return q.pendingUntil <= block.timestamp ? q.pendingQuota : q.currentQuota;
+    }
+
+    function _pendingQuota(Quota memory q)
+        internal
+        view
+        returns (
+            uint __pendingQuota,
+            uint __pendingUntil
+        )
+    {
+        if (q.pendingUntil > 0 && q.pendingUntil > block.timestamp) {
+            __pendingQuota = q.pendingQuota;
+            __pendingUntil = q.pendingUntil;
+        }
+    }
+
+    function _spentQuota(Quota memory q)
+        public
+        view
+        returns (uint)
+    {
+        uint timeSinceLastSpent = block.timestamp.sub(q.spentTimestamp);
+        if (timeSinceLastSpent < 1 days) {
+            return uint(q.spentAmount).sub(timeSinceLastSpent.mul(q.spentAmount) / 1 days);
+        } else {
+            return 0;
+        }
+    }
+
+    function _availableQuota(Quota memory q)
+        public
+        view
+        returns (uint)
+    {
+        uint quota = _currentQuota(q);
+        if (quota == 0) {
+            return MAX_QUOTA;
+        }
+        uint spent = _spentQuota(q);
+        return quota > spent ? quota - spent : 0;
+    }
+
+    function _hasEnoughQuota(
+        Quota   memory q,
+        uint    requiredAmount
+        )
+        public
+        view
+        returns (bool)
+    {
+        return _availableQuota(q) >= requiredAmount;
+    }
+
+    function _addToSpent(
+        address wallet,
+        Quota   memory q,
+        uint    amount
+        )
+        internal
+    {
+        Quota storage s = quotas[wallet];
+        s.spentAmount = _spentQuota(q).add(amount).toUint128();
+        s.spentTimestamp = uint64(block.timestamp);
     }
 }

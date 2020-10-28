@@ -87,8 +87,9 @@ abstract contract TransferModule is BaseTransferModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        if (_needCheckQuota(wallet, amount) && !isTargetWhitelisted(wallet, to)) {
-            _updateQuota(wallet, token, amount);
+        QuotaStore qs = controllerCache.quotaStore;
+        if (_needCheckQuota(qs, wallet, amount) && !isTargetWhitelisted(wallet, to)) {
+            _updateQuota(qs, wallet, token, amount);
         }
 
         transferInternal(wallet, token, to, amount, logdata);
@@ -133,8 +134,9 @@ abstract contract TransferModule is BaseTransferModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
-        if (_needCheckQuota(wallet, value) && !isTargetWhitelisted(wallet, to)) {
-            _updateQuota(wallet, address(0), value);
+        QuotaStore qs = controllerCache.quotaStore;
+        if (_needCheckQuota(qs, wallet, value) && !isTargetWhitelisted(wallet, to)) {
+            _updateQuota(qs, wallet, address(0), value);
         }
 
         return callContractInternal(wallet, to, value, data);
@@ -179,9 +181,10 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        if (_needCheckQuota(wallet, additionalAllowance) &&
+        QuotaStore qs = controllerCache.quotaStore;
+        if (_needCheckQuota(qs, wallet, additionalAllowance) &&
             !isTargetWhitelisted(wallet, to)) {
-            _updateQuota(wallet, token, additionalAllowance);
+            _updateQuota(qs, wallet, token, additionalAllowance);
         }
     }
 
@@ -226,10 +229,11 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        if (_needCheckQuota(wallet, additionalAllowance.add(value)) &&
+        QuotaStore qs = controllerCache.quotaStore;
+        if (_needCheckQuota(qs, wallet, additionalAllowance.add(value)) &&
             !isTargetWhitelisted(wallet, to)) {
-            _updateQuota(wallet, token, additionalAllowance);
-            _updateQuota(wallet, address(0), value);
+            _updateQuota(qs, wallet, token, additionalAllowance);
+            _updateQuota(qs, wallet, address(0), value);
         }
 
         return callContractInternal(wallet, to, value, data);
