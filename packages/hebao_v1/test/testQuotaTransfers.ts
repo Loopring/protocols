@@ -871,7 +871,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
         "Token transfer " + (withQuota ? "(with quota)" : "(without quota)"),
         async () => {
           useMetaTx = true;
-          const owner = ctx.owners[0];
+          const owner = ctx.owners[withQuota ? 0 : 1];
           const to = ctx.miscAddresses[withQuota ? 0 : 1];
           const { wallet } = await createWallet(ctx, owner);
 
@@ -888,10 +888,17 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
           const quota = await ctx.quotaStore.currentQuota(wallet);
 
+          // Use a cached price oracle
           const TestPriceOracle = artifacts.require("TestPriceOracle");
           const testPriceOracle = await TestPriceOracle.new();
-          await defaultCtx.controllerImpl.setPriceOracle(
+          const PriceCacheStore = artifacts.require("PriceCacheStore");
+          const priceCacheStore = await PriceCacheStore.new(
             testPriceOracle.address
+          );
+          const lrcAddress = await getTokenAddress(ctx, "LRC");
+          await priceCacheStore.updateTokenPrice(lrcAddress, toAmount("1"));
+          await defaultCtx.controllerImpl.setPriceOracle(
+            priceCacheStore.address
           );
           await updateControllerCache(defaultCtx);
 

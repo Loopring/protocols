@@ -37,6 +37,21 @@ library SafeCast {
     }
 
     /**
+     * @dev Returns the downcasted uint96 from uint256, reverting on
+     * overflow (when the input is greater than largest uint96).
+     *
+     * Counterpart to Solidity's `uint96` operator.
+     *
+     * Requirements:
+     *
+     * - input must fit into 96 bits
+     */
+    function toUint96(uint256 value) internal pure returns (uint96) {
+        require(value < 2**96, "SafeCast: value doesn\'t fit in 96 bits");
+        return uint96(value);
+    }
+
+    /**
      * @dev Returns the downcasted uint64 from uint256, reverting on
      * overflow (when the input is greater than largest uint64).
      *
