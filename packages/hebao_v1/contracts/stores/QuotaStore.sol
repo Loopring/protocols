@@ -4,13 +4,12 @@ pragma solidity ^0.7.0;
 
 import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
-import "../lib/Claimable.sol";
 import "../thirdparty/SafeCast.sol";
 
 /// @title QuotaStore
 /// @dev This store maintains daily spending quota for each wallet.
 ///      A rolling daily limit is used.
-contract QuotaStore is DataStore, Claimable
+contract QuotaStore is DataStore
 {
     using MathUint for uint;
     using SafeCast for uint;
