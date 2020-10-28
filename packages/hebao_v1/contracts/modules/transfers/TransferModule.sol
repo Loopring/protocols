@@ -87,7 +87,7 @@ abstract contract TransferModule is BaseTransferModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        if (amount > 0 && !isTargetWhitelisted(wallet, to)) {
+        if (_needUpdateQuota(wallet, amount) && !isTargetWhitelisted(wallet, to)) {
             _updateQuota(wallet, token, amount);
         }
 
@@ -133,7 +133,7 @@ abstract contract TransferModule is BaseTransferModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
-        if (value > 0 && !isTargetWhitelisted(wallet, to)) {
+        if (_needUpdateQuota(wallet, value) && !isTargetWhitelisted(wallet, to)) {
             _updateQuota(wallet, address(0), value);
         }
 
@@ -179,7 +179,9 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        if (additionalAllowance > 0 && !isTargetWhitelisted(wallet, to)) {
+        if (additionalAllowance > 0 &&
+            _needUpdateQuota(wallet, amount) &&
+            !isTargetWhitelisted(wallet, to)) {
             _updateQuota(wallet, token, additionalAllowance);
         }
     }
@@ -225,7 +227,9 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        if ((additionalAllowance > 0 || value > 0) && !isTargetWhitelisted(wallet, to)) {
+        if ((additionalAllowance > 0 || value > 0) &&
+             _needUpdateQuota(wallet, amount) &&
+            !isTargetWhitelisted(wallet, to)) {
             _updateQuota(wallet, token, additionalAllowance);
             _updateQuota(wallet, address(0), value);
         }
