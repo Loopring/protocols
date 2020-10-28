@@ -72,7 +72,7 @@ abstract contract SecurityModule is MetaTxModule
         return controllerCache.securityStore.isLocked(wallet);
     }
 
-    function _needUpdateQuota(
+    function _needCheckQuota(
         address wallet,
         uint    amount
         )
