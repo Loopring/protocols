@@ -179,8 +179,7 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        if (additionalAllowance > 0 &&
-            _needCheckQuota(wallet, amount) &&
+        if (_needCheckQuota(wallet, additionalAllowance) &&
             !isTargetWhitelisted(wallet, to)) {
             _updateQuota(wallet, token, additionalAllowance);
         }
@@ -227,8 +226,7 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        if ((additionalAllowance > 0 || value > 0) &&
-             _needCheckQuota(wallet, amount) &&
+        if (_needCheckQuota(wallet, additionalAllowance.add(value)) &&
             !isTargetWhitelisted(wallet, to)) {
             _updateQuota(wallet, token, additionalAllowance);
             _updateQuota(wallet, address(0), value);
