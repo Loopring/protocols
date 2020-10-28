@@ -83,7 +83,7 @@ contract QuotaStore is DataStore, Claimable
         address wallet,
         uint    amount
         )
-        internal
+        public
         onlyWalletModule(wallet)
     {
         Quota storage q = quotas[wallet];
