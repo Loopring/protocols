@@ -50,7 +50,6 @@ module.exports = function(deployer, network, accounts) {
     await deployer.link(ExchangeGenesis, ExchangeV3);
     await deployer.link(ExchangeDeposits, ExchangeV3);
     await deployer.link(ExchangeWithdrawals, ExchangeV3);
-    await deployer.link(Cloneable, ExchangeV3);
 
     await deployer.deploy(ExchangeV3, { gas: 6700000 });
     await deployer.deploy(DefaultDepositContract, { gas: 6700000 });
@@ -87,7 +86,7 @@ module.exports = function(deployer, network, accounts) {
         LoopringAmmPoolCopy.address,
         true
       );
-      
+
       // set ownerContract:
       const ownerContract = await LoopringIOExchangeOwner.deployed();
       await exchangeV3.transferOwnership(ownerContract.address);
@@ -97,7 +96,7 @@ module.exports = function(deployer, network, accounts) {
       // console.log("claimData:", claimData);
       await ownerContract.transact(claimData);
       await ownerContract.openAccessToSubmitBlocks(true);
-      
+
       // do setup:
       const poolConfig1 = {
         sharedConfig: LoopringAmmSharedConfig.address,

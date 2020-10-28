@@ -2,7 +2,6 @@ const LRCToken = artifacts.require("./test/tokens/LRC.sol");
 const GTOToken = artifacts.require("./test/tokens/GTO.sol");
 const WETHToken = artifacts.require("./test/tokens/WETH.sol");
 
-const Cloneable = artifacts.require("Cloneable");
 const ProtocolFeeVault = artifacts.require("ProtocolFeeVault");
 const UserStakingPool = artifacts.require("UserStakingPool");
 const UniswapTokenSeller = artifacts.require("UniswapTokenSeller");
@@ -33,7 +32,6 @@ module.exports = function(deployer, network, accounts) {
   console.log("- LRCToken:", LRCToken.address);
   console.log("- GTOToken:", GTOToken.address);
   console.log("- WETHToken:", WETHToken.address);
-  console.log("- Cloneable:", Cloneable.address);
   console.log("- ProtocolFeeVault:", ProtocolFeeVault.address);
   console.log("- UserStakingPool:", UserStakingPool.address);
   // console.log("- UniswapTokenSeller:", UniswapTokenSeller.address);

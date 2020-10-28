@@ -134,4 +134,16 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
     {
         return circuits[blockType][blockSize][blockVersion].enabled;
     }
+
+    function getVerificationKey(
+        uint8  blockType,
+        uint16 blockSize,
+        uint8  blockVersion
+        )
+        external
+        view
+        returns (uint[18] memory)
+    {
+        return circuits[blockType][blockSize][blockVersion].verificationKey;
+    }
 }
