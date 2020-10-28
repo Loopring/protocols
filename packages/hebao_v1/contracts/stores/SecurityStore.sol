@@ -56,7 +56,8 @@ contract SecurityStore is GuardianStore
         )
         public
     {
-        if (block.timestamp > lastActive(wallet) + minInternval) {
+        if (wallets[wallet].inheritor != address(0) &&
+            block.timestamp > lastActive(wallet) + minInternval) {
             requireWalletModule(wallet);
             wallets[wallet].lastActive = uint64(block.timestamp);
         }
