@@ -84,6 +84,7 @@ abstract contract SecurityModule is MetaTxModule
         QuotaStore qs = controllerCache.quotaStore;
         if (qs == QuotaStore(0)) return false;
         if (qs.currentQuota(wallet) == 0 /* max/disabled */) return false;
+        return true;
     }
 
     function _updateQuota(
