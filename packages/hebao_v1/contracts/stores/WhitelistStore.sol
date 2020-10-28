@@ -36,7 +36,7 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         uint    effectiveTime
         )
         public
-        onlyWalletModule(wallet)
+        onlyFromSelfOrWalletModule(wallet)
     {
         addAddressToSet(walletKey(wallet), addr, true);
         uint effective = effectiveTime >= block.timestamp ? effectiveTime : block.timestamp;
@@ -49,7 +49,7 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         address addr
         )
         public
-        onlyWalletModule(wallet)
+        onlyFromSelfOrWalletModule(wallet)
     {
         removeAddressFromSet(walletKey(wallet), addr);
         delete effectiveTimeMap[wallet][addr];

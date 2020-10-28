@@ -86,7 +86,7 @@ abstract contract GuardianStore is DataStore
 
     function removeAllGuardians(address wallet)
         public
-        onlyWalletModule(wallet)
+        onlyFromSelfOrWalletModule(wallet)
     {
         Wallet storage w = wallets[wallet];
         for (uint i = 0; i < w.guardians.length; i++) {
@@ -97,7 +97,7 @@ abstract contract GuardianStore is DataStore
 
     function cancelPendingGuardians(address wallet)
         public
-        onlyWalletModule(wallet)
+        onlyFromSelfOrWalletModule(wallet)
     {
         Wallet storage w = wallets[wallet];
         for (uint i = 0; i < w.guardians.length; i++) {
@@ -121,7 +121,7 @@ abstract contract GuardianStore is DataStore
         bool    alwaysOverride
         )
         public
-        onlyWalletModule(wallet)
+        onlyFromSelfOrWalletModule(wallet)
         returns (uint)
     {
         require(validSince >= block.timestamp, "INVALID_VALID_SINCE");
@@ -176,7 +176,7 @@ abstract contract GuardianStore is DataStore
         bool    alwaysOverride
         )
         public
-        onlyWalletModule(wallet)
+        onlyFromSelfOrWalletModule(wallet)
         returns (uint)
     {
         require(validUntil >= block.timestamp, "INVALID_VALID_UNTIL");

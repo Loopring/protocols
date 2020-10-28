@@ -67,7 +67,7 @@ contract QuotaStore is DataStore, Claimable
         uint    effectiveTime
         )
         public
-        onlyWalletModule(wallet)
+        onlyFromSelfOrWalletModule(wallet)
     {
         quotas[wallet].currentQuota = currentQuota(wallet).toUint128();
         quotas[wallet].pendingQuota = newQuota.toUint128();
@@ -85,7 +85,7 @@ contract QuotaStore is DataStore, Claimable
         uint    amount
         )
         public
-        onlyWalletModule(wallet)
+        onlyFromSelfOrWalletModule(wallet)
     {
         Quota memory q = quotas[wallet];
         require(_hasEnoughQuota(q, amount), "QUOTA_EXCEEDED");
@@ -97,7 +97,7 @@ contract QuotaStore is DataStore, Claimable
         uint    amount
         )
         public
-        onlyWalletModule(wallet)
+        onlyFromSelfOrWalletModule(wallet)
     {
         _addToSpent(wallet, quotas[wallet], amount);
     }
