@@ -140,7 +140,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         uint16 blockSize,
         uint8  blockVersion
         )
-        external
+        public
         view
         returns (uint[18] memory)
     {
