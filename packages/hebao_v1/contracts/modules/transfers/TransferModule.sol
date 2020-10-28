@@ -271,7 +271,7 @@ abstract contract TransferModule is BaseTransferModule
         public
         view
         returns (
-            uint total,
+            uint total, // 0 indicates quota is disabled
             uint spent,
             uint available
         )
@@ -289,13 +289,14 @@ abstract contract TransferModule is BaseTransferModule
         private
     {
         QuotaStore qs = controllerCache.quotaStore;
-        uint _newQuota = newQuota == 0 ? qs.defaultQuota(): newQuota;
         uint _currentQuota = qs.currentQuota(wallet);
+        require(_currentQuota != newQuota, "SAME_VALUE");
 
-        if (_newQuota < _currentQuota) {
-            qs.changeQuota(wallet, _newQuota, block.timestamp);
-        } else if (_newQuota > _currentQuota) {
-            qs.changeQuota(wallet, _newQuota, block.timestamp.add(pendingPeriod));
+        uint _pendingPeriod = pendingPeriod;
+        if (newQuota > 0 && newQuota < _currentQuota) {
+            _pendingPeriod = 0;
         }
+
+        qs.changeQuota(wallet, newQuota, block.timestamp.add(_pendingPeriod));
     }
 }
