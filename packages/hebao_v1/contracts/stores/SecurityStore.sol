@@ -39,7 +39,6 @@ contract SecurityStore is GuardianStore
         uint    minInternval
         )
         external
-        onlyWalletModule(wallet)
     {
         if (wallets[wallet].inheritor != address(0) &&
             block.timestamp > lastActive(wallet) + minInternval) {
