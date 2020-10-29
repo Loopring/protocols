@@ -70,11 +70,11 @@ contract QuotaStore is DataStore
         uint    amount
         )
         external
-        onlyWalletModule(wallet)
     {
         Quota memory q = quotas[wallet];
         uint available = _availableQuota(q);
         if (available != MAX_QUOTA) {
+            requireWalletModule(wallet);
             require(available >= amount, "QUOTA_EXCEEDED");
             _addToSpent(wallet, q, amount);
         }
