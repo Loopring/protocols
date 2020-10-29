@@ -10,7 +10,7 @@ import "../../thirdparty/opengsn2/IKnowForwarderAddress.sol";
 
 contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress
 {
-    address public exchange;
+    address public immutable exchange;
 
     constructor(
         address _exchange,
