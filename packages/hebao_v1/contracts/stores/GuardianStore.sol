@@ -119,7 +119,7 @@ abstract contract GuardianStore is DataStore
         if (cancelled) {
             requireWalletModule(wallet);
         }
-        _cleanRemovedGuardians(wallet);
+        _cleanRemovedGuardians(wallet, true);
     }
 
     function addGuardian(
@@ -148,7 +148,7 @@ abstract contract GuardianStore is DataStore
             w.guardians.push(g);
             w.guardianIdx[addr] = w.guardians.length;
 
-            _cleanRemovedGuardians(wallet);
+            _cleanRemovedGuardians(wallet, false);
             return validSince;
         }
 
@@ -291,12 +291,15 @@ abstract contract GuardianStore is DataStore
         return _isActive(guardian) || includePendingAddition && _isPendingAddition(guardian);
     }
 
-    function _cleanRemovedGuardians(address wallet)
+    function _cleanRemovedGuardians(
+        address wallet,
+        bool    force
+        )
         private
     {
         Wallet storage w = wallets[wallet];
         uint count = w.guardians.length;
-        if (count < 10) return;
+        if (!force && count < 10) return;
 
         for (int i = int(count) - 1; i >= 0; i--) {
             Data.Guardian memory g = w.guardians[uint(i)];
