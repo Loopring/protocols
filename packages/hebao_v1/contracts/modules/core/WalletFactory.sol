@@ -90,7 +90,7 @@ contract WalletFactory is MetaTxAware
     {
         address _walletImplementation = walletImplementation;
         for (uint i = 0; i < salts.length; i++) {
-            createBlank_(_walletImplementation, modules, salts[i]);
+            _createBlank(_walletImplementation, modules, salts[i]);
         }
     }
 
@@ -172,7 +172,7 @@ contract WalletFactory is MetaTxAware
             _signature
         );
 
-        _wallet = consumeBlank_(_blank, _modules);
+        _wallet = _consumeBlank(_blank, _modules);
 
         initializeWallet_(
             _wallet,
@@ -194,7 +194,7 @@ contract WalletFactory is MetaTxAware
         external
         txAwareHashNotAllowed()
     {
-        registerENS_(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
+        _registerENS(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
     }
 
     function computeWalletAddress(address owner, uint salt)
@@ -232,7 +232,7 @@ contract WalletFactory is MetaTxAware
 
     // ---- internal functions ---
 
-    function consumeBlank_(
+    function _consumeBlank(
         address blank,
         address[] calldata modules
         )
@@ -246,7 +246,7 @@ contract WalletFactory is MetaTxAware
         return blank;
     }
 
-    function createBlank_(
+    function _createBlank(
         address   _walletImplementation,
         address[] calldata modules,
         uint      salt
@@ -254,7 +254,7 @@ contract WalletFactory is MetaTxAware
         internal
         returns (address blank)
     {
-        blank = deploy_(_walletImplementation, modules, address(0), salt);
+        blank = _deploy(_walletImplementation, modules, address(0), salt);
         bytes32 version = keccak256(abi.encode(modules));
         blanks[blank] = version;
 
@@ -269,10 +269,10 @@ contract WalletFactory is MetaTxAware
         internal
         returns (address wallet)
     {
-        return deploy_(walletImplementation, modules, owner, salt);
+        return _deploy(walletImplementation, modules, owner, salt);
     }
 
-    function deploy_(
+    function _deploy(
         address            _walletImplementation,
         address[] calldata modules,
         address            owner,
@@ -334,7 +334,7 @@ contract WalletFactory is MetaTxAware
         BaseWallet(_wallet.toPayable()).initOwner(_owner);
 
         if (bytes(_ensLabel).length > 0) {
-            registerENS_(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
+            _registerENS(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
         } else {
             require(allowEmptyENS, "EMPTY_ENS_NOT_ALLOWED");
         }
@@ -346,7 +346,7 @@ contract WalletFactory is MetaTxAware
         address owner,
         uint    salt
         )
-        internal
+        private
         view
         returns (address)
     {
@@ -356,14 +356,14 @@ contract WalletFactory is MetaTxAware
         );
     }
 
-    function registerENS_(
+    function _registerENS(
         address       wallet,
         address       owner,
         string memory ensLabel,
         bytes  memory ensApproval,
         bool          ensRegisterReverse
         )
-        internal
+        private
     {
         require(
             bytes(ensLabel).length > 0 &&

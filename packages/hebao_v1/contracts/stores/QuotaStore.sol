@@ -112,7 +112,7 @@ contract QuotaStore is DataStore
     }
 
     function spentQuota(address wallet)
-        public
+        external
         view
         returns (uint)
     {
