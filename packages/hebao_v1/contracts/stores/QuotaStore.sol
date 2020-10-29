@@ -112,7 +112,7 @@ contract QuotaStore is DataStore
     }
 
     function spentQuota(address wallet)
-        external
+        public
         view
         returns (uint)
     {
@@ -141,7 +141,7 @@ contract QuotaStore is DataStore
     // Internal
 
     function _currentQuota(Quota memory q)
-        internal
+        private
         view
         returns (uint)
     {
@@ -149,7 +149,7 @@ contract QuotaStore is DataStore
     }
 
     function _pendingQuota(Quota memory q)
-        internal
+        private
         view
         returns (
             uint __pendingQuota,
@@ -163,7 +163,7 @@ contract QuotaStore is DataStore
     }
 
     function _spentQuota(Quota memory q)
-        public
+        private
         view
         returns (uint)
     {
@@ -176,7 +176,7 @@ contract QuotaStore is DataStore
     }
 
     function _availableQuota(Quota memory q)
-        public
+        private
         view
         returns (uint)
     {
@@ -192,7 +192,7 @@ contract QuotaStore is DataStore
         Quota   memory q,
         uint    requiredAmount
         )
-        public
+        private
         view
         returns (bool)
     {
@@ -204,7 +204,7 @@ contract QuotaStore is DataStore
         Quota   memory q,
         uint    amount
         )
-        internal
+        private
     {
         Quota storage s = quotas[wallet];
         s.spentAmount = _spentQuota(q).add(amount).toUint128();

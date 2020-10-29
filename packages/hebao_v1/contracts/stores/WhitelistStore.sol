@@ -56,6 +56,22 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         emit Whitelisted(wallet, addr, false, 0);
     }
 
+    function addDapp(address addr)
+        external
+        onlyManager
+    {
+        addAddressToSet(DAPPS, addr, true);
+        emit DappWhitelisted(addr, true);
+    }
+
+    function removeDapp(address addr)
+        external
+        onlyManager
+    {
+        removeAddressFromSet(DAPPS, addr);
+        emit DappWhitelisted(addr, false);
+    }
+
     function whitelist(address wallet)
         public
         view
@@ -92,22 +108,6 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         returns (uint)
     {
         return numAddressesInSet(_walletKey(wallet));
-    }
-
-    function addDapp(address addr)
-        external
-        onlyManager
-    {
-        addAddressToSet(DAPPS, addr, true);
-        emit DappWhitelisted(addr, true);
-    }
-
-    function removeDapp(address addr)
-        external
-        onlyManager
-    {
-        removeAddressFromSet(DAPPS, addr);
-        emit DappWhitelisted(addr, false);
     }
 
     function dapps()
