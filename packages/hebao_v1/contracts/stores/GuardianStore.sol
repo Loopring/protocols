@@ -122,6 +122,12 @@ abstract contract GuardianStore is DataStore
         }
     }
 
+    function cleanRemovedGuardians(address wallet)
+        external
+    {
+        _cleanRemovedGuardians(wallet, true);
+    }
+
     function addGuardian(
         address wallet,
         address addr,
