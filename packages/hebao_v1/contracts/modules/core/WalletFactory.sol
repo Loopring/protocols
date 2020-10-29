@@ -23,7 +23,7 @@ import "../ControllerImpl.sol";
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 
-contract WalletFactory is MetaTxAware
+contract WalletFactory
 {
     using AddressUtil for address;
     using SignatureUtil for bytes32;
@@ -40,10 +40,10 @@ contract WalletFactory is MetaTxAware
 
     mapping(address => bytes32) blanks;
 
-    address        public walletImplementation;
-    bool           public allowEmptyENS; // MUST be false in production
-    ControllerImpl public controller;
-    bytes32        public DOMAIN_SEPERATOR;
+    address        public immutable walletImplementation;
+    bool           public immutable allowEmptyENS; // MUST be false in production
+    ControllerImpl public immutable controller;
+    bytes32        public immutable DOMAIN_SEPERATOR;
 
     struct ControllerCache
     {
@@ -59,23 +59,14 @@ contract WalletFactory is MetaTxAware
         address        _walletImplementation,
         bool           _allowEmptyENS
         )
-        MetaTxAware(address(0))
     {
         DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("WalletFactory", "1.2.0", address(this))
         );
         controller = _controller;
-        updateControllerCache();
+        _updateControllerCache(_controller);
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
-    }
-
-    function initMetaTxForwarder(address _metaTxForwarder)
-        external
-    {
-        require(metaTxForwarder == address(0), "INITIALIZED_ALREADY");
-        require(_metaTxForwarder != address(0), "INVALID_ADDRESS");
-        metaTxForwarder = _metaTxForwarder;
     }
 
     /// @dev Create a set of new wallet blanks to be used in the future.
@@ -86,11 +77,9 @@ contract WalletFactory is MetaTxAware
         uint[]    calldata salts
         )
         external
-        txAwareHashNotAllowed()
     {
-        address _walletImplementation = walletImplementation;
         for (uint i = 0; i < salts.length; i++) {
-            _createBlank(_walletImplementation, modules, salts[i]);
+            _createBlank(modules, salts[i]);
         }
     }
 
@@ -192,7 +181,6 @@ contract WalletFactory is MetaTxAware
         bool            _ensRegisterReverse
         )
         external
-        txAwareHashNotAllowed()
     {
         _registerENS(_wallet, _owner, _ensLabel, _ensApproval, _ensRegisterReverse);
     }
@@ -224,13 +212,19 @@ contract WalletFactory is MetaTxAware
     function updateControllerCache()
         public
     {
-        BaseENSManager ensManager = controller.ensManager();
+        _updateControllerCache(controller);
+    }
+
+    // ---- internal functions ---
+
+    function _updateControllerCache(ControllerImpl _controller)
+        private
+    {
+        BaseENSManager ensManager = _controller.ensManager();
         controllerCache.ensManager = ensManager;
         controllerCache.ensResolver = ensManager.ensResolver();
         controllerCache.ensReverseRegistrar = ensManager.getENSReverseRegistrar();
     }
-
-    // ---- internal functions ---
 
     function _consumeBlank(
         address blank,
@@ -247,14 +241,13 @@ contract WalletFactory is MetaTxAware
     }
 
     function _createBlank(
-        address   _walletImplementation,
         address[] calldata modules,
         uint      salt
         )
         internal
         returns (address blank)
     {
-        blank = _deploy(_walletImplementation, modules, address(0), salt);
+        blank = _deploy(modules, address(0), salt);
         bytes32 version = keccak256(abi.encode(modules));
         blanks[blank] = version;
 
@@ -269,11 +262,10 @@ contract WalletFactory is MetaTxAware
         internal
         returns (address wallet)
     {
-        return _deploy(walletImplementation, modules, owner, salt);
+        return _deploy(modules, owner, salt);
     }
 
     function _deploy(
-        address            _walletImplementation,
         address[] calldata modules,
         address            owner,
         uint               salt
@@ -283,7 +275,7 @@ contract WalletFactory is MetaTxAware
     {
         wallet = Create2.deploy(
             keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
-            CloneFactory.getByteCode(_walletImplementation)
+            CloneFactory.getByteCode(walletImplementation)
         );
 
         BaseWallet(wallet).init(controller, modules);

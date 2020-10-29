@@ -17,7 +17,7 @@ contract FinalSecurityModule is
     InheritanceModule,
     WhitelistModule
 {
-    ControllerImpl private controller_;
+    ControllerImpl private immutable controller_;
 
     constructor(
         ControllerImpl _controller,
@@ -29,7 +29,7 @@ contract FinalSecurityModule is
         WhitelistModule()
     {
         controller_ = _controller;
-        updateControllerCache();
+        _updateControllerCache(_controller);
     }
 
     function controller()

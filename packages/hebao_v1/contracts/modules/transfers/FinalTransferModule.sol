@@ -12,7 +12,7 @@ import "./TransferModule.sol";
 ///      by wallet creation.
 contract FinalTransferModule is TransferModule
 {
-    ControllerImpl private controller_;
+    ControllerImpl private immutable controller_;
 
     constructor(
         ControllerImpl _controller,
@@ -22,7 +22,7 @@ contract FinalTransferModule is TransferModule
         TransferModule()
     {
         controller_ = _controller;
-        updateControllerCache();
+        _updateControllerCache(_controller);
     }
 
     function controller()

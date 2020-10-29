@@ -14,8 +14,8 @@ contract UniswapV2PriceOracle is PriceOracle
 {
     using MathUint   for uint;
 
-    IUniswapV2Factory factory;
-    address wethAddress;
+    IUniswapV2Factory immutable factory;
+    address immutable wethAddress;
 
     constructor(
         IUniswapV2Factory _factory,

@@ -15,7 +15,7 @@ abstract contract WhitelistModule is SecurityModule
     using MathUint      for uint;
     using SignedRequest for ControllerImpl;
 
-    bytes32 public WHITELIST_DOMAIN_SEPERATOR;
+    bytes32 public immutable WHITELIST_DOMAIN_SEPERATOR;
 
     uint public constant WHITELIST_PENDING_PERIOD = 1 days;
 

@@ -14,8 +14,8 @@ import "../base/BaseModule.sol";
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 contract AddOfficialGuardianModule is BaseModule {
-    ControllerImpl private controller_;
-    address        public  officialGuardian;
+    ControllerImpl private immutable controller_;
+    address        public  immutable officialGuardian;
 
     constructor(
         ControllerImpl   _controller,
@@ -23,7 +23,7 @@ contract AddOfficialGuardianModule is BaseModule {
         )
     {
         controller_ = _controller;
-        updateControllerCache();
+        _updateControllerCache(_controller);
         officialGuardian = _officialGuardian;
     }
 

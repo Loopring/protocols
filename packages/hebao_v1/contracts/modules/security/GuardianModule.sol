@@ -16,7 +16,7 @@ abstract contract GuardianModule is SecurityModule
     using AddressUtil   for address;
     using SignedRequest for ControllerImpl;
 
-    bytes32 public GUARDIAN_DOMAIN_SEPERATOR;
+    bytes32 public immutable GUARDIAN_DOMAIN_SEPERATOR;
 
     uint public constant MAX_GUARDIANS           = 10;
     uint public constant GUARDIAN_PENDING_PERIOD = 7 days;

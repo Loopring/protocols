@@ -112,7 +112,14 @@ abstract contract BaseModule is Module
     function updateControllerCache()
         public
     {
-        ControllerImpl _controller = controller();
+        _updateControllerCache(controller());
+    }
+
+    // ===== internal & private methods =====
+
+    function _updateControllerCache(ControllerImpl _controller)
+        internal
+    {
         controllerCache.moduleRegistry = _controller.moduleRegistry();
         controllerCache.securityStore = _controller.securityStore();
         controllerCache.whitelistStore = _controller.whitelistStore();
@@ -122,8 +129,6 @@ abstract contract BaseModule is Module
         controllerCache.walletFactory = _controller.walletFactory();
         controllerCache.collectTo = _controller.collectTo();
     }
-
-    // ===== internal & private methods =====
 
     /// @dev Binds all methods to the given wallet.
     function bindMethods(address wallet)

@@ -17,7 +17,7 @@ abstract contract TransferModule is BaseTransferModule
     using MathUint      for uint;
     using SignedRequest for ControllerImpl;
 
-    bytes32 public TRANSFER_DOMAIN_SEPERATOR;
+    bytes32 public immutable TRANSFER_DOMAIN_SEPERATOR;
 
     uint public constant QUOTA_PENDING_PERIOD = 1 days;
 

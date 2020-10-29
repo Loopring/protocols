@@ -21,7 +21,7 @@ abstract contract MetaTxAware
     using AddressUtil for address;
     using BytesUtil   for bytes;
 
-    address public metaTxForwarder;
+    address public immutable metaTxForwarder;
 
     constructor(address _metaTxForwarder)
     {
