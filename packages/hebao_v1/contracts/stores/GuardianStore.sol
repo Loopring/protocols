@@ -118,8 +118,8 @@ abstract contract GuardianStore is DataStore
         }
         if (cancelled) {
             requireWalletModule(wallet);
-            _cleanRemovedGuardians(wallet);
         }
+        _cleanRemovedGuardians(wallet);
     }
 
     function addGuardian(
