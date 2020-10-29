@@ -87,8 +87,9 @@ abstract contract TransferModule is BaseTransferModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        if (amount > 0 && !isTargetWhitelisted(wallet, to)) {
-            _updateQuota(wallet, token, amount);
+        QuotaStore qs = controllerCache.quotaStore;
+        if (_needCheckQuota(qs, wallet, amount) && !isTargetWhitelisted(wallet, to)) {
+            _updateQuota(qs, wallet, token, amount);
         }
 
         transferInternal(wallet, token, to, amount, logdata);
@@ -133,8 +134,9 @@ abstract contract TransferModule is BaseTransferModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
-        if (value > 0 && !isTargetWhitelisted(wallet, to)) {
-            _updateQuota(wallet, address(0), value);
+        QuotaStore qs = controllerCache.quotaStore;
+        if (_needCheckQuota(qs, wallet, value) && !isTargetWhitelisted(wallet, to)) {
+            _updateQuota(qs, wallet, address(0), value);
         }
 
         return callContractInternal(wallet, to, value, data);
@@ -179,8 +181,10 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        if (additionalAllowance > 0 && !isTargetWhitelisted(wallet, to)) {
-            _updateQuota(wallet, token, additionalAllowance);
+        QuotaStore qs = controllerCache.quotaStore;
+        if (_needCheckQuota(qs, wallet, additionalAllowance) &&
+            !isTargetWhitelisted(wallet, to)) {
+            _updateQuota(qs, wallet, token, additionalAllowance);
         }
     }
 
@@ -225,9 +229,11 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        if ((additionalAllowance > 0 || value > 0) && !isTargetWhitelisted(wallet, to)) {
-            _updateQuota(wallet, token, additionalAllowance);
-            _updateQuota(wallet, address(0), value);
+        QuotaStore qs = controllerCache.quotaStore;
+        if (_needCheckQuota(qs, wallet, additionalAllowance.add(value)) &&
+            !isTargetWhitelisted(wallet, to)) {
+            _updateQuota(qs, wallet, token, additionalAllowance);
+            _updateQuota(qs, wallet, address(0), value);
         }
 
         return callContractInternal(wallet, to, value, data);
@@ -271,7 +277,7 @@ abstract contract TransferModule is BaseTransferModule
         public
         view
         returns (
-            uint total,
+            uint total, // 0 indicates quota is disabled
             uint spent,
             uint available
         )
@@ -289,13 +295,14 @@ abstract contract TransferModule is BaseTransferModule
         private
     {
         QuotaStore qs = controllerCache.quotaStore;
-        uint _newQuota = newQuota == 0 ? qs.defaultQuota(): newQuota;
         uint _currentQuota = qs.currentQuota(wallet);
+        require(_currentQuota != newQuota, "SAME_VALUE");
 
-        if (_newQuota < _currentQuota) {
-            qs.changeQuota(wallet, _newQuota, block.timestamp);
-        } else if (_newQuota > _currentQuota) {
-            qs.changeQuota(wallet, _newQuota, block.timestamp.add(pendingPeriod));
+        uint _pendingPeriod = pendingPeriod;
+        if (newQuota > 0 && newQuota < _currentQuota) {
+            _pendingPeriod = 0;
         }
+
+        qs.changeQuota(wallet, newQuota, block.timestamp.add(_pendingPeriod));
     }
 }

@@ -17,14 +17,6 @@ contract SecurityStore is GuardianStore
 
     constructor() GuardianStore() {}
 
-    function isLocked(address wallet)
-        public
-        view
-        returns (bool)
-    {
-        return wallets[wallet].locked;
-    }
-
     function setLock(
         address wallet,
         bool    locked
@@ -33,14 +25,6 @@ contract SecurityStore is GuardianStore
         onlyWalletModule(wallet)
     {
         wallets[wallet].locked = locked;
-    }
-
-    function lastActive(address wallet)
-        public
-        view
-        returns (uint)
-    {
-        return wallets[wallet].lastActive;
     }
 
     function touchLastActive(address wallet)
@@ -61,6 +45,35 @@ contract SecurityStore is GuardianStore
             requireWalletModule(wallet);
             wallets[wallet].lastActive = uint64(block.timestamp);
         }
+    }
+
+    function setInheritor(
+        address wallet,
+        address who,
+        uint32 _inheritWaitingPeriod
+        )
+        external
+        onlyWalletModule(wallet)
+    {
+        wallets[wallet].inheritor = who;
+        wallets[wallet].inheritWaitingPeriod = _inheritWaitingPeriod;
+        wallets[wallet].lastActive = uint64(block.timestamp);
+    }
+
+    function isLocked(address wallet)
+        public
+        view
+        returns (bool)
+    {
+        return wallets[wallet].locked;
+    }
+
+    function lastActive(address wallet)
+        public
+        view
+        returns (uint)
+    {
+        return wallets[wallet].lastActive;
     }
 
     function inheritor(address wallet)
@@ -89,18 +102,5 @@ contract SecurityStore is GuardianStore
 
         _who = _inheritor;
         _effectiveTimestamp = _lastActive + _inheritWaitingPeriod;
-    }
-
-    function setInheritor(
-        address wallet,
-        address who,
-        uint32 _inheritWaitingPeriod
-        )
-        external
-        onlyWalletModule(wallet)
-    {
-        wallets[wallet].inheritor = who;
-        wallets[wallet].inheritWaitingPeriod = _inheritWaitingPeriod;
-        wallets[wallet].lastActive = uint64(block.timestamp);
     }
 }

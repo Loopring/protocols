@@ -60,10 +60,7 @@ export async function getContext() {
     securityStore: await contracts.SecurityStore.deployed(),
     whitelistStore: await contracts.WhitelistStore.deployed(),
     quotaStore: await contracts.QuotaStore.deployed(),
-    priceCacheStore: await contracts.PriceCacheStore.new(
-      Constants.zeroAddress,
-      3600 * 240
-    )
+    priceCacheStore: await contracts.PriceCacheStore.new(Constants.zeroAddress)
   };
   return context;
 }

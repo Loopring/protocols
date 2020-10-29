@@ -5,23 +5,22 @@ pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
-import "../lib/Claimable.sol";
 import "../thirdparty/SafeCast.sol";
 
 /// @title QuotaStore
 /// @dev This store maintains daily spending quota for each wallet.
 ///      A rolling daily limit is used.
-contract QuotaStore is DataStore, Claimable
+contract QuotaStore is DataStore
 {
     using MathUint for uint;
     using SafeCast for uint;
 
-    uint128 public defaultQuota;
+    uint128 public constant MAX_QUOTA = uint128(-1);
 
     // Optimized to fit into 64 bytes (2 slots)
     struct Quota
     {
-        uint128 currentQuota; // 0 indicates default
+        uint128 currentQuota;
         uint128 pendingQuota;
         uint128 spentAmount;
         uint64  spentTimestamp;
@@ -30,37 +29,18 @@ contract QuotaStore is DataStore, Claimable
 
     mapping (address => Quota) public quotas;
 
-    event DefaultQuotaChanged(
-        uint prevValue,
-        uint currentValue
-    );
-
     event QuotaScheduled(
         address wallet,
         uint    pendingQuota,
         uint64  pendingUntil
     );
 
-    constructor(uint128 _defaultQuota)
+    constructor()
         DataStore()
     {
-        defaultQuota = _defaultQuota;
     }
 
-    function changeDefaultQuota(uint128 _defaultQuota)
-        external
-        onlyOwner
-    {
-        require(
-            _defaultQuota != defaultQuota &&
-            _defaultQuota >= 1 ether &&
-            _defaultQuota <= 100 ether,
-            "INVALID_DEFAULT_QUOTA"
-        );
-        emit DefaultQuotaChanged(defaultQuota, _defaultQuota);
-        defaultQuota = _defaultQuota;
-    }
-
+    // 0 for newQuota indicates unlimited quota, or daily quota is disabled.
     function changeQuota(
         address wallet,
         uint    newQuota,
@@ -69,6 +49,11 @@ contract QuotaStore is DataStore, Claimable
         external
         onlyWalletModule(wallet)
     {
+        require(newQuota <= MAX_QUOTA, "INVALID_VALUE");
+        if (newQuota == MAX_QUOTA) {
+            newQuota = 0;
+        }
+
         quotas[wallet].currentQuota = currentQuota(wallet).toUint128();
         quotas[wallet].pendingQuota = newQuota.toUint128();
         quotas[wallet].pendingUntil = effectiveTime.toUint64();
@@ -88,8 +73,11 @@ contract QuotaStore is DataStore, Claimable
         onlyWalletModule(wallet)
     {
         Quota memory q = quotas[wallet];
-        require(_hasEnoughQuota(q, amount), "QUOTA_EXCEEDED");
-        _addToSpent(wallet, q, amount);
+        uint available = _availableQuota(q);
+        if (available != MAX_QUOTA) {
+            require(available >= amount, "QUOTA_EXCEEDED");
+            _addToSpent(wallet, q, amount);
+        }
     }
 
     function addToSpent(
@@ -102,6 +90,7 @@ contract QuotaStore is DataStore, Claimable
         _addToSpent(wallet, quotas[wallet], amount);
     }
 
+    // Returns 0 to indiciate unlimited quota
     function currentQuota(address wallet)
         public
         view
@@ -110,6 +99,7 @@ contract QuotaStore is DataStore, Claimable
         return _currentQuota(quotas[wallet]);
     }
 
+    // Returns 0 to indiciate unlimited quota
     function pendingQuota(address wallet)
         public
         view
@@ -122,7 +112,7 @@ contract QuotaStore is DataStore, Claimable
     }
 
     function spentQuota(address wallet)
-        external
+        public
         view
         returns (uint)
     {
@@ -151,18 +141,15 @@ contract QuotaStore is DataStore, Claimable
     // Internal
 
     function _currentQuota(Quota memory q)
-        internal
+        private
         view
         returns (uint)
     {
-        uint value = q.pendingUntil <= block.timestamp ?
-            q.pendingQuota : q.currentQuota;
-
-        return value == 0 ? defaultQuota : value;
+        return q.pendingUntil <= block.timestamp ? q.pendingQuota : q.currentQuota;
     }
 
     function _pendingQuota(Quota memory q)
-        internal
+        private
         view
         returns (
             uint __pendingQuota,
@@ -170,13 +157,13 @@ contract QuotaStore is DataStore, Claimable
         )
     {
         if (q.pendingUntil > 0 && q.pendingUntil > block.timestamp) {
-            __pendingQuota = q.pendingQuota > 0 ? q.pendingQuota : defaultQuota;
+            __pendingQuota = q.pendingQuota;
             __pendingUntil = q.pendingUntil;
         }
     }
 
     function _spentQuota(Quota memory q)
-        public
+        private
         view
         returns (uint)
     {
@@ -189,11 +176,14 @@ contract QuotaStore is DataStore, Claimable
     }
 
     function _availableQuota(Quota memory q)
-        public
+        private
         view
         returns (uint)
     {
         uint quota = _currentQuota(q);
+        if (quota == 0) {
+            return MAX_QUOTA;
+        }
         uint spent = _spentQuota(q);
         return quota > spent ? quota - spent : 0;
     }
@@ -202,7 +192,7 @@ contract QuotaStore is DataStore, Claimable
         Quota   memory q,
         uint    requiredAmount
         )
-        public
+        private
         view
         returns (bool)
     {
@@ -214,7 +204,7 @@ contract QuotaStore is DataStore, Claimable
         Quota   memory q,
         uint    amount
         )
-        internal
+        private
     {
         Quota storage s = quotas[wallet];
         s.spentAmount = _spentQuota(q).add(amount).toUint128();
