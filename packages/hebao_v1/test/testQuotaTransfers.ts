@@ -35,7 +35,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
   let priceOracleMock: any;
   let targetContract: any;
-  let defaultQuota: BN;
+  let maxQuota: BN;
   let quotaPeriod: number; // 24 * 3600; // 1 day
 
   let useMetaTx: boolean = false;
@@ -155,7 +155,10 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     const newAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
     const newSpentQuota = await ctx.quotaStore.spentQuota(wallet);
 
-    const quotaDelta = isWhitelisted || approved ? new BN(0) : assetValue;
+    const quotaDelta =
+      isWhitelisted || approved || oldAvailableQuota.eq(maxQuota)
+        ? new BN(0)
+        : assetValue;
     equalWithPrecision(
       oldAvailableQuota,
       newAvailableQuota.add(quotaDelta),
@@ -853,68 +856,95 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
     targetContract = await TestTargetContract.new();
-    quotaPeriod = (await ctx.finalTransferModule.QUOTA_PENDING_PERIOD()).toNumber();
-    defaultQuota = await ctx.quotaStore.defaultQuota();
+    quotaPeriod = (
+      await ctx.finalTransferModule.QUOTA_PENDING_PERIOD()
+    ).toNumber();
+    maxQuota = await ctx.quotaStore.MAX_QUOTA();
 
     await defaultCtx.controllerImpl.setPriceOracle(priceOracleMock.address);
     await updateControllerCache(defaultCtx);
   });
 
-  [true].forEach(function(metaTx) {
-    describe(description("Benchmark TransferToken", metaTx), () => {
-      it(description("benchmark", metaTx), async () => {
-        useMetaTx = metaTx;
-        const owner = ctx.owners[0];
-        const to = ctx.miscAddresses[0];
-        const { wallet } = await createWallet(ctx, owner);
+  describe.only("Benchmark", () => {
+    [false, true].forEach(function(withQuota) {
+      it(
+        "Token transfer " + (withQuota ? "(with quota)" : "(without quota)"),
+        async () => {
+          useMetaTx = true;
+          const owner = ctx.owners[withQuota ? 0 : 1];
+          const to = ctx.miscAddresses[withQuota ? 0 : 1];
+          const { wallet } = await createWallet(ctx, owner);
 
-        const quota = await ctx.quotaStore.currentQuota(wallet);
+          if (withQuota) {
+            const targetQuota = new BN(10);
+            await ctx.finalTransferModule.changeDailyQuota(
+              wallet,
+              targetQuota.toString(10),
+              { from: owner }
+            );
+            // Skip forward `quotaPeriod`
+            await advanceTimeAndBlockAsync(quotaPeriod);
+          }
 
-        const TestPriceOracle = artifacts.require("TestPriceOracle");
-        const testPriceOracle = await TestPriceOracle.new();
-        await defaultCtx.controllerImpl.setPriceOracle(testPriceOracle.address);
-        await updateControllerCache(defaultCtx);
+          const quota = await ctx.quotaStore.currentQuota(wallet);
 
-        // Use up the quota in multiple transfers
-        const transferValue = quota.div(new BN(7));
-        await transferTokenChecked(
-          owner,
-          wallet,
-          "ETH",
-          to,
-          transferValue,
-          "0x"
-        );
+          // Use a cached price oracle
+          const TestPriceOracle = artifacts.require("TestPriceOracle");
+          const testPriceOracle = await TestPriceOracle.new();
+          const PriceCacheStore = artifacts.require("PriceCacheStore");
+          const priceCacheStore = await PriceCacheStore.new(
+            testPriceOracle.address
+          );
+          const lrcAddress = await getTokenAddress(ctx, "LRC");
+          await priceCacheStore.updateTokenPrice(lrcAddress, toAmount("1"));
+          await defaultCtx.controllerImpl.setPriceOracle(
+            priceCacheStore.address
+          );
+          await updateControllerCache(defaultCtx);
 
-        await transferTokenChecked(
-          owner,
-          wallet,
-          "ETH",
-          to,
-          transferValue,
-          "0x"
-        );
+          // Use up the quota in multiple transfers
+          const transferValue = withQuota
+            ? quota.div(new BN(7))
+            : toAmount("1");
+          await transferTokenChecked(
+            owner,
+            wallet,
+            "ETH",
+            to,
+            transferValue,
+            "0x"
+          );
 
-        await transferTokenChecked(
-          owner,
-          wallet,
-          "LRC",
-          to,
-          transferValue,
-          "0x",
-          { assetValue: transferValue }
-        );
+          await transferTokenChecked(
+            owner,
+            wallet,
+            "ETH",
+            to,
+            transferValue,
+            "0x"
+          );
 
-        await transferTokenChecked(
-          owner,
-          wallet,
-          "LRC",
-          to,
-          transferValue,
-          "0x",
-          { assetValue: transferValue }
-        );
-      });
+          await transferTokenChecked(
+            owner,
+            wallet,
+            "LRC",
+            to,
+            transferValue,
+            "0x",
+            { assetValue: transferValue }
+          );
+
+          await transferTokenChecked(
+            owner,
+            wallet,
+            "LRC",
+            to,
+            transferValue,
+            "0x",
+            { assetValue: transferValue }
+          );
+        }
+      );
     });
   });
 

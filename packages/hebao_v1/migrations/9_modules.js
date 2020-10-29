@@ -45,7 +45,6 @@ module.exports = function(deployer, network, accounts) {
       AddOfficialGuardianModule,
       ControllerImpl.address,
       OfficialGuardian.address,
-      11,
       { gas: 6700000 }
     );
 
