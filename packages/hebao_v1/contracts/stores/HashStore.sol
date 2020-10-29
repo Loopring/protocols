@@ -17,9 +17,9 @@ contract HashStore is DataStore
 
     function verifyAndUpdate(address wallet, bytes32 hash)
         external
-        onlyWalletModule(wallet)
     {
         require(!hashes[wallet][hash], "HASH_EXIST");
+        requireWalletModule(wallet);
         hashes[wallet][hash] = true;
     }
 }
