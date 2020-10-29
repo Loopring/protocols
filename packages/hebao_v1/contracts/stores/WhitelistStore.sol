@@ -35,10 +35,10 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         address addr,
         uint    effectiveTime
         )
-        public
+        external
         onlyWalletModule(wallet)
     {
-        addAddressToSet(walletKey(wallet), addr, true);
+        addAddressToSet(_walletKey(wallet), addr, true);
         uint effective = effectiveTime >= block.timestamp ? effectiveTime : block.timestamp;
         effectiveTimeMap[wallet][addr] = effective;
         emit Whitelisted(wallet, addr, true, effective);
@@ -48,10 +48,10 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         address wallet,
         address addr
         )
-        public
+        external
         onlyWalletModule(wallet)
     {
-        removeAddressFromSet(walletKey(wallet), addr);
+        removeAddressFromSet(_walletKey(wallet), addr);
         delete effectiveTimeMap[wallet][addr];
         emit Whitelisted(wallet, addr, false, 0);
     }
@@ -64,7 +64,7 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
             uint[]    memory effectiveTimes
         )
     {
-        addresses = addressesInSet(walletKey(wallet));
+        addresses = addressesInSet(_walletKey(wallet));
         effectiveTimes = new uint[](addresses.length);
         for (uint i = 0; i < addresses.length; i++) {
             effectiveTimes[i] = effectiveTimeMap[wallet][addresses[i]];
@@ -91,19 +91,11 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         view
         returns (uint)
     {
-        return numAddressesInSet(walletKey(wallet));
-    }
-
-    function walletKey(address addr)
-        public
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encodePacked("__WHITELIST__", addr));
+        return numAddressesInSet(_walletKey(wallet));
     }
 
     function addDapp(address addr)
-        public
+        external
         onlyManager
     {
         addAddressToSet(DAPPS, addr, true);
@@ -111,7 +103,7 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
     }
 
     function removeDapp(address addr)
-        public
+        external
         onlyManager
     {
         removeAddressFromSet(DAPPS, addr);
@@ -157,4 +149,13 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         (res,) = isWhitelisted(wallet, addr);
         return res || isAddressInSet(DAPPS, addr);
     }
+
+    function _walletKey(address addr)
+        private
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked("__WHITELIST__", addr));
+    }
+
 }

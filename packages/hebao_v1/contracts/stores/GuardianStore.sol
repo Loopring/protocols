@@ -85,7 +85,7 @@ abstract contract GuardianStore is DataStore
     }
 
     function removeAllGuardians(address wallet)
-        public
+        external
         onlyWalletModule(wallet)
     {
         Wallet storage w = wallets[wallet];
@@ -96,7 +96,7 @@ abstract contract GuardianStore is DataStore
     }
 
     function cancelPendingGuardians(address wallet)
-        public
+        external
         onlyWalletModule(wallet)
     {
         Wallet storage w = wallets[wallet];
@@ -120,7 +120,7 @@ abstract contract GuardianStore is DataStore
         uint    validSince,
         bool    alwaysOverride
         )
-        public
+        external
         onlyWalletModule(wallet)
         returns (uint)
     {
@@ -175,7 +175,7 @@ abstract contract GuardianStore is DataStore
         uint    validUntil,
         bool    alwaysOverride
         )
-        public
+        external
         onlyWalletModule(wallet)
         returns (uint)
     {

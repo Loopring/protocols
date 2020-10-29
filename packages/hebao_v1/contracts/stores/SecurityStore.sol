@@ -29,7 +29,7 @@ contract SecurityStore is GuardianStore
         address wallet,
         bool    locked
         )
-        public
+        external
         onlyWalletModule(wallet)
     {
         wallets[wallet].locked = locked;
@@ -44,7 +44,7 @@ contract SecurityStore is GuardianStore
     }
 
     function touchLastActive(address wallet)
-        public
+        external
         onlyWalletModule(wallet)
     {
         wallets[wallet].lastActive = uint64(block.timestamp);
@@ -54,7 +54,7 @@ contract SecurityStore is GuardianStore
         address wallet,
         uint    minInternval
         )
-        public
+        external
     {
         if (wallets[wallet].inheritor != address(0) &&
             block.timestamp > lastActive(wallet) + minInternval) {
@@ -96,7 +96,7 @@ contract SecurityStore is GuardianStore
         address who,
         uint32 _inheritWaitingPeriod
         )
-        public
+        external
         onlyWalletModule(wallet)
     {
         wallets[wallet].inheritor = who;

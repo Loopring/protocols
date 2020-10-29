@@ -34,7 +34,7 @@ contract KyberNetworkPriceOracle is PriceOracle
     }
 
     function tokenValue(address token, uint amount)
-        external
+        public
         view
         override
         returns (uint value)
