@@ -46,7 +46,7 @@ contract QuotaStore is DataStore
         uint    newQuota,
         uint    effectiveTime
         )
-        public
+        external
         onlyWalletModule(wallet)
     {
         require(newQuota <= MAX_QUOTA, "INVALID_VALUE");
@@ -69,7 +69,7 @@ contract QuotaStore is DataStore
         address wallet,
         uint    amount
         )
-        public
+        external
         onlyWalletModule(wallet)
     {
         Quota memory q = quotas[wallet];
@@ -84,7 +84,7 @@ contract QuotaStore is DataStore
         address wallet,
         uint    amount
         )
-        public
+        external
         onlyWalletModule(wallet)
     {
         _addToSpent(wallet, quotas[wallet], amount);

@@ -15,7 +15,7 @@ contract PriceCacheStore is PriceOracle, OwnerManagable
     using MathUint for uint;
     using SafeCast for uint;
 
-    uint public constant EXPIRY_PERIOD = 14 days;
+    uint public constant EXPIRY_PERIOD = 7 days;
 
     PriceOracle oracle;
     uint expiry;
@@ -74,14 +74,14 @@ contract PriceCacheStore is PriceOracle, OwnerManagable
         uint    value
         )
         external
-        onlyOwnerOrManager
+        onlyManager
     {
         cacheTokenPrice(token, amount, value);
     }
 
     function setOracle(PriceOracle _oracle)
         external
-        onlyOwnerOrManager
+        onlyManager
     {
         oracle = _oracle;
     }
