@@ -49,7 +49,7 @@ library GuardianUtils
             if (signers[i] == owner) {
                 walletOwnerSigned = true;
             } else {
-                require(isWalletGuardian(allGuardians, signers[i]), "SIGNER_NOT_GUARDIAN");
+                require(_isWalletGuardian(allGuardians, signers[i]), "SIGNER_NOT_GUARDIAN");
             }
         }
 
@@ -73,14 +73,14 @@ library GuardianUtils
             require(signers.length > 1, "NO_GUARDIAN_SIGNED_BESIDES_OWNER");
         }
 
-        return hasMajority(signers.length, numExtendedSigners);
+        return _hasMajority(signers.length, numExtendedSigners);
     }
 
-    function isWalletGuardian(
+    function _isWalletGuardian(
         Data.Guardian[] memory allGuardians,
         address signer
         )
-        internal
+        private
         pure
         returns (bool)
     {
@@ -92,11 +92,11 @@ library GuardianUtils
         return false;
     }
 
-    function hasMajority(
+    function _hasMajority(
         uint signed,
         uint total
         )
-        internal
+        private
         pure
         returns (bool)
     {

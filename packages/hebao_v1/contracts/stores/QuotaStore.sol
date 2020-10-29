@@ -66,7 +66,7 @@ contract QuotaStore is DataStore, Claimable
         uint    newQuota,
         uint    effectiveTime
         )
-        public
+        external
         onlyWalletModule(wallet)
     {
         quotas[wallet].currentQuota = currentQuota(wallet).toUint128();
@@ -84,7 +84,7 @@ contract QuotaStore is DataStore, Claimable
         address wallet,
         uint    amount
         )
-        public
+        external
         onlyWalletModule(wallet)
     {
         Quota memory q = quotas[wallet];
@@ -96,7 +96,7 @@ contract QuotaStore is DataStore, Claimable
         address wallet,
         uint    amount
         )
-        public
+        external
         onlyWalletModule(wallet)
     {
         _addToSpent(wallet, quotas[wallet], amount);
@@ -122,7 +122,7 @@ contract QuotaStore is DataStore, Claimable
     }
 
     function spentQuota(address wallet)
-        public
+        external
         view
         returns (uint)
     {
