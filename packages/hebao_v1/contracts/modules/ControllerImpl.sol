@@ -19,7 +19,7 @@ import "../thirdparty/ens/BaseENSManager.sol";
 contract ControllerImpl is Claimable, Controller
 {
     address             public collectTo;
-    BaseENSManager      public ensManager;
+    BaseENSManager      public immutable ensManager;
     PriceOracle         public priceOracle;
     HashStore           public hashStore;
     QuotaStore          public quotaStore;
@@ -29,7 +29,7 @@ contract ControllerImpl is Claimable, Controller
     // Make sure this value if false in production env.
     // Ideally we can use chainid(), but there is a bug in truffle so testing is buggy:
     // https://github.com/trufflesuite/ganache/issues/1643
-    bool                public allowChangingWalletFactory;
+    bool                public immutable allowChangingWalletFactory;
 
     event AddressChanged(
         string   name,

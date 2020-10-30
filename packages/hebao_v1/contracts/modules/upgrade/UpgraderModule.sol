@@ -23,8 +23,8 @@ contract UpgraderModule is BaseModule {
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
-    SecurityStore_1_0_2 oldSecurityStore;
-    SecurityStore       newSecurityStore;
+    SecurityStore_1_0_2 immutable oldSecurityStore;
+    SecurityStore       immutable newSecurityStore;
 
     constructor(
         ControllerImpl   _controller,
