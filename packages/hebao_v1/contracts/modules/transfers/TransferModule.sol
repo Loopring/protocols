@@ -81,14 +81,15 @@ abstract contract TransferModule is BaseTransferModule
         address        token,
         address        to,
         uint           amount,
-        bytes calldata logdata
+        bytes calldata logdata,
+        bool           isWhitelisted
         )
         external
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         QuotaStore qs = quotaStore;
-        if (_needCheckQuota(qs, wallet, amount) && !isTargetWhitelisted(wallet, to)) {
+        if (!isWhitelisted || !isAddressWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, amount);
         }
 
@@ -127,7 +128,8 @@ abstract contract TransferModule is BaseTransferModule
         address            wallet,
         address            to,
         uint               value,
-        bytes     calldata data
+        bytes     calldata data,
+        bool               isWhitelisted
         )
         external
         txAwareHashNotAllowed()
@@ -135,7 +137,7 @@ abstract contract TransferModule is BaseTransferModule
         returns (bytes memory returnData)
     {
         QuotaStore qs = quotaStore;
-        if (_needCheckQuota(qs, wallet, value) && !isTargetWhitelisted(wallet, to)) {
+        if (!isWhitelisted || !isContractWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, address(0), value);
         }
 
@@ -173,7 +175,8 @@ abstract contract TransferModule is BaseTransferModule
         address wallet,
         address token,
         address to,
-        uint    amount
+        uint    amount,
+        bool    isWhitelisted
         )
         external
         txAwareHashNotAllowed()
@@ -182,8 +185,7 @@ abstract contract TransferModule is BaseTransferModule
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
         QuotaStore qs = quotaStore;
-        if (_needCheckQuota(qs, wallet, additionalAllowance) &&
-            !isTargetWhitelisted(wallet, to)) {
+        if (!isWhitelisted || !isContractWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, additionalAllowance);
         }
     }
@@ -220,7 +222,8 @@ abstract contract TransferModule is BaseTransferModule
         address        to,
         uint           amount,
         uint           value,
-        bytes calldata data
+        bytes calldata data,
+        bool           isWhitelisted
         )
         external
         txAwareHashNotAllowed()
@@ -230,8 +233,7 @@ abstract contract TransferModule is BaseTransferModule
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
         QuotaStore qs = quotaStore;
-        if (_needCheckQuota(qs, wallet, additionalAllowance.add(value)) &&
-            !isTargetWhitelisted(wallet, to)) {
+        if (!isWhitelisted || !isContractWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, additionalAllowance);
             _updateQuota(qs, wallet, address(0), value);
         }

@@ -75,21 +75,6 @@ abstract contract SecurityModule is MetaTxModule
         return securityStore.isLocked(wallet);
     }
 
-    function _needCheckQuota(
-        QuotaStore qs,
-        address    wallet,
-        uint       amount
-        )
-        internal
-        view
-        returns (bool)
-    {
-        if (amount == 0) return false;
-        if (qs == QuotaStore(0)) return false;
-        if (qs.currentQuota(wallet) == 0 /* max/disabled */) return false;
-        return true;
-    }
-
     function _updateQuota(
         QuotaStore qs,
         address    wallet,
@@ -98,12 +83,14 @@ abstract contract SecurityModule is MetaTxModule
         )
         internal
     {
-        uint value = (token == address(0)) ?
-            amount :
-            controllerCache.priceOracle.tokenValue(token, amount);
+        if (amount == 0) return;
+        if (qs == QuotaStore(0)) return;
 
-        if (value > 0) {
-            qs.checkAndAddToSpent(wallet, value);
-        }
+        qs.checkAndAddToSpent(
+            wallet,
+            token,
+            amount,
+            priceOracle
+        );
     }
 }

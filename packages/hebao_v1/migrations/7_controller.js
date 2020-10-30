@@ -29,8 +29,7 @@ module.exports = function(deployer, network, accounts) {
       ModuleRegistryImpl.address,
       collecTo,
       ensManagerAddr,
-      TestPriceOracle.address,
-      true
+      TestPriceOracle.address
     );
   });
 };

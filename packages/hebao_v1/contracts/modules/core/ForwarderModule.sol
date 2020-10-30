@@ -205,7 +205,7 @@ abstract contract ForwarderModule is SecurityModule
 
             reimburseGasFee(
                 metaTx.from,
-                controllerCache.collectTo,
+                collectTo,
                 metaTx.gasToken,
                 metaTx.gasPrice,
                 gasToReimburse,

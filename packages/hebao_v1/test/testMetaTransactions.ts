@@ -5,8 +5,7 @@ import {
   createWallet,
   executeTransaction,
   toAmount,
-  sortAddresses,
-  updateControllerCache
+  sortAddresses
 } from "./helpers/TestUtils";
 import {
   transferFrom,
@@ -32,14 +31,12 @@ contract("ForwarderModule", () => {
   };
 
   before(async () => {
-    defaultCtx = await getContext();
     priceOracleMock = await defaultCtx.contracts.MockContract.new();
-    await defaultCtx.controllerImpl.setPriceOracle(priceOracleMock.address);
-    await updateControllerCache(defaultCtx);
+    defaultCtx = await getContext();
   });
 
   beforeEach(async () => {
-    ctx = await createContext(defaultCtx);
+    ctx = await createContext(defaultCtx, { priceOracle: priceOracleMock });
   });
 
   it("should not be able to receive ETH", async () => {

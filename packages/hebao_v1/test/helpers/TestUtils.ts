@@ -27,6 +27,7 @@ export interface Context {
 
   walletImpl: any;
 
+  hashStore: any;
   securityStore: any;
   whitelistStore: any;
   quotaStore: any;
@@ -57,6 +58,8 @@ export async function getContext() {
     finalTransferModule: await contracts.FinalTransferModule.deployed(),
 
     walletImpl: await contracts.WalletImpl.deployed(),
+
+    hashStore: await contracts.HashStore.deployed(),
     securityStore: await contracts.SecurityStore.deployed(),
     whitelistStore: await contracts.WhitelistStore.deployed(),
     quotaStore: await contracts.QuotaStore.deployed(),
@@ -65,8 +68,47 @@ export async function getContext() {
   return context;
 }
 
-export async function createContext(context?: Context) {
+export async function createContext(context?: Context, options: any = {}) {
   context = context === undefined ? await getContext() : context;
+  const priceOracle =
+    options.priceOracle !== undefined
+      ? options.priceOracle
+      : context.priceCacheStore.address;
+
+  // Create new controller
+  const controllerImpl = await context.contracts.ControllerImpl.new(
+    context.hashStore.address,
+    context.quotaStore.address,
+    context.securityStore.address,
+    context.whitelistStore.address,
+    context.moduleRegistryImpl.address,
+    await context.controllerImpl.collectTo(),
+    await context.controllerImpl.ensManager(),
+    priceOracle
+  );
+  context.controllerImpl = controllerImpl;
+
+  // Create new modules
+  const finalCoreModule = await context.contracts.FinalCoreModule.new(
+    context.controllerImpl.address
+  );
+  const finalSecurityModule = await context.contracts.FinalSecurityModule.new(
+    context.controllerImpl.address,
+    finalCoreModule.address
+  );
+  const finalTransferModule = await context.contracts.FinalTransferModule.new(
+    context.controllerImpl.address,
+    finalCoreModule.address
+  );
+
+  await context.moduleRegistryImpl.registerModule(finalCoreModule.address);
+  await context.moduleRegistryImpl.registerModule(finalSecurityModule.address);
+  await context.moduleRegistryImpl.registerModule(finalTransferModule.address);
+
+  context.finalCoreModule = finalCoreModule;
+  context.finalSecurityModule = finalSecurityModule;
+  context.finalTransferModule = finalTransferModule;
+
   // Create a new wallet factory
   const walletFactory = await context.contracts.WalletFactory.new(
     context.controllerImpl.address,
@@ -78,17 +120,8 @@ export async function createContext(context?: Context) {
   await context.controllerImpl.initWalletFactory(walletFactory.address);
   context.walletFactory = walletFactory;
 
-  await updateControllerCache(context);
-
   return context;
 }
-
-export async function updateControllerCache(ctx: Context) {
-  await ctx.finalCoreModule.updateControllerCache();
-  await ctx.finalSecurityModule.updateControllerCache();
-  await ctx.finalTransferModule.updateControllerCache();
-}
-
 export function getAllModuleAddresses(ctx: Context) {
   return [
     ctx.finalCoreModule.address,

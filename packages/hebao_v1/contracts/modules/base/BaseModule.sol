@@ -25,20 +25,14 @@ abstract contract BaseModule is Module
     event Activated   (address wallet);
     event Deactivated (address wallet);
 
-    struct ControllerCache
-    {
-        PriceOracle      priceOracle;
-        address          collectTo;
-    }
-
-    ControllerCache public controllerCache;
-
     ModuleRegistry public immutable moduleRegistry;
     SecurityStore  public immutable securityStore;
     WhitelistStore public immutable whitelistStore;
     QuotaStore     public immutable quotaStore;
     HashStore      public immutable hashStore;
     address        public immutable walletFactory;
+    PriceOracle    public immutable priceOracle;
+    address        public immutable collectTo;
 
     function logicalSender()
         internal
@@ -77,8 +71,8 @@ abstract contract BaseModule is Module
         quotaStore = _controller.quotaStore();
         hashStore = _controller.hashStore();
         walletFactory = _controller.walletFactory();
-
-        _updateControllerCache(_controller);
+        priceOracle = _controller.priceOracle();
+        collectTo = _controller.collectTo();
     }
 
     function controller()
@@ -122,20 +116,7 @@ abstract contract BaseModule is Module
     {
     }
 
-    function updateControllerCache()
-        public
-    {
-        _updateControllerCache(controller());
-    }
-
     // ===== internal & private methods =====
-
-    function _updateControllerCache(ControllerImpl _controller)
-        internal
-    {
-        controllerCache.priceOracle = _controller.priceOracle();
-        controllerCache.collectTo = _controller.collectTo();
-    }
 
     /// @dev Binds all methods to the given wallet.
     function bindMethods(address wallet)
@@ -255,13 +236,12 @@ abstract contract BaseModule is Module
         uint gasCost = gasAmount.mul(gasPrice);
 
         if (!skipQuota) {
-            uint value = (gasToken == address(0)) ?
-                gasCost :
-                controllerCache.priceOracle.tokenValue(gasToken, gasCost);
-
-            if (value > 0) {
-              quotaStore.checkAndAddToSpent(wallet, value);
-            }
+            quotaStore.checkAndAddToSpent(
+                wallet,
+                gasToken,
+                gasAmount,
+                priceOracle
+            );
         }
 
         transactTokenTransfer(wallet, gasToken, recipient, gasCost);
