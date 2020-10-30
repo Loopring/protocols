@@ -33,7 +33,7 @@ abstract contract InheritanceModule is SecurityModule
         view
         returns (address _inheritor, uint _effectiveTimestamp)
     {
-        return controllerCache.securityStore.inheritor(wallet);
+        return securityStore.inheritor(wallet);
     }
 
     function inherit(
@@ -45,7 +45,7 @@ abstract contract InheritanceModule is SecurityModule
         eligibleWalletOwner(newOwner)
         notWalletOwner(wallet, newOwner)
     {
-        SecurityStore ss = controllerCache.securityStore;
+        SecurityStore ss = securityStore;
         (address _inheritor, uint _effectiveTimestamp) = ss.inheritor(wallet);
 
         require(_effectiveTimestamp != 0 && _inheritor != address(0), "NO_INHERITOR");
@@ -78,7 +78,7 @@ abstract contract InheritanceModule is SecurityModule
             "INVALID_INHERITOR_OR_WAITING_PERIOD"
         );
 
-        controllerCache.securityStore.setInheritor(wallet, _inheritor, _waitingPeriod);
+        securityStore.setInheritor(wallet, _inheritor, _waitingPeriod);
         emit InheritorChanged(wallet, _inheritor, _waitingPeriod);
     }
 }

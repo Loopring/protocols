@@ -89,6 +89,6 @@ abstract contract BaseTransferModule is SecurityModule
         view
         returns (bool)
     {
-        return controllerCache.whitelistStore.isDappOrWhitelisted(wallet, to);
+        return whitelistStore.isDappOrWhitelisted(wallet, to);
     }
 }

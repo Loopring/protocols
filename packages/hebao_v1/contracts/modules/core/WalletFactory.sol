@@ -47,12 +47,13 @@ contract WalletFactory
 
     struct ControllerCache
     {
-        BaseENSManager      ensManager;
         address             ensResolver;
         ENSReverseRegistrar ensReverseRegistrar;
     }
 
     ControllerCache public controllerCache;
+
+    BaseENSManager public immutable ensManager;
 
     constructor(
         ControllerImpl _controller,
@@ -64,7 +65,9 @@ contract WalletFactory
             EIP712.Domain("WalletFactory", "1.2.0", address(this))
         );
         controller = _controller;
-        _updateControllerCache(_controller);
+        BaseENSManager _ensManager = _controller.ensManager();
+        ensManager = _ensManager;
+        _updateControllerCache(_ensManager);
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
     }
@@ -212,18 +215,16 @@ contract WalletFactory
     function updateControllerCache()
         public
     {
-        _updateControllerCache(controller);
+        _updateControllerCache(ensManager);
     }
 
     // ---- internal functions ---
 
-    function _updateControllerCache(ControllerImpl _controller)
-        private
+    function _updateControllerCache(BaseENSManager _ensManager)
+        internal
     {
-        BaseENSManager ensManager = _controller.ensManager();
-        controllerCache.ensManager = ensManager;
-        controllerCache.ensResolver = ensManager.ensResolver();
-        controllerCache.ensReverseRegistrar = ensManager.getENSReverseRegistrar();
+        controllerCache.ensResolver = _ensManager.ensResolver();
+        controllerCache.ensReverseRegistrar = _ensManager.getENSReverseRegistrar();
     }
 
     function _consumeBlank(
@@ -363,7 +364,6 @@ contract WalletFactory
             "INVALID_LABEL_OR_SIGNATURE"
         );
 
-        BaseENSManager ensManager = controllerCache.ensManager;
         ensManager.register(wallet, owner, ensLabel, ensApproval);
 
         if (ensRegisterReverse) {
