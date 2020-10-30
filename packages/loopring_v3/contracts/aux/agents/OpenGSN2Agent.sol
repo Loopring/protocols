@@ -16,9 +16,9 @@ contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress
         address _exchange,
         address _forwarder
         )
+        BaseRelayRecipient(_forwarder)
     {
         exchange = _exchange;
-        trustedForwarder = _forwarder;
     }
 
     modifier onlyFrom(address addr)

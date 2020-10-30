@@ -20,6 +20,8 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
+    address public immutable override lrcAddress;
+
     // -- Constructor --
     constructor(
         address _lrcAddress,

@@ -13,7 +13,6 @@ abstract contract IUserStakingPool
     uint public constant MIN_CLAIM_DELAY        = 90 days;
     uint public constant MIN_WITHDRAW_DELAY     = 90 days;
 
-    address public lrcAddress;
     address public protocolFeeVaultAddress;
 
     uint    public numAddresses;
@@ -23,6 +22,14 @@ abstract contract IUserStakingPool
     event LRCStaked       (address indexed user,  uint amount);
     event LRCWithdrawn    (address indexed user,  uint amount);
     event LRCRewarded     (address indexed user,  uint amount);
+
+    /// @dev Returns the LRC token address
+    /// @return the LRC token address
+    function lrcAddress()
+        external
+        view
+        virtual
+        returns (address);
 
     /// @dev Sets a new IProtocolFeeVault address, only callable by the owner.
     /// @param _protocolFeeVaultAddress The new IProtocolFeeVault address.
