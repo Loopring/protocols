@@ -17,8 +17,7 @@ contract PriceCacheStore is PriceOracle, OwnerManagable
 
     uint public constant EXPIRY_PERIOD = 7 days;
 
-    PriceOracle oracle;
-    uint expiry;
+    PriceOracle public oracle;
 
     event PriceCached (
         address token,

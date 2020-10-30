@@ -17,19 +17,18 @@ contract FinalSecurityModule is
     InheritanceModule,
     WhitelistModule
 {
-    ControllerImpl private controller_;
+    ControllerImpl private immutable controller_;
 
     constructor(
         ControllerImpl _controller,
         address        _metaTxForwarder
         )
-        SecurityModule(_metaTxForwarder)
+        SecurityModule(_controller, _metaTxForwarder)
         GuardianModule()
         InheritanceModule()
         WhitelistModule()
     {
         controller_ = _controller;
-        updateControllerCache();
     }
 
     function controller()

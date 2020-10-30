@@ -47,7 +47,7 @@ abstract contract ERC1271Module is ERC1271, SecurityModule
         returns (bytes4 magicValue)
     {
         address wallet = msg.sender;
-        if (controllerCache.securityStore.isLocked(wallet)) {
+        if (securityStore.isLocked(wallet)) {
             return 0;
         }
 

@@ -74,7 +74,6 @@ export async function createContext(context?: Context) {
     true
   );
 
-  await walletFactory.initMetaTxForwarder(context.finalCoreModule.address);
   await context.baseENSManager.addManager(walletFactory.address);
   await context.controllerImpl.initWalletFactory(walletFactory.address);
   context.walletFactory = walletFactory;

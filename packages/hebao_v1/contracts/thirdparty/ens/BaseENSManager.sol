@@ -44,7 +44,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     // The managed root name
     string public rootName;
     // The managed root node
-    bytes32 public rootNode;
+    bytes32 public immutable rootNode;
     // The address of the ENS resolver
     address public ensResolver;
 

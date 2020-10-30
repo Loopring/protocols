@@ -84,7 +84,10 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
   ) => {
     let assetValue = options.assetValue ? options.assetValue : amount;
     let isWhitelisted = options.isWhitelisted ? options.isWhitelisted : false;
+    const gasToken = options.gasToken ? options.gasToken : "ETH";
+    const gasPrice = options.gasPrice ? options.gasPrice : new BN(0);
     let approved = options.approved;
+
     token = await getTokenAddress(ctx, token);
 
     // Set the value of the transfer on the price oracle
@@ -92,6 +95,13 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
 
     // Make sure the wallet has enough funds
     await addBalance(ctx, wallet, token, amount.mul(new BN(2)));
+    // More realistic gas measurement
+    await addBalance(
+      ctx,
+      await ctx.controllerImpl.collectTo(),
+      gasToken,
+      new BN(1)
+    );
 
     // Cache quota data
     const oldAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
@@ -100,7 +110,9 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     const oldBalanceWallet = await getBalance(ctx, token, wallet);
     const oldBalanceTo = await getBalance(ctx, token, to);
 
-    const opt = useMetaTx ? { wallet, owner } : { from: owner };
+    const opt = useMetaTx
+      ? { wallet, owner, gasToken, gasPrice }
+      : { from: owner };
 
     // Transfer the tokens
     // if (approved) {
@@ -119,7 +131,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     //     opt
     //   );
     // } else {
-    await executeTransaction(
+    const tx = await executeTransaction(
       ctx.finalTransferModule.contract.methods.transferToken(
         wallet,
         token,
@@ -150,6 +162,8 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
         );
       }
     );
+
+    if (!gasPrice.eq(new BN(0))) return;
 
     // Check quota
     const newAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
@@ -865,7 +879,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     await updateControllerCache(defaultCtx);
   });
 
-  describe.only("Benchmark", () => {
+  describe("Benchmark", () => {
     [false, true].forEach(function(withQuota) {
       it(
         "Token transfer " + (withQuota ? "(with quota)" : "(without quota)"),
@@ -876,7 +890,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           const { wallet } = await createWallet(ctx, owner);
 
           if (withQuota) {
-            const targetQuota = new BN(10);
+            const targetQuota = toAmount("10");
             await ctx.finalTransferModule.changeDailyQuota(
               wallet,
               targetQuota.toString(10),
@@ -942,6 +956,34 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
             transferValue,
             "0x",
             { assetValue: transferValue }
+          );
+
+          await transferTokenChecked(
+            owner,
+            wallet,
+            "LRC",
+            to,
+            transferValue,
+            "0x",
+            {
+              assetValue: transferValue,
+              gasToken: "ETH",
+              gasPrice: new BN(web3.utils.toWei("12", "gwei"))
+            }
+          );
+
+          await transferTokenChecked(
+            owner,
+            wallet,
+            "LRC",
+            to,
+            transferValue,
+            "0x",
+            {
+              assetValue: transferValue,
+              gasToken: "LRC",
+              gasPrice: new BN(web3.utils.toWei("34", "gwei"))
+            }
           );
         }
       );

@@ -25,7 +25,7 @@ abstract contract KyberNetworkProxy {
 /// @dev Returns the value in Ether for any given ERC20 token.
 contract KyberNetworkPriceOracle is PriceOracle
 {
-    KyberNetworkProxy kyber;
+    KyberNetworkProxy immutable kyber;
     address constant private ethTokenInKyber = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     constructor(KyberNetworkProxy _kyber)

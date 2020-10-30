@@ -16,7 +16,7 @@ abstract contract GuardianModule is SecurityModule
     using AddressUtil   for address;
     using SignedRequest for ControllerImpl;
 
-    bytes32 public GUARDIAN_DOMAIN_SEPERATOR;
+    bytes32 public immutable GUARDIAN_DOMAIN_SEPERATOR;
 
     uint public constant MAX_GUARDIANS           = 10;
     uint public constant GUARDIAN_PENDING_PERIOD = 7 days;
@@ -124,7 +124,7 @@ abstract contract GuardianModule is SecurityModule
         require(
             _logicalSender == wallet ||
             _logicalSender == Wallet(wallet).owner() ||
-            controllerCache.securityStore.isGuardian(wallet, _logicalSender, false),
+            securityStore.isGuardian(wallet, _logicalSender, false),
             "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
         );
 
@@ -196,7 +196,7 @@ abstract contract GuardianModule is SecurityModule
             )
         );
 
-        SecurityStore ss = controllerCache.securityStore;
+        SecurityStore ss = securityStore;
         if (ss.isGuardian(request.wallet, newOwner, true)) {
             ss.removeGuardian(request.wallet, newOwner, block.timestamp, true);
         }
@@ -229,7 +229,7 @@ abstract contract GuardianModule is SecurityModule
         require(guardian != wallet, "INVALID_ADDRESS");
         require(guardian != address(0), "ZERO_ADDRESS");
 
-        SecurityStore ss = controllerCache.securityStore;
+        SecurityStore ss = securityStore;
         uint numGuardians = ss.numGuardians(wallet, true);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
@@ -250,7 +250,7 @@ abstract contract GuardianModule is SecurityModule
         private
     {
         uint validUntil = block.timestamp + pendingPeriod;
-        SecurityStore ss = controllerCache.securityStore;
+        SecurityStore ss = securityStore;
         validUntil = ss.removeGuardian(wallet, guardian, validUntil, alwaysOverride);
         emit GuardianRemoved(wallet, guardian, validUntil);
     }

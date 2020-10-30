@@ -23,8 +23,8 @@ abstract contract ForwarderModule is SecurityModule
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 165000;
-    bytes32 public FORWARDER_DOMAIN_SEPARATOR;
+    uint    public constant  MAX_REIMBURSTMENT_OVERHEAD = 165000;
+    bytes32 public immutable FORWARDER_DOMAIN_SEPARATOR;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
         "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
@@ -51,9 +51,12 @@ abstract contract ForwarderModule is SecurityModule
         uint    gasLimit;
     }
 
-    constructor()
-        SecurityModule(address(this))
+    constructor(ControllerImpl _controller)
+        SecurityModule(_controller, address(this))
     {
+        FORWARDER_DOMAIN_SEPARATOR = EIP712.hash(
+            EIP712.Domain("ForwarderModule", "1.2.0", address(this))
+        );
     }
 
     function validateMetaTx(
@@ -102,7 +105,7 @@ abstract contract ForwarderModule is SecurityModule
         // Instead of always taking the expensive path through ER1271,
         // skip directly to the wallet owner here (which could still be another contract).
         //require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
-        require(!controllerCache.securityStore.isLocked(from), "WALLET_LOCKED");
+        require(!securityStore.isLocked(from), "WALLET_LOCKED");
         require(metaTxHash.verifySignature(Wallet(from).owner(), signature), "INVALID_SIGNATURE");
     }
 
@@ -186,7 +189,7 @@ abstract contract ForwarderModule is SecurityModule
                 metaTx.txAwareHash != 0 || (
                     data.toBytes4(0) == WalletFactory.createWallet.selector ||
                     data.toBytes4(0) == WalletFactory.createWallet2.selector) &&
-                metaTx.to == controllerCache.walletFactory
+                metaTx.to == walletFactory
             );
 
             // MAX_REIMBURSTMENT_OVERHEAD covers an ERC20 transfer and a quota update.
@@ -271,13 +274,13 @@ abstract contract ForwarderModule is SecurityModule
         // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
         // so no Store can be used as 'to'.
         require(
-            controllerCache.moduleRegistry.isModuleRegistered(to) ||
+            moduleRegistry.isModuleRegistered(to) ||
 
             // We only allow the wallet to call itself to addModule
             (to == wallet) &&
             data.toBytes4(0) == Wallet.addModule.selector ||
 
-            to == controllerCache.walletFactory,
+            to == walletFactory,
             "INVALID_DESTINATION_OR_METHOD"
         );
     }

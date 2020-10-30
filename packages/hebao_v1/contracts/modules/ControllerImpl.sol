@@ -18,18 +18,20 @@ import "../thirdparty/ens/BaseENSManager.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ControllerImpl is Claimable, Controller
 {
+    HashStore           public immutable hashStore;
+    QuotaStore          public immutable quotaStore;
+    SecurityStore       public immutable securityStore;
+    WhitelistStore      public immutable whitelistStore;
+    ModuleRegistry      public immutable override moduleRegistry;
+    address             public override  walletFactory;
     address             public collectTo;
-    BaseENSManager      public ensManager;
+    BaseENSManager      public immutable ensManager;
     PriceOracle         public priceOracle;
-    HashStore           public hashStore;
-    QuotaStore          public quotaStore;
-    SecurityStore       public securityStore;
-    WhitelistStore      public whitelistStore;
 
     // Make sure this value if false in production env.
     // Ideally we can use chainid(), but there is a bug in truffle so testing is buggy:
     // https://github.com/trufflesuite/ganache/issues/1643
-    bool                public allowChangingWalletFactory;
+    bool                public immutable allowChangingWalletFactory;
 
     event AddressChanged(
         string   name,
@@ -37,6 +39,10 @@ contract ControllerImpl is Claimable, Controller
     );
 
     constructor(
+        HashStore         _hashStore,
+        QuotaStore        _quotaStore,
+        SecurityStore     _securityStore,
+        WhitelistStore    _whitelistStore,
         ModuleRegistry    _moduleRegistry,
         address           _collectTo,
         BaseENSManager    _ensManager,
@@ -44,6 +50,10 @@ contract ControllerImpl is Claimable, Controller
         bool              _allowChangingWalletFactory
         )
     {
+        hashStore = _hashStore;
+        quotaStore = _quotaStore;
+        securityStore = _securityStore;
+        whitelistStore = _whitelistStore;
         moduleRegistry = _moduleRegistry;
 
         require(_collectTo != address(0), "ZERO_ADDRESS");
@@ -52,28 +62,6 @@ contract ControllerImpl is Claimable, Controller
         ensManager = _ensManager;
         priceOracle = _priceOracle;
         allowChangingWalletFactory = _allowChangingWalletFactory;
-    }
-
-    function initStores(
-        HashStore         _hashStore,
-        QuotaStore        _quotaStore,
-        SecurityStore     _securityStore,
-        WhitelistStore    _whitelistStore
-        )
-        external
-        onlyOwner
-    {
-        // Make sure this function can only invoked once.
-        require(
-            address(hashStore) == address(0) &&
-            address(_hashStore) != address(0),
-            "INVALID_INIT"
-        );
-
-        hashStore = _hashStore;
-        quotaStore = _quotaStore;
-        securityStore = _securityStore;
-        whitelistStore = _whitelistStore;
     }
 
     function initWalletFactory(address _walletFactory)

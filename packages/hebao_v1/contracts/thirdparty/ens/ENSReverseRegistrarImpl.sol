@@ -10,8 +10,8 @@ contract ENSReverseRegistrarImpl is ENSReverseRegistrar {
     // namehash('addr.reverse')
     bytes32 constant ADDR_REVERSE_NODE = 0x91d1777781884d03a6757a803996e38de2a42967fb37eeaca72729271025a9e2;
 
-    ENSRegistry public ens;
-    ENSResolver public defaultResolver;
+    ENSRegistry public immutable ens;
+    ENSResolver public immutable defaultResolver;
 
     /**
      * @dev Constructor

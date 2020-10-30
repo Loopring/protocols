@@ -12,17 +12,16 @@ import "./TransferModule.sol";
 ///      by wallet creation.
 contract FinalTransferModule is TransferModule
 {
-    ControllerImpl private controller_;
+    ControllerImpl private immutable controller_;
 
     constructor(
         ControllerImpl _controller,
         address        _metaTxForwarder
         )
-        SecurityModule(_metaTxForwarder)
+        SecurityModule(_controller, _metaTxForwarder)
         TransferModule()
     {
         controller_ = _controller;
-        updateControllerCache();
     }
 
     function controller()

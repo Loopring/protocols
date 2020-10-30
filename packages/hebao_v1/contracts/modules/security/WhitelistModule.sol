@@ -15,7 +15,7 @@ abstract contract WhitelistModule is SecurityModule
     using MathUint      for uint;
     using SignedRequest for ControllerImpl;
 
-    bytes32 public WHITELIST_DOMAIN_SEPERATOR;
+    bytes32 public immutable WHITELIST_DOMAIN_SEPERATOR;
 
     uint public constant WHITELIST_PENDING_PERIOD = 1 days;
 
@@ -41,7 +41,7 @@ abstract contract WhitelistModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controllerCache.whitelistStore.addToWhitelist(
+        whitelistStore.addToWhitelist(
             wallet,
             addr,
             block.timestamp.add(WHITELIST_PENDING_PERIOD)
@@ -67,7 +67,7 @@ abstract contract WhitelistModule is SecurityModule
             )
         );
 
-        controllerCache.whitelistStore.addToWhitelist(
+        whitelistStore.addToWhitelist(
             request.wallet,
             addr,
             block.timestamp
@@ -82,7 +82,7 @@ abstract contract WhitelistModule is SecurityModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        controllerCache.whitelistStore.removeFromWhitelist(wallet, addr);
+        whitelistStore.removeFromWhitelist(wallet, addr);
     }
 
     function removeFromWhitelistWA(
@@ -104,7 +104,7 @@ abstract contract WhitelistModule is SecurityModule
             )
         );
 
-        controllerCache.whitelistStore.removeFromWhitelist(request.wallet, addr);
+        whitelistStore.removeFromWhitelist(request.wallet, addr);
     }
 
     function getWhitelist(address wallet)
@@ -115,7 +115,7 @@ abstract contract WhitelistModule is SecurityModule
             uint[]    memory effectiveTimes
         )
     {
-        return controllerCache.whitelistStore.whitelist(wallet);
+        return whitelistStore.whitelist(wallet);
     }
 
     function isWhitelisted(
@@ -128,6 +128,6 @@ abstract contract WhitelistModule is SecurityModule
             uint effectiveTime
         )
     {
-        return controllerCache.whitelistStore.isWhitelisted(wallet, addr);
+        return whitelistStore.isWhitelisted(wallet, addr);
     }
 }

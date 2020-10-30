@@ -17,14 +17,14 @@ import "./SecurityStore_1_0_2.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 
 contract UpgraderModule is BaseModule {
-    ControllerImpl private controller_;
+    ControllerImpl private immutable controller_;
 
-    address    public walletImplementation;
+    address    public immutable walletImplementation;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
-    SecurityStore_1_0_2 oldSecurityStore;
-    SecurityStore       newSecurityStore;
+    SecurityStore_1_0_2 immutable oldSecurityStore;
+    SecurityStore       immutable newSecurityStore;
 
     constructor(
         ControllerImpl   _controller,
@@ -34,9 +34,9 @@ contract UpgraderModule is BaseModule {
         address          _oldSecurityStore,
         address          _newSecurityStore
         )
+        BaseModule(_controller)
     {
         controller_ = _controller;
-        updateControllerCache();
         walletImplementation = _walletImplementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;

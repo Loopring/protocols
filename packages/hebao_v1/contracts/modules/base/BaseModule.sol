@@ -27,17 +27,18 @@ abstract contract BaseModule is Module
 
     struct ControllerCache
     {
-        ModuleRegistry   moduleRegistry;
-        SecurityStore    securityStore;
-        WhitelistStore   whitelistStore;
-        QuotaStore       quotaStore;
-        HashStore        hashStore;
         PriceOracle      priceOracle;
-        address          walletFactory;
         address          collectTo;
     }
 
     ControllerCache public controllerCache;
+
+    ModuleRegistry public immutable moduleRegistry;
+    SecurityStore  public immutable securityStore;
+    WhitelistStore public immutable whitelistStore;
+    QuotaStore     public immutable quotaStore;
+    HashStore      public immutable hashStore;
+    address        public immutable walletFactory;
 
     function logicalSender()
         internal
@@ -66,6 +67,18 @@ abstract contract BaseModule is Module
     {
         require(addr != address(0) && !addr.isContract(), "INVALID_OWNER");
         _;
+    }
+
+    constructor(ControllerImpl _controller)
+    {
+        moduleRegistry = _controller.moduleRegistry();
+        securityStore = _controller.securityStore();
+        whitelistStore = _controller.whitelistStore();
+        quotaStore = _controller.quotaStore();
+        hashStore = _controller.hashStore();
+        walletFactory = _controller.walletFactory();
+
+        _updateControllerCache(_controller);
     }
 
     function controller()
@@ -112,18 +125,17 @@ abstract contract BaseModule is Module
     function updateControllerCache()
         public
     {
-        ControllerImpl _controller = controller();
-        controllerCache.moduleRegistry = _controller.moduleRegistry();
-        controllerCache.securityStore = _controller.securityStore();
-        controllerCache.whitelistStore = _controller.whitelistStore();
-        controllerCache.quotaStore = _controller.quotaStore();
-        controllerCache.hashStore = _controller.hashStore();
-        controllerCache.priceOracle = _controller.priceOracle();
-        controllerCache.walletFactory = _controller.walletFactory();
-        controllerCache.collectTo = _controller.collectTo();
+        _updateControllerCache(controller());
     }
 
     // ===== internal & private methods =====
+
+    function _updateControllerCache(ControllerImpl _controller)
+        internal
+    {
+        controllerCache.priceOracle = _controller.priceOracle();
+        controllerCache.collectTo = _controller.collectTo();
+    }
 
     /// @dev Binds all methods to the given wallet.
     function bindMethods(address wallet)
@@ -248,7 +260,7 @@ abstract contract BaseModule is Module
                 controllerCache.priceOracle.tokenValue(gasToken, gasCost);
 
             if (value > 0) {
-              controllerCache.quotaStore.checkAndAddToSpent(wallet, value);
+              quotaStore.checkAndAddToSpent(wallet, value);
             }
         }
 
