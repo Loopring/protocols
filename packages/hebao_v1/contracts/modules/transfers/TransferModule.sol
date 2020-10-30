@@ -87,7 +87,7 @@ abstract contract TransferModule is BaseTransferModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        QuotaStore qs = controllerCache.quotaStore;
+        QuotaStore qs = quotaStore;
         if (_needCheckQuota(qs, wallet, amount) && !isTargetWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, amount);
         }
@@ -134,7 +134,7 @@ abstract contract TransferModule is BaseTransferModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
-        QuotaStore qs = controllerCache.quotaStore;
+        QuotaStore qs = quotaStore;
         if (_needCheckQuota(qs, wallet, value) && !isTargetWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, address(0), value);
         }
@@ -181,7 +181,7 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        QuotaStore qs = controllerCache.quotaStore;
+        QuotaStore qs = quotaStore;
         if (_needCheckQuota(qs, wallet, additionalAllowance) &&
             !isTargetWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, additionalAllowance);
@@ -229,7 +229,7 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        QuotaStore qs = controllerCache.quotaStore;
+        QuotaStore qs = quotaStore;
         if (_needCheckQuota(qs, wallet, additionalAllowance.add(value)) &&
             !isTargetWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, additionalAllowance);
@@ -282,9 +282,9 @@ abstract contract TransferModule is BaseTransferModule
             uint available
         )
     {
-        total = controllerCache.quotaStore.currentQuota(wallet);
-        spent = controllerCache.quotaStore.spentQuota(wallet);
-        available = controllerCache.quotaStore.availableQuota(wallet);
+        total = quotaStore.currentQuota(wallet);
+        spent = quotaStore.spentQuota(wallet);
+        available = quotaStore.availableQuota(wallet);
     }
 
     function _changeQuota(
@@ -294,7 +294,7 @@ abstract contract TransferModule is BaseTransferModule
         )
         private
     {
-        QuotaStore qs = controllerCache.quotaStore;
+        QuotaStore qs = quotaStore;
         uint _currentQuota = qs.currentQuota(wallet);
         require(_currentQuota != newQuota, "SAME_VALUE");
 

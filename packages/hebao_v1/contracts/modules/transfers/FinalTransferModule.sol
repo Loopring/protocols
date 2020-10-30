@@ -18,11 +18,10 @@ contract FinalTransferModule is TransferModule
         ControllerImpl _controller,
         address        _metaTxForwarder
         )
-        SecurityModule(_metaTxForwarder)
+        SecurityModule(_controller, _metaTxForwarder)
         TransferModule()
     {
         controller_ = _controller;
-        _updateControllerCache(_controller);
     }
 
     function controller()

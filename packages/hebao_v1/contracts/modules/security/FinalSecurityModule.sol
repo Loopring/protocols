@@ -23,13 +23,12 @@ contract FinalSecurityModule is
         ControllerImpl _controller,
         address        _metaTxForwarder
         )
-        SecurityModule(_metaTxForwarder)
+        SecurityModule(_controller, _metaTxForwarder)
         GuardianModule()
         InheritanceModule()
         WhitelistModule()
     {
         controller_ = _controller;
-        _updateControllerCache(_controller);
     }
 
     function controller()

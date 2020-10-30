@@ -34,9 +34,9 @@ contract UpgraderModule is BaseModule {
         address          _oldSecurityStore,
         address          _newSecurityStore
         )
+        BaseModule(_controller)
     {
         controller_ = _controller;
-        _updateControllerCache(_controller);
         walletImplementation = _walletImplementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;

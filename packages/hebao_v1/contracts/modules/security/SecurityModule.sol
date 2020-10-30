@@ -25,8 +25,11 @@ abstract contract SecurityModule is MetaTxModule
         bool            locked
     );
 
-    constructor(address _metaTxForwarder)
-        MetaTxModule(_metaTxForwarder)
+    constructor(
+        ControllerImpl _controller,
+        address        _metaTxForwarder
+        )
+        MetaTxModule(_controller, _metaTxForwarder)
     {
     }
 
@@ -39,19 +42,19 @@ abstract contract SecurityModule is MetaTxModule
             (_logicalSender == Wallet(wallet).owner() && !_isWalletLocked(wallet)),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
-        controllerCache.securityStore.touchLastActiveWhenRequired(wallet, TOUCH_GRACE_PERIOD);
+        securityStore.touchLastActiveWhenRequired(wallet, TOUCH_GRACE_PERIOD);
         _;
     }
 
     modifier onlyWalletGuardian(address wallet, address guardian)
     {
-        require(controllerCache.securityStore.isGuardian(wallet, guardian, false), "NOT_GUARDIAN");
+        require(securityStore.isGuardian(wallet, guardian, false), "NOT_GUARDIAN");
         _;
     }
 
     modifier notWalletGuardian(address wallet, address guardian)
     {
-        require(!controllerCache.securityStore.isGuardian(wallet, guardian, false), "IS_GUARDIAN");
+        require(!securityStore.isGuardian(wallet, guardian, false), "IS_GUARDIAN");
         _;
     }
 
@@ -60,7 +63,7 @@ abstract contract SecurityModule is MetaTxModule
     function _lockWallet(address wallet, address by, bool locked)
         internal
     {
-        controllerCache.securityStore.setLock(wallet, locked);
+        securityStore.setLock(wallet, locked);
         emit WalletLocked(wallet, by, locked);
     }
 
@@ -69,7 +72,7 @@ abstract contract SecurityModule is MetaTxModule
         view
         returns (bool)
     {
-        return controllerCache.securityStore.isLocked(wallet);
+        return securityStore.isLocked(wallet);
     }
 
     function _needCheckQuota(

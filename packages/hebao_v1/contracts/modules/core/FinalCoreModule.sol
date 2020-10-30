@@ -18,9 +18,9 @@ contract FinalCoreModule is
     ControllerImpl private immutable controller_;
 
     constructor(ControllerImpl _controller)
+        ForwarderModule(_controller)
     {
         controller_ = _controller;
-        _updateControllerCache(_controller);
     }
 
     function controller()
