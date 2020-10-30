@@ -20,8 +20,8 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
     uint256 constant MAX_UINT = ~uint(0);
     uint    public constant MAX_SLIPPAGE_BIPS = 100; // 1 percent
-    address public uniswapFactoryAddress; // 0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95 on live
-    address public recipient;
+    address public immutable uniswapFactoryAddress; // 0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95 on live
+    address public immutable recipient;
 
     event TokenSold (
         address indexed seller,

@@ -17,7 +17,6 @@ abstract contract IProtocolFeeVault
     uint public constant DAO_PERDENTAGE         = 20;
 
     address public userStakingPoolAddress;
-    address public lrcAddress;
     address public tokenSellerAddress;
     address public daoAddress;
 
@@ -29,6 +28,14 @@ abstract contract IProtocolFeeVault
     event DAOFunded(uint amountDAO, uint amountBurn);
     event TokenSold(address token, uint amount);
     event SettingsUpdated(uint time);
+
+    /// @dev Returns the LRC token address
+    /// @return the LRC token address
+    function lrcAddress()
+        external
+        view
+        virtual
+        returns (address);
 
     /// @dev Sets depending contract addresses. All these addresses can be zero.
     /// @param _userStakingPoolAddress The address of the user staking pool.

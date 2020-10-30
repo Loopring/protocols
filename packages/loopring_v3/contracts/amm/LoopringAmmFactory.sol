@@ -15,7 +15,7 @@ contract LoopringAmmFactory is ReentrancyGuard, Claimable
 {
     event PoolCreated(AmmData.PoolConfig config, address pool);
 
-    address public poolImplementation;
+    address public immutable poolImplementation;
 
     constructor(address _poolImplementation)
         Claimable()

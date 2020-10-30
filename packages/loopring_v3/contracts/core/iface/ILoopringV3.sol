@@ -19,7 +19,6 @@ abstract contract ILoopringV3 is Claimable
     // == Public Variables ==
     mapping (address => uint) internal exchangeStake;
 
-    address public lrcAddress;
     uint    public totalStake;
     address public blockVerifierAddress;
     uint    public forcedWithdrawalFee;
@@ -31,6 +30,15 @@ abstract contract ILoopringV3 is Claimable
     address payable public protocolFeeVault;
 
     // == Public Functions ==
+
+    /// @dev Returns the LRC token address
+    /// @return the LRC token address
+    function lrcAddress()
+        external
+        view
+        virtual
+        returns (address);
+
     /// @dev Updates the global exchange settings.
     ///      This function can only be called by the owner of this contract.
     ///

@@ -12,7 +12,12 @@ abstract contract BaseRelayRecipient is IRelayRecipient {
     /*
      * Forwarder singleton we accept calls from
      */
-    address public trustedForwarder;
+    address public immutable trustedForwarder;
+
+    constructor(address _forwarder)
+    {
+        trustedForwarder = _forwarder;
+    }
 
     /*
      * require a function to be called through GSN only

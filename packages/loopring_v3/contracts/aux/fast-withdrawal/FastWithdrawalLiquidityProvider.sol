@@ -40,9 +40,9 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
         "FastWithdrawalApproval(address exchange,address from,address to,address token,uint96 amount,uint32 storageID,uint64 validUntil)"
     );
 
-    bytes32 public DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR;
 
-    FastWithdrawalAgent public agent;
+    FastWithdrawalAgent public immutable agent;
 
     constructor(FastWithdrawalAgent _agent)
     {

@@ -24,6 +24,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         uint64 claimedAt;      // timestamp from which more points will be accumulated
     }
 
+    address public immutable override lrcAddress;
+
     Staking public total;
     mapping (address => Staking) public stakings;
 
