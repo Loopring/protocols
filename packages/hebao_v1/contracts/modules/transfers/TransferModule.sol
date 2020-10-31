@@ -137,7 +137,7 @@ abstract contract TransferModule is BaseTransferModule
         returns (bytes memory returnData)
     {
         QuotaStore qs = quotaStore;
-        if (!isWhitelisted || !isContractWhitelisted(wallet, to)) {
+        if (!isWhitelisted || !isAddressDappOrWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, address(0), value);
         }
 
@@ -185,7 +185,7 @@ abstract contract TransferModule is BaseTransferModule
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
         QuotaStore qs = quotaStore;
-        if (!isWhitelisted || !isContractWhitelisted(wallet, to)) {
+        if (!isWhitelisted || !isAddressDappOrWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, additionalAllowance);
         }
     }
@@ -233,7 +233,7 @@ abstract contract TransferModule is BaseTransferModule
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
         QuotaStore qs = quotaStore;
-        if (!isWhitelisted || !isContractWhitelisted(wallet, to)) {
+        if (!isWhitelisted || !isAddressDappOrWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, additionalAllowance);
             _updateQuota(qs, wallet, address(0), value);
         }

@@ -92,7 +92,7 @@ abstract contract BaseTransferModule is SecurityModule
         (res,) = whitelistStore.isWhitelisted(wallet, to);
     }
 
-    function isContractWhitelisted(address wallet, address to)
+    function isAddressDappOrWhitelisted(address wallet, address to)
         internal
         view
         returns (bool)
