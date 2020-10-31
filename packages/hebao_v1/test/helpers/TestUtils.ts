@@ -140,7 +140,7 @@ export async function createWallet(
   const guardians = ctx.guardians.slice(0, numGuardians);
   const group = 0;
   for (const guardian of guardians) {
-    await addGuardian(ctx, owner, wallet, guardian, group, false);
+    await addGuardian(ctx, owner, wallet, guardian, false);
   }
   return { wallet, guardians };
 }
@@ -187,7 +187,7 @@ export async function createWallet2(
   // Add the guardians
   const group = 0;
   for (const guardian of guardianAddrs) {
-    await addGuardian(ctx, owner, wallet, guardian, group, false);
+    await addGuardian(ctx, owner, wallet, guardian, false);
   }
   return { wallet, guardians: guardianAddrs };
 }

@@ -13,7 +13,6 @@ export async function addGuardian(
   owner: string,
   wallet: string,
   guardian: string,
-  group: number,
   useMetaTx: boolean = true
 ) {
   const guardianPendingPeriod = (await ctx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()).toNumber();

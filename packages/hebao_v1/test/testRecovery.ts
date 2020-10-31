@@ -61,7 +61,7 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
 
         // Add the guardians
         for (const guardian of guardians) {
-          await addGuardian(ctx, owner, wallet, guardian, group, true);
+          await addGuardian(ctx, owner, wallet, guardian, true);
         }
 
         // Recover

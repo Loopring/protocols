@@ -208,7 +208,7 @@ contract("GuardianUtils", (accounts: string[]) => {
 
       let signers: string[] = test.ownerSigns ? [owner] : [];
       for (const [i, guardian] of test.guardians.entries()) {
-        await addGuardian(ctx, owner, wallet, ctx.guardians[i], guardian.group);
+        await addGuardian(ctx, owner, wallet, ctx.guardians[i]);
         if (guardian.signs) {
           signers.push(ctx.guardians[i]);
         }
