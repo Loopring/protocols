@@ -273,7 +273,7 @@ contract("ForwarderModule", () => {
         const { wallet, guardians } = await createWallet(ctx, owner, 3);
         const signers = [owner, ...guardians].sort();
 
-        const feeRecipient = await ctx.controllerImpl.collectTo();
+        const feeRecipient = await ctx.controllerImpl.feeCollector();
         const gasOverhead = 100000;
         const gasPrice = new BN(7);
         const amount = toAmount("1");

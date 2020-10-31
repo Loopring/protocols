@@ -96,7 +96,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     // More realistic gas measurement
     await addBalance(
       ctx,
-      await ctx.controllerImpl.collectTo(),
+      await ctx.controllerImpl.feeCollector(),
       gasToken,
       new BN(1)
     );

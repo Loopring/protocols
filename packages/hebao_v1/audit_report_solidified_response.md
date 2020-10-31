@@ -63,23 +63,21 @@ We are removing Dapps modules, and adding a new `DappModule`to interact with whi
 
 Addressed in PR https://github.com/Loopring/protocols/pull/1185 and https://github.com/Loopring/protocols/pull/1184
 
-### 17. MetaTxModule.sol, ApprovedTransfers.sol: Return value of operations in collectTokens and reimburseGasFee is not being verified
+### 17. MetaTxModule.sol, ApprovedTransfers.sol: Return value of operations in feeCollectorkens and reimburseGasFee is not being verified
 
 Addressed in PR https://github.com/Loopring/protocols/pull/1189 and https://github.com/Loopring/protocols/pull/1184
-
 
 ### 18. The initialization method initManager() could be front-run, unless it is called within the same transaction as the creation of the contract.
 
 Addressed by PR https://github.com/Loopring/protocols/pull/1194
 
-
 ### 19. AddressSet.sol
 
-Addressed by PR  https://github.com/Loopring/protocols/pull/1195
+Addressed by PR https://github.com/Loopring/protocols/pull/1195
 
 ### 20. Possible misleading comment in Module.sol
 
-Addressed by PR  https://github.com/Loopring/protocols/pull/1195
+Addressed by PR https://github.com/Loopring/protocols/pull/1195
 
 ### 21. Consider removing the option to make delegateCalls from wallet and vault
 
@@ -88,7 +86,6 @@ This method is not used and is internal only. We'll keep it there just in case t
 ### 22. Consider implementing a receive() function for no-data calls.
 
 We implemented the `receive` function after sending the code for review: https://github.com/Loopring/protocols/blob/fc0a9bfdf82f07ccc60535b1a85493a29b897a6c/packages/hebao_v1/contracts/base/BaseWallet.sol#L226
-
 
 ## Additional Changes:
 
