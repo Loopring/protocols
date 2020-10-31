@@ -88,9 +88,8 @@ abstract contract TransferModule is BaseTransferModule
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        QuotaStore qs = quotaStore;
         if (forceUseQuota || !isAddressWhitelisted(wallet, to)) {
-            _updateQuota(qs, wallet, token, amount);
+            _updateQuota(quotaStore, wallet, token, amount);
         }
 
         transferInternal(wallet, token, to, amount, logdata);
@@ -136,9 +135,8 @@ abstract contract TransferModule is BaseTransferModule
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
-        QuotaStore qs = quotaStore;
         if (forceUseQuota || !isAddressDappOrWhitelisted(wallet, to)) {
-            _updateQuota(qs, wallet, address(0), value);
+            _updateQuota(quotaStore, wallet, address(0), value);
         }
 
         return callContractInternal(wallet, to, value, data);
@@ -184,9 +182,8 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        QuotaStore qs = quotaStore;
         if (forceUseQuota || !isAddressDappOrWhitelisted(wallet, to)) {
-            _updateQuota(qs, wallet, token, additionalAllowance);
+            _updateQuota(quotaStore, wallet, token, additionalAllowance);
         }
     }
 
@@ -232,10 +229,9 @@ abstract contract TransferModule is BaseTransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
-        QuotaStore qs = quotaStore;
         if (forceUseQuota || !isAddressDappOrWhitelisted(wallet, to)) {
-            _updateQuota(qs, wallet, token, additionalAllowance);
-            _updateQuota(qs, wallet, address(0), value);
+            _updateQuota(quotaStore, wallet, token, additionalAllowance);
+            _updateQuota(quotaStore, wallet, address(0), value);
         }
 
         return callContractInternal(wallet, to, value, data);
@@ -296,8 +292,7 @@ abstract contract TransferModule is BaseTransferModule
         )
         private
     {
-        QuotaStore qs = quotaStore;
-        uint _currentQuota = qs.currentQuota(wallet);
+        uint _currentQuota = quotaStore.currentQuota(wallet);
         require(_currentQuota != newQuota, "SAME_VALUE");
 
         uint _pendingPeriod = pendingPeriod;
@@ -305,6 +300,6 @@ abstract contract TransferModule is BaseTransferModule
             _pendingPeriod = 0;
         }
 
-        qs.changeQuota(wallet, newQuota, block.timestamp.add(_pendingPeriod));
+        quotaStore.changeQuota(wallet, newQuota, block.timestamp.add(_pendingPeriod));
     }
 }

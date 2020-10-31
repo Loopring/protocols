@@ -88,7 +88,6 @@ contract QuotaStore is DataStore
         }
     }
 
-
     function addToSpent(
         address wallet,
         uint    amount
