@@ -18,4 +18,7 @@ contract FeeCollector is Drainable, OwnerManagable
     {
         return isManager(drainer) || drainer == owner;
     }
+
+    // Allow receiving ETH
+    receive() payable external {}
 }
