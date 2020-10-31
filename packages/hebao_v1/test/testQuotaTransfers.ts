@@ -136,7 +136,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
         to,
         amount.toString(10),
         logdata,
-        isWhitelisted
+        !isWhitelisted
       ),
       ctx,
       useMetaTx,

@@ -82,14 +82,14 @@ abstract contract TransferModule is BaseTransferModule
         address        to,
         uint           amount,
         bytes calldata logdata,
-        bool           isWhitelisted
+        bool           forceUseQuota
         )
         external
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
         QuotaStore qs = quotaStore;
-        if (!isWhitelisted || !isAddressWhitelisted(wallet, to)) {
+        if (forceUseQuota || !isAddressWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, amount);
         }
 
@@ -129,7 +129,7 @@ abstract contract TransferModule is BaseTransferModule
         address            to,
         uint               value,
         bytes     calldata data,
-        bool               isWhitelisted
+        bool               forceUseQuota
         )
         external
         txAwareHashNotAllowed()
@@ -137,7 +137,7 @@ abstract contract TransferModule is BaseTransferModule
         returns (bytes memory returnData)
     {
         QuotaStore qs = quotaStore;
-        if (!isWhitelisted || !isAddressDappOrWhitelisted(wallet, to)) {
+        if (forceUseQuota || !isAddressDappOrWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, address(0), value);
         }
 
@@ -176,7 +176,7 @@ abstract contract TransferModule is BaseTransferModule
         address token,
         address to,
         uint    amount,
-        bool    isWhitelisted
+        bool    forceUseQuota
         )
         external
         txAwareHashNotAllowed()
@@ -185,7 +185,7 @@ abstract contract TransferModule is BaseTransferModule
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
         QuotaStore qs = quotaStore;
-        if (!isWhitelisted || !isAddressDappOrWhitelisted(wallet, to)) {
+        if (forceUseQuota || !isAddressDappOrWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, additionalAllowance);
         }
     }
@@ -223,7 +223,7 @@ abstract contract TransferModule is BaseTransferModule
         uint           amount,
         uint           value,
         bytes calldata data,
-        bool           isWhitelisted
+        bool           forceUseQuota
         )
         external
         txAwareHashNotAllowed()
@@ -233,7 +233,7 @@ abstract contract TransferModule is BaseTransferModule
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
 
         QuotaStore qs = quotaStore;
-        if (!isWhitelisted || !isAddressDappOrWhitelisted(wallet, to)) {
+        if (forceUseQuota || !isAddressDappOrWhitelisted(wallet, to)) {
             _updateQuota(qs, wallet, token, additionalAllowance);
             _updateQuota(qs, wallet, address(0), value);
         }
