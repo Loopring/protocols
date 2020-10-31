@@ -16,6 +16,6 @@ contract FeeCollector is Drainable, OwnerManagable
         view
         returns (bool)
     {
-        return isManager(drainer);
+        return isManager(drainer) || drainer == owner;
     }
 }
