@@ -63,7 +63,7 @@ We are removing Dapps modules, and adding a new `DappModule`to interact with whi
 
 Addressed in PR https://github.com/Loopring/protocols/pull/1185 and https://github.com/Loopring/protocols/pull/1184
 
-### 17. MetaTxModule.sol, ApprovedTransfers.sol: Return value of operations in feeCollectorkens and reimburseGasFee is not being verified
+### 17. MetaTxModule.sol, ApprovedTransfers.sol: Return value of operations in collectTokens and reimburseGasFee is not being verified
 
 Addressed in PR https://github.com/Loopring/protocols/pull/1189 and https://github.com/Loopring/protocols/pull/1184
 
