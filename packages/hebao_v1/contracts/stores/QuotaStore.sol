@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
+import "../iface/PriceOracle.sol";
 import "../lib/MathUint.sol";
 import "../thirdparty/SafeCast.sol";
 
@@ -66,17 +67,24 @@ contract QuotaStore is DataStore
     }
 
     function checkAndAddToSpent(
-        address wallet,
-        uint    amount
+        address     wallet,
+        address     token,
+        uint        amount,
+        PriceOracle priceOracle
         )
         external
     {
         Quota memory q = quotas[wallet];
         uint available = _availableQuota(q);
         if (available != MAX_QUOTA) {
-            require(available >= amount, "QUOTA_EXCEEDED");
-            requireWalletModule(wallet);
-            _addToSpent(wallet, q, amount);
+            uint value = (token == address(0)) ?
+                amount :
+                priceOracle.tokenValue(token, amount);
+            if (value > 0) {
+                require(available >= value, "QUOTA_EXCEEDED");
+                requireWalletModule(wallet);
+                _addToSpent(wallet, q, value);
+            }
         }
     }
 

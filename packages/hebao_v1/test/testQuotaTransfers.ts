@@ -5,8 +5,7 @@ import {
   createWallet,
   executeTransaction,
   getBlockTime,
-  toAmount,
-  updateControllerCache
+  toAmount
 } from "./helpers/TestUtils";
 import { addToWhitelist, isWhitelisted } from "./helpers/WhitelistUtils";
 import { expectThrow } from "../util/expectThrow";
@@ -86,7 +85,6 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     let isWhitelisted = options.isWhitelisted ? options.isWhitelisted : false;
     const gasToken = options.gasToken ? options.gasToken : "ETH";
     const gasPrice = options.gasPrice ? options.gasPrice : new BN(0);
-    let approved = options.approved;
 
     token = await getTokenAddress(ctx, token);
 
@@ -98,7 +96,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     // More realistic gas measurement
     await addBalance(
       ctx,
-      await ctx.controllerImpl.collectTo(),
+      await ctx.controllerImpl.feeCollector(),
       gasToken,
       new BN(1)
     );
@@ -137,7 +135,8 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
         token,
         to,
         amount.toString(10),
-        logdata
+        logdata,
+        !isWhitelisted
       ),
       ctx,
       useMetaTx,
@@ -148,7 +147,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     //  }
 
     await assertEventEmitted(
-      approved ? ctx.finalTransferModule : ctx.finalTransferModule,
+      ctx.finalTransferModule,
       "Transfered",
       (event: any) => {
         return (
@@ -170,9 +169,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     const newSpentQuota = await ctx.quotaStore.spentQuota(wallet);
 
     const quotaDelta =
-      isWhitelisted || approved || oldAvailableQuota.eq(maxQuota)
-        ? new BN(0)
-        : assetValue;
+      isWhitelisted || oldAvailableQuota.eq(maxQuota) ? new BN(0) : assetValue;
     equalWithPrecision(
       oldAvailableQuota,
       newAvailableQuota.add(quotaDelta),
@@ -868,15 +865,14 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
   });
 
   beforeEach(async () => {
-    ctx = await createContext(defaultCtx);
+    ctx = await createContext(defaultCtx, {
+      priceOracle: priceOracleMock.address
+    });
     targetContract = await TestTargetContract.new();
     quotaPeriod = (
       await ctx.finalTransferModule.QUOTA_PENDING_PERIOD()
     ).toNumber();
     maxQuota = await ctx.quotaStore.MAX_QUOTA();
-
-    await defaultCtx.controllerImpl.setPriceOracle(priceOracleMock.address);
-    await updateControllerCache(defaultCtx);
   });
 
   describe("Benchmark", () => {
@@ -887,6 +883,21 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           useMetaTx = true;
           const owner = ctx.owners[withQuota ? 0 : 1];
           const to = ctx.miscAddresses[withQuota ? 0 : 1];
+
+          // Use a cached price oracle
+          const TestPriceOracle = artifacts.require("TestPriceOracle");
+          const testPriceOracle = await TestPriceOracle.new();
+          const PriceCacheStore = artifacts.require("PriceCacheStore");
+          const priceCacheStore = await PriceCacheStore.new(
+            testPriceOracle.address
+          );
+          const lrcAddress = await getTokenAddress(ctx, "LRC");
+          await priceCacheStore.updateTokenPrice(lrcAddress, toAmount("1"));
+
+          ctx = await createContext(defaultCtx, {
+            priceOracle: priceCacheStore.address
+          });
+
           const { wallet } = await createWallet(ctx, owner);
 
           if (withQuota) {
@@ -901,20 +912,6 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           }
 
           const quota = await ctx.quotaStore.currentQuota(wallet);
-
-          // Use a cached price oracle
-          const TestPriceOracle = artifacts.require("TestPriceOracle");
-          const testPriceOracle = await TestPriceOracle.new();
-          const PriceCacheStore = artifacts.require("PriceCacheStore");
-          const priceCacheStore = await PriceCacheStore.new(
-            testPriceOracle.address
-          );
-          const lrcAddress = await getTokenAddress(ctx, "LRC");
-          await priceCacheStore.updateTokenPrice(lrcAddress, toAmount("1"));
-          await defaultCtx.controllerImpl.setPriceOracle(
-            priceCacheStore.address
-          );
-          await updateControllerCache(defaultCtx);
 
           // Use up the quota in multiple transfers
           const transferValue = withQuota

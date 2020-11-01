@@ -5,8 +5,7 @@ import {
   createWallet,
   executeTransaction,
   toAmount,
-  sortAddresses,
-  updateControllerCache
+  sortAddresses
 } from "./helpers/TestUtils";
 import {
   transferFrom,
@@ -32,14 +31,12 @@ contract("ForwarderModule", () => {
   };
 
   before(async () => {
-    defaultCtx = await getContext();
     priceOracleMock = await defaultCtx.contracts.MockContract.new();
-    await defaultCtx.controllerImpl.setPriceOracle(priceOracleMock.address);
-    await updateControllerCache(defaultCtx);
+    defaultCtx = await getContext();
   });
 
   beforeEach(async () => {
-    ctx = await createContext(defaultCtx);
+    ctx = await createContext(defaultCtx, { priceOracle: priceOracleMock });
   });
 
   it("should not be able to receive ETH", async () => {
@@ -276,7 +273,7 @@ contract("ForwarderModule", () => {
         const { wallet, guardians } = await createWallet(ctx, owner, 3);
         const signers = [owner, ...guardians].sort();
 
-        const feeRecipient = await ctx.controllerImpl.collectTo();
+        const feeRecipient = await ctx.controllerImpl.feeCollector();
         const gasOverhead = 100000;
         const gasPrice = new BN(7);
         const amount = toAmount("1");
