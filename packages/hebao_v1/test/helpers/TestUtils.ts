@@ -82,7 +82,7 @@ export async function createContext(context?: Context, options: any = {}) {
     context.securityStore.address,
     context.whitelistStore.address,
     context.moduleRegistryImpl.address,
-    await context.controllerImpl.collectTo(),
+    await context.controllerImpl.feeCollector(),
     await context.controllerImpl.ensManager(),
     priceOracle
   );

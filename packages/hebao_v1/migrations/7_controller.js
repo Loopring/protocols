@@ -14,7 +14,7 @@ module.exports = function(deployer, network, accounts) {
     ensManagerAddr = BaseENSManager.address;
   }
 
-  const collecTo = process.env.collectTo || accounts[1];
+  const collecTo = process.env.feeCollector || accounts[1];
 
   let priceOracle;
   let controllerImpl;

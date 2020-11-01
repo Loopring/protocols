@@ -32,7 +32,7 @@ abstract contract BaseModule is Module
     HashStore      public immutable hashStore;
     address        public immutable walletFactory;
     PriceOracle    public immutable priceOracle;
-    address        public immutable collectTo;
+    address        public immutable feeCollector;
 
     function logicalSender()
         internal
@@ -72,7 +72,7 @@ abstract contract BaseModule is Module
         hashStore = _controller.hashStore();
         walletFactory = _controller.walletFactory();
         priceOracle = _controller.priceOracle();
-        collectTo = _controller.collectTo();
+        feeCollector = _controller.feeCollector();
     }
 
     function controller()
