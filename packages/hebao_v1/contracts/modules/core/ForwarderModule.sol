@@ -9,22 +9,26 @@ import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../base/BaseModule.sol";
+import "../security/SecurityModule.sol";
 import "./WalletFactory.sol";
 
 /// @title ForwarderModule
 /// @dev A module to support wallet meta-transactions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract ForwarderModule is BaseModule
+abstract contract ForwarderModule is SecurityModule
 {
     using AddressUtil   for address;
     using BytesUtil     for bytes;
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 165000;
-    bytes32 public FORWARDER_DOMAIN_SEPARATOR;
+    uint    public constant  MAX_REIMBURSTMENT_OVERHEAD = 165000;
+    bytes32 public immutable FORWARDER_DOMAIN_SEPARATOR;
+
+    bytes32 public constant META_TX_TYPEHASH = keccak256(
+        "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
+    );
 
     mapping(address => uint) public nonces;
 
@@ -47,9 +51,13 @@ abstract contract ForwarderModule is BaseModule
         uint    gasLimit;
     }
 
-    bytes32 constant public META_TX_TYPEHASH = keccak256(
-        "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
-    );
+    constructor(ControllerImpl _controller)
+        SecurityModule(_controller, address(this))
+    {
+        FORWARDER_DOMAIN_SEPARATOR = EIP712.hash(
+            EIP712.Domain("ForwarderModule", "1.2.0", address(this))
+        );
+    }
 
     function validateMetaTx(
         address from, // the wallet
@@ -65,20 +73,13 @@ abstract contract ForwarderModule is BaseModule
         public
         view
     {
-        // Since this contract is a module, we need to prevent wallet from interacting with
-        // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
-        // so no Store can be used as 'to'.
+        verifyTo(to, from, data);
         require(
-            (to != address(this)) &&
-            controllerCache.moduleRegistry.isModuleRegistered(to) ||
-
-            // We only allow the wallet to call itself to addModule
-            (to == from) &&
-            data.toBytes4(0) == Wallet.addModule.selector ||
-
-            to == controllerCache.walletFactory,
-            "INVALID_DESTINATION_OR_METHOD"
+            msg.sender != address(this) ||
+            data.toBytes4(0) == ForwarderModule.batchCall.selector,
+            "INVALID_TARGET"
         );
+
         require(
             nonce == 0 && txAwareHash != 0 ||
             nonce != 0 && txAwareHash == 0,
@@ -104,8 +105,7 @@ abstract contract ForwarderModule is BaseModule
         // Instead of always taking the expensive path through ER1271,
         // skip directly to the wallet owner here (which could still be another contract).
         //require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
-        (uint _lock,) = controllerCache.securityStore.getLock(from);
-        require(_lock <= block.timestamp, "WALLET_LOCKED");
+        require(!securityStore.isLocked(from), "WALLET_LOCKED");
         require(metaTxHash.verifySignature(Wallet(from).owner(), signature), "INVALID_SIGNATURE");
     }
 
@@ -122,7 +122,7 @@ abstract contract ForwarderModule is BaseModule
         )
         external
         returns (
-            bool         success
+            bool success
         )
     {
         MetaTx memory metaTx = MetaTx(
@@ -136,7 +136,7 @@ abstract contract ForwarderModule is BaseModule
         );
 
         uint gasLeft = gasleft();
-        checkSufficientGas(metaTx);
+        require(gasLeft >= (gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
 
         // Update the nonce before the call to protect against reentrancy
         if (metaTx.nonce != 0) {
@@ -189,7 +189,7 @@ abstract contract ForwarderModule is BaseModule
                 metaTx.txAwareHash != 0 || (
                     data.toBytes4(0) == WalletFactory.createWallet.selector ||
                     data.toBytes4(0) == WalletFactory.createWallet2.selector) &&
-                metaTx.to == controllerCache.walletFactory
+                metaTx.to == walletFactory
             );
 
             // MAX_REIMBURSTMENT_OVERHEAD covers an ERC20 transfer and a quota update.
@@ -205,7 +205,7 @@ abstract contract ForwarderModule is BaseModule
 
             reimburseGasFee(
                 metaTx.from,
-                controllerCache.collectTo,
+                feeCollector,
                 metaTx.gasToken,
                 metaTx.gasPrice,
                 gasToReimburse,
@@ -221,6 +221,29 @@ abstract contract ForwarderModule is BaseModule
             success,
             gasUsed
         );
+    }
+
+    function batchCall(
+        address   wallet,
+        address[] calldata to,
+        bytes[]   calldata data
+        )
+        external
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
+    {
+        require(to.length == data.length, "INVALID_DATA");
+
+        for (uint i = 0; i < to.length; i++) {
+            require(to[i] != address(this), "INVALID_TARGET");
+            verifyTo(to[i], wallet, data[i]);
+            // The trick is to append the really logical message sender and the
+            // transaction-aware hash to the end of the call data.
+            (bool success, ) = to[i].call(
+                abi.encodePacked(data[i], wallet, bytes32(0))
+            );
+            require(success, "BATCHED_CALL_FAILED");
+        }
     }
 
     function lastNonce(address wallet)
@@ -239,39 +262,33 @@ abstract contract ForwarderModule is BaseModule
         return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
     }
 
+    function verifyTo(
+        address to,
+        address wallet,
+        bytes   memory data
+        )
+        internal
+        view
+    {
+        // Since this contract is a module, we need to prevent wallet from interacting with
+        // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
+        // so no Store can be used as 'to'.
+        require(
+            moduleRegistry.isModuleRegistered(to) ||
+
+            // We only allow the wallet to call itself to addModule
+            (to == wallet) &&
+            data.toBytes4(0) == Wallet.addModule.selector ||
+
+            to == walletFactory,
+            "INVALID_DESTINATION_OR_METHOD"
+        );
+    }
+
     function verifyAndUpdateNonce(address wallet, uint nonce)
         internal
     {
         require(isNonceValid(wallet, nonce), "INVALID_NONCE");
         nonces[wallet] = nonce;
-    }
-
-    function checkSufficientGas(
-        MetaTx memory metaTx
-        )
-        private
-        view
-    {
-        // Check the relayer has enough Ether gas
-        uint gasLimit = metaTx.gasLimit.mul(64) / 63;
-
-        require(gasleft() >= gasLimit, "OPERATOR_INSUFFICIENT_GAS");
-
-        // Operator should off-chain check the wallet has enough meta tx gas.
-        // if (metaTx.gasPrice > 0) {
-        //     uint gasCost = metaTx.gasLimit.mul(metaTx.gasPrice);
-
-        //     if (metaTx.gasToken == address(0)) {
-        //         require(
-        //             metaTx.from.balance >= gasCost,
-        //             "WALLET_INSUFFICIENT_ETH_GAS"
-        //         );
-        //     } else {
-        //         require(
-        //             ERC20(metaTx.gasToken).balanceOf(metaTx.from) >= gasCost,
-        //             "WALLET_INSUFFICIENT_TOKEN_GAS"
-        //         );
-        //     }
-        // }
     }
 }

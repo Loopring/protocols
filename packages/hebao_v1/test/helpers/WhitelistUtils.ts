@@ -82,9 +82,7 @@ export async function addToWhitelist(
   addr: string,
   useMetaTx: boolean = true
 ) {
-  const whitelistPendingPeriod = (
-    await ctx.finalSecurityModule.WHITELIST_PENDING_PERIOD()
-  ).toNumber();
+  const whitelistPendingPeriod = (await ctx.finalSecurityModule.WHITELIST_PENDING_PERIOD()).toNumber();
 
   let whitelistBefore = toPrettyList(
     await ctx.whitelistStore.whitelist(wallet)
@@ -142,9 +140,9 @@ export async function addToWhitelist(
     addr,
     effectiveTime: blockTime + whitelistPendingPeriod
   });
-  const whitelistSize = (
-    await ctx.whitelistStore.whitelistSize(wallet)
-  ).toNumber();
+  const whitelistSize = (await ctx.whitelistStore.whitelistSize(
+    wallet
+  )).toNumber();
   assert.equal(
     whitelistBefore.length,
     whitelistSize,
@@ -188,7 +186,7 @@ export async function removeFromWhitelist(
     );
   }
 
-  // Should be effective immediately
+  // Should be effective WA
   assert(
     !(await isWhitelisted(ctx, wallet, addr)),
     "should not be whitelisted"
@@ -197,9 +195,9 @@ export async function removeFromWhitelist(
   // Check if the guardian list stored is correct
   let whitelistAfter = toPrettyList(await ctx.whitelistStore.whitelist(wallet));
   whitelistBefore = whitelistBefore.filter((g: any) => g.addr !== addr);
-  const whitelistSize = (
-    await ctx.whitelistStore.whitelistSize(wallet)
-  ).toNumber();
+  const whitelistSize = (await ctx.whitelistStore.whitelistSize(
+    wallet
+  )).toNumber();
   assert.equal(
     whitelistBefore.length,
     whitelistSize,

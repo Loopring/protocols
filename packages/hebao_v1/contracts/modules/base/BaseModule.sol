@@ -16,9 +16,7 @@ import "../ControllerImpl.sol";
 ///      be useful for all modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
+
 abstract contract BaseModule is Module
 {
     using MathUint      for uint;
@@ -27,18 +25,14 @@ abstract contract BaseModule is Module
     event Activated   (address wallet);
     event Deactivated (address wallet);
 
-    struct ControllerCache
-    {
-        ModuleRegistry   moduleRegistry;
-        SecurityStore    securityStore;
-        WhitelistStore   whitelistStore;
-        QuotaStore       quotaStore;
-        PriceOracle      priceOracle;
-        address          walletFactory;
-        address          collectTo;
-    }
-
-    ControllerCache public controllerCache;
+    ModuleRegistry public immutable moduleRegistry;
+    SecurityStore  public immutable securityStore;
+    WhitelistStore public immutable whitelistStore;
+    QuotaStore     public immutable quotaStore;
+    HashStore      public immutable hashStore;
+    address        public immutable walletFactory;
+    PriceOracle    public immutable priceOracle;
+    address        public immutable feeCollector;
 
     function logicalSender()
         internal
@@ -67,6 +61,18 @@ abstract contract BaseModule is Module
     {
         require(addr != address(0) && !addr.isContract(), "INVALID_OWNER");
         _;
+    }
+
+    constructor(ControllerImpl _controller)
+    {
+        moduleRegistry = _controller.moduleRegistry();
+        securityStore = _controller.securityStore();
+        whitelistStore = _controller.whitelistStore();
+        quotaStore = _controller.quotaStore();
+        hashStore = _controller.hashStore();
+        walletFactory = _controller.walletFactory();
+        priceOracle = _controller.priceOracle();
+        feeCollector = _controller.feeCollector();
     }
 
     function controller()
@@ -106,19 +112,8 @@ abstract contract BaseModule is Module
         public
         pure
         virtual
-        returns (bytes4[] memory methods);
-
-    function updateControllerCache()
-        public
+        returns (bytes4[] memory methods)
     {
-        ControllerImpl _controller = controller();
-        controllerCache.moduleRegistry = _controller.moduleRegistry();
-        controllerCache.securityStore = _controller.securityStore();
-        controllerCache.whitelistStore = _controller.whitelistStore();
-        controllerCache.quotaStore = _controller.quotaStore();
-        controllerCache.priceOracle = _controller.priceOracle();
-        controllerCache.walletFactory = _controller.walletFactory();
-        controllerCache.collectTo = _controller.collectTo();
     }
 
     // ===== internal & private methods =====
@@ -241,13 +236,12 @@ abstract contract BaseModule is Module
         uint gasCost = gasAmount.mul(gasPrice);
 
         if (!skipQuota) {
-            uint value = (gasToken == address(0)) ?
-                gasCost :
-                controllerCache.priceOracle.tokenValue(gasToken, gasCost);
-
-            if (value > 0) {
-              controllerCache.quotaStore.checkAndAddToSpent(wallet, value);
-            }
+            quotaStore.checkAndAddToSpent(
+                wallet,
+                gasToken,
+                gasAmount,
+                priceOracle
+            );
         }
 
         transactTokenTransfer(wallet, gasToken, recipient, gasCost);

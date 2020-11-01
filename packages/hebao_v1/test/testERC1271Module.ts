@@ -50,10 +50,6 @@ contract("ERC1271Module", () => {
       const hash = ethUtil.keccak("1234");
       const sig = sign(owner, hash);
 
-      const lockPeriod = (
-        await ctx.finalSecurityModule.LOCK_PERIOD()
-      ).toNumber();
-
       const walletContract = await ctx.contracts.FinalCoreModule.at(wallet);
 
       // lock wallet:
@@ -74,15 +70,6 @@ contract("ERC1271Module", () => {
         isValidBefore,
         "verification should be failed, but succeeded."
       );
-
-      // unlock
-      await advanceTimeAndBlockAsync(lockPeriod);
-
-      // verify agian:
-      const isValidAfter = await walletContract.contract.methods[
-        "isValidSignature(bytes32,bytes)"
-      ](hash, sig).call();
-      assert.equal(MAGICVALUE_B32, isValidAfter, "signature verify failed.");
     });
   });
 });

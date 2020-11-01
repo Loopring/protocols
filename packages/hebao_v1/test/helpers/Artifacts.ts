@@ -23,6 +23,7 @@ export class Artifacts {
   public FinalSecurityModule: any;
   public FinalTransferModule: any;
 
+  public HashStore: any;
   public SecurityStore: any;
   public WhitelistStore: any;
   public QuotaStore: any;
@@ -56,6 +57,7 @@ export class Artifacts {
     this.FinalSecurityModule = artifacts.require("FinalSecurityModule");
     this.FinalTransferModule = artifacts.require("FinalTransferModule");
 
+    this.HashStore = artifacts.require("HashStore");
     this.SecurityStore = artifacts.require("SecurityStore");
     this.WhitelistStore = artifacts.require("WhitelistStore");
     this.QuotaStore = artifacts.require("QuotaStore");

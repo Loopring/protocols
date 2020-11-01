@@ -14,7 +14,7 @@ module.exports = function(deployer, network, accounts) {
     ensManagerAddr = BaseENSManager.address;
   }
 
-  const collecTo = process.env.collectTo || accounts[1];
+  const collecTo = process.env.feeCollector || accounts[1];
 
   let priceOracle;
   let controllerImpl;
@@ -22,21 +22,14 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(TestPriceOracle);
     await deployer.deploy(
       ControllerImpl,
+      HashStore.address,
+      QuotaStore.address,
+      SecurityStore.address,
+      WhitelistStore.address,
       ModuleRegistryImpl.address,
       collecTo,
       ensManagerAddr,
-      TestPriceOracle.address,
-      true
+      TestPriceOracle.address
     );
-
-    const controllerImpl = await ControllerImpl.deployed();
-    return Promise.all([
-      controllerImpl.initStores(
-        HashStore.address,
-        QuotaStore.address,
-        SecurityStore.address,
-        WhitelistStore.address
-      )
-    ]);
   });
 };

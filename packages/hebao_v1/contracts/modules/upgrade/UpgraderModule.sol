@@ -15,18 +15,16 @@ import "./SecurityStore_1_0_2.sol";
 ///      removes itself.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
-contract UpgraderModule is BaseModule {
-    ControllerImpl private controller_;
 
-    address    public walletImplementation;
+contract UpgraderModule is BaseModule {
+    ControllerImpl private immutable controller_;
+
+    address    public immutable walletImplementation;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
-    SecurityStore_1_0_2 oldSecurityStore;
-    SecurityStore       newSecurityStore;
+    SecurityStore_1_0_2 immutable oldSecurityStore;
+    SecurityStore       immutable newSecurityStore;
 
     constructor(
         ControllerImpl   _controller,
@@ -36,9 +34,9 @@ contract UpgraderModule is BaseModule {
         address          _oldSecurityStore,
         address          _newSecurityStore
         )
+        BaseModule(_controller)
     {
         controller_ = _controller;
-        updateControllerCache();
         walletImplementation = _walletImplementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
@@ -54,14 +52,6 @@ contract UpgraderModule is BaseModule {
         returns(ControllerImpl)
     {
         return ControllerImpl(controller_);
-    }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
     }
 
     function upgradeWalletImplementation(address payable wallet)
@@ -93,14 +83,14 @@ contract UpgraderModule is BaseModule {
             newSecurityStore.addGuardian(
                 wallet,
                 guardians[i].addr,
-                guardians[i].group,
-                guardians[i].validSince
+                guardians[i].validSince,
+                true
             );
         }
 
         (address inheritor,) = oldSecurityStore.inheritor(wallet);
         if (inheritor != address(0)) {
-            newSecurityStore.setInheritor(wallet, inheritor);
+            newSecurityStore.setInheritor(wallet, inheritor, 365 days);
         }
     }
 

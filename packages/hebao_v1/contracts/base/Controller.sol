@@ -10,6 +10,15 @@ import "../iface/ModuleRegistry.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract Controller
 {
-    ModuleRegistry public moduleRegistry;
-    address        public walletFactory;
+    function moduleRegistry()
+        external
+        view
+        virtual
+        returns (ModuleRegistry);
+
+    function walletFactory()
+        external
+        view
+        virtual
+        returns (address);
 }

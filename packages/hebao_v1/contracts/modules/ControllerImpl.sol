@@ -18,18 +18,15 @@ import "../thirdparty/ens/BaseENSManager.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ControllerImpl is Claimable, Controller
 {
-    address             public collectTo;
-    BaseENSManager      public ensManager;
+    HashStore           public immutable hashStore;
+    QuotaStore          public immutable quotaStore;
+    SecurityStore       public immutable securityStore;
+    WhitelistStore      public immutable whitelistStore;
+    ModuleRegistry      public immutable override moduleRegistry;
+    address             public override  walletFactory;
+    address             public feeCollector;
+    BaseENSManager      public immutable ensManager;
     PriceOracle         public priceOracle;
-    HashStore           public hashStore;
-    QuotaStore          public quotaStore;
-    SecurityStore       public securityStore;
-    WhitelistStore      public whitelistStore;
-
-    // Make sure this value if false in production env.
-    // Ideally we can use chainid(), but there is a bug in truffle so testing is buggy:
-    // https://github.com/trufflesuite/ganache/issues/1643
-    bool                public allowChangingWalletFactory;
 
     event AddressChanged(
         string   name,
@@ -37,65 +34,46 @@ contract ControllerImpl is Claimable, Controller
     );
 
     constructor(
-        ModuleRegistry    _moduleRegistry,
-        address           _collectTo,
-        BaseENSManager    _ensManager,
-        PriceOracle       _priceOracle,
-        bool              _allowChangingWalletFactory
-        )
-    {
-        moduleRegistry = _moduleRegistry;
-
-        require(_collectTo != address(0), "ZERO_ADDRESS");
-        collectTo = _collectTo;
-
-        ensManager = _ensManager;
-        priceOracle = _priceOracle;
-        allowChangingWalletFactory = _allowChangingWalletFactory;
-    }
-
-    function initStores(
         HashStore         _hashStore,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
-        WhitelistStore    _whitelistStore
+        WhitelistStore    _whitelistStore,
+        ModuleRegistry    _moduleRegistry,
+        address           _feeCollector,
+        BaseENSManager    _ensManager,
+        PriceOracle       _priceOracle
         )
-        external
-        onlyOwner
     {
-        // Make sure this function can only invoked once.
-        require(
-            address(hashStore) == address(0) &&
-            address(_hashStore) != address(0),
-            "INVALID_INIT"
-        );
-
         hashStore = _hashStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
+        moduleRegistry = _moduleRegistry;
+
+        require(_feeCollector != address(0), "ZERO_ADDRESS");
+        feeCollector = _feeCollector;
+
+        ensManager = _ensManager;
+        priceOracle = _priceOracle;
     }
 
     function initWalletFactory(address _walletFactory)
         external
         onlyOwner
     {
-        require(
-            allowChangingWalletFactory || walletFactory == address(0),
-            "INITIALIZED_ALREADY"
-        );
+        require(walletFactory == address(0), "INITIALIZED_ALREADY");
         require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
         emit AddressChanged("WalletFactory", walletFactory);
     }
 
-    function setCollectTo(address _collectTo)
+    function setCollectTo(address _feeCollector)
         external
         onlyOwner
     {
-        require(_collectTo != address(0), "ZERO_ADDRESS");
-        collectTo = _collectTo;
-        emit AddressChanged("CollectTo", collectTo);
+        require(_feeCollector != address(0), "ZERO_ADDRESS");
+        feeCollector = _feeCollector;
+        emit AddressChanged("CollectTo", feeCollector);
     }
 
     function setPriceOracle(PriceOracle _priceOracle)

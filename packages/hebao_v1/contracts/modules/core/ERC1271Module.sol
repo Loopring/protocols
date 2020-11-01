@@ -8,14 +8,14 @@ import "../../lib/AddressUtil.sol";
 import "../../lib/ERC1271.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../base/BaseModule.sol";
+import "../security/SecurityModule.sol";
 
 
 /// @title ERC1271Module
 /// @dev This module enables our smart wallets to message signers.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract ERC1271Module is ERC1271, BaseModule
+abstract contract ERC1271Module is ERC1271, SecurityModule
 {
     using SignatureUtil for bytes;
     using SignatureUtil for bytes32;
@@ -47,8 +47,7 @@ abstract contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4 magicValue)
     {
         address wallet = msg.sender;
-        (uint _lock,) = controllerCache.securityStore.getLock(wallet);
-        if (_lock > block.timestamp) { // wallet locked
+        if (securityStore.isLocked(wallet)) {
             return 0;
         }
 

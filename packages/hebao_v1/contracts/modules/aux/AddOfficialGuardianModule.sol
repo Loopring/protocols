@@ -14,20 +14,17 @@ import "../base/BaseModule.sol";
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 contract AddOfficialGuardianModule is BaseModule {
-    ControllerImpl private controller_;
-    address        public  officialGuardian;
-    uint           public  officialGuardianGroup;
+    ControllerImpl private immutable controller_;
+    address        public  immutable officialGuardian;
 
     constructor(
         ControllerImpl   _controller,
-        address          _officialGuardian,
-        uint             _officialGuardianGroup
+        address          _officialGuardian
         )
+        BaseModule(_controller)
     {
         controller_ = _controller;
-        updateControllerCache();
         officialGuardian = _officialGuardian;
-        officialGuardianGroup = _officialGuardianGroup;
     }
 
     function controller()
@@ -39,31 +36,23 @@ contract AddOfficialGuardianModule is BaseModule {
         return ControllerImpl(controller_);
     }
 
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-    }
-
     function activate()
         external
         override
     {
         address payable wallet = msg.sender;
 
-        SecurityStore ss = controllerCache.securityStore;
+        SecurityStore ss = securityStore;
         require(
-            ss.numGuardiansWithPending(wallet) == 0,
+            ss.numGuardians(wallet, true /* with pending */) == 0,
             "NOT_THE_FIRST_GUARDIAN"
         );
 
         ss.addGuardian(
             wallet,
             officialGuardian,
-            officialGuardianGroup,
-            block.timestamp
+            block.timestamp,
+            true
         );
 
         BaseWallet(wallet).removeModule(address(this));

@@ -13,9 +13,7 @@ import "./Controller.sol";
 /// @dev This contract provides basic implementation for a Wallet.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
+
 abstract contract BaseWallet is ReentrancyGuard, Wallet
 {
     // WARNING: do not delete wallet state data to make this implementation
@@ -107,13 +105,13 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
 
         ModuleRegistry moduleRegistry = controller.moduleRegistry();
         for (uint i = 0; i < _modules.length; i++) {
-            addModuleInternal(_modules[i], moduleRegistry);
+            _addModule(_modules[i], moduleRegistry);
         }
     }
 
     function owner()
         override
-        external
+        public
         view
         returns (address)
     {
@@ -147,7 +145,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         override
         onlyFromFactoryOrModule
     {
-        addModuleInternal(_module, controller.moduleRegistry());
+        _addModule(_module, controller.moduleRegistry());
     }
 
     function removeModule(address _module)
@@ -163,7 +161,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     }
 
     function hasModule(address _module)
-        external
+        public
         view
         override
         returns (bool)
@@ -186,7 +184,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     }
 
     function boundMethodModule(bytes4 _method)
-        external
+        public
         view
         override
         returns (address)
@@ -216,20 +214,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         }
     }
 
-    function addModuleInternal(address _module, ModuleRegistry moduleRegistry)
-        internal
-    {
-        require(_module != address(0), "NULL_MODULE");
-        require(modules[_module] == false, "MODULE_EXISTS");
-        require(
-            moduleRegistry.isModuleEnabled(_module),
-            "INVALID_MODULE"
-        );
-        modules[_module] = true;
-        emit ModuleAdded(_module);
-        Module(_module).activate();
-    }
-
     receive()
         external
         payable
@@ -251,6 +235,20 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
             case 0 { revert(add(returnData, 32), mload(returnData)) }
             default { return(add(returnData, 32), mload(returnData)) }
         }
+    }
+
+    function _addModule(address _module, ModuleRegistry moduleRegistry)
+        internal
+    {
+        require(_module != address(0), "NULL_MODULE");
+        require(modules[_module] == false, "MODULE_EXISTS");
+        require(
+            moduleRegistry.isModuleEnabled(_module),
+            "INVALID_MODULE"
+        );
+        modules[_module] = true;
+        emit ModuleAdded(_module);
+        Module(_module).activate();
     }
 
     function _call(

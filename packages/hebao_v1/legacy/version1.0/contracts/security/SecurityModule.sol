@@ -20,7 +20,7 @@ abstract contract SecurityModule is MetaTxModule
 
     event WalletLock(
         address indexed wallet,
-        uint            lock
+        bool            locked
     );
 
     constructor(ControllerImpl _controller)

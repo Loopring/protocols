@@ -38,15 +38,15 @@ library SignedRequest {
 
         bytes32 _txAwareHash = EIP712.hashPacked(domainSeperator, encodedRequest);
 
-        // Save hash to prevent replay attacks
-        controller.hashStore().verifyAndUpdate(request.wallet, _txAwareHash);
-
         // If txAwareHash from the mata-transaction is non-zero,
         // we must verify it matches the hash signed by the respective signers.
         require(
             txAwareHash == 0 || txAwareHash == _txAwareHash,
             "TX_INNER_HASH_MISMATCH"
         );
+
+        // Save hash to prevent replay attacks
+        controller.hashStore().verifyAndUpdate(request.wallet, _txAwareHash);
 
         require(
             _txAwareHash.verifySignatures(request.signers, request.signatures),
