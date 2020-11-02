@@ -25,13 +25,14 @@ abstract contract BaseModule is Module
     event Activated   (address wallet);
     event Deactivated (address wallet);
 
-    struct ControllerCache
-    {
-        PriceOracle      priceOracle;
-        address          collectTo;
-    }
-
-    ControllerCache public controllerCache;
+    ModuleRegistry public immutable moduleRegistry;
+    SecurityStore  public immutable securityStore;
+    WhitelistStore public immutable whitelistStore;
+    QuotaStore     public immutable quotaStore;
+    HashStore      public immutable hashStore;
+    address        public immutable walletFactory;
+    PriceOracle    public immutable priceOracle;
+    address        public immutable feeCollector;
 
     ModuleRegistry public immutable moduleRegistry;
     SecurityStore  public immutable securityStore;
@@ -77,8 +78,8 @@ abstract contract BaseModule is Module
         quotaStore = _controller.quotaStore();
         hashStore = _controller.hashStore();
         walletFactory = _controller.walletFactory();
-
-        _updateControllerCache(_controller);
+        priceOracle = _controller.priceOracle();
+        feeCollector = _controller.feeCollector();
     }
 
     function controller()
@@ -119,13 +120,6 @@ abstract contract BaseModule is Module
         pure
         virtual
         returns (bytes4[] memory methods)
-    {
-    }
-
-    function updateControllerCache()
-        public
-    {
-        _updateControllerCache(controller());
     }
 
     // ===== internal & private methods =====
@@ -255,13 +249,12 @@ abstract contract BaseModule is Module
         uint gasCost = gasAmount.mul(gasPrice);
 
         if (!skipQuota) {
-            uint value = (gasToken == address(0)) ?
-                gasCost :
-                controllerCache.priceOracle.tokenValue(gasToken, gasCost);
-
-            if (value > 0) {
-              quotaStore.checkAndAddToSpent(wallet, value);
-            }
+            quotaStore.checkAndAddToSpent(
+                wallet,
+                gasToken,
+                gasAmount,
+                priceOracle
+            );
         }
 
         transactTokenTransfer(wallet, gasToken, recipient, gasCost);

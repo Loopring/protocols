@@ -24,14 +24,9 @@ contract ControllerImpl is Claimable, Controller
     WhitelistStore      public immutable whitelistStore;
     ModuleRegistry      public immutable override moduleRegistry;
     address             public override  walletFactory;
-    address             public collectTo;
+    address             public feeCollector;
     BaseENSManager      public immutable ensManager;
     PriceOracle         public priceOracle;
-
-    // Make sure this value if false in production env.
-    // Ideally we can use chainid(), but there is a bug in truffle so testing is buggy:
-    // https://github.com/trufflesuite/ganache/issues/1643
-    bool                public immutable allowChangingWalletFactory;
 
     event AddressChanged(
         string   name,
@@ -44,10 +39,9 @@ contract ControllerImpl is Claimable, Controller
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore,
         ModuleRegistry    _moduleRegistry,
-        address           _collectTo,
+        address           _feeCollector,
         BaseENSManager    _ensManager,
-        PriceOracle       _priceOracle,
-        bool              _allowChangingWalletFactory
+        PriceOracle       _priceOracle
         )
     {
         hashStore = _hashStore;
@@ -56,34 +50,30 @@ contract ControllerImpl is Claimable, Controller
         whitelistStore = _whitelistStore;
         moduleRegistry = _moduleRegistry;
 
-        require(_collectTo != address(0), "ZERO_ADDRESS");
-        collectTo = _collectTo;
+        require(_feeCollector != address(0), "ZERO_ADDRESS");
+        feeCollector = _feeCollector;
 
         ensManager = _ensManager;
         priceOracle = _priceOracle;
-        allowChangingWalletFactory = _allowChangingWalletFactory;
     }
 
     function initWalletFactory(address _walletFactory)
         external
         onlyOwner
     {
-        require(
-            allowChangingWalletFactory || walletFactory == address(0),
-            "INITIALIZED_ALREADY"
-        );
+        require(walletFactory == address(0), "INITIALIZED_ALREADY");
         require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
         emit AddressChanged("WalletFactory", walletFactory);
     }
 
-    function setCollectTo(address _collectTo)
+    function setCollectTo(address _feeCollector)
         external
         onlyOwner
     {
-        require(_collectTo != address(0), "ZERO_ADDRESS");
-        collectTo = _collectTo;
-        emit AddressChanged("CollectTo", collectTo);
+        require(_feeCollector != address(0), "ZERO_ADDRESS");
+        feeCollector = _feeCollector;
+        emit AddressChanged("CollectTo", feeCollector);
     }
 
     function setPriceOracle(PriceOracle _priceOracle)
