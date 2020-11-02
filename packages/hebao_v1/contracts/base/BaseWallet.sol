@@ -34,7 +34,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     }
 
     uint64  public constant OWNER_PERPETUAL_DURATION = uint64(30 days);
-    uint64  public _ownerStartIdx;
+    uint64  public _ownersStartIdx;
     Owner[] public _owners;
 
     //  ----- DATA LAYOUT ENDS -----
@@ -150,7 +150,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         view
         returns (address, uint)
     {
-        if (idx >= _ownerStartIdx && idx < _owners.length) {
+        if (idx >= _ownersStartIdx && idx < _owners.length) {
             Owner memory owner_ = _owners[idx];
             if (owner_.timestamp + OWNER_PERPETUAL_DURATION > block.timestamp) {
                 return (owner_.addr, owner_.timestamp);
@@ -173,13 +173,13 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         require(block.timestamp > currentOwner.timestamp, "SAME_TIMESTAMP");
 
         // Clean up so we don't have a long history
-        uint64 i = _ownerStartIdx;
+        uint64 i = _ownersStartIdx;
         uint expiry = block.timestamp - OWNER_PERPETUAL_DURATION;
         while (i < size && _owners[i].timestamp <= expiry) {
             delete _owners[i];
             i++;
         }
-        _ownerStartIdx = i;
+        _ownersStartIdx = i;
 
         _owners.push(Owner({
             addr: newOwner,
