@@ -10,6 +10,7 @@ import {
 import { assertEventEmitted } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
 import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
+import { SignedRequest, signUnlock } from "./helpers/SignatureUtils";
 import util = require("util");
 
 contract("GuardianModule - Lock", (accounts: string[]) => {
@@ -63,36 +64,27 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     assert(await isLocked(wallet), "wallet needs to be locked");
   };
 
-  const unlockChecked = async (
-    wallet: string,
-    guardian: string,
-    from?: string,
-    guardianWallet?: any,
-    finalSecurityModule: any = ctx.finalSecurityModule
-  ) => {
-    const opt = useMetaTx
-      ? { owner: guardian, wallet: guardianWallet, from }
-      : { from };
+  const unlockChecked = async (wallet: string, owner: string) => {
+    const signers = [owner, ...guardians.slice(0, 2)].sort();
 
     const wasLocked = await isLocked(wallet);
     // Unlock the wallet
+    const request: SignedRequest = {
+      signers,
+      signatures: [],
+      validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
+      wallet
+    };
+    signUnlock(request, ctx.finalSecurityModule.address);
+
     await executeTransaction(
-      finalSecurityModule.contract.methods.unlock(wallet),
+      ctx.finalSecurityModule.contract.methods.unlock(request),
       ctx,
       useMetaTx,
       wallet,
       [],
-      opt
+      { from: owner }
     );
-    if (wasLocked && useMetaTx) {
-      await assertEventEmitted(
-        finalSecurityModule,
-        "WalletLocked",
-        (event: any) => {
-          return event.wallet == wallet && event.locked == false;
-        }
-      );
-    }
     assert(!(await isLocked(wallet)), "wallet needs to be unlocked");
   };
 
@@ -139,7 +131,9 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
   [false, true].forEach(function(metaTx) {
     useMetaTx = metaTx;
     it(
-      description("guardians should be able to lock/unlock the wallet"),
+      description(
+        "guardians or owner/wallet should be able to lock/unlock the wallet"
+      ),
       async () => {
         const owner = ctx.owners[0];
 
@@ -155,57 +149,19 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
             ),
             useMetaTx ? "NOT_FROM_GUARDIAN" : "NOT_FROM_GUARDIAN"
           );
-          await expectThrow(
-            unlockChecked(wallet, guardians[1]),
-            useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_FROM_GUARDIAN"
-          );
-
-          // Try to lock/unlock from an address that is not a guardian
-          await expectThrow(
-            lockChecked(wallet, owner, owner),
-            useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_FROM_GUARDIAN"
-          );
-          await expectThrow(
-            unlockChecked(wallet, owner),
-            useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_FROM_GUARDIAN"
-          );
         }
 
         // // Lock the wallet
-        await lockChecked(wallet, guardians[0], undefined, guardianWallet1);
+        await lockChecked(wallet, guardians[0], owner, guardianWallet1);
 
         // Try to lock the wallet again
         if (!useMetaTx) {
           await expectThrow(lockChecked(wallet, guardians[1]), "LOCKED");
         }
         // Unlock the wallet (using a different guardian)
-        await unlockChecked(wallet, guardians[1], undefined, guardianWallet2);
+        await unlockChecked(wallet, owner);
         // Try to unlock the wallet again (should not throw)
-        await unlockChecked(wallet, guardians[0], undefined, guardianWallet1);
-      }
-    );
-
-    it(
-      description(
-        "should not be able to unlock a lock set by a different module"
-      ),
-      async () => {
-        // Lock the wallet
-        await lockChecked(wallet, guardians[0], undefined, guardianWallet1);
-
-        if (!useMetaTx) {
-          // Try to unlock a lock set by a different module
-          await expectThrow(
-            unlockChecked(
-              wallet,
-              guardians[1],
-              undefined,
-              undefined,
-              finalSecurityModule2
-            ),
-            "UNABLE_TO_UNLOCK"
-          );
-        }
+        await unlockChecked(wallet, owner);
       }
     );
   });

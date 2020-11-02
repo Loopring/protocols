@@ -98,8 +98,9 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
         const owner = ctx.owners[0];
         const { wallet } = await createWallet(ctx, owner);
 
-        // The first guardian is added WA (so cannot be cancelled)
+        // The first two guardian is added WA (so cannot be cancelled)
         await addGuardianChecked(owner, wallet, ctx.guardians[0]);
+        await addGuardianChecked(owner, wallet, ctx.guardians[1]);
 
         const opt = useMetaTx
           ? { owner, wallet, gasPrice: new BN(0) }
