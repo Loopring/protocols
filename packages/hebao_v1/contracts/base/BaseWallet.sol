@@ -25,7 +25,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         uint64  timestamp;
     }
 
-    uint64  public constant OWNER_HISTORY_DURATION = uint64(30 days);
+    uint64  public constant OWNER_PERPETUAL_DURATION = uint64(30 days);
     uint64  internal _ownerStartIdx;
     Owner[] internal _owner;
 
@@ -137,7 +137,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     {
         require(idx >= _ownerStartIdx && idx < _owner.length, "INVALID_IDX");
         Owner memory owner_ = _owner[idx];
-        require(owner_.timestamp + OWNER_HISTORY_DURATION > block.timestamp, "EXPIRED");
+        require(owner_.timestamp + OWNER_PERPETUAL_DURATION > block.timestamp, "EXPIRED");
         return (owner_.addr, owner_.timestamp);
     }
 
@@ -157,7 +157,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
 
         // Clean up so we don't have a long history
         uint64 i = _ownerStartIdx;
-        uint expiry = block.timestamp - OWNER_HISTORY_DURATION;
+        uint expiry = block.timestamp - OWNER_PERPETUAL_DURATION;
         while (i < size && _owner[i].timestamp <= expiry) {
             delete _owner[i];
             i++;
