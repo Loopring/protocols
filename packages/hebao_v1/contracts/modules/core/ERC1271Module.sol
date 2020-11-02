@@ -65,12 +65,13 @@ abstract contract ERC1271Module is ERC1271, SecurityModule
             return _signHash.verifySignature(_owner, _sig) ? ERC1271_MAGICVALUE : bytes4(0);
         } else if (sigType == uint8(SignType.PERPETUAL)) {
             uint ownerIdx = _signature.toUint32(8);
-            address prevOwner = Wallet(msg.sender).previousOwner(ownerIdx);
-            if (prevOwner == address(0)) {
+            uint ownerTimestamp = _signature.toUint64(40);
+            (address prevOwner, uint timestamp) = Wallet(msg.sender).previousOwner(ownerIdx);
+            if (prevOwner == address(0) || timestamp != ownerTimestamp) {
                 return 0;
             }
 
-            bytes memory _sig = _signature.slice(40, _signature.length - 40);
+            bytes memory _sig = _signature.slice(104, _signature.length - 104);
             return _signHash.verifySignature(prevOwner, _sig) ? ERC1271_MAGICVALUE : bytes4(0);
         } else {
             return 0;

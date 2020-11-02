@@ -18,7 +18,7 @@ interface Wallet
 
     function owner() external view returns (address);
 
-    function previousOwner(uint idx) external view returns (address);
+    function previousOwner(uint idx) external view returns (address, uint);
 
     /// @dev Set a new owner.
     function setOwner(address newOwner) external;

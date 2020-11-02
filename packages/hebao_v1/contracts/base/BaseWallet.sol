@@ -133,12 +133,12 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         public
         override
         view
-        returns (address)
+        returns (address, uint)
     {
         require(idx >= _ownerStartIdx && idx < _owner.length, "INVALID_IDX");
         Owner memory owner_ = _owner[idx];
         require(owner_.timestamp + OWNER_HISTORY_DURATION > block.timestamp, "EXPIRED");
-        return owner_.addr;
+        return (owner_.addr, owner_.timestamp);
     }
 
     function setOwner(address newOwner)
