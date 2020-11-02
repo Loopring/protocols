@@ -20,8 +20,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     // compatible with early versions.
     //
     //  ----- DATA LAYOUT BEGINS -----
-
-    address internal __owner_deprecated; // DEPRECATED
+    address internal __owner_deprecated; // DEPRECATED but kept to be proxy friendly
 
     mapping (address => bool) private modules;
 
