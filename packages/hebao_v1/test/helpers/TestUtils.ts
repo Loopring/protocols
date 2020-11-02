@@ -88,6 +88,17 @@ export async function createContext(context?: Context, options: any = {}) {
   );
   context.controllerImpl = controllerImpl;
 
+  // Create a new wallet factory
+  const walletFactory = await context.contracts.WalletFactory.new(
+    context.controllerImpl.address,
+    context.walletImpl.address,
+    true
+  );
+
+  await context.baseENSManager.addManager(walletFactory.address);
+  await context.controllerImpl.initWalletFactory(walletFactory.address);
+  context.walletFactory = walletFactory;
+
   // Create new modules
   const finalCoreModule = await context.contracts.FinalCoreModule.new(
     context.controllerImpl.address
@@ -108,17 +119,6 @@ export async function createContext(context?: Context, options: any = {}) {
   context.finalCoreModule = finalCoreModule;
   context.finalSecurityModule = finalSecurityModule;
   context.finalTransferModule = finalTransferModule;
-
-  // Create a new wallet factory
-  const walletFactory = await context.contracts.WalletFactory.new(
-    context.controllerImpl.address,
-    context.walletImpl.address,
-    true
-  );
-
-  await context.baseENSManager.addManager(walletFactory.address);
-  await context.controllerImpl.initWalletFactory(walletFactory.address);
-  context.walletFactory = walletFactory;
 
   return context;
 }
