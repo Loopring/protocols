@@ -684,6 +684,7 @@ class State(object):
             newState.TXV_ACCOUNT_A_ADDRESS = txInput.accountID
             accountA = self.getAccount(newState.TXV_ACCOUNT_A_ADDRESS)
 
+            newState.TXV_ACCOUNT_A_OWNER = txInput.owner
             newState.TXV_ACCOUNT_A_PUBKEY_X = txInput.publicKeyX
             newState.TXV_ACCOUNT_A_PUBKEY_Y = txInput.publicKeyY
             newState.TXV_ACCOUNT_A_NONCE = 1

@@ -36,6 +36,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
     Poseidon_gadget_T<9, 1, 6, 53, 8, 1> hash;
 
     // Validate
+    OwnerValidGadget ownerValid;
     RequireLtGadget requireValidUntil;
     RequireLeqGadget requireValidFee;
 
@@ -67,7 +68,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
         : BaseTransactionCircuit(pb, state, prefix),
 
           // Inputs
-          owner(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
+          owner(pb, NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
           accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
           validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
           nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
@@ -93,6 +94,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
             FMT(this->annotation_prefix, ".hash")),
 
           // Validate
+          ownerValid(pb, state.constants, state.accountA.account.owner, owner.packed, FMT(prefix, ".ownerValid")),
           requireValidUntil(
             pb,
             state.timestamp,
@@ -145,6 +147,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
     {
         // Update the account data
         setArrayOutput(TXV_ACCOUNT_A_ADDRESS, accountID.bits);
+        setOutput(TXV_ACCOUNT_A_OWNER, owner.packed);
         setOutput(TXV_ACCOUNT_A_PUBKEY_X, publicKeyX);
         setOutput(TXV_ACCOUNT_A_PUBKEY_Y, publicKeyY);
         setOutput(TXV_ACCOUNT_A_NONCE, nonce_after.result());
@@ -168,7 +171,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
     void generate_r1cs_witness(const AccountUpdateTx &update)
     {
         // Inputs
-        owner.generate_r1cs_witness();
+        owner.generate_r1cs_witness(pb, update.owner);
         accountID.generate_r1cs_witness(pb, update.accountID);
         validUntil.generate_r1cs_witness(pb, update.validUntil);
         nonce.generate_r1cs_witness();
@@ -183,6 +186,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
         hash.generate_r1cs_witness();
 
         // Validate
+        ownerValid.generate_r1cs_witness();
         requireValidUntil.generate_r1cs_witness();
         requireValidFee.generate_r1cs_witness();
 
@@ -224,6 +228,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
         hash.generate_r1cs_constraints();
 
         // Validate
+        ownerValid.generate_r1cs_constraints();
         requireValidUntil.generate_r1cs_constraints();
         requireValidFee.generate_r1cs_constraints();
 

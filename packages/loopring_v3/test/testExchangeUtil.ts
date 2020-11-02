@@ -1402,7 +1402,20 @@ export class ExchangeTestUtil {
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
 
-    const account = this.findAccount(owner);
+    let isNewAccount = false;
+    let account = this.findAccount(owner);
+    if (account === undefined) {
+      account = {
+        accountID: this.accounts[this.exchangeId].length,
+        owner: owner,
+        publicKeyX: "0",
+        publicKeyY: "0",
+        secretKey: "0",
+        nonce: 0
+      };
+      this.accounts[this.exchangeId].push(account);
+      isNewAccount = true;
+    }
 
     const accountUpdate: AccountUpdate = {
       txType: "AccountUpdate",
@@ -1422,7 +1435,12 @@ export class ExchangeTestUtil {
 
     // Sign the public key update
     if (authMethod === AuthMethod.EDDSA) {
-      accountUpdate.signature = AccountUpdateUtils.sign(account, accountUpdate);
+      // New accounts should not be able to set keys with EDDSA.
+      // Try to sign with the keys we're setting (which shouldn't work).
+      accountUpdate.signature = AccountUpdateUtils.sign(
+        isNewAccount ? keyPair : account,
+        accountUpdate
+      );
     } else if (authMethod === AuthMethod.ECDSA) {
       const hash = AccountUpdateUtils.getHash(
         accountUpdate,
