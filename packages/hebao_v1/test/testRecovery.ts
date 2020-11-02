@@ -101,7 +101,7 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
             );
           } else {
             if (!useMetaTx) {
-              await expectThrow(transaction, "NOT_ENOUGH_SIGNERS");
+              await expectThrow(transaction, "PERMISSION_DENIED");
             }
           }
         }
