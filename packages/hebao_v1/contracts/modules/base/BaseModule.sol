@@ -34,13 +34,6 @@ abstract contract BaseModule is Module
     PriceOracle    public immutable priceOracle;
     address        public immutable feeCollector;
 
-    ModuleRegistry public immutable moduleRegistry;
-    SecurityStore  public immutable securityStore;
-    WhitelistStore public immutable whitelistStore;
-    QuotaStore     public immutable quotaStore;
-    HashStore      public immutable hashStore;
-    address        public immutable walletFactory;
-
     function logicalSender()
         internal
         view
@@ -120,16 +113,10 @@ abstract contract BaseModule is Module
         pure
         virtual
         returns (bytes4[] memory methods)
+    {
     }
 
     // ===== internal & private methods =====
-
-    function _updateControllerCache(ControllerImpl _controller)
-        internal
-    {
-        controllerCache.priceOracle = _controller.priceOracle();
-        controllerCache.collectTo = _controller.collectTo();
-    }
 
     /// @dev Binds all methods to the given wallet.
     function bindMethods(address wallet)

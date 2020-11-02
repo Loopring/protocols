@@ -131,6 +131,8 @@ abstract contract TransferModule is BaseTransferModule
         bool               forceUseQuota
         )
         external
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
         returns (bytes memory returnData)
     {
         if (forceUseQuota || !isAddressDappOrWhitelisted(wallet, to)) {
