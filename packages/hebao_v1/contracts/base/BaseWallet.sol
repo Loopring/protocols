@@ -20,7 +20,14 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     // compatible with early versions.
     //
     //  ----- DATA LAYOUT BEGINS -----
-    address internal _owner;
+    struct Owner {
+        address addr;
+        uint64  timestamp;
+    }
+
+    uint64  public constant OWNER_HISTORY_DURATION = uint64(30 days);
+    uint64  internal _ownerStartIdx;
+    Owner[] internal _owner;
 
     mapping (address => bool) private modules;
 
@@ -74,10 +81,14 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         onlyFromFactory
     {
         require(controller != Controller(0), "NO_CONTROLLER");
-        require(_owner == address(0), "INITIALIZED_ALREADY");
+        require(_owner.length == 0, "INITIALIZED_ALREADY");
         require(_initialOwner != address(0), "ZERO_ADDRESS");
 
-        _owner = _initialOwner;
+        _owner.push(Owner({
+            addr: _initialOwner,
+            timestamp: uint64(block.timestamp)
+        }));
+
         emit WalletSetup(_initialOwner);
     }
 
@@ -95,7 +106,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         external
     {
         require(
-            _owner == address(0) &&
+            _owner.length == 0 &&
             controller == Controller(0) &&
             _controller != Controller(0),
             "CONTROLLER_INIT_FAILED"
@@ -110,12 +121,24 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     }
 
     function owner()
-        override
         public
+        override
         view
         returns (address)
     {
-        return _owner;
+        return _owner[_owner.length - 1].addr;
+    }
+
+    function previousOwner(uint idx)
+        public
+        override
+        view
+        returns (address)
+    {
+        require(idx >= _ownerStartIdx && idx < _owner.length, "INVALID_IDX");
+        Owner memory owner_ = _owner[idx];
+        require(owner_.timestamp + OWNER_HISTORY_DURATION > block.timestamp, "EXPIRED");
+        return owner_.addr;
     }
 
     function setOwner(address newOwner)
@@ -125,8 +148,27 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
         require(newOwner != address(this), "PROHIBITED");
-        require(newOwner != _owner, "SAME_ADDRESS");
-        _owner = newOwner;
+
+        uint size = _owner.length;
+        Owner memory currentOwner = _owner[size - 1];
+
+        require(newOwner != currentOwner.addr, "SAME_ADDRESS");
+        require(block.timestamp > currentOwner.timestamp, "SAME_TIMESTAMP");
+
+        // Clean up so we don't have a long history
+        uint64 i = _ownerStartIdx;
+        uint expiry = block.timestamp - OWNER_HISTORY_DURATION;
+        while (i < size && _owner[i].timestamp <= expiry) {
+            delete _owner[i];
+            i++;
+        }
+        _ownerStartIdx = i;
+
+        _owner.push(Owner({
+            addr: newOwner,
+            timestamp: uint64(block.timestamp)
+        }));
+
         emit OwnerChanged(newOwner);
     }
 

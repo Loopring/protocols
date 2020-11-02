@@ -17,9 +17,15 @@ import "../security/SecurityModule.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract ERC1271Module is ERC1271, SecurityModule
 {
+    using AddressUtil   for address;
+    using BytesUtil     for bytes;
     using SignatureUtil for bytes;
     using SignatureUtil for bytes32;
-    using AddressUtil   for address;
+
+    enum SignType {
+        DEFAULT,  // = 0
+        PERPETUAL // = 1
+    }
 
     function bindableMethodsForERC1271()
         internal
@@ -46,13 +52,26 @@ abstract contract ERC1271Module is ERC1271, SecurityModule
         override
         returns (bytes4 magicValue)
     {
-        address wallet = msg.sender;
-        if (securityStore.isLocked(wallet)) {
-            return 0;
-        }
+        uint8 sigType = _signature.toUint8(0);
 
-        if (_signHash.verifySignature(Wallet(wallet).owner(), _signature)) {
-            return ERC1271_MAGICVALUE;
+        if (sigType == uint8(SignType.DEFAULT)) {
+            address wallet = msg.sender;
+            if (securityStore.isLocked(wallet)) {
+                return 0;
+            }
+
+            address _owner = Wallet(wallet).owner();
+            bytes memory _sig = _signature.slice(8, _signature.length - 8);
+            return _signHash.verifySignature(_owner, _sig) ? ERC1271_MAGICVALUE : bytes4(0);
+        } else if (sigType == uint8(SignType.PERPETUAL)) {
+            uint ownerIdx = _signature.toUint32(8);
+            address prevOwner = Wallet(msg.sender).previousOwner(ownerIdx);
+            if (prevOwner == address(0)) {
+                return 0;
+            }
+
+            bytes memory _sig = _signature.slice(40, _signature.length - 40);
+            return _signHash.verifySignature(prevOwner, _sig) ? ERC1271_MAGICVALUE : bytes4(0);
         } else {
             return 0;
         }
