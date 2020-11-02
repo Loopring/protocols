@@ -64,9 +64,13 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     assert(await isLocked(wallet), "wallet needs to be locked");
   };
 
-  const unlockChecked = async (wallet: string, owner: string) => {
-    const signers = [owner, ...guardians.slice(0, 2)].sort();
-
+  const unlockChecked = async (
+    wallet: string,
+    owner: string,
+    guardian?: string,
+    guardianWallet?: any
+  ) => {
+    const signers = [owner, guardian].sort();
     const wasLocked = await isLocked(wallet);
     // Unlock the wallet
     const request: SignedRequest = {
@@ -76,6 +80,19 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       wallet
     };
     signUnlock(request, ctx.finalSecurityModule.address);
+    console.log("request:", request);
+    if (useMetaTx) {
+      for (let i = 0; i < request.signers.length; i++) {
+        if (request.signers[i] == guardian) {
+          request.signers[i] = guardianWallet;
+          request.signatures[i] = request.signatures[i].slice(
+            0,
+            request.signatures[i].length - 2
+          );
+        }
+      }
+    }
+    console.log("request after:", request);
 
     await executeTransaction(
       ctx.finalSecurityModule.contract.methods.unlock(request),
@@ -83,7 +100,7 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       useMetaTx,
       wallet,
       [],
-      { from: owner }
+      { from: owner, wallet: guardianWallet, owner: guardian }
     );
     assert(!(await isLocked(wallet)), "wallet needs to be unlocked");
   };
@@ -147,21 +164,17 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
               ctx.miscAddresses[0],
               fakeGuardianWallet
             ),
-            useMetaTx ? "NOT_FROM_GUARDIAN" : "NOT_FROM_GUARDIAN"
+            "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
           );
         }
 
         // // Lock the wallet
         await lockChecked(wallet, guardians[0], owner, guardianWallet1);
 
-        // Try to lock the wallet again
-        if (!useMetaTx) {
-          await expectThrow(lockChecked(wallet, guardians[1]), "LOCKED");
-        }
         // Unlock the wallet (using a different guardian)
-        await unlockChecked(wallet, owner);
+        await unlockChecked(wallet, owner, guardians[0], guardianWallet1);
         // Try to unlock the wallet again (should not throw)
-        await unlockChecked(wallet, owner);
+        await unlockChecked(wallet, owner, guardians[0], guardianWallet1);
       }
     );
   });

@@ -114,8 +114,11 @@ export async function executeMetaTx(
     chainId: /*await web3.eth.net.getId()*/ 1
   };
 
+  // console.log("metaTx:", metaTx);
+
   // Sign the meta transaction
   const hash: Buffer = getMetaTxHash(metaTx, ctx.finalCoreModule.address);
+  // console.log("metaTx hash:", hash);
   const signature = sign(options.owner, hash);
 
   const tx = await ctx.finalCoreModule.executeMetaTx(

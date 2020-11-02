@@ -89,7 +89,7 @@ abstract contract GuardianModule is SecurityModule
         external
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
-        onlyWalletGuardian(wallet, guardian)
+    // onlyWalletGuardian(wallet, guardian)
     {
         _removeGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD, false);
     }

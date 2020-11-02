@@ -106,7 +106,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
           ? { owner, wallet, gasPrice: new BN(0) }
           : { from: owner };
 
-        // Add the second guardian which is added after a delay
+        // Add the third guardian which is added after a delay
         await executeTransaction(
           ctx.finalSecurityModule.contract.methods.addGuardian(
             wallet,

@@ -89,7 +89,7 @@ export function signUnlock(request: SignedRequest, moduleAddr: string) {
     [UNLOCK_TYPEHASH, request.wallet, request.validUntil]
   );
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-  // console.log(`hash: ${hash}`);
+  // console.log("hash:", hash);
   // console.log(`request.signers: ${request.signers}`);
 
   for (const signer of request.signers) {
@@ -303,8 +303,6 @@ export function getMetaTxHash(metaTx: MetaTx, moduleAddr: string) {
       "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
     )
   );
-
-  console.log("metaTx: 11111111", metaTx);
 
   const data =
     metaTx.txAwareHash === Constants.emptyBytes32
