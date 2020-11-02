@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/Wallet.sol";
+import "../../base/BaseWallet.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC1271.sol";
 import "../../lib/SignatureUtil.sol";
@@ -65,8 +65,13 @@ abstract contract ERC1271Module is ERC1271, SecurityModule
             return _signHash.verifySignature(_owner, _sig) ? ERC1271_MAGICVALUE : bytes4(0);
         } else if (sigType == uint8(SignType.PERPETUAL)) {
             uint ownerIdx = _signature.toUint32(8);
+
+            // Extract the owner's timestamp so the client can decide to accept or reject
+            // the signature based on this value.
             uint ownerTimestamp = _signature.toUint64(40);
-            (address prevOwner, uint timestamp) = Wallet(msg.sender).previousOwner(ownerIdx);
+
+
+            (address prevOwner, uint timestamp) = BaseWallet(msg.sender).getPreviousOwner(ownerIdx);
             if (prevOwner == address(0) || timestamp != ownerTimestamp) {
                 return 0;
             }

@@ -20,20 +20,24 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     // compatible with early versions.
     //
     //  ----- DATA LAYOUT BEGINS -----
-    struct Owner {
-        address addr;
-        uint64  timestamp;
-    }
 
-    uint64  public constant OWNER_PERPETUAL_DURATION = uint64(30 days);
-    uint64  internal _ownerStartIdx;
-    Owner[] internal _owner;
+    address internal __owner_deprecated; // DEPRECATED
 
     mapping (address => bool) private modules;
 
     Controller public controller;
 
     mapping (bytes4  => address) internal methodToModule;
+
+    struct Owner {
+        address addr;
+        uint64  timestamp;
+    }
+
+    uint64  public constant OWNER_PERPETUAL_DURATION = uint64(30 days);
+    uint64  public _ownerStartIdx;
+    Owner[] public _owners;
+
     //  ----- DATA LAYOUT ENDS -----
 
     event OwnerChanged          (address newOwner);
@@ -81,10 +85,10 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         onlyFromFactory
     {
         require(controller != Controller(0), "NO_CONTROLLER");
-        require(_owner.length == 0, "INITIALIZED_ALREADY");
+        require(_owners.length == 0, "INITIALIZED_ALREADY");
         require(_initialOwner != address(0), "ZERO_ADDRESS");
 
-        _owner.push(Owner({
+        _owners.push(Owner({
             addr: _initialOwner,
             timestamp: uint64(block.timestamp)
         }));
@@ -106,7 +110,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         external
     {
         require(
-            _owner.length == 0 &&
+            _owners.length == 0 &&
             controller == Controller(0) &&
             _controller != Controller(0),
             "CONTROLLER_INIT_FAILED"
@@ -126,19 +130,33 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         view
         returns (address)
     {
-        return _owner[_owner.length - 1].addr;
+        uint size = _owners.length;
+        return size > 0 ? _owners[size - 1].addr : address(0);
     }
 
-    function previousOwner(uint idx)
+    function getOwnerInfo()
         public
-        override
+        view
+        returns (address addr, uint index, uint timestamp)
+    {
+        uint size = _owners.length;
+        if (size > 0) {
+            Owner memory o = _owners[size - 1];
+            return (o.addr, size - 1, o.timestamp);
+        }
+    }
+
+    function getPreviousOwner(uint idx)
+        public
         view
         returns (address, uint)
     {
-        require(idx >= _ownerStartIdx && idx < _owner.length, "INVALID_IDX");
-        Owner memory owner_ = _owner[idx];
-        require(owner_.timestamp + OWNER_PERPETUAL_DURATION > block.timestamp, "EXPIRED");
-        return (owner_.addr, owner_.timestamp);
+        if (idx >= _ownerStartIdx && idx < _owners.length) {
+            Owner memory owner_ = _owners[idx];
+            if (owner_.timestamp + OWNER_PERPETUAL_DURATION > block.timestamp) {
+                return (owner_.addr, owner_.timestamp);
+            }
+        }
     }
 
     function setOwner(address newOwner)
@@ -149,8 +167,8 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         require(newOwner != address(0), "ZERO_ADDRESS");
         require(newOwner != address(this), "PROHIBITED");
 
-        uint size = _owner.length;
-        Owner memory currentOwner = _owner[size - 1];
+        uint size = _owners.length;
+        Owner memory currentOwner = _owners[size - 1];
 
         require(newOwner != currentOwner.addr, "SAME_ADDRESS");
         require(block.timestamp > currentOwner.timestamp, "SAME_TIMESTAMP");
@@ -158,13 +176,13 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         // Clean up so we don't have a long history
         uint64 i = _ownerStartIdx;
         uint expiry = block.timestamp - OWNER_PERPETUAL_DURATION;
-        while (i < size && _owner[i].timestamp <= expiry) {
-            delete _owner[i];
+        while (i < size && _owners[i].timestamp <= expiry) {
+            delete _owners[i];
             i++;
         }
         _ownerStartIdx = i;
 
-        _owner.push(Owner({
+        _owners.push(Owner({
             addr: newOwner,
             timestamp: uint64(block.timestamp)
         }));
