@@ -381,6 +381,7 @@ static void from_json(const json &j, Withdrawal &withdrawal)
 class AccountUpdateTx
 {
   public:
+    ethsnarks::FieldT owner;
     ethsnarks::FieldT accountID;
     ethsnarks::FieldT publicKeyX;
     ethsnarks::FieldT publicKeyY;
@@ -393,6 +394,7 @@ class AccountUpdateTx
 
 static void from_json(const json &j, AccountUpdateTx &update)
 {
+    update.owner = ethsnarks::FieldT(j.at("owner").get<std::string>().c_str());
     update.accountID = ethsnarks::FieldT(j.at("accountID"));
     update.publicKeyX = ethsnarks::FieldT(j["publicKeyX"].get<std::string>().c_str());
     update.publicKeyY = ethsnarks::FieldT(j["publicKeyY"].get<std::string>().c_str());
@@ -557,6 +559,8 @@ static void from_json(const json &j, UniversalTransaction &transaction)
     // Patch some of the dummy tx's so they are valid against the current state
     // Deposit
     transaction.deposit.owner = transaction.witness.accountUpdate_A.before.owner;
+    // AccountUpdate
+    transaction.accountUpdate.owner = transaction.witness.accountUpdate_A.before.owner;
     // Transfer
     transaction.transfer.to = transaction.witness.accountUpdate_B.before.owner;
     transaction.transfer.payerTo = transaction.witness.accountUpdate_B.before.owner;

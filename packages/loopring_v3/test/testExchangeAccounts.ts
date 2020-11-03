@@ -40,6 +40,31 @@ contract("Exchange", (accounts: string[]) => {
   describe("Accounts", function() {
     this.timeout(0);
 
+    it("Should be able to create an account", async () => {
+      await createExchange();
+
+      const token = ctx.getTokenAddress("LRC");
+      const fee = new BN(0);
+
+      // Create the account
+      let newKeyPair = ctx.getKeyPairEDDSA();
+      await ctx.requestAccountUpdate(ownerA, token, fee, newKeyPair, {
+        authMethod: AuthMethod.ECDSA
+      });
+
+      // Submit
+      await ctx.submitTransactions();
+      await ctx.submitPendingBlocks();
+
+      // Try to create the account with EdDSA
+      await ctx.requestAccountUpdate(ownerB, token, fee, newKeyPair, {
+        authMethod: AuthMethod.EDDSA
+      });
+
+      // Submit
+      await expectThrow(ctx.submitTransactions(), "invalid block");
+    });
+
     it("Should be able to update an account", async () => {
       await createExchange();
 
