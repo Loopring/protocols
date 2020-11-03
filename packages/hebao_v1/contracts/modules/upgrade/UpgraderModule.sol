@@ -7,7 +7,7 @@ import "../../base/BaseWallet.sol";
 import "../../stores/SecurityStore.sol";
 import "../../thirdparty/proxy/OwnedUpgradeabilityProxy.sol";
 import "../base/BaseModule.sol";
-import "./SecurityStore_1_0_2.sol";
+import "./SecurityStore_1_1_6.sol";
 
 
 /// @title UpgraderModule
@@ -23,7 +23,7 @@ contract UpgraderModule is BaseModule {
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
-    SecurityStore_1_0_2 immutable oldSecurityStore;
+    SecurityStore_1_1_6 immutable oldSecurityStore;
     SecurityStore       immutable newSecurityStore;
 
     constructor(
@@ -41,7 +41,7 @@ contract UpgraderModule is BaseModule {
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
 
-        oldSecurityStore = SecurityStore_1_0_2(_oldSecurityStore);
+        oldSecurityStore = SecurityStore_1_1_6(_oldSecurityStore);
         newSecurityStore = SecurityStore(_newSecurityStore);
     }
 
@@ -71,12 +71,12 @@ contract UpgraderModule is BaseModule {
     function migrateSecurityStore(address wallet)
         internal
     {
-        if (oldSecurityStore == SecurityStore_1_0_2(0) ||
+        if (oldSecurityStore == SecurityStore_1_1_6(0) ||
             newSecurityStore == SecurityStore(0)) {
             return;
         }
 
-        SecurityStore_1_0_2.Guardian[] memory guardians =
+        SecurityStore_1_1_6.Guardian[] memory guardians =
             oldSecurityStore.guardians(wallet);
 
         for (uint i = 0; i < guardians.length; i++) {
