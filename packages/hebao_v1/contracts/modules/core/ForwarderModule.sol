@@ -23,7 +23,7 @@ abstract contract ForwarderModule is SecurityModule
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    uint    public constant  MAX_REIMBURSTMENT_OVERHEAD = 165000;
+    uint    public constant  MAX_REIMBURSTMENT_OVERHEAD = 70000;
     bytes32 public immutable FORWARDER_DOMAIN_SEPARATOR;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
