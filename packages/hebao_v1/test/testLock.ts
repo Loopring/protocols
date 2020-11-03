@@ -98,17 +98,11 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       for (let i = 0; i < request.signers.length; i++) {
         if (request.signers[i] == guardian) {
           request.signers[i] = guardianWallet;
-          // request.signatures[i] = request.signatures[i].slice(
-          //   0,
-          //   request.signatures[i].length - 2
-          // );
         }
       }
     } else {
       signUnlock(request, ctx.finalSecurityModule.address);
     }
-
-    // console.log("request:", request);
 
     await executeTransaction(
       ctx.finalSecurityModule.contract.methods.unlock(request),

@@ -138,7 +138,9 @@ export async function createWallet(
 ) {
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
 
-  const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
+  const salt = new Date().getTime();
+
+  const wallet = await ctx.walletFactory.computeWalletAddress(owner, salt);
   const walletName = "mywalleta" + new Date().getTime();
 
   const ensApproval = await getEnsApproval(
@@ -150,7 +152,7 @@ export async function createWallet(
   const { txSignature } = signCreateWallet(
     ctx.walletFactory.address,
     owner,
-    0,
+    salt,
     Constants.zeroAddress,
     walletName,
     true,
@@ -159,7 +161,7 @@ export async function createWallet(
 
   await ctx.walletFactory.createWallet(
     owner,
-    0,
+    salt,
     walletName,
     ensApproval,
     true,
@@ -171,7 +173,6 @@ export async function createWallet(
   );
   // Add the guardians
   const guardians = ctx.guardians.slice(0, numGuardians);
-  const group = 0;
   for (const guardian of guardians) {
     await addGuardian(ctx, owner, wallet, guardian, false);
   }
@@ -185,8 +186,9 @@ export async function createWallet2(
   modules?: string[]
 ) {
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
+  const salt = new Date().getTime();
 
-  const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
+  const wallet = await ctx.walletFactory.computeWalletAddress(owner, salt);
   const walletName = "mywalleta" + new Date().getTime();
 
   const ensApproval = await getEnsApproval(
@@ -198,7 +200,7 @@ export async function createWallet2(
   const { txSignature } = signCreateWallet(
     ctx.walletFactory.address,
     owner,
-    0,
+    salt,
     Constants.zeroAddress,
     walletName,
     true,
@@ -207,7 +209,7 @@ export async function createWallet2(
 
   await ctx.walletFactory.createWallet(
     owner,
-    0,
+    salt,
     walletName,
     ensApproval,
     true,
@@ -218,7 +220,6 @@ export async function createWallet2(
     }
   );
   // Add the guardians
-  const group = 0;
   for (const guardian of guardianAddrs) {
     await addGuardian(ctx, owner, wallet, guardian, false);
   }
