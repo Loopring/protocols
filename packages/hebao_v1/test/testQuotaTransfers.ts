@@ -991,7 +991,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     });
   });
 
-  [false /*, true*/].forEach(function(metaTx) {
+  [false, true].forEach(function(metaTx) {
     describe(description("TransferToken", metaTx), () => {
       it(
         description(

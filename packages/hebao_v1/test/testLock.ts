@@ -70,7 +70,14 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
     guardian?: string,
     guardianWallet?: any
   ) => {
-    const signers = [owner, guardian].sort();
+    let signers = [];
+
+    if (useMetaTx) {
+      signers = [owner, guardianWallet].sort();
+    } else {
+      signers = [owner, guardian].sort();
+    }
+
     const wasLocked = await isLocked(wallet);
     // Unlock the wallet
     const request: SignedRequest = {
@@ -79,20 +86,29 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
       validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
       wallet
     };
-    signUnlock(request, ctx.finalSecurityModule.address);
-    console.log("request:", request);
+
+    // replace wallet signer with its owner(which will actually sign the request)
     if (useMetaTx) {
+      for (let i = 0; i < request.signers.length; i++) {
+        if (request.signers[i] == guardianWallet) {
+          request.signers[i] = guardian;
+        }
+      }
+      signUnlock(request, ctx.finalSecurityModule.address);
       for (let i = 0; i < request.signers.length; i++) {
         if (request.signers[i] == guardian) {
           request.signers[i] = guardianWallet;
-          request.signatures[i] = request.signatures[i].slice(
-            0,
-            request.signatures[i].length - 2
-          );
+          // request.signatures[i] = request.signatures[i].slice(
+          //   0,
+          //   request.signatures[i].length - 2
+          // );
         }
       }
+    } else {
+      signUnlock(request, ctx.finalSecurityModule.address);
     }
-    console.log("request after:", request);
+
+    // console.log("request:", request);
 
     await executeTransaction(
       ctx.finalSecurityModule.contract.methods.unlock(request),
@@ -167,6 +183,9 @@ contract("GuardianModule - Lock", (accounts: string[]) => {
             "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
           );
         }
+
+        // const walletGuardians = await ctx.securityStore.guardians(wallet, false);
+        // console.log("walletGuardians:", walletGuardians);
 
         // // Lock the wallet
         await lockChecked(wallet, guardians[0], owner, guardianWallet1);
