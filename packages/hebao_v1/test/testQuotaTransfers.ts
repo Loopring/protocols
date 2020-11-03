@@ -323,7 +323,8 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           wallet,
           to,
           value.toString(10),
-          data
+          data,
+          false
         ),
         ctx,
         useMetaTx,
@@ -337,7 +338,8 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           wallet,
           to,
           value.toString(10),
-          data
+          data,
+          false
         ),
         ctx,
         useMetaTx,
@@ -530,7 +532,8 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           wallet,
           token,
           to,
-          amount.toString(10)
+          amount.toString(10),
+          false
         ),
         ctx,
         useMetaTx,
@@ -544,7 +547,8 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           wallet,
           token,
           to,
-          amount.toString(10)
+          amount.toString(10),
+          false
         ),
         ctx,
         useMetaTx,
@@ -704,7 +708,8 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           to,
           amount.toString(10),
           value.toString(10),
-          data
+          data,
+          false
         ),
         ctx,
         useMetaTx,
@@ -720,7 +725,8 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           to,
           amount.toString(10),
           value.toString(10),
-          data
+          data,
+          false
         ),
         ctx,
         useMetaTx,
@@ -869,9 +875,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
       priceOracle: priceOracleMock.address
     });
     targetContract = await TestTargetContract.new();
-    quotaPeriod = (
-      await ctx.finalTransferModule.QUOTA_PENDING_PERIOD()
-    ).toNumber();
+    quotaPeriod = (await ctx.finalTransferModule.QUOTA_PENDING_PERIOD()).toNumber();
     maxQuota = await ctx.quotaStore.MAX_QUOTA();
   });
 
@@ -999,6 +1003,13 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           const owner = ctx.owners[0];
           const to = ctx.miscAddresses[0];
           const { wallet } = await createWallet(ctx, owner);
+
+          await ctx.finalTransferModule.changeDailyQuota(
+            wallet,
+            "1" + "0".repeat(18),
+            { from: owner }
+          );
+          await advanceTimeAndBlockAsync(quotaPeriod);
 
           const quota = await ctx.quotaStore.currentQuota(wallet);
 
@@ -1281,6 +1292,13 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           let to = ctx.miscAddresses[0];
           const { wallet } = await createWallet(ctx, owner);
 
+          await ctx.finalTransferModule.changeDailyQuota(
+            wallet,
+            "1" + "0".repeat(18),
+            { from: owner }
+          );
+          await advanceTimeAndBlockAsync(quotaPeriod);
+
           const quota = await ctx.quotaStore.currentQuota(wallet);
 
           if (!useMetaTx) {
@@ -1413,6 +1431,13 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           const owner = ctx.owners[0];
           let to = targetContract.address;
           const { wallet } = await createWallet(ctx, owner);
+
+          await ctx.finalTransferModule.changeDailyQuota(
+            wallet,
+            "1" + "0".repeat(18),
+            { from: owner }
+          );
+          await advanceTimeAndBlockAsync(quotaPeriod);
 
           const quota = await ctx.quotaStore.currentQuota(wallet);
           let nonce = 0;

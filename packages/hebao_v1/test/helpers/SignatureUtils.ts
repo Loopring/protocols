@@ -79,6 +79,27 @@ export function signAddToWhitelistWA(
   }
 }
 
+export function signUnlock(request: SignedRequest, moduleAddr: string) {
+  const domainSeprator = eip712.hash("GuardianModule", "1.2.0", moduleAddr);
+  const UNLOCK_TYPEHASH = ethUtil.keccak(
+    Buffer.from("unlock(address wallet,uint256 validUntil)")
+  );
+  const encodedRequest = web3.eth.abi.encodeParameters(
+    ["bytes32", "address", "uint256"],
+    [UNLOCK_TYPEHASH, request.wallet, request.validUntil]
+  );
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+  // console.log("hash:", hash);
+  // console.log(`request.signers: ${request.signers}`);
+
+  for (const signer of request.signers) {
+    if (signer) {
+      const sig = sign(signer, hash);
+      request.signatures.push(sig);
+    }
+  }
+}
+
 export function signRecover(
   request: SignedRequest,
   newOwner: string,

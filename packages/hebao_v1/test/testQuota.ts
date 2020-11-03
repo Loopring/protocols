@@ -22,7 +22,7 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
   let ctx: Context;
 
   let delayPeriod: number;
-  let defaultQuota: BN;
+  // let defaultQuota: BN;
 
   let useMetaTx: boolean = false;
 
@@ -125,21 +125,21 @@ contract("TransferModule - changeQuota", (accounts: string[]) => {
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
     delayPeriod = (await ctx.finalTransferModule.QUOTA_PENDING_PERIOD()).toNumber();
-    defaultQuota = await ctx.quotaStore.defaultQuota();
+    // defaultQuota = await ctx.quotaStore.defaultQuota();
   });
 
-  it(
-    description("wallet should have the default daily quota by default"),
-    async () => {
-      const owner = ctx.owners[0];
-      const { wallet } = await createWallet(ctx, owner);
+  // it(
+  //   description("wallet should have the default daily quota by default"),
+  //   async () => {
+  //     const owner = ctx.owners[0];
+  //     const { wallet } = await createWallet(ctx, owner);
 
-      assert(
-        (await ctx.quotaStore.currentQuota(wallet)).eq(defaultQuota),
-        "incorrect default quota"
-      );
-    }
-  );
+  //     assert(
+  //       (await ctx.quotaStore.currentQuota(wallet)).eq(defaultQuota),
+  //       "incorrect default quota"
+  //     );
+  //   }
+  // );
 
   [false, true].forEach(function(metaTx) {
     useMetaTx = metaTx;

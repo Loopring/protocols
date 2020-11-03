@@ -13,14 +13,17 @@ export async function addGuardian(
   owner: string,
   wallet: string,
   guardian: string,
-  group: number,
   useMetaTx: boolean = true
 ) {
   const guardianPendingPeriod = (await ctx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()).toNumber();
 
-  let guardiansBefore = await ctx.securityStore.guardians(wallet);
+  let guardiansBefore = await ctx.securityStore.guardians(wallet, false);
 
-  const wasGuardian = await ctx.securityStore.isGuardian(wallet, guardian);
+  const wasGuardian = await ctx.securityStore.isGuardian(
+    wallet,
+    guardian,
+    false
+  );
 
   await web3.eth.sendTransaction({
     from: owner,
@@ -36,11 +39,7 @@ export async function addGuardian(
 
   // Start adding the guardian
   await executeTransaction(
-    ctx.finalSecurityModule.contract.methods.addGuardian(
-      wallet,
-      guardian,
-      group
-    ),
+    ctx.finalSecurityModule.contract.methods.addGuardian(wallet, guardian),
     ctx,
     useMetaTx,
     wallet,
@@ -52,13 +51,10 @@ export async function addGuardian(
     ctx.finalSecurityModule,
     "GuardianAdded",
     (event: any) => {
-      return (
-        event.wallet == wallet &&
-        event.guardian == guardian &&
-        event.group == group
-      );
+      return event.wallet == wallet && event.guardian == guardian;
     }
   );
+
   if (guardiansBefore.length === 0) {
     // The first guardian can be added WA
   } else {
@@ -69,45 +65,9 @@ export async function addGuardian(
 
   // Check if now guardian
   assert(
-    await ctx.securityStore.isGuardian(wallet, guardian),
+    await ctx.securityStore.isGuardian(wallet, guardian, false),
     "should be guardian"
   );
-
-  if (wasGuardian) {
-    // Strip out the guardian from the before array as we will add it again with updated group
-    guardiansBefore = guardiansBefore.filter((g: any) => g.addr !== guardian);
-  }
-
-  // Check if the guardian list stored is correct
-  let guardiansAfter = await ctx.securityStore.guardians(wallet);
-  const numGuardians = (await ctx.securityStore.numGuardians(
-    wallet
-  )).toNumber();
-  guardiansBefore.push({ addr: guardian, group });
-  guardiansBefore = sortGuardians(guardiansBefore);
-  guardiansAfter = sortGuardians(guardiansAfter);
-  assert.equal(
-    guardiansBefore.length,
-    numGuardians,
-    "guardian count unexpected"
-  );
-  assert.equal(
-    guardiansBefore.length,
-    guardiansAfter.length,
-    "guardian not added"
-  );
-  for (let i = 0; i < guardiansBefore.length; i++) {
-    assert.equal(
-      guardiansBefore[i].addr,
-      guardiansAfter[i].addr,
-      "guardian address unexpected"
-    );
-    assert.equal(
-      guardiansBefore[i].group,
-      guardiansAfter[i].group,
-      "guardian group unexpected"
-    );
-  }
 }
 
 export async function removeGuardian(
@@ -119,7 +79,7 @@ export async function removeGuardian(
 ) {
   const guardianPendingPeriod = (await ctx.finalSecurityModule.GUARDIAN_PENDING_PERIOD()).toNumber();
 
-  let guardiansBefore = await ctx.securityStore.guardians(wallet);
+  let guardiansBefore = await ctx.securityStore.guardians(wallet, false);
 
   const opt = useMetaTx
     ? { owner, wallet, gasPrice: new BN(0) }
@@ -161,12 +121,12 @@ export async function removeGuardian(
 
   // Check if not guardian anymore
   assert(
-    !(await ctx.securityStore.isGuardian(wallet, guardian)),
+    !(await ctx.securityStore.isGuardian(wallet, guardian, false)),
     "should not be guardian"
   );
 
   // Check if the guardian list stored is correct
-  let guardiansAfter = await ctx.securityStore.guardians(wallet);
+  let guardiansAfter = await ctx.securityStore.guardians(wallet, false);
   guardiansBefore = guardiansBefore.filter((g: any) => g.addr !== guardian);
   guardiansBefore = sortGuardians(guardiansBefore);
   guardiansAfter = sortGuardians(guardiansAfter);
@@ -178,10 +138,6 @@ export async function removeGuardian(
     assert(
       guardiansBefore[i].addr === guardiansAfter[i].addr,
       "guardian address mismatch"
-    );
-    assert(
-      guardiansBefore[i].group == guardiansAfter[i].group,
-      "guardian group mismatch"
     );
   }
 }
