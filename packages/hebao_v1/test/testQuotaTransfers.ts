@@ -991,7 +991,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
     });
   });
 
-  [false, true].forEach(function(metaTx) {
+  [false /*, true*/].forEach(function(metaTx) {
     describe(description("TransferToken", metaTx), () => {
       it(
         description(
@@ -1004,22 +1004,29 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           const to = ctx.miscAddresses[0];
           const { wallet } = await createWallet(ctx, owner);
 
+          await ctx.finalTransferModule.changeDailyQuota(
+            wallet,
+            "1" + "0".repeat(18),
+            { from: owner }
+          );
+          await advanceTimeAndBlockAsync(quotaPeriod);
+
           const quota = await ctx.quotaStore.currentQuota(wallet);
 
-          // if (!useMetaTx) {
-          //   // Try to transfer more than the quota
-          //   await expectThrow(
-          //     transferTokenChecked(
-          //       owner,
-          //       wallet,
-          //       "ETH",
-          //       to,
-          //       quota.add(new BN(1)),
-          //       "0x"
-          //     ),
-          //     "QUOTA_EXCEEDED"
-          //   );
-          // }
+          if (!useMetaTx) {
+            // Try to transfer more than the quota
+            await expectThrow(
+              transferTokenChecked(
+                owner,
+                wallet,
+                "ETH",
+                to,
+                quota.add(new BN(1)),
+                "0x"
+              ),
+              "QUOTA_EXCEEDED"
+            );
+          }
 
           // Transfer the complete quota
           await transferTokenChecked(owner, wallet, "ETH", to, quota, "0xa45d");
@@ -1285,6 +1292,13 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           let to = ctx.miscAddresses[0];
           const { wallet } = await createWallet(ctx, owner);
 
+          await ctx.finalTransferModule.changeDailyQuota(
+            wallet,
+            "1" + "0".repeat(18),
+            { from: owner }
+          );
+          await advanceTimeAndBlockAsync(quotaPeriod);
+
           const quota = await ctx.quotaStore.currentQuota(wallet);
 
           if (!useMetaTx) {
@@ -1417,6 +1431,13 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           const owner = ctx.owners[0];
           let to = targetContract.address;
           const { wallet } = await createWallet(ctx, owner);
+
+          await ctx.finalTransferModule.changeDailyQuota(
+            wallet,
+            "1" + "0".repeat(18),
+            { from: owner }
+          );
+          await advanceTimeAndBlockAsync(quotaPeriod);
 
           const quota = await ctx.quotaStore.currentQuota(wallet);
           let nonce = 0;
