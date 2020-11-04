@@ -16,7 +16,6 @@ import "../ControllerImpl.sol";
 ///      be useful for all modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 abstract contract BaseModule is Module
 {
     using MathUint      for uint;

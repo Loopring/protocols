@@ -105,7 +105,7 @@ contract WalletFactory
         payable
         returns (address _wallet)
     {
-        validateRequest_(
+        _validateRequest(
             _owner,
             _salt,
             address(0),
@@ -117,7 +117,7 @@ contract WalletFactory
 
         _wallet = _deploy(_modules, _owner, _salt);
 
-        initializeWallet_(
+        _initializeWallet(
             _wallet,
             _owner,
             _ensLabel,
@@ -150,7 +150,7 @@ contract WalletFactory
         payable
         returns (address _wallet)
     {
-        validateRequest_(
+        _validateRequest(
             _owner,
             0,
             _blank,
@@ -162,7 +162,7 @@ contract WalletFactory
 
         _wallet = _consumeBlank(_blank, _modules);
 
-        initializeWallet_(
+        _initializeWallet(
             _wallet,
             _owner,
             _ensLabel,
@@ -189,7 +189,7 @@ contract WalletFactory
         view
         returns (address)
     {
-        return computeAddress_(owner, salt);
+        return _computeAddress(owner, salt);
     }
 
     function computeBlankAddress(uint salt)
@@ -197,7 +197,7 @@ contract WalletFactory
         view
         returns (address)
     {
-        return computeAddress_(address(0), salt);
+        return _computeAddress(address(0), salt);
     }
 
     function getWalletCreationCode()
@@ -252,7 +252,7 @@ contract WalletFactory
         BaseWallet(wallet).init(controller, modules);
     }
 
-    function validateRequest_(
+    function _validateRequest(
         address            _owner,
         uint               _salt,
         address            _blankAddress,
@@ -284,7 +284,7 @@ contract WalletFactory
         require(signHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
     }
 
-    function initializeWallet_(
+    function _initializeWallet(
         address       _wallet,
         address       _owner,
         string memory _ensLabel,
@@ -305,7 +305,7 @@ contract WalletFactory
         emit WalletCreated(_wallet, _ensLabel, _owner, _blankUsed);
     }
 
-    function computeAddress_(
+    function _computeAddress(
         address owner,
         uint    salt
         )
@@ -330,7 +330,7 @@ contract WalletFactory
     {
         require(
             bytes(ensLabel).length > 0 &&
-            bytes(ensApproval).length > 0,
+            ensApproval.length > 0,
             "INVALID_LABEL_OR_SIGNATURE"
         );
 
