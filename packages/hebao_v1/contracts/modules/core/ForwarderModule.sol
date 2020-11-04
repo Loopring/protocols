@@ -23,8 +23,9 @@ abstract contract ForwarderModule is SecurityModule
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    uint    public constant  MAX_REIMBURSTMENT_OVERHEAD = 60000;
     bytes32 public immutable FORWARDER_DOMAIN_SEPARATOR;
+
+    uint    public constant  MAX_REIMBURSTMENT_OVERHEAD = 60000;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
         "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
@@ -140,7 +141,8 @@ abstract contract ForwarderModule is SecurityModule
 
         // Update the nonce before the call to protect against reentrancy
         if (metaTx.nonce != 0) {
-            verifyAndUpdateNonce(metaTx.from, metaTx.nonce);
+            require(isNonceValid(metaTx.from, metaTx.nonce), "INVALID_NONCE");
+            nonces[metaTx.from] = metaTx.nonce;
         }
 
         // The trick is to append the really logical message sender and the
@@ -267,7 +269,7 @@ abstract contract ForwarderModule is SecurityModule
         address wallet,
         bytes   memory data
         )
-        internal
+        private
         view
     {
         // Since this contract is a module, we need to prevent wallet from interacting with
@@ -283,12 +285,5 @@ abstract contract ForwarderModule is SecurityModule
             to == walletFactory,
             "INVALID_DESTINATION_OR_METHOD"
         );
-    }
-
-    function verifyAndUpdateNonce(address wallet, uint nonce)
-        internal
-    {
-        require(isNonceValid(wallet, nonce), "INVALID_NONCE");
-        nonces[wallet] = nonce;
     }
 }
