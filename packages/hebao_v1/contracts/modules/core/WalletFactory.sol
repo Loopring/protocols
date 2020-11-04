@@ -45,9 +45,9 @@ contract WalletFactory
     address             public immutable walletImplementation;
     bool                public immutable allowEmptyENS; // MUST be false in production
 
-    BaseENSManager      private immutable ensManager;
-    address             private immutable ensResolver;
-    ENSReverseRegistrar private immutable ensReverseRegistrar;
+    BaseENSManager      public immutable ensManager;
+    address             public immutable ensResolver;
+    ENSReverseRegistrar public immutable ensReverseRegistrar;
 
     constructor(
         ControllerImpl _controller,
