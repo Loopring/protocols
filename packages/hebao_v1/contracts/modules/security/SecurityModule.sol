@@ -11,7 +11,6 @@ import "./SignedRequest.sol";
 /// @title SecurityStore
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 abstract contract SecurityModule is MetaTxModule
 {
 

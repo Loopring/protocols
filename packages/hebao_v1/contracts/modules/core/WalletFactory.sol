@@ -22,7 +22,6 @@ import "../ControllerImpl.sol";
 ///      in front of a real wallet.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 contract WalletFactory
 {
     using AddressUtil for address;

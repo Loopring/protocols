@@ -10,7 +10,6 @@ import "./Wallet.sol";
 /// @dev Base contract for all smart wallet modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 interface Module
 {
     /// @dev Activates the module for the given wallet (msg.sender) after the module is added.

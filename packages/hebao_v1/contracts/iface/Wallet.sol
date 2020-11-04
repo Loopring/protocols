@@ -11,7 +11,6 @@ pragma solidity ^0.7.0;
 ///      saving gas.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 interface Wallet
 {
     function version() external pure returns (string memory);
