@@ -45,15 +45,6 @@ contract UpgraderModule is BaseModule {
         newSecurityStore = SecurityStore(_newSecurityStore);
     }
 
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
-
     function upgradeWalletImplementation(address payable wallet)
         external
     {

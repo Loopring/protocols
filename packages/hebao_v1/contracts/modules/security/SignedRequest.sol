@@ -3,9 +3,10 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../stores/HashStore.sol";
+import "../../stores/SecurityStore.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
-import "../ControllerImpl.sol";
 import "./GuardianUtils.sol";
 
 
@@ -25,7 +26,8 @@ library SignedRequest {
     }
 
     function verifyRequest(
-        ControllerImpl               controller,
+        HashStore                    hashStore,
+        SecurityStore                securityStore,
         bytes32                      domainSeperator,
         bytes32                      txAwareHash,
         GuardianUtils.SigRequirement sigRequirement,
@@ -46,7 +48,7 @@ library SignedRequest {
         );
 
         // Save hash to prevent replay attacks
-        controller.hashStore().verifyAndUpdate(request.wallet, _txAwareHash);
+        hashStore.verifyAndUpdate(request.wallet, _txAwareHash);
 
         require(
             _txAwareHash.verifySignatures(request.signers, request.signatures),
@@ -55,7 +57,7 @@ library SignedRequest {
 
         require(
             GuardianUtils.requireMajority(
-                controller.securityStore(),
+                securityStore,
                 request.wallet,
                 request.signers,
                 sigRequirement

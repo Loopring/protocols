@@ -23,15 +23,6 @@ contract FinalCoreModule is
         controller_ = _controller;
     }
 
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
-
     function bindableMethods()
         public
         pure
