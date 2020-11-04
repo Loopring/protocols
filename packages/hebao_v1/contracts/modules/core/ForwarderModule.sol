@@ -25,7 +25,7 @@ abstract contract ForwarderModule is SecurityModule
 
     bytes32 public immutable FORWARDER_DOMAIN_SEPARATOR;
 
-    uint    public constant  MAX_REIMBURSTMENT_OVERHEAD = 60000;
+    uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 63000;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
         "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
