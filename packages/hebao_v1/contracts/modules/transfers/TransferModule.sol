@@ -15,7 +15,6 @@ import "./BaseTransferModule.sol";
 abstract contract TransferModule is BaseTransferModule
 {
     using MathUint      for uint;
-    using SignedRequest for ControllerImpl;
 
     bytes32 public immutable TRANSFER_DOMAIN_SEPERATOR;
 
@@ -61,7 +60,9 @@ abstract contract TransferModule is BaseTransferModule
         )
         external
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
@@ -104,7 +105,9 @@ abstract contract TransferModule is BaseTransferModule
         )
         external
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
@@ -151,7 +154,9 @@ abstract contract TransferModule is BaseTransferModule
         external
         returns (bytes memory returnData)
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
@@ -195,7 +200,9 @@ abstract contract TransferModule is BaseTransferModule
         )
         external
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
@@ -259,7 +266,9 @@ abstract contract TransferModule is BaseTransferModule
             keccak256(data)
         );
 
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,

@@ -14,7 +14,6 @@ abstract contract GuardianModule is SecurityModule
 {
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
-    using SignedRequest for ControllerImpl;
 
     bytes32 public immutable GUARDIAN_DOMAIN_SEPERATOR;
 
@@ -66,7 +65,9 @@ abstract contract GuardianModule is SecurityModule
         )
         external
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
@@ -99,7 +100,9 @@ abstract contract GuardianModule is SecurityModule
         )
         external
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
@@ -135,7 +138,9 @@ abstract contract GuardianModule is SecurityModule
         )
         external
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.OWNER_OR_ANY_GUARDIAN,
@@ -155,7 +160,9 @@ abstract contract GuardianModule is SecurityModule
         )
         external
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
@@ -182,7 +189,9 @@ abstract contract GuardianModule is SecurityModule
         notWalletOwner(request.wallet, newOwner)
         eligibleWalletOwner(newOwner)
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             GUARDIAN_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,

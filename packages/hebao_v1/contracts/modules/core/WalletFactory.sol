@@ -40,20 +40,14 @@ contract WalletFactory
 
     mapping(address => bytes32) blanks;
 
-    address        public immutable walletImplementation;
-    bool           public immutable allowEmptyENS; // MUST be false in production
-    ControllerImpl public immutable controller;
-    bytes32        public immutable DOMAIN_SEPERATOR;
+    bytes32             public immutable DOMAIN_SEPERATOR;
+    ControllerImpl      public immutable controller;
+    address             public immutable walletImplementation;
+    bool                public immutable allowEmptyENS; // MUST be false in production
 
-    struct ControllerCache
-    {
-        address             ensResolver;
-        ENSReverseRegistrar ensReverseRegistrar;
-    }
-
-    ControllerCache public controllerCache;
-
-    BaseENSManager public immutable ensManager;
+    BaseENSManager      public immutable ensManager;
+    address             public immutable ensResolver;
+    ENSReverseRegistrar public immutable ensReverseRegistrar;
 
     constructor(
         ControllerImpl _controller,
@@ -65,11 +59,13 @@ contract WalletFactory
             EIP712.Domain("WalletFactory", "1.2.0", address(this))
         );
         controller = _controller;
-        BaseENSManager _ensManager = _controller.ensManager();
-        ensManager = _ensManager;
-        _updateControllerCache(_ensManager);
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
+
+        BaseENSManager _ensManager = _controller.ensManager();
+        ensManager = _ensManager;
+        ensResolver = _ensManager.ensResolver();
+        ensReverseRegistrar = _ensManager.getENSReverseRegistrar();
     }
 
     /// @dev Create a set of new wallet blanks to be used in the future.
@@ -119,7 +115,7 @@ contract WalletFactory
             _signature
         );
 
-        _wallet = createWallet_(_owner, _salt, _modules);
+        _wallet = _deploy(_modules, _owner, _salt);
 
         initializeWallet_(
             _wallet,
@@ -212,21 +208,6 @@ contract WalletFactory
         return CloneFactory.getByteCode(walletImplementation);
     }
 
-    function updateControllerCache()
-        public
-    {
-        _updateControllerCache(ensManager);
-    }
-
-    // ---- internal functions ---
-
-    function _updateControllerCache(BaseENSManager _ensManager)
-        internal
-    {
-        controllerCache.ensResolver = _ensManager.ensResolver();
-        controllerCache.ensReverseRegistrar = _ensManager.getENSReverseRegistrar();
-    }
-
     function _consumeBlank(
         address blank,
         address[] calldata modules
@@ -253,17 +234,6 @@ contract WalletFactory
         blanks[blank] = version;
 
         emit BlankDeployed(blank, version);
-    }
-
-    function createWallet_(
-        address   owner,
-        uint      salt,
-        address[] calldata modules
-        )
-        internal
-        returns (address wallet)
-    {
-        return _deploy(modules, owner, salt);
     }
 
     function _deploy(
@@ -370,12 +340,12 @@ contract WalletFactory
             bytes memory data = abi.encodeWithSelector(
                 ENSReverseRegistrar.claimWithResolver.selector,
                 address(0), // the owner of the reverse record
-                controllerCache.ensResolver
+                ensResolver
             );
 
             Wallet(wallet).transact(
                 uint8(1),
-                address(controllerCache.ensReverseRegistrar),
+                address(ensReverseRegistrar),
                 0, // value
                 data
             );

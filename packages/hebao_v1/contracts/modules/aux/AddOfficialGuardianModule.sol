@@ -27,15 +27,6 @@ contract AddOfficialGuardianModule is BaseModule {
         officialGuardian = _officialGuardian;
     }
 
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
-
     function activate()
         external
         override

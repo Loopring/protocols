@@ -75,12 +75,6 @@ abstract contract BaseModule is Module
         feeCollector = _controller.feeCollector();
     }
 
-    function controller()
-        internal
-        view
-        virtual
-        returns (ControllerImpl);
-
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()
         external
