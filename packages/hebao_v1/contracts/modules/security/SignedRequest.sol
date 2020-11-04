@@ -3,10 +3,10 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../stores/HashStore.sol";
-import "../../stores/SecurityStore.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
+import "../../stores/HashStore.sol";
+import "../../stores/SecurityStore.sol";
 import "./GuardianUtils.sol";
 
 
