@@ -60,10 +60,11 @@ contract PriceCacheStore is PriceOracle, OwnerManagable
         uint    amount
         )
         external
+        returns (uint value)
     {
-        uint value = oracle.tokenValue(token, amount);
+        value = oracle.tokenValue(token, amount);
         if (value > 0) {
-            cacheTokenPrice(token, amount, value);
+            _cacheTokenPrice(token, amount, value);
         }
     }
 
@@ -75,22 +76,23 @@ contract PriceCacheStore is PriceOracle, OwnerManagable
         external
         onlyManager
     {
-        cacheTokenPrice(token, amount, value);
+        _cacheTokenPrice(token, amount, value);
     }
 
     function setOracle(PriceOracle _oracle)
         external
         onlyManager
     {
+        require(_oracle != PriceOracle(0), "INVALID_ORACLE");
         oracle = _oracle;
     }
 
-    function cacheTokenPrice(
+    function _cacheTokenPrice(
         address token,
         uint    amount,
         uint    value
         )
-        internal
+        private
     {
         prices[token].amount = amount.toUint128();
         prices[token].value = value.toUint96();
