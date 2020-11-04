@@ -66,7 +66,6 @@ contract WalletFactory
         ensManager = _ensManager;
         ensResolver = _ensManager.ensResolver();
         ensReverseRegistrar = _ensManager.getENSReverseRegistrar();
-
     }
 
     /// @dev Create a set of new wallet blanks to be used in the future.
@@ -116,7 +115,7 @@ contract WalletFactory
             _signature
         );
 
-        _wallet = createWallet_(_owner, _salt, _modules);
+        _wallet = _deploy(_modules, _owner, _salt);
 
         initializeWallet_(
             _wallet,
@@ -235,17 +234,6 @@ contract WalletFactory
         blanks[blank] = version;
 
         emit BlankDeployed(blank, version);
-    }
-
-    function createWallet_(
-        address   owner,
-        uint      salt,
-        address[] calldata modules
-        )
-        internal
-        returns (address wallet)
-    {
-        return _deploy(modules, owner, salt);
     }
 
     function _deploy(
