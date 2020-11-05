@@ -15,7 +15,6 @@ import "./SecurityStore_1_1_6.sol";
 ///      removes itself.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 contract UpgraderModule is BaseModule {
     ControllerImpl private immutable controller_;
 

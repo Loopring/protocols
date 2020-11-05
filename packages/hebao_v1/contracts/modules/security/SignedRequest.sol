@@ -11,8 +11,8 @@ import "./GuardianUtils.sol";
 
 
 /// @title SignedRequest
-/// @dev Utilitiy library for better handling of signed wallet requests.
-///      This library must be deployed and link to other modules.
+/// @dev Utility library for better handling of signed wallet requests.
+///      This library must be deployed and linked to other modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 library SignedRequest {
@@ -40,7 +40,7 @@ library SignedRequest {
 
         bytes32 _txAwareHash = EIP712.hashPacked(domainSeperator, encodedRequest);
 
-        // If txAwareHash from the mata-transaction is non-zero,
+        // If txAwareHash from the meta-transaction is non-zero,
         // we must verify it matches the hash signed by the respective signers.
         require(
             txAwareHash == 0 || txAwareHash == _txAwareHash,

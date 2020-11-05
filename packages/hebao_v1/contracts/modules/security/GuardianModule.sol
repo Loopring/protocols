@@ -64,6 +64,7 @@ abstract contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        notWalletOwner(request.wallet, guardian)
     {
         SignedRequest.verifyRequest(
             hashStore,
@@ -180,7 +181,6 @@ abstract contract GuardianModule is SecurityModule
     /// @dev Recover a wallet by setting a new owner.
     /// @param request The general request object.
     /// @param newOwner The new owner address to set.
-    ///        The addresses must be sorted ascendently.
     function recover(
         SignedRequest.Request calldata request,
         address newOwner

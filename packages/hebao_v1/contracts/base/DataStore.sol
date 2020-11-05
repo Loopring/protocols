@@ -10,7 +10,6 @@ import "../iface/Wallet.sol";
 ///      Using ModuleStorage will achieve better module decoupling.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 abstract contract DataStore
 {
     modifier onlyWalletModule(address wallet)
