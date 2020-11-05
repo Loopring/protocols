@@ -145,8 +145,7 @@ abstract contract ForwarderModule is SecurityModule
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
-        bytes memory returnData;
-        (success, returnData) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
+        (success, ) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
             abi.encodePacked(data, metaTx.from, metaTx.txAwareHash)
         );
 
