@@ -221,21 +221,18 @@ abstract contract BaseModule is Module
         address     recipient,
         address     gasToken,
         uint        gasPrice,
-        uint        gasAmount,
-        bool        skipQuota
+        uint        gasAmount
         )
         internal
     {
         uint gasCost = gasAmount.mul(gasPrice);
 
-        if (!skipQuota) {
-            quotaStore.checkAndAddToSpent(
-                wallet,
-                gasToken,
-                gasAmount,
-                priceOracle
-            );
-        }
+        quotaStore.checkAndAddToSpent(
+            wallet,
+            gasToken,
+            gasAmount,
+            priceOracle
+        );
 
         transactTokenTransfer(wallet, gasToken, recipient, gasCost);
     }

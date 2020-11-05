@@ -182,23 +182,6 @@ abstract contract ForwarderModule is SecurityModule
                 MAX_REIMBURSTMENT_OVERHEAD + // near-worst case cost
                 2300; // 2*SLOAD+1*CALL = 2*800+1*700=2300
 
-            // Do not consume quota when call factory's createWallet function or
-            // when a successful meta-tx's txAwareHash is non-zero (which means it will
-            // be signed by at least a guardian). Therefor, even if the owner's
-            // private key is leaked, the hacker won't be able to deplete ether/tokens
-            // as high meta-tx fees.
-            bool skipQuota = success && (
-                metaTx.txAwareHash != 0 || (
-                    data.toBytes4(0) == WalletFactory.createWallet.selector ||
-                    data.toBytes4(0) == WalletFactory.createWallet2.selector) &&
-                metaTx.to == walletFactory
-            );
-
-            // MAX_REIMBURSTMENT_OVERHEAD covers an ERC20 transfer and a quota update.
-            if (skipQuota) {
-                gasUsed -= 48000;
-            }
-
             if (metaTx.gasToken == address(0)) {
                 gasUsed -= 15000; // diff between an regular ERC20 transfer and an ETH send
             }
@@ -210,8 +193,7 @@ abstract contract ForwarderModule is SecurityModule
                 feeCollector,
                 metaTx.gasToken,
                 metaTx.gasPrice,
-                gasToReimburse,
-                skipQuota
+                gasToReimburse
             );
         }
 

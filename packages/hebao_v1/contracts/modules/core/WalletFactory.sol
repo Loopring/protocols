@@ -82,7 +82,6 @@ contract WalletFactory
     }
 
     /// @dev Create a new wallet by deploying a proxy.
-    ///      This function supports tx-aware hash.
     /// @param _owner The wallet's owner.
     /// @param _salt A salt to adjust address.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
@@ -127,7 +126,6 @@ contract WalletFactory
     }
 
     /// @dev Create a new wallet by using a pre-deployed blank.
-    ///      This function supports tx-aware hash.
     /// @param _owner The wallet's owner.
     /// @param _blank The address of the blank to use.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
@@ -275,9 +273,6 @@ contract WalletFactory
             _ensRegisterReverse,
             keccak256(abi.encode(_modules))
         );
-        // txAwareHash replay attack is impossible because the same wallet can only be created once.
-        // bytes32 txAwareHash_ = txAwareHash();
-        // require(txAwareHash_ == 0 || txAwareHash_ == signHash, "INVALID_TX_AWARE_HASH");
 
         bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
         require(signHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
