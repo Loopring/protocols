@@ -13,7 +13,6 @@ import "./SecurityModule.sol";
 abstract contract WhitelistModule is SecurityModule
 {
     using MathUint      for uint;
-    using SignedRequest for ControllerImpl;
 
     bytes32 public immutable WHITELIST_DOMAIN_SEPERATOR;
 
@@ -54,7 +53,9 @@ abstract contract WhitelistModule is SecurityModule
         )
         external
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             WHITELIST_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
@@ -91,7 +92,9 @@ abstract contract WhitelistModule is SecurityModule
         )
         external
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             WHITELIST_DOMAIN_SEPERATOR,
             txAwareHash(),
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,

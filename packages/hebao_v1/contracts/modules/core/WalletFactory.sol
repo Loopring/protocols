@@ -22,7 +22,6 @@ import "../ControllerImpl.sol";
 ///      in front of a real wallet.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 contract WalletFactory
 {
     using AddressUtil for address;
@@ -40,20 +39,14 @@ contract WalletFactory
 
     mapping(address => bytes32) blanks;
 
-    address        public immutable walletImplementation;
-    bool           public immutable allowEmptyENS; // MUST be false in production
-    ControllerImpl public immutable controller;
-    bytes32        public immutable DOMAIN_SEPERATOR;
+    bytes32             public immutable DOMAIN_SEPERATOR;
+    ControllerImpl      public immutable controller;
+    address             public immutable walletImplementation;
+    bool                public immutable allowEmptyENS; // MUST be false in production
 
-    struct ControllerCache
-    {
-        address             ensResolver;
-        ENSReverseRegistrar ensReverseRegistrar;
-    }
-
-    ControllerCache public controllerCache;
-
-    BaseENSManager public immutable ensManager;
+    BaseENSManager      public immutable ensManager;
+    address             public immutable ensResolver;
+    ENSReverseRegistrar public immutable ensReverseRegistrar;
 
     constructor(
         ControllerImpl _controller,
@@ -65,11 +58,13 @@ contract WalletFactory
             EIP712.Domain("WalletFactory", "1.2.0", address(this))
         );
         controller = _controller;
-        BaseENSManager _ensManager = _controller.ensManager();
-        ensManager = _ensManager;
-        _updateControllerCache(_ensManager);
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
+
+        BaseENSManager _ensManager = _controller.ensManager();
+        ensManager = _ensManager;
+        ensResolver = _ensManager.ensResolver();
+        ensReverseRegistrar = _ensManager.getENSReverseRegistrar();
     }
 
     /// @dev Create a set of new wallet blanks to be used in the future.
@@ -87,7 +82,6 @@ contract WalletFactory
     }
 
     /// @dev Create a new wallet by deploying a proxy.
-    ///      This function supports tx-aware hash.
     /// @param _owner The wallet's owner.
     /// @param _salt A salt to adjust address.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
@@ -109,7 +103,7 @@ contract WalletFactory
         payable
         returns (address _wallet)
     {
-        validateRequest_(
+        _validateRequest(
             _owner,
             _salt,
             address(0),
@@ -119,9 +113,9 @@ contract WalletFactory
             _signature
         );
 
-        _wallet = createWallet_(_owner, _salt, _modules);
+        _wallet = _deploy(_modules, _owner, _salt);
 
-        initializeWallet_(
+        _initializeWallet(
             _wallet,
             _owner,
             _ensLabel,
@@ -132,7 +126,6 @@ contract WalletFactory
     }
 
     /// @dev Create a new wallet by using a pre-deployed blank.
-    ///      This function supports tx-aware hash.
     /// @param _owner The wallet's owner.
     /// @param _blank The address of the blank to use.
     /// @param _ensLabel The ENS subdomain to register, use "" to skip.
@@ -154,7 +147,7 @@ contract WalletFactory
         payable
         returns (address _wallet)
     {
-        validateRequest_(
+        _validateRequest(
             _owner,
             0,
             _blank,
@@ -166,7 +159,7 @@ contract WalletFactory
 
         _wallet = _consumeBlank(_blank, _modules);
 
-        initializeWallet_(
+        _initializeWallet(
             _wallet,
             _owner,
             _ensLabel,
@@ -193,7 +186,7 @@ contract WalletFactory
         view
         returns (address)
     {
-        return computeAddress_(owner, salt);
+        return _computeAddress(owner, salt);
     }
 
     function computeBlankAddress(uint salt)
@@ -201,7 +194,7 @@ contract WalletFactory
         view
         returns (address)
     {
-        return computeAddress_(address(0), salt);
+        return _computeAddress(address(0), salt);
     }
 
     function getWalletCreationCode()
@@ -210,21 +203,6 @@ contract WalletFactory
         returns (bytes memory)
     {
         return CloneFactory.getByteCode(walletImplementation);
-    }
-
-    function updateControllerCache()
-        public
-    {
-        _updateControllerCache(ensManager);
-    }
-
-    // ---- internal functions ---
-
-    function _updateControllerCache(BaseENSManager _ensManager)
-        internal
-    {
-        controllerCache.ensResolver = _ensManager.ensResolver();
-        controllerCache.ensReverseRegistrar = _ensManager.getENSReverseRegistrar();
     }
 
     function _consumeBlank(
@@ -255,17 +233,6 @@ contract WalletFactory
         emit BlankDeployed(blank, version);
     }
 
-    function createWallet_(
-        address   owner,
-        uint      salt,
-        address[] calldata modules
-        )
-        internal
-        returns (address wallet)
-    {
-        return _deploy(modules, owner, salt);
-    }
-
     function _deploy(
         address[] calldata modules,
         address            owner,
@@ -282,7 +249,7 @@ contract WalletFactory
         BaseWallet(wallet).init(controller, modules);
     }
 
-    function validateRequest_(
+    function _validateRequest(
         address            _owner,
         uint               _salt,
         address            _blankAddress,
@@ -306,15 +273,12 @@ contract WalletFactory
             _ensRegisterReverse,
             keccak256(abi.encode(_modules))
         );
-        // txAwareHash replay attack is impossible because the same wallet can only be created once.
-        // bytes32 txAwareHash_ = txAwareHash();
-        // require(txAwareHash_ == 0 || txAwareHash_ == signHash, "INVALID_TX_AWARE_HASH");
 
         bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
         require(signHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
     }
 
-    function initializeWallet_(
+    function _initializeWallet(
         address       _wallet,
         address       _owner,
         string memory _ensLabel,
@@ -335,7 +299,7 @@ contract WalletFactory
         emit WalletCreated(_wallet, _ensLabel, _owner, _blankUsed);
     }
 
-    function computeAddress_(
+    function _computeAddress(
         address owner,
         uint    salt
         )
@@ -360,7 +324,7 @@ contract WalletFactory
     {
         require(
             bytes(ensLabel).length > 0 &&
-            bytes(ensApproval).length > 0,
+            ensApproval.length > 0,
             "INVALID_LABEL_OR_SIGNATURE"
         );
 
@@ -370,12 +334,12 @@ contract WalletFactory
             bytes memory data = abi.encodeWithSelector(
                 ENSReverseRegistrar.claimWithResolver.selector,
                 address(0), // the owner of the reverse record
-                controllerCache.ensResolver
+                ensResolver
             );
 
             Wallet(wallet).transact(
                 uint8(1),
-                address(controllerCache.ensReverseRegistrar),
+                address(ensReverseRegistrar),
                 0, // value
                 data
             );

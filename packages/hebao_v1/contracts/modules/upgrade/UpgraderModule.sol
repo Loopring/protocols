@@ -15,7 +15,6 @@ import "./SecurityStore_1_1_6.sol";
 ///      removes itself.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 contract UpgraderModule is BaseModule {
     ControllerImpl private immutable controller_;
 
@@ -43,15 +42,6 @@ contract UpgraderModule is BaseModule {
 
         oldSecurityStore = SecurityStore_1_1_6(_oldSecurityStore);
         newSecurityStore = SecurityStore(_newSecurityStore);
-    }
-
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
     }
 
     function upgradeWalletImplementation(address payable wallet)

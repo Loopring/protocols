@@ -30,13 +30,4 @@ contract FinalSecurityModule is
     {
         controller_ = _controller;
     }
-
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
 }

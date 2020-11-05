@@ -24,7 +24,7 @@ contract ControllerImpl is Claimable, Controller
     WhitelistStore      public immutable whitelistStore;
     ModuleRegistry      public immutable override moduleRegistry;
     address             public override  walletFactory;
-    address             public feeCollector;
+    address             public immutable feeCollector;
     BaseENSManager      public immutable ensManager;
     PriceOracle         public priceOracle;
 
@@ -65,15 +65,6 @@ contract ControllerImpl is Claimable, Controller
         require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
         emit AddressChanged("WalletFactory", walletFactory);
-    }
-
-    function setCollectTo(address _feeCollector)
-        external
-        onlyOwner
-    {
-        require(_feeCollector != address(0), "ZERO_ADDRESS");
-        feeCollector = _feeCollector;
-        emit AddressChanged("CollectTo", feeCollector);
     }
 
     function setPriceOracle(PriceOracle _priceOracle)

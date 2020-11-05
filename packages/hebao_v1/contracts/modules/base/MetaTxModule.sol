@@ -22,7 +22,8 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
 
     constructor(
         ControllerImpl _controller,
-        address        _metaTxForwarder)
+        address        _metaTxForwarder
+        )
         MetaTxAware(_metaTxForwarder)
         BaseModule(_controller)
     {

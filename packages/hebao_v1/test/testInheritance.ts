@@ -14,7 +14,7 @@ contract("InheritanceModule", (accounts: string[]) => {
   let defaultCtx: Context;
   let ctx: Context;
 
-  let inheritWaitingPeriod: number;
+  const inheritWaitingPeriod = 3600 * 24 * 365;
 
   const getInheritor = async (wallet: string) => {
     const inheritorData = await ctx.finalSecurityModule.inheritor(wallet);
@@ -32,10 +32,7 @@ contract("InheritanceModule", (accounts: string[]) => {
 
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
-    inheritWaitingPeriod = (await ctx.finalSecurityModule.INHERIT_WAITING_PERIOD()).toNumber();
   });
-
-  const inherit_period = 3600 * 24 * 365;
 
   [false, true].forEach(function(useMetaTx) {
     const description = (descr: string, metaTx: boolean = useMetaTx) => {
@@ -80,7 +77,7 @@ contract("InheritanceModule", (accounts: string[]) => {
           ctx.finalSecurityModule.contract.methods.setInheritor(
             wallet,
             inheritor,
-            inherit_period
+            inheritWaitingPeriod
           ),
           ctx,
           useMetaTx,
@@ -173,7 +170,7 @@ contract("InheritanceModule", (accounts: string[]) => {
           ctx.finalSecurityModule.contract.methods.setInheritor(
             wallet,
             inheritor,
-            inherit_period
+            inheritWaitingPeriod
           )
         ];
 
@@ -188,7 +185,7 @@ contract("InheritanceModule", (accounts: string[]) => {
           ctx.finalSecurityModule.contract.methods.setInheritor(
             wallet,
             inheritor,
-            inherit_period
+            inheritWaitingPeriod
           ),
           ctx,
           useMetaTx,

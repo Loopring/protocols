@@ -13,7 +13,6 @@ import "./Controller.sol";
 /// @dev This contract provides basic implementation for a Wallet.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 abstract contract BaseWallet is ReentrancyGuard, Wallet
 {
     // WARNING: do not delete wallet state data to make this implementation

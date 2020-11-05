@@ -16,7 +16,6 @@ import "../ControllerImpl.sol";
 ///      be useful for all modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 abstract contract BaseModule is Module
 {
     using MathUint      for uint;
@@ -74,12 +73,6 @@ abstract contract BaseModule is Module
         priceOracle = _controller.priceOracle();
         feeCollector = _controller.feeCollector();
     }
-
-    function controller()
-        internal
-        view
-        virtual
-        returns (ControllerImpl);
 
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()
@@ -228,21 +221,18 @@ abstract contract BaseModule is Module
         address     recipient,
         address     gasToken,
         uint        gasPrice,
-        uint        gasAmount,
-        bool        skipQuota
+        uint        gasAmount
         )
         internal
     {
         uint gasCost = gasAmount.mul(gasPrice);
 
-        if (!skipQuota) {
-            quotaStore.checkAndAddToSpent(
-                wallet,
-                gasToken,
-                gasAmount,
-                priceOracle
-            );
-        }
+        quotaStore.checkAndAddToSpent(
+            wallet,
+            gasToken,
+            gasAmount,
+            priceOracle
+        );
 
         transactTokenTransfer(wallet, gasToken, recipient, gasCost);
     }

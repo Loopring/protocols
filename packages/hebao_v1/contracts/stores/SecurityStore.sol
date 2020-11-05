@@ -9,7 +9,6 @@ import "./GuardianStore.sol";
 /// @title SecurityStore
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 contract SecurityStore is GuardianStore
 {
     using MathUint for uint;

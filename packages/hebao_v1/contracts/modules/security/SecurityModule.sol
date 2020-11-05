@@ -11,10 +11,8 @@ import "./SignedRequest.sol";
 /// @title SecurityStore
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-
 abstract contract SecurityModule is MetaTxModule
 {
-    using SignedRequest for ControllerImpl;
 
     // The minimal number of guardians for recovery and locking.
     uint public constant TOUCH_GRACE_PERIOD = 30 days;
