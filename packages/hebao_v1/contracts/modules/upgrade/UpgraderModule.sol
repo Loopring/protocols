@@ -7,7 +7,7 @@ import "../../base/BaseWallet.sol";
 import "../../stores/SecurityStore.sol";
 import "../../thirdparty/proxy/OwnedUpgradeabilityProxy.sol";
 import "../base/BaseModule.sol";
-import "./SecurityStore_1_0_2.sol";
+import "./SecurityStore_1_1_6.sol";
 
 
 /// @title UpgraderModule
@@ -15,18 +15,15 @@ import "./SecurityStore_1_0_2.sol";
 ///      removes itself.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
-    ControllerImpl private controller_;
+    ControllerImpl private immutable controller_;
 
-    address    public walletImplementation;
+    address    public immutable walletImplementation;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
-    SecurityStore_1_0_2 oldSecurityStore;
-    SecurityStore       newSecurityStore;
+    SecurityStore_1_1_6 immutable oldSecurityStore;
+    SecurityStore       immutable newSecurityStore;
 
     constructor(
         ControllerImpl   _controller,
@@ -36,31 +33,15 @@ contract UpgraderModule is BaseModule {
         address          _oldSecurityStore,
         address          _newSecurityStore
         )
+        BaseModule(_controller)
     {
         controller_ = _controller;
         walletImplementation = _walletImplementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
 
-        oldSecurityStore = SecurityStore_1_0_2(_oldSecurityStore);
+        oldSecurityStore = SecurityStore_1_1_6(_oldSecurityStore);
         newSecurityStore = SecurityStore(_newSecurityStore);
-    }
-
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
     }
 
     function upgradeWalletImplementation(address payable wallet)
@@ -80,26 +61,26 @@ contract UpgraderModule is BaseModule {
     function migrateSecurityStore(address wallet)
         internal
     {
-        if (oldSecurityStore == SecurityStore_1_0_2(0) ||
+        if (oldSecurityStore == SecurityStore_1_1_6(0) ||
             newSecurityStore == SecurityStore(0)) {
             return;
         }
 
-        SecurityStore_1_0_2.Guardian[] memory guardians =
+        SecurityStore_1_1_6.Guardian[] memory guardians =
             oldSecurityStore.guardians(wallet);
 
         for (uint i = 0; i < guardians.length; i++) {
             newSecurityStore.addGuardian(
                 wallet,
                 guardians[i].addr,
-                guardians[i].group,
-                guardians[i].validSince
+                guardians[i].validSince,
+                true
             );
         }
 
         (address inheritor,) = oldSecurityStore.inheritor(wallet);
         if (inheritor != address(0)) {
-            newSecurityStore.setInheritor(wallet, inheritor);
+            newSecurityStore.setInheritor(wallet, inheritor, 365 days);
         }
     }
 

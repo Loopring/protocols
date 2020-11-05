@@ -15,24 +15,12 @@ contract FinalCoreModule is
     ERC1271Module,
     ForwarderModule
 {
-    ControllerImpl private controller_;
+    ControllerImpl private immutable controller_;
 
     constructor(ControllerImpl _controller)
+        ForwarderModule(_controller)
     {
-        FORWARDER_DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("ForwarderModule", "1.1.0", address(this))
-        );
-
         controller_ = _controller;
-    }
-
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
     }
 
     function bindableMethods()

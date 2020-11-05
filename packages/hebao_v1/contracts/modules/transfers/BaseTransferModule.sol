@@ -14,25 +14,9 @@ abstract contract BaseTransferModule is SecurityModule
 {
     using MathUint      for uint;
 
-    event Transfered(
-        address wallet,
-        address token,
-        address to,
-        uint    amount,
-        bytes   logdata
-    );
-    event Approved(
-        address wallet,
-        address token,
-        address spender,
-        uint    amount
-    );
-    event ContractCalled(
-        address wallet,
-        address to,
-        uint    value,
-        bytes   data
-    );
+    event Transfered    (address wallet, address token, address to,      uint amount, bytes logdata);
+    event Approved      (address wallet, address token, address spender, uint amount);
+    event ContractCalled(address wallet, address to,    uint    value,   bytes data);
 
     function transferInternal(
         address wallet,
@@ -94,18 +78,25 @@ abstract contract BaseTransferModule is SecurityModule
 
         // Disallow general calls to token contracts (for tokens that have price data
         // so the quota is actually used).
-        require(controller().priceOracle().tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
+        require(priceOracle.tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
 
         returnData = transactCall(wallet, to, value, txData);
         emit ContractCalled(wallet, to, value, txData);
     }
 
-    function isTargetWhitelisted(address wallet, address to)
+    function isAddressWhitelisted(address wallet, address to)
         internal
         view
         returns (bool res)
     {
-        (res,) = controller().whitelistStore().isWhitelisted(wallet, to);
-        res = res || controller().dappAddressStore().isDapp(to);
+        (res,) = whitelistStore.isWhitelisted(wallet, to);
+    }
+
+    function isAddressDappOrWhitelisted(address wallet, address to)
+        internal
+        view
+        returns (bool)
+    {
+        return whitelistStore.isDappOrWhitelisted(wallet, to);
     }
 }

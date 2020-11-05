@@ -15,10 +15,7 @@ import {
 import { expectThrow } from "../util/expectThrow";
 import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 import { assertEventEmitted } from "../util/Events";
-import {
-  SignedRequest,
-  signAddToWhitelistImmediately
-} from "./helpers/SignatureUtils";
+import { SignedRequest, signAddToWhitelistWA } from "./helpers/SignatureUtils";
 
 contract("WhitelistModule", (accounts: string[]) => {
   let defaultCtx: Context;
@@ -76,7 +73,7 @@ contract("WhitelistModule", (accounts: string[]) => {
 
   it(
     description(
-      "should be able to add addresses to the whitelist immediately with majority"
+      "should be able to add addresses to the whitelist WA with majority"
     ),
     async () => {
       const owner = ctx.owners[0];
@@ -91,14 +88,10 @@ contract("WhitelistModule", (accounts: string[]) => {
         validUntil: Math.floor(new Date().getTime()) + 3600 * 24 * 30,
         wallet
       };
-      signAddToWhitelistImmediately(
-        request,
-        addr,
-        ctx.finalSecurityModule.address
-      );
+      signAddToWhitelistWA(request, addr, ctx.finalSecurityModule.address);
 
       const tx = await executeTransaction(
-        ctx.finalSecurityModule.contract.methods.addToWhitelistImmediately(
+        ctx.finalSecurityModule.contract.methods.addToWhitelistWA(
           request,
           addr
         ),
@@ -111,7 +104,7 @@ contract("WhitelistModule", (accounts: string[]) => {
       const blockTime = await getBlockTime(tx.blockNumber);
 
       // if(!useMetaTx) {
-      //   // The first guardian can be added immediately
+      //   // The first guardian can be added WA
       //   await assertEventEmitted(
       //     ctx.whitelistStore,
       //     "Whitelisted",
@@ -125,7 +118,7 @@ contract("WhitelistModule", (accounts: string[]) => {
       //   );
       // }
 
-      // Should be effective immediately
+      // Should be effective WA
       assert(
         await isWhitelisted(ctx, wallet, addr),
         "should be whitelisted immediately"

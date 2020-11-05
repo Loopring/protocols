@@ -5,12 +5,16 @@ pragma solidity ^0.7.0;
 
 library Data
 {
+    enum GuardianStatus {
+        REMOVE,    // Being removed or removed after validUntil timestamp
+        ADD        // Being added or added after validSince timestamp.
+    }
+
     // Optimized to fit into 32 bytes (1 slot)
     struct Guardian
     {
         address addr;
-        uint16  group;
-        uint40  validSince;
-        uint40  validUntil;
+        uint8   status;
+        uint64  timestamp; // validSince if status = ADD; validUntil if adding = REMOVE;
     }
 }

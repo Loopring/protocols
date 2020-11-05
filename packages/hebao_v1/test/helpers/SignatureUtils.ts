@@ -21,7 +21,7 @@ export function signCreateWallet(
   ensRegisterReverse: boolean,
   modules: string[]
 ) {
-  const domainSeprator = eip712.hash("WalletFactory", "1.1.0", moduleAddress);
+  const domainSeprator = eip712.hash("WalletFactory", "1.2.0", moduleAddress);
 
   const TYPE_STR =
     "createWallet(address owner,uint256 salt,address blankAddress,string ensLabel,bool ensRegisterReverse,address[] modules)";
@@ -52,28 +52,44 @@ export function signCreateWallet(
   return { txSignature, hash };
 }
 
-export function signAddToWhitelistImmediately(
+export function signAddToWhitelistWA(
   request: SignedRequest,
   addr: string,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("WhitelistModule", "1.1.0", moduleAddr);
-  const ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH = ethUtil.keccak(
+  const domainSeprator = eip712.hash("WhitelistModule", "1.2.0", moduleAddr);
+  const ADD_TO_WHITELIST_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
+      "addToWhitelist(address wallet,uint256 validUntil,address addr)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
     ["bytes32", "address", "uint256", "address"],
-    [
-      ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH,
-      request.wallet,
-      request.validUntil,
-      addr
-    ]
+    [ADD_TO_WHITELIST_TYPEHASH, request.wallet, request.validUntil, addr]
   );
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
   // console.log(`hash: ${hash}`);
+  // console.log(`request.signers: ${request.signers}`);
+
+  for (const signer of request.signers) {
+    if (signer) {
+      const sig = sign(signer, hash);
+      request.signatures.push(sig);
+    }
+  }
+}
+
+export function signUnlock(request: SignedRequest, moduleAddr: string) {
+  const domainSeprator = eip712.hash("GuardianModule", "1.2.0", moduleAddr);
+  const UNLOCK_TYPEHASH = ethUtil.keccak(
+    Buffer.from("unlock(address wallet,uint256 validUntil)")
+  );
+  const encodedRequest = web3.eth.abi.encodeParameters(
+    ["bytes32", "address", "uint256"],
+    [UNLOCK_TYPEHASH, request.wallet, request.validUntil]
+  );
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+  // console.log("hash:", hash);
   // console.log(`request.signers: ${request.signers}`);
 
   for (const signer of request.signers) {
@@ -89,7 +105,7 @@ export function signRecover(
   newOwner: string,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("GuardianModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("GuardianModule", "1.2.0", moduleAddr);
   const RECOVER_TYPEHASH = ethUtil.keccak(
     Buffer.from("recover(address wallet,uint256 validUntil,address newOwner)")
   );
@@ -105,21 +121,21 @@ export function signRecover(
   }
 }
 
-export function signChangeDailyQuotaImmediately(
+export function signChangeDailyQuotaWA(
   request: SignedRequest,
   newQuota: BN,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
-  const CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = ethUtil.keccak(
+  const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
+  const CHANGE_DAILY_QUOTE_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
+      "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
     ["bytes32", "address", "uint256", "uint256"],
     [
-      CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH,
+      CHANGE_DAILY_QUOTE_TYPEHASH,
       request.wallet,
       request.validUntil,
       newQuota.toString(10)
@@ -140,10 +156,10 @@ export function signTransferTokenApproved(
   logdata: string,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const TRANSFER_TOKEN_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "transferTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+      "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
@@ -180,10 +196,10 @@ export function signApproveTokenApproved(
   amount: BN,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const APPROVE_TOKEN_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "approveTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
+      "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
@@ -211,10 +227,10 @@ export function signCallContractApproved(
   data: string,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "callContractWithApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+      "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
@@ -244,10 +260,10 @@ export function signApproveThenCallContractApproved(
   data: string,
   moduleAddr: string
 ) {
-  const domainSeprator = eip712.hash("TransferModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
   const APPROVE_THEN_CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
     Buffer.from(
-      "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+      "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     )
   );
   const encodedRequest = web3.eth.abi.encodeParameters(
@@ -280,7 +296,7 @@ export function signApproveThenCallContractApproved(
 }
 
 export function getMetaTxHash(metaTx: MetaTx, moduleAddr: string) {
-  const domainSeprator = eip712.hash("ForwarderModule", "1.1.0", moduleAddr);
+  const domainSeprator = eip712.hash("ForwarderModule", "1.2.0", moduleAddr);
 
   const META_TX_TYPEHASH = ethUtil.keccak(
     Buffer.from(

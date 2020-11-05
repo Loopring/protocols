@@ -18,7 +18,6 @@ export interface Context {
 
   controllerImpl: any;
   walletFactory: any;
-  walletRegistryImpl: any;
   moduleRegistryImpl: any;
   baseENSManager: any;
 
@@ -28,6 +27,7 @@ export interface Context {
 
   walletImpl: any;
 
+  hashStore: any;
   securityStore: any;
   whitelistStore: any;
   quotaStore: any;
@@ -50,7 +50,6 @@ export async function getContext() {
 
     controllerImpl: await contracts.ControllerImpl.deployed(),
     walletFactory: await contracts.WalletFactory.deployed(),
-    walletRegistryImpl: await contracts.WalletRegistryImpl.deployed(),
     moduleRegistryImpl: await contracts.ModuleRegistryImpl.deployed(),
     baseENSManager: await contracts.BaseENSManager.deployed(),
 
@@ -59,19 +58,36 @@ export async function getContext() {
     finalTransferModule: await contracts.FinalTransferModule.deployed(),
 
     walletImpl: await contracts.WalletImpl.deployed(),
+
+    hashStore: await contracts.HashStore.deployed(),
     securityStore: await contracts.SecurityStore.deployed(),
     whitelistStore: await contracts.WhitelistStore.deployed(),
     quotaStore: await contracts.QuotaStore.deployed(),
-    priceCacheStore: await contracts.PriceCacheStore.new(
-      Constants.zeroAddress,
-      3600 * 240
-    )
+    priceCacheStore: await contracts.PriceCacheStore.new(Constants.zeroAddress)
   };
   return context;
 }
 
-export async function createContext(context?: Context) {
+export async function createContext(context?: Context, options: any = {}) {
   context = context === undefined ? await getContext() : context;
+  const priceOracle =
+    options.priceOracle !== undefined
+      ? options.priceOracle
+      : context.priceCacheStore.address;
+
+  // Create new controller
+  const controllerImpl = await context.contracts.ControllerImpl.new(
+    context.hashStore.address,
+    context.quotaStore.address,
+    context.securityStore.address,
+    context.whitelistStore.address,
+    context.moduleRegistryImpl.address,
+    await context.controllerImpl.feeCollector(),
+    await context.controllerImpl.ensManager(),
+    priceOracle
+  );
+  context.controllerImpl = controllerImpl;
+
   // Create a new wallet factory
   const walletFactory = await context.contracts.WalletFactory.new(
     context.controllerImpl.address,
@@ -79,15 +95,33 @@ export async function createContext(context?: Context) {
     true
   );
 
-  await walletFactory.initTrustedForwarder(context.finalCoreModule.address);
-  await context.walletRegistryImpl.setWalletFactory(walletFactory.address);
   await context.baseENSManager.addManager(walletFactory.address);
   await context.controllerImpl.initWalletFactory(walletFactory.address);
   context.walletFactory = walletFactory;
 
+  // Create new modules
+  const finalCoreModule = await context.contracts.FinalCoreModule.new(
+    context.controllerImpl.address
+  );
+  const finalSecurityModule = await context.contracts.FinalSecurityModule.new(
+    context.controllerImpl.address,
+    finalCoreModule.address
+  );
+  const finalTransferModule = await context.contracts.FinalTransferModule.new(
+    context.controllerImpl.address,
+    finalCoreModule.address
+  );
+
+  await context.moduleRegistryImpl.registerModule(finalCoreModule.address);
+  await context.moduleRegistryImpl.registerModule(finalSecurityModule.address);
+  await context.moduleRegistryImpl.registerModule(finalTransferModule.address);
+
+  context.finalCoreModule = finalCoreModule;
+  context.finalSecurityModule = finalSecurityModule;
+  context.finalTransferModule = finalTransferModule;
+
   return context;
 }
-
 export function getAllModuleAddresses(ctx: Context) {
   return [
     ctx.finalCoreModule.address,
@@ -104,7 +138,9 @@ export async function createWallet(
 ) {
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
 
-  const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
+  const salt = new Date().getTime();
+
+  const wallet = await ctx.walletFactory.computeWalletAddress(owner, salt);
   const walletName = "mywalleta" + new Date().getTime();
 
   const ensApproval = await getEnsApproval(
@@ -116,7 +152,7 @@ export async function createWallet(
   const { txSignature } = signCreateWallet(
     ctx.walletFactory.address,
     owner,
-    0,
+    salt,
     Constants.zeroAddress,
     walletName,
     true,
@@ -125,7 +161,7 @@ export async function createWallet(
 
   await ctx.walletFactory.createWallet(
     owner,
-    0,
+    salt,
     walletName,
     ensApproval,
     true,
@@ -137,9 +173,8 @@ export async function createWallet(
   );
   // Add the guardians
   const guardians = ctx.guardians.slice(0, numGuardians);
-  const group = 0;
   for (const guardian of guardians) {
-    await addGuardian(ctx, owner, wallet, guardian, group, false);
+    await addGuardian(ctx, owner, wallet, guardian, false);
   }
   return { wallet, guardians };
 }
@@ -151,8 +186,9 @@ export async function createWallet2(
   modules?: string[]
 ) {
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
+  const salt = new Date().getTime();
 
-  const wallet = await ctx.walletFactory.computeWalletAddress(owner, 0);
+  const wallet = await ctx.walletFactory.computeWalletAddress(owner, salt);
   const walletName = "mywalleta" + new Date().getTime();
 
   const ensApproval = await getEnsApproval(
@@ -164,7 +200,7 @@ export async function createWallet2(
   const { txSignature } = signCreateWallet(
     ctx.walletFactory.address,
     owner,
-    0,
+    salt,
     Constants.zeroAddress,
     walletName,
     true,
@@ -173,7 +209,7 @@ export async function createWallet2(
 
   await ctx.walletFactory.createWallet(
     owner,
-    0,
+    salt,
     walletName,
     ensApproval,
     true,
@@ -184,9 +220,8 @@ export async function createWallet2(
     }
   );
   // Add the guardians
-  const group = 0;
   for (const guardian of guardianAddrs) {
-    await addGuardian(ctx, owner, wallet, guardian, group, false);
+    await addGuardian(ctx, owner, wallet, guardian, false);
   }
   return { wallet, guardians: guardianAddrs };
 }

@@ -82,9 +82,7 @@ export async function addToWhitelist(
   addr: string,
   useMetaTx: boolean = true
 ) {
-  const delayPeriod = (
-    await ctx.finalSecurityModule.whitelistDelayPeriod()
-  ).toNumber();
+  const whitelistPendingPeriod = (await ctx.finalSecurityModule.WHITELIST_PENDING_PERIOD()).toNumber();
 
   let whitelistBefore = toPrettyList(
     await ctx.whitelistStore.whitelist(wallet)
@@ -125,23 +123,26 @@ export async function addToWhitelist(
   if (!useMetaTx) {
     assert.equal(
       (await getEffectiveTime(ctx, wallet, addr)).toNumber(),
-      blockTime + delayPeriod,
+      blockTime + whitelistPendingPeriod,
       "should not be whitelisted yet"
     );
   }
 
   // Skip forward `pendingPeriod` seconds
-  await advanceTimeAndBlockAsync(delayPeriod);
+  await advanceTimeAndBlockAsync(whitelistPendingPeriod);
 
   // Should be effective now
   assert(await isWhitelisted(ctx, wallet, addr), "should be whitelisted");
 
   // Check if the guardian list stored is correct
   let whitelistAfter = toPrettyList(await ctx.whitelistStore.whitelist(wallet));
-  whitelistBefore.push({ addr, effectiveTime: blockTime + delayPeriod });
-  const whitelistSize = (
-    await ctx.whitelistStore.whitelistSize(wallet)
-  ).toNumber();
+  whitelistBefore.push({
+    addr,
+    effectiveTime: blockTime + whitelistPendingPeriod
+  });
+  const whitelistSize = (await ctx.whitelistStore.whitelistSize(
+    wallet
+  )).toNumber();
   assert.equal(
     whitelistBefore.length,
     whitelistSize,
@@ -185,7 +186,7 @@ export async function removeFromWhitelist(
     );
   }
 
-  // Should be effective immediately
+  // Should be effective WA
   assert(
     !(await isWhitelisted(ctx, wallet, addr)),
     "should not be whitelisted"
@@ -194,9 +195,9 @@ export async function removeFromWhitelist(
   // Check if the guardian list stored is correct
   let whitelistAfter = toPrettyList(await ctx.whitelistStore.whitelist(wallet));
   whitelistBefore = whitelistBefore.filter((g: any) => g.addr !== addr);
-  const whitelistSize = (
-    await ctx.whitelistStore.whitelistSize(wallet)
-  ).toNumber();
+  const whitelistSize = (await ctx.whitelistStore.whitelistSize(
+    wallet
+  )).toNumber();
   assert.equal(
     whitelistBefore.length,
     whitelistSize,

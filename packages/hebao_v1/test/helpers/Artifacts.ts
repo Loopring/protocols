@@ -15,7 +15,6 @@ export class Artifacts {
   public WalletImpl: any;
   public WalletFactory: any;
   public UpgraderModule: any;
-  public WalletRegistryImpl: any;
   public ModuleRegistryImpl: any;
   public BaseENSManager: any;
   public ENSRegistryImpl: any;
@@ -24,11 +23,11 @@ export class Artifacts {
   public FinalSecurityModule: any;
   public FinalTransferModule: any;
 
+  public HashStore: any;
   public SecurityStore: any;
   public WhitelistStore: any;
   public QuotaStore: any;
   public PriceCacheStore: any;
-  public NonceStore: any;
 
   constructor(artifacts: any) {
     this.MockContract = artifacts.require("thirdparty/MockContract.sol");
@@ -48,9 +47,6 @@ export class Artifacts {
     this.WalletImpl = artifacts.require("./base/WalletImpl.sol");
     this.WalletFactory = artifacts.require("WalletFactory");
     this.UpgraderModule = artifacts.require("UpgraderModule");
-    this.WalletRegistryImpl = artifacts.require(
-      "./base/WalletRegistryImpl.sol"
-    );
     this.ModuleRegistryImpl = artifacts.require(
       "./base/ModuleRegistryImpl.sol"
     );
@@ -61,9 +57,9 @@ export class Artifacts {
     this.FinalSecurityModule = artifacts.require("FinalSecurityModule");
     this.FinalTransferModule = artifacts.require("FinalTransferModule");
 
+    this.HashStore = artifacts.require("HashStore");
     this.SecurityStore = artifacts.require("SecurityStore");
     this.WhitelistStore = artifacts.require("WhitelistStore");
     this.QuotaStore = artifacts.require("QuotaStore");
-    this.NonceStore = artifacts.require("NonceStore");
   }
 }

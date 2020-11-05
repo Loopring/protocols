@@ -11,9 +11,6 @@ pragma solidity ^0.7.0;
 ///      saving gas.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
 interface Wallet
 {
     function version() external pure returns (string memory);
@@ -58,11 +55,10 @@ interface Wallet
     ///      wallet can use this method to transact on any third-party contract with
     ///      msg.sender as this wallet itself.
     ///
-    ///      This method will emit `Transacted` event if it doesn't throw.
-    ///
-    ///      Note: this method must ONLY allow invocations from a module that has
+    ///      Note: 1) this method must ONLY allow invocations from a module that has
     ///      been added to this wallet. The wallet owner shall NOT be permitted
-    ///      to call this method directly.
+    ///      to call this method directly. 2) Reentrancy inside this function should
+    ///      NOT cause any problems.
     ///
     /// @param mode The transaction mode, 1 for CALL, 2 for DELEGATECALL.
     /// @param to The desitination address.

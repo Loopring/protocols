@@ -14,8 +14,8 @@ contract UniswapV2PriceOracle is PriceOracle
 {
     using MathUint   for uint;
 
-    IUniswapV2Factory factory;
-    address wethAddress;
+    IUniswapV2Factory public immutable factory;
+    address public immutable wethAddress;
 
     constructor(
         IUniswapV2Factory _factory,
@@ -28,7 +28,7 @@ contract UniswapV2PriceOracle is PriceOracle
     }
 
     function tokenValue(address token, uint amount)
-        external
+        public
         view
         override
         returns (uint)

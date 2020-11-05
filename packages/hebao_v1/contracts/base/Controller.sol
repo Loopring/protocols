@@ -3,7 +3,6 @@
 pragma solidity ^0.7.0;
 
 import "../iface/ModuleRegistry.sol";
-import "../iface/WalletRegistry.sol";
 
 
 /// @title Controller
@@ -11,7 +10,15 @@ import "../iface/WalletRegistry.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract Controller
 {
-    ModuleRegistry public moduleRegistry;
-    WalletRegistry public walletRegistry;
-    address        public walletFactory;
+    function moduleRegistry()
+        external
+        view
+        virtual
+        returns (ModuleRegistry);
+
+    function walletFactory()
+        external
+        view
+        virtual
+        returns (address);
 }

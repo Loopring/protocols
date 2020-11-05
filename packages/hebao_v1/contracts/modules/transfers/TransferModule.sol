@@ -15,40 +15,32 @@ import "./BaseTransferModule.sol";
 abstract contract TransferModule is BaseTransferModule
 {
     using MathUint      for uint;
-    using SignedRequest for ControllerImpl;
 
-    bytes32 public TRANSFER_DOMAIN_SEPERATOR;
+    bytes32 public immutable TRANSFER_DOMAIN_SEPERATOR;
 
-    bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = keccak256(
-        "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
+    uint public constant QUOTA_PENDING_PERIOD = 1 days;
+
+    bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH = keccak256(
+        "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
     );
-
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
-        "transferTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+        "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
-
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
-        "approveTokenWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
+        "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     );
-
     bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
-        "callContractWithApproval(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+        "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     );
-
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
-        "approveThenCallContractWithApproval(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+        "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
-    uint public transferDelayPeriod;
-
-    constructor(uint _transferDelayPeriod)
+    constructor()
     {
-        require(_transferDelayPeriod > 0, "INVALID_DELAY");
-
         TRANSFER_DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("TransferModule", "1.1.0", address(this))
+            EIP712.Domain("TransferModule", "1.2.0", address(this))
         );
-        transferDelayPeriod = _transferDelayPeriod;
     }
 
     function changeDailyQuota(
@@ -56,43 +48,33 @@ abstract contract TransferModule is BaseTransferModule
         uint    newQuota
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        QuotaStore qs = controller().quotaStore();
-        uint _newQuota = newQuota == 0 ? qs.defaultQuota(): newQuota;
-        uint _currentQuota = qs.currentQuota(wallet);
-
-        if (_currentQuota >= _newQuota) {
-            qs.changeQuota(wallet, _newQuota, block.timestamp);
-        } else {
-            qs.changeQuota(wallet, _newQuota, block.timestamp.add(transferDelayPeriod));
-        }
+        _changeQuota(wallet, newQuota, QUOTA_PENDING_PERIOD);
     }
 
-    function changeDailyQuotaImmediately(
+    function changeDailyQuotaWA(
         SignedRequest.Request calldata request,
         uint newQuota
         )
         external
-        nonReentrant
-        onlyWhenWalletUnlocked(request.wallet)
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
-                CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH,
+                CHANGE_DAILY_QUOTE_TYPEHASH,
                 request.wallet,
                 request.validUntil,
                 newQuota
             )
         );
-
-        controller().quotaStore().changeQuota(request.wallet, newQuota, block.timestamp);
+        _changeQuota(request.wallet, newQuota, 0);
     }
 
     function transferToken(
@@ -100,96 +82,21 @@ abstract contract TransferModule is BaseTransferModule
         address        token,
         address        to,
         uint           amount,
-        bytes calldata logdata
+        bytes calldata logdata,
+        bool           forceUseQuota
         )
         external
-        nonReentrant
         txAwareHashNotAllowed()
         onlyFromWalletOrOwnerWhenUnlocked(wallet)
     {
-        if (amount > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, amount);
+        if (forceUseQuota || !isAddressWhitelisted(wallet, to)) {
+            _updateQuota(quotaStore, wallet, token, amount);
         }
 
         transferInternal(wallet, token, to, amount, logdata);
     }
 
-    function callContract(
-        address            wallet,
-        address            to,
-        uint               value,
-        bytes     calldata data
-        )
-        external
-        nonReentrant
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerWhenUnlocked(wallet)
-        returns (bytes memory returnData)
-    {
-        if (value > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, address(0), value);
-        }
-
-        return callContractInternal(wallet, to, value, data);
-    }
-
-    function approveToken(
-        address wallet,
-        address token,
-        address to,
-        uint    amount
-        )
-        external
-        nonReentrant
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerWhenUnlocked(wallet)
-    {
-        uint additionalAllowance = approveInternal(wallet, token, to, amount);
-
-        if (additionalAllowance > 0 && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, additionalAllowance);
-        }
-    }
-
-    function approveThenCallContract(
-        address        wallet,
-        address        token,
-        address        to,
-        uint           amount,
-        uint           value,
-        bytes calldata data
-        )
-        external
-        nonReentrant
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerWhenUnlocked(wallet)
-        returns (bytes memory returnData)
-    {
-        uint additionalAllowance = approveInternal(wallet, token, to, amount);
-
-        if ((additionalAllowance > 0 || value > 0) && !isTargetWhitelisted(wallet, to)) {
-            updateQuota(wallet, token, additionalAllowance);
-            updateQuota(wallet, address(0), value);
-        }
-
-        return callContractInternal(wallet, to, value, data);
-    }
-
-    function getDailyQuota(address wallet)
-        public
-        view
-        returns (
-            uint total,
-            uint spent,
-            uint available
-        )
-    {
-        total = controller().quotaStore().currentQuota(wallet);
-        spent = controller().quotaStore().spentQuota(wallet);
-        available = controller().quotaStore().availableQuota(wallet);
-    }
-
-    function transferTokenWithApproval(
+    function transferTokenWA(
         SignedRequest.Request calldata request,
         address        token,
         address        to,
@@ -197,13 +104,13 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata logdata
         )
         external
-        nonReentrant
-        onlyWhenWalletUnlocked(request.wallet)
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 TRANSFER_TOKEN_TYPEHASH,
@@ -219,49 +126,40 @@ abstract contract TransferModule is BaseTransferModule
         transferInternal(request.wallet, token, to, amount, logdata);
     }
 
-    function approveTokenWithApproval(
-        SignedRequest.Request calldata request,
-        address token,
-        address to,
-        uint    amount
+    function callContract(
+        address            wallet,
+        address            to,
+        uint               value,
+        bytes     calldata data,
+        bool               forceUseQuota
         )
         external
-        nonReentrant
-        onlyWhenWalletUnlocked(request.wallet)
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
+        returns (bytes memory returnData)
     {
-        controller().verifyRequest(
-            TRANSFER_DOMAIN_SEPERATOR,
-            txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
-            request,
-            abi.encode(
-                APPROVE_TOKEN_TYPEHASH,
-                request.wallet,
-                request.validUntil,
-                token,
-                to,
-                amount
-            )
-        );
+        if (forceUseQuota || !isAddressDappOrWhitelisted(wallet, to)) {
+            _updateQuota(quotaStore, wallet, address(0), value);
+        }
 
-        approveInternal(request.wallet, token, to, amount);
+        return callContractInternal(wallet, to, value, data);
     }
 
-    function callContractWithApproval(
+    function callContractWA(
         SignedRequest.Request calldata request,
         address        to,
         uint           value,
         bytes calldata data
         )
         external
-        nonReentrant
-        onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
                 CALL_CONTRACT_TYPEHASH,
@@ -276,7 +174,77 @@ abstract contract TransferModule is BaseTransferModule
         return callContractInternal(request.wallet, to, value, data);
     }
 
-    function approveThenCallContractWithApproval(
+    function approveToken(
+        address wallet,
+        address token,
+        address to,
+        uint    amount,
+        bool    forceUseQuota
+        )
+        external
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
+    {
+        uint additionalAllowance = approveInternal(wallet, token, to, amount);
+
+        if (forceUseQuota || !isAddressDappOrWhitelisted(wallet, to)) {
+            _updateQuota(quotaStore, wallet, token, additionalAllowance);
+        }
+    }
+
+    function approveTokenWA(
+        SignedRequest.Request calldata request,
+        address token,
+        address to,
+        uint    amount
+        )
+        external
+    {
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
+            TRANSFER_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
+            request,
+            abi.encode(
+                APPROVE_TOKEN_TYPEHASH,
+                request.wallet,
+                request.validUntil,
+                token,
+                to,
+                amount
+            )
+        );
+
+        approveInternal(request.wallet, token, to, amount);
+    }
+
+    function approveThenCallContract(
+        address        wallet,
+        address        token,
+        address        to,
+        uint           amount,
+        uint           value,
+        bytes calldata data,
+        bool           forceUseQuota
+        )
+        external
+        txAwareHashNotAllowed()
+        onlyFromWalletOrOwnerWhenUnlocked(wallet)
+        returns (bytes memory returnData)
+    {
+        uint additionalAllowance = approveInternal(wallet, token, to, amount);
+
+        if (forceUseQuota || !isAddressDappOrWhitelisted(wallet, to)) {
+            _updateQuota(quotaStore, wallet, token, additionalAllowance);
+            _updateQuota(quotaStore, wallet, address(0), value);
+        }
+
+        return callContractInternal(wallet, to, value, data);
+    }
+
+    function approveThenCallContractWA(
         SignedRequest.Request calldata request,
         address        token,
         address        to,
@@ -285,8 +253,6 @@ abstract contract TransferModule is BaseTransferModule
         bytes calldata data
         )
         external
-        nonReentrant
-        onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
         bytes memory encoded = abi.encode(
@@ -300,15 +266,49 @@ abstract contract TransferModule is BaseTransferModule
             keccak256(data)
         );
 
-        controller().verifyRequest(
+        SignedRequest.verifyRequest(
+            hashStore,
+            securityStore,
             TRANSFER_DOMAIN_SEPERATOR,
             txAwareHash(),
-            GuardianUtils.SigRequirement.OwnerRequired,
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             encoded
         );
 
         approveInternal(request.wallet, token, to, amount);
         return callContractInternal(request.wallet, to, value, data);
+    }
+
+    function getDailyQuota(address wallet)
+        public
+        view
+        returns (
+            uint total, // 0 indicates quota is disabled
+            uint spent,
+            uint available
+        )
+    {
+        total = quotaStore.currentQuota(wallet);
+        spent = quotaStore.spentQuota(wallet);
+        available = quotaStore.availableQuota(wallet);
+    }
+
+    function _changeQuota(
+        address wallet,
+        uint    newQuota,
+        uint    pendingPeriod
+        )
+        private
+    {
+        uint _currentQuota = quotaStore.currentQuota(wallet);
+        require(_currentQuota != newQuota, "SAME_VALUE");
+
+        uint _pendingPeriod = pendingPeriod;
+        if (newQuota > 0 && newQuota < _currentQuota) {
+            _pendingPeriod = 0;
+        }
+
+        quotaStore.changeQuota(wallet, newQuota, block.timestamp.add(_pendingPeriod));
     }
 }

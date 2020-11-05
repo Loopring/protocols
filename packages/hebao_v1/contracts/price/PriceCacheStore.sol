@@ -4,19 +4,20 @@ pragma solidity ^0.7.0;
 
 import "../lib/MathUint.sol";
 import "../lib/OwnerManagable.sol";
+import "../thirdparty/SafeCast.sol";
 
 import "../iface/PriceOracle.sol";
 
-import "../base/DataStore.sol";
-
 
 /// @title PriceCacheStore
-contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
+contract PriceCacheStore is PriceOracle, OwnerManagable
 {
     using MathUint for uint;
+    using SafeCast for uint;
 
-    PriceOracle oracle;
-    uint expiry;
+    uint public constant EXPIRY_PERIOD = 7 days;
+
+    PriceOracle public oracle;
 
     event PriceCached (
         address token,
@@ -25,23 +26,19 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
         uint    timestamp
     );
 
+    // Optimized to fit into 32 bytes (1 slot)
     struct TokenPrice
     {
-        uint amount;
-        uint value;
-        uint timestamp;
+        uint128 amount;
+        uint96  value;
+        uint32  timestamp;
     }
 
     mapping (address => TokenPrice) prices;
 
-    constructor(
-        PriceOracle _oracle,
-        uint        _expiry
-        )
-        DataStore()
+    constructor(PriceOracle _oracle)
     {
         oracle = _oracle;
-        expiry = _expiry;
     }
 
     function tokenValue(address token, uint amount)
@@ -50,9 +47,9 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
         override
         returns (uint)
     {
-        TokenPrice storage tp = prices[token];
-        if (tp.timestamp > 0 && block.timestamp < tp.timestamp + expiry) {
-            return tp.value.mul(amount) / tp.amount;
+        TokenPrice memory tp = prices[token];
+        if (tp.timestamp > 0 && block.timestamp < tp.timestamp + EXPIRY_PERIOD) {
+            return uint(tp.value).mul(amount) / tp.amount;
         } else {
             return 0;
         }
@@ -63,11 +60,11 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
         uint    amount
         )
         external
-        onlyManager
+        returns (uint value)
     {
-        uint value = oracle.tokenValue(token, amount);
+        value = oracle.tokenValue(token, amount);
         if (value > 0) {
-            cacheTokenPrice(token, amount, value);
+            _cacheTokenPrice(token, amount, value);
         }
     }
 
@@ -79,7 +76,7 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
         external
         onlyManager
     {
-        cacheTokenPrice(token, amount, value);
+        _cacheTokenPrice(token, amount, value);
     }
 
     function setOracle(PriceOracle _oracle)
@@ -89,16 +86,16 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
         oracle = _oracle;
     }
 
-    function cacheTokenPrice(
+    function _cacheTokenPrice(
         address token,
         uint    amount,
         uint    value
         )
         internal
     {
-        prices[token].amount = amount;
-        prices[token].value = value;
-        prices[token].timestamp = block.timestamp;
+        prices[token].amount = amount.toUint128();
+        prices[token].value = value.toUint96();
+        prices[token].timestamp = block.timestamp.toUint32();
         emit PriceCached(token, amount, value, block.timestamp);
     }
 }

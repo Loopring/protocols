@@ -17,37 +17,17 @@ contract FinalSecurityModule is
     InheritanceModule,
     WhitelistModule
 {
-    ControllerImpl private controller_;
+    ControllerImpl private immutable controller_;
 
     constructor(
         ControllerImpl _controller,
-        address        _trustedForwarder,
-        uint           _recoveryPendingPeriod,
-        uint           _inheritWaitingPeriod,
-        uint           _whitelistDelayPeriod
+        address        _metaTxForwarder
         )
-        SecurityModule(_trustedForwarder)
-        GuardianModule(_recoveryPendingPeriod)
-        InheritanceModule(_inheritWaitingPeriod)
-        WhitelistModule(_whitelistDelayPeriod)
+        SecurityModule(_controller, _metaTxForwarder)
+        GuardianModule()
+        InheritanceModule()
+        WhitelistModule()
     {
         controller_ = _controller;
-    }
-
-    function controller()
-        internal
-        view
-        override
-        returns(ControllerImpl)
-    {
-        return ControllerImpl(controller_);
-    }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
     }
 }

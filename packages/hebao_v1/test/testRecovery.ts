@@ -61,7 +61,7 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
 
         // Add the guardians
         for (const guardian of guardians) {
-          await addGuardian(ctx, owner, wallet, guardian, group, true);
+          await addGuardian(ctx, owner, wallet, guardian, true);
         }
 
         // Recover
@@ -101,7 +101,7 @@ contract("GuardianModule - Recovery", (accounts: string[]) => {
             );
           } else {
             if (!useMetaTx) {
-              await expectThrow(transaction, "NOT_ENOUGH_SIGNERS");
+              await expectThrow(transaction, "PERMISSION_DENIED");
             }
           }
         }

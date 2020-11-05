@@ -44,7 +44,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     // The managed root name
     string public rootName;
     // The managed root node
-    bytes32 public rootNode;
+    bytes32 public immutable rootNode;
     // The address of the ENS resolver
     address public ensResolver;
 
@@ -112,16 +112,18 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     {
         verifyApproval(_wallet, _owner, _label, _approval);
 
+        ENSRegistry _ensRegistry = getENSRegistry();
+        ENSResolver _ensResolver = ENSResolver(ensResolver);
         bytes32 labelNode = keccak256(abi.encodePacked(_label));
         bytes32 node = keccak256(abi.encodePacked(rootNode, labelNode));
-        address currentOwner = getENSRegistry().owner(node);
+        address currentOwner = _ensRegistry.owner(node);
         require(currentOwner == address(0), "AEM: _label is alrealdy owned");
 
         // Forward ENS
-        getENSRegistry().setSubnodeOwner(rootNode, labelNode, address(this));
-        getENSRegistry().setResolver(node, ensResolver);
-        getENSRegistry().setOwner(node, _wallet);
-        ENSResolver(ensResolver).setAddr(node, _wallet);
+        _ensRegistry.setSubnodeOwner(rootNode, labelNode, address(this));
+        _ensRegistry.setResolver(node, address(_ensResolver));
+        _ensRegistry.setOwner(node, _wallet);
+        _ensResolver.setAddr(node, _wallet);
 
         // Reverse ENS
         strings.slice[] memory parts = new strings.slice[](2);
@@ -129,7 +131,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         parts[1] = rootName.toSlice();
         string memory name = ".".toSlice().join(parts);
         bytes32 reverseNode = getENSReverseRegistrar().node(_wallet);
-        ENSResolver(ensResolver).setName(reverseNode, name);
+        _ensResolver.setName(reverseNode, name);
 
         emit Registered(_wallet, _owner, name);
     }

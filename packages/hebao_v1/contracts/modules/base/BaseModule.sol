@@ -8,7 +8,6 @@ import "../../iface/Wallet.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/ReentrancyGuard.sol";
 import "../ControllerImpl.sol";
 
 
@@ -17,16 +16,22 @@ import "../ControllerImpl.sol";
 ///      be useful for all modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
-abstract contract BaseModule is ReentrancyGuard, Module
+abstract contract BaseModule is Module
 {
     using MathUint      for uint;
     using AddressUtil   for address;
 
     event Activated   (address wallet);
     event Deactivated (address wallet);
+
+    ModuleRegistry public immutable moduleRegistry;
+    SecurityStore  public immutable securityStore;
+    WhitelistStore public immutable whitelistStore;
+    QuotaStore     public immutable quotaStore;
+    HashStore      public immutable hashStore;
+    address        public immutable walletFactory;
+    PriceOracle    public immutable priceOracle;
+    address        public immutable feeCollector;
 
     function logicalSender()
         internal
@@ -57,11 +62,17 @@ abstract contract BaseModule is ReentrancyGuard, Module
         _;
     }
 
-    function controller()
-        internal
-        view
-        virtual
-        returns(ControllerImpl);
+    constructor(ControllerImpl _controller)
+    {
+        moduleRegistry = _controller.moduleRegistry();
+        securityStore = _controller.securityStore();
+        whitelistStore = _controller.whitelistStore();
+        quotaStore = _controller.quotaStore();
+        hashStore = _controller.hashStore();
+        walletFactory = _controller.walletFactory();
+        priceOracle = _controller.priceOracle();
+        feeCollector = _controller.feeCollector();
+    }
 
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()
@@ -94,7 +105,9 @@ abstract contract BaseModule is ReentrancyGuard, Module
         public
         pure
         virtual
-        returns (bytes4[] memory methods);
+        returns (bytes4[] memory methods)
+    {
+    }
 
     // ===== internal & private methods =====
 
@@ -208,19 +221,18 @@ abstract contract BaseModule is ReentrancyGuard, Module
         address     recipient,
         address     gasToken,
         uint        gasPrice,
-        uint        gasAmount,
-        bool        skipQuota
+        uint        gasAmount
         )
         internal
     {
         uint gasCost = gasAmount.mul(gasPrice);
 
-        if (!skipQuota) {
-            uint value = controller().priceOracle().tokenValue(gasToken, gasCost);
-            if (value > 0) {
-              controller().quotaStore().checkAndAddToSpent(wallet, value);
-            }
-        }
+        quotaStore.checkAndAddToSpent(
+            wallet,
+            gasToken,
+            gasAmount,
+            priceOracle
+        );
 
         transactTokenTransfer(wallet, gasToken, recipient, gasCost);
     }

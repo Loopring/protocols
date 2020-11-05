@@ -10,14 +10,16 @@ import "../iface/Wallet.sol";
 ///      Using ModuleStorage will achieve better module decoupling.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
 abstract contract DataStore
 {
     modifier onlyWalletModule(address wallet)
     {
-        require(Wallet(wallet).hasModule(msg.sender), "UNAUTHORIZED");
+        requireWalletModule(wallet);
         _;
+    }
+
+    function requireWalletModule(address wallet) view internal
+    {
+        require(Wallet(wallet).hasModule(msg.sender), "UNAUTHORIZED");
     }
 }

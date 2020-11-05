@@ -8,12 +8,12 @@ import "../base/BaseWallet.sol";
 /// @title WalletImpl
 contract WalletImpl is BaseWallet {
     function version()
-        external
+        public
         override
         pure
         returns (string memory)
     {
         // 使用中国省会作为别名
-        return "1.1.7 (changsha)";
+        return "1.2.0 (daqing)";
     }
 }

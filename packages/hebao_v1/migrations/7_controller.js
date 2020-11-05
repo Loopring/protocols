@@ -1,10 +1,7 @@
-const DappAddressStore = artifacts.require("DappAddressStore");
 const ModuleRegistryImpl = artifacts.require("ModuleRegistryImpl");
-const WalletRegistryImpl = artifacts.require("WalletRegistryImpl");
 const BaseENSManager = artifacts.require("BaseENSManager");
 const TestPriceOracle = artifacts.require("TestPriceOracle");
 const HashStore = artifacts.require("HashStore");
-const NonceStore = artifacts.require("NonceStore");
 const QuotaStore = artifacts.require("QuotaStore");
 const SecurityStore = artifacts.require("SecurityStore");
 const WhitelistStore = artifacts.require("WhitelistStore");
@@ -17,8 +14,7 @@ module.exports = function(deployer, network, accounts) {
     ensManagerAddr = BaseENSManager.address;
   }
 
-  const lockPeriod = Number(process.env.controllerLockPeriod) || 1 * 24 * 3600;
-  const collecTo = process.env.collectTo || accounts[1];
+  const collecTo = process.env.feeCollector || accounts[1];
 
   let priceOracle;
   let controllerImpl;
@@ -26,25 +22,14 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(TestPriceOracle);
     await deployer.deploy(
       ControllerImpl,
+      HashStore.address,
+      QuotaStore.address,
+      SecurityStore.address,
+      WhitelistStore.address,
       ModuleRegistryImpl.address,
-      WalletRegistryImpl.address,
-      lockPeriod,
       collecTo,
       ensManagerAddr,
-      TestPriceOracle.address,
-      true
+      TestPriceOracle.address
     );
-
-    const controllerImpl = await ControllerImpl.deployed();
-    return Promise.all([
-      controllerImpl.initStores(
-        DappAddressStore.address,
-        HashStore.address,
-        NonceStore.address,
-        QuotaStore.address,
-        SecurityStore.address,
-        WhitelistStore.address
-      )
-    ]);
   });
 };

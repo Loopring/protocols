@@ -10,8 +10,8 @@ contract ENSReverseRegistrarImpl is ENSReverseRegistrar {
     // namehash('addr.reverse')
     bytes32 constant ADDR_REVERSE_NODE = 0x91d1777781884d03a6757a803996e38de2a42967fb37eeaca72729271025a9e2;
 
-    ENSRegistry public ens;
-    ENSResolver public defaultResolver;
+    ENSRegistry public immutable ens;
+    ENSResolver public immutable defaultResolver;
 
     /**
      * @dev Constructor
@@ -41,23 +41,24 @@ contract ENSReverseRegistrarImpl is ENSReverseRegistrar {
      * @return The ENS node hash of the reverse record.
      */
     function claimWithResolver(address owner, address resolver) public override returns (bytes32) {
+        ENSRegistry _ens = ens;
         bytes32 label = sha3HexAddress(msg.sender);
         bytes32 node = keccak256(abi.encodePacked(ADDR_REVERSE_NODE, label));
-        address currentOwner = ens.owner(node);
+        address currentOwner = _ens.owner(node);
 
         // Update the resolver if required
-        if(resolver != address(0) && resolver != address(ens.resolver(node))) {
+        if(resolver != address(0) && resolver != address(_ens.resolver(node))) {
             // Transfer the name to us first if it's not already
             if(currentOwner != address(this)) {
-                ens.setSubnodeOwner(ADDR_REVERSE_NODE, label, address(this));
+                _ens.setSubnodeOwner(ADDR_REVERSE_NODE, label, address(this));
                 currentOwner = address(this);
             }
-            ens.setResolver(node, resolver);
+            _ens.setResolver(node, resolver);
         }
 
         // Update the owner if required
         if(currentOwner != owner) {
-            ens.setSubnodeOwner(ADDR_REVERSE_NODE, label, owner);
+            _ens.setSubnodeOwner(ADDR_REVERSE_NODE, label, owner);
         }
 
         return node;
