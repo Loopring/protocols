@@ -145,3 +145,5 @@
 - DEFI+S: 0xad6a626ae2b43dcb1b39430ce496d2fa0365ba9c, tokenId: 78
 - AAVE: 0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9, tokenId: 79
 - TRYB: 0x2c537e5624e4af88a7ae4060c022609376c8d0eb, tokenId: 80
+- CEL: 0xaaaebe6fe48e54f431b0c390cfaf0b017d09d42d, tokenId: 81
+- AMP: 0xff20817765cb7f73d4bde2e66e067e58d11095c2, tokenId: 82
