@@ -18,7 +18,6 @@ import "./SecurityStore_1_1_6.sol";
 contract UpgraderModule is BaseModule {
     ControllerImpl private immutable controller_;
 
-    address    public immutable walletImplementation;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
 
@@ -27,7 +26,6 @@ contract UpgraderModule is BaseModule {
 
     constructor(
         ControllerImpl   _controller,
-        address          _walletImplementation,
         address[] memory _modulesToAdd,
         address[] memory _modulesToRemove,
         address          _oldSecurityStore,
@@ -36,26 +34,11 @@ contract UpgraderModule is BaseModule {
         BaseModule(_controller)
     {
         controller_ = _controller;
-        walletImplementation = _walletImplementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
 
         oldSecurityStore = SecurityStore_1_1_6(_oldSecurityStore);
         newSecurityStore = SecurityStore(_newSecurityStore);
-    }
-
-    function upgradeWalletImplementation(address payable wallet)
-        external
-    {
-        require(msg.sender == address(this), "NOT_ALLOWED");
-
-        if (walletImplementation != OwnedUpgradeabilityProxy(wallet).implementation()) {
-            bytes memory txData = abi.encodeWithSelector(
-                OwnedUpgradeabilityProxy.upgradeTo.selector,
-                walletImplementation
-            );
-            transactCall(wallet, wallet, 0, txData);
-        }
     }
 
     function migrateSecurityStore(address wallet)
@@ -89,10 +72,6 @@ contract UpgraderModule is BaseModule {
         override
     {
         address payable wallet = msg.sender;
-
-        if (walletImplementation != address(0)) {
-            try UpgraderModule(address(this)).upgradeWalletImplementation(wallet) {} catch {}
-        }
 
         BaseWallet w = BaseWallet(wallet);
 
