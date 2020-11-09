@@ -302,10 +302,9 @@ abstract contract TransferModule is BaseTransferModule
         private
     {
         uint _currentQuota = quotaStore.currentQuota(wallet);
-        require(_currentQuota != newQuota, "SAME_VALUE");
 
         uint _pendingPeriod = pendingPeriod;
-        if (newQuota > 0 && newQuota < _currentQuota) {
+        if (_currentQuota == 0 || (newQuota > 0 && newQuota <= _currentQuota)) {
             _pendingPeriod = 0;
         }
 
