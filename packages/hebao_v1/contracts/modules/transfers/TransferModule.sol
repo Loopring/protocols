@@ -304,7 +304,7 @@ abstract contract TransferModule is BaseTransferModule
         uint _currentQuota = quotaStore.currentQuota(wallet);
 
         uint _pendingPeriod = pendingPeriod;
-        if (_currentQuota == 0 || (newQuota > 0 && newQuota < _currentQuota)) {
+        if (_currentQuota == 0 || (newQuota > 0 && newQuota <= _currentQuota)) {
             _pendingPeriod = 0;
         }
 
