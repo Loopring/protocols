@@ -3,7 +3,9 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../../iface/IVersion.sol";
 import "../../../lib/MathUint.sol";
+import "../../../thirdparty/BytesUtil.sol";
 import "./SecurityModule.sol";
 
 
@@ -13,6 +15,7 @@ import "./SecurityModule.sol";
 abstract contract BaseTransferModule is SecurityModule
 {
     using MathUint      for uint;
+    using BytesUtil     for bytes;
 
     event Transfered    (address wallet, address token, address to,      uint amount, bytes logdata);
     event Approved      (address wallet, address token, address spender, uint amount);
@@ -74,12 +77,12 @@ abstract contract BaseTransferModule is SecurityModule
         // (e.g. this is used for updating the wallet implementation)
         // We also disallow calls to module functions directly
         // (e.g. this is used for some special wallet <-> module interaction)
-        // TODO
-        // require(wallet != to && !IWallet(wallet).hasModule(to), "CALL_DISALLOWED");
+        require(wallet != to, "NOT_ALOOWED");
+        require(!storeWriterManager.isStoreWriter(to), "NOT_ALOOWED");
 
         // Disallow general calls to token contracts (for tokens that have price data
         // so the quota is actually used).
-        require(priceOracle.tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
+        require(priceOracle.tokenValue(to, 1e18) == 0, "PROHOBITED");
 
         returnData = transactCall(wallet, to, value, txData);
         emit ContractCalled(wallet, to, value, txData);

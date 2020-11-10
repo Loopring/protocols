@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 
 import "../base/DataStore.sol";
-import "../iface/IStoreAccessManager.sol";
+import "../iface/IStoreWriterManager.sol";
 import "../lib/MathUint.sol";
 
 
@@ -14,7 +14,7 @@ contract HashStore is DataStore
     // wallet => hash => consumed
     mapping(address => mapping(bytes32 => bool)) public hashes;
 
-    constructor(IStoreAccessManager accessManager) DataStore(accessManager) {}
+    constructor(IStoreWriterManager accessManager) DataStore(accessManager) {}
 
     function verifyAndUpdate(address wallet, bytes32 hash)
         external

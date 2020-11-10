@@ -2,15 +2,15 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../iface/IStoreAccessManager.sol";
+import "../iface/IStoreWriterManager.sol";
 import "../lib/OwnerManagable.sol";
 
 
-/// @title IStoreAccessManager
+/// @title IStoreWriterManager
 /// @dev Implementation of a IVersionRegistry.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract StoreAccessManager is OwnerManagable, IStoreAccessManager
+contract StoreWriterManager is OwnerManagable, IStoreWriterManager
 {
     event AccessGranted(address version, bool);
 
@@ -18,7 +18,7 @@ contract StoreAccessManager is OwnerManagable, IStoreAccessManager
 
     mapping (address => bool) private access;
 
-    function isAccessAllowed(address addr)
+    function isStoreWriter(address addr)
         public
         override
         virtual

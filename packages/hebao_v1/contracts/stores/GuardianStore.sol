@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
-import "../iface/IStoreAccessManager.sol";
+import "../iface/IStoreWriterManager.sol";
 import "../lib/MathUint.sol";
 import "../stores/Data.sol";
 import "../thirdparty/SafeCast.sol";
@@ -31,7 +31,7 @@ abstract contract GuardianStore is DataStore
 
     mapping (address => Wallet) public wallets;
 
-    constructor(IStoreAccessManager accessManager) DataStore(accessManager) {}
+    constructor(IStoreWriterManager accessManager) DataStore(accessManager) {}
 
     function isGuardian(
         address wallet,
@@ -135,7 +135,7 @@ abstract contract GuardianStore is DataStore
         bool    alwaysOverride
         )
         external
-        onlyFromStoreAccessor
+        onlyFromStoreWriter
         returns (uint)
     {
         require(validSince >= block.timestamp, "INVALID_VALID_SINCE");
@@ -190,7 +190,7 @@ abstract contract GuardianStore is DataStore
         bool    alwaysOverride
         )
         external
-        onlyFromStoreAccessor
+        onlyFromStoreWriter
         returns (uint)
     {
         require(validUntil >= block.timestamp, "INVALID_VALID_UNTIL");

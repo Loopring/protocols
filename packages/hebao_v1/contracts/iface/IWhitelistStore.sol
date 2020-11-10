@@ -3,10 +3,10 @@
 pragma solidity ^0.7.0;
 
 
-/// @title IStoreAccessManager
+/// @title StoreWriterManager
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-interface IStoreAccessManager
+interface StoreWriterManager
 {
-   function isAccessAllowed(address addr) external view returns (bool);
+   function isStoreWriter(address addr) external view returns (bool);
 }

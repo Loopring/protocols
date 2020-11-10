@@ -24,13 +24,14 @@ abstract contract BaseModule is Module
     event Activated   (address wallet);
     event Deactivated (address wallet);
 
-    SecurityStore  public immutable securityStore;
-    WhitelistStore public immutable whitelistStore;
-    QuotaStore     public immutable quotaStore;
-    HashStore      public immutable hashStore;
-    IPriceOracle   public immutable priceOracle;
-    address        public immutable walletFactory;
-    address        public immutable feeCollector;
+    IStoreWriterManager public immutable storeWriterManager;
+    SecurityStore       public immutable securityStore;
+    WhitelistStore      public immutable whitelistStore;
+    QuotaStore          public immutable quotaStore;
+    HashStore           public immutable hashStore;
+    IPriceOracle        public immutable priceOracle;
+    address             public immutable walletFactory;
+    address             public immutable feeCollector;
 
     modifier onlyWalletOwner(address wallet, address addr)
         virtual
@@ -54,6 +55,7 @@ abstract contract BaseModule is Module
 
     constructor(Controller _controller)
     {
+        storeWriterManager = _controller.storeWriterManager();
         securityStore = _controller.securityStore();
         whitelistStore = _controller.whitelistStore();
         quotaStore = _controller.quotaStore();

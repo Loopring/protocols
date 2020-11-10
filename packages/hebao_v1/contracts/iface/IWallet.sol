@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-
 /// @title Wallet
 /// @dev Base contract for smart wallets.
 ///      Sub-contracts must NOT use non-default constructor to initialize

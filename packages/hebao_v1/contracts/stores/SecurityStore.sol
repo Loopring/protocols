@@ -14,21 +14,21 @@ contract SecurityStore is GuardianStore
     using MathUint for uint;
     using SafeCast for uint;
 
-    constructor(IStoreAccessManager accessManager) GuardianStore(accessManager) {}
+    constructor(IStoreWriterManager accessManager) GuardianStore(accessManager) {}
 
     function setLock(
         address wallet,
         bool    locked
         )
         external
-        onlyFromStoreAccessor
+        onlyFromStoreWriter
     {
         wallets[wallet].locked = locked;
     }
 
     function touchLastActive(address wallet)
         external
-        onlyFromStoreAccessor
+        onlyFromStoreWriter
     {
         wallets[wallet].lastActive = uint64(block.timestamp);
     }
@@ -52,7 +52,7 @@ contract SecurityStore is GuardianStore
         uint32 _inheritWaitingPeriod
         )
         external
-        onlyFromStoreAccessor
+        onlyFromStoreWriter
     {
         wallets[wallet].inheritor = who;
         wallets[wallet].inheritWaitingPeriod = _inheritWaitingPeriod;

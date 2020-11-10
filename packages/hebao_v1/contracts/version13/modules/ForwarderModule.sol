@@ -8,6 +8,7 @@ import "../../lib/EIP712.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
+import "../../iface/IStoreWriterManager.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "./base/SecurityModule.sol";
 
@@ -22,8 +23,7 @@ contract ForwarderModule is SecurityModule
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    bytes32 public immutable FORWARDER_DOMAIN_SEPARATOR;
-
+    bytes32             public immutable FORWARDER_DOMAIN_SEPARATOR;
     uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 63000;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
@@ -256,9 +256,8 @@ contract ForwarderModule is SecurityModule
         // Since this contract is a module, we need to prevent wallet from interacting with
         // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
         // so no Store can be used as 'to'.
-        // TODO(daniel)
         require(
-            // moduleRegistry.isModuleRegistered(to) ||
+            storeWriterManager.isStoreWriter(to) ||
 
             // We only allow the wallet to call itself to addModule
             (to == wallet) &&

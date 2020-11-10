@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../iface/IStoreAccessManager.sol";
+import "../iface/IStoreWriterManager.sol";
 /// @title DataStore
 /// @dev Modules share states by accessing the same storage instance.
 ///      Using ModuleStorage will achieve better module decoupling.
@@ -10,14 +10,14 @@ import "../iface/IStoreAccessManager.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract DataStore
 {
-    IStoreAccessManager public immutable accessManager;
+    IStoreWriterManager public immutable accessManager;
 
-    constructor(IStoreAccessManager _accessManager)
+    constructor(IStoreWriterManager _accessManager)
     {
         accessManager = _accessManager;
     }
 
-    modifier onlyFromStoreAccessor()
+    modifier onlyFromStoreWriter()
     {
         requireStoreAccessor();
         _;
@@ -25,6 +25,6 @@ abstract contract DataStore
 
     function requireStoreAccessor() view internal
     {
-        require(accessManager.isAccessAllowed(msg.sender), "UNAUTHORIZED");
+        require(accessManager.isStoreWriter(msg.sender), "UNAUTHORIZED");
     }
 }

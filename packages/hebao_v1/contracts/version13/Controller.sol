@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 
 import "../iface/IPriceOracle.sol";
+import "../iface/IStoreWriterManager.sol";
 import "../lib/Claimable.sol";
 import "../stores/HashStore.sol";
 import "../stores/QuotaStore.sol";
@@ -18,6 +19,7 @@ contract Controller
 {
     address             public immutable walletFactory;
     address             public immutable feeCollector;
+    IStoreWriterManager public immutable storeWriterManager;
     IPriceOracle        public immutable priceOracle;
     BaseENSManager      public immutable ensManager;
     HashStore           public immutable hashStore;
@@ -26,18 +28,20 @@ contract Controller
     WhitelistStore      public immutable whitelistStore;
 
     constructor(
-        address           _walletFactory,
-        address           _feeCollector,
-        IPriceOracle      _priceOracle,
-        BaseENSManager    _ensManager,
-        HashStore         _hashStore,
-        QuotaStore        _quotaStore,
-        SecurityStore     _securityStore,
-        WhitelistStore    _whitelistStore
+        address             _walletFactory,
+        address             _feeCollector,
+        IStoreWriterManager _storeWriterManager,
+        IPriceOracle        _priceOracle,
+        BaseENSManager      _ensManager,
+        HashStore           _hashStore,
+        QuotaStore          _quotaStore,
+        SecurityStore       _securityStore,
+        WhitelistStore      _whitelistStore
         )
     {
         walletFactory = _walletFactory;
         feeCollector = _feeCollector;
+        storeWriterManager = _storeWriterManager;
         priceOracle = _priceOracle;
         ensManager = _ensManager;
         hashStore = _hashStore;
