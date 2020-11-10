@@ -12,7 +12,6 @@ import "../thirdparty/ens/BaseENSManager.sol";
 import "../thirdparty/ens/ENS.sol";
 import "../thirdparty/proxy/CloneFactory.sol";
 import "./MetaTxAware.sol";
-import "./Controller.sol";
 
 
 /// @title WalletFactory
@@ -46,9 +45,9 @@ contract WalletFactory
     ENSReverseRegistrar public immutable ensReverseRegistrar;
 
     constructor(
-        Controller _controller,
-        address    _walletImplementation,
-        bool       _allowEmptyENS
+        BaseENSManager _ensManager,
+        address        _walletImplementation,
+        bool           _allowEmptyENS
         )
     {
         DOMAIN_SEPERATOR = EIP712.hash(
@@ -58,7 +57,6 @@ contract WalletFactory
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
 
-        BaseENSManager _ensManager = _controller.ensManager();
         ensManager = _ensManager;
         ensResolver = _ensManager.ensResolver();
         ensReverseRegistrar = _ensManager.getENSReverseRegistrar();

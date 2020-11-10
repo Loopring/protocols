@@ -11,13 +11,12 @@ import "../stores/WhitelistStore.sol";
 import "../thirdparty/ens/BaseENSManager.sol";
 
 
-/// @title ControllerImpl
-/// @dev Basic implementation of a Controller.
+/// @title Controller
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract Controller is Claimable
+contract Controller
 {
-    address             public walletFactory;
+    address             public immutable walletFactory;
     address             public immutable feeCollector;
     IPriceOracle        public immutable priceOracle;
     BaseENSManager      public immutable ensManager;
@@ -26,9 +25,8 @@ contract Controller is Claimable
     SecurityStore       public immutable securityStore;
     WhitelistStore      public immutable whitelistStore;
 
-    event AddressChanged(string name, address addr);
-
     constructor(
+        address           _walletFactory,
         address           _feeCollector,
         IPriceOracle      _priceOracle,
         BaseENSManager    _ensManager,
@@ -38,6 +36,7 @@ contract Controller is Claimable
         WhitelistStore    _whitelistStore
         )
     {
+        walletFactory = _walletFactory;
         feeCollector = _feeCollector;
         priceOracle = _priceOracle;
         ensManager = _ensManager;
@@ -45,15 +44,5 @@ contract Controller is Claimable
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
-    }
-
-    function initWalletFactory(address _walletFactory)
-        external
-        onlyOwner
-    {
-        require(walletFactory == address(0), "INITIALIZED_ALREADY");
-        require(_walletFactory != address(0), "ZERO_ADDRESS");
-        walletFactory = _walletFactory;
-        emit AddressChanged("WalletFactory", walletFactory);
     }
 }
