@@ -24,24 +24,35 @@ contract WalletImpl is IWallet
 
     //  ----- DATA LAYOUT ENDS -----
 
-    event OwnerChanged  (address newOwner);
-    event VersionChanged(address newVersion);
-
-    modifier onlyFromAuthorized()
-    {
-        require(IVersion(version).isAuthorized(msg.sender, msg.sig), "UNAUTHORIZED");
-        _;
-    }
+    event OwnerChanged  (address oldOwner,   address newOwner);
+    event VersionChanged(address oldVersion, address newVersion);
 
     constructor(address _versionRegistry)
     {
         versionRegistry = _versionRegistry;
     }
 
+    function setVersion(address newVersion)
+        external
+        override
+    {
+        require(
+            newVersion != version &&
+            IVersionRegistry(versionRegistry).getVersionNumber(newVersion) > 0,
+            "INVALID_VERSION_ADDRESS"
+        );
+        require(
+            version == address(0) ||
+            IVersion(version).isAuthorized(msg.sender, msg.sig),
+            "UNAUTHORIZED"
+        );
+        emit VersionChanged(version, newVersion);
+        version = newVersion;
+    }
+
     function setOwner(address newOwner)
         external
         override
-        onlyFromAuthorized
     {
         require(
             newOwner != address(0) &&
@@ -50,20 +61,12 @@ contract WalletImpl is IWallet
             "INVALID_OWNER_ADDRESS"
         );
 
-        owner = newOwner;
-        emit OwnerChanged(newOwner);
-    }
-
-    function setVersion(address newVersion)
-        external
-        override
-        onlyFromAuthorized
-    {
         require(
-            IVersionRegistry(versionRegistry).getVersionNumber(newVersion) > 0,
-            "INVALID_VERSION_ADDRESS"
+            IVersion(version).isAuthorized(msg.sender, msg.sig),
+            "UNAUTHORIZED"
         );
-        emit VersionChanged(newVersion);
+        emit OwnerChanged(owner, newOwner);
+        owner = newOwner;
     }
 
     function transact(
@@ -74,9 +77,13 @@ contract WalletImpl is IWallet
         )
         external
         override
-        onlyFromAuthorized
         returns (bytes memory returnData)
     {
+        require(
+            IVersion(version).isAuthorized(msg.sender, msg.sig),
+            "UNAUTHORIZED"
+        );
+
         bool success;
         if (mode == 1) {
             // solium-disable-next-line security/no-call-value
@@ -100,11 +107,7 @@ contract WalletImpl is IWallet
         }
     }
 
-    receive()
-        external
-        payable
-    {
-    }
+    receive() external payable {}
 
     /// @dev This default function can receive Ether or perform queries to modules
     ///      using bound methods.
@@ -113,6 +116,7 @@ contract WalletImpl is IWallet
         payable
     {
         address target = IVersion(version).getBinding(msg.sig);
+        require(target != address(0), "NO_BINDING_FOUND");
 
         (bool success, bytes memory returnData) = target.call{value: msg.value}(msg.data);
         assembly {
