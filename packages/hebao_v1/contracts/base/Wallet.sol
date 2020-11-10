@@ -12,7 +12,7 @@ import "../lib/ERC20.sol";
 /// @dev This contract provides basic implementation for a Wallet.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract WalletImpl is IWallet
+contract Wallet is IWallet
 {
     // WARNING: do not delete wallet state data to make this implementation
     // compatible with early versions.

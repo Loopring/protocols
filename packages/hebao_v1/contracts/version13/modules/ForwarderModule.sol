@@ -106,7 +106,7 @@ contract ForwarderModule is SecurityModule
         // skip directly to the wallet owner here (which could still be another contract).
         //require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
         require(!securityStore.isLocked(from), "WALLET_LOCKED");
-        require(metaTxHash.verifySignature(Wallet(from).owner(), signature), "INVALID_SIGNATURE");
+        require(metaTxHash.verifySignature(IWallet(from).owner(), signature), "INVALID_SIGNATURE");
     }
 
     function executeMetaTx(

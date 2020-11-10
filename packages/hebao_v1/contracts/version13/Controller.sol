@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../iface/PriceOracle.sol";
+import "../iface/IPriceOracle.sol";
 import "../lib/Claimable.sol";
 import "../stores/HashStore.sol";
 import "../stores/QuotaStore.sol";
@@ -24,7 +24,7 @@ contract Controller is Claimable
     QuotaStore          public immutable quotaStore;
     SecurityStore       public immutable securityStore;
     WhitelistStore      public immutable whitelistStore;
-    PriceOracle         public priceOracle;
+    IPriceOracle        public priceOracle;
 
     event AddressChanged(
         string   name,
@@ -39,7 +39,7 @@ contract Controller is Claimable
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore,
-        PriceOracle       _priceOracle
+        IPriceOracle      _priceOracle
         )
     {
         walletFactory = _walletFactory;
@@ -52,11 +52,11 @@ contract Controller is Claimable
         priceOracle = _priceOracle;
     }
 
-    function setPriceOracle(PriceOracle _priceOracle)
+    function setPriceOracle(IPriceOracle _priceOracle)
         external
         onlyOwner
     {
         priceOracle = _priceOracle;
-        emit AddressChanged("PriceOracle", address(priceOracle));
+        emit AddressChanged("IPriceOracle", address(priceOracle));
     }
 }

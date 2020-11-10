@@ -313,7 +313,7 @@ contract WalletFactory
                 ensResolver
             );
 
-            Wallet(wallet).transact(
+            IWallet(wallet).transact(
                 uint8(1),
                 address(ensReverseRegistrar),
                 0, // value

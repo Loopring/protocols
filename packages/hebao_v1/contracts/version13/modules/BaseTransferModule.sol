@@ -74,7 +74,8 @@ abstract contract BaseTransferModule is SecurityModule
         // (e.g. this is used for updating the wallet implementation)
         // We also disallow calls to module functions directly
         // (e.g. this is used for some special wallet <-> module interaction)
-        require(wallet != to && !Wallet(wallet).hasModule(to), "CALL_DISALLOWED");
+        // TODO
+        // require(wallet != to && !IWallet(wallet).hasModule(to), "CALL_DISALLOWED");
 
         // Disallow general calls to token contracts (for tokens that have price data
         // so the quota is actually used).

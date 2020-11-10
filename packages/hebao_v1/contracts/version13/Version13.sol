@@ -5,9 +5,9 @@ pragma solidity ^0.7.0;
 import "../iface/IVersion.sol";
 import "../iface/IVersionRegistry.sol";
 import "../iface/IWallet.sol";
-import "../iface/IModule.sol";
 import "../lib/ERC20.sol";
 import "../stores/SecurityStore.sol";
+import "./Module.sol";
 
 
 /// @title BaseWallet
@@ -41,7 +41,7 @@ abstract contract Version13 is IVersion
             require(module != address(0), "NULL_MODULE");
             modules[module] = true;
 
-            bytes4[] memory methods = IModule(module).bindableMethods();
+            bytes4[] memory methods = Module(module).bindableMethods();
             for (uint j = 0; j < methods.length; j++) {
                 methodToModule[methods[j]] = module;
             }
@@ -55,7 +55,7 @@ abstract contract Version13 is IVersion
     {
         address wallet = msg.sender;
         for (uint i = 0; i < moduleList.length; i++) {
-            IModule(moduleList[i]).activate(wallet);
+            Module(moduleList[i]).activate(wallet);
         }
 
         SecurityStore ss = SecurityStore(securityStore);

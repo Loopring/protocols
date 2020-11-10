@@ -4,20 +4,19 @@ pragma solidity ^0.7.0;
 
 import "../lib/MathUint.sol";
 import "../lib/OwnerManagable.sol";
+import "../iface/IPriceOracle.sol";
 import "../thirdparty/SafeCast.sol";
-
-import "../iface/PriceOracle.sol";
 
 
 /// @title PriceCacheStore
-contract PriceCacheStore is PriceOracle, OwnerManagable
+contract PriceCacheStore is IPriceOracle, OwnerManagable
 {
     using MathUint for uint;
     using SafeCast for uint;
 
     uint public constant EXPIRY_PERIOD = 7 days;
 
-    PriceOracle public oracle;
+    IPriceOracle public oracle;
 
     event PriceCached (
         address token,
@@ -36,7 +35,7 @@ contract PriceCacheStore is PriceOracle, OwnerManagable
 
     mapping (address => TokenPrice) prices;
 
-    constructor(PriceOracle _oracle)
+    constructor(IPriceOracle _oracle)
     {
         oracle = _oracle;
     }
@@ -79,7 +78,7 @@ contract PriceCacheStore is PriceOracle, OwnerManagable
         _cacheTokenPrice(token, amount, value);
     }
 
-    function setOracle(PriceOracle _oracle)
+    function setOracle(IPriceOracle _oracle)
         external
         onlyManager
     {

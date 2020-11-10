@@ -2,8 +2,6 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../iface/Wallet.sol";
-
 
 /// @title DataStore
 /// @dev Modules share states by accessing the same storage instance.
@@ -20,6 +18,7 @@ abstract contract DataStore
 
     function requireWalletModule(address wallet) view internal
     {
-        require(Wallet(wallet).hasModule(msg.sender), "UNAUTHORIZED");
+        // TODO
+        // require(Wallet(wallet).hasModule(msg.sender), "UNAUTHORIZED");
     }
 }

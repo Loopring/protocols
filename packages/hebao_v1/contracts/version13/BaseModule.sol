@@ -3,12 +3,12 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../iface/IModule.sol";
 import "../iface/IWallet.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 import "./Controller.sol";
+import "./Module.sol";
 
 
 /// @title BaseModule
@@ -16,7 +16,7 @@ import "./Controller.sol";
 ///      be useful for all modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract BaseModule is IModule
+abstract contract BaseModule is Module
 {
     using MathUint      for uint;
     using AddressUtil   for address;
@@ -28,8 +28,8 @@ abstract contract BaseModule is IModule
     WhitelistStore public immutable whitelistStore;
     QuotaStore     public immutable quotaStore;
     HashStore      public immutable hashStore;
+    IPriceOracle   public immutable priceOracle;
     address        public immutable walletFactory;
-    PriceOracle    public immutable priceOracle;
     address        public immutable feeCollector;
 
     modifier onlyWalletOwner(address wallet, address addr)
@@ -58,8 +58,8 @@ abstract contract BaseModule is IModule
         whitelistStore = _controller.whitelistStore();
         quotaStore = _controller.quotaStore();
         hashStore = _controller.hashStore();
-        walletFactory = _controller.walletFactory();
         priceOracle = _controller.priceOracle();
+        walletFactory = _controller.walletFactory();
         feeCollector = _controller.feeCollector();
     }
 
@@ -78,7 +78,7 @@ abstract contract BaseModule is IModule
         internal
         returns (bytes memory)
     {
-        return Wallet(wallet).transact(uint8(1), to, value, data);
+        return IWallet(wallet).transact(uint8(1), to, value, data);
     }
 
     // Special case for transactCall to support transfers on "bad" ERC20 tokens
@@ -138,7 +138,7 @@ abstract contract BaseModule is IModule
         internal
         returns (bytes memory)
     {
-        return Wallet(wallet).transact(uint8(2), to, value, data);
+        return IWallet(wallet).transact(uint8(2), to, value, data);
     }
 
     function transactStaticCall(
@@ -149,7 +149,7 @@ abstract contract BaseModule is IModule
         internal
         returns (bytes memory)
     {
-        return Wallet(wallet).transact(uint8(3), to, 0, data);
+        return IWallet(wallet).transact(uint8(3), to, 0, data);
     }
 
     function reimburseGasFee(

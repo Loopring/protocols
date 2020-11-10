@@ -130,7 +130,7 @@ contract GuardianModule is SecurityModule
         address payable _logicalSender = logicalSender();
         require(
             _logicalSender == wallet ||
-            _logicalSender == Wallet(wallet).owner() ||
+            _logicalSender == IWallet(wallet).owner() ||
             securityStore.isGuardian(wallet, _logicalSender, false),
             "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
         );
@@ -213,7 +213,7 @@ contract GuardianModule is SecurityModule
             ss.removeGuardian(request.wallet, newOwner, block.timestamp, true);
         }
 
-        Wallet(request.wallet).setOwner(newOwner);
+        IWallet(request.wallet).setOwner(newOwner);
         _lockWallet(request.wallet, address(this), false);
         ss.cancelPendingGuardians(request.wallet);
 

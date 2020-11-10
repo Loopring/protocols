@@ -37,7 +37,7 @@ abstract contract SecurityModule is MetaTxModule
         // If the wallet's signature verfication passes, the wallet must be unlocked.
         require(
             _logicalSender == wallet ||
-            (_logicalSender == Wallet(wallet).owner() && !_isWalletLocked(wallet)),
+            (_logicalSender == IWallet(wallet).owner() && !_isWalletLocked(wallet)),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
         securityStore.touchLastActiveWhenRequired(wallet, TOUCH_GRACE_PERIOD);

@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
-import "../iface/PriceOracle.sol";
+import "../iface/IPriceOracle.sol";
 import "../lib/MathUint.sol";
 import "../thirdparty/SafeCast.sol";
 
@@ -70,7 +70,7 @@ contract QuotaStore is DataStore
         address     wallet,
         address     token,
         uint        amount,
-        PriceOracle priceOracle
+        IPriceOracle priceOracle
         )
         external
     {

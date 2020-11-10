@@ -62,7 +62,7 @@ contract InheritanceModule is SecurityModule
         ss.setInheritor(wallet, address(0), 0);
         _lockWallet(wallet, address(this), false);
 
-        Wallet(wallet).setOwner(newOwner);
+        IWallet(wallet).setOwner(newOwner);
 
         emit Inherited(wallet, _inheritor, newOwner);
     }

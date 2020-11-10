@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../iface/PriceOracle.sol";
+import "../iface/IPriceOracle.sol";
 import "../lib/ERC20.sol";
 
 
@@ -23,7 +23,7 @@ abstract contract KyberNetworkProxy {
 
 /// @title KyberNetworkPriceOracle
 /// @dev Returns the value in Ether for any given ERC20 token.
-contract KyberNetworkPriceOracle is PriceOracle
+contract KyberNetworkPriceOracle is IPriceOracle
 {
     KyberNetworkProxy public immutable kyber;
     address constant public ethTokenInKyber = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
