@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
+import "../iface/IStoreAccessManager.sol";
 import "../lib/MathUint.sol";
 import "../stores/Data.sol";
 import "../thirdparty/SafeCast.sol";
@@ -30,7 +31,7 @@ abstract contract GuardianStore is DataStore
 
     mapping (address => Wallet) public wallets;
 
-    constructor() DataStore() {}
+    constructor(IStoreAccessManager accessManager) DataStore(accessManager) {}
 
     function isGuardian(
         address wallet,
@@ -90,7 +91,7 @@ abstract contract GuardianStore is DataStore
         uint size = w.guardians.length;
         if (size == 0) return;
 
-        requireWalletModule(wallet);
+        requireStoreAccessor();
         for (uint i = 0; i < w.guardians.length; i++) {
             delete w.guardianIdx[w.guardians[i].addr];
         }
@@ -116,7 +117,7 @@ abstract contract GuardianStore is DataStore
             }
         }
         if (cancelled) {
-            requireWalletModule(wallet);
+            requireStoreAccessor();
         }
         _cleanRemovedGuardians(wallet, true);
     }
@@ -134,7 +135,7 @@ abstract contract GuardianStore is DataStore
         bool    alwaysOverride
         )
         external
-        onlyWalletModule(wallet)
+        onlyFromStoreAccessor
         returns (uint)
     {
         require(validSince >= block.timestamp, "INVALID_VALID_SINCE");
@@ -189,7 +190,7 @@ abstract contract GuardianStore is DataStore
         bool    alwaysOverride
         )
         external
-        onlyWalletModule(wallet)
+        onlyFromStoreAccessor
         returns (uint)
     {
         require(validUntil >= block.timestamp, "INVALID_VALID_UNTIL");

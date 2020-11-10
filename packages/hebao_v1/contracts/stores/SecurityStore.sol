@@ -3,8 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-
 import "./GuardianStore.sol";
+
 
 /// @title SecurityStore
 ///
@@ -14,21 +14,21 @@ contract SecurityStore is GuardianStore
     using MathUint for uint;
     using SafeCast for uint;
 
-    constructor() GuardianStore() {}
+    constructor(IStoreAccessManager accessManager) GuardianStore(accessManager) {}
 
     function setLock(
         address wallet,
         bool    locked
         )
         external
-        onlyWalletModule(wallet)
+        onlyFromStoreAccessor
     {
         wallets[wallet].locked = locked;
     }
 
     function touchLastActive(address wallet)
         external
-        onlyWalletModule(wallet)
+        onlyFromStoreAccessor
     {
         wallets[wallet].lastActive = uint64(block.timestamp);
     }
@@ -41,7 +41,7 @@ contract SecurityStore is GuardianStore
     {
         if (wallets[wallet].inheritor != address(0) &&
             block.timestamp > lastActive(wallet) + minInternval) {
-            requireWalletModule(wallet);
+            requireStoreAccessor();
             wallets[wallet].lastActive = uint64(block.timestamp);
         }
     }
@@ -52,7 +52,7 @@ contract SecurityStore is GuardianStore
         uint32 _inheritWaitingPeriod
         )
         external
-        onlyWalletModule(wallet)
+        onlyFromStoreAccessor
     {
         wallets[wallet].inheritor = who;
         wallets[wallet].inheritWaitingPeriod = _inheritWaitingPeriod;

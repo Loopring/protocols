@@ -3,6 +3,7 @@
 pragma solidity ^0.7.0;
 
 import "../base/DataStore.sol";
+import "../iface/IStoreAccessManager.sol";
 import "../lib/AddressSet.sol";
 import "../lib/OwnerManagable.sol";
 
@@ -28,7 +29,7 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         bool    whitelisted
     );
 
-    constructor() DataStore() {}
+    constructor(IStoreAccessManager accessManager) DataStore(accessManager) {}
 
     function addToWhitelist(
         address wallet,
@@ -36,7 +37,7 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         uint    effectiveTime
         )
         external
-        onlyWalletModule(wallet)
+        onlyFromStoreAccessor
     {
         addAddressToSet(_walletKey(wallet), addr, true);
         uint effective = effectiveTime >= block.timestamp ? effectiveTime : block.timestamp;
@@ -49,7 +50,7 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
         address addr
         )
         external
-        onlyWalletModule(wallet)
+        onlyFromStoreAccessor
     {
         removeAddressFromSet(_walletKey(wallet), addr);
         delete effectiveTimeMap[wallet][addr];
@@ -157,5 +158,4 @@ contract WhitelistStore is DataStore, AddressSet, OwnerManagable
     {
         return keccak256(abi.encodePacked("__WHITELIST__", addr));
     }
-
 }

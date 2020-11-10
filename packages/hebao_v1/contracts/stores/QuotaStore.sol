@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
 import "../iface/IPriceOracle.sol";
+import "../iface/IStoreAccessManager.sol";
 import "../lib/MathUint.sol";
 import "../thirdparty/SafeCast.sol";
 
@@ -36,10 +37,7 @@ contract QuotaStore is DataStore
         uint64  pendingUntil
     );
 
-    constructor()
-        DataStore()
-    {
-    }
+    constructor(IStoreAccessManager accessManager) DataStore(accessManager) {}
 
     // 0 for newQuota indicates unlimited quota, or daily quota is disabled.
     function changeQuota(
@@ -48,7 +46,7 @@ contract QuotaStore is DataStore
         uint    effectiveTime
         )
         external
-        onlyWalletModule(wallet)
+        onlyFromStoreAccessor
     {
         require(newQuota <= MAX_QUOTA, "INVALID_VALUE");
         if (newQuota == MAX_QUOTA) {
@@ -82,7 +80,7 @@ contract QuotaStore is DataStore
                 priceOracle.tokenValue(token, amount);
             if (value > 0) {
                 require(available >= value, "QUOTA_EXCEEDED");
-                requireWalletModule(wallet);
+                requireStoreAccessor();
                 _addToSpent(wallet, q, value);
             }
         }
@@ -93,7 +91,7 @@ contract QuotaStore is DataStore
         uint    amount
         )
         external
-        onlyWalletModule(wallet)
+        onlyFromStoreAccessor
     {
         _addToSpent(wallet, quotas[wallet], amount);
     }
