@@ -63,7 +63,6 @@ abstract contract BaseModule is IModule
         feeCollector = _controller.feeCollector();
     }
 
-
     function logicalSender() internal view virtual returns (address payable) { return msg.sender; }
     function activate(address wallet) external override pure {}
     function bindableMethods() public override pure virtual returns (bytes4[] memory methods) {}
