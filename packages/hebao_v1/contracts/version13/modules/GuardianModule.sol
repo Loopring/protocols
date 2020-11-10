@@ -47,7 +47,7 @@ contract GuardianModule is SecurityModule
         SecurityModule(_controller, _metaTxForwarder)
     {
         GUARDIAN_DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("GuardianModule", "1.2.0", address(this))
+            EIP712.Domain("GuardianModule", "1.3.0", address(this))
         );
     }
 

@@ -23,7 +23,7 @@ contract ForwarderModule is SecurityModule
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    bytes32             public immutable FORWARDER_DOMAIN_SEPARATOR;
+    bytes32 public immutable FORWARDER_DOMAIN_SEPARATOR;
     uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 63000;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
@@ -55,7 +55,7 @@ contract ForwarderModule is SecurityModule
         SecurityModule(_controller, address(this))
     {
         FORWARDER_DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("ForwarderModule", "1.2.0", address(this))
+            EIP712.Domain("ForwarderModule", "1.3.0", address(this))
         );
     }
 

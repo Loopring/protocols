@@ -32,7 +32,7 @@ contract WhitelistModule is SecurityModule
         SecurityModule(_controller, _metaTxForwarder)
     {
         WHITELIST_DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("WhitelistModule", "1.2.0", address(this))
+            EIP712.Domain("WhitelistModule", "1.3.0", address(this))
         );
     }
 
