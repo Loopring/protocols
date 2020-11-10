@@ -81,7 +81,7 @@ abstract contract Version13 is IVersion
         return modules[sender];
     }
 
-    function getBinding(bytes4 method)
+    function getBindingTarget(bytes4 method)
         public
         override
         view

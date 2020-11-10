@@ -15,5 +15,5 @@ interface IVersion
 
     function isAuthorized(address sender, bytes4 method) external view returns (bool);
 
-    function getBinding(bytes4 method) external view returns (address);
+    function getBindingTarget(bytes4 method) external view returns (address);
 }

@@ -135,7 +135,7 @@ contract Wallet is IWallet
         external
         payable
     {
-        address target = IVersion(version).getBinding(msg.sig);
+        address target = IVersion(version).getBindingTarget(msg.sig);
         require(target != address(0), "NO_BINDING_FOUND");
 
         (bool success, bytes memory returnData) = target.call{value: msg.value}(msg.data);
