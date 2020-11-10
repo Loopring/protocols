@@ -25,7 +25,6 @@ contract WhitelistModule is SecurityModule
         "removeFromWhitelist(address wallet,uint256 validUntil,address addr)"
     );
 
-
     constructor(
         Controller _controller,
         address    _metaTxForwarder
