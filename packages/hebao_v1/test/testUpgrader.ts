@@ -17,6 +17,7 @@ import {
 } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
 import BN = require("bn.js");
+const OwnedUpgradeabilityProxy = artifacts.require("OwnedUpgradeabilityProxy");
 
 contract("UpgraderModule", () => {
   let defaultCtx: Context;
@@ -40,7 +41,6 @@ contract("UpgraderModule", () => {
     // Create an upgrader module
     const upgraderModule = await ctx.contracts.UpgraderModule.new(
       ctx.controllerImpl.address,
-      Constants.zeroAddress,
       modulesToAdd,
       modulesToRemove,
       Constants.zeroAddress,
@@ -80,6 +80,22 @@ contract("UpgraderModule", () => {
 
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
+  });
+
+  it("wallet should be able to upgrade wallet implementation", async () => {
+    const owner = ctx.owners[0];
+    const { wallet } = await createWallet(ctx, owner, 0, [
+      ctx.finalCoreModule.address
+    ]);
+    const newImpl = Constants.zeroAddress;
+    const walletProxy = await OwnedUpgradeabilityProxy.at(wallet);
+    await walletProxy.upgradeTo(newImpl, { from: owner });
+    const newImplOfWallet = await walletProxy.implementation();
+    // console.log("newImplOfWallet:", newImplOfWallet);
+    assert(
+      newImplOfWallet === Constants.zeroAddress,
+      "unexpected new implementation"
+    );
   });
 
   [/*false,*/ true].forEach(function(metaTx) {

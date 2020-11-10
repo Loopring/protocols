@@ -12,7 +12,7 @@ import "../../lib/EIP712.sol";
 import "../../thirdparty/Create2.sol";
 import "../../thirdparty/ens/BaseENSManager.sol";
 import "../../thirdparty/ens/ENS.sol";
-import "../../thirdparty/proxy/CloneFactory.sol";
+import "../../thirdparty/proxy/OwnedUpgradeabilityProxy.sol";
 import "../base/MetaTxAware.sol";
 import "../ControllerImpl.sol";
 
@@ -199,10 +199,10 @@ contract WalletFactory
 
     function getWalletCreationCode()
         public
-        view
+        pure
         returns (bytes memory)
     {
-        return CloneFactory.getByteCode(walletImplementation);
+        return type(OwnedUpgradeabilityProxy).creationCode;
     }
 
     function _consumeBlank(
@@ -243,9 +243,10 @@ contract WalletFactory
     {
         wallet = Create2.deploy(
             keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
-            CloneFactory.getByteCode(walletImplementation)
+            getWalletCreationCode()
         );
 
+        OwnedUpgradeabilityProxy(wallet).upgradeTo(walletImplementation);
         BaseWallet(wallet).init(controller, modules);
     }
 
@@ -288,6 +289,7 @@ contract WalletFactory
         )
         private
     {
+        OwnedUpgradeabilityProxy(_wallet.toPayable()).transferProxyOwnership(_owner);
         BaseWallet(_wallet.toPayable()).initOwner(_owner);
 
         if (bytes(_ensLabel).length > 0) {
@@ -309,7 +311,7 @@ contract WalletFactory
     {
         return Create2.computeAddress(
             keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
-            CloneFactory.getByteCode(walletImplementation)
+            getWalletCreationCode()
         );
     }
 
