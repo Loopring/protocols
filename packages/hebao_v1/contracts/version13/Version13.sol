@@ -5,6 +5,7 @@ pragma solidity ^0.7.0;
 import "../iface/IVersion.sol";
 import "../iface/IVersionRegistry.sol";
 import "../iface/IWallet.sol";
+import "../iface/IModule.sol";
 import "../lib/ERC20.sol";
 
 
@@ -15,7 +16,7 @@ import "../lib/ERC20.sol";
 abstract contract Version13 is IVersion
 {
     address public immutable walletFactory;
-    mapping (address => bool   ) internal modules;
+    mapping (address => bool)    internal modules;
     mapping (bytes4  => address) internal methodToModule;
 
     constructor(
@@ -27,8 +28,15 @@ abstract contract Version13 is IVersion
         walletFactory = _walletFactory;
 
         for (uint i = 0; i < _modules.length; i++) {
-            require(_modules[i] != address(0), "NULL_MODULE");
-            modules[_modules[i]] = true;
+            address module = _modules[i];
+
+            require(module != address(0), "NULL_MODULE");
+            modules[module] = true;
+
+            bytes4[] memory methods = IModule(module).getBandableMethods();
+            for (uint j = 0; j < methods.length; j++) {
+                methodToModule[methods[j]] = module;
+            }
         }
     }
 
@@ -39,15 +47,14 @@ abstract contract Version13 is IVersion
         returns (bool)
     {
         if (method == IWallet.setOwner.selector) {
-            address owner = IWallet(msg.sender).owner();
-            if (owner == address(0)) {
+            if (IWallet(msg.sender).owner() == address(0)) {
                 return sender == walletFactory;
             } else {
                 return modules[sender];
             }
-        } else {
-            return modules[sender];
         }
+
+        return modules[sender];
     }
 
     function getBinding(bytes4 method)
