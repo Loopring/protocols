@@ -27,9 +27,9 @@ contract WalletImpl is IWallet
     event OwnerChanged  (address newOwner);
     event VersionChanged(address newVersion);
 
-    modifier onlyFromAuthorized
+    modifier onlyFromAuthorized()
     {
-        require(IVersion(version).isAuthorized(msg.sender), "UNAUTHORIZED");
+        require(IVersion(version).isAuthorized(msg.sender, msg.sig), "UNAUTHORIZED");
         _;
     }
 
@@ -112,7 +112,7 @@ contract WalletImpl is IWallet
         external
         payable
     {
-        address target = IVersion(version).getStaticBinding(msg.sig);
+        address target = IVersion(version).getBinding(msg.sig);
 
         (bool success, bytes memory returnData) = target.call{value: msg.value}(msg.data);
         assembly {
