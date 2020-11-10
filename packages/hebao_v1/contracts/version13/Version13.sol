@@ -7,6 +7,7 @@ import "../iface/IVersionRegistry.sol";
 import "../iface/IWallet.sol";
 import "../iface/IModule.sol";
 import "../lib/ERC20.sol";
+import "../stores/SecurityStore.sol";
 
 
 /// @title BaseWallet
@@ -15,17 +16,22 @@ import "../lib/ERC20.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract Version13 is IVersion
 {
+    address   public immutable officialGuardian;
+    address   public immutable securityStore;
     address   public immutable walletFactory;
     address[] public moduleList;
     mapping (address => bool)    internal modules;
     mapping (bytes4  => address) internal methodToModule;
 
     constructor(
+        address          _officialGuardian,
+        address          _securityStore,
         address          _walletFactory,
         address[] memory _modules
         )
     {
-        require(_walletFactory != address(0), "NULL_FACTORY");
+        officialGuardian = _officialGuardian;
+        securityStore = _securityStore;
         walletFactory = _walletFactory;
 
         for (uint i = 0; i < _modules.length; i++) {
@@ -50,6 +56,11 @@ abstract contract Version13 is IVersion
         address wallet = msg.sender;
         for (uint i = 0; i < moduleList.length; i++) {
             IModule(moduleList[i]).activate(wallet);
+        }
+
+        SecurityStore ss = SecurityStore(securityStore);
+        if (ss.numGuardians(wallet, true /* with pending */) == 0) {
+            ss.addGuardian(wallet, officialGuardian, block.timestamp, true);
         }
     }
 

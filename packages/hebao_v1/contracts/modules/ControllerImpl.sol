@@ -25,6 +25,7 @@ contract ControllerImpl is Claimable, Controller
     ModuleRegistry      public immutable override moduleRegistry;
     address             public override  walletFactory;
     address             public immutable feeCollector;
+    address             public immutable officialGuardian;
     BaseENSManager      public immutable ensManager;
     PriceOracle         public priceOracle;
 
@@ -40,6 +41,7 @@ contract ControllerImpl is Claimable, Controller
         WhitelistStore    _whitelistStore,
         ModuleRegistry    _moduleRegistry,
         address           _feeCollector,
+        address           _officialGuardian,
         BaseENSManager    _ensManager,
         PriceOracle       _priceOracle
         )
@@ -50,8 +52,8 @@ contract ControllerImpl is Claimable, Controller
         whitelistStore = _whitelistStore;
         moduleRegistry = _moduleRegistry;
 
-        require(_feeCollector != address(0), "ZERO_ADDRESS");
         feeCollector = _feeCollector;
+        officialGuardian = _officialGuardian;
 
         ensManager = _ensManager;
         priceOracle = _priceOracle;
