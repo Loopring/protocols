@@ -2,8 +2,8 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../stores/SecurityStore.sol";
-import "../iface/IWallet.sol";
+import "../../../iface/IWallet.sol";
+import "../../../stores/SecurityStore.sol";
 
 
 /// @title GuardianUtils

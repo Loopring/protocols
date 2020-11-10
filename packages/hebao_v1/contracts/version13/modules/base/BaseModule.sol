@@ -3,11 +3,11 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../iface/IWallet.sol";
-import "../lib/AddressUtil.sol";
-import "../lib/ERC20.sol";
-import "../lib/MathUint.sol";
-import "./Controller.sol";
+import "../../../iface/IWallet.sol";
+import "../../..//lib/AddressUtil.sol";
+import "../../../lib/ERC20.sol";
+import "../../../lib/MathUint.sol";
+import "../../Controller.sol";
 import "./Module.sol";
 
 

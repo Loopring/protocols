@@ -3,10 +3,10 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../lib/EIP712.sol";
-import "../lib/SignatureUtil.sol";
+import "../../../lib/EIP712.sol";
+import "../../../lib/SignatureUtil.sol";
+import "../../MetaTxAware.sol";
 import "./BaseModule.sol";
-import "./MetaTxAware.sol";
 
 
 /// @title MetaTxModule

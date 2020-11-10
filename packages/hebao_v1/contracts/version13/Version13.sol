@@ -7,7 +7,7 @@ import "../iface/IVersionRegistry.sol";
 import "../iface/IWallet.sol";
 import "../lib/ERC20.sol";
 import "../stores/SecurityStore.sol";
-import "./Module.sol";
+import "./modules/base/Module.sol";
 
 
 /// @title BaseWallet

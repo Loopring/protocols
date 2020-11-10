@@ -4,9 +4,9 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
-import "../SecurityModule.sol";
-import "../SignedRequest.sol";
-import "./BaseTransferModule.sol";
+import "./base/SecurityModule.sol";
+import "./base/SignedRequest.sol";
+import "./base/BaseTransferModule.sol";
 
 
 /// @title TransferModule

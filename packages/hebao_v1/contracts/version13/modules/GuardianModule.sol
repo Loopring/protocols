@@ -3,8 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../SecurityModule.sol";
-import "../SignedRequest.sol";
+import "./base/SecurityModule.sol";
+import "./base/SignedRequest.sol";
 
 
 /// @title GuardianModule

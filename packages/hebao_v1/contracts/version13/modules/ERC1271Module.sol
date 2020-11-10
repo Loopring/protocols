@@ -8,7 +8,7 @@ import "../../lib/AddressUtil.sol";
 import "../../lib/ERC1271.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../BaseModule.sol";
+import "./base/BaseModule.sol";
 
 
 /// @title ERC1271Module

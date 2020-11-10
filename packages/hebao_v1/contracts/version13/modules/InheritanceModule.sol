@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../SecurityModule.sol";
+import "./base/SecurityModule.sol";
 
 
 /// @title InheritanceModule

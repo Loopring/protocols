@@ -9,7 +9,7 @@ import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../SecurityModule.sol";
+import "./base/SecurityModule.sol";
 
 /// @title ForwarderModule
 /// @dev A module to support wallet meta-transactions.
