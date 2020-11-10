@@ -17,46 +17,43 @@ import "../thirdparty/ens/BaseENSManager.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract Controller is Claimable
 {
-    address             public immutable walletFactory;
+    address             public walletFactory;
     address             public immutable feeCollector;
+    IPriceOracle        public immutable priceOracle;
     BaseENSManager      public immutable ensManager;
     HashStore           public immutable hashStore;
     QuotaStore          public immutable quotaStore;
     SecurityStore       public immutable securityStore;
     WhitelistStore      public immutable whitelistStore;
-    IPriceOracle        public priceOracle;
 
-    event AddressChanged(
-        string   name,
-        address  addr
-    );
+    event AddressChanged(string name, address addr);
 
     constructor(
-        address           _walletFactory,
         address           _feeCollector,
+        IPriceOracle      _priceOracle,
         BaseENSManager    _ensManager,
         HashStore         _hashStore,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
-        WhitelistStore    _whitelistStore,
-        IPriceOracle      _priceOracle
+        WhitelistStore    _whitelistStore
         )
     {
-        walletFactory = _walletFactory;
         feeCollector = _feeCollector;
+        priceOracle = _priceOracle;
         ensManager = _ensManager;
         hashStore = _hashStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
-        priceOracle = _priceOracle;
     }
 
-    function setPriceOracle(IPriceOracle _priceOracle)
+    function initWalletFactory(address _walletFactory)
         external
         onlyOwner
     {
-        priceOracle = _priceOracle;
-        emit AddressChanged("IPriceOracle", address(priceOracle));
+        require(walletFactory == address(0), "INITIALIZED_ALREADY");
+        require(_walletFactory != address(0), "ZERO_ADDRESS");
+        walletFactory = _walletFactory;
+        emit AddressChanged("WalletFactory", walletFactory);
     }
 }
