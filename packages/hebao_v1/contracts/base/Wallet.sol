@@ -32,6 +32,25 @@ contract Wallet is IWallet
         versionRegistry = _versionRegistry;
     }
 
+    function versionLabel()
+        public
+        override
+        view
+        returns (string memory)
+    {
+        return version == address(0) ? "" : IVersion(version).label();
+    }
+
+    function versionNumber()
+        public
+        override
+        view
+        returns (uint)
+    {
+        return version == address(0) ? 0 :
+            IVersionRegistry(versionRegistry).getVersionNumber(version);
+    }
+
     function setVersion(address newVersion)
         external
         override

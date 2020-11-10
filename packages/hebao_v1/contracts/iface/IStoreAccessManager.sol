@@ -8,7 +8,5 @@ pragma solidity ^0.7.0;
 /// @author Daniel Wang - <daniel@loopring.org>
 interface IStoreAccessManager
 {
-    /// @dev Returns a version's numeric number. For invalid version addres,
-    ///      0 will be returned.
    function isAccessAllowed(address addr) external view returns (bool);
 }
