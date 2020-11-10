@@ -9,6 +9,8 @@ pragma solidity ^0.7.0;
 /// @author Daniel Wang - <daniel@loopring.org>
 interface IVersion
 {
+    function migrateFrom(address oldVersion) external;
+
     function isAuthorized(address sender, bytes4 method) external view returns (bool);
 
     function getBinding(bytes4 method) external view returns (address);

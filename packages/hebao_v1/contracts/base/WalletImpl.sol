@@ -46,6 +46,7 @@ contract WalletImpl is IWallet
             IVersion(version).isAuthorized(msg.sender, msg.sig),
             "UNAUTHORIZED"
         );
+        IVersion(newVersion).migrateFrom(version);
         emit VersionChanged(version, newVersion);
         version = newVersion;
     }

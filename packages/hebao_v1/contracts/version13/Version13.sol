@@ -15,7 +15,8 @@ import "../lib/ERC20.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract Version13 is IVersion
 {
-    address public immutable walletFactory;
+    address   public immutable walletFactory;
+    address[] public moduleList;
     mapping (address => bool)    internal modules;
     mapping (bytes4  => address) internal methodToModule;
 
@@ -29,14 +30,26 @@ abstract contract Version13 is IVersion
 
         for (uint i = 0; i < _modules.length; i++) {
             address module = _modules[i];
+            moduleList.push(module);
 
             require(module != address(0), "NULL_MODULE");
             modules[module] = true;
 
-            bytes4[] memory methods = IModule(module).getBandableMethods();
+            bytes4[] memory methods = IModule(module).bindableMethods();
             for (uint j = 0; j < methods.length; j++) {
                 methodToModule[methods[j]] = module;
             }
+        }
+    }
+
+    function migrateFrom(address /*oldVersion*/)
+        external
+        override
+        virtual
+    {
+        address wallet = msg.sender;
+        for (uint i = 0; i < moduleList.length; i++) {
+            IModule(moduleList[i]).activate(wallet);
         }
     }
 

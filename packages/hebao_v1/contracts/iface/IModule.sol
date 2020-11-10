@@ -16,5 +16,5 @@ interface IModule
     ///      Warning: this method shall ONLY be callable by a wallet.
     function activate(address wallet) external;
 
-    function getBandableMethods() external returns (bytes4[] memory);
+    function bindableMethods() external returns (bytes4[] memory);
 }
