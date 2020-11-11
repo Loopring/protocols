@@ -22,6 +22,7 @@ declare -a all_contracts=(
     "contracts/stores/QuotaStore.sol"
     "contracts/stores/SecurityStore.sol"
     "contracts/stores/WhitelistStore.sol"
+    "contracts/price/CachedPriceOracle.sol"
     "contracts/modules/ControllerImpl.sol"
     "contracts/modules/OfficialGuardian.sol"
     "contracts/modules/WalletImpl.sol"
@@ -31,12 +32,11 @@ declare -a all_contracts=(
     "contracts/modules/security/FinalSecurityModule.sol"
     "contracts/modules/transfers/FinalTransferModule.sol"
     "contracts/modules/aux/AddOfficialGuardianModule.sol"
+    "contracts/modules/upgrade/UpgraderModule.sol"
     "contracts/thirdparty/ens/BaseENSManager.sol"
     "contracts/thirdparty/ens/BaseENSResolver.sol"
     "contracts/thirdparty/ens/ENSRegistryImpl.sol"
     "contracts/thirdparty/ens/ENSReverseRegistrarImpl.sol"
-    "contracts/test/tokens/LRC.sol"
-    "contracts/test/tokens/USDT.sol"
 )
 
 mkdir -p $DEST
