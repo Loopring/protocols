@@ -47,7 +47,6 @@ contract MetaTxModule is BaseTransferModule
     );
 
     struct MetaTx {
-        address to;
         uint    nonce;
         bytes32 txAwareHash;
         address gasToken;
@@ -86,7 +85,6 @@ contract MetaTxModule is BaseTransferModule
     }
 
     function validateMetaTx(
-        address to,
         uint    nonce,
         bytes32 txAwareHash,
         address gasToken,
@@ -118,7 +116,6 @@ contract MetaTxModule is BaseTransferModule
     }
 
     function executeMetaTx(
-        address to,
         uint    nonce,
         bytes32 txAwareHash,
         address gasToken,
@@ -133,7 +130,7 @@ contract MetaTxModule is BaseTransferModule
         uint gasLeft = gasleft();
         require(gasLeft >= (gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
 
-        MetaTx memory metaTx = MetaTx(to, nonce, txAwareHash, gasToken, gasPrice, gasLimit);
+        MetaTx memory metaTx = MetaTx(nonce, txAwareHash, gasToken, gasPrice, gasLimit);
 
         // Update the nonce before the call to protect against reentrancy
         if (metaTx.nonce != 0) {
@@ -143,7 +140,8 @@ contract MetaTxModule is BaseTransferModule
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
-        (success, ) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
+
+        (success, ) = address(this).call{gas : metaTx.gasLimit, value : 0}(
             abi.encodePacked(data, address(this), metaTx.txAwareHash)
         );
 
@@ -151,7 +149,6 @@ contract MetaTxModule is BaseTransferModule
         // in the case of creating the wallet, otherwise, wallet signature validation
         // will fail before the wallet is created.
         validateMetaTx(
-            metaTx.to,
             metaTx.nonce,
             metaTx.txAwareHash,
             metaTx.gasToken,
