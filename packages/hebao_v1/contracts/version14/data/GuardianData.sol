@@ -76,4 +76,70 @@ library GuardianData
         // }
     }
 
+
+     function removeGuardian(
+        WalletDataLayout.State storage S,
+        address addr,
+        uint    validUntil,
+        bool    alwaysOverride
+        )
+        internal
+        returns (uint)
+    {
+        // require(validUntil >= block.timestamp, "INVALID_VALID_UNTIL");
+        // require(addr != address(0), "ZERO_ADDRESS");
+
+        // Wallet storage w = wallets[wallet];
+        // uint pos = w.guardianIdx[addr];
+        // require(pos > 0, "GUARDIAN_NOT_EXISTS");
+
+        // Data.Guardian memory g = w.guardians[pos - 1];
+
+        // if (_isAdded(g)) {
+        //     w.guardians[pos - 1].status = uint8(Data.GuardianStatus.REMOVE);
+        //     w.guardians[pos - 1].timestamp = validUntil.toUint64();
+        //     return validUntil;
+        // }
+
+        // if (_isPendingAddition(g)) {
+        //     w.guardians[pos - 1].status = uint8(Data.GuardianStatus.REMOVE);
+        //     w.guardians[pos - 1].timestamp = 0;
+        //     return 0;
+        // }
+
+        // if (_isPendingRemoval(g)) {
+        //     if (!alwaysOverride) return g.timestamp;
+
+        //     w.guardians[pos - 1].timestamp = validUntil.toUint64();
+        //     return validUntil;
+        // }
+
+        // require(_isRemoved(g), "UNEXPECTED_RESULT");
+        // return 0;
+    }
+
+    function cancelPendingGuardians(WalletDataLayout.State storage S)
+        internal
+    {
+        // bool cancelled = false;
+        // Wallet storage w = wallets[wallet];
+        // for (uint i = 0; i < w.guardians.length; i++) {
+        //     Data.Guardian memory g = w.guardians[i];
+        //     if (_isPendingAddition(g)) {
+        //         w.guardians[i].status = uint8(Data.GuardianStatus.REMOVE);
+        //         w.guardians[i].timestamp = 0;
+        //         cancelled = true;
+        //     }
+        //     if (_isPendingRemoval(g)) {
+        //         w.guardians[i].status = uint8(Data.GuardianStatus.ADD);
+        //         w.guardians[i].timestamp = 0;
+        //         cancelled = true;
+        //     }
+        // }
+        // if (cancelled) {
+        //     requireStoreAccessor();
+        // }
+        // _cleanRemovedGuardians(wallet, true);
+    }
+
 }

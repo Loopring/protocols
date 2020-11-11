@@ -23,7 +23,6 @@ contract GuardianModule is SecurityModule
 
     bytes32 public constant ADD_GUARDIAN_TYPEHASH    = keccak256("addGuardian(uint256 validUntil,address guardian)");
     bytes32 public constant REMOVE_GUARDIAN_TYPEHASH = keccak256("removeGuardian(uint256 validUntil,address guardian)");
-    bytes32 public constant RECOVER_TYPEHASH         = keccak256("recover(uint256 validUntil,address newOwner)");
 
     event GuardianAdded   (address guardian, uint effectiveTime);
     event GuardianRemoved (address guardian, uint effectiveTime);

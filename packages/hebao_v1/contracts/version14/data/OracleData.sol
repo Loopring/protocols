@@ -10,9 +10,7 @@ import "../../iface/IPriceOracle.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 library OracleData
 {
-    function priceOracle(
-        WalletDataLayout.State storage S
-        )
+    function priceOracle(WalletDataLayout.State storage S)
         internal
         view
         returns (IPriceOracle)

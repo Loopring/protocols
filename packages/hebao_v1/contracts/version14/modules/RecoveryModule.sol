@@ -15,10 +15,14 @@ import "./SecurityModule.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract RecoveryModule is SecurityModule
 {
+    using GuardianData  for WalletDataLayout.State;
+    using SecurityData  for WalletDataLayout.State;
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
-    event Recovered       (address newOwner);
+    event Recovered (address newOwner);
+
+    bytes32 public constant RECOVER_TYPEHASH = keccak256("recover(uint256 validUntil,address newOwner)");
 
     function bindableMethods()
         public
@@ -26,62 +30,40 @@ contract RecoveryModule is SecurityModule
         pure
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](4);
-        // methods[0] = this.addGuardian.selector;
-        // methods[1] = this.addGuardianWA.selector;
-        // methods[2] = this.removeGuardian.selector;
-        // methods[3] = this.removeGuardianWA.selector;
-
-        // methods[4] = this.removeFromWhitelist.selector;
-        // methods[5] = this.removeFromWhitelistWA.selector;
+        methods = new bytes4[](1);
+        methods[0] = this.recover.selector;
     }
 
-    // /// @dev Recover a wallet by setting a new owner.
-    // /// @param request The general request object.
-    // /// @param newOwner The new owner address to set.
-    // function recover(
-    //     SignedRequest.Request calldata request,
-    //     address newOwner
-    //     )
-    //     external
-    //     notWalletOwner(newOwner)
-    //     eligibleWalletOwner(newOwner)
-    // {
-    //     SignedRequest.verifyRequest(
-    //         hashStore,
-    //         securityStore,
-    //         GUARDIAN_DOMAIN_SEPERATOR,
-    //         txAwareHash(),
-    //         GuardianUtils.SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
-    //         request,
-    //         abi.encode(
-    //             RECOVER_TYPEHASH,
-    //             request.wallet,
-    //             request.validUntil,
-    //             newOwner
-    //         )
-    //     );
+    /// @dev Recover a wallet by setting a new owner.
+    /// @param request The general request object.
+    /// @param newOwner The new owner address to set.
+    function recover(
+        SignedRequest.Request calldata request,
+        address newOwner
+        )
+        external
+        notWalletOwner(newOwner)
+    {
+        require(newOwner != address(0) && !newOwner.isContract(), "INVALID_OWNER");
 
-    //     SecurityStore ss = securityStore;
-    //     if (ss.isGuardian(request.wallet, newOwner, true)) {
-    //         ss.removeGuardian(request.wallet, newOwner, block.timestamp, true);
-    //     }
+        _verifyRequest(
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
+            request,
+            abi.encode(
+                RECOVER_TYPEHASH,
+                request.validUntil,
+                newOwner
+            )
+        );
 
-    //     IWallet(request.wallet).setOwner(newOwner);
-    //     _lockWallet(request.wallet, address(this), false);
-    //     ss.cancelPendingGuardians(request.wallet);
+        if (state.isGuardian(newOwner, true)) {
+            state.removeGuardian(newOwner, block.timestamp, true);
+        }
 
-    //     emit Recovered(request.wallet, newOwner);
-    // }
+        thisWallet().setOwner(newOwner);
+        state.setLock(false);
+        state.cancelPendingGuardians();
 
-    // function isLocked(address wallet)
-    //     public
-    //     view
-    //     returns (bool)
-    // {
-    //     return _isWalletLocked(wallet);
-    // }
-
-    // // ---- internal functions ---
-
+        emit Recovered(newOwner);
+    }
 }

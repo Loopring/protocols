@@ -9,9 +9,7 @@ import "../../base/WalletDataLayout.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 library SecurityData
 {
-    function touchLastActive(
-        WalletDataLayout.State storage S
-        )
+    function touchLastActive(WalletDataLayout.State storage S)
         internal
     {
         address wallet = msg.sender;
@@ -42,9 +40,7 @@ library SecurityData
         // wallets[wallet].locked = locked;
     }
 
-    function isLocked(
-        WalletDataLayout.State storage S
-        )
+    function isLocked(WalletDataLayout.State storage S)
         internal
         view
         returns (bool)

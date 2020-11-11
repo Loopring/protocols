@@ -9,9 +9,7 @@ import "../../base/WalletDataLayout.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 library WhitelistData
 {
-    function whitelist(
-        WalletDataLayout.State storage S
-        )
+    function whitelist(WalletDataLayout.State storage S)
         internal
         view
         returns (
