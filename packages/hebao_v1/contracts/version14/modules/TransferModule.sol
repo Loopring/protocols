@@ -31,11 +31,14 @@ contract TransferModule is BaseTransferModule
         pure
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](4);
+        methods = new bytes4[](7);
         methods[0] = this.transferToken.selector;
-        methods[1] = this.callContract.selector;
+        methods[1] = this.transferTokens.selector;
         methods[2] = this.approveToken.selector;
-        methods[3] = this.approveThenCallContract.selector;
+        methods[3] = this.approveTokens.selector;
+        methods[4] = this.callContract.selector;
+        methods[5] = this.callContracts.selector;
+        methods[6] = this.approveThenCallContract.selector;
     }
 
     function transferToken(
@@ -49,11 +52,68 @@ contract TransferModule is BaseTransferModule
         txAwareHashNotAllowed
         onlyFromWalletOrOwnerWhenUnlocked
     {
-        if (forceUseQuota || !state.isAddressWhitelisted(to)) {
-            _updateQuota(token, amount);
-        }
+        __transferToken(token, to, amount, logdata, forceUseQuota);
+    }
 
-        _transferToken(token, to, amount, logdata);
+    function transferTokens(
+        address[] calldata token,
+        address[] calldata to,
+        uint[]    calldata amount,
+        bytes[]   calldata logdata,
+        bool[]    calldata forceUseQuota
+        )
+        external
+        txAwareHashNotAllowed
+        onlyFromWalletOrOwnerWhenUnlocked
+    {
+        uint size = token.length;
+        require(
+            size == to.length &&
+            size == amount.length &&
+            size == logdata.length &&
+            size == forceUseQuota.length,
+            "INVALID_SIZES"
+        );
+
+        for (uint i = 0; i < size; i++) {
+           __transferToken(token[i], to[i], amount[i], logdata[i], forceUseQuota[i]);
+        }
+    }
+
+    function approveToken(
+        address token,
+        address to,
+        uint    amount,
+        bool    forceUseQuota
+        )
+        external
+        txAwareHashNotAllowed
+        onlyFromWalletOrOwnerWhenUnlocked
+    {
+       __approveToken(token, to, amount, forceUseQuota);
+    }
+
+    function approveTokens(
+        address[] calldata token,
+        address[] calldata to,
+        uint[]    calldata amount,
+        bool[]    calldata forceUseQuota
+        )
+        external
+        txAwareHashNotAllowed
+        onlyFromWalletOrOwnerWhenUnlocked
+    {
+        uint size = token.length;
+        require(
+            size == to.length &&
+            size == amount.length &&
+            size == forceUseQuota.length,
+            "INVALID_SIZES"
+        );
+
+        for (uint i = 0; i < size; i++) {
+            __approveToken(token[i], to[i], amount[i], forceUseQuota[i]);
+        }
     }
 
     function callContract(
@@ -67,7 +127,7 @@ contract TransferModule is BaseTransferModule
         onlyFromWalletOrOwnerWhenUnlocked
         returns (bytes memory returnData)
     {
-        return _callContractInternal(to, value, data, forceUseQuota);
+        return __callContract(to, value, data, forceUseQuota);
     }
 
     function callContracts(
@@ -89,24 +149,7 @@ contract TransferModule is BaseTransferModule
         );
 
         for (uint i = 0; i < size; i++) {
-            _callContractInternal(to[i], value[i], data[i], forceUseQuota[i]);
-        }
-    }
-
-    function approveToken(
-        address token,
-        address to,
-        uint    amount,
-        bool    forceUseQuota
-        )
-        external
-        txAwareHashNotAllowed
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        uint additionalAllowance = _approveToken(token, to, amount);
-
-        if (forceUseQuota || !state.isAddressDappOrWhitelisted(to)) {
-            _updateQuota(token, additionalAllowance);
+            __callContract(to[i], value[i], data[i], forceUseQuota[i]);
         }
     }
 
@@ -133,14 +176,44 @@ contract TransferModule is BaseTransferModule
         return _callContract(to, value, data);
     }
 
+    function __transferToken(
+        address        token,
+        address        to,
+        uint           amount,
+        bytes calldata logdata,
+        bool           forceUseQuota
+        )
+        private
+    {
+        if (forceUseQuota || !state.isAddressWhitelisted(to)) {
+            _updateQuota(token, amount);
+        }
 
-    function _callContractInternal(
+        _transferToken(token, to, amount, logdata);
+    }
+
+    function __approveToken(
+        address token,
+        address to,
+        uint    amount,
+        bool    forceUseQuota
+        )
+        private
+    {
+        uint additionalAllowance = _approveToken(token, to, amount);
+
+        if (forceUseQuota || !state.isAddressDappOrWhitelisted(to)) {
+            _updateQuota(token, additionalAllowance);
+        }
+    }
+
+    function __callContract(
         address         to,
         uint            value,
         bytes calldata  data,
         bool            forceUseQuota
         )
-        internal
+        private
         returns (bytes memory returnData)
     {
         if (forceUseQuota || !state.isAddressDappOrWhitelisted(to)) {
