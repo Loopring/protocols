@@ -42,7 +42,7 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
   const setOraclePrice = async (token: string, amount: BN, assetValue: BN) => {
     // Set the specified price
     token = await getTokenAddress(ctx, token);
-    const data = ctx.priceCacheStore.contract.methods
+    const data = ctx.cachedPriceOracle.contract.methods
       .tokenValue(token, amount.toString(10))
       .encodeABI();
     await priceOracleMock.givenCalldataReturnUint(data, assetValue);
@@ -891,15 +891,15 @@ contract("TransferModule - approvedTransfer", (accounts: string[]) => {
           // Use a cached price oracle
           const TestPriceOracle = artifacts.require("TestPriceOracle");
           const testPriceOracle = await TestPriceOracle.new();
-          const PriceCacheStore = artifacts.require("PriceCacheStore");
-          const priceCacheStore = await PriceCacheStore.new(
+          const CachedPriceOracle = artifacts.require("CachedPriceOracle");
+          const cachedPriceOracle = await CachedPriceOracle.new(
             testPriceOracle.address
           );
           const lrcAddress = await getTokenAddress(ctx, "LRC");
-          await priceCacheStore.updateTokenPrice(lrcAddress, toAmount("1"));
+          await cachedPriceOracle.updateTokenPrice(lrcAddress, toAmount("1"));
 
           ctx = await createContext(defaultCtx, {
-            priceOracle: priceCacheStore.address
+            priceOracle: cachedPriceOracle.address
           });
 
           const { wallet } = await createWallet(ctx, owner);
