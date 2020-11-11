@@ -26,7 +26,7 @@ contract ControllerImpl is Claimable, Controller
     address             public override  walletFactory;
     address             public immutable feeCollector;
     BaseENSManager      public immutable ensManager;
-    PriceOracle         public priceOracle;
+    PriceOracle         public immutable priceOracle;
 
     event AddressChanged(
         string   name,
@@ -65,13 +65,5 @@ contract ControllerImpl is Claimable, Controller
         require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
         emit AddressChanged("WalletFactory", walletFactory);
-    }
-
-    function setPriceOracle(PriceOracle _priceOracle)
-        external
-        onlyOwner
-    {
-        priceOracle = _priceOracle;
-        emit AddressChanged("PriceOracle", address(priceOracle));
     }
 }

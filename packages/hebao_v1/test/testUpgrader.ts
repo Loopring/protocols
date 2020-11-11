@@ -40,7 +40,6 @@ contract("UpgraderModule", () => {
     // Create an upgrader module
     const upgraderModule = await ctx.contracts.UpgraderModule.new(
       ctx.controllerImpl.address,
-      Constants.zeroAddress,
       modulesToAdd,
       modulesToRemove,
       Constants.zeroAddress,

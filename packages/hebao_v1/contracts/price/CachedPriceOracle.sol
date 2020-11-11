@@ -2,15 +2,14 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+import "../iface/PriceOracle.sol";
 import "../lib/MathUint.sol";
 import "../lib/OwnerManagable.sol";
 import "../thirdparty/SafeCast.sol";
 
-import "../iface/PriceOracle.sol";
 
-
-/// @title PriceCacheStore
-contract PriceCacheStore is PriceOracle, OwnerManagable
+/// @title CachedPriceOracle
+contract CachedPriceOracle is PriceOracle, OwnerManagable
 {
     using MathUint for uint;
     using SafeCast for uint;
