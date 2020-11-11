@@ -30,22 +30,21 @@ abstract contract SecurityModule is MetaTxAwareModule
     // The minimal number of guardians for recovery and locking.
     uint public constant TOUCH_GRACE_PERIOD = 30 days;
 
-    event WalletLocked(
-        address indexed wallet,
-        address         by,
-        bool            locked
-    );
-
-
     modifier onlyFromWalletOrOwnerWhenUnlocked()
     {
         address payable _sender = msgSender();
         require(
             _sender == address(this) ||
-            _sender == thisWallet().owner() && !_isWalletLocked(address(this)),
+            _sender == thisWallet().owner() && !_isWalletLocked(),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
         state.touchLastActiveWhenRequired(TOUCH_GRACE_PERIOD);
+        _;
+    }
+
+    modifier notWalletOwner(address addr)
+    {
+        require(addr != thisWallet().owner(), "ADDRESS_IS_OWNER");
         _;
     }
 
@@ -79,14 +78,7 @@ abstract contract SecurityModule is MetaTxAwareModule
         );
     }
 
-    function _lockWallet(address wallet, address by, bool locked)
-        internal
-    {
-        state.setLock(locked);
-        emit WalletLocked(wallet, by, locked);
-    }
-
-    function _isWalletLocked(address wallet)
+    function _isWalletLocked()
         internal
         view
         returns (bool)
