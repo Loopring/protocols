@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../data/WhitelistData.sol";
+import "../utils/SignedRequest.sol";
 import "./SecurityModule.sol";
 
 
@@ -14,6 +15,7 @@ import "./SecurityModule.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract WhitelistModule is SecurityModule
 {
+    using SignedRequest for WalletDataLayout.State;
     using WhitelistData for WalletDataLayout.State;
     using MathUint for uint;
 
@@ -41,102 +43,94 @@ contract WhitelistModule is SecurityModule
         pure
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](1);
-        methods[0] = this.addToWhitelist.selector;
+        methods = new bytes4[](4);
+        methods[0] = this.getWhitelist.selector;
+        methods[1] = this.isWhitelisted.selector;
+        methods[2] = this.addToWhitelist.selector;
+        methods[3] = this.addToWhitelistWA.selector;
+        methods[4] = this.removeFromWhitelist.selector;
+        methods[5] = this.removeFromWhitelistWA.selector;
+    }
+
+   function getWhitelist()
+        public
+        view
+        returns (
+            address[] memory addresses,
+            uint[]    memory effectiveTimes
+        )
+    {
+        return state.whitelist();
+    }
+
+    function isWhitelisted(address addr)
+        public
+        view
+        returns (
+            bool isWhitelistedAndEffective,
+            uint effectiveTime
+        )
+    {
+        return state.isWhitelisted(addr);
     }
 
     function addToWhitelist(address addr)
         external
-        txAwareHashNotAllowed()
-        onlyFromWalletOrOwnerWhenUnlocked()
+        txAwareHashNotAllowed
+        onlyFromWalletOrOwnerWhenUnlocked
     {
         state.addToWhitelist(addr, block.timestamp.add(WHITELIST_PENDING_PERIOD));
     }
 
-    // function addToWhitelistWA(
-    //     SignedRequest.Request calldata request,
-    //     address addr
-    //     )
-    //     external
-    // {
-    //     SignedRequest.verifyRequest(
-    //         hashStore,
-    //         securityStore,
-    //         WHITELIST_DOMAIN_SEPERATOR,
-    //         txAwareHash(),
-    //         GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
-    //         request,
-    //         abi.encode(
-    //             ADD_TO_WHITELIST_TYPEHASH,
-    //             request.wallet,
-    //             request.validUntil,
-    //             addr
-    //         )
-    //     );
+    function addToWhitelistWA(
+        SignedRequest.Request calldata request,
+        address addr
+        )
+        external
+    {
+        state.verifyRequest(
+            WHITELIST_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
+            request,
+            abi.encode(
+                ADD_TO_WHITELIST_TYPEHASH,
+                address(this),
+                request.validUntil,
+                addr
+            )
+        );
 
-    //     whitelistStore.addToWhitelist(
-    //         request.wallet,
-    //         addr,
-    //         block.timestamp
-    //     );
-    // }
+        state.addToWhitelist(addr, block.timestamp);
+    }
 
-    // function removeFromWhitelist(
-    //     address wallet,
-    //     address addr
-    //     )
-    //     external
-    //     txAwareHashNotAllowed()
-    //     onlyFromWalletOrOwnerWhenUnlocked(wallet)
-    // {
-    //     whitelistStore.removeFromWhitelist(wallet, addr);
-    // }
+    function removeFromWhitelist(address addr)
+        external
+        txAwareHashNotAllowed
+        onlyFromWalletOrOwnerWhenUnlocked
+    {
+        state.removeFromWhitelist(addr);
+    }
 
-    // function removeFromWhitelistWA(
-    //     SignedRequest.Request calldata request,
-    //     address addr
-    //     )
-    //     external
-    // {
-    //     SignedRequest.verifyRequest(
-    //         hashStore,
-    //         securityStore,
-    //         WHITELIST_DOMAIN_SEPERATOR,
-    //         txAwareHash(),
-    //         GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
-    //         request,
-    //         abi.encode(
-    //             REMOVE_FROM_WHITELIST_TYPEHASH,
-    //             request.wallet,
-    //             request.validUntil,
-    //             addr
-    //         )
-    //     );
+    function removeFromWhitelistWA(
+        SignedRequest.Request calldata request,
+        address addr
+        )
+        external
+    {
+        state.verifyRequest(
+            WHITELIST_DOMAIN_SEPERATOR,
+            txAwareHash(),
+            GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
+            request,
+            abi.encode(
+                REMOVE_FROM_WHITELIST_TYPEHASH,
+                address(this),
+                request.validUntil,
+                addr
+            )
+        );
 
-    //     whitelistStore.removeFromWhitelist(request.wallet, addr);
-    // }
-
-    // function getWhitelist(address wallet)
-    //     public
-    //     view
-    //     returns (
-    //         address[] memory addresses,
-    //         uint[]    memory effectiveTimes
-    //     )
-    // {
-    //     return whitelistStore.whitelist(wallet);
-    // }
-
-    // function isWhitelisted(
-    //     address wallet,
-    //     address addr)
-    //     public
-    //     view
-    //     returns (
-    //         bool isWhitelistedAndEffective,
-    //         uint effectiveTime
-    //     )
-    // {
-    //     return whitelistStore.isWhitelisted(wallet, addr);
-    // }
+        state.removeFromWhitelist(addr);
+    }
 }
