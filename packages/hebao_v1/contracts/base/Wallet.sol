@@ -6,6 +6,7 @@ import "../iface/IVersion.sol";
 import "../iface/IVersionRegistry.sol";
 import "../iface/IWallet.sol";
 import "../lib/ERC20.sol";
+import "../lib/EIP712.sol";
 import "./WalletDataLayout.sol";
 
 
@@ -33,6 +34,16 @@ contract Wallet is IWallet, WalletDataLayout
     constructor(address _versionRegistry)
     {
         versionRegistry = _versionRegistry;
+    }
+
+    function domainSeperator()
+        public
+        override
+        view
+        returns (bytes32)
+    {
+        string memory label = IVersion(version()).label();
+        return EIP712.hash(EIP712.Domain("Loopring Wallet", label, address(this)));
     }
 
     function version() public override view returns (address) { return state.version; }

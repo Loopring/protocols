@@ -13,6 +13,7 @@ pragma solidity ^0.7.0;
 interface IWallet
 {
     function versionRegistry() external view returns (address);
+    function domainSeperator() external view returns (bytes32);
 
     function version() external view returns (address);
     function setVersion(address newVersion) external;

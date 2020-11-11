@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../data/WhitelistData.sol";
-import "../utils/SignedRequest.sol";
 import "./SecurityModule.sol";
 
 
@@ -15,11 +14,8 @@ import "./SecurityModule.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract WhitelistModule is SecurityModule
 {
-    using SignedRequest for WalletDataLayout.State;
     using WhitelistData for WalletDataLayout.State;
     using MathUint for uint;
-
-    bytes32 public immutable WHITELIST_DOMAIN_SEPERATOR;
 
     uint public constant WHITELIST_PENDING_PERIOD = 1 days;
 
@@ -29,13 +25,6 @@ contract WhitelistModule is SecurityModule
     bytes32 public constant REMOVE_FROM_WHITELIST_TYPEHASH = keccak256(
         "removeFromWhitelist(address wallet,uint256 validUntil,address addr)"
     );
-
-    constructor()
-    {
-        WHITELIST_DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("WhitelistModule", "1.3.0", address(this))
-        );
-    }
 
     function bindableMethods()
         public
@@ -88,9 +77,7 @@ contract WhitelistModule is SecurityModule
         )
         external
     {
-        state.verifyRequest(
-            WHITELIST_DOMAIN_SEPERATOR,
-            txAwareHash(),
+        _verifyRequest(
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(
@@ -118,9 +105,7 @@ contract WhitelistModule is SecurityModule
         )
         external
     {
-        state.verifyRequest(
-            WHITELIST_DOMAIN_SEPERATOR,
-            txAwareHash(),
+        _verifyRequest(
             GuardianUtils.SigRequirement.MAJORITY_OWNER_REQUIRED,
             request,
             abi.encode(

@@ -8,6 +8,8 @@ import "../data/GuardianData.sol";
 import "../data/OracleData.sol";
 import "../data/QuotaData.sol";
 import "../data/SecurityData.sol";
+import "../utils/GuardianUtils.sol";
+import "../utils/SignedRequest.sol";
 import "./MetaTxAwareModule.sol";
 
 // import "./GuardianUtils.sol";
@@ -19,10 +21,11 @@ import "./MetaTxAwareModule.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract SecurityModule is MetaTxAwareModule
 {
-    using GuardianData for WalletDataLayout.State;
-    using OracleData   for WalletDataLayout.State;
-    using QuotaData    for WalletDataLayout.State;
-    using SecurityData for WalletDataLayout.State;
+    using GuardianData  for WalletDataLayout.State;
+    using OracleData    for WalletDataLayout.State;
+    using QuotaData     for WalletDataLayout.State;
+    using SecurityData  for WalletDataLayout.State;
+    using SignedRequest for WalletDataLayout.State;
 
     // The minimal number of guardians for recovery and locking.
     uint public constant TOUCH_GRACE_PERIOD = 30 days;
@@ -59,6 +62,22 @@ abstract contract SecurityModule is MetaTxAwareModule
     }
 
     // ----- internal methods -----
+
+    function _verifyRequest(
+        GuardianUtils.SigRequirement sigRequirement,
+        SignedRequest.Request calldata request,
+        bytes                 memory   encodedRequest
+        )
+        internal
+    {
+        state.verifyRequest(
+            thisWallet().domainSeperator(),
+            txAwareHash(),
+            sigRequirement,
+            request,
+            encodedRequest
+        );
+    }
 
     function _lockWallet(address wallet, address by, bool locked)
         internal
