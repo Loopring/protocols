@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../../base/WalletDataLayout.sol";
+import "../../iface/IVersion.sol";
 import "../data/GuardianData.sol";
 import "../data/OracleData.sol";
 import "../data/QuotaData.sol";
@@ -61,11 +62,12 @@ contract MetaTxModule is BaseTransferModule
         pure
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](4);
+        methods = new bytes4[](5);
         methods[0] = this.lastNonce.selector;
         methods[1] = this.isNonceValid.selector;
-        methods[3] = this.validateMetaTx.selector;
-        methods[4] = this.executeMetaTx.selector;
+        methods[2] = this.validateMetaTx.selector;
+        methods[3] = this.executeMetaTx.selector;
+        methods[4] = this.batchCall.selector;
     }
 
     function lastNonce()
@@ -182,7 +184,8 @@ contract MetaTxModule is BaseTransferModule
 
             uint gasToReimburse = gasUsed <= metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 
-            _reimburseGasFee(feeCollector, metaTx.gasToken, metaTx.gasPrice, gasToReimburse);
+            address feeRecipient = IVersion(thisWallet().version()).feeRecipient();
+            _reimburseGasFee(feeRecipient, metaTx.gasToken, metaTx.gasPrice, gasToReimburse);
         }
 
         emit MetaTxExecuted(
@@ -206,8 +209,6 @@ contract MetaTxModule is BaseTransferModule
 
         for (uint i = 0; i < to.length; i++) {
             require(to[i] != address(this), "INVALID_TARGET");
-            // The trick is to append the really logical message sender and the
-            // transaction-aware hash to the end of the call data.
             (bool success, ) = to[i].call{value: 0}(data[i]);
             require(success, "BATCHED_CALL_FAILED");
         }

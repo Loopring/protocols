@@ -57,7 +57,6 @@ contract TransferModule is BaseTransferModule
     }
 
     function callContract(
-        address            wallet,
         address            to,
         uint               value,
         bytes     calldata data,
@@ -68,15 +67,33 @@ contract TransferModule is BaseTransferModule
         onlyFromWalletOrOwnerWhenUnlocked
         returns (bytes memory returnData)
     {
-        if (forceUseQuota || !state.isAddressDappOrWhitelisted(to)) {
-            _updateQuota(address(0), value);
-        }
+        return _callContractInternal(to, value, data, forceUseQuota);
+    }
 
-        return _callContract(to, value, data);
+    function callContracts(
+        address[] calldata to,
+        uint[]    calldata value,
+        bytes[]   calldata data,
+        bool[]    calldata forceUseQuota
+        )
+        external
+        txAwareHashNotAllowed
+        onlyFromWalletOrOwnerWhenUnlocked
+    {
+        uint size = to.length;
+        require(
+            size == value.length &&
+            size == data.length &&
+            size == forceUseQuota.length,
+            "INVALID_SIZES"
+        );
+
+        for (uint i = 0; i < size; i++) {
+            _callContractInternal(to[i], value[i], data[i], forceUseQuota[i]);
+        }
     }
 
     function approveToken(
-        address wallet,
         address token,
         address to,
         uint    amount,
@@ -94,7 +111,6 @@ contract TransferModule is BaseTransferModule
     }
 
     function approveThenCallContract(
-        address        wallet,
         address        token,
         address        to,
         uint           amount,
@@ -111,6 +127,23 @@ contract TransferModule is BaseTransferModule
 
         if (forceUseQuota || !state.isAddressDappOrWhitelisted(to)) {
             _updateQuota(token, additionalAllowance);
+            _updateQuota(address(0), value);
+        }
+
+        return _callContract(to, value, data);
+    }
+
+
+    function _callContractInternal(
+        address         to,
+        uint            value,
+        bytes calldata  data,
+        bool            forceUseQuota
+        )
+        internal
+        returns (bytes memory returnData)
+    {
+        if (forceUseQuota || !state.isAddressDappOrWhitelisted(to)) {
             _updateQuota(address(0), value);
         }
 
