@@ -118,6 +118,11 @@ library GuardianData
         // return 0;
     }
 
+    function removeAllGuardians(WalletDataLayout.State storage S)
+        internal
+    {
+    }
+
     function cancelPendingGuardians(WalletDataLayout.State storage S)
         internal
     {

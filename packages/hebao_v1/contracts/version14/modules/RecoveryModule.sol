@@ -18,7 +18,6 @@ contract RecoveryModule is SecurityModule
     using GuardianData  for WalletDataLayout.State;
     using SecurityData  for WalletDataLayout.State;
     using SignatureUtil for bytes32;
-    using AddressUtil   for address;
 
     event Recovered (address newOwner);
 
@@ -42,10 +41,9 @@ contract RecoveryModule is SecurityModule
         address newOwner
         )
         external
+        eligibleWalletOwner(newOwner)
         notWalletOwner(newOwner)
     {
-        require(newOwner != address(0) && !newOwner.isContract(), "INVALID_OWNER");
-
         _verifyRequest(
             GuardianUtils.SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
             request,

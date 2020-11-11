@@ -26,6 +26,7 @@ abstract contract SecurityModule is MetaTxAwareModule
     using QuotaData     for WalletDataLayout.State;
     using SecurityData  for WalletDataLayout.State;
     using SignedRequest for WalletDataLayout.State;
+    using AddressUtil   for address;
 
     // The minimal number of guardians for recovery and locking.
     uint public constant TOUCH_GRACE_PERIOD = 30 days;
@@ -42,6 +43,11 @@ abstract contract SecurityModule is MetaTxAwareModule
         _;
     }
 
+    modifier eligibleWalletOwner(address addr)
+    {
+        require(addr != address(0) && !addr.isContract(), "INVALID_OWNER");
+        _;
+    }
     modifier notWalletOwner(address addr)
     {
         require(addr != thisWallet().owner(), "ADDRESS_IS_OWNER");
