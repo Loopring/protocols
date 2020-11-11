@@ -27,19 +27,6 @@ abstract contract BaseTransferModule is SecurityModule
     event Approved      (address token, address spender, uint amount);
     event ContractCalled(address to,    uint    value,   bytes data);
 
-    // function _reimburseGasFee(
-    //     address     recipient,
-    //     address     gasToken,
-    //     uint        gasPrice,
-    //     uint        gasAmount
-    //     )
-    //     internal
-    // {
-    //     uint gasCost = gasAmount.mul(gasPrice);
-    //     state.checkAndAddToSpent(gasToken, gasAmount, state.priceOracle());
-    //     _transferTokenInternal(gasToken, recipient, gasCost);
-    // }
-
     function _transferToken(
         address token,
         address to,
