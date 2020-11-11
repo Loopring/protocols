@@ -40,7 +40,6 @@ contract MetaTxModule is BaseTransferModule
     address feeCollector;
 
     event MetaTxExecuted(
-        address relayer,
         uint    nonce,
         bytes32 txAwareHash,
         bool    success,
@@ -99,7 +98,7 @@ contract MetaTxModule is BaseTransferModule
         public
         view
     {
-        require(to != address(this) && msg.sender != address(this), "PROHIBITED");
+        require(msg.sender != address(this), "PROHIBITED");
         require(nonce == 0 && txAwareHash != 0 || nonce != 0 && txAwareHash == 0, "INVALID_NONCE");
 
         bytes memory data_ = txAwareHash == 0 ? data : data.slice(0, 4); // function selector
@@ -144,7 +143,7 @@ contract MetaTxModule is BaseTransferModule
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
-        (success, ) = address(this).call{gas : metaTx.gasLimit, value : 0}(
+        (success, ) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
             abi.encodePacked(data, address(this), metaTx.txAwareHash)
         );
 
@@ -184,12 +183,10 @@ contract MetaTxModule is BaseTransferModule
 
             uint gasToReimburse = gasUsed <= metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 
-            address feeRecipient = IVersion(thisWallet().version()).feeRecipient();
-            _reimburseGasFee(feeRecipient, metaTx.gasToken, metaTx.gasPrice, gasToReimburse);
+            _reimburseGasFee(metaTx.gasToken, metaTx.gasPrice, gasToReimburse);
         }
 
         emit MetaTxExecuted(
-            msg.sender,
             metaTx.nonce,
             metaTx.txAwareHash,
             success,
@@ -215,7 +212,6 @@ contract MetaTxModule is BaseTransferModule
     }
 
     function _reimburseGasFee(
-        address     recipient,
         address     gasToken,
         uint        gasPrice,
         uint        gasAmount
@@ -224,6 +220,6 @@ contract MetaTxModule is BaseTransferModule
     {
         uint gasCost = gasAmount.mul(gasPrice);
         state.checkAndAddToSpent(gasToken, gasAmount, state.priceOracle());
-        _transferTokenInternal(gasToken, recipient, gasCost);
+        _transferTokenInternal(gasToken, msg.sender, gasCost);
     }
 }

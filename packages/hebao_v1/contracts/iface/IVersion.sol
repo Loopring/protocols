@@ -14,6 +14,4 @@ interface IVersion
     function migrateFrom(address oldVersion) external;
 
     function getBindingTarget(bytes4 method) external view returns (address);
-
-    function feeRecipient() external view returns (address);
 }
