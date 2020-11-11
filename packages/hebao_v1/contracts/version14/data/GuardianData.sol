@@ -32,7 +32,7 @@ library GuardianData
         view
         returns (bool)
     {
-        address wallet = msg.sender;
+        address wallet = address(this);
         // Data.Guardian memory g = _getGuardian(wallet, addr);
         // return _isActiveOrPendingAddition(g, includePendingAddition);
     }
@@ -66,7 +66,7 @@ library GuardianData
         view
         returns (uint count)
     {
-                address wallet = msg.sender;
+        address wallet = address(this);
         // Wallet storage w = wallets[msg.sender];
         // for (uint i = 0; i < w.guardians.length; i++) {
         //     Data.Guardian memory g = w.guardians[i];

@@ -67,7 +67,7 @@ library WhitelistData
         )
         internal
     {
-        address wallet = msg.sender;
+        address wallet = address(this);
         // addAddressToSet(_walletKey(wallet), addr, true);
         // uint effective = effectiveTime >= block.timestamp ? effectiveTime : block.timestamp;
         // effectiveTimeMap[wallet][addr] = effective;
@@ -80,7 +80,7 @@ library WhitelistData
         )
         internal
     {
-        address wallet = msg.sender;
+        address wallet = address(this);
         // addAddressToSet(_walletKey(wallet), addr, true);
         // uint effective = effectiveTime >= block.timestamp ? effectiveTime : block.timestamp;
         // effectiveTimeMap[wallet][addr] = effective;

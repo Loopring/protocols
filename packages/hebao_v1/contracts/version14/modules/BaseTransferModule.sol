@@ -96,7 +96,7 @@ abstract contract BaseTransferModule is SecurityModule
         address to,
         uint    amount
         )
-        private
+        internal
     {
         if (token == address(0)) {
             transact(uint8(1), to, amount, "");
@@ -117,7 +117,7 @@ abstract contract BaseTransferModule is SecurityModule
         address spender,
         uint    amount
         )
-        private
+        internal
     {
         require(token != address(0), "INVALID_TOKEN");
         bytes memory txData = abi.encodeWithSelector(

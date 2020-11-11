@@ -12,7 +12,7 @@ library SecurityData
     function touchLastActive(WalletDataLayout.State storage S)
         internal
     {
-        address wallet = msg.sender;
+        address wallet = address(this);
         // wallets[wallet].lastActive = uint64(block.timestamp);
     }
 
@@ -22,7 +22,7 @@ library SecurityData
         )
         internal
     {
-        address wallet = msg.sender;
+        address wallet = address(this);
         // if (wallets[wallet].inheritor != address(0) &&
         //     block.timestamp > lastActive(wallet) + minInternval) {
         //     requireStoreAccessor();
@@ -36,7 +36,7 @@ library SecurityData
         )
         internal
     {
-        address wallet = msg.sender;
+        address wallet = address(this);
         // wallets[wallet].locked = locked;
     }
 
@@ -45,7 +45,7 @@ library SecurityData
         view
         returns (bool)
     {
-        address wallet = msg.sender;
+        address wallet = address(this);
         // return wallets[wallet].locked;
     }
 }

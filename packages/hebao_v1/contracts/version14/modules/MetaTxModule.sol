@@ -7,8 +7,10 @@ import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../../base/WalletDataLayout.sol";
 import "../data/GuardianData.sol";
+import "../data/OracleData.sol";
+import "../data/QuotaData.sol";
 import "../data/SecurityData.sol";
-import "./SecurityModule.sol";
+import "./BaseTransferModule.sol";
 
 
 /// @title MetaTxModule
@@ -16,6 +18,8 @@ import "./SecurityModule.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract MetaTxModule is BaseTransferModule
 {
+    using QuotaData     for WalletDataLayout.State;
+    using OracleData    for WalletDataLayout.State;
     using GuardianData  for WalletDataLayout.State;
     using SecurityData  for WalletDataLayout.State;
     using AddressUtil   for address;
@@ -26,14 +30,16 @@ contract MetaTxModule is BaseTransferModule
     uint    public constant MAX_REIMBURSTMENT_OVERHEAD = 63000;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
-        "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
+        "MetaTx(uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
     );
 
+// TODO
     mapping(address => uint) public nonces;
+    address walletFactory;
+    address feeCollector;
 
     event MetaTxExecuted(
         address relayer,
-        address from,
         uint    nonce,
         bytes32 txAwareHash,
         bool    success,
@@ -41,7 +47,6 @@ contract MetaTxModule is BaseTransferModule
     );
 
     struct MetaTx {
-        address from; // the wallet
         address to;
         uint    nonce;
         bytes32 txAwareHash;
@@ -56,13 +61,30 @@ contract MetaTxModule is BaseTransferModule
         pure
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](2);
-        methods[0] = this.validateMetaTx.selector;
-        methods[1] = this.executeMetaTx.selector;
+        methods = new bytes4[](4);
+        methods[0] = this.lastNonce.selector;
+        methods[1] = this.isNonceValid.selector;
+        methods[3] = this.validateMetaTx.selector;
+        methods[4] = this.executeMetaTx.selector;
+    }
+
+    function lastNonce()
+        public
+        view
+        returns (uint)
+    {
+        // return nonces[wallet];
+    }
+
+    function isNonceValid(uint nonce)
+        public
+        view
+        returns (bool)
+    {
+        // return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
     }
 
     function validateMetaTx(
-        address from, // the wallet
         address to,
         uint    nonce,
         bytes32 txAwareHash,
@@ -75,25 +97,12 @@ contract MetaTxModule is BaseTransferModule
         public
         view
     {
-        _verifyDestAddress(to, from, data);
-        require(
-            msg.sender != address(this) ||
-            data.toBytes4(0) == ForwarderModule.batchCall.selector,
-            "INVALID_TARGET"
-        );
-
-        require(
-            nonce == 0 && txAwareHash != 0 ||
-            nonce != 0 && txAwareHash == 0,
-            "INVALID_NONCE"
-        );
+        require(to != address(this) && msg.sender != address(this), "PROHIBITED");
+        require(nonce == 0 && txAwareHash != 0 || nonce != 0 && txAwareHash == 0, "INVALID_NONCE");
 
         bytes memory data_ = txAwareHash == 0 ? data : data.slice(0, 4); // function selector
-
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
-            from,
-            to,
             nonce,
             txAwareHash,
             gasToken,
@@ -102,17 +111,12 @@ contract MetaTxModule is BaseTransferModule
             keccak256(data_)
         );
 
-        bytes32 metaTxHash = EIP712.hashPacked(FORWARDER_DOMAIN_SEPARATOR, encoded);
-
-        // Instead of always taking the expensive path through ER1271,
-        // skip directly to the wallet owner here (which could still be another contract).
-        //require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
-        require(!securityStore.isLocked(from), "WALLET_LOCKED");
-        require(metaTxHash.verifySignature(IWallet(from).owner(), signature), "INVALID_SIGNATURE");
+        require(!state.isLocked(), "WALLET_LOCKED");
+        bytes32 metaTxHash = EIP712.hashPacked(thisWallet().domainSeperator(), encoded);
+        require(metaTxHash.verifySignature(thisWallet().owner(), signature), "INVALID_SIGNATURE");
     }
 
     function executeMetaTx(
-        address from, // the wallet
         address to,
         uint    nonce,
         bytes32 txAwareHash,
@@ -123,40 +127,29 @@ contract MetaTxModule is BaseTransferModule
         bytes   calldata signature
         )
         external
-        returns (
-            bool success
-        )
+        returns (bool success)
     {
-        MetaTx memory metaTx = MetaTx(
-            from,
-            to,
-            nonce,
-            txAwareHash,
-            gasToken,
-            gasPrice,
-            gasLimit
-        );
-
         uint gasLeft = gasleft();
         require(gasLeft >= (gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
 
+        MetaTx memory metaTx = MetaTx(to, nonce, txAwareHash, gasToken, gasPrice, gasLimit);
+
         // Update the nonce before the call to protect against reentrancy
         if (metaTx.nonce != 0) {
-            require(isNonceValid(metaTx.from, metaTx.nonce), "INVALID_NONCE");
-            nonces[metaTx.from] = metaTx.nonce;
+            require(isNonceValid(metaTx.nonce), "INVALID_NONCE");
+            // nonces[metaTx.from] = metaTx.nonce;
         }
 
         // The trick is to append the really logical message sender and the
         // transaction-aware hash to the end of the call data.
-        (success, ) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
-            abi.encodePacked(data, metaTx.from, metaTx.txAwareHash)
+        (success, ) = address(this).call{gas : metaTx.gasLimit, value : 0}(
+            abi.encodePacked(data, address(this), metaTx.txAwareHash)
         );
 
         // It's ok to do the validation after the 'call'. This is also necessary
         // in the case of creating the wallet, otherwise, wallet signature validation
         // will fail before the wallet is created.
         validateMetaTx(
-            metaTx.from,
             metaTx.to,
             metaTx.nonce,
             metaTx.txAwareHash,
@@ -189,18 +182,11 @@ contract MetaTxModule is BaseTransferModule
 
             uint gasToReimburse = gasUsed <= metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 
-            reimburseGasFee(
-                metaTx.from,
-                feeCollector,
-                metaTx.gasToken,
-                metaTx.gasPrice,
-                gasToReimburse
-            );
+            _reimburseGasFee(feeCollector, metaTx.gasToken, metaTx.gasPrice, gasToReimburse);
         }
 
         emit MetaTxExecuted(
             msg.sender,
-            metaTx.from,
             metaTx.nonce,
             metaTx.txAwareHash,
             success,
@@ -208,66 +194,23 @@ contract MetaTxModule is BaseTransferModule
         );
     }
 
-    // function batchCall(
-    //     address   wallet,
-    //     address[] calldata to,
-    //     bytes[]   calldata data
-    //     )
-    //     external
-    //     txAwareHashNotAllowed()
-    //     onlyFromWalletOrOwnerWhenUnlocked(wallet)
-    // {
-    //     require(to.length == data.length, "INVALID_DATA");
-
-    //     for (uint i = 0; i < to.length; i++) {
-    //         require(to[i] != address(this), "INVALID_TARGET");
-    //         _verifyDestAddress(to[i], wallet, data[i]);
-    //         // The trick is to append the really logical message sender and the
-    //         // transaction-aware hash to the end of the call data.
-    //         (bool success, ) = to[i].call(
-    //             abi.encodePacked(data[i], wallet, bytes32(0))
-    //         );
-    //         require(success, "BATCHED_CALL_FAILED");
-    //     }
-    // }
-
-    function lastNonce(address wallet)
-        public
-        view
-        returns (uint)
-    {
-        return nonces[wallet];
-    }
-
-    function isNonceValid(address wallet, uint nonce)
-        public
-        view
-        returns (bool)
-    {
-        return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
-    }
-
-    function _verifyDestAddress(
-        address to,
-        address wallet,
-        bytes   memory data
+    function batchCall(
+        address[] calldata to,
+        bytes[]   calldata data
         )
-        private
-        view
+        external
+        txAwareHashNotAllowed
+        onlyFromWalletOrOwnerWhenUnlocked
     {
-        // Since this contract is a module, we need to prevent wallet from interacting with
-        // Stores via this module. Therefore, we must carefully check the 'to' address as follows,
-        // so no Store can be used as 'to'.
-        require(
-            storeWriterManager.isStoreWriter(to) ||
+        require(to.length == data.length, "INVALID_DATA");
 
-            // We only allow the wallet to call itself to addModule
-            (to == wallet) &&
-            data.toBytes4(0) == IWallet.setVersion.selector ||
-
-            to == walletFactory,
-            "INVALID_DESTINATION_OR_METHOD"
-        );
+        for (uint i = 0; i < to.length; i++) {
+            require(to[i] != address(this), "INVALID_TARGET");
+            // The trick is to append the really logical message sender and the
+            // transaction-aware hash to the end of the call data.
+            (bool success, ) = to[i].call{value: 0}(data[i]);
+            require(success, "BATCHED_CALL_FAILED");
+        }
     }
 
     function _reimburseGasFee(
@@ -282,5 +225,4 @@ contract MetaTxModule is BaseTransferModule
         state.checkAndAddToSpent(gasToken, gasAmount, state.priceOracle());
         _transferTokenInternal(gasToken, recipient, gasCost);
     }
-
 }

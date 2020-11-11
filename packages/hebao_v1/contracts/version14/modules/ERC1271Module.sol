@@ -32,13 +32,6 @@ contract ERC1271Module is ERC1271, Module
         methods[0] = this.isValidSignature.selector;
     }
 
-    // Will use msg.sender to detect the wallet, so this function should be called through
-    // the bounded method on the wallet itself, not directly on this module.
-    //
-    // Note that we allow chained wallet ownership:
-    // Wallet1 owned by Wallet2, Wallet2 owned by Wallet3, ..., WaleltN owned by an EOA.
-    // The verificaiton of Wallet1's signature will succeed if the final EOA's signature is
-    // valid.
     function isValidSignature(
         bytes32      _signHash,
         bytes memory _signature
