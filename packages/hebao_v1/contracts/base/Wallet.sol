@@ -38,25 +38,6 @@ contract Wallet is IWallet, WalletDataLayout
     function version() public override view returns (address) { return state.version; }
     function owner() public override view returns (address) { return state.owner; }
 
-    function versionLabel()
-        public
-        override
-        view
-        returns (string memory)
-    {
-        return version() == address(0) ? "" : IVersion(version()).label();
-    }
-
-    function versionNumber()
-        public
-        override
-        view
-        returns (uint)
-    {
-        return version() == address(0) ? 0 :
-            IVersionRegistry(versionRegistry).getVersionNumber(version());
-    }
-
     function setVersion(address newVersion)
         external
         override

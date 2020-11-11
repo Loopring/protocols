@@ -13,6 +13,23 @@ abstract contract Module is IModule, WalletDataLayout
 {
     function activate(address wallet) external override pure virtual { }
 
+    function thisWallet()
+        internal
+        view
+        returns (IWallet)
+    {
+        return IWallet(address(this));
+    }
+
+    function msgSender()
+        internal
+        virtual
+        view
+        returns (address payable)
+    {
+        return msg.sender;
+    }
+
     function transact(
         uint8    mode,
         address  to,

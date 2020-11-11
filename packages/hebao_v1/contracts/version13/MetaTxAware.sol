@@ -34,8 +34,6 @@ abstract contract MetaTxAware
         _;
     }
 
-    /// @dev Return's the function's logicial message sender. This method should be
-    // used to replace `msg.sender` for all meta-tx enabled functions.
     function msgSender()
         internal
         view

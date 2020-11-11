@@ -23,5 +23,5 @@ contract WalletDataLayout
         mapping (bytes32 => bytes) byteArrays;
     }
 
-    State   internal state;
+    State internal state;
 }
