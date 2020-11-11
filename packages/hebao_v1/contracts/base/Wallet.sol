@@ -83,33 +83,6 @@ contract Wallet is IWallet, WalletDataLayout
         emit OwnerChanged(_owner, newOwner);
     }
 
-    function transact(
-        address  to,
-        uint     value,
-        bytes    calldata data
-        )
-        external
-        override
-        returns (bytes memory returnData)
-    {
-        // require(
-        //     IVersion(version()).isAuthorized(msg.sender, msg.sig),
-        //     "UNAUTHORIZED"
-        // );
-
-        // bool success;
-        //     // solium-disable-next-line security/no-call-value
-        // (success, returnData) = to.call{value: value}(data);
-
-
-        // if (!success) {
-        //     assembly {
-        //         returndatacopy(0, 0, returndatasize())
-        //         revert(0, returndatasize())
-        //     }
-        // }
-    }
-
     receive() external payable {}
 
     fallback()

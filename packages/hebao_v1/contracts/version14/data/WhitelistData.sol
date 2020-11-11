@@ -38,6 +38,28 @@ library WhitelistData
 
     }
 
+    function isAddressWhitelisted(
+        WalletDataLayout.State storage S,
+        address addr
+        )
+        internal
+        view
+        returns (bool)
+    {
+
+    }
+
+    function isAddressDappOrWhitelisted(
+        WalletDataLayout.State storage S,
+        address addr
+        )
+        internal
+        view
+        returns (bool)
+    {
+
+    }
+
     function addToWhitelist(
         WalletDataLayout.State storage S,
         address addr,
@@ -64,5 +86,8 @@ library WhitelistData
         // effectiveTimeMap[wallet][addr] = effective;
         // emit Whitelisted(wallet, addr, true, effective);
     }
+
+
+
 
 }

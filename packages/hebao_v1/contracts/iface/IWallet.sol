@@ -20,26 +20,4 @@ interface IWallet
 
     function owner() external view returns (address);
     function setOwner(address newOwner) external;
-
-    /// @dev Performs generic transactions. Any module that has been added to this
-    ///      wallet can use this method to transact on any third-party contract with
-    ///      msg.sender as this wallet itself.
-    ///
-    ///      This method will emit `Transacted` event if it doesn't throw.
-    ///
-    ///      Note: this method must ONLY allow invocations from a module that has
-    ///      been added to this wallet. The wallet owner shall NOT be permitted
-    ///      to call this method directly.
-    ///
-    /// @param to The desitination address.
-    /// @param value The amount of Ether to transfer.
-    /// @param data The data to send over using `to.call{value: value}(data)`
-    /// @return returnData The transaction's return value.
-    function transact(
-        address  to,
-        uint     value,
-        bytes    calldata data
-        )
-        external
-        returns (bytes memory returnData);
 }

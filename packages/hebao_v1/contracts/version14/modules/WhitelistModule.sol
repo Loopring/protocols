@@ -33,7 +33,7 @@ contract WhitelistModule is SecurityModule
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](4);
-        methods[0] = this.getWhitelist.selector;
+        methods[0] = this.whitelist.selector;
         methods[1] = this.isWhitelisted.selector;
         methods[2] = this.addToWhitelist.selector;
         methods[3] = this.addToWhitelistWA.selector;
@@ -41,7 +41,7 @@ contract WhitelistModule is SecurityModule
         methods[5] = this.removeFromWhitelistWA.selector;
     }
 
-   function getWhitelist()
+   function whitelist()
         public
         view
         returns (

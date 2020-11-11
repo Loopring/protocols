@@ -80,7 +80,7 @@ abstract contract BaseModule is Module
         internal
         returns (bytes memory)
     {
-        return IWallet(wallet).transact(to, value, data);
+        // return IWallet(wallet).transact(to, value, data);
     }
 
     // Special case for transactCall to support transfers on "bad" ERC20 tokens

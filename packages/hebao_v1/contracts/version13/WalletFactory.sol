@@ -311,11 +311,11 @@ contract WalletFactory
                 ensResolver
             );
 
-            IWallet(wallet).transact(
-                address(ensReverseRegistrar),
-                0, // value
-                data
-            );
+            // transact(
+            //     address(ensReverseRegistrar),
+            //     0, // value
+            //     data
+            // );
         }
     }
 }

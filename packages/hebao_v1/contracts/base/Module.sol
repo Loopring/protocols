@@ -34,7 +34,7 @@ abstract contract Module is IModule, WalletDataLayout
         uint8    mode,
         address  to,
         uint     value,
-        bytes    calldata data
+        bytes    memory data
         )
         internal
         returns (bytes memory returnData)

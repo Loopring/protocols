@@ -98,12 +98,8 @@ abstract contract SecurityModule is MetaTxAwareModule
         )
         internal
     {
-        if (amount == 0) return;
-
-        state.checkAndAddToSpent(
-            token,
-            amount,
-            state.priceOracle()
-        );
+        if (amount > 0) {
+            state.checkAndAddToSpent(token, amount, state.priceOracle());
+        }
     }
 }
