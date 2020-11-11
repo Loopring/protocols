@@ -4,6 +4,9 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../base/WalletDataLayout.sol";
+import "../data/GuardianData.sol";
+import "../data/OracleData.sol";
+import "../data/QuotaData.sol";
 import "../data/SecurityData.sol";
 import "./MetaTxAwareModule.sol";
 
@@ -16,6 +19,9 @@ import "./MetaTxAwareModule.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract SecurityModule is MetaTxAwareModule
 {
+    using GuardianData for WalletDataLayout.State;
+    using OracleData   for WalletDataLayout.State;
+    using QuotaData    for WalletDataLayout.State;
     using SecurityData for WalletDataLayout.State;
 
     // The minimal number of guardians for recovery and locking.
@@ -31,24 +37,23 @@ abstract contract SecurityModule is MetaTxAwareModule
     modifier onlyFromOwnerWhenUnlocked()
     {
         address payable _sender = msgSender();
-        // If the wallet's signature verfication passes, the wallet must be unlocked.
         require(
             _sender == thisWallet().owner() && !_isWalletLocked(address(this)),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
-        // securityStore.touchLastActiveWhenRequired(address(this), TOUCH_GRACE_PERIOD);
+        state.touchLastActiveWhenRequired(TOUCH_GRACE_PERIOD);
         _;
     }
 
     modifier onlyWalletGuardian(address guardian)
     {
-        require(state.isGuardian(address(this), guardian, false), "NOT_GUARDIAN");
+        require(state.isGuardian(guardian, false), "NOT_GUARDIAN");
         _;
     }
 
     modifier notWalletGuardian(address guardian)
     {
-        require(!state.isGuardian(address(this), guardian, false), "IS_GUARDIAN");
+        require(!state.isGuardian(guardian, false), "IS_GUARDIAN");
         _;
     }
 
@@ -57,7 +62,7 @@ abstract contract SecurityModule is MetaTxAwareModule
     function _lockWallet(address wallet, address by, bool locked)
         internal
     {
-        // securityStore.setLock(wallet, locked);
+        state.setLock(locked);
         emit WalletLocked(wallet, by, locked);
     }
 
@@ -66,25 +71,21 @@ abstract contract SecurityModule is MetaTxAwareModule
         view
         returns (bool)
     {
-        // return securityStore.isLocked(wallet);
+        return state.isLocked();
     }
 
-    // function _updateQuota(
-    //     QuotaStore qs,
-    //     address    wallet,
-    //     address    token,
-    //     uint       amount
-    //     )
-    //     internal
-    // {
-    //     if (amount == 0) return;
-    //     if (qs == QuotaStore(0)) return;
+    function _updateQuota(
+        address    token,
+        uint       amount
+        )
+        internal
+    {
+        if (amount == 0) return;
 
-    //     qs.checkAndAddToSpent(
-    //         wallet,
-    //         token,
-    //         amount,
-    //         priceOracle
-    //     );
-    // }
+        state.checkAndAddToSpent(
+            token,
+            amount,
+            state.priceOracle()
+        );
+    }
 }

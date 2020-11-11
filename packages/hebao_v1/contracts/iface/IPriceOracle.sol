@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 
 
-/// @title PriceOracle
+/// @title IPriceOracle
 interface IPriceOracle
 {
     // @dev Return's the token's value in ETH

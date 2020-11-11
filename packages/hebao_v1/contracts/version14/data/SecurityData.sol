@@ -9,20 +9,47 @@ import "../../base/WalletDataLayout.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 library SecurityData
 {
-    bytes32 public constant KEY_META_TX_FORWARDER =
-        keccak256("eth.loopring.hebao.modules.security.lock");
-
-    function isGuardian(
-        WalletDataLayout.State storage S,
-        address wallet,
-        address addr,
-        bool    includePendingAddition
+    function touchLastActive(
+        WalletDataLayout.State storage S
         )
-        public
+        internal
+    {
+        address wallet = msg.sender;
+        // wallets[wallet].lastActive = uint64(block.timestamp);
+    }
+
+    function touchLastActiveWhenRequired(
+        WalletDataLayout.State storage S,
+        uint minInternval
+        )
+        internal
+    {
+        address wallet = msg.sender;
+        // if (wallets[wallet].inheritor != address(0) &&
+        //     block.timestamp > lastActive(wallet) + minInternval) {
+        //     requireStoreAccessor();
+        //     wallets[wallet].lastActive = uint64(block.timestamp);
+        // }
+    }
+
+    function setLock(
+        WalletDataLayout.State storage S,
+        bool locked
+        )
+        internal
+    {
+        address wallet = msg.sender;
+        // wallets[wallet].locked = locked;
+    }
+
+    function isLocked(
+        WalletDataLayout.State storage S
+        )
+        internal
         view
         returns (bool)
     {
-        // Data.Guardian memory g = _getGuardian(wallet, addr);
-        // return _isActiveOrPendingAddition(g, includePendingAddition);
+        address wallet = msg.sender;
+        // return wallets[wallet].locked;
     }
 }
