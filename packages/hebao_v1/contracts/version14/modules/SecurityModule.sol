@@ -34,10 +34,11 @@ abstract contract SecurityModule is MetaTxAwareModule
     );
 
 
-    modifier onlyFromOwnerWhenUnlocked()
+    modifier onlyFromWalletOrOwnerWhenUnlocked()
     {
         address payable _sender = msgSender();
         require(
+            _sender == address(this) ||
             _sender == thisWallet().owner() && !_isWalletLocked(address(this)),
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
