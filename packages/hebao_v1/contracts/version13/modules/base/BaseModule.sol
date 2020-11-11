@@ -80,7 +80,7 @@ abstract contract BaseModule is Module
         internal
         returns (bytes memory)
     {
-        return IWallet(wallet).transact(uint8(1), to, value, data);
+        return IWallet(wallet).transact(to, value, data);
     }
 
     // Special case for transactCall to support transfers on "bad" ERC20 tokens
@@ -129,29 +129,6 @@ abstract contract BaseModule is Module
         // The only extra check we have to do is verify if the return value (if there is any) is correct.
         bool success = returnData.length == 0 ? true :  abi.decode(returnData, (bool));
         require(success, "ERC20_APPROVE_FAILED");
-    }
-
-    function transactDelegateCall(
-        address wallet,
-        address to,
-        uint    value,
-        bytes   calldata data
-        )
-        internal
-        returns (bytes memory)
-    {
-        return IWallet(wallet).transact(uint8(2), to, value, data);
-    }
-
-    function transactStaticCall(
-        address wallet,
-        address to,
-        bytes   calldata data
-        )
-        internal
-        returns (bytes memory)
-    {
-        return IWallet(wallet).transact(uint8(3), to, 0, data);
     }
 
     function reimburseGasFee(

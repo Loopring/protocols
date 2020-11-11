@@ -6,31 +6,37 @@ import "../iface/IVersion.sol";
 import "../iface/IVersionRegistry.sol";
 import "../iface/IWallet.sol";
 import "../lib/ERC20.sol";
+import "./WalletDataLayout.sol";
 
 
 /// @title BaseWallet
 /// @dev This contract provides basic implementation for a Wallet.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract Wallet is IWallet
+contract Wallet is IWallet, WalletDataLayout
 {
-    // WARNING: do not delete wallet state data to make this implementation
-    // compatible with early versions.
-    //
-    //  ----- DATA LAYOUT BEGINS -----
     address public override immutable versionRegistry;
-    address public override owner;
-    address public override version;
-
-    //  ----- DATA LAYOUT ENDS -----
 
     event OwnerChanged  (address oldOwner,   address newOwner);
     event VersionChanged(address oldVersion, address newVersion);
+
+    modifier asDelegatableMethod()
+    {
+        address _target = _getBindingTarget();
+        if (_target != address(0)) {
+            _delegateToTarget(_target);
+        } else {
+            _;
+        }
+    }
 
     constructor(address _versionRegistry)
     {
         versionRegistry = _versionRegistry;
     }
+
+    function version() public override view returns (address) { return state.version; }
+    function owner() public override view returns (address) { return state.owner; }
 
     function versionLabel()
         public
@@ -38,7 +44,7 @@ contract Wallet is IWallet
         view
         returns (string memory)
     {
-        return version == address(0) ? "" : IVersion(version).label();
+        return version() == address(0) ? "" : IVersion(version()).label();
     }
 
     function versionNumber()
@@ -47,50 +53,45 @@ contract Wallet is IWallet
         view
         returns (uint)
     {
-        return version == address(0) ? 0 :
-            IVersionRegistry(versionRegistry).getVersionNumber(version);
+        return version() == address(0) ? 0 :
+            IVersionRegistry(versionRegistry).getVersionNumber(version());
     }
 
     function setVersion(address newVersion)
         external
         override
+        asDelegatableMethod
     {
+        address _version = version();
         require(
-            newVersion != version &&
+            newVersion != _version &&
             IVersionRegistry(versionRegistry).getVersionNumber(newVersion) > 0,
             "INVALID_VERSION_ADDRESS"
         );
-        require(
-            version == address(0) ||
-            IVersion(version).isAuthorized(msg.sender, msg.sig),
-            "UNAUTHORIZED"
-        );
-        IVersion(newVersion).migrateFrom(version);
-        emit VersionChanged(version, newVersion);
-        version = newVersion;
+
+        IVersion(newVersion).migrateFrom(_version);
+        state.version = newVersion;
+        emit VersionChanged(_version, newVersion);
     }
 
     function setOwner(address newOwner)
         external
         override
+        asDelegatableMethod
     {
+        address _owner = owner();
         require(
             newOwner != address(0) &&
             newOwner != address(this) &&
-            newOwner != owner,
+            newOwner != _owner,
             "INVALID_OWNER_ADDRESS"
         );
 
-        require(
-            IVersion(version).isAuthorized(msg.sender, msg.sig),
-            "UNAUTHORIZED"
-        );
-        emit OwnerChanged(owner, newOwner);
-        owner = newOwner;
+        state.owner = newOwner;
+        emit OwnerChanged(_owner, newOwner);
     }
 
     function transact(
-        uint8    mode,
         address  to,
         uint     value,
         bytes    calldata data
@@ -99,50 +100,56 @@ contract Wallet is IWallet
         override
         returns (bytes memory returnData)
     {
-        require(
-            IVersion(version).isAuthorized(msg.sender, msg.sig),
-            "UNAUTHORIZED"
-        );
+        // require(
+        //     IVersion(version()).isAuthorized(msg.sender, msg.sig),
+        //     "UNAUTHORIZED"
+        // );
 
-        bool success;
-        if (mode == 1) {
-            // solium-disable-next-line security/no-call-value
-            (success, returnData) = to.call{value: value}(data);
-        } else if (mode == 2) {
-            // solium-disable-next-line security/no-call-value
-            (success, returnData) = to.delegatecall(data);
-        } else if (mode == 3) {
-            require(value == 0, "INVALID_VALUE");
-            // solium-disable-next-line security/no-call-value
-            (success, returnData) = to.staticcall(data);
-        } else {
-            revert("UNSUPPORTED_MODE");
-        }
+        // bool success;
+        //     // solium-disable-next-line security/no-call-value
+        // (success, returnData) = to.call{value: value}(data);
 
-        if (!success) {
-            assembly {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
-        }
+
+        // if (!success) {
+        //     assembly {
+        //         returndatacopy(0, 0, returndatasize())
+        //         revert(0, returndatasize())
+        //     }
+        // }
     }
 
     receive() external payable {}
 
-    /// @dev This default function can receive Ether or perform queries to modules
-    ///      using bound methods.
     fallback()
         external
         payable
     {
-        address target = IVersion(version).getBindingTarget(msg.sig);
-        require(target != address(0), "NO_BINDING_FOUND");
+        address _target = _getBindingTarget();
+        require(_target != address(0), "NO_BINDING_FOUND");
+        _delegateToTarget(_target);
+    }
 
-        (bool success, bytes memory returnData) = target.call{value: msg.value}(msg.data);
+    function _delegateToTarget(address target)
+        internal
+    {
+        (bool success, bytes memory returnData) = target.delegatecall(msg.data);
         assembly {
             switch success
             case 0 { revert(add(returnData, 32), mload(returnData)) }
             default { return(add(returnData, 32), mload(returnData)) }
+        }
+    }
+
+    function _getBindingTarget()
+        internal
+        view
+        returns (address)
+    {
+        address _version = version();
+        if (_version == address(0)) {
+            return address(0);
+        } else {
+            return IVersion(_version).getBindingTarget(msg.sig);
         }
     }
 }

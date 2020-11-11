@@ -32,13 +32,11 @@ interface IWallet
     ///      been added to this wallet. The wallet owner shall NOT be permitted
     ///      to call this method directly.
     ///
-    /// @param mode The transaction mode, 1 for CALL, 2 for DELEGATECALL.
     /// @param to The desitination address.
     /// @param value The amount of Ether to transfer.
     /// @param data The data to send over using `to.call{value: value}(data)`
     /// @return returnData The transaction's return value.
     function transact(
-        uint8    mode,
         address  to,
         uint     value,
         bytes    calldata data

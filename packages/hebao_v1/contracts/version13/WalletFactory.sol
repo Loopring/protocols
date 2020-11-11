@@ -312,7 +312,6 @@ contract WalletFactory
             );
 
             IWallet(wallet).transact(
-                uint8(1),
                 address(ensReverseRegistrar),
                 0, // value
                 data

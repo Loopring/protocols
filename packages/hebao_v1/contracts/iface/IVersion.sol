@@ -13,7 +13,5 @@ interface IVersion
 
     function migrateFrom(address oldVersion) external;
 
-    function isAuthorized(address sender, bytes4 method) external view returns (bool);
-
     function getBindingTarget(bytes4 method) external view returns (address);
 }

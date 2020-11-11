@@ -64,22 +64,22 @@ abstract contract Version13 is IVersion
         }
     }
 
-    function isAuthorized(address sender, bytes4 method)
-        public
-        override
-        view
-        returns (bool)
-    {
-        if (method == IWallet.setOwner.selector) {
-            if (IWallet(msg.sender).owner() == address(0)) {
-                return sender == walletFactory;
-            } else {
-                return modules[sender];
-            }
-        }
+    // function isAuthorized(address sender, bytes4 method)
+    //     public
+    //     override
+    //     view
+    //     returns (bool)
+    // {
+    //     if (method == IWallet.setOwner.selector) {
+    //         if (IWallet(msg.sender).owner() == address(0)) {
+    //             return sender == walletFactory;
+    //         } else {
+    //             return modules[sender];
+    //         }
+    //     }
 
-        return modules[sender];
-    }
+    //     return modules[sender];
+    // }
 
     function getBindingTarget(bytes4 method)
         public
