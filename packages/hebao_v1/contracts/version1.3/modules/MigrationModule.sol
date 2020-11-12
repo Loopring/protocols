@@ -3,23 +3,13 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/EIP712.sol";
-import "../../lib/MathUint.sol";
-import "../../base/WalletDataLayout.sol";
-import "../data/GuardianData.sol";
-import "../data/SecurityData.sol";
 import "./SecurityModule.sol";
 
 
-/// @title LockModule
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title MigrationModule
 /// @author Daniel Wang - <daniel@loopring.org>
 contract MigrationModule is SecurityModule
 {
-    using SecurityData  for WalletDataLayout.State;
-    using SignatureUtil for bytes32;
-    using AddressUtil   for address;
-
     event VersionChanged(address prevVersion, address newVersion);
 
     function bindableMethods()
@@ -28,16 +18,9 @@ contract MigrationModule is SecurityModule
         pure
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](1);
+        methods = new bytes4[](2);
         methods[0] = this.setVersion.selector;
-        // methods[0] = this.migrate.selector;
-    }
-
-    function migrate(address prevVersion, address newVersion)
-        external
-    {
-        require(msg.sender == address(this), "PROHOBITED");
-        // DO whatever we want.
+        methods[1] = this.migrate.selector;
     }
 
     function setVersion(address newVersion)
@@ -55,5 +38,12 @@ contract MigrationModule is SecurityModule
 
         state.version = newVersion;
         emit VersionChanged(prevVersion, newVersion);
+    }
+
+    function migrate(address prevVersion, address newVersion)
+        external
+    {
+        require(msg.sender == address(this), "PROHOBITED");
+        require(prevVersion != newVersion, "UNEXPECTED");
     }
 }

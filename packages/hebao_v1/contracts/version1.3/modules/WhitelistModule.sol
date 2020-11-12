@@ -3,7 +3,6 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../data/WhitelistData.sol";
 import "./SecurityModule.sol";
@@ -17,14 +16,9 @@ contract WhitelistModule is SecurityModule
     using WhitelistData for WalletDataLayout.State;
     using MathUint for uint;
 
-    uint public constant WHITELIST_PENDING_PERIOD = 1 days;
-
-    bytes32 public constant ADD_TO_WHITELIST_TYPEHASH = keccak256(
-        "addToWhitelist(address wallet,uint256 validUntil,address addr)"
-    );
-    bytes32 public constant REMOVE_FROM_WHITELIST_TYPEHASH = keccak256(
-        "removeFromWhitelist(address wallet,uint256 validUntil,address addr)"
-    );
+    uint    public constant WHITELIST_PENDING_PERIOD       = 1 days;
+    bytes32 public constant ADD_TO_WHITELIST_TYPEHASH      = keccak256("addToWhitelist(uint256 validUntil,address addr)");
+    bytes32 public constant REMOVE_FROM_WHITELIST_TYPEHASH = keccak256("removeFromWhitelist(uint256 validUntil,address addr)");
 
     function bindableMethods()
         public
@@ -32,7 +26,7 @@ contract WhitelistModule is SecurityModule
         pure
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](4);
+        methods = new bytes4[](6);
         methods[0] = this.whitelist.selector;
         methods[1] = this.isWhitelisted.selector;
         methods[2] = this.addToWhitelist.selector;
@@ -82,7 +76,6 @@ contract WhitelistModule is SecurityModule
             request,
             abi.encode(
                 ADD_TO_WHITELIST_TYPEHASH,
-                address(this),
                 request.validUntil,
                 addr
             )
@@ -110,7 +103,6 @@ contract WhitelistModule is SecurityModule
             request,
             abi.encode(
                 REMOVE_FROM_WHITELIST_TYPEHASH,
-                address(this),
                 request.validUntil,
                 addr
             )
