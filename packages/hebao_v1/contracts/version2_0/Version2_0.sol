@@ -11,7 +11,7 @@ import "../lib/OwnerManagable.sol";
 /// @dev Base contract for wallet Versions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract Version2_1 is IVersion, OwnerManagable
+contract Version2_0 is IVersion, OwnerManagable
 {
     address[] public modules;
     mapping (bytes4 => address) public bindings;
