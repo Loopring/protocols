@@ -22,7 +22,7 @@ contract Wallet is IWallet, WalletDataLayout
 
     modifier asDelegatableMethod()
     {
-        address _module = _getBindingTarget();
+        address _module = _getBindingModule();
         if (_module != address(0)) {
             _delegateTo(_module);
         } else {
@@ -71,7 +71,7 @@ contract Wallet is IWallet, WalletDataLayout
         external
         payable
     {
-        address _module = _getBindingTarget();
+        address _module = _getBindingModule();
         require(_module != address(0), "NO_BINDING_FOUND");
         _delegateTo(_module);
     }
@@ -87,7 +87,7 @@ contract Wallet is IWallet, WalletDataLayout
         }
     }
 
-    function _getBindingTarget()
+    function _getBindingModule()
         internal
         view
         returns (address)
