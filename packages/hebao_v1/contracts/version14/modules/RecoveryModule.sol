@@ -71,9 +71,7 @@ contract RecoveryModule is SecurityModule
 
         state.cancelPendingGuardians();
         state.setLock(false);
-        address prevOwner = state.owner;
+        emit OwnerChanged(state.owner, newOwner);
         state.owner = newOwner;
-
-        emit OwnerChanged(prevOwner, newOwner);
     }
 }
