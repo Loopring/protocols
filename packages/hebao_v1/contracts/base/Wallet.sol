@@ -68,7 +68,6 @@ contract Wallet is IWallet, WalletDataLayout
         state.version = _version;
         emit VersionChanged(_version, newVersion);
 
-
         bytes4 migrateSelector = bytes4(keccak256("migrate(address,address)"));
         address _module = _getBindingModule(migrateSelector);
         if (_module != address(0)) {

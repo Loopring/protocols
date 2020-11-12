@@ -11,8 +11,6 @@ import "./WalletDataLayout.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract Module is IModule, WalletDataLayout
 {
-    function activate(address wallet) external override pure virtual { }
-
     function thisWallet()
         internal
         view

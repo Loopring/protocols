@@ -3,10 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/AddressUtil.sol";
 import "../../lib/ERC1271.sol";
 import "../../lib/SignatureUtil.sol";
-import "../../thirdparty/BytesUtil.sol";
 import "../../base/Module.sol";
 import "../../base/WalletDataLayout.sol";
 import "../data/SecurityData.sol";
@@ -19,7 +17,6 @@ import "../data/SecurityData.sol";
 contract ERC1271Module is ERC1271, Module
 {
     using SignatureUtil for bytes32;
-    using AddressUtil   for address;
     using SecurityData  for WalletDataLayout.State;
 
     function bindableMethods()
@@ -41,14 +38,10 @@ contract ERC1271Module is ERC1271, Module
         view
         returns (bytes4 magicValue)
     {
-        if (state.isLocked()) {
+        if (state.isLocked() || !_signHash.verifySignature(thisWallet().owner(), _signature)) {
             return 0;
-        }
-
-        if (_signHash.verifySignature(thisWallet().owner(), _signature)) {
-            return ERC1271_MAGICVALUE;
         } else {
-            return 0;
+            return ERC1271_MAGICVALUE;
         }
     }
 }

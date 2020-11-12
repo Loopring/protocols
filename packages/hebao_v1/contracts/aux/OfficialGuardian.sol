@@ -13,7 +13,7 @@ import "../thirdparty/BytesUtil.sol";
 contract OfficialGuardian is OwnerManagable, ERC1271
 {
     using SignatureUtil for bytes32;
-    // mapping (address => bool) public whitelist;
+    mapping (address => bool) public whitelist;
 
 
     /// @dev init owner for proxy contract:
@@ -38,29 +38,29 @@ contract OfficialGuardian is OwnerManagable, ERC1271
             bytes4(0);
     }
 
-    // function addWhitelist(address target, bool toAdd)
-    //     external
-    //     onlyOwner
-    // {
-    //     require(target != address(0), "ZERO_ADDRESS");
-    //     require(whitelist[target] != toAdd, "SAME_VALUE");
-    //     whitelist[target] = toAdd;
-    // }
+    function addWhitelist(address target, bool toAdd)
+        external
+        onlyOwner
+    {
+        require(target != address(0), "ZERO_ADDRESS");
+        require(whitelist[target] != toAdd, "SAME_VALUE");
+        whitelist[target] = toAdd;
+    }
 
-    // function transact(
-    //     address  target,
-    //     uint     value,
-    //     bytes    calldata data
-    //     )
-    //     external
-    //     onlyManager
-    //     returns (
-    //         bool success,
-    //         bytes memory returnData
-    //     )
-    // {
-    //     require(whitelist[target], "INVALID_TARGET");
-    //     // solium-disable-next-line security/no-call-value
-    //     (success, returnData) = target.call{value: value}(data);
-    // }
+    function transact(
+        address  target,
+        uint     value,
+        bytes    calldata data
+        )
+        external
+        onlyManager
+        returns (
+            bool success,
+            bytes memory returnData
+        )
+    {
+        require(whitelist[target], "INVALID_TARGET");
+        // solium-disable-next-line security/no-call-value
+        (success, returnData) = target.call{value: value}(data);
+    }
 }

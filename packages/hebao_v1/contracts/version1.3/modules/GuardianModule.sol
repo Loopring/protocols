@@ -3,11 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/EIP712.sol";
-import "../../lib/MathUint.sol";
-import "../data/WhitelistData.sol";
+// import "../data/WhitelistData.sol";
 import "./SecurityModule.sol";
-
 
 
 /// @title GuardianModule
@@ -15,12 +12,8 @@ import "./SecurityModule.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract GuardianModule is SecurityModule
 {
-    using SignatureUtil for bytes32;
-    using AddressUtil   for address;
-
-    uint public constant MAX_GUARDIANS           = 10;
-    uint public constant GUARDIAN_PENDING_PERIOD = 3 days;
-
+    uint    public constant MAX_GUARDIANS            = 10;
+    uint    public constant GUARDIAN_PENDING_PERIOD  = 3 days;
     bytes32 public constant ADD_GUARDIAN_TYPEHASH    = keccak256("addGuardian(uint256 validUntil,address guardian)");
     bytes32 public constant REMOVE_GUARDIAN_TYPEHASH = keccak256("removeGuardian(uint256 validUntil,address guardian)");
 
@@ -39,11 +32,7 @@ contract GuardianModule is SecurityModule
         methods[1] = this.addGuardianWA.selector;
         methods[2] = this.removeGuardian.selector;
         methods[3] = this.removeGuardianWA.selector;
-
-        // methods[4] = this.removeFromWhitelist.selector;
-        // methods[5] = this.removeFromWhitelistWA.selector;
     }
-
 
     function addGuardian(address guardian)
         external

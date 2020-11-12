@@ -45,5 +45,6 @@ contract MigrationModule is SecurityModule
     {
         require(msg.sender == address(this), "PROHOBITED");
         require(prevVersion != newVersion, "UNEXPECTED");
+        // Migration from old version to new version can be done here.
     }
 }
