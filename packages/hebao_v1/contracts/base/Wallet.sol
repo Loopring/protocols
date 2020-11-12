@@ -18,11 +18,20 @@ contract Wallet is IWallet, WalletDataLayout
 {
     address public override immutable versionRegistry;
 
-    event VersionChanged(address oldVersion, address newVersion);
+    event VersionChanged(address prevVersion, address newVersion);
 
-    modifier asDelegatableMethod()
+    modifier isValidVersion(address version)
     {
-        address _module = _getBindingModule();
+        require(
+            IVersionRegistry(versionRegistry).getVersionNumber(version) > 0,
+            "INVALID_VERSION_ADDRESS"
+        );
+        _;
+    }
+
+    modifier isDelegatable()
+    {
+        address _module = _getBindingModule(msg.sig);
         if (_module != address(0)) {
             _delegateTo(_module);
         } else {
@@ -51,17 +60,13 @@ contract Wallet is IWallet, WalletDataLayout
     function setVersion(address newVersion)
         external
         override
-        asDelegatableMethod
+        isValidVersion(newVersion)
+        isDelegatable
     {
         address _version = version();
-        require(
-            newVersion != _version &&
-            IVersionRegistry(versionRegistry).getVersionNumber(newVersion) > 0,
-            "INVALID_VERSION_ADDRESS"
-        );
+        require(_version == address(0), "INITIALIZED_ALREADY");
+        state.version = _version;
 
-        // IVersion(newVersion).migrateFrom(_version);
-        state.version = newVersion;
         emit VersionChanged(_version, newVersion);
     }
 
@@ -71,7 +76,7 @@ contract Wallet is IWallet, WalletDataLayout
         external
         payable
     {
-        address _module = _getBindingModule();
+        address _module = _getBindingModule(msg.sig);
         require(_module != address(0), "NO_BINDING_FOUND");
         _delegateTo(_module);
     }
@@ -87,7 +92,7 @@ contract Wallet is IWallet, WalletDataLayout
         }
     }
 
-    function _getBindingModule()
+    function _getBindingModule(bytes4 selector)
         internal
         view
         returns (address)
@@ -96,7 +101,7 @@ contract Wallet is IWallet, WalletDataLayout
         if (_version == address(0)) {
             return address(0);
         } else {
-            return IVersion(_version).getBindingTarget(msg.sig);
+            return IVersion(_version).getBindingTarget(selector);
         }
     }
 }
