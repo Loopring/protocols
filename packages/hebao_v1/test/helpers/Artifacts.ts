@@ -27,7 +27,7 @@ export class Artifacts {
   public SecurityStore: any;
   public WhitelistStore: any;
   public QuotaStore: any;
-  public PriceCacheStore: any;
+  public CachedPriceOracle: any;
 
   constructor(artifacts: any) {
     this.MockContract = artifacts.require("thirdparty/MockContract.sol");
@@ -39,7 +39,7 @@ export class Artifacts {
     this.WETHToken = artifacts.require("test/tokens/WETH");
     this.INDAToken = artifacts.require("test/tokens/INDA");
     this.INDBToken = artifacts.require("test/tokens/INDB");
-    this.PriceCacheStore = artifacts.require("test/PriceCacheStore");
+    this.CachedPriceOracle = artifacts.require("test/CachedPriceOracle");
 
     this.SimpleProxy = artifacts.require("SimpleProxy");
 

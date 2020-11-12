@@ -31,7 +31,7 @@ export interface Context {
   securityStore: any;
   whitelistStore: any;
   quotaStore: any;
-  priceCacheStore: any;
+  cachedPriceOracle: any;
 }
 
 export async function getContext() {
@@ -63,7 +63,9 @@ export async function getContext() {
     securityStore: await contracts.SecurityStore.deployed(),
     whitelistStore: await contracts.WhitelistStore.deployed(),
     quotaStore: await contracts.QuotaStore.deployed(),
-    priceCacheStore: await contracts.PriceCacheStore.new(Constants.zeroAddress)
+    cachedPriceOracle: await contracts.CachedPriceOracle.new(
+      Constants.zeroAddress
+    )
   };
   return context;
 }
@@ -73,7 +75,7 @@ export async function createContext(context?: Context, options: any = {}) {
   const priceOracle =
     options.priceOracle !== undefined
       ? options.priceOracle
-      : context.priceCacheStore.address;
+      : context.cachedPriceOracle.address;
 
   // Create new controller
   const controllerImpl = await context.contracts.ControllerImpl.new(

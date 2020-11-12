@@ -11,7 +11,7 @@ import "../lib/OwnerManagable.sol";
 /// @dev Base contract for wallet Versions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract Version1_3 is IVersion, OwnerManagable
+contract Version2_1 is IVersion, OwnerManagable
 {
     address[] public modules;
     mapping (bytes4 => address) public bindings;
@@ -37,7 +37,7 @@ contract Version1_3 is IVersion, OwnerManagable
         pure
         returns (string memory)
     {
-        return "1.3.0";
+        return "2.0.0";
     }
 
     function getBindingTarget(bytes4 method)

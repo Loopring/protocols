@@ -2,14 +2,22 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+<<<<<<< HEAD:packages/hebao_v1/contracts/price/CachedPriceOracle.sol
 import "../iface/IPriceOracle.sol";
+=======
+import "../iface/PriceOracle.sol";
+>>>>>>> 28728594dbdbef119d4508c913450c976ea45005:packages/hebao_v1/contracts/price/PriceCacheStore.sol
 import "../lib/MathUint.sol";
 import "../lib/OwnerManagable.sol";
 import "../thirdparty/SafeCast.sol";
 
 
 /// @title CachedPriceOracle
+<<<<<<< HEAD:packages/hebao_v1/contracts/price/CachedPriceOracle.sol
 contract CachedPriceOracle is IPriceOracle, OwnerManagable
+=======
+contract CachedPriceOracle is PriceOracle, OwnerManagable
+>>>>>>> 28728594dbdbef119d4508c913450c976ea45005:packages/hebao_v1/contracts/price/PriceCacheStore.sol
 {
     using MathUint for uint;
     using SafeCast for uint;
