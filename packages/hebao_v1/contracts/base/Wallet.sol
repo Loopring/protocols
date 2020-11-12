@@ -66,8 +66,14 @@ contract Wallet is IWallet, WalletDataLayout
         address _version = version();
         require(_version == address(0), "INITIALIZED_ALREADY");
         state.version = _version;
-
         emit VersionChanged(_version, newVersion);
+
+
+        bytes4 migrateSelector = bytes4(keccak256("migrate(address,address)"));
+        address _module = _getBindingModule(migrateSelector);
+        if (_module != address(0)) {
+            _module.delegatecall(abi.encodePacked(migrateSelector, _version, newVersion));
+        }
     }
 
     receive() external payable {}

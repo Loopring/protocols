@@ -33,11 +33,12 @@ contract MigrationModule is SecurityModule
         // methods[0] = this.migrate.selector;
     }
 
-    // function migrate(address prevVersion, address newVersion)
-    //     external
-    // {
-    //     require(msg.sender == address(this), "PROHOBITED");
-    // }
+    function migrate(address prevVersion, address newVersion)
+        external
+    {
+        require(msg.sender == address(this), "PROHOBITED");
+        // DO whatever we want.
+    }
 
     function setVersion(address newVersion)
         external
@@ -50,7 +51,7 @@ contract MigrationModule is SecurityModule
         IVersionRegistry registry = IVersionRegistry(thisWallet().versionRegistry());
         require(registry.getVersionNumber(newVersion) > 0, "INVALID_VERSION_ADDRESS");
 
-        // migrate(prevVersion, newVersion);
+        MigrationModule(this).migrate(prevVersion, newVersion);
 
         state.version = newVersion;
         emit VersionChanged(prevVersion, newVersion);
