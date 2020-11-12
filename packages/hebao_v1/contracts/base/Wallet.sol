@@ -22,9 +22,9 @@ contract Wallet is IWallet, WalletDataLayout
 
     modifier asDelegatableMethod()
     {
-        address _target = _getBindingTarget();
-        if (_target != address(0)) {
-            _delegateToTarget(_target);
+        address _module = _getBindingTarget();
+        if (_module != address(0)) {
+            _delegateTo(_module);
         } else {
             _;
         }
@@ -60,7 +60,7 @@ contract Wallet is IWallet, WalletDataLayout
             "INVALID_VERSION_ADDRESS"
         );
 
-        IVersion(newVersion).migrateFrom(_version);
+        // IVersion(newVersion).migrateFrom(_version);
         state.version = newVersion;
         emit VersionChanged(_version, newVersion);
     }
@@ -71,15 +71,15 @@ contract Wallet is IWallet, WalletDataLayout
         external
         payable
     {
-        address _target = _getBindingTarget();
-        require(_target != address(0), "NO_BINDING_FOUND");
-        _delegateToTarget(_target);
+        address _module = _getBindingTarget();
+        require(_module != address(0), "NO_BINDING_FOUND");
+        _delegateTo(_module);
     }
 
-    function _delegateToTarget(address target)
+    function _delegateTo(address module)
         internal
     {
-        (bool success, bytes memory returnData) = target.delegatecall(msg.data);
+        (bool success, bytes memory returnData) = module.delegatecall(msg.data);
         assembly {
             switch success
             case 0 { revert(add(returnData, 32), mload(returnData)) }
