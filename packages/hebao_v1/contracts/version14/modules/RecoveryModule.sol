@@ -30,16 +30,20 @@ contract RecoveryModule is SecurityModule
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](2);
-        methods[0] = this.setOwner.selector;
+        methods[0] = this.initOwner.selector;
         methods[1] = this.recover.selector;
     }
 
-    function setOwner(address newOwner)
+    function initOwner(address newOwner)
         external
         eligibleWalletOwner(newOwner)
     {
         address prevOwner = state.owner;
         require(prevOwner == address(0), "INITIALIZED_ALREADY");
+
+        IVersion v = IVersion(thisWallet().version());
+        require(v.canInitWalletOwner(msgSender()), "UNAUTHORIZED");
+
         state.owner = newOwner;
         emit OwnerChanged(prevOwner, newOwner);
     }

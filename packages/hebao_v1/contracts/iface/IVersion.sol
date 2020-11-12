@@ -14,4 +14,6 @@ interface IVersion
     function migrateFrom(address oldVersion) external;
 
     function getBindingTarget(bytes4 method) external view returns (address);
+
+    function canInitWalletOwner(address addr) external view returns (bool);
 }
