@@ -3,8 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../base/DataStore.sol";
-import "../iface/IStoreWriterManager.sol";
+import "./DataStore.sol";
+import "./IStoreWriterManager.sol";
 import "../lib/MathUint.sol";
 import "../stores/Data.sol";
 import "../thirdparty/SafeCast.sol";

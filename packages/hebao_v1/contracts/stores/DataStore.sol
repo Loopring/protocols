@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../iface/IStoreWriterManager.sol";
+import "./IStoreWriterManager.sol";
 /// @title DataStore
 /// @dev Modules share states by accessing the same storage instance.
 ///      Using ModuleStorage will achieve better module decoupling.

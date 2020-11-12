@@ -2,8 +2,8 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../base/DataStore.sol";
-import "../iface/IStoreWriterManager.sol";
+import "./DataStore.sol";
+import "./IStoreWriterManager.sol";
 import "../lib/MathUint.sol";
 
 
