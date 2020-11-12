@@ -15,9 +15,7 @@ interface IWallet
     function versionRegistry() external view returns (address);
     function domainSeperator() external view returns (bytes32);
 
+    function owner() external view returns (address);
     function version() external view returns (address);
     function setVersion(address newVersion) external;
-
-    function owner() external view returns (address);
-    function setOwner(address newOwner) external;
 }

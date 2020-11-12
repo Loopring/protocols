@@ -18,7 +18,6 @@ contract Wallet is IWallet, WalletDataLayout
 {
     address public override immutable versionRegistry;
 
-    event OwnerChanged  (address oldOwner,   address newOwner);
     event VersionChanged(address oldVersion, address newVersion);
 
     modifier asDelegatableMethod()
@@ -46,8 +45,8 @@ contract Wallet is IWallet, WalletDataLayout
         return EIP712.hash(EIP712.Domain("Loopring Wallet", label, address(this)));
     }
 
-    function version() public override view returns (address) { return state.version; }
     function owner() public override view returns (address) { return state.owner; }
+    function version() public override view returns (address) { return state.version; }
 
     function setVersion(address newVersion)
         external
@@ -64,23 +63,6 @@ contract Wallet is IWallet, WalletDataLayout
         IVersion(newVersion).migrateFrom(_version);
         state.version = newVersion;
         emit VersionChanged(_version, newVersion);
-    }
-
-    function setOwner(address newOwner)
-        external
-        override
-        asDelegatableMethod
-    {
-        address _owner = owner();
-        require(
-            newOwner != address(0) &&
-            newOwner != address(this) &&
-            newOwner != _owner,
-            "INVALID_OWNER_ADDRESS"
-        );
-
-        state.owner = newOwner;
-        emit OwnerChanged(_owner, newOwner);
     }
 
     receive() external payable {}

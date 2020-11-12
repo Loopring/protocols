@@ -81,7 +81,7 @@ contract InheritanceModule is SecurityModule
         state.removeAllGuardians();
         state.setInheritor(address(0), 0);
         state.setLock(false);
-        thisWallet().setOwner(newOwner);
+        state.owner = newOwner;
 
         emit Inherited(_inheritor, newOwner);
     }

@@ -19,7 +19,7 @@ contract RecoveryModule is SecurityModule
     using SecurityData  for WalletDataLayout.State;
     using SignatureUtil for bytes32;
 
-    event Recovered (address newOwner);
+    event OwnerChanged (address prevOwner, address newOwner);
 
     bytes32 public constant RECOVER_TYPEHASH = keccak256("recover(uint256 validUntil,address newOwner)");
 
@@ -29,8 +29,19 @@ contract RecoveryModule is SecurityModule
         pure
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](1);
-        methods[0] = this.recover.selector;
+        methods = new bytes4[](2);
+        methods[0] = this.setOwner.selector;
+        methods[1] = this.recover.selector;
+    }
+
+    function setOwner(address newOwner)
+        external
+        eligibleWalletOwner(newOwner)
+    {
+        address prevOwner = state.owner;
+        require(prevOwner == address(0), "INITIALIZED_ALREADY");
+        state.owner = newOwner;
+        emit OwnerChanged(prevOwner, newOwner);
     }
 
     /// @dev Recover a wallet by setting a new owner.
@@ -58,10 +69,11 @@ contract RecoveryModule is SecurityModule
             state.removeGuardian(newOwner, block.timestamp, true);
         }
 
-        thisWallet().setOwner(newOwner);
-        state.setLock(false);
         state.cancelPendingGuardians();
+        state.setLock(false);
+        address prevOwner = state.owner;
+        state.owner = newOwner;
 
-        emit Recovered(newOwner);
+        emit OwnerChanged(prevOwner, newOwner);
     }
 }
