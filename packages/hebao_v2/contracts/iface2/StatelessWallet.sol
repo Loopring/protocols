@@ -64,6 +64,7 @@ contract StatelessWallet is ERC1271
             )
         );
 
+        // Need check `word1` and `statehash` not modified by the delegatecall?
         require(success, "FAILED");
 
         TxOutput memory output = abi.decode(result, (TxOutput));
