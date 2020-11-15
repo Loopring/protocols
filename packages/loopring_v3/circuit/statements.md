@@ -43,6 +43,35 @@
 - Balance := (balance: F, weightAMM: F, storageRoot: F)
 - Account := (owner: F, publicKeyX: F, publicKeyY: F, nonce: F, feeBipsAMM: F, balancesRoot: F)
 
+- AccountState := (
+  storage: Storage,
+  balanceS: Balance,
+  balanceB: Balance,
+  account: Account
+  )
+- AccountOperator := (
+  balanceA: Balance,
+  balanceB: Balance,
+  account: Account
+  )
+- AccountBalances := (
+  balanceA: Balance,
+  balanceB: Balance
+  )
+- State := (
+  exchange: F,
+  timestamp: F,
+  protocolTakerFeeBips: F,
+  protocolMakerFeeBips: F,
+  numConditionalTransactions: F,
+  type: F,
+
+  accountA: AccountState,
+  accountB: AccountState,
+  operator: AccountOperatorState,
+  pool: AccountBalancesState,
+  )
+
 - Accuracy := (N: unsigned int, D: unsigned int)
 
 - TxOutput := (
@@ -96,8 +125,94 @@
 
   NUM_CONDITIONAL_TXS: F,
 
-  DA: F (x bits)
+  DA: F (68\*8 bits)
   )
+
+- OrderMatchingData := (
+  amm: {0..1},
+  orderFeeBips: {0..2^8},
+  fillS: {0..2^NUM_BITS_AMOUNT},
+  balanceBeforeS: {0..2^NUM_BITS_AMOUNT},
+  balanceBeforeB: {0..2^NUM_BITS_AMOUNT},
+  balanceAfterS: {0..2^NUM_BITS_AMOUNT},
+  balanceAfterB: {0..2^NUM_BITS_AMOUNT},
+  weightS: {0..2^NUM_BITS_AMOUNT},
+  weightB: {0..2^NUM_BITS_AMOUNT},
+  ammFeeBips: {0..2^NUM_BITS_FEE_BIPS},
+  )
+
+- AmmData := (
+  inBalanceBefore: {0..2^NUM_BITS_AMOUNT},
+  inBalanceAfter: {0..2^NUM_BITS_AMOUNT},
+  inWeight: {0..2^NUM_BITS_AMOUNT},
+  outBalanceBefore: {0..2^NUM_BITS_AMOUNT},
+  outBalanceAfter: {0..2^NUM_BITS_AMOUNT},
+  outWeight: {0..2^NUM_BITS_AMOUNT},
+  ammFill: {0..2^NUM_BITS_AMOUNT}
+  )
+
+## DefaultTxOutput
+
+A valid instance of an DefaultTxOutput statement assures that given an input of:
+
+-
+
+the prover knows an auxiliary input:
+
+- output: TxOutput
+- state: State
+
+such that the following conditions hold:
+
+- output.STORAGE_A_ADDRESS = 0
+- output.STORAGE_A_DATA = state.accountA.storage.data
+- output.TORAGE_A_STORAGEID = state.accountA.storage.storageID
+
+- output.BALANCE_A_S_ADDRESS = 0
+- output.BALANCE_A_S_BALANCE = state.accountA.balanceS.balance
+- output.BALANCE_A_S_WEIGHTAMM = state.accountA.balanceS.weightAMM
+
+- output.BALANCE_A_B_BALANCE = state.accountA.balanceB.balance
+
+- output.ACCOUNT_A_ADDRESS = 1
+- output.ACCOUNT_A_OWNER = state.accountA.account.owner
+- output.ACCOUNT_A_PUBKEY_X = state.accountA.account.publicKeyX
+- output.ACCOUNT_A_PUBKEY_Y = state.accountA.account.publicKeyY
+- output.ACCOUNT_A_NONCE = state.accountA.account.nonce
+- output.ACCOUNT_A_FEEBIPSAMM = state.accountA.account.feeBipsAMM
+
+- output.STORAGE_B_ADDRESS] = 0
+- output.STORAGE_B_DATA = state.accountB.storage.data
+- output.STORAGE_B_STORAGEID = state.accountB.storage.storageID
+
+- output.BALANCE_B_S_ADDRESS = 0
+- output.BALANCE_B_S_BALANCE = state.accountB.balanceS.balance
+- output.BALANCE_B_B_BALANCE = state.accountB.balanceB.balance
+
+- output.ACCOUNT_B_ADDRESS = 1
+- output.ACCOUNT_B_OWNER = state.accountB.account.owner
+- output.ACCOUNT_B_PUBKEY_X = state.accountB.account.publicKeyX
+- output.ACCOUNT_B_PUBKEY_Y = state.accountB.account.publicKeyY
+- output.ACCOUNT_B_NONCE = state.accountB.account.nonce
+
+- output.BALANCE_P_A_BALANCE = state.pool.balanceA.balance
+- output.BALANCE_P_B_BALANCE = state.pool.balanceB.balance
+
+- output.BALANCE_O_A_BALANCE = state.oper.balanceA.balance
+- output.BALANCE_O_B_BALANCE = state.oper.balanceB.balance
+
+- output.HASH_A = 0
+- output.PUBKEY_X_A = state.accountA.account.publicKeyX
+- output.PUBKEY_Y_A = state.accountA.account.publicKeyY
+- output.SIGNATURE_REQUIRED_A = 1
+
+- output.HASH_B = 0
+- output.PUBKEY_X_B = state.accountB.account.publicKeyX
+- output.PUBKEY_Y_B = state.accountB.account.publicKeyY
+- output.SIGNATURE_REQUIRED_B = 1
+
+- output.NUM_CONDITIONAL_TXS = state.numConditionalTransactions;
+- output.DA = 0
 
 ## DualVariableGadget
 
@@ -224,6 +339,62 @@ such that the following conditions hold:
   )
 - MerklePathCheck(TREE_DEPTH_ACCOUNTS, address, hash_before, root_before, proof)
 - root_after = MerklePath(TREE_DEPTH_ACCOUNTS, address, hash_after, proof)
+
+## UpdateBalance statement
+
+A valid instance of an UpdateBalance statement assures that given an input of:
+
+- root_before: F
+- address: {0..2^NUM_BITS_TOKEN}
+- before: Balance
+- after: Balance
+
+the prover knows an auxiliary input:
+
+- root_after: F
+- proof: F[3 * TREE_DEPTH_TOKENS]
+
+such that the following conditions hold:
+
+- hash_before = PoseidonHash_t5f6p52(
+  before.balance,
+  before.weightAMM,
+  before.storageRoot
+  )
+- hash_after = PoseidonHash_t5f6p52(
+  after.balance,
+  after.weightAMM,
+  after.storageRoot
+  )
+- MerklePathCheck(TREE_DEPTH_TOKENS, address, hash_before, root_before, proof)
+- root_after = MerklePath(TREE_DEPTH_TOKENS, address, hash_after, proof)
+
+## UpdateStorage statement
+
+A valid instance of an UpdateStorage statement assures that given an input of:
+
+- root_before: F
+- address: {0..2^NUM_BITS_STORAGEID}
+- before: Storage
+- after: Storage
+
+the prover knows an auxiliary input:
+
+- root_after: F
+- proof: F[3 * TREE_DEPTH_STORAGE]
+
+such that the following conditions hold:
+
+- hash_before = PoseidonHash_t5f6p52(
+  before.data,
+  before.storageID
+  )
+- hash_after = PoseidonHash_t5f6p52(
+  after.data,
+  after.storageID
+  )
+- MerklePathCheck(TREE_DEPTH_STORAGE, address, hash_before, root_before, proof)
+- root_after = MerklePath(TREE_DEPTH_STORAGE, address, hash_after, proof)
 
 ## OwnerValid statement
 
@@ -383,6 +554,7 @@ such that the following conditions hold:
 
 - OwnerValid(account_old.owner, owner)
 
+- output = DefaultTxOutput(state)
 - output.ACCOUNT_A_ADDRESS = accountID
 - output.ACCOUNT_A_OWNER = owner
 - output.BALANCE_A_S_ADDRESS = tokenID
@@ -465,6 +637,7 @@ such that the following conditions hold:
 - Float(fFee, uFee)
 - RequireAccuracy(uFee, fee)
 
+- output = DefaultTxOutput(state)
 - output.ACCOUNT_A_ADDRESS = accountID
 - output.ACCOUNT_A_OWNER = owner
 - output.ACCOUNT_A_PUBKEY_X = publicKeyX
@@ -528,6 +701,7 @@ such that the following conditions hold:
 - state.accountA.account.nonce_bits = state.accountA.account.nonce_packed
 - state.accountA.balanceS.balance_bits = state.accountA.balanceS.balance_packed
 
+- output = DefaultTxOutput(state)
 - output.ACCOUNT_A_ADDRESS = accountID
 - output.ACCOUNT_A_NONCE = state.accountA.account.nonce + 1
 - output.BALANCE_A_FEEBIPSAMM = feeBips
@@ -571,7 +745,11 @@ the prover knows an auxiliary input:
 
 such that the following conditions hold:
 
-- No changes are done to the Merkle tree or any other intermediate block values (like numConditionalTransactions)
+- output = DefaultTxOutput(state)
+
+Notes:
+
+- Should do no to the Merkle tree or any other intermediate block values (like numConditionalTransactions)
 
 ### Description
 
@@ -637,6 +815,7 @@ such that the following conditions hold:
 - Float(fFee, uFee)
 - RequireAccuracy(uFee, fee)
 
+- output = DefaultTxOutput(state)
 - output.ACCOUNT_A_ADDRESS = (accountID == 0) ? 1 : accountID
 - output.BALANCE_A_S_ADDRESS = tokenID
 - output.BALANCE_B_S_ADDRESS = feeTokenID
@@ -789,6 +968,7 @@ such that the following conditions hold:
 - Float(fAmount, uAmount)
 - RequireAccuracy(uAmount, amount)
 
+- output = DefaultTxOutput(state)
 - output.ACCOUNT_A_ADDRESS = fromAccountID
 - output.ACCOUNT_B_ADDRESS = toAccountID
 - output.ACCOUNT_B_OWNER = to
@@ -903,7 +1083,7 @@ the prover knows an auxiliary input:
 
 such that the following conditions hold:
 
-- (fillAmountS _ amountB _ 1000) <= (fillAmountB _ amountS _ 1001) (RequireLeqGadget)
+- (fillAmountS \* amountB \* 1000) <= (fillAmountB \* amountS \* 1001) (RequireLeqGadget)
 - (fillAmountS == 0 && fillAmountB == 0) || (fillAmountS != 0 && fillAmountB != 0)
 
 ### Description
@@ -1034,6 +1214,104 @@ such that the following conditions hold:
 - RequireValidOrder(timestamp, orderA)
 - RequireValidOrder(timestamp, orderB)
 
+## SpotPriceAMM statement
+
+A valid instance of an SpotPriceAMM statement assures that given an input of:
+
+- balanceIn: {0..2^NUM_BITS_AMOUNT},
+- weightIn: {0..2^NUM_BITS_AMOUNT},
+- balanceOut: {0..2^NUM_BITS_AMOUNT},
+- weightOut: {0..2^NUM_BITS_AMOUNT},
+
+the prover knows an auxiliary input:
+
+- result: F
+- numer: F
+- denom: F
+- ratio: F
+- invFeeBips: F
+
+such that the following conditions hold:
+
+- numer = balanceIn \* weightOut
+- denom = balanceOut \* weightIn
+- ratio = (numer \* BASE_FIXED) / denom
+- invFeeBips = BASE_BIPS - feeBips
+- result = (ratio \* BASE_BIPS) / invFeeBips
+
+## CalcOutGivenInAMM statement
+
+A valid instance of an CalcOutGivenInAMM statement assures that given an input of:
+
+- balanceIn: {0..2^NUM_BITS_AMOUNT},
+- weightIn: {0..2^NUM_BITS_AMOUNT},
+- balanceOut: {0..2^NUM_BITS_AMOUNT},
+- weightOut: {0..2^NUM_BITS_AMOUNT},
+- feeBips: {0..2^NUM_BITS_FEE_BIPS},
+- amountIn: {0..2^NUM_BITS_AMOUNT},
+
+the prover knows an auxiliary input:
+
+- result: F
+- weightRatio: {0..2^NUM_BITS_AMOUNT}
+- fee: F
+- y: F
+- p: F
+
+such that the following conditions hold:
+
+- weightRatio = (weightIn \* BASE_FIXED) / weightOut
+- fee = amountIn \* feeBips / BASE_BIPS
+- y = (balanceIn \* BASE_FIXED) / (balanceIn + (amountIn - fee))
+- p = power(y, weightRatio)
+- result = balanceOut \* (BASE_FIXED - p) / BASE_FIXED
+
+## RequireAMMFills statement
+
+A valid instance of an RequireAMMFills statement assures that given an input of:
+
+- data: OrderMatchingData
+- fillB: {0..2^NUM_BITS_AMOUNT}
+
+the prover knows an auxiliary input:
+
+- ammData: AmmData
+- maxFillS: F
+- price_before: F
+- price_after: F
+
+such that the following conditions hold:
+
+- ammData = (data.amm == 1) ?
+  AmmData(data.balanceBeforeB, data.balanceAfterB, data.weightB, data.balanceBeforeS, data.balanceAfterS, data.weightS, fillB) :
+  AmmData(FIXED_BASE, FIXED_BASE, FIXED_BASE, FIXED_BASE, FIXED_BASE, FIXED_BASE, 0)
+
+- if data.amm == 1 then data.orderFeeBips == 0
+- if data.amm == 1 then ammData.inWeight != 0
+- if data.amm == 1 then ammData.outWeight != 0
+
+- maxFillS = CalcOutGivenInAMM(ammData.inWeight, ammData.outBalanceBefore, ammData.outWeight, data.ammFeeBips, ammData.ammFill)
+- if data.amm == 1 then data.fillS <= maxFillS
+- price_before = SpotPriceAMM(ammData.inBalanceBefore, ammData.inWeight, ammData.outBalanceBefore, ammData.outWeight, data.ammFeeBips)
+- price_after = SpotPriceAMM(ammData.inBalanceAfter, ammData.inWeight, ammData.outBalanceAfter, ammData.outWeight, data.ammFeeBips)
+- if data.amm == 1 price_before <= price_after
+
+## ValidateAMM statement
+
+A valid instance of an ValidateAMM statement assures that given an input of:
+
+- dataA: OrderMatchingData
+- dataB: OrderMatchingData
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- RequireAMMFills(dataA, dataB.fillS)
+- RequireAMMFills(dataB, dataA.fillS)
+
 ## SpotTrade statement
 
 A valid instance of an SpotTrade statement assures that given an input of:
@@ -1115,6 +1393,31 @@ such that the following conditions hold:
   padding_zeros
   )
 
+- ValidateAMM(
+  OrderMatchingData(
+  orderA.feeBips,
+  uFillS_A,
+  state.accountA.balanceS.balance,
+  state.accountA.balanceB.balance,
+  output.BALANCE_A_S_BALANCE,
+  output.BALANCE_A_B_BALANCE,
+  state.accountA.balanceS.weightAMM,
+  state.accountA.balanceB.weightAMM,
+  state.accountA.account.feeBipsAMM
+  ),
+  OrderMatchingData(
+  orderB.feeBips,
+  uFillS_B,
+  state.accountB.balanceS.balance,
+  state.accountB.balanceB.balance,
+  output.BALANCE_B_S_BALANCE,
+  output.BALANCE_B_B_BALANCE,
+  state.accountB.balanceS.weightAMM,
+  state.accountB.balanceB.weightAMM,
+  state.accountB.account.feeBipsAMM
+  ),
+  )
+
 ### Description
 
 This gadgets allows transferring amount tokens from token tokenID from account fromAccountID to accoun toAccountID.
@@ -1189,35 +1492,87 @@ such that the following conditions hold:
 - SignatureVerifier(output.PUBKEY_X_A, output.PUBKEY_Y_A, output.HASH_A, output.SIGNATURE_REQUIRED_A)
 - SignatureVerifier(output.PUBKEY_X_B, output.PUBKEY_Y_B, output.HASH_B, output.SIGNATURE_REQUIRED_B)
 
-- There is a valid path at output.STORAGE_A_ADDRESS from state.accountA.storage to state.accountA.balanceS.storageRoot
-- There is a valid path at output.STORAGE_A_ADDRESS from (output.STORAGE_A_DATA, output.STORAGE_A_STORAGEID) to root_updateStorage_A
-- There is a valid path at output.BALANCE_A_S_ADDRESS from state.accountA.balanceS to state.accountA.account.balancesRoot
-- There is a valid path at output.BALANCE_A_S_ADDRESS from (output.BALANCE_A_S_BALANCE, output.BALANCE_A_S_WEIGHTAMM, root_updateStorage_A) to root_updateBalanceS_A
-- There is a valid path at output.BALANCE_B_S_ADDRESS from state.accountA.balanceB to root_updateBalanceS_A
-- There is a valid path at output.BALANCE_B_S_ADDRESS from (output.BALANCE_A_B_BALANCE, state.accountA.balanceB.weightAMM, state.accountA.balanceB.storageRoot) to root_updateBalanceB_A
-- There is a valid path at output.ACCOUNT_A_ADDRESS from state.accountA.account to root_old
-- There is a valid path at output.ACCOUNT_A_ADDRESS from (output.ACCOUNT_A_OWNER, output.ACCOUNT_A_PUBKEY_X, output.ACCOUNT_A_PUBKEY_Y, output.ACCOUNT_A_NONCE, output.ACCOUNT_A_FEEBIPSAMM, root_updateBalanceB_A) to root_updateAccount_A
+- root_updateStorage_A = StorageUpdate(
+  state.accountA.balanceS.storageRoot,
+  output.STORAGE_A_ADDRESS,
+  state.accountA.storage,
+  (output.STORAGE_A_DATA, output.STORAGE_A_STORAGEID)
+  )
+- root_updateBalanceS_A = BalanceUpdate(
+  state.accountA.account.balancesRoot,
+  output.BALANCE_A_S_ADDRESS,
+  state.accountA.balanceS,
+  (output.BALANCE_A_S_BALANCE, output.BALANCE_A_S_WEIGHTAMM, root_updateStorage_A)
+  )
+- root_updateBalanceB_A = BalanceUpdate(
+  root_updateBalanceS_A,
+  output.BALANCE_B_S_ADDRESS,
+  state.accountA.balanceB,
+  (output.BALANCE_A_B_BALANCE, state.accountA.balanceB.weightAMM, state.accountA.balanceB.storageRoot)
+  )
+- root_updateAccount_A = AccountUpdate(
+  root_old,
+  output.ACCOUNT_A_ADDRESS,
+  state.accountA.account,
+  (output.ACCOUNT_A_OWNER, output.ACCOUNT_A_PUBKEY_X, output.ACCOUNT_A_PUBKEY_Y, output.ACCOUNT_A_NONCE, output.ACCOUNT_A_FEEBIPSAMM, root_updateBalanceB_A)
+  )
 
-- There is a valid path at output.STORAGE_B_ADDRESS from state.accountB.storage to state.accountB.balanceS.storageRoot
-- There is a valid path at output.STORAGE_B_ADDRESS from (output.STORAGE_B_DATA, output.STORAGE_B_STORAGEID) to root_updateStorage_B
-- There is a valid path at output.BALANCE_B_S_ADDRESS from state.accountB.balanceS to state.accountB.account.balancesRoot
-- There is a valid path at output.BALANCE_B_S_ADDRESS from (output.BALANCE_B_S_BALANCE, state.accountB.balanceS.weightAMM, root_updateStorage_B) to root_updateBalanceS_B
-- There is a valid path at output.BALANCE_A_S_ADDRESS from state.accountB.balanceB to root_updateBalanceS_B
-- There is a valid path at output.BALANCE_A_S_ADDRESS from (output.BALANCE_B_B_BALANCE, state.accountB.balanceB.weightAMM, state.accountB.balanceB.storageRoot) to root_updateBalanceB_B
-- There is a valid path at output.ACCOUNT_B_ADDRESS from state.accountB.account to root_updateAccount_A
-- There is a valid path at output.ACCOUNT_B_ADDRESS from (output.ACCOUNT_A_OWNER, output.ACCOUNT_A_PUBKEY_X, output.ACCOUNT_A_PUBKEY_Y, output.ACCOUNT_A_NONCE, state.accountB.account.feeBips, root_updateBalanceB_B) to root_updateAccount_B
+- root_updateStorage_B = StorageUpdate(
+  state.accountB.balanceS.storageRoot,
+  output.STORAGE_B_ADDRESS,
+  state.accountB.storage,
+  (output.STORAGE_B_DATA, output.STORAGE_B_STORAGEID)
+  )
+- root_updateBalanceS_B = BalanceUpdate(
+  state.accountB.account.balancesRoot,
+  output.BALANCE_B_S_ADDRESS,
+  state.accountB.balanceS,
+  (output.BALANCE_B_S_BALANCE, state.accountB.balanceS.weightAMM, root_updateStorage_B)
+  )
+- root_updateBalanceB_B = BalanceUpdate(
+  root_updateBalanceS_B,
+  output.BALANCE_A_S_ADDRESS,
+  state.accountB.balanceB,
+  (output.BALANCE_B_B_BALANCE, state.accountB.balanceB.weightAMM, state.accountB.balanceB.storageRoot)
+  )
+- root_updateAccount_B = AccountUpdate(
+  root_updateAccount_A,
+  output.ACCOUNT_B_ADDRESS,
+  state.accountB.account,
+  (output.ACCOUNT_B_OWNER, output.ACCOUNT_B_PUBKEY_X, output.ACCOUNT_B_PUBKEY_Y, output.ACCOUNT_B_NONCE, state.accountB.account.feeBips, root_updateBalanceB_B)
+  )
 
-- There is a valid path at output.BALANCE_A_S_ADDRESS from state.operator.balanceB to state.operator.account.balancesRoot
-- There is a valid path at output.BALANCE_A_S_ADDRESS from (output.BALANCE_O_B_BALANCE, state.operator.balanceB.weightAMM, state.operator.balanceB.storageRoot) to root_updateBalanceB_O
-- There is a valid path at output.BALANCE_B_S_ADDRESS from state.operator.balanceS to root_updateBalanceS_B
-- There is a valid path at output.BALANCE_B_S_ADDRESS from (output.BALANCE_O_A_BALANCE, state.operator.balanceS.weightAMM, state.operator.balanceS.storageRoot) to root_updateBalanceA_O
-- There is a valid path at operatorAccountID from state.operator.account to root_updateAccount_B
-- There is a valid path at operatorAccountID from (state.operator.account.owner, state.operator.account.publicKeyX, state.operator.account.publicKeyY, state.operator.account.nonce, state.operator.account.feeBips, root_updateBalanceA_O) to root_new
+- root_updateBalanceB_O = BalanceUpdate(
+  state.operator.account.balancesRoot,
+  output.BALANCE_A_S_ADDRESS,
+  state.operator.balanceB,
+  (output.BALANCE_O_B_BALANCE, state.operator.balanceB.weightAMM, state.operator.balanceB.storageRoot)
+  )
+- root_updateBalanceA_O = BalanceUpdate(
+  root_updateBalanceB_O,
+  output.BALANCE_B_S_ADDRESS,
+  state.operator.balanceS,
+  (output.BALANCE_O_A_BALANCE, state.operator.balanceS.weightAMM, state.operator.balanceS.storageRoot)
+  )
+- root_new = AccountUpdate(
+  root_updateAccount_B,
+  operatorAccountID,
+  state.operator.account,
+  (state.operator.account.owner, state.operator.account.publicKeyX, state.operator.account.publicKeyY, state.operator.account.nonce, state.operator.account.feeBips, root_updateBalanceA_O)
+  )
 
-- There is a valid path at output.BALANCE_A_S_ADDRESS from state.pool.balanceB to protocolBalancesRoot_old
-- There is a valid path at output.BALANCE_A_S_ADDRESS from (output.BALANCE_P_B_BALANCE, 0, EMPTY_STORAGE_ROOT) to root_updateBalanceB_P
-- There is a valid path at output.BALANCE_B_S_ADDRESS from state.pool.balanceS to root_updateBalanceB_P
-- There is a valid path at output.BALANCE_B_S_ADDRESS from (output.BALANCE_P_A_BALANCE, 0, EMPTY_STORAGE_ROOT) to protocolBalancesRoot_new
+- root_updateBalanceB_P = BalanceUpdate(
+  protocolBalancesRoot_old,
+  output.BALANCE_A_S_ADDRESS,
+  state.pool.balanceB,
+  (output.BALANCE_P_B_BALANCE, 0, EMPTY_STORAGE_ROOT)
+  )
+- protocolBalancesRoot_new = BalanceUpdate(
+  root_updateBalanceB_P,
+  output.BALANCE_B_S_ADDRESS,
+  state.operator.balanceB,
+  (output.BALANCE_P_A_BALANCE, 0, EMPTY_STORAGE_ROOT)
+  )
 
 ### Description
 
@@ -1307,13 +1662,15 @@ such that the following conditions hold:
 - SignatureVerifier(accountO.publicKeyX, accountO.publicKeyY, hash, 1)
 
 - root_P = UpdateAccount(
-  Transaction[N-1].newAccountsRoot, 0,
-  (accountP.owner, accountP.publicKey.x, accountP.publicKey.y, accountP.nonce, accountP.feeBipsAMM, accountP.balancesRoot},
+  Transaction[N-1].newAccountsRoot,
+  0,
+  (accountP.owner, accountP.publicKey.x, accountP.publicKey.y, accountP.nonce, accountP.feeBipsAMM, accountP.balancesRoot),
   (accountP.owner, accountP.publicKey.x, accountP.publicKey.y, accountP.nonce, accountP.feeBipsAMM, Transaction[N-1].getNewProtocolBalancesRoot())
   )
 - root_O = UpdateAccount(
-  root_P, operatorAccountID,
-  (accountO.owner, accountO.publicKey.x, accountO.publicKey.y, accountO.nonce, accountO.feeBipsAMM, accountO.balancesRoot},
+  root_P,
+  operatorAccountID,
+  (accountO.owner, accountO.publicKey.x, accountO.publicKey.y, accountO.nonce, accountO.feeBipsAMM, accountO.balancesRoot),
   (accountO.owner, accountO.publicKey.x, accountO.publicKey.y, accountO.nonce + 1, accountO.feeBipsAMM, accountO.balancesRoot)
   )
 - merkleRootAfter = root_O
