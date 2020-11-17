@@ -211,7 +211,7 @@ such that the following conditions hold:
 - output.PUBKEY_Y_B = state.accountB.account.publicKeyY
 - output.SIGNATURE_REQUIRED_B = 1
 
-- output.NUM_CONDITIONAL_TXS = state.numConditionalTransactions;
+- output.NUM_CONDITIONAL_TXS = state.numConditionalTransactions
 - output.DA = 0
 
 ## DualVariableGadget
@@ -231,6 +231,330 @@ The gadget is used to make writing circuits easier. A `VariableT` can only have 
 
 A single instance of a DynamicVariableGadget can be created which internally contains a list of `VariableT` members. When the value needs to be updated a new `VariableT` is pushed on top of the stack. This way using the latest value is just looking at the `VariableT` at the top of the list.
 
+## UnsafeSub statement
+
+A valid instance of an UnsafeSub statement assures that given an input of:
+
+- value: F
+- sub: F
+
+the prover knows an auxiliary input:
+
+- result: F
+
+such that the following conditions hold:
+
+- result = value - sub
+
+Notes:
+
+- Does _not_ check for underflow
+
+## UnsafeAdd statement
+
+A valid instance of an UnsafeAdd statement assures that given an input of:
+
+- value: F
+- add: F
+
+the prover knows an auxiliary input:
+
+- result: F
+
+such that the following conditions hold:
+
+- result = value + add
+
+Notes:
+
+- Does _not_ check for overflow
+
+## UnsafeMul statement
+
+A valid instance of an UnsafeMul statement assures that given an input of:
+
+- valueA: F
+- valueB: F
+
+the prover knows an auxiliary input:
+
+- result: F
+
+such that the following conditions hold:
+
+- result = valueA \* valueB
+
+Notes:
+
+- Does _not_ check for overflow
+
+## Add statement
+
+A valid instance of an Add statement assures that given an input of:
+
+- A: F
+- B: F
+
+with circuit parameters:
+
+- n: unsigned int
+
+the prover knows an auxiliary input:
+
+- result: {0..2^n}
+
+such that the following conditions hold:
+
+- result = UnsafeAdd(A, B)
+- result < 2^n
+
+## Sub statement
+
+A valid instance of an Sub statement assures that given an input of:
+
+- A: F
+- B: F
+
+with circuit parameters:
+
+- n: unsigned int
+
+the prover knows an auxiliary input:
+
+- result: {0..2^n}
+
+such that the following conditions hold:
+
+- result = UnsafeSub(A, B)
+- result < 2^n && result >= 0
+
+Notes:
+
+- Should check for underflow
+
+## Transfer statement
+
+A valid instance of an Transfer statement assures that given an input of:
+
+- from: DynamicVariableGadget
+- to: DynamicVariableGadget
+- value: F
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- from = Sub(from, value, NUM_BITS_AMOUNT)
+- to = Add(to, value, NUM_BITS_AMOUNT)
+
+## Ternary statement
+
+A valid instance of an Ternary statement assures that given an input of:
+
+- b: {0..1}
+- x: F
+- y: F
+
+with circuit parameters:
+
+- enforceBitness: bool
+
+the prover knows an auxiliary input:
+
+- result: F
+
+such that the following conditions hold:
+
+- result = (b == 1) ? x : y
+- if enforceBitness then generate_boolean_r1cs_constraint(b)
+
+Notes:
+
+- Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+
+## ArrayTernary statement
+
+A valid instance of an ArrayTernary statement assures that given an input of:
+
+- b: {0..1}
+- x: F[N]
+- y: F[N]
+
+with circuit parameters:
+
+- enforceBitness: bool
+
+the prover knows an auxiliary input:
+
+- result: F[N]
+
+such that the following conditions hold:
+
+- for i in N: result[i] = (b == 1) ? x[i] : y[i]
+- if enforceBitness then generate_boolean_r1cs_constraint(b)
+
+## And statement
+
+A valid instance of an And statement assures that given an input of:
+
+- inputs: {0..1}[N]
+
+the prover knows an auxiliary input:
+
+- result: F
+
+such that the following conditions hold:
+
+- result = inputs[0] && inputs[1] && ... && inputs[N-1]
+
+Notes:
+
+- All inputs are expected to be boolean
+- AND constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+
+## Or statement
+
+A valid instance of an Or statement assures that given an input of:
+
+- inputs: {0..1}[N]
+
+the prover knows an auxiliary input:
+
+- result: F
+
+such that the following conditions hold:
+
+- result = inputs[0] || inputs[1] || ... || inputs[N-1]
+
+Notes:
+
+- All inputs are expected to be boolean
+- OR constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+
+## Not statement
+
+A valid instance of an Not statement assures that given an input of:
+
+- A: {0..1}
+
+with circuit parameters:
+
+- enforceBitness: bool
+
+the prover knows an auxiliary input:
+
+- result: {0..1}
+
+such that the following conditions hold:
+
+- result = 1 - A
+- if enforceBitness then generate_boolean_r1cs_constraint(b)
+
+Notes:
+
+- NOT constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+
+## XorArray statement
+
+A valid instance of an XorArray statement assures that given an input of:
+
+- A: {0..1}[N]
+- B: {0..1}[N]
+
+the prover knows an auxiliary input:
+
+- result: {0..1}[N]
+
+such that the following conditions hold:
+
+- for i in N: result[i] = A[i] ^ B[i]
+
+Notes:
+
+- All inputs are expected to be boolean
+- XOR constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+
+## Equal statement
+
+A valid instance of an Equal statement assures that given an input of:
+
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+- result: {0..1}
+
+such that the following conditions hold:
+
+- result = (A - B == 0) ? 1 : 0
+
+## RequireEqual statement
+
+A valid instance of an RequireEqual statement assures that given an input of:
+
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- A == B
+
+## RequireZeroAorB statement
+
+A valid instance of an RequireZeroAorB statement assures that given an input of:
+
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- A \* B = 0
+
+## RequireNotZero statement
+
+A valid instance of an RequireNotZero statement assures that given an input of:
+
+- A: F
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- A \* (1/A) = 1
+
+Notes:
+
+- The inverse exists for all numbers except 0
+- Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+
+## RequireNotEqual statement
+
+A valid instance of an RequireNotEqual statement assures that given an input of:
+
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- A - B != 0
+
 ## LeqGadget
 
 This gadget is a wrapper around `libsnark::comparison_gadget`, exposing `<`, `<=`, `==`, `>=` and `>` for simplicity (and sometimes efficiensy if the same comparison result can be reused e.g. when both `<` and `<=` are needed).
@@ -238,6 +562,388 @@ This gadget is a wrapper around `libsnark::comparison_gadget`, exposing `<`, `<=
 One important limitation of `libsnark::comparison_gadget` is that it does not work for values close to the max field element value. This is an implementation detail as the gadget depends on there being an extra bit at MSB of the valules to be available. As the max field element is ~254 bits, only 253 bits can be used. And because the implementation needs an extra bit we can only compare values that take up at most 252 bits.
 
 This is _not_ checked in the gadget itself, and it depends on the caller to specifiy a valid `n` which is the max number of bits of the value passed into the gadget.
+
+## LtField statement
+
+A valid instance of an LtField statement assures that given an input of:
+
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+- result: {0..1}
+
+such that the following conditions hold:
+
+- result = A < B
+
+Notes:
+
+- Because LeqGadget does not work for certain very large values (values taking up more than 252 bits), we split up the values in two smaller values and do the comparison like that.
+
+## Min statement
+
+A valid instance of an Min statement assures that given an input of:
+
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+- result: F
+
+such that the following conditions hold:
+
+- (A < B) ? A : B
+
+## Max statement
+
+A valid instance of an Max statement assures that given an input of:
+
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+- result: F
+
+such that the following conditions hold:
+
+- (A < B) ? B : A
+
+## RequireLeq statement
+
+A valid instance of an RequireLeq statement assures that given an input of:
+
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- A <= B
+
+## RequireLt statement
+
+A valid instance of an RequireLt statement assures that given an input of:
+
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- A < B
+
+## IfThenRequire statement
+
+A valid instance of an IfThenRequire statement assures that given an input of:
+
+- C: {0..1}
+- A: {0..1}
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- !C || A
+
+## IfThenRequireEqual statement
+
+A valid instance of an IfThenRequireEqual statement assures that given an input of:
+
+- C: {0..1}
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- IfThenRequire(C, (A == B) ? 1 : 0)
+
+## IfThenRequireNotEqual statement
+
+A valid instance of an IfThenRequireNotEqual statement assures that given an input of:
+
+- C: {0..1}
+- A: F
+- B: F
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- IfThenRequire(C, (A != B) ? 1 : 0)
+
+## MulDivGadget statement
+
+A valid instance of an MulDivGadget statement assures that given an input of:
+
+- value: {0..2^numBitsValue}
+- numerator: {0..2^numBitsNumerator}
+- denominator: {0..2^numBitsDenominator}
+
+the prover knows an auxiliary input:
+
+- quotient: F
+- remainder: F
+
+such that the following conditions hold:
+
+- denominator != 0
+- remainder < denominator (with extra check that remainder < 2^numBitsDenominator)
+- value _ numerator = denominator _ quotient + remainder
+
+Notes:
+
+- Calculates floor((value \* denominator) / denominator)
+
+## RequireAccuracy statement
+
+A valid instance of an RequireAccuracy statement assures that the prover knows the auxiliary inputs of:
+
+- value: F
+- original: F
+
+with circuit parameters:
+
+- accuracy: Accuracy
+- maxNumBits: unsigned int
+
+such that the following conditions hold:
+
+- value < 2^maxNumBits (range check)
+- value <= original (RequireLeqGadget)
+- original \* accuracy.N <= value \* accuracy.D (RequireLeqGadget)
+
+Notes:
+
+- value is first range checked to ensure value can be used in LeqGadget
+
+### Description
+
+This is a simple gadget that ensures the valid specified are approximately the same. The main reason this gadget is used is because the amounts that are compressed by using decimal floats can have small rounding errors.
+
+## PublicData statement
+
+A valid instance of an PublicData statement assures that given an input of:
+
+- data: bits[N]
+
+the prover knows an auxiliary input:
+
+- publicInput: F
+
+such that the following conditions hold:
+
+- publicInput = sha256(data) >> 3
+
+### Description
+
+3 LBS are stripped from the 256-bit hash so that the packed value always fits inside a field element.
+
+## Float statement
+
+Given inputs:
+
+- floatValue_bits: {0..2^(numBitsExponent+numBitsMantissa)}
+- decodedValue: F
+
+The following conditions hold:
+
+- decodedValue = floatValue[0..numBitsMantissa[ \* (10^floatValue[numBitsMantissa, numBitsExponent+numBitsMantissa[)
+
+Notes:
+
+- We can only decode floats in the circuits, we never encode floats (which is a heavier operation normally)
+- Floats are used to reduce the amount of data we have to put on-chain for amounts.
+
+## Selector statement
+
+A valid instance of an Selector statement assures that given an input of:
+
+- type: F
+
+with circuit parameters:
+
+- n: unsigned int
+
+the prover knows an auxiliary input:
+
+- result: {0..1}[n]
+
+The following conditions hold:
+
+- for i in n: result[i] = (i == type) ? 1 : 0
+
+Notes:
+
+- Sets the variable at position type to 1, all other variables are 0
+
+## Select statement
+
+A valid instance of an Select statement assures that given an input of:
+
+- selector: {0..1}[N]
+- values: F[N]
+
+the prover knows an auxiliary input:
+
+- result: F
+
+The following conditions hold:
+
+- for i in n: result = (selector[i] == 1) ? values[i] : result
+
+Notes:
+
+- selector can be assumed to contain exactly a single 1 bit
+
+## ArraySelect statement
+
+A valid instance of an ArraySelect statement assures that given an input of:
+
+- selector: {0..1}[N]
+- values: F_array[N]
+
+the prover knows an auxiliary input:
+
+- result: F_array
+
+The following conditions hold:
+
+- for i in n: result = (selector[i] == 1) ? values[i] : result
+
+Notes:
+
+- selector can be assumed to contain exactly a single 1 bit
+
+## OwnerValid statement
+
+A valid instance of an OwnerValid statement assures that given an input of:
+
+- oldOwner: F
+- newOwner: F
+
+such that the following conditions hold:
+
+- (oldOwner == newOwner) || (oldOwner == 0)
+
+## SignedAdd statement
+
+A valid instance of an SignedAdd statement assures that given an input of:
+
+- A: SignedF
+- B: SignedF
+
+the prover knows an auxiliary input:
+
+- result: SignedF
+
+The following conditions hold:
+
+- result.value = (A.sign == B.sign) ? A.value + B.value : ((A.value < B.value) ? B.value - A.value : A.value - B.value)
+- result.sign = result.value == 0 ? 0 : (B.sign == 1 && A.value <= B.value) || (A.sign == 1 && A.value > B.value)
+
+Notes:
+
+- result = A + B
+
+## SignedSub statement
+
+A valid instance of an SignedSub statement assures that given an input of:
+
+- A: SignedF
+- B: SignedF
+
+the prover knows an auxiliary input:
+
+- result: SignedF
+
+The following conditions hold:
+
+- result = SignedAdd(A, -B)
+
+## SignedMulDiv statement
+
+A valid instance of an SignedMulDiv statement assures that given an input of:
+
+- value: SignedF{0..2^numBitsValue}
+- numerator: SignedF{0..2^numBitsNumerator}
+- denominator: {0..2^numBitsDenominator}
+
+the prover knows an auxiliary input:
+
+- res: SignedF
+- quotient: F
+- sign: {0..1}
+
+such that the following conditions hold:
+
+- quotient = MulDiv(value.value, numerator.value, denominitor)
+- sign = (quotient == 0) ? 0 : ((value.sign == numerator.sign) ? 1 : 0)
+
+## Power statement
+
+A valid instance of an Power statement assures that given an input of:
+
+- \_x: F
+- \_y: F
+
+with circuit parameters:
+
+- numIterations: unsigned int
+
+the prover knows an auxiliary input:
+
+- result: F
+- x: F
+- sum0: F
+
+such that the following conditions hold:
+
+- x = BASE_FIXED - \_x
+- sum[0] = BASE_FIXED \* BASE_FIXED
+- sum[1] = sum[0] - (x \* y)
+- bn[1] = BASE_FIXED
+- xn[1] = x
+- cn[1] = y
+- for i in 2..numIterations:
+  - bn[i] = bn[i-1] + BASE_FIXED
+  - vn[i] = y - bn[i-1]
+  - xn[i] = (xn[i-1] \* x) / BASE_FIXED
+  - cn[i] = (cn[i-1] \* vn[i]) / bn[i]
+  - tn[i] = SignedF((i+1)%2, xn[i]) \* cn[i]
+  - sum[i] = sum[i-1] + tn[i]
+  - cn[i] < 2^NUM_BITS_AMOUNT
+- result = sum[numIterations-1] / BASE_FIXED
+- result < 2^NUM_BITS_AMOUNT
+- result.sign == 1
+
+Notes:
+
+- Results should never be able to overflow or underflow
+- Power approximiation formule as found here: https://docs.balancer.finance/protocol/index/approxing
+
+### Description
+
+Calculates [0, 1]\*\*[0, inf) using an approximation. The closer the base is to 1, the higher the accuracy.
+The result is enforced to be containable in NUM_BITS_AMOUNT bits.
+The higher the number of iterations, the higher the accuracy (and the greater the cost).
 
 ## MerklePathSelector statement
 
@@ -396,17 +1102,6 @@ such that the following conditions hold:
 - MerklePathCheck(TREE_DEPTH_STORAGE, address, hash_before, root_before, proof)
 - root_after = MerklePath(TREE_DEPTH_STORAGE, address, hash_after, proof)
 
-## OwnerValid statement
-
-A valid instance of an OwnerValid statement assures that given an input of:
-
-- oldOwner: F
-- newOwner: F
-
-such that the following conditions hold:
-
-- (oldOwner == newOwner) || (oldOwner == 0)
-
 ## CompressPublicKey statement
 
 A valid instance of an CompressPublicKey statement assures that given an input of:
@@ -420,18 +1115,76 @@ the prover knows an auxiliary input:
 
 The following conditions hold:
 
-If publicKeyY != 0
+If publicKeyY != 0:
 
 - publicKeyY = compressedPublicKey_bits[0..254[
 - compressedPublicKey_bits[254] = 0
 - publicKeyX = (compressedPublicKey_bits[255] == 1 ? -1 : 1) \* sqrt((y\*y - 1) / ((JubJub.D \* y\*y) - JubJub.A)
-  If publicKeyY == 0
+
+If publicKeyY == 0:
+
 - compressedPublicKey_bits[0..256[ = 0
 
 Notes:
 
 - sqrt always needs to return the positive root, which is defined by root < 0 - root. Otherwise the prover can supply either the negative root or the positive root as a valid result of sqrt when the constraint is defined as x == y \* y == -y \* -y.
 - A special case is to allow publicKeyX == publicKeyY == 0, which isn't a valid point. This allows disabling the ability to sign with EdDSA with the account).
+- See https://ed25519.cr.yp.to/eddsa-20150704.pdf
+
+## EdDSA_HashRAM_Poseidon statement
+
+A valid instance of an EdDSA_HashRAM_Poseidon statement assures that given an input of:
+
+- rX: F
+- rY: F
+- aX: F
+- aY: F
+- message: F
+
+the prover knows an auxiliary input:
+
+- hash: F
+
+The following conditions hold:
+
+- hash_bits = hash_packed
+- hash = PoseidonHash_t6f6p52(
+  rX,
+  rY,
+  aX,
+  aY,
+  message
+  )
+
+## EdDSA_Poseidon statement
+
+A valid instance of an EdDSA_Poseidon statement assures that given an input of:
+
+- aX: F
+- aY: F
+- rX: F
+- rY: F
+- s: F[]
+- message: F
+
+the prover knows an auxiliary input:
+
+- result: {0..1}
+- hash: F
+- hashRam: F[]
+- atX: F
+- atY: F
+
+The following conditions hold:
+
+- PointValidator(aX, aY)
+- hashRAM = EdDSA_HashRAM_Poseidon(rX, rY, aX, aY, s)
+- (atX, atY) = ScalarMult(aX, aY, hashRAM)
+- result = (fixed_base_mul(s) == PointAdder(rX, rY, atX, atY))
+
+Notes:
+
+- Based on `PureEdDSA` in ethsnarks
 
 ## SignatureVerifier statement
 
@@ -441,11 +1194,18 @@ Given inputs:
 - publicKeyY: F
 - message: F
 - required: {0..1}
-- signature: Signature
+
+the prover knows an auxiliary input:
+
+- result
+- rX: F
+- rY: F
+- s: F[]
 
 The following conditions hold:
 
-- If and only if required == 1: signature is valid for (publicKeyX, publicKeyY)
+- result = EdDSA_Poseidon(publicKeyX, publicKeyY, rX, rY, s, message)
+- if required == 1 then valid == 1
 
 ## StorageReader statement
 
@@ -488,48 +1248,6 @@ such that the following conditions hold:
 ### Description
 
 Builds a simple parallel nonce system on top of the storage tree. Transactions can use any storage slot that contains 0 as data (after overwriting logic). This slot will be overwritten with a 1, making it impossible to re-use the transaction multiple times.
-
-## RequireAccuracy statement
-
-A valid instance of an RequireAccuracy statement assures that the prover knows the auxiliary inputs of:
-
-- value: F
-- original: F
-
-with circuit parameters:
-
-- accuracy: Accuracy
-- maxNumBits: unsigned int
-
-such that the following conditions hold:
-
-- value < 2^maxNumBits (range check)
-- value <= original (RequireLeqGadget)
-- original \* accuracy.N <= value \* accuracy.D (RequireLeqGadget)
-
-Notes:
-
-- value is first range checked to ensure value can be used in LeqGadget
-
-### Description
-
-This is a simple gadget that ensures the valid specified are approximately the same. The main reason this gadget is used is because the amounts that are compressed by using decimal floats can have small rounding errors.
-
-## Float statement
-
-Given inputs:
-
-- floatValue_bits: {0..2^(numBitsExponent+numBitsMantissa)}
-- decodedValue: F
-
-The following conditions hold:
-
-- decodedValue = floatValue[0..numBitsMantissa[ \* (10^floatValue[numBitsMantissa, numBitsExponent+numBitsMantissa[)
-
-Notes:
-
-- We can only decode floats in the circuits, we never encode floats (which is a heavier operation normally)
-- Floats are used to reduce the amount of data we have to put on-chain for amounts.
 
 ## Deposit statement
 
@@ -629,7 +1347,7 @@ such that the following conditions hold:
   publicKeyY,
   validUntil,
   nonce
-  );
+  )
 - OwnerValid(account_old.owner, owner)
 - timestamp < validUntil
 - fee <= maxFee
@@ -804,7 +1522,7 @@ such that the following conditions hold:
   onchainDataHash,
   validUntil,
   storageID
-  );
+  )
 - owner = (accountID == 0) ? 0 : state.accountA.account.owner
 - timestamp < validUntil (RequireLtGadget)
 - fee <= maxFee (RequireLeqGadget)
@@ -1218,10 +1936,10 @@ such that the following conditions hold:
 
 A valid instance of an SpotPriceAMM statement assures that given an input of:
 
-- balanceIn: {0..2^NUM_BITS_AMOUNT},
-- weightIn: {0..2^NUM_BITS_AMOUNT},
-- balanceOut: {0..2^NUM_BITS_AMOUNT},
-- weightOut: {0..2^NUM_BITS_AMOUNT},
+- balanceIn: {0..2^NUM_BITS_AMOUNT}
+- weightIn: {0..2^NUM_BITS_AMOUNT}
+- balanceOut: {0..2^NUM_BITS_AMOUNT}
+- weightOut: {0..2^NUM_BITS_AMOUNT}
 
 the prover knows an auxiliary input:
 
@@ -1243,12 +1961,12 @@ such that the following conditions hold:
 
 A valid instance of an CalcOutGivenInAMM statement assures that given an input of:
 
-- balanceIn: {0..2^NUM_BITS_AMOUNT},
-- weightIn: {0..2^NUM_BITS_AMOUNT},
-- balanceOut: {0..2^NUM_BITS_AMOUNT},
-- weightOut: {0..2^NUM_BITS_AMOUNT},
-- feeBips: {0..2^NUM_BITS_FEE_BIPS},
-- amountIn: {0..2^NUM_BITS_AMOUNT},
+- balanceIn: {0..2^NUM_BITS_AMOUNT}
+- weightIn: {0..2^NUM_BITS_AMOUNT}
+- balanceOut: {0..2^NUM_BITS_AMOUNT}
+- weightOut: {0..2^NUM_BITS_AMOUNT}
+- feeBips: {0..2^NUM_BITS_FEE_BIPS}
+- amountIn: {0..2^NUM_BITS_AMOUNT}
 
 the prover knows an auxiliary input:
 
@@ -1579,24 +2297,6 @@ such that the following conditions hold:
 This gadget executes the required logic for the transaction (by executing the logic for each transactions type and then selecting the right output) and using the output of the transaction to do all shared and heavy operations: signature checking and Merkle tree updates. By sharing these operations between all transaction types the resulting circuit is much more efficient than if we would simply do these operations for all transactions types all times (as the number of constraints produced would simply stack on top of each other).
 
 To do this, all data that could be updated in any of the transactions is stored in a shared output data interface. We then always update all output data, even if it remains the same.
-
-## PublicData statement
-
-A valid instance of an PublicData statement assures that given an input of:
-
-- data: bits[N]
-
-the prover knows an auxiliary input:
-
-- publicInput: F
-
-such that the following conditions hold:
-
-- publicInput = sha256(data) >> 3
-
-### Description
-
-3 LBS are stripped from the 256-bit hash so that the packed value always fits inside a field element.
 
 ## Universal statement
 
