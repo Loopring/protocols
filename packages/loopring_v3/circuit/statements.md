@@ -2,24 +2,42 @@
 
 ## Constants
 
-- NUM_BITS_ADDRESS := 160
-- NUM_BITS_ACCOUNTID := 32
-- NUM_BITS_TOKENID := 16
-- NUM_BITS_AMOUNT := 96
-- NUM_BITS_TIMESTAMP := 32
-- NUM_BITS_NONCE := 32
-- NUM_BITS_DA := 68\*8
-- NUM_BITS_AMM_BIPS = 8
-- NUM_BITS_HASH = 160
-- NUM_BITS_STORAGEID = 32
-- NUM_BITS_TYPE = 8
-- NUM_BITS_TX_TYPE = 8
+- TREE_DEPTH_STORAGE = 7
+- TREE_DEPTH_ACCOUNTS = 16
+- TREE_DEPTH_TOKENS = 8
 
 - TX_DATA_AVAILABILITY_SIZE = 68
 
-- EMPTY_STORAGE_ROOT = 6592749167578234498153410564243369229486412054742481069049239297514590357090
+- NUM_BITS_MAX_VALUE = 254
+- NUM_BITS_FIELD_CAPACITY = 253
+- NUM_BITS_AMOUNT = 96
+- NUM_BITS_STORAGE_ADDRESS = TREE_DEPTH_STORAGE\*2
+- NUM_BITS_ACCOUNT = TREE_DEPTH_ACCOUNTS\*2
+- NUM_BITS_TOKEN = TREE_DEPTH_TOKENS\*2
+- NUM_BITS_STORAGEID = 32
+- NUM_BITS_TIMESTAMP = 32
+- NUM_BITS_NONCE = 32
+- NUM_BITS_BIPS = 6
+- NUM_BITS_PROTOCOL_FEE_BIPS = 8
+- NUM_BITS_TYPE = 8
+- NUM_STORAGE_SLOTS = 16384
+- NUM_MARKETS_PER_BLOCK = 16
+- NUM_BITS_TX_TYPE = 8
+- NUM_BITS_ADDRESS = 160
+- NUM_BITS_HASH = 160
+- NUM_BITS_AMM_BIPS = 8
 
-- TREE_DEPTH_STORAGE = 14
+- EMPTY_STORAGE_ROOT = 6592749167578234498153410564243369229486412054742481069049239297514590357090
+- MAX_AMOUNT = 79228162514264337593543950335 // 2^96 - 1
+- FIXED_BASE = 1000000000000000000 // 10^18
+- NUM_BITS_FIXED_BASE = 60; // ceil(log2(10^18))
+
+- Float24Encoding: Accuracy = {5, 19}
+- Float16Encoding: Accuracy = {5, 11}
+
+- JubJub.a := 168700
+- JubJub.d := 168696
+- JubJub.A := 168698
 
 - TransactionType.Noop := 0 (8 bits)
 - TransactionType.Deposit := 1 (8 bits)
@@ -29,16 +47,10 @@
 - TransactionType.AccountUpdate := 5 (8 bits)
 - TransactionType.AmmUpdate := 6 (8 bits)
 
-- Float24Encoding: Accuracy = {5, 19}
-- Float16Encoding: Accuracy = {5, 11}
-
-- JubJub.a := 168700
-- JubJub.d := 168696
-- JubJub.A := 168698
-
 ## Data types
 
-- F: Snark field element
+- F := Snark field element
+- SignedF := (sign: {0..2}, value: F)
 - Storage := (data: F, storageID: F)
 - Balance := (balance: F, weightAMM: F, storageRoot: F)
 - Account := (owner: F, publicKeyX: F, publicKeyY: F, nonce: F, feeBipsAMM: F, balancesRoot: F)
@@ -59,12 +71,12 @@
   balanceB: Balance
   )
 - State := (
-  exchange: F,
-  timestamp: F,
-  protocolTakerFeeBips: F,
-  protocolMakerFeeBips: F,
+  exchange: {0..2^NUM_BITS_ADDRESS},
+  timestamp: {0..2^NUM_BITS_TIMESTAMP},
+  protocolTakerFeeBips: {0..2^NUM_BITS_PROTOCOL_FEE_BIPS},
+  protocolMakerFeeBips: {0..2^NUM_BITS_PROTOCOL_FEE_BIPS},
   numConditionalTransactions: F,
-  type: F,
+  txType: {0..2^NUM_BITS_TX_TYPE},
 
   accountA: AccountState,
   accountB: AccountState,
@@ -75,33 +87,33 @@
 - Accuracy := (N: unsigned int, D: unsigned int)
 
 - TxOutput := (
-  STORAGE_A_ADDRESS: F (bits),
+  STORAGE_A_ADDRESS: F[NUM_BITS_STORAGE_ADDRESS],
   STORAGE_A_DATA: F,
   STORAGE_A_STORAGEID: F,
 
-  BALANCE_A_S_ADDRESS: F (bits),
+  BALANCE_A_S_ADDRESS: F[NUM_BITS_TOKEN],
   BALANCE_A_S_BALANCE: F,
   BALANCE_A_S_WEIGHTAMM: F,
 
   BALANCE_A_B_BALANCE: F
 
-  ACCOUNT_A_ADDRESS: F (bits),
+  ACCOUNT_A_ADDRESS: F[NUM_BITS_ACCOUNT],
   ACCOUNT_A_OWNER: F,
   ACCOUNT_A_PUBKEY_X: F,
   ACCOUNT_A_PUBKEY_Y: F,
   ACCOUNT_A_NONCE: F,
   ACCOUNT_A_FEEBIPSAMM: F,
 
-  STORAGE_B_ADDRESS: F (bits),
+  STORAGE_B_ADDRESS: F[NUM_BITS_STORAGE_ADDRESS],
   STORAGE_B_DATA: F,
   STORAGE_B_STORAGEID: F,
 
-  BALANCE_B_S_ADDRESS: F (bits),
+  BALANCE_B_S_ADDRESS: F[NUM_BITS_TOKEN],
   BALANCE_B_S_BALANCE: F,
 
   BALANCE_B_B_BALANCE: F,
 
-  ACCOUNT_B_ADDRESS: F (bits),
+  ACCOUNT_B_ADDRESS: F[NUM_BITS_ACCOUNT],
   ACCOUNT_B_OWNER: F,
   ACCOUNT_B_PUBKEY_X: F,
   ACCOUNT_B_PUBKEY_Y: F,
@@ -125,11 +137,11 @@
 
   NUM_CONDITIONAL_TXS: F,
 
-  DA: F (68\*8 bits)
+  DA: F[TX_DATA_AVAILABILITY_SIZE\*8]
   )
 
 - OrderMatchingData := (
-  amm: {0..1},
+  amm: {0..2},
   orderFeeBips: {0..2^8},
   fillS: {0..2^NUM_BITS_AMOUNT},
   balanceBeforeS: {0..2^NUM_BITS_AMOUNT},
@@ -138,7 +150,7 @@
   balanceAfterB: {0..2^NUM_BITS_AMOUNT},
   weightS: {0..2^NUM_BITS_AMOUNT},
   weightB: {0..2^NUM_BITS_AMOUNT},
-  ammFeeBips: {0..2^NUM_BITS_FEE_BIPS},
+  ammFeeBips: {0..2^NUM_BITS_AMM_BIPS},
   )
 
 - AmmData := (
@@ -292,8 +304,8 @@ Notes:
 
 A valid instance of an Add statement assures that given an input of:
 
-- A: F
-- B: F
+- A: {0..2^n}
+- B: {0..2^n}
 
 with circuit parameters:
 
@@ -308,12 +320,16 @@ such that the following conditions hold:
 - result = UnsafeAdd(A, B)
 - result < 2^n
 
+Notes:
+
+- Should check for overflow
+
 ## Sub statement
 
-A valid instance of an Sub statement assures that given an input of:
+A valid instance of a Sub statement assures that given an input of:
 
-- A: F
-- B: F
+- A: {0..2^n}
+- B: {0..2^n}
 
 with circuit parameters:
 
@@ -334,7 +350,7 @@ Notes:
 
 ## Transfer statement
 
-A valid instance of an Transfer statement assures that given an input of:
+A valid instance of a Transfer statement assures that given an input of:
 
 - from: DynamicVariableGadget
 - to: DynamicVariableGadget
@@ -353,7 +369,7 @@ such that the following conditions hold:
 
 A valid instance of an Ternary statement assures that given an input of:
 
-- b: {0..1}
+- b: {0..2}
 - x: F
 - y: F
 
@@ -378,7 +394,7 @@ Notes:
 
 A valid instance of an ArrayTernary statement assures that given an input of:
 
-- b: {0..1}
+- b: {0..2}
 - x: F[N]
 - y: F[N]
 
@@ -392,18 +408,18 @@ the prover knows an auxiliary input:
 
 such that the following conditions hold:
 
-- for i in N: result[i] = (b == 1) ? x[i] : y[i]
+- for i in {0..N}: result[i] = (b == 1) ? x[i] : y[i]
 - if enforceBitness then generate_boolean_r1cs_constraint(b)
 
 ## And statement
 
 A valid instance of an And statement assures that given an input of:
 
-- inputs: {0..1}[N]
+- inputs: {0..2}[N]
 
 the prover knows an auxiliary input:
 
-- result: F
+- result: {0..2}
 
 such that the following conditions hold:
 
@@ -418,11 +434,11 @@ Notes:
 
 A valid instance of an Or statement assures that given an input of:
 
-- inputs: {0..1}[N]
+- inputs: {0..2}[N]
 
 the prover knows an auxiliary input:
 
-- result: F
+- result: {0..2}
 
 such that the following conditions hold:
 
@@ -435,9 +451,9 @@ Notes:
 
 ## Not statement
 
-A valid instance of an Not statement assures that given an input of:
+A valid instance of a Not statement assures that given an input of:
 
-- A: {0..1}
+- A: {0..2}
 
 with circuit parameters:
 
@@ -445,7 +461,7 @@ with circuit parameters:
 
 the prover knows an auxiliary input:
 
-- result: {0..1}
+- result: {0..2}
 
 such that the following conditions hold:
 
@@ -460,16 +476,16 @@ Notes:
 
 A valid instance of an XorArray statement assures that given an input of:
 
-- A: {0..1}[N]
-- B: {0..1}[N]
+- A: {0..2}[N]
+- B: {0..2}[N]
 
 the prover knows an auxiliary input:
 
-- result: {0..1}[N]
+- result: {0..2}[N]
 
 such that the following conditions hold:
 
-- for i in N: result[i] = A[i] ^ B[i]
+- for i in {0..N}: result[i] = A[i] ^ B[i]
 
 Notes:
 
@@ -485,7 +501,7 @@ A valid instance of an Equal statement assures that given an input of:
 
 the prover knows an auxiliary input:
 
-- result: {0..1}
+- result: {0..2}
 
 such that the following conditions hold:
 
@@ -493,7 +509,7 @@ such that the following conditions hold:
 
 ## RequireEqual statement
 
-A valid instance of an RequireEqual statement assures that given an input of:
+A valid instance of a RequireEqual statement assures that given an input of:
 
 - A: F
 - B: F
@@ -508,7 +524,7 @@ such that the following conditions hold:
 
 ## RequireZeroAorB statement
 
-A valid instance of an RequireZeroAorB statement assures that given an input of:
+A valid instance of a RequireZeroAorB statement assures that given an input of:
 
 - A: F
 - B: F
@@ -523,17 +539,18 @@ such that the following conditions hold:
 
 ## RequireNotZero statement
 
-A valid instance of an RequireNotZero statement assures that given an input of:
+A valid instance of a RequireNotZero statement assures that given an input of:
 
 - A: F
 
 the prover knows an auxiliary input:
 
--
+- inv: F
 
 such that the following conditions hold:
 
-- A \* (1/A) = 1
+- inv = 1/A
+- A \* inv = 1
 
 Notes:
 
@@ -542,7 +559,7 @@ Notes:
 
 ## RequireNotEqual statement
 
-A valid instance of an RequireNotEqual statement assures that given an input of:
+A valid instance of a RequireNotEqual statement assures that given an input of:
 
 - A: F
 - B: F
@@ -565,26 +582,29 @@ This is _not_ checked in the gadget itself, and it depends on the caller to spec
 
 ## LtField statement
 
-A valid instance of an LtField statement assures that given an input of:
+A valid instance of a LtField statement assures that given an input of:
 
 - A: F
 - B: F
 
 the prover knows an auxiliary input:
 
-- result: {0..1}
+- result: {0..2}
 
 such that the following conditions hold:
 
-- result = A < B
+- result = A[NUM_BITS_MAX_VALUE/2..NUM_BITS_MAX_VALUE] == B[NUM_BITS_MAX_VALUE/2..NUM_BITS_MAX_VALUE] ?
+  A[0..NUM_BITS_MAX_VALUE/2] < B[0..NUM_BITS_MAX_VALUE] :
+  A[NUM_BITS_MAX_VALUE/2..NUM_BITS_MAX_VALUE] <> B[NUM_BITS_MAX_VALUE/2..NUM_BITS_MAX_VALUE]
 
 Notes:
 
+- Calculates A < B
 - Because LeqGadget does not work for certain very large values (values taking up more than 252 bits), we split up the values in two smaller values and do the comparison like that.
 
 ## Min statement
 
-A valid instance of an Min statement assures that given an input of:
+A valid instance of a Min statement assures that given an input of:
 
 - A: F
 - B: F
@@ -599,7 +619,7 @@ such that the following conditions hold:
 
 ## Max statement
 
-A valid instance of an Max statement assures that given an input of:
+A valid instance of a Max statement assures that given an input of:
 
 - A: F
 - B: F
@@ -614,7 +634,7 @@ such that the following conditions hold:
 
 ## RequireLeq statement
 
-A valid instance of an RequireLeq statement assures that given an input of:
+A valid instance of a RequireLeq statement assures that given an input of:
 
 - A: F
 - B: F
@@ -629,7 +649,7 @@ such that the following conditions hold:
 
 ## RequireLt statement
 
-A valid instance of an RequireLt statement assures that given an input of:
+A valid instance of a RequireLt statement assures that given an input of:
 
 - A: F
 - B: F
@@ -646,8 +666,8 @@ such that the following conditions hold:
 
 A valid instance of an IfThenRequire statement assures that given an input of:
 
-- C: {0..1}
-- A: {0..1}
+- C: {0..2}
+- A: {0..2}
 
 the prover knows an auxiliary input:
 
@@ -661,7 +681,7 @@ such that the following conditions hold:
 
 A valid instance of an IfThenRequireEqual statement assures that given an input of:
 
-- C: {0..1}
+- C: {0..2}
 - A: F
 - B: F
 
@@ -677,7 +697,7 @@ such that the following conditions hold:
 
 A valid instance of an IfThenRequireNotEqual statement assures that given an input of:
 
-- C: {0..1}
+- C: {0..2}
 - A: F
 - B: F
 
@@ -691,7 +711,7 @@ such that the following conditions hold:
 
 ## MulDivGadget statement
 
-A valid instance of an MulDivGadget statement assures that given an input of:
+A valid instance of a MulDivGadget statement assures that given an input of:
 
 - value: {0..2^numBitsValue}
 - numerator: {0..2^numBitsNumerator}
@@ -705,8 +725,9 @@ the prover knows an auxiliary input:
 such that the following conditions hold:
 
 - denominator != 0
-- remainder < denominator (with extra check that remainder < 2^numBitsDenominator)
-- value _ numerator = denominator _ quotient + remainder
+- remainder < 2^numBitsDenominator (range check)
+- remainder < denominator
+- value \* numerator = denominator \* quotient + remainder
 
 Notes:
 
@@ -714,7 +735,7 @@ Notes:
 
 ## RequireAccuracy statement
 
-A valid instance of an RequireAccuracy statement assures that the prover knows the auxiliary inputs of:
+A valid instance of a RequireAccuracy statement assures that the prover knows the auxiliary inputs of:
 
 - value: F
 - original: F
@@ -740,7 +761,7 @@ This is a simple gadget that ensures the valid specified are approximately the s
 
 ## PublicData statement
 
-A valid instance of an PublicData statement assures that given an input of:
+A valid instance of a PublicData statement assures that given an input of:
 
 - data: bits[N]
 
@@ -754,11 +775,11 @@ such that the following conditions hold:
 
 ### Description
 
-3 LBS are stripped from the 256-bit hash so that the packed value always fits inside a field element.
+3 LBS are stripped from the 256-bit hash so that the packed value always fits inside a single field element.
 
 ## Float statement
 
-Given inputs:
+A valid instance of a Float statement assures that given an input of:
 
 - floatValue_bits: {0..2^(numBitsExponent+numBitsMantissa)}
 - decodedValue: F
@@ -784,11 +805,11 @@ with circuit parameters:
 
 the prover knows an auxiliary input:
 
-- result: {0..1}[n]
+- result: {0..2}[n]
 
 The following conditions hold:
 
-- for i in n: result[i] = (i == type) ? 1 : 0
+- for i in {0..n}: result[i] = (i == type) ? 1 : 0
 
 Notes:
 
@@ -798,7 +819,7 @@ Notes:
 
 A valid instance of an Select statement assures that given an input of:
 
-- selector: {0..1}[N]
+- selector: {0..2}[N]
 - values: F[N]
 
 the prover knows an auxiliary input:
@@ -807,7 +828,7 @@ the prover knows an auxiliary input:
 
 The following conditions hold:
 
-- for i in n: result = (selector[i] == 1) ? values[i] : result
+- for i in {0..n}: result = (selector[i] == 1) ? values[i] : result
 
 Notes:
 
@@ -817,16 +838,16 @@ Notes:
 
 A valid instance of an ArraySelect statement assures that given an input of:
 
-- selector: {0..1}[N]
-- values: F_array[N]
+- selector: {0..2}[N]
+- values: F[][n]
 
 the prover knows an auxiliary input:
 
-- result: F_array
+- result: F[]
 
 The following conditions hold:
 
-- for i in n: result = (selector[i] == 1) ? values[i] : result
+- for i in {0..n}: result = (selector[i] == 1) ? values[i] : result
 
 Notes:
 
@@ -890,7 +911,7 @@ the prover knows an auxiliary input:
 
 - res: SignedF
 - quotient: F
-- sign: {0..1}
+- sign: {0..2}
 
 such that the following conditions hold:
 
@@ -910,7 +931,7 @@ with circuit parameters:
 
 the prover knows an auxiliary input:
 
-- result: F
+- result: {0..2^NUM_BITS_AMOUNT}
 - x: F
 - sum0: F
 
@@ -922,7 +943,7 @@ such that the following conditions hold:
 - bn[1] = BASE_FIXED
 - xn[1] = x
 - cn[1] = y
-- for i in 2..numIterations:
+- for i in {2..numIterations}:
   - bn[i] = bn[i-1] + BASE_FIXED
   - vn[i] = y - bn[i-1]
   - xn[i] = (xn[i-1] \* x) / BASE_FIXED
@@ -951,8 +972,8 @@ A valid instance of an MerklePathSelector statement assures that given an input 
 
 - input: F
 - sideNodes: F[3]
-- bit0: {0..1}
-- bit1: {0..1}
+- bit0: {0..2}
+- bit1: {0..2}
 
 the prover knows an auxiliary input:
 
@@ -967,12 +988,15 @@ such that the following conditions hold:
 
 ## MerklePath statement
 
-A valid instance of an MerklePath statement assures that given an input of:
+A valid instance of a MerklePath statement assures that given an input of:
 
-- depth: unsigned int
 - address: {0..2^NUM_BITS_ACCOUNT}
 - leaf: F
 - proof: F[3 * depth]
+
+with circuit parameters:
+
+- depth: unsigned int
 
 the prover knows an auxiliary input:
 
@@ -982,7 +1006,7 @@ the prover knows an auxiliary input:
 
 such that the following conditions hold:
 
-- for i in [0..depth[:
+- for i in {0..depth}:
   children[i] = MerklePathSelector(
   (i == 0) ? leaf : hashes[i-1],
   {proof[3*i + 0], proof[3*i + 1], proof[3*i + 2]},
@@ -994,13 +1018,16 @@ such that the following conditions hold:
 
 ## MerklePathCheck statement
 
-A valid instance of an MerklePathCheck statement assures that given an input of:
+A valid instance of a MerklePathCheck statement assures that given an input of:
 
-- depth: unsigned int
 - address: {0..2^NUM_BITS_ACCOUNT}
 - leaf: F
 - root: F
 - proof: F[3 * depth]
+
+with circuit parameters:
+
+- depth: unsigned int
 
 the prover knows an auxiliary input:
 
@@ -1023,7 +1050,7 @@ A valid instance of an UpdateAccount statement assures that given an input of:
 the prover knows an auxiliary input:
 
 - root_after: F
-- proof: F[3 * NUM_BITS_ACCOUNT]
+- proof: F[3 * TREE_DEPTH_ACCOUNTS]
 
 such that the following conditions hold:
 
@@ -1080,7 +1107,7 @@ such that the following conditions hold:
 A valid instance of an UpdateStorage statement assures that given an input of:
 
 - root_before: F
-- address: {0..2^NUM_BITS_STORAGEID}
+- address: {0..2^NUM_BITS_STORAGE_ADDRESS}
 - before: Storage
 - after: Storage
 
@@ -1169,7 +1196,7 @@ A valid instance of an EdDSA_Poseidon statement assures that given an input of:
 
 the prover knows an auxiliary input:
 
-- result: {0..1}
+- result: {0..2}
 - hash: F
 - hashRam: F[]
 - atX: F
@@ -1193,7 +1220,7 @@ Given inputs:
 - publicKeyX: F
 - publicKeyY: F
 - message: F
-- required: {0..1}
+- required: {0..2}
 
 the prover knows an auxiliary input:
 
@@ -1213,7 +1240,7 @@ A valid instance of a StorageReader statement assures that given an input of:
 
 - storage: Storage
 - storageID: {0..2^NUM_BITS_STORAGEID}
-- verify: {0..1}
+- verify: {0..2}
 
 the prover knows an auxiliary input:
 
@@ -1234,7 +1261,7 @@ A valid instance of a Nonce statement assures that given an input of:
 
 - storage: Storage
 - storageID: {0..2^NUM_BITS_STORAGEID}
-- verify: {0..1}
+- verify: {0..2}
 
 the prover knows an auxiliary input:
 
@@ -1251,16 +1278,16 @@ Builds a simple parallel nonce system on top of the storage tree. Transactions c
 
 ## Deposit statement
 
-A valid instance of an Deposit statement assures that given an input of:
+A valid instance of a Deposit statement assures that given an input of:
 
+- state: State
 - owner: {0..2^NUM_BITS_ADDRESS}
-- accountID: {0..2^NUM_BITS_ACCOUNTID}
-- tokenID: {0..2^NUM_BITS_TOKENID}
+- accountID: {0..2^NUM_BITS_ACCOUNT}
+- tokenID: {0..2^NUM_BITS_TOKEN}
 - amount: {0..2^NUM_BITS_AMOUNT}
 
 the prover knows an auxiliary input:
 
-- state: State
 - output: TxOutput
 
 such that the following conditions hold:
@@ -1270,7 +1297,7 @@ such that the following conditions hold:
 - tokenID_bits = tokenID_packed
 - amount_bits = amount_packed
 
-- OwnerValid(account_old.owner, owner)
+- OwnerValid(state.accountA.account.owner, owner)
 
 - output = DefaultTxOutput(state)
 - output.ACCOUNT_A_ADDRESS = accountID
@@ -1295,35 +1322,32 @@ Notes:
 
 ### Description
 
+- https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#deposit
+
 This gadgets allows depositing funds to a new or existing account at accountID. The owner of an account can never change, unless account_old.owner == 0, which means a new account is created for owner.
 
-The tokenID balance in balance_old for accountID account account_old is increased by amount.
-
-As deposits are stored on-chain, we have to process this transaction in the smart contract, and so numConditionalTransactions is incremented.
+As deposits are processed and stored on-chain, we have to process this transaction in the smart contract, and so numConditionalTransactions is incremented.
 
 ## AccountUpdate statement
 
 A valid instance of an AccountUpdate statement assures that given an input of:
 
-- exchange: {0..2^NUM_BITS_ADDRESS}
-- timestamp: {0..2^NUM_BITS_TIMESTAMP}
+- state: State
 - owner: {0..2^NUM_BITS_ADDRESS}
-- accountID: {0..2^NUM_BITS_ACCOUNTID}
+- accountID: {0..2^NUM_BITS_ACCOUNT}
 - validUntil: {0..2^NUM_BITS_TIMESTAMP}
 - publicKeyX: F
 - publicKeyY: F
-- feeTokenID: {0..2^NUM_BITS_TOKENID}
+- feeTokenID: {0..2^NUM_BITS_TOKEN}
 - fee: {0..2^NUM_BITS_AMOUNT}
 - maxFee: {0..2^NUM_BITS_AMOUNT}
 - type: {0..2^8}
-- operatorAccountID: {0..2^NUM_BITS_ACCOUNTID}
 
 the prover knows an auxiliary input:
 
-- state: State
 - output: TxOutput
 - hash: F
-- compressedPublicKey: {0..2^254}
+- compressedPublicKey: {0..2^256}
 - fFee: {0..2^16}
 - uFee: F
 
@@ -1336,10 +1360,10 @@ such that the following conditions hold:
 - fee_bits = fee_packed
 - maxFee_bits = maxFee_packed
 - type_bits = type_packed
-- account_old.nonce_bits = account_old.nonce_packed
+- state.accountA.account.nonce_bits = state.accountA.account.nonce_packed
 
 - hash = PoseidonHash_t9f6p53(
-  exchange,
+  state.exchange,
   accountID,
   feeTokenID,
   maxFee,
@@ -1349,9 +1373,9 @@ such that the following conditions hold:
   nonce
   )
 - OwnerValid(account_old.owner, owner)
-- timestamp < validUntil
+- state.timestamp < validUntil
 - fee <= maxFee
-- CompressPublicKey(publicKeyX, publicKeyY, compressedPublicKey)
+- compressedPublicKey = CompressPublicKey(publicKeyX, publicKeyY)
 - Float(fFee, uFee)
 - RequireAccuracy(uFee, fee)
 
@@ -1385,28 +1409,30 @@ Notes:
 
 ### Description
 
+- https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#account-update
+
 This gadgets allows setting the account EdDSA public key in a new or existing account at accountID. The owner of an account can never change, unless account_old.owner == 0, which means a new account is created for owner.
 
-A fee is paid to the operator. The tokenID balance in balance_old for accountID account account_old is decreased by uFee. The tokenID balance in balanceOperator_old for operatorAccountID account accountOperator_old is increased by uFee.
+A fee is paid to the operator in any token. The operator can choose any fee lower or equal than the maxFee specified by the user.
 
 The public key can either be set
 
 - with the help of an on-chain signature. In this case no valid EdDSA signature needs to be provided and numConditionalTransactions is incremented.
-- with the help of an EdDSA signature. In this case a valid signature for (account_old.publicKeyX, account_old.publicKeyY) needs to be provided signing hash. numConditionalTransactions is not incremented.
+- with the help of an EdDSA signature. In this case a valid signature for the _current_ (not the new ones!) EdDSA public keys stored in the account needs to be provided. numConditionalTransactions is not incremented.
 
 ## AmmUpdate statement
 
 A valid instance of an AmmUpdate statement assures that given an input of:
 
+- state: State
 - owner: {0..2^NUM_BITS_ADDRESS}
-- accountID: {0..2^NUM_BITS_ACCOUNTID}
-- tokenID: {0..2^NUM_BITS_TOKENID}
+- accountID: {0..2^NUM_BITS_ACCOUNT}
+- tokenID: {0..2^NUM_BITS_TOKEN}
 - feeBips: {0..2^NUM_BITS_AMM_BIPS}
 - tokenWeight: {0..2^NUM_BITS_AMOUNT}
 
 the prover knows an auxiliary input:
 
-- state: State
 - output: TxOutput
 
 such that the following conditions hold:
@@ -1435,27 +1461,25 @@ such that the following conditions hold:
   tokenID,
   feeBips,
   tokenWeight,
-  account_old.nonce,
-  balance_old.balance,
-  padding_zeros
+  state.accountA.account.nonce,
+  state.accountA.balanceS.balance
   }
 
 ### Description
 
+- https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#amm-update
+
 This gadgets allows setting the feeBipsAMM and tokenWeightAMM parameters on an existing account at accountID.
 
-The tokenID weightAMM in balance_old for accountID account account_old is set to the input weightAMM.
-The feeBipsAMM in account_old for accountID account account_old is set to the input feeBipsAMM.
+All AMM updates need to be authorized in the smart contract, so numConditionalTransactions is always incremented.
 
-All AMM updates need to be authorized in the smart contract, and so numConditionalTransactions is incremented.
-
-The nonce and balance are added in da to make those values available on-chain (which we use in our AMM pool smart contracts).
+The nonce and balance are added in the da to make those values available on-chain (which we use in our AMM pool smart contracts).
 
 ## Noop statement
 
 A valid instance of an Noop statement assures that given an input of:
 
--
+- state: State
 
 the prover knows an auxiliary input:
 
@@ -1467,7 +1491,7 @@ such that the following conditions hold:
 
 Notes:
 
-- Should do no to the Merkle tree or any other intermediate block values (like numConditionalTransactions)
+- Should have no side effects
 
 ### Description
 
@@ -1477,24 +1501,20 @@ Can be used to fill up blocks that are not fully filled with actual transactions
 
 A valid instance of an Withdraw statement assures that given an input of:
 
-- txType: {0..2^NUM_BITS_TYPE}
-- exchange: {0..2^NUM_BITS_ADDRESS}
-- timestamp: {0..2^NUM_BITS_TIMESTAMP}
-- accountID: {0..2^NUM_BITS_ACCOUNTID}
-- tokenID: {0..2^NUM_BITS_TOKENID}
+- state: State
+- accountID: {0..2^NUM_BITS_ACCOUNT}
+- tokenID: {0..2^NUM_BITS_TOKEN}
 - amount: {0..2^NUM_BITS_AMOUNT}
-- feeTokenID: {0..2^NUM_BITS_TOKENID}
+- feeTokenID: {0..2^NUM_BITS_TOKEN}
 - maxFee: {0..2^NUM_BITS_AMOUNT}
 - fee: {0..2^NUM_BITS_AMOUNT}
 - validUntil: {0..2^NUM_BITS_TIMESTAMP}
 - onchainDataHash: {0..2^NUM_BITS_HASH}
 - storageID: {0..2^NUM_BITS_STORAGEID}
 - type: {0..2^NUM_BITS_TYPE}
-- operatorAccountID: {0..2^NUM_BITS_ACCOUNTID}
 
 the prover knows an auxiliary input:
 
-- state: State
 - output: TxOutput
 - owner: {0..2^NUM_BITS_ADDRESS}
 - hash: F
@@ -1513,7 +1533,7 @@ such that the following conditions hold:
 - state.accountA.account.nonce_bits = state.accountA.account.nonce_packed
 
 - hash = PoseidonHash_t10f6p53(
-  exchange,
+  state.exchange,
   accountID,
   tokenID,
   amount,
@@ -1524,12 +1544,12 @@ such that the following conditions hold:
   storageID
   )
 - owner = (accountID == 0) ? 0 : state.accountA.account.owner
-- timestamp < validUntil (RequireLtGadget)
+- state.timestamp < validUntil (RequireLtGadget)
 - fee <= maxFee (RequireLeqGadget)
 - if type == 2 then amount = balance_old.balance
 - if type == 3 then amount = 0
 
-- Nonce(state.accountA.storage, storageID, (txType == TransactionType.Withdraw && (type == 0 || type == 1)))
+- Nonce(state.accountA.storage, storageID, (state.txType == TransactionType.Withdraw && (type == 0 || type == 1)))
 - Float(fFee, uFee)
 - RequireAccuracy(uFee, fee)
 
@@ -1558,8 +1578,7 @@ such that the following conditions hold:
   feeTokenID,
   fFee,
   storageID,
-  onchainDataHash,
-  padding_zeros
+  onchainDataHash
   }
 
 Notes:
@@ -1569,19 +1588,23 @@ Notes:
 
 ### Description
 
+- https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#withdraw
+
 This gadgets allows withdrawing from an account at accountID.
 
 Withdrawing from account == 0 is special because this is where the protocol fees are stored and these balances are not immediately committed to the Merkle tree state. This is why some special logic is needed to make sure we don't do any unexpected state changes on that account.
 
-amount is subtracted from the users balance_old at tokenID. Depending on the type, amount may need to have a specific value:
+Some things are only checked when we're actually doing a withdrawal by inspecting txType. This is done because the withdrawal constraints are also part of different transaction types, and so while these constraints don't need for a non-Withdrawal transaction, they do need to be valid to be able to create a valid block.
 
-- type == 0 || type == 1: any amount is allowed as long as amount >= balance_old.balance
-- type == 2: amount == balance_old.balance
+amount is subtracted from the users balance at tokenID. Depending on the type, amount may need to have a specific value:
+
+- type == 0 || type == 1: any amount is allowed as long as amount >= balance
+- type == 2: amount == state.accountA.balanceS.balance
 - type == 3: amount == 0
 
 These different types are used on-chain to correctly handle withdrawals.
 
-A fee is paid to the operator. The feeTokenID balance in balanceF_old for accountID account account_old is decreased by uFee. The feeTokenID balance in balanceOperator_old for operatorAccountID account accountOperator_old is increased by uFee.
+A fee is paid to the operator in any token. The operator can choose any fee lower or equal than the maxFee specified by the user.
 
 Only when type == 0 is a valid EdDSA signature required.
 
@@ -1591,14 +1614,12 @@ In all cases the withdrawal transaction needs to be processed on-chain, so numCo
 
 A valid instance of an Transfer statement assures that given an input of:
 
-- txType: {0..2^NUM_BITS_TYPE}
-- exchange: {0..2^NUM_BITS_ADDRESS}
-- timestamp: {0..2^NUM_BITS_TIMESTAMP}
-- fromAccountID: {0..2^NUM_BITS_ACCOUNTID}
-- toAccountID: {0..2^NUM_BITS_ACCOUNTID}
-- tokenID: {0..2^NUM_BITS_TOKENID}
+- state: State
+- fromAccountID: {0..2^NUM_BITS_ACCOUNT}
+- toAccountID: {0..2^NUM_BITS_ACCOUNT}
+- tokenID: {0..2^NUM_BITS_TOKEN}
 - amount: {0..2^NUM_BITS_AMOUNT}
-- feeTokenID: {0..2^NUM_BITS_TOKENID}
+- feeTokenID: {0..2^NUM_BITS_TOKEN}
 - maxFee: {0..2^NUM_BITS_AMOUNT}
 - fee: {0..2^NUM_BITS_AMOUNT}
 - validUntil: {0..2^NUM_BITS_TIMESTAMP}
@@ -1608,15 +1629,13 @@ A valid instance of an Transfer statement assures that given an input of:
 - to: {0..2^NUM_BITS_ADDRESS}
 - dualAuthorX: F
 - dualAuthorY: F
-- payer_toAccountID: {0..2^NUM_BITS_ACCOUNTID}
+- payer_toAccountID: {0..2^NUM_BITS_ACCOUNT}
 - payer_to: {0..2^NUM_BITS_ADDRESS}
-- payee_toAccountID: {0..2^NUM_BITS_ACCOUNTID}
-- putAddressesInDA: {0..1}
-- operatorAccountID: {0..2^NUM_BITS_ACCOUNTID}
+- payee_toAccountID: {0..2^NUM_BITS_ACCOUNT}
+- putAddressesInDA: {0..2}
 
 the prover knows an auxiliary input:
 
-- state: State
 - output: TxOutput
 - from: {0..2^NUM_BITS_ADDRESS}
 - hashPayer: F
@@ -1646,7 +1665,7 @@ such that the following conditions hold:
 - putAddressesInDA_bits = putAddressesInDA_packed
 
 - hashPayer = PoseidonHash_t13f6p53(
-  exchange,
+  state.exchange,
   fromAccountID,
   payer_toAccountID,
   tokenID,
@@ -1673,14 +1692,14 @@ such that the following conditions hold:
   validUntil,
   storageID
   )
-- timestamp < validUntil (RequireLtGadget)
+- state.timestamp < validUntil (RequireLtGadget)
 - fee <= maxFee (RequireLeqGadget)
 - if (payerTo != 0) then payerTo = to
 - if (payerTo != 0) then payer_toAccountID = payee_toAccountID
 - if (payee_toAccountID != 0) then payee_toAccountID = toAccountID
-- if (txType == TransactionType.Transfer) then to != 0
+- if (state.txType == TransactionType.Transfer) then to != 0
 - to = state.accountB.account.owner
-- Nonce(state.accountA.storage, storageID, (txType == TransactionType.Transfer))
+- Nonce(state.accountA.storage, storageID, (state.txType == TransactionType.Transfer))
 - Float(fFee, uFee)
 - RequireAccuracy(uFee, fee)
 - Float(fAmount, uAmount)
@@ -1716,44 +1735,42 @@ such that the following conditions hold:
   fFee,
   storageID,
   (state.accountA.account.owner == 0 || type == 1 || putAddressesInDA == 1) ? to : 0,
-  (type == 1 || putAddressesInDA == 1) ? from : 0,
-  padding_zeros
+  (type == 1 || putAddressesInDA == 1) ? from : 0
   )
 
 ### Description
 
-This gadgets allows transferring amount tokens from token tokenID from account fromAccountID to accoun toAccountID.
+- https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#transfer
 
-A fee is paid to the operator. The feeTokenID balance in the users's account is decreased by uFee. The feeTokenID balance in the operator's account is increased by uFee.
+This gadgets allows transferring amount tokens of token tokenID from account fromAccountID to accoun toAccountID.
 
-Only when type == 0 is a valid EdDSA signature required.
+Some things are only checked when we're actually doing a transfer by inspecting txType. This is done because the transfer constraints are also part of different transaction types, and so while these constraints don't need to be valid for a non-Transfer transaction, they do need to be valid to be able to create a valid block.
 
-When type == 1 the transfer transaction needs to be processed on-chain, so numConditionalTransactions is incremented.
+A fee is paid to the operator in any token. The operator can choose any fee lower or equal than the maxFee specified by the user.
+
+Only when type == 0 is a valid EdDSA signature required. When type == 1 the transfer transaction needs to be processed on-chain, so numConditionalTransactions is incremented.
 
 ## Order statement
 
 A valid instance of an Order statement assures that given an input of:
 
-- txType: {0..2^NUM_BITS_TYPE}
 - exchange: {0..2^NUM_BITS_ADDRESS}
 - storageID: {0..2^NUM_BITS_STORAGEID}
-- timestamp: {0..2^NUM_BITS_TIMESTAMP}
-- accountID: {0..2^NUM_BITS_ACCOUNTID}
-- tokenS: {0..2^NUM_BITS_TOKENID}
-- tokenB: {0..2^NUM_BITS_TOKENID}
+- accountID: {0..2^NUM_BITS_ACCOUNT}
+- tokenS: {0..2^NUM_BITS_TOKEN}
+- tokenB: {0..2^NUM_BITS_TOKEN}
 - amountS: {0..2^NUM_BITS_AMOUNT}
 - amountB: {0..2^NUM_BITS_AMOUNT}
 - validUntil: {0..2^NUM_BITS_TIMESTAMP}
 - maxFeeBips: {0..2^NUM_BITS_FEE_BIPS}
-- fillAmountBorS: {0..1}
+- fillAmountBorS: {0..2}
 - taker: F
 - feeBips: {0..2^NUM_BITS_FEE_BIPS}
-- amm: {0..1}
-- operatorAccountID: {0..2^NUM_BITS_ACCOUNTID}
+- amm: {0..2}
 
 the prover knows an auxiliary input:
 
--
+- hash: F
 
 such that the following conditions hold:
 
@@ -1820,13 +1837,17 @@ A valid instance of an Order statement assures that given an input of:
 
 the prover knows an auxiliary input:
 
-- protocolFee: F
-- fee: F
+- protocolFee: {0..2^NUM_BITS_AMOUNT}
+- fee: {0..2^NUM_BITS_AMOUNT}
 
 such that the following conditions hold:
 
 - protocolFee = amount \* protocolFeeBips // 100000
 - fee = amount \* feeBips // 10000
+
+- Notes:
+
+While protocolFeeBips is called bips, the unit is actually bips/10
 
 ## RequireValidOrder statement
 
@@ -1940,10 +1961,11 @@ A valid instance of an SpotPriceAMM statement assures that given an input of:
 - weightIn: {0..2^NUM_BITS_AMOUNT}
 - balanceOut: {0..2^NUM_BITS_AMOUNT}
 - weightOut: {0..2^NUM_BITS_AMOUNT}
+- feeBips: {0..2^NUM_BITS_AMM_BIPS}
 
 the prover knows an auxiliary input:
 
-- result: F
+- result: {0..2^NUM_BITS_AMOUNT}
 - numer: F
 - denom: F
 - ratio: F
@@ -1954,8 +1976,13 @@ such that the following conditions hold:
 - numer = balanceIn \* weightOut
 - denom = balanceOut \* weightIn
 - ratio = (numer \* BASE_FIXED) / denom
+- ratio < 2^NUM_BITS_AMOUNT (range check)
 - invFeeBips = BASE_BIPS - feeBips
 - result = (ratio \* BASE_BIPS) / invFeeBips
+
+### Description
+
+Formula from balancer.
 
 ## CalcOutGivenInAMM statement
 
@@ -1965,24 +1992,29 @@ A valid instance of an CalcOutGivenInAMM statement assures that given an input o
 - weightIn: {0..2^NUM_BITS_AMOUNT}
 - balanceOut: {0..2^NUM_BITS_AMOUNT}
 - weightOut: {0..2^NUM_BITS_AMOUNT}
-- feeBips: {0..2^NUM_BITS_FEE_BIPS}
+- feeBips: {0..2^NUM_BITS_AMM_BIPS}
 - amountIn: {0..2^NUM_BITS_AMOUNT}
 
 the prover knows an auxiliary input:
 
-- result: F
+- result: {0..2^NUM_BITS_AMOUNT}
 - weightRatio: {0..2^NUM_BITS_AMOUNT}
-- fee: F
-- y: F
-- p: F
+- fee: {0..2^NUM_BITS_AMOUNT}
+- y: {0..2^NUM_BITS_AMOUNT}
+- p: {0..2^NUM_BITS_AMOUNT}
 
 such that the following conditions hold:
 
 - weightRatio = (weightIn \* BASE_FIXED) / weightOut
+- weightRatio < 2^NUM_BITS_AMOUNT (range check)
 - fee = amountIn \* feeBips / BASE_BIPS
 - y = (balanceIn \* BASE_FIXED) / (balanceIn + (amountIn - fee))
 - p = power(y, weightRatio)
 - result = balanceOut \* (BASE_FIXED - p) / BASE_FIXED
+
+### Description
+
+Formula from balancer.
 
 ## RequireAMMFills statement
 
@@ -1994,9 +2026,9 @@ A valid instance of an RequireAMMFills statement assures that given an input of:
 the prover knows an auxiliary input:
 
 - ammData: AmmData
-- maxFillS: F
-- price_before: F
-- price_after: F
+- maxFillS: {0..2^NUM_BITS_AMOUNT}
+- price_before: {0..2^NUM_BITS_AMOUNT}
+- price_after: {0..2^NUM_BITS_AMOUNT}
 
 such that the following conditions hold:
 
@@ -2013,6 +2045,9 @@ such that the following conditions hold:
 - price_before = SpotPriceAMM(ammData.inBalanceBefore, ammData.inWeight, ammData.outBalanceBefore, ammData.outWeight, data.ammFeeBips)
 - price_after = SpotPriceAMM(ammData.inBalanceAfter, ammData.inWeight, ammData.outBalanceAfter, ammData.outWeight, data.ammFeeBips)
 - if data.amm == 1 price_before <= price_after
+
+- Notes:
+- As an additional check agains potential rounding errors in the power gadget, we enforce that the AMM minimum price after the trade cannot be lower than before.
 
 ## ValidateAMM statement
 
@@ -2034,35 +2069,31 @@ such that the following conditions hold:
 
 A valid instance of an SpotTrade statement assures that given an input of:
 
-- txType: {0..2^NUM_BITS_TYPE}
-- exchange: {0..2^NUM_BITS_ADDRESS}
-- timestamp: {0..2^NUM_BITS_TIMESTAMP}
+- state: State
 - orderA: Order
 - orderB: Order
 - fillS_A: {0..2^24}
 - fillS_B: {0..2^24}
-- operatorAccountID: {0..2^NUM_BITS_ACCOUNTID}
 
 the prover knows an auxiliary input:
 
-- state: State
 - output: TxOutput
 - storageDataA: F
 - storageDataB: F
-- uFillS_A
-- uFillS_B
-- filledAfterA
-- filledAfterB
+- uFillS_A: {0..2^NUM_BITS_AMOUNT}
+- uFillS_B: {0..2^NUM_BITS_AMOUNT}
+- filledAfterA: {0..2^NUM_BITS_AMOUNT}
+- filledAfterB: {0..2^NUM_BITS_AMOUNT}
 
 such that the following conditions hold:
 
-- Order(orderA)
-- Order(orderB)
+- orderA = Order(state.exchange)
+- orderB = Order(state.exchange)
 - Float(fillS_A, uFillS_A)
 - Float(fillS_B, uFillS_B)
-- storageDataA = StorageReader(state.accountA.storage, orderA.storageID, (txType == TransactionType.SpotTrade))
-- storageDataB = StorageReader(state.accountB.storage, orderB.storageID, (txType == TransactionType.SpotTrade))
-- OrderMatching(timestamp, orderA, orderB, state.accountA.account.owner, state.accountB.account.owner, storageDataA, storageDataB, uFillS_A, uFillS_B)
+- storageDataA = StorageReader(state.accountA.storage, orderA.storageID, (state.txType == TransactionType.SpotTrade))
+- storageDataB = StorageReader(state.accountB.storage, orderB.storageID, (state.txType == TransactionType.SpotTrade))
+- OrderMatching(state.timestamp, orderA, orderB, state.accountA.account.owner, state.accountB.account.owner, storageDataA, storageDataB, uFillS_A, uFillS_B)
 - (feeA, protocolFeeA) = FeeCalculator(uFillS_B, state.protocolTakerFeeBips, orderA.feeBips)
 - (feeB, protocolFeeB) = FeeCalculator(uFillS_A, state.protocolMakerFeeBips, orderB.feeBips)
 
@@ -2107,8 +2138,7 @@ such that the following conditions hold:
   fillS_A,
   fillS_B,
   orderA.fillAmountBorS, 0, orderA.feeBips,
-  orderB.fillAmountBorS, 0, orderB.feeBips,
-  padding_zeros
+  orderB.fillAmountBorS, 0, orderB.feeBips
   )
 
 - ValidateAMM(
@@ -2138,17 +2168,24 @@ such that the following conditions hold:
 
 ### Description
 
-This gadgets allows transferring amount tokens from token tokenID from account fromAccountID to accoun toAccountID.
+- https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#spot-trade
 
-A fee is paid to the operator. The feeTokenID balance in the users's account is decreased by uFee. The feeTokenID balance in the operator's account is increased by uFee.
+This gadgets allows trading two tokens (tokenS and tokenB) between two accounts (orderA.accountID and orderB.accountID).
 
-Only when type == 0 is a valid EdDSA signature required.
+A fee is paid to the operator, and this fee is always paid in the tokens bought by the account. Additionally a protocol fee is charged to the operator.
 
-When type == 1 the transfer transaction needs to be processed on-chain, so numConditionalTransactions is incremented.
+The operator is free to pass in any fillS_A and fillS_B, as long as all user requirements are met:
+
+- For limit orders the price is below the maximum price defined in the order as amountS/amountB
+- For AMM orders the price is above the minimum price as set by the curve defined by the current AMM weights on the account.
+
+Orders need to be signed with EdDSA in all cases, except when AMM is enabled for tokenS and tokenB in the account.
+
+Trades are never processed on-chain, so numConditionalTransactions is never incremented.
 
 ## SelectTransaction statement
 
-A valid instance of an SelectTransaction statement assures that given an input of:
+A valid instance of a SelectTransaction statement assures that given an input of:
 
 - selector_bits: {0..2^7}
 - outputs[7]: TxOutput
@@ -2159,9 +2196,9 @@ the prover knows an auxiliary input:
 
 such that the following conditions hold:
 
-- for each var in TxOutput.uOutputs: output.uOutputs.var = Select(selector_bits, outputs[0..7].uOutputs.var)
-- for each var in TxOutput.aOutputs: output.aOutputs.var = ArraySelect(selector_bits, outputs[0..7].aOutputs.var)
-- for each var in TxOutput.da: output.da = ArraySelect(selector_bits, outputs[0..7].da), wit outputs[i].da padded to (TX_DATA_AVAILABILITY_SIZE - 1) \* 8 bits with zeros
+- for each F var in TxOutput: output.var = Select(selector_bits, outputs[0..7].var)
+- for each F_array var in TxOutput: output.var = ArraySelect(selector_bits, outputs[0..7].var)
+- output.da = ArraySelect(selector_bits, outputs[0..7].da), wit outputs[i].da padded to (TX_DATA_AVAILABILITY_SIZE - 1) \* 8 bits with zeros
 
 ### Description
 
@@ -2169,23 +2206,24 @@ This gadget selects the correct output for the transaction that's being executed
 
 ## Transaction statement
 
-A valid instance of an Transaction statement assures that given an input of:
+A valid instance of a Transaction statement assures that given an input of:
 
 - txType: {0..2^NUM_BITS_TX_TYPE}
-- txInputs: TxInputs
 - exchange: {0..2^NUM_BITS_ADDRESS}
 - timestamp: {0..2^NUM_BITS_TIMESTAMP}
-- protocolTakerFeeBips: F
-- protocolMakerFeeBips: F
-- operatorAccountID: {0..2^NUM_BITS_ACCOUNTID}
+- protocolTakerFeeBips: {0..2^NUM_BITS_PROTOCOL_FEE_BIPS}
+- protocolMakerFeeBips: {0..2^NUM_BITS_PROTOCOL_FEE_BIPS}
+- operatorAccountID: {0..2^NUM_BITS_ACCOUNT}
+- root_old: F
+- protocolBalancesRoot_old: F
+- numConditionalTransactions_old: F
 
 the prover knows an auxiliary input:
 
-- state: State
-- root_old: F
 - root_new: F
-- numConditionalTransactions_old: F
+- protocolBalancesRoot_new: F
 - numConditionalTransactions_new: F
+- state: State
 - outputs: TxOutput[7]
 - output: TxOutput
 
@@ -2193,13 +2231,21 @@ such that the following conditions hold:
 
 - txType_bits = txType_packed
 - selector = Selector(txType)
-- outputs[0] = Noop(state, txInputs)
-- outputs[1] = SpotTrade(state, txInputs)
-- outputs[2] = Deposit(state, txInputs)
-- outputs[3] = Withdraw(state, txInputs)
-- outputs[4] = AccountUpdate(state, txInputs)
-- outputs[5] = Transfer(state, txInputs)
-- outputs[6] = AmmUpdate(state, txInputs)
+
+- state.txType = txType
+- state.exchange = exchange
+- state.timestamp = timestamp
+- state.protocolTakerFeeBips = protocolTakerFeeBips
+- state.protocolMakerFeeBips = protocolMakerFeeBips
+- state.operatorAccountID = operatorAccountID
+
+- outputs[0] = Noop(state)
+- outputs[1] = SpotTrade(state)
+- outputs[2] = Deposit(state)
+- outputs[3] = Withdraw(state)
+- outputs[4] = AccountUpdate(state)
+- outputs[5] = Transfer(state)
+- outputs[6] = AmmUpdate(state)
 - output = SelectTransaction(selector, outputs)
 
 - output.ACCOUNT_A_ADDRESS_bits = output.ACCOUNT_A_ADDRESS_packed
@@ -2308,11 +2354,11 @@ A valid instance of an Universal statement assures that given an input of:
 - timestamp: {0..2^NUM_BITS_TIMESTAMP}
 - protocolTakerFeeBips: {0..2^NUM_BITS_PROTOCOL_FEE_BIPS}
 - protocolMakerFeeBips: {0..2^NUM_BITS_PROTOCOL_FEE_BIPS}
-- operatorAccountID: {0..2^NUM_BITS_ACCOUNTID}
-- transactions: Transaction[N]
+- operatorAccountID: {0..2^NUM_BITS_ACCOUNT}
 
 the prover knows an auxiliary input:
 
+- transactions: Transaction[N]
 - accountP: Account
 - accountO: Account
 - numConditionalTransactions: {0..2^32}
@@ -2328,19 +2374,18 @@ such that the following conditions hold:
 - operatorAccountID_bits = operatorAccountID_packed
 - numConditionalTransactions_bits = numConditionalTransactions_packed
 
-- for i in 0..N: Transaction(
+- for i in {0..N}: transactions[i] = Transaction(
   exchange,
-  (i == 0) ? merkleRootBefore : Transaction[i-1].newAccountsRoot,
+  (i == 0) ? merkleRootBefore : transactions[i-1].root_new,
   timestamp,
   protocolTakerFeeBips,
   protocolMakerFeeBips,
   operatorAccountID,
-  (i == 0) ? accountBefore_P.balancesRoot : Transaction[i-1].newPoolBalancesRoot,
-  (i == 0) ? 0 : Transaction[i-1].output.NUM_CONDITIONAL_TXS,
-  transactions[i]
+  (i == 0) ? accountBefore_P.balancesRoot : transactions[i-1].protocolBalancesRoot_new,
+  (i == 0) ? 0 : transactions[i-1].output.NUM_CONDITIONAL_TXS
   )
 
-- numConditionalTransactions = Transaction[N-1].NUM_CONDITIONAL_TXS
+- numConditionalTransactions = transactions[N-1].output.NUM_CONDITIONAL_TXS
 
 - publicData = (
   exchange,
@@ -2351,7 +2396,7 @@ such that the following conditions hold:
   protocolMakerFeeBips,
   numConditionalTransactions,
   operatorAccountID,
-  for i in 0..N: Transaction[i].output.DA, with the resulting bit array split in two parts: the initial 29 bytes grouped together first, then the remaining 39 grouped together.
+  concat(for i in {0..N}: transactions[i].output.DA[0..29\*8], for i in {0..N}: transactions[i].output.DA[29\*8, 68\*8])
   )
 - publicInput = PublicData(publicData)
 
@@ -2362,10 +2407,10 @@ such that the following conditions hold:
 - SignatureVerifier(accountO.publicKeyX, accountO.publicKeyY, hash, 1)
 
 - root_P = UpdateAccount(
-  Transaction[N-1].newAccountsRoot,
+  transactions[N-1].root_new,
   0,
   (accountP.owner, accountP.publicKey.x, accountP.publicKey.y, accountP.nonce, accountP.feeBipsAMM, accountP.balancesRoot),
-  (accountP.owner, accountP.publicKey.x, accountP.publicKey.y, accountP.nonce, accountP.feeBipsAMM, Transaction[N-1].getNewProtocolBalancesRoot())
+  (accountP.owner, accountP.publicKey.x, accountP.publicKey.y, accountP.nonce, accountP.feeBipsAMM, transactions[N-1].protocolBalancesRoot_new)
   )
 - root_O = UpdateAccount(
   root_P,
@@ -2379,4 +2424,6 @@ such that the following conditions hold:
 
 Batches multiple transactions together in a block. All public input is hashed to the single field element publicInput, this makes verifying the proof more efficient.
 
-The operator is required to sign the block. This is needed because the operator pays the protocol fees.
+The operator is required to sign the block. This is required because the operator pays the protocol fees direclty from his own account.
+
+Here we finally apply the new balance root of the pool acccount (at accountID = 0) to the Merkle tree. All balance updates done while running over the transactions only updated the balance Merkle tree of the account, and so here we set it in the account so the main Merkle tree is updated.
