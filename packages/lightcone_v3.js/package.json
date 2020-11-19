@@ -27,7 +27,7 @@
   "license": "ISC",
   "dependencies": {
     "@types/ethereumjs-abi": "^0.6.3",
-    "async-validator": "3.3.0",
+    "async-validator": "3.5.1",
     "bignumber.js": "^9.0.0",
     "bip39": "2.5.0",
     "blake-hash": "^2.0.0",
