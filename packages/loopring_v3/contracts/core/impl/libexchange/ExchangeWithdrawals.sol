@@ -63,11 +63,13 @@ library ExchangeWithdrawals
         public
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        // Limit the amount of pending forced withdrawals so that the owner cannot be overwhelmed.
         require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
         require(accountID < ExchangeData.MAX_NUM_ACCOUNTS(), "INVALID_ACCOUNTID");
 
         uint16 tokenID = S.getTokenID(token);
 
+        // A user needs to pay a fixed ETH withdrawal fee, set by the protocol.
         uint withdrawalFeeETH = S.loopring.forcedWithdrawalFee();
 
         // Check ETH value sent, can be larger than the expected withdraw fee
@@ -79,16 +81,19 @@ library ExchangeWithdrawals
             msg.sender.sendETHAndVerify(feeSurplus, gasleft());
         }
 
+        // There can only be a single forced withdrawal per (account, token) pair.
         require(
             S.pendingForcedWithdrawals[accountID][tokenID].timestamp == 0,
             "WITHDRAWAL_ALREADY_PENDING"
         );
 
+        // Store the forced withdrawal request data
         S.pendingForcedWithdrawals[accountID][tokenID] = ExchangeData.ForcedWithdrawal({
             owner: owner,
             timestamp: uint64(block.timestamp)
         });
 
+        // Increment the number of pending forced transactions so we can keep count.
         S.numPendingForcedTransactions++;
 
         emit ForcedWithdrawalRequested(
@@ -98,7 +103,7 @@ library ExchangeWithdrawals
         );
     }
 
-    // We still alow anyone to withdraw these funds for the account owner
+    // We alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTree(
         ExchangeData.State       storage S,
         ExchangeData.MerkleProof calldata merkleProof
@@ -112,8 +117,10 @@ library ExchangeWithdrawals
         uint16 tokenID = merkleProof.balanceLeaf.tokenID;
         uint96 balance = merkleProof.balanceLeaf.balance;
 
+        // Make sure the funds aren't withdrawn already.
         require(S.withdrawnInWithdrawMode[accountID][tokenID] == false, "WITHDRAWN_ALREADY");
 
+        // Verify that the provided Merkle tree data is valid by using the Merkle proof.
         ExchangeBalances.verifyAccountBalance(
             uint(S.merkleRoot),
             merkleProof
@@ -122,7 +129,7 @@ library ExchangeWithdrawals
         // Make sure the balance can only be withdrawn once
         S.withdrawnInWithdrawMode[accountID][tokenID] = true;
 
-        // Transfer the tokens
+        // Transfer the tokens to the account owner
         transferTokens(
             S,
             uint8(WithdrawalCategory.FROM_MERKLE_TREE),
@@ -189,7 +196,7 @@ library ExchangeWithdrawals
             // Make sure this amount can't be withdrawn again
             delete S.amountWithdrawable[owner][tokenID];
 
-            // Transfer the tokens
+            // Transfer the tokens to the owner
             transferTokens(
                 S,
                 uint8(WithdrawalCategory.FROM_APPROVED_WITHDRAWAL),
@@ -227,8 +234,10 @@ library ExchangeWithdrawals
             gasLimit,
             true
         );
+        // If the transfer was successful there's nothing left to do.
+        // However, if the transfer failed the tokens are still in the contract and can be
+        // withdrawn later to `to` by anyone by using `withdrawFromApprovedWithdrawal.
         if (!success) {
-            // Allow the amount to be withdrawn using `withdrawFromApprovedWithdrawal`.
             S.amountWithdrawable[to][tokenID] = S.amountWithdrawable[to][tokenID].add(amount);
         }
     }
@@ -254,6 +263,7 @@ library ExchangeWithdrawals
         private
         returns (bool success)
     {
+        // Redirect withdrawals to address(0) to the protocol fee vault
         if (to == address(0)) {
             to = S.loopring.protocolFeeVault();
         }
@@ -275,6 +285,8 @@ library ExchangeWithdrawals
         if (success) {
             emit WithdrawalCompleted(category, from, to, token, amount);
 
+            // Keep track of when the protocol fees were last withdrawn
+            // (only done to make this data easier available).
             if (from == address(0)) {
                 S.protocolFeeLastWithdrawnTime[token] = block.timestamp;
             }

@@ -88,32 +88,6 @@ abstract contract IExchangeV3 is Claimable
         bytes32 transactionHash
     );
 
-    // events from libraries
-    /*event DepositProcessed(
-        address to,
-        uint32  toAccountId,
-        uint16  token,
-        uint    amount
-    );*/
-
-    /*event ForcedWithdrawalProcessed(
-        uint32 fromAccountID,
-        uint16 tokenID,
-        uint   amount
-    );*/
-
-    /*event ConditionalTransferProcessed(
-        address from,
-        address to,
-        uint16  token,
-        uint    amount
-    );*/
-
-    /*event AccountUpdated(
-        uint32 owner,
-        uint   publicKey
-    );*/
-
 
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.

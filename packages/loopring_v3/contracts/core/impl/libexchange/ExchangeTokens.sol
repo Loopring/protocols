@@ -46,6 +46,7 @@ library ExchangeTokens
         require(S.tokenToTokenId[tokenAddress] == 0, "TOKEN_ALREADY_EXIST");
         require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS(), "TOKEN_REGISTRY_FULL");
 
+        // Check if the deposit contract supports the new token
         if (S.depositContract != IDepositContract(0)) {
             require(
                 S.depositContract.isTokenSupported(tokenAddress),
@@ -53,6 +54,7 @@ library ExchangeTokens
             );
         }
 
+        // Assign a tokenID and store the token
         ExchangeData.Token memory token = ExchangeData.Token(
             tokenAddress
         );
