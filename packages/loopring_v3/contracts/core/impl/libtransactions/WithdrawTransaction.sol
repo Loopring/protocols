@@ -103,6 +103,10 @@ library WithdrawTransaction
         withdrawal.maxFee = auxData.maxFee == 0 ? withdrawal.fee : auxData.maxFee;
         withdrawal.validUntil = auxData.validUntil;
 
+        // If the account has an owner, don't allow withdrawing to the zero address
+        // (which will be the protocol fee vault contract).
+        require(withdrawal.from == address(0) || withdrawal.to != address(0), "INVALID_WITHDRAWAL_RECIPIENT");
+
         if (withdrawal.withdrawalType == 0) {
             // Signature checked offchain, nothing to do
         } else if (withdrawal.withdrawalType == 1) {
