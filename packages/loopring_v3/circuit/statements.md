@@ -1,5 +1,7 @@
 # Circuit documentation
 
+For a full overview of the Loopring protocol, see https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md
+
 ## Constants
 
 - TREE_DEPTH_STORAGE = 7
@@ -163,16 +165,26 @@
   ammFill: {0..2^NUM_BITS_AMOUNT}
   )
 
+## Poseidon
+
+Most of the hashing is done using the Poseidon (https://eprint.iacr.org/2019/458.pdf) hash function. This hash function works direclty on field elements and is very efficient.
+
+Poseidon can be instanciated with 3 parameters: t, f, and p. In all cases we use the following method to choose these:
+
+1. Set t equal to the number of inputs + 1 (this extra input of 0 is the capacity)
+2. With the above t, choose f and p so that the number of constraints necessary is minimized, while ensuring a minimum security level of 128 bit. The rules that need to be followed to achieve this are described in the paper. In practice, the script available at https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/util/find_optimal_poseidon.py.
+
+Because Poseidon is more efficient for four inputs compared to two inputs we use a quad Merkle tree instead of a binary Merkle tree.
+
 ## DefaultTxOutput
 
 A valid instance of an DefaultTxOutput statement assures that given an input of:
 
--
+- state: State
 
 the prover knows an auxiliary input:
 
 - output: TxOutput
-- state: State
 
 such that the following conditions hold:
 
@@ -226,6 +238,8 @@ such that the following conditions hold:
 - output.NUM_CONDITIONAL_TXS = state.numConditionalTransactions
 - output.DA = 0
 
+# Math
+
 ## DualVariableGadget
 
 This gadget is a simple wrapper around `libsnark::dual_variable_gadget`.
@@ -260,7 +274,7 @@ such that the following conditions hold:
 
 Notes:
 
-- Does _not_ check for underflow
+- Does _not_ check for underflow, not because any circuit depends on underflow, but because this gadget should only be used in cases where it should never happen.
 
 ## UnsafeAdd statement
 
@@ -279,7 +293,7 @@ such that the following conditions hold:
 
 Notes:
 
-- Does _not_ check for overflow
+- Does _not_ check for overflow, not because any circuit depends on overflow, but because this gadget should only be used in cases where it should never happen.
 
 ## UnsafeMul statement
 
@@ -298,7 +312,7 @@ such that the following conditions hold:
 
 Notes:
 
-- Does _not_ check for overflow
+- Does _not_ check for overflow, not because any circuit depends on overflow, but because this gadget should only be used in cases where it should never happen.
 
 ## Add statement
 
@@ -323,6 +337,7 @@ such that the following conditions hold:
 Notes:
 
 - Should check for overflow
+- A and B are limited to n + 1 <= NUM_BITS_FIELD_CAPACITY, so we can be sure to detect overflow with a simple range check on the result.
 
 ## Sub statement
 
@@ -347,6 +362,7 @@ such that the following conditions hold:
 Notes:
 
 - Should check for underflow
+- A and B are limited to n + 1 <= NUM_BITS_FIELD_CAPACITY, so we can be sure to detect underflow with a simple range check on the result.
 
 ## Transfer statement
 
@@ -777,6 +793,8 @@ such that the following conditions hold:
 
 3 LBS are stripped from the 256-bit hash so that the packed value always fits inside a single field element.
 
+sha256 is used here because we also need to hash the data onchain. sha256 is very cheap to calculate onchain but quite expensive to calculate in the circuits, while something like Poseidon is extremely expensive to calculate onchain, which cheap to calculate in the circuits. Because we aim for scalability, we want onchain costs to be as low as possible, while proving costs are pretty cheap regardless.
+
 ## Float statement
 
 A valid instance of a Float statement assures that given an input of:
@@ -795,7 +813,7 @@ Notes:
 
 ## Selector statement
 
-A valid instance of an Selector statement assures that given an input of:
+A valid instance of a Selector statement assures that given an input of:
 
 - type: F
 
@@ -817,7 +835,7 @@ Notes:
 
 ## Select statement
 
-A valid instance of an Select statement assures that given an input of:
+A valid instance of a Select statement assures that given an input of:
 
 - selector: {0..2}[N]
 - values: F[N]
@@ -866,7 +884,7 @@ such that the following conditions hold:
 
 ## SignedAdd statement
 
-A valid instance of an SignedAdd statement assures that given an input of:
+A valid instance of a SignedAdd statement assures that given an input of:
 
 - A: SignedF
 - B: SignedF
@@ -886,7 +904,7 @@ Notes:
 
 ## SignedSub statement
 
-A valid instance of an SignedSub statement assures that given an input of:
+A valid instance of a SignedSub statement assures that given an input of:
 
 - A: SignedF
 - B: SignedF
@@ -901,7 +919,7 @@ The following conditions hold:
 
 ## SignedMulDiv statement
 
-A valid instance of an SignedMulDiv statement assures that given an input of:
+A valid instance of a SignedMulDiv statement assures that given an input of:
 
 - value: SignedF{0..2^numBitsValue}
 - numerator: SignedF{0..2^numBitsNumerator}
@@ -920,10 +938,10 @@ such that the following conditions hold:
 
 ## Power statement
 
-A valid instance of an Power statement assures that given an input of:
+A valid instance of a Power statement assures that given an input of:
 
 - \_x: F
-- \_y: F
+- y: F
 
 with circuit parameters:
 
@@ -966,9 +984,11 @@ Calculates [0, 1]\*\*[0, inf) using an approximation. The closer the base is to 
 The result is enforced to be containable in NUM_BITS_AMOUNT bits.
 The higher the number of iterations, the higher the accuracy (and the greater the cost).
 
+# Merkle tree
+
 ## MerklePathSelector statement
 
-A valid instance of an MerklePathSelector statement assures that given an input of:
+A valid instance of a MerklePathSelector statement assures that given an input of:
 
 - input: F
 - sideNodes: F[3]
@@ -985,6 +1005,10 @@ such that the following conditions hold:
 - if bit1 == 0 && bit0 == 1: children = [sideNodes[0], input, sideNodes[1], sideNodes[2]]
 - if bit1 == 1 && bit0 == 0: children = [sideNodes[0], sideNodes[1], input, sideNodes[2]]
 - if bit1 == 1 && bit0 == 1: children = [sideNodes[0], sideNodes[1], sideNodes[2], input]
+
+### Description
+
+Using the address bits specified, selects the children in a quad Merkle tree.
 
 ## MerklePath statement
 
@@ -1016,6 +1040,10 @@ such that the following conditions hold:
   hashes[i] = PoseidonHash_t5f6p52(children[i])
 - result = hashes[depth-1]
 
+### Description
+
+Calculates the Merkle root along the specified path.
+
 ## MerklePathCheck statement
 
 A valid instance of a MerklePathCheck statement assures that given an input of:
@@ -1037,6 +1065,10 @@ such that the following conditions hold:
 
 - expectedRoot = MerklePath(depth, address, leaf, proof)
 - root = expectedRoot
+
+### Description
+
+Verifies the Merkle root for the specified path.
 
 ## UpdateAccount statement
 
@@ -1073,6 +1105,10 @@ such that the following conditions hold:
 - MerklePathCheck(TREE_DEPTH_ACCOUNTS, address, hash_before, root_before, proof)
 - root_after = MerklePath(TREE_DEPTH_ACCOUNTS, address, hash_after, proof)
 
+### Description
+
+Updates an Account leaf in the accounts Merkle tree.
+
 ## UpdateBalance statement
 
 A valid instance of an UpdateBalance statement assures that given an input of:
@@ -1102,6 +1138,10 @@ such that the following conditions hold:
 - MerklePathCheck(TREE_DEPTH_TOKENS, address, hash_before, root_before, proof)
 - root_after = MerklePath(TREE_DEPTH_TOKENS, address, hash_after, proof)
 
+### Description
+
+Updates a Balance leaf in the balances Merkle tree.
+
 ## UpdateStorage statement
 
 A valid instance of an UpdateStorage statement assures that given an input of:
@@ -1129,110 +1169,9 @@ such that the following conditions hold:
 - MerklePathCheck(TREE_DEPTH_STORAGE, address, hash_before, root_before, proof)
 - root_after = MerklePath(TREE_DEPTH_STORAGE, address, hash_after, proof)
 
-## CompressPublicKey statement
+### Description
 
-A valid instance of an CompressPublicKey statement assures that given an input of:
-
-- publicKeyX: F
-- publicKeyY: F
-
-the prover knows an auxiliary input:
-
-- compressedPublicKey_bits: {0..2^256}
-
-The following conditions hold:
-
-If publicKeyY != 0:
-
-- publicKeyY = compressedPublicKey_bits[0..254[
-- compressedPublicKey_bits[254] = 0
-- publicKeyX = (compressedPublicKey_bits[255] == 1 ? -1 : 1) \* sqrt((y\*y - 1) / ((JubJub.D \* y\*y) - JubJub.A)
-
-If publicKeyY == 0:
-
-- compressedPublicKey_bits[0..256[ = 0
-
-Notes:
-
-- sqrt always needs to return the positive root, which is defined by root < 0 - root. Otherwise the prover can supply either the negative root or the positive root as a valid result of sqrt when the constraint is defined as x == y \* y == -y \* -y.
-- A special case is to allow publicKeyX == publicKeyY == 0, which isn't a valid point. This allows disabling the ability to sign with EdDSA with the account).
-- See https://ed25519.cr.yp.to/eddsa-20150704.pdf
-
-## EdDSA_HashRAM_Poseidon statement
-
-A valid instance of an EdDSA_HashRAM_Poseidon statement assures that given an input of:
-
-- rX: F
-- rY: F
-- aX: F
-- aY: F
-- message: F
-
-the prover knows an auxiliary input:
-
-- hash: F
-
-The following conditions hold:
-
-- hash_bits = hash_packed
-- hash = PoseidonHash_t6f6p52(
-  rX,
-  rY,
-  aX,
-  aY,
-  message
-  )
-
-## EdDSA_Poseidon statement
-
-A valid instance of an EdDSA_Poseidon statement assures that given an input of:
-
-- aX: F
-- aY: F
-- rX: F
-- rY: F
-- s: F[]
-- message: F
-
-the prover knows an auxiliary input:
-
-- result: {0..2}
-- hash: F
-- hashRam: F[]
-- atX: F
-- atY: F
-
-The following conditions hold:
-
-- PointValidator(aX, aY)
-- hashRAM = EdDSA_HashRAM_Poseidon(rX, rY, aX, aY, s)
-- (atX, atY) = ScalarMult(aX, aY, hashRAM)
-- result = (fixed_base_mul(s) == PointAdder(rX, rY, atX, atY))
-
-Notes:
-
-- Based on `PureEdDSA` in ethsnarks
-
-## SignatureVerifier statement
-
-Given inputs:
-
-- publicKeyX: F
-- publicKeyY: F
-- message: F
-- required: {0..2}
-
-the prover knows an auxiliary input:
-
-- result
-- rX: F
-- rY: F
-- s: F[]
-
-The following conditions hold:
-
-- result = EdDSA_Poseidon(publicKeyX, publicKeyY, rX, rY, s, message)
-- if required == 1 then valid == 1
+Updates a Storage leaf in the storage Merkle tree.
 
 ## StorageReader statement
 
@@ -1275,6 +1214,481 @@ such that the following conditions hold:
 ### Description
 
 Builds a simple parallel nonce system on top of the storage tree. Transactions can use any storage slot that contains 0 as data (after overwriting logic). This slot will be overwritten with a 1, making it impossible to re-use the transaction multiple times.
+
+# Signature
+
+## CompressPublicKey statement
+
+A valid instance of a CompressPublicKey statement assures that given an input of:
+
+- publicKeyX: F
+- publicKeyY: F
+
+the prover knows an auxiliary input:
+
+- compressedPublicKey_bits: {0..2^256}
+
+The following conditions hold:
+
+If publicKeyY != 0:
+
+- publicKeyY = compressedPublicKey_bits[0..254[
+- compressedPublicKey_bits[254] = 0
+- publicKeyX = (compressedPublicKey_bits[255] == 1 ? -1 : 1) \* sqrt((y\*y - 1) / ((JubJub.D \* y\*y) - JubJub.A)
+
+If publicKeyY == 0:
+
+- compressedPublicKey_bits[0..256[ = 0
+
+Notes:
+
+- sqrt always needs to return the positive root, which is defined by root < 0 - root. Otherwise the prover can supply either the negative root or the positive root as a valid result of sqrt when the constraint is defined as x == y \* y == -y \* -y.
+- A special case is to allow publicKeyX == publicKeyY == 0, which isn't a valid point. This allows disabling the ability to sign with EdDSA with the account).
+
+### Description
+
+Compresses a point on the curve (two field elements) to a single field element (254 bits) + 1 bit. See https://ed25519.cr.yp.to/eddsa-20150704.pdf for the mathematical background.
+
+## EdDSA_HashRAM_Poseidon statement
+
+A valid instance of an EdDSA_HashRAM_Poseidon statement assures that given an input of:
+
+- rX: F
+- rY: F
+- aX: F
+- aY: F
+- message: F
+
+the prover knows an auxiliary input:
+
+- hash: F
+
+The following conditions hold:
+
+- hash_bits = hash_packed
+- hash = PoseidonHash_t6f6p52(
+  rX,
+  rY,
+  aX,
+  aY,
+  message
+  )
+
+Notes:
+
+- Based on `EdDSA_HashRAM_gadget` in ethsnarks (https://github.com/yueawang/ethsnarks/blob/042ad35a8a67a1844e51eac441b310371eba1fe8/src/jubjub/eddsa.cpp#L11), modified to use Poseidon.
+
+### Description
+
+For use with EdDSA.
+
+## EdDSA_Poseidon statement
+
+A valid instance of an EdDSA_Poseidon statement assures that given an input of:
+
+- aX: F
+- aY: F
+- rX: F
+- rY: F
+- s: F[]
+- message: F
+
+the prover knows an auxiliary input:
+
+- result: {0..2}
+- hash: F
+- hashRam: F[]
+- atX: F
+- atY: F
+
+The following conditions hold:
+
+- PointValidator(aX, aY)
+- hashRAM = EdDSA_HashRAM_Poseidon(rX, rY, aX, aY, s)
+- (atX, atY) = ScalarMult(aX, aY, hashRAM)
+- result = (fixed_base_mul(s) == PointAdder(rX, rY, atX, atY))
+
+Notes:
+
+- Based on `PureEdDSA` in ethsnarks (https://github.com/yueawang/ethsnarks/blob/042ad35a8a67a1844e51eac441b310371eba1fe8/src/jubjub/eddsa.cpp#L63), modified to use Poseidon.
+
+## SignatureVerifier statement
+
+A valid instance of a SignatureVerifier statement assures that given an input of:
+
+- publicKeyX: F
+- publicKeyY: F
+- message: F
+- required: {0..2}
+
+the prover knows an auxiliary input:
+
+- result
+- rX: F
+- rY: F
+- s: F[]
+
+The following conditions hold:
+
+- result = EdDSA_Poseidon(publicKeyX, publicKeyY, rX, rY, s, message)
+- if required == 1 then valid == 1
+
+### Description
+
+Verifies a signature for message signed by the specified public key if required is set to one. If required is set to zero no valid signature needs to be provided.
+
+# Matching
+
+## Order statement
+
+A valid instance of an Order statement assures that given an input of:
+
+- exchange: {0..2^NUM_BITS_ADDRESS}
+- storageID: {0..2^NUM_BITS_STORAGEID}
+- accountID: {0..2^NUM_BITS_ACCOUNT}
+- tokenS: {0..2^NUM_BITS_TOKEN}
+- tokenB: {0..2^NUM_BITS_TOKEN}
+- amountS: {0..2^NUM_BITS_AMOUNT}
+- amountB: {0..2^NUM_BITS_AMOUNT}
+- validUntil: {0..2^NUM_BITS_TIMESTAMP}
+- maxFeeBips: {0..2^NUM_BITS_FEE_BIPS}
+- fillAmountBorS: {0..2}
+- taker: F
+- feeBips: {0..2^NUM_BITS_FEE_BIPS}
+- amm: {0..2}
+
+the prover knows an auxiliary input:
+
+- hash: F
+
+such that the following conditions hold:
+
+- storageID_bits = storageID_packed
+- accountID_bits = accountID_packed
+- tokenS_bits = tokenS_packed
+- tokenB_bits = tokenB_packed
+- amountS_bits = amountS_packed
+- amountB_bits = amountB_packed
+- maxFeeBips_bits = maxFeeBips_packed
+- feeBips_bits = feeBips_packed
+- validUntil_bits = validUntil_packed
+- fillAmountBorS_bits = fillAmountBorS_packed
+
+- hash = PoseidonHash_t12f6p53(
+  exchange,
+  storageID,
+  accountID,
+  tokenS,
+  tokenB,
+  amountS,
+  amountB,
+  validUntil,
+  maxFeeBips,
+  fillAmountBorS,
+  taker
+  )
+- feeBips <= maxFeeBips (RequireLeqGadget)
+- tokenS != tokenB
+- amountS != 0
+- amountB != 0
+
+### Description
+
+Bundles the order data and does some basic order data validation. Also calculates the order hash.
+
+We do not allow the token bought to equal the token sold.
+
+The operator can choose any fee lower or equal than the maxFeeBips specified by the user.
+
+## RequireFillRate statement
+
+A valid instance of a RequireFillRate statement assures that given an input of:
+
+- amountS: {0..2^NUM_BITS_AMOUNT}
+- amountB: {0..2^NUM_BITS_AMOUNT}
+- fillAmountS: {0..2^NUM_BITS_AMOUNT}
+- fillAmountB: {0..2^NUM_BITS_AMOUNT}
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- (fillAmountS \* amountB \* 1000) <= (fillAmountB \* amountS \* 1001) (RequireLeqGadget)
+- (fillAmountS == 0 && fillAmountB == 0) || (fillAmountS != 0 && fillAmountB != 0)
+
+### Description
+
+The fill rate can be up to 0.1% higher than the max fill rate defined in the order to be more lenient for rounding errors.
+
+The additional requirement for the fill amounts is to make sure rounding errors don't make it possible to only do a token transfer in a single direction (only receiving tokens or only sending tokens). This could allow an order to be used to drain an account.
+
+## FeeCalculator statement
+
+A valid instance of a FeeCalculator statement assures that given an input of:
+
+- amount: {0..2^NUM_BITS_AMOUNT}
+- protocolFeeBips: {0..2^8}
+- feeBips: {0..2^NUM_BITS_FEE_BIPS}
+
+the prover knows an auxiliary input:
+
+- protocolFee: {0..2^NUM_BITS_AMOUNT}
+- fee: {0..2^NUM_BITS_AMOUNT}
+
+such that the following conditions hold:
+
+- protocolFee = amount \* protocolFeeBips // 100000
+- fee = amount \* feeBips // 10000
+
+Notes:
+
+- While protocolFeeBips is called bips, the unit is actually bips/10
+
+### Description
+
+Calculates the fee (paid by the user to the operator) and the protocol fee (paid by the operator to the protocol pool). Both fees are a percentage of the amount of tokens bought by the user.
+
+## RequireValidOrder statement
+
+A valid instance of a RequireValidOrder statement assures that given an input of:
+
+- timestamp: {0..2^NUM_BITS_TIMESTAMP}
+- order: Order
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- timestamp < order.validUntil (RequireLtGadget)
+
+### Description
+
+Validates that the order isn't expired.
+
+## RequireFillLimit statement
+
+A valid instance of a RequireFillLimit statement assures that given an input of:
+
+- order: Order
+- filled: {0..2^NUM_BITS_AMOUNT}
+- fillS: {0..2^NUM_BITS_AMOUNT}
+- fillB: {0..2^NUM_BITS_AMOUNT}
+
+the prover knows an auxiliary input:
+
+- fillAfter: {0..2^NUM_BITS_AMOUNT}
+
+such that the following conditions hold:
+
+- filledAfter = filled + ((order.fillAmountBorS == 0) ? fillB : fillS)
+- (order.fillAmountBorS == 0) ? filledAfter <= order.amountB : filledAfter <= order.amountS
+
+### Description
+
+Allows orders to be limited against either the amount bought or the amount sold. This is useful because the price defined in the order is only the worst price the order can be filled.
+
+This also directly limits the use of an order. Once the limit is reached the order cannot be used anymore.
+
+## RequireOrderFills statement
+
+A valid instance of a RequireOrderFills statement assures that given an input of:
+
+- order: Order
+- filled: {0..2^NUM_BITS_AMOUNT}
+- fillS: {0..2^NUM_BITS_AMOUNT}
+- fillB: {0..2^NUM_BITS_AMOUNT}
+
+the prover knows an auxiliary input:
+
+- filledAfter: {0..2^NUM_BITS_AMOUNT}
+
+such that the following conditions hold:
+
+- RequireFillRate(order.amountS, order.amountB, fillS, fillB)
+- filledAfter = RequireFillLimit(order, filled, fillS, fillB)
+
+### Description
+
+Verifies the filling of an order.
+
+## RequireValidTaker statement
+
+A valid instance of a RequireValidTaker statement assures that given an input of:
+
+- taker: F
+- expectedTaker: F
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- (expectedTaker == 0) || (taker == expectedTaker)
+
+### Description
+
+Allows an order to be created that can only be matched agains a speicific counterparty.
+
+## OrderMatching statement
+
+A valid instance of an OrderMatching statement assures that given an input of:
+
+- timestamp: {0..2^NUM_BITS_TIMESTAMP}
+- orderA: Order
+- orderB: Order
+- ownerA: {0..2^NUM_BITS_ADDRESS}
+- ownerB: {0..2^NUM_BITS_ADDRESS}
+- filledA: {0..2^NUM_BITS_AMOUNT}
+- filledB: {0..2^NUM_BITS_AMOUNT}
+- fillS_A: {0..2^NUM_BITS_AMOUNT}
+- fillS_B: {0..2^NUM_BITS_AMOUNT}
+
+the prover knows an auxiliary input:
+
+- filledAfterA: {0..2^NUM_BITS_AMOUNT}
+- filledAfterB: {0..2^NUM_BITS_AMOUNT}
+
+such that the following conditions hold:
+
+- filledAfterA = RequireOrderFills(orderA, filledA, fillS_A, fillS_B)
+- filledAfterB = RequireOrderFills(orderB, filledB, fillS_B, fillS_A)
+- orderA.tokenS == orderB.tokenB
+- orderA.tokenB == orderB.tokenS
+- ValidateTaker(ownerB, orderA.taker)
+- ValidateTaker(ownerA, orderB.taker)
+- RequireValidOrder(timestamp, orderA)
+- RequireValidOrder(timestamp, orderB)
+
+### Description
+
+Verifies that the given fill amounts fill both orders in a valid way.
+
+## SpotPriceAMM statement
+
+A valid instance of a SpotPriceAMM statement assures that given an input of:
+
+- balanceIn: {0..2^NUM_BITS_AMOUNT}
+- weightIn: {0..2^NUM_BITS_AMOUNT}
+- balanceOut: {0..2^NUM_BITS_AMOUNT}
+- weightOut: {0..2^NUM_BITS_AMOUNT}
+- feeBips: {0..2^NUM_BITS_AMM_BIPS}
+
+the prover knows an auxiliary input:
+
+- result: {0..2^NUM_BITS_AMOUNT}
+- numer: F
+- denom: F
+- ratio: F
+- invFeeBips: F
+
+such that the following conditions hold:
+
+- numer = balanceIn \* weightOut
+- denom = balanceOut \* weightIn
+- ratio = (numer \* BASE_FIXED) / denom
+- ratio < 2^NUM_BITS_AMOUNT (range check)
+- invFeeBips = BASE_BIPS - feeBips
+- result = (ratio \* BASE_BIPS) / invFeeBips
+
+### Description
+
+Formula from balancer. Calculates the price as if there would be no slippage.
+
+## CalcOutGivenInAMM statement
+
+A valid instance of a CalcOutGivenInAMM statement assures that given an input of:
+
+- balanceIn: {0..2^NUM_BITS_AMOUNT}
+- weightIn: {0..2^NUM_BITS_AMOUNT}
+- balanceOut: {0..2^NUM_BITS_AMOUNT}
+- weightOut: {0..2^NUM_BITS_AMOUNT}
+- feeBips: {0..2^NUM_BITS_AMM_BIPS}
+- amountIn: {0..2^NUM_BITS_AMOUNT}
+
+the prover knows an auxiliary input:
+
+- result: {0..2^NUM_BITS_AMOUNT}
+- weightRatio: {0..2^NUM_BITS_AMOUNT}
+- fee: {0..2^NUM_BITS_AMOUNT}
+- y: {0..2^NUM_BITS_AMOUNT}
+- p: {0..2^NUM_BITS_AMOUNT}
+
+such that the following conditions hold:
+
+- weightRatio = (weightIn \* BASE_FIXED) / weightOut
+- weightRatio < 2^NUM_BITS_AMOUNT (range check)
+- fee = amountIn \* feeBips / BASE_BIPS
+- y = (balanceIn \* BASE_FIXED) / (balanceIn + (amountIn - fee))
+- p = power(y, weightRatio)
+- result = balanceOut \* (BASE_FIXED - p) / BASE_FIXED
+
+### Description
+
+Formula from balancer. Calculates the maximum amount of tokens that can be sold by the AMM when buying the specified amount of tokens.
+
+## RequireAMMFills statement
+
+A valid instance of a RequireAMMFills statement assures that given an input of:
+
+- data: OrderMatchingData
+- fillB: {0..2^NUM_BITS_AMOUNT}
+
+the prover knows an auxiliary input:
+
+- ammData: AmmData
+- maxFillS: {0..2^NUM_BITS_AMOUNT}
+- price_before: {0..2^NUM_BITS_AMOUNT}
+- price_after: {0..2^NUM_BITS_AMOUNT}
+
+such that the following conditions hold:
+
+- ammData = (data.amm == 1) ?
+  AmmData(data.balanceBeforeB, data.balanceAfterB, data.weightB, data.balanceBeforeS, data.balanceAfterS, data.weightS, fillB) :
+  AmmData(FIXED_BASE, FIXED_BASE, FIXED_BASE, FIXED_BASE, FIXED_BASE, FIXED_BASE, 0)
+
+- if data.amm == 1 then data.orderFeeBips == 0
+- if data.amm == 1 then ammData.inWeight != 0
+- if data.amm == 1 then ammData.outWeight != 0
+
+- maxFillS = CalcOutGivenInAMM(ammData.inWeight, ammData.outBalanceBefore, ammData.outWeight, data.ammFeeBips, ammData.ammFill)
+- if data.amm == 1 then data.fillS <= maxFillS
+- price_before = SpotPriceAMM(ammData.inBalanceBefore, ammData.inWeight, ammData.outBalanceBefore, ammData.outWeight, data.ammFeeBips)
+- price_after = SpotPriceAMM(ammData.inBalanceAfter, ammData.inWeight, ammData.outBalanceAfter, ammData.outWeight, data.ammFeeBips)
+- if data.amm == 1 price_before <= price_after
+
+### Description
+
+Validates if an AMM order is filled correctly. If the order isn't an AMM order some dummy data is used in ammData so that all following checks pass.
+
+An AMM order is correctly filled when the amount of tokens sold by the AMM is less than the maximum allowed as defined by CalcOutGivenInAMM.
+As an additional check agains potential rounding errors in the power gadget, we enforce that the AMM price after the trade cannot be lower than before the trade.
+
+## ValidateAMM statement
+
+A valid instance of a ValidateAMM statement assures that given an input of:
+
+- dataA: OrderMatchingData
+- dataB: OrderMatchingData
+
+the prover knows an auxiliary input:
+
+-
+
+such that the following conditions hold:
+
+- RequireAMMFills(dataA, dataB.fillS)
+- RequireAMMFills(dataB, dataA.fillS)
+
+### Description
+
+Validates both AMM orders.
+
+# Transactions
 
 ## Deposit statement
 
@@ -1477,7 +1891,7 @@ The nonce and balance are added in the da to make those values available on-chai
 
 ## Noop statement
 
-A valid instance of an Noop statement assures that given an input of:
+A valid instance of a Noop statement assures that given an input of:
 
 - state: State
 
@@ -1499,7 +1913,7 @@ Can be used to fill up blocks that are not fully filled with actual transactions
 
 ## Withdraw statement
 
-A valid instance of an Withdraw statement assures that given an input of:
+A valid instance of a Withdraw statement assures that given an input of:
 
 - state: State
 - accountID: {0..2^NUM_BITS_ACCOUNT}
@@ -1546,7 +1960,7 @@ such that the following conditions hold:
 - owner = (accountID == 0) ? 0 : state.accountA.account.owner
 - state.timestamp < validUntil (RequireLtGadget)
 - fee <= maxFee (RequireLeqGadget)
-- if type == 2 then amount = balance_old.balance
+- if type == 2 then amount = (accountID == 0) ? state.pool.balanceB.balance : state.accountA.balanceS.balance
 - if type == 3 then amount = 0
 
 - Nonce(state.accountA.storage, storageID, (state.txType == TransactionType.Withdraw && (type == 0 || type == 1)))
@@ -1569,7 +1983,7 @@ such that the following conditions hold:
 - output.STORAGE_A_ADDRESS = storageID[0..NUM_BITS_STORAGE_ADDRESS]
 - output.STORAGE_A_DATA = (accountId != 0 && type == 2) ? 1 : state.accountA.storage.data
 - output.STORAGE_A_STORAGEID = (accountId != 0 && type == 2) ? storageID : state.accountA.storage.storageID
-- output.DA = = {
+- output.DA = {
   TransactionType.Withdraw,
   owner,
   accountID,
@@ -1612,7 +2026,7 @@ In all cases the withdrawal transaction needs to be processed on-chain, so numCo
 
 ## Transfer statement
 
-A valid instance of an Transfer statement assures that given an input of:
+A valid instance of a Transfer statement assures that given an input of:
 
 - state: State
 - fromAccountID: {0..2^NUM_BITS_ACCOUNT}
@@ -1750,324 +2164,11 @@ A fee is paid to the operator in any token. The operator can choose any fee lowe
 
 Only when type == 0 is a valid EdDSA signature required. When type == 1 the transfer transaction needs to be processed on-chain, so numConditionalTransactions is incremented.
 
-## Order statement
-
-A valid instance of an Order statement assures that given an input of:
-
-- exchange: {0..2^NUM_BITS_ADDRESS}
-- storageID: {0..2^NUM_BITS_STORAGEID}
-- accountID: {0..2^NUM_BITS_ACCOUNT}
-- tokenS: {0..2^NUM_BITS_TOKEN}
-- tokenB: {0..2^NUM_BITS_TOKEN}
-- amountS: {0..2^NUM_BITS_AMOUNT}
-- amountB: {0..2^NUM_BITS_AMOUNT}
-- validUntil: {0..2^NUM_BITS_TIMESTAMP}
-- maxFeeBips: {0..2^NUM_BITS_FEE_BIPS}
-- fillAmountBorS: {0..2}
-- taker: F
-- feeBips: {0..2^NUM_BITS_FEE_BIPS}
-- amm: {0..2}
-
-the prover knows an auxiliary input:
-
-- hash: F
-
-such that the following conditions hold:
-
-- storageID_bits = storageID_packed
-- accountID_bits = accountID_packed
-- tokenS_bits = tokenS_packed
-- tokenB_bits = tokenB_packed
-- amountS_bits = amountS_packed
-- amountB_bits = amountB_packed
-- maxFeeBips_bits = maxFeeBips_packed
-- feeBips_bits = feeBips_packed
-- validUntil_bits = validUntil_packed
-- fillAmountBorS_bits = fillAmountBorS_packed
-
-- hash = PoseidonHash_t12f6p53(
-  exchange,
-  storageID,
-  accountID,
-  tokenS,
-  tokenB,
-  amountS,
-  amountB,
-  validUntil,
-  maxFeeBips,
-  fillAmountBorS,
-  taker
-  )
-- feeBips <= maxFeeBips (RequireLeqGadget)
-- tokenS != tokenB
-- amountS != 0
-- amountB != 0
-
-## RequireFillRate statement
-
-A valid instance of an Order statement assures that given an input of:
-
-- amountS: {0..2^NUM_BITS_AMOUNT}
-- amountB: {0..2^NUM_BITS_AMOUNT}
-- fillAmountS: {0..2^NUM_BITS_AMOUNT}
-- fillAmountB: {0..2^NUM_BITS_AMOUNT}
-
-the prover knows an auxiliary input:
-
--
-
-such that the following conditions hold:
-
-- (fillAmountS \* amountB \* 1000) <= (fillAmountB \* amountS \* 1001) (RequireLeqGadget)
-- (fillAmountS == 0 && fillAmountB == 0) || (fillAmountS != 0 && fillAmountB != 0)
-
-### Description
-
-The fill rate can be up to 0.1% higher than the max fill rate defined in the order to be more lenient for rounding errors.
-
-The additional requirement for the fill amounts is to make sure rounding errors don't make it possible to only do a token transfer in a single direction (only receiving tokens or only sending tokens). This could allow an order to be used to drain an account.
-
-## FeeCalculator statement
-
-A valid instance of an Order statement assures that given an input of:
-
-- amount: {0..2^NUM_BITS_AMOUNT}
-- protocolFeeBips: {0..2^8}
-- feeBips: {0..2^NUM_BITS_FEE_BIPS}
-
-the prover knows an auxiliary input:
-
-- protocolFee: {0..2^NUM_BITS_AMOUNT}
-- fee: {0..2^NUM_BITS_AMOUNT}
-
-such that the following conditions hold:
-
-- protocolFee = amount \* protocolFeeBips // 100000
-- fee = amount \* feeBips // 10000
-
-- Notes:
-
-While protocolFeeBips is called bips, the unit is actually bips/10
-
-## RequireValidOrder statement
-
-A valid instance of an RequireValidOrder statement assures that given an input of:
-
-- timestamp: {0..2^NUM_BITS_TIMESTAMP}
-- order: Order
-
-the prover knows an auxiliary input:
-
--
-
-such that the following conditions hold:
-
-- timestamp < order.validUntil (RequireLtGadget)
-
-## RequireFillLimit statement
-
-A valid instance of an RequireFillLimit statement assures that given an input of:
-
-- order: Order
-- filled: {0..2^NUM_BITS_AMOUNT}
-- fillS: {0..2^NUM_BITS_AMOUNT}
-- fillB: {0..2^NUM_BITS_AMOUNT}
-
-the prover knows an auxiliary input:
-
-- fillAfter: {0..2^NUM_BITS_AMOUNT}
-
-such that the following conditions hold:
-
-- filledAfter = filled + ((order.fillAmountBorS == 0) ? fillB : fillS)
-- (order.fillAmountBorS == 0) ? filledAfter <= order.amountB : filledAfter <= order.amountS
-
-### Description
-
-Allows orders to be limited against either the amount bought or the amount sold. This is useful because the price defined in the order is only the worst price the order can be filled.
-
-## RequireOrderFills statement
-
-A valid instance of an RequireOrderFills statement assures that given an input of:
-
-- order: Order
-- filled: {0..2^NUM_BITS_AMOUNT}
-- fillS: {0..2^NUM_BITS_AMOUNT}
-- fillB: {0..2^NUM_BITS_AMOUNT}
-
-the prover knows an auxiliary input:
-
-- filledAfter: {0..2^NUM_BITS_AMOUNT}
-
-such that the following conditions hold:
-
-- RequireFillRate(order.amountS, order.amountB, fillS, fillB)
-- filledAfter = RequireFillLimit(order, filled, fillS, fillB)
-
-## RequireValidTaker statement
-
-A valid instance of an RequireValidTaker statement assures that given an input of:
-
-- taker: F
-- expectedTaker: F
-
-the prover knows an auxiliary input:
-
--
-
-such that the following conditions hold:
-
-- (expectedTaker == 0) || (taker == expectedTaker)
-
-### Description
-
-Allows an order to be created that can only be matched agains a speicific counterparty.
-
-## OrderMatching statement
-
-A valid instance of an OrderMatching statement assures that given an input of:
-
-- timestamp: {0..2^NUM_BITS_TIMESTAMP}
-- orderA: Order
-- orderB: Order
-- ownerA: {0..2^NUM_BITS_ADDRESS}
-- ownerB: {0..2^NUM_BITS_ADDRESS}
-- filledA: {0..2^NUM_BITS_AMOUNT}
-- filledB: {0..2^NUM_BITS_AMOUNT}
-- fillS_A: {0..2^NUM_BITS_AMOUNT}
-- fillS_B: {0..2^NUM_BITS_AMOUNT}
-
-the prover knows an auxiliary input:
-
-- filledAfterA: {0..2^NUM_BITS_AMOUNT}
-- filledAfterB: {0..2^NUM_BITS_AMOUNT}
-
-such that the following conditions hold:
-
-- filledAfterA = RequireOrderFills(orderA, filledA, fillS_A, fillS_B)
-- filledAfterB = RequireOrderFills(orderB, filledB, fillS_B, fillS_A)
-- orderA.tokenS == orderB.tokenB
-- orderA.tokenB == orderB.tokenS
-- ValidateTaker(ownerB, orderA.taker)
-- ValidateTaker(ownerA, orderB.taker)
-- RequireValidOrder(timestamp, orderA)
-- RequireValidOrder(timestamp, orderB)
-
-## SpotPriceAMM statement
-
-A valid instance of an SpotPriceAMM statement assures that given an input of:
-
-- balanceIn: {0..2^NUM_BITS_AMOUNT}
-- weightIn: {0..2^NUM_BITS_AMOUNT}
-- balanceOut: {0..2^NUM_BITS_AMOUNT}
-- weightOut: {0..2^NUM_BITS_AMOUNT}
-- feeBips: {0..2^NUM_BITS_AMM_BIPS}
-
-the prover knows an auxiliary input:
-
-- result: {0..2^NUM_BITS_AMOUNT}
-- numer: F
-- denom: F
-- ratio: F
-- invFeeBips: F
-
-such that the following conditions hold:
-
-- numer = balanceIn \* weightOut
-- denom = balanceOut \* weightIn
-- ratio = (numer \* BASE_FIXED) / denom
-- ratio < 2^NUM_BITS_AMOUNT (range check)
-- invFeeBips = BASE_BIPS - feeBips
-- result = (ratio \* BASE_BIPS) / invFeeBips
-
-### Description
-
-Formula from balancer.
-
-## CalcOutGivenInAMM statement
-
-A valid instance of an CalcOutGivenInAMM statement assures that given an input of:
-
-- balanceIn: {0..2^NUM_BITS_AMOUNT}
-- weightIn: {0..2^NUM_BITS_AMOUNT}
-- balanceOut: {0..2^NUM_BITS_AMOUNT}
-- weightOut: {0..2^NUM_BITS_AMOUNT}
-- feeBips: {0..2^NUM_BITS_AMM_BIPS}
-- amountIn: {0..2^NUM_BITS_AMOUNT}
-
-the prover knows an auxiliary input:
-
-- result: {0..2^NUM_BITS_AMOUNT}
-- weightRatio: {0..2^NUM_BITS_AMOUNT}
-- fee: {0..2^NUM_BITS_AMOUNT}
-- y: {0..2^NUM_BITS_AMOUNT}
-- p: {0..2^NUM_BITS_AMOUNT}
-
-such that the following conditions hold:
-
-- weightRatio = (weightIn \* BASE_FIXED) / weightOut
-- weightRatio < 2^NUM_BITS_AMOUNT (range check)
-- fee = amountIn \* feeBips / BASE_BIPS
-- y = (balanceIn \* BASE_FIXED) / (balanceIn + (amountIn - fee))
-- p = power(y, weightRatio)
-- result = balanceOut \* (BASE_FIXED - p) / BASE_FIXED
-
-### Description
-
-Formula from balancer.
-
-## RequireAMMFills statement
-
-A valid instance of an RequireAMMFills statement assures that given an input of:
-
-- data: OrderMatchingData
-- fillB: {0..2^NUM_BITS_AMOUNT}
-
-the prover knows an auxiliary input:
-
-- ammData: AmmData
-- maxFillS: {0..2^NUM_BITS_AMOUNT}
-- price_before: {0..2^NUM_BITS_AMOUNT}
-- price_after: {0..2^NUM_BITS_AMOUNT}
-
-such that the following conditions hold:
-
-- ammData = (data.amm == 1) ?
-  AmmData(data.balanceBeforeB, data.balanceAfterB, data.weightB, data.balanceBeforeS, data.balanceAfterS, data.weightS, fillB) :
-  AmmData(FIXED_BASE, FIXED_BASE, FIXED_BASE, FIXED_BASE, FIXED_BASE, FIXED_BASE, 0)
-
-- if data.amm == 1 then data.orderFeeBips == 0
-- if data.amm == 1 then ammData.inWeight != 0
-- if data.amm == 1 then ammData.outWeight != 0
-
-- maxFillS = CalcOutGivenInAMM(ammData.inWeight, ammData.outBalanceBefore, ammData.outWeight, data.ammFeeBips, ammData.ammFill)
-- if data.amm == 1 then data.fillS <= maxFillS
-- price_before = SpotPriceAMM(ammData.inBalanceBefore, ammData.inWeight, ammData.outBalanceBefore, ammData.outWeight, data.ammFeeBips)
-- price_after = SpotPriceAMM(ammData.inBalanceAfter, ammData.inWeight, ammData.outBalanceAfter, ammData.outWeight, data.ammFeeBips)
-- if data.amm == 1 price_before <= price_after
-
-- Notes:
-- As an additional check agains potential rounding errors in the power gadget, we enforce that the AMM minimum price after the trade cannot be lower than before.
-
-## ValidateAMM statement
-
-A valid instance of an ValidateAMM statement assures that given an input of:
-
-- dataA: OrderMatchingData
-- dataB: OrderMatchingData
-
-the prover knows an auxiliary input:
-
--
-
-such that the following conditions hold:
-
-- RequireAMMFills(dataA, dataB.fillS)
-- RequireAMMFills(dataB, dataA.fillS)
+Some data is only put in the DA when either required (so that the Merkle tree can be reconstructed) or when requested by the operator (putAddressesInDA == 1).
 
 ## SpotTrade statement
 
-A valid instance of an SpotTrade statement assures that given an input of:
+A valid instance of a SpotTrade statement assures that given an input of:
 
 - state: State
 - orderA: Order
@@ -2182,6 +2283,8 @@ The operator is free to pass in any fillS_A and fillS_B, as long as all user req
 Orders need to be signed with EdDSA in all cases, except when AMM is enabled for tokenS and tokenB in the account.
 
 Trades are never processed on-chain, so numConditionalTransactions is never incremented.
+
+# Unvisersal Circuit
 
 ## SelectTransaction statement
 
@@ -2346,7 +2449,7 @@ To do this, all data that could be updated in any of the transactions is stored 
 
 ## Universal statement
 
-A valid instance of an Universal statement assures that given an input of:
+A valid instance of a Universal statement assures that given an input of:
 
 - exchange: {0..2^NUM_BITS_ADDRESS}
 - merkleRootBefore: {0..2^256}
