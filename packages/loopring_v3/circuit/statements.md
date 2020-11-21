@@ -1,6 +1,6 @@
 # Circuit documentation
 
-For a full overview of the Loopring protocol, see https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md
+For a full overview of the Loopring protocol, see https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md.
 
 ## Constants
 
@@ -32,7 +32,7 @@ For a full overview of the Loopring protocol, see https://github.com/Loopring/pr
 - EMPTY_STORAGE_ROOT = 6592749167578234498153410564243369229486412054742481069049239297514590357090
 - MAX_AMOUNT = 79228162514264337593543950335 // 2^96 - 1
 - FIXED_BASE = 1000000000000000000 // 10^18
-- NUM_BITS_FIXED_BASE = 60; // ceil(log2(10^18))
+- NUM_BITS_FIXED_BASE = 60 // ceil(log2(10^18))
 
 - Float24Encoding: Accuracy = {5, 19}
 - Float16Encoding: Accuracy = {5, 11}
@@ -167,18 +167,18 @@ For a full overview of the Loopring protocol, see https://github.com/Loopring/pr
 
 ## Poseidon
 
-Most of the hashing is done using the Poseidon (https://eprint.iacr.org/2019/458.pdf) hash function. This hash function works direclty on field elements and is very efficient.
+Most of the hashing is done using the Poseidon (https://eprint.iacr.org/2019/458.pdf) hash function. This hash function works directly on field elements and is very efficient.
 
-Poseidon can be instanciated with 3 parameters: t, f, and p. In all cases we use the following method to choose these:
+Poseidon can be instantiated with 3 parameters: t, f, and p. In all cases we use the following method to choose these:
 
-1. Set t equal to the number of inputs + 1 (this extra input of 0 is the capacity)
+1. Set t equal to the number of inputs + 1 (this extra input of 0 is the capacity).
 2. With the above t, choose f and p so that the number of constraints necessary is minimized, while ensuring a minimum security level of 128 bit. The rules that need to be followed to achieve this are described in the paper. In practice, the script available at https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/util/find_optimal_poseidon.py.
 
-Because Poseidon is more efficient for four inputs compared to two inputs we use a quad Merkle tree instead of a binary Merkle tree.
+Because Poseidon is more efficient for four inputs compared to two inputs we use quad Merkle trees instead of binary Merkle trees.
 
 ## DefaultTxOutput
 
-A valid instance of an DefaultTxOutput statement assures that given an input of:
+A valid instance of a DefaultTxOutput statement assures that given an input of:
 
 - state: State
 
@@ -222,8 +222,8 @@ such that the following conditions hold:
 - output.BALANCE_P_A_BALANCE = state.pool.balanceA.balance
 - output.BALANCE_P_B_BALANCE = state.pool.balanceB.balance
 
-- output.BALANCE_O_A_BALANCE = state.oper.balanceA.balance
-- output.BALANCE_O_B_BALANCE = state.oper.balanceB.balance
+- output.BALANCE_O_A_BALANCE = state.operator.balanceA.balance
+- output.BALANCE_O_B_BALANCE = state.operator.balanceB.balance
 
 - output.HASH_A = 0
 - output.PUBKEY_X_A = state.accountA.account.publicKeyX
@@ -237,6 +237,10 @@ such that the following conditions hold:
 
 - output.NUM_CONDITIONAL_TXS = state.numConditionalTransactions
 - output.DA = 0
+
+### Description
+
+Simply sets the default values for a transaction output. If a transaction doesn't explicitly set an output, these values are used.
 
 # Math
 
@@ -363,6 +367,7 @@ Notes:
 
 - Should check for underflow
 - A and B are limited to n + 1 <= NUM_BITS_FIELD_CAPACITY, so we can be sure to detect underflow with a simple range check on the result.
+- Underflow check is thus detected when the result is a value taking up more than n bits.
 
 ## Transfer statement
 
@@ -381,9 +386,13 @@ such that the following conditions hold:
 - from = Sub(from, value, NUM_BITS_AMOUNT)
 - to = Add(to, value, NUM_BITS_AMOUNT)
 
+### Description
+
+Simple reusable gadget to transfer a certain amount of funds from one balance to another.
+
 ## Ternary statement
 
-A valid instance of an Ternary statement assures that given an input of:
+A valid instance of a Ternary statement assures that given an input of:
 
 - b: {0..2}
 - x: F
@@ -570,7 +579,7 @@ such that the following conditions hold:
 
 Notes:
 
-- The inverse exists for all numbers except 0
+- The inverse exists for all values except 0
 - Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
 
 ## RequireNotEqual statement
@@ -594,7 +603,7 @@ This gadget is a wrapper around `libsnark::comparison_gadget`, exposing `<`, `<=
 
 One important limitation of `libsnark::comparison_gadget` is that it does not work for values close to the max field element value. This is an implementation detail as the gadget depends on there being an extra bit at MSB of the valules to be available. As the max field element is ~254 bits, only 253 bits can be used. And because the implementation needs an extra bit we can only compare values that take up at most 252 bits.
 
-This is _not_ checked in the gadget itself, and it depends on the caller to specifiy a valid `n` which is the max number of bits of the value passed into the gadget.
+This is _not_ checked in the gadget itself, and it depends on the caller to specify a valid `n` which needs to be the max number of bits of the value passed into the gadget.
 
 ## LtField statement
 
@@ -611,23 +620,28 @@ such that the following conditions hold:
 
 - result = A[NUM_BITS_MAX_VALUE/2..NUM_BITS_MAX_VALUE] == B[NUM_BITS_MAX_VALUE/2..NUM_BITS_MAX_VALUE] ?
   A[0..NUM_BITS_MAX_VALUE/2] < B[0..NUM_BITS_MAX_VALUE] :
-  A[NUM_BITS_MAX_VALUE/2..NUM_BITS_MAX_VALUE] <> B[NUM_BITS_MAX_VALUE/2..NUM_BITS_MAX_VALUE]
+  A[NUM_BITS_MAX_VALUE/2..NUM_BITS_MAX_VALUE] < B[NUM_BITS_MAX_VALUE/2..NUM_BITS_MAX_VALUE]
 
 Notes:
 
 - Calculates A < B
+- Unlike LeqGadget, this works for ALL field element values
 - Because LeqGadget does not work for certain very large values (values taking up more than 252 bits), we split up the values in two smaller values and do the comparison like that.
 
 ## Min statement
 
 A valid instance of a Min statement assures that given an input of:
 
-- A: F
-- B: F
+- A: {0..2^n}
+- B: {0..2^n}
+
+with circuit parameters:
+
+- n: unsigned int
 
 the prover knows an auxiliary input:
 
-- result: F
+- result: {0..2^n}
 
 such that the following conditions hold:
 
@@ -637,12 +651,16 @@ such that the following conditions hold:
 
 A valid instance of a Max statement assures that given an input of:
 
-- A: F
-- B: F
+- A: {0..2^n}
+- B: {0..2^n}
+
+with circuit parameters:
+
+- n: unsigned int
 
 the prover knows an auxiliary input:
 
-- result: F
+- result: {0..2^n}
 
 such that the following conditions hold:
 
@@ -652,8 +670,12 @@ such that the following conditions hold:
 
 A valid instance of a RequireLeq statement assures that given an input of:
 
-- A: F
-- B: F
+- A: {0..2^n}
+- B: {0..2^n}
+
+with circuit parameters:
+
+- n: unsigned int
 
 the prover knows an auxiliary input:
 
@@ -667,8 +689,12 @@ such that the following conditions hold:
 
 A valid instance of a RequireLt statement assures that given an input of:
 
-- A: F
-- B: F
+- A: {0..2^n}
+- B: {0..2^n}
+
+with circuit parameters:
+
+- n: unsigned int
 
 the prover knows an auxiliary input:
 
@@ -736,7 +762,7 @@ A valid instance of a MulDivGadget statement assures that given an input of:
 the prover knows an auxiliary input:
 
 - quotient: F
-- remainder: F
+- remainder: {0..2^numBitsDenominator}
 
 such that the following conditions hold:
 
@@ -761,6 +787,10 @@ with circuit parameters:
 - accuracy: Accuracy
 - maxNumBits: unsigned int
 
+the prover knows an auxiliary input:
+
+-
+
 such that the following conditions hold:
 
 - value < 2^maxNumBits (range check)
@@ -774,6 +804,8 @@ Notes:
 ### Description
 
 This is a simple gadget that ensures the valid specified are approximately the same. The main reason this gadget is used is because the amounts that are compressed by using decimal floats can have small rounding errors.
+
+We always force the value to be smaller (or equal) to the original value. This is to ensure that we never spend more than the user either expected or even has.
 
 ## PublicData statement
 
@@ -791,9 +823,11 @@ such that the following conditions hold:
 
 ### Description
 
-3 LBS are stripped from the 256-bit hash so that the packed value always fits inside a single field element.
+Hashes all public data to a single field element, which is much more efficient on-chain to verify the proof.
 
-sha256 is used here because we also need to hash the data onchain. sha256 is very cheap to calculate onchain but quite expensive to calculate in the circuits, while something like Poseidon is extremely expensive to calculate onchain, which cheap to calculate in the circuits. Because we aim for scalability, we want onchain costs to be as low as possible, while proving costs are pretty cheap regardless.
+3 LBS are stripped from the 256-bit hash so that the packed value always fits inside a single field element (NUM_BITS_FIELD_CAPACITY).
+
+sha256 is used here because we also need to hash the data onchain. sha256 is very cheap to calculate onchain but quite expensive to calculate in the circuits, while something like Poseidon is extremely expensive to calculate onchain, but cheap to calculate in the circuits. Because we aim for scalability, we want onchain costs to be as low as possible, while proving costs are pretty cheap regardless.
 
 ## Float statement
 
@@ -806,10 +840,9 @@ The following conditions hold:
 
 - decodedValue = floatValue[0..numBitsMantissa[ \* (10^floatValue[numBitsMantissa, numBitsExponent+numBitsMantissa[)
 
-Notes:
+### Description
 
-- We can only decode floats in the circuits, we never encode floats (which is a heavier operation normally)
-- Floats are used to reduce the amount of data we have to put on-chain for amounts.
+Floats are used to reduce the amount of data we have to put on-chain for amounts. We can only decode floats in the circuits, we never encode floats (which is a heavier operation normally).
 
 ## Selector statement
 
@@ -829,9 +862,9 @@ The following conditions hold:
 
 - for i in {0..n}: result[i] = (i == type) ? 1 : 0
 
-Notes:
+### Description
 
-- Sets the variable at position type to 1, all other variables are 0
+Sets the variable at position type to 1, all other variables are 0
 
 ## Select statement
 
@@ -852,6 +885,10 @@ Notes:
 
 - selector can be assumed to contain exactly a single 1 bit
 
+### Description
+
+Selects the value in values which has a bit set to 1 in selector.
+
 ## ArraySelect statement
 
 A valid instance of an ArraySelect statement assures that given an input of:
@@ -871,6 +908,10 @@ Notes:
 
 - selector can be assumed to contain exactly a single 1 bit
 
+### Description
+
+Selects the value in values which has a bit set to 1 in selector.
+
 ## OwnerValid statement
 
 A valid instance of an OwnerValid statement assures that given an input of:
@@ -881,6 +922,10 @@ A valid instance of an OwnerValid statement assures that given an input of:
 such that the following conditions hold:
 
 - (oldOwner == newOwner) || (oldOwner == 0)
+
+### Description
+
+A valid owner is when the account currently has no owner or it matches the current owner of the account.
 
 ## SignedAdd statement
 
@@ -933,14 +978,14 @@ the prover knows an auxiliary input:
 
 such that the following conditions hold:
 
-- quotient = MulDiv(value.value, numerator.value, denominitor)
+- quotient = MulDiv(value.value, numerator.value, denominator)
 - sign = (quotient == 0) ? 0 : ((value.sign == numerator.sign) ? 1 : 0)
 
 ## Power statement
 
 A valid instance of a Power statement assures that given an input of:
 
-- \_x: F
+- \_x: {0..BASE_FIXED+1}
 - y: F
 
 with circuit parameters:
@@ -957,7 +1002,7 @@ such that the following conditions hold:
 
 - x = BASE_FIXED - \_x
 - sum[0] = BASE_FIXED \* BASE_FIXED
-- sum[1] = sum[0] - (x \* y)
+- sum[1] = sum[0] + (x \* y)
 - bn[1] = BASE_FIXED
 - xn[1] = x
 - cn[1] = y
@@ -975,12 +1020,13 @@ such that the following conditions hold:
 
 Notes:
 
+- \_x will always be in [0, 1] (in fixed point representation)
 - Results should never be able to overflow or underflow
-- Power approximiation formule as found here: https://docs.balancer.finance/protocol/index/approxing
+- Power approximation formule as found here: https://docs.balancer.finance/protocol/index/approxing
 
 ### Description
 
-Calculates [0, 1]\*\*[0, inf) using an approximation. The closer the base is to 1, the higher the accuracy.
+Calculates [0, 1]\*\*[0, inf) using an approximation. The closer the base is to 1, the higher the accuracy. Values and calculations are done with fixed points.
 The result is enforced to be containable in NUM_BITS_AMOUNT bits.
 The higher the number of iterations, the higher the accuracy (and the greater the cost).
 
@@ -1008,7 +1054,7 @@ such that the following conditions hold:
 
 ### Description
 
-Using the address bits specified, selects the children in a quad Merkle tree.
+Using the address bits specified, orders the children as expected in a quad Merkle tree.
 
 ## MerklePath statement
 
@@ -1042,7 +1088,7 @@ such that the following conditions hold:
 
 ### Description
 
-Calculates the Merkle root along the specified path.
+Calculates the Merkle root in a quad tree along the specified path.
 
 ## MerklePathCheck statement
 
@@ -1107,7 +1153,10 @@ such that the following conditions hold:
 
 ### Description
 
-Updates an Account leaf in the accounts Merkle tree.
+Updates an Account leaf in the accounts Merkle tree:
+
+- First check if the data provided for the current state is valid.
+- Then calculate the new Merkle root with the new leaf data.
 
 ## UpdateBalance statement
 
@@ -1138,9 +1187,16 @@ such that the following conditions hold:
 - MerklePathCheck(TREE_DEPTH_TOKENS, address, hash_before, root_before, proof)
 - root_after = MerklePath(TREE_DEPTH_TOKENS, address, hash_after, proof)
 
+Notes:
+
+- Even though the leaf has only three values, we still use PoseidonHash_t5f6p52 (which hashes up to 4 inputs) so we need less Poseidon implementations in our smart contracts.
+
 ### Description
 
-Updates a Balance leaf in the balances Merkle tree.
+Updates an Balance leaf in the balances Merkle tree:
+
+- First check if the data provided for the current state is valid.
+- Then calculate the new Merkle root with the new leaf data.
 
 ## UpdateStorage statement
 
@@ -1169,9 +1225,16 @@ such that the following conditions hold:
 - MerklePathCheck(TREE_DEPTH_STORAGE, address, hash_before, root_before, proof)
 - root_after = MerklePath(TREE_DEPTH_STORAGE, address, hash_after, proof)
 
+Notes:
+
+- Even though the leaf has only two values, we still use PoseidonHash_t5f6p52 (which hashes up to 4 inputs) so we need less Poseidon implementations in our smart contracts.
+
 ### Description
 
-Updates a Storage leaf in the storage Merkle tree.
+Updates an Storage leaf in the storage Merkle tree:
+
+- First check if the data provided for the current state is valid.
+- Then calculate the new Merkle root with the new leaf data.
 
 ## StorageReader statement
 
@@ -1192,7 +1255,7 @@ such that the following conditions hold:
 
 ### Description
 
-Reads data at storageID in the storage tree of the account, but allows the data to be overwritten by increasing the storageID and reading the tree at storageID % 2^TREE_DEPTH_STORAGE.
+Reads data at storageID in the storage tree of the account, but allows the data to be overwritten by increasing the storageID in delta's of 2^TREE_DEPTH_STORAGE and reading the tree at storageID % 2^TREE_DEPTH_STORAGE.
 
 ## Nonce statement
 
@@ -1214,6 +1277,8 @@ such that the following conditions hold:
 ### Description
 
 Builds a simple parallel nonce system on top of the storage tree. Transactions can use any storage slot that contains 0 as data (after overwriting logic). This slot will be overwritten with a 1, making it impossible to re-use the transaction multiple times.
+
+To make is easier to ignore this check, verify is added to make the statement always valid if necessary.
 
 # Signature
 
@@ -1280,7 +1345,7 @@ Notes:
 
 ### Description
 
-For use with EdDSA.
+For use in EdDSA signatures.
 
 ## EdDSA_Poseidon statement
 
@@ -1396,7 +1461,7 @@ such that the following conditions hold:
 
 Bundles the order data and does some basic order data validation. Also calculates the order hash.
 
-We do not allow the token bought to equal the token sold.
+We do not allow the token bought to be equal to the token sold.
 
 The operator can choose any fee lower or equal than the maxFeeBips specified by the user.
 
@@ -1420,9 +1485,9 @@ such that the following conditions hold:
 
 ### Description
 
-The fill rate can be up to 0.1% higher than the max fill rate defined in the order to be more lenient for rounding errors.
+The fill rate can be up to 0.1% higher than the max fill rate defined in the order to be more lenient to rounding errors.
 
-The additional requirement for the fill amounts is to make sure rounding errors don't make it possible to only do a token transfer in a single direction (only receiving tokens or only sending tokens). This could allow an order to be used to drain an account.
+The additional requirement for the fill amounts is to make sure rounding errors don't make it possible to only do a token transfer in a single direction (only receiving tokens or only sending tokens). This could allow an order to be used to drain an account as is could be used an unlimited number of times.
 
 ## FeeCalculator statement
 
@@ -1513,7 +1578,7 @@ such that the following conditions hold:
 
 ### Description
 
-Verifies the filling of an order.
+Verifies the filling of an order i.e. if the rate at which it is being filled is valid and it's not being filled more than allowed.
 
 ## RequireValidTaker statement
 
@@ -1532,7 +1597,7 @@ such that the following conditions hold:
 
 ### Description
 
-Allows an order to be created that can only be matched agains a speicific counterparty.
+Allows an order to be created that can only be matched against a specific counterparty.
 
 ## OrderMatching statement
 
@@ -1597,7 +1662,7 @@ such that the following conditions hold:
 
 ### Description
 
-Formula from balancer. Calculates the price as if there would be no slippage.
+Formula from balancer (https://docs.balancer.finance/protocol/index#spot-price). Calculates the price as if there would be no slippage.
 
 ## CalcOutGivenInAMM statement
 
@@ -1629,7 +1694,7 @@ such that the following conditions hold:
 
 ### Description
 
-Formula from balancer. Calculates the maximum amount of tokens that can be sold by the AMM when buying the specified amount of tokens.
+Formula from balancer (https://docs.balancer.finance/protocol/index#out-given-in). Calculates the maximum amount of tokens that can be sold by the AMM when buying the specified amount of tokens.
 
 ## RequireAMMFills statement
 
@@ -1663,10 +1728,10 @@ such that the following conditions hold:
 
 ### Description
 
-Validates if an AMM order is filled correctly. If the order isn't an AMM order some dummy data is used in ammData so that all following checks pass.
+Validates if an AMM order is filled correctly. If the order isn't an AMM order dummy data is used in ammData so that all the following checks pass.
 
 An AMM order is correctly filled when the amount of tokens sold by the AMM is less than the maximum allowed as defined by CalcOutGivenInAMM.
-As an additional check agains potential rounding errors in the power gadget, we enforce that the AMM price after the trade cannot be lower than before the trade.
+As an additional check against potential rounding errors in the power gadget, we enforce that the AMM price after the trade cannot be lower than before the trade.
 
 ## ValidateAMM statement
 
@@ -1686,7 +1751,7 @@ such that the following conditions hold:
 
 ### Description
 
-Validates both AMM orders.
+Validates the AMM requirements for both orders.
 
 # Transactions
 
@@ -1738,9 +1803,9 @@ Notes:
 
 - https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#deposit
 
-This gadgets allows depositing funds to a new or existing account at accountID. The owner of an account can never change, unless account_old.owner == 0, which means a new account is created for owner.
+This gadgets allows depositing funds to a new or existing account at accountID. The owner of an account can never change, unless state.accountA.owner.owner == 0, which means a new account is created for owner.
 
-As deposits are processed and stored on-chain, we have to process this transaction in the smart contract, and so numConditionalTransactions is incremented.
+As deposits are processed and stored on-chain, we have to process this transaction in the smart contract, and so numConditionalTransactions is incremented. No EdDSA signature are ever used, the deposit data is validated on-chain.
 
 ## AccountUpdate statement
 
@@ -1786,7 +1851,7 @@ such that the following conditions hold:
   validUntil,
   nonce
   )
-- OwnerValid(account_old.owner, owner)
+- OwnerValid(state.accountA.owner.owner, owner)
 - state.timestamp < validUntil
 - fee <= maxFee
 - compressedPublicKey = CompressPublicKey(publicKeyX, publicKeyY)
@@ -1825,7 +1890,9 @@ Notes:
 
 - https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#account-update
 
-This gadgets allows setting the account EdDSA public key in a new or existing account at accountID. The owner of an account can never change, unless account_old.owner == 0, which means a new account is created for owner.
+This gadgets allows setting the account EdDSA public key in a new or existing account at accountID. The owner of an account can never change, unless state.accountA.owner.owner == 0, which means a new account is created for owner.
+
+The account nonce is used to prevent replay protection.
 
 A fee is paid to the operator in any token. The operator can choose any fee lower or equal than the maxFee specified by the user.
 
@@ -1884,6 +1951,8 @@ such that the following conditions hold:
 - https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#amm-update
 
 This gadgets allows setting the feeBipsAMM and tokenWeightAMM parameters on an existing account at accountID.
+
+The account nonce is used to prevent replay protection.
 
 All AMM updates need to be authorized in the smart contract, so numConditionalTransactions is always incremented.
 
@@ -1995,11 +2064,6 @@ such that the following conditions hold:
   onchainDataHash
   }
 
-Notes:
-
-- The Merkle tree is allowed to have multiple accounts with the same owner.
-- owner cannot be 0, but this is enforced in the smart contracts.
-
 ### Description
 
 - https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#withdraw
@@ -2008,7 +2072,7 @@ This gadgets allows withdrawing from an account at accountID.
 
 Withdrawing from account == 0 is special because this is where the protocol fees are stored and these balances are not immediately committed to the Merkle tree state. This is why some special logic is needed to make sure we don't do any unexpected state changes on that account.
 
-Some things are only checked when we're actually doing a withdrawal by inspecting txType. This is done because the withdrawal constraints are also part of different transaction types, and so while these constraints don't need for a non-Withdrawal transaction, they do need to be valid to be able to create a valid block.
+Some things are only checked when we're actually doing a withdrawal by inspecting txType. This is done because the withdrawal constraints are also part of different transaction types, and so while these constraints aren't needed for a non-Withdrawal transaction, they do need to be valid to be able to create a valid block.
 
 amount is subtracted from the users balance at tokenID. Depending on the type, amount may need to have a specific value:
 
@@ -2020,7 +2084,9 @@ These different types are used on-chain to correctly handle withdrawals.
 
 A fee is paid to the operator in any token. The operator can choose any fee lower or equal than the maxFee specified by the user.
 
-Only when type == 0 is a valid EdDSA signature required.
+The storage nonce system is used to prevent replay protection.
+
+Only when type == 0 is a valid EdDSA signature required, for the other types the approval is checked on-chain.
 
 In all cases the withdrawal transaction needs to be processed on-chain, so numConditionalTransactions is always incremented.
 
@@ -2162,9 +2228,11 @@ Some things are only checked when we're actually doing a transfer by inspecting 
 
 A fee is paid to the operator in any token. The operator can choose any fee lower or equal than the maxFee specified by the user.
 
+The storage nonce system is used to prevent replay protection.
+
 Only when type == 0 is a valid EdDSA signature required. When type == 1 the transfer transaction needs to be processed on-chain, so numConditionalTransactions is incremented.
 
-Some data is only put in the DA when either required (so that the Merkle tree can be reconstructed) or when requested by the operator (putAddressesInDA == 1).
+Some data is only put in the DA when either required (so that the Merkle tree can be reconstructed) or when requested by the operator (putAddressesInDA == 1). Putting less data on-chain makes the transcation cheaper, but in some cases it may be useful to still put it on-chain.
 
 ## SpotTrade statement
 
@@ -2275,12 +2343,12 @@ This gadgets allows trading two tokens (tokenS and tokenB) between two accounts 
 
 A fee is paid to the operator, and this fee is always paid in the tokens bought by the account. Additionally a protocol fee is charged to the operator.
 
-The operator is free to pass in any fillS_A and fillS_B, as long as all user requirements are met:
+The operator is free to pass in any fillS_A and fillS_B, as long as all user requirements are met, the most important ones being:
 
 - For limit orders the price is below the maximum price defined in the order as amountS/amountB
 - For AMM orders the price is above the minimum price as set by the curve defined by the current AMM weights on the account.
 
-Orders need to be signed with EdDSA in all cases, except when AMM is enabled for tokenS and tokenB in the account.
+Orders need to be signed with EdDSA in all cases, except when AMM is enabled and the tokens being traded have AMM enabled (AMM weight != 0) on the account.
 
 Trades are never processed on-chain, so numConditionalTransactions is never incremented.
 
@@ -2305,7 +2373,7 @@ such that the following conditions hold:
 
 ### Description
 
-This gadget selects the correct output for the transaction that's being executed. All transactions types are always executed in the circuit, so we select the transaction of the correct type here.
+This gadget selects the correct output for the transaction that's being executed. All transactions types are always executed in the circuit, so we select the output of the required transaction here.
 
 ## Transaction statement
 
@@ -2437,15 +2505,15 @@ such that the following conditions hold:
 - protocolBalancesRoot_new = BalanceUpdate(
   root_updateBalanceB_P,
   output.BALANCE_B_S_ADDRESS,
-  state.operator.balanceB,
+  state.pool.balanceA,
   (output.BALANCE_P_A_BALANCE, 0, EMPTY_STORAGE_ROOT)
   )
 
 ### Description
 
-This gadget executes the required logic for the transaction (by executing the logic for each transactions type and then selecting the right output) and using the output of the transaction to do all shared and heavy operations: signature checking and Merkle tree updates. By sharing these operations between all transaction types the resulting circuit is much more efficient than if we would simply do these operations for all transactions types all times (as the number of constraints produced would simply stack on top of each other).
+This gadget executes the required logic for the transaction (by executing the logic for each transactions type and then selecting the right output) and using the output of the transaction to do all shared and heavy operations: signature checking and Merkle tree updates. By sharing these operations between all transaction types the resulting circuit is much more efficient than if we would simply do these operations for all transactions types at all times (as the number of constraints produced would simply stack on top of each other).
 
-To do this, all data that could be updated in any of the transactions is stored in a shared output data interface. We then always update all output data, even if it remains the same.
+To do this, all data that could be updated in any of the transactions is stored in a shared output data interface. We then always update all output data, even if it remains the same for a specific transaction.
 
 ## Universal statement
 
@@ -2527,6 +2595,6 @@ such that the following conditions hold:
 
 Batches multiple transactions together in a block. All public input is hashed to the single field element publicInput, this makes verifying the proof more efficient.
 
-The operator is required to sign the block. This is required because the operator pays the protocol fees direclty from his own account.
+The operator needs to sign the block. This is required because the operator pays the protocol fees directly from his own account.
 
 Here we finally apply the new balance root of the pool acccount (at accountID = 0) to the Merkle tree. All balance updates done while running over the transactions only updated the balance Merkle tree of the account, and so here we set it in the account so the main Merkle tree is updated.
