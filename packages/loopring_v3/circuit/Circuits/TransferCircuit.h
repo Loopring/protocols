@@ -31,7 +31,6 @@ namespace Loopring
         require(payee_toAccountID == toAccountID);
     }
     require (to != 0);
-    require (toAccountID > 1);
 */
 class TransferCircuit : public BaseTransactionCircuit
 {

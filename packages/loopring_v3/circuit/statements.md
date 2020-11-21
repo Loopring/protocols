@@ -52,10 +52,14 @@ For a full overview of the Loopring protocol, see https://github.com/Loopring/pr
 ## Data types
 
 - F := Snark field element
-- SignedF := (sign: {0..2}, value: F)
 - Storage := (data: F, storageID: F)
 - Balance := (balance: F, weightAMM: F, storageRoot: F)
 - Account := (owner: F, publicKeyX: F, publicKeyY: F, nonce: F, feeBipsAMM: F, balancesRoot: F)
+
+- SignedF := (sign: {0..2}, value: F),
+  sign == 1 -> positive value,
+  sign == 0 -> negative value,
+  value == 0 can have sign 0 or 1.
 
 - AccountState := (
   storage: Storage,
@@ -340,7 +344,7 @@ such that the following conditions hold:
 
 Notes:
 
-- Should check for overflow
+- Calculates A + B with overflow checking
 - A and B are limited to n + 1 <= NUM_BITS_FIELD_CAPACITY, so we can be sure to detect overflow with a simple range check on the result.
 
 ## Sub statement
@@ -365,7 +369,7 @@ such that the following conditions hold:
 
 Notes:
 
-- Should check for underflow
+- Calculates A - B with underflow checking
 - A and B are limited to n + 1 <= NUM_BITS_FIELD_CAPACITY, so we can be sure to detect underflow with a simple range check on the result.
 - Underflow check is thus detected when the result is a value taking up more than n bits.
 
@@ -413,7 +417,8 @@ such that the following conditions hold:
 
 Notes:
 
-- Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+- Implements the ternary operator.
+- Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 
 ## ArrayTernary statement
 
@@ -436,6 +441,11 @@ such that the following conditions hold:
 - for i in {0..N}: result[i] = (b == 1) ? x[i] : y[i]
 - if enforceBitness then generate_boolean_r1cs_constraint(b)
 
+Notes:
+
+- Implements the ternary operator.
+- Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
+
 ## And statement
 
 A valid instance of an And statement assures that given an input of:
@@ -453,7 +463,7 @@ such that the following conditions hold:
 Notes:
 
 - All inputs are expected to be boolean
-- AND constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+- Implements the AND operator. Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 
 ## Or statement
 
@@ -472,7 +482,7 @@ such that the following conditions hold:
 Notes:
 
 - All inputs are expected to be boolean
-- OR constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+- Implements the OR operator. Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
 
 ## Not statement
 
@@ -495,7 +505,8 @@ such that the following conditions hold:
 
 Notes:
 
-- NOT constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+- Implements the NOT operator.
+- Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
 
 ## XorArray statement
 
@@ -515,7 +526,8 @@ such that the following conditions hold:
 Notes:
 
 - All inputs are expected to be boolean
-- XOR constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
+- Implements the XOR operator.
+- Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
 
 ## Equal statement
 
@@ -532,6 +544,10 @@ such that the following conditions hold:
 
 - result = (A - B == 0) ? 1 : 0
 
+Notes:
+
+- Checks for equality between any two field elements
+
 ## RequireEqual statement
 
 A valid instance of a RequireEqual statement assures that given an input of:
@@ -547,6 +563,10 @@ such that the following conditions hold:
 
 - A == B
 
+Notes:
+
+- Enforces equality between any two field elements
+
 ## RequireZeroAorB statement
 
 A valid instance of a RequireZeroAorB statement assures that given an input of:
@@ -561,6 +581,11 @@ the prover knows an auxiliary input:
 such that the following conditions hold:
 
 - A \* B = 0
+
+Notes:
+
+- Checks (A == 0) || (B == 0).
+- Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf.
 
 ## RequireNotZero statement
 
@@ -579,7 +604,7 @@ such that the following conditions hold:
 
 Notes:
 
-- The inverse exists for all values except 0
+- Enforces A != 0 by using the trick that the inverse exists for all values except 0.
 - Constraint logic from https://github.com/daira/r1cs/blob/master/zkproofs.pdf
 
 ## RequireNotEqual statement
@@ -596,6 +621,10 @@ the prover knows an auxiliary input:
 such that the following conditions hold:
 
 - A - B != 0
+
+Notes:
+
+- Enforces inequality between any two field elements
 
 ## LeqGadget
 
@@ -647,6 +676,10 @@ such that the following conditions hold:
 
 - (A < B) ? A : B
 
+Notes:
+
+- Implements the common min operation.
+
 ## Max statement
 
 A valid instance of a Max statement assures that given an input of:
@@ -665,6 +698,10 @@ the prover knows an auxiliary input:
 such that the following conditions hold:
 
 - (A < B) ? B : A
+
+Notes:
+
+- Implements the common max operation.
 
 ## RequireLeq statement
 
@@ -685,6 +722,10 @@ such that the following conditions hold:
 
 - A <= B
 
+Notes:
+
+- Enforces A <= B.
+
 ## RequireLt statement
 
 A valid instance of a RequireLt statement assures that given an input of:
@@ -704,6 +745,10 @@ such that the following conditions hold:
 
 - A < B
 
+Notes:
+
+- Enforces A < B.
+
 ## IfThenRequire statement
 
 A valid instance of an IfThenRequire statement assures that given an input of:
@@ -718,6 +763,10 @@ the prover knows an auxiliary input:
 such that the following conditions hold:
 
 - !C || A
+
+Notes:
+
+- Enforces !C || A.
 
 ## IfThenRequireEqual statement
 
@@ -735,6 +784,10 @@ such that the following conditions hold:
 
 - IfThenRequire(C, (A == B) ? 1 : 0)
 
+Notes:
+
+- Enforces !C || (A == B).
+
 ## IfThenRequireNotEqual statement
 
 A valid instance of an IfThenRequireNotEqual statement assures that given an input of:
@@ -750,6 +803,10 @@ the prover knows an auxiliary input:
 such that the following conditions hold:
 
 - IfThenRequire(C, (A != B) ? 1 : 0)
+
+Notes:
+
+- Enforces !C || (A != B).
 
 ## MulDivGadget statement
 
@@ -834,6 +891,9 @@ sha256 is used here because we also need to hash the data onchain. sha256 is ver
 A valid instance of a Float statement assures that given an input of:
 
 - floatValue_bits: {0..2^(numBitsExponent+numBitsMantissa)}
+
+the prover knows an auxiliary input:
+
 - decodedValue: F
 
 The following conditions hold:
@@ -945,7 +1005,7 @@ The following conditions hold:
 
 Notes:
 
-- result = A + B
+- Calculates A + B with overflow/underflow checking with both values being signed field elements.
 
 ## SignedSub statement
 
@@ -961,6 +1021,10 @@ the prover knows an auxiliary input:
 The following conditions hold:
 
 - result = SignedAdd(A, -B)
+
+Notes:
+
+- Calculates A - B with overflow/underflow checking with both values being signed field elements.
 
 ## SignedMulDiv statement
 
@@ -980,6 +1044,11 @@ such that the following conditions hold:
 
 - quotient = MulDiv(value.value, numerator.value, denominator)
 - sign = (quotient == 0) ? 0 : ((value.sign == numerator.sign) ? 1 : 0)
+
+Notes:
+
+- Calculates floor((value \* denominator) / denominator) with both the value and the numerator being signed field elements.
+- floor rounds always towards 0.
 
 ## Power statement
 
@@ -1276,7 +1345,7 @@ such that the following conditions hold:
 
 ### Description
 
-Builds a simple parallel nonce system on top of the storage tree. Transactions can use any storage slot that contains 0 as data (after overwriting logic). This slot will be overwritten with a 1, making it impossible to re-use the transaction multiple times.
+Builds a simple parallel nonce system on top of the storage tree. Transactions can use any storage slot that contains 0 as data (after overwriting logic). A 1 will be written to the storage after the transaction is used, making it impossible to re-use the transaction multiple times.
 
 To make is easier to ignore this check, verify is added to make the statement always valid if necessary.
 
@@ -1345,7 +1414,7 @@ Notes:
 
 ### Description
 
-For use in EdDSA signatures.
+For use in EdDSA signatures. Hashes the message together with the public key and the signature R point.
 
 ## EdDSA_Poseidon statement
 
@@ -1494,7 +1563,7 @@ The additional requirement for the fill amounts is to make sure rounding errors 
 A valid instance of a FeeCalculator statement assures that given an input of:
 
 - amount: {0..2^NUM_BITS_AMOUNT}
-- protocolFeeBips: {0..2^8}
+- protocolFeeBips: {0..2^NUM_BITS_PROTOCOL_FEE_BIPS}
 - feeBips: {0..2^NUM_BITS_FEE_BIPS}
 
 the prover knows an auxiliary input:
@@ -1631,7 +1700,12 @@ such that the following conditions hold:
 
 ### Description
 
-Verifies that the given fill amounts fill both orders in a valid way.
+Verifies that the given fill amounts fill both orders in a valid way:
+
+- Valid order fills
+- Matching tokens
+- Valid taker
+- Valid order
 
 ## SpotPriceAMM statement
 
@@ -1730,6 +1804,8 @@ such that the following conditions hold:
 
 Validates if an AMM order is filled correctly. If the order isn't an AMM order dummy data is used in ammData so that all the following checks pass.
 
+For an AMM order to be usable, both tokens need to have AMM enabled (weigth != 0). An AMM order does not pay any fee to the operator.
+
 An AMM order is correctly filled when the amount of tokens sold by the AMM is less than the maximum allowed as defined by CalcOutGivenInAMM.
 As an additional check against potential rounding errors in the power gadget, we enforce that the AMM price after the trade cannot be lower than before the trade.
 
@@ -1803,7 +1879,7 @@ Notes:
 
 - https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#deposit
 
-This gadgets allows depositing funds to a new or existing account at accountID. The owner of an account can never change, unless state.accountA.owner.owner == 0, which means a new account is created for owner.
+This gadgets allows depositing funds to a new or existing account at accountID. The owner of an account can never change, unless state.accountA.account.owner == 0, which means a new account is created for owner.
 
 As deposits are processed and stored on-chain, we have to process this transaction in the smart contract, and so numConditionalTransactions is incremented. No EdDSA signature are ever used, the deposit data is validated on-chain.
 
@@ -1851,11 +1927,11 @@ such that the following conditions hold:
   validUntil,
   nonce
   )
-- OwnerValid(state.accountA.owner.owner, owner)
+- OwnerValid(state.accountA.account.owner, owner)
 - state.timestamp < validUntil
 - fee <= maxFee
 - compressedPublicKey = CompressPublicKey(publicKeyX, publicKeyY)
-- Float(fFee, uFee)
+- uFee = Float(fFee)
 - RequireAccuracy(uFee, fee)
 
 - output = DefaultTxOutput(state)
@@ -1890,7 +1966,7 @@ Notes:
 
 - https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#account-update
 
-This gadgets allows setting the account EdDSA public key in a new or existing account at accountID. The owner of an account can never change, unless state.accountA.owner.owner == 0, which means a new account is created for owner.
+This gadgets allows setting the account EdDSA public key in a new or existing account at accountID. The owner of an account can never change, unless state.accountA.account.owner == 0, which means a new account is created for owner.
 
 The account nonce is used to prevent replay protection.
 
@@ -2029,11 +2105,11 @@ such that the following conditions hold:
 - owner = (accountID == 0) ? 0 : state.accountA.account.owner
 - state.timestamp < validUntil (RequireLtGadget)
 - fee <= maxFee (RequireLeqGadget)
-- if type == 2 then amount = (accountID == 0) ? state.pool.balanceB.balance : state.accountA.balanceS.balance
-- if type == 3 then amount = 0
+- if type == 2 then amount == (accountID == 0) ? state.pool.balanceB.balance : state.accountA.balanceS.balance
+- if type == 3 then amount == 0
 
 - Nonce(state.accountA.storage, storageID, (state.txType == TransactionType.Withdraw && (type == 0 || type == 1)))
-- Float(fFee, uFee)
+- uFee = Float(fFee)
 - RequireAccuracy(uFee, fee)
 
 - output = DefaultTxOutput(state)
@@ -2050,8 +2126,8 @@ such that the following conditions hold:
 - output.SIGNATURE_REQUIRED_B = 0
 - output.NUM_CONDITIONAL_TXS = state.numConditionalTransactions + 1
 - output.STORAGE_A_ADDRESS = storageID[0..NUM_BITS_STORAGE_ADDRESS]
-- output.STORAGE_A_DATA = (accountId != 0 && type == 2) ? 1 : state.accountA.storage.data
-- output.STORAGE_A_STORAGEID = (accountId != 0 && type == 2) ? storageID : state.accountA.storage.storageID
+- output.STORAGE_A_DATA = (type == 0 || type == 1) ? 1 : state.accountA.storage.data
+- output.STORAGE_A_STORAGEID = (type == 0 || type == 1) ? storageID : state.accountA.storage.storageID
 - output.DA = {
   TransactionType.Withdraw,
   owner,
@@ -2082,9 +2158,11 @@ amount is subtracted from the users balance at tokenID. Depending on the type, a
 
 These different types are used on-chain to correctly handle withdrawals.
 
+Valid forced withdrawals (type == 0) reset the AMM weight of the token. This is to allow AMMs to be safely disabled in all cases.
+
 A fee is paid to the operator in any token. The operator can choose any fee lower or equal than the maxFee specified by the user.
 
-The storage nonce system is used to prevent replay protection.
+The storage nonce system is used to prevent replay protection when type == 0 or type == 1. Replay protection for other types are handled on-chain.
 
 Only when type == 0 is a valid EdDSA signature required, for the other types the approval is checked on-chain.
 
@@ -2178,11 +2256,11 @@ such that the following conditions hold:
 - if (payerTo != 0) then payer_toAccountID = payee_toAccountID
 - if (payee_toAccountID != 0) then payee_toAccountID = toAccountID
 - if (state.txType == TransactionType.Transfer) then to != 0
-- to = state.accountB.account.owner
+- OwnerValid(state.accountB.account.owner, to)
 - Nonce(state.accountA.storage, storageID, (state.txType == TransactionType.Transfer))
-- Float(fFee, uFee)
+- uFee = Float(fFee)
 - RequireAccuracy(uFee, fee)
-- Float(fAmount, uAmount)
+- uAmount = Float(fAmount)
 - RequireAccuracy(uAmount, amount)
 
 - output = DefaultTxOutput(state)
@@ -2258,8 +2336,8 @@ such that the following conditions hold:
 
 - orderA = Order(state.exchange)
 - orderB = Order(state.exchange)
-- Float(fillS_A, uFillS_A)
-- Float(fillS_B, uFillS_B)
+- uFillS_A = Float(fillS_A)
+- uFillS_B = Float(fillS_B)
 - storageDataA = StorageReader(state.accountA.storage, orderA.storageID, (state.txType == TransactionType.SpotTrade))
 - storageDataB = StorageReader(state.accountB.storage, orderB.storageID, (state.txType == TransactionType.SpotTrade))
 - OrderMatching(state.timestamp, orderA, orderB, state.accountA.account.owner, state.accountB.account.owner, storageDataA, storageDataB, uFillS_A, uFillS_B)
@@ -2275,7 +2353,7 @@ such that the following conditions hold:
 - output.BALANCE_A_S_BALANCE = state.accountA.balanceS.balance - uFillS_A
 - output.BALANCE_A_B_BALANCE = state.accountB.balanceB.balance + uFillS_B - feeA
 - output.BALANCE_B_S_BALANCE = state.accountA.balanceB.balance - uFillS_B
-- output.BALANCE_B_B_BALANCE = state.accountA.balanceB.balance + uFillS_A - feeB
+- output.BALANCE_B_B_BALANCE = state.accountB.balanceB.balance + uFillS_A - feeB
 
 - output.BALANCE_P_A_BALANCE = state.pool.balanceA.balance + protocolFeeA
 - output.BALANCE_P_B_BALANCE = state.pool.balanceB.balance + protocolFeeB
@@ -2348,7 +2426,7 @@ The operator is free to pass in any fillS_A and fillS_B, as long as all user req
 - For limit orders the price is below the maximum price defined in the order as amountS/amountB
 - For AMM orders the price is above the minimum price as set by the curve defined by the current AMM weights on the account.
 
-Orders need to be signed with EdDSA in all cases, except when AMM is enabled and the tokens being traded have AMM enabled (AMM weight != 0) on the account.
+Orders need to be signed with EdDSA in all cases, except for AMM orders, which are implicitely authorized by having the tokens being traded have AMM enabled (AMM weight != 0) on the order owner's account.
 
 Trades are never processed on-chain, so numConditionalTransactions is never incremented.
 
@@ -2369,7 +2447,7 @@ such that the following conditions hold:
 
 - for each F var in TxOutput: output.var = Select(selector_bits, outputs[0..7].var)
 - for each F_array var in TxOutput: output.var = ArraySelect(selector_bits, outputs[0..7].var)
-- output.da = ArraySelect(selector_bits, outputs[0..7].da), wit outputs[i].da padded to (TX_DATA_AVAILABILITY_SIZE - 1) \* 8 bits with zeros
+- output.da = ArraySelect(selector_bits, outputs[0..7].da), with outputs[i].da padded to TX_DATA_AVAILABILITY_SIZE \* 8 bits with zeros
 
 ### Description
 
@@ -2567,7 +2645,7 @@ such that the following conditions hold:
   protocolMakerFeeBips,
   numConditionalTransactions,
   operatorAccountID,
-  concat(for i in {0..N}: transactions[i].output.DA[0..29\*8], for i in {0..N}: transactions[i].output.DA[29\*8, 68\*8])
+  concat(for i in {0..N}: transactions[i].output.DA[0..29\*8], for i in {0..N}: transactions[i].output.DA[29\*8..68\*8])
   )
 - publicInput = PublicData(publicData)
 
