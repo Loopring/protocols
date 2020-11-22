@@ -384,15 +384,15 @@ class TransactionGadget : public GadgetT
             pb,
             protocolBalancesRoot,
             tx.getArrayOutput(TXV_BALANCE_A_S_ADDRESS),
-            {state.pool.balanceB.balance, constants._0, constants.emptyStorage},
-            {tx.getOutput(TXV_BALANCE_P_B_BALANCE), constants._0, constants.emptyStorage},
+            {state.pool.balanceB.balance, state.pool.balanceB.weightAMM, state.pool.balanceB.storageRoot},
+            {tx.getOutput(TXV_BALANCE_P_B_BALANCE), state.pool.balanceB.weightAMM, state.pool.balanceB.storageRoot},
             FMT(prefix, ".updateBalanceB_P")),
           updateBalanceA_P(
             pb,
             updateBalanceB_P.result(),
             tx.getArrayOutput(TXV_BALANCE_B_S_ADDRESS),
-            {state.pool.balanceA.balance, constants._0, constants.emptyStorage},
-            {tx.getOutput(TXV_BALANCE_P_A_BALANCE), constants._0, constants.emptyStorage},
+            {state.pool.balanceA.balance, state.pool.balanceA.weightAMM, state.pool.balanceA.storageRoot},
+            {tx.getOutput(TXV_BALANCE_P_A_BALANCE), state.pool.balanceA.weightAMM, state.pool.balanceA.storageRoot},
             FMT(prefix, ".updateBalanceA_P"))
 
     {
