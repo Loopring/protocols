@@ -2,7 +2,7 @@
 
 - release url: https://github.com/Loopring/protocols/releases/tag/Loopring_3.6.0_beta
 - deployer: 0x4374D3d032B3c96785094ec9f384f07077792768
-- operator(grant access to submitBlocks): 0x81a48f7BB0b8FCE3db9FAf013D63963aE4948c1D
+- operator(has access to submitBlocks): 0x81a48f7BB0b8FCE3db9FAf013D63963aE4948c1D
 
 ## contract addresses
 
