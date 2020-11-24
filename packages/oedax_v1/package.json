@@ -86,6 +86,6 @@
     "snarkjs": "0.1.31",
     "truffle": "5.1.51",
     "truffle-hdwallet-provider": "web3-one",
-    "typedarray-to-buffer": "^3.1.5"
+    "typedarray-to-buffer": "^4.0.0"
   }
 }

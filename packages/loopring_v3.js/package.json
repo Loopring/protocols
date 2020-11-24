@@ -74,7 +74,7 @@
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
     "snarkjs": "0.1.31",
-    "typedarray-to-buffer": "^3.1.5",
+    "typedarray-to-buffer": "^4.0.0",
     "web3": "^1.2.0"
   }
 }
