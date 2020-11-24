@@ -3,6 +3,7 @@
 - release url: https://github.com/Loopring/protocols/releases/tag/Loopring_3.6.0_beta
 - deployer: 0x4374D3d032B3c96785094ec9f384f07077792768
 - operator(has access to submitBlocks): 0x81a48f7BB0b8FCE3db9FAf013D63963aE4948c1D
+- operator 2: 0x2b263f55Bf2125159Ce8Ec2Bb575C649f822ab46
 
 ## contract addresses
 
@@ -16,6 +17,7 @@
     - lrcAddr: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD
     - protocolFeeVault: 0x4b89f8996892d137c3dE1312d1dD4E4F4fFcA171
     - BlockVerifier: 0x6150343E0F43A17519c0327c41eDd9eBE88D01ef
+- ProtocolFeeVaultAddress: 0x4b89f8996892d137c3dE1312d1dD4E4F4fFcA171
 - Exchange Libs:
     - ExchangeBalances:0x6CE48C5E1C6391F6877da7502a0d8621727eA441
     - ExchangeAdmins:0x919551E7c778539f6238E3483358a2aFbDaa83c9
