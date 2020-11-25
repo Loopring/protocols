@@ -82,13 +82,15 @@ function getDates(startDate, stopDate) {
 function main() {
   let config = { nextBatch: 0 };
   let file = location + "addresses-birthday.json";
+  let addresses = [];
+
   if (fs.existsSync(file)) {
     try {
       const result = JSON.parse(fs.readFileSync(file));
       config = result.config || config;
+      addresses = result.addresses || [];
     } catch (err) {}
   }
-  let addresses = [];
 
   const dateSet = getDates(new Date("1980-01-01"), new Date("2020-12-30"));
   // console.log("dateSet:", dateSet);
