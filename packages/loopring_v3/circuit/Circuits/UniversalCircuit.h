@@ -62,7 +62,7 @@ class SelectTransactionGadget : public BaseTransactionCircuit
             {
                 variables.push_back(transactions[i]->getOutput(uPair.first));
             }
-            uSelects.emplace_back(pb, selector, variables, FMT(annotation_prefix, ".uSelects"));
+            uSelects.emplace_back(pb, state.constants, selector, variables, FMT(annotation_prefix, ".uSelects"));
 
             // Set the output variable
             setOutput(uPair.first, uSelects.back().result());
@@ -77,7 +77,7 @@ class SelectTransactionGadget : public BaseTransactionCircuit
             {
                 variables.push_back(transactions[i]->getArrayOutput(aPair.first));
             }
-            aSelects.emplace_back(pb, selector, variables, FMT(annotation_prefix, ".aSelects"));
+            aSelects.emplace_back(pb, state.constants, selector, variables, FMT(annotation_prefix, ".aSelects"));
 
             // Set the output variable
             setArrayOutput(aPair.first, aSelects.back().result());
@@ -98,7 +98,7 @@ class SelectTransactionGadget : public BaseTransactionCircuit
                 variables.push_back(da);
                 // std::cout << "da size: " << variables.back().size() << std::endl;
             }
-            publicDataSelects.emplace_back(pb, selector, variables, FMT(annotation_prefix, ".publicDataSelects"));
+            publicDataSelects.emplace_back(pb, state.constants, selector, variables, FMT(annotation_prefix, ".publicDataSelects"));
         }
     }
 
