@@ -493,8 +493,8 @@ class OrderMatchingGadget : public GadgetT
 //     return Math.floor((ratio * BASE_BIPS) / invFeeBips);
 // }
 
-// Result is guaranteed to fit inside NUM_BITS_AMOUNT bits.
-// Max ratio between weights guaranteed to be supported is 2**(96-14)/(10**18) = 4835703.278458517
+// Result is guaranteed to fit inside NUM_BITS_AMOUNT*2 bits.
+// Max ratio between weights guaranteed to be supported is 2**(96*2-14)/(10**18)
 // but this depends on the balances inside the pool as well. Normally it should be even much higher.
 class SpotPriceAMMGadget : public GadgetT
 {
@@ -529,7 +529,7 @@ class SpotPriceAMMGadget : public GadgetT
             60,
             NUM_BITS_AMOUNT * 2,
             FMT(prefix, ".ratio")),
-          ratioRangeCheck(pb, ratio.result(), NUM_BITS_AMOUNT - 14 /*log2(10000)*/, FMT(prefix, ".ratioRangeCheck")),
+          ratioRangeCheck(pb, ratio.result(), NUM_BITS_AMOUNT*2 - 14 /*log2(10000)*/, FMT(prefix, ".ratioRangeCheck")),
           invFeeBips(pb, constants._10000, feeBips, FMT(prefix, ".invFeeBips")),
           res(
             pb,
@@ -537,7 +537,7 @@ class SpotPriceAMMGadget : public GadgetT
             ratio.result(),
             constants._10000,
             invFeeBips.result(),
-            NUM_BITS_AMOUNT - 14,
+            NUM_BITS_AMOUNT*2 - 14,
             14 /*log2(10000)*/,
             14 /*log2(10000)*/,
             FMT(prefix, ".res"))
@@ -870,7 +870,7 @@ class RequireAMMFillsGadget : public GadgetT
             pb,
             priceBefore.result(),
             priceAfter.result(),
-            NUM_BITS_AMOUNT,
+            NUM_BITS_AMOUNT*2,
             FMT(prefix, ".priceBefore_leq_priceAfter")),
           requirePriceIncreased( //
             pb,

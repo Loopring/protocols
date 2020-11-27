@@ -1210,7 +1210,7 @@ calcSpotPrice(BigInt balanceIn, BigInt weightIn, BigInt balanceOut, BigInt weigh
         return {false, 0};
     }
     BigInt ratio = (numer * BASE) / denom;
-    if (ratio > getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT))
+    if (ratio > getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT*2 - 14))
     {
         return {false, 0};
     }
@@ -1404,8 +1404,7 @@ TEST_CASE("RequireAMMFills", "[RequireAMMFillsGadget]")
 
     SECTION("Ratio overflow")
     {
-        requireAMMFillsChecked(true, 0, max, 1, 1, 2, 10, 0, 0, ExpectedSatisfied::NotSatisfied);
-        requireAMMFillsChecked(true, 0, 1, max, 1, 2, 10, 0, 0, ExpectedSatisfied::NotSatisfied);
+        requireAMMFillsChecked(true, 0, max, max, 1, 1, 10, 0, 0, ExpectedSatisfied::NotSatisfied);
     }
 
     SECTION("Maxed out")
