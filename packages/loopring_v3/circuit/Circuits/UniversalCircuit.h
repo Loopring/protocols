@@ -62,7 +62,7 @@ class SelectTransactionGadget : public BaseTransactionCircuit
             {
                 variables.push_back(transactions[i]->getOutput(uPair.first));
             }
-            uSelects.emplace_back(pb, selector, variables, FMT(annotation_prefix, ".uSelects"));
+            uSelects.emplace_back(pb, state.constants, selector, variables, FMT(annotation_prefix, ".uSelects"));
 
             // Set the output variable
             setOutput(uPair.first, uSelects.back().result());
@@ -77,7 +77,7 @@ class SelectTransactionGadget : public BaseTransactionCircuit
             {
                 variables.push_back(transactions[i]->getArrayOutput(aPair.first));
             }
-            aSelects.emplace_back(pb, selector, variables, FMT(annotation_prefix, ".aSelects"));
+            aSelects.emplace_back(pb, state.constants, selector, variables, FMT(annotation_prefix, ".aSelects"));
 
             // Set the output variable
             setArrayOutput(aPair.first, aSelects.back().result());
@@ -98,7 +98,7 @@ class SelectTransactionGadget : public BaseTransactionCircuit
                 variables.push_back(da);
                 // std::cout << "da size: " << variables.back().size() << std::endl;
             }
-            publicDataSelects.emplace_back(pb, selector, variables, FMT(annotation_prefix, ".publicDataSelects"));
+            publicDataSelects.emplace_back(pb, state.constants, selector, variables, FMT(annotation_prefix, ".publicDataSelects"));
         }
     }
 
@@ -384,15 +384,15 @@ class TransactionGadget : public GadgetT
             pb,
             protocolBalancesRoot,
             tx.getArrayOutput(TXV_BALANCE_A_S_ADDRESS),
-            {state.pool.balanceB.balance, constants._0, constants.emptyStorage},
-            {tx.getOutput(TXV_BALANCE_P_B_BALANCE), constants._0, constants.emptyStorage},
+            {state.pool.balanceB.balance, state.pool.balanceB.weightAMM, state.pool.balanceB.storageRoot},
+            {tx.getOutput(TXV_BALANCE_P_B_BALANCE), state.pool.balanceB.weightAMM, state.pool.balanceB.storageRoot},
             FMT(prefix, ".updateBalanceB_P")),
           updateBalanceA_P(
             pb,
             updateBalanceB_P.result(),
             tx.getArrayOutput(TXV_BALANCE_B_S_ADDRESS),
-            {state.pool.balanceA.balance, constants._0, constants.emptyStorage},
-            {tx.getOutput(TXV_BALANCE_P_A_BALANCE), constants._0, constants.emptyStorage},
+            {state.pool.balanceA.balance, state.pool.balanceA.weightAMM, state.pool.balanceA.storageRoot},
+            {tx.getOutput(TXV_BALANCE_P_A_BALANCE), state.pool.balanceA.weightAMM, state.pool.balanceA.storageRoot},
             FMT(prefix, ".updateBalanceA_P"))
 
     {

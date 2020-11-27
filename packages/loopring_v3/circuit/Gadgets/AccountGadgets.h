@@ -309,10 +309,8 @@ class DynamicBalanceGadget : public DynamicVariableGadget
       ProtoboardT &pb,
       const VariableT &balance,
       const std::string &prefix)
-        : DynamicVariableGadget(pb, prefix)
+        : DynamicVariableGadget(pb, balance, prefix)
     {
-        add(balance);
-        allowGeneratingWitness = false;
     }
 
     DynamicBalanceGadget( //
