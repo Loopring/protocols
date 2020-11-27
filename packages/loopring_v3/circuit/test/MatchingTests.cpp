@@ -1402,6 +1402,12 @@ TEST_CASE("RequireAMMFills", "[RequireAMMFillsGadget]")
         requireAMMFillsChecked(true, 0, 0, 1, 1000, 1, 10, 0, 0);
     }
 
+    SECTION("Large ratio differences")
+    {
+        requireAMMFillsChecked(true, 0, max, BASE, 1, BASE, 10, 0, 0, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(true, 0, 1, BASE, max, BASE, 10, 0, 0, ExpectedSatisfied::Satisfied);
+    }
+
     SECTION("Ratio overflow")
     {
         requireAMMFillsChecked(true, 0, max, max, 1, 1, 10, 0, 0, ExpectedSatisfied::NotSatisfied);
