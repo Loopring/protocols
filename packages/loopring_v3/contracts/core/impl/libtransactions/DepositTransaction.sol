@@ -36,6 +36,9 @@ library DepositTransaction
     {
         // Read in the deposit
         Deposit memory deposit = readTx(data, offset);
+        if (deposit.amount == 0) {
+            return;
+        }
 
         // Process the deposit
         ExchangeData.Deposit memory pendingDeposit = S.pendingDeposits[deposit.to][deposit.tokenID];
@@ -46,11 +49,8 @@ library DepositTransaction
         // This is done to ensure the user can do multiple deposits after each other
         // without invalidating work done by the exchange owner for previous deposit amounts.
 
-        // Also note the original deposit.amount can be zero!
-        if (deposit.amount > 0) {
-            require(pendingDeposit.amount >= deposit.amount, "INVALID_AMOUNT");
-            pendingDeposit.amount = pendingDeposit.amount.sub(deposit.amount);
-        }
+        require(pendingDeposit.amount >= deposit.amount, "INVALID_AMOUNT");
+        pendingDeposit.amount = pendingDeposit.amount.sub(deposit.amount);
 
         // If the deposit was fully consumed, reset it so the storage is freed up
         // and the owner receives a gas refund.
