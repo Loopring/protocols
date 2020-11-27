@@ -66,6 +66,8 @@ library BlockReader {
 
         bytes memory data = _block.data;
 
+        // The transaction was transformed to make it easier to compress.
+        // Transform it back here.
         bytes memory txData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE());
         // Part 1
         uint txDataOffset = OFFSET_TO_TRANSACTIONS +

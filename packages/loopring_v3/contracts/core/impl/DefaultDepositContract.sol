@@ -103,6 +103,10 @@ contract DefaultDepositContract is IDepositContract, Claimable
             amountReceived = amount;
             ethToReturn = msg.value - amount;
         } else {
+            // When checkBalance is enabled for a token we check the balance change
+            // on the contract instead of counting on transferFrom to transfer exactly
+            // the amount of tokens that is specified in the transferFrom call.
+            // This is to support non-standard tokens which do custom transfer logic.
             bool checkBalance = needCheckBalance[token];
             uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
 
@@ -136,6 +140,10 @@ contract DefaultDepositContract is IDepositContract, Claimable
         if (isETHInternal(token)) {
             to.sendETHAndVerify(amount, gasleft());
         } else {
+            // Try to transfer the amount requested.
+            // If this fails try to transfer the remaining balance in this contract.
+            // This is to guard against non-standard token behavior where total supply
+            // has changed in unexpected ways.
             if (!token.safeTransfer(to, amount)){
                 uint amountPaid = ERC20(token).balanceOf(address(this));
                 require(amountPaid < amount, "UNEXPECTED");

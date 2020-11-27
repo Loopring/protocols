@@ -68,12 +68,6 @@ library WithdrawTransaction
         uint32  validUntil;
     }
 
-    /*event ForcedWithdrawalProcessed(
-        uint32 accountID,
-        uint16 tokenID,
-        uint   amount
-    );*/
-
     function process(
         ExchangeData.State        storage S,
         ExchangeData.BlockContext memory  ctx,
@@ -102,6 +96,10 @@ library WithdrawTransaction
         withdrawal.extraData = auxData.extraData;
         withdrawal.maxFee = auxData.maxFee == 0 ? withdrawal.fee : auxData.maxFee;
         withdrawal.validUntil = auxData.validUntil;
+
+        // If the account has an owner, don't allow withdrawing to the zero address
+        // (which will be the protocol fee vault contract).
+        require(withdrawal.from == address(0) || withdrawal.to != address(0), "INVALID_WITHDRAWAL_RECIPIENT");
 
         if (withdrawal.withdrawalType == 0) {
             // Signature checked offchain, nothing to do
@@ -140,12 +138,6 @@ library WithdrawTransaction
                 // delete the withdrawal request and free a slot
                 delete S.pendingForcedWithdrawals[withdrawal.fromAccountID][withdrawal.tokenID];
                 S.numPendingForcedTransactions--;
-
-                /*emit ForcedWithdrawalProcessed(
-                    withdrawal.fromAccountID,
-                    withdrawal.tokenID,
-                    withdrawal.amount
-                );*/
             } else {
                 // Allow the owner to submit full withdrawals without authorization
                 // - when in shutdown mode

@@ -36,7 +36,7 @@ library ExchangeBalances
         pure
         returns (bool)
     {
-        // Verify data
+        // Calculate the Merkle root using the Merkle paths provided
         uint calculatedRoot = getBalancesRoot(
             merkleProof.balanceLeaf.tokenID,
             merkleProof.balanceLeaf.balance,
@@ -54,6 +54,7 @@ library ExchangeBalances
             calculatedRoot,
             merkleProof.accountMerkleProof
         );
+        // Check against the expected Merkle root
         return (calculatedRoot == merkleRoot);
     }
 
@@ -68,7 +69,9 @@ library ExchangeBalances
         pure
         returns (uint)
     {
+        // Hash the balance leaf
         uint balanceItem = hashImpl(balance, weightAMM, storageRoot, 0);
+        // Calculate the Merkle root of the balance quad Merkle tree
         uint _id = tokenID;
         for (uint depth = 0; depth < 8; depth++) {
             uint base = depth * 3;
@@ -120,7 +123,9 @@ library ExchangeBalances
         pure
         returns (uint)
     {
+        // Hash the account leaf
         uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, feeBipsAMM, balancesRoot);
+        // Calculate the Merkle root of the account quad Merkle tree
         uint _id = accountID;
         for (uint depth = 0; depth < 16; depth++) {
             uint base = depth * 3;

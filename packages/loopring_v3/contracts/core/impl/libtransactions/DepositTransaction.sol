@@ -25,13 +25,6 @@ library DepositTransaction
         uint96  amount;
     }
 
-    /*event DepositProcessed(
-        address to,
-        uint32  toAccountId,
-        uint16  token,
-        uint    amount
-    );*/
-
     function process(
         ExchangeData.State        storage S,
         ExchangeData.BlockContext memory  /*ctx*/,
@@ -48,6 +41,7 @@ library DepositTransaction
         ExchangeData.Deposit memory pendingDeposit = S.pendingDeposits[deposit.to][deposit.tokenID];
         // Make sure the deposit was actually done
         require(pendingDeposit.timestamp > 0, "DEPOSIT_DOESNT_EXIST");
+
         // Processing partial amounts of the deposited amount is allowed.
         // This is done to ensure the user can do multiple deposits after each other
         // without invalidating work done by the exchange owner for previous deposit amounts.
@@ -65,8 +59,6 @@ library DepositTransaction
         } else {
             S.pendingDeposits[deposit.to][deposit.tokenID] = pendingDeposit;
         }
-
-        //emit DepositProcessed(deposit.to, deposit.toAccountID, deposit.tokenID, deposit.amount);
     }
 
     function readTx(

@@ -47,13 +47,6 @@ library TransferTransaction
         uint32 validUntil;
     }
 
-    /*event ConditionalTransferProcessed(
-        address from,
-        address to,
-        uint16  token,
-        uint    amount
-    );*/
-
     function process(
         ExchangeData.State        storage S,
         ExchangeData.BlockContext memory  ctx,
@@ -79,8 +72,6 @@ library TransferTransaction
 
         // Check the on-chain authorization
         S.requireAuthorizedTx(transfer.from, auxData.signature, txHash);
-
-        //emit ConditionalTransferProcessed(from, to, tokenID, amount);
     }
 
     function readTx(
