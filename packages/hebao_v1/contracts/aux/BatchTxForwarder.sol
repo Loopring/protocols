@@ -3,20 +3,19 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../lib/Claimable.sol";
 import "../lib/Drainable.sol";
-import "../lib/OwnerManagable.sol";
 
 
-/// @title BatchTxOperator
+/// @title BatchTxForwarder
 /// @author Daniel Wang - <daniel@loopring.org>
-contract BatchTxOperator is Drainable, OwnerManagable
+contract BatchTxForwarder is Drainable, Claimable
 {
     address immutable target;
     constructor(address _target)
         Drainable()
-        OwnerManagable()
+        Claimable()
     {
-        require(_target != address(0));
         target = _target;
     }
 
@@ -25,10 +24,7 @@ contract BatchTxOperator is Drainable, OwnerManagable
         uint[]  calldata gasLimits
         )
         external
-        payable
-        onlyManager
     {
-        require(msg.value == 0, "INVALID_VALUES");
         require(txs.length == gasLimits.length, "INVALID_DATA");
 
         for (uint i = 0; i < txs.length; i++) {
