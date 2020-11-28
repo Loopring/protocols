@@ -24,7 +24,7 @@ contract BatchTxForwarder is Drainable, Claimable
 
         for (uint i = 0; i < txs.length; i++) {
             (bool success,) = to.call{gas: gasLimits[i]}(txs[i]);
-            require(success, "TX_FILED");
+            require(success, "TX_FAILED");
         }
     }
 
