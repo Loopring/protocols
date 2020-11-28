@@ -11,25 +11,24 @@ import "../lib/Drainable.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract BatchTxForwarder is Drainable, Claimable
 {
-    address immutable target;
     constructor(address _target)
         Drainable()
         Claimable()
     {
-        target = _target;
     }
 
     function transactTo(
+        address to,
         bytes[] calldata txs,
         uint[]  calldata gasLimits
         )
         external
     {
-        require(txs.length == gasLimits.length, "INVALID_DATA");
+        require(txs.length == gasLimits.length, "SIZE_DIFF");
 
         for (uint i = 0; i < txs.length; i++) {
-            (bool success,) = target.call{gas: gasLimits[i]}(txs[i]);
-            require(success, "FAILED_TX");
+            (bool success,) = to.call{gas: gasLimits[i]}(txs[i]);
+            require(success, "TX_FILED");
         }
     }
 
