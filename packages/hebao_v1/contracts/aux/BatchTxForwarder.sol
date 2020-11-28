@@ -11,11 +11,7 @@ import "../lib/Drainable.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract BatchTxForwarder is Drainable, Claimable
 {
-    constructor(address _target)
-        Drainable()
-        Claimable()
-    {
-    }
+    constructor(address _target) Drainable() Claimable() {}
 
     function transactTo(
         address to,
