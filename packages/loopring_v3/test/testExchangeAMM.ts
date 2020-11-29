@@ -315,6 +315,114 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitPendingBlocks();
     });
 
+    it("Successful swap (small decimals out)", async () => {
+      const ring: SpotTrade = {
+        orderA: {
+          owner: exchangeTestUtil.testContext.orderOwners[0],
+          tokenS: "INDA",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("98", "mwei")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          balanceS: new BN(web3.utils.toWei("10000", "mwei")),
+          balanceB: new BN(web3.utils.toWei("20000", "ether")),
+          feeBips: 0,
+          amm: true
+        },
+        orderB: {
+          tokenS: "WETH",
+          tokenB: "INDA",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("98", "mwei"))
+        },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      await exchangeTestUtil.setupRing(ring);
+
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
+        ring.orderA.tokenB,
+        ring.orderA.amountB
+      );
+
+      const feeBipsAMM = 30;
+      const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
+      const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenS,
+        feeBipsAMM,
+        tokenWeightS
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenB,
+        feeBipsAMM,
+        tokenWeightB
+      );
+
+      await exchangeTestUtil.sendRing(ring);
+      await exchangeTestUtil.submitTransactions();
+      await exchangeTestUtil.submitPendingBlocks();
+    });
+
+    it("Successful swap (small decimals in)", async () => {
+      const ring: SpotTrade = {
+        orderA: {
+          owner: exchangeTestUtil.testContext.orderOwners[0],
+          tokenS: "WETH",
+          tokenB: "INDA",
+          amountS: new BN(web3.utils.toWei("98", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "mwei")),
+          balanceS: new BN(web3.utils.toWei("10000", "ether")),
+          balanceB: new BN(web3.utils.toWei("20000", "mwei")),
+          feeBips: 0,
+          amm: true
+        },
+        orderB: {
+          tokenS: "INDA",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "mwei")),
+          amountB: new BN(web3.utils.toWei("98", "ether"))
+        },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      await exchangeTestUtil.setupRing(ring);
+
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
+        ring.orderA.tokenB,
+        ring.orderA.amountB
+      );
+
+      const feeBipsAMM = 30;
+      const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
+      const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenS,
+        feeBipsAMM,
+        tokenWeightS
+      );
+      await exchangeTestUtil.requestAmmUpdate(
+        ring.orderA.owner,
+        ring.orderA.tokenB,
+        feeBipsAMM,
+        tokenWeightB
+      );
+
+      await exchangeTestUtil.sendRing(ring);
+      await exchangeTestUtil.submitTransactions();
+      await exchangeTestUtil.submitPendingBlocks();
+    });
+
     it("Insufficient fills for AMM curve", async () => {
       // Use exactly the spot price at the current position on the curve
       const ring: SpotTrade = {
