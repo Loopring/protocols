@@ -55,7 +55,7 @@ library AmmUtil
             return amount == 0;
         } else {
             // Max rounding error for a float24 is 2/100000
-            // But maybe relayer using rounding multiple times
+            // But relayer may use float rounding multiple times
             // so the range is expanded to [100000 - 8, 100000 + 8]
             uint ratio = (uint(amount) * 100000) / uint(targetAmount);
             return (100000 - 8) <= ratio && ratio <= (100000 + 8);
