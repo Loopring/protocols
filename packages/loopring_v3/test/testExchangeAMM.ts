@@ -323,8 +323,8 @@ contract("Exchange", (accounts: string[]) => {
           tokenB: "WETH",
           amountS: new BN(web3.utils.toWei("98", "mwei")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
-          balanceS: new BN(web3.utils.toWei("10000", "mwei")),
-          balanceB: new BN(web3.utils.toWei("20000", "ether")),
+          balanceS: new BN(web3.utils.toWei("10000000", "mwei")),
+          balanceB: new BN(web3.utils.toWei("20000000", "ether")),
           feeBips: 0,
           amm: true
         },
@@ -377,8 +377,8 @@ contract("Exchange", (accounts: string[]) => {
           tokenB: "INDA",
           amountS: new BN(web3.utils.toWei("98", "ether")),
           amountB: new BN(web3.utils.toWei("200", "mwei")),
-          balanceS: new BN(web3.utils.toWei("10000", "ether")),
-          balanceB: new BN(web3.utils.toWei("20000", "mwei")),
+          balanceS: new BN(web3.utils.toWei("10000000", "ether")),
+          balanceB: new BN(web3.utils.toWei("20000000", "mwei")),
           feeBips: 0,
           amm: true
         },

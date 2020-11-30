@@ -36,7 +36,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           owner,
           owner,
           token,
-          new BN(web3.utils.toWei("1000000", "ether"))
+          new BN(web3.utils.toWei("10000000", "ether"))
         );
       }
     }
@@ -114,8 +114,8 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           ownerA,
           pool.POOL_TOKEN_BASE,
           [
-            new BN(web3.utils.toWei("10000", "ether")),
-            new BN(web3.utils.toWei("20000", "ether"))
+            new BN(web3.utils.toWei("1234567.89", "ether")),
+            new BN(web3.utils.toWei("2345678.91", "ether"))
           ],
           { authMethod: AuthMethod.ECDSA }
         );
@@ -123,8 +123,8 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           ownerB,
           new BN(0),
           [
-            new BN(web3.utils.toWei("1000", "ether")),
-            new BN(web3.utils.toWei("2000", "ether"))
+            new BN(web3.utils.toWei("123456.789", "ether")),
+            new BN(web3.utils.toWei("234567.891", "ether"))
           ],
           { authMethod: AuthMethod.ECDSA }
         );
@@ -371,6 +371,89 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         assert(event.burnAmount.eq(new BN(0)), "unexpected exit burn amount");
         assert.equal(event.amounts.length, 0, "unexpected exit num amounts");
       }
+      await pool.verifySupply();
+    });
+
+    it("Successful swap (Large amounts)", async () => {
+      const pool = await setupDefaultPool();
+
+      await pool.prePoolTransactions();
+      await pool.join(
+        ownerA,
+        pool.POOL_TOKEN_BASE,
+        [
+          new BN(web3.utils.toWei("1000000.123456", "ether")),
+          new BN(web3.utils.toWei("2000000.654321", "ether"))
+        ],
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(11)),
+        [
+          new BN(web3.utils.toWei("100000", "ether")),
+          new BN(web3.utils.toWei("200000", "ether"))
+        ],
+        { authMethod: AuthMethod.APPROVE }
+      );
+      await ctx.submitTransactions(16);
+
+      const ring: SpotTrade = {
+        orderA: {
+          owner: pool.contract.address,
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("98", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          feeBips: 0,
+          amm: true
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("98", "ether"))
+        },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      await ctx.setupRing(ring, true, true, false, true);
+
+      await ctx.deposit(
+        ctx.exchangeOperator,
+        ctx.exchangeOperator,
+        ring.orderA.tokenB,
+        ring.orderA.amountB
+      );
+
+      await ctx.sendRing(ring);
+
+      await pool.prePoolTransactions();
+      await pool.exit(
+        ownerA,
+        pool.POOL_TOKEN_BASE.mul(new BN(6)).div(new BN(10)),
+        [
+          new BN(web3.utils.toWei("500000", "ether")),
+          new BN(web3.utils.toWei("1000000", "ether"))
+        ],
+        {
+          authMethod: AuthMethod.ECDSA,
+          fee: new BN(web3.utils.toWei("100.1234", "ether"))
+        }
+      );
+      await pool.exit(
+        ownerB,
+        pool.POOL_TOKEN_BASE.mul(new BN(6)).div(new BN(100)),
+        [
+          new BN(web3.utils.toWei("50000", "ether")),
+          new BN(web3.utils.toWei("100000", "ether"))
+        ],
+        { authMethod: AuthMethod.APPROVE }
+      );
+      await ctx.submitTransactions(16);
+      await ctx.submitPendingBlocks();
       await pool.verifySupply();
     });
 
@@ -625,7 +708,9 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               "INVALID_CHALLENGE"
             );
 
-            const maxForcedExitAge = (await sharedConfig.maxForcedExitAge()).toNumber();
+            const maxForcedExitAge = (
+              await sharedConfig.maxForcedExitAge()
+            ).toNumber();
             // Wait
             await ctx.advanceBlockTimestamp(maxForcedExitAge - 100);
 
