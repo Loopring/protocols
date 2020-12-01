@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
+pragma experimental ABIEncoderV2;
 
 import "../lib/Claimable.sol";
 import "../lib/Drainable.sol";
@@ -10,7 +11,8 @@ import "../lib/Drainable.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract BatchTransactor is Drainable, Claimable
 {
-   public immutable address target;
+    address public immutable target;
+
     constructor(address _target)
         Claimable()
         Drainable()
@@ -27,7 +29,7 @@ contract BatchTransactor is Drainable, Claimable
         require(txs.length == gasLimits.length, "SIZE_DIFF");
 
         for (uint i = 0; i < txs.length; i++) {
-            (bool success,) = target.call{gas: gasLimits[i]}(txs[i]);
+            (bool success, bytes memory returnData) = target.call{gas: gasLimits[i]}(txs[i]);
             if (!success) {
                 assembly {
                     revert(add(returnData, 32), mload(returnData))
