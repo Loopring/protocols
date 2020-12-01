@@ -8,8 +8,8 @@
 ## contract addresses
 
 - BlockVerifier: 0x6150343E0F43A17519c0327c41eDd9eBE88D01ef
-    - blockVersion: 11
-    - blockSizes: 16, 64, 256
+    - blockVersion: 12
+    - blockSizes: 16, 64, 128, 256
 - AgentRegistry: 0x39B9bf169a7e225ba037C443A40460c77438ea14
 - FastWithdrawalAgent: 0xec3Cc6Cf0252565b56FC7AC396017Df5b9B78a31
 - LoopringV3: 0xe56D6ccab6551932C0356E4e8d5dAF0630920C71  
@@ -39,7 +39,7 @@
   - AmmStatus: 0xaae0a0515609723F66a38e6fE9e3455e7897143a
   - AmmWithdrawal: 0xb971902d99e1f94f02Cc19e6BEC73Cf3d38c16B3
   - LoopringAmmSharedConfig: 0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D
-  - LoopringAmmPool: 0x47Ce50fF181baEF9139187273F66c54796d7BC2d
+  - LoopringAmmPool: 0xEE017DF188362F8620058e6CeF56D0e65b872164
   
 - AmmPool: 
     1. LRC-ETH pool: 0x18920d6E6Fb7EbE057a4DD9260D6D95845c95036
@@ -56,22 +56,6 @@
       weights: [ 1000000, 1000000 ],
       feeBips: 15,
       tokenSymbol: 'LP-LRC-ETH'
-    }
-    ```
-    2. USDT-ETH pool: 0xA573C5d473702286f0AC84592EDA49aD799EBAA1
-    ```
-    {
-      sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
-      exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
-      poolName: 'AMM-USDT-ETH',
-      accountID: 2,
-      tokens: [
-        '0xdac17f958d2ee523a2206206994597c13d831ec7',
-        '0x0000000000000000000000000000000000000000'
-      ],
-      weights: [ 1000000, 1000000 ],
-      feeBips: 15,
-      tokenSymbol: 'LP-USDT-ETH'
     }
     ```
     3. ETH-USDT pool: 0x6D537764355bc23d4eADba7829048Dac8215a73c
