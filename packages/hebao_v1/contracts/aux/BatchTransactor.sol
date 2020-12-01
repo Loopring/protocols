@@ -11,21 +11,15 @@ import "../lib/Drainable.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract BatchTransactor is Drainable, Claimable
 {
-    address public immutable target;
-
-    constructor(address _target)
-        Claimable()
-        Drainable()
-    {
-        target = _target;
-    }
 
     function batchTransact(
+        address target,
         bytes[] calldata txs,
         uint[]  calldata gasLimits
         )
         external
     {
+        require(target != address(0), "EMPTY_TARGET");
         require(txs.length == gasLimits.length, "SIZE_DIFF");
 
         for (uint i = 0; i < txs.length; i++) {
