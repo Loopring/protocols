@@ -19,6 +19,7 @@ contract BatchTransactor is Drainable, Claimable
         )
         external
     {
+        require(target != address(0), "EMPTY_TARGET");
         require(txs.length == gasLimits.length, "SIZE_DIFF");
 
         for (uint i = 0; i < txs.length; i++) {
