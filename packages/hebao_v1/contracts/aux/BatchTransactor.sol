@@ -6,9 +6,9 @@ import "../lib/Claimable.sol";
 import "../lib/Drainable.sol";
 
 
-/// @title BatchTxForwarder
+/// @title BatchTransactor
 /// @author Daniel Wang - <daniel@loopring.org>
-contract BatchTxForwarder is Drainable, Claimable
+contract BatchTransactor is Drainable, Claimable
 {
    public immutable address target;
     constructor(address _target)
