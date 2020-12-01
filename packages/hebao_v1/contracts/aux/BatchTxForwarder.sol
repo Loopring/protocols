@@ -18,7 +18,7 @@ contract BatchTxForwarder is Drainable, Claimable
         target = _target;
     }
 
-    function transactTo(
+    function batchTransact(
         bytes[] calldata txs,
         uint[]  calldata gasLimits
         )
