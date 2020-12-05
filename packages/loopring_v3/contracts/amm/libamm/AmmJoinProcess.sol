@@ -45,13 +45,13 @@ library AmmJoinProcess
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
 
         if (l2VerifiedTxHash != bytes32(0)) {
-            require(txHash == l2VerifiedTxHash, "INVALID_L2_TX_HASH");
+            require(txHash == l2VerifiedTxHash, "INVALID_OFFCHAIN_L2_APPROVAL");
             require(signature.length == 0, "UNEXPECTED_L1_SIG");
         } else if (signature.length == 0) {
             require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
             delete S.approvedTx[txHash];
         } else {
-            require(txHash.verifySignature(join.owner, signature), "INVALID_OFFCHAIN_APPROVAL");
+            require(txHash.verifySignature(join.owner, signature), "INVALID_OFFCHAIN_L1_APPROVAL");
         }
 
         // Check if the requirements are fulfilled

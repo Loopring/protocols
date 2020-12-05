@@ -48,7 +48,7 @@ library AmmExitProcess
         bool isForcedExit = false;
 
         if (l2VerifiedTxHash != bytes32(0)) {
-            require(txHash == l2VerifiedTxHash, "INVALID_L2_TX_HASH");
+            require(txHash == l2VerifiedTxHash, "INVALID_OFFCHAIN_L2_APPROVAL");
             require(signature.length == 0, "UNEXPECTED_L1_SIG");
         } else if (signature.length == 0) {
             bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
@@ -57,7 +57,7 @@ library AmmExitProcess
                 S.forcedExitCount--;
                 isForcedExit = true;
             } else {
-                require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
+                require(S.approvedTx[txHash], "INVALID_OFFCHAIN_L1_APPROVAL");
                 delete S.approvedTx[txHash];
             }
         } else {
