@@ -48,7 +48,8 @@ library AmmExitProcess
         bool isForcedExit = false;
 
         if (l2VerifiedTxHash != bytes32(0)) {
-            require(txHash == l2VerifiedTxHash, "INVALID_L2_TX_HASH")
+            require(txHash == l2VerifiedTxHash, "INVALID_L2_TX_HASH");
+            require(signature.length == 0, "UNEXPECTED_L2_SIG");
         } else if (signature.length == 0) {
             bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
             if (txHash == forcedExitHash) {

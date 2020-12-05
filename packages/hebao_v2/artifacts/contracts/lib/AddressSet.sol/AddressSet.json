@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "AddressSet",
+  "sourceName": "contracts/lib/AddressSet.sol",
+  "abi": [],
+  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea2646970667358221220547995980b093aea6352a5028f6235fbfe74bffa9bec871f9e3f6b018785007064736f6c63430007030033",
+  "deployedBytecode": "0x6080604052600080fdfea2646970667358221220547995980b093aea6352a5028f6235fbfe74bffa9bec871f9e3f6b018785007064736f6c63430007030033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
