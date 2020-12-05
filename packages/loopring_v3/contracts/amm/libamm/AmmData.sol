@@ -56,6 +56,7 @@ library AmmData
     {
         PoolTxType txType;
         bytes      data;
+        bytes      l2VerifiedTxHash;
         bytes      signature;
     }
 

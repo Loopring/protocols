@@ -37,7 +37,8 @@ library AmmExitProcess
         AmmData.Context     memory  ctx,
         ExchangeData.Block  memory  _block,
         AmmData.PoolExit    memory  exit,
-        bytes               memory  signature
+        bytes               memory  signature,
+        bytes32                     l2VerifiedTxHash
         )
         internal
     {
@@ -46,7 +47,9 @@ library AmmExitProcess
         bytes32 txHash = AmmExitRequest.hash(ctx.domainSeparator, exit);
         bool isForcedExit = false;
 
-        if (signature.length == 0) {
+        if (l2VerifiedTxHash != bytes32(0)) {
+            require(txHash == l2VerifiedTxHash, "INVALID_L2_TX_HASH")
+        } else if (signature.length == 0) {
             bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
             if (txHash == forcedExitHash) {
                 delete S.forcedExit[exit.owner];
