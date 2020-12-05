@@ -46,7 +46,7 @@ library AmmJoinProcess
 
         if (l2VerifiedTxHash != bytes32(0)) {
             require(txHash == l2VerifiedTxHash, "INVALID_L2_TX_HASH");
-            require(signature.length == 0, "UNEXPECTED_L2_SIG");
+            require(signature.length == 0, "UNEXPECTED_L1_SIG");
         } else if (signature.length == 0) {
             require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
             delete S.approvedTx[txHash];
