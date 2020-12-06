@@ -53,7 +53,7 @@ library AmmExitProcess
                 S.forcedExitCount--;
                 isForcedExit = true;
             } else {
-                require(S.approvedTx[txHash], "INVALID_OFFCHAIN_L1_APPROVAL");
+                require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
                 delete S.approvedTx[txHash];
             }
         } else if (signature.length == 1) {

@@ -145,6 +145,10 @@ export interface AmmUpdateOptions {
   validUntil?: number;
 }
 
+export interface SignatureVerificationOptions {
+  dataToSign?: string;
+}
+
 export interface OnchainBlock {
   blockType: number;
   blockSize: number;
@@ -1544,10 +1548,18 @@ export class ExchangeTestUtil {
     return ammUpdate;
   }
 
-  public async requestSignatureVerification(owner: string, data: string) {
+  public async requestSignatureVerification(
+    owner: string,
+    data: string,
+    options: SignatureVerificationOptions = {}
+  ) {
+    // Fill in defaults
+    const dataToSign =
+      options.dataToSign !== undefined ? options.dataToSign : data;
+
     const account = this.findAccount(owner);
 
-    const value = new BN(data, 10);
+    const value = new BN(dataToSign, 10);
     const cap = new BN(2).pow(new BN(253));
     assert(value.lt(cap), "data value too big");
 
@@ -1556,7 +1568,7 @@ export class ExchangeTestUtil {
       exchange: this.exchange.address,
       owner,
       accountID: account.accountID,
-      data
+      data: dataToSign
     };
 
     // Approve
@@ -1565,6 +1577,7 @@ export class ExchangeTestUtil {
       signatureVerification
     );
 
+    signatureVerification.data = data;
     this.pendingTransactions[this.exchangeId].push(signatureVerification);
 
     return signatureVerification;

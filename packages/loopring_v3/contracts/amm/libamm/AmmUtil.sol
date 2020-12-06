@@ -21,6 +21,8 @@ library AmmUtil
     using MathUint          for uint;
     using TransactionReader for ExchangeData.Block;
 
+    uint8 public constant L2_SIGNATURE_TYPE = 16;
+
     function verifySignatureL2(
         AmmData.Context     memory  ctx,
         ExchangeData.Block  memory  _block,
@@ -32,7 +34,7 @@ library AmmUtil
         pure
     {
         // Check the signature type
-        require(signature.toUint8(0) == 16, "INVALID_SIGNATURE_TYPE");
+        require(signature.toUint8(0) == L2_SIGNATURE_TYPE, "INVALID_SIGNATURE_TYPE");
 
         // Read the signature verification transaction
         SignatureVerificationTransaction.SignatureVerification memory verification = _block.readSignatureVerification(ctx.txIdx++);
@@ -41,7 +43,7 @@ library AmmUtil
         require(
             verification.owner == owner &&
             verification.data == uint(txHash) >> 3,
-            "INVALID_L2_SIGNATURE"
+            "INVALID_OFFCHAIN_L2_APPROVAL"
         );
     }
 

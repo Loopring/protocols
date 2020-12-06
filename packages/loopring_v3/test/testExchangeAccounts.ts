@@ -156,6 +156,20 @@ contract("Exchange", (accounts: string[]) => {
       // Submit
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
+
+      // Verify different data
+      await ctx.requestSignatureVerification(
+        ownerA,
+        ctx.hashToFieldElement(
+          "0xe58c1e35c9b00a5c962c98dfd135846e87d9813d6c9f3e92fb4ca6037fb3f021"
+        ),
+        {
+          dataToSign: ctx.hashToFieldElement(
+            "0xe58c1e35c9b00a5c962c98dfd135846e87d9813d6c9f3e92fb4ca6037fb4f021"
+          )
+        }
+      );
+      await expectThrow(ctx.submitTransactions(), "invalid block");
     });
 
     [AuthMethod.EDDSA, AuthMethod.ECDSA].forEach(function(authMethod) {
