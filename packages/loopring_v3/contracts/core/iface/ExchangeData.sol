@@ -25,7 +25,8 @@ library ExchangeData
         TRANSFER,
         SPOT_TRADE,
         ACCOUNT_UPDATE,
-        AMM_UPDATE
+        AMM_UPDATE,
+        SIGNATURE_VERIFICATION
     }
 
     // -- Structs --

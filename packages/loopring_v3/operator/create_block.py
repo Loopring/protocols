@@ -139,6 +139,14 @@ def ammUpdateFromJSON(jUpdate):
     update.nonce = int(jUpdate["nonce"])
     return update
 
+def signatureVerificationFromJSON(jVerification):
+    verification = GeneralObject()
+    verification.owner = str(jVerification["owner"])
+    verification.accountID = int(jVerification["accountID"])
+    verification.data = str(jVerification["data"])
+    verification.signature = jVerification["signature"]
+    return verification
+
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
@@ -177,6 +185,8 @@ def createBlock(state, data):
             transaction = accountUpdateFromJSON(transactionInfo)
         if txType == "AmmUpdate":
             transaction = ammUpdateFromJSON(transactionInfo)
+        if txType == "SignatureVerification":
+            transaction = signatureVerificationFromJSON(transactionInfo)
 
         transaction.txType = txType
         tx = state.executeTransaction(context, transaction)
@@ -196,6 +206,8 @@ def createBlock(state, data):
             txWitness.accountUpdate = tx.input
         if txType == "AmmUpdate":
             txWitness.ammUpdate = tx.input
+        if txType == "SignatureVerification":
+            txWitness.signatureVerification = tx.input
         txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
         block.transactions.append(txWitness)
 

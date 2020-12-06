@@ -110,6 +110,11 @@ static auto dummyAmmUpdate = R"({
     "tokenWeight": "0"
 })"_json;
 
+static auto dummySignatureVerification = R"({
+    "accountID": 0,
+    "data": "0"
+})"_json;
+
 // Baby Jubjub base point.
 // https://github.com/ethereum/EIPs/blob/41569d75e42da2046cb18fdca79609e18968af47/eip-draft_babyjubjub.md#base-point
 static auto dummySignature = R"({
@@ -127,6 +132,7 @@ enum class TransactionType
     SpotTrade,
     AccountUpdate,
     AmmUpdate,
+    SignatureVerification,
 
     COUNT
 };
@@ -422,6 +428,19 @@ static void from_json(const json &j, AmmUpdate &update)
     update.tokenWeight = ethsnarks::FieldT(j.at("tokenWeight").get<std::string>().c_str());
 }
 
+class SignatureVerification
+{
+  public:
+    ethsnarks::FieldT accountID;
+    ethsnarks::FieldT data;
+};
+
+static void from_json(const json &j, SignatureVerification &verification)
+{
+    verification.accountID = ethsnarks::FieldT(j.at("accountID"));
+    verification.data = ethsnarks::FieldT(j.at("data").get<std::string>().c_str());
+}
+
 class Transfer
 {
   public:
@@ -542,6 +561,7 @@ class UniversalTransaction
     Deposit deposit;
     AccountUpdateTx accountUpdate;
     AmmUpdate ammUpdate;
+    SignatureVerification signatureVerification;
 };
 
 static void from_json(const json &j, UniversalTransaction &transaction)
@@ -555,6 +575,7 @@ static void from_json(const json &j, UniversalTransaction &transaction)
     transaction.deposit = dummyDeposit.get<Loopring::Deposit>();
     transaction.accountUpdate = dummyAccountUpdate.get<Loopring::AccountUpdateTx>();
     transaction.ammUpdate = dummyAmmUpdate.get<Loopring::AmmUpdate>();
+    transaction.signatureVerification = dummySignatureVerification.get<Loopring::SignatureVerification>();
 
     // Patch some of the dummy tx's so they are valid against the current state
     // Deposit
@@ -600,6 +621,11 @@ static void from_json(const json &j, UniversalTransaction &transaction)
     {
         transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::AmmUpdate));
         transaction.ammUpdate = j.at("ammUpdate").get<Loopring::AmmUpdate>();
+    }
+    else if (j.contains("signatureVerification"))
+    {
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::SignatureVerification));
+        transaction.signatureVerification = j.at("signatureVerification").get<Loopring::SignatureVerification>();
     }
 }
 

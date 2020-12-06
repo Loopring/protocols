@@ -196,6 +196,17 @@ export interface AmmUpdate {
   onchainSignature?: any;
 }
 
+export interface SignatureVerification {
+  txType?: "SignatureVerification";
+  exchange: string;
+
+  owner: string;
+  accountID: number;
+  data: string;
+
+  signature?: Signature;
+}
+
 // Blocks
 
 export interface TxBlock {

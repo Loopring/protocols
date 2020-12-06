@@ -3,6 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../../aux/transactions/TransactionReader.sol";
+import "../../core/impl/libtransactions/SignatureVerificationTransaction.sol";
 import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
@@ -14,8 +16,34 @@ import "./AmmData.sol";
 library AmmUtil
 {
     using AddressUtil       for address;
+    using BytesUtil         for bytes;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
+    using TransactionReader for ExchangeData.Block;
+
+    function verifySignatureL2(
+        AmmData.Context     memory  ctx,
+        ExchangeData.Block  memory  _block,
+        address                     owner,
+        bytes32                     txHash,
+        bytes               memory  signature
+        )
+        internal
+        pure
+    {
+        // Check the signature type
+        require(signature.toUint8(0) == 16, "INVALID_SIGNATURE_TYPE");
+
+        // Read the signature verification transaction
+        SignatureVerificationTransaction.SignatureVerification memory verification = _block.readSignatureVerification(ctx.txIdx++);
+
+        // Verify that the hash was signed on L2
+        require(
+            verification.owner == owner &&
+            verification.data == uint(txHash) >> 3,
+            "INVALID_L2_SIGNATURE"
+        );
+    }
 
     function approveTransfer(
         AmmData.Context  memory  ctx,

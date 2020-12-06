@@ -19,6 +19,7 @@
 #include "./WithdrawCircuit.h"
 #include "./NoopCircuit.h"
 #include "./AmmUpdateCircuit.h"
+#include "./SignatureVerificationCircuit.h"
 
 #include "ethsnarks.hpp"
 #include "utils.hpp"
@@ -158,6 +159,7 @@ class TransactionGadget : public GadgetT
     AccountUpdateCircuit accountUpdate;
     TransferCircuit transfer;
     AmmUpdateCircuit ammUpdate;
+    SignatureVerificationCircuit signatureVerification;
     SelectTransactionGadget tx;
 
     // General validation
@@ -231,11 +233,12 @@ class TransactionGadget : public GadgetT
           accountUpdate(pb, state, FMT(prefix, ".accountUpdate")),
           transfer(pb, state, FMT(prefix, ".transfer")),
           ammUpdate(pb, state, FMT(prefix, ".ammUpdate")),
+          signatureVerification(pb, state, FMT(prefix, ".signatureVerification")),
           tx(
             pb,
             state,
             selector.result(),
-            {&noop, &deposit, &withdraw, &transfer, &spotTrade, &accountUpdate, &ammUpdate},
+            {&noop, &deposit, &withdraw, &transfer, &spotTrade, &accountUpdate, &ammUpdate, &signatureVerification},
             FMT(prefix, ".tx")),
 
           // General validation
@@ -425,6 +428,7 @@ class TransactionGadget : public GadgetT
         accountUpdate.generate_r1cs_witness(uTx.accountUpdate);
         transfer.generate_r1cs_witness(uTx.transfer);
         ammUpdate.generate_r1cs_witness(uTx.ammUpdate);
+        signatureVerification.generate_r1cs_witness(uTx.signatureVerification);
         tx.generate_r1cs_witness();
 
         // General validation
@@ -471,6 +475,7 @@ class TransactionGadget : public GadgetT
         accountUpdate.generate_r1cs_constraints();
         transfer.generate_r1cs_constraints();
         ammUpdate.generate_r1cs_constraints();
+        signatureVerification.generate_r1cs_constraints();
         tx.generate_r1cs_constraints();
 
         // General validation

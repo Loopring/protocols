@@ -90,7 +90,6 @@ library AmmBlockReceiver
                 ctx,
                 _block,
                 abi.decode(poolTx.data, (AmmData.PoolJoin)),
-                poolTx.l2VerifiedTxHash,
                 poolTx.signature
             );
         } else if (poolTx.txType == AmmData.PoolTxType.EXIT) {
@@ -98,7 +97,6 @@ library AmmBlockReceiver
                 ctx,
                 _block,
                 abi.decode(poolTx.data, (AmmData.PoolExit)),
-                poolTx.l2VerifiedTxHash,
                 poolTx.signature
             );
         } else {

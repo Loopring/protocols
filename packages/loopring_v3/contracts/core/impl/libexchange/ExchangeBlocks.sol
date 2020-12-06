@@ -263,8 +263,9 @@ library ExchangeBlocks
                         auxiliaryData.data
                     );
                 } else {
-                    // ExchangeData.TransactionType.NOOP and
-                    // ExchangeData.TransactionType.SPOT_TRADE
+                    // ExchangeData.TransactionType.NOOP,
+                    // ExchangeData.TransactionType.SPOT_TRADE and
+                    // ExchangeData.TransactionType.SIGNATURE_VERIFICATION
                     // are not supported
                     revert("UNSUPPORTED_TX_TYPE");
                 }

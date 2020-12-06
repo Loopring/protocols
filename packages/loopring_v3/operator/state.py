@@ -715,6 +715,11 @@ class State(object):
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 
+        elif txInput.txType == "SignatureVerification":
+
+            newState.TXV_ACCOUNT_A_ADDRESS = txInput.accountID
+            newState.signatureA = txInput.signature
+
 
         # Tokens default values
         newState.TXV_BALANCE_A_S_ADDRESS = setValue(newState.TXV_BALANCE_A_S_ADDRESS, 0)

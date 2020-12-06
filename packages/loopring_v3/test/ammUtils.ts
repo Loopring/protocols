@@ -319,6 +319,7 @@ export class AmmPool {
       validUntil
     };
 
+    let txHash: Buffer;
     if (authMethod === AuthMethod.APPROVE) {
       await this.contract.joinPool(joinAmounts, mintMinAmount, { from: owner });
       const event = await this.ctx.assertEventEmitted(
@@ -333,9 +334,15 @@ export class AmmPool {
       const hash = PoolJoinUtils.getHash(join, this.contract.address);
       join.signature = await sign(signer, hash, SignatureType.EIP_712);
       await verifySignature(signer, hash, join.signature);
+    } else if (authMethod === AuthMethod.EDDSA) {
+      for (const token of this.tokens) {
+        join.joinStorageIDs.push(this.ctx.reserveStorageID());
+      }
+      txHash = PoolJoinUtils.getHash(join, this.contract.address);
+      join.signature = "0x10";
     }
 
-    await this.process(join);
+    await this.process(join, txHash);
 
     return join;
   }
@@ -371,6 +378,7 @@ export class AmmPool {
       authMethod
     };
 
+    let txHash: Buffer;
     if (authMethod === AuthMethod.FORCE) {
       await this.contract.forceExitPool(burnAmount, exitMinAmounts, {
         from: owner,
@@ -398,10 +406,14 @@ export class AmmPool {
       const hash = PoolExitUtils.getHash(exit, this.contract.address);
       exit.signature = await sign(signer, hash, SignatureType.EIP_712);
       await verifySignature(signer, hash, exit.signature);
+    } else if (authMethod === AuthMethod.EDDSA) {
+      exit.burnStorageID = this.ctx.reserveStorageID();
+      txHash = PoolExitUtils.getHash(exit, this.contract.address);
+      exit.signature = "0x10";
     }
 
     if (!skip) {
-      await this.process(exit);
+      await this.process(exit, txHash);
     }
 
     return exit;
@@ -421,7 +433,7 @@ export class AmmPool {
     }
   }
 
-  private async process(transaction: TxType) {
+  private async process(transaction: TxType, txHash: Buffer) {
     const owner = this.contract.address;
 
     const blockCallback = this.ctx.addBlockCallback(owner);
@@ -434,6 +446,15 @@ export class AmmPool {
         this.weights[i],
         { authMethod: AuthMethod.NONE }
       );
+    }
+
+    let numTxs = this.tokens.length * 2 + 1;
+    if (transaction.signature === "0x10") {
+      await this.ctx.requestSignatureVerification(
+        transaction.owner,
+        this.ctx.hashToFieldElement("0x" + txHash.toString("hex"))
+      );
+      numTxs++;
     }
 
     // Process the transaction
@@ -545,7 +566,8 @@ export class AmmPool {
       if (valid) {
         if (exit.authMethod !== AuthMethod.FORCE) {
           const storageID =
-            exit.authMethod === AuthMethod.ECDSA
+            exit.authMethod === AuthMethod.ECDSA ||
+            exit.authMethod === AuthMethod.EDDSA
               ? exit.burnStorageID
               : undefined;
           // Burn
@@ -603,7 +625,7 @@ export class AmmPool {
 
     // Set the pool transaction data on the callback
     blockCallback.auxiliaryData = AmmPool.getAuxiliaryData(transaction);
-    blockCallback.numTxs = this.tokens.length * 2 + 1;
+    blockCallback.numTxs = numTxs;
     blockCallback.tx = transaction;
     blockCallback.tx.txIdx = blockCallback.txIdx;
     blockCallback.tx.numTxs = blockCallback.numTxs;

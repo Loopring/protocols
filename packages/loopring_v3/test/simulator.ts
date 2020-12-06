@@ -465,6 +465,8 @@ export class Simulator {
         logInfo("#" + index + " AMM Update");
         const accountBefore = previousState.getAccount(update.accountID);
         const accountAfter = state.getAccount(update.accountID);
+      } else if (tx.txType === "SignatureVerification") {
+        logInfo("#" + index + " Signature Verification");
       } else {
         assert(false, "Unknown tx type: " + tx.txType);
       }

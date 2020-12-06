@@ -133,6 +133,31 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(ctx.submitPendingBlocks(), "TX_NOT_APPROVED");
     });
 
+    it("Should be able to verify an L2 signature", async () => {
+      await createExchange();
+
+      const token = ctx.getTokenAddress("LRC");
+      const fee = new BN(0);
+
+      // Create the account
+      let newKeyPair = ctx.getKeyPairEDDSA();
+      await ctx.requestAccountUpdate(ownerA, token, fee, newKeyPair, {
+        authMethod: AuthMethod.ECDSA
+      });
+
+      // Verify the data
+      await ctx.requestSignatureVerification(
+        ownerA,
+        ctx.hashToFieldElement(
+          "0xe58c1e35c9b00a5c962c98dfd135846e87d9813d6c9f3e92fb4ca6037fb3f021"
+        )
+      );
+
+      // Submit
+      await ctx.submitTransactions();
+      await ctx.submitPendingBlocks();
+    });
+
     [AuthMethod.EDDSA, AuthMethod.ECDSA].forEach(function(authMethod) {
       it(
         "Should not be able to update an account with fee > maxFee (" +

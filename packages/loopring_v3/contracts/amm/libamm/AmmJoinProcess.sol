@@ -35,8 +35,7 @@ library AmmJoinProcess
         AmmData.Context     memory  ctx,
         ExchangeData.Block  memory  _block,
         AmmData.PoolJoin    memory  join,
-        bytes               memory  signature,
-        bytes32                     l2VerifiedTxHash
+        bytes               memory  signature
         )
         internal
     {
@@ -44,12 +43,11 @@ library AmmJoinProcess
 
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
 
-        if (l2VerifiedTxHash != bytes32(0)) {
-            require(txHash == l2VerifiedTxHash, "INVALID_OFFCHAIN_L2_APPROVAL");
-            require(signature.length == 0, "UNEXPECTED_L1_SIG");
-        } else if (signature.length == 0) {
+        if (signature.length == 0) {
             require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
             delete S.approvedTx[txHash];
+        } else if (signature.length == 1) {
+            ctx.verifySignatureL2(_block, join.owner, txHash, signature);
         } else {
             require(txHash.verifySignature(join.owner, signature), "INVALID_OFFCHAIN_L1_APPROVAL");
         }

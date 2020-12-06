@@ -30,6 +30,7 @@ import { SpotTradeProcessor } from "./request_processors/spot_trade_processor";
 import { TransferProcessor } from "./request_processors/transfer_processor";
 import { WithdrawalProcessor } from "./request_processors/withdrawal_processor";
 import { AmmUpdateProcessor } from "./request_processors/amm_update_processor";
+import { SignatureVerificationProcessor } from "./request_processors/signature_verification_processor";
 import * as log from "./logs";
 
 /**
@@ -84,9 +85,9 @@ export class ExchangeV3 {
     this.exchange = new web3.eth.Contract(JSON.parse(this.exchangeV3Abi));
     this.exchange.options.address = this.exchangeAddress;
 
-    const exchangeCreationTimestamp = (await this.exchange.methods
-      .getBlockInfo(0)
-      .call()).timestamp;
+    const exchangeCreationTimestamp = (
+      await this.exchange.methods.getBlockInfo(0).call()
+    ).timestamp;
     const genesisMerkleRoot = new BN(
       (await this.exchange.methods.getMerkleRoot().call()).slice(2),
       16
@@ -887,6 +888,12 @@ export class ExchangeV3 {
         request = AccountUpdateProcessor.process(this.state, ctx, txData);
       } else if (txType === TransactionType.AMM_UPDATE) {
         request = AmmUpdateProcessor.process(this.state, ctx, txData);
+      } else if (txType === TransactionType.SIGNATURE_VERIFICATION) {
+        request = SignatureVerificationProcessor.process(
+          this.state,
+          ctx,
+          txData
+        );
       } else {
         assert(false, "unknown transaction type: " + txType);
       }
