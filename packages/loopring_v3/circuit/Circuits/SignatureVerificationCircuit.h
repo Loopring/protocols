@@ -25,8 +25,6 @@ class SignatureVerificationCircuit : public BaseTransactionCircuit
     DualVariableGadget accountID;
     DualVariableGadget data;
 
-    EqualGadget isSignatureVerificationTx;
-
     SignatureVerificationCircuit( //
       ProtoboardT &pb,
       const TransactionState &state,
@@ -36,19 +34,13 @@ class SignatureVerificationCircuit : public BaseTransactionCircuit
           // Inputs
           owner(pb, state.accountA.account.owner, NUM_BITS_ADDRESS, FMT(prefix, ".owner")),
           accountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".accountID")),
-          data(pb, NUM_BITS_FIELD_CAPACITY, FMT(prefix, ".data")),
-
-          isSignatureVerificationTx( //
-            pb,
-            state.type,
-            state.constants.txTypeSignatureVerification,
-            FMT(prefix, ".isSignatureVerificationTx"))
+          data(pb, NUM_BITS_FIELD_CAPACITY, FMT(prefix, ".data"))
     {
         setArrayOutput(TXV_ACCOUNT_A_ADDRESS, accountID.bits);
 
         // We need a single signature of the account
         setOutput(TXV_HASH_A, data.packed);
-        setOutput(TXV_SIGNATURE_REQUIRED_A, isSignatureVerificationTx.result());
+        setOutput(TXV_SIGNATURE_REQUIRED_A, state.constants._1);
         setOutput(TXV_SIGNATURE_REQUIRED_B, state.constants._0);
     }
 
@@ -58,8 +50,6 @@ class SignatureVerificationCircuit : public BaseTransactionCircuit
         owner.generate_r1cs_witness();
         accountID.generate_r1cs_witness(pb, verification.accountID);
         data.generate_r1cs_witness(pb, verification.data);
-
-        isSignatureVerificationTx.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
@@ -68,8 +58,6 @@ class SignatureVerificationCircuit : public BaseTransactionCircuit
         owner.generate_r1cs_constraints();
         accountID.generate_r1cs_constraints(true);
         data.generate_r1cs_constraints(true);
-
-        isSignatureVerificationTx.generate_r1cs_constraints();
     }
 
     const VariableArrayT getPublicData() const
