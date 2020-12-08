@@ -22,11 +22,6 @@ library AccountUpdateTransaction
         "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint96 maxFee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
     );
 
-    /*event AccountUpdated(
-        uint32 owner,
-        uint   publicKey
-    );*/
-
     struct AccountUpdate
     {
         address owner;
@@ -72,8 +67,6 @@ library AccountUpdateTransaction
 
         // Check onchain authorization
         S.requireAuthorizedTx(accountUpdate.owner, auxData.signature, txHash);
-
-        //emit AccountUpdated(accountID, publicKey);
     }
 
     function readTx(

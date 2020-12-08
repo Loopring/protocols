@@ -1797,6 +1797,7 @@ class SelectGadget : public GadgetT
 
     SelectGadget(
       ProtoboardT &pb,
+      const Constants &_constants,
       const VariableArrayT &selector,
       const std::vector<VariableT> &values,
       const std::string &prefix)
@@ -1806,7 +1807,7 @@ class SelectGadget : public GadgetT
         for (unsigned int i = 0; i < values.size(); i++)
         {
             results.emplace_back(TernaryGadget(
-              pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
+              pb, selector[i], values[i], (i == 0) ? _constants._0 : results.back().result(), FMT(prefix, ".results")));
         }
     }
 
@@ -1841,6 +1842,7 @@ class ArraySelectGadget : public GadgetT
 
     ArraySelectGadget(
       ProtoboardT &pb,
+      const Constants &_constants,
       const VariableArrayT &selector,
       const std::vector<VariableArrayT> &values,
       const std::string &prefix)
@@ -1849,8 +1851,8 @@ class ArraySelectGadget : public GadgetT
         assert(values.size() == selector.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
-            results.emplace_back(ArrayTernaryGadget(
-              pb, selector[i], values[i], (i == 0) ? values[0] : results.back().result(), FMT(prefix, ".results")));
+            results.emplace_back(
+              pb, selector[i], values[i], (i == 0) ? VariableArrayT(values[0].size(), _constants._0) : results.back().result(), FMT(prefix, ".results"));
         }
     }
 
@@ -2200,7 +2202,7 @@ class PowerGadget : public GadgetT
     UnsafeMulGadget t1;
     SignedAddGadget sum1;
 
-    std::vector<UnsafeAddGadget> bn;
+    std::vector<UnsafeMulGadget> bn;
     std::vector<SignedSubGadget> vn;
     std::vector<MulDivGadget> xn;
     std::vector<SignedMulDivGadget> cn;
@@ -2238,7 +2240,7 @@ class PowerGadget : public GadgetT
         for (unsigned int i = 2; i < iterations; i++)
         {
             bn.emplace_back(
-              pb, i > 2 ? bn.back().result() : constants.fixedBase, constants.fixedBase, FMT(prefix, ".bn"));
+              pb, constants.fixedBase, constants.values[i], FMT(prefix, ".bn"));
             vn.emplace_back(
               pb,
               constants,

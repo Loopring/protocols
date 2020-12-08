@@ -1617,7 +1617,7 @@ TEST_CASE("Select", "[SelectGadget]")
         selectorGadget.generate_r1cs_constraints();
         selectorGadget.generate_r1cs_witness();
 
-        SelectGadget selectGadget(pb, selectorGadget.result(), values, "selectGadget");
+        SelectGadget selectGadget(pb, constants, selectorGadget.result(), values, "selectGadget");
         selectGadget.generate_r1cs_constraints();
         selectGadget.generate_r1cs_witness();
 
@@ -1675,7 +1675,7 @@ TEST_CASE("ArraySelect", "[ArraySelectGadget]")
         selectorGadget.generate_r1cs_constraints();
         selectorGadget.generate_r1cs_witness();
 
-        ArraySelectGadget arraySelectGadget(pb, selectorGadget.result(), values, "arraySelectGadget");
+        ArraySelectGadget arraySelectGadget(pb, constants, selectorGadget.result(), values, "arraySelectGadget");
         arraySelectGadget.generate_r1cs_constraints();
         arraySelectGadget.generate_r1cs_witness();
 

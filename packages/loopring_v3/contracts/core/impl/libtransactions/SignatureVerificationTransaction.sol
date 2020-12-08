@@ -10,7 +10,7 @@ import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 
 
-/// @title AmmUpdateTransaction
+/// @title SignatureVerificationTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
 library SignatureVerificationTransaction
 {

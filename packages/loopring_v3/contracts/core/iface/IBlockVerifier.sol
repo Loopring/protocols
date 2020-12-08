@@ -44,8 +44,6 @@ abstract contract IBlockVerifier is Claimable
         virtual;
 
     /// @dev Disables the use of the specified circuit.
-    ///      This will stop NEW blocks from using the given circuit, blocks that were already committed
-    ///      can still be verified.
     /// @param blockType The type of the block
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)

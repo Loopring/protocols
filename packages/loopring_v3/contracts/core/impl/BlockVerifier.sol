@@ -38,6 +38,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
         require(circuit.registered == false, "ALREADY_REGISTERED");
 
+        // Store the verification key on-chain.
         for (uint i = 0; i < 18; i++) {
             circuit.verificationKey[i] = vk[i];
         }
@@ -65,6 +66,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         require(circuit.registered == true, "NOT_REGISTERED");
         require(circuit.enabled == true, "ALREADY_DISABLED");
 
+        // Disable the circuit
         circuit.enabled = false;
 
         emit CircuitDisabled(
@@ -88,7 +90,9 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
     {
         Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");
+        require(circuit.enabled == true, "NOT_ENABLED");
 
+        // Load the verification key from storage.
         uint[18] storage vk = circuit.verificationKey;
         uint[14] memory _vk = [
             vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],
@@ -96,6 +100,11 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         ];
         uint[4] memory _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
 
+        // Verify the proof.
+        // Batched proof verification has a fixed overhead which makes it more
+        // expensive to verify a single proof compared to the non-batched code
+        // This is why we don't use the batched verification code here when only
+        // a single proof needs to be verified.
         if (publicInputs.length == 1) {
             return Verifier.Verify(_vk, _vk_gammaABC, proofs, publicInputs);
         } else {

@@ -479,6 +479,12 @@ It is possible to force the operator to process a withdrawal for the complete ba
 
 The operator is allowed to process these forced withdrawals in any order but must process them within `MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE` seconds the request was made on-chain. From that point on, `notifyForcedRequestTooOld` can be called by anyone to enable withdrawal mode.
 
+#### Withdrawal Fee Griefing
+
+It is possible for the operator to seemingly refuse to process a normal withdrawal request until the user caves in and requests a forced withdrawal, but then still process the normal withdrawal request first. This way the operator receives fees twice for the same withdrawal, the normal withdrawal fee and the forced withdrawal fee. Fees will be low so this isn't that big of a problem. And the operator has every reason to keep users of the rollup happy, so in any normal case this isn't something an operator even wants to do.
+
+This problem can be solved by making use of `validUntil` in the withdrawal request. The user can set a reasonably short time for the withdrawal request to be valid, and only does a forced withdrawal after the request has expired and the normal withdrawal still hasn't been processed.
+
 ### Data-availability
 
 ```

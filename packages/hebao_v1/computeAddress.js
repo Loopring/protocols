@@ -7,7 +7,7 @@ const creationCode =
 
 const codeHash = ethUtil.keccak(Buffer.from(creationCode, "hex"));
 const zeroAddress = "0x" + "00".repeat(20);
-const walletFactory = "0x262f27480cCb98FA0B91D7A9f11bB82e3547ada1";
+const walletFactory = "0x9fAD9FFceA95c345D41055a63bD099E1a0576109";
 const batchSize = 1000000;
 const endingSize = 8;
 const location = "./";
@@ -108,7 +108,7 @@ function findTopAddressesInBatch(nextBatch) {
   for (let i = 0; i < batchSize; i++) {
     const addr = calAddress(nextBatch, i + base);
 
-    if (addr.score >= 0.48) {
+    if (addr.score >= 0.47) {
       console.log(addr);
       prettyOnes.push(addr);
     } else if (addr.score <= 0.0037) {

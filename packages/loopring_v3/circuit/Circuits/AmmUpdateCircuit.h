@@ -107,7 +107,7 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
         balance.generate_r1cs_constraints(true);
 
         // Increase the nonce
-        nonce_after.generate_r1cs_witness();
+        nonce_after.generate_r1cs_constraints();
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter.generate_r1cs_constraints();
     }

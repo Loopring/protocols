@@ -668,7 +668,7 @@ int main(int argc, char **argv)
         std::cerr << "-exportwitness <block.json> <witness.json>: Exports the "
                      "witness to json (circom)"
                   << std::endl;
-        std::cerr << "-createpk <block.json> <pk.json> <pk.raw>: Creates the "
+        std::cerr << "-createpk <pk.json> <pk.raw>: Creates the "
                      "proving key using a bellman pk"
                   << std::endl;
         std::cerr << "-pk_alt2mcl <pk_alt.raw> <pk_mcl.raw>: Converts the proving "
@@ -857,7 +857,7 @@ int main(int argc, char **argv)
     Loopring::Circuit *circuit = createCircuit(blockType, blockSize, pb);
     if (config.swapAB)
     {
-        pb.constraint_system.swap_AB_if_beneficial();
+        //pb.constraint_system.swap_AB_if_beneficial();
     }
     pb.constraint_system.constraints.shrink_to_fit();
     pb.values.shrink_to_fit();

@@ -56,7 +56,7 @@ contract UpgraderModule is BaseModule {
             newSecurityStore.addGuardian(
                 wallet,
                 guardians[i].addr,
-                guardians[i].validSince,
+                block.timestamp + 1,
                 true
             );
         }

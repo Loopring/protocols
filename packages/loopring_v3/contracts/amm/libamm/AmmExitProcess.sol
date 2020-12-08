@@ -96,7 +96,7 @@ library AmmExitProcess
                 require(
                     i == ctx.tokens.length - 1 &&
                     transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                    transfer.fee.isAlmostEqualFee(exit.fee),
+                    transfer.fee <= exit.fee,
                     "INVALID_FEES"
                 );
             }
