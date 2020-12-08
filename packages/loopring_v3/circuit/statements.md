@@ -48,6 +48,7 @@ For a full overview of the Loopring protocol, see https://github.com/Loopring/pr
 - TransactionType.SpotTrade := 4 (8 bits)
 - TransactionType.AccountUpdate := 5 (8 bits)
 - TransactionType.AmmUpdate := 6 (8 bits)
+- TransactionType.SignatureVerification := 7 (8 bits)
 
 ## Data types
 
@@ -2033,6 +2034,42 @@ The account nonce is used to prevent replay protection.
 All AMM updates need to be authorized in the smart contract, so numConditionalTransactions is always incremented.
 
 The nonce and balance are added in the da to make those values available on-chain (which we use in our AMM pool smart contracts).
+
+## SignatureVerification statement
+
+A valid instance of an SignatureVerification statement assures that given an input of:
+
+- state: State
+- owner: {0..2^NUM_BITS_ADDRESS}
+- accountID: {0..2^NUM_BITS_ACCOUNT}
+- data: {0..2^NUM_BITS_FIELD_CAPACITY}
+
+the prover knows an auxiliary input:
+
+- output: TxOutput
+
+such that the following conditions hold:
+
+- owner_bits = owner_packed
+- accountID_bits = accountID_packed
+- data_bits = data_packed
+
+- owner = state.accountA.account.owner
+- output = DefaultTxOutput(state)
+- output.ACCOUNT_A_ADDRESS = accountID
+- output.HASH_A = data
+- output.SIGNATURE_REQUIRED_A = 1
+- output.SIGNATURE_REQUIRED_B = 0
+- output.DA = {
+  TransactionType.SignatureVerification,
+  owner,
+  accountID,
+  data
+  }
+
+### Description
+
+- https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md#signature-verification
 
 ## Noop statement
 

@@ -26,6 +26,7 @@
     - [Withdraw](#withdraw)
     - [Account Update](#account-update)
     - [AMM Update](#AMM-update)
+    - [Signature Verification](#signature-verification)
     - [No-op](#no-op)
     - [Block](#block)
   - [Account Creation](#account-creation)
@@ -574,6 +575,21 @@ The transaction also makes the balance of the specified token in the account ava
 
 - => **55 bytes/AMM update**
 - => Calldata cost: 55 \* 16 = **880 gas/AMM update**
+
+## Signature Verification
+
+This transaction allows checking if an account owner signed some data (up to 253 bits) using EdDSA. This makes it possible to efficiently check EdDSA signatures on-chain.
+
+### Data-availability
+
+```
+- Account owner: 20 bytes
+- Account ID: 4 bytes
+- Data: 32 bytes
+```
+
+- => **56 bytes/Signature verification**
+- => Calldata cost: 56 \* 16 = **896 gas/Signature verification**
 
 ## No-op
 

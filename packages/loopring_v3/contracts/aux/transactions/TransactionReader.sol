@@ -7,6 +7,7 @@ import "../../core/impl/libtransactions/BlockReader.sol";
 
 import "../../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "../../core/impl/libtransactions/DepositTransaction.sol";
+import "../../core/impl/libtransactions/SignatureVerificationTransaction.sol";
 import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../core/impl/libtransactions/WithdrawTransaction.sol";
 
@@ -64,6 +65,18 @@ library TransactionReader {
     {
         bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.TRANSFER);
         return TransferTransaction.readTx(data, 1);
+    }
+
+    function readSignatureVerification(
+        ExchangeData.Block memory _block,
+        uint txIdx
+        )
+        internal
+        pure
+        returns (SignatureVerificationTransaction.SignatureVerification memory)
+    {
+        bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.SIGNATURE_VERIFICATION);
+        return SignatureVerificationTransaction.readTx(data, 1);
     }
 
     function readTx(

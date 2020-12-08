@@ -457,6 +457,57 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await pool.verifySupply();
     });
 
+    it("Add/Remove liquidity using L2 signatures", async () => {
+      const pool = await setupDefaultPool();
+
+      await pool.prePoolTransactions();
+      await pool.join(
+        ownerA,
+        pool.POOL_TOKEN_BASE,
+        [
+          new BN(web3.utils.toWei("10000", "ether")),
+          new BN(web3.utils.toWei("20000", "ether"))
+        ],
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(11)),
+        [
+          new BN(web3.utils.toWei("1000", "ether")),
+          new BN(web3.utils.toWei("2000", "ether"))
+        ],
+        { authMethod: AuthMethod.EDDSA }
+      );
+      await ctx.submitTransactions(16);
+
+      await pool.prePoolTransactions();
+      await pool.exit(
+        ownerA,
+        pool.POOL_TOKEN_BASE.mul(new BN(6)).div(new BN(10)),
+        [
+          new BN(web3.utils.toWei("5000", "ether")),
+          new BN(web3.utils.toWei("10000", "ether"))
+        ],
+        {
+          authMethod: AuthMethod.EDDSA,
+          fee: new BN(web3.utils.toWei("100", "ether"))
+        }
+      );
+      await pool.exit(
+        ownerB,
+        pool.POOL_TOKEN_BASE.mul(new BN(6)).div(new BN(100)),
+        [
+          new BN(web3.utils.toWei("500", "ether")),
+          new BN(web3.utils.toWei("1000", "ether"))
+        ],
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await ctx.submitTransactions(16);
+      await ctx.submitPendingBlocks();
+      await pool.verifySupply();
+    });
+
     it("No join signature", async () => {
       const pool = await setupDefaultPool();
       await pool.prePoolTransactions();
@@ -467,7 +518,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await expectThrow(ctx.submitPendingBlocks(), "INVALID_ONCHAIN_APPROVAL");
     });
 
-    it("Invalid join signature", async () => {
+    it("Invalid join signature (ECDSA)", async () => {
       const pool = await setupDefaultPool();
       await pool.prePoolTransactions();
       await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
@@ -475,7 +526,24 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         signer: ownerB
       });
       await ctx.submitTransactions();
-      await expectThrow(ctx.submitPendingBlocks(), "INVALID_OFFCHAIN_APPROVAL");
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "INVALID_OFFCHAIN_L1_APPROVAL"
+      );
+    });
+
+    it("Invalid join signature (EDDSA)", async () => {
+      const pool = await setupDefaultPool();
+      await pool.prePoolTransactions();
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
+        authMethod: AuthMethod.EDDSA,
+        invalidTxHash: true
+      });
+      await ctx.submitTransactions();
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "INVALID_OFFCHAIN_L2_APPROVAL"
+      );
     });
 
     it("No exit signature", async () => {
@@ -489,7 +557,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await expectThrow(ctx.submitPendingBlocks(), "INVALID_ONCHAIN_APPROVAL");
     });
 
-    it("Invalid exit signature", async () => {
+    it("Invalid exit signature (ECDSA)", async () => {
       const pool = await setupDefaultPool();
       pool.totalSupply = pool.POOL_TOKEN_BASE;
       await pool.prePoolTransactions();
@@ -499,6 +567,21 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       });
       await ctx.submitTransactions();
       await expectThrow(ctx.submitPendingBlocks(), "INVALID_OFFCHAIN_APPROVAL");
+    });
+
+    it("Invalid exit signature (EDDSA)", async () => {
+      const pool = await setupDefaultPool();
+      pool.totalSupply = pool.POOL_TOKEN_BASE;
+      await pool.prePoolTransactions();
+      await pool.exit(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
+        authMethod: AuthMethod.EDDSA,
+        invalidTxHash: true
+      });
+      await ctx.submitTransactions();
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "INVALID_OFFCHAIN_L2_APPROVAL"
+      );
     });
 
     it("Invalid join slippage", async () => {

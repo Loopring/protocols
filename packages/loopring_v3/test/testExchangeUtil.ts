@@ -40,7 +40,8 @@ import {
   TxBlock,
   AccountUpdate,
   SpotTrade,
-  WithdrawalRequest
+  WithdrawalRequest,
+  SignatureVerification
 } from "./types";
 
 const LoopringIOExchangeOwner = artifacts.require("LoopringIOExchangeOwner");
@@ -52,7 +53,8 @@ type TxType =
   | WithdrawalRequest
   | Deposit
   | AccountUpdate
-  | AmmUpdate;
+  | AmmUpdate
+  | SignatureVerification;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -141,6 +143,10 @@ export interface AccountUpdateOptions {
 export interface AmmUpdateOptions {
   authMethod?: AuthMethod;
   validUntil?: number;
+}
+
+export interface SignatureVerificationOptions {
+  dataToSign?: string;
 }
 
 export interface OnchainBlock {
@@ -446,6 +452,22 @@ export namespace AmmUpdateUtils {
   export function getHash(update: AmmUpdate, verifyingContract: string) {
     const typedData = this.toTypedData(update, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
+  }
+}
+
+export namespace SignatureVerificationUtils {
+  export function sign(keyPair: any, verification: SignatureVerification) {
+    // Create signature
+    const signature = EdDSA.sign(keyPair.secretKey, verification.data);
+
+    // Verify signature
+    const success = EdDSA.verify(verification.data, signature, [
+      keyPair.publicKeyX,
+      keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+
+    return signature;
   }
 }
 
@@ -1526,6 +1548,41 @@ export class ExchangeTestUtil {
     return ammUpdate;
   }
 
+  public async requestSignatureVerification(
+    owner: string,
+    data: string,
+    options: SignatureVerificationOptions = {}
+  ) {
+    // Fill in defaults
+    const dataToSign =
+      options.dataToSign !== undefined ? options.dataToSign : data;
+
+    const account = this.findAccount(owner);
+
+    const value = new BN(dataToSign, 10);
+    const cap = new BN(2).pow(new BN(253));
+    assert(value.lt(cap), "data value too big");
+
+    const signatureVerification: SignatureVerification = {
+      txType: "SignatureVerification",
+      exchange: this.exchange.address,
+      owner,
+      accountID: account.accountID,
+      data: dataToSign
+    };
+
+    // Approve
+    signatureVerification.signature = SignatureVerificationUtils.sign(
+      account,
+      signatureVerification
+    );
+
+    signatureVerification.data = data;
+    this.pendingTransactions[this.exchangeId].push(signatureVerification);
+
+    return signatureVerification;
+  }
+
   public sendRing(ring: SpotTrade) {
     ring.txType = "SpotTrade";
     this.pendingTransactions[this.exchangeId].push(ring);
@@ -2471,6 +2528,17 @@ export class ExchangeTestUtil {
         da.addBN(new BN(update.tokenWeight), 12);
         da.addNumber(update.nonce, 4);
         da.addBN(new BN(update.balance), 12);
+      } else if (
+        tx.signatureVerification ||
+        tx.txType === "SignatureVerification"
+      ) {
+        const verification = tx.signatureVerification
+          ? tx.signatureVerification
+          : tx;
+        da.addNumber(TransactionType.SIGNATURE_VERIFICATION, 1);
+        da.addBN(new BN(verification.owner), 20);
+        da.addNumber(verification.accountID, 4);
+        da.addBN(new BN(verification.data, 10), 32);
       }
       // console.log("type: " + da.extractUint8(0));
       // console.log("da.length(): " + da.length());

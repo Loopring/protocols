@@ -56,6 +56,8 @@ library AmmExitProcess
                 require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
                 delete S.approvedTx[txHash];
             }
+        } else if (signature.length == 1) {
+            ctx.verifySignatureL2(_block, exit.owner, txHash, signature);
         } else {
             require(txHash.verifySignature(exit.owner, signature), "INVALID_OFFCHAIN_APPROVAL");
         }

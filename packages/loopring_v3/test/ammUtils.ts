@@ -60,6 +60,7 @@ export interface JoinOptions {
   authMethod?: AuthMethod;
   signer?: string;
   validUntil?: number;
+  invalidTxHash?: boolean;
 }
 
 export interface ExitOptions {
@@ -69,6 +70,7 @@ export interface ExitOptions {
   fee?: BN;
   forcedExitFee?: BN;
   skip?: boolean;
+  invalidTxHash?: boolean;
 }
 
 export interface Permit {
@@ -222,6 +224,8 @@ export class AmmPool {
   public POOL_TOKEN_BASE: BN = new BN("10000000000");
   public POOL_TOKEN_MINTED_SUPPLY: BN = new BN("79228162514264337593543950335"); // uint96(-1)
 
+  public L2_SIGNATURE: string = "0x10";
+
   public totalSupply: BN;
 
   public tokenBalancesL2: BN[];
@@ -308,6 +312,8 @@ export class AmmPool {
     const signer = options.signer !== undefined ? options.signer : owner;
     const validUntil =
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+    const invalidTxHash =
+      options.invalidTxHash !== undefined ? options.invalidTxHash : false;
 
     const join: PoolJoin = {
       txType: "Join",
@@ -319,6 +325,7 @@ export class AmmPool {
       validUntil
     };
 
+    let txHash: Buffer;
     if (authMethod === AuthMethod.APPROVE) {
       await this.contract.joinPool(joinAmounts, mintMinAmount, { from: owner });
       const event = await this.ctx.assertEventEmitted(
@@ -333,9 +340,21 @@ export class AmmPool {
       const hash = PoolJoinUtils.getHash(join, this.contract.address);
       join.signature = await sign(signer, hash, SignatureType.EIP_712);
       await verifySignature(signer, hash, join.signature);
+    } else if (authMethod === AuthMethod.EDDSA) {
+      for (const token of this.tokens) {
+        join.joinStorageIDs.push(this.ctx.reserveStorageID());
+      }
+      txHash = PoolJoinUtils.getHash(join, this.contract.address);
+      if (invalidTxHash) {
+        txHash = Buffer.from(
+          new BN(txHash.toString("hex"), 16).add(new BN(8)).toString(16),
+          "hex"
+        );
+      }
+      join.signature = this.L2_SIGNATURE;
     }
 
-    await this.process(join);
+    await this.process(join, txHash);
 
     return join;
   }
@@ -358,6 +377,8 @@ export class AmmPool {
         ? options.forcedExitFee
         : await this.sharedConfig.forcedExitFee();
     const skip = options.skip !== undefined ? options.skip : false;
+    const invalidTxHash =
+      options.invalidTxHash !== undefined ? options.invalidTxHash : false;
 
     const exit: PoolExit = {
       txType: "Exit",
@@ -371,6 +392,7 @@ export class AmmPool {
       authMethod
     };
 
+    let txHash: Buffer;
     if (authMethod === AuthMethod.FORCE) {
       await this.contract.forceExitPool(burnAmount, exitMinAmounts, {
         from: owner,
@@ -398,10 +420,20 @@ export class AmmPool {
       const hash = PoolExitUtils.getHash(exit, this.contract.address);
       exit.signature = await sign(signer, hash, SignatureType.EIP_712);
       await verifySignature(signer, hash, exit.signature);
+    } else if (authMethod === AuthMethod.EDDSA) {
+      exit.burnStorageID = this.ctx.reserveStorageID();
+      txHash = PoolExitUtils.getHash(exit, this.contract.address);
+      if (invalidTxHash) {
+        txHash = Buffer.from(
+          new BN(txHash.toString("hex"), 16).add(new BN(8)).toString(16),
+          "hex"
+        );
+      }
+      exit.signature = this.L2_SIGNATURE;
     }
 
     if (!skip) {
-      await this.process(exit);
+      await this.process(exit, txHash);
     }
 
     return exit;
@@ -421,7 +453,7 @@ export class AmmPool {
     }
   }
 
-  private async process(transaction: TxType) {
+  private async process(transaction: TxType, txHash: Buffer) {
     const owner = this.contract.address;
 
     const blockCallback = this.ctx.addBlockCallback(owner);
@@ -434,6 +466,15 @@ export class AmmPool {
         this.weights[i],
         { authMethod: AuthMethod.NONE }
       );
+    }
+
+    let numTxs = this.tokens.length * 2 + 1;
+    if (transaction.signature === this.L2_SIGNATURE) {
+      await this.ctx.requestSignatureVerification(
+        transaction.owner,
+        this.ctx.hashToFieldElement("0x" + txHash.toString("hex"))
+      );
+      numTxs++;
     }
 
     // Process the transaction
@@ -545,7 +586,8 @@ export class AmmPool {
       if (valid) {
         if (exit.authMethod !== AuthMethod.FORCE) {
           const storageID =
-            exit.authMethod === AuthMethod.ECDSA
+            exit.authMethod === AuthMethod.ECDSA ||
+            exit.authMethod === AuthMethod.EDDSA
               ? exit.burnStorageID
               : undefined;
           // Burn
@@ -603,7 +645,7 @@ export class AmmPool {
 
     // Set the pool transaction data on the callback
     blockCallback.auxiliaryData = AmmPool.getAuxiliaryData(transaction);
-    blockCallback.numTxs = this.tokens.length * 2 + 1;
+    blockCallback.numTxs = numTxs;
     blockCallback.tx = transaction;
     blockCallback.tx.txIdx = blockCallback.txIdx;
     blockCallback.tx.numTxs = blockCallback.numTxs;

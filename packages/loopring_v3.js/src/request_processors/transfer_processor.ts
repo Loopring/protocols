@@ -19,7 +19,7 @@ interface Transfer {
 }
 
 /**
- * Processes internal transfer requests.
+ * Processes transfer requests.
  */
 export class TransferProcessor {
   public static process(

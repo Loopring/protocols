@@ -46,8 +46,10 @@ library AmmJoinProcess
         if (signature.length == 0) {
             require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
             delete S.approvedTx[txHash];
+        } else if (signature.length == 1) {
+            ctx.verifySignatureL2(_block, join.owner, txHash, signature);
         } else {
-            require(txHash.verifySignature(join.owner, signature), "INVALID_OFFCHAIN_APPROVAL");
+            require(txHash.verifySignature(join.owner, signature), "INVALID_OFFCHAIN_L1_APPROVAL");
         }
 
         // Check if the requirements are fulfilled
