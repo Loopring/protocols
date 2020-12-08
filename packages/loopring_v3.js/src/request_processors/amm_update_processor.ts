@@ -14,10 +14,14 @@ interface AmmUpdate {
 }
 
 /**
- * Processes deposit requests.
+ * Processes amm update requests.
  */
 export class AmmUpdateProcessor {
-  public static process(state: ExchangeState, block: BlockContext, txData: Bitstream) {
+  public static process(
+    state: ExchangeState,
+    block: BlockContext,
+    txData: Bitstream
+  ) {
     const update = this.extractData(txData);
 
     const account = state.getAccount(update.accountID);

@@ -20,7 +20,7 @@ interface Withdrawal {
 }
 
 /**
- * Processes internal transfer requests.
+ * Processes withdrawal requests.
  */
 export class WithdrawalProcessor {
   public static process(

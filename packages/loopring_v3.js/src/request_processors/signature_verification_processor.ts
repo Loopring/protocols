@@ -11,7 +11,7 @@ interface SignatureVerification {
 }
 
 /**
- * Processes internal transfer requests.
+ * Processes signature verification requests.
  */
 export class SignatureVerificationProcessor {
   public static process(

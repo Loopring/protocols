@@ -23,7 +23,7 @@ interface SettlementValues {
 }
 
 /**
- * Processes ring settlement requests.
+ * Processes spot trade requests.
  */
 export class SpotTradeProcessor {
   public static process(
