@@ -58,13 +58,13 @@
       tokenSymbol: 'LP-LRC-ETH'
     }
     ```
-    3. ETH-USDT pool: 0x6D537764355bc23d4eADba7829048Dac8215a73c
+    4. ETH-USDT pool: 0x605872a5A459E778959B8a49dc3A56a8c9197983
     ```
     {
       sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
       exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
       poolName: 'AMM-ETH-USDT',
-      accountID: 3,
+      accountID: 4,
       tokens: [
         '0x0000000000000000000000000000000000000000',
         '0xdac17f958d2ee523a2206206994597c13d831ec7'
@@ -72,6 +72,22 @@
       weights: [ 1000000, 1000000 ],
       feeBips: 15,
       tokenSymbol: 'LP-ETH-USDT'
+    }
+    ```
+    5. WBTC-ETH pool: 0xf6cd964E6345E8f01e548063De13d0DE7d8c59De
+    ```
+    {
+      sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+      exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+      poolName: 'AMM-WBTC-ETH',
+      accountID: 5,
+      tokens: [
+        '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
+        '0x0000000000000000000000000000000000000000'
+      ],
+      weights: [ 1000000, 1000000 ],
+      feeBips: 15,
+      tokenSymbol: 'LP-WBTC-ETH'
     }
     ```
 
@@ -160,5 +176,7 @@
     - CEL: 0xaaaebe6fe48e54f431b0c390cfaf0b017d09d42d, tokenId: 81
     - AMP: 0xff20817765cb7f73d4bde2e66e067e58d11095c2, tokenId: 82
     - LP-LRC-ETH: 0x18920d6E6Fb7EbE057a4DD9260D6D95845c95036, tokenId: 83
-    - LP-USDT-ETH: 0xA573C5d473702286f0AC84592EDA49aD799EBAA1, tokenId: 84
-    - LP-ETH-USDT: 0x6D537764355bc23d4eADba7829048Dac8215a73c, tokenId: 85
+    - ~~LP-USDT-ETH: 0xA573C5d473702286f0AC84592EDA49aD799EBAA1, tokenId: 84~~
+    - ~~LP-ETH-USDT: 0x6D537764355bc23d4eADba7829048Dac8215a73c, tokenId: 85~~
+    - LP-ETH-USDT: 0x605872a5A459E778959B8a49dc3A56a8c9197983, tokenId: 86
+    - LP-WBTC-ETH: 0xf6cd964E6345E8f01e548063De13d0DE7d8c59De, tokenId: 87
