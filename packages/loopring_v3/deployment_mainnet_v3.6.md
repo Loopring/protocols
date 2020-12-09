@@ -99,6 +99,23 @@
     tokenSymbol: 'LP-WBTC-ETH'
   }
   ```
+  
+  6. UNI-ETH pool: 0x9b7a20ae12a3f2a3d4cF9eA2d4a8518c104cc5f2
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-UNI-ETH',
+    accountID: 6,
+    tokens: [
+      '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-UNI-ETH'
+  }
+  ```
 
 - Registered tokens:
   - ETH: 0x0000000000000000000000000000000000000000, tokenId: 0
@@ -189,3 +206,4 @@
   - ~~LP-ETH-USDT: 0x6D537764355bc23d4eADba7829048Dac8215a73c, tokenId: 85~~
   - LP-ETH-USDT: 0x605872a5A459E778959B8a49dc3A56a8c9197983, tokenId: 86
   - LP-WBTC-ETH: 0xf6cd964E6345E8f01e548063De13d0DE7d8c59De, tokenId: 87
+  - LP-UNI-ETH: 0x9b7a20ae12a3f2a3d4cF9eA2d4a8518c104cc5f2, tokenId: 88
