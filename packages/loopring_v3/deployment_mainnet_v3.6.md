@@ -116,6 +116,107 @@
     tokenSymbol: 'LP-UNI-ETH'
   }
   ```
+  7. DPI-ETH pool: 0x6FF8A397F7A04B41c58c00AB8e70ACa7cbc0adBa
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-DPI-ETH',
+    accountID: 7,
+    tokens: [
+      '0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-DPI-ETH'
+  }
+  ```
+
+  8. LINK-ETH pool: 0x1230F7e06c3fA96f4259F7BaD79e6afF321B8133
+  ```
+    {
+      sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+      exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+      poolName: 'AMM-LINK-ETH',
+      accountID: 8,
+      tokens: [
+        '0x514910771af9ca656af840dff83e8264ecf986ca',
+        '0x0000000000000000000000000000000000000000'
+      ],
+      weights: [ 1000000, 1000000 ],
+      feeBips: 15,
+      tokenSymbol: 'LP-LINK-ETH'
+    }
+  ```
+
+  9. KP3R-ETH pool: 0x2ed5d3Fff0EB1451c381DDECE244E9b796db7b8a
+    ```
+    {
+      sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+      exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+      poolName: 'AMM-KP3R-ETH',
+      accountID: 9,
+      tokens: [
+        '0x1ceb5cb57c4d4e2b2433641b95dd330a33185a44',
+        '0x0000000000000000000000000000000000000000'
+      ],
+      weights: [ 1000000, 1000000 ],
+      feeBips: 15,
+      tokenSymbol: 'LP-KP3R-ETH'
+    }
+    ```
+
+  10. YFI-ETH pool: 0xd85f594481D3DEE61FD38464dD54CF3ccE6906b6
+    ```
+    {
+      sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+      exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+      poolName: 'AMM-YFI-ETH',
+      accountID: 10,
+      tokens: [
+        '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e',
+        '0x0000000000000000000000000000000000000000'
+      ],
+      weights: [ 1000000, 1000000 ],
+      feeBips: 15,
+      tokenSymbol: 'LP-YFI-ETH'
+    }
+    ```
+  11. YFII-ETH pool: 0xF8e4aBF498235fA8fdE2f6A04c21db7877957C47
+    ```
+    {
+      sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+      exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+      poolName: 'AMM-YFII-ETH',
+      accountID: 11,
+      tokens: [
+        '0xa1d0e215a23d7030842fc67ce582a6afa3ccab83',
+        '0x0000000000000000000000000000000000000000'
+      ],
+      weights: [ 1000000, 1000000 ],
+      feeBips: 15,
+      tokenSymbol: 'LP-YFII-ETH'
+    }
+    ```
+
+  12. MCB-ETH: 0x70c8E0AedB5933Da09C9392A17389e4D6d79D638
+  ```
+    {
+      sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+      exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+      poolName: 'AMM-MCB-ETH',
+      accountID: 12,
+      tokens: [
+        '0x4e352cF164E64ADCBad318C3a1e222E9EBa4Ce42',
+        '0x0000000000000000000000000000000000000000'
+      ],
+      weights: [ 1000000, 1000000 ],
+      feeBips: 15,
+      tokenSymbol: 'LP-MCB-ETH'
+    }
+  ```
+
 
 - Registered tokens:
   - ETH: 0x0000000000000000000000000000000000000000, tokenId: 0
@@ -210,3 +311,9 @@
   - KP3R: 0x1ceb5cb57c4d4e2b2433641b95dd330a33185a44, tokenId: 89
   - YFII: 0xa1d0e215a23d7030842fc67ce582a6afa3ccab83, tokenId: 90
   - MCB: 0x4e352cF164E64ADCBad318C3a1e222E9EBa4Ce42, tokenId: 91
+  - LP-DPI-ETH: 0x6FF8A397F7A04B41c58c00AB8e70ACa7cbc0adBa, tokenId: 92
+  - LP-LINK-ETH: 0x1230F7e06c3fA96f4259F7BaD79e6afF321B8133, tokenId: 93
+  - LP-KP3R-ETH: 0x2ed5d3Fff0EB1451c381DDECE244E9b796db7b8a, tokenId: 94
+  - LP-YFI-ETH: 0xd85f594481D3DEE61FD38464dD54CF3ccE6906b6, tokenId: 95
+  - LP-YFII-ETH: 0xF8e4aBF498235fA8fdE2f6A04c21db7877957C47, tokenId: 96
+  - LP-MCB-ETH: 0x70c8E0AedB5933Da09C9392A17389e4D6d79D638, tokenId: 97
