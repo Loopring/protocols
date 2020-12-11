@@ -84,7 +84,7 @@
     "solium": "^1.2.5",
     "truffle": "^5.1.45",
     "truffle-assertions": "^0.9.1",
-    "truffle-flattener": "^1.4.0",
+    "truffle-flattener": "^1.5.0",
     "types-bn": "0.0.1",
     "typescript": "4.0.5",
     "webpack": "^5.1.2"
