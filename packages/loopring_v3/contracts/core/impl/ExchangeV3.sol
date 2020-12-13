@@ -117,7 +117,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyOwner
     {
-        require(state.loopring.blockVerifierAddress() !== address(0), "ZERO_ADDRESS");
+        require(state.loopring.blockVerifierAddress() != address(0), "ZERO_ADDRESS");
         state.blockVerifier = IBlockVerifier(state.loopring.blockVerifierAddress());
     }
 
