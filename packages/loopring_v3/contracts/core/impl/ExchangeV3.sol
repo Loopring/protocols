@@ -114,6 +114,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
 
     function refreshBlockVerifier()
         external
+        override
         nonReentrant
         onlyOwner
     {

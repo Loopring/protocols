@@ -123,6 +123,11 @@ abstract contract IExchangeV3 is Claimable
         external
         virtual;
 
+    /// @dev refresh the blockVerifier contract which maybe changed in loopringV3 contract.
+    function refreshBlockVerifier()
+        external
+        virtual;
+
     /// @dev Gets the deposit contract used by the exchange.
     /// @return the deposit contract
     function getDepositContract()
