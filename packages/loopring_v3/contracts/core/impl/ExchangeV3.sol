@@ -11,6 +11,7 @@ import "../../lib/ReentrancyGuard.sol";
 import "../../thirdparty/proxies/OwnedUpgradabilityProxy.sol";
 import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
+import "../iface/IBlockVerifier.sol";
 import "./libexchange/ExchangeAdmins.sol";
 import "./libexchange/ExchangeBalances.sol";
 import "./libexchange/ExchangeBlocks.sol";
@@ -109,6 +110,16 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         require(_agentRegistry != address(0), "ZERO_ADDRESS");
         require(state.agentRegistry == IAgentRegistry(0), "ALREADY_SET");
         state.agentRegistry = IAgentRegistry(_agentRegistry);
+    }
+
+    function refreshBlockVerifier()
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(state.loopring.blockVerifierAddress() != address(0), "ZERO_ADDRESS");
+        state.blockVerifier = IBlockVerifier(state.loopring.blockVerifierAddress());
     }
 
     function getAgentRegistry()
