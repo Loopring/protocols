@@ -1439,7 +1439,7 @@ the prover knows an auxiliary input:
 The following conditions hold:
 
 - PointValidator(aX, aY)
-- hashRAM = EdDSA_HashRAM_Poseidon(rX, rY, aX, aY, s)
+- hashRAM = EdDSA_HashRAM_Poseidon(rX, rY, aX, aY, message)
 - (atX, atY) = ScalarMult(aX, aY, hashRAM)
 - result = (fixed_base_mul(s) == PointAdder(rX, rY, atX, atY))
 
@@ -1615,12 +1615,12 @@ A valid instance of a RequireFillLimit statement assures that given an input of:
 
 the prover knows an auxiliary input:
 
-- fillAfter: {0..2^NUM_BITS_AMOUNT}
+- filledAfter: {0..2^NUM_BITS_AMOUNT}
 
 such that the following conditions hold:
 
-- filledAfter = filled + ((order.fillAmountBorS == 0) ? fillB : fillS)
-- (order.fillAmountBorS == 0) ? filledAfter <= order.amountB : filledAfter <= order.amountS
+- filledAfter = filled + ((order.fillAmountBorS == 1) ? fillB : fillS)
+- (order.fillAmountBorS == 1) ? filledAfter <= order.amountB : filledAfter <= order.amountS
 
 ### Description
 
