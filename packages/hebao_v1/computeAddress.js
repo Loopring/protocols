@@ -125,12 +125,21 @@ function main() {
   //     fs.mkdirSync(`wallet_addr`);
   // }
 
+  let chunk = parseInt(process.argv.slice(2)[0]);
+  if (chunk < 0) {
+    console.log("invalid chunk");
+    return;
+  }
+
+  console.log("chunk: ", chunk);
+
   let config = {
-    nextBatch: 0,
+    nextBatch: chunk * 1000000,
+    untilBatch: (chunk + 1) * 1000000,
     selectPerMillion: 0.1
   };
 
-  let file = location + "addresses.json";
+  let file = location + "addresses" + chunk + ".json";
   let prettyOnes = [];
   let uglyOnes = [];
 
@@ -143,11 +152,13 @@ function main() {
     } catch (err) {}
   }
 
-  while (true) {
+  while (config.untilBatch <= 0 || config.untilBatch > config.nextBatch) {
     const startTime = new Date().getTime();
     console.log(
       ">>> batch:",
       config.nextBatch,
+      " until batch:",
+      config.untilBatch,
       " select per million:",
       config.selectPerMillion,
       " pretty:",
@@ -190,6 +201,7 @@ function main() {
 
     fs.writeFileSync(file, JSON.stringify(result, undefined, 2));
   }
+  console.log("done");
 }
 
 main();
