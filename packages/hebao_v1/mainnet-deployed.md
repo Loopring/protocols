@@ -1,5 +1,19 @@
 # Hebao Mainnet deploy info
 
+## ENS Names: (2020-12-18)
+- ENSManager: 0xF61f3C9cEcB8d206DeA1faEd99A693e6d3BAAEf2
+- ENS info:
+
+| ENS Name | Address         | Memo |
+| -------- | ---------------- | -------- |
+| exchange2.loopring.eth | 0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4 |loopring36 exchange proxy |
+| deposit2.loopring.eth  | 0x674bdf20A0F284D710BC40872100128e2d66Bd3f |loopring36 deposit contract  |
+| fees2.loopring.eth | 0x4b89f8996892d137c3dE1312d1dD4E4F4fFcA171 |loopring feeVault|
+| agents2.loopring.eth | 0x39B9bf169a7e225ba037C443A40460c77438ea14 |loopring36 AgentRegistry|
+| verifier2.loopring.eth | 0x6150343E0F43A17519c0327c41eDd9eBE88D01ef |loopring36 BlockVerifier  |
+| fastwithdraw2.loopring.eth | 0xec3Cc6Cf0252565b56FC7AC396017Df5b9B78a31 |loopring36 FastWithdrawalAgent|
+|guardian1.loopring.eth | 0x6325d247696D39ee59Ffd931a87e022A68bbBE4f | hebao OfficialGuardian |
+
 ## Hebao V1.0.2 (2020-06-13)
 
 ### Period parameters:
