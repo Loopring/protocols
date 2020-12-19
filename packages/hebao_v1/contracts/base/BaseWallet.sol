@@ -26,6 +26,8 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     Controller public controller;
 
     mapping (bytes4  => address) internal methodToModule;
+
+    bool internal isImplementationContract;
     //  ----- DATA LAYOUT ENDS -----
 
     event OwnerChanged          (address newOwner);
@@ -61,6 +63,19 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
+    /// @dev We need to make sure the implemenation contract cannot be initialized
+    ///      and used to do delegate calls to arbitrary contracts.
+    modifier disableInImplementationContract
+    {
+        require(!isImplementationContract, "DISALLOWED_ON_IMPLEMENTATION_CONTRACT");
+        _;
+    }
+
+    constructor()
+    {
+        isImplementationContract = true;
+    }
+
     /// @dev Set up this wallet by assigning an original owner
     ///
     ///      Note that calling this method more than once will throw.
@@ -92,6 +107,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         address[]  calldata _modules
         )
         external
+        disableInImplementationContract
     {
         require(
             _owner == address(0) &&

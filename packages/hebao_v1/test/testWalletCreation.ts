@@ -449,4 +449,11 @@ contract("WalletFactory", () => {
       }
     );
   });
+
+  it("should not be possible to initialize the wallet implementation contract", async () => {
+    await expectThrow(
+      ctx.walletImpl.init(Constants.zeroAddress, []),
+      "DISALLOWED_ON_IMPLEMENTATION_CONTRACT"
+    );
+  });
 });
