@@ -918,10 +918,13 @@ with circuit parameters:
 the prover knows an auxiliary input:
 
 - result: {0..2}[n]
+- sum: F
 
 The following conditions hold:
 
 - for i in {0..n}: result[i] = (i == type) ? 1 : 0
+- for i in {0..n}: sum += result[i]
+- sum == 1
 
 ### Description
 
