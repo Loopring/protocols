@@ -307,3 +307,41 @@
 ```
 
 - BatchTransfer: 0xa2f31F8f587D5D85A83F2EEfAA1ba7b23E8432F6
+
+
+## Deployment Fix
+
+The bug report: https://blog.trailofbits.com/2020/12/16/breaking-aave-upgradeability/
+
+BaseWallet: 0xF8C1F5848969baC54a5cc0178e0A36504B818Db9
+
+Fix TX: https://etherscan.io/tx/0x304be65d0916505998b74923851078e62ed53bb74fe5460838164125d53cc4dd
+
+Controlelr Value: 0x728348a947b808483365bf24f5f7886f0a9786bf
+
+Used By
+- Hebao V1.0.2 (2020-06-13)
+
+
+WalletImpl: 0xA7c03D39082B54E8AAC266fCf9A9b56d0892EDFf
+
+Fix TX: https://etherscan.io/tx/0x4eaa57c07f47e1c2112f0631fe13a29bc3259e1141103b30d4cdd36503e1a411
+
+Controlelr Value: 0xd33a5abf3ce5e9ab889e998c09ff49bd45da3258
+
+Used By
+- HebaoV1.1.5 (2020-08-26)
+- HebaoV1.1.6 (2020-09-21)
+- hebao-1.1.6 patch-1 [20201009]
+
+
+
+WalletImpl: 0xE5857440BBFF64C98CEb70d650805E1E96addE7A
+
+Fix TX: https://etherscan.io/tx/0xcfd59d639de901cf201c376efef37231ee5ab7637752982f5af506b44bda657a
+
+Controller Value: 0xb39e09279D4035c0F92307741d9dd8ed66e74de0
+
+Used By:
+- hebao-1.2.1 [20201112]
+- hebao-1.2.0 [20201108]
