@@ -42,6 +42,7 @@ library AmmExitProcess
         internal
     {
         require(exit.validUntil >= block.timestamp, "EXPIRED");
+        require(exit.burnAmount > 0, "ZERO_BURN_AMOUNT");
 
         bytes32 txHash = AmmExitRequest.hash(ctx.domainSeparator, exit);
         bool isForcedExit = false;
