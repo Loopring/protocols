@@ -136,7 +136,7 @@ function main() {
   let config = {
     nextBatch: chunk * 1000000,
     untilBatch: (chunk + 1) * 1000000,
-    selectPerMillion: 0.1
+    select: 1000
   };
 
   let file = location + "addresses" + chunk + ".json";
@@ -159,8 +159,8 @@ function main() {
       config.nextBatch,
       " until batch:",
       config.untilBatch,
-      " select per million:",
-      config.selectPerMillion,
+      " select:",
+      config.select,
       " pretty:",
       prettyOnes.length,
       " ugly:",
@@ -171,20 +171,15 @@ function main() {
 
     let res = findTopAddressesInBatch(config.nextBatch);
 
-    var select = config.selectPerMillion * (config.nextBatch + 1);
-    if (select < 10) {
-      select = 10;
-    }
-
     prettyOnes = prettyOnes
       .concat(res[0])
       .sort((a, b) => b.score - a.score)
-      .slice(0, select);
+      .slice(0, config.select);
 
     uglyOnes = uglyOnes
       .concat(res[1])
       .sort((a, b) => a.score - b.score)
-      .slice(0, select);
+      .slice(0, config.select);
 
     config.nextBatch++;
 
