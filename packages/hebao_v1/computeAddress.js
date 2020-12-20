@@ -95,7 +95,7 @@ function calAddress(batch, salt) {
   return result;
 }
 
-function findTopAddressesInBatch(nextBatch) {
+function findTopAddressesInBatch(nextBatch, minScore) {
   const prettyOnes = [];
   const uglyOnes = [];
 
@@ -104,7 +104,7 @@ function findTopAddressesInBatch(nextBatch) {
   for (let i = 0; i < batchSize; i++) {
     const addr = calAddress(nextBatch, i + base);
 
-    if (addr.score >= 0.5) {
+    if (addr.score > minScore) {
       console.log(addr);
       prettyOnes.push(addr);
     } else if (addr.score <= 0.0037) {
@@ -150,6 +150,12 @@ function main() {
 
   while (config.untilBatch <= 0 || config.untilBatch > config.nextBatch) {
     const startTime = new Date().getTime();
+    let minScore = 0;
+    let maxScore = 0;
+    if (prettyOnes.length > 0) {
+      minScore = prettyOnes[prettyOnes.length-1].score;
+      maxScore = prettyOnes[0].score;
+    }
     console.log(
       ">>> batch:",
       config.nextBatch,
@@ -162,10 +168,14 @@ function main() {
       " ugly:",
       uglyOnes.length,
       " time used:",
-      config.timeUsedLastBatch / 1000
+      config.timeUsedLastBatch / 1000,
+      " max score:",
+      maxScore,
+      " min score:",
+      minScore
     );
 
-    let res = findTopAddressesInBatch(config.nextBatch);
+    let res = findTopAddressesInBatch(config.nextBatch, minScore);
 
     prettyOnes = prettyOnes
       .concat(res[0])

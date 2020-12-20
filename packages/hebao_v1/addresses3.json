@@ -1,9 +1,9 @@
 {
   "config": {
-    "nextBatch": 3014413,
+    "nextBatch": 3014423,
     "untilBatch": 4000000,
     "select": 1000,
-    "timeUsedLastBatch": 21583
+    "timeUsedLastBatch": 21452
   },
   "prettyCount": 1000,
   "uglyCount": 1000,
@@ -14024,6 +14024,16 @@
       "concatScore": 3.5999999999999996
     },
     {
+      "addr": "0xce79dbDE11e1c0646deC75e0D86CB293CA2Faf0B",
+      "salt": 3014415178536,
+      "score": 0.0035148333333333325
+    },
+    {
+      "addr": "0xBeAc2D0a47fC1c69fa87eC440134e210bCE3f9dF",
+      "salt": 3014418176995,
+      "score": 0.0035148333333333325
+    },
+    {
       "addr": "0xB8aecA6EC6FA2Eacc15a96C71cF55a26fd23DCFb",
       "batch": 3000619,
       "salt": 3000619449971,
@@ -15408,6 +15418,11 @@
       "headScore": 7.6,
       "tailScore": 6,
       "concatScore": 3.5999999999999996
+    },
+    {
+      "addr": "0x9A0FcD75D9e5211F72284E20Fd464708edaCEbfB",
+      "salt": 3014419495513,
+      "score": 0.003557333333333333
     },
     {
       "addr": "0x7a8AEeD91759FF775048b8c9AdDd6436BcCf6Fdb",
@@ -17978,33 +17993,6 @@
       "addr": "0xA3feCc219c777253916A9d6dF5EF5158DaEBF4b5",
       "batch": 3004011,
       "salt": 3004011735569,
-      "score": 0.003587166666666667,
-      "headScore": 7.050000000000001,
-      "tailScore": 6.65,
-      "concatScore": 3.7
-    },
-    {
-      "addr": "0xa4bC7DEe4E816782DFcFf0b46d5Ff73BBf35A2Fd",
-      "batch": 3004067,
-      "salt": 3004067460910,
-      "score": 0.003587166666666667,
-      "headScore": 6.65,
-      "tailScore": 7.050000000000001,
-      "concatScore": 3.6999999999999993
-    },
-    {
-      "addr": "0xDd1E7A2bbf41A55E8BD105FD2E81E2Adae3f4CFc",
-      "batch": 3004128,
-      "salt": 3004128326511,
-      "score": 0.003587166666666667,
-      "headScore": 7.050000000000001,
-      "tailScore": 6.65,
-      "concatScore": 3.7
-    },
-    {
-      "addr": "0xEAB2c73DcD541a260390d9C3C3C31997ea14fFCb",
-      "batch": 3004134,
-      "salt": 3004134033457,
       "score": 0.003587166666666667,
       "headScore": 7.050000000000001,
       "tailScore": 6.65,

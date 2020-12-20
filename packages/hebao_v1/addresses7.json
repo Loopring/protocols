@@ -1,9 +1,9 @@
 {
   "config": {
-    "nextBatch": 7014159,
+    "nextBatch": 7014170,
     "untilBatch": 8000000,
     "select": 1000,
-    "timeUsedLastBatch": 21622
+    "timeUsedLastBatch": 21542
   },
   "prettyCount": 1000,
   "uglyCount": 1000,
@@ -241,6 +241,11 @@
       "headScore": 58.97142857142857,
       "tailScore": 85.83571428571427,
       "concatScore": 78.72
+    },
+    {
+      "addr": "0x027909298926063C9b7D3D475396204122220002",
+      "salt": 7014161315044,
+      "score": 0.5680745878231293
     },
     {
       "addr": "0x0011660102860ac982aA6C657CcF517681080018",
@@ -8993,15 +8998,6 @@
       "score": 0.48982610503401364,
       "headScore": 69.08571428571429,
       "tailScore": 71.6857142857143,
-      "concatScore": 69.16
-    },
-    {
-      "addr": "0x043400047a1eEd3105E8fbb357235B6f36A33636",
-      "batch": 7002275,
-      "salt": 7002275509364,
-      "score": 0.48982610503401364,
-      "headScore": 71.6857142857143,
-      "tailScore": 69.08571428571429,
       "concatScore": 69.16
     }
   ],
