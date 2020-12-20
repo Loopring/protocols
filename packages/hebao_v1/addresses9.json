@@ -1,9 +1,9 @@
 {
   "config": {
-    "nextBatch": 9014303,
+    "nextBatch": 9014317,
     "untilBatch": 10000000,
     "select": 1000,
-    "timeUsedLastBatch": 21592
+    "timeUsedLastBatch": 21101
   },
   "prettyCount": 1000,
   "uglyCount": 1000,
@@ -2869,6 +2869,11 @@
       "headScore": 69.08571428571429,
       "tailScore": 71.6857142857143,
       "concatScore": 75.03
+    },
+    {
+      "addr": "0x8e88e8823Cce98692cC6BCc41f66788322885858",
+      "salt": 9014308334472,
+      "score": 0.5180392817006803
     },
     {
       "addr": "0x6c86636c2765181E7664c41beffF56cF00003000",
@@ -8998,15 +9003,6 @@
       "headScore": 72.80000000000001,
       "tailScore": 71.31428571428572,
       "concatScore": 65.8
-    },
-    {
-      "addr": "0x50558850bCac2b6aceC9A3218B80Fb5326244462",
-      "batch": 9012848,
-      "salt": 9012848350616,
-      "score": 0.4905069115646259,
-      "headScore": 72.80000000000001,
-      "tailScore": 71.31428571428572,
-      "concatScore": 65.8
     }
   ],
   "ugly": [
@@ -12989,6 +12985,11 @@
       "concatScore": 3.5
     },
     {
+      "addr": "0x4Bbd269c970DD8aE5b5CDD7C7F9c07abeDACaFEf",
+      "salt": 9014309735811,
+      "score": 0.0034833333333333335
+    },
+    {
       "addr": "0xe0EBDfdF7491b9Cb363750228461E2662A7abcC3",
       "batch": 9001378,
       "salt": 9001378391086,
@@ -15662,6 +15663,11 @@
       "concatScore": 3.6500000000000004
     },
     {
+      "addr": "0xbEecDd9A0f1D5ABC6e1f67E26B837a036C4a0BfF",
+      "salt": 9014307595029,
+      "score": 0.0035615
+    },
+    {
       "addr": "0xeaED9FfB3922B6DD785cFEBcC36058D383ACb6dc",
       "batch": 9010995,
       "salt": 9010995901410,
@@ -17991,24 +17997,6 @@
       "headScore": 7.050000000000001,
       "tailScore": 6.65,
       "concatScore": 3.7
-    },
-    {
-      "addr": "0xF1Bed27E236DE51535ef0c8D7683f7584Abca5fD",
-      "batch": 9001405,
-      "salt": 9001405341105,
-      "score": 0.003587166666666667,
-      "headScore": 7.050000000000001,
-      "tailScore": 6.65,
-      "concatScore": 3.6999999999999993
-    },
-    {
-      "addr": "0x4bFEA1cae1f5E3d75dF72496ECEcf51C2Ce7fd3B",
-      "batch": 9001453,
-      "salt": 9001453292469,
-      "score": 0.003587166666666667,
-      "headScore": 6.65,
-      "tailScore": 7.050000000000001,
-      "concatScore": 3.6999999999999993
     }
   ]
 }

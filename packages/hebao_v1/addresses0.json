@@ -1,9 +1,9 @@
 {
   "config": {
-    "nextBatch": 18038,
+    "nextBatch": 18054,
     "untilBatch": 1000000,
     "select": 1000,
-    "timeUsedLastBatch": 21367
+    "timeUsedLastBatch": 21028
   },
   "prettyCount": 1000,
   "uglyCount": 1000,
@@ -15752,6 +15752,11 @@
       "concatScore": 3.6499999999999995
     },
     {
+      "addr": "0xbcABeFf069125C618D91A08997BD5eEbC2DE3a8d",
+      "salt": 18050731246,
+      "score": 0.0035564999999999998
+    },
+    {
       "addr": "0xfAbEF0dBb9d5C4fEd2e326AaBe162bbD27caCDe8",
       "batch": 3637,
       "salt": 3637471975,
@@ -17999,15 +18004,6 @@
       "score": 0.0035859999999999998,
       "headScore": 6.7,
       "tailScore": 7,
-      "concatScore": 3.6999999999999993
-    },
-    {
-      "addr": "0xAd1F7eB4e86f1FB929bA99289FEb5040cEf3b5Da",
-      "batch": 13532,
-      "salt": 13532532065,
-      "score": 0.0035859999999999998,
-      "headScore": 7,
-      "tailScore": 6.7,
       "concatScore": 3.6999999999999993
     }
   ]

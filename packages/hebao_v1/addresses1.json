@@ -1,9 +1,9 @@
 {
   "config": {
-    "nextBatch": 1014510,
+    "nextBatch": 1014526,
     "untilBatch": 2000000,
     "select": 1000,
-    "timeUsedLastBatch": 21337
+    "timeUsedLastBatch": 21241
   },
   "prettyCount": 1000,
   "uglyCount": 1000,
@@ -1587,6 +1587,15 @@
       "addr": "0x00060036529f1cA525bCF40C42e079883b33336b",
       "batch": 1010758,
       "salt": 1010758725301,
+      "score": 0.5296087839455783,
+      "headScore": 72.80000000000001,
+      "tailScore": 69.08571428571429,
+      "concatScore": 76.26
+    },
+    {
+      "addr": "0x66363306F82e0A9CeF5855f819fC756D6666636a",
+      "batch": 1014511,
+      "salt": 1014511774544,
       "score": 0.5296087839455783,
       "headScore": 72.80000000000001,
       "tailScore": 69.08571428571429,
@@ -4188,6 +4197,15 @@
       "addr": "0x1C4141110B402e120e1A87830d63E02C11414481",
       "batch": 1009959,
       "salt": 1009959888768,
+      "score": 0.5091328949659863,
+      "headScore": 67.97142857142858,
+      "tailScore": 71.31428571428572,
+      "concatScore": 74.61999999999999
+    },
+    {
+      "addr": "0x4C5C4454Ef8a1bac709D9669B909DbF745546554",
+      "batch": 1014510,
+      "salt": 1014510688797,
       "score": 0.5091328949659863,
       "headScore": 67.97142857142858,
       "tailScore": 71.31428571428572,
@@ -8989,24 +9007,6 @@
       "headScore": 71.6857142857143,
       "tailScore": 69.08571428571429,
       "concatScore": 69.16
-    },
-    {
-      "addr": "0x558ff888aAB80846D3A91C8c1A06202765516165",
-      "batch": 1014167,
-      "salt": 1014167744975,
-      "score": 0.48982610503401364,
-      "headScore": 69.08571428571429,
-      "tailScore": 71.6857142857143,
-      "concatScore": 69.16
-    },
-    {
-      "addr": "0x588588855E00c40DbaAeEd4991dd8C8171717427",
-      "batch": 1010998,
-      "salt": 1010998854071,
-      "score": 0.4898141258503401,
-      "headScore": 85.4,
-      "tailScore": 57.43571428571428,
-      "concatScore": 64.05
     }
   ],
   "ugly": [
@@ -10692,6 +10692,11 @@
       "headScore": 6.3,
       "tailScore": 7.15,
       "concatScore": 3.4499999999999993
+    },
+    {
+      "addr": "0xBdCbFD4e290c170E268F002276532042fa6E52cA",
+      "salt": 1014522914115,
+      "score": 0.003423833333333333
     },
     {
       "addr": "0x7EC6B1fF4081ecc2C2Ff0FF307483B08eDadAc4b",
@@ -17516,6 +17521,11 @@
       "concatScore": 3.6999999999999993
     },
     {
+      "addr": "0xbEc17Dda53cAa8bd8eBe82946E5970eC43fBC2AF",
+      "salt": 1014520993713,
+      "score": 0.0035859999999999998
+    },
+    {
       "addr": "0xBb34Af2dD92C42245dFd78E67A3cDfF17e1EFcCD",
       "batch": 1003702,
       "salt": 1003702512125,
@@ -17991,24 +18001,6 @@
       "headScore": 6.65,
       "tailScore": 7.050000000000001,
       "concatScore": 3.6999999999999993
-    },
-    {
-      "addr": "0x4EaF7deC918eaAe831a7936ccD7e1ae3Bf251cAD",
-      "batch": 1005105,
-      "salt": 1005105907464,
-      "score": 0.003587166666666667,
-      "headScore": 6.65,
-      "tailScore": 7.050000000000001,
-      "concatScore": 3.6999999999999993
-    },
-    {
-      "addr": "0xE7AfF5C181136336770A0cd586363188c34DbBad",
-      "batch": 1005131,
-      "salt": 1005131053696,
-      "score": 0.003587166666666667,
-      "headScore": 7.050000000000001,
-      "tailScore": 6.65,
-      "concatScore": 3.7
     }
   ]
 }

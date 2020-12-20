@@ -1,9 +1,9 @@
 {
   "config": {
-    "nextBatch": 7014144,
+    "nextBatch": 7014159,
     "untilBatch": 8000000,
     "select": 1000,
-    "timeUsedLastBatch": 21656
+    "timeUsedLastBatch": 21622
   },
   "prettyCount": 1000,
   "uglyCount": 1000,
@@ -6750,6 +6750,11 @@
       "concatScore": 79.13000000000001
     },
     {
+      "addr": "0x77887881ec341EA37FA5CD9065eb84c407118871",
+      "salt": 7014154248105,
+      "score": 0.4971449187755103
+    },
+    {
       "addr": "0x611106069551f6fd1E9Ee1e0164E084322222988",
       "batch": 7009207,
       "salt": 7009207063099,
@@ -8994,15 +8999,6 @@
       "addr": "0x043400047a1eEd3105E8fbb357235B6f36A33636",
       "batch": 7002275,
       "salt": 7002275509364,
-      "score": 0.48982610503401364,
-      "headScore": 71.6857142857143,
-      "tailScore": 69.08571428571429,
-      "concatScore": 69.16
-    },
-    {
-      "addr": "0x722778270f87f5fe8FcE47E4dC05D90866777E6E",
-      "batch": 7002612,
-      "salt": 7002612603202,
       "score": 0.48982610503401364,
       "headScore": 71.6857142857143,
       "tailScore": 69.08571428571429,
@@ -11612,6 +11608,11 @@
       "concatScore": 3.5
     },
     {
+      "addr": "0xB3ACfa7ea78a3139bB9E2A401d22879EdEF5Dcb8",
+      "salt": 7014152027207,
+      "score": 0.0034460000000000003
+    },
+    {
       "addr": "0xceCB1E3A0955a4747e84F3613B9252B9D7bFfad8",
       "batch": 7004715,
       "salt": 7004715787786,
@@ -13797,6 +13798,11 @@
       "headScore": 6.35,
       "tailScore": 7.199999999999999,
       "concatScore": 3.5500000000000007
+    },
+    {
+      "addr": "0xCE9B56ad1983e1481053995E1E8f29F2e7AcFDbf",
+      "salt": 7014158740070,
+      "score": 0.003492166666666667
     },
     {
       "addr": "0x4ebDcdAEb5c11A705056C85c972de6800C3Ba9Ff",
@@ -17987,24 +17993,6 @@
       "addr": "0xcf3d5A1FCE060eE98b5b2e354299E765beEBCa47",
       "batch": 7003485,
       "salt": 7003485069819,
-      "score": 0.003587166666666667,
-      "headScore": 7.050000000000001,
-      "tailScore": 6.65,
-      "concatScore": 3.7
-    },
-    {
-      "addr": "0xDEaC1b238b4fb8b615c09e2dD573f8cAFde5c4fB",
-      "batch": 7003498,
-      "salt": 7003498300342,
-      "score": 0.003587166666666667,
-      "headScore": 7.050000000000001,
-      "tailScore": 6.65,
-      "concatScore": 3.7
-    },
-    {
-      "addr": "0xEFDb27f3082F909275e884D790FeA320Cc1eAaB4",
-      "batch": 7003820,
-      "salt": 7003820635481,
       "score": 0.003587166666666667,
       "headScore": 7.050000000000001,
       "tailScore": 6.65,

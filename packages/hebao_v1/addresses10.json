@@ -1,9 +1,9 @@
 {
   "config": {
-    "nextBatch": 10014190,
+    "nextBatch": 10014205,
     "untilBatch": 11000000,
     "select": 1000,
-    "timeUsedLastBatch": 21658
+    "timeUsedLastBatch": 21133
   },
   "prettyCount": 1000,
   "uglyCount": 1000,
@@ -1195,6 +1195,11 @@
       "headScore": 85.4,
       "tailScore": 56.20714285714286,
       "concatScore": 75.03
+    },
+    {
+      "addr": "0x84484888e2020bF5CADdBb3FdcC4cd0f81680168",
+      "salt": 10014194656548,
+      "score": 0.5357980194557823
     },
     {
       "addr": "0x75477757632bbF2D5Dc55A2F24029A6B54444855",
@@ -5256,6 +5261,15 @@
       "concatScore": 79.13000000000001
     },
     {
+      "addr": "0x698696889ADF9493C8C9f3d518b64C9863983933",
+      "batch": 10014191,
+      "salt": 10014191720847,
+      "score": 0.5025115310204082,
+      "headScore": 72.80000000000001,
+      "tailScore": 59.27857142857143,
+      "concatScore": 79.13000000000001
+    },
+    {
       "addr": "0x666666447890B485eA104FaBc012657183a38834",
       "batch": 10000631,
       "salt": 10000631569374,
@@ -8989,24 +9003,6 @@
       "headScore": 56.51428571428571,
       "tailScore": 86.27142857142857,
       "concatScore": 63.699999999999996
-    },
-    {
-      "addr": "0x7070a070Bf4D148e309D3CC81128206c97337999",
-      "batch": 10002162,
-      "salt": 10002162896332,
-      "score": 0.4897709213605442,
-      "headScore": 69.45714285714286,
-      "tailScore": 71.31428571428572,
-      "concatScore": 69.16
-    },
-    {
-      "addr": "0x62426244Eb532367e1ca457F96BAa683202c20cc",
-      "batch": 10011694,
-      "salt": 10011694067596,
-      "score": 0.4897709213605442,
-      "headScore": 71.31428571428572,
-      "tailScore": 69.45714285714286,
-      "concatScore": 69.16
     }
   ],
   "ugly": [
@@ -9441,6 +9437,15 @@
       "headScore": 6,
       "tailScore": 7.35,
       "concatScore": 3.3499999999999988
+    },
+    {
+      "addr": "0xEa14C5D25a13331B8F34Ad0f9D9010C7edBbfAcF",
+      "batch": 10014190,
+      "salt": 10014190725606,
+      "score": 0.003374833333333333,
+      "headScore": 7.35,
+      "tailScore": 6,
+      "concatScore": 3.3499999999999996
     },
     {
       "addr": "0xdc4feDa9aCDe44B97967B8BC35f2fc25AF1EBbC7",
@@ -11612,6 +11617,11 @@
       "concatScore": 3.5
     },
     {
+      "addr": "0xcFe8AfBC83272b6c559006F17eaA2de19aEbdD43",
+      "salt": 10014201291225,
+      "score": 0.0034518333333333337
+    },
+    {
       "addr": "0xbBa84D1Ae4C3e41B23819bA580736054eECdfcF9",
       "batch": 10000311,
       "salt": 10000311026137,
@@ -13617,6 +13627,11 @@
       "headScore": 6.799999999999999,
       "tailScore": 6.799999999999999,
       "concatScore": 3.5999999999999996
+    },
+    {
+      "addr": "0xbcB0ACD4F68347F953ba7Fe7D414c47eea5E8dFf",
+      "salt": 10014201216087,
+      "score": 0.0035146666666666655
     },
     {
       "addr": "0xbcdAE65CEfD0FCc1E3B0a836A837D16fD40FeBfa",
@@ -17982,33 +17997,6 @@
       "headScore": 7.050000000000001,
       "tailScore": 6.65,
       "concatScore": 3.7
-    },
-    {
-      "addr": "0xeEcC5Ab43E0559E5b42481c18853A8cA13Da2Ffd",
-      "batch": 10005289,
-      "salt": 10005289534956,
-      "score": 0.003587166666666667,
-      "headScore": 6.65,
-      "tailScore": 7.05,
-      "concatScore": 3.6999999999999993
-    },
-    {
-      "addr": "0x37Ea2BbFEa1a3FDdD780EFE318967CB05AfCed4D",
-      "batch": 10005324,
-      "salt": 10005324646505,
-      "score": 0.003587166666666667,
-      "headScore": 7.05,
-      "tailScore": 6.65,
-      "concatScore": 3.7
-    },
-    {
-      "addr": "0xb5daf4AE22e872E9ae8a6eD81925b1ebC3F2c1eB",
-      "batch": 10005601,
-      "salt": 10005601825801,
-      "score": 0.003587166666666667,
-      "headScore": 6.65,
-      "tailScore": 7.050000000000001,
-      "concatScore": 3.6999999999999993
     }
   ]
 }

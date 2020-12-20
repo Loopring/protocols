@@ -1,9 +1,9 @@
 {
   "config": {
-    "nextBatch": 2014358,
+    "nextBatch": 2014373,
     "untilBatch": 3000000,
     "select": 1000,
-    "timeUsedLastBatch": 21345
+    "timeUsedLastBatch": 21216
   },
   "prettyCount": 1000,
   "uglyCount": 1000,
