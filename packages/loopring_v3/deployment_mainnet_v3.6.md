@@ -251,6 +251,38 @@
   tokenSymbol: 'LP-ETH-DAI'
   }
   ```
+  15. LRC-USDT: 0xE6CC0d45C4E4F81be340F4D176e6Ce0D63Ad5743
+  ```
+  {
+  sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+  exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+  poolName: 'AMM-LRC-USDT',
+  accountID: 15,
+  tokens: [
+    '0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD',
+    '0xdac17f958d2ee523a2206206994597c13d831ec7'
+  ],
+  weights: [ 1000000, 1000000 ],
+  feeBips: 15,
+  tokenSymbol: 'LP-LRC-USDT'
+  }
+  ```
+  16. HBTC-USDT: 0x746EEB6bdd9139A4d605C2c410911F37BEa9093b
+  ```
+   {
+  sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+  exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+  poolName: 'AMM-HBTC-USDT',
+  accountID: 16,
+  tokens: [
+    '0x0316EB71485b0Ab14103307bf65a021042c6d380',
+    '0xdac17f958d2ee523a2206206994597c13d831ec7'
+  ],
+  weights: [ 1000000, 1000000 ],
+  feeBips: 15,
+  tokenSymbol: 'LP-HBTC-USDT'
+  }
+  ```
 
 - Registered tokens:
   - ETH: 0x0000000000000000000000000000000000000000, tokenId: 0
@@ -355,3 +387,5 @@
   - LP-AC-ETH: 0x8EFAD07720D331a49f5db2cC83946F7DC8FC6B42, tokenId: 99
   - LP-ETH-DAI: 0xD9D681C1ddD462ca222E90Bbe14A35273C318A09, tokenId: 100
   - CVT: 0xbe428c3867f05dea2a89fc76a102b544eac7f772, tokenId: 101
+  - LP-LRC-USDT: 0xE6CC0d45C4E4F81be340F4D176e6Ce0D63Ad5743, tokenId: 102
+  - LP-HBTC-USDT: 0x746EEB6bdd9139A4d605C2c410911F37BEa9093b, tokenId: 103
