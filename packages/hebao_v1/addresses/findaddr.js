@@ -142,14 +142,8 @@ function exportAddress(chunk) {
 }
 
 //-----------------------------------
-function findAddresses(chunk) {
-  if (chunk < 0) {
-    console.log("invalid chunk");
-    return;
-  }
 
-  console.log("chunk: ", chunk);
-
+function loadChunk(chunk) {
   let config = {
     nextBatch: chunk * 1000000,
     untilBatch: (chunk + 1) * 1000000,
@@ -169,63 +163,81 @@ function findAddresses(chunk) {
     } catch (err) {}
   }
 
-  while (config.untilBatch <= 0 || config.untilBatch > config.nextBatch) {
+  return {
+    config: config,
+    prettyOnes: prettyOnes,
+    uglyOnes: uglyOnes
+  };
+}
+
+function saveChunk(chunkIdx, chunk) {
+  let file = location + "chunk_" + chunkIdx + ".json";
+  fs.writeFileSync(file, JSON.stringify(chunk, undefined, 2));
+}
+
+function findAddresses(chunkIdx) {
+  if (chunkIdx < 0) {
+    console.log("invalid chunk");
+    return;
+  }
+
+  let chunk = loadChunk(chunkIdx);
+
+  while (
+    chunk.config.untilBatch <= 0 ||
+    chunk.config.untilBatch > chunk.config.nextBatch
+  ) {
     const startTime = new Date().getTime();
     let minScore = 0;
     let maxScore = 0;
-    if (prettyOnes.length > 0) {
-      minScore = prettyOnes[prettyOnes.length - 1].score;
-      maxScore = prettyOnes[0].score;
+    if (chunk.prettyOnes && chunk.prettyOnes.length > 0) {
+      minScore = chunk.prettyOnes[chunk.prettyOnes.length - 1].score;
+      maxScore = chunk.prettyOnes[0].score;
     }
 
     if (minScore < 0.4) {
-      minScore = 0.4;
+      filterScore = 0.4;
+    } else {
+      filterScore = minScore;
     }
+
+    let remaining = chunk.config.untilBatch - chunk.config.nextBatch;
+    let pctg =
+      (((1000000 - remaining) * 100.0) / 1000000).toString().slice(0, 5) + "%";
     console.log(
-      ">>> batch:",
-      config.nextBatch,
-      " until batch:",
-      config.untilBatch,
-      " select:",
-      config.select,
-      " pretty:",
-      prettyOnes.length,
-      " ugly:",
-      uglyOnes.length,
-      " time used:",
-      config.timeUsedLastBatch / 1000,
-      " max score:",
-      maxScore,
-      " min score:",
-      minScore
+      "chunk:" + chunkIdx,
+
+      pctg,
+      "select:" + chunk.config.select,
+      "pretty:" + (chunk.prettyOnes ? chunk.prettyOnes.length : 0),
+      "time:" +
+        (chunk.config.timeUsedLastBatch / 1000).toString().slice(0, 2) +
+        "s",
+
+      "score:" +
+        minScore.toString().slice(0, 5) +
+        "-" +
+        maxScore.toString().slice(0, 5)
     );
 
-    let res = findTopAddressesInBatch(config.nextBatch, minScore);
+    let res = findTopAddressesInBatch(chunk.config.nextBatch, filterScore);
 
-    prettyOnes = prettyOnes
+    chunk.prettyOnes = chunk.prettyOnes
       .concat(res[0])
       .sort((a, b) => b.score - a.score)
-      .slice(0, config.select);
+      .slice(0, chunk.config.select);
 
-    uglyOnes = uglyOnes
+    chunk.uglyOnes = chunk.uglyOnes
       .concat(res[1])
       .sort((a, b) => a.score - b.score)
-      .slice(0, config.select);
+      .slice(0, chunk.config.select);
 
-    config.nextBatch++;
+    chunk.config.nextBatch++;
 
     const endTime = new Date().getTime();
-    config.timeUsedLastBatch = endTime - startTime;
+    chunk.config.timeUsedLastBatch = endTime - startTime;
 
-    let result = {
-      config: config,
-      prettyCount: prettyOnes.length,
-      uglyCount: uglyOnes.length,
-      pretty: prettyOnes,
-      ugly: uglyOnes
-    };
-
-    fs.writeFileSync(file, JSON.stringify(result, undefined, 2));
+    saveChunk(chunkIdx, chunk);
   }
   console.log("done");
 }

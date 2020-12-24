@@ -1,0 +1,32 @@
+{
+  "config": {
+    "nextBatch": 101000001,
+    "untilBatch": 102000000,
+    "select": 1000,
+    "timeUsedLastBatch": 19589
+  },
+  "prettyOnes": [
+    {
+      "addr": "0x54D4D05086000C34D0d07438bAD9073361615566",
+      "salt": 101000000764209,
+      "score": 0.4074369013605443
+    },
+    {
+      "addr": "0x515512115E981DeA2a8020C5722e500076617e61",
+      "salt": 101000000391150,
+      "score": 0.4009978129251701
+    },
+    {
+      "addr": "0x9881918162844c577e2F4AA4eEF07EBFc891611c",
+      "salt": 101000000234543,
+      "score": 0.40010703292517014
+    }
+  ],
+  "uglyOnes": [
+    {
+      "addr": "0xf4cCFAD2a7d6CE8dcD9FBBDCa6C7b0F5b0d75eEB",
+      "salt": 101000000678980,
+      "score": 0.003696166666666666
+    }
+  ]
+}
