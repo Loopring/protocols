@@ -121,7 +121,28 @@ function main() {
   //     fs.mkdirSync(`wallet_addr`);
   // }
 
-  let chunk = parseInt(process.argv.slice(2)[0]);
+  let cmd = process.argv.slice(2)[0];
+  if (cmd === "find") {
+    let chunk = parseInt(process.argv.slice(2)[1]);
+    return findAddresses(chunk);
+  }
+
+  if (cmd === "export") {
+    let chunk = parseInt(process.argv.slice(2)[1]);
+    return exportAddresses(chunk);
+  }
+}
+
+//-----------------------------------
+function exportAddress(chunk) {
+  if (chunk < 0) {
+    console.log("invalid chunk");
+    return;
+  }
+}
+
+//-----------------------------------
+function findAddresses(chunk) {
   if (chunk < 0) {
     console.log("invalid chunk");
     return;
@@ -135,7 +156,7 @@ function main() {
     select: 1000
   };
 
-  let file = location + "addresses" + chunk + ".json";
+  let file = location + "chunk_" + chunk + ".json";
   let prettyOnes = [];
   let uglyOnes = [];
 
@@ -155,6 +176,10 @@ function main() {
     if (prettyOnes.length > 0) {
       minScore = prettyOnes[prettyOnes.length - 1].score;
       maxScore = prettyOnes[0].score;
+    }
+
+    if (minScore < 0.4) {
+      minScore = 0.4;
     }
     console.log(
       ">>> batch:",
