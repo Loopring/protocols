@@ -153,7 +153,7 @@ function main() {
     let minScore = 0;
     let maxScore = 0;
     if (prettyOnes.length > 0) {
-      minScore = prettyOnes[prettyOnes.length-1].score;
+      minScore = prettyOnes[prettyOnes.length - 1].score;
       maxScore = prettyOnes[0].score;
     }
     console.log(
