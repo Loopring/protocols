@@ -134,23 +134,40 @@ function main() {
 }
 
 //-----------------------------------
-function exportAddress(chunk) {
-  if (chunk < 0) {
+function exportAddresses(chunkIdx) {
+  if (chunkIdx < 0) {
     console.log("invalid chunk");
     return;
   }
+
+  let result = loadExports();
+  let chunk = loadChunk(chunkIdx);
+
+  result.prettyOnes = result.prettyOnes
+    .concat(chunk.prettyOnes)
+    .sort((a, b) => b.score - a.score);
+  result.uglyOnes = result.uglyOnes
+    .concat(chunk.uglyOnes)
+    .sort((a, b) => a.score - b.score);
+
+  saveExports(result.prettyOnes, result.uglyOnes);
+
+  chunk.prettyOnes = [];
+  chunk.uglyOnes = [];
+  saveChunk(chunkIdx, chunk);
+  console.log(chunk);
 }
 
 //-----------------------------------
 
-function loadChunk(chunk) {
+function loadChunk(chunkIdx) {
   let config = {
-    nextBatch: chunk * 1000000,
-    untilBatch: (chunk + 1) * 1000000,
+    nextBatch: chunkIdx * 1000000,
+    untilBatch: (chunkIdx + 1) * 1000000,
     select: 1000
   };
 
-  let file = location + "chunk_" + chunk + ".json";
+  let file = location + "chunk_" + chunkIdx + ".json";
   let prettyOnes = [];
   let uglyOnes = [];
 
@@ -158,8 +175,8 @@ function loadChunk(chunk) {
     try {
       const result = JSON.parse(fs.readFileSync(file));
       config = result.config || config;
-      prettyOnes = result.pretty || [];
-      uglyOnes = result.ugly || [];
+      prettyOnes = result.prettyOnes || [];
+      uglyOnes = result.uglyOnes || [];
     } catch (err) {}
   }
 
@@ -173,6 +190,33 @@ function loadChunk(chunk) {
 function saveChunk(chunkIdx, chunk) {
   let file = location + "chunk_" + chunkIdx + ".json";
   fs.writeFileSync(file, JSON.stringify(chunk, undefined, 2));
+}
+
+function loadExports() {
+  let file = "exports.json";
+  let prettyOnes = [];
+  let uglyOnes = [];
+
+  if (fs.existsSync(file)) {
+    try {
+      const result = JSON.parse(fs.readFileSync(file));
+      prettyOnes = result.prettyOnes || [];
+      uglyOnes = result.uglyOnes || [];
+    } catch (err) {}
+  }
+  return {
+    prettyOnes: prettyOnes,
+    uglyOnes: uglyOnes
+  };
+}
+
+function saveExports(prettyOnes, uglyOnes) {
+  let file = "exports.json";
+  let result = {
+    prettyOnes: prettyOnes,
+    uglyOnes: uglyOnes
+  };
+  fs.writeFileSync(file, JSON.stringify(result, undefined, 2));
 }
 
 function findAddresses(chunkIdx) {
@@ -203,7 +247,7 @@ function findAddresses(chunkIdx) {
 
     let remaining = chunk.config.untilBatch - chunk.config.nextBatch;
     let pctg =
-      (((1000000 - remaining) * 100.0) / 1000000).toString().slice(0, 5) + "%";
+      (((1000000 - remaining) * 100.0) / 1000000).toString().slice(0, 8) + "%";
     console.log(
       "chunk:" + chunkIdx,
 
