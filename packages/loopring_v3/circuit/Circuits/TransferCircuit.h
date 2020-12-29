@@ -44,7 +44,7 @@ class TransferCircuit : public BaseTransactionCircuit
     DualVariableGadget fee;
     DualVariableGadget validUntil;
     DualVariableGadget type;
-    DualVariableGadget from;
+    ToBitsGadget from;
     DualVariableGadget to;
     DualVariableGadget storageID;
     VariableT dualAuthorX;
@@ -431,7 +431,7 @@ class TransferCircuit : public BaseTransactionCircuit
         fee.generate_r1cs_constraints(true);
         validUntil.generate_r1cs_constraints(true);
         type.generate_r1cs_constraints(true);
-        from.generate_r1cs_constraints(true);
+        from.generate_r1cs_constraints();
         to.generate_r1cs_constraints(true);
         storageID.generate_r1cs_constraints(true);
         payer_toAccountID.generate_r1cs_constraints(true);

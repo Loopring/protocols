@@ -24,7 +24,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
     DualVariableGadget owner;
     DualVariableGadget accountID;
     DualVariableGadget validUntil;
-    DualVariableGadget nonce;
+    ToBitsGadget nonce;
     VariableT publicKeyX;
     VariableT publicKeyY;
     DualVariableGadget feeTokenID;

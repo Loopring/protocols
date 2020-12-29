@@ -163,8 +163,8 @@ class TransactionGadget : public GadgetT
     SelectTransactionGadget tx;
 
     // General validation
-    DualVariableGadget accountA;
-    DualVariableGadget accountB;
+    FromBitsGadget accountA;
+    FromBitsGadget accountB;
     RequireNotZeroGadget validateAccountA;
     RequireNotZeroGadget validateAccountB;
 
@@ -544,7 +544,7 @@ class UniversalCircuit : public Circuit
     DualVariableGadget timestamp;
     DualVariableGadget protocolTakerFeeBips;
     DualVariableGadget protocolMakerFeeBips;
-    std::unique_ptr<libsnark::dual_variable_gadget<FieldT>> numConditionalTransactions;
+    std::unique_ptr<ToBitsGadget> numConditionalTransactions;
     DualVariableGadget operatorAccountID;
 
     // Increment the nonce of the Operator
@@ -685,9 +685,9 @@ class UniversalCircuit : public Circuit
         updateAccount_O->generate_r1cs_constraints();
 
         // Num conditional transactions
-        numConditionalTransactions.reset(new libsnark::dual_variable_gadget<FieldT>(
+        numConditionalTransactions.reset(new ToBitsGadget(
           pb, transactions.back().tx.getOutput(TXV_NUM_CONDITIONAL_TXS), 32, ".numConditionalTransactions"));
-        numConditionalTransactions->generate_r1cs_constraints(true);
+        numConditionalTransactions->generate_r1cs_constraints();
 
         // Public data
         publicData.add(exchange.bits);

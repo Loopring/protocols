@@ -129,7 +129,7 @@ class OrderGadget : public GadgetT
         hash.generate_r1cs_witness();
     }
 
-    void generate_r1cs_constraints(bool doSignatureCheck = true)
+    void generate_r1cs_constraints()
     {
         // Inputs
         storageID.generate_r1cs_constraints(true);

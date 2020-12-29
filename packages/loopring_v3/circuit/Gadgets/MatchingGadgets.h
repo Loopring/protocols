@@ -502,7 +502,7 @@ class SpotPriceAMMGadget : public GadgetT
     UnsafeMulGadget numer;
     UnsafeMulGadget denom;
     MulDivGadget ratio;
-    DualVariableGadget ratioRangeCheck;
+    RangeCheckGadget ratioRangeCheck;
     UnsafeSubGadget invFeeBips;
     MulDivGadget res;
 
@@ -588,7 +588,7 @@ class CalcOutGivenInAMMGadget : public GadgetT
     static const unsigned int numIterations = 4;
 
     MulDivGadget weightRatio;
-    DualVariableGadget weightRatioRangeCheck;
+    RangeCheckGadget weightRatioRangeCheck;
     MulDivGadget fee;
     UnsafeSubGadget amountInWithoutFee;
     AddGadget y_denom;

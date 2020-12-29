@@ -167,7 +167,7 @@ class EdDSA_HashRAM_Poseidon_gadget : public GadgetT
 {
   public:
     Poseidon_gadget_T<6, 1, 6, 52, 5, 1> m_hash_RAM; // hash_RAM = H(R, A, M)
-    libsnark::dual_variable_gadget<FieldT> hash;
+    ToBitsGadget hash;
 
     EdDSA_HashRAM_Poseidon_gadget(
       ProtoboardT &in_pb,
@@ -186,13 +186,13 @@ class EdDSA_HashRAM_Poseidon_gadget : public GadgetT
     void generate_r1cs_constraints()
     {
         m_hash_RAM.generate_r1cs_constraints();
-        hash.generate_r1cs_constraints(true);
+        hash.generate_r1cs_constraints();
     }
 
     void generate_r1cs_witness()
     {
         m_hash_RAM.generate_r1cs_witness();
-        hash.generate_r1cs_witness_from_packed();
+        hash.generate_r1cs_witness();
     }
 
     const VariableArrayT &result()
