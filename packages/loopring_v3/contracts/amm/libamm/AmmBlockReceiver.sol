@@ -40,7 +40,8 @@ library AmmBlockReceiver
         _processPoolTx(S, ctx, _block, data);
 
         // Approve transactions
-        ctx.exchange.approveTransactions(ctx.transactionBuffer.owners, ctx.transactionBuffer.txHashes);
+        ctx.exchange.approveTransactionsWithoutEvents(
+            ctx.transactionBuffer.owners, ctx.transactionBuffer.txHashes);
 
         // Update state
         S._totalSupply = ctx.totalSupply;
