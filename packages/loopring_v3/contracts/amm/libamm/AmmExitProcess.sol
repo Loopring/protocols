@@ -102,8 +102,6 @@ library AmmExitProcess
                 );
             }
 
-            ctx.approveTransfer(transfer);
-
             ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].sub(transfer.amount);
         }
 
@@ -137,8 +135,6 @@ library AmmExitProcess
             (signature.length == 0 || transfer.storageID == burnStorageID),
             "INVALID_BURN_TX_DATA"
         );
-
-        ctx.approveTransfer(transfer);
 
         // Update pool balance
         ctx.totalSupply = ctx.totalSupply.sub(transfer.amount);

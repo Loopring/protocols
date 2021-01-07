@@ -1872,6 +1872,20 @@ export class ExchangeTestUtil {
     return callbackConfig;
   }
 
+  public setPreApprovedTransactions(blocks: Block[]) {
+    for (const block of blocks) {
+      for (const blockCallback of block.callbacks) {
+        for (let i = 0; i < blockCallback.numTxs; i++) {
+          for (const auxiliaryData of block.auxiliaryData) {
+            if (auxiliaryData[0] === Number(blockCallback.txIdx) + i) {
+              auxiliaryData[1] = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
   public getOnchainBlock(
     blockType: number,
     blockSize: number,
@@ -2001,6 +2015,8 @@ export class ExchangeTestUtil {
       block.proof = this.readProof(proofFilename);
       // console.log(proof);
     }
+
+    this.setPreApprovedTransactions(blocks);
 
     // Prepare block data
     const onchainBlocks: OnchainBlock[] = [];
@@ -2399,23 +2415,23 @@ export class ExchangeTestUtil {
       if (transaction.txType === "Transfer") {
         if (transaction.type > 0) {
           const encodedTransferData = this.getTransferAuxData(transaction);
-          auxiliaryData.push([i, encodedTransferData]);
+          auxiliaryData.push([i, false, encodedTransferData]);
         }
       } else if (transaction.txType === "Withdraw") {
         const encodedWithdrawalData = this.getWithdrawalAuxData(transaction);
-        auxiliaryData.push([i, encodedWithdrawalData]);
+        auxiliaryData.push([i, false, encodedWithdrawalData]);
       } else if (transaction.txType === "Deposit") {
-        auxiliaryData.push([i, "0x"]);
+        auxiliaryData.push([i, false, "0x"]);
       } else if (transaction.txType === "AccountUpdate") {
         if (transaction.type > 0) {
           const encodedAccountUpdateData = this.getAccountUpdateAuxData(
             transaction
           );
-          auxiliaryData.push([i, encodedAccountUpdateData]);
+          auxiliaryData.push([i, false, encodedAccountUpdateData]);
         }
       } else if (transaction.txType === "AmmUpdate") {
         const encodedAmmUpdateData = this.getAmmUpdateAuxData(transaction);
-        auxiliaryData.push([i, encodedAmmUpdateData]);
+        auxiliaryData.push([i, false, encodedAmmUpdateData]);
       }
     }
     logDebug("numConditionalTransactions: " + auxiliaryData.length);

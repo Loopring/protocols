@@ -95,10 +95,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         )
         external
     {
-        bool performCallback;
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");
-            performCallback = true;
+            IAgentRegistry agentRegistry = IExchangeV3(target).getAgentRegistry();
+            for (uint i = 0; i < config.receivers.length; i++) {
+                require(agentRegistry.isAgent(address(0), config.receivers[i]), "UNAUTHORIZED_RECEIVER");
+            }
         }
 
         require(
@@ -114,10 +116,11 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             "INVALID_DATA"
         );
 
+        // Decode the blocks
+        ExchangeData.Block[] memory blocks = _decodeBlocks(decompressed);
+
         // Process the callback logic.
-        if (performCallback) {
-            _beforeBlockSubmission(_decodeBlocks(decompressed), config);
-        }
+        _beforeBlockSubmission(blocks, config);
 
         target.fastCallAndVerify(gasleft(), 0, decompressed);
     }
@@ -128,6 +131,13 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         )
         private
     {
+        // Allocate memory to verify transactions that are approved here
+        bool[][] memory preApprovedTxs = new bool[][](blocks.length);
+        for (uint i = 0; i < blocks.length; i++) {
+            preApprovedTxs[i] = new bool[](blocks[i].blockSize);
+        }
+
+        // Process transactions
         int lastBlockIdx = -1;
         for (uint i = 0; i < config.blockCallbacks.length; i++) {
             BlockCallback calldata blockCallback = config.blockCallbacks[i];
@@ -139,14 +149,31 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             require(blockIdx < blocks.length, "INVALID_BLOCKIDX");
             ExchangeData.Block memory _block = blocks[blockIdx];
 
-            _processTxCallbacks(_block, blockCallback.txCallbacks, config.receivers);
+            _processTxCallbacks(_block, blockCallback.txCallbacks, config.receivers, preApprovedTxs[i]);
+        }
+
+        // Verify the approved transactions data against the auxiliary data in the block
+        for (uint i = 0; i < blocks.length; i++) {
+            ExchangeData.Block memory _block = blocks[i];
+            ExchangeData.AuxiliaryData[] memory auxiliaryData = _block.auxiliaryData;
+            for(uint j = 0; j < _block.auxiliaryData.length; j++) {
+                uint txIdx;
+                bool approved;
+                assembly {
+                    let auxOffset := mload(add(auxiliaryData, add(32, mul(32, j))))
+                    txIdx := mload(add(add(32, auxiliaryData), auxOffset))
+                    approved := mload(add(add(64, auxiliaryData), auxOffset))
+                }
+                require(preApprovedTxs[i][txIdx] == approved, "PRE_APPROVED_TX_MISMATCH");
+            }
         }
     }
 
     function _processTxCallbacks(
         ExchangeData.Block memory _block,
         TxCallback[]       calldata txCallbacks,
-        address[]          calldata receivers
+        address[]          calldata receivers,
+        bool[]             memory   preApprovedTxs
         )
         private
     {
@@ -168,6 +195,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
                 0,
                 txCallback.numTxs
             );
+            for (uint j = txIdx; j < txIdx + txCallback.numTxs; j++) {
+                preApprovedTxs[j] = true;
+            }
 
             cursor = txIdx + txCallback.numTxs;
         }
@@ -206,11 +236,26 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             uint blockDataOffset = data.toUint(offset);
             offset += 32;
 
+            // Skip over proof
+            offset += 32 * 8;
+
+            // Skip over storeBlockInfoOnchain
+            offset += 32;
+
+            uint auxiliaryDataOffset = data.toUint(offset);
+            offset += 32;
+
             bytes memory blockData;
             assembly {
                 blockData := add(data, add(32, add(blockOffset, blockDataOffset)))
             }
             _block.data = blockData;
+
+            ExchangeData.AuxiliaryData[] memory auxiliaryData;
+            assembly {
+                auxiliaryData := add(data, add(32, add(blockOffset, auxiliaryDataOffset)))
+            }
+            _block.auxiliaryData = auxiliaryData;
         }
         return blocks;
     }
