@@ -97,8 +97,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     {
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");
-            IAgentRegistry agentRegistry = IExchangeV3(target).getAgentRegistry();
+
             // Make sure the receiver is authorized to approve transactions
+            IAgentRegistry agentRegistry = IExchangeV3(target).getAgentRegistry();
             for (uint i = 0; i < config.receivers.length; i++) {
                 require(agentRegistry.isUniversalAgent(config.receivers[i]), "UNAUTHORIZED_RECEIVER");
             }
@@ -132,7 +133,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         )
         private
     {
-        // Allocate memory to verify transactions that are approved here
+        // Allocate memory to verify transactions that are approved
         bool[][] memory preApprovedTxs = new bool[][](blocks.length);
         for (uint i = 0; i < blocks.length; i++) {
             preApprovedTxs[i] = new bool[](blocks[i].blockSize);
@@ -161,9 +162,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         // Verify the approved transactions data against the auxiliary data in the block
         for (uint i = 0; i < blocks.length; i++) {
             bool[] memory _preApprovedTxs = preApprovedTxs[i];
-            ExchangeData.Block memory _block = blocks[i];
-            ExchangeData.AuxiliaryData[] memory auxiliaryData = _block.auxiliaryData;
-            for(uint j = 0; j < _block.auxiliaryData.length; j++) {
+            ExchangeData.AuxiliaryData[] memory auxiliaryData = blocks[i].auxiliaryData;
+            for(uint j = 0; j < auxiliaryData.length; j++) {
                 // Load the data from auxiliaryData, which is still encoded as calldata
                 uint txIdx;
                 bool approved;
@@ -207,6 +207,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
                 txCallback.numTxs
             );
 
+            // Now that the transactions have been verified, mark them as approved
             for (uint j = txIdx; j < txIdx + txCallback.numTxs; j++) {
                 preApprovedTxs[j] = true;
             }
