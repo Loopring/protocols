@@ -98,8 +98,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");
             IAgentRegistry agentRegistry = IExchangeV3(target).getAgentRegistry();
+            // Make sure the receiver is authorized to approve transactions
             for (uint i = 0; i < config.receivers.length; i++) {
-                require(agentRegistry.isAgent(address(0), config.receivers[i]), "UNAUTHORIZED_RECEIVER");
+                require(agentRegistry.isUniversalAgent(config.receivers[i]), "UNAUTHORIZED_RECEIVER");
             }
         }
 
@@ -149,7 +150,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             require(blockIdx < blocks.length, "INVALID_BLOCKIDX");
             ExchangeData.Block memory _block = blocks[blockIdx];
 
-            _processTxCallbacks(_block, blockCallback.txCallbacks, config.receivers, preApprovedTxs[i]);
+            _processTxCallbacks(
+                _block,
+                blockCallback.txCallbacks,
+                config.receivers,
+                preApprovedTxs[blockIdx]
+            );
         }
 
         // Verify the approved transactions data against the auxiliary data in the block
@@ -158,13 +164,17 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             ExchangeData.Block memory _block = blocks[i];
             ExchangeData.AuxiliaryData[] memory auxiliaryData = _block.auxiliaryData;
             for(uint j = 0; j < _block.auxiliaryData.length; j++) {
+                // Load the data from auxiliaryData, which is still encoded as calldata
                 uint txIdx;
                 bool approved;
                 assembly {
+                    // Offset to auxiliaryData[j]
                     let auxOffset := mload(add(auxiliaryData, add(32, mul(32, j))))
+                    // Load `txIdx` (pos 0) and `approved` (pos 1) in auxiliaryData[j]
                     txIdx := mload(add(add(32, auxiliaryData), auxOffset))
                     approved := mload(add(add(64, auxiliaryData), auxOffset))
                 }
+                // Check that the provided data matches the expected value
                 require(_preApprovedTxs[txIdx] == approved, "PRE_APPROVED_TX_MISMATCH");
             }
         }
@@ -196,6 +206,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
                 0,
                 txCallback.numTxs
             );
+
             for (uint j = txIdx; j < txIdx + txCallback.numTxs; j++) {
                 preApprovedTxs[j] = true;
             }
@@ -236,13 +247,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             offset += 32;
             uint blockDataOffset = data.toUint(offset);
             offset += 32;
-
             // Skip over proof
             offset += 32 * 8;
-
             // Skip over storeBlockInfoOnchain
             offset += 32;
-
             uint auxiliaryDataOffset = data.toUint(offset);
             offset += 32;
 
@@ -256,6 +264,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             assembly {
                 auxiliaryData := add(data, add(32, add(blockOffset, auxiliaryDataOffset)))
             }
+            // Still encoded as calldata!
             _block.auxiliaryData = auxiliaryData;
         }
         return blocks;

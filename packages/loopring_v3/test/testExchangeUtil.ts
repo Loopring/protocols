@@ -2016,6 +2016,7 @@ export class ExchangeTestUtil {
       // console.log(proof);
     }
 
+    // Set pool transactions as approved
     this.setPreApprovedTransactions(blocks);
 
     // Prepare block data
