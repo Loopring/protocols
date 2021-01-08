@@ -154,6 +154,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
         // Verify the approved transactions data against the auxiliary data in the block
         for (uint i = 0; i < blocks.length; i++) {
+            bool[] memory _preApprovedTxs = preApprovedTxs[i];
             ExchangeData.Block memory _block = blocks[i];
             ExchangeData.AuxiliaryData[] memory auxiliaryData = _block.auxiliaryData;
             for(uint j = 0; j < _block.auxiliaryData.length; j++) {
@@ -164,7 +165,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
                     txIdx := mload(add(add(32, auxiliaryData), auxOffset))
                     approved := mload(add(add(64, auxiliaryData), auxOffset))
                 }
-                require(preApprovedTxs[i][txIdx] == approved, "PRE_APPROVED_TX_MISMATCH");
+                require(_preApprovedTxs[txIdx] == approved, "PRE_APPROVED_TX_MISMATCH");
             }
         }
     }
