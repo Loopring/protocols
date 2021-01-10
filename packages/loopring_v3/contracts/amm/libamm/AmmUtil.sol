@@ -47,32 +47,6 @@ library AmmUtil
         );
     }
 
-    function approveTransfer(
-        AmmData.Context  memory  ctx,
-        TransferTransaction.Transfer memory transfer
-        )
-        internal
-        pure
-    {
-        transfer.validUntil = 0xffffffff;
-        transfer.maxFee = transfer.fee;
-        bytes32 hash = TransferTransaction.hashTx(ctx.exchangeDomainSeparator, transfer);
-        approveExchangeTransaction(ctx.transactionBuffer, transfer.from, hash);
-    }
-
-    function approveExchangeTransaction(
-        AmmData.TransactionBuffer memory buffer,
-        address                          owner,
-        bytes32                          txHash
-        )
-        internal
-        pure
-    {
-        buffer.owners[buffer.size] = owner;
-        buffer.txHashes[buffer.size] = txHash;
-        buffer.size++;
-    }
-
     function isAlmostEqualAmount(
         uint96 amount,
         uint96 targetAmount

@@ -458,6 +458,8 @@ export class AmmPool {
 
     const blockCallback = this.ctx.addBlockCallback(owner);
 
+    let numTxs = 0;
+
     for (let i = 0; i < this.tokens.length; i++) {
       await this.ctx.requestAmmUpdate(
         owner,
@@ -466,9 +468,9 @@ export class AmmPool {
         this.weights[i],
         { authMethod: AuthMethod.NONE }
       );
+      numTxs++;
     }
 
-    let numTxs = this.tokens.length * 2 + 1;
     if (transaction.signature === this.L2_SIGNATURE) {
       await this.ctx.requestSignatureVerification(
         transaction.owner,
@@ -538,6 +540,7 @@ export class AmmPool {
             storageID
           }
         );
+        numTxs++;
         this.tokenBalancesL2[i].iadd(amount);
         logDebug("pool join: " + amount.toString(10));
       }
@@ -557,6 +560,7 @@ export class AmmPool {
           amountToDeposit: new BN(0)
         }
       );
+      numTxs++;
       mintAmount = roundToFloatValue(mintAmount, Constants.Float24Encoding);
       poolTotal.iadd(mintAmount);
     } else if (transaction.txType === "Exit") {
@@ -604,6 +608,7 @@ export class AmmPool {
               storageID
             }
           );
+          numTxs++;
         }
 
         // Withdraw
@@ -628,6 +633,7 @@ export class AmmPool {
               transferToNew: true
             }
           );
+          numTxs++;
           this.tokenBalancesL2[i].isub(amount);
           logDebug("pool exit: " + amount.toString(10));
         }
