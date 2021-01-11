@@ -8,8 +8,9 @@
 ## contract addresses
 
 - BlockVerifier: 0x6150343E0F43A17519c0327c41eDd9eBE88D01ef
-  - blockVersion: 13
-  - blockSizes: 16, 64, 128, 256
+  - ~~blockVersion: 13~~
+  - blockVersion: 14 (udated at 2021-01-11)
+  - blockSizes: 16, 64, 128, 256, 384
 - AgentRegistry: 0x39B9bf169a7e225ba037C443A40460c77438ea14
 - FastWithdrawalAgent: 0xec3Cc6Cf0252565b56FC7AC396017Df5b9B78a31
 - LoopringV3: 0xe56D6ccab6551932C0356E4e8d5dAF0630920C71  
