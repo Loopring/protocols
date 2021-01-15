@@ -33,7 +33,7 @@
 - ~~ExchangeV3: 0xa01d4d1FE18A34902Ac2e4045a5e8f553dDe9685~~
 - ~~ExchangeV3: 0x2fefbeF4d1445F523941c56349C2414cd5e9675d~~
 - DefaultDepositContract: 0x674bdf20A0F284D710BC40872100128e2d66Bd3f
-- ~~LoopringIOExchangeOwner: 0x5c367c1b2603ed166C62cEc0e4d47e9D5DC1c073  ~~
+- ~~LoopringIOExchangeOwner: 0x5c367c1b2603ed166C62cEc0e4d47e9D5DC1c073~~
 
 - Amm:
 
