@@ -204,9 +204,10 @@ contract("WalletFactory", () => {
     await ctx.walletFactory.createBlanks(modules, [0], {
       from: owner
     });
-    const blankWalletAddr = (
-      await assertEventEmitted(ctx.walletFactory, "BlankDeployed")
-    ).blank;
+    const blankWalletAddr = (await assertEventEmitted(
+      ctx.walletFactory,
+      "BlankDeployed"
+    )).blank;
 
     const wallet = blankWalletAddr;
 
@@ -447,6 +448,19 @@ contract("WalletFactory", () => {
       (event: any) => {
         return event.version == version;
       }
+    );
+  });
+
+  it("should not be possible to initialize the wallet implementation contract", async () => {
+    // Try to initialize the wallet
+    await expectThrow(
+      ctx.walletImpl.init(Constants.zeroAddress, []),
+      "DISALLOWED_ON_IMPLEMENTATION_CONTRACT"
+    );
+    // Try to call transact anyway
+    await expectThrow(
+      ctx.walletImpl.transact(2, ctx.walletImpl.address, 0, "0x"),
+      "Returned error: VM Exception while processing transaction: revert"
     );
   });
 });

@@ -42,6 +42,7 @@ library AmmExitProcess
         internal
     {
         require(exit.validUntil >= block.timestamp, "EXPIRED");
+        require(exit.burnAmount > 0, "ZERO_BURN_AMOUNT");
 
         bytes32 txHash = AmmExitRequest.hash(ctx.domainSeparator, exit);
         bool isForcedExit = false;
@@ -101,8 +102,6 @@ library AmmExitProcess
                 );
             }
 
-            ctx.approveTransfer(transfer);
-
             ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].sub(transfer.amount);
         }
 
@@ -136,8 +135,6 @@ library AmmExitProcess
             (signature.length == 0 || transfer.storageID == burnStorageID),
             "INVALID_BURN_TX_DATA"
         );
-
-        ctx.approveTransfer(transfer);
 
         // Update pool balance
         ctx.totalSupply = ctx.totalSupply.sub(transfer.amount);

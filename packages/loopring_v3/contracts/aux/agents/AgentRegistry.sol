@@ -70,6 +70,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
 
     function isUniversalAgent(address agent)
         public
+        override
         view
         returns (bool)
     {

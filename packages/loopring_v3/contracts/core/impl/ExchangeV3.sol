@@ -582,7 +582,6 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         require(state.agentRegistry.isAgent(owners, msg.sender), "UNAUTHORIZED");
         for (uint i = 0; i < owners.length; i++) {
             state.approvedTx[owners[i]][transactionHashes[i]] = true;
-            emit TransactionApproved(owners[i], transactionHashes[i]);
         }
     }
 

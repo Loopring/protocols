@@ -21,16 +21,31 @@ export class EdDSA {
     let unpacked = null;
     while (unpacked == null) {
       const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
-      const packed = this.pack(publicKey[0].toString(10), publicKey[1].toString(10));
+      const packed = this.pack(
+        publicKey[0].toString(10),
+        publicKey[1].toString(10)
+      );
       unpacked = this.unpack(packed);
       if (unpacked == null) {
         secretKey = Fr.add(secretKey, Fr.e("1"));
       } else {
-        assert(unpacked.publicKeyX === publicKey[0].toString(10), "invalid unpack X");
-        assert(unpacked.publicKeyY === publicKey[1].toString(10), "invalid unpack Y");
+        assert(
+          unpacked.publicKeyX === publicKey[0].toString(10),
+          "invalid unpack X"
+        );
+        assert(
+          unpacked.publicKeyY === publicKey[1].toString(10),
+          "invalid unpack Y"
+        );
       }
     }
-    assert(babyJub.inCurve([babyJub.F.e(unpacked.publicKeyX), babyJub.F.e(unpacked.publicKeyY)]), "invalid point");
+    assert(
+      babyJub.inCurve([
+        babyJub.F.e(unpacked.publicKeyX),
+        babyJub.F.e(unpacked.publicKeyY)
+      ]),
+      "invalid point"
+    );
 
     const keyPair: KeyPair = {
       publicKeyX: unpacked.publicKeyX,
@@ -62,7 +77,7 @@ export class EdDSA {
     if (publicKey === "00".repeat(32)) {
       const pubKey = {
         publicKeyX: "0",
-        publicKeyY: "0",
+        publicKeyY: "0"
       };
       return pubKey;
     } else {
@@ -77,7 +92,7 @@ export class EdDSA {
       }
       const pubKey = {
         publicKeyX: unpacked[0].toString(10),
-        publicKeyY: unpacked[1].toString(10),
+        publicKeyY: unpacked[1].toString(10)
       };
       return pubKey;
     }
@@ -88,7 +103,7 @@ export class EdDSA {
     const prv = utils.leInt2Buff(key, 32);
 
     const h1 = createBlakeHash("blake512")
-      .update(prv)
+      .update(prv.toString("hex"))
       .digest();
     const msgBuff = utils.leInt2Buff(Scalar.fromString(msg), 32);
     const rBuff = createBlakeHash("blake512")
@@ -103,7 +118,7 @@ export class EdDSA {
 
     const hasher = poseidon.createHash(6, 6, 52);
     const hm = hasher([R8[0], R8[1], A[0], A[1], msg]);
-    const S = Fr.add(r , Fr.mul(hm, key));
+    const S = Fr.add(r, Fr.mul(hm, key));
 
     const signature: Signature = {
       Rx: R8[0].toString(),

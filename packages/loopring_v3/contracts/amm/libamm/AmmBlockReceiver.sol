@@ -39,14 +39,11 @@ library AmmBlockReceiver
 
         _processPoolTx(S, ctx, _block, data);
 
-        // Approve transactions
-        ctx.exchange.approveTransactions(ctx.transactionBuffer.owners, ctx.transactionBuffer.txHashes);
-
         // Update state
         S._totalSupply = ctx.totalSupply;
 
-        // Make sure we haven't consumed more transactions than expected
-        require(numTxs >= (ctx.txIdx - txIdx), "INVALID_NUM_TXS");
+        // Make sure we have consumed exactly the expected number of transactions
+        require(numTxs == (ctx.txIdx - txIdx), "INVALID_NUM_TXS");
     }
 
     function _getContext(
@@ -67,12 +64,7 @@ library AmmBlockReceiver
             poolTokenID: S.poolTokenID,
             totalSupply: S._totalSupply,
             tokens: S.tokens,
-            tokenBalancesL2: new uint96[](size),
-            transactionBuffer: AmmData.TransactionBuffer({
-                size: 0,
-                owners: new address[](size*2 + 1),
-                txHashes: new bytes32[](size*2 + 1)
-            })
+            tokenBalancesL2: new uint96[](size)
         });
     }
 

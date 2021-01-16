@@ -213,6 +213,12 @@ library ExchangeBlocks
                 // Each conditional transaction needs to be processed from left to right
                 require(auxiliaryData.txIndex >= minTxIndex, "AUXILIARYDATA_INVALID_ORDER");
 
+                minTxIndex = auxiliaryData.txIndex + 1;
+
+                if (auxiliaryData.approved) {
+                    continue;
+                }
+
                 // Get the transaction data
                 bytes memory txData = _block.readTransactionData(auxiliaryData.txIndex);
 
@@ -269,8 +275,6 @@ library ExchangeBlocks
                     // are not supported
                     revert("UNSUPPORTED_TX_TYPE");
                 }
-
-                minTxIndex = auxiliaryData.txIndex + 1;
             }
         }
     }

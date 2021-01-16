@@ -72,8 +72,6 @@ library AmmJoinProcess
                 "INVALID_JOIN_TRANSFER_TX_DATA"
             );
 
-            ctx.approveTransfer(transfer);
-
             ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(transfer.amount);
         }
 
@@ -105,8 +103,6 @@ library AmmJoinProcess
             // transfer.storageID == UNKNOWN &&
             "INVALID_MINT_TX_DATA"
         );
-
-        ctx.approveTransfer(transfer);
 
         // Update pool balance
         ctx.totalSupply = ctx.totalSupply.add(transfer.amount);

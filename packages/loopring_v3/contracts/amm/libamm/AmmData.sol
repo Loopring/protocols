@@ -84,15 +84,6 @@ library AmmData
 
         Token[]  tokens;
         uint96[] tokenBalancesL2;
-
-        TransactionBuffer transactionBuffer;
-    }
-
-    struct TransactionBuffer
-    {
-        uint      size;
-        address[] owners;
-        bytes32[] txHashes;
     }
 
     struct State {
