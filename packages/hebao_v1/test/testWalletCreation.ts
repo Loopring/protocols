@@ -204,9 +204,10 @@ contract("WalletFactory", () => {
     await ctx.walletFactory.createBlanks(modules, [0], {
       from: owner
     });
-    const blankWalletAddr = (
-      await assertEventEmitted(ctx.walletFactory, "BlankDeployed")
-    ).blank;
+    const blankWalletAddr = (await assertEventEmitted(
+      ctx.walletFactory,
+      "BlankDeployed"
+    )).blank;
 
     const wallet = blankWalletAddr;
 

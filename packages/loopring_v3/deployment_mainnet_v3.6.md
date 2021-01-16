@@ -46,11 +46,12 @@
   - ~~LoopringAmmPool: 0xcc2e3d2DC1fd6Ce145e1124868fda5B2a0592cc5~~
 
 ### UPDATE-20210115
+
 - LoopringIOExchangeOwner: 0x42bC1aB51b7aF89CfAA88A7291CE55971d8cB83a
 - ExchangeV3: 0x8c63D8E608fF702a92D5908730C91457b0447Ad7
 - LoopringAmmPool: 0xE6AbFcABE24F06197a7A20dc9c81c251f2862430
 
-*** 
+---
 
 - AmmPools:
 
@@ -107,8 +108,9 @@
     tokenSymbol: 'LP-WBTC-ETH'
   }
   ```
-  
+
   6. UNI-ETH pool: 0x9b7a20ae12a3f2a3d4cF9eA2d4a8518c104cc5f2
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -124,7 +126,9 @@
     tokenSymbol: 'LP-UNI-ETH'
   }
   ```
+
   7. DPI-ETH pool: 0x6FF8A397F7A04B41c58c00AB8e70ACa7cbc0adBa
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -142,6 +146,7 @@
   ```
 
   8. LINK-ETH pool: 0x1230F7e06c3fA96f4259F7BaD79e6afF321B8133
+
   ```
     {
       sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -159,56 +164,61 @@
   ```
 
   9. KP3R-ETH pool: 0x2ed5d3Fff0EB1451c381DDECE244E9b796db7b8a
-    ```
-    {
-      sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
-      exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
-      poolName: 'AMM-KP3R-ETH',
-      accountID: 9,
-      tokens: [
-        '0x1ceb5cb57c4d4e2b2433641b95dd330a33185a44',
-        '0x0000000000000000000000000000000000000000'
-      ],
-      weights: [ 1000000, 1000000 ],
-      feeBips: 15,
-      tokenSymbol: 'LP-KP3R-ETH'
-    }
-    ```
+
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-KP3R-ETH',
+    accountID: 9,
+    tokens: [
+      '0x1ceb5cb57c4d4e2b2433641b95dd330a33185a44',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-KP3R-ETH'
+  }
+  ```
 
   10. YFI-ETH pool: 0xd85f594481D3DEE61FD38464dD54CF3ccE6906b6
-    ```
-    {
-      sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
-      exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
-      poolName: 'AMM-YFI-ETH',
-      accountID: 10,
-      tokens: [
-        '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e',
-        '0x0000000000000000000000000000000000000000'
-      ],
-      weights: [ 1000000, 1000000 ],
-      feeBips: 15,
-      tokenSymbol: 'LP-YFI-ETH'
-    }
-    ```
+
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-YFI-ETH',
+    accountID: 10,
+    tokens: [
+      '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-YFI-ETH'
+  }
+  ```
+
   11. YFII-ETH pool: 0xF8e4aBF498235fA8fdE2f6A04c21db7877957C47
-    ```
-    {
-      sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
-      exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
-      poolName: 'AMM-YFII-ETH',
-      accountID: 11,
-      tokens: [
-        '0xa1d0e215a23d7030842fc67ce582a6afa3ccab83',
-        '0x0000000000000000000000000000000000000000'
-      ],
-      weights: [ 1000000, 1000000 ],
-      feeBips: 15,
-      tokenSymbol: 'LP-YFII-ETH'
-    }
-    ```
+
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-YFII-ETH',
+    accountID: 11,
+    tokens: [
+      '0xa1d0e215a23d7030842fc67ce582a6afa3ccab83',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-YFII-ETH'
+  }
+  ```
 
   12. MCB-ETH: 0x70c8E0AedB5933Da09C9392A17389e4D6d79D638
+
   ```
     {
       sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -224,7 +234,9 @@
       tokenSymbol: 'LP-MCB-ETH'
     }
   ```
+
   13. AC-ETH: 0x8EFAD07720D331a49f5db2cC83946F7DC8FC6B42
+
   ```
   {
   sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -240,7 +252,9 @@
   tokenSymbol: 'LP-AC-ETH'
   }
   ```
+
   14. ETH-DAI: 0xD9D681C1ddD462ca222E90Bbe14A35273C318A09
+
   ```
   {
   sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -256,7 +270,9 @@
   tokenSymbol: 'LP-ETH-DAI'
   }
   ```
+
   15. LRC-USDT: 0xE6CC0d45C4E4F81be340F4D176e6Ce0D63Ad5743
+
   ```
   {
   sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -272,7 +288,9 @@
   tokenSymbol: 'LP-LRC-USDT'
   }
   ```
+
   16. HBTC-USDT: 0x746EEB6bdd9139A4d605C2c410911F37BEa9093b
+
   ```
    {
   sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -290,6 +308,7 @@
   ```
 
   17. 1INCH-ETH: 0xa9D46DEdEff7dFe8fF3628F4D276a0e1C5007b81
+
   ```
   {
   sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -305,8 +324,9 @@
   tokenSymbol: 'LP-1INCH-ETH'
   }
   ```
-  
+
   18. AC-USDT: 0x502B5525e1508C51Af46719D13E5238b83A404e5
+
   ```
   {
   sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -322,8 +342,9 @@
   tokenSymbol: 'LP-AC-USDT'
   }
   ```
-  
+
   19. VETH-ETH： 0x9795f527d0Fad45F41dE27bef71F0eeD47f5256C
+
   ```
   {
   sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -339,8 +360,9 @@
   tokenSymbol: 'LP-VETH-ETH'
   }
   ```
-  
+
   20. WOO-USDT: 0x1D28b287B5E19b12Ac2B3618405C57AD882A4D74
+
   ```
   {
   sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -356,8 +378,9 @@
   tokenSymbol: 'LP-WOO-USDT'
   }
   ```
-  
+
   21. HBTC-ETH: 0x1F78CD24Ccf73fDd5095d0339DD6eF72E30669aC
+
   ```
   {
   sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -373,8 +396,9 @@
   tokenSymbol: 'LP-HBTC-ETH'
   }
   ```
-  
+
   22. ETH-USDC: 0xF88de0CCD1E84898b4EA62c421009996bFb6156e
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -388,10 +412,11 @@
     weights: [ 1000000, 1000000 ],
     feeBips: 15,
     tokenSymbol: 'LP-ETH-USDC'
-  }  
+  }
   ```
-  
+
   23. CEL-ETH: 0x93bB5B402F04D3053F2c3800F6A4AF54788c16d0
+
   ```
   {
   sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -407,9 +432,9 @@
   tokenSymbol: 'LP-CEL-ETH'
   }
   ```
-  
+
   ***
-  
+
 - Registered tokens:
   - ETH: 0x0000000000000000000000000000000000000000, tokenId: 0
   - LRC: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD, tokenId: 1
