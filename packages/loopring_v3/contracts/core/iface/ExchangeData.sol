@@ -48,6 +48,7 @@ library ExchangeData
     struct AuxiliaryData
     {
         uint  txIndex;
+        bool  approved;
         bytes data;
     }
 

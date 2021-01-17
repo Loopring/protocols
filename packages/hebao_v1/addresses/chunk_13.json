@@ -1,0 +1,10 @@
+{
+  "config": {
+    "nextBatch": 13026955,
+    "untilBatch": 14000000,
+    "select": 1000,
+    "timeUsedLastBatch": 29995
+  },
+  "prettyOnes": [],
+  "uglyOnes": []
+}

@@ -239,8 +239,8 @@ function findAddresses(chunkIdx) {
       maxScore = chunk.prettyOnes[0].score;
     }
 
-    if (minScore < 0.4) {
-      filterScore = 0.4;
+    if (minScore < 0.5) {
+      filterScore = 0.5;
     } else {
       filterScore = minScore;
     }

@@ -12,7 +12,6 @@ import "./AmmUtil.sol";
 /// @title AmmUpdateProcess
 library AmmUpdateProcess
 {
-    using AmmUtil           for AmmData.TransactionBuffer;
     using TransactionReader for ExchangeData.Block;
 
     function approveAmmUpdates(
@@ -35,11 +34,6 @@ library AmmUpdateProcess
                 update.tokenWeight == ctx.tokens[i].weight,
                 "INVALID_AMM_UPDATE_TX_DATA"
             );
-
-            // Now approve this AMM update
-            update.validUntil = 0xffffffff;
-            bytes32 txHash = AmmUpdateTransaction.hashTx(ctx.exchangeDomainSeparator, update);
-            ctx.transactionBuffer.approveExchangeTransaction(address(this), txHash);
 
             ctx.tokenBalancesL2[i] = update.balance;
         }

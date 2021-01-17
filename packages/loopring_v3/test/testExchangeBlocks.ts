@@ -416,7 +416,8 @@ contract("Exchange", (accounts: string[]) => {
                   blocks[0].blockInfoData
                 );
                 onchainBlocks[0].auxiliaryData.push([
-                  99,
+                  0,
+                  false,
                   web3.utils.hexToBytes("0x")
                 ]);
               }
