@@ -35,7 +35,7 @@
     "bignumber.js": "^9.0.0",
     "bip39": "3.0.2",
     "blake-hash": "^2.0.0",
-    "@types/bn.js": "4.11.6",
+    "@types/bn.js": "5.1.0",
     "ethereumjs-abi": "0.6.8",
     "ethereumjs-tx": "2.1.1",
     "ethereumjs-util": "6.1.0",
