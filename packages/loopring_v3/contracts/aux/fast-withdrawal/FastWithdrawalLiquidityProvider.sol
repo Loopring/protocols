@@ -36,13 +36,45 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
         bytes   signature;  // signer's signature
     }
 
+    struct WithdrawalRequest
+    {
+        address from;
+        address to;
+        address token;
+        uint amount;
+        uint timestamp;
+    }
+
     bytes32 constant public FASTWITHDRAWAL_APPROVAL_TYPEHASH = keccak256(
         "FastWithdrawalApproval(address exchange,address from,address to,address token,uint96 amount,uint32 storageID,uint64 validUntil)"
     );
 
     bytes32 public immutable DOMAIN_SEPARATOR;
+    mapping(address => mapping(address => uint)) public userTokenShares;  // token => (account => share)
+    mapping(address => mapping(address => uint)) public userTokenBalances;
+    mapping(address => uint) public tokenShares;
+    uint constant public SHARE_BASE = 10 ** 6;
+    uint constant public MAX_AGE_WITHDRAWAL_REQUEST_UNTIL_SHUTDOWN = 15 days; // 15 days
+    bool public shutdown = false;
 
     FastWithdrawalAgent public immutable agent;
+
+    mapping(bytes32 => WithdrawalRequest) public withdrawalRequests;
+
+    event Deposit(address user, address token, uint amount);
+    event WithdrawalRequested(address from, address to, address token, uint amount, uint timestamp);
+    event WithdrawalRequestProceeded(bytes32 requestHash);
+    event LiguidityProviderShudown(address provider, uint timestamp);
+
+    modifier onlyShutdown() {
+        require(shutdown, "NOT_SHUTDOWN");
+        _;
+    }
+
+    modifier onlyNotShutdown() {
+        require(!shutdown, "IS_SHUTDOWN");
+        _;
+    }
 
     constructor(FastWithdrawalAgent _agent)
     {
@@ -57,6 +89,7 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
     function execute(FastWithdrawalApproval[] calldata approvals)
         external
         nonReentrant
+        onlyNotShutdown
     {
         // Prepare the data and validate the approvals when necessary
         FastWithdrawalAgent.Withdrawal[] memory withdrawals =
@@ -81,21 +114,97 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
         agent.executeFastWithdrawals{value: value}(withdrawals);
     }
 
+    function deposit(
+        address token,
+        uint amount
+        )
+        external
+        nonReentrant
+    {
+        require(amount > 0, "ZERO_AMOUNT");
+        uint _balance = 0;
+        if (token == address(0)) {
+            _balance = address(this).balance;
+            address(this).sendETHAndVerify(amount, gasleft()); // ETH
+        } else {
+            _balance = ERC20(token).balanceOf(address(this));
+            token.safeTransferAndVerify(address(this), amount);  // ERC20 token
+        }
+        userTokenBalances[msg.sender][token] = userTokenBalances[msg.sender][token].add(amount);
+
+        uint _sharesToAdd = 0;
+        uint _totalShares = tokenShares[token];
+        if (_totalShares == 0) {
+            _sharesToAdd = 100 * SHARE_BASE;
+        } else {
+            _sharesToAdd = _totalShares.mul(amount) / _balance;
+        }
+
+        userTokenShares[msg.sender][token] = userTokenShares[msg.sender][token].add(_sharesToAdd);
+        tokenShares[token] = _balance.add(_sharesToAdd);
+        emit Deposit(msg.sender, token, amount);
+    }
+
     // Allows the LP to transfer funds back out of this contract.
-    function drain(
+    function requestWithdrawal(
         address to,
         address token,
         uint    amount
         )
         external
         nonReentrant
-        onlyOwner
     {
-        if (token == address(0)) {
-            to.sendETHAndVerify(amount, gasleft()); // ETH
-        } else {
-            token.safeTransferAndVerify(to, amount);  // ERC20 token
-        }
+        require(amount > 0, "ZERO_AMOUNT");
+        require(userTokenShares[msg.sender][token] > 0, "NOT_PARTICIPANT");
+        WithdrawalRequest memory _request = WithdrawalRequest(msg.sender, to, token, amount, block.timestamp);
+        bytes32 _hash = keccak256(
+            abi.encodePacked(
+                _request.from,
+                _request.to,
+                _request.token,
+                _request.amount,
+                _request.timestamp
+            )
+        );
+
+        require(withdrawalRequests[_hash].from == address(0), "DUPLICATED_REQUEST");
+        withdrawalRequests[_hash] = _request;
+        emit WithdrawalRequested(
+            _request.from,
+            _request.to,
+            _request.token,
+            _request.amount,
+            _request.timestamp
+        );
+
+    }
+
+    function processWithdrawal(bytes32 requestHash)
+        external
+        nonReentrant
+        onlyManager
+    {
+        processWithdrawalInternal(requestHash, false);
+    }
+
+    function forceWithdraw(bytes32 requestHash)
+        external
+        nonReentrant
+        onlyShutdown
+    {
+        processWithdrawalInternal(requestHash, true);
+    }
+
+    function notifyWithdrawalRequestTooOld(bytes32 requestHash)
+        external
+        onlyNotShutdown
+    {
+        WithdrawalRequest memory _request = withdrawalRequests[requestHash];
+        require(_request.timestamp > 0, "WITHDRAWAL_REQUEST_NOT_EXIST");
+        require(block.timestamp > _request.timestamp + MAX_AGE_WITHDRAWAL_REQUEST_UNTIL_SHUTDOWN,
+                "WITHDRAWAL_REQUEST_NOT_TOO_OLD");
+        shutdown = true;
+        emit LiguidityProviderShudown(address(this), block.timestamp);
     }
 
     // Allows the LP to enable the necessary ERC20 approvals
@@ -140,7 +249,7 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
             isManager(approval.signer);
     }
 
-    receive() payable external {}
+    // receive() payable external {}
 
     // -- Internal --
 
@@ -166,5 +275,49 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
             amount: approval.amount,
             storageID: approval.storageID
         });
+    }
+
+    function processWithdrawalInternal(
+        bytes32 requestHash,
+        bool forced
+        )
+        internal
+    {
+        WithdrawalRequest memory _request = withdrawalRequests[requestHash];
+        require(_request.from != address(0), "REQUEST_NOT_EXIST");
+        uint _totalBalance = 0;
+        address token = _request.token;
+        if (token == address(0)) {
+            _totalBalance = address(this).balance;
+        } else {
+            _totalBalance = ERC20(token).balanceOf(address(this));
+        }
+
+        uint _shares = userTokenShares[msg.sender][token];
+        uint _userBalance = userTokenBalances[msg.sender][token];
+        uint _withdrawable = _totalBalance.mul(_shares) / tokenShares[token];
+        if (!forced) {
+            require(_withdrawable >= _userBalance, "NOT_READY_FOR_WITHDRAWAL");
+        }
+
+        uint _actualAmount = _request.amount > _withdrawable ? _withdrawable : _request.amount;
+        uint _sharesToBurn = _shares.mul(_actualAmount) / _withdrawable ;
+        userTokenShares[msg.sender][token] = _shares.sub(_sharesToBurn);
+
+        if (_userBalance > _actualAmount) {
+            userTokenBalances[msg.sender][token] = _userBalance.sub(_actualAmount);
+        } else {
+            userTokenBalances[msg.sender][token] = 0;
+        }
+
+        if (token == address(0)) {
+            _request.to.sendETHAndVerify(_actualAmount, gasleft());   // ETH
+        } else {
+            token.safeTransferAndVerify(_request.to, _actualAmount);  // ERC20 token
+        }
+
+        delete withdrawalRequests[requestHash];
+
+        emit WithdrawalRequestProceeded(requestHash);
     }
 }
