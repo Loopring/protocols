@@ -49,7 +49,6 @@ contract FastWithdrawalAgent2 is ReentrancyGuard, IAgent, Claimable
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-    uint public feeBips = 0;
     uint constant public MAX_FEE_BIPS = 200;
     uint constant public FEE_BIPS_BASE = 10000;
 
@@ -59,6 +58,7 @@ contract FastWithdrawalAgent2 is ReentrancyGuard, IAgent, Claimable
         address to,
         address token,
         uint96  amount,
+        uint96  feeBips,
         address provider,
         bool    success
     );
@@ -71,14 +71,6 @@ contract FastWithdrawalAgent2 is ReentrancyGuard, IAgent, Claimable
         address token;
         uint96  amount;
         uint32  storageID;
-    }
-
-    function updateFeeBips(uint newFeeBips)
-        external
-        onlyOwner
-    {
-        require(newFeeBips <= MAX_FEE_BIPS, "EXCEEDE_MAX_VALUE");
-        feeBips = newFeeBips;
     }
 
     // This method needs to be called by any liquidity provider
@@ -105,13 +97,14 @@ contract FastWithdrawalAgent2 is ReentrancyGuard, IAgent, Claimable
             withdrawal.exchange != address(0) &&
             withdrawal.from != address(0) &&
             withdrawal.to != address(0) &&
-            withdrawal.amount != 0,
+            withdrawal.amount != 0 &&
+            withdrawal.feeBips <= MAX_FEE_BIPS,
             "INVALID_WITHDRAWAL"
         );
 
         // The liquidity provider always authorizes the fast withdrawal by being the direct caller
         address payable liquidityProvider = msg.sender;
-        uint transferAmount = withdrawal.amount * (FEE_BIPS_BASE - feeBips) / FEE_BIPS_BASE;
+        uint transferAmount = withdrawal.amount * (FEE_BIPS_BASE - withdrawal.feeBips) / FEE_BIPS_BASE;
 
         bool success;
         // Override the destination address of a withdrawal to the address of the liquidity provider
