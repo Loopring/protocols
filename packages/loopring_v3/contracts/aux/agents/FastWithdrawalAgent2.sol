@@ -70,6 +70,7 @@ contract FastWithdrawalAgent2 is ReentrancyGuard, IAgent, Claimable
         address to;                     // The `to` address of the withdrawal
         address token;
         uint96  amount;
+        uint96  feeBips;
         uint32  storageID;
     }
 
@@ -135,6 +136,7 @@ contract FastWithdrawalAgent2 is ReentrancyGuard, IAgent, Claimable
             withdrawal.to,
             withdrawal.token,
             withdrawal.amount,
+            withdrawal.feeBips,
             liquidityProvider,
             success
         );
