@@ -33,7 +33,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
     bytes4 private constant SUBMITBLOCKS_SELECTOR  = IExchangeV3.submitBlocks.selector;
     bool   public  open;
-    GST2   public  gst2 = GST2(0x0000000000b3F879cb30FE243b4Dfee438691c04);
+    GST2   public  gst2;
 
     event SubmitBlocksAccessOpened(bool open);
 
