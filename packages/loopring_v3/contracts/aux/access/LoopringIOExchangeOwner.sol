@@ -16,6 +16,12 @@ import "./SelectorBasedAccessManager.sol";
 import "./IBlockReceiver.sol";
 
 
+interface GST2 {
+    // decimals = 2
+    function mint(uint value) external;
+    function freeUpTo(uint value) external returns (uint freed);
+}
+
 contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainable
 {
     using AddressUtil       for address;
@@ -27,8 +33,11 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
     bytes4 private constant SUBMITBLOCKS_SELECTOR  = IExchangeV3.submitBlocks.selector;
     bool   public  open;
+    GST2   public  gst2 = GST2(0x0000000000b3F879cb30FE243b4Dfee438691c04);
 
     event SubmitBlocksAccessOpened(bool open);
+    event GasTokenMinted(uint amount);
+    event GasTokenBurned(uint amount);
 
     struct TxCallback
     {
@@ -50,9 +59,13 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         address[]       receivers;
     }
 
-    constructor(address _exchange)
+    constructor(
+        address _exchange,
+        address _gst2 // 0x0000000000b3F879cb30FE243b4Dfee438691c04 mainnet
+        )
         SelectorBasedAccessManager(_exchange)
     {
+        gst2 = GST2(_gst2);
     }
 
     function openAccessToSubmitBlocks(bool _open)
@@ -91,7 +104,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     function submitBlocksWithCallbacks(
         bool                     isDataCompressed,
         bytes           calldata data,
-        CallbackConfig  calldata config
+        CallbackConfig  calldata config,
+        int                      gasTokens // max gas token to mint or free
         )
         external
     {
@@ -125,6 +139,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         _beforeBlockSubmission(blocks, config);
 
         target.fastCallAndVerify(gasleft(), 0, decompressed);
+
+        if (gasTokens < 0) {
+            _freeGasTokens(uint(-gasTokens));
+        } else if (gasTokens > 0) {
+            _mintGasTokens(uint(gasTokens));
+        }
     }
 
     function _beforeBlockSubmission(
@@ -270,4 +290,47 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         }
         return blocks;
     }
+
+    // Copied from https://github.com/projectchicago/gastoken/blob/master/contract/gst2_free_example.sol
+    function _freeGasTokens(uint amount)
+        private
+    {
+        uint _amount = 0;
+        uint gas = gasleft();
+
+        if (gas >= 27710) {
+            _amount = (gas - 27710) / 7020;
+        }
+
+        if (amount > _amount) {
+            amount = _amount;
+        }
+
+        if (amount > 0) {
+            uint burned = gst2.freeUpTo(amount);
+            emit GasTokenBurned(burned);
+        }
+    }
+
+    function _mintGasTokens(uint amount)
+        private
+    {
+        uint _amount = 0;
+        uint gas = gasleft();
+
+        if (gas >= 32254) {
+            _amount = (gas - 32254) / 36543;
+        }
+
+        if (amount > _amount) {
+            amount = _amount;
+        }
+
+        if (amount > 0) {
+            try gst2.mint(amount) {
+                emit GasTokenMinted(amount);
+            } catch {}
+        }
+    }
+
 }
