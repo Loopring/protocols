@@ -23,6 +23,9 @@ class merkle_path_selector_4 : public GadgetT
     TernaryGadget child2;
     TernaryGadget child3;
 
+    // Takes as input the computed hash x,
+    // and three sibling nodes, and two bits representing x's position amongst these sibling nodes.
+    // It then sets the 'child' variables correctly according to the position of x.
     //[bit1][bit0] [child0] [child1] [child2] [child3]
     // 0 0         x         y0          y1      y2
     // 0 1         y0        x           y1      y2
@@ -37,14 +40,24 @@ class merkle_path_selector_4 : public GadgetT
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
+          // bit0_or_bit1 = bit0 | bit1
           bit0_or_bit1(pb, {bit0, bit1}, FMT(prefix, ".bit0_or_bit1")),
+          // bit0_and_bit1 = bit0 & bit1
           bit0_and_bit1(pb, {bit0, bit1}, FMT(prefix, ".bit0_and_bit1")),
 
+          // if (bit0 or bit1 == 0), then child0 = x, else child0 = y0.
           child0(pb, bit0_or_bit1.result(), sideNodes[0], input, FMT(prefix, ".child0")),
+          // child1p is the value of child1 if bit 1 is 0.
+          // if (bit1 == 1), then child1 = y1, else child1 == child1p
+          // if (bit0 == 1), then child1p = x, else it equals y0.
           child1p(pb, bit0, input, sideNodes[0], FMT(prefix, ".child1p")),
           child1(pb, bit1, sideNodes[1], child1p.result(), FMT(prefix, ".child1")),
+          // child2p is the value of child2 if bit 1 is 1.
+          // if (bit1 == 1), child2 = x, else child2 = child2p
+          // if (bit0 == 1), child2p = y2, else child2p = x.
           child2p(pb, bit0, sideNodes[2], input, FMT(prefix, ".child2p")),
           child2(pb, bit1, child2p.result(), sideNodes[1], FMT(prefix, ".child2")),
+          // if (bit0 and bit1 == 1), then child3 = x, else child3 = y2
           child3(pb, bit0_and_bit1.result(), input, sideNodes[2], FMT(prefix, ".child3"))
     {
         assert(sideNodes.size() == 3);
@@ -88,6 +101,9 @@ template <typename HashT> class merkle_path_compute_4 : public GadgetT
     std::vector<merkle_path_selector_4> m_selectors;
     std::vector<HashT> m_hashers;
 
+    // in_address_bits: {0..2}[in_depth*2]
+    // in_leaf: The hashed leaf data
+    // in_path: The Merkle inclusion proof values
     merkle_path_compute_4(
       ProtoboardT &in_pb,
       const size_t in_depth,
@@ -150,6 +166,10 @@ template <typename HashT> class merkle_path_authenticator_4 : public merkle_path
   public:
     const VariableT m_expected_root;
 
+    // in_address_bits: {0..2}[in_depth*2]
+    // in_leaf: The hashed leaf data
+    // in_expected_root: The expected Merkle root value
+    // in_path: The Merkle inclusion proof values
     merkle_path_authenticator_4(
       ProtoboardT &in_pb,
       const size_t in_depth,
@@ -186,10 +206,10 @@ template <typename HashT> class merkle_path_authenticator_4 : public merkle_path
 };
 
 // Same parameters for ease of implementation in EVM
-using HashMerkleTree = Poseidon_gadget_T<5, 1, 6, 52, 4, 1>;
-using HashAccountLeaf = Poseidon_gadget_T<7, 1, 6, 52, 6, 1>;
-using HashBalanceLeaf = Poseidon_gadget_T<5, 1, 6, 52, 3, 1>;
-using HashStorageLeaf = Poseidon_gadget_T<5, 1, 6, 52, 2, 1>;
+using HashMerkleTree = Poseidon_4;
+using HashAccountLeaf = Poseidon_6;
+using HashBalanceLeaf = Poseidon_4_<3>;
+using HashStorageLeaf = Poseidon_4_<2>;
 
 using MerklePathCheckT = merkle_path_authenticator_4<HashMerkleTree>;
 using MerklePathT = merkle_path_compute_4<HashMerkleTree>;

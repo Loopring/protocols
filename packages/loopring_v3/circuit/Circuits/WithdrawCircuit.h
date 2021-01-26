@@ -47,7 +47,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
     ToBitsGadget owner;
 
     // Signature
-    Poseidon_gadget_T<10, 1, 6, 53, 9, 1> hash;
+    Poseidon_9 hash;
 
     // Validate
     RequireLtGadget requireValidUntil;

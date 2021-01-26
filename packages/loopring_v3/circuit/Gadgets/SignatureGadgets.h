@@ -18,9 +18,18 @@ using namespace jubjub;
 namespace Loopring
 {
 
-// Compressed the public key to 32 bytes.
+// Compresses the public key to 32 bytes. The public key is compressed and then fully decompressed to verify
+// that the decompression can be done successfully in a deterministic way. Because the code depends on a square root
+// it would be possible for different implementations to give inconsistent results if not correctly implemented
+// (e.g. a sqrt implementation can always return the "smallest root", or the implementation could just return any root).
+//
+// The compression is done to minimize the number of bytes needed to represent the public key in the public data.
+// In all other cases, we use the uncompressed public key.
+//
+// In theory any point data can be used that decompresses correctly, no other constraints are put on the point itself.
+//
 // See https://ed25519.cr.yp.to/eddsa-20150704.pdf
-// If y == 0 we force x == 0.
+// If y == 0 we force x == 0 to allow setting the public key to (0,0) to disable signatures for the account.
 class CompressPublicKey : public GadgetT
 {
   public:
@@ -130,26 +139,40 @@ class CompressPublicKey : public GadgetT
     void generate_r1cs_constraints()
     {
         // Reconstruct sqrt(xx)
+        // yy = y * y
         pb.add_r1cs_constraint(ConstraintT(y, y, yy), FMT(annotation_prefix, ".yy"));
+        // lhs = yy - 1
         pb.add_r1cs_constraint(ConstraintT(yy - 1, 1, lhs), FMT(annotation_prefix, ".lhs"));
+        // rhs = params.d * yy - params.a
         pb.add_r1cs_constraint(ConstraintT((params.d * yy) - params.a, 1, rhs), FMT(annotation_prefix, ".rhs"));
+        // irhs = 1/rhs
         pb.add_r1cs_constraint(ConstraintT(rhs, irhs, 1), FMT(annotation_prefix, ".irhs"));
+        // xx = lhs * irhs
         pb.add_r1cs_constraint(ConstraintT(lhs, irhs, xx), FMT(annotation_prefix, ".xx"));
+        // xx = rootX * rootX
         pb.add_r1cs_constraint(ConstraintT(rootX, rootX, xx), FMT(annotation_prefix, ".rootX"));
 
         // Reconstruct x
+        // negRootX = 0 - rootX
         negRootX.generate_r1cs_constraints();
+        // absX = min(rootX, negRootX)
         isSmallestRoot.generate_r1cs_constraints();
         absX.generate_r1cs_constraints();
+        // absX and negAbsX := 0 - absX are the roots of xx
         negAbsX.generate_r1cs_constraints();
+        // isNegativeX = (_x == negAbsX)
         isNegativeX.generate_r1cs_constraints();
+        // reconstructedX = isNegativeX ? negAbsX : absX
         reconstructedX.generate_r1cs_constraints();
 
         // Special case 0
+        // isZeroY = (y == 0)
         isZeroY.generate_r1cs_constraints();
+        // x = isZeroY ? 0 : reconstructedX
         x.generate_r1cs_constraints();
 
         // Make sure the reconstructed x matches the original x
+        // require(x == _x)
         valid.generate_r1cs_constraints();
 
         // Get the bits of y
@@ -166,7 +189,7 @@ class CompressPublicKey : public GadgetT
 class EdDSA_HashRAM_Poseidon_gadget : public GadgetT
 {
   public:
-    Poseidon_gadget_T<6, 1, 6, 52, 5, 1> m_hash_RAM; // hash_RAM = H(R, A, M)
+    Poseidon_5 m_hash_RAM;
     ToBitsGadget hash;
 
     EdDSA_HashRAM_Poseidon_gadget(
@@ -185,7 +208,9 @@ class EdDSA_HashRAM_Poseidon_gadget : public GadgetT
 
     void generate_r1cs_constraints()
     {
+        // m_hash_RAM = H(R, A, M)
         m_hash_RAM.generate_r1cs_constraints();
+        // toBits(m_hash_RAM)
         hash.generate_r1cs_constraints();
     }
 
@@ -253,6 +278,7 @@ class EdDSA_Poseidon : public GadgetT
             FMT(this->annotation_prefix, ".rhs")),
 
           // Verify the two points are equal
+          // m_lhs = m_rhs
           equalX(in_pb, m_lhs.result_x(), m_rhs.result_x(), ".equalX"),
           equalY(in_pb, m_lhs.result_y(), m_rhs.result_y(), ".equalY"),
           valid(in_pb, {equalX.result(), equalY.result()}, ".valid")
@@ -304,6 +330,9 @@ class SignatureVerifier : public GadgetT
 
     IfThenRequireGadget valid;
 
+    // publicKey: will be verified to be a valid point (even when required is 0)
+    // message: hash of the signed data
+    // required: 1 if the signature needs to be valid, 0 otherwise
     SignatureVerifier(
       ProtoboardT &pb,
       const jubjub::Params &params,
@@ -341,6 +370,10 @@ class SignatureVerifier : public GadgetT
 
     void generate_r1cs_constraints()
     {
+        for (unsigned int i = 0; i < sig_s.size(); i++)
+        {
+            libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, sig_s[i], FMT(annotation_prefix, ".bitness"));
+        }
         signatureVerifier.generate_r1cs_constraints();
         valid.generate_r1cs_constraints();
     }

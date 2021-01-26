@@ -33,7 +33,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
     DualVariableGadget type;
 
     // Signature
-    Poseidon_gadget_T<9, 1, 6, 53, 8, 1> hash;
+    Poseidon_8 hash;
 
     // Validate
     OwnerValidGadget ownerValid;

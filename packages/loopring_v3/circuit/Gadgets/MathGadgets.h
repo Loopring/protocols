@@ -19,6 +19,18 @@ using namespace jubjub;
 namespace Loopring
 {
 
+// All Poseidon permutations used
+using Poseidon_2 = Poseidon_gadget_T<3, 1, 6, 51, 2, 1>;
+template <unsigned n_outputs>
+using Poseidon_4_ = Poseidon_gadget_T<5, 1, 6, 52, n_outputs, 1>;
+using Poseidon_4 = Poseidon_4_<4>;
+using Poseidon_5 = Poseidon_gadget_T<6, 1, 6, 52, 5, 1>;
+using Poseidon_6 = Poseidon_gadget_T<7, 1, 6, 52, 6, 1>;
+using Poseidon_8 = Poseidon_gadget_T<9, 1, 6, 53, 8, 1>;
+using Poseidon_9 = Poseidon_gadget_T<10, 1, 6, 53, 9, 1>;
+using Poseidon_11 = Poseidon_gadget_T<12, 1, 6, 53, 11, 1>;
+using Poseidon_12 = Poseidon_gadget_T<13, 1, 6, 53, 12, 1>;
+
 // require(A == B)
 static void requireEqual( //
   ProtoboardT &pb,

@@ -551,7 +551,7 @@ class UniversalCircuit : public Circuit
     AddGadget nonce_after;
 
     // Signature
-    Poseidon_gadget_T<3, 1, 6, 51, 2, 1> hash;
+    Poseidon_2 hash;
     SignatureVerifier signatureVerifier;
 
     // Transactions

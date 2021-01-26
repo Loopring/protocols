@@ -74,8 +74,8 @@ class TransferCircuit : public BaseTransactionCircuit
     TernaryGadget resolvedDualAuthorY;
 
     // Signature
-    Poseidon_gadget_T<13, 1, 6, 53, 12, 1> hashPayer;
-    Poseidon_gadget_T<13, 1, 6, 53, 12, 1> hashDual;
+    Poseidon_12 hashPayer;
+    Poseidon_12 hashDual;
 
     // Balances
     DynamicBalanceGadget balanceS_A;
