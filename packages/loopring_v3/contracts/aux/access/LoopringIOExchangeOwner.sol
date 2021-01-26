@@ -7,6 +7,7 @@ import "../../aux/compression/ZeroDecompressor.sol";
 import "../../aux/transactions/TransactionReader.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
+import "../../thirdparty/Chi/IChiToken.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/Drainable.sol";
 import "../../lib/ERC1271.sol";
@@ -25,8 +26,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
 
-    bytes4 private constant SUBMITBLOCKS_SELECTOR  = IExchangeV3.submitBlocks.selector;
-    bool   public  open;
+    bytes4    private constant SUBMITBLOCKS_SELECTOR = IExchangeV3.submitBlocks.selector;
+    bool      public  open;
+    IChiToken public  immutable chi;
 
     event SubmitBlocksAccessOpened(bool open);
 
@@ -50,9 +52,28 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         address[]       receivers;
     }
 
-    constructor(address _exchange)
+    // See:
+    // - https://github.com/1inch-exchange/1inchProtocol/blob/a7781cf9aa1cc2aaa5ccab0d54ecbae1327ca08f/contracts/OneSplitAudit.sol#L343
+    // - https://github.com/curvefi/curve-ren-adapter/blob/8c1fbc3fec41ebd79b06984d72ff6ace3198e62d/truffle/contracts/CurveExchangeAdapter.sol#L104
+    modifier discountCHI(uint maxToBurn)
+    {
+        uint gasStart = gasleft();
+        _;
+        uint gasSpent = 21000 + gasStart - gasleft() + 16 * msg.data.length;
+        uint fullAmountToBurn = (gasSpent + 14154) / 41947;
+        uint amountToBurn = fullAmountToBurn > maxToBurn ? maxToBurn : fullAmountToBurn;
+        if (amountToBurn > 0) {
+            chi.free(amountToBurn);
+        }
+    }
+
+    constructor(
+        address _exchange,
+        address _chi       // Mainnet: 0x0000000000004946c0e9F43F4Dee607b0eF1fA1c
+        )
         SelectorBasedAccessManager(_exchange)
     {
+        chi = IChiToken(_chi);
     }
 
     function openAccessToSubmitBlocks(bool _open)
@@ -91,9 +112,11 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     function submitBlocksWithCallbacks(
         bool                     isDataCompressed,
         bytes           calldata data,
-        CallbackConfig  calldata config
+        CallbackConfig  calldata config,
+        uint                     maxGasTokensToBurn
         )
         external
+        discountCHI(maxGasTokensToBurn)
     {
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");
