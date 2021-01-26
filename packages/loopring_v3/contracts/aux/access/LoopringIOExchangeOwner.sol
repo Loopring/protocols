@@ -36,8 +36,6 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     GST2   public  gst2 = GST2(0x0000000000b3F879cb30FE243b4Dfee438691c04);
 
     event SubmitBlocksAccessOpened(bool open);
-    event GasTokenMinted(uint amount);
-    event GasTokenBurned(uint amount);
 
     struct TxCallback
     {
@@ -307,8 +305,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         }
 
         if (amount > 0) {
-            uint burned = gst2.freeUpTo(amount);
-            emit GasTokenBurned(burned);
+            try gst2.freeUpTo(amount) {} catch {}
         }
     }
 
@@ -327,9 +324,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         }
 
         if (amount > 0) {
-            try gst2.mint(amount) {
-                emit GasTokenMinted(amount);
-            } catch {}
+            try gst2.mint(amount) {} catch {}
         }
     }
 
