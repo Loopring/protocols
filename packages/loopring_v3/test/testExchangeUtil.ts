@@ -2779,6 +2779,7 @@ export class ExchangeTestUtil {
       const ownerContract = await LoopringIOExchangeOwner.new(
         this.exchange.address,
         this.contracts.ChiToken.address,
+        Constants.zeroAddress,
         { from: this.exchangeOwner }
       );
       await this.setOperatorContract(ownerContract);
