@@ -76,8 +76,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         )
         SelectorBasedAccessManager(_exchange)
     {
+        address __gasTokenVault = (_gasTokenVault == address(0)) ? address(this) : _gasTokenVault;
+
         chi = IChiToken(_chi);
-        gasTokenVault = (_gasTokenVault == address(0)) ? address(this) : _gasTokenVault;
+        gasTokenVault = __gasTokenVault;
+
+        IChiToken(_chi).approve(__gasTokenVault, type(uint256).max);
     }
 
     function openAccessToSubmitBlocks(bool _open)

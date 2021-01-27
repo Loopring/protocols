@@ -2066,12 +2066,32 @@ export class ExchangeTestUtil {
 
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
+
+    let bestGasTokensToBurn = 0;
+    /*let bestGasUsed = 20000000;
+    for (let i = 0; i < 10; i++) {
+      const gasUsed = await operatorContract.submitBlocksWithCallbacks.estimateGas(
+        parameters.isDataCompressed,
+        parameters.data,
+        parameters.callbackConfig,
+        i,
+        { from: this.exchangeOperator, gasPrice: 0 }
+      );
+      if (gasUsed < bestGasUsed) {
+        bestGasUsed = gasUsed;
+        bestGasTokensToBurn = i;
+      }
+      console.log("" + i + ": " + gasUsed);
+    }
+    console.log("Best gas used: " + bestGasUsed);
+    console.log("Num gas tokens burned: " + bestGasTokensToBurn);*/
+
     let tx: any = undefined;
     tx = await operatorContract.submitBlocksWithCallbacks(
       parameters.isDataCompressed,
       parameters.data,
       parameters.callbackConfig,
-      parameters.maxGasTokensToBurn,
+      bestGasTokensToBurn,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
     );
