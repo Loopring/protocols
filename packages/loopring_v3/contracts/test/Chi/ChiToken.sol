@@ -385,7 +385,9 @@ contract ChiToken is IERC20, ERC20WithoutTotalSupply {
     function mint(uint256 value) public {
         uint256 offset = totalMinted;
         assembly {
-            mstore(0, 0x746d4946c0e9F43F4Dee607b0eF1fA1c3318585733ff6000526015600bf30000)
+            // Loopring test implementation: Changed JUMPI instruction to DUP1
+            // to ignore msg.sender check
+            mstore(0, 0x746d4946c0e9F43F4Dee607b0eF1fA1c3318588033ff6000526015600bf30000)
 
             for {let i := div(value, 32)} i {i := sub(i, 1)} {
                 pop(create2(0, 0, 30, add(offset, 0))) pop(create2(0, 0, 30, add(offset, 1)))
@@ -417,7 +419,7 @@ contract ChiToken is IERC20, ERC20WithoutTotalSupply {
         totalMinted = offset;
     }
 
-    function computeAddress2(uint256 salt) public pure returns (address child) {
+    /*function computeAddress2(uint256 salt) public view returns (address child) {
         assembly {
             let data := mload(0x40)
             mstore(data, 0xff0000000000004946c0e9F43F4Dee607b0eF1fA1c0000000000000000000000)
@@ -425,17 +427,25 @@ contract ChiToken is IERC20, ERC20WithoutTotalSupply {
             mstore(add(data, 53), 0x3c1644c68e5d6cb380c36d1bf847fdbc0c7ac28030025a2fc5e63cce23c16348)
             child := and(keccak256(data, 85), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
         }
-    }
+    }*/
 
     function _destroyChildren(uint256 value) internal {
+        // Loopring test implementation: Changed to use address(this) instead of harcoded mainnet address
+        bytes memory _data = abi.encodePacked(
+            bytes1(0xff),
+            address(this),
+            uint256(0),
+            keccak256(abi.encodePacked(bytes30(0x746d4946c0e9F43F4Dee607b0eF1fA1c3318588033ff6000526015600bf3)))
+        );
         assembly {
             let i := sload(totalBurned.slot)
             let end := add(i, value)
             sstore(totalBurned.slot, end)
 
-            let data := mload(0x40)
-            mstore(data, 0xff0000000000004946c0e9F43F4Dee607b0eF1fA1c0000000000000000000000)
-            mstore(add(data, 53), 0x3c1644c68e5d6cb380c36d1bf847fdbc0c7ac28030025a2fc5e63cce23c16348)
+            let data := add(_data, 32)
+            //let data := mload(0x40)
+            //mstore(data, 0xff0000000000004946c0e9F43F4Dee607b0eF1fA1c0000000000000000000000)
+            //mstore(add(data, 53), 0x9202a5bc08448cc1ece81e300beb6ac9b82b910011ffabb858fd6ff4a337fc08)
             let ptr := add(data, 21)
             for { } lt(i, end) { i := add(i, 1) } {
                 mstore(ptr, i)

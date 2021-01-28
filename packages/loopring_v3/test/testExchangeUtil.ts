@@ -11,6 +11,7 @@ import { SignatureType, sign, verifySignature } from "../util/Signature";
 import {
   Bitstream,
   BlockType,
+  calculateCalldataCost,
   compressZeros,
   CompressionType,
   Constants,
@@ -34,6 +35,7 @@ import {
   Block,
   BlockCallback,
   Deposit,
+  GasTokenConfig,
   Transfer,
   Noop,
   OrderInfo,
@@ -1920,7 +1922,7 @@ export class ExchangeTestUtil {
         parameters.isDataCompressed,
         parameters.data,
         parameters.callbackConfig,
-        parameters.maxGasTokensToBurn
+        parameters.gasTokenConfig
       )
       .encodeABI();
   }
@@ -1940,7 +1942,11 @@ export class ExchangeTestUtil {
       isDataCompressed,
       data,
       callbackConfig,
-      maxGasTokensToBurn: 0
+      gasTokenConfig: {
+        maxToBurn: 0,
+        expectedGasRefund: 0,
+        calldataCost: 0
+      }
     };
   }
 
@@ -2067,14 +2073,21 @@ export class ExchangeTestUtil {
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
 
+    const gasTokenConfig: GasTokenConfig = {
+      maxToBurn: 0,
+      expectedGasRefund: 0,
+      calldataCost: 0
+    };
+
     let bestGasTokensToBurn = 0;
     /*let bestGasUsed = 20000000;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 15; i++) {
+      gasTokenConfig.maxToBurn = i;
       const gasUsed = await operatorContract.submitBlocksWithCallbacks.estimateGas(
         parameters.isDataCompressed,
         parameters.data,
         parameters.callbackConfig,
-        i,
+        gasTokenConfig,
         { from: this.exchangeOperator, gasPrice: 0 }
       );
       if (gasUsed < bestGasUsed) {
@@ -2085,13 +2098,28 @@ export class ExchangeTestUtil {
     }
     console.log("Best gas used: " + bestGasUsed);
     console.log("Num gas tokens burned: " + bestGasTokensToBurn);*/
+    gasTokenConfig.maxToBurn = bestGasTokensToBurn;
+
+    let numDeposits = 0;
+    for (const block of blocks) {
+      for (const tx of block.internalBlock.transactions) {
+        if (tx.txType === "Deposit") {
+          numDeposits++;
+        }
+      }
+    }
+    //console.log("num deposits: " + numDeposits);
+    gasTokenConfig.expectedGasRefund = numDeposits * 15000;
+
+    const msg_data = this.getSubmitBlocksWithCallbacks(parameters);
+    gasTokenConfig.calldataCost = calculateCalldataCost(msg_data);
 
     let tx: any = undefined;
     tx = await operatorContract.submitBlocksWithCallbacks(
       parameters.isDataCompressed,
       parameters.data,
       parameters.callbackConfig,
-      bestGasTokensToBurn,
+      gasTokenConfig,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
     );

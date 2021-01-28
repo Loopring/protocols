@@ -230,6 +230,12 @@ export interface BlockCallback {
   tx?: any;
 }
 
+export interface GasTokenConfig {
+  maxToBurn: number;
+  expectedGasRefund: number;
+  calldataCost: number;
+}
+
 export interface Block {
   blockIdx: number;
   filename: string;

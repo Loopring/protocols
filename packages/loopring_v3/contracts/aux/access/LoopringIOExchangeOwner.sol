@@ -7,7 +7,7 @@ import "../../aux/compression/ZeroDecompressor.sol";
 import "../../aux/transactions/TransactionReader.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../../thirdparty/Chi/IChiToken.sol";
+import "../../thirdparty/chi/IChiToken.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/Drainable.sol";
 import "../../lib/ERC1271.sol";
@@ -53,19 +53,32 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         address[]       receivers;
     }
 
+    struct GasTokenConfig
+    {
+        uint maxToBurn;
+        uint expectedGasRefund;
+        uint calldataCost;
+    }
+
     // See:
     // - https://github.com/1inch-exchange/1inchProtocol/blob/a7781cf9aa1cc2aaa5ccab0d54ecbae1327ca08f/contracts/OneSplitAudit.sol#L343
     // - https://github.com/curvefi/curve-ren-adapter/blob/8c1fbc3fec41ebd79b06984d72ff6ace3198e62d/truffle/contracts/CurveExchangeAdapter.sol#L104
-    modifier discountCHI(address from, uint maxToBurn)
+    modifier discountCHI(GasTokenConfig memory config)
     {
         uint gasStart = gasleft();
         _;
-        if (maxToBurn == 0) return;
-        uint gasSpent = 21000 + gasStart - gasleft() + 16 * msg.data.length;
-        uint fullAmountToBurn = (gasSpent + 14154) / 41947;
-        uint amountToBurn = fullAmountToBurn > maxToBurn ? maxToBurn : fullAmountToBurn;
+        if (config.maxToBurn == 0) return;
+        uint gasSpent = 21000 + gasStart - gasleft() + 14154;
+        gasSpent += (config.calldataCost == 0) ? 16 * msg.data.length : config.calldataCost;
+        uint gasRefundOffset = (config.expectedGasRefund * 2 > gasSpent) ? gasSpent : config.expectedGasRefund * 2;
+        uint fullAmountToBurn = (gasSpent - gasRefundOffset) / 41947;
+        uint amountToBurn = fullAmountToBurn > config.maxToBurn ? config.maxToBurn : fullAmountToBurn;
         if (amountToBurn > 0) {
-            chi.freeFromUpTo(from, amountToBurn);
+            if (gasTokenVault == address(this)) {
+                chi.freeUpTo(amountToBurn);
+            } else {
+                chi.freeFromUpTo(gasTokenVault, amountToBurn);
+            }
         }
     }
 
@@ -121,10 +134,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         bool                     isDataCompressed,
         bytes           calldata data,
         CallbackConfig  calldata config,
-        uint                     maxGasTokensToBurn
+        GasTokenConfig  calldata gasTokenConfig
         )
         external
-        discountCHI(gasTokenVault, maxGasTokensToBurn)
+        discountCHI(gasTokenConfig)
     {
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");
