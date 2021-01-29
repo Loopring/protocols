@@ -10,7 +10,7 @@ contract ChiDiscount
 {
     struct ChiConfig
     {
-        address chi;
+        address chiToken;
         address gasTokenVault;
         uint    maxToBurn;
         uint    expectedGasRefund;
