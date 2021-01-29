@@ -7,17 +7,17 @@ import "../../aux/compression/ZeroDecompressor.sol";
 import "../../aux/transactions/TransactionReader.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../../thirdparty/chi/IChiToken.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/Drainable.sol";
 import "../../lib/ERC1271.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
+import "../gas/ChiDiscount.sol";
 import "./SelectorBasedAccessManager.sol";
 import "./IBlockReceiver.sol";
 
 
-contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainable
+contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC1271, Drainable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -28,8 +28,6 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
     bytes4    private constant SUBMITBLOCKS_SELECTOR = IExchangeV3.submitBlocks.selector;
     bool      public  open;
-    IChiToken public  immutable chi;
-    address   public  immutable gasTokenVault;
 
     event SubmitBlocksAccessOpened(bool open);
 
@@ -53,48 +51,11 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         address[]       receivers;
     }
 
-    struct GasTokenConfig
-    {
-        uint maxToBurn;
-        uint expectedGasRefund;
-        uint calldataCost;
-    }
-
-    // See:
-    // - https://github.com/1inch-exchange/1inchProtocol/blob/a7781cf9aa1cc2aaa5ccab0d54ecbae1327ca08f/contracts/OneSplitAudit.sol#L343
-    // - https://github.com/curvefi/curve-ren-adapter/blob/8c1fbc3fec41ebd79b06984d72ff6ace3198e62d/truffle/contracts/CurveExchangeAdapter.sol#L104
-    modifier discountCHI(GasTokenConfig memory config)
-    {
-        uint gasStart = gasleft();
-        _;
-        if (config.maxToBurn == 0) return;
-        uint gasSpent = 21000 + gasStart - gasleft() + 14154;
-        gasSpent += (config.calldataCost == 0) ? 16 * msg.data.length : config.calldataCost;
-        uint gasRefundOffset = (config.expectedGasRefund * 2 > gasSpent) ? gasSpent : config.expectedGasRefund * 2;
-        uint fullAmountToBurn = (gasSpent - gasRefundOffset) / 41947;
-        uint amountToBurn = fullAmountToBurn > config.maxToBurn ? config.maxToBurn : fullAmountToBurn;
-        if (amountToBurn > 0) {
-            if (gasTokenVault == address(this)) {
-                chi.freeUpTo(amountToBurn);
-            } else {
-                chi.freeFromUpTo(gasTokenVault, amountToBurn);
-            }
-        }
-    }
-
     constructor(
-        address _exchange,
-        address _chi,             // Mainnet: 0x0000000000004946c0e9F43F4Dee607b0eF1fA1c
-        address _gasTokenVault
+        address _exchange
         )
         SelectorBasedAccessManager(_exchange)
     {
-        address __gasTokenVault = (_gasTokenVault == address(0)) ? address(this) : _gasTokenVault;
-
-        chi = IChiToken(_chi);
-        gasTokenVault = __gasTokenVault;
-
-        IChiToken(_chi).approve(__gasTokenVault, type(uint256).max);
     }
 
     function openAccessToSubmitBlocks(bool _open)
@@ -134,10 +95,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         bool                     isDataCompressed,
         bytes           calldata data,
         CallbackConfig  calldata config,
-        GasTokenConfig  calldata gasTokenConfig
+        ChiConfig       calldata chiConfig
         )
         external
-        discountCHI(gasTokenConfig)
+        discountCHI(chiConfig)
     {
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");
