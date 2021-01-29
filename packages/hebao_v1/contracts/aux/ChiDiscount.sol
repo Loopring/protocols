@@ -20,7 +20,7 @@ contract ChiDiscount
     // See:
     // - https://github.com/1inch-exchange/1inchProtocol/blob/a7781cf9aa1cc2aaa5ccab0d54ecbae1327ca08f/contracts/OneSplitAudit.sol#L343
     // - https://github.com/curvefi/curve-ren-adapter/blob/8c1fbc3fec41ebd79b06984d72ff6ace3198e62d/truffle/contracts/CurveExchangeAdapter.sol#L104
-    modifier discountCHI(ChiConfig storage config)
+    modifier discountCHI(ChiConfig calldata config)
     {
         uint gasStart = gasleft();
 
