@@ -27,6 +27,7 @@ contract BatchTransactor is Drainable, ChiDiscount, OwnerManagable
         )
         external
         discountCHI(chiToken, chiConfig)
+        onlyManager
     {
         require(target != address(0), "EMPTY_TARGET");
         require(txs.length == gasLimits.length, "SIZE_DIFF");
