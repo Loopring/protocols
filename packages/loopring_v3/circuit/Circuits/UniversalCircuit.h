@@ -99,7 +99,8 @@ class SelectTransactionGadget : public BaseTransactionCircuit
                 variables.push_back(da);
                 // std::cout << "da size: " << variables.back().size() << std::endl;
             }
-            publicDataSelects.emplace_back(pb, state.constants, selector, variables, FMT(annotation_prefix, ".publicDataSelects"));
+            publicDataSelects.emplace_back(
+              pb, state.constants, selector, variables, FMT(annotation_prefix, ".publicDataSelects"));
         }
     }
 

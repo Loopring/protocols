@@ -1852,7 +1852,11 @@ class ArraySelectGadget : public GadgetT
         for (unsigned int i = 0; i < values.size(); i++)
         {
             results.emplace_back(
-              pb, selector[i], values[i], (i == 0) ? VariableArrayT(values[0].size(), _constants._0) : results.back().result(), FMT(prefix, ".results"));
+              pb,
+              selector[i],
+              values[i],
+              (i == 0) ? VariableArrayT(values[0].size(), _constants._0) : results.back().result(),
+              FMT(prefix, ".results"));
         }
     }
 
@@ -2239,8 +2243,7 @@ class PowerGadget : public GadgetT
 
         for (unsigned int i = 2; i < iterations; i++)
         {
-            bn.emplace_back(
-              pb, constants.fixedBase, constants.values[i], FMT(prefix, ".bn"));
+            bn.emplace_back(pb, constants.fixedBase, constants.values[i], FMT(prefix, ".bn"));
             vn.emplace_back(
               pb,
               constants,

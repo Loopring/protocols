@@ -857,7 +857,7 @@ int main(int argc, char **argv)
     Loopring::Circuit *circuit = createCircuit(blockType, blockSize, pb);
     if (config.swapAB)
     {
-        //pb.constraint_system.swap_AB_if_beneficial();
+        // pb.constraint_system.swap_AB_if_beneficial();
     }
     pb.constraint_system.constraints.shrink_to_fit();
     pb.values.shrink_to_fit();

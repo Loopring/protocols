@@ -62,7 +62,6 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(
       LoopringIOExchangeOwner,
       ExchangeV3.address,
-      chiTokenAddress,
       "0x" + "00".repeat(20),
       {
         gas: 6700000
