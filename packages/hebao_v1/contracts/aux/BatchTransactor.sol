@@ -20,7 +20,7 @@ contract BatchTransactor is Drainable, ChiDiscount, OwnerManagable
     }
 
     function batchTransact(
-        address target,
+        address   target,
         bytes[]   calldata txs,
         uint[]    calldata gasLimits,
         ChiConfig calldata chiConfig
