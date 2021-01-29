@@ -94,6 +94,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         return hasAccessTo(drainer, this.drain.selector);
     }
 
+    /// @dev chiConfig.expectedGasRefund shall be set to numDeposits * 15,000, and
+    /// chiConfig.calldataCost shall be set to 16 * msg.data.length or calculated
+    /// perfectly offchain (16 gas for non-zero byte, 4 gas for zero byte).
     function submitBlocksWithCallbacks(
         bool                     isDataCompressed,
         bytes           calldata data,

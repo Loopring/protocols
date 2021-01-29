@@ -12,8 +12,10 @@ contract ChiDiscount
     {
         address gasTokenVault;
         uint    maxToBurn;
-        uint    expectedGasRefund;
-        uint    calldataCost;
+        uint    expectedGasRefund; // The amount of gas refunded by the tx itself. Setting this to 0 will work well.
+        uint    calldataCost;      // The gas cost for the calldata itself. This is calculated as 16 * msg.data.length
+                                   // in the contract when set to 0, but can be calculated perfectly offchain (
+                                   // 16 gas for non-zero byte, 4 gas for zero byte).
     }
 
     // See:
