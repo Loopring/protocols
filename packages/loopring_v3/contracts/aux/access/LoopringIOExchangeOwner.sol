@@ -28,6 +28,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
 
     bytes4    private constant SUBMITBLOCKS_SELECTOR = IExchangeV3.submitBlocks.selector;
     bool      public  open;
+    address   public  immutable chiToken;
 
     event SubmitBlocksAccessOpened(bool open);
 
@@ -52,10 +53,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
     }
 
     constructor(
-        address _exchange
+        address _exchange,
+        address _chiToken
         )
         SelectorBasedAccessManager(_exchange)
     {
+        chiToken = _chiToken;
     }
 
     function openAccessToSubmitBlocks(bool _open)
@@ -98,7 +101,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         ChiConfig       calldata chiConfig
         )
         external
-        discountCHI(chiConfig)
+        discountCHI(chiToken, chiConfig)
     {
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");

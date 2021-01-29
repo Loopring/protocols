@@ -10,7 +10,6 @@ contract ChiDiscount
 {
     struct ChiConfig
     {
-        address chi;
         address gasTokenVault;
         uint    maxToBurn;
         uint    expectedGasRefund;
@@ -20,13 +19,16 @@ contract ChiDiscount
     // See:
     // - https://github.com/1inch-exchange/1inchProtocol/blob/a7781cf9aa1cc2aaa5ccab0d54ecbae1327ca08f/contracts/OneSplitAudit.sol#L343
     // - https://github.com/curvefi/curve-ren-adapter/blob/8c1fbc3fec41ebd79b06984d72ff6ace3198e62d/truffle/contracts/CurveExchangeAdapter.sol#L104
-    modifier discountCHI(ChiConfig calldata config)
+    modifier discountCHI(
+        address chiToken,
+        ChiConfig calldata config
+        )
     {
         uint gasStart = gasleft();
 
         _;
 
-        if (config.chiToken == address(0) || config.maxToBurn == 0) return;
+        if (chiToken == address(0) || config.maxToBurn == 0) return;
 
         uint gasSpent = 21000 + gasStart - gasleft() + 14154;
         gasSpent += (config.calldataCost == 0) ? 16 * msg.data.length : config.calldataCost;
@@ -37,9 +39,9 @@ contract ChiDiscount
         if (amountToBurn == 0) return;
 
         if (config.gasTokenVault == address(0) || config.gasTokenVault == address(this)) {
-            IChiToken(config.chiToken).freeUpTo(amountToBurn);
+            IChiToken(chiToken).freeUpTo(amountToBurn);
         } else {
-            IChiToken(config.chiToken).freeFromUpTo(config.gasTokenVault, amountToBurn);
+            IChiToken(chiToken).freeFromUpTo(config.gasTokenVault, amountToBurn);
         }
     }
 }

@@ -12,6 +12,13 @@ import "./ChiDiscount.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract BatchTransactor is Drainable, ChiDiscount, OwnerManagable
 {
+    address public immutable chiToken;
+
+    constructor(address _chiToken)
+    {
+        chiToken = _chiToken;
+    }
+
     function batchTransact(
         address target,
         bytes[]   calldata txs,
@@ -19,7 +26,7 @@ contract BatchTransactor is Drainable, ChiDiscount, OwnerManagable
         ChiConfig calldata chiConfig
         )
         external
-        discountCHI(chiConfig)
+        discountCHI(chiToken, chiConfig)
     {
         require(target != address(0), "EMPTY_TARGET");
         require(txs.length == gasLimits.length, "SIZE_DIFF");
