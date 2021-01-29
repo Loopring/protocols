@@ -231,6 +231,7 @@ export interface BlockCallback {
 }
 
 export interface GasTokenConfig {
+  gasTokenVault: string;
   maxToBurn: number;
   expectedGasRefund: number;
   calldataCost: number;
