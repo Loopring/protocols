@@ -3,21 +3,31 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../lib/Claimable.sol";
+import "../lib/OwnerManagable.sol";
 import "../lib/Drainable.sol";
+import "./ChiDiscount.sol";
 
 
 /// @title BatchTransactor
 /// @author Daniel Wang - <daniel@loopring.org>
-contract BatchTransactor is Drainable, Claimable
+contract BatchTransactor is Drainable, ChiDiscount, OwnerManagable
 {
+    address public immutable chiToken;
+
+    constructor(address _chiToken)
+    {
+        chiToken = _chiToken;
+    }
 
     function batchTransact(
-        address target,
-        bytes[] calldata txs,
-        uint[]  calldata gasLimits
+        address   target,
+        bytes[]   calldata txs,
+        uint[]    calldata gasLimits,
+        ChiConfig calldata chiConfig
         )
         external
+        discountCHI(chiToken, chiConfig)
+        onlyManager
     {
         require(target != address(0), "EMPTY_TARGET");
         require(txs.length == gasLimits.length, "SIZE_DIFF");

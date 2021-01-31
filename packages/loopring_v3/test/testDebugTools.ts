@@ -1,8 +1,9 @@
 import BN = require("bn.js");
 import fs = require("fs");
 import { AmmPool } from "./ammUtils";
+import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { BlockCallback } from "./types";
+import { BlockCallback, GasTokenConfig } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let ctx: ExchangeTestUtil;
@@ -95,11 +96,19 @@ contract("Exchange", (accounts: string[]) => {
       const submitBlocksTxData = ctx.getSubmitCallbackData(onchainBlocks);
       console.log(submitBlocksTxData);
 
+      const gasTokenConfig: GasTokenConfig = {
+        gasTokenVault: Constants.zeroAddress,
+        maxToBurn: 0,
+        expectedGasRefund: 0,
+        calldataCost: 0
+      };
+
       // LoopringIOExchangeOwner.submitBlocksWithCallbacks
       const withCallbacksParameters = ctx.getSubmitBlocksWithCallbacksData(
         useCompression,
         submitBlocksTxData,
-        blockCallbacks
+        blockCallbacks,
+        gasTokenConfig
       );
       console.log(withCallbacksParameters);
 
