@@ -892,6 +892,346 @@
   }
   ```
 
+  51. QCAD-ETH: 0xa738de0f4b1f52cc8410d6e49ab6ed1ca3fe1420
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-QCAD-ETH',
+    accountID: 51,
+    tokens: [
+      '0x4A16BAf414b8e637Ed12019faD5Dd705735DB2e0',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-QCAD-ETH'
+  }
+  ```
+
+  52. FIN-ETH: 0xa0059ad8e06c57458116abc5e5c0bdb86c4fb4b2
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-FIN-ETH',
+    accountID: 52,
+    tokens: [
+      '0x054f76beed60ab6dbeb23502178c52d6c5debe40',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-FIN-ETH'
+  }
+  ```
+
+  53. DOUGH-ETH: 0x24e4cf9b1723e5a5401841d931a301aedecd96ef
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-DOUGH-ETH',
+    accountID: 53,
+    tokens: [
+      '0xad32A8e6220741182940c5aBF610bDE99E737b2D',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-DOUGH-ETH'
+  }
+  ```
+
+  54. DEFIL-ETH: 0xa2f4a88553ba746a468c21d3990fe9c503e0b19a
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-DEFIL-ETH',
+    accountID: 54,
+    tokens: [
+      '0x78f225869c08d478c34e5f645d07a87d3fe8eb78',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-DEFIL-ETH'
+  }
+  ```
+
+  55. DEFIS-ETH: 0xa2acf6b0304a808147ee3b10601e452c3f1bfde7
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-DEFIS-ETH',
+    accountID: 55,
+    tokens: [
+      '0xad6a626ae2b43dcb1b39430ce496d2fa0365ba9c',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-DEFIS-ETH'
+  }
+  ```
+
+  56. AAVE-ETH: 0x8f5a6e6d18f8e3fdffc27fe7fe5804c2378f8310
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-AAVE-ETH',
+    accountID: 56,
+    tokens: [
+      '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-AAVE-ETH'
+  }
+  ```
+
+  57. MKR-ETH: 0x69a8bdee1af2138c58b1261373b37071850689c0
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-MKR-ETH',
+    accountID: 57,
+    tokens: [
+      '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-MKR-ETH'
+  }
+  ```
+
+  58. BAL-ETH: 0x145f20a0c129d592da261e42947a70be3b22db07
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-BAL-ETH',
+    accountID: 58,
+    tokens: [
+      '0xba100000625a3754423978a60c9317c58a424e3D',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-BAL-ETH'
+  }
+  ```
+
+  59. REN-ETH: 0xee6a9d6cb11a9796f767540f435f90f11a9b1414
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-REN-ETH',
+    accountID: 59,
+    tokens: [
+      '0x408e41876cccdc0f92210600ef50372656052a38',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-REN-ETH'
+  }
+  ```
+
+  60. UMA-ETH: 0x8a6ba9d448ad54579bed1f42f587d134bf7f8582
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-UMA-ETH',
+    accountID: 60,
+    tokens: [
+      '0x04Fa0d235C4abf4BcF4787aF4CF447DE572eF828',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-UMA-ETH'
+  }
+  ```
+
+  61. OMG-ETH: 0x8a986607603d606b1ac5fdcca089764671c725e1
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-OMG-ETH',
+    accountID: 61,
+    tokens: [
+      '0xd26114cd6EE289AccF82350c8d8487fedB8A0C07',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-OMG-ETH'
+  }
+  ```
+
+  62. KNC-ETH: 0xf85f030865359d1843701f4f1b08c38913c3d57f
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-KNC-ETH',
+    accountID: 62,
+    tokens: [
+      '0xdd974D5C2e2928deA5F71b9825b8b646686BD200',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-KNC-ETH'
+  }
+  ```
+
+  63. BNT-ETH: 0x7ab580e6af77bd13f090619ee1f7e7c2a645afb1
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-BNT-ETH',
+    accountID: 63,
+    tokens: [
+      '0x1F573D6Fb3F13d689FF844B4cE37794d79a7FF1C',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-BNT-ETH'
+  }
+  ```
+
+  64. SNT-ETH: 0xfe88c469e27861907d05a0e97f81d84c789a1cda
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-SNT-ETH',
+    accountID: 64,
+    tokens: [
+      '0x744d70fdbe2ba4cf95131626614a1763df805b9e',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-SNT-ETH'
+  }
+  ```
+
+  65. GNO-ETH: 0x447356b190c7dafbe0452c8d041725abf1e1d41f
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-GNO-ETH',
+    accountID: 65,
+    tokens: [
+      '0x6810e776880c02933d47db1b9fc05908e5386b96',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-GNO-ETH'
+  }
+  ```
+
+  66. CVT-ETH: 0x8f871ac37fa7f575e9b8c285b38f0bf99d3c087f
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-CVT-ETH',
+    accountID: 66,
+    tokens: [
+      '0xbe428c3867f05dea2a89fc76a102b544eac7f772',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-CVT-ETH'
+  }
+  ```
+
+  67. ENTRP-ETH: 0x41e3b439a4798f2f466d28be7bedc0743847dbe4
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-ENTRP-ETH',
+    accountID: 67,
+    tokens: [
+      '0x5bc7e5f0ab8b2e10d2d0a3f21739fce62459aef3',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-ENTRP-ETH'
+  }
+  ```
+
+  68. FARM-ETH: 0x5f6a9960318903d4205dda6ba45796bc969461b8
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-FARM-ETH',
+    accountID: 68,
+    tokens: [
+      '0xa0246c9032bC3A600820415aE600c6388619A14D',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-FARM-ETH'
+  }
+  ```
+
+  69. ZRX-ETH: 0xbbca4790398c4ce916937db3c6b7e9a9da6502e8
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-ZRX-ETH',
+    accountID: 69,
+    tokens: [
+      '0xE41d2489571d322189246DaFA5ebDe1F4699F498',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-ZRX-ETH'
+  }
+  ```
+
+  70. NMR-ETH: 0x093137cfd844b64febeb5371d85cf83ff4f92bbf
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-NMR-ETH',
+    accountID: 70,
+    tokens: [
+      '0x1776e1F26f98b1A5dF9cD347953a26dd3Cb46671',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-NMR-ETH'
+  }
+  ```
+
   ***
 
 - Registered tokens:
@@ -1043,3 +1383,24 @@
   - LP-ADX-ETH 0x1f94eaaa413c11bea645ee65108b5673304753bd, tokenId: 145
   - LP-PLTC-ETH 0xfb64c2d72e1caa0286899be8e4f88266c4d8ab9f, tokenId: 146
   - BOR: 0x3c9d6c1c73b31c837832c72e04d3152f051fc1a9, tokenId: 147
+  - LP-QCAD-ETH 0xa738de0f4b1f52cc8410d6e49ab6ed1ca3fe1420, tokenId: 148
+  - LP-FIN-ETH 0xa0059ad8e06c57458116abc5e5c0bdb86c4fb4b2, tokenId: 149
+  - LP-DOUGH-ETH 0x24e4cf9b1723e5a5401841d931a301aedecd96ef, tokenId: 150
+  - LP-DEFIL-ETH 0xa2f4a88553ba746a468c21d3990fe9c503e0b19a, tokenId: 151
+  - LP-DEFIS-ETH 0xa2acf6b0304a808147ee3b10601e452c3f1bfde7, tokenId: 152
+  - LP-AAVE-ETH 0x8f5a6e6d18f8e3fdffc27fe7fe5804c2378f8310, tokenId: 153
+  - LP-MKR-ETH 0x69a8bdee1af2138c58b1261373b37071850689c0, tokenId: 154
+  - LP-BAL-ETH 0x145f20a0c129d592da261e42947a70be3b22db07, tokenId: 155
+  - LP-REN-ETH 0xee6a9d6cb11a9796f767540f435f90f11a9b1414, tokenId: 156
+  - LP-UMA-ETH 0x8a6ba9d448ad54579bed1f42f587d134bf7f8582, tokenId: 157
+  - LP-OMG-ETH 0x8a986607603d606b1ac5fdcca089764671c725e1, tokenId: 158
+  - LP-KNC-ETH 0xf85f030865359d1843701f4f1b08c38913c3d57f, tokenId: 159
+  - LP-BNT-ETH 0x7ab580e6af77bd13f090619ee1f7e7c2a645afb1, tokenId: 160
+  - LP-SNT-ETH 0xfe88c469e27861907d05a0e97f81d84c789a1cda, tokenId: 161
+  - LP-GNO-ETH 0x447356b190c7dafbe0452c8d041725abf1e1d41f, tokenId: 162
+  - LP-CVT-ETH 0x8f871ac37fa7f575e9b8c285b38f0bf99d3c087f, tokenId: 163
+  - LP-ENTRP-ETH 0x41e3b439a4798f2f466d28be7bedc0743847dbe4, tokenId: 164
+  - LP-FARM-ETH 0x5f6a9960318903d4205dda6ba45796bc969461b8, tokenId: 165
+  - LP-ZRX-ETH 0xbbca4790398c4ce916937db3c6b7e9a9da6502e8, tokenId: 166
+  - LP-NMR-ETH 0x093137cfd844b64febeb5371d85cf83ff4f92bbf, tokenId: 167
+
