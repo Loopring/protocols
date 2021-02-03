@@ -1,7 +1,17 @@
-import { calculateCalldataCost, compressLZ, decompressLZ, compressZeros, decompressZeros, Bitstream } from "loopringV3.js";
+import {
+  calculateCalldataCost,
+  compressLZ,
+  decompressLZ,
+  compressZeros,
+  decompressZeros,
+  Bitstream
+} from "loopringV3.js";
+import { CompressionSpeed } from "loopringV3.js";
 
 contract("Compression", (accounts: string[]) => {
-  describe("LZ compression", () => {
+  describe("LZ compression", function() {
+    this.timeout(0);
+
     let lzDecompressor: any;
 
     const compressLZChecked = (data: string) => {
@@ -41,8 +51,35 @@ contract("Compression", (accounts: string[]) => {
     };
 
     before(async () => {
-      const LzDecompressorContract = artifacts.require("LzDecompressorContract");
+      const LzDecompressorContract = artifacts.require(
+        "LzDecompressorContract"
+      );
       lzDecompressor = await LzDecompressorContract.new();
+    });
+
+    it.skip("Optimizer", async () => {
+      const data =
+        "0x0123456789987654301111111111111111111111111115548914444444444444121288412354425140000000000000" +
+        "151156455787878787878787878787878454000000000000000000000000000000000000456487844878984567000000" +
+        "151515151515151515151515151515151515151515151500000000000000000000000000000000000000000000000000" +
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001";
+
+      let bestGas = 10000000;
+      let bestN = 0;
+      for (let i = 20; i < 60; i++) {
+        const compressed = compressLZ(data, i, CompressionSpeed.SLOW);
+        console.log(compressed);
+        const tx = await lzDecompressor.benchmark(compressed);
+        const gasUsed = tx.receipt.gasUsed;
+        if (gasUsed < bestGas) {
+          bestGas = gasUsed;
+          bestN = i;
+        }
+        console.log("" + i + ": " + gasUsed);
+      }
+      console.log("Best - " + bestN + ": " + bestGas);
     });
 
     it("Test data", async () => {
@@ -150,7 +187,9 @@ contract("Compression", (accounts: string[]) => {
     };
 
     before(async () => {
-      const ZeroDecompressorContract = artifacts.require("ZeroDecompressorContract");
+      const ZeroDecompressorContract = artifacts.require(
+        "ZeroDecompressorContract"
+      );
       zeroDecompressor = await ZeroDecompressorContract.new();
     });
 
@@ -163,6 +202,30 @@ contract("Compression", (accounts: string[]) => {
         "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
         "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001";
       await compressAndDecompressZerosChecked(data);
+    });
+
+    it.skip("Optimizer", async () => {
+      const data =
+        "0x0123456789987654301111111111111111111111111115548914444444444444121288412354425140000000000000" +
+        "151156455787878787878787878787878454000000000000000000000000000000000000456487844878984567000000" +
+        "151515151515151515151515151515151515151515151500000000000000000000000000000000000000000000000000" +
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001";
+
+      let bestGas = 10000000;
+      let bestN = 0;
+      for (let i = 8; i < 100; i++) {
+        const compressed = compressZeros(data, i);
+        const tx = await zeroDecompressor.benchmark(compressed);
+        const gasUsed = tx.receipt.gasUsed;
+        if (gasUsed < bestGas) {
+          bestGas = gasUsed;
+          bestN = i;
+        }
+        console.log("" + i + ": " + gasUsed);
+      }
+      console.log("Best - " + bestN + ": " + bestGas);
     });
 
     it("Random data", async () => {
@@ -218,5 +281,4 @@ contract("Compression", (accounts: string[]) => {
       await compressAndDecompressZerosChecked(bitstream.getData());
     });
   });
-
 });

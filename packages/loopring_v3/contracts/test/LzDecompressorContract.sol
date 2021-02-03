@@ -14,4 +14,13 @@ contract LzDecompressorContract {
     {
         return LzDecompressor.decompress(data);
     }
+
+    function benchmark(
+        bytes calldata data
+        )
+        external
+        returns (bytes memory)
+    {
+        return LzDecompressor.decompress(data);
+    }
 }

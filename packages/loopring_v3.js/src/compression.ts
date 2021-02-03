@@ -79,9 +79,10 @@ export function decompress(data: string) {
 
 export function compressLZ(
   input: string,
+  minNumZeros: number = 42,
   speed: CompressionSpeed = CompressionSpeed.MEDIUM
 ) {
-  const minGasSavedForReplacement = GAS_COST_NONZERO_BYTE * 40;
+  const minGasSavedForReplacement = GAS_COST_NONZERO_BYTE * minNumZeros;
   const minLengthReplacement = Math.floor(
     minGasSavedForReplacement / GAS_COST_NONZERO_BYTE
   );
@@ -262,10 +263,10 @@ export function decompressLZ(input: string) {
 
 export function compressZeros(
   input: string,
+  minNumZeros: Number = 42,
   speed: CompressionSpeed = CompressionSpeed.MEDIUM
 ) {
-  const minNumZeros = 20;
-  const maxLength = 2**16-1;
+  const maxLength = 2 ** 16 - 1;
 
   const stream = new Bitstream(input);
   assert(stream.length() > 0, "cannot compress empty input");
@@ -283,22 +284,23 @@ export function compressZeros(
 
   const writeLiterals = (numData: number, numZeros: number) => {
     // Make sure no length is longer than `maxLength`
-    const numDataWriteLoops = Math.floor((numData + maxLength) / (maxLength + 1));
-      for (let i = 0; i < numDataWriteLoops - 1; i++)
-      {
-        compressed.addNumber(maxLength, 2);
-        compressed.addNumber(0, 2);
-        for (let i = 0; i < maxLength; i++) {
-          compressed.addNumber(data[previousPos + i], 1);
-        }
-        previousPos += maxLength;
-        numData -= maxLength;
+    const numDataWriteLoops = Math.floor(
+      (numData + maxLength) / (maxLength + 1)
+    );
+    for (let i = 0; i < numDataWriteLoops - 1; i++) {
+      compressed.addNumber(maxLength, 2);
+      compressed.addNumber(0, 2);
+      for (let i = 0; i < maxLength; i++) {
+        compressed.addNumber(data[previousPos + i], 1);
       }
-      compressed.addNumber(numData, 2);
-      compressed.addNumber(numZeros, 2);
-      for (let i = 0; i < numData; i++) {
-         compressed.addNumber(data[previousPos + i], 1);
-      }
+      previousPos += maxLength;
+      numData -= maxLength;
+    }
+    compressed.addNumber(numData, 2);
+    compressed.addNumber(numZeros, 2);
+    for (let i = 0; i < numData; i++) {
+      compressed.addNumber(data[previousPos + i], 1);
+    }
   };
 
   while (pos < dataLength) {
