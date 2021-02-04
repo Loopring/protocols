@@ -1232,6 +1232,23 @@
   }
   ```
 
+  71. LRC-WBTC: 0xfa6680779dc9168600bcdcaff28b41c8fa568d98
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-LRC-WBTC',
+    accountID: 71,
+    tokens: [
+      '0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD',
+      '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-LRC-WBTC'
+  }
+  ```
+  
   ***
 
 - Registered tokens:
@@ -1403,4 +1420,4 @@
   - LP-FARM-ETH 0x5f6a9960318903d4205dda6ba45796bc969461b8, tokenId: 165
   - LP-ZRX-ETH 0xbbca4790398c4ce916937db3c6b7e9a9da6502e8, tokenId: 166
   - LP-NMR-ETH 0x093137cfd844b64febeb5371d85cf83ff4f92bbf, tokenId: 167
-
+  - LP-LRC-WBTC 0xfa6680779dc9168600bcdcaff28b41c8fa568d98, tokenId: 168
