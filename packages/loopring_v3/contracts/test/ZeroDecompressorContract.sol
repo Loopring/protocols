@@ -14,4 +14,13 @@ contract ZeroDecompressorContract {
     {
         return ZeroDecompressor.decompress(data, 0);
     }
+
+    function benchmark(
+        bytes calldata data
+        )
+        external
+        returns (bytes memory)
+    {
+        return ZeroDecompressor.decompress(data, 0);
+    }
 }

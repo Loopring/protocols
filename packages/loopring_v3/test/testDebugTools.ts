@@ -4,6 +4,7 @@ import { AmmPool } from "./ammUtils";
 import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
 import { BlockCallback, GasTokenConfig } from "./types";
+import { calculateCalldataCost, compressZeros } from "loopringV3.js";
 
 contract("Exchange", (accounts: string[]) => {
   let ctx: ExchangeTestUtil;
@@ -19,6 +20,46 @@ contract("Exchange", (accounts: string[]) => {
 
   describe("Debug Tools", function() {
     this.timeout(0);
+
+    it.skip("submitBlocks tx data compressor", async () => {
+      const data = "";
+
+      //console.log("original gas cost: " + calculateCalldataCost(data));
+
+      const decodedInput = web3.eth.abi.decodeParameters(
+        [
+          "bool",
+          "bytes",
+          {
+            "struct CallbackConfig": {
+              "struct BlockCallback[]": {
+                blockIdx: "uint16",
+                "struct TxCallback[]": {
+                  txIdx: "uint16",
+                  numTxs: "uint16",
+                  receiverIdx: "uint16",
+                  data: "bytes"
+                }
+              },
+              receivers: "address[]"
+            }
+          }
+        ],
+        "0x" + data.slice(2 + 4 * 2)
+      );
+
+      const ctx = new ExchangeTestUtil();
+      await ctx.initialize(accounts);
+
+      const encodedData = await ctx.getSubmitBlocksWithCallbacks({
+        isDataCompressed: true,
+        data: compressZeros(decodedInput[1]),
+        callbackConfig: decodedInput[2]
+      });
+
+      //console.log("new gas cost: " + calculateCalldataCost(encodedData));
+      console.log(encodedData);
+    });
 
     it.skip("submitBlocks tx data", async () => {
       const blockDirectory = "./blocks/";
