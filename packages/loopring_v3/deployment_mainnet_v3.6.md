@@ -1248,7 +1248,39 @@
     tokenSymbol: 'LP-LRC-WBTC'
   }
   ```
-  
+  72. RFOX-ETH: 0x1ad74cf7caf443f77bd89860ef39f4ca16fbe810
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-RFOX-ETH',
+    accountID: 72,
+    tokens: [
+      '0xa1d6Df714F91DeBF4e0802A542E13067f31b8262',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-RFOX-ETH'
+  }
+  ```
+
+  73. NEC-ETH: 0xc418a3af58d7a1bad0b709fe58d0afddf64e178d
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-NEC-ETH',
+    accountID: 73,
+    tokens: [
+      '0xCc80C051057B774cD75067Dc48f8987C4Eb97A5e',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-NEC-ETH'
+  }
+  ```
   ***
 
 - Registered tokens:
@@ -1421,3 +1453,7 @@
   - LP-ZRX-ETH 0xbbca4790398c4ce916937db3c6b7e9a9da6502e8, tokenId: 166
   - LP-NMR-ETH 0x093137cfd844b64febeb5371d85cf83ff4f92bbf, tokenId: 167
   - LP-LRC-WBTC 0xfa6680779dc9168600bcdcaff28b41c8fa568d98, tokenId: 168
+  - RFOX: 0xa1d6Df714F91DeBF4e0802A542E13067f31b8262, tokenId: 169
+  - NEC: 0xCc80C051057B774cD75067Dc48f8987C4Eb97A5e, tokenId: 170
+  - LP-RFOX-ETH 0x1ad74cf7caf443f77bd89860ef39f4ca16fbe810, tokenId: 171
+  - LP-NEC-ETH 0xc418a3af58d7a1bad0b709fe58d0afddf64e178d, tokenId: 172
