@@ -24,12 +24,16 @@ y_pred = regressor.predict(X_test)
 
 #print(regressor.coef_)
 
-print("- noop_cost:           " + str(regressor.coef_[0]))
-print("- deposit_cost:        " + str(regressor.coef_[1]))
-print("- withdrawal_cost:     " + str(regressor.coef_[2]))
-print("- transfer_cost:       " + str(regressor.coef_[3]))
-print("- trade_cost:          " + str(regressor.coef_[4]))
-print("- account_update_cost: " + str(regressor.coef_[5]))
-print("- amm_update_cost:     " + str(regressor.coef_[6]))
-#print("- signature_cost:      " + str(regressor.coef_[7]))
 
+print(regressor.intercept_)
+
+offset = regressor.intercept_/386
+
+print("- noop_cost:           " + str(regressor.coef_[0] + offset/7))
+print("- deposit_cost:        " + str(regressor.coef_[1] + offset/7))
+print("- withdrawal_cost:     " + str(regressor.coef_[2] + offset/7))
+print("- transfer_cost:       " + str(regressor.coef_[3] + offset/7))
+print("- trade_cost:          " + str(regressor.coef_[4] + offset/7))
+print("- account_update_cost: " + str(regressor.coef_[5] + offset/7))
+print("- amm_update_cost:     " + str(regressor.coef_[6] + offset/7))
+#print("- signature_cost:      " + str(regressor.coef_[7]))
