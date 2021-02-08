@@ -4,7 +4,8 @@ dataset = pd.read_csv('block_stats.csv')
 dataset.head()
 
 # select data
-X = dataset.iloc[:,2:].values
+# remove signature tx cost (correlated to amm update)
+X = dataset.iloc[:,2:-1].values
 y = dataset.iloc[:,1].values
 
 #print(X)
@@ -14,8 +15,8 @@ from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 0)
 
 # Fitting the model
-from sklearn.linear_model import Lasso
-regressor = Lasso(positive=True,max_iter=10000000)
+from sklearn.linear_model import LinearRegression
+regressor = LinearRegression(positive=True)
 regressor.fit(X_train, y_train)
 
 # predicting the test set results
@@ -30,4 +31,5 @@ print("- transfer_cost:       " + str(regressor.coef_[3]))
 print("- trade_cost:          " + str(regressor.coef_[4]))
 print("- account_update_cost: " + str(regressor.coef_[5]))
 print("- amm_update_cost:     " + str(regressor.coef_[6]))
-print("- signature_cost:      " + str(regressor.coef_[7]))
+#print("- signature_cost:      " + str(regressor.coef_[7]))
+

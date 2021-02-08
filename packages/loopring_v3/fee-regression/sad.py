@@ -28,7 +28,7 @@ with open('block_stats.csv', newline='') as csvfile:
     best_deposit_cost = 0
     best_withdrawal_cost = 0
     best_transfer_cost = 0
-    best_trade_cost= 0
+    best_trade_cost = 0
     best_account_update_cost = 0
     best_amm_update_cost = 0
     best_signature_cost = 0
@@ -64,17 +64,17 @@ with open('block_stats.csv', newline='') as csvfile:
     '''
 
     # Used to find the best values
-    for noop_cost in range(0, 50, 50):
+    for noop_cost in range(800, 1200, 50):
         print("**noop_cost**: " + str(noop_cost))
         for deposit_cost in range(-1000, 500, 500):
             print("**deposit_cost**: " + str(deposit_cost))
-            for withdrawal_cost in range(44000, 48000, 500):
+            for withdrawal_cost in range(45000, 50000, 500):
                 print("**withdrawal_cost**: " + str(withdrawal_cost))
-                for transfer_cost in range(1300, 1450, 50):
-                    for trade_cost in range(1300, 1450, 50):
-                        for account_update_cost in range(14500, 18500, 500):
-                            for amm_update_cost in range(44500, 48000, 500):
-                                for signature_cost in range(4500, 7000, 500):
+                for transfer_cost in range(1100, 1400, 25):
+                    for trade_cost in range(1100, 1400, 25):
+                        for account_update_cost in range(16000, 18500, 500):
+                            for amm_update_cost in range(47000, 53000, 500):
+                                for signature_cost in range(0, 500, 500):
 
                                     total_error = 0
                                     total_gas_delta = 0
