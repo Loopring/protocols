@@ -44,9 +44,9 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     const pool = new AmmPool(ctx);
     await pool.setupPool(sharedConfig, tokens, weights, feeBipsAMM);
 
-    await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
-      from: registryOwner
-    });
+    // await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
+    //   from: registryOwner
+    // });
 
     return pool;
   };
@@ -791,9 +791,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               "INVALID_CHALLENGE"
             );
 
-            const maxForcedExitAge = (
-              await sharedConfig.maxForcedExitAge()
-            ).toNumber();
+            const maxForcedExitAge = (await sharedConfig.maxForcedExitAge()).toNumber();
             // Wait
             await ctx.advanceBlockTimestamp(maxForcedExitAge - 100);
 
