@@ -67,10 +67,18 @@ library AmmJoinProcess
                 transfer.to == address(this) &&
                 transfer.tokenID == ctx.tokens[i].tokenID &&
                 transfer.amount.isAlmostEqualAmount(amounts[i]) &&
-                transfer.fee == 0 &&
                 (signature.length == 0 || transfer.storageID == join.joinStorageIDs[i]),
                 "INVALID_JOIN_TRANSFER_TX_DATA"
             );
+
+            if (transfer.fee > 0) {
+                require(
+                    i == ctx.tokens.length - 1 &&
+                    transfer.feeTokenID == ctx.tokens[i].tokenID &&
+                    transfer.fee <= join.fee,
+                    "INVALID_FEES"
+                );
+            }
 
             ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(transfer.amount);
         }
