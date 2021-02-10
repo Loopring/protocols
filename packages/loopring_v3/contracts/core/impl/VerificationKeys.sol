@@ -7,7 +7,7 @@ pragma solidity ^0.7.0;
 /// @author Brecht Devos - <brecht@loopring.org>
 library VerificationKeys
 {
-    function getKeys(
+    function getKey(
         uint blockType,
         uint blockSize,
         uint blockVersion

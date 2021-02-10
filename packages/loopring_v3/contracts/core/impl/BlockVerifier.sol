@@ -90,7 +90,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         returns (bool)
     {
         // First try to find the verification key in the hard coded list
-        (uint[14] memory _vk, uint[4] memory _vk_gammaABC, bool found) = VerificationKeys.getKeys(
+        (uint[14] memory _vk, uint[4] memory _vk_gammaABC, bool found) = VerificationKeys.getKey(
             blockType,
             blockSize,
             blockVersion

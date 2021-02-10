@@ -3,7 +3,7 @@ import json
 
 # block settings
 block_type = 0
-block_sizes = [2, 4, 8, 16]
+block_sizes = [16, 8, 4, 2]
 block_version = 123
 
 # keys path
@@ -29,7 +29,7 @@ o = o + "/// @title Hard coded verification keys\n"
 o = o + "/// @author Brecht Devos - <brecht@loopring.org>\n"
 o = o + "library VerificationKeys\n"
 o = o + "{\n"
-o = o + "    function getKeys(\n"
+o = o + "    function getKey(\n"
 o = o + "        uint blockType,\n"
 o = o + "        uint blockSize,\n"
 o = o + "        uint blockVersion\n"
