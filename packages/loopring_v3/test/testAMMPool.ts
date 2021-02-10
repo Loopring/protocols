@@ -483,7 +483,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("1000", "ether")),
           new BN(web3.utils.toWei("2000", "ether"))
         ],
-        { authMethod: AuthMethod.EDDSA }
+        {
+          authMethod: AuthMethod.EDDSA,
+          fee: new BN(web3.utils.toWei("100", "ether"))
+        }
       );
       await ctx.submitTransactions(16);
 
