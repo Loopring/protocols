@@ -103,6 +103,8 @@ cost_amm_join_exit *= ratio;
 cost_transfer /= ((1 - lrc_discount) * (1 - protocol_fee))
 cost_trade /= ((1 - lrc_discount) * (1 - protocol_fee) * (1 - affiliate_reward))
 
-
+# Lets round up it to 50 so the UI can display this better.
+cost_withdrawal = （cost_withdrawal / 50).ceil() * 50;
+cost_transfer = ...
 
 # print cost...
