@@ -5,11 +5,11 @@ from pytz import reference
 
 # block settings
 block_type = 0
-block_sizes = [16, 8, 4, 2]
-block_version = 123
+block_sizes = [384, 256, 128, 64, 32, 16]
+block_version = 32
 
 # keys path
-keys_path = "./keys/"
+keys_path = "./trusted_setup_keys/"
 # output
 output_filename = "./contracts/core/impl/VerificationKeys.sol"
 
@@ -30,7 +30,7 @@ o = o + "pragma solidity ^0.7.0;\n"
 o = o + "\n"
 o = o + "\n"
 o = o + "/// @title Hard coded verification keys\n"
-o = o + "/// @dev Generated on " + now.strftime("%d-%b-%Y %I:%M:%S, " + localtime.tzname(now)) + "\n"
+o = o + "/// @dev Generated on " + now.strftime("%d-%b-%Y %H:%M:%S, " + localtime.tzname(now)) + "\n"
 o = o + "/// @author Brecht Devos - <brecht@loopring.org>\n"
 o = o + "library VerificationKeys\n"
 o = o + "{\n"
