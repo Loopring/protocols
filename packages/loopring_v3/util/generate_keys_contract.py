@@ -1,5 +1,7 @@
 import sys
 import json
+from datetime import datetime
+from pytz import reference
 
 # block settings
 block_type = 0
@@ -14,10 +16,12 @@ output_filename = "./contracts/core/impl/VerificationKeys.sol"
 
 def to_hex(d):
     return hex(int(d)).rstrip('L')
-    return d
 
 def from_hex(h):
     return int(h, 16)
+
+now = datetime.now()
+localtime = reference.LocalTimezone()
 
 o = ""
 o = o + "// SPDX-License-Identifier: Apache-2.0\n"
@@ -26,6 +30,7 @@ o = o + "pragma solidity ^0.7.0;\n"
 o = o + "\n"
 o = o + "\n"
 o = o + "/// @title Hard coded verification keys\n"
+o = o + "/// @dev Generated on " + now.strftime("%d-%b-%Y %I:%M:%S, " + localtime.tzname(now)) + "\n"
 o = o + "/// @author Brecht Devos - <brecht@loopring.org>\n"
 o = o + "library VerificationKeys\n"
 o = o + "{\n"

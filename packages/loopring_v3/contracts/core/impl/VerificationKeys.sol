@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 
 
 /// @title Hard coded verification keys
+/// @dev Generated on 11-Feb-2021 04:57:47, CET
 /// @author Brecht Devos - <brecht@loopring.org>
 library VerificationKeys
 {
