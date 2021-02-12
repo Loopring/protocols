@@ -11,7 +11,7 @@ import "./AmmData.sol";
 library AmmJoinRequest
 {
     bytes32 constant private POOLJOIN_TYPEHASH = keccak256(
-        "PoolJoin(address owner,uint96[] joinAmounts,uint32[] joinStorageIDs,uint96 mintMinAmount,uint32 validUntil)"
+        "PoolJoin(address owner,uint96[] joinAmounts,uint32[] joinStorageIDs,uint96 mintMinAmount,uint96 fee,uint32 validUntil)"
     );
 
     event PoolJoinRequested(AmmData.PoolJoin join);
@@ -19,7 +19,8 @@ library AmmJoinRequest
     function joinPool(
         AmmData.State storage S,
         uint96[]     calldata joinAmounts,
-        uint96                mintMinAmount
+        uint96                mintMinAmount,
+        uint96                fee
         )
         public
     {
@@ -34,6 +35,7 @@ library AmmJoinRequest
             joinAmounts: joinAmounts,
             joinStorageIDs: new uint32[](0),
             mintMinAmount: mintMinAmount,
+            fee: fee,
             validUntil: uint32(block.timestamp + S.sharedConfig.maxForcedExitAge())
         });
 
@@ -61,6 +63,7 @@ library AmmJoinRequest
                     keccak256(abi.encodePacked(join.joinAmounts)),
                     keccak256(abi.encodePacked(join.joinStorageIDs)),
                     join.mintMinAmount,
+                    join.fee,
                     join.validUntil
                 )
             )
