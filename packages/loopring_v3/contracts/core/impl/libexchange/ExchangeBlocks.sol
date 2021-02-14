@@ -25,7 +25,7 @@ library ExchangeBlocks
 {
     using AddressUtil          for address;
     using AddressUtil          for address payable;
-    using BlockReader          for ExchangeData.Block;
+    using BlockReader          for bytes;
     using BytesUtil            for bytes;
     using MathUint             for uint;
     using ExchangeMode         for ExchangeData.State;
@@ -49,7 +49,7 @@ library ExchangeBlocks
         ExchangeData.State   storage S,
         ExchangeData.Block[] memory  blocks
         )
-        public
+        external
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -57,10 +57,12 @@ library ExchangeBlocks
         // Commit the blocks
         bytes32[] memory publicDataHashes = new bytes32[](blocks.length);
         for (uint i = 0; i < blocks.length; i++) {
+            bytes memory blockData = blocks[i].data;
             // Hash all the public data to a single value which is used as the input for the circuit
             publicDataHashes[i] = blocks[i].data.fastSHA256();
+            //publicDataHashes[i] = sha256(blocks[i].data);
             // Commit the block
-            commitBlock(S, blocks[i], publicDataHashes[i]);
+            commitBlock(S, blocks[i], blockData, publicDataHashes[i]);
         }
 
         // Verify the blocks - blocks are verified in a batch to save gas.
@@ -72,12 +74,13 @@ library ExchangeBlocks
     function commitBlock(
         ExchangeData.State storage S,
         ExchangeData.Block memory  _block,
+        bytes memory                _blockData,
         bytes32                    _publicDataHash
         )
         private
     {
         // Read the block header
-        BlockReader.BlockHeader memory header = _block.readHeader();
+        BlockReader.BlockHeader memory header = _blockData.readHeader();
 
         // Validate the exchange
         require(header.exchange == address(this), "INVALID_EXCHANGE");
@@ -101,6 +104,7 @@ library ExchangeBlocks
         processConditionalTransactions(
             S,
             _block,
+            //_blockData,
             header
         );
 
@@ -131,8 +135,10 @@ library ExchangeBlocks
         IBlockVerifier blockVerifier = S.blockVerifier;
         uint numBlocksVerified = 0;
         bool[] memory blockVerified = new bool[](blocks.length);
-        ExchangeData.Block memory firstBlock;
+        //ExchangeData.Block memory firstBlock;
         uint[] memory batch = new uint[](blocks.length);
+
+        uint firstBlockIdx;
 
         while (numBlocksVerified < blocks.length) {
             // Find all blocks of the same type
@@ -140,13 +146,13 @@ library ExchangeBlocks
             for (uint i = 0; i < blocks.length; i++) {
                 if (blockVerified[i] == false) {
                     if (batchLength == 0) {
-                        firstBlock = blocks[i];
+                        firstBlockIdx = i;
                         batch[batchLength++] = i;
                     } else {
-                        ExchangeData.Block memory _block = blocks[i];
-                        if (_block.blockType == firstBlock.blockType &&
-                            _block.blockSize == firstBlock.blockSize &&
-                            _block.blockVersion == firstBlock.blockVersion) {
+                        //ExchangeData.Block memory _block = blocks[i];
+                        if (blocks[i].blockType == blocks[firstBlockIdx].blockType &&
+                            blocks[i].blockSize == blocks[firstBlockIdx].blockSize &&
+                            blocks[i].blockVersion == blocks[firstBlockIdx].blockVersion) {
                             batch[batchLength++] = i;
                         }
                     }
@@ -165,18 +171,18 @@ library ExchangeBlocks
                 // so we don't have any overflow in the snark field
                 publicInputs[i] = uint(publicDataHashes[blockIdx]) >> 3;
                 // Copy proof
-                ExchangeData.Block memory _block = blocks[blockIdx];
+                //ExchangeData.Block memory _block = blocks[blockIdx];
                 for (uint j = 0; j < 8; j++) {
-                    proofs[i*8 + j] = _block.proof[j];
+                    proofs[i*8 + j] = blocks[blockIdx].proof[j];
                 }
             }
 
             // Verify the proofs
             require(
-                blockVerifier.verifyProofs(
-                    uint8(firstBlock.blockType),
-                    firstBlock.blockSize,
-                    firstBlock.blockVersion,
+                !blockVerifier.verifyProofs(
+                    uint8(blocks[firstBlockIdx].blockType),
+                    blocks[firstBlockIdx].blockSize,
+                    blocks[firstBlockIdx].blockVersion,
                     publicInputs,
                     proofs
                 ),
@@ -190,6 +196,7 @@ library ExchangeBlocks
     function processConditionalTransactions(
         ExchangeData.State      storage S,
         ExchangeData.Block      memory _block,
+        //bytes                   memory _blockData,
         BlockReader.BlockHeader memory header
         )
         private
@@ -201,15 +208,39 @@ library ExchangeBlocks
                 timestamp: header.timestamp
             });
 
+            ExchangeData.AuxiliaryData[] memory block_auxiliaryData;
+            bytes memory blockAuxData = _block.auxiliaryData;
+            assembly {
+                block_auxiliaryData := add(blockAuxData, 64)
+            }
+
             require(
-                _block.auxiliaryData.length == header.numConditionalTransactions,
+                block_auxiliaryData.length == header.numConditionalTransactions,
                 "AUXILIARYDATA_INVALID_LENGTH"
             );
 
             // Run over all conditional transactions
             uint minTxIndex = 0;
-            for (uint i = 0; i < _block.auxiliaryData.length; i++) {
-                ExchangeData.AuxiliaryData memory auxiliaryData = _block.auxiliaryData[i];
+            ExchangeData.AuxiliaryData memory auxiliaryData;
+            bytes memory txData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE);
+            for (uint i = 0; i < block_auxiliaryData.length; i++) {
+                // Load the data from auxiliaryData, which is still encoded as calldata
+                uint txIdx;
+                bool approved;
+                bytes memory auxData;
+                assembly {
+                    // Offset to block_auxiliaryData[i]
+                    let auxOffset := mload(add(block_auxiliaryData, add(32, mul(32, i))))
+                    // Load `txIdx` (pos 0) and `approved` (pos 1) in block_auxiliaryData[i]
+                    txIdx := mload(add(add(32, block_auxiliaryData), auxOffset))
+                    approved := mload(add(add(64, block_auxiliaryData), auxOffset))
+                    let auxDataOffset := mload(add(add(96, block_auxiliaryData), auxOffset))
+                    auxData := add(add(32, block_auxiliaryData), add(auxOffset, auxDataOffset))
+                }
+                auxiliaryData.txIndex = txIdx;
+                auxiliaryData.approved = approved;
+                auxiliaryData.data = auxData;
+
                 // Each conditional transaction needs to be processed from left to right
                 require(auxiliaryData.txIndex >= minTxIndex, "AUXILIARYDATA_INVALID_ORDER");
 
@@ -220,7 +251,7 @@ library ExchangeBlocks
                 }
 
                 // Get the transaction data
-                bytes memory txData = _block.readTransactionData(auxiliaryData.txIndex);
+                _block.data.readTransactionData(auxiliaryData.txIndex, _block.blockSize, txData);
 
                 // Process the transaction
                 ExchangeData.TransactionType txType = ExchangeData.TransactionType(

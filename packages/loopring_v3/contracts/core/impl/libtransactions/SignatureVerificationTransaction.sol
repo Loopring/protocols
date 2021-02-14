@@ -35,11 +35,11 @@ library SignatureVerificationTransaction
         uint _offset = offset;
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        verification.owner = data.toAddress(_offset);
+        verification.owner = data.toAddressUnsafe(_offset);
         _offset += 20;
-        verification.accountID = data.toUint32(_offset);
+        verification.accountID = data.toUint32Unsafe(_offset);
         _offset += 4;
-        verification.data = data.toUint(_offset);
+        verification.data = data.toUintUnsafe(_offset);
         _offset += 32;
     }
 }

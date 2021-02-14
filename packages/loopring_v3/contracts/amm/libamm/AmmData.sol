@@ -71,10 +71,6 @@ library AmmData
         // functional parameters
         uint txIdx;
 
-        // Exchange state variables
-        IExchangeV3 exchange;
-        bytes32     exchangeDomainSeparator;
-
         // AMM pool state variables
         bytes32 domainSeparator;
         uint32  accountID;
@@ -84,6 +80,8 @@ library AmmData
 
         Token[]  tokens;
         uint96[] tokenBalancesL2;
+
+        bytes txData;
     }
 
     struct State {

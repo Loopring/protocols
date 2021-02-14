@@ -67,7 +67,8 @@ library ExchangeData
 
         // Block specific data that is only used to help process the block on-chain.
         // It is not used as input for the circuits and it is not necessary for data-availability.
-        AuxiliaryData[] auxiliaryData;
+        // This bytes array contains the abi encoded AuxiliaryData[] data.
+        bytes auxiliaryData;
 
         // Arbitrary data, mainly for off-chain data-availability, i.e.,
         // the multihash of the IPFS file that contains the block data.
@@ -125,12 +126,13 @@ library ExchangeData
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 30 days; }
     // The amount of bytes each rollup transaction uses in the block data for data-availability.
     // This is the maximum amount of bytes of all different transaction types.
-    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 68; }
     function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 15 days; }
     function ACCOUNTID_PROTOCOLFEE() internal pure returns (uint32) { return 0; }
 
-    function TX_DATA_AVAILABILITY_SIZE_PART_1() internal pure returns (uint32) { return 29; }
-    function TX_DATA_AVAILABILITY_SIZE_PART_2() internal pure returns (uint32) { return 39; }
+
+    uint public constant TX_DATA_AVAILABILITY_SIZE = 68;
+    uint public constant TX_DATA_AVAILABILITY_SIZE_PART_1 = 29;
+    uint public constant TX_DATA_AVAILABILITY_SIZE_PART_2 = 39;
 
     struct AccountLeaf
     {

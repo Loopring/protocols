@@ -91,7 +91,7 @@ library AccountUpdateTransaction
         _offset += 4;
         accountUpdate.feeTokenID = data.toUint16(_offset);
         _offset += 2;
-        accountUpdate.fee = uint(data.toUint16(_offset)).decodeFloat(16);
+        accountUpdate.fee = uint(data.toUint16(_offset)).decodeFloat16();
         _offset += 2;
         accountUpdate.publicKey = data.toUint(_offset);
         _offset += 32;

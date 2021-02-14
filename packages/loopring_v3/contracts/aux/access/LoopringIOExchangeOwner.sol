@@ -173,7 +173,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         // Verify the approved transactions data against the auxiliary data in the block
         for (uint i = 0; i < blocks.length; i++) {
             bool[] memory _preApprovedTxs = preApprovedTxs[i];
-            ExchangeData.AuxiliaryData[] memory auxiliaryData = blocks[i].auxiliaryData;
+            ExchangeData.AuxiliaryData[] memory auxiliaryData;
+            bytes memory blockAuxData = blocks[i].auxiliaryData;
+            assembly {
+                auxiliaryData := add(blockAuxData, 64)
+            }
+
             for(uint j = 0; j < auxiliaryData.length; j++) {
                 // Load the data from auxiliaryData, which is still encoded as calldata
                 uint txIdx;
@@ -185,6 +190,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
                     txIdx := mload(add(add(32, auxiliaryData), auxOffset))
                     approved := mload(add(add(64, auxiliaryData), auxOffset))
                 }
+
                 // Check that the provided data matches the expected value
                 require(_preApprovedTxs[txIdx] == approved, "PRE_APPROVED_TX_MISMATCH");
             }
@@ -210,9 +216,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
             uint16 receiverIdx = txCallback.receiverIdx;
             require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
 
-            ExchangeData.Block memory minimalBlock = _block.createMinimalBlock(txIdx, txCallback.numTxs);
+            bytes memory txsData = _block.extractTransactions(txIdx, txCallback.numTxs);
             IBlockReceiver(receivers[receiverIdx]).beforeBlockSubmission(
-                minimalBlock,
+                txsData,
                 txCallback.data,
                 0,
                 txCallback.numTxs
@@ -272,11 +278,11 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
             }
             _block.data = blockData;
 
-            ExchangeData.AuxiliaryData[] memory auxiliaryData;
+            bytes memory auxiliaryData;
             assembly {
                 auxiliaryData := add(data, add(32, add(blockOffset, auxiliaryDataOffset)))
             }
-            // Still encoded as calldata!
+            // Encoded as calldata!
             _block.auxiliaryData = auxiliaryData;
         }
         return blocks;

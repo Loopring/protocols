@@ -17,14 +17,15 @@ library AmmUpdateProcess
     function approveAmmUpdates(
         AmmData.State      storage S,
         AmmData.Context    memory  ctx,
-        ExchangeData.Block memory  _block
+        bytes              memory  txsData
         )
         internal
         view
     {
+        AmmUpdateTransaction.AmmUpdate memory update;
         for (uint i = 0; i < ctx.tokens.length; i++) {
             // Check that the AMM update in the block matches the expected update
-            AmmUpdateTransaction.AmmUpdate memory update = _block.readAmmUpdate(ctx.txIdx++);
+            AmmUpdateTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1, update);
 
             require(
                 update.owner == address(this) &&

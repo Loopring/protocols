@@ -1881,6 +1881,8 @@ export class ExchangeTestUtil {
           for (const auxiliaryData of block.auxiliaryData) {
             if (auxiliaryData[0] === Number(blockCallback.txIdx) + i) {
               auxiliaryData[1] = true;
+              // No auxiliary data needed for the tx
+              auxiliaryData[2] = "0x";
             }
           }
         }
@@ -1898,6 +1900,17 @@ export class ExchangeTestUtil {
     storeBlockInfoOnchain: boolean = false,
     blockVersion: number = 0
   ) {
+    const encodedAuxiliaryData = web3.eth.abi.encodeParameter(
+      {
+        "struct AuxiliaryData[]": {
+          txIndex: "uint",
+          approved: "bool",
+          data: "bytes"
+        }
+      },
+      auxiliaryData
+    );
+
     const onchainBlock: OnchainBlock = {
       blockType,
       blockSize,
@@ -1906,7 +1919,7 @@ export class ExchangeTestUtil {
       proof,
       storeBlockInfoOnchain,
       offchainData: offchainData,
-      auxiliaryData: auxiliaryData
+      auxiliaryData: encodedAuxiliaryData
     };
     return onchainBlock;
   }

@@ -28,11 +28,50 @@ library FloatUtil
         pure
         returns (uint96 value)
     {
+        if (f == 0) {
+            return 0;
+        }
         uint numBitsMantissa = numBits.sub(5);
         uint exponent = f >> numBitsMantissa;
         // log2(10**77) = 255.79 < 256
         require(exponent <= 77, "EXPONENT_TOO_LARGE");
         uint mantissa = f & ((1 << numBitsMantissa) - 1);
         value = mantissa.mul(10 ** exponent).toUint96();
+    }
+
+    // Decodes a decimal float value that is encoded like `exponent | mantissa`.
+    // Both exponent and mantissa are in base 10.
+    // Decoding to an integer is as simple as `mantissa * (10 ** exponent)`
+    // Will throw when the decoded value overflows an uint96
+    /// @param f The float value with 5 bits for the exponent, and `f < 2**16`!
+    /// @return value The decoded integer value.
+    function decodeFloat16(
+        uint f
+        )
+        internal
+        pure
+        returns (uint96)
+    {
+        uint value = ((f & 2047) * (10 ** (f >> 11)));
+        require(value < 2**96, "SafeCast: value doesn\'t fit in 96 bits");
+        return uint96(value);
+    }
+
+    // Decodes a decimal float value that is encoded like `exponent | mantissa`.
+    // Both exponent and mantissa are in base 10.
+    // Decoding to an integer is as simple as `mantissa * (10 ** exponent)`
+    // Will throw when the decoded value overflows an uint96
+    /// @param f The float value with 5 bits for the exponent, and `f < 2**24`!
+    /// @return value The decoded integer value.
+    function decodeFloat24(
+        uint f
+        )
+        internal
+        pure
+        returns (uint96)
+    {
+        uint value = ((f & 524287) * (10 ** (f >> 19)));
+        require(value < 2**96, "SafeCast: value doesn\'t fit in 96 bits");
+        return uint96(value);
     }
 }

@@ -118,7 +118,7 @@ contract LoopringAmmPool is
     }
 
     function beforeBlockSubmission(
-        ExchangeData.Block memory   _block,
+        bytes              calldata txsData,
         bytes              calldata data,
         uint                        txIdx,
         uint                        numTxs
@@ -130,7 +130,7 @@ contract LoopringAmmPool is
         // nonReentrant     // Not needed, does not do any external calls (except to the exchange)
                             // and can only be called by the exchange owner.
     {
-        state.beforeBlockSubmission(_block, data, txIdx, numTxs);
+        state.beforeBlockSubmission(txsData, data, txIdx, numTxs);
     }
 
     function withdrawWhenOffline()

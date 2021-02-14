@@ -35,7 +35,7 @@ library AmmExitProcess
     function processExit(
         AmmData.State       storage S,
         AmmData.Context     memory  ctx,
-        ExchangeData.Block  memory  _block,
+        bytes               memory  txsData,
         AmmData.PoolExit    memory  exit,
         bytes               memory  signature
         )
@@ -58,13 +58,14 @@ library AmmExitProcess
                 delete S.approvedTx[txHash];
             }
         } else if (signature.length == 1) {
-            ctx.verifySignatureL2(_block, exit.owner, txHash, signature);
+            ctx.verifySignatureL2(txsData, exit.owner, txHash, signature);
         } else {
             require(txHash.verifySignature(exit.owner, signature), "INVALID_OFFCHAIN_APPROVAL");
         }
 
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
 
+        TransferTransaction.Transfer memory transfer;
         if (isForcedExit) {
             if (!slippageOK) {
                 AmmUtil.transferOut(address(this), exit.burnAmount, exit.owner);
@@ -75,12 +76,12 @@ library AmmExitProcess
             ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
         } else {
             require(slippageOK, "EXIT_SLIPPAGE_INVALID");
-            _burnPoolTokenOnL2(ctx, _block, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
+            _burnPoolTokenOnL2(ctx, txsData, exit.burnAmount, exit.owner, exit.burnStorageID, signature, transfer);
         }
 
         // Handle liquidity tokens
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
+            TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1, transfer);
 
             require(
                 transfer.fromAccountID == ctx.accountID &&
@@ -112,16 +113,17 @@ library AmmExitProcess
 
     function _burnPoolTokenOnL2(
         AmmData.Context     memory  ctx,
-        ExchangeData.Block  memory  _block,
+        bytes               memory  txsData,
         uint96                      amount,
         address                     from,
         uint32                      burnStorageID,
-        bytes               memory  signature
+        bytes               memory  signature,
+        TransferTransaction.Transfer memory transfer
         )
         internal
         view
     {
-        TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
+        TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1, transfer);
 
         require(
             // transfer.fromAccountID == UNKNOWN &&

@@ -19,11 +19,11 @@ library AmmBlockReceiver
     using AmmJoinProcess    for AmmData.State;
     using AmmPoolToken      for AmmData.State;
     using AmmUpdateProcess  for AmmData.State;
-    using BlockReader       for ExchangeData.Block;
+    using BlockReader       for bytes;
 
     function beforeBlockSubmission(
-        AmmData.State      storage   S,
-        ExchangeData.Block memory   _block,
+        AmmData.State      storage  S,
+        bytes              memory   txsData,
         bytes              calldata data,
         uint                        txIdx,
         uint                        numTxs
@@ -32,12 +32,9 @@ library AmmBlockReceiver
     {
         AmmData.Context memory ctx = _getContext(S, txIdx);
 
-        BlockReader.BlockHeader memory header = _block.readHeader();
-        require(header.exchange == address(ctx.exchange), "INVALID_EXCHANGE");
+        S.approveAmmUpdates(ctx, txsData);
 
-        S.approveAmmUpdates(ctx, _block);
-
-        _processPoolTx(S, ctx, _block, data);
+        _processPoolTx(S, ctx, txsData, data);
 
         // Update state
         S._totalSupply = ctx.totalSupply;
@@ -57,21 +54,20 @@ library AmmBlockReceiver
         uint size = S.tokens.length;
         return AmmData.Context({
             txIdx: txIdx,
-            exchange: S.exchange,
-            exchangeDomainSeparator: S.exchangeDomainSeparator,
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             poolTokenID: S.poolTokenID,
             totalSupply: S._totalSupply,
             tokens: S.tokens,
-            tokenBalancesL2: new uint96[](size)
+            tokenBalancesL2: new uint96[](size),
+            txData: new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE)
         });
     }
 
     function _processPoolTx(
         AmmData.State           storage   S,
         AmmData.Context         memory    ctx,
-        ExchangeData.Block      memory    _block,
+        bytes                   memory    txsData,
         bytes                   calldata  poolTxData
         )
         private
@@ -80,14 +76,14 @@ library AmmBlockReceiver
         if (poolTx.txType == AmmData.PoolTxType.JOIN) {
             S.processJoin(
                 ctx,
-                _block,
+                txsData,
                 abi.decode(poolTx.data, (AmmData.PoolJoin)),
                 poolTx.signature
             );
         } else if (poolTx.txType == AmmData.PoolTxType.EXIT) {
             S.processExit(
                 ctx,
-                _block,
+                txsData,
                 abi.decode(poolTx.data, (AmmData.PoolExit)),
                 poolTx.signature
             );

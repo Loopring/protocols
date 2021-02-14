@@ -198,7 +198,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
             uint(ExchangeData.MAX_NUM_TOKENS()),
             uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
             uint(ExchangeData.MIN_TIME_IN_SHUTDOWN()),
-            uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE()),
+            uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE),
             uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND())
         );
     }

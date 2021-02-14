@@ -209,7 +209,7 @@ library WithdrawTransaction
         _offset += 12;
         withdrawal.feeTokenID = data.toUint16(_offset);
         _offset += 2;
-        withdrawal.fee = uint(data.toUint16(_offset)).decodeFloat(16);
+        withdrawal.fee = uint(data.toUint16(_offset)).decodeFloat16();
         _offset += 2;
         withdrawal.storageID = data.toUint32(_offset);
         _offset += 4;
