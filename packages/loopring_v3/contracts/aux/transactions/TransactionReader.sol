@@ -48,12 +48,11 @@ library TransactionReader {
     function readAmmUpdate(
         ExchangeData.Block memory _block,
         uint txIdx,
-        bytes memory txData,
-        AmmUpdateTransaction.AmmUpdate memory ammUpdate
+        bytes memory txData
         )
         internal
         pure
-        returns (AmmUpdateTransaction.AmmUpdate memory)
+        returns (AmmUpdateTransaction.AmmUpdate memory ammUpdate)
     {
         _block.readTx(txIdx, ExchangeData.TransactionType.AMM_UPDATE, txData);
         AmmUpdateTransaction.readTx(txData, 1, ammUpdate);
@@ -100,14 +99,13 @@ library TransactionReader {
 
     function extractTransactions(
         ExchangeData.Block memory _block,
-        uint txIdx,
-        uint16 numTransactions
+        uint                      txIdx,
+        uint16                    numTransactions,
+        bytes              memory txsData
         )
         internal
         pure
-        returns (bytes memory)
     {
-        bytes memory txsData = new bytes(68*numTransactions);
         bytes memory txData = txsData;
         for (uint i = 0; i < numTransactions; i++) {
             _block.data.readTransactionData(txIdx + i, _block.blockSize, txData);
@@ -115,6 +113,5 @@ library TransactionReader {
                 txData := add(txData, 68)
             }
         }
-        return txsData;
     }
 }

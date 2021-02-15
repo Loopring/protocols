@@ -207,6 +207,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
     {
         uint cursor = 0;
 
+        bytes memory txsData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE*6);
         for (uint i = 0; i < txCallbacks.length; i++) {
             TxCallback calldata txCallback = txCallbacks[i];
 
@@ -216,12 +217,13 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
             uint16 receiverIdx = txCallback.receiverIdx;
             require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
 
-            bytes memory txsData = _block.extractTransactions(txIdx, txCallback.numTxs);
+            if (txsData.length != ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs) {
+                txsData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs);
+            }
+            _block.extractTransactions(txIdx, txCallback.numTxs, txsData);
             IBlockReceiver(receivers[receiverIdx]).beforeBlockSubmission(
                 txsData,
-                txCallback.data,
-                0,
-                txCallback.numTxs
+                txCallback.data
             );
 
             // Now that the transactions have been verified, mark them as approved

@@ -24,13 +24,11 @@ library AmmBlockReceiver
     function beforeBlockSubmission(
         AmmData.State      storage  S,
         bytes              memory   txsData,
-        bytes              calldata data,
-        uint                        txIdx,
-        uint                        numTxs
+        bytes              calldata data
         )
         internal
     {
-        AmmData.Context memory ctx = _getContext(S, txIdx);
+        AmmData.Context memory ctx = _getContext(S);
 
         ctx.approveAmmUpdates(txsData);
 
@@ -40,12 +38,11 @@ library AmmBlockReceiver
         S._totalSupply = ctx.totalSupply;
 
         // Make sure we have consumed exactly the expected number of transactions
-        require(numTxs == (ctx.txIdx - txIdx), "INVALID_NUM_TXS");
+        require(txsData.length/ExchangeData.TX_DATA_AVAILABILITY_SIZE == ctx.txIdx, "INVALID_NUM_TXS");
     }
 
     function _getContext(
-        AmmData.State      storage S,
-        uint                       txIdx
+        AmmData.State      storage S
         )
         private
         view
@@ -53,7 +50,7 @@ library AmmBlockReceiver
     {
         uint size = S.tokens.length;
         return AmmData.Context({
-            txIdx: txIdx,
+            txIdx: 0,
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             poolTokenID: S.poolTokenID,
