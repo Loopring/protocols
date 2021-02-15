@@ -16,7 +16,8 @@ import "../libexchange/ExchangeSignatures.sol";
 library TransferTransaction
 {
     using BytesUtil            for bytes;
-    using FloatUtil            for uint;
+    using FloatUtil            for uint24;
+    using FloatUtil            for uint16;
     using MathUint             for uint;
     using ExchangeSignatures   for ExchangeData.State;
 
@@ -97,11 +98,11 @@ library TransferTransaction
         _offset += 4;
         transfer.tokenID = data.toUint16Unsafe(_offset);
         _offset += 2;
-        transfer.amount = uint(data.toUint24Unsafe(_offset)).decodeFloat24();
+        transfer.amount = data.toUint24Unsafe(_offset).decodeFloat24();
         _offset += 3;
         transfer.feeTokenID = data.toUint16Unsafe(_offset);
         _offset += 2;
-        transfer.fee = uint(data.toUint16Unsafe(_offset)).decodeFloat16();
+        transfer.fee = data.toUint16Unsafe(_offset).decodeFloat16();
         _offset += 2;
         transfer.storageID = data.toUint32Unsafe(_offset);
         _offset += 4;

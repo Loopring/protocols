@@ -127,7 +127,7 @@ contract LoopringAmmPool is
         override
         onlyWhenOnline
         onlyFromExchangeOwner
-        // nonReentrant     // Not needed, does not do any external calls (except to the exchange)
+        // nonReentrant     // Not needed, does not do any external calls
                             // and can only be called by the exchange owner.
     {
         state.beforeBlockSubmission(txsData, data, txIdx, numTxs);

@@ -26,11 +26,11 @@ library SignatureVerificationTransaction
 
     function readTx(
         bytes memory data,
-        uint         offset
+        uint         offset,
+        SignatureVerification memory verification
         )
         internal
         pure
-        returns (SignatureVerification memory verification)
     {
         uint _offset = offset;
         // We don't use abi.decode for this because of the large amount of zero-padding

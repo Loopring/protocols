@@ -126,7 +126,7 @@ library AmmJoinProcess
         amounts = new uint96[](ctx.tokens.length);
 
         if (ctx.totalSupply == 0) {
-            return(true, AmmData.POOL_TOKEN_BASE().toUint96(), join.joinAmounts);
+            return(true, AmmData.POOL_TOKEN_BASE.toUint96(), join.joinAmounts);
         }
 
         // Calculate the amount of pool tokens that should be minted
@@ -150,10 +150,10 @@ library AmmJoinProcess
         }
 
         // Calculate the amounts to deposit
-        uint ratio = uint(AmmData.POOL_TOKEN_BASE()).mul(mintAmount) / ctx.totalSupply;
+        uint ratio = uint(AmmData.POOL_TOKEN_BASE).mul(mintAmount) / ctx.totalSupply;
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE()).toUint96();
+            amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE).toUint96();
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

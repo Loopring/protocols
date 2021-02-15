@@ -18,7 +18,7 @@ library AmmBlockReceiver
     using AmmExitProcess    for AmmData.State;
     using AmmJoinProcess    for AmmData.State;
     using AmmPoolToken      for AmmData.State;
-    using AmmUpdateProcess  for AmmData.State;
+    using AmmUpdateProcess  for AmmData.Context;
     using BlockReader       for bytes;
 
     function beforeBlockSubmission(
@@ -32,7 +32,7 @@ library AmmBlockReceiver
     {
         AmmData.Context memory ctx = _getContext(S, txIdx);
 
-        S.approveAmmUpdates(ctx, txsData);
+        ctx.approveAmmUpdates(txsData);
 
         _processPoolTx(S, ctx, txsData, data);
 
@@ -57,10 +57,10 @@ library AmmBlockReceiver
             domainSeparator: S.domainSeparator,
             accountID: S.accountID,
             poolTokenID: S.poolTokenID,
+            feeBips: S.feeBips,
             totalSupply: S._totalSupply,
             tokens: S.tokens,
-            tokenBalancesL2: new uint96[](size),
-            txData: new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE)
+            tokenBalancesL2: new uint96[](size)
         });
     }
 

@@ -26,7 +26,7 @@ import "../libexchange/ExchangeWithdrawals.sol";
 library WithdrawTransaction
 {
     using BytesUtil            for bytes;
-    using FloatUtil            for uint;
+    using FloatUtil            for uint16;
     using MathUint             for uint;
     using ExchangeMode         for ExchangeData.State;
     using ExchangeSignatures   for ExchangeData.State;
@@ -77,7 +77,8 @@ library WithdrawTransaction
         )
         internal
     {
-        Withdrawal memory withdrawal = readTx(data, offset);
+        Withdrawal memory withdrawal;
+        readTx(data, offset, withdrawal);
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
 
         // Validate the withdrawal data not directly part of the DA
@@ -186,34 +187,34 @@ library WithdrawTransaction
     }
 
     function readTx(
-        bytes memory data,
-        uint         offset
+        bytes      memory data,
+        uint              offset,
+        Withdrawal memory withdrawal
         )
         internal
         pure
-        returns (Withdrawal memory withdrawal)
     {
         uint _offset = offset;
         // Extract the transfer data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        withdrawal.withdrawalType = data.toUint8(_offset);
+        withdrawal.withdrawalType = data.toUint8Unsafe(_offset);
         _offset += 1;
-        withdrawal.from = data.toAddress(_offset);
+        withdrawal.from = data.toAddressUnsafe(_offset);
         _offset += 20;
-        withdrawal.fromAccountID = data.toUint32(_offset);
+        withdrawal.fromAccountID = data.toUint32Unsafe(_offset);
         _offset += 4;
-        withdrawal.tokenID = data.toUint16(_offset);
+        withdrawal.tokenID = data.toUint16Unsafe(_offset);
         _offset += 2;
-        withdrawal.amount = data.toUint96(_offset);
+        withdrawal.amount = data.toUint96Unsafe(_offset);
         _offset += 12;
-        withdrawal.feeTokenID = data.toUint16(_offset);
+        withdrawal.feeTokenID = data.toUint16Unsafe(_offset);
         _offset += 2;
-        withdrawal.fee = uint(data.toUint16(_offset)).decodeFloat16();
+        withdrawal.fee = data.toUint16Unsafe(_offset).decodeFloat16();
         _offset += 2;
-        withdrawal.storageID = data.toUint32(_offset);
+        withdrawal.storageID = data.toUint32Unsafe(_offset);
         _offset += 4;
-        withdrawal.onchainDataHash = data.toBytes20(_offset);
+        withdrawal.onchainDataHash = data.toBytes20Unsafe(_offset);
         _offset += 20;
     }
 

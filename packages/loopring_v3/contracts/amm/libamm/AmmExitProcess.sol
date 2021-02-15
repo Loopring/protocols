@@ -156,10 +156,10 @@ library AmmExitProcess
         amounts = new uint96[](ctx.tokens.length);
 
         // Calculate how much will be withdrawn
-        uint ratio = uint(AmmData.POOL_TOKEN_BASE()).mul(exit.burnAmount) / ctx.totalSupply;
+        uint ratio = uint(AmmData.POOL_TOKEN_BASE).mul(exit.burnAmount) / ctx.totalSupply;
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE()).toUint96();
+            amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE).toUint96();
             if (amounts[i] < exit.exitMinAmounts[i]) {
                 return (false, amounts);
             }

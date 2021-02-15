@@ -15,7 +15,6 @@ library AmmUpdateProcess
     using TransactionReader for ExchangeData.Block;
 
     function approveAmmUpdates(
-        AmmData.State      storage S,
         AmmData.Context    memory  ctx,
         bytes              memory  txsData
         )
@@ -31,7 +30,7 @@ library AmmUpdateProcess
                 update.owner == address(this) &&
                 update.accountID == ctx.accountID &&
                 update.tokenID == ctx.tokens[i].tokenID &&
-                update.feeBips == S.feeBips &&
+                update.feeBips == ctx.feeBips &&
                 update.tokenWeight == ctx.tokens[i].weight,
                 "INVALID_AMM_UPDATE_TX_DATA"
             );

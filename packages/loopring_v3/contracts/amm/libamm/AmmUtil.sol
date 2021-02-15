@@ -34,10 +34,11 @@ library AmmUtil
         pure
     {
         // Check the signature type
-        require(signature.toUint8(0) == L2_SIGNATURE_TYPE, "INVALID_SIGNATURE_TYPE");
+        require(signature.toUint8Unsafe(0) == L2_SIGNATURE_TYPE, "INVALID_SIGNATURE_TYPE");
 
         // Read the signature verification transaction
-        SignatureVerificationTransaction.SignatureVerification memory verification = SignatureVerificationTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1);
+        SignatureVerificationTransaction.SignatureVerification memory verification;
+        SignatureVerificationTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1, verification);
 
         // Verify that the hash was signed on L2
         require(

@@ -35,7 +35,8 @@ library DepositTransaction
         internal
     {
         // Read in the deposit
-        Deposit memory deposit = readTx(data, offset);
+        Deposit memory deposit;
+        readTx(data, offset, deposit);
         if (deposit.amount == 0) {
             return;
         }
@@ -62,23 +63,23 @@ library DepositTransaction
     }
 
     function readTx(
-        bytes memory data,
-        uint         offset
+        bytes   memory data,
+        uint           offset,
+        Deposit memory deposit
         )
         internal
         pure
-        returns (Deposit memory deposit)
     {
         uint _offset = offset;
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        deposit.to = data.toAddress(_offset);
+        deposit.to = data.toAddressUnsafe(_offset);
         _offset += 20;
-        deposit.toAccountID = data.toUint32(_offset);
+        deposit.toAccountID = data.toUint32Unsafe(_offset);
         _offset += 4;
-        deposit.tokenID = data.toUint16(_offset);
+        deposit.tokenID = data.toUint16Unsafe(_offset);
         _offset += 2;
-        deposit.amount = data.toUint96(_offset);
+        deposit.amount = data.toUint96Unsafe(_offset);
         _offset += 12;
     }
 }
