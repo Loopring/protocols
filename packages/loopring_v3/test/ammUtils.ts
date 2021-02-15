@@ -20,6 +20,7 @@ export interface PoolJoin {
   joinAmounts: BN[];
   joinStorageIDs: number[];
   mintMinAmount: BN;
+  fee: BN;
   validUntil: number;
 
   signature?: string;
@@ -60,6 +61,7 @@ export interface JoinOptions {
   authMethod?: AuthMethod;
   signer?: string;
   validUntil?: number;
+  fee?: BN;
   invalidTxHash?: boolean;
 }
 
@@ -98,6 +100,7 @@ export namespace PoolJoinUtils {
           { name: "joinAmounts", type: "uint96[]" },
           { name: "joinStorageIDs", type: "uint32[]" },
           { name: "mintMinAmount", type: "uint96" },
+          { name: "fee", type: "uint96" },
           { name: "validUntil", type: "uint32" }
         ]
       },
@@ -113,6 +116,7 @@ export namespace PoolJoinUtils {
         joinAmounts: join.joinAmounts,
         joinStorageIDs: join.joinStorageIDs,
         mintMinAmount: join.mintMinAmount,
+        fee: join.fee,
         validUntil: join.validUntil
       }
     };
@@ -310,6 +314,7 @@ export class AmmPool {
     const authMethod =
       options.authMethod !== undefined ? options.authMethod : AuthMethod.ECDSA;
     const signer = options.signer !== undefined ? options.signer : owner;
+    const fee = options.fee !== undefined ? options.fee : new BN(0);
     const validUntil =
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
     const invalidTxHash =
@@ -322,12 +327,15 @@ export class AmmPool {
       joinAmounts,
       joinStorageIDs: [],
       mintMinAmount,
+      fee,
       validUntil
     };
 
     let txHash: Buffer;
     if (authMethod === AuthMethod.APPROVE) {
-      await this.contract.joinPool(joinAmounts, mintMinAmount, { from: owner });
+      await this.contract.joinPool(joinAmounts, mintMinAmount, fee, {
+        from: owner
+      });
       const event = await this.ctx.assertEventEmitted(
         this.contract,
         "PoolJoinRequested"
@@ -532,7 +540,7 @@ export class AmmPool {
           this.tokens[i],
           amount,
           this.tokens[i],
-          new BN(0),
+          i === this.tokens.length - 1 ? join.fee : new BN(0),
           {
             authMethod: AuthMethod.NONE,
             amountToDeposit: new BN(0),
@@ -663,12 +671,13 @@ export class AmmPool {
       amounts.push(amount.toString(10));
     }
     return web3.eth.abi.encodeParameter(
-      "tuple(address,uint96[],uint32[],uint96,uint32)",
+      "tuple(address,uint96[],uint32[],uint96,uint96,uint32)",
       [
         join.owner,
         amounts,
         join.joinStorageIDs,
         join.mintMinAmount.toString(10),
+        join.fee.toString(10),
         join.validUntil
       ]
     );
@@ -715,8 +724,8 @@ export class AmmPool {
 
     return web3.eth.abi.encodeParameter("tuple(uint256,bytes,bytes)", [
       poolTx.txType,
-      web3.utils.hexToBytes(poolTx.data),
-      web3.utils.hexToBytes(poolTx.signature ? poolTx.signature : "0x")
+      poolTx.data,
+      poolTx.signature ? poolTx.signature : "0x"
     ]);
   }
 

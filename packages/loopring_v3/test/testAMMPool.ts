@@ -144,7 +144,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("10000.123456", "ether")),
           new BN(web3.utils.toWei("20000.654321", "ether"))
         ],
-        { authMethod: AuthMethod.ECDSA }
+        {
+          authMethod: AuthMethod.ECDSA,
+          fee: new BN(web3.utils.toWei("100.1234", "ether"))
+        }
       );
       await pool.join(
         ownerB,
@@ -394,7 +397,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("100000", "ether")),
           new BN(web3.utils.toWei("200000", "ether"))
         ],
-        { authMethod: AuthMethod.APPROVE }
+        {
+          authMethod: AuthMethod.APPROVE,
+          fee: new BN(web3.utils.toWei("123", "ether"))
+        }
       );
       await ctx.submitTransactions(16);
 
@@ -477,7 +483,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           new BN(web3.utils.toWei("1000", "ether")),
           new BN(web3.utils.toWei("2000", "ether"))
         ],
-        { authMethod: AuthMethod.EDDSA }
+        {
+          authMethod: AuthMethod.EDDSA,
+          fee: new BN(web3.utils.toWei("100", "ether"))
+        }
       );
       await ctx.submitTransactions(16);
 

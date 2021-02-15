@@ -39,6 +39,7 @@ library AmmData
         uint96[]  joinAmounts;
         uint32[]  joinStorageIDs;
         uint96    mintMinAmount;
+        uint96    fee;
         uint32    validUntil;
     }
 

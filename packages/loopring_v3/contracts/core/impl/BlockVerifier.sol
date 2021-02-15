@@ -7,6 +7,7 @@ import "../../thirdparty/verifiers/BatchVerifier.sol";
 import "../../thirdparty/verifiers/Verifier.sol";
 import "../iface/ExchangeData.sol";
 import "../iface/IBlockVerifier.sol";
+import "./VerificationKeys.sol";
 
 
 /// @title An Implementation of IBlockVerifier.
@@ -88,17 +89,25 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         view
         returns (bool)
     {
-        Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
-        require(circuit.registered == true, "NOT_REGISTERED");
-        require(circuit.enabled == true, "NOT_ENABLED");
+        // First try to find the verification key in the hard coded list
+        (uint[14] memory _vk, uint[4] memory _vk_gammaABC, bool found) = VerificationKeys.getKey(
+            blockType,
+            blockSize,
+            blockVersion
+        );
+        if (!found) {
+            Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
+            require(circuit.registered == true, "NOT_REGISTERED");
+            require(circuit.enabled == true, "NOT_ENABLED");
 
-        // Load the verification key from storage.
-        uint[18] storage vk = circuit.verificationKey;
-        uint[14] memory _vk = [
-            vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],
-            vk[7], vk[8], vk[9], vk[10], vk[11], vk[12], vk[13]
-        ];
-        uint[4] memory _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
+            // Load the verification key from storage.
+            uint[18] storage vk = circuit.verificationKey;
+            _vk = [
+                vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],
+                vk[7], vk[8], vk[9], vk[10], vk[11], vk[12], vk[13]
+            ];
+            _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
+        }
 
         // Verify the proof.
         // Batched proof verification has a fixed overhead which makes it more
