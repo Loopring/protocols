@@ -79,6 +79,10 @@ library AccountUpdateTransaction
         pure
     {
         uint _offset = offset;
+
+        require(data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.ACCOUNT_UPDATE), "INVALID_TX_TYPE");
+        _offset += 1;
+
         // Check that this is a conditional offset
         require(data.toUint8Unsafe(_offset) == 1, "INVALID_AUXILIARYDATA_DATA");
         _offset += 1;

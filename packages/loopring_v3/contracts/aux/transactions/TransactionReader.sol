@@ -28,7 +28,7 @@ library TransactionReader {
         pure
         returns (DepositTransaction.Deposit memory deposit)
     {
-        _block.readTx(txIdx, ExchangeData.TransactionType.DEPOSIT, txData);
+        _block.readTx(txIdx, txData);
         DepositTransaction.readTx(txData, 1, deposit);
     }
 
@@ -41,7 +41,7 @@ library TransactionReader {
         pure
         returns (WithdrawTransaction.Withdrawal memory withdrawal)
     {
-        _block.readTx(txIdx, ExchangeData.TransactionType.WITHDRAWAL, txData);
+        _block.readTx(txIdx, txData);
         WithdrawTransaction.readTx(txData, 1, withdrawal);
     }
 
@@ -54,7 +54,7 @@ library TransactionReader {
         pure
         returns (AmmUpdateTransaction.AmmUpdate memory ammUpdate)
     {
-        _block.readTx(txIdx, ExchangeData.TransactionType.AMM_UPDATE, txData);
+        _block.readTx(txIdx, txData);
         AmmUpdateTransaction.readTx(txData, 1, ammUpdate);
     }
 
@@ -67,7 +67,7 @@ library TransactionReader {
         pure
         returns (TransferTransaction.Transfer memory transfer)
     {
-        _block.readTx(txIdx, ExchangeData.TransactionType.TRANSFER, txData);
+        _block.readTx(txIdx, txData);
         TransferTransaction.readTx(txData, 1, transfer);
     }
 
@@ -80,21 +80,19 @@ library TransactionReader {
         pure
         returns (SignatureVerificationTransaction.SignatureVerification memory verification)
     {
-         _block.readTx(txIdx, ExchangeData.TransactionType.SIGNATURE_VERIFICATION, txData);
+         _block.readTx(txIdx, txData);
         SignatureVerificationTransaction.readTx(txData, 1, verification);
     }
 
     function readTx(
         ExchangeData.Block memory _block,
         uint txIdx,
-        ExchangeData.TransactionType txType,
         bytes memory txData
         )
         internal
         pure
     {
         _block.data.readTransactionData(txIdx, _block.blockSize, txData);
-        require(txType == ExchangeData.TransactionType(txData.toUint8Unsafe(0)), "UNEXPTECTED_TX_TYPE");
     }
 
     function extractTransactions(
@@ -107,10 +105,11 @@ library TransactionReader {
         pure
     {
         bytes memory txData = txsData;
+        uint TX_DATA_AVAILABILITY_SIZE = ExchangeData.TX_DATA_AVAILABILITY_SIZE;
         for (uint i = 0; i < numTransactions; i++) {
             _block.data.readTransactionData(txIdx + i, _block.blockSize, txData);
             assembly {
-                txData := add(txData, 68)
+                txData := add(txData, TX_DATA_AVAILABILITY_SIZE)
             }
         }
     }

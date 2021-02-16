@@ -38,7 +38,7 @@ library AmmUtil
 
         // Read the signature verification transaction
         SignatureVerificationTransaction.SignatureVerification memory verification;
-        SignatureVerificationTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1, verification);
+        SignatureVerificationTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, verification);
 
         // Verify that the hash was signed on L2
         require(

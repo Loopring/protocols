@@ -24,7 +24,7 @@ library AmmUpdateProcess
         AmmUpdateTransaction.AmmUpdate memory update;
         for (uint i = 0; i < ctx.tokens.length; i++) {
             // Check that the AMM update in the block matches the expected update
-            AmmUpdateTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1, update);
+            AmmUpdateTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, update);
 
             require(
                 update.owner == address(this) &&

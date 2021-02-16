@@ -81,7 +81,7 @@ library AmmExitProcess
 
         // Handle liquidity tokens
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1, transfer);
+            TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
 
             require(
                 transfer.fromAccountID == ctx.accountID &&
@@ -112,18 +112,18 @@ library AmmExitProcess
     }
 
     function _burnPoolTokenOnL2(
-        AmmData.Context     memory  ctx,
-        bytes               memory  txsData,
+        AmmData.Context             memory  ctx,
+        bytes                       memory  txsData,
         uint96                      amount,
         address                     from,
         uint32                      burnStorageID,
-        bytes               memory  signature,
+        bytes                       memory  signature,
         TransferTransaction.Transfer memory transfer
         )
         internal
         view
     {
-        TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1, transfer);
+        TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
 
         require(
             // transfer.fromAccountID == UNKNOWN &&

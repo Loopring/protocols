@@ -63,9 +63,7 @@ library BlockReader {
         internal
         pure
     {
-        //require(txIdx < _block.blockSize, "INVALID_TX_IDX");
-
-        //bytes memory data = _block.data;
+        require(txIdx < blockSize, "INVALID_TX_IDX");
 
         // The transaction was transformed to make it easier to compress.
         // Transform it back here.

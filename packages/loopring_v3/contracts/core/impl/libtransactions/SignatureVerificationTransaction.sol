@@ -33,6 +33,10 @@ library SignatureVerificationTransaction
         pure
     {
         uint _offset = offset;
+
+        require(data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.SIGNATURE_VERIFICATION), "INVALID_TX_TYPE");
+        _offset += 1;
+
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
         verification.owner = data.toAddressUnsafe(_offset);

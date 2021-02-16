@@ -250,7 +250,7 @@ library ExchangeBlocks
                 ExchangeData.TransactionType txType = ExchangeData.TransactionType(
                     txData.toUint8(0)
                 );
-                uint txDataOffset = 1;
+                uint txDataOffset = 0;
 
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
                     DepositTransaction.process(

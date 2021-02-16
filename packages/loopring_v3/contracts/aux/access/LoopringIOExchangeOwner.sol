@@ -190,7 +190,6 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
                     txIdx := mload(add(add(32, auxiliaryData), auxOffset))
                     approved := mload(add(add(64, auxiliaryData), auxOffset))
                 }
-
                 // Check that the provided data matches the expected value
                 require(_preApprovedTxs[txIdx] == approved, "PRE_APPROVED_TX_MISMATCH");
             }
@@ -207,6 +206,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
     {
         uint cursor = 0;
 
+        // Reuse the data when possible to save on some memory alloc gas
         bytes memory txsData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE*6);
         for (uint i = 0; i < txCallbacks.length; i++) {
             TxCallback calldata txCallback = txCallbacks[i];

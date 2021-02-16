@@ -85,6 +85,10 @@ library TransferTransaction
         pure
     {
         uint _offset = offset;
+
+        require(data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.TRANSFER), "INVALID_TX_TYPE");
+        _offset += 1;
+
         // Check that this is a conditional transfer
         require(data.toUint8Unsafe(_offset) == 1, "INVALID_AUXILIARYDATA_DATA");
         _offset += 1;

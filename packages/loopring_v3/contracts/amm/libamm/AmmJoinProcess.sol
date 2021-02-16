@@ -59,7 +59,7 @@ library AmmJoinProcess
         // Handle liquidity tokens
         TransferTransaction.Transfer memory transfer;
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1, transfer);
+            TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
 
             require(
                 // transfer.fromAccountID == UNKNOWN &&
@@ -99,7 +99,7 @@ library AmmJoinProcess
         private
         view
     {
-        TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE + 1, transfer);
+        TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
 
         require(
             transfer.fromAccountID == ctx.accountID &&
