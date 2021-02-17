@@ -224,5 +224,8 @@ library ExchangeData
 
         // Last time the protocol fee was withdrawn for a specific token
         mapping (address => uint) protocolFeeLastWithdrawnTime;
+
+        // Flash deposits
+        mapping (address => uint96) amountFlashDeposited;
     }
 }

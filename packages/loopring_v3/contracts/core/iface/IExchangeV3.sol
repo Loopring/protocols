@@ -343,6 +343,33 @@ abstract contract IExchangeV3 is Claimable
         view
         returns (uint96);
 
+
+    function flashDeposit(
+        address to,
+        address tokenAddress,
+        uint96  amount
+        )
+        external
+        virtual;
+
+    function repayFlashDeposit(
+        address from,
+        address tokenAddress,
+        uint96  amount,
+        bytes   calldata extraData
+        )
+        external
+        virtual
+        payable;
+
+    function getAmountFlashDeposited(
+        address tokenAddress
+        )
+        external
+        virtual
+        view
+        returns (uint96);
+
     // -- Withdrawals --
     /// @dev Submits an onchain request to force withdraw Ether or ERC20 tokens.
     ///      This request always withdraws the full balance.

@@ -366,7 +366,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        state.deposit(from, to, tokenAddress, amount, extraData);
+        state.deposit(from, to, tokenAddress, amount, extraData, false);
     }
 
     function getPendingDepositAmount(
@@ -380,6 +380,44 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     {
         uint16 tokenID = state.getTokenID(tokenAddress);
         return state.pendingDeposits[owner][tokenID].amount;
+    }
+
+    function flashDeposit(
+        address to,
+        address tokenAddress,
+        uint96  amount
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        state.deposit(to, to, tokenAddress, amount, new bytes(0), true);
+    }
+
+    function repayFlashDeposit(
+        address from,
+        address tokenAddress,
+        uint96  amount,
+        bytes   calldata extraData
+        )
+        external
+        payable
+        override
+        nonReentrant
+    {
+        state.repayFlashDeposit(from, tokenAddress, amount, extraData);
+    }
+
+    function getAmountFlashDeposited(
+        address tokenAddress
+        )
+        external
+        override
+        view
+        returns (uint96)
+    {
+        return state.amountFlashDeposited[tokenAddress];
     }
 
     // -- Withdrawals --

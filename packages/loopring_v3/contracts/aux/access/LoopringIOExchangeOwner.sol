@@ -52,6 +52,25 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         address[]       receivers;
     }
 
+    struct FlashDepositInfo
+    {
+        address to;
+        address token;
+        uint96  amount;
+    }
+
+    struct FlashVaultInfo
+    {
+        address to;
+        bytes   data;
+    }
+
+    struct FlashConfig
+    {
+        FlashDepositInfo[] deposits;
+        FlashVaultInfo[]   vaults;
+    }
+
     constructor(
         address _exchange,
         address _chiToken
@@ -101,7 +120,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         bool                     isDataCompressed,
         bytes           calldata data,
         CallbackConfig  calldata config,
-        ChiConfig       calldata chiConfig
+        ChiConfig       calldata chiConfig,
+        FlashConfig     calldata flashConfig
         )
         external
         discountCHI(chiToken, chiConfig)
@@ -135,7 +155,31 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         // Process the callback logic.
         _beforeBlockSubmission(blocks, config);
 
+        // Do flash deposits
+        for (uint i = 0; i < flashConfig.deposits.length; i++) {
+            IExchangeV3(target).flashDeposit(
+                flashConfig.deposits[i].to,
+                flashConfig.deposits[i].token,
+                flashConfig.deposits[i].amount
+            );
+        }
+
         target.fastCallAndVerify(gasleft(), 0, decompressed);
+
+        // Do vault logic
+        for (uint i = 0; i < flashConfig.vaults.length; i++) {
+            require(flashConfig.vaults[i].to != target, "EXCHANGE_CANNOT_BE_VAULT");
+            (bool success, ) = flashConfig.vaults[i].to.call(flashConfig.vaults[i].data);
+            require(success, "VAULT_CALL_FAILED");
+        }
+
+        // Make sure flash deposits were repaid
+        for (uint i = 0; i < flashConfig.deposits.length; i++) {
+            require(
+                IExchangeV3(target).getAmountFlashDeposited(flashConfig.deposits[i].token) == 0,
+                "FLASH_DEPOSIT_NOT REPAID"
+            );
+        }
     }
 
     function _beforeBlockSubmission(
