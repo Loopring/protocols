@@ -1890,16 +1890,7 @@ export class ExchangeTestUtil {
     }
   }
 
-  public getOnchainBlock(
-    blockType: number,
-    blockSize: number,
-    data: string,
-    auxiliaryData: any[],
-    proof: any,
-    offchainData: string = "0x",
-    storeBlockInfoOnchain: boolean = false,
-    blockVersion: number = 0
-  ) {
+  public encodeAuxiliaryData(auxiliaryData: any[]) {
     const encodedAuxiliaryData = web3.eth.abi.encodeParameter(
       {
         "struct AuxiliaryData[]": {
@@ -1910,7 +1901,33 @@ export class ExchangeTestUtil {
       },
       auxiliaryData
     );
+    return encodedAuxiliaryData;
+  }
 
+  public decodeAuxiliaryData(encodedAuxiliaryData: string) {
+    const auxiliaryData = web3.eth.abi.decodeParameter(
+      {
+        "struct AuxiliaryData[]": {
+          txIndex: "uint",
+          approved: "bool",
+          data: "bytes"
+        }
+      },
+      encodedAuxiliaryData
+    );
+    return auxiliaryData;
+  }
+
+  public getOnchainBlock(
+    blockType: number,
+    blockSize: number,
+    data: string,
+    auxiliaryData: any[],
+    proof: any,
+    offchainData: string = "0x",
+    storeBlockInfoOnchain: boolean = false,
+    blockVersion: number = 0
+  ) {
     const onchainBlock: OnchainBlock = {
       blockType,
       blockSize,
@@ -1919,7 +1936,7 @@ export class ExchangeTestUtil {
       proof,
       storeBlockInfoOnchain,
       offchainData: offchainData,
-      auxiliaryData: encodedAuxiliaryData
+      auxiliaryData: this.encodeAuxiliaryData(auxiliaryData)
     };
     return onchainBlock;
   }

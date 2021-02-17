@@ -112,12 +112,12 @@ library AmmExitProcess
     }
 
     function _burnPoolTokenOnL2(
-        AmmData.Context             memory  ctx,
-        bytes                       memory  txsData,
-        uint96                      amount,
-        address                     from,
-        uint32                      burnStorageID,
-        bytes                       memory  signature,
+        AmmData.Context              memory  ctx,
+        bytes                        memory  txsData,
+        uint96                       amount,
+        address                      from,
+        uint32                       burnStorageID,
+        bytes                        memory  signature,
         TransferTransaction.Transfer memory transfer
         )
         internal

@@ -214,37 +214,34 @@ library ExchangeBlocks
 
             // Run over all conditional transactions
             uint minTxIndex = 0;
-            ExchangeData.AuxiliaryData memory auxiliaryData;
             bytes memory txData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE);
             for (uint i = 0; i < block_auxiliaryData.length; i++) {
                 // Load the data from auxiliaryData, which is still encoded as calldata
-                uint txIdx;
+                uint txIndex;
                 bool approved;
                 bytes memory auxData;
                 assembly {
                     // Offset to block_auxiliaryData[i]
                     let auxOffset := mload(add(block_auxiliaryData, add(32, mul(32, i))))
-                    // Load `txIdx` (pos 0) and `approved` (pos 1) in block_auxiliaryData[i]
-                    txIdx := mload(add(add(32, block_auxiliaryData), auxOffset))
+                    // Load `txIndex` (pos 0) and `approved` (pos 1) in block_auxiliaryData[i]
+                    txIndex := mload(add(add(32, block_auxiliaryData), auxOffset))
                     approved := mload(add(add(64, block_auxiliaryData), auxOffset))
+                    // Load `data` (pos 2)
                     let auxDataOffset := mload(add(add(96, block_auxiliaryData), auxOffset))
                     auxData := add(add(32, block_auxiliaryData), add(auxOffset, auxDataOffset))
                 }
-                auxiliaryData.txIndex = txIdx;
-                auxiliaryData.approved = approved;
-                auxiliaryData.data = auxData;
 
                 // Each conditional transaction needs to be processed from left to right
-                require(auxiliaryData.txIndex >= minTxIndex, "AUXILIARYDATA_INVALID_ORDER");
+                require(txIndex >= minTxIndex, "AUXILIARYDATA_INVALID_ORDER");
 
-                minTxIndex = auxiliaryData.txIndex + 1;
+                minTxIndex = txIndex + 1;
 
-                if (auxiliaryData.approved) {
+                if (approved) {
                     continue;
                 }
 
                 // Get the transaction data
-                _block.data.readTransactionData(auxiliaryData.txIndex, _block.blockSize, txData);
+                _block.data.readTransactionData(txIndex, _block.blockSize, txData);
 
                 // Process the transaction
                 ExchangeData.TransactionType txType = ExchangeData.TransactionType(
@@ -258,7 +255,7 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxiliaryData.data
+                        auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
                     WithdrawTransaction.process(
@@ -266,7 +263,7 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxiliaryData.data
+                        auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.TRANSFER) {
                     TransferTransaction.process(
@@ -274,7 +271,7 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxiliaryData.data
+                        auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
                     AccountUpdateTransaction.process(
@@ -282,7 +279,7 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxiliaryData.data
+                        auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.AMM_UPDATE) {
                     AmmUpdateTransaction.process(
@@ -290,7 +287,7 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxiliaryData.data
+                        auxData
                     );
                 } else {
                     // ExchangeData.TransactionType.NOOP,

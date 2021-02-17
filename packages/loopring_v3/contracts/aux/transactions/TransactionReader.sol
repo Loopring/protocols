@@ -29,7 +29,7 @@ library TransactionReader {
         returns (DepositTransaction.Deposit memory deposit)
     {
         _block.readTx(txIdx, txData);
-        DepositTransaction.readTx(txData, 1, deposit);
+        DepositTransaction.readTx(txData, 0, deposit);
     }
 
     function readWithdrawal(
@@ -42,7 +42,7 @@ library TransactionReader {
         returns (WithdrawTransaction.Withdrawal memory withdrawal)
     {
         _block.readTx(txIdx, txData);
-        WithdrawTransaction.readTx(txData, 1, withdrawal);
+        WithdrawTransaction.readTx(txData, 0, withdrawal);
     }
 
     function readAmmUpdate(
@@ -55,7 +55,7 @@ library TransactionReader {
         returns (AmmUpdateTransaction.AmmUpdate memory ammUpdate)
     {
         _block.readTx(txIdx, txData);
-        AmmUpdateTransaction.readTx(txData, 1, ammUpdate);
+        AmmUpdateTransaction.readTx(txData, 0, ammUpdate);
     }
 
     function readTransfer(
@@ -68,7 +68,7 @@ library TransactionReader {
         returns (TransferTransaction.Transfer memory transfer)
     {
         _block.readTx(txIdx, txData);
-        TransferTransaction.readTx(txData, 1, transfer);
+        TransferTransaction.readTx(txData, 0, transfer);
     }
 
     function readSignatureVerification(
@@ -81,7 +81,7 @@ library TransactionReader {
         returns (SignatureVerificationTransaction.SignatureVerification memory verification)
     {
          _block.readTx(txIdx, txData);
-        SignatureVerificationTransaction.readTx(txData, 1, verification);
+        SignatureVerificationTransaction.readTx(txData, 0, verification);
     }
 
     function readTx(
