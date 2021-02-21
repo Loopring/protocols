@@ -44,7 +44,7 @@ library ExchangeTokens
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.tokenToTokenId[tokenAddress] == 0, "TOKEN_ALREADY_EXIST");
-        require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS(), "TOKEN_REGISTRY_FULL");
+        require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
 
         // Check if the deposit contract supports the new token
         if (S.depositContract != IDepositContract(0)) {

@@ -84,11 +84,11 @@ library ExchangeBlocks
         // Validate the Merkle roots
         require(header.merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
         require(header.merkleRootAfter != header.merkleRootBefore, "EMPTY_BLOCK_DISABLED");
-        require(uint(header.merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
+        require(uint(header.merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD, "INVALID_MERKLE_ROOT");
         // Validate the timestamp
         require(
-            header.timestamp > block.timestamp - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
-            header.timestamp < block.timestamp + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
+            header.timestamp > block.timestamp - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS &&
+            header.timestamp < block.timestamp + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
             "INVALID_TIMESTAMP"
         );
         // Validate the protocol fee values
@@ -309,7 +309,7 @@ library ExchangeBlocks
         returns (bool)
     {
         ExchangeData.ProtocolFeeData memory data = S.protocolFeeData;
-        if (block.timestamp > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
+        if (block.timestamp > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED) {
             // Store the current protocol fees in the previous protocol fees
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;

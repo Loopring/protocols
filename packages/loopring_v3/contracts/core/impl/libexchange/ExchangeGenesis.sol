@@ -29,7 +29,7 @@ library ExchangeGenesis
         require(address(0) != _loopringAddr, "INVALID_LOOPRING_ADDRESS");
         require(_genesisMerkleRoot != 0, "INVALID_GENESIS_MERKLE_ROOT");
 
-        S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND();
+        S.maxAgeDepositUntilWithdrawable = ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND;
         S.DOMAIN_SEPARATOR = _domainSeparator;
 
         ILoopringV3 loopring = ILoopringV3(_loopringAddr);

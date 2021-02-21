@@ -24,7 +24,7 @@ library AmmBlockReceiver
     function beforeBlockSubmission(
         AmmData.State      storage  S,
         bytes              memory   txsData,
-        bytes              calldata data
+        bytes              calldata callbackData
         )
         internal
     {
@@ -32,13 +32,13 @@ library AmmBlockReceiver
 
         ctx.approveAmmUpdates(txsData);
 
-        _processPoolTx(S, ctx, txsData, data);
+        _processPoolTx(S, ctx, txsData, callbackData);
 
         // Update state
         S._totalSupply = ctx.totalSupply;
 
         // Make sure we have consumed exactly the expected number of transactions
-        require(txsData.length/ExchangeData.TX_DATA_AVAILABILITY_SIZE == ctx.txIdx, "INVALID_NUM_TXS");
+        require(txsData.length == ctx.txIdx * ExchangeData.TX_DATA_AVAILABILITY_SIZE, "INVALID_NUM_TXS");
     }
 
     function _getContext(
@@ -65,11 +65,11 @@ library AmmBlockReceiver
         AmmData.State           storage   S,
         AmmData.Context         memory    ctx,
         bytes                   memory    txsData,
-        bytes                   calldata  poolTxData
+        bytes                   calldata  callbackData
         )
         private
     {
-        AmmData.PoolTx memory poolTx = abi.decode(poolTxData, (AmmData.PoolTx));
+        AmmData.PoolTx memory poolTx = abi.decode(callbackData, (AmmData.PoolTx));
         if (poolTx.txType == AmmData.PoolTxType.JOIN) {
             S.processJoin(
                 ctx,

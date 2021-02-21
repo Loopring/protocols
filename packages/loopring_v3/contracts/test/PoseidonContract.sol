@@ -19,7 +19,7 @@ contract PoseidonContract {
         returns (uint)
     {
         Poseidon.HashInputs5 memory inputs = Poseidon.HashInputs5(t0, t1, t2, t3, t4);
-        return Poseidon.hash_t5f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
+        return Poseidon.hash_t5f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD);
     }
 
     function hash_t7f6p52(
@@ -36,6 +36,6 @@ contract PoseidonContract {
         returns (uint)
     {
         Poseidon.HashInputs7 memory inputs = Poseidon.HashInputs7(t0, t1, t2, t3, t4, t5, t6);
-        return Poseidon.hash_t7f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD());
+        return Poseidon.hash_t7f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD);
     }
 }

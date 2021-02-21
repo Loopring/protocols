@@ -144,7 +144,7 @@ library WithdrawTransaction
                 // - when in shutdown mode
                 // - to withdraw protocol fees
                 require(
-                    withdrawal.fromAccountID == ExchangeData.ACCOUNTID_PROTOCOLFEE() ||
+                    withdrawal.fromAccountID == ExchangeData.ACCOUNTID_PROTOCOLFEE ||
                     S.isShutdown(),
                     "FULL_WITHDRAWAL_UNAUTHORIZED"
                 );

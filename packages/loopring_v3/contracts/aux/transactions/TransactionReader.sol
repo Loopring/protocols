@@ -95,7 +95,7 @@ library TransactionReader {
         _block.data.readTransactionData(txIdx, _block.blockSize, txData);
     }
 
-    function extractTransactions(
+    function readTxs(
         ExchangeData.Block memory _block,
         uint                      txIdx,
         uint16                    numTransactions,

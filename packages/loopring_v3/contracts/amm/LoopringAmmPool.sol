@@ -120,7 +120,7 @@ contract LoopringAmmPool is
 
     function beforeBlockSubmission(
         bytes              calldata txsData,
-        bytes              calldata data
+        bytes              calldata callbackData
         )
         external
         override
@@ -129,7 +129,7 @@ contract LoopringAmmPool is
         // nonReentrant     // Not needed, does not do any external calls
                             // and can only be called by the exchange owner.
     {
-        state.beforeBlockSubmission(txsData, data);
+        state.beforeBlockSubmission(txsData, callbackData);
     }
 
     function withdrawWhenOffline()

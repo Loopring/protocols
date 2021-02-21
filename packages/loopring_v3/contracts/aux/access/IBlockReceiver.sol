@@ -12,7 +12,7 @@ abstract contract IBlockReceiver
 {
     function beforeBlockSubmission(
         bytes              calldata txsData,
-        bytes              calldata data
+        bytes              calldata callbackData
         )
         external
         virtual;

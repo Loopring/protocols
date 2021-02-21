@@ -113,22 +113,20 @@ library ExchangeData
         uint MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND;
     }
 
-    function SNARK_SCALAR_FIELD() internal pure returns (uint) {
-        // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
-        return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    }
-    function MAX_OPEN_FORCED_REQUESTS() internal pure returns (uint16) { return 4096; }
-    function MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 15 days; }
-    function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 7 days; }
-    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 32; }
-    function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 16; }
-    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 7 days; }
-    function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 30 days; }
+    // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
+    uint public constant SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
+    uint public constant MAX_OPEN_FORCED_REQUESTS = 4096;
+    uint public constant MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE = 15 days;
+    uint public constant TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = 7 days;
+    uint public constant MAX_NUM_ACCOUNTS = 2 ** 32;
+    uint public constant MAX_NUM_TOKENS = 2 ** 16;
+    uint public constant MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = 7 days;
+    uint public constant MIN_TIME_IN_SHUTDOWN = 30 days;
     // The amount of bytes each rollup transaction uses in the block data for data-availability.
     // This is the maximum amount of bytes of all different transaction types.
-    function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND() internal pure returns (uint32) { return 15 days; }
-    function ACCOUNTID_PROTOCOLFEE() internal pure returns (uint32) { return 0; }
-
+    uint32 public constant MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND = 15 days;
+    uint32 public constant ACCOUNTID_PROTOCOLFEE = 0;
 
     uint public constant TX_DATA_AVAILABILITY_SIZE = 68;
     uint public constant TX_DATA_AVAILABILITY_SIZE_PART_1 = 29;

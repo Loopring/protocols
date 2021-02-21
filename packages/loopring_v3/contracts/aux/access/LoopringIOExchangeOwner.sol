@@ -204,10 +204,14 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         )
         private
     {
+        if (txCallbacks.length == 0) {
+            return;
+        }
+
         uint cursor = 0;
 
         // Reuse the data when possible to save on some memory alloc gas
-        bytes memory txsData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE*6);
+        bytes memory txsData = new bytes(txCallbacks[0].numTxs * ExchangeData.TX_DATA_AVAILABILITY_SIZE);
         for (uint i = 0; i < txCallbacks.length; i++) {
             TxCallback calldata txCallback = txCallbacks[i];
 
@@ -220,7 +224,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
             if (txsData.length != ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs) {
                 txsData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs);
             }
-            _block.extractTransactions(txIdx, txCallback.numTxs, txsData);
+            _block.readTxs(txIdx, txCallback.numTxs, txsData);
             IBlockReceiver(receivers[receiverIdx]).beforeBlockSubmission(
                 txsData,
                 txCallback.data
