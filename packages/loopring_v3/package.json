@@ -72,7 +72,7 @@
     "eslint-plugin-prettier": "^3.1.1",
     "ethlint": "^1.2.5",
     "ganache-cli": "6.9.1",
-    "husky": "^4.0.4",
+    "husky": "^5.1.1",
     "mocha": "^8.0.1",
     "node": "^13.10.1",
     "npm": "^6.14.8",
