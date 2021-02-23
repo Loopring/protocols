@@ -218,14 +218,14 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
             uint txIdx = uint(txCallback.txIdx);
             require(txIdx >= cursor, "TX_INDEX_OUT_OF_ORDER");
 
-            uint16 receiverIdx = txCallback.receiverIdx;
-            require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
+            require(txCallback.receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
 
-            if (txsData.length != ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs) {
-                txsData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs);
+            uint txsDataLength = ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs;
+            if (txsData.length != txsDataLength) {
+                txsData = new bytes(txsDataLength);
             }
             _block.readTxs(txIdx, txCallback.numTxs, txsData);
-            IBlockReceiver(receivers[receiverIdx]).beforeBlockSubmission(
+            IBlockReceiver(receivers[txCallback.receiverIdx]).beforeBlockSubmission(
                 txsData,
                 txCallback.data
             );

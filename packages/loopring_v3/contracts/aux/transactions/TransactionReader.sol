@@ -80,7 +80,7 @@ library TransactionReader {
         pure
         returns (SignatureVerificationTransaction.SignatureVerification memory verification)
     {
-         _block.readTx(txIdx, txData);
+        _block.readTx(txIdx, txData);
         SignatureVerificationTransaction.readTx(txData, 0, verification);
     }
 
