@@ -1281,6 +1281,261 @@
     tokenSymbol: 'LP-NEC-ETH'
   }
   ```
+  
+  74. WBTC-USDT: 0xe6f1c20d06b2f541e4308d752d0d58c6df07191d
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-WBTC-USDT',
+    accountID: 74,
+    tokens: [
+      '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
+      '0xdac17f958d2ee523a2206206994597c13d831ec7'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-WBTC-USDT'
+  }
+  ```
+
+  75. WBTC-USDC: 0x7af6e5dd61c93277b406ffcadad6e6089b27075b
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-WBTC-USDC',
+    accountID: 75,
+    tokens: [
+      '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
+      '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-WBTC-USDC'
+  }
+  ```
+
+  76. WBTC-DAI: 0x759c0d0ce4191db16ef5bce6ed0a05de9e99a9f5
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-WBTC-DAI',
+    accountID: 76,
+    tokens: [
+      '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
+      '0x6B175474E89094C44Da98b954EedeAC495271d0F'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-WBTC-DAI'
+  }
+  ```
+
+  77. RAI-ETH: 0x994f94c853d691f5c775e5131fc4a110abeed4a8
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-RAI-ETH',
+    accountID: 77,
+    tokens: [
+      '0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-RAI-ETH'
+  }
+  ```
+
+  78. SNX-ETH: 0xe7e807631f3e807ae20d0e23919db8789680104b
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-SNX-ETH',
+    accountID: 78,
+    tokens: [
+      '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-SNX-ETH'
+  }
+  ```
+
+  79. RGT-ETH: 0x7cd7871181d91af440dd4552bae70b8ebe9fba73
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-RGT-ETH',
+    accountID: 79,
+    tokens: [
+      '0xd291e7a03283640fdc51b121ac401383a46cc623',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-RGT-ETH'
+  }
+  ```
+
+  80. VSP-ETH: 0x9a94a815f56d00f52bbad46edc6d12d879df2635
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-VSP-ETH',
+    accountID: 80,
+    tokens: [
+      '0x1b40183efb4dd766f11bda7a7c3ad8982e998421',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-VSP-ETH'
+  }
+  ```
+
+  81. SMARTCREDIT-ETH: 0xfd997e572f03f3ff4f117aaccaab9b45bfb6e01c
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-SMARTCREDIT-ETH',
+    accountID: 81,
+    tokens: [
+      '0x72e9D9038cE484EE986FEa183f8d8Df93f9aDA13',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-SMARTCREDIT-ETH'
+  }
+  ```
+
+  82. TEL-ETH: 0x5f24c3a2c9841c023d6646402fd449665b64626b
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-TEL-ETH',
+    accountID: 82,
+    tokens: [
+      '0x467Bccd9d29f223BcE8043b84E8C8B282827790F',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-TEL-ETH'
+  }
+  ```
+
+  83. BCP-ETH: 0x9775449efdf24b7eb5391e7d3758e184595e4c69
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-BCP-ETH',
+    accountID: 83,
+    tokens: [
+      '0xE4f726Adc8e89C6a6017F01eadA77865dB22dA14',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-BCP-ETH'
+  }
+  ```
+
+  84. BADGER-ETH: 0x4f23ca1cc6253dc1ba69a07a892d68f3b777c407
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-BADGER-ETH',
+    accountID: 84,
+    tokens: [
+      '0x3472A5A71965499acd81997a54BBA8D852C6E53d',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-BADGER-ETH'
+  }
+  ```
+
+  85. SUSHI-ETH: 0x5c159d164b8fd7f0599c625988dc2db68df14842
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-SUSHI-ETH',
+    accountID: 85,
+    tokens: [
+      '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-SUSHI-ETH'
+  }
+  ```
+
+  86. MASK-ETH: 0x8572b8a876f47d70128c73bfca049ce00eb77563
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-MASK-ETH',
+    accountID: 86,
+    tokens: [
+      '0x69af81e73A73B40adF4f3d4223Cd9b1ECE623074',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-MASK-ETH'
+  }
+  ```
+
+  87. YPIE-ETH: 0xbbb360538b07b59ba2ca1c9f847c8bc760b8f0d7
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-YPIE-ETH',
+    accountID: 87,
+    tokens: [
+      '0x17525E4f4Af59fbc29551bC4eCe6AB60Ed49CE31',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-YPIE-ETH'
+  }
+  ```
+
+  88. FUSE-ETH: 0x34841262432975e36755ab797cb523dd7248861a
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-FUSE-ETH',
+    accountID: 88,
+    tokens: [
+      '0x970B9bB2C0444F5E81e9d0eFb84C8ccdcdcAf84d',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-FUSE-ETH'
+  }
+  ```
   ***
 
 - Registered tokens:
@@ -1457,3 +1712,30 @@
   - NEC: 0xCc80C051057B774cD75067Dc48f8987C4Eb97A5e, tokenId: 170
   - LP-RFOX-ETH 0x1ad74cf7caf443f77bd89860ef39f4ca16fbe810, tokenId: 171
   - LP-NEC-ETH 0xc418a3af58d7a1bad0b709fe58d0afddf64e178d, tokenId: 172
+  - SNX: 0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F, tokenId: 173 
+  - RGT: 0xd291e7a03283640fdc51b121ac401383a46cc623, tokenId: 174
+  - VSP: 0x1b40183efb4dd766f11bda7a7c3ad8982e998421, tokenId: 175
+  - SMARTCREDIT: 0x72e9D9038cE484EE986FEa183f8d8Df93f9aDA13, tokenId: 176
+  - RAI: 0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919, tokenId: 177
+  - TEL: 0x467Bccd9d29f223BcE8043b84E8C8B282827790F, tokenId: 178
+  - BCP: 0xE4f726Adc8e89C6a6017F01eadA77865dB22dA14, tokenId: 179
+  - BADGER: 0x3472A5A71965499acd81997a54BBA8D852C6E53d, tokenId: 180
+  - SUSHI: 0x6B3595068778DD592e39A122f4f5a5cF09C90fE2, tokenId: 181
+  - MASK: 0x69af81e73A73B40adF4f3d4223Cd9b1ECE623074, tokenId: 182
+  - LP-WBTC-USDT 0xe6f1c20d06b2f541e4308d752d0d58c6df07191d, tokenId: 183
+  - LP-WBTC-USDC 0x7af6e5dd61c93277b406ffcadad6e6089b27075b, tokenId: 184
+  - LP-WBTC-DAI 0x759c0d0ce4191db16ef5bce6ed0a05de9e99a9f5, tokenId: 185
+  - LP-RAI-ETH 0x994f94c853d691f5c775e5131fc4a110abeed4a8, tokenId: 186
+  - LP-SNX-ETH 0xe7e807631f3e807ae20d0e23919db8789680104b, tokenId: 187
+  - LP-RGT-ETH 0x7cd7871181d91af440dd4552bae70b8ebe9fba73, tokenId: 188
+  - LP-VSP-ETH 0x9a94a815f56d00f52bbad46edc6d12d879df2635, tokenId: 189
+  - LP-SMARTCREDIT-ETH 0xfd997e572f03f3ff4f117aaccaab9b45bfb6e01c, tokenId: 190
+  - LP-TEL-ETH 0x5f24c3a2c9841c023d6646402fd449665b64626b, tokenId: 191
+  - LP-BCP-ETH 0x9775449efdf24b7eb5391e7d3758e184595e4c69, tokenId: 192
+  - LP-BADGER-ETH 0x4f23ca1cc6253dc1ba69a07a892d68f3b777c407, tokenId: 193
+  - LP-SUSHI-ETH 0x5c159d164b8fd7f0599c625988dc2db68df14842, tokenId: 194
+  - LP-MASK-ETH 0x8572b8a876f47d70128c73bfca049ce00eb77563, tokenId: 195
+  - YPIE: 0x17525E4f4Af59fbc29551bC4eCe6AB60Ed49CE31, tokenId: 196
+  - FUSE: 0x970B9bB2C0444F5E81e9d0eFb84C8ccdcdcAf84d, tokenId: 197
+  - LP-YPIE-ETH 0xbbb360538b07b59ba2ca1c9f847c8bc760b8f0d7, tokenId: 198
+  - LP-FUSE-ETH 0x34841262432975e36755ab797cb523dd7248861a, tokenId: 199
