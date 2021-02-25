@@ -715,8 +715,8 @@ export class AmmPool {
 
     return web3.eth.abi.encodeParameter("tuple(uint256,bytes,bytes)", [
       poolTx.txType,
-      web3.utils.hexToBytes(poolTx.data),
-      web3.utils.hexToBytes(poolTx.signature ? poolTx.signature : "0x")
+      poolTx.data,
+      poolTx.signature ? poolTx.signature : "0x"
     ]);
   }
 
