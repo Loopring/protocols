@@ -44,6 +44,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
 
     ExchangeData.State public state;
     address public loopringAddr;
+    uint8 private ammFeeBips = 20;
 
     modifier onlyWhenUninitialized()
     {
@@ -659,5 +660,23 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         makerFeeBips = state.protocolFeeData.makerFeeBips;
         previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;
         previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
+    }
+
+    function setAmmFeeBips(uint8 _feeBips)
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(_feeBips <= 200, "INVALID_VALUE");
+        ammFeeBips = _feeBips;
+    }
+
+    function getAmmFeeBips()
+        external
+        override
+        view
+        returns (uint8) {
+        return ammFeeBips;
     }
 }
