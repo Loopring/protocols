@@ -1,17 +1,14 @@
 import * as fs from "fs";
 import {
   execAsync,
-  newWeb3,
+  newWeb3WithPrivateKey,
   Eth,
   infuraUrlMain,
   zeroAddress
 } from "@freemanz/ts-utils";
 const assert = require("assert");
 
-const web3 = newWeb3(
-  "/usr/local/klzhong/private/priv-test.json",
-  infuraUrlMain
-);
+const web3 = newWeb3WithPrivateKey("0x" + "11".repeat(32), infuraUrlMain);
 
 const myEth = new Eth(web3, false);
 const defaultTxOpts = {
