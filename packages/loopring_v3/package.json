@@ -92,6 +92,7 @@
   "dependencies": {
     "@types/bitwise-xor": "0.0.31",
     "@types/web3": "^1.0.20",
+    "@freemanz/ts-utils": "^0.2.0",
     "any-promise": "1.3.0",
     "bignumber.js": "^4.1.0",
     "bitwise-xor": "0.0.0",
