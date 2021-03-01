@@ -31,6 +31,8 @@ async function listPendingDeposits(blocksAhead: number) {
       continue;
     }
 
+    const txhash = e.transactionHash;
+
     const token = e.returnValues.token;
     const pendingAmount = await myEth.call(
       "ABI/version36/ExchangeV3.abi",
@@ -43,7 +45,7 @@ async function listPendingDeposits(blocksAhead: number) {
     console.log("pendingAmount:", pendingAmount);
     if (pendingAmount > 0) {
       recheckMap.set(to, token);
-      pendingDeposits.push({ to, token, pendingAmount });
+      pendingDeposits.push({ txhash, to, token, pendingAmount });
     }
   }
 
