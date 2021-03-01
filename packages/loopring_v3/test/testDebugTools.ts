@@ -148,8 +148,7 @@ contract("Exchange", (accounts: string[]) => {
       const withCallbacksParameters = ctx.getSubmitBlocksWithCallbacksData(
         useCompression,
         submitBlocksTxData,
-        blockCallbacks,
-        gasTokenConfig
+        blockCallbacks
       );
       console.log(withCallbacksParameters);
 
