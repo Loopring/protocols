@@ -21,7 +21,7 @@ class SignatureVerificationCircuit : public BaseTransactionCircuit
 {
   public:
     // Inputs
-    DualVariableGadget owner;
+    ToBitsGadget owner;
     DualVariableGadget accountID;
     DualVariableGadget data;
 

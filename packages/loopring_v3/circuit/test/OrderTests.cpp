@@ -5,11 +5,7 @@
 
 TEST_CASE("Order", "[OrderGadget]")
 {
-    // We can't easily create signatures here, so disable the signature check for
-    // some tests
-    bool doSignatureCheck = true;
-
-    auto orderChecked = [&doSignatureCheck](const FieldT &_exchange, const Order &order, bool expectedSatisfied) {
+    auto orderChecked = [&](const FieldT &_exchange, const Order &order, bool expectedSatisfied) {
         protoboard<FieldT> pb;
 
         VariableT exchange = make_variable(pb, _exchange, "exchange");
@@ -18,7 +14,7 @@ TEST_CASE("Order", "[OrderGadget]")
         OrderGadget orderGadget(pb, constants, exchange, ".order");
 
         orderGadget.generate_r1cs_witness(order);
-        orderGadget.generate_r1cs_constraints(doSignatureCheck);
+        orderGadget.generate_r1cs_constraints();
 
         REQUIRE(pb.is_satisfied() == expectedSatisfied);
     };

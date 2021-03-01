@@ -44,10 +44,10 @@ class WithdrawCircuit : public BaseTransactionCircuit
     EqualGadget isWithdrawalTx;
     EqualGadget isProtocolFeeWithdrawal;
     TernaryGadget ownerValue;
-    DualVariableGadget owner;
+    ToBitsGadget owner;
 
     // Signature
-    Poseidon_gadget_T<10, 1, 6, 53, 9, 1> hash;
+    Poseidon_9 hash;
 
     // Validate
     RequireLtGadget requireValidUntil;
@@ -397,7 +397,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
         isWithdrawalTx.generate_r1cs_constraints();
         isProtocolFeeWithdrawal.generate_r1cs_constraints();
         ownerValue.generate_r1cs_constraints();
-        owner.generate_r1cs_constraints(true);
+        owner.generate_r1cs_constraints();
 
         // Signature
         hash.generate_r1cs_constraints();
