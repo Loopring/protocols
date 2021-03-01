@@ -33,7 +33,7 @@ library AmmJoinProcess
     function processJoin(
         AmmData.State       storage S,
         AmmData.Context     memory  ctx,
-        ExchangeData.Block  memory  _block,
+        bytes               memory  txsData,
         AmmData.PoolJoin    memory  join,
         bytes               memory  signature
         )
@@ -47,7 +47,7 @@ library AmmJoinProcess
             require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
             delete S.approvedTx[txHash];
         } else if (signature.length == 1) {
-            ctx.verifySignatureL2(_block, join.owner, txHash, signature);
+            ctx.verifySignatureL2(txsData, join.owner, txHash, signature);
         } else {
             require(txHash.verifySignature(join.owner, signature), "INVALID_OFFCHAIN_L1_APPROVAL");
         }
@@ -57,8 +57,9 @@ library AmmJoinProcess
         require(slippageOK, "JOIN_SLIPPAGE_INVALID");
 
         // Handle liquidity tokens
+        TransferTransaction.Transfer memory transfer;
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
+            TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
 
             require(
                 // transfer.fromAccountID == UNKNOWN &&
@@ -83,21 +84,22 @@ library AmmJoinProcess
             ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(transfer.amount);
         }
 
-        _mintPoolTokenOnL2(ctx, _block, mintAmount, join.owner);
+        _mintPoolTokenOnL2(ctx, txsData, mintAmount, join.owner, transfer);
 
         // emit JoinProcessed(join.owner, mintAmount, amounts);
     }
 
     function _mintPoolTokenOnL2(
         AmmData.Context     memory  ctx,
-        ExchangeData.Block  memory  _block,
+        bytes               memory  txsData,
         uint96                      amount,
-        address                     to
+        address                     to,
+         TransferTransaction.Transfer memory transfer
         )
         private
         view
     {
-        TransferTransaction.Transfer memory transfer = _block.readTransfer(ctx.txIdx++);
+        TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
 
         require(
             transfer.fromAccountID == ctx.accountID &&
@@ -132,7 +134,7 @@ library AmmJoinProcess
         amounts = new uint96[](ctx.tokens.length);
 
         if (ctx.totalSupply == 0) {
-            return(true, AmmData.POOL_TOKEN_BASE().toUint96(), join.joinAmounts);
+            return(true, AmmData.POOL_TOKEN_BASE.toUint96(), join.joinAmounts);
         }
 
         // Calculate the amount of pool tokens that should be minted
@@ -156,10 +158,10 @@ library AmmJoinProcess
         }
 
         // Calculate the amounts to deposit
-        uint ratio = uint(AmmData.POOL_TOKEN_BASE()).mul(mintAmount) / ctx.totalSupply;
+        uint ratio = uint(AmmData.POOL_TOKEN_BASE).mul(mintAmount) / ctx.totalSupply;
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE()).toUint96();
+            amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE).toUint96();
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

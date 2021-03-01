@@ -15,7 +15,7 @@ import "../libexchange/ExchangeSignatures.sol";
 library AccountUpdateTransaction
 {
     using BytesUtil            for bytes;
-    using FloatUtil            for uint;
+    using FloatUtil            for uint16;
     using ExchangeSignatures   for ExchangeData.State;
 
     bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
@@ -52,7 +52,8 @@ library AccountUpdateTransaction
         internal
     {
         // Read the account update
-        AccountUpdate memory accountUpdate = readTx(data, offset);
+        AccountUpdate memory accountUpdate;
+        readTx(data, offset, accountUpdate);
         AccountUpdateAuxiliaryData memory auxData = abi.decode(auxiliaryData, (AccountUpdateAuxiliaryData));
 
         // Fill in withdrawal data missing from DA
@@ -71,31 +72,35 @@ library AccountUpdateTransaction
 
     function readTx(
         bytes memory data,
-        uint         offset
+        uint         offset,
+        AccountUpdate memory accountUpdate
         )
         internal
         pure
-        returns (AccountUpdate memory accountUpdate)
     {
         uint _offset = offset;
+
+        require(data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.ACCOUNT_UPDATE), "INVALID_TX_TYPE");
+        _offset += 1;
+
         // Check that this is a conditional offset
-        require(data.toUint8(_offset) == 1, "INVALID_AUXILIARYDATA_DATA");
+        require(data.toUint8Unsafe(_offset) == 1, "INVALID_AUXILIARYDATA_DATA");
         _offset += 1;
 
         // Extract the data from the tx data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        accountUpdate.owner = data.toAddress(_offset);
+        accountUpdate.owner = data.toAddressUnsafe(_offset);
         _offset += 20;
-        accountUpdate.accountID = data.toUint32(_offset);
+        accountUpdate.accountID = data.toUint32Unsafe(_offset);
         _offset += 4;
-        accountUpdate.feeTokenID = data.toUint16(_offset);
+        accountUpdate.feeTokenID = data.toUint16Unsafe(_offset);
         _offset += 2;
-        accountUpdate.fee = uint(data.toUint16(_offset)).decodeFloat(16);
+        accountUpdate.fee = data.toUint16Unsafe(_offset).decodeFloat16();
         _offset += 2;
-        accountUpdate.publicKey = data.toUint(_offset);
+        accountUpdate.publicKey = data.toUintUnsafe(_offset);
         _offset += 32;
-        accountUpdate.nonce = data.toUint32(_offset);
+        accountUpdate.nonce = data.toUint32Unsafe(_offset);
         _offset += 4;
     }
 

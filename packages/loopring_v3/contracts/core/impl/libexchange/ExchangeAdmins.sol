@@ -35,7 +35,7 @@ library ExchangeAdmins
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(
             newValue > 0 &&
-            newValue <= ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND(),
+            newValue <= ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND,
             "INVALID_VALUE"
         );
         oldValue = S.maxAgeDepositUntilWithdrawable;
@@ -60,7 +60,7 @@ library ExchangeAdmins
         require(!S.isInWithdrawalMode(), "CANNOT_BE_IN_WITHDRAWAL_MODE");
 
         // Need to remain in shutdown for some time
-        require(block.timestamp >= S.shutdownModeStartTime + ExchangeData.MIN_TIME_IN_SHUTDOWN(), "TOO_EARLY");
+        require(block.timestamp >= S.shutdownModeStartTime + ExchangeData.MIN_TIME_IN_SHUTDOWN, "TOO_EARLY");
 
         // Withdraw the complete stake
         uint amount = S.loopring.getExchangeStake(address(this));

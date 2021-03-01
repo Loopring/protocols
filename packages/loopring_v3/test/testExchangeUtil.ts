@@ -1881,11 +1881,41 @@ export class ExchangeTestUtil {
           for (const auxiliaryData of block.auxiliaryData) {
             if (auxiliaryData[0] === Number(blockCallback.txIdx) + i) {
               auxiliaryData[1] = true;
+              // No auxiliary data needed for the tx
+              auxiliaryData[2] = "0x";
             }
           }
         }
       }
     }
+  }
+
+  public encodeAuxiliaryData(auxiliaryData: any[]) {
+    const encodedAuxiliaryData = web3.eth.abi.encodeParameter(
+      {
+        "struct AuxiliaryData[]": {
+          txIndex: "uint",
+          approved: "bool",
+          data: "bytes"
+        }
+      },
+      auxiliaryData
+    );
+    return encodedAuxiliaryData;
+  }
+
+  public decodeAuxiliaryData(encodedAuxiliaryData: string) {
+    const auxiliaryData = web3.eth.abi.decodeParameter(
+      {
+        "struct AuxiliaryData[]": {
+          txIndex: "uint",
+          approved: "bool",
+          data: "bytes"
+        }
+      },
+      encodedAuxiliaryData
+    );
+    return auxiliaryData;
   }
 
   public getOnchainBlock(
@@ -1906,7 +1936,7 @@ export class ExchangeTestUtil {
       proof,
       storeBlockInfoOnchain,
       offchainData: offchainData,
-      auxiliaryData: auxiliaryData
+      auxiliaryData: this.encodeAuxiliaryData(auxiliaryData)
     };
     return onchainBlock;
   }

@@ -15,119 +15,102 @@ import "../../core/impl/libtransactions/WithdrawTransaction.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Utility library to read transactions.
 library TransactionReader {
-    using BlockReader       for ExchangeData.Block;
+    using BlockReader       for bytes;
     using TransactionReader for ExchangeData.Block;
     using BytesUtil         for bytes;
 
     function readDeposit(
         ExchangeData.Block memory _block,
-        uint txIdx
+        uint txIdx,
+        bytes memory txData
         )
         internal
         pure
-        returns (DepositTransaction.Deposit memory)
+        returns (DepositTransaction.Deposit memory deposit)
     {
-        bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.DEPOSIT);
-        return DepositTransaction.readTx(data, 1);
+        _block.readTx(txIdx, txData);
+        DepositTransaction.readTx(txData, 0, deposit);
     }
 
     function readWithdrawal(
         ExchangeData.Block memory _block,
-        uint txIdx
+        uint txIdx,
+        bytes memory txData
         )
         internal
         pure
-        returns (WithdrawTransaction.Withdrawal memory)
+        returns (WithdrawTransaction.Withdrawal memory withdrawal)
     {
-        bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.WITHDRAWAL);
-        return WithdrawTransaction.readTx(data, 1);
+        _block.readTx(txIdx, txData);
+        WithdrawTransaction.readTx(txData, 0, withdrawal);
     }
 
     function readAmmUpdate(
         ExchangeData.Block memory _block,
-        uint txIdx
+        uint txIdx,
+        bytes memory txData
         )
         internal
         pure
-        returns (AmmUpdateTransaction.AmmUpdate memory)
+        returns (AmmUpdateTransaction.AmmUpdate memory ammUpdate)
     {
-        bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.AMM_UPDATE);
-        return AmmUpdateTransaction.readTx(data, 1);
+        _block.readTx(txIdx, txData);
+        AmmUpdateTransaction.readTx(txData, 0, ammUpdate);
     }
 
     function readTransfer(
         ExchangeData.Block memory _block,
-        uint txIdx
+        uint txIdx,
+        bytes memory txData
         )
         internal
         pure
-        returns (TransferTransaction.Transfer memory)
+        returns (TransferTransaction.Transfer memory transfer)
     {
-        bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.TRANSFER);
-        return TransferTransaction.readTx(data, 1);
+        _block.readTx(txIdx, txData);
+        TransferTransaction.readTx(txData, 0, transfer);
     }
 
     function readSignatureVerification(
         ExchangeData.Block memory _block,
-        uint txIdx
+        uint txIdx,
+        bytes memory txData
         )
         internal
         pure
-        returns (SignatureVerificationTransaction.SignatureVerification memory)
+        returns (SignatureVerificationTransaction.SignatureVerification memory verification)
     {
-        bytes memory data = _block.readTx(txIdx, ExchangeData.TransactionType.SIGNATURE_VERIFICATION);
-        return SignatureVerificationTransaction.readTx(data, 1);
+        _block.readTx(txIdx, txData);
+        SignatureVerificationTransaction.readTx(txData, 0, verification);
     }
 
     function readTx(
         ExchangeData.Block memory _block,
         uint txIdx,
-        ExchangeData.TransactionType txType
+        bytes memory txData
         )
         internal
         pure
-        returns (bytes memory data)
     {
-        data = _block.readTransactionData(txIdx);
-        require(txType == ExchangeData.TransactionType(data.toUint8(0)), "UNEXPTECTED_TX_TYPE");
+        _block.data.readTransactionData(txIdx, _block.blockSize, txData);
     }
 
-    function createMinimalBlock(
+    function readTxs(
         ExchangeData.Block memory _block,
-        uint txIdx,
-        uint16 numTransactions
+        uint                      txIdx,
+        uint16                    numTransactions,
+        bytes              memory txsData
         )
         internal
         pure
-        returns (ExchangeData.Block memory)
     {
-        ExchangeData.Block memory minimalBlock = ExchangeData.Block({
-            blockType: _block.blockType,
-            blockSize: numTransactions,
-            blockVersion: _block.blockVersion,
-            data: new bytes(0),
-            proof: _block.proof,
-            storeBlockInfoOnchain: _block.storeBlockInfoOnchain,
-            auxiliaryData: new ExchangeData.AuxiliaryData[](0),
-            offchainData: new bytes(0)
-        });
-
-        bytes memory header = _block.data.slice(0, BlockReader.OFFSET_TO_TRANSACTIONS);
-
-        // Extract the data of the transactions we want
-        // Part 1
-        uint txDataOffset = BlockReader.OFFSET_TO_TRANSACTIONS +
-            txIdx * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1();
-        bytes memory dataPart1 = _block.data.slice(txDataOffset, numTransactions * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1());
-        // Part 2
-        txDataOffset = BlockReader.OFFSET_TO_TRANSACTIONS +
-            _block.blockSize * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1() +
-            txIdx * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_2();
-        bytes memory dataPart2 = _block.data.slice(txDataOffset, numTransactions * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_2());
-
-        // Set the data on the block in the standard format
-        minimalBlock.data = header.concat(dataPart1).concat(dataPart2);
-
-        return minimalBlock;
+        bytes memory txData = txsData;
+        uint TX_DATA_AVAILABILITY_SIZE = ExchangeData.TX_DATA_AVAILABILITY_SIZE;
+        for (uint i = 0; i < numTransactions; i++) {
+            _block.data.readTransactionData(txIdx + i, _block.blockSize, txData);
+            assembly {
+                txData := add(txData, TX_DATA_AVAILABILITY_SIZE)
+            }
+        }
     }
 }

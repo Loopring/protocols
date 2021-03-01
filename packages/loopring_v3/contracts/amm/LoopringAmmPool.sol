@@ -119,19 +119,17 @@ contract LoopringAmmPool is
     }
 
     function beforeBlockSubmission(
-        ExchangeData.Block memory   _block,
-        bytes              calldata data,
-        uint                        txIdx,
-        uint                        numTxs
+        bytes              calldata txsData,
+        bytes              calldata callbackData
         )
         external
         override
         onlyWhenOnline
         onlyFromExchangeOwner
-        // nonReentrant     // Not needed, does not do any external calls (except to the exchange)
+        // nonReentrant     // Not needed, does not do any external calls
                             // and can only be called by the exchange owner.
     {
-        state.beforeBlockSubmission(_block, data, txIdx, numTxs);
+        state.beforeBlockSubmission(txsData, callbackData);
     }
 
     function withdrawWhenOffline()

@@ -173,7 +173,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         // Verify the approved transactions data against the auxiliary data in the block
         for (uint i = 0; i < blocks.length; i++) {
             bool[] memory _preApprovedTxs = preApprovedTxs[i];
-            ExchangeData.AuxiliaryData[] memory auxiliaryData = blocks[i].auxiliaryData;
+            ExchangeData.AuxiliaryData[] memory auxiliaryData;
+            bytes memory blockAuxData = blocks[i].auxiliaryData;
+            assembly {
+                auxiliaryData := add(blockAuxData, 64)
+            }
+
             for(uint j = 0; j < auxiliaryData.length; j++) {
                 // Load the data from auxiliaryData, which is still encoded as calldata
                 uint txIdx;
@@ -199,23 +204,30 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         )
         private
     {
+        if (txCallbacks.length == 0) {
+            return;
+        }
+
         uint cursor = 0;
 
+        // Reuse the data when possible to save on some memory alloc gas
+        bytes memory txsData = new bytes(txCallbacks[0].numTxs * ExchangeData.TX_DATA_AVAILABILITY_SIZE);
         for (uint i = 0; i < txCallbacks.length; i++) {
             TxCallback calldata txCallback = txCallbacks[i];
 
             uint txIdx = uint(txCallback.txIdx);
             require(txIdx >= cursor, "TX_INDEX_OUT_OF_ORDER");
 
-            uint16 receiverIdx = txCallback.receiverIdx;
-            require(receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
+            require(txCallback.receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
 
-            ExchangeData.Block memory minimalBlock = _block.createMinimalBlock(txIdx, txCallback.numTxs);
-            IBlockReceiver(receivers[receiverIdx]).beforeBlockSubmission(
-                minimalBlock,
-                txCallback.data,
-                0,
-                txCallback.numTxs
+            uint txsDataLength = ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs;
+            if (txsData.length != txsDataLength) {
+                txsData = new bytes(txsDataLength);
+            }
+            _block.readTxs(txIdx, txCallback.numTxs, txsData);
+            IBlockReceiver(receivers[txCallback.receiverIdx]).beforeBlockSubmission(
+                txsData,
+                txCallback.data
             );
 
             // Now that the transactions have been verified, mark them as approved
@@ -272,11 +284,11 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
             }
             _block.data = blockData;
 
-            ExchangeData.AuxiliaryData[] memory auxiliaryData;
+            bytes memory auxiliaryData;
             assembly {
                 auxiliaryData := add(data, add(32, add(blockOffset, auxiliaryDataOffset)))
             }
-            // Still encoded as calldata!
+            // Encoded as calldata!
             _block.auxiliaryData = auxiliaryData;
         }
         return blocks;
