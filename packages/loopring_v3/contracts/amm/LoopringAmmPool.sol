@@ -140,10 +140,10 @@ contract LoopringAmmPool is
         state.withdrawWhenOffline();
     }
 
-    function updateExchangeOwner()
+    function updateExchangeOwnerAndFeeBips()
         external
         nonReentrant
     {
-        state.updateExchangeOwner();
+        state.updateExchangeOwnerAndFeeBips();
     }
 }

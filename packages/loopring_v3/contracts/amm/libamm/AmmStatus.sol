@@ -112,9 +112,10 @@ library AmmStatus
     }
 
     // Anyone is able to update the cached exchange owner to the current owner.
-    function updateExchangeOwner(AmmData.State storage S)
+    function updateExchangeOwnerAndFeeBips(AmmData.State storage S)
         public
     {
         S.exchangeOwner = S.exchange.owner();
+        S.feeBips = S.exchange.getAmmFeeBips();
     }
 }
