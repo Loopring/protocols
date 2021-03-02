@@ -1536,6 +1536,23 @@
     tokenSymbol: 'LP-FUSE-ETH'
   }
   ```
+  
+  89. MASK-LRC: 0xc8f242b2ac6069ebdc876ba0ef42efbf03c5ba4b
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-MASK-LRC',
+    accountID: 89,
+    tokens: [
+      '0x69af81e73A73B40adF4f3d4223Cd9b1ECE623074',
+      '0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-MASK-LRC'
+  }
+  ```
   ***
 
 - Registered tokens:
@@ -1739,3 +1756,4 @@
   - FUSE: 0x970B9bB2C0444F5E81e9d0eFb84C8ccdcdcAf84d, tokenId: 197
   - LP-YPIE-ETH 0xbbb360538b07b59ba2ca1c9f847c8bc760b8f0d7, tokenId: 198
   - LP-FUSE-ETH 0x34841262432975e36755ab797cb523dd7248861a, tokenId: 199
+  - LP-MASK-LRC 0xc8f242b2ac6069ebdc876ba0ef42efbf03c5ba4b, tokenId: 200
