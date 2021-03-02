@@ -51,16 +51,16 @@ async function loadRes() {
   }
 }
 
-async function resContains(res: any[], token: string) {
+function resContains(res: any[], token: string) {
   for (const item of res) {
-    if (item.token == token) return true;
+    if (item && item.token === token) return true;
   }
   return false;
 }
 
 async function fetchAllTokenGasStats() {
   const tokenMap = await loadTokens();
-  const res: any[] = loadRes;
+  const res: any[] = await loadRes();
 
   // await Promise.all(
   //   [...tokenMap.values()].map(async function(token) {
