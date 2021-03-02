@@ -63,7 +63,7 @@ async function getFailedDistributions(blocksAhead: number) {
 }
 
 async function main() {
-  await getFailedDistributions(1000000);
+  await getFailedDistributions(50000);
 }
 
 main()
