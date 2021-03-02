@@ -16,7 +16,7 @@
     "build": "lerna link && wsrun build $PKG --fast-exit -r --stages --exclude-missing"
   },
   "devDependencies": {
-    "lerna": "^3.16.0",
+    "lerna": "^4.0.0",
     "wsrun": "^5.0.2",
     "husky": "^4.0.4"
   }
