@@ -12,12 +12,11 @@ import "../../lib/Drainable.sol";
 import "../../lib/ERC1271.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
-import "../gas/ChiDiscount.sol";
 import "./SelectorBasedAccessManager.sol";
 import "./IBlockReceiver.sol";
 
 
-contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC1271, Drainable
+contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -28,7 +27,6 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
 
     bytes4    private constant SUBMITBLOCKS_SELECTOR = IExchangeV3.submitBlocks.selector;
     bool      public  open;
-    address   public  immutable chiToken;
 
     event SubmitBlocksAccessOpened(bool open);
 
@@ -53,12 +51,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
     }
 
     constructor(
-        address _exchange,
-        address _chiToken
+        address _exchange
         )
         SelectorBasedAccessManager(_exchange)
     {
-        chiToken = _chiToken;
     }
 
     function openAccessToSubmitBlocks(bool _open)
@@ -94,17 +90,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         return hasAccessTo(drainer, this.drain.selector);
     }
 
-    /// @dev chiConfig.expectedGasRefund shall be set to numDeposits * 15,000, and
-    /// chiConfig.calldataCost shall be set to 16 * msg.data.length or calculated
-    /// perfectly offchain (16 gas for non-zero byte, 4 gas for zero byte).
     function submitBlocksWithCallbacks(
         bool                     isDataCompressed,
         bytes           calldata data,
-        CallbackConfig  calldata config,
-        ChiConfig       calldata chiConfig
+        CallbackConfig  calldata config
         )
         external
-        discountCHI(chiToken, chiConfig)
     {
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");
