@@ -1553,6 +1553,57 @@
     tokenSymbol: 'LP-MASK-LRC'
   }
   ```
+  
+  90. SX-ETH: 0xb27b1fd0d4a7d91d07c19f9a33d3a4711a453d7c
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-SX-ETH',
+    accountID: 90,
+    tokens: [
+      '0x99fe3b1391503a1bc1788051347a1324bff41452',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-SX-ETH'
+  }
+  ```
+
+  91. REPT-ETH: 0x76d8ea32c511a87ee4bff5f00e758dd362adf3d0
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-REPT-ETH',
+    accountID: 91,
+    tokens: [
+      '0xcda4770d65b4211364cb870ad6be19e7ef1d65f4',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-REPT-ETH'
+  }
+  ```
+
+  92. RSPT-USDC: 0x6bf0060fbcf271a2ed828e77076543076d5edba1
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-RSPT-USDC',
+    accountID: 92,
+    tokens: [
+      '0x016bf078abcacb987f0589a6d3beadd4316922b0',
+      '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-RSPT-USDC'
+  }
+  ```
   ***
 
 - Registered tokens:
@@ -1757,3 +1808,9 @@
   - LP-YPIE-ETH 0xbbb360538b07b59ba2ca1c9f847c8bc760b8f0d7, tokenId: 198
   - LP-FUSE-ETH 0x34841262432975e36755ab797cb523dd7248861a, tokenId: 199
   - LP-MASK-LRC 0xc8f242b2ac6069ebdc876ba0ef42efbf03c5ba4b, tokenId: 200
+  - SX: 0x99fe3b1391503a1bc1788051347a1324bff41452, tokenId: 201
+  - REPT: 0xcda4770d65b4211364cb870ad6be19e7ef1d65f4, tokenId: 202
+  - RSPT: 0x016bf078abcacb987f0589a6d3beadd4316922b0, tokenId: 203
+  - LP-SX-ETH 0xb27b1fd0d4a7d91d07c19f9a33d3a4711a453d7c, tokenId: 204
+  - LP-REPT-ETH 0x76d8ea32c511a87ee4bff5f00e758dd362adf3d0, tokenId: 205
+  - LP-RSPT-USDC 0x6bf0060fbcf271a2ed828e77076543076d5edba1, tokenId: 206
