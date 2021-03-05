@@ -52,6 +52,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
         address _exchange
         )
         external
+        onlyOwner
     {
         require(
             exchange == address(0) && _exchange != address(0),
