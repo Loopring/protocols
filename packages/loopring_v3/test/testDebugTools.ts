@@ -149,7 +149,9 @@ contract("Exchange", (accounts: string[]) => {
         useCompression,
         submitBlocksTxData,
         blockCallbacks,
-        gasTokenConfig
+        gasTokenConfig,
+        [],
+        []
       );
       console.log(withCallbacksParameters);
 

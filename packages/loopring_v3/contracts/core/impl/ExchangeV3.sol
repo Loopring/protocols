@@ -382,20 +382,27 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.pendingDeposits[owner][tokenID].amount;
     }
 
-    function flashDeposit(
-        address to,
-        address tokenAddress,
-        uint96  amount
+    function flashMint(
+        ExchangeData.FlashMint[] calldata flashMints
         )
         external
         override
         nonReentrant
         onlyOwner
     {
-        state.deposit(to, to, tokenAddress, amount, new bytes(0), true);
+        for (uint i = 0; i < flashMints.length; i++) {
+            state.deposit(
+                flashMints[i].to,
+                flashMints[i].to,
+                flashMints[i].token,
+                flashMints[i].amount,
+                new bytes(0),
+                true
+            );
+        }
     }
 
-    function repayFlashDeposit(
+    function repayFlashMint(
         address from,
         address tokenAddress,
         uint96  amount,
@@ -406,10 +413,10 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         override
         nonReentrant
     {
-        state.repayFlashDeposit(from, tokenAddress, amount, extraData);
+        state.repayFlashMint(from, tokenAddress, amount, extraData);
     }
 
-    function getAmountFlashDeposited(
+    function getAmountFlashMinted(
         address tokenAddress
         )
         external
@@ -417,7 +424,19 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         view
         returns (uint96)
     {
-        return state.amountFlashDeposited[tokenAddress];
+        return state.amountFlashMinted[tokenAddress];
+    }
+
+    function verifyFlashMintsPaidBack(
+        ExchangeData.FlashMint[] calldata flashMints
+        )
+        external
+        override
+        view
+    {
+        for (uint i = 0; i < flashMints.length; i++) {
+            require(state.amountFlashMinted[flashMints[i].token] == 0, "FLASH_MINT_NOT_REPAID");
+        }
     }
 
     // -- Withdrawals --

@@ -49,7 +49,7 @@ library DepositTransaction
         // This is done to ensure the user can do multiple deposits after each other
         // without invalidating work done by the exchange owner for previous deposit amounts.
 
-        require(pendingDeposit.amount >= deposit.amount, "INVALID_AMOUNT");
+        require(pendingDeposit.amount >= deposit.amount, "INVALID_DEPOSIT_AMOUNT");
         pendingDeposit.amount = pendingDeposit.amount.sub(deposit.amount);
 
         // If the deposit was fully consumed, reset it so the storage is freed up

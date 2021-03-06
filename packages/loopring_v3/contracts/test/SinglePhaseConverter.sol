@@ -9,8 +9,8 @@ import "../lib/ERC20.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TestVault is Claimable, Drainable {
-
+contract SinglePhaseConverter is Claimable, Drainable
+{
     function swapAndRepay(
         address exchange,
         address swapContract,
@@ -35,7 +35,7 @@ contract TestVault is Claimable, Drainable {
             ERC20(repayToken).approve(address(depositContract), repayAmount);
         }
         uint repayValue = (repayToken == address(0)) ? repayAmount : 0;
-        IExchangeV3(exchange).repayFlashDeposit{value: repayValue}(
+        IExchangeV3(exchange).repayFlashMint{value: repayValue}(
             address(this),
             repayToken,
             repayAmount,

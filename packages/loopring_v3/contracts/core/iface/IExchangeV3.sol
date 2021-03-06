@@ -344,15 +344,13 @@ abstract contract IExchangeV3 is Claimable
         returns (uint96);
 
 
-    function flashDeposit(
-        address to,
-        address tokenAddress,
-        uint96  amount
+    function flashMint(
+        ExchangeData.FlashMint[] calldata flashMints
         )
         external
         virtual;
 
-    function repayFlashDeposit(
+    function repayFlashMint(
         address from,
         address tokenAddress,
         uint96  amount,
@@ -362,13 +360,20 @@ abstract contract IExchangeV3 is Claimable
         virtual
         payable;
 
-    function getAmountFlashDeposited(
+    function getAmountFlashMinted(
         address tokenAddress
         )
         external
         virtual
         view
         returns (uint96);
+
+    function verifyFlashMintsPaidBack(
+        ExchangeData.FlashMint[] calldata flashMints
+        )
+        external
+        virtual
+        view;
 
     // -- Withdrawals --
     /// @dev Submits an onchain request to force withdraw Ether or ERC20 tokens.

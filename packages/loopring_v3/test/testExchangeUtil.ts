@@ -35,6 +35,8 @@ import {
   Block,
   BlockCallback,
   Deposit,
+  FlashMint,
+  PostBlocksCallback,
   GasTokenConfig,
   Transfer,
   Noop,
@@ -537,6 +539,8 @@ export class ExchangeTestUtil {
 
   private pendingTransactions: TxType[][] = [];
   private pendingBlockCallbacks: BlockCallback[][] = [];
+  private pendingFlashMints: FlashMint[][] = [];
+  private pendingPostBlocksCallbacks: PostBlocksCallback[][] = [];
 
   private storageIDGenerator: number = 0;
 
@@ -574,13 +578,15 @@ export class ExchangeTestUtil {
     //   { from: this.testContext.deployer }
     // );
 
-    await this.loopringV3.updateProtocolFeeSettings(50, 0, {
+    await this.loopringV3.updateProtocolFeeSettings(0, 0, {
       from: this.testContext.deployer
     });
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       this.pendingTransactions.push([]);
       this.pendingBlockCallbacks.push([]);
+      this.pendingFlashMints.push([]);
+      this.pendingPostBlocksCallbacks.push([]);
       this.pendingBlocks.push([]);
       this.blocks.push([]);
 
@@ -1011,7 +1017,7 @@ export class ExchangeTestUtil {
     const deposit = await this.deposit(
       order.owner,
       order.owner,
-      order.tokenS,
+      balanceS.gt(new BN(0)) ? order.tokenS : "ETH",
       balanceS
     );
     order.accountID = deposit.accountID;
@@ -1133,9 +1139,6 @@ export class ExchangeTestUtil {
         ? options.amountDepositedCanDiffer
         : this.exchange;
 
-    //console.log("token:" + token);
-    //console.log("amount:" + amount.toString(10));
-
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
@@ -1245,6 +1248,30 @@ export class ExchangeTestUtil {
     };
     this.pendingTransactions[this.exchangeId].push(deposit);
     return deposit;
+  }
+
+  public async flashMint(owner: string, token: string, amount: BN) {
+    this.requestDeposit(owner, token, amount);
+    this.addFlashMint(owner, token, amount);
+  }
+
+  public addFlashMint(owner: string, token: string, amount: BN) {
+    const flashMint: FlashMint = {
+      to: owner,
+      token: this.getTokenAddress(token),
+      amount: amount.toString(10)
+    };
+    this.pendingFlashMints[this.exchangeId].push(flashMint);
+    return flashMint;
+  }
+
+  public addPostBlocksCallback(to: string, data: string) {
+    const postBlocksCallback: PostBlocksCallback = {
+      to,
+      data
+    };
+    this.pendingPostBlocksCallbacks[this.exchangeId].push(postBlocksCallback);
+    return postBlocksCallback;
   }
 
   public hexToDecString(hex: string) {
@@ -1922,7 +1949,9 @@ export class ExchangeTestUtil {
         parameters.isDataCompressed,
         parameters.data,
         parameters.callbackConfig,
-        parameters.gasTokenConfig
+        parameters.gasTokenConfig,
+        parameters.flashMints,
+        parameters.postBlocksCallbacks
       )
       .encodeABI();
   }
@@ -1931,7 +1960,9 @@ export class ExchangeTestUtil {
     isDataCompressed: boolean,
     txData: string,
     blockCallbacks: BlockCallback[][],
-    gasTokenConfig: GasTokenConfig
+    gasTokenConfig: GasTokenConfig,
+    flashMints: FlashMint[],
+    postBlocksCallbacks: PostBlocksCallback[]
   ) {
     const data = isDataCompressed ? compressZeros(txData) : txData;
     //console.log(data);
@@ -1943,7 +1974,9 @@ export class ExchangeTestUtil {
       isDataCompressed,
       data,
       callbackConfig,
-      gasTokenConfig
+      gasTokenConfig,
+      flashMints,
+      postBlocksCallbacks
     };
   }
 
@@ -2072,7 +2105,9 @@ export class ExchangeTestUtil {
       true,
       txData,
       blockCallbacks,
-      gasTokenConfig
+      gasTokenConfig,
+      this.pendingFlashMints[this.exchangeId],
+      this.pendingPostBlocksCallbacks[this.exchangeId]
     );
 
     // Submit the blocks onchain
@@ -2119,6 +2154,8 @@ export class ExchangeTestUtil {
       parameters.data,
       parameters.callbackConfig,
       gasTokenConfig,
+      parameters.flashMints,
+      parameters.postBlocksCallbacks,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
     );
@@ -2149,6 +2186,9 @@ export class ExchangeTestUtil {
       "[submitBlocks] Gas used: " + tx.receipt.gasUsed
     );
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
+
+    this.pendingFlashMints[this.exchangeId] = [];
+    this.pendingPostBlocksCallbacks[this.exchangeId] = [];
 
     // Check number of blocks submitted
     const numBlocksSubmittedAfter = (
@@ -2636,10 +2676,22 @@ export class ExchangeTestUtil {
     return bs.getData();
   }
 
-  public async registerToken(tokenAddress: string) {
-    const tx = await this.exchange.registerToken(tokenAddress, {
+  public async registerToken(tokenAddress: string, symbol?: string) {
+    const onchainExchangeOwner = await this.exchange.owner();
+    let contract = this.exchange;
+    if (this.operator && this.operator.address == onchainExchangeOwner) {
+      contract = await this.contracts.ExchangeV3.at(this.operator.address);
+    }
+
+    // Register it on the exchange contract
+    const tx = await contract.registerToken(tokenAddress, {
       from: this.exchangeOwner
     });
+    if (symbol) {
+      this.testContext.tokenSymbolAddrMap.set(symbol, tokenAddress);
+    }
+
+    await this.addTokenToMaps(tokenAddress);
     // logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
   }
 
@@ -2917,8 +2969,16 @@ export class ExchangeTestUtil {
   }
 
   public async transferBalance(to: string, token: string, amount: BN) {
-    const Token = await this.getTokenContract(token);
-    await Token.transfer(to, amount, { from: this.testContext.deployer });
+    if (token === "ETH" || token === Constants.zeroAddress) {
+      await web3.eth.sendTransaction({
+        from: this.testContext.deployer,
+        to: to,
+        value: amount
+      });
+    } else {
+      const Token = await this.getTokenContract(token);
+      await Token.transfer(to, amount, { from: this.testContext.deployer });
+    }
   }
 
   public evmIncreaseTime(seconds: number) {

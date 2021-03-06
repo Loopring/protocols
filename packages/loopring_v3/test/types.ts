@@ -237,6 +237,17 @@ export interface GasTokenConfig {
   calldataCost: number;
 }
 
+export interface FlashMint {
+  to: string;
+  token: string;
+  amount: string;
+}
+
+export interface PostBlocksCallback {
+  to: string;
+  data: string;
+}
+
 export interface Block {
   blockIdx: number;
   filename: string;

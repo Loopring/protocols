@@ -52,23 +52,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         address[]       receivers;
     }
 
-    struct FlashDepositInfo
-    {
-        address to;
-        address token;
-        uint96  amount;
-    }
-
-    struct FlashVaultInfo
+    struct PostBlocksCallbacks
     {
         address to;
         bytes   data;
-    }
-
-    struct FlashConfig
-    {
-        FlashDepositInfo[] deposits;
-        FlashVaultInfo[]   vaults;
     }
 
     constructor(
@@ -117,20 +104,22 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
     /// chiConfig.calldataCost shall be set to 16 * msg.data.length or calculated
     /// perfectly offchain (16 gas for non-zero byte, 4 gas for zero byte).
     function submitBlocksWithCallbacks(
-        bool                     isDataCompressed,
-        bytes           calldata data,
-        CallbackConfig  calldata config,
-        ChiConfig       calldata chiConfig,
-        FlashConfig     calldata flashConfig
+        bool                              isDataCompressed,
+        bytes                    calldata data,
+        CallbackConfig           calldata config,
+        ChiConfig                calldata chiConfig,
+        ExchangeData.FlashMint[] calldata flashMints,
+        PostBlocksCallbacks[]    calldata postBlocksCallbacks
         )
         external
         discountCHI(chiToken, chiConfig)
     {
+        IAgentRegistry agentRegistry = IExchangeV3(target).getAgentRegistry();
+
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");
 
             // Make sure the receiver is authorized to approve transactions
-            IAgentRegistry agentRegistry = IExchangeV3(target).getAgentRegistry();
             for (uint i = 0; i < config.receivers.length; i++) {
                 require(agentRegistry.isUniversalAgent(config.receivers[i]), "UNAUTHORIZED_RECEIVER");
             }
@@ -152,34 +141,27 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ChiDiscount, ERC
         // Decode the blocks
         ExchangeData.Block[] memory blocks = _decodeBlocks(decompressed);
 
-        // Process the callback logic.
+        // Do pre blocks callbacks
         _beforeBlockSubmission(blocks, config);
 
-        // Do flash deposits
-        for (uint i = 0; i < flashConfig.deposits.length; i++) {
-            IExchangeV3(target).flashDeposit(
-                flashConfig.deposits[i].to,
-                flashConfig.deposits[i].token,
-                flashConfig.deposits[i].amount
-            );
-        }
+        // Do flash mints
+        IExchangeV3(target).flashMint(flashMints);
 
+        // Submit blocks
         target.fastCallAndVerify(gasleft(), 0, decompressed);
 
-        // Do vault logic
-        for (uint i = 0; i < flashConfig.vaults.length; i++) {
-            require(flashConfig.vaults[i].to != target, "EXCHANGE_CANNOT_BE_VAULT");
-            (bool success, ) = flashConfig.vaults[i].to.call(flashConfig.vaults[i].data);
-            require(success, "VAULT_CALL_FAILED");
+        // Do post blocks callbacks
+        for (uint i = 0; i < postBlocksCallbacks.length; i++) {
+            require(postBlocksCallbacks[i].to != target, "EXCHANGE_CANNOT_BE_POST_CALLBACK_TARGET");
+            require(!agentRegistry.isUniversalAgent(postBlocksCallbacks[i].to), "UNI_AGENT_CANNOT_BE_POST_CALLBACK_TARGET");
+            (bool success, bytes memory returnData) = postBlocksCallbacks[i].to.call(postBlocksCallbacks[i].data);
+            if (!success) {
+                assembly { revert(add(returnData, 32), mload(returnData)) }
+            }
         }
 
-        // Make sure flash deposits were repaid
-        for (uint i = 0; i < flashConfig.deposits.length; i++) {
-            require(
-                IExchangeV3(target).getAmountFlashDeposited(flashConfig.deposits[i].token) == 0,
-                "FLASH_DEPOSIT_NOT REPAID"
-            );
-        }
+        // Make sure flash mints were repaid
+        IExchangeV3(target).verifyFlashMintsPaidBack(flashMints);
     }
 
     function _beforeBlockSubmission(
