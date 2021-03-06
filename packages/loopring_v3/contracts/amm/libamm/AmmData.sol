@@ -11,8 +11,8 @@ import "./IAmmSharedConfig.sol";
 /// @title AmmData
 library AmmData
 {
-    function POOL_TOKEN_BASE() internal pure returns (uint) { return 100 * (10 ** 8); }
-    function POOL_TOKEN_MINTED_SUPPLY() internal pure returns (uint) { return uint96(-1); }
+    uint public constant POOL_TOKEN_BASE = 100 * (10 ** 8);
+    uint public constant POOL_TOKEN_MINTED_SUPPLY = uint96(-1);
 
     enum PoolTxType
     {
@@ -72,15 +72,12 @@ library AmmData
         // functional parameters
         uint txIdx;
 
-        // Exchange state variables
-        IExchangeV3 exchange;
-        bytes32     exchangeDomainSeparator;
-
         // AMM pool state variables
         bytes32 domainSeparator;
         uint32  accountID;
 
         uint16  poolTokenID;
+        uint8   feeBips;
         uint    totalSupply;
 
         Token[]  tokens;

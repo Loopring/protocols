@@ -37,7 +37,6 @@ import {
   Deposit,
   FlashMint,
   PostBlocksCallback,
-  GasTokenConfig,
   Transfer,
   Noop,
   OrderInfo,
@@ -1908,11 +1907,41 @@ export class ExchangeTestUtil {
           for (const auxiliaryData of block.auxiliaryData) {
             if (auxiliaryData[0] === Number(blockCallback.txIdx) + i) {
               auxiliaryData[1] = true;
+              // No auxiliary data needed for the tx
+              auxiliaryData[2] = "0x";
             }
           }
         }
       }
     }
+  }
+
+  public encodeAuxiliaryData(auxiliaryData: any[]) {
+    const encodedAuxiliaryData = web3.eth.abi.encodeParameter(
+      {
+        "struct AuxiliaryData[]": {
+          txIndex: "uint",
+          approved: "bool",
+          data: "bytes"
+        }
+      },
+      auxiliaryData
+    );
+    return encodedAuxiliaryData;
+  }
+
+  public decodeAuxiliaryData(encodedAuxiliaryData: string) {
+    const auxiliaryData = web3.eth.abi.decodeParameter(
+      {
+        "struct AuxiliaryData[]": {
+          txIndex: "uint",
+          approved: "bool",
+          data: "bytes"
+        }
+      },
+      encodedAuxiliaryData
+    );
+    return auxiliaryData;
   }
 
   public getOnchainBlock(
@@ -1933,7 +1962,7 @@ export class ExchangeTestUtil {
       proof,
       storeBlockInfoOnchain,
       offchainData: offchainData,
-      auxiliaryData: auxiliaryData
+      auxiliaryData: this.encodeAuxiliaryData(auxiliaryData)
     };
     return onchainBlock;
   }
@@ -1949,7 +1978,6 @@ export class ExchangeTestUtil {
         parameters.isDataCompressed,
         parameters.data,
         parameters.callbackConfig,
-        parameters.gasTokenConfig,
         parameters.flashMints,
         parameters.postBlocksCallbacks
       )
@@ -1960,7 +1988,6 @@ export class ExchangeTestUtil {
     isDataCompressed: boolean,
     txData: string,
     blockCallbacks: BlockCallback[][],
-    gasTokenConfig: GasTokenConfig,
     flashMints: FlashMint[],
     postBlocksCallbacks: PostBlocksCallback[]
   ) {
@@ -1974,7 +2001,6 @@ export class ExchangeTestUtil {
       isDataCompressed,
       data,
       callbackConfig,
-      gasTokenConfig,
       flashMints,
       postBlocksCallbacks
     };
@@ -2094,45 +2120,16 @@ export class ExchangeTestUtil {
     const txData = this.getSubmitCallbackData(onchainBlocks);
     //console.log(txData);
 
-    const gasTokenConfig: GasTokenConfig = {
-      gasTokenVault: Constants.zeroAddress,
-      maxToBurn: 0,
-      expectedGasRefund: 0,
-      calldataCost: 0
-    };
-
     const parameters = this.getSubmitBlocksWithCallbacksData(
       true,
       txData,
       blockCallbacks,
-      gasTokenConfig,
       this.pendingFlashMints[this.exchangeId],
       this.pendingPostBlocksCallbacks[this.exchangeId]
     );
 
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
-
-    let bestGasTokensToBurn = 0;
-    /*let bestGasUsed = 20000000;
-    for (let i = 0; i < 15; i++) {
-      gasTokenConfig.maxToBurn = i;
-      const gasUsed = await operatorContract.submitBlocksWithCallbacks.estimateGas(
-        parameters.isDataCompressed,
-        parameters.data,
-        parameters.callbackConfig,
-        gasTokenConfig,
-        { from: this.exchangeOperator, gasPrice: 0 }
-      );
-      if (gasUsed < bestGasUsed) {
-        bestGasUsed = gasUsed;
-        bestGasTokensToBurn = i;
-      }
-      console.log("" + i + ": " + gasUsed);
-    }
-    console.log("Best gas used: " + bestGasUsed);
-    console.log("Num gas tokens burned: " + bestGasTokensToBurn);*/
-    gasTokenConfig.maxToBurn = bestGasTokensToBurn;
 
     let numDeposits = 0;
     for (const block of blocks) {
@@ -2143,17 +2140,15 @@ export class ExchangeTestUtil {
       }
     }
     //console.log("num deposits: " + numDeposits);
-    gasTokenConfig.expectedGasRefund = numDeposits * 15000;
 
     const msg_data = this.getSubmitBlocksWithCallbacks(parameters);
-    gasTokenConfig.calldataCost = calculateCalldataCost(msg_data);
+    // console.log("submitBlocksWithCallbacks msg_data:", msg_data);
 
     let tx: any = undefined;
     tx = await operatorContract.submitBlocksWithCallbacks(
       parameters.isDataCompressed,
       parameters.data,
       parameters.callbackConfig,
-      gasTokenConfig,
       parameters.flashMints,
       parameters.postBlocksCallbacks,
       //txData,
@@ -2877,7 +2872,6 @@ export class ExchangeTestUtil {
     if (useOwnerContract) {
       const ownerContract = await LoopringIOExchangeOwner.new(
         this.exchange.address,
-        this.contracts.ChiToken.address,
         { from: this.exchangeOwner }
       );
       await this.setOperatorContract(ownerContract);
@@ -2889,11 +2883,6 @@ export class ExchangeTestUtil {
         .claimOwnership()
         .encodeABI();
       await ownerContract.transact(txData, { from: this.exchangeOwner });
-
-      // Mint some gas tokens
-      const chiToken = await this.contracts.ChiToken.deployed();
-      await chiToken.mint(100);
-      await chiToken.transfer(ownerContract.address, 100);
     }
 
     return exchangeId;

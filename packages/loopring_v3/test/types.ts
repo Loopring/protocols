@@ -230,13 +230,6 @@ export interface BlockCallback {
   tx?: any;
 }
 
-export interface GasTokenConfig {
-  gasTokenVault: string;
-  maxToBurn: number;
-  expectedGasRefund: number;
-  calldataCost: number;
-}
-
 export interface FlashMint {
   to: string;
   token: string;

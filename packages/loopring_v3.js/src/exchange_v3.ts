@@ -626,7 +626,7 @@ export class ExchangeV3 {
 
     // Get the block data from the transaction data
     //const submitBlocksFunctionSignature = "0x8dadd3af"; // submitBlocks
-    const submitBlocksFunctionSignature = "0x937f369b"; // submitBlocksWithCallbacks
+    const submitBlocksFunctionSignature = "0x11edcb4d"; // submitBlocksWithCallbacks
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
@@ -636,6 +636,7 @@ export class ExchangeV3 {
       const decodedInput = this.web3.eth.abi.decodeParameters(
         [
           "bool",
+          "bytes",
           "bytes",
           "bytes",
           "bytes"

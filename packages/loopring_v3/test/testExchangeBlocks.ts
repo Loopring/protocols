@@ -159,9 +159,9 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion,
             new Array(18).fill(1)
           );
-          let timestamp = (await web3.eth.getBlock(
-            await web3.eth.getBlockNumber()
-          )).timestamp;
+          let timestamp = (
+            await web3.eth.getBlock(await web3.eth.getBlockNumber())
+          ).timestamp;
           timestamp -=
             exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
           const bs = new Bitstream();
@@ -199,9 +199,9 @@ contract("Exchange", (accounts: string[]) => {
           );
           // Timestamp too early
           {
-            let timestamp = (await web3.eth.getBlock(
-              await web3.eth.getBlockNumber()
-            )).timestamp;
+            let timestamp = (
+              await web3.eth.getBlock(await web3.eth.getBlockNumber())
+            ).timestamp;
             timestamp -=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
             const bs = new Bitstream();
@@ -229,9 +229,9 @@ contract("Exchange", (accounts: string[]) => {
           }
           // Timestamp too late
           {
-            let timestamp = (await web3.eth.getBlock(
-              await web3.eth.getBlockNumber()
-            )).timestamp;
+            let timestamp = (
+              await web3.eth.getBlock(await web3.eth.getBlockNumber())
+            ).timestamp;
             timestamp +=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
             const bs = new Bitstream();
@@ -269,9 +269,9 @@ contract("Exchange", (accounts: string[]) => {
             new Array(18).fill(1)
           );
           const protocolFees = await loopring.getProtocolFeeValues();
-          const timestamp = (await web3.eth.getBlock(
-            await web3.eth.getBlockNumber()
-          )).timestamp;
+          const timestamp = (
+            await web3.eth.getBlock(await web3.eth.getBlockNumber())
+          ).timestamp;
           // Invalid taker protocol fee
           {
             const bs = new Bitstream();
@@ -377,15 +377,16 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.submitPendingBlocks(
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
-                console.log(blocks[0]);
-                onchainBlocks[0].auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
+                const auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
                   blocks[0].blockInfoData
                 );
                 // Swap tx 0 and 1
-                const temp = onchainBlocks[0].auxiliaryData[1];
-                onchainBlocks[0].auxiliaryData[1] =
-                  onchainBlocks[0].auxiliaryData[0];
-                onchainBlocks[0].auxiliaryData[0] = temp;
+                const temp = auxiliaryData[1];
+                auxiliaryData[1] = auxiliaryData[0];
+                auxiliaryData[0] = temp;
+                onchainBlocks[0].auxiliaryData = exchangeTestUtil.encodeAuxiliaryData(
+                  auxiliaryData
+                );
               }
             ),
             "AUXILIARYDATA_INVALID_ORDER"
@@ -396,12 +397,14 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.submitPendingBlocks(
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
-                onchainBlocks[0].auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
+                const auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
                   blocks[0].blockInfoData
                 );
                 // Set the idx of tx 0 on tx 1
-                onchainBlocks[0].auxiliaryData[1][0] =
-                  onchainBlocks[0].auxiliaryData[0][0];
+                auxiliaryData[1][0] = auxiliaryData[0][0];
+                onchainBlocks[0].auxiliaryData = exchangeTestUtil.encodeAuxiliaryData(
+                  auxiliaryData
+                );
               }
             ),
             "AUXILIARYDATA_INVALID_ORDER"
@@ -412,14 +415,13 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.submitPendingBlocks(
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
                 assert(blocks.length === 1, "unexpected number of blocks");
-                onchainBlocks[0].auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
+                const auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
                   blocks[0].blockInfoData
                 );
-                onchainBlocks[0].auxiliaryData.push([
-                  0,
-                  false,
-                  web3.utils.hexToBytes("0x")
-                ]);
+                auxiliaryData.push([0, false, web3.utils.hexToBytes("0x")]);
+                onchainBlocks[0].auxiliaryData = exchangeTestUtil.encodeAuxiliaryData(
+                  auxiliaryData
+                );
               }
             ),
             "AUXILIARYDATA_INVALID_LENGTH"
@@ -429,8 +431,11 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.submitPendingBlocks(
             (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
               assert(blocks.length === 1, "unexpected number of blocks");
-              onchainBlocks[0].auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
+              const auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
                 blocks[0].blockInfoData
+              );
+              onchainBlocks[0].auxiliaryData = exchangeTestUtil.encodeAuxiliaryData(
+                auxiliaryData
               );
             }
           );

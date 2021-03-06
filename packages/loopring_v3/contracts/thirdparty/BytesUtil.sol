@@ -279,6 +279,128 @@ library BytesUtil {
         return tempBytes32;
     }
 
+
+    function toAddressUnsafe(bytes memory _bytes, uint _start) internal  pure returns (address) {
+        address tempAddress;
+
+        assembly {
+            tempAddress := div(mload(add(add(_bytes, 0x20), _start)), 0x1000000000000000000000000)
+        }
+
+        return tempAddress;
+    }
+
+    function toUint8Unsafe(bytes memory _bytes, uint _start) internal  pure returns (uint8) {
+        uint8 tempUint;
+
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x1), _start))
+        }
+
+        return tempUint;
+    }
+
+    function toUint16Unsafe(bytes memory _bytes, uint _start) internal  pure returns (uint16) {
+        uint16 tempUint;
+
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x2), _start))
+        }
+
+        return tempUint;
+    }
+
+    function toUint24Unsafe(bytes memory _bytes, uint _start) internal  pure returns (uint24) {
+        uint24 tempUint;
+
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x3), _start))
+        }
+
+        return tempUint;
+    }
+
+    function toUint32Unsafe(bytes memory _bytes, uint _start) internal  pure returns (uint32) {
+        uint32 tempUint;
+
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x4), _start))
+        }
+
+        return tempUint;
+    }
+
+    function toUint64Unsafe(bytes memory _bytes, uint _start) internal  pure returns (uint64) {
+        uint64 tempUint;
+
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x8), _start))
+        }
+
+        return tempUint;
+    }
+
+    function toUint96Unsafe(bytes memory _bytes, uint _start) internal  pure returns (uint96) {
+        uint96 tempUint;
+
+        assembly {
+            tempUint := mload(add(add(_bytes, 0xc), _start))
+        }
+
+        return tempUint;
+    }
+
+    function toUint128Unsafe(bytes memory _bytes, uint _start) internal  pure returns (uint128) {
+        uint128 tempUint;
+
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x10), _start))
+        }
+
+        return tempUint;
+    }
+
+    function toUintUnsafe(bytes memory _bytes, uint _start) internal  pure returns (uint256) {
+        uint256 tempUint;
+
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x20), _start))
+        }
+
+        return tempUint;
+    }
+
+    function toBytes4Unsafe(bytes memory _bytes, uint _start) internal  pure returns (bytes4) {
+        bytes4 tempBytes4;
+
+        assembly {
+            tempBytes4 := mload(add(add(_bytes, 0x20), _start))
+        }
+
+        return tempBytes4;
+    }
+
+    function toBytes20Unsafe(bytes memory _bytes, uint _start) internal  pure returns (bytes20) {
+        bytes20 tempBytes20;
+
+        assembly {
+            tempBytes20 := mload(add(add(_bytes, 0x20), _start))
+        }
+
+        return tempBytes20;
+    }
+
+    function toBytes32Unsafe(bytes memory _bytes, uint _start) internal  pure returns (bytes32) {
+        bytes32 tempBytes32;
+
+        assembly {
+            tempBytes32 := mload(add(add(_bytes, 0x20), _start))
+        }
+
+        return tempBytes32;
+    }
+
+
     function fastSHA256(
         bytes memory data
         )

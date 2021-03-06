@@ -44,17 +44,6 @@ class StorageGadget : public GadgetT
     {
     }
 
-    StorageGadget( //
-      ProtoboardT &pb,
-      VariableT _data,
-      VariableT _storageID)
-        : GadgetT(pb, "storageGadget"),
-
-          data(_data),
-          storageID(_storageID)
-    {
-    }
-
     void generate_r1cs_witness(const StorageLeaf &storageLeaf)
     {
         pb.val(data) = storageLeaf.data;

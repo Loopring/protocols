@@ -3,7 +3,7 @@ import fs = require("fs");
 import { AmmPool } from "./ammUtils";
 import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { BlockCallback, GasTokenConfig } from "./types";
+import { BlockCallback } from "./types";
 import { calculateCalldataCost, compressZeros } from "loopringV3.js";
 
 contract("Exchange", (accounts: string[]) => {
@@ -137,19 +137,11 @@ contract("Exchange", (accounts: string[]) => {
       const submitBlocksTxData = ctx.getSubmitCallbackData(onchainBlocks);
       console.log(submitBlocksTxData);
 
-      const gasTokenConfig: GasTokenConfig = {
-        gasTokenVault: Constants.zeroAddress,
-        maxToBurn: 0,
-        expectedGasRefund: 0,
-        calldataCost: 0
-      };
-
       // LoopringIOExchangeOwner.submitBlocksWithCallbacks
       const withCallbacksParameters = ctx.getSubmitBlocksWithCallbacksData(
         useCompression,
         submitBlocksTxData,
         blockCallbacks,
-        gasTokenConfig,
         [],
         []
       );

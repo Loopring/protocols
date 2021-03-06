@@ -697,4 +697,16 @@ abstract contract IExchangeV3 is Claimable
         virtual
         view
         returns (bytes32);
+
+    /// @dev set amm pool feeBips value.
+    function setAmmFeeBips(uint8 _feeBips)
+        external
+        virtual;
+
+    /// @dev get amm pool feeBips value.
+    function getAmmFeeBips()
+        external
+        virtual
+        view
+        returns (uint8);
 }

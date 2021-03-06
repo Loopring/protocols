@@ -21,13 +21,13 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
 {
   public:
     // Inputs
-    DualVariableGadget owner;
+    ToBitsGadget owner;
     DualVariableGadget accountID;
     DualVariableGadget tokenID;
     DualVariableGadget feeBips;
     DualVariableGadget tokenWeight;
-    DualVariableGadget nonce;
-    DualVariableGadget balance;
+    ToBitsGadget nonce;
+    ToBitsGadget balance;
 
     // Increase the nonce
     AddGadget nonce_after;
@@ -98,13 +98,13 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
     void generate_r1cs_constraints()
     {
         // Inputs
-        owner.generate_r1cs_constraints(true);
+        owner.generate_r1cs_constraints();
         accountID.generate_r1cs_constraints(true);
         tokenID.generate_r1cs_constraints(true);
         feeBips.generate_r1cs_constraints(true);
         tokenWeight.generate_r1cs_constraints(true);
-        nonce.generate_r1cs_constraints(true);
-        balance.generate_r1cs_constraints(true);
+        nonce.generate_r1cs_constraints();
+        balance.generate_r1cs_constraints();
 
         // Increase the nonce
         nonce_after.generate_r1cs_constraints();

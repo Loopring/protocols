@@ -65,7 +65,7 @@ library ExchangeWithdrawals
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         // Limit the amount of pending forced withdrawals so that the owner cannot be overwhelmed.
         require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
-        require(accountID < ExchangeData.MAX_NUM_ACCOUNTS(), "INVALID_ACCOUNTID");
+        require(accountID < ExchangeData.MAX_NUM_ACCOUNTS, "INVALID_ACCOUNTID");
 
         uint16 tokenID = S.getTokenID(token);
 

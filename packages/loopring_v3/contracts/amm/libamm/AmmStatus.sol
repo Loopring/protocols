@@ -74,13 +74,13 @@ library AmmStatus
         }
 
         // Mint all liquidity tokens to the pool account on L2
-        S.balanceOf[address(this)] = AmmData.POOL_TOKEN_MINTED_SUPPLY();
+        S.balanceOf[address(this)] = AmmData.POOL_TOKEN_MINTED_SUPPLY;
         S.allowance[address(this)][address(exchange.getDepositContract())] = uint(-1);
         exchange.deposit(
             address(this), // from
             address(this), // to
             address(this), // token
-            uint96(AmmData.POOL_TOKEN_MINTED_SUPPLY()),
+            uint96(AmmData.POOL_TOKEN_MINTED_SUPPLY),
             new bytes(0)
         );
     }
@@ -112,9 +112,10 @@ library AmmStatus
     }
 
     // Anyone is able to update the cached exchange owner to the current owner.
-    function updateExchangeOwner(AmmData.State storage S)
+    function updateExchangeOwnerAndFeeBips(AmmData.State storage S)
         public
     {
         S.exchangeOwner = S.exchange.owner();
+        S.feeBips = S.exchange.getAmmFeeBips();
     }
 }

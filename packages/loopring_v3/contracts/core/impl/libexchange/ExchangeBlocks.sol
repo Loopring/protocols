@@ -25,7 +25,7 @@ library ExchangeBlocks
 {
     using AddressUtil          for address;
     using AddressUtil          for address payable;
-    using BlockReader          for ExchangeData.Block;
+    using BlockReader          for bytes;
     using BytesUtil            for bytes;
     using MathUint             for uint;
     using ExchangeMode         for ExchangeData.State;
@@ -77,18 +77,18 @@ library ExchangeBlocks
         private
     {
         // Read the block header
-        BlockReader.BlockHeader memory header = _block.readHeader();
+        BlockReader.BlockHeader memory header = _block.data.readHeader();
 
         // Validate the exchange
         require(header.exchange == address(this), "INVALID_EXCHANGE");
         // Validate the Merkle roots
         require(header.merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
         require(header.merkleRootAfter != header.merkleRootBefore, "EMPTY_BLOCK_DISABLED");
-        require(uint(header.merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
+        require(uint(header.merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD, "INVALID_MERKLE_ROOT");
         // Validate the timestamp
         require(
-            header.timestamp > block.timestamp - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
-            header.timestamp < block.timestamp + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
+            header.timestamp > block.timestamp - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS &&
+            header.timestamp < block.timestamp + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
             "INVALID_TIMESTAMP"
         );
         // Validate the protocol fee values
@@ -201,32 +201,53 @@ library ExchangeBlocks
                 timestamp: header.timestamp
             });
 
+            ExchangeData.AuxiliaryData[] memory block_auxiliaryData;
+            bytes memory blockAuxData = _block.auxiliaryData;
+            assembly {
+                block_auxiliaryData := add(blockAuxData, 64)
+            }
+
             require(
-                _block.auxiliaryData.length == header.numConditionalTransactions,
+                block_auxiliaryData.length == header.numConditionalTransactions,
                 "AUXILIARYDATA_INVALID_LENGTH"
             );
 
             // Run over all conditional transactions
             uint minTxIndex = 0;
-            for (uint i = 0; i < _block.auxiliaryData.length; i++) {
-                ExchangeData.AuxiliaryData memory auxiliaryData = _block.auxiliaryData[i];
+            bytes memory txData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE);
+            for (uint i = 0; i < block_auxiliaryData.length; i++) {
+                // Load the data from auxiliaryData, which is still encoded as calldata
+                uint txIndex;
+                bool approved;
+                bytes memory auxData;
+                assembly {
+                    // Offset to block_auxiliaryData[i]
+                    let auxOffset := mload(add(block_auxiliaryData, add(32, mul(32, i))))
+                    // Load `txIndex` (pos 0) and `approved` (pos 1) in block_auxiliaryData[i]
+                    txIndex := mload(add(add(32, block_auxiliaryData), auxOffset))
+                    approved := mload(add(add(64, block_auxiliaryData), auxOffset))
+                    // Load `data` (pos 2)
+                    let auxDataOffset := mload(add(add(96, block_auxiliaryData), auxOffset))
+                    auxData := add(add(32, block_auxiliaryData), add(auxOffset, auxDataOffset))
+                }
+
                 // Each conditional transaction needs to be processed from left to right
-                require(auxiliaryData.txIndex >= minTxIndex, "AUXILIARYDATA_INVALID_ORDER");
+                require(txIndex >= minTxIndex, "AUXILIARYDATA_INVALID_ORDER");
 
-                minTxIndex = auxiliaryData.txIndex + 1;
+                minTxIndex = txIndex + 1;
 
-                if (auxiliaryData.approved) {
+                if (approved) {
                     continue;
                 }
 
                 // Get the transaction data
-                bytes memory txData = _block.readTransactionData(auxiliaryData.txIndex);
+                _block.data.readTransactionData(txIndex, _block.blockSize, txData);
 
                 // Process the transaction
                 ExchangeData.TransactionType txType = ExchangeData.TransactionType(
                     txData.toUint8(0)
                 );
-                uint txDataOffset = 1;
+                uint txDataOffset = 0;
 
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
                     DepositTransaction.process(
@@ -234,7 +255,7 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxiliaryData.data
+                        auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
                     WithdrawTransaction.process(
@@ -242,7 +263,7 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxiliaryData.data
+                        auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.TRANSFER) {
                     TransferTransaction.process(
@@ -250,7 +271,7 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxiliaryData.data
+                        auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
                     AccountUpdateTransaction.process(
@@ -258,7 +279,7 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxiliaryData.data
+                        auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.AMM_UPDATE) {
                     AmmUpdateTransaction.process(
@@ -266,7 +287,7 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxiliaryData.data
+                        auxData
                     );
                 } else {
                     // ExchangeData.TransactionType.NOOP,
@@ -288,7 +309,7 @@ library ExchangeBlocks
         returns (bool)
     {
         ExchangeData.ProtocolFeeData memory data = S.protocolFeeData;
-        if (block.timestamp > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
+        if (block.timestamp > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED) {
             // Store the current protocol fees in the previous protocol fees
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;

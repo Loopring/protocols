@@ -44,6 +44,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
 
     ExchangeData.State public state;
     address public loopringAddr;
+    uint8 private ammFeeBips = 20;
 
     modifier onlyWhenUninitialized()
     {
@@ -190,16 +191,16 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         returns(ExchangeData.Constants memory)
     {
         return ExchangeData.Constants(
-            uint(ExchangeData.SNARK_SCALAR_FIELD()),
-            uint(ExchangeData.MAX_OPEN_FORCED_REQUESTS()),
-            uint(ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE()),
-            uint(ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS()),
-            uint(ExchangeData.MAX_NUM_ACCOUNTS()),
-            uint(ExchangeData.MAX_NUM_TOKENS()),
-            uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
-            uint(ExchangeData.MIN_TIME_IN_SHUTDOWN()),
-            uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE()),
-            uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND())
+            uint(ExchangeData.SNARK_SCALAR_FIELD),
+            uint(ExchangeData.MAX_OPEN_FORCED_REQUESTS),
+            uint(ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE),
+            uint(ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS),
+            uint(ExchangeData.MAX_NUM_ACCOUNTS),
+            uint(ExchangeData.MAX_NUM_TOKENS),
+            uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED),
+            uint(ExchangeData.MIN_TIME_IN_SHUTDOWN),
+            uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE),
+            uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND)
         );
     }
 
@@ -476,7 +477,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         payable
     {
-        state.forceWithdraw(address(0), token, ExchangeData.ACCOUNTID_PROTOCOLFEE());
+        state.forceWithdraw(address(0), token, ExchangeData.ACCOUNTID_PROTOCOLFEE);
     }
 
     // We still alow anyone to withdraw these funds for the account owner
@@ -557,7 +558,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
 
         // Check if the withdrawal has indeed exceeded the time limit
-        require(block.timestamp >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE(), "WITHDRAWAL_NOT_TOO_OLD");
+        require(block.timestamp >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE, "WITHDRAWAL_NOT_TOO_OLD");
 
         // Enter withdrawal mode
         state.withdrawalModeStartTime = block.timestamp;
@@ -716,5 +717,23 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         makerFeeBips = state.protocolFeeData.makerFeeBips;
         previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;
         previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
+    }
+
+    function setAmmFeeBips(uint8 _feeBips)
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(_feeBips <= 200, "INVALID_VALUE");
+        ammFeeBips = _feeBips;
+    }
+
+    function getAmmFeeBips()
+        external
+        override
+        view
+        returns (uint8) {
+        return ammFeeBips;
     }
 }

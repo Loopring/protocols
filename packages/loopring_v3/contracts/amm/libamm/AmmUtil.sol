@@ -25,7 +25,7 @@ library AmmUtil
 
     function verifySignatureL2(
         AmmData.Context     memory  ctx,
-        ExchangeData.Block  memory  _block,
+        bytes               memory  txsData,
         address                     owner,
         bytes32                     txHash,
         bytes               memory  signature
@@ -34,10 +34,11 @@ library AmmUtil
         pure
     {
         // Check the signature type
-        require(signature.toUint8(0) == L2_SIGNATURE_TYPE, "INVALID_SIGNATURE_TYPE");
+        require(signature.toUint8Unsafe(0) == L2_SIGNATURE_TYPE, "INVALID_SIGNATURE_TYPE");
 
         // Read the signature verification transaction
-        SignatureVerificationTransaction.SignatureVerification memory verification = _block.readSignatureVerification(ctx.txIdx++);
+        SignatureVerificationTransaction.SignatureVerification memory verification;
+        SignatureVerificationTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, verification);
 
         // Verify that the hash was signed on L2
         require(
