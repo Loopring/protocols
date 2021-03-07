@@ -12,15 +12,10 @@ contract TestConverter is BaseConverter
     TestSwapper public immutable swapContract;
 
     constructor(
-        IExchangeV3      _exchange,
-        address          _tokenIn,
-        address          _tokenOut,
-        string    memory _name,
-        string    memory _symbol,
-        uint8            _decimals,
-        TestSwapper      _swapContract
+        IExchangeV3 _exchange,
+        TestSwapper _swapContract
         )
-        BaseConverter(_exchange, _tokenIn, _tokenOut, _name, _symbol, _decimals)
+        BaseConverter(_exchange)
     {
         swapContract = _swapContract;
     }
@@ -32,14 +27,17 @@ contract TestConverter is BaseConverter
         )
         internal
         override
+        returns (uint amountOut)
     {
+        address _tokenIn = tokenIn;
+
         uint ethValue = 0;
-        if (tokenIn != address(0)) {
-            ERC20(tokenIn).approve(address(swapContract), amountIn);
+        if (_tokenIn != address(0)) {
+            ERC20(_tokenIn).approve(address(swapContract), amountIn);
         } else {
             ethValue = amountIn;
         }
-        uint amountOut = swapContract.swap{value: ethValue}(amountIn);
+        amountOut = swapContract.swap{value: ethValue}(amountIn);
         require(amountOut >= minAmountOut, "INSUFFICIENT_OUT_AMOUNT");
     }
 }

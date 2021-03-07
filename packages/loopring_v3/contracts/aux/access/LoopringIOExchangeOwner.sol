@@ -50,7 +50,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         address[]       receivers;
     }
 
-    struct PostBlocksCallbacks
+    struct PostBlocksCallback
     {
         address to;
         bytes   data;
@@ -101,16 +101,15 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         bytes                    calldata data,
         CallbackConfig           calldata config,
         ExchangeData.FlashMint[] calldata flashMints,
-        PostBlocksCallbacks[]    calldata postBlocksCallbacks
+        PostBlocksCallback[]     calldata postBlocksCallbacks
         )
         external
     {
-        IAgentRegistry agentRegistry = IExchangeV3(target).getAgentRegistry();
-
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");
 
             // Make sure the receiver is authorized to approve transactions
+            IAgentRegistry agentRegistry = IExchangeV3(target).getAgentRegistry();
             for (uint i = 0; i < config.receivers.length; i++) {
                 require(agentRegistry.isUniversalAgent(config.receivers[i]), "UNAUTHORIZED_RECEIVER");
             }
@@ -136,23 +135,20 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         _beforeBlockSubmission(blocks, config);
 
         // Do flash mints
-        IExchangeV3(target).flashMint(flashMints);
+        if (flashMints.length > 0) {
+            IExchangeV3(target).flashMint(flashMints);
+        }
 
         // Submit blocks
         target.fastCallAndVerify(gasleft(), 0, decompressed);
 
         // Do post blocks callbacks
-        for (uint i = 0; i < postBlocksCallbacks.length; i++) {
-            require(postBlocksCallbacks[i].to != target, "EXCHANGE_CANNOT_BE_POST_CALLBACK_TARGET");
-            require(!agentRegistry.isUniversalAgent(postBlocksCallbacks[i].to), "UNI_AGENT_CANNOT_BE_POST_CALLBACK_TARGET");
-            (bool success, bytes memory returnData) = postBlocksCallbacks[i].to.call(postBlocksCallbacks[i].data);
-            if (!success) {
-                assembly { revert(add(returnData, 32), mload(returnData)) }
-            }
-        }
+        _afterBlockSubmission(blocks, postBlocksCallbacks);
 
         // Make sure flash mints were repaid
-        IExchangeV3(target).verifyFlashMintsPaidBack(flashMints);
+        if (flashMints.length > 0) {
+            IExchangeV3(target).verifyFlashMintsPaidBack(flashMints);
+        }
     }
 
     function _beforeBlockSubmission(
@@ -209,6 +205,23 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
                 }
                 // Check that the provided data matches the expected value
                 require(_preApprovedTxs[txIdx] == approved, "PRE_APPROVED_TX_MISMATCH");
+            }
+        }
+    }
+
+    function _afterBlockSubmission(
+        ExchangeData.Block[] memory   /*blocks*/,
+        PostBlocksCallback[] calldata postBlocksCallbacks
+        )
+        private
+    {
+        for (uint i = 0; i < postBlocksCallbacks.length; i++) {
+            // Disallow calls to the exchange and pre block callback contracts
+            require(postBlocksCallbacks[i].to != target, "EXCHANGE_CANNOT_BE_POST_CALLBACK_TARGET");
+            require(postBlocksCallbacks[i].data.toBytes4(0) != IBlockReceiver.beforeBlockSubmission.selector, "INVALID_POST_CALLBACK_FUNCTION");
+            (bool success, bytes memory returnData) = postBlocksCallbacks[i].to.call(postBlocksCallbacks[i].data);
+            if (!success) {
+                assembly { revert(add(returnData, 32), mload(returnData)) }
             }
         }
     }

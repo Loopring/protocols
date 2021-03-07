@@ -49,12 +49,14 @@ export class Converter {
 
     this.contract = await TestConverter.new(
       this.ctx.exchange.address,
-      this.ctx.getTokenAddress(tokenIn),
-      this.ctx.getTokenAddress(tokenOut),
+      swapper.address
+    );
+    await this.contract.initialize(
       "Loopring Convert - TOKA -> TOKB",
       "LC-TOKA-TOKB",
       18,
-      swapper.address
+      this.ctx.getTokenAddress(tokenIn),
+      this.ctx.getTokenAddress(tokenOut)
     );
     this.address = this.contract.address;
 
@@ -80,6 +82,10 @@ contract("LoopringConverter", (accounts: string[]) => {
   let agentRegistry: any;
   let registryOwner: string;
 
+  const amountIn = new BN(web3.utils.toWei("10", "ether"));
+  const tradeAmountInA = amountIn.div(new BN(4));
+  const tradeAmountInB = amountIn.div(new BN(4)).mul(new BN(3));
+
   let broker: string;
   let ownerA: string;
   let ownerB: string;
@@ -89,19 +95,16 @@ contract("LoopringConverter", (accounts: string[]) => {
     _tokenOut: string,
     ticker: string,
     rate: BN,
-    letConvertFail: boolean
+    expectedSuccess: boolean,
+    doPhase2: boolean = true
   ) => {
     const RATE_BASE = new BN(web3.utils.toWei("1", "ether"));
 
     const converter = new Converter(ctx);
     await converter.setupConverter(_tokenIn, _tokenOut, ticker, rate);
 
-    const amountIn = new BN(web3.utils.toWei("10", "ether"));
-    const tradeAmountInA = amountIn.div(new BN(4));
-    const tradeAmountInB = amountIn.div(new BN(4)).mul(new BN(3));
-
     let minAmountOut = amountIn.mul(rate).div(RATE_BASE);
-    if (letConvertFail) {
+    if (!expectedSuccess) {
       minAmountOut = minAmountOut.add(new BN(1));
     }
 
@@ -191,16 +194,20 @@ contract("LoopringConverter", (accounts: string[]) => {
 
     await converter.verifySupply(amountIn);
 
+    if (!doPhase2) {
+      return converter;
+    }
+
     // Check result of phase 1 on the vault
     const failed = await converter.contract.failed();
     //console.log("failed: " + failed);
-    assert.equal(failed, letConvertFail, "Conversion status unexpected!");
+    assert.equal(failed, !expectedSuccess, "Conversion status unexpected!");
 
     const tokenOut = failed ? converter.tokenIn : converter.tokenOut;
-    const balance = await ctx.getOnchainBalance(
-      converter.contract.address,
-      tokenOut
-    );
+    //const balance = await ctx.getOnchainBalance(
+    //  converter.contract.address,
+    //  tokenOut
+    //);
     //console.log("Token: " + tokenOut);
     //console.log("Balance: " + balance.toString(10));
 
@@ -254,7 +261,7 @@ contract("LoopringConverter", (accounts: string[]) => {
           tokenB: tokenOut,
           amountS: tradeAmountInB,
           amountB: tradeAmountOutB,
-          feeBips: 0,
+          feeBips: 20,
           balanceS: new BN(0),
           balanceB: new BN(0)
         },
@@ -276,7 +283,7 @@ contract("LoopringConverter", (accounts: string[]) => {
         amountIn,
         converter.ticker,
         new BN(0),
-        { to: converter.address }
+        { to: ctx.operator.address }
       );
 
       //console.log("amountIn:  " + amountIn.toString(10));
@@ -285,7 +292,7 @@ contract("LoopringConverter", (accounts: string[]) => {
       await ctx.addPostBlocksCallback(
         converter.address,
         converter.contract.contract.methods
-          .withdraw(converter.address, broker, amountIn, amountOut)
+          .withdraw(broker, amountIn, amountOut)
           .encodeABI()
       );
 
@@ -332,39 +339,81 @@ contract("LoopringConverter", (accounts: string[]) => {
   describe("Converter", function() {
     this.timeout(0);
 
-    [false, true].forEach(function(letConvertFail) {
+    [true, false].forEach(function(success) {
       [
         new BN(web3.utils.toWei("1.0", "ether")),
         new BN(web3.utils.toWei("0.5", "ether")),
         new BN(web3.utils.toWei("2.0", "ether"))
       ].forEach(function(rate) {
-        it.only(
-          (letConvertFail ? "Failed" : "Successful") +
+        it(
+          (success ? "Successful" : "Failed") +
             " conversion ERC20 -> ERC20 - rate: " +
             rate.toString(10),
           async () => {
-            await doConversion("GTO", "WETH", "vETH", rate, letConvertFail);
+            await doConversion("GTO", "WETH", "vETH", rate, success);
           }
         );
 
-        it.only(
-          (letConvertFail ? "Failed" : "Successful") +
+        it(
+          (success ? "Successful" : "Failed") +
             " conversion ETH   -> ERC20 - rate: " +
             rate.toString(10),
           async () => {
-            await doConversion("ETH", "GTO", "vETH", rate, letConvertFail);
+            await doConversion("ETH", "GTO", "vETH", rate, success);
           }
         );
 
-        it.only(
-          (letConvertFail ? "Failed" : "Successful") +
+        it(
+          (success ? "Successful" : "Failed") +
             " conversion ERC20 -> ETH   - rate: " +
             rate.toString(10),
           async () => {
-            await doConversion("GTO", "ETH", "vETH", rate, letConvertFail);
+            await doConversion("GTO", "ETH", "vETH", rate, success);
           }
         );
       });
+    });
+
+    it("Manual withdrawal", async () => {
+      const rate = new BN(web3.utils.toWei("1.0", "ether"));
+      const converter = await doConversion(
+        "ETH",
+        "WETH",
+        "vETH",
+        rate,
+        true,
+        false
+      );
+
+      await ctx.requestWithdrawal(
+        ownerA,
+        converter.ticker,
+        tradeAmountInA,
+        converter.ticker,
+        new BN(0)
+      );
+
+      await ctx.submitTransactions();
+      await ctx.submitPendingBlocks();
+
+      const snapshot = new BalanceSnapshot(ctx);
+      await snapshot.transfer(
+        converter.address,
+        ownerA,
+        converter.tokenOut,
+        tradeAmountInA,
+        "converter",
+        "from"
+      );
+
+      await converter.verifySupply(amountIn);
+      await converter.contract.withdraw(ownerA, tradeAmountInA, new BN(0), {
+        from: ownerA
+      });
+      await converter.verifySupply(amountIn.sub(tradeAmountInA));
+
+      // Verify balances
+      await snapshot.verifyBalances();
     });
   });
 });

@@ -19,13 +19,16 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-    event Deposit (bool success, string reason);
+    event ConversionSuccess (uint amountIn, uint amountOut);
+    event ConversionFailed  (string reason);
 
     IExchangeV3        public  immutable exchange;
     IDepositContract   public  immutable depositContract;
 
-    address            public  immutable tokenIn;
-    address            public  immutable tokenOut;
+    bool               public  initialized;
+
+    address            public  tokenIn;
+    address            public  tokenOut;
 
     bool               public  failed;
 
@@ -36,19 +39,29 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
     }
 
     constructor(
-        IExchangeV3      _exchange,
-        address          _tokenIn,
-        address          _tokenOut,
-        string    memory _name,
-        string    memory _symbol,
-        uint8            _decimals
+        IExchangeV3      _exchange
         )
-        LPERC20(_name, _symbol, _decimals)
     {
         exchange = _exchange;
         depositContract = _exchange.getDepositContract();
+    }
+
+    function initialize(
+        string memory _name,
+        string memory _symbol,
+        uint8         _decimals,
+        address       _tokenIn,
+        address       _tokenOut
+        )
+        external
+    {
+        require(!initialized, "ALREADY_INITIALIZED");
+        initializeToken(_name, _symbol, _decimals);
+
         tokenIn = _tokenIn;
         tokenOut = _tokenOut;
+
+        initialized = true;
     }
 
     function deposit(
@@ -63,15 +76,16 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         require(totalSupply == 0);
 
         // Converter specific logic, which can fail
-        try BaseConverter(this).convertExternal(amountIn, minAmountOut, customData) {
+        try BaseConverter(this).convertExternal(amountIn, minAmountOut, customData)
+            returns (uint amountOut) {
             failed = false;
-            emit Deposit(true, "");
+            emit ConversionSuccess(amountIn, amountOut);
         } catch Error(string memory reason) {
-            emit Deposit(false, reason);
             failed = true;
+            emit ConversionFailed(reason);
         } catch {
             failed = true;
-            emit Deposit(false, "unknown");
+            emit ConversionFailed("unknown");
         }
 
         _mint(address(this), amountIn);
@@ -80,31 +94,35 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
     }
 
     function withdraw(
-        address from,
         address to,
         uint96  poolAmount,
         uint96  repayAmount
         )
         public
     {
-        require(from == msg.sender || from == address(this), "UNAUTHORIZED");
-
+        // Token to withdraw
         address token = failed ? tokenIn : tokenOut;
 
+        // Current balance in the contract
         uint balance = 0;
         if (token == address(0)) {
             balance = address(this).balance;
         } else {
             balance = ERC20(token).balanceOf(address(this));
         }
+
+        // Share to withdraw
         uint amount = balance.mul(poolAmount) / totalSupply;
 
-        _burn(from, poolAmount);
+        // Burn pool tokens
+        _burn(msg.sender, poolAmount);
 
+        // Use to repay flash mint directly if requested
         if (repayAmount > 0) {
             _repay(token, repayAmount);
         }
 
+        // Send remaining amount to `to`
         uint amountToSend = amount.sub(repayAmount);
         if (token == address(0)) {
             to.sendETHAndVerify(amountToSend, gasleft());   // ETH
@@ -113,6 +131,7 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         }
     }
 
+    // Wrapper around `convert` which enforces only self calls.
     function convertExternal(
         uint96 amountIn,
         uint96 minAmountOut,
@@ -120,9 +139,10 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         )
         external
         virtual
+        returns (uint amountOut)
     {
         require(msg.sender == address(this), "UNAUTHORIZED");
-        convert(amountIn, minAmountOut, customData);
+        amountOut = convert(amountIn, minAmountOut, customData);
     }
 
     receive()
@@ -136,12 +156,14 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         )
         private
     {
-        // Repay
+        uint ethValue = 0;
         if (token != address(0)) {
             ERC20(token).approve(address(depositContract), amount);
+        } else {
+            ethValue = amount;
         }
-        uint repayValue = (token == address(0)) ? amount : 0;
-        IExchangeV3(exchange).repayFlashMint{value: repayValue}(
+
+        IExchangeV3(exchange).repayFlashMint{value: ethValue}(
             address(this),
             token,
             amount,
@@ -165,5 +187,6 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         bytes  calldata customData
         )
         internal
-        virtual;
+        virtual
+        returns (uint amountOut);
 }

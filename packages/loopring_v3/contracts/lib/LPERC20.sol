@@ -13,11 +13,11 @@ contract LPERC20 is ERC20
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    bytes32                                      public immutable DOMAIN_SEPARATOR;
+    bytes32                                      public           DOMAIN_SEPARATOR;
 
     string                                       public           name;
     string                                       public           symbol;
-    uint8                                        public immutable decimals;
+    uint8                                        public           decimals;
 
     uint                                         public override totalSupply;
     mapping(address => uint)                     public override balanceOf;
@@ -29,11 +29,12 @@ contract LPERC20 is ERC20
 
     bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
-    constructor(
+    function initializeToken(
         string memory _name,
         string memory _symbol,
         uint8         _decimals
         )
+        internal
     {
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("LPERC20", "1.0", address(this)));
 
