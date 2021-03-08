@@ -40,7 +40,8 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
       fakeToken,
       accountId,
       {
-        value: web3.utils.toWei("0.1", "ether")
+        value: web3.utils.toWei("0.1", "ether"),
+        from: accounts[0]
       }
     );
 
@@ -147,7 +148,7 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
       forcedWithdrawalAgent.address
     );
     assert(balanceBefore > 0, "invalid balance");
-    await forcedWithdrawalAgent.drain();
+    await forcedWithdrawalAgent.drain(accounts[0], "0x" + "00".repeat(20));
     const balanceAfter = await web3.eth.getBalance(
       forcedWithdrawalAgent.address
     );
