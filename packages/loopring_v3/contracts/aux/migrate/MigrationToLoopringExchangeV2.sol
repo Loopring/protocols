@@ -20,14 +20,18 @@ abstract contract ILoopringV3Partial
 }
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-contract Drainer is Drainable
+/// @dev This contract enables an alternative approach of getting back assets from Loopring Exchange v1.
+/// Now you don't have to withdraw using merkle proofs (very expensive);
+/// instead, all assets will be distributed on Loopring Exchange v2 - Loopring's new zkRollup implementation.
+/// Please activate and unlock your address on https://exchange.loopring.io to claim your assets.
+contract MigrationToLoopringExchangeV2 is Drainable
 {
     function canDrain(address /*drainer*/, address /*token*/)
         public
         override
         view
         returns (bool) {
-        return isOwner();
+        return isMigrationOperator();
     }
 
     function withdrawExchangeStake(
@@ -38,11 +42,11 @@ contract Drainer is Drainable
         )
         external
     {
-        require(isOwner(), "INVALID_SENDER");
+        require(isMigrationOperator(), "INVALID_SENDER");
         ILoopringV3Partial(loopringV3).withdrawExchangeStake(exchangeId, recipient, amount);
     }
 
-    function isOwner() internal view returns (bool) {
+    function isMigrationOperator() internal view returns (bool) {
         return msg.sender == 0x4374D3d032B3c96785094ec9f384f07077792768;
     }
 
