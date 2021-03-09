@@ -58,6 +58,7 @@ export class Converter {
       this.ctx.getTokenAddress(tokenIn),
       this.ctx.getTokenAddress(tokenOut)
     );
+    await this.contract.approveTokens();
     this.address = this.contract.address;
 
     await this.ctx.transferBalance(

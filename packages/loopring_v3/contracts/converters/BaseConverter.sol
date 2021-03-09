@@ -156,19 +156,26 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         )
         private
     {
-        uint ethValue = 0;
-        if (token != address(0)) {
-            ERC20(token).approve(address(depositContract), amount);
-        } else {
-            ethValue = amount;
-        }
-
+        uint ethValue = (token == address(0)) ? amount : 0;
         IExchangeV3(exchange).repayFlashMint{value: ethValue}(
             address(this),
             token,
             amount,
             new bytes(0)
         );
+    }
+
+    function approveTokens()
+        public
+        virtual
+    {
+        if (tokenIn != address(0)) {
+            ERC20(tokenIn).approve(address(depositContract), type(uint256).max);
+        }
+        if (tokenOut != address(0)) {
+            ERC20(tokenOut).approve(address(depositContract), type(uint256).max);
+        }
+        ERC20(address(this)).approve(address(depositContract), type(uint256).max);
     }
 
     function canDrain(address drainer, address /* token */)

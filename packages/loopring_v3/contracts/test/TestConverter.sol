@@ -29,15 +29,18 @@ contract TestConverter is BaseConverter
         override
         returns (uint amountOut)
     {
-        address _tokenIn = tokenIn;
-
-        uint ethValue = 0;
-        if (_tokenIn != address(0)) {
-            ERC20(_tokenIn).approve(address(swapContract), amountIn);
-        } else {
-            ethValue = amountIn;
-        }
+        uint ethValue = (tokenIn == address(0)) ? amountIn : 0;
         amountOut = swapContract.swap{value: ethValue}(amountIn);
         require(amountOut >= minAmountOut, "INSUFFICIENT_OUT_AMOUNT");
+    }
+
+    function approveTokens()
+        public
+        override
+    {
+        super.approveTokens();
+        if (tokenIn != address(0)) {
+            ERC20(tokenIn).approve(address(swapContract), type(uint256).max);
+        }
     }
 }
