@@ -25,7 +25,7 @@ abstract contract Drainable
         address to,
         address token
         )
-        external
+        public
         returns (uint amount)
     {
         require(canDrain(msg.sender, token), "UNAUTHORIZED");
