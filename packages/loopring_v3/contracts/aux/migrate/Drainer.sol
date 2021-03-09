@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 
 import "../../lib/ReentrancyGuard.sol";
-import "../../lib/Claimable.sol";
 import "../../lib/Drainable.sol";
 
 abstract contract ILoopringV3Partial
@@ -21,22 +20,14 @@ abstract contract ILoopringV3Partial
 }
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-contract Drainer is Claimable, Drainable
+contract Drainer is Drainable
 {
     function canDrain(address /*drainer*/, address /*token*/)
         public
         override
         view
         returns (bool) {
-        return msg.sender == owner;
-    }
-
-    function initOwner(address _owner)
-        external
-    {
-        // 0x4374D3d032B3c96785094ec9f384f07077792768 is my EOA address.
-        require(msg.sender == 0x4374D3d032B3c96785094ec9f384f07077792768, "INVALID_SENDER");
-        owner = _owner;
+        return isOwner();
     }
 
     function withdrawExchangeStake(
@@ -45,10 +36,14 @@ contract Drainer is Claimable, Drainable
         uint amount,
         address recipient
         )
-        onlyOwner
         external
     {
+        require(isOwner(), "INVALID_SENDER");
         ILoopringV3Partial(loopringV3).withdrawExchangeStake(exchangeId, recipient, amount);
+    }
+
+    function isOwner() internal view returns (bool) {
+        return msg.sender == 0x4374D3d032B3c96785094ec9f384f07077792768;
     }
 
 }
