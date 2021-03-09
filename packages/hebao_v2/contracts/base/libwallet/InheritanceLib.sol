@@ -3,7 +3,6 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./SignedRequest.sol";
 import "./WalletData.sol";
 import "./GuardianLib.sol";
 import "./LockLib.sol";

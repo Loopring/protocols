@@ -9,25 +9,25 @@ import "./GuardianLib.sol";
 import "./WalletData.sol";
 
 
-/// @title SignedRequest
+/// @title ApprovalLib
 /// @dev Utility library for better handling of signed wallet requests.
 ///      This library must be deployed and linked to other modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-library SignedRequest {
+library ApprovalLib {
     using SignatureUtil for bytes32;
 
-    function verifyRequest(
-        Wallet storage wallet,
-        bytes32        domainSeperator,
-        SigRequirement sigRequirement,
-        Request memory request,
-        bytes   memory encodedRequest
+    function verifyApproval(
+        Wallet  storage wallet,
+        bytes32         domainSeperator,
+        SigRequirement  sigRequirement,
+        Approval memory approval,
+        bytes    memory encodedRequest
         )
         internal
     {
-        require(address(this) == request.wallet, "INVALID_WALLET");
-        require(block.timestamp <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
+        require(address(this) == approval.wallet, "INVALID_WALLET");
+        require(block.timestamp <= approval.validUntil, "EXPIRED_SIGNED_REQUEST");
 
         bytes32 _hash = EIP712.hashPacked(domainSeperator, encodedRequest);
 
@@ -36,14 +36,14 @@ library SignedRequest {
         wallet.hashes[_hash] = true;
 
         require(
-            _hash.verifySignatures(request.signers, request.signatures),
+            _hash.verifySignatures(approval.signers, approval.signatures),
             "INVALID_SIGNATURES"
         );
 
         require(
             GuardianLib.requireMajority(
                 wallet,
-                request.signers,
+                approval.signers,
                 sigRequirement
             ),
             "PERMISSION_DENIED"

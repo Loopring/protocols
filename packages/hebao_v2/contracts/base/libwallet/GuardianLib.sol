@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
-import "./SignedRequest.sol";
+import "./ApprovalLib.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/SafeCast.sol";
 
@@ -15,9 +15,9 @@ import "../../thirdparty/SafeCast.sol";
 library GuardianLib
 {
     using AddressUtil   for address;
-    using SafeCast for uint;
+    using SafeCast      for uint;
     using SignatureUtil for bytes32;
-    using SignedRequest for Wallet;
+    using ApprovalLib   for Wallet;
 
     uint public constant MAX_GUARDIANS           = 10;
     uint public constant GUARDIAN_PENDING_PERIOD = 3 days;
@@ -54,21 +54,21 @@ library GuardianLib
     }
 
     function addGuardianWA(
-        Wallet  storage  wallet,
-        bytes32          domainSeperator,
-        Request calldata request,
-        address guardian
+        Wallet   storage  wallet,
+        bytes32           domainSeperator,
+        Approval calldata approval,
+        address  guardian
         )
         external
     {
-        wallet.verifyRequest(
+        wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
-            request,
+            approval,
             abi.encode(
                 ADD_GUARDIAN_TYPEHASH,
-                request.wallet,
-                request.validUntil,
+                approval.wallet,
+                approval.validUntil,
                 guardian
             )
         );
@@ -86,21 +86,21 @@ library GuardianLib
     }
 
     function removeGuardianWA(
-        Wallet  storage  wallet,
-        bytes32          domainSeperator,
-        Request calldata request,
-        address guardian
+        Wallet   storage  wallet,
+        bytes32           domainSeperator,
+        Approval calldata approval,
+        address  guardian
         )
         external
     {
-        wallet.verifyRequest(
+        wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
-            request,
+            approval,
             abi.encode(
                 REMOVE_GUARDIAN_TYPEHASH,
-                request.wallet,
-                request.validUntil,
+                approval.wallet,
+                approval.validUntil,
                 guardian
             )
         );

@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./SignedRequest.sol";
+import "./ApprovalLib.sol";
 import "./WalletData.sol";
 
 
@@ -11,7 +11,7 @@ import "./WalletData.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library UpgradeLib
 {
-    using SignedRequest   for Wallet;
+    using ApprovalLib     for Wallet;
 
     event ChangedMasterCopy (address masterCopy);
 
@@ -20,24 +20,24 @@ library UpgradeLib
     );
 
     function changeMasterCopy(
-        Wallet  storage  wallet,
-        bytes32          domainSeperator,
-        Request calldata request,
-        address          newMasterCopy
+        Wallet   storage  wallet,
+        bytes32           domainSeperator,
+        Approval calldata approval,
+        address           newMasterCopy
         )
         external
         returns (address)
     {
         require(newMasterCopy != address(0), "INVALID_MASTER_COPY");
 
-        wallet.verifyRequest(
+        wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
-            request,
+            approval,
             abi.encode(
                 CHANGE_MASTER_COPY_TYPEHASH,
-                request.wallet,
-                request.validUntil,
+                approval.wallet,
+                approval.validUntil,
                 newMasterCopy
             )
         );

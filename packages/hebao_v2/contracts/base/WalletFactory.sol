@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./SmartWallet.sol";
-import "./WalletProxy.sol";
+import "../thirdparty/proxy/WalletProxy.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/EIP712.sol";
 import "../thirdparty/Create2.sol";

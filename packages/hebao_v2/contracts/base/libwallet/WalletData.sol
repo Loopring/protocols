@@ -12,7 +12,7 @@ enum SigRequirement
     ANY_GUARDIAN
 }
 
-struct Request
+struct Approval
 {
     address[] signers;
     bytes[]   signatures;

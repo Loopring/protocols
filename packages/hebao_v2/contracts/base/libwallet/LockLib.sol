@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./SignedRequest.sol";
+import "./ApprovalLib.sol";
 import "./WalletData.sol";
 import "./GuardianLib.sol";
 
@@ -13,7 +13,7 @@ import "./GuardianLib.sol";
 library LockLib
 {
     using GuardianLib   for Wallet;
-    using SignedRequest for Wallet;
+    using ApprovalLib   for Wallet;
 
     event WalletLocked (
         address         by,
@@ -41,20 +41,20 @@ library LockLib
     }
 
     function unlock(
-        Wallet  storage  wallet,
-        bytes32          domainSeperator,
-        Request calldata request
+        Wallet   storage  wallet,
+        bytes32           domainSeperator,
+        Approval calldata approval
         )
         public
     {
-        wallet.verifyRequest(
+        wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
-            request,
+            approval,
             abi.encode(
                 UNLOCK_TYPEHASH,
-                request.wallet,
-                request.validUntil
+                approval.wallet,
+                approval.validUntil
             )
         );
 

@@ -117,7 +117,9 @@ contract SmartWallet is ERC1271
         disableInImplementationContract
         onlyFromWalletFactory
     {
-        require(owner == address(0), "INITIALIZED_ALREADY");
+        require(wallet.owner == address(0), "INITIALIZED_ALREADY");
+        require(owner != address(0), "INVALID_OWNER");
+
         wallet.owner = owner;
         if (guardians.length != 0) {
             wallet.setInitialGuardians(guardians);
@@ -128,6 +130,7 @@ contract SmartWallet is ERC1271
         if (inheritor != address(0)) {
             wallet.setInheritor(inheritor, 365 days);
         }
+        // Do reverse ENS registration if desired
         if (ensReverseRegistrar != ENSReverseRegistrar(0)) {
             ensReverseRegistrar.claimWithResolver(
                 address(0), // the owner of the reverse record
@@ -171,14 +174,14 @@ contract SmartWallet is ERC1271
     //
 
     function changeMasterCopy(
-        Request calldata request,
-        address          newMasterCopy
+        Approval calldata approval,
+        address           newMasterCopy
         )
         external
     {
         masterCopy = wallet.changeMasterCopy(
             DOMAIN_SEPARATOR,
-            request,
+            approval,
             newMasterCopy
         );
     }
@@ -197,12 +200,12 @@ contract SmartWallet is ERC1271
     }
 
     function addGuardianWA(
-        Request calldata request,
-        address guardian
+        Approval calldata approval,
+        address           guardian
         )
         external
     {
-        wallet.addGuardianWA(DOMAIN_SEPARATOR, request, guardian);
+        wallet.addGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
     }
 
     function removeGuardian(
@@ -215,12 +218,12 @@ contract SmartWallet is ERC1271
     }
 
      function removeGuardianWA(
-        Request calldata request,
-        address guardian
+        Approval calldata approval,
+        address           guardian
         )
         external
     {
-        wallet.removeGuardianWA(DOMAIN_SEPARATOR, request, guardian);
+        wallet.removeGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
     }
 
     //
@@ -256,11 +259,11 @@ contract SmartWallet is ERC1271
     }
 
     function unlock(
-        Request calldata request
+        Approval calldata approval
         )
         external
     {
-        wallet.unlock(DOMAIN_SEPARATOR, request);
+        wallet.unlock(DOMAIN_SEPARATOR, approval);
     }
 
     //
@@ -277,12 +280,12 @@ contract SmartWallet is ERC1271
     }
 
     function changeDailyQuotaWA(
-        Request calldata request,
-        uint newQuota
+        Approval calldata approval,
+        uint              newQuota
         )
         external
     {
-        wallet.changeDailyQuotaWA(DOMAIN_SEPARATOR, request, newQuota);
+        wallet.changeDailyQuotaWA(DOMAIN_SEPARATOR, approval, newQuota);
     }
 
     //
@@ -337,14 +340,14 @@ contract SmartWallet is ERC1271
     //
 
     function recover(
-        Request calldata request,
-        address          newOwner
+        Approval calldata approval,
+        address           newOwner
         )
         external
     {
         wallet.recover(
             DOMAIN_SEPARATOR,
-            request,
+            approval,
             newOwner
         );
     }
@@ -363,14 +366,14 @@ contract SmartWallet is ERC1271
     }
 
     function addToWhitelistWA(
-        Request calldata request,
-        address addr
+        Approval calldata approval,
+        address           addr
         )
         external
     {
         wallet.addToWhitelistWA(
             DOMAIN_SEPARATOR,
-            request,
+            approval,
             addr
         );
     }
@@ -409,17 +412,17 @@ contract SmartWallet is ERC1271
     }
 
     function transferTokenWA(
-        Request calldata request,
-        address          token,
-        address          to,
-        uint             amount,
-        bytes   calldata logdata
+        Approval calldata approval,
+        address           token,
+        address           to,
+        uint              amount,
+        bytes    calldata logdata
         )
         external
     {
         wallet.transferTokenWA(
             DOMAIN_SEPARATOR,
-            request,
+            approval,
             token,
             to,
             amount,
@@ -447,17 +450,17 @@ contract SmartWallet is ERC1271
     }
 
     function callContractWA(
-        Request calldata request,
-        address          to,
-        uint             value,
-        bytes   calldata data
+        Approval calldata approval,
+        address           to,
+        uint              value,
+        bytes    calldata data
         )
         external
         returns (bytes memory)
     {
         return wallet.callContractWA(
             DOMAIN_SEPARATOR,
-            request,
+            approval,
             to,
             value,
             data
@@ -483,16 +486,16 @@ contract SmartWallet is ERC1271
     }
 
     function approveTokenWA(
-        Request calldata request,
-        address token,
-        address to,
-        uint    amount
+        Approval calldata approval,
+        address           token,
+        address           to,
+        uint              amount
         )
         external
     {
         wallet.approveTokenWA(
             DOMAIN_SEPARATOR,
-            request,
+            approval,
             token,
             to,
             amount
@@ -523,19 +526,19 @@ contract SmartWallet is ERC1271
     }
 
     function approveThenCallContractWA(
-        Request calldata request,
-        address          token,
-        address          to,
-        uint             amount,
-        uint             value,
-        bytes   calldata data
+        Approval calldata approval,
+        address           token,
+        address           to,
+        uint              amount,
+        uint              value,
+        bytes    calldata data
         )
         external
         returns (bytes memory)
     {
         return wallet.approveThenCallContractWA(
             DOMAIN_SEPARATOR,
-            request,
+            approval,
             token,
             to,
             amount,

@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./SignedRequest.sol";
+import "./ApprovalLib.sol";
 import "./WalletData.sol";
 import "../../lib/MathUint.sol";
 
@@ -14,7 +14,7 @@ library WhitelistLib
 {
     using MathUint          for uint;
     using WhitelistLib      for Wallet;
-    using SignedRequest     for Wallet;
+    using ApprovalLib       for Wallet;
 
     uint public constant WHITELIST_PENDING_PERIOD = 1 days;
 
@@ -29,8 +29,8 @@ library WhitelistLib
     );
 
     function addToWhitelist(
-        Wallet  storage  wallet,
-        address          addr
+        Wallet  storage wallet,
+        address         addr
         )
         external
     {
@@ -41,21 +41,21 @@ library WhitelistLib
     }
 
     function addToWhitelistWA(
-        Wallet  storage  wallet,
-        bytes32          domainSeperator,
-        Request calldata request,
-        address addr
+        Wallet   storage  wallet,
+        bytes32           domainSeperator,
+        Approval calldata approval,
+        address           addr
         )
         external
     {
-        wallet.verifyRequest(
+        wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
-            request,
+            approval,
             abi.encode(
                 ADD_TO_WHITELIST_TYPEHASH,
-                request.wallet,
-                request.validUntil,
+                approval.wallet,
+                approval.validUntil,
                 addr
             )
         );
@@ -88,8 +88,8 @@ library WhitelistLib
     }
 
     function isAddressDappOrWhitelisted(
-        Wallet storage wallet,
-        address addr
+        Wallet  storage wallet,
+        address         addr
         )
         internal
         view
@@ -103,8 +103,8 @@ library WhitelistLib
 
     function _addToWhitelist(
         Wallet storage wallet,
-        address addr,
-        uint    effectiveTime
+        address        addr,
+        uint           effectiveTime
         )
         internal
     {
@@ -116,13 +116,11 @@ library WhitelistLib
 
     function _removeFromWhitelist(
         Wallet storage wallet,
-        address addr
+        address        addr
         )
         internal
     {
         delete wallet.whitelisted[addr];
         emit Whitelisted(addr, false, 0);
     }
-
-
 }

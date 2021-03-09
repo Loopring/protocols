@@ -82,6 +82,7 @@ library MetaTxLib
         public
         returns (bool success)
     {
+        require(msg.sender != address(this), "RECURSIVE_METATXS_DISALLOWED");
         require(!wallet.locked, "WALLET_LOCKED");
         require(metaTx.to == address(this));
 
