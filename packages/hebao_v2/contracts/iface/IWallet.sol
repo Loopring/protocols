@@ -2,6 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
+
 /// @title Wallet
 /// @dev Base contract for smart wallets.
 ///      Sub-contracts must NOT use non-default constructor to initialize
@@ -12,10 +13,5 @@ pragma solidity ^0.7.0;
 /// @author Daniel Wang - <daniel@loopring.org>
 interface IWallet
 {
-    function versionRegistry() external view returns (address);
-    function domainSeperator() external view returns (bytes32);
 
-    function owner() external view returns (address);
-    function version() external view returns (address);
-    function setVersion(address newVersion) external;
 }

@@ -12,5 +12,5 @@ abstract contract ERC1271 {
         public
         view
         virtual
-        returns (bytes4 magicValueB32);
+        returns (bytes4 magicValue);
 }
