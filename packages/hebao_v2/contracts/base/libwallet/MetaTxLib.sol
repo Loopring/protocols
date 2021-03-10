@@ -83,7 +83,7 @@ library MetaTxLib
         returns (bool success)
     {
         require(msg.sender != address(this), "RECURSIVE_METATXS_DISALLOWED");
-        require(!wallet.locked, "WALLET_LOCKED");
+
         require(metaTx.to == address(this));
 
         uint gasLeft = gasleft();
@@ -95,13 +95,16 @@ library MetaTxLib
             wallet.nonce[msg.sender] = metaTx.nonce;
         }
 
+        (success, ) = metaTx.to.call{gas : metaTx.gasLimit}(metaTx.data);
+
+        // These checks are done afterwards to use the latest state post meta-tx call
+        require(!wallet.locked, "WALLET_LOCKED");
+
         validateMetaTx(
             wallet,
             DOMAIN_SEPARATOR,
             metaTx
         );
-
-        (success, ) = metaTx.to.call{gas : metaTx.gasLimit}(metaTx.data);
 
         uint gasUsed = gasLeft - gasleft() + metaTx.gasOverhead;
 
