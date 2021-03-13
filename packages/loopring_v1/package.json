@@ -30,7 +30,7 @@
     "@types/node": "14.14.12",
     "@types/request-promise-native": "^1.0.14",
     "ajv": "^6.0.0",
-    "chai": "^2.2.1",
+    "chai": "^4.3.4",
     "copyfiles": "^2.1.1",
     "dirty-chai": "^2.0.0",
     "ganache-cli": "^6.1.0",
