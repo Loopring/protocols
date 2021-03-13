@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../iface/IPriceOracle.sol";
+import "../iface/PriceOracle.sol";
 import "../lib/MathUint.sol";
 import "../thirdparty/uniswap2/IUniswapV2Factory.sol";
 import "../thirdparty/uniswap2/IUniswapV2Pair.sol";
@@ -10,7 +10,7 @@ import "../thirdparty/uniswap2/IUniswapV2Pair.sol";
 
 /// @title Uniswap2PriceOracle
 /// @dev Returns the value in Ether for any given ERC20 token.
-contract UniswapV2PriceOracle is IPriceOracle
+contract UniswapV2PriceOracle is PriceOracle
 {
     using MathUint   for uint;
 

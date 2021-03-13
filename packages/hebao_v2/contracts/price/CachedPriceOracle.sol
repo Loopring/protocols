@@ -2,21 +2,21 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../iface/IPriceOracle.sol";
+import "../iface/PriceOracle.sol";
 import "../lib/MathUint.sol";
 import "../lib/OwnerManagable.sol";
 import "../thirdparty/SafeCast.sol";
 
 
 /// @title CachedPriceOracle
-contract CachedPriceOracle is IPriceOracle, OwnerManagable
+contract CachedPriceOracle is PriceOracle, OwnerManagable
 {
     using MathUint for uint;
     using SafeCast for uint;
 
     uint public constant EXPIRY_PERIOD = 7 days;
 
-    IPriceOracle public oracle;
+    PriceOracle public oracle;
 
     event PriceCached (
         address token,
@@ -35,7 +35,7 @@ contract CachedPriceOracle is IPriceOracle, OwnerManagable
 
     mapping (address => TokenPrice) prices;
 
-    constructor(IPriceOracle _oracle)
+    constructor(PriceOracle _oracle)
     {
         oracle = _oracle;
     }
@@ -78,7 +78,7 @@ contract CachedPriceOracle is IPriceOracle, OwnerManagable
         _cacheTokenPrice(token, amount, value);
     }
 
-    function setOracle(IPriceOracle _oracle)
+    function setOracle(PriceOracle _oracle)
         external
         onlyManager
     {
