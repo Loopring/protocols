@@ -131,9 +131,6 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         // Decode the blocks
         ExchangeData.Block[] memory blocks = _decodeBlocks(decompressed);
 
-        // Do pre blocks callbacks
-        _beforeBlockSubmission(blocks, config);
-
         // Do flash mints
         if (flashMints.length > 0) {
             IExchangeV3(target).flashMint(flashMints);
@@ -141,6 +138,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
         // Submit blocks
         target.fastCallAndVerify(gasleft(), 0, decompressed);
+
+        // Do transaction verifying blocks callbacks
+        _verifyTransactions(blocks, config);
 
         // Do post blocks callbacks
         _afterBlockSubmission(blocks, postBlocksCallbacks);
@@ -151,7 +151,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         }
     }
 
-    function _beforeBlockSubmission(
+    function _verifyTransactions(
         ExchangeData.Block[] memory   blocks,
         CallbackConfig       calldata config
         )

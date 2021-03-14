@@ -236,9 +236,9 @@ library ExchangeBlocks
 
                 minTxIndex = txIndex + 1;
 
-                if (approved) {
+                /*if (approved) {
                     continue;
-                }
+                }*/
 
                 // Get the transaction data
                 _block.data.readTransactionData(txIndex, _block.blockSize, txData);
@@ -248,6 +248,10 @@ library ExchangeBlocks
                     txData.toUint8(0)
                 );
                 uint txDataOffset = 0;
+
+                if (approved && txType != ExchangeData.TransactionType.WITHDRAWAL) {
+                    continue;
+                }
 
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
                     DepositTransaction.process(
@@ -263,7 +267,8 @@ library ExchangeBlocks
                         ctx,
                         txData,
                         txDataOffset,
-                        auxData
+                        auxData,
+                        approved
                     );
                 } else if (txType == ExchangeData.TransactionType.TRANSFER) {
                     TransferTransaction.process(

@@ -1907,8 +1907,13 @@ export class ExchangeTestUtil {
           for (const auxiliaryData of block.auxiliaryData) {
             if (auxiliaryData[0] === Number(blockCallback.txIdx) + i) {
               auxiliaryData[1] = true;
-              // No auxiliary data needed for the tx
-              auxiliaryData[2] = "0x";
+              if (
+                block.internalBlock.transactions[auxiliaryData[0]].txType !==
+                "Withdraw"
+              ) {
+                // No auxiliary data needed for the tx
+                auxiliaryData[2] = "0x";
+              }
             }
           }
         }
