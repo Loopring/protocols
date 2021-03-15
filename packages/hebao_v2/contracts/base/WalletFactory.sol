@@ -8,7 +8,6 @@ import "../thirdparty/proxy/WalletProxy.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/EIP712.sol";
 import "../thirdparty/Create2.sol";
-import "../thirdparty/ens/BaseENSManager.sol";
 
 
 /// @title WalletFactory
@@ -21,22 +20,14 @@ contract WalletFactory
     using SignatureUtil for bytes32;
 
     event WalletCreated (address wallet, address owner);
-    event BlankDeployed (address blank);
-    event BlankConsumed (address blank);
 
     bytes32             public immutable DOMAIN_SEPERATOR;
     address             public immutable walletImplementation;
 
-    BaseENSManager      public immutable ensManager;
-    ENSResolver         public immutable ensResolver;
-    ENSReverseRegistrar public immutable ensReverseRegistrar;
-
-    mapping(address => bool) blanks;
-
     string  public constant WALLET_CREATION = "WALLET_CREATION";
 
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,string ensLabel,bool ensRegisterReverse,uint256 salt,address blankAddress)"
+        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt,address blankAddress)"
     );
 
     struct WalletConfig
@@ -48,15 +39,11 @@ contract WalletFactory
         address   feeRecipient;
         address   feeToken;
         uint      feeAmount;
-        string    ensLabel;
-        bool      ensRegisterReverse;
-        bytes     ensApproval;
         bytes     signature;
     }
 
     constructor(
-        address        _walletImplementation,
-        BaseENSManager _ensManager
+        address        _walletImplementation
         )
     {
         DOMAIN_SEPERATOR = EIP712.hash(
@@ -64,10 +51,6 @@ contract WalletFactory
         );
 
         walletImplementation = _walletImplementation;
-        ensManager = _ensManager;
-
-        ensResolver = ENSResolver(_ensManager.ensResolver());
-        ensReverseRegistrar = _ensManager.getENSReverseRegistrar();
     }
 
     /// @dev Create a new wallet by deploying a proxy.
@@ -82,36 +65,9 @@ contract WalletFactory
         payable
         returns (address wallet)
     {
-        _validateRequest(config, salt, address(0));
+        _validateRequest(config, salt);
         wallet = _deploy(config.owner, salt);
         _initializeWallet(wallet, config);
-    }
-
-    /// @dev Create a new wallet by using a pre-deployed blank.
-    /// @param config The wallet's config.
-    /// @param blank The address of the blank to use.
-    /// @return wallet The new wallet address
-    function createWalletFromBlank(
-        WalletConfig calldata config,
-        address               blank
-        )
-        external
-        payable
-        returns (address wallet)
-    {
-        _validateRequest(config, 0, blank);
-        wallet = _consumeBlank(blank);
-        _initializeWallet(wallet, config);
-    }
-
-    /// @dev Create a set of new wallet blanks to be used in the future.
-    /// @param salts The salts that can be used to generate nice addresses.
-    function createBlanks(uint[] calldata salts)
-        external
-    {
-        for (uint i = 0; i < salts.length; i++) {
-            _createBlank(salts[i]);
-        }
     }
 
     function computeWalletAddress(
@@ -136,19 +92,11 @@ contract WalletFactory
         )
         internal
     {
-        // ENS
-        bool setupENS = ensManager != BaseENSManager(0) && bytes(config.ensLabel).length > 0;
-        if (setupENS) {
-            ensManager.register(wallet, config.owner, config.ensLabel, config.ensApproval);
-        }
-
         SmartWallet(payable(wallet)).initialize(
             config.owner,
             config.guardians,
             config.quota,
             config.inheritor,
-            config.ensRegisterReverse ? ensResolver : ENSResolver(0),
-            config.ensRegisterReverse ? ensReverseRegistrar : ENSReverseRegistrar(0),
             config.feeRecipient,
             config.feeToken,
             config.feeAmount
@@ -159,8 +107,7 @@ contract WalletFactory
 
     function _validateRequest(
         WalletConfig memory config,
-        uint                salt,
-        address             blankAddress
+        uint                salt
         )
         private
         view
@@ -176,34 +123,12 @@ contract WalletFactory
             config.feeRecipient,
             config.feeToken,
             config.feeAmount,
-            keccak256(bytes(config.ensLabel)),
-            config.ensRegisterReverse,
             salt,
-            blankAddress
+            address(0)
         );
 
         bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
         require(signHash.verifySignature(config.owner, config.signature), "INVALID_SIGNATURE");
-    }
-
-    function _createBlank(uint salt)
-        internal
-        returns (address blank)
-    {
-        blank = _deploy(address(0), salt);
-        blanks[blank] = true;
-
-        emit BlankDeployed(blank);
-    }
-
-    function _consumeBlank(address blank)
-        internal
-        returns (address)
-    {
-        require(blanks[blank], "INVALID_BLANK");
-        delete blanks[blank];
-        emit BlankConsumed(blank);
-        return blank;
     }
 
     function _deploy(
