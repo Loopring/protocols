@@ -34,13 +34,13 @@ library GuardianLib
 
     function setInitialGuardians(
         Wallet    storage wallet,
-        address[] memory  guardians
+        address[] memory  _guardians
         )
         external
     {
-        require(guardians.length < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
-         for (uint i = 0; i < guardians.length; i++) {
-            _addGuardian(wallet, guardians[i], 0, true);
+        require(_guardians.length < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
+         for (uint i = 0; i < _guardians.length; i++) {
+            _addGuardian(wallet, _guardians[i], 0, true);
         }
     }
 
@@ -137,14 +137,14 @@ library GuardianLib
             if (signers[i] == owner) {
                 walletOwnerSigned = true;
             } else {
-                bool isGuardian = false;
+                bool _isGuardian = false;
                 for (uint j = 0; j < allGuardians.length; j++) {
                     if (allGuardians[j].addr == signers[i]) {
-                        isGuardian = true;
+                        _isGuardian = true;
                         break;
                     }
                 }
-                require(isGuardian, "SIGNER_NOT_GUARDIAN");
+                require(_isGuardian, "SIGNER_NOT_GUARDIAN");
             }
         }
 
@@ -271,12 +271,12 @@ library GuardianLib
 
         if(pos == 0) {
             // Add the new guardian
-            Guardian memory g = Guardian(
+            Guardian memory _g = Guardian(
                 addr,
                 uint8(GuardianStatus.ADD),
                 validSince.toUint64()
             );
-            wallet.guardians.push(g);
+            wallet.guardians.push(_g);
             wallet.guardianIdx[addr] = wallet.guardians.length;
 
             _cleanRemovedGuardians(wallet, false);
@@ -358,11 +358,11 @@ library GuardianLib
         )
         internal
     {
-        uint numGuardians = numGuardians(wallet, true);
-        require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
+        uint _numGuardians = numGuardians(wallet, true);
+        require(_numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         uint validSince = block.timestamp;
-        if (numGuardians >= 2) {
+        if (_numGuardians >= 2) {
             validSince = block.timestamp + pendingPeriod;
         }
         validSince = storeGuardian(wallet, guardian, validSince, alwaysOverride);
