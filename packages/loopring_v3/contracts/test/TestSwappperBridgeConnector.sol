@@ -82,6 +82,17 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         }
     }
 
+    function getMinGasLimit(ConnectorCalls calldata connectorCalls)
+        external
+        pure
+        override
+        returns (uint gasLimit)
+    {
+        for (uint g = 0; g < connectorCalls.groups.length; g++) {
+           gasLimit += 100000 + 2500 * connectorCalls.groups[g].calls.length;
+        }
+    }
+
     receive()
         external
         payable

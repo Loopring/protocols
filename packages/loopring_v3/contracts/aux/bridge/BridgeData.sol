@@ -36,6 +36,8 @@ struct ConnectorGroup
 struct ConnectorCalls
 {
     address             connector;
+    uint                gasLimit;
+    uint                totalMinGas;
     ConnectorGroup[]    groups;
     TokenData[]         tokens;
 }

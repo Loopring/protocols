@@ -11,4 +11,9 @@ interface IBridgeConnector
     function processCalls(ConnectorCalls calldata connectorCalls)
     external
     payable;
+
+    function getMinGasLimit(ConnectorCalls calldata connectorCalls)
+    external
+    pure
+    returns (uint);
 }

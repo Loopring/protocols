@@ -49,6 +49,7 @@ contract Bridge is Claimable
     uint               public constant  MAX_NUM_TRANSACTIONS_IN_BLOCK = 386;
     uint               public constant  MAX_AGE_PENDING_TRANSFERS     = 7 days;
     uint               public constant  MAX_FEE_BIPS                  = 25;     // 0.25%
+    uint               public constant  GAS_LIMIT_CHECK_GAS_LIMIT     = 10000;
 
     IExchangeV3        public immutable exchange;
     uint32             public immutable accountID;
@@ -103,6 +104,7 @@ contract Bridge is Claimable
         // Needs to be possible to do all transfers in a single block
         require(deposits.length <= MAX_NUM_TRANSACTIONS_IN_BLOCK, "MAX_DEPOSITS_EXCEEDED");
 
+        // TODO: compare gas costs with a version that doesn't depend on a sorted list for best performance
         uint totalETH = 0;
         address token = address(0);
         uint96 total = 0;
@@ -113,6 +115,8 @@ contract Bridge is Claimable
             if(token != deposits[i].token) {
                 _deposit(from, token, total);
                 totalETH = (token == address(0)) ? totalETH.add(total) : totalETH;
+                token = deposits[i].token;
+                total = 0;
             }
 
             total = total.add(deposits[i].amount);
@@ -315,6 +319,8 @@ contract Bridge is Claimable
                         "INVALID_OFFCHAIN_L2_APPROVAL"
                     );
 
+                    connectorCalls[c].totalMinGas = connectorCalls[c].totalMinGas.sub(call.minGas);
+
                     for (uint t = 0; t < tokens.length; t++) {
                         if (transfer.tokenID == tokens[t].tokenID) {
                             connectorCalls[c].tokens[t].amount = connectorCalls[c].tokens[t].amount.sub(transfer.amount);
@@ -327,6 +333,12 @@ contract Bridge is Claimable
             for (uint i = 0; i < tokens.length; i++) {
                 require(connectorCalls[c].tokens[i].amount == 0, "INVALID_BRIDGE_DATA");
             }
+
+            // Make sure the gas passed to the connector is at least the sum of all call gas min amounts.
+            // So calls basically "buy" a part of the total gas needed to do the batched call,
+            // while IBridgeConnector.getMinGasLimit() makes sure the total gas limit makes sense for the
+            // amount of work submitted.
+            require(connectorCalls[c].totalMinGas == 0, "INVALID_TOTAL_MIN_GAS");
         }
 
         // Verify the withdrawals
@@ -388,6 +400,13 @@ contract Bridge is Claimable
     function _connectorCall(ConnectorCalls memory connectorCalls)
         internal
     {
+        // Check if the minimum amount of gas required is achieved
+        try IBridgeConnector(connectorCalls.connector).getMinGasLimit{gas: GAS_LIMIT_CHECK_GAS_LIMIT}(connectorCalls) returns (uint minGasLimit) {
+            require(connectorCalls.gasLimit >= minGasLimit, "GAS_LIMIT_TOO_LOW");
+        } catch {
+            // If the call failed for some reason just continue.
+        }
+
         // Do the call
         bool success;
         try Bridge(this)._executeConnectorCall(connectorCalls) {
@@ -437,7 +456,7 @@ contract Bridge is Claimable
             if (!success) {
                 assembly { revert(add(returnData, 32), mload(returnData)) }
             }
-            // TODO: maybe return transfers here to batch all of them together in a single `deposit` call across all tursted connectors.
+            // TODO: maybe return transfers here to batch all of them together in a single `deposit` call across all trusted connectors.
         } else {
             // Transfer funds to the external contract with a real call, so the connector doesn't have to be trusted at all.
 
@@ -454,7 +473,7 @@ contract Bridge is Claimable
             }
 
             // Do the call
-            IBridgeConnector(connectorCalls.connector).processCalls{value: ethValue}(connectorCalls);
+            IBridgeConnector(connectorCalls.connector).processCalls{value: ethValue, gas: connectorCalls.gasLimit}(connectorCalls);
         }
     }
 
@@ -485,7 +504,8 @@ contract Bridge is Claimable
         } else {
             // Max rounding error for a float24 is 2/100000
             // But relayer may use float rounding multiple times
-            // so the range is expanded to [100000 - 8, 100000 + 0]
+            // so the range is expanded to [100000 - 8, 100000 + 0],
+            // always rounding down.
             uint ratio = (uint(amount) * 100000) / uint(targetAmount);
             return (100000 - 8) <= ratio && ratio <= (100000 + 0);
         }
