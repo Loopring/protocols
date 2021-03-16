@@ -39,7 +39,6 @@ contract SmartWallet is ERC1271
 
     bytes32     public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
-    address     public immutable walletFactory;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -73,15 +72,8 @@ contract SmartWallet is ERC1271
         _;
     }
 
-    modifier onlyFromWalletFactory()
-    {
-        require(msg.sender == walletFactory, "NOT_FROM_WALLET_FACTORY");
-        _;
-    }
-
     constructor(
-        PriceOracle _priceOracle,
-        address     _walletFactory
+        PriceOracle _priceOracle
         )
     {
         isImplementationContract = true;
@@ -91,7 +83,6 @@ contract SmartWallet is ERC1271
         );
 
         priceOracle = _priceOracle;
-        walletFactory = _walletFactory;
     }
 
     /// @dev Set up this wallet.
@@ -111,7 +102,6 @@ contract SmartWallet is ERC1271
         )
         external
         disableInImplementationContract
-        onlyFromWalletFactory
     {
         require(wallet.owner == address(0), "INITIALIZED_ALREADY");
         require(owner != address(0), "INVALID_OWNER");

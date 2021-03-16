@@ -27,7 +27,7 @@ contract WalletFactory
     string  public constant WALLET_CREATION = "WALLET_CREATION";
 
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt,address blankAddress)"
+        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)"
     );
 
     struct WalletConfig
@@ -123,8 +123,7 @@ contract WalletFactory
             config.feeRecipient,
             config.feeToken,
             config.feeAmount,
-            salt,
-            address(0)
+            salt
         );
 
         bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
