@@ -35,7 +35,6 @@ contract SmartWallet is ERC1271
     using WhitelistLib      for Wallet;
     using QuotaLib          for Wallet;
     using RecoverLib        for Wallet;
-    using RecoverLib        for Wallet;
     using UpgradeLib        for Wallet;
 
     bytes32     public immutable DOMAIN_SEPARATOR;

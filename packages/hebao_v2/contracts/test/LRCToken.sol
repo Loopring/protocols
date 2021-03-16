@@ -97,7 +97,7 @@ contract BasicToken is ERC20Basic {
  * @title ERC20 interface
  * @dev see https://github.com/ethereum/EIPs/issues/20
  */
-abstract contract ERC20 is ERC20Basic {
+abstract contract AbsERC20 is ERC20Basic {
     function allowance(address owner, address spender) public view virtual returns (uint);
     function transferFrom(address from, address to, uint value) public virtual returns (bool);
     function approve(address spender, uint value) public virtual returns (bool);
@@ -110,7 +110,7 @@ abstract contract ERC20 is ERC20Basic {
  * @dev https://github.com/ethereum/EIPs/issues/20
  * @dev Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
  */
-contract StandardToken is ERC20, BasicToken {
+contract StandardToken is AbsERC20, BasicToken {
     using MathUint for uint;
 
     mapping (address => mapping (address => uint)) internal allowed;
