@@ -7,7 +7,6 @@ import "../lib/EIP712.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC1271.sol";
 import "../lib/ReentrancyGuard.sol";
-import "../thirdparty/ens/ENS.sol";
 
 import "./libwallet/ERC20Lib.sol";
 import "./libwallet/ERC1271Lib.sol";
@@ -36,12 +35,10 @@ contract SmartWallet is ERC1271
     using WhitelistLib      for Wallet;
     using QuotaLib          for Wallet;
     using RecoverLib        for Wallet;
-    using RecoverLib        for Wallet;
     using UpgradeLib        for Wallet;
 
     bytes32     public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
-    address     public immutable walletFactory;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -75,15 +72,8 @@ contract SmartWallet is ERC1271
         _;
     }
 
-    modifier onlyFromWalletFactory()
-    {
-        require(msg.sender == walletFactory, "NOT_FROM_WALLET_FACTORY");
-        _;
-    }
-
     constructor(
-        PriceOracle _priceOracle,
-        address     _walletFactory
+        PriceOracle _priceOracle
         )
     {
         isImplementationContract = true;
@@ -93,7 +83,6 @@ contract SmartWallet is ERC1271
         );
 
         priceOracle = _priceOracle;
-        walletFactory = _walletFactory;
     }
 
     /// @dev Set up this wallet.
@@ -107,15 +96,12 @@ contract SmartWallet is ERC1271
         address[] calldata  guardians,
         uint                quota,
         address             inheritor,
-        ENSResolver         ensResolver,
-        ENSReverseRegistrar ensReverseRegistrar,
         address             feeRecipient,
         address             feeToken,
         uint                feeAmount
         )
         external
         disableInImplementationContract
-        onlyFromWalletFactory
     {
         require(wallet.owner == address(0), "INITIALIZED_ALREADY");
         require(owner != address(0), "INVALID_OWNER");
@@ -130,13 +116,7 @@ contract SmartWallet is ERC1271
         if (inheritor != address(0)) {
             wallet.setInheritor(inheritor, 365 days);
         }
-        // Do reverse ENS registration if desired
-        if (ensReverseRegistrar != ENSReverseRegistrar(0)) {
-            ensReverseRegistrar.claimWithResolver(
-                address(0), // the owner of the reverse record
-                address(ensResolver)
-            );
-        }
+
         // Pay for the wallet creation using wallet funds
         if (feeRecipient != address(0)) {
             ERC20Lib.transfer(feeToken, feeRecipient, feeAmount);
