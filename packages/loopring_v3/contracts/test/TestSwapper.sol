@@ -41,13 +41,21 @@ contract TestSwapper
             tokenIn.safeTransferFromAndVerify(msg.sender, address(this), amountIn);
         }
 
-        amountOut = amountIn.mul(rate) / 1 ether;
+        amountOut = getAmountOut(amountIn);
 
         if (tokenOut == address(0)) {
             msg.sender.sendETHAndVerify(amountOut, gasleft());
         } else {
             tokenOut.safeTransferAndVerify(msg.sender, amountOut);
         }
+    }
+
+    function getAmountOut(uint amountIn)
+        public
+        view
+        returns (uint amountOut)
+    {
+        amountOut = amountIn.mul(rate) / 1 ether;
     }
 
     receive()

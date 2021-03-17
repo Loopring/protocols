@@ -10,6 +10,13 @@ struct BridgeTransfer
     uint96  amount;
 }
 
+struct InternalBridgeTransfer
+{
+    address owner;
+    uint16  tokenID;
+    uint96  amount;
+}
+
 struct TokenData
 {
     address token;
@@ -44,8 +51,8 @@ struct ConnectorCalls
 
 struct TransferOperation
 {
-    uint             batchID;
-    BridgeTransfer[] transfers;
+    uint                     batchID;
+    InternalBridgeTransfer[] transfers;
 }
 
 struct BridgeOperations

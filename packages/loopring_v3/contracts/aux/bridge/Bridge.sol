@@ -66,7 +66,10 @@ contract Bridge is Claimable
 
     uint                                       public batchIDGenerator;
 
-    event Transfers(uint batchID, BridgeTransfer[] transfers);
+    // token -> tokenID
+    mapping (address => uint16)                public cachedTokenIDs;
+
+    event Transfers(uint batchID, InternalBridgeTransfer[] transfers);
 
     event BridgeCallSuccess (bytes32 hash);
     event BridgeCallFailed  (bytes32 hash, string reason);
@@ -94,8 +97,8 @@ contract Bridge is Claimable
     }
 
     function batchDeposit(
-        address                   from,
-        BridgeTransfer[] calldata deposits
+        address                 from,
+        BridgeTransfer[] memory deposits
         )
         external
         payable
@@ -104,30 +107,47 @@ contract Bridge is Claimable
         // Needs to be possible to do all transfers in a single block
         require(deposits.length <= MAX_NUM_TRANSACTIONS_IN_BLOCK, "MAX_DEPOSITS_EXCEEDED");
 
-        // TODO: compare gas costs with a version that doesn't depend on a sorted list for best performance
-        uint totalETH = 0;
-        address token = address(0);
-        uint96 total = 0;
+        // Transfers to be done
+        InternalBridgeTransfer[] memory transfers = new InternalBridgeTransfer[](deposits.length);
+
+        // Worst case scenario all tokens are different
+        TokenData[] memory tokens = new TokenData[](deposits.length);
+        uint numDistinctTokens = 0;
+
+        // Run over all deposits summing up total amounts per token
+        address token = address(-1);
+        uint tokenIdx = 0;
         for (uint i = 0; i < deposits.length; i++) {
-            if (total == 0) {
-                token = deposits[i].token;
-            }
             if(token != deposits[i].token) {
-                _deposit(from, token, total);
-                totalETH = (token == address(0)) ? totalETH.add(total) : totalETH;
                 token = deposits[i].token;
-                total = 0;
+                tokenIdx = 0;
+                while(tokenIdx < numDistinctTokens && tokens[tokenIdx].token != token) {
+                    tokenIdx++;
+                }
+                if (tokenIdx == numDistinctTokens) {
+                    tokens[tokenIdx].token = token;
+                    tokens[tokenIdx].tokenID = _getTokenID(token);
+                    numDistinctTokens++;
+                }
             }
+            tokens[tokenIdx].amount = tokens[tokenIdx].amount.add(deposits[i].amount);
+            deposits[i].token = address(tokens[tokenIdx].tokenID);
 
-            total = total.add(deposits[i].amount);
+            transfers[i].owner = deposits[i].owner;
+            transfers[i].tokenID = tokens[tokenIdx].tokenID;
+            transfers[i].amount = deposits[i].amount;
         }
-        if(total > 0) {
-            _deposit(from, token, total);
-            totalETH = (token == address(0)) ? totalETH.add(total) : totalETH;
-        }
-        require(totalETH == msg.value, "INVALID_ETH_DEPOSIT");
 
-        _storeTransfers(deposits);
+        // Do a normal deposit per token
+        for(uint i = 0; i < numDistinctTokens; i++) {
+            if (tokens[i].token == address(0)) {
+                require(tokens[i].amount == msg.value, "INVALID_ETH_DEPOSIT");
+            }
+            _deposit(from, tokens[i].token, uint96(tokens[i].amount));
+        }
+
+        // Store the transfers so they can be processed later
+        _storeTransfers(transfers);
     }
 
     function beforeBlockSubmission(
@@ -154,9 +174,9 @@ contract Bridge is Claimable
 
     // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFERS old.
     function withdrawFromPendingTransfers(
-        uint                      batchID,
-        BridgeTransfer[] calldata transfers,
-        uint[]           calldata indices
+        uint                              batchID,
+        InternalBridgeTransfer[] calldata transfers,
+        uint[]                   calldata indices
         )
         external
     {
@@ -170,8 +190,10 @@ contract Bridge is Claimable
             require(!withdrawn[hash][idx], "ALREADY_WITHDRAWN");
             withdrawn[hash][idx] = true;
 
+            address tokenAddress = exchange.getTokenAddress(transfers[idx].tokenID);
+
             _transferOut(
-                transfers[idx].token,
+                tokenAddress,
                 transfers[idx].amount,
                 transfers[idx].owner
             );
@@ -219,7 +241,7 @@ contract Bridge is Claimable
         internal
     {
         for (uint o = 0; o < operations.length; o++) {
-            BridgeTransfer[] memory transfers = operations[o].transfers;
+            InternalBridgeTransfer[] memory transfers = operations[o].transfers;
 
             // Check if these transfers can be processed
             bytes32 hash = _hashTransfers(operations[o].batchID, transfers);
@@ -229,17 +251,11 @@ contract Bridge is Claimable
             pendingTransfers[hash] = 0;
 
             // Verify transfers
-            address token   = address(0);
-            uint16  tokenID = 0;
             TransferTransaction.Transfer memory transfer;
             for (uint i = 0; i < transfers.length; i++) {
                 TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
 
-                if (transfer.tokenID != tokenID) {
-                    tokenID = transfer.tokenID;
-                    token = exchange.getTokenAddress(tokenID);
-                }
-
+                uint16 tokenID = transfers[i].tokenID;
                 require(
                     transfer.fromAccountID == ctx.accountID &&
                     transfer.to == transfers[i].owner &&
@@ -248,7 +264,7 @@ contract Bridge is Claimable
                     transfer.feeTokenID == tokenID &&
                     _isAlmostEqualAmount(transfer.amount, transfers[i].amount) &&
                     transfer.fee <= (uint(transfer.amount).mul(MAX_FEE_BIPS) / 10000),
-                    "INVALID_DISTRIBUTE_TRANSFER_TX_DATA"
+                    "INVALID_BRIDGE_TRANSFER_TX_DATA"
                 );
             }
         }
@@ -346,7 +362,7 @@ contract Bridge is Claimable
         for (uint i = 0; i < tokens.length; i++) {
             // Verify token data
             require(
-                tokens[i].token == exchange.getTokenAddress(tokens[i].tokenID),
+                _getTokenID(tokens[i].token) == tokens[i].tokenID,
                 "INVALID_TOKEN_DATA"
             );
 
@@ -365,11 +381,12 @@ contract Bridge is Claimable
                 "INVALID_BRIDGE_WITHDRAWAL_TX_DATA"
             );
 
+            // Verify all tokens withdrawn were actually transferred into the Bridge
             require(tokens[i].amount == 0, "INVALID_BRIDGE_TOKEN_DATA");
         }
     }
 
-    function _storeTransfers(BridgeTransfer[] memory transfers)
+    function _storeTransfers(InternalBridgeTransfer[] memory transfers)
         internal
     {
         uint batchID = batchIDGenerator++;
@@ -423,15 +440,15 @@ contract Bridge is Claimable
         // If the call failed return funds to all users
         if (!success) {
             for (uint g = 0; g < connectorCalls.groups.length; g++) {
-                BridgeTransfer[] memory transfersOut = new BridgeTransfer[](connectorCalls.groups[g].calls.length);
+                InternalBridgeTransfer[] memory transfers = new InternalBridgeTransfer[](connectorCalls.groups[g].calls.length);
                 for (uint i = 0; i < connectorCalls.groups[g].calls.length; i++) {
-                    transfersOut[i] = BridgeTransfer({
+                    transfers[i] = InternalBridgeTransfer({
                         owner: connectorCalls.groups[g].calls[i].owner,
-                        token: connectorCalls.groups[g].calls[i].token,
+                        tokenID:  _getTokenID(connectorCalls.groups[g].calls[i].token),
                         amount: connectorCalls.groups[g].calls[i].amount
                     });
                 }
-                _storeTransfers(transfersOut);
+                _storeTransfers(transfers);
             }
         }
     }
@@ -477,6 +494,24 @@ contract Bridge is Claimable
         }
     }
 
+    // Returns the tokenID for the given token address.
+    // Instead of querying the exchange each time, the tokenID
+    // is automatically cached inside this contract to save gas.
+    function _getTokenID(address tokenAddress)
+        internal
+        returns (uint16 cachedTokenID)
+    {
+        if (tokenAddress == address(0)) {
+            cachedTokenID = 0;
+        } else {
+            cachedTokenID = cachedTokenIDs[tokenAddress];
+            if (cachedTokenID == 0) {
+                cachedTokenID = exchange.getTokenID(tokenAddress);
+                cachedTokenIDs[tokenAddress] = cachedTokenID;
+            }
+        }
+    }
+
     function _transferOut(
         address token,
         uint    amount,
@@ -513,7 +548,7 @@ contract Bridge is Claimable
 
     function _hashTransfers(
         uint batchID,
-        BridgeTransfer[] memory transfers
+        InternalBridgeTransfer[] memory transfers
         )
         internal
         pure

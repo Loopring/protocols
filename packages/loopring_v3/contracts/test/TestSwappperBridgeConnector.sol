@@ -22,10 +22,15 @@ contract TestSwappperBridgeConnector is IBridgeConnector
     using MathUint          for uint;
     using SafeCast          for uint;
 
-    struct Settings
+    struct GroupSettings
     {
         address tokenIn;
         address tokenOut;
+    }
+
+    struct UserSettings
+    {
+        uint minAmountOut;
     }
 
     IExchangeV3        public immutable exchange;
@@ -50,35 +55,88 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         override
     {
         for (uint g = 0; g < connectorCalls.groups.length; g++) {
-            Settings memory settings = abi.decode(connectorCalls.groups[g].groupData, (Settings));
+            GroupSettings memory settings = abi.decode(connectorCalls.groups[g].groupData, (GroupSettings));
 
             BridgeCall[] calldata calls = connectorCalls.groups[g].calls;
 
-            uint amountIn = 0;
+            bool[] memory valid = new bool[](calls.length);
+            uint numValid = 0;
+
+            uint amountInExpected = 0;
             for (uint i = 0; i < calls.length; i++) {
-                require(calls[i].token == settings.tokenIn, "INVALID_TOKEN");
-                amountIn = amountIn.add(calls[i].amount);
+                valid[i] = calls[i].token == settings.tokenIn;
+                if (valid[i]) {
+                    amountInExpected = amountInExpected.add(calls[i].amount);
+                }
             }
 
+            // Get expected output amount
+            uint amountOut = testSwapper.getAmountOut(amountInExpected);
+
+            uint amountIn = 0;
+            uint ammountInInvalid = 0;
+            for (uint i = 0; i < calls.length; i++) {
+                if(valid[i] && calls[i].userData.length == 32) {
+                    UserSettings memory userSettings = abi.decode(calls[i].userData, (UserSettings));
+                    uint userAmountOut = uint(calls[i].amount).mul(amountOut) / amountInExpected;
+                    if (userAmountOut < userSettings.minAmountOut) {
+                        valid[i] = false;
+                    }
+                }
+                if (valid[i]) {
+                    amountIn = amountIn.add(calls[i].amount);
+                    numValid++;
+                } else {
+                    ammountInInvalid = ammountInInvalid.add(calls[i].amount);
+                }
+            }
+
+            // Do the actual swap
+            {
             uint ethValueOut = (settings.tokenIn == address(0)) ? amountIn : 0;
-            uint amountOut = testSwapper.swap{value: ethValueOut}(amountIn);
-
-            BridgeTransfer[] memory transfers = new BridgeTransfer[](calls.length);
-            for (uint i = 0; i < transfers.length; i++) {
-                transfers[i] = BridgeTransfer({
-                    owner: transfers[i].owner,
-                    token: settings.tokenOut,
-                    amount: (uint(transfers[i].amount).mul(amountOut) / amountIn).toUint96()
-                });
+            amountOut = testSwapper.swap{value: ethValueOut}(amountIn);
             }
 
+            // Create transfers back to the users
+            BridgeTransfer[] memory transfers = new BridgeTransfer[](calls.length);
+            for (uint i = 0; i < calls.length; i++) {
+                if (valid[i]) {
+                    // Give equal share to all valid calls
+                    transfers[i] = BridgeTransfer({
+                        owner: calls[i].owner,
+                        token: settings.tokenOut,
+                        amount: (uint(calls[i].amount).mul(amountOut) / amountIn).toUint96()
+                    });
+                } else {
+                    // Just transfer the tokens back
+                    transfers[i] = BridgeTransfer({
+                        owner: calls[i].owner,
+                        token: calls[i].token,
+                        amount: calls[i].amount
+                    });
+                }
+            }
+
+            // Batch deposit
+            // TODO: more batching
+            {
             uint ethValueIn = 0;
-            if (settings.tokenOut == address(0)) {
-                ethValueIn = amountOut;
-            } else {
-                ERC20(settings.tokenOut).approve(address(depositContract), amountOut);
+            if (numValid != 0) {
+                if (settings.tokenOut == address(0)) {
+                    ethValueIn = ethValueIn.add(amountOut);
+                } else {
+                    ERC20(settings.tokenOut).approve(address(depositContract), amountOut);
+                }
+            }
+            if (numValid != calls.length) {
+                if (settings.tokenIn == address(0)) {
+                    ethValueIn = ethValueIn.add(ammountInInvalid);
+                } else {
+                    ERC20(settings.tokenIn).approve(address(depositContract), ammountInInvalid);
+                }
             }
             IBridge(msg.sender).batchDeposit{value: ethValueIn}(address(this), transfers);
+            }
         }
     }
 
