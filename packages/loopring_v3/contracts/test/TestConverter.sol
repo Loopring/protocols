@@ -30,7 +30,7 @@ contract TestConverter is BaseConverter
         returns (uint amountOut)
     {
         uint ethValue = (tokenIn == address(0)) ? amountIn : 0;
-        amountOut = swapContract.swap{value: ethValue}(amountIn);
+        amountOut = swapContract.swap{value: ethValue}(tokenIn, tokenOut, amountIn);
         require(amountOut >= minAmountOut, "INSUFFICIENT_OUT_AMOUNT");
     }
 

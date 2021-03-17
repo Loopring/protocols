@@ -15,22 +15,20 @@ contract TestSwapper
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-    address public immutable tokenIn;
-    address public immutable tokenOut;
     uint    public immutable rate;
 
     constructor(
-        address _tokenIn,
-        address _tokenOut,
         uint    _rate
         )
     {
-        tokenIn = _tokenIn;
-        tokenOut = _tokenOut;
         rate = _rate;
     }
 
-    function swap(uint amountIn)
+    function swap(
+        address tokenIn,
+        address tokenOut,
+        uint    amountIn
+        )
         external
         payable
         returns (uint amountOut)
@@ -41,7 +39,7 @@ contract TestSwapper
             tokenIn.safeTransferFromAndVerify(msg.sender, address(this), amountIn);
         }
 
-        amountOut = getAmountOut(amountIn);
+        amountOut = getAmountOut(tokenIn, tokenOut, amountIn);
 
         if (tokenOut == address(0)) {
             msg.sender.sendETHAndVerify(amountOut, gasleft());
@@ -50,7 +48,11 @@ contract TestSwapper
         }
     }
 
-    function getAmountOut(uint amountIn)
+    function getAmountOut(
+        address /*tokenIn*/,
+        address /*tokenOut*/,
+        uint amountIn
+        )
         public
         view
         returns (uint amountOut)

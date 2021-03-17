@@ -36,14 +36,16 @@ contract Bridge is Claimable
         uint    txIdx;
     }
 
-    struct HashAuxData
+    struct HashData
     {
-        address connector;
-        bytes groupData;
+        address                      connector;
+        bytes                        groupData;
+        TransferTransaction.Transfer transfer;
+        BridgeCall                   call;
     }
 
     bytes32 constant public BRIDGE_CALL_TYPEHASH = keccak256(
-        "BridgeCall(address from,address to,uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
+        "BridgeCall(address from,address to,uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData,uint256 validUntil)"
     );
 
     uint               public constant  MAX_NUM_TRANSACTIONS_IN_BLOCK = 386;
@@ -291,7 +293,7 @@ contract Bridge is Claimable
         for (uint c = 0; c < connectorCalls.length; c++) {
 
             // Verify token data
-            require(connectorCalls[c].tokens.length == tokens.length, "INVALID_DATA");
+            require(connectorCalls[c].tokens.length == tokens.length, "INVALID_TOKEN_DATA");
             for (uint i = 0; i < tokens.length; i++) {
                 require(tokens[i].token == connectorCalls[c].tokens[i].token, "INVALID_CONNECTOR_TOKEN_DATA");
                 tokens[i].amount = tokens[i].amount.sub(connectorCalls[c].tokens[i].amount);
@@ -312,23 +314,22 @@ contract Bridge is Claimable
                     require(
                         transfer.toAccountID == ctx.accountID &&
                         transfer.to == address(this) &&
-                        transfer.fee <= call.maxFee,
-                        "INVALID_COLLECT_TRANSFER"
+                        transfer.fee <= call.maxFee &&
+                        call.validUntil >= block.timestamp,
+                        "INVALID_BRIDGE_CALL_TRANSFER"
                     );
 
-                    HashAuxData memory hashAuxData = HashAuxData(
+                    // Verify that the transaction was approved with an L2 signature
+                    HashData memory hashData = HashData(
                         connectorCalls[c].connector,
-                        connectorCalls[c].groups[g].groupData
+                        connectorCalls[c].groups[g].groupData,
+                        transfer,
+                        call
                     );
-
                     bytes32 txHash = _hashTx(
                         ctx.domainSeparator,
-                        transfer,
-                        call,
-                        hashAuxData
+                        hashData
                     );
-
-                    // Verify that the hash was signed on L2
                     require(
                         verification.owner == transfer.from &&
                         verification.data == uint(txHash) >> 3,
@@ -568,10 +569,8 @@ contract Bridge is Claimable
     }
 
     function _hashTx(
-        bytes32                             _DOMAIN_SEPARATOR,
-        TransferTransaction.Transfer memory transfer,
-        BridgeCall                   memory call,
-        HashAuxData                  memory hashAuxData
+        bytes32         _DOMAIN_SEPARATOR,
+        HashData memory hashData
         )
         internal
         pure
@@ -582,17 +581,18 @@ contract Bridge is Claimable
             keccak256(
                 abi.encode(
                     BRIDGE_CALL_TYPEHASH,
-                    transfer.from,
-                    transfer.to,
-                    transfer.tokenID,
-                    transfer.amount,
-                    transfer.feeTokenID,
-                    call.maxFee,
-                    transfer.storageID,
-                    call.minGas,
-                    hashAuxData.connector,
-                    keccak256(hashAuxData.groupData),
-                    keccak256(call.userData)
+                    hashData.transfer.from,
+                    hashData.transfer.to,
+                    hashData.transfer.tokenID,
+                    hashData.transfer.amount,
+                    hashData.transfer.feeTokenID,
+                    hashData.call.maxFee,
+                    hashData.transfer.storageID,
+                    hashData.call.minGas,
+                    hashData.connector,
+                    keccak256(hashData.groupData),
+                    keccak256(hashData.call.userData),
+                    hashData.call.validUntil
                 )
             )
         );

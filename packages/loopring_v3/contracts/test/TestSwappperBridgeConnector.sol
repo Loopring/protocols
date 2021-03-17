@@ -33,6 +33,12 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         uint minAmountOut;
     }
 
+    struct TokenApprovals
+    {
+        address token;
+        uint    amount;
+    }
+
     IExchangeV3        public immutable exchange;
     IDepositContract   public immutable depositContract;
 
@@ -54,6 +60,16 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         payable
         override
     {
+        uint numTransfers = 0;
+        for (uint g = 0; g < connectorCalls.groups.length; g++) {
+            numTransfers += connectorCalls.groups[g].calls.length;
+        }
+        BridgeTransfer[] memory transfers = new BridgeTransfer[](numTransfers);
+        uint transferIdx = 0;
+
+        // Total ETH to re-deposit
+        uint ethValueIn = 0;
+
         for (uint g = 0; g < connectorCalls.groups.length; g++) {
             GroupSettings memory settings = abi.decode(connectorCalls.groups[g].groupData, (GroupSettings));
 
@@ -71,7 +87,11 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             }
 
             // Get expected output amount
-            uint amountOut = testSwapper.getAmountOut(amountInExpected);
+            uint amountOut = testSwapper.getAmountOut(
+                settings.tokenIn,
+                settings.tokenOut,
+                amountInExpected
+            );
 
             uint amountIn = 0;
             uint ammountInInvalid = 0;
@@ -94,22 +114,28 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             // Do the actual swap
             {
             uint ethValueOut = (settings.tokenIn == address(0)) ? amountIn : 0;
-            amountOut = testSwapper.swap{value: ethValueOut}(amountIn);
+            if (settings.tokenIn != address(0)) {
+                ERC20(settings.tokenIn).approve(address(testSwapper), amountIn);
+            }
+            amountOut = testSwapper.swap{value: ethValueOut}(
+                settings.tokenIn,
+                settings.tokenOut,
+                amountIn
+            );
             }
 
             // Create transfers back to the users
-            BridgeTransfer[] memory transfers = new BridgeTransfer[](calls.length);
             for (uint i = 0; i < calls.length; i++) {
                 if (valid[i]) {
                     // Give equal share to all valid calls
-                    transfers[i] = BridgeTransfer({
+                    transfers[transferIdx++] = BridgeTransfer({
                         owner: calls[i].owner,
                         token: settings.tokenOut,
                         amount: (uint(calls[i].amount).mul(amountOut) / amountIn).toUint96()
                     });
                 } else {
                     // Just transfer the tokens back
-                    transfers[i] = BridgeTransfer({
+                    transfers[transferIdx++] = BridgeTransfer({
                         owner: calls[i].owner,
                         token: calls[i].token,
                         amount: calls[i].amount
@@ -119,25 +145,27 @@ contract TestSwappperBridgeConnector is IBridgeConnector
 
             // Batch deposit
             // TODO: more batching
-            {
-            uint ethValueIn = 0;
+            // TODO: maybe use internal list to track allowances (maybe not needed with eip-2929)
+            // TODO: pre-approve tokens where possible
             if (numValid != 0) {
                 if (settings.tokenOut == address(0)) {
                     ethValueIn = ethValueIn.add(amountOut);
                 } else {
-                    ERC20(settings.tokenOut).approve(address(depositContract), amountOut);
+                    uint allowance = ERC20(settings.tokenOut).allowance(address(this), address(depositContract));
+                    ERC20(settings.tokenOut).approve(address(depositContract), allowance.add(amountOut));
                 }
             }
             if (numValid != calls.length) {
                 if (settings.tokenIn == address(0)) {
                     ethValueIn = ethValueIn.add(ammountInInvalid);
                 } else {
-                    ERC20(settings.tokenIn).approve(address(depositContract), ammountInInvalid);
+                    uint allowance = ERC20(settings.tokenIn).allowance(address(this), address(depositContract));
+                    ERC20(settings.tokenIn).approve(address(depositContract), allowance.add(ammountInInvalid));
                 }
             }
-            IBridge(msg.sender).batchDeposit{value: ethValueIn}(address(this), transfers);
-            }
         }
+
+        IBridge(msg.sender).batchDeposit{value: ethValueIn}(address(this), transfers);
     }
 
     function getMinGasLimit(ConnectorCalls calldata connectorCalls)

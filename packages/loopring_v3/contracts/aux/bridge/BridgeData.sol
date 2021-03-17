@@ -32,6 +32,7 @@ struct BridgeCall
     bytes   userData;
     uint    minGas;
     uint    maxFee;
+    uint    validUntil;
 }
 
 struct ConnectorGroup
