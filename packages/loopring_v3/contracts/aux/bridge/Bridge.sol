@@ -73,8 +73,8 @@ contract Bridge is Claimable
 
     event Transfers(uint batchID, InternalBridgeTransfer[] transfers);
 
-    event BridgeCallSuccess (bytes32 hash);
-    event BridgeCallFailed  (bytes32 hash, string reason);
+    event BridgeCallSuccess (address connector);
+    event BridgeCallFailed  (address connector, string reason);
 
     event ConnectorTrusted  (address connector, bool trusted);
 
@@ -279,7 +279,6 @@ contract Bridge is Claimable
         )
         internal
     {
-        ConnectorCalls[] memory connectorCalls = operations.connectorCalls;
         TokenData[] memory tokens = operations.tokens;
 
         uint[] memory withdrawalAmounts = new uint[](tokens.length);
@@ -290,25 +289,29 @@ contract Bridge is Claimable
         // Calls
         TransferTransaction.Transfer memory transfer;
         SignatureVerificationTransaction.SignatureVerification memory verification;
-        for (uint c = 0; c < connectorCalls.length; c++) {
+        HashData memory hashData;
+        for (uint c = 0; c < operations.connectorCalls.length; c++) {
+
+            ConnectorCalls memory connectorCall = operations.connectorCalls[c];
 
             // Verify token data
-            require(connectorCalls[c].tokens.length == tokens.length, "INVALID_TOKEN_DATA");
+            require(connectorCall.tokens.length == tokens.length, "INVALID_TOKEN_DATA");
             for (uint i = 0; i < tokens.length; i++) {
-                require(tokens[i].token == connectorCalls[c].tokens[i].token, "INVALID_CONNECTOR_TOKEN_DATA");
-                tokens[i].amount = tokens[i].amount.sub(connectorCalls[c].tokens[i].amount);
+                require(tokens[i].token == connectorCall.tokens[i].token, "INVALID_CONNECTOR_TOKEN_DATA");
+                tokens[i].amount = tokens[i].amount.sub(connectorCall.tokens[i].amount);
             }
 
             // Call the connector
-            _connectorCall(connectorCalls[c]);
+            _connectorCall(connectorCall);
 
             // Verify the transactions
-            for (uint g = 0; g < connectorCalls[c].groups.length; g++) {
-                for (uint i = 0; i < connectorCalls[c].groups[g].calls.length; i++) {
+            for (uint g = 0; g < connectorCall.groups.length; g++) {
+                ConnectorGroup memory group = connectorCall.groups[g];
+                for (uint i = 0; i < group.calls.length; i++) {
                     TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
                     SignatureVerificationTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, verification);
 
-                    BridgeCall memory call = connectorCalls[c].groups[g].calls[i];
+                    BridgeCall memory call = group.calls[i];
 
                     // Verify the transaction data
                     require(
@@ -320,12 +323,10 @@ contract Bridge is Claimable
                     );
 
                     // Verify that the transaction was approved with an L2 signature
-                    HashData memory hashData = HashData(
-                        connectorCalls[c].connector,
-                        connectorCalls[c].groups[g].groupData,
-                        transfer,
-                        call
-                    );
+                    hashData.connector = connectorCall.connector;
+                    hashData.groupData = group.groupData;
+                    hashData.transfer = transfer;
+                    hashData.call = call;
                     bytes32 txHash = _hashTx(
                         ctx.domainSeparator,
                         hashData
@@ -336,11 +337,11 @@ contract Bridge is Claimable
                         "INVALID_OFFCHAIN_L2_APPROVAL"
                     );
 
-                    connectorCalls[c].totalMinGas = connectorCalls[c].totalMinGas.sub(call.minGas);
+                    connectorCall.totalMinGas = connectorCall.totalMinGas.sub(call.minGas);
 
                     for (uint t = 0; t < tokens.length; t++) {
                         if (transfer.tokenID == tokens[t].tokenID) {
-                            connectorCalls[c].tokens[t].amount = connectorCalls[c].tokens[t].amount.sub(transfer.amount);
+                            connectorCall.tokens[t].amount = connectorCall.tokens[t].amount.sub(transfer.amount);
                         }
                     }
                 }
@@ -348,14 +349,14 @@ contract Bridge is Claimable
 
             // Make sure token amounts passed in match
             for (uint i = 0; i < tokens.length; i++) {
-                require(connectorCalls[c].tokens[i].amount == 0, "INVALID_BRIDGE_DATA");
+                require(connectorCall.tokens[i].amount == 0, "INVALID_BRIDGE_DATA");
             }
 
             // Make sure the gas passed to the connector is at least the sum of all call gas min amounts.
             // So calls basically "buy" a part of the total gas needed to do the batched call,
             // while IBridgeConnector.getMinGasLimit() makes sure the total gas limit makes sense for the
             // amount of work submitted.
-            require(connectorCalls[c].totalMinGas == 0, "INVALID_TOTAL_MIN_GAS");
+            require(connectorCall.totalMinGas == 0, "INVALID_TOTAL_MIN_GAS");
         }
 
         // Verify the withdrawals
@@ -429,13 +430,13 @@ contract Bridge is Claimable
         bool success;
         try Bridge(this)._executeConnectorCall(connectorCalls) {
             success = true;
-            emit BridgeCallSuccess(keccak256(abi.encode(connectorCalls)));
+            emit BridgeCallSuccess(connectorCalls.connector);
         } catch Error(string memory reason) {
             success = false;
-            emit BridgeCallFailed(keccak256(abi.encode(connectorCalls)), reason);
+            emit BridgeCallFailed(connectorCalls.connector, reason);
         } catch {
             success = false;
-            emit BridgeCallFailed(keccak256(abi.encode(connectorCalls)), "unknown");
+            emit BridgeCallFailed(connectorCalls.connector, "unknown");
         }
 
         // If the call failed return funds to all users
@@ -466,11 +467,24 @@ contract Bridge is Claimable
             // Execute the logic using a delegate so no extra transfers are needed
 
             // Do the delegate call
-            bytes memory txData = abi.encodeWithSelector(
+            /*bytes memory txData = abi.encodeWithSelector(
                 IBridgeConnector.processCalls.selector,
                 connectorCalls
-            );
-            (bool success, bytes memory returnData) = connectorCalls.connector.delegatecall(txData);
+            );*/
+            //(bool success, bytes memory returnData) = connectorCalls.connector.delegatecall(txData);
+
+            // Manually copy data from the calldata and pass it into the connector
+            uint txDataSize;
+            assembly {
+                txDataSize := calldatasize()
+            }
+            bytes memory txData = new bytes(txDataSize);
+            bytes4 selector = IBridgeConnector.processCalls.selector;
+            assembly {
+                mstore(add(txData, 32), selector)
+                calldatacopy(add(txData, 36), 4, sub(txDataSize, 4))
+            }
+            (bool success, bytes memory returnData) = connectorCalls.connector.fastDelegatecall(gasleft(), txData);
             if (!success) {
                 assembly { revert(add(returnData, 32), mload(returnData)) }
             }

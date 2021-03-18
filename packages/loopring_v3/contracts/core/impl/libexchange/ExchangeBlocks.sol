@@ -236,10 +236,6 @@ library ExchangeBlocks
 
                 minTxIndex = txIndex + 1;
 
-                /*if (approved) {
-                    continue;
-                }*/
-
                 // Get the transaction data
                 _block.data.readTransactionData(txIndex, _block.blockSize, txData);
 
@@ -249,7 +245,9 @@ library ExchangeBlocks
                 );
                 uint txDataOffset = 0;
 
-                if (approved && txType != ExchangeData.TransactionType.WITHDRAWAL) {
+                if (approved &&
+                    txType != ExchangeData.TransactionType.WITHDRAWAL &&
+                    txType != ExchangeData.TransactionType.DEPOSIT) {
                     continue;
                 }
 
