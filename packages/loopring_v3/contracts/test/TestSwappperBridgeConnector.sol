@@ -165,7 +165,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             }
         }
 
-        IBridge(msg.sender).batchDeposit{value: ethValueIn}(address(this), transfers);
+        IBridge(msg.sender).batchDeposit{value: ethValueIn}(transfers);
     }
 
     function getMinGasLimit(ConnectorCalls calldata connectorCalls)

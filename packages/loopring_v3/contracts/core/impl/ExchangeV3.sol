@@ -436,7 +436,10 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         view
     {
         for (uint i = 0; i < flashMints.length; i++) {
-            require(state.amountFlashMinted[flashMints[i].token] == 0, "FLASH_MINT_NOT_REPAID");
+            require(
+                state.amountFlashMinted[flashMints[i].token] == 0,
+                "FLASH_MINT_NOT_REPAID"
+            );
         }
     }
 

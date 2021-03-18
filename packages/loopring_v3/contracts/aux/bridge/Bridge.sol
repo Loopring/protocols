@@ -99,13 +99,11 @@ contract Bridge is Claimable
     }
 
     function batchDeposit(
-        address                 from,
         BridgeTransfer[] memory deposits
         )
         external
         payable
     {
-        require(from == msg.sender, "UNAUTHORIZED");
         // Needs to be possible to do all transfers in a single block
         require(deposits.length <= MAX_NUM_TRANSACTIONS_IN_BLOCK, "MAX_DEPOSITS_EXCEEDED");
 
@@ -145,7 +143,7 @@ contract Bridge is Claimable
             if (tokens[i].token == address(0)) {
                 require(tokens[i].amount == msg.value, "INVALID_ETH_DEPOSIT");
             }
-            _deposit(from, tokens[i].token, uint96(tokens[i].amount));
+            _deposit(msg.sender, tokens[i].token, uint96(tokens[i].amount));
         }
 
         // Store the transfers so they can be processed later
@@ -167,7 +165,7 @@ contract Bridge is Claimable
             txIdx: 0
         });
 
-        _processTransfers(ctx, operations.transferOperations, txsData);
+        _processTransfers(ctx, operations.transferBatches, txsData);
         _processCalls(ctx, operations, txsData);
 
         // Make sure we have consumed exactly the expected number of transactions
@@ -175,7 +173,7 @@ contract Bridge is Claimable
     }
 
     // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFERS old.
-    function withdrawFromPendingTransfers(
+    function withdrawFromPendingBatchDeposit(
         uint                              batchID,
         InternalBridgeTransfer[] calldata transfers,
         uint[]                   calldata indices
@@ -236,9 +234,9 @@ contract Bridge is Claimable
     // --- Internal functions ---
 
     function _processTransfers(
-        Context             memory ctx,
-        TransferOperation[] memory operations,
-        bytes               memory txsData
+        Context         memory ctx,
+        TransferBatch[] memory operations,
+        bytes           memory txsData
         )
         internal
     {
@@ -495,11 +493,12 @@ contract Bridge is Claimable
             // Transfer funds to the connector contract
             uint ethValue = 0;
             for (uint i = 0; i < connectorCalls.tokens.length; i++) {
-                if (connectorCalls.tokens[i].amount > 0) {
-                    if (connectorCalls.tokens[i].token != address(0)) {
-                        connectorCalls.tokens[i].token.safeTransferAndVerify(connectorCalls.connector, connectorCalls.tokens[i].amount);
+                TokenData memory tokenData = connectorCalls.tokens[i];
+                if (tokenData.amount > 0) {
+                    if (tokenData.token != address(0)) {
+                        tokenData.token.safeTransferAndVerify(connectorCalls.connector, tokenData.amount);
                     } else {
-                        ethValue = ethValue.add(connectorCalls.tokens[i].amount);
+                        ethValue = ethValue.add(tokenData.amount);
                     }
                 }
             }

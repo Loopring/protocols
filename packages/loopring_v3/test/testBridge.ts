@@ -63,13 +63,13 @@ export interface ConnectorCalls {
   tokens: TokenData[];
 }
 
-export interface TransferOperation {
+export interface TransferBatch {
   batchID: number;
   transfers: InternalBridgeTransfer[];
 }
 
 export interface BridgeOperations {
-  transferOperations: TransferOperation[];
+  transferBatches: TransferBatch[];
   connectorCalls: ConnectorCalls[];
   tokens: TokenData[];
 }
@@ -200,7 +200,7 @@ export class Bridge {
       }
     }
 
-    const tx = await this.contract.batchDeposit(this.relayer, deposits, {
+    const tx = await this.contract.batchDeposit(deposits, {
       from: this.relayer,
       value: ethValue
     });
@@ -253,7 +253,7 @@ export class Bridge {
     }
 
     const bridgeOperations: BridgeOperations = {
-      transferOperations: [{ batchID: event.batchID.toNumber(), transfers }],
+      transferBatches: [{ batchID: event.batchID.toNumber(), transfers }],
       connectorCalls: [],
       tokens: []
     };
@@ -292,7 +292,7 @@ export class Bridge {
     }
 
     const bridgeOperations: BridgeOperations = {
-      transferOperations: [],
+      transferBatches: [],
       connectorCalls: [],
       tokens: []
     };

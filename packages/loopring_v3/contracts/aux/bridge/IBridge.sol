@@ -8,10 +8,7 @@ import "./BridgeData.sol";
 
 interface IBridge
 {
-     function batchDeposit(
-        address                   from,
-        BridgeTransfer[] calldata deposits
-    )
-    external
-    payable;
+    function batchDeposit(BridgeTransfer[] calldata deposits)
+        external
+        payable;
 }

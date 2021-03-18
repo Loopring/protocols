@@ -50,7 +50,7 @@ struct ConnectorCalls
     TokenData[]         tokens;
 }
 
-struct TransferOperation
+struct TransferBatch
 {
     uint                     batchID;
     InternalBridgeTransfer[] transfers;
@@ -58,7 +58,7 @@ struct TransferOperation
 
 struct BridgeOperations
 {
-    TransferOperation[] transferOperations;
-    ConnectorCalls[]    connectorCalls;
-    TokenData[]         tokens;
+    TransferBatch[]  transferBatches;
+    ConnectorCalls[] connectorCalls;
+    TokenData[]      tokens;
 }
