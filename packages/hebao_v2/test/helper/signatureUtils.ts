@@ -1,4 +1,5 @@
 import ethUtil = require("ethereumjs-util");
+import ethAbi = require("web3-eth-abi");
 import { sign, SignatureType } from "./Signature";
 import { Constants } from "./Constants";
 import * as eip712 from "./eip712";
@@ -33,7 +34,7 @@ export function signCreateWallet(
   );
   const guardiansHash = ethUtil.keccak(guardiansBuffer);
 
-  const encodedRequest = web3.eth.abi.encodeParameters(
+  const encodedRequest = ethAbi.encodeParameters(
     [
       "bytes32",
       "address",
@@ -76,7 +77,7 @@ export function signAddToWhitelistWA(
       "addToWhitelist(address wallet,uint256 validUntil,address addr)"
     )
   );
-  const encodedRequest = web3.eth.abi.encodeParameters(
+  const encodedRequest = ethAbi.encodeParameters(
     ["bytes32", "address", "uint256", "address"],
     [ADD_TO_WHITELIST_TYPEHASH, request.wallet, request.validUntil, addr]
   );
@@ -97,7 +98,7 @@ export function signUnlock(request: SignedRequest, moduleAddr: string) {
   const UNLOCK_TYPEHASH = ethUtil.keccak(
     Buffer.from("unlock(address wallet,uint256 validUntil)")
   );
-  const encodedRequest = web3.eth.abi.encodeParameters(
+  const encodedRequest = ethAbi.encodeParameters(
     ["bytes32", "address", "uint256"],
     [UNLOCK_TYPEHASH, request.wallet, request.validUntil]
   );
@@ -122,7 +123,7 @@ export function signRecover(
   const RECOVER_TYPEHASH = ethUtil.keccak(
     Buffer.from("recover(address wallet,uint256 validUntil,address newOwner)")
   );
-  const encodedRequest = web3.eth.abi.encodeParameters(
+  const encodedRequest = ethAbi.encodeParameters(
     ["bytes32", "address", "uint256", "address"],
     [RECOVER_TYPEHASH, request.wallet, request.validUntil, newOwner]
   );
@@ -145,7 +146,7 @@ export function signChangeDailyQuotaWA(
       "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
     )
   );
-  const encodedRequest = web3.eth.abi.encodeParameters(
+  const encodedRequest = ethAbi.encodeParameters(
     ["bytes32", "address", "uint256", "uint256"],
     [
       CHANGE_DAILY_QUOTE_TYPEHASH,
@@ -175,7 +176,7 @@ export function signTransferTokenApproved(
       "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     )
   );
-  const encodedRequest = web3.eth.abi.encodeParameters(
+  const encodedRequest = ethAbi.encodeParameters(
     [
       "bytes32",
       "address",
@@ -215,7 +216,7 @@ export function signApproveTokenApproved(
       "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     )
   );
-  const encodedRequest = web3.eth.abi.encodeParameters(
+  const encodedRequest = ethAbi.encodeParameters(
     ["bytes32", "address", "uint256", "address", "address", "uint256"],
     [
       APPROVE_TOKEN_TYPEHASH,
@@ -246,7 +247,7 @@ export function signCallContractApproved(
       "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     )
   );
-  const encodedRequest = web3.eth.abi.encodeParameters(
+  const encodedRequest = ethAbi.encodeParameters(
     ["bytes32", "address", "uint256", "address", "uint256", "bytes32"],
     [
       CALL_CONTRACT_TYPEHASH,
@@ -279,7 +280,7 @@ export function signApproveThenCallContractApproved(
       "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     )
   );
-  const encodedRequest = web3.eth.abi.encodeParameters(
+  const encodedRequest = ethAbi.encodeParameters(
     [
       "bytes32",
       "address",
@@ -322,7 +323,7 @@ export function getMetaTxHash(metaTx: MetaTx, moduleAddr: string) {
       ? metaTx.data
       : metaTx.data.slice(0, 10);
 
-  const encodedRequest = web3.eth.abi.encodeParameters(
+  const encodedRequest = ethAbi.encodeParameters(
     [
       "bytes32",
       "address",

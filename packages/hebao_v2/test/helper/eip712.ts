@@ -1,4 +1,5 @@
 import ethUtil = require("ethereumjs-util");
+import ethAbi = require("web3-eth-abi");
 import { Constants } from "./Constants";
 
 const EIP191_HEADER = "\x19\x01";
@@ -7,7 +8,7 @@ const EIP712_DOMAIN_TYPEHASH = ethUtil.keccak(
 );
 
 export function hash(name: string, version: string, moduleAddress: string) {
-  const encoded = web3.eth.abi.encodeParameters(
+  const encoded = ethAbi.encodeParameters(
     ["bytes32", "bytes32", "bytes32", "uint256", "address"],
     [
       EIP712_DOMAIN_TYPEHASH,
