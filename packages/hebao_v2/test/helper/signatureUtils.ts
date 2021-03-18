@@ -1,5 +1,5 @@
 import ethUtil = require("ethereumjs-util");
-import ethAbi = require("web3-eth-abi");
+const ethAbi = require("ethereumjs-abi");
 import { sign, SignatureType } from "./Signature";
 import { Constants } from "./Constants";
 import * as eip712 from "./eip712";
@@ -309,44 +309,44 @@ export function signApproveThenCallContractApproved(
   }
 }
 
-export function getMetaTxHash(metaTx: MetaTx, moduleAddr: string) {
-  const domainSeprator = eip712.hash("ForwarderModule", "1.2.0", moduleAddr);
+// export function getMetaTxHash(metaTx: MetaTx, moduleAddr: string) {
+//   const domainSeprator = eip712.hash("ForwarderModule", "1.2.0", moduleAddr);
 
-  const META_TX_TYPEHASH = ethUtil.keccak(
-    Buffer.from(
-      "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
-    )
-  );
+//   const META_TX_TYPEHASH = ethUtil.keccak(
+//     Buffer.from(
+//       "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
+//     )
+//   );
 
-  const data =
-    metaTx.txAwareHash === Constants.emptyBytes32
-      ? metaTx.data
-      : metaTx.data.slice(0, 10);
+//   const data =
+//     metaTx.txAwareHash === Constants.emptyBytes32
+//       ? metaTx.data
+//       : metaTx.data.slice(0, 10);
 
-  const encodedRequest = ethAbi.encodeParameters(
-    [
-      "bytes32",
-      "address",
-      "address",
-      "uint256",
-      "bytes32",
-      "address",
-      "uint256",
-      "uint256",
-      "bytes32"
-    ],
-    [
-      META_TX_TYPEHASH,
-      metaTx.from,
-      metaTx.to,
-      new BN(metaTx.nonce).toString(10),
-      metaTx.txAwareHash,
-      metaTx.gasToken,
-      new BN(metaTx.gasPrice).toString(10),
-      new BN(metaTx.gasLimit).toString(10),
-      ethUtil.keccak(data)
-    ]
-  );
-  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-  return hash;
-}
+//   const encodedRequest = ethAbi.encodeParameters(
+//     [
+//       "bytes32",
+//       "address",
+//       "address",
+//       "uint256",
+//       "bytes32",
+//       "address",
+//       "uint256",
+//       "uint256",
+//       "bytes32"
+//     ],
+//     [
+//       META_TX_TYPEHASH,
+//       metaTx.from,
+//       metaTx.to,
+//       new BN(metaTx.nonce).toString(10),
+//       metaTx.txAwareHash,
+//       metaTx.gasToken,
+//       new BN(metaTx.gasPrice).toString(10),
+//       new BN(metaTx.gasLimit).toString(10),
+//       ethUtil.keccak(data)
+//     ]
+//   );
+//   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+//   return hash;
+// }

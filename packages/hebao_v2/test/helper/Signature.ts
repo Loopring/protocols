@@ -1,7 +1,7 @@
-import { Bitstream } from "../../util/Bitstream";
-import { Context } from "./TestUtils";
+import { Bitstream } from "./Bitstream";
 import ethUtil = require("ethereumjs-util");
 import fs = require("fs");
+const assert = require("assert");
 
 export enum SignatureType {
   ILLEGAL,

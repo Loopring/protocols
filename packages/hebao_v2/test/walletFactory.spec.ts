@@ -1,7 +1,8 @@
 import { expect } from "./setup";
-
+import { signCreateWallet } from "./helper/signatureUtils";
 import { l2ethers as ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
+import BN = require("bn.js");
 
 describe("wallet lock", () => {
   let account1: Signer;
@@ -35,20 +36,30 @@ describe("wallet lock", () => {
 
   describe("create wallet", () => {
     it("should be able to create new wallet", async () => {
-      // const signature =
+      const signature = signCreateWallet(
+        WalletFactory.address,
+        await account1.getAddress(),
+        [],
+        new BN(0),
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+        new BN(0),
+        1
+      );
 
       const walletConfig: any = {
-        owner: account2,
+        owner: await account2.getAddress(),
         guardians: [],
         quota: 0,
         inheritor: ethers.constants.AddressZero,
-        feeRecipient: account3,
+        feeRecipient: await account3.getAddress(),
         feeToken: ethers.constants.AddressZero,
         feeAmount: 0,
         signature
       };
 
-      expect(await ERC20.name()).to.equal(name);
+      // expect(await ERC20.name()).to.equal(name);
     });
   });
 });
