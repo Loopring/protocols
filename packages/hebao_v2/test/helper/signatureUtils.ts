@@ -1,5 +1,5 @@
 import ethUtil = require("ethereumjs-util");
-const ethAbi = require("ethereumjs-abi");
+const ethAbi = require("web3-eth-abi");
 import { sign, SignatureType } from "./Signature";
 import { Constants } from "./Constants";
 import * as eip712 from "./eip712";

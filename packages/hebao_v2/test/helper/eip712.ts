@@ -1,5 +1,5 @@
 import ethUtil = require("ethereumjs-util");
-const ethAbi = require("ethereumjs-abi");
+const ethAbi = require("web3-eth-abi");
 import { Constants } from "./Constants";
 
 const EIP191_HEADER = "\x19\x01";

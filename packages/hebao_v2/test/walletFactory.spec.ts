@@ -99,28 +99,28 @@ describe("wallet lock", () => {
 
   describe("create wallet", () => {
     it.only("should be able to create new wallet", async () => {
-      const signature = signCreateWallet(
-        WalletFactory.address,
-        await account1.getAddress(),
-        [],
-        new BN(0),
-        ethers.constants.AddressZero,
-        ethers.constants.AddressZero,
-        ethers.constants.AddressZero,
-        new BN(0),
-        1
-      );
+      // const signature = signCreateWallet(
+      //   WalletFactory.address,
+      //   await account1.getAddress(),
+      //   [],
+      //   new BN(0),
+      //   ethers.constants.AddressZero,
+      //   ethers.constants.AddressZero,
+      //   ethers.constants.AddressZero,
+      //   new BN(0),
+      //   1
+      // );
 
-      const walletConfig: any = {
-        owner: await account2.getAddress(),
-        guardians: [],
-        quota: 0,
-        inheritor: ethers.constants.AddressZero,
-        feeRecipient: await account3.getAddress(),
-        feeToken: ethers.constants.AddressZero,
-        feeAmount: 0,
-        signature
-      };
+      // const walletConfig: any = {
+      //   owner: await account2.getAddress(),
+      //   guardians: [],
+      //   quota: 0,
+      //   inheritor: ethers.constants.AddressZero,
+      //   feeRecipient: await account3.getAddress(),
+      //   feeToken: ethers.constants.AddressZero,
+      //   feeAmount: 0,
+      //   signature
+      // };
 
       // expect(await ERC20.name()).to.equal(name);
     });
