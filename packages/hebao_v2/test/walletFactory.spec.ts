@@ -1,6 +1,8 @@
 import { expect } from "./setup";
 import { signCreateWallet } from "./helper/signatureUtils";
-import { l2ethers as ethers } from "hardhat";
+// import { /*l2ethers as*/ ethers } from "hardhat";
+const { ethers } = require("hardhat");
+
 import { Contract, Signer } from "ethers";
 import BN = require("bn.js");
 
@@ -8,34 +10,36 @@ describe("wallet lock", () => {
   let account1: Signer;
   let account2: Signer;
   let account3: Signer;
-  before(async () => {
-    [account1, account2, account3] = await ethers.getSigners();
-
-    console.log("account1:", account1);
-  });
-
-  const name = "Some Really Cool Token Name";
-  const initialSupply = 10000000;
 
   let TestPriceOracle: Contract;
   let SmartWallet: Contract;
   let WalletFactory: Contract;
-  beforeEach(async () => {
-    TestPriceOracle = await (await ethers.getContractFactory("TestPriceOracle"))
-      .connect(account1)
-      .deploy();
 
-    SmartWallet = await (await ethers.getContractFactory("SmartWallet"))
-      .connect(account1)
-      .deploy(TestPriceOracle.address);
+  before(async () => {
+    [account1, account2, account3] = await ethers.getSigners();
 
-    WalletFactory = await (await ethers.getContractFactory("WalletFactory"))
-      .connect(account1)
-      .deploy(SmartWallet.address);
+    const Token = await ethers.getContractFactory("GTO");
+
+    const hardhatToken = await Token.deploy();
+
+    // console.log("account1:", account1);
+
+    // const factory = await ethers.getContractFactory("TestPriceOracle");
+    // console.log("factory:", factory);
+    // TestPriceOracle = await factory.deploy();
+    // console.log("TestPriceOracle:", TestPriceOracle);
+
+    // SmartWallet = await (await ethers.getContractFactory("SmartWallet"))
+    //   .connect(account1)
+    //   .deploy(TestPriceOracle.address);
+
+    // WalletFactory = await (await ethers.getContractFactory("WalletFactory"))
+    //   .connect(account1)
+    //   .deploy(SmartWallet.address);
   });
 
   describe("create wallet", () => {
-    it("should be able to create new wallet", async () => {
+    it.only("should be able to create new wallet", async () => {
       const signature = signCreateWallet(
         WalletFactory.address,
         await account1.getAddress(),
