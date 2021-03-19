@@ -18,24 +18,83 @@ describe("wallet lock", () => {
   before(async () => {
     [account1, account2, account3] = await ethers.getSigners();
 
-    const Token = await ethers.getContractFactory("GTO");
+    TestPriceOracle = await (await ethers.getContractFactory("TestPriceOracle"))
+      .connect(account1)
+      .deploy();
 
-    const hardhatToken = await Token.deploy();
+    // * contracts/base/libwallet/ERC1271Lib.sol:ERC1271Lib
+    // * contracts/base/libwallet/ERC20Lib.sol:ERC20Lib
+    // * contracts/base/libwallet/GuardianLib.sol:GuardianLib
+    // * contracts/base/libwallet/InheritanceLib.sol:InheritanceLib
+    // * contracts/base/libwallet/LockLib.sol:LockLib
+    // * contracts/base/libwallet/MetaTxLib.sol:MetaTxLib
+    // * contracts/base/libwallet/QuotaLib.sol:QuotaLib
+    // * contracts/base/libwallet/RecoverLib.sol:RecoverLib
+    // * contracts/base/libwallet/UpgradeLib.sol:UpgradeLib
+    // * contracts/base/libwallet/WhitelistLib.sol:WhitelistLib
+    const ERC1271Lib = await (await ethers.getContractFactory("ERC1271Lib"))
+      .connect(account1)
+      .deploy();
+    const ERC20Lib = await (await ethers.getContractFactory("ERC20Lib"))
+      .connect(account1)
+      .deploy();
+    const GuardianLib = await (await ethers.getContractFactory("GuardianLib"))
+      .connect(account1)
+      .deploy();
+    const InheritanceLib = await (await ethers.getContractFactory("InheritanceLib"))
+      .connect(account1)
+      .deploy();
+    const LockLib = await (await ethers.getContractFactory("LockLib", {
+      libraries: {
+        GuardianLib: GuardianLib.address
+      }
+    }))
+      .connect(account1)
+      .deploy();
+    const MetaTxLib = await (await ethers.getContractFactory("MetaTxLib", {
+      libraries: {
+        ERC20Lib: ERC20Lib.address
+      }
+    }))
+      .connect(account1)
+      .deploy();
+    const QuotaLib = await (await ethers.getContractFactory("QuotaLib"))
+      .connect(account1)
+      .deploy();
+    const RecoverLib = await (await ethers.getContractFactory("RecoverLib", {
+      libraries: {
+        GuardianLib: GuardianLib.address
+      }
+    }))
+      .connect(account1)
+      .deploy();
+    const UpgradeLib = await (await ethers.getContractFactory("UpgradeLib"))
+      .connect(account1)
+      .deploy();
+    const WhitelistLib = await (await ethers.getContractFactory("WhitelistLib"))
+      .connect(account1)
+      .deploy();
 
-    // console.log("account1:", account1);
+    SmartWallet = await (await ethers.getContractFactory("SmartWallet", {
+      libraries: {
+        ERC1271Lib: ERC1271Lib.address,
+        ERC20Lib: ERC20Lib.address,
+        GuardianLib: GuardianLib.address,
+        InheritanceLib: InheritanceLib.address,
+        LockLib: LockLib.address,
+        MetaTxLib: MetaTxLib.address,
+        QuotaLib: QuotaLib.address,
+        RecoverLib: RecoverLib.address,
+        UpgradeLib: UpgradeLib.address,
+        WhitelistLib: WhitelistLib.address
+      }
+    }))
+      .connect(account1)
+      .deploy(TestPriceOracle.address);
 
-    // const factory = await ethers.getContractFactory("TestPriceOracle");
-    // console.log("factory:", factory);
-    // TestPriceOracle = await factory.deploy();
-    // console.log("TestPriceOracle:", TestPriceOracle);
-
-    // SmartWallet = await (await ethers.getContractFactory("SmartWallet"))
-    //   .connect(account1)
-    //   .deploy(TestPriceOracle.address);
-
-    // WalletFactory = await (await ethers.getContractFactory("WalletFactory"))
-    //   .connect(account1)
-    //   .deploy(SmartWallet.address);
+    WalletFactory = await (await ethers.getContractFactory("WalletFactory"))
+      .connect(account1)
+      .deploy(SmartWallet.address);
   });
 
   describe("create wallet", () => {
