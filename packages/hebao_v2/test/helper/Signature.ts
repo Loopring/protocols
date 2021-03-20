@@ -122,7 +122,7 @@ function verifyECDSA(message: Buffer, data: Bitstream, signer: string) {
 }
 
 function getPrivateKey(address: string) {
-  const textData = fs.readFileSync("./ganache_account_keys.txt", "ascii");
+  const textData = fs.readFileSync("./test_account_keys.json", "ascii");
   const data = JSON.parse(textData);
   return data.private_keys[String(address).toLowerCase()];
 }

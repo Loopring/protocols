@@ -79,7 +79,7 @@ contract SmartWallet is ERC1271
         isImplementationContract = true;
 
         DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("LoopringWallet", "0.2.0", address(this))
+            EIP712.Domain("LoopringWallet", "2.0.0", address(this))
         );
 
         priceOracle = _priceOracle;
