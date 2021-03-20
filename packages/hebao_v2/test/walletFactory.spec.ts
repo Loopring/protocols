@@ -1,5 +1,6 @@
 import { expect } from "./setup";
 import { signCreateWallet } from "./helper/signatureUtils";
+import { newWalletFactoryContract } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
@@ -11,75 +12,75 @@ describe("wallet lock", () => {
   let account2: Signer;
   let account3: Signer;
 
-  let TestPriceOracle: Contract;
-  let SmartWallet: Contract;
-  let WalletFactory: Contract;
+  // let TestPriceOracle: Contract;
+  // let SmartWallet: Contract;
+  // let WalletFactory: Contract;
 
-  before(async () => {
-    [account1, account2, account3] = await ethers.getSigners();
-    // console.log("account1:", account1);
+  // before(async () => {
+  //   [account1, account2, account3] = await ethers.getSigners();
+  //   // console.log("account1:", account1);
 
-    TestPriceOracle = await (await ethers.getContractFactory("TestPriceOracle"))
-      .deploy();
+  //   TestPriceOracle = await (await ethers.getContractFactory("TestPriceOracle"))
+  //     .deploy();
 
-    const ERC1271Lib = await (await ethers.getContractFactory("ERC1271Lib"))
-      .deploy();
-    const ERC20Lib = await (await ethers.getContractFactory("ERC20Lib"))
-      .deploy();
-    const GuardianLib = await (await ethers.getContractFactory("GuardianLib"))
-      .deploy();
-    const InheritanceLib = await (await ethers.getContractFactory("InheritanceLib"))
-      .deploy();
-    const LockLib = await (await ethers.getContractFactory("LockLib", {
-      libraries: {
-        GuardianLib: GuardianLib.address
-      }
-    }))
-      .deploy();
-    const MetaTxLib = await (await ethers.getContractFactory("MetaTxLib", {
-      libraries: {
-        ERC20Lib: ERC20Lib.address
-      }
-    }))
-      .deploy();
-    const QuotaLib = await (await ethers.getContractFactory("QuotaLib"))
-      .deploy();
-    const RecoverLib = await (await ethers.getContractFactory("RecoverLib", {
-      libraries: {
-        GuardianLib: GuardianLib.address
-      }
-    }))
-      .deploy();
-    const UpgradeLib = await (await ethers.getContractFactory("UpgradeLib"))
-      .deploy();
-    const WhitelistLib = await (await ethers.getContractFactory("WhitelistLib"))
-      .deploy();
+  //   const ERC1271Lib = await (await ethers.getContractFactory("ERC1271Lib"))
+  //     .deploy();
+  //   const ERC20Lib = await (await ethers.getContractFactory("ERC20Lib"))
+  //     .deploy();
+  //   const GuardianLib = await (await ethers.getContractFactory("GuardianLib"))
+  //     .deploy();
+  //   const InheritanceLib = await (await ethers.getContractFactory("InheritanceLib"))
+  //     .deploy();
+  //   const LockLib = await (await ethers.getContractFactory("LockLib", {
+  //     libraries: {
+  //       GuardianLib: GuardianLib.address
+  //     }
+  //   }))
+  //     .deploy();
+  //   const MetaTxLib = await (await ethers.getContractFactory("MetaTxLib", {
+  //     libraries: {
+  //       ERC20Lib: ERC20Lib.address
+  //     }
+  //   }))
+  //     .deploy();
+  //   const QuotaLib = await (await ethers.getContractFactory("QuotaLib"))
+  //     .deploy();
+  //   const RecoverLib = await (await ethers.getContractFactory("RecoverLib", {
+  //     libraries: {
+  //       GuardianLib: GuardianLib.address
+  //     }
+  //   }))
+  //     .deploy();
+  //   const UpgradeLib = await (await ethers.getContractFactory("UpgradeLib"))
+  //     .deploy();
+  //   const WhitelistLib = await (await ethers.getContractFactory("WhitelistLib"))
+  //     .deploy();
 
-    SmartWallet = await (await ethers.getContractFactory("SmartWallet", {
-      libraries: {
-        ERC1271Lib: ERC1271Lib.address,
-        ERC20Lib: ERC20Lib.address,
-        GuardianLib: GuardianLib.address,
-        InheritanceLib: InheritanceLib.address,
-        LockLib: LockLib.address,
-        MetaTxLib: MetaTxLib.address,
-        QuotaLib: QuotaLib.address,
-        RecoverLib: RecoverLib.address,
-        UpgradeLib: UpgradeLib.address,
-        WhitelistLib: WhitelistLib.address
-      }
-    }))
-      .deploy(TestPriceOracle.address);
+  //   SmartWallet = await (await ethers.getContractFactory("SmartWallet", {
+  //     libraries: {
+  //       ERC1271Lib: ERC1271Lib.address,
+  //       ERC20Lib: ERC20Lib.address,
+  //       GuardianLib: GuardianLib.address,
+  //       InheritanceLib: InheritanceLib.address,
+  //       LockLib: LockLib.address,
+  //       MetaTxLib: MetaTxLib.address,
+  //       QuotaLib: QuotaLib.address,
+  //       RecoverLib: RecoverLib.address,
+  //       UpgradeLib: UpgradeLib.address,
+  //       WhitelistLib: WhitelistLib.address
+  //     }
+  //   }))
+  //     .deploy(TestPriceOracle.address);
 
-    WalletFactory = await (await ethers.getContractFactory("WalletFactory"))
-      .deploy(SmartWallet.address);
+  //   WalletFactory = await (await ethers.getContractFactory("WalletFactory"))
+  //     .deploy(SmartWallet.address);
 
-    await WalletFactory.deployed();
-  });
+  //   await WalletFactory.deployed();
+  // });
 
   describe("create wallet", () => {
     it("should be able to create new wallet", async () => {
-
+      [account1, account2, account3] = await ethers.getSigners();
       // const signature = signCreateWallet(
       //   WalletFactory.address,
       //   await account1.getAddress(),
@@ -93,6 +94,7 @@ describe("wallet lock", () => {
       // );
 
       // console.log("signature:", signature);
+      const walletFactory = await newWalletFactoryContract();
 
       const owner = await account2.getAddress();
       const walletConfig: any = {
@@ -107,14 +109,14 @@ describe("wallet lock", () => {
       };
 
       const salt = 0;
-      const walletAddrComputed = await WalletFactory.computeWalletAddress(owner, salt);
+      const walletAddrComputed = await walletFactory.computeWalletAddress(owner, salt);
 
-      const tx = await WalletFactory.createWallet(walletConfig, salt);
+      const tx = await walletFactory.createWallet(walletConfig, salt);
       // console.log("tx:", tx);
 
       // get WalletCreated event:
       const fromBlock = tx.blockNumber;
-      const walletCreatedEvent = (await WalletFactory.queryFilter({address: WalletFactory.address}, fromBlock))[0];
+      const walletCreatedEvent = (await walletFactory.queryFilter({address: walletFactory.address}, fromBlock))[0];
       const walletAddress = walletCreatedEvent.args.wallet;
       // console.log("walletAddress:", walletAddress);
 
