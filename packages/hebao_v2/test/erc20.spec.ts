@@ -39,7 +39,7 @@ describe("Optimistic ERC20", () => {
   });
 
   describe("transfer", () => {
-    it("should revert when the sender does not have enough balance", async () => {
+    it.only("should revert when the sender does not have enough balance", async () => {
       const sender = account1;
       const recipient = account2;
       const amount = initialSupply + 2500000;
