@@ -65,7 +65,7 @@ contract WalletFactory
         payable
         returns (address wallet)
     {
-        _validateRequest(config, salt);
+        // _validateRequest(config, salt);  // TODO: disable signature check temporarily.
         wallet = _deploy(config.owner, salt);
         _initializeWallet(wallet, config);
     }
