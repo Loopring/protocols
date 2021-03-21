@@ -154,3 +154,14 @@ export async function advanceTime(time: number) {
   const res = await jsonRpcProvider.send("evm_increaseTime", time);
   return res;
 }
+
+export async function getBlockTimestamp(blockNumber: number) {
+  const block = await ethers.providers
+    .getDefaultProvider()
+    .getBlock(blockNumber);
+  return block.timestamp;
+}
+
+export function timeAlmostEqual(t1: number, t2: number, deviation: number) {
+  return t1 >= t2 - deviation && t1 <= t2 + deviation;
+}

@@ -380,6 +380,15 @@ contract SmartWallet is ERC1271
         wallet.removeFromWhitelist(addr);
     }
 
+    function getWhitelistEffectiveTime(
+        address addr
+        )
+        external
+        view
+        returns (uint) {
+        return wallet.whitelisted[addr];
+    }
+
     //
     // ERC20
     //
@@ -539,4 +548,5 @@ contract SmartWallet is ERC1271
             data
         );
     }
+
 }

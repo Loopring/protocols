@@ -7,12 +7,12 @@ const { ethers } = require("hardhat");
 import { Contract, Signer } from "ethers";
 import BN = require("bn.js");
 
-describe("wallet lock", () => {
+describe("walletFactory", () => {
   let account1: Signer;
   let account2: Signer;
   let account3: Signer;
 
-  describe("create wallet", () => {
+  describe("any EOA", () => {
     it("should be able to create new wallet", async () => {
       const walletFactory = await newWalletFactoryContract();
       [account1, account2, account3] = await ethers.getSigners();

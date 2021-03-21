@@ -8,14 +8,14 @@ const { ethers } = require("hardhat");
 import { Contract, Signer } from "ethers";
 import BN = require("bn.js");
 
-describe("wallet lock", () => {
+describe("wallet", () => {
   let account1: Signer;
   let account2: Signer;
   let account3: Signer;
 
   async function getBlockTime() {}
 
-  describe("wallet", () => {
+  describe("guardian", () => {
     it("owner should be able to add a guardian", async () => {
       [account1, account2, account3] = await ethers.getSigners();
 
@@ -38,7 +38,7 @@ describe("wallet lock", () => {
       expect(addEvent.args.guardian).to.equal(guardian);
     });
 
-    it.only("owner should be able to remove a guardian", async () => {
+    it("owner should be able to remove a guardian", async () => {
       [account1, account2, account3] = await ethers.getSigners();
 
       const owner = await account1.getAddress();
