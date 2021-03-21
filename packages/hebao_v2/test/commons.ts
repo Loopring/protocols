@@ -140,10 +140,17 @@ export async function getFirstEvent(
     { address: contract.address },
     fromBlock
   );
+  // console.log("events:", events);
 
   for (const e of events) {
     if (e.event === eventName) return e;
   }
 
   return undefined;
+}
+
+export async function advanceTime(time: number) {
+  const jsonRpcProvider = new ethers.providers.JsonRpcProvider();
+  const res = await jsonRpcProvider.send("evm_increaseTime", time);
+  return res;
 }

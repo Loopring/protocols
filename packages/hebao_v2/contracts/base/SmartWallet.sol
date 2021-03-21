@@ -52,6 +52,11 @@ contract SmartWallet is ERC1271
     Wallet public wallet;
     //  ----- DATA LAYOUT ENDS -----
 
+    // ---- Events definitions ----
+    event GuardianAdded   (address guardian, uint effectiveTime);
+    event GuardianRemoved (address guardian, uint effectiveTime);
+    // ---- Events definitions end ----
+
     /// @dev We need to make sure the implemenation contract cannot be initialized
     ///      and used to do delegate calls to arbitrary contracts.
     modifier disableInImplementationContract

@@ -12,7 +12,7 @@ describe("wallet lock", () => {
   let account1: Signer;
 
   describe("wallet", () => {
-    it.only("should be able to verify erc1271 signature", async () => {
+    it("should be able to verify erc1271 signature", async () => {
       [account1] = await ethers.getSigners();
 
       const owner = await account1.getAddress();
