@@ -27,8 +27,7 @@ contract WalletFactory
     string  public constant WALLET_CREATION = "WALLET_CREATION";
 
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)"
-    );
+        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)");
 
     struct WalletConfig
     {
@@ -65,7 +64,7 @@ contract WalletFactory
         payable
         returns (address wallet)
     {
-        // _validateRequest(config, salt);  // TODO: disable signature check temporarily.
+        _validateRequest(config, salt);
         wallet = _deploy(config.owner, salt);
         _initializeWallet(wallet, config);
     }
