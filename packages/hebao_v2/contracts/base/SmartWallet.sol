@@ -206,6 +206,14 @@ contract SmartWallet is ERC1271
         wallet.removeGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
     }
 
+     function isGuardian(address addr, bool includePendingAddition)
+         external
+         view
+         returns (bool)
+     {
+         return wallet.isGuardian(addr, includePendingAddition);
+     }
+
     //
     // Inheritance
     //

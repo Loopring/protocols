@@ -1,6 +1,6 @@
 import { expect } from "./setup";
 import { signCreateWallet } from "./helper/signatureUtils";
-import { newWalletFactoryContract } from "./commons";
+import { newWalletFactoryContract, getFirstEvent } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
@@ -52,17 +52,13 @@ describe("wallet lock", () => {
 
       // get WalletCreated event:
       const fromBlock = tx.blockNumber;
-      // const events = await walletFactory.queryFilter({address: walletFactory.address}, fromBlock);
-      // console.log(events);
-      const walletCreatedEvent = (await walletFactory.queryFilter(
-        { address: walletFactory.address },
-        fromBlock
-      ))[0];
-      const walletAddress = walletCreatedEvent.args.wallet;
-      // console.log("walletAddress:", walletAddress);
-
+      const walletCreatedEvent = await getFirstEvent(
+        walletFactory,
+        fromBlock,
+        "WalletCreated"
+      );
       expect(owner).to.equal(walletCreatedEvent.args.owner);
-      expect(walletAddrComputed).to.equal(walletAddress);
+      expect(walletAddrComputed).to.equal(walletCreatedEvent.args.wallet);
     });
   });
 });

@@ -1,7 +1,8 @@
 const { ethers } = require("hardhat");
 import { Contract } from "ethers";
+import BN = require("bn.js");
 
-export async function getSmartContractInstance() {}
+import { signCreateWallet } from "./helper/signatureUtils";
 
 export async function newWalletFactoryContract(deployer?: string) {
   let testPriceOracle: Contract;
@@ -73,22 +74,25 @@ export async function newWalletFactoryContract(deployer?: string) {
   }
 }
 
-export async function newWallet(owner: string, feeRecipient: string) {
-  // const signature = signCreateWallet(
-  //   WalletFactory.address,
-  //   await account1.getAddress(),
-  //   [],
-  //   new BN(0),
-  //   ethers.constants.AddressZero,
-  //   ethers.constants.AddressZero,
-  //   ethers.constants.AddressZero,
-  //   new BN(0),
-  //   1
-
-  // );
-
-  // console.log("signature:", signature);
+export async function newWallet(
+  owner: string,
+  feeRecipient: string,
+  salt: number
+) {
   const walletFactory = await newWalletFactoryContract();
+
+  const signature = signCreateWallet(
+    walletFactory.address,
+    owner,
+    [],
+    new BN(0),
+    ethers.constants.AddressZero,
+    feeRecipient,
+    ethers.constants.AddressZero,
+    new BN(0),
+    salt
+  );
+  // console.log("signature:", signature);
 
   const walletConfig: any = {
     owner,
@@ -98,10 +102,9 @@ export async function newWallet(owner: string, feeRecipient: string) {
     feeRecipient,
     feeToken: ethers.constants.AddressZero,
     feeAmount: 0,
-    signature: []
+    signature: Buffer.from(signature.txSignature.slice(2), "hex")
   };
 
-  const salt = 0;
   const walletAddrComputed = await walletFactory.computeWalletAddress(
     owner,
     salt
@@ -126,4 +129,21 @@ export async function newWallet(owner: string, feeRecipient: string) {
 
   // console.log("SmartWallet:", smartWallet);
   return smartWallet;
+}
+
+export async function getFirstEvent(
+  contract: any,
+  fromBlock: number,
+  eventName: string
+) {
+  const events = await contract.queryFilter(
+    { address: contract.address },
+    fromBlock
+  );
+
+  for (const e of events) {
+    if (e.event === eventName) return e;
+  }
+
+  return undefined;
 }

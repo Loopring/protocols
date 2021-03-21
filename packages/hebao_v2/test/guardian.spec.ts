@@ -18,7 +18,15 @@ describe("wallet lock", () => {
       [account1, account2, account3] = await ethers.getSigners();
 
       const owner = await account1.getAddress();
-      const wallet = await newWallet(owner, ethers.constants.AddressZero);
+      const wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
+      const guardian = "0x" + "12".repeat(20);
+      const tx = await wallet.addGuardian(guardian);
+
+      // check isGuardian:
+      const isGuardian = await wallet.isGuardian(guardian, false);
+      console.log("isGuardian:", isGuardian);
+
+      // get guardianAdded event:
     });
   });
 });

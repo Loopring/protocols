@@ -12,11 +12,11 @@ describe("wallet lock", () => {
   let account1: Signer;
 
   describe("wallet", () => {
-    it("should be able to verify erc1271 signature", async () => {
+    it.only("should be able to verify erc1271 signature", async () => {
       [account1] = await ethers.getSigners();
 
       const owner = await account1.getAddress();
-      const wallet = await newWallet(owner, ethers.constants.AddressZero);
+      const wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
       // console.log("wallet:", wallet);
 
       const hash = "12".repeat(32);
