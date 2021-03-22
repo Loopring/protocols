@@ -18,7 +18,6 @@ describe("wallet", () => {
   let account1: Signer;
   let wallet: Contract;
 
-  const whiteListedAddr = "0x" + "11".repeat(20);
   before(async () => {
     [account1] = await ethers.getSigners();
 
@@ -26,26 +25,9 @@ describe("wallet", () => {
     wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
   });
 
-  describe("whitelist", () => {
-    it("owner should be able to add address to its whitelist", async () => {
+  describe("transfer token", () => {
+    it("owner should be able to do transfer eth of wallet", async () => {
       const tx = await wallet.addToWhitelist(whiteListedAddr);
-
-      const effectiveTime = await wallet.getWhitelistEffectiveTime(
-        whiteListedAddr
-      );
-      const now = Math.floor(new Date().getTime() / 1000);
-
-      expect(
-        timeAlmostEqual(now + 3600 * 24, effectiveTime.toNumber(), 60 * 10)
-      ).to.be.true;
-    });
-
-    it("owner should be able to remove its whitelisted address", async () => {
-      await wallet.removeFromWhitelist(whiteListedAddr);
-      const effectiveTime = await wallet.getWhitelistEffectiveTime(
-        whiteListedAddr
-      );
-      expect(effectiveTime).to.equal(0);
     });
   });
 });
