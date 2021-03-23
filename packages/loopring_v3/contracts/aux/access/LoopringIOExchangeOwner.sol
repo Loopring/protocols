@@ -227,7 +227,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     }
 
     function _processTxCallbacks(
-        ExchangeData.Block memory _block,
+        ExchangeData.Block memory   _block,
         TxCallback[]       calldata txCallbacks,
         address[]          calldata receivers,
         bool[]             memory   preApprovedTxs
