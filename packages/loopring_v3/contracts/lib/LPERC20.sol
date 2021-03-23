@@ -13,11 +13,10 @@ contract LPERC20 is ERC20
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    bytes32                                      public           DOMAIN_SEPARATOR;
-
-    string                                       public           name;
-    string                                       public           symbol;
-    uint8                                        public           decimals;
+    bytes32 public DOMAIN_SEPARATOR;
+    string  public name;
+    string  public symbol;
+    uint8   public decimals;
 
     uint                                         public override totalSupply;
     mapping(address => uint)                     public override balanceOf;
@@ -36,7 +35,11 @@ contract LPERC20 is ERC20
         )
         internal
     {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("LPERC20", "1.0", address(this)));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain(
+            "LPERC20",
+            "1.0",
+            address(this)
+        ));
 
         name = _name;
         symbol = _symbol;
@@ -44,8 +47,8 @@ contract LPERC20 is ERC20
     }
 
     function approve(
-        address               spender,
-        uint                  value
+        address spender,
+        uint    value
         )
         external
         override
@@ -56,8 +59,8 @@ contract LPERC20 is ERC20
     }
 
     function transfer(
-        address               to,
-        uint                  value
+        address to,
+        uint    value
         )
         external
         override
@@ -68,9 +71,9 @@ contract LPERC20 is ERC20
     }
 
     function transferFrom(
-        address               from,
-        address               to,
-        uint                  value
+        address from,
+        address to,
+        uint    value
         )
         external
         override
@@ -86,7 +89,7 @@ contract LPERC20 is ERC20
 
     function _mint(
         address to,
-        uint value
+        uint    value
         )
         internal
     {
@@ -97,7 +100,7 @@ contract LPERC20 is ERC20
 
     function _burn(
         address from,
-        uint value
+        uint    value
         )
         internal
     {
@@ -107,11 +110,11 @@ contract LPERC20 is ERC20
     }
 
     function permit(
-        address               owner,
-        address               spender,
-        uint256               value,
-        uint256               deadline,
-        bytes        calldata signature
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        bytes   calldata signature
         )
         external
     {
@@ -136,9 +139,9 @@ contract LPERC20 is ERC20
     }
 
     function _approve(
-        address               owner,
-        address               spender,
-        uint                  value
+        address owner,
+        address spender,
+        uint    value
         )
         private
     {
@@ -149,9 +152,9 @@ contract LPERC20 is ERC20
     }
 
     function _transfer(
-        address               from,
-        address               to,
-        uint                  value
+        address from,
+        address to,
+        uint    value
         )
         private
     {
