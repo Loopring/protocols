@@ -150,15 +150,12 @@ export async function getFirstEvent(
 }
 
 export async function advanceTime(time: number) {
-  const jsonRpcProvider = new ethers.providers.JsonRpcProvider();
-  const res = await jsonRpcProvider.send("evm_increaseTime", time);
+  const res = await ethers.provider.send("evm_increaseTime", time);
   return res;
 }
 
 export async function getBlockTimestamp(blockNumber: number) {
-  const block = await ethers.providers
-    .getDefaultProvider()
-    .getBlock(blockNumber);
+  const block = await ethers.provider.getBlock(blockNumber);
   return block.timestamp;
 }
 

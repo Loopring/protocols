@@ -1,7 +1,12 @@
 import { expect } from "./setup";
 import { signCreateWallet } from "./helper/signatureUtils";
 import { sign } from "./helper/Signature";
-import { newWallet, getFirstEvent, advanceTime } from "./commons";
+import {
+  newWallet,
+  getFirstEvent,
+  advanceTime,
+  getBlockTimestamp
+} from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
@@ -24,7 +29,13 @@ describe("wallet", () => {
       const tx = await wallet.changeDailyQuota(quotaAmount);
       const quotaInfo = (await wallet.wallet())["quota"];
 
-      // expect(quotaInfo.pendingQuota.toString(10)).to.equal(quotaAmount);
+      // console.log("quotaInfo:", quotaInfo);
+      const blockTime = await getBlockTimestamp(tx.blockNumber);
+      // console.log("blockTime:", blockTime);
+      expect(quotaInfo.pendingQuota.toString()).to.equal(quotaAmount);
+      expect(quotaInfo.pendingUntil.toString()).to.equal(
+        blockTime + 3600 * 24 + ""
+      );
     });
   });
 });

@@ -1,7 +1,12 @@
 import { expect } from "./setup";
 import { signCreateWallet } from "./helper/signatureUtils";
 import { sign } from "./helper/Signature";
-import { newWallet, getFirstEvent, advanceTime } from "./commons";
+import {
+  newWallet,
+  getFirstEvent,
+  advanceTime,
+  getBlockTimestamp
+} from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
@@ -35,7 +40,9 @@ describe("wallet", () => {
         "GuardianAdded"
       );
       // console.log("addEvent:", addEvent);
+      const blockTime = await getBlockTimestamp(tx.blockNumber);
       expect(addEvent.args.guardian).to.equal(guardian);
+      expect(addEvent.args.effectiveTime.toString()).to.equal(blockTime + "");
     });
 
     it("owner should be able to remove a guardian", async () => {
@@ -61,11 +68,11 @@ describe("wallet", () => {
         tx2.blockNumber,
         "GuardianRemoved"
       );
+      const blockTime = await getBlockTimestamp(tx2.blockNumber);
       expect(removeEvent.args.guardian).to.equal(guardian);
-
-      // const provider = ethers.providers.getDefaultProvider();
-      // const blockTime = (await provider.getBlock(tx2.blockNumber)).timestamp;
-      // expect(removeEvent.args.effectiveTime).to.equal(blockTime + 3600 * 24 * 3);
+      expect(removeEvent.args.effectiveTime.toString()).to.equal(
+        blockTime + 3600 * 24 * 3 + ""
+      );
     });
   });
 });

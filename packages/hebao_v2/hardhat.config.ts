@@ -33,9 +33,22 @@ function loadTestAccounts() {
 // loadTestAccounts();
 
 const config: HardhatUserConfig = {
+  defaultNetwork: "hardhat",
   networks: {
     hardhat: {
       accounts: loadTestAccounts()
+    },
+
+    // HttpNetworkConfig
+    ganache: {
+      chainId: 31337,
+      url: "http://localhost:8545",
+      gas: "auto",
+      gasPrice: "auto",
+      gasMultiplier: 1,
+      timeout: 20000,
+      httpHeaders: undefined,
+      accounts: loadTestAccounts().map(item => item.privateKey)
     }
   },
 
