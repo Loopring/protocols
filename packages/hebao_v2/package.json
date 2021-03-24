@@ -19,6 +19,7 @@
     "ethereum-waffle": "^3.2.1",
     "ethers": "^5.0.24",
     "hardhat": "^2.0.7",
+    "hardhat-gas-reporter": "^1.0.4",
     "mocha": "^8.2.1",
     "rimraf": "^3.0.2",
     "ts-node": "^9.1.1",

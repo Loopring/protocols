@@ -3,6 +3,8 @@ import { task } from "hardhat/config";
 
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
+import "hardhat-gas-reporter";
+
 // import "@eth-optimism/plugins/hardhat/compiler";
 // import "@eth-optimism/plugins/hardhat/ethers";
 
@@ -32,7 +34,7 @@ function loadTestAccounts() {
 
 // loadTestAccounts();
 
-const config: HardhatUserConfig = {
+export default {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
@@ -51,8 +53,9 @@ const config: HardhatUserConfig = {
       accounts: loadTestAccounts().map(item => item.privateKey)
     }
   },
-
-  solidity: "0.7.6"
+  solidity: "0.7.6",
+  gasReporter: {
+    currency: "USD",
+    gasPrice: 100
+  }
 };
-
-export default config;

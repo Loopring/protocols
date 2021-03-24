@@ -31,7 +31,7 @@ describe("wallet", () => {
   });
 
   describe("transfer token", () => {
-    it.only("owner should be able to do transfer eth of wallet", async () => {
+    it("wallet owner should be able to transfer eth or ERC20 token of the wallet", async () => {
       // console.log("wallet address:", wallet.address);
 
       // send eth to wallet:
@@ -59,6 +59,19 @@ describe("wallet", () => {
       const toBalance = await ethers.provider.getBalance(to);
       expect(walletEthBalanceAfter).to.equal(ethers.utils.parseEther("90"));
       expect(toBalance).to.equal(ethers.utils.parseEther("10"));
+
+      await LRC.setBalance(wallet.address, ethers.utils.parseEther("1000"));
+      await wallet.transferToken(
+        LRC.address,
+        to,
+        ethers.utils.parseEther("200"),
+        [],
+        false
+      );
+      const walletLrcBalance = await LRC.balanceOf(wallet.address);
+      const toLrcBalance = await LRC.balanceOf(to);
+      expect(walletLrcBalance).to.equal(ethers.utils.parseEther("800"));
+      expect(toLrcBalance).to.equal(ethers.utils.parseEther("200"));
     });
   });
 });
