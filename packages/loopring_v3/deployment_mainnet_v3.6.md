@@ -51,6 +51,9 @@
 - ExchangeV3: 0x8c63D8E608fF702a92D5908730C91457b0447Ad7
 - LoopringAmmPool: 0xE6AbFcABE24F06197a7A20dc9c81c251f2862430
 
+### UPDATE-20210310
+- ForcedWithdrawalAgent: 0x52ea1971C05B0169c02a0bBeC05Fe8b5E3A24470
+
 ---
 
 - AmmPools:
@@ -1674,7 +1677,177 @@
     tokenSymbol: 'LP-RSPT-USDC'
   }
   ```
+  
+  93. RSR-ETH: 0x554be7b23fde679049e52f195448db28b624534e
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-RSR-ETH',
+    accountID: 93,
+    tokens: [
+      '0x8762db106b2c2a0bccb3a80d1ed41273552616e8',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-RSR-ETH'
+  }
+  ```
 
+  94. UBT-ETH: 0xa41e49fdcd0555484f70899d95593d2e1a0fcbbb
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-UBT-ETH',
+    accountID: 94,
+    tokens: [
+      '0x8400d94a5cb0fa0d041a3788e395285d61c9ee5e',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-UBT-ETH'
+  }
+  ```
+
+  95. BAT-ETH: 0x83df13e357c731ec92d13cbf8f5bf4765a8e1205
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-BAT-ETH',
+    accountID: 95,
+    tokens: [
+      '0x0D8775F648430679A709E98d2b0Cb6250d2887EF',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-BAT-ETH'
+  }
+  ```
+
+  96. 0xBTC-ETH: 0x4facf65a157678e62f84389dd248d99f828403d6
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-0xBTC-ETH',
+    accountID: 96,
+    tokens: [
+      '0xb6ed7644c69416d67b522e20bc294a9a9b405b31',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-0xBTC-ETH'
+  }
+  ```
+
+  97. HEX-ETH: 0xc3630669cb660f9405df0d0037f52b78c49772ab
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-HEX-ETH',
+    accountID: 97,
+    tokens: [
+      '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-HEX-ETH'
+  }
+  ```
+
+  98. OVR-ETH: 0x7b854d37e502771b1647f5917efcf065ce1c0677
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-OVR-ETH',
+    accountID: 98,
+    tokens: [
+      '0x21BfBDa47A0B4B5b1248c767Ee49F7caA9B23697',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-OVR-ETH'
+  }
+  ```
+  
+  99. BCDT-ETH: 0x66fAD4Ab701eE8C6F9eBef93b634a3E7401aa276
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-BCDT-ETH',
+    accountID: 99,
+    tokens: [
+      '0xacfa209fb73bf3dd5bbfb1101b9bc999c49062a5',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-BCDT-ETH'
+  }
+  ```
+
+  100. ALCX-ETH: 0x18a1A6F47Fd92185b91edc322d1954349aD0b652
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-ALCX-ETH',
+    accountID: 100,
+    tokens: [
+      '0xdbdb4d16eda451d0503b854cf79d55697f90c8df',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-ALCX-ETH'
+  }
+  ```
+
+  101. FLI-ETH: 0x4a7e38476b05F40B16E5ae1C761302B1A7d5afc5
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-FLI-ETH',
+    accountID: 101,
+    tokens: [
+      '0xaa6e8127831c9de45ae56bb1b0d4d4da6e5665bd',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-FLI-ETH'
+  }
+  ```
+
+  102. JRT-ETH: 0x83c11cbfbED2971032d3a1eD2f34d4Fb43FE181F
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-JRT-ETH',
+    accountID: 102,
+    tokens: [
+      '0x8a9c67fee641579deba04928c4bc45f66e26343a',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-JRT-ETH'
+  }
+  ```
+  
   ***
 
 - Registered tokens:
@@ -1885,3 +2058,21 @@
   - LP-SX-ETH 0xb27b1fd0d4a7d91d07c19f9a33d3a4711a453d7c, tokenId: 204
   - LP-REPT-ETH 0x76d8ea32c511a87ee4bff5f00e758dd362adf3d0, tokenId: 205
   - LP-RSPT-USDC 0x6bf0060fbcf271a2ed828e77076543076d5edba1, tokenId: 206
+  - RSR: 0x8762db106b2c2a0bccb3a80d1ed41273552616e8, tokenId: 207
+  - UBT: 0x8400d94a5cb0fa0d041a3788e395285d61c9ee5e, tokenId: 208
+  - OXBTC: 0xb6ed7644c69416d67b522e20bc294a9a9b405b31, tokenId: 209
+  - OVR: 0x21BfBDa47A0B4B5b1248c767Ee49F7caA9B23697, tokenId: 210
+  - LP-RSR-ETH 0x554be7b23fde679049e52f195448db28b624534e, tokenId: 211
+  - LP-UBT-ETH 0xa41e49fdcd0555484f70899d95593d2e1a0fcbbb, tokenId: 212
+  - LP-BAT-ETH 0x83df13e357c731ec92d13cbf8f5bf4765a8e1205, tokenId: 213
+  - LP-0xBTC-ETH 0x4facf65a157678e62f84389dd248d99f828403d6, tokenId: 214
+  - LP-HEX-ETH 0xc3630669cb660f9405df0d0037f52b78c49772ab, tokenId: 215
+  - LP-OVR-ETH 0x7b854d37e502771b1647f5917efcf065ce1c0677, tokenId: 216
+  - BCDT: 0xacfa209fb73bf3dd5bbfb1101b9bc999c49062a5, tokenId: 217
+  - ALCX: 0xdbdb4d16eda451d0503b854cf79d55697f90c8df, tokenId: 218
+  - FLI: 0xaa6e8127831c9de45ae56bb1b0d4d4da6e5665bd, tokenId: 219
+  - JRT: 0x8a9c67fee641579deba04928c4bc45f66e26343a, tokenId: 220
+  - LP-BCDT-ETH: 0x66fAD4Ab701eE8C6F9eBef93b634a3E7401aa276, tokenId: 221
+  - LP-ALCX-ETH: 0x18a1A6F47Fd92185b91edc322d1954349aD0b652, tokenId: 222
+  - LP-FLI-ETH: 0x4a7e38476b05F40B16E5ae1C761302B1A7d5afc5, tokenId: 223
+  - LP-JRT-ETH: 0x83c11cbfbED2971032d3a1eD2f34d4Fb43FE181F, tokenId: 224

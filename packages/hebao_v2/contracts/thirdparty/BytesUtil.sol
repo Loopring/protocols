@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-//Mainly taken from https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol
+// Taken from https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol
 pragma solidity ^0.7.0;
 
 library BytesUtil {
