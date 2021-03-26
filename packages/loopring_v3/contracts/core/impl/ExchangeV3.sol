@@ -45,6 +45,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     ExchangeData.State public state;
     address public loopringAddr;
     uint8 private ammFeeBips = 20;
+    bool public allowOnchainTransferFrom = false;
 
     modifier onlyWhenUninitialized()
     {
@@ -555,6 +556,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyFromUserOrAgent(from)
     {
+        require(allowOnchainTransferFrom, "NOT_ALLOWED");
         state.depositContract.transfer(from, to, token, amount);
     }
 
@@ -678,5 +680,14 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         view
         returns (uint8) {
         return ammFeeBips;
+    }
+
+    function setAllowOnchainTransferFrom(bool value)
+        external
+        nonReentrant
+        onlyOwner
+    {
+        require(allowOnchainTransferFrom != value, "SAME_VALUE");
+        allowOnchainTransferFrom = value;
     }
 }
