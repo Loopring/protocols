@@ -1,3 +1,5 @@
+const glob = require("glob");
+const fs = require("fs");
 const { ethers } = require("hardhat");
 import { Contract } from "ethers";
 import BN = require("bn.js");
@@ -59,7 +61,7 @@ export async function newWalletFactoryContract(deployer?: string) {
       UpgradeLib: UpgradeLib.address,
       WhitelistLib: WhitelistLib.address
     }
-  })).deploy(testPriceOracle.address);
+  })).deploy(ethers.constants.AddressZero /*testPriceOracle.address*/);
 
   walletFactory = await (await ethers.getContractFactory(
     "WalletFactory"
@@ -161,4 +163,21 @@ export async function getBlockTimestamp(blockNumber: number) {
 
 export function timeAlmostEqual(t1: number, t2: number, deviation: number) {
   return t1 >= t2 - deviation && t1 <= t2 + deviation;
+}
+
+export async function getContractABI(contractName: string) {
+  if (!contractName) return undefined;
+
+  return new Promise((resolve, reject) => {
+    glob("./artifacts/**/*.json", function(err, files) {
+      if (err) return reject(err);
+      for (const f of files) {
+        if (f.endsWith(contractName + ".json")) {
+          const abi = JSON.parse(fs.readFileSync(f, "ascii")).abi;
+          resolve(abi);
+        }
+      }
+      resolve(undefined);
+    });
+  });
 }
