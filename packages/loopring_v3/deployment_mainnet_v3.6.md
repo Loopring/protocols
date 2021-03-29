@@ -54,7 +54,8 @@
 
 ### UPGRADE-2021-03-25
 - [LoopringIOExchangeOwner: 0x153CdDD727e407Cb951f728F24bEB9A5FaaA8512](https://etherscan.io/address/0x153CdDD727e407Cb951f728F24bEB9A5FaaA8512)  
-- ExchangeV3(implementation): 0xCFba78aecfBcc0B4B748fA58c530D4675BB5D32F
+- ~~ExchangeV3(implementation): 0xCFba78aecfBcc0B4B748fA58c530D4675BB5D32F~~
+- ExchangeV3(implementation): 0x4fb117dcd6d09abf1a99b502d488a99f5a17e7ec
 - LoopringAmmPool(implementation): 0xCAC49516e6E1c79a62BD67E4D87F7E0d80858258
 
 
