@@ -29,7 +29,7 @@ describe("wallet", () => {
   });
 
   describe("callContract", () => {
-    it.only("wallet owner should be able to call other contract", async () => {
+    it("wallet owner should be able to call other contract", async () => {
       const callData = TestContract.interface.encodeFunctionData(
         "functionDefault",
         [10]
@@ -43,6 +43,50 @@ describe("wallet", () => {
       const event = await getFirstEvent(
         TestContract,
         tx.blockNumber,
+        "Invoked"
+      );
+      // console.log("event", event);
+      // console.log("wallet address:", wallet.address);
+      expect(event.args.sender).to.equal(wallet.address);
+    });
+
+    it("wallet owner should be able to approve token", async () => {
+      const spender = "0x" + "11".repeat(20);
+      const tx = wallet.approveToken(
+        LRC.address,
+        spender,
+        ethers.utils.parseEther("1000"),
+        true
+      );
+      const allowance = await LRC.allowance(wallet.address, spender);
+      // console.log("allowance:", allowance);
+      expect(allowance).to.equal(ethers.utils.parseEther("1000"));
+    });
+
+    it.only("approveThenCallContract", async () => {
+      const spender = TestContract.address;
+      const tx = wallet.approveToken(
+        LRC.address,
+        spender,
+        ethers.utils.parseEther("1000"),
+        true
+      );
+      const allowance = await LRC.allowance(wallet.address, spender);
+      expect(allowance).to.equal(ethers.utils.parseEther("1000"));
+
+      const callData = TestContract.interface.encodeFunctionData(
+        "functionDefault",
+        [10]
+      );
+      const tx2 = await wallet.callContract(
+        TestContract.address,
+        0,
+        callData,
+        false
+      );
+      const event = await getFirstEvent(
+        TestContract,
+        tx2.blockNumber,
         "Invoked"
       );
       // console.log("event", event);
