@@ -63,7 +63,7 @@ describe("wallet", () => {
       expect(allowance).to.equal(ethers.utils.parseEther("1000"));
     });
 
-    it.only("approveThenCallContract", async () => {
+    it("approveThenCallContract", async () => {
       const spender = TestContract.address;
       const tx = wallet.approveToken(
         LRC.address,

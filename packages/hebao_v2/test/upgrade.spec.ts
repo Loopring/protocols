@@ -1,13 +1,7 @@
 import { expect } from "./setup";
 import { signCreateWallet } from "./helper/signatureUtils";
 import { sign } from "./helper/Signature";
-import {
-  newWallet,
-  getFirstEvent,
-  advanceTime,
-  getBlockTimestamp,
-  timeAlmostEqual
-} from "./commons";
+import { newWallet, getContractABI, getFirstEvent } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
@@ -20,6 +14,7 @@ describe("wallet", () => {
   let owner: string;
   let wallet: Contract;
   let LRC: Contract;
+  let TestContract: Contract;
   before(async () => {
     [account1, account2] = await ethers.getSigners();
 
@@ -28,11 +23,15 @@ describe("wallet", () => {
       account2
     );
     LRC = await (await ethers.getContractFactory("LRC")).deploy();
+    TestContract = await (await ethers.getContractFactory(
+      "TestTargetContract"
+    )).deploy();
   });
 
-  describe("upgrade", () => {
-    it("wallet should be able to upgrade its implementation with enough approval", async () => {
-      // no guardian
+  describe("callContract", () => {
+    it("wallet owner should be able to call other contract", async () => {
+
     });
+
   });
 });

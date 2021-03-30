@@ -171,6 +171,14 @@ contract SmartWallet is ERC1271
         );
     }
 
+    function getMasterCopy()
+        external
+        view
+        returns (address)
+    {
+        return masterCopy;
+    }
+
     //
     // Guardians
     //

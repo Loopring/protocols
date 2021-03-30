@@ -6,6 +6,58 @@ import BN = require("bn.js");
 
 import { signCreateWallet } from "./helper/signatureUtils";
 
+export async function newWalletImpl() {
+  const ERC1271Lib = await (await ethers.getContractFactory(
+    "ERC1271Lib"
+  )).deploy();
+  const ERC20Lib = await (await ethers.getContractFactory("ERC20Lib")).deploy();
+  const GuardianLib = await (await ethers.getContractFactory(
+    "GuardianLib"
+  )).deploy();
+  const InheritanceLib = await (await ethers.getContractFactory(
+    "InheritanceLib"
+  )).deploy();
+  const LockLib = await (await ethers.getContractFactory("LockLib", {
+    libraries: {
+      GuardianLib: GuardianLib.address
+    }
+  })).deploy();
+  const MetaTxLib = await (await ethers.getContractFactory("MetaTxLib", {
+    libraries: {
+      ERC20Lib: ERC20Lib.address
+    }
+  })).deploy();
+  const QuotaLib = await (await ethers.getContractFactory("QuotaLib")).deploy();
+  const RecoverLib = await (await ethers.getContractFactory("RecoverLib", {
+    libraries: {
+      GuardianLib: GuardianLib.address
+    }
+  })).deploy();
+  const UpgradeLib = await (await ethers.getContractFactory(
+    "UpgradeLib"
+  )).deploy();
+  const WhitelistLib = await (await ethers.getContractFactory(
+    "WhitelistLib"
+  )).deploy();
+
+  const smartWallet = await (await ethers.getContractFactory("SmartWallet", {
+    libraries: {
+      ERC1271Lib: ERC1271Lib.address,
+      ERC20Lib: ERC20Lib.address,
+      GuardianLib: GuardianLib.address,
+      InheritanceLib: InheritanceLib.address,
+      LockLib: LockLib.address,
+      MetaTxLib: MetaTxLib.address,
+      QuotaLib: QuotaLib.address,
+      RecoverLib: RecoverLib.address,
+      UpgradeLib: UpgradeLib.address,
+      WhitelistLib: WhitelistLib.address
+    }
+  })).deploy(ethers.constants.AddressZero);
+
+  return smartWallet;
+}
+
 export async function newWalletFactoryContract(deployer?: string) {
   let testPriceOracle: Contract;
   let smartWallet: Contract;
@@ -131,6 +183,17 @@ export async function newWallet(
 
   // console.log("SmartWallet:", smartWallet);
   return smartWallet;
+}
+
+export async function getAllEvent(
+  contract: any,
+  fromBlock: number
+) {
+  const events = await contract.queryFilter(
+    { address: contract.address },
+    fromBlock
+  );
+  return events;
 }
 
 export async function getFirstEvent(
