@@ -393,7 +393,8 @@ contract SmartWallet is ERC1271
         )
         public
         view
-        returns (uint) {
+        returns (uint)
+    {
         return wallet.whitelisted[addr];
     }
 
