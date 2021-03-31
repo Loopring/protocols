@@ -12,6 +12,13 @@ export interface SignedRequest {
   wallet: string;
 }
 
+function encodeAddressesPacked(addrs: string[]) {
+  const addrsBs = Buffer.concat(
+    addrs.map(a => Buffer.from("00".repeat(12) + a.slice(2), "hex"))
+  );
+  return addrsBs;
+}
+
 export function signCreateWallet(
   moduleAddress: string,
   owner: string,
@@ -29,10 +36,8 @@ export function signCreateWallet(
     "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)";
   const CREATE_WALLET_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
-  const guardiansBuffer = Buffer.concat(
-    guardians.map(g => Buffer.from(g.slice(2), "hex"))
-  );
-  const guardiansHash = ethUtil.keccak(guardiansBuffer);
+  const guardiansBs = encodeAddressesPacked(guardians);
+  const guardiansHash = ethUtil.keccak(guardiansBs);
 
   const encodedRequest = ethAbi.encodeParameters(
     [

@@ -22,7 +22,7 @@ export function hash(name: string, version: string, moduleAddress: string) {
   return ethUtil.keccak(encoded);
 }
 
-export function hashPacked(domainSeprator: string, encodedData: string) {
+export function hashPacked(domainSeprator: Buffer, encodedData: string) {
   return ethUtil.keccak(
     Buffer.concat([
       Buffer.from(EIP191_HEADER, "utf8"),

@@ -131,14 +131,16 @@ export async function newWalletFactoryContract(deployer?: string) {
 export async function newWallet(
   owner: string,
   feeRecipient: string,
-  salt: number
+  salt: number,
+  guardians?: string[]
 ) {
   const walletFactory = await newWalletFactoryContract();
-
+  const _guardians = guardians ? guardians : [];
+  
   const signature = signCreateWallet(
     walletFactory.address,
     owner,
-    [],
+    _guardians,
     new BN(0),
     ethers.constants.AddressZero,
     feeRecipient,
@@ -150,7 +152,7 @@ export async function newWallet(
 
   const walletConfig: any = {
     owner,
-    guardians: [],
+    guardians: _guardians,
     quota: 0,
     inheritor: ethers.constants.AddressZero,
     feeRecipient,
@@ -164,7 +166,9 @@ export async function newWallet(
     salt
   );
 
-  await walletFactory.createWallet(walletConfig, salt);
+  const tx = await walletFactory.createWallet(walletConfig, salt);
+  // const allEvents = await getAllEvent(walletFactory, tx.blockNumber);
+  // console.log(allEvents);
 
   const smartWallet = await (await ethers.getContractFactory("SmartWallet", {
     libraries: {
@@ -243,4 +247,19 @@ export async function getContractABI(contractName: string) {
       resolve(undefined);
     });
   });
+}
+
+export function sortSignersAndSignatures(signers: string[], signatures: Buffer[]) {
+  const sigMap = new Map();
+  signers.forEach(function(signer, i){
+    sigMap.set(signer, signatures[i]);
+  });
+
+  const sortedSigners = signers.sort((a, b) => {
+    const numA = parseInt(a.slice(2, 10), 16);
+    const numB = parseInt(b.slice(2, 10), 16);
+    return numA - numB;
+  });
+  const sortedSignatures = sortedSigners.map(s => sigMap.get(s));
+  return { sortedSigners, sortedSignatures };
 }
