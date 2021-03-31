@@ -172,7 +172,7 @@ contract SmartWallet is ERC1271
     }
 
     function getMasterCopy()
-        external
+        public
         view
         returns (address)
     {
