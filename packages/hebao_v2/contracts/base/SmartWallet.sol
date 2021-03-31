@@ -391,7 +391,7 @@ contract SmartWallet is ERC1271
     function getWhitelistEffectiveTime(
         address addr
         )
-        external
+        public
         view
         returns (uint) {
         return wallet.whitelisted[addr];
