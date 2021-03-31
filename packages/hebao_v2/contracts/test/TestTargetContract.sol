@@ -9,6 +9,8 @@ contract TestTargetContract
 {
     uint public value = 12345;
 
+    event Invoked(address sender);
+
     function functionDefault(
         uint _value
         )
@@ -16,6 +18,7 @@ contract TestTargetContract
         returns (uint)
     {
         value = _value;
+        emit Invoked(msg.sender);
         return _value;
     }
 

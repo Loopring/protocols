@@ -87,18 +87,6 @@ library WhitelistLib
         return effectiveTime > 0 && effectiveTime <= block.timestamp;
     }
 
-    function isAddressDappOrWhitelisted(
-        Wallet  storage wallet,
-        address         addr
-        )
-        internal
-        view
-        returns (bool)
-    {
-        uint effectiveTime = wallet.whitelisted[addr];
-        return effectiveTime > 0 && effectiveTime <= block.timestamp;
-    }
-
     // --- Internal functions ---
 
     function _addToWhitelist(

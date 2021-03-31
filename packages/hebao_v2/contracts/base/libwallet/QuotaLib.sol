@@ -38,7 +38,7 @@ library QuotaLib
         )
         public
     {
-        setQuota(wallet, newQuota, QUOTA_PENDING_PERIOD);
+        setQuota(wallet, newQuota,  block.timestamp.add(QUOTA_PENDING_PERIOD));
     }
 
     function changeDailyQuotaWA(

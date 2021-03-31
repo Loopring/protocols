@@ -99,7 +99,7 @@ library ERC20Lib
         external
         returns (bytes memory returnData)
     {
-        if (forceUseQuota || !wallet.isAddressDappOrWhitelisted(to)) {
+        if (forceUseQuota || !wallet.isAddressWhitelisted(to)) {
             wallet.checkAndAddToSpent(priceOracle, address(0), value);
         }
 
@@ -146,7 +146,7 @@ library ERC20Lib
     {
         uint additionalAllowance = _approveInternal(token, to, amount);
 
-        if (forceUseQuota || !wallet.isAddressDappOrWhitelisted(to)) {
+        if (forceUseQuota || !wallet.isAddressWhitelisted(to)) {
             wallet.checkAndAddToSpent(priceOracle, token, additionalAllowance);
         }
     }
@@ -193,7 +193,7 @@ library ERC20Lib
     {
         uint additionalAllowance = _approveInternal(token, to, amount);
 
-        if (forceUseQuota || !wallet.isAddressDappOrWhitelisted(to)) {
+        if (forceUseQuota || !wallet.isAddressWhitelisted(to)) {
             wallet.checkAndAddToSpent(priceOracle, token, additionalAllowance);
             wallet.checkAndAddToSpent(priceOracle, address(0), value);
         }
