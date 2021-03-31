@@ -36,7 +36,7 @@ describe("wallet", () => {
   });
 
   describe("", () => {
-    it.only("wallet owner should be able to upgrade impl with enough approvals", async () => {
+    it("wallet owner should be able to upgrade impl with enough approvals", async () => {
       const validUntil = 9999999999;
       const currentImpl = await wallet.getMasterCopy();
       const sig1 = signChangeMasterCopy(

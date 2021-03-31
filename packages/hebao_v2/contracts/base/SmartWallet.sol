@@ -220,7 +220,7 @@ contract SmartWallet is ERC1271
     }
 
      function isGuardian(address addr, bool includePendingAddition)
-         external
+         public
          view
          returns (bool)
      {
