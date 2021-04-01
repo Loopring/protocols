@@ -12,3 +12,8 @@ yarn compile
 ```
 yarn test
 ```
+
+# Deploy contract to arbitrum:
+```
+npx hardhat run --network arbitrum scripts/deploy-arbitrum.ts
+```
