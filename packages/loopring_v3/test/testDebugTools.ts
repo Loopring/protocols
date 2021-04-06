@@ -3,7 +3,7 @@ import fs = require("fs");
 import { AmmPool } from "./ammUtils";
 import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { BlockCallback } from "./types";
+import { TransactionReceiverCallback } from "./types";
 import { calculateCalldataCost, compressZeros } from "loopringV3.js";
 
 contract("Exchange", (accounts: string[]) => {
@@ -71,7 +71,7 @@ contract("Exchange", (accounts: string[]) => {
       const useCompression = false;
 
       const onchainBlocks: OnchainBlock[] = [];
-      const blockCallbacks: BlockCallback[][] = [];
+      const transactionReceiverCallback: TransactionReceiverCallback[][] = [];
       for (const blockName of blockNames) {
         const baseFilename = blockDirectory + blockName;
         //const auxDataFilename = baseFilename + "_auxiliaryData.json";
@@ -124,14 +124,14 @@ contract("Exchange", (accounts: string[]) => {
         console.log(onchainBlock);
 
         // Read the AMM transactions
-        const callbacks: BlockCallback[] = [];
+        const callbacks: TransactionReceiverCallback[] = [];
         for (const ammTx of blockInfo.ammTransactions) {
-          callbacks.push(AmmPool.getBlockCallback(ammTx));
+          callbacks.push(AmmPool.getTransactionReceiverCallback(ammTx));
         }
         //console.log(callbacks);
 
         onchainBlocks.push(onchainBlock);
-        blockCallbacks.push(callbacks);
+        transactionReceiverCallback.push(callbacks);
       }
 
       const submitBlocksTxData = ctx.getSubmitCallbackData(onchainBlocks);
@@ -141,7 +141,7 @@ contract("Exchange", (accounts: string[]) => {
       const withCallbacksParameters = ctx.getSubmitBlocksWithCallbacksData(
         useCompression,
         submitBlocksTxData,
-        blockCallbacks,
+        transactionReceiverCallback,
         [],
         []
       );

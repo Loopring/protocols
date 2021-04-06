@@ -24,11 +24,10 @@ library AmmUtil
     uint8 public constant L2_SIGNATURE_TYPE = 16;
 
     function verifySignatureL2(
-        AmmData.Context     memory  ctx,
-        bytes               memory  txsData,
-        address                     owner,
-        bytes32                     txHash,
-        bytes               memory  signature
+        AmmData.Context memory ctx,
+        address                owner,
+        bytes32                txHash,
+        bytes           memory signature
         )
         internal
         pure
@@ -37,15 +36,36 @@ library AmmUtil
         require(signature.toUint8Unsafe(0) == L2_SIGNATURE_TYPE, "INVALID_SIGNATURE_TYPE");
 
         // Read the signature verification transaction
-        SignatureVerificationTransaction.SignatureVerification memory verification;
-        SignatureVerificationTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, verification);
+        uint txsDataPtr = ctx.txsDataPtr - 2;
+        uint packedData;
+        uint data;
+        assembly {
+            packedData := calldataload(txsDataPtr)
+            data := calldataload(add(txsDataPtr, 36))
+        }
 
         // Verify that the hash was signed on L2
         require(
-            verification.owner == owner &&
-            verification.data == uint(txHash) >> 3,
+            packedData & 0xffffffffffffffffffffffffffffffffffffffffff ==
+            (uint(ExchangeData.TransactionType.SIGNATURE_VERIFICATION) << 160) | (uint(owner) & 0x00ffffffffffffffffffffffffffffffffffffffff) &&
+            data == uint(txHash) >> 3,
             "INVALID_OFFCHAIN_L2_APPROVAL"
         );
+
+        ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
+    }
+
+    function readTransfer(uint txsDataPtr)
+        internal
+        pure
+        returns (uint packedData, address to, address from)
+    {
+        // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
+        assembly {
+            packedData := calldataload(txsDataPtr)
+            to := and(calldataload(add(txsDataPtr, 20)), 0xffffffffffffffffffffffffffffffffffffffff)
+            from := and(calldataload(add(txsDataPtr, 40)), 0xffffffffffffffffffffffffffffffffffffffff)
+        }
     }
 
     function isAlmostEqualAmount(
@@ -56,15 +76,12 @@ library AmmUtil
         pure
         returns (bool)
     {
-        if (targetAmount == 0) {
-            return amount == 0;
-        } else {
-            // Max rounding error for a float24 is 2/100000
-            // But relayer may use float rounding multiple times
-            // so the range is expanded to [100000 - 8, 100000 + 8]
-            uint ratio = (uint(amount) * 100000) / uint(targetAmount);
-            return (100000 - 8) <= ratio && ratio <= (100000 + 8);
-        }
+        uint _amount = uint(amount) * 100000;
+        uint _targetAmount = uint(targetAmount);
+        // Max rounding error for a float24 is 2/100000
+        // But relayer may use float rounding multiple times
+        // so the range is expanded to [100000 - 8, 100000 + 8]
+        return (100000 - 8) * _targetAmount <= _amount && _amount <= (100000 + 8) * _targetAmount;
     }
 
     function isAlmostEqualFee(

@@ -85,6 +85,9 @@ library ExchangeDeposits
         )
         public
     {
+        // Make sure the token is registered
+        /*uint16 tokenID = */S.getTokenID(tokenAddress);
+
         // Transfer the tokens to this contract
         uint96 amountDeposited = S.depositContract.deposit{value: msg.value}(
             from,
@@ -92,8 +95,9 @@ library ExchangeDeposits
             amount,
             extraData
         );
+        require(amountDeposited > 0, "INVALID_REPAY_AMOUNT");
 
-        // Paid back
+        // Pay back
         S.amountFlashMinted[tokenAddress] = S.amountFlashMinted[tokenAddress].sub(amountDeposited);
     }
 }

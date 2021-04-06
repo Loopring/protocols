@@ -10,6 +10,7 @@ import {
 import { AuthMethod, Transfer } from "./types";
 import { SignatureType, sign, verifySignature } from "../util/Signature";
 import * as sigUtil from "eth-sig-util";
+import { Bitstream } from "loopringV3.js";
 
 const AgentRegistry = artifacts.require("AgentRegistry");
 
@@ -65,7 +66,7 @@ export interface ConnectorCalls {
 
 export interface TransferBatch {
   batchID: number;
-  transfers: InternalBridgeTransfer[];
+  amounts: string[];
 }
 
 export interface BridgeOperations {
@@ -95,18 +96,14 @@ export namespace CollectTransferUtils {
           { name: "verifyingContract", type: "address" }
         ],
         BridgeCall: [
-          { name: "from", type: "address" },
-          { name: "to", type: "address" },
           { name: "tokenID", type: "uint16" },
           { name: "amount", type: "uint96" },
           { name: "feeTokenID", type: "uint16" },
-          { name: "maxFee", type: "uint96" },
           { name: "storageID", type: "uint32" },
           { name: "minGas", type: "uint32" },
           { name: "connector", type: "address" },
           { name: "groupData", type: "bytes" },
-          { name: "userData", type: "bytes" },
-          { name: "validUntil", type: "uint256" }
+          { name: "userData", type: "bytes" }
         ]
       },
       primaryType: "BridgeCall",
@@ -117,18 +114,14 @@ export namespace CollectTransferUtils {
         verifyingContract
       },
       message: {
-        from: callWrapper.transfer.from,
-        to: callWrapper.transfer.to,
         tokenID: callWrapper.transfer.tokenID,
         amount: callWrapper.transfer.amount,
         feeTokenID: callWrapper.transfer.feeTokenID,
-        maxFee: callWrapper.call.maxFee,
         storageID: callWrapper.transfer.storageID,
         minGas: callWrapper.call.minGas,
         connector: callWrapper.connector,
         groupData: callWrapper.groupData,
-        userData: callWrapper.call.userData,
-        validUntil: callWrapper.call.validUntil
+        userData: callWrapper.call.userData
       }
     };
     return typedData;
@@ -176,6 +169,10 @@ export class Bridge {
     );
     assert(deposit.accountID === this.accountID, "unexpected accountID");
 
+    //console.log(this.contract);
+    //console.log(this.contract.contract);
+    //console.log(this.contract.contract.methods);
+
     this.address = this.contract.address;
   }
 
@@ -208,12 +205,12 @@ export class Bridge {
       "\x1b[46m%s\x1b[0m",
       "[BatchDeposit] Gas used: " + tx.receipt.gasUsed
     );
-    const event = await this.ctx.assertEventEmitted(this.contract, "Transfers");
+    const transferEvents = await this.ctx.getEvents(this.contract, "Transfers");
 
     const depositEvents = await this.ctx.assertEventsEmitted(
       this.ctx.exchange,
       "DepositRequested",
-      3
+      tokens.size
     );
 
     // Process the deposits
@@ -224,9 +221,9 @@ export class Bridge {
     await this.ctx.submitTransactions();
     await this.ctx.submitPendingBlocks();
 
-    const blockCallback = this.ctx.addBlockCallback(this.address);
+    //const blockCallback = this.ctx.addBlockCallback(this.address);
 
-    for (const deposit of deposits) {
+    /*for (const deposit of deposits) {
       await this.ctx.transfer(
         this.address,
         deposit.owner,
@@ -263,10 +260,11 @@ export class Bridge {
     blockCallback.numTxs = deposits.length;
 
     await this.ctx.submitTransactions();
-    await this.ctx.submitPendingBlocks();
+    await this.ctx.submitPendingBlocks();*/
+    return transferEvents;
   }
 
-  public async submitCalls(calls: BridgeCall[]) {
+  public async setupCalls(calls: BridgeCall[]) {
     for (const call of calls) {
       await this.ctx.deposit(
         call.owner,
@@ -279,6 +277,50 @@ export class Bridge {
 
     await this.ctx.submitTransactions();
     await this.ctx.submitPendingBlocks();
+  }
+
+  public async submitBridgeOperations(
+    transferEvents: any[],
+    calls: BridgeCall[]
+  ) {
+    const bridgeOperations: BridgeOperations = {
+      transferBatches: [],
+      connectorCalls: [],
+      tokens: []
+    };
+
+    const blockCallback = this.ctx.addBlockCallback(this.address);
+
+    for (const event of transferEvents) {
+      const amounts: string[] = [];
+      const transfers = new Bitstream(event.transfers);
+      for (let i = 0; i < transfers.length() / 34; i++) {
+        const transfer: InternalBridgeTransfer = {
+          owner: transfers.extractAddress(i * 34 + 0),
+          tokenID: transfers.extractUint16(i * 34 + 32),
+          amount: transfers.extractUint96(i * 34 + 20).toString(10)
+        };
+        await this.ctx.transfer(
+          this.address,
+          transfer.owner,
+          this.ctx.getTokenAddressFromID(transfer.tokenID),
+          new BN(transfer.amount),
+          this.ctx.getTokenAddressFromID(transfer.tokenID),
+          new BN(0),
+          {
+            authMethod: AuthMethod.NONE,
+            amountToDeposit: new BN(0),
+            feeToDeposit: new BN(0),
+            transferToNew: true
+          }
+        );
+        amounts.push(transfer.amount);
+      }
+      bridgeOperations.transferBatches.push({
+        batchID: event.batchID.toNumber(),
+        amounts
+      });
+    }
 
     const tokenMap: Map<string, BN> = new Map<string, BN>();
     for (const call of calls) {
@@ -290,12 +332,6 @@ export class Bridge {
         tokenMap.get(call.token).add(new BN(call.amount))
       );
     }
-
-    const bridgeOperations: BridgeOperations = {
-      transferBatches: [],
-      connectorCalls: [],
-      tokens: []
-    };
 
     for (const [token, amount] of tokenMap.entries()) {
       bridgeOperations.tokens.push({
@@ -325,7 +361,7 @@ export class Bridge {
         }
         connectorCalls = {
           connector: call.connector,
-          gasLimit: 1000000,
+          gasLimit: 2000000,
           totalMinGas: 0,
           groups: [],
           tokens: connectorTokens
@@ -367,8 +403,6 @@ export class Bridge {
     //
     // Do L2 transactions
     //
-
-    const blockCallback = this.ctx.addBlockCallback(this.address);
 
     for (const connectorCalls of bridgeOperations.connectorCalls) {
       for (const group of connectorCalls.groups) {
@@ -423,11 +457,21 @@ export class Bridge {
     // Set the pool transaction data on the callback
     blockCallback.auxiliaryData = this.encodeBridgeOperations(bridgeOperations);
     blockCallback.numTxs = calls.length * 2 + bridgeOperations.tokens.length;
+    for (const batch of bridgeOperations.transferBatches) {
+      blockCallback.numTxs += batch.amounts.length;
+    }
+
+    //console.log("Bridge Data:");
+    //console.log(blockCallback.auxiliaryData);
 
     await this.ctx.submitTransactions();
     await this.ctx.submitPendingBlocks();
 
-    await this.ctx.assertEventEmitted(this.contract, "BridgeCallSuccess");
+    await this.ctx.assertEventsEmitted(
+      this.contract,
+      "BridgeCallSuccess",
+      bridgeOperations.connectorCalls.length
+    );
   }
 
   public encodeBridgeOperations(bridgeOperations: BridgeOperations) {
@@ -525,12 +569,13 @@ contract("Bridge", (accounts: string[]) => {
       await ctx.transferBalance(
         swapper.address,
         token,
-        new BN(web3.utils.toWei("20", "ether"))
+        new BN(web3.utils.toWei("100", "ether"))
       );
     }
 
     testSwappperBridgeConnector = await TestSwappperBridgeConnector.new(
       ctx.exchange.address,
+      bridge.address,
       swapper.address
     );
 
@@ -553,7 +598,7 @@ contract("Bridge", (accounts: string[]) => {
   };
 
   const encodeSwapUserSettings = (minAmountOut: BN) => {
-    return web3.eth.abi.encodeParameter(
+    /*return web3.eth.abi.encodeParameter(
       {
         "struct UserSettings": {
           minAmountOut: "uint"
@@ -562,7 +607,8 @@ contract("Bridge", (accounts: string[]) => {
       {
         minAmountOut: minAmountOut.toString(10)
       }
-    );
+    );*/
+    return "0x";
   };
 
   const round = (value: string) => {
@@ -645,8 +691,26 @@ contract("Bridge", (accounts: string[]) => {
         token: ctx.getTokenAddress("WETH"),
         amount: web3.utils.toWei("12.15484511245", "ether")
       });
+      deposits.push({
+        owner: ownerB,
+        token: ctx.getTokenAddress("ETH"),
+        amount: web3.utils.toWei("1.15484511245", "ether")
+      });
+      deposits.push({
+        owner: ownerB,
+        token: ctx.getTokenAddress("LRC"),
+        amount: web3.utils.toWei("12545.15484511245", "ether")
+      });
+      deposits.push({
+        owner: ownerB,
+        token: ctx.getTokenAddress("WETH"),
+        amount: web3.utils.toWei("12.15484511245", "ether")
+      });
 
-      await bridge.batchDeposit(deposits);
+      const transferEvents = await bridge.batchDeposit(deposits);
+      await bridge.submitBridgeOperations(transferEvents, []);
+
+      assert(false);
     });
 
     it.only("Batch call", async () => {
@@ -661,6 +725,9 @@ contract("Bridge", (accounts: string[]) => {
       const group_LRC_ETH = encodeGroupSettings("LRC", "ETH");
       const group_WETH_LRC = encodeGroupSettings("WETH", "LRC");
 
+      //console.log("connector: " + testSwappperBridgeConnector.address);
+      //console.log("group: " + group_ETH_LRC);
+
       const calls: BridgeCall[] = [];
       calls.push({
         owner: ownerA,
@@ -670,7 +737,7 @@ contract("Bridge", (accounts: string[]) => {
         maxFee: "0",
         minGas: 30000,
         userData: "0x",
-        validUntil: 0xffffffff,
+        validUntil: 0,
         connector: testSwappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
@@ -684,7 +751,7 @@ contract("Bridge", (accounts: string[]) => {
         userData: encodeSwapUserSettings(
           new BN(web3.utils.toWei("2", "ether"))
         ),
-        validUntil: 0xffffffff,
+        validUntil: 0,
         connector: testSwappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
@@ -696,9 +763,9 @@ contract("Bridge", (accounts: string[]) => {
         maxFee: "0",
         minGas: 30000,
         userData: encodeSwapUserSettings(
-          new BN(web3.utils.toWei("4", "ether"))
+          new BN(web3.utils.toWei("3", "ether"))
         ),
-        validUntil: 0xffffffff,
+        validUntil: 0,
         connector: testSwappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
@@ -712,12 +779,95 @@ contract("Bridge", (accounts: string[]) => {
         userData: encodeSwapUserSettings(
           new BN(web3.utils.toWei("1", "ether"))
         ),
-        validUntil: 0xffffffff,
+        validUntil: 0,
         connector: testSwappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
-
       calls.push({
+        owner: ownerA,
+        token: "ETH",
+        amount: round(web3.utils.toWei("1.0132", "ether")),
+        feeToken: "ETH",
+        maxFee: "0",
+        minGas: 30000,
+        userData: "0x",
+        validUntil: 0,
+        connector: testSwappperBridgeConnector.address,
+        groupData: group_ETH_LRC
+      });
+      calls.push({
+        owner: ownerB,
+        token: "ETH",
+        amount: round(web3.utils.toWei("2.0456546565", "ether")),
+        feeToken: "ETH",
+        maxFee: "0",
+        minGas: 30000,
+        userData: encodeSwapUserSettings(
+          new BN(web3.utils.toWei("2", "ether"))
+        ),
+        validUntil: 0,
+        connector: testSwappperBridgeConnector.address,
+        groupData: group_ETH_LRC
+      });
+      calls.push({
+        owner: ownerC,
+        token: "ETH",
+        amount: round(web3.utils.toWei("3.458415454541", "ether")),
+        feeToken: "ETH",
+        maxFee: "0",
+        minGas: 30000,
+        userData: encodeSwapUserSettings(
+          new BN(web3.utils.toWei("3", "ether"))
+        ),
+        validUntil: 0,
+        connector: testSwappperBridgeConnector.address,
+        groupData: group_ETH_LRC
+      });
+      calls.push({
+        owner: ownerD,
+        token: "ETH",
+        amount: round(web3.utils.toWei("1.458415454541", "ether")),
+        feeToken: "ETH",
+        maxFee: "0",
+        minGas: 30000,
+        userData: encodeSwapUserSettings(
+          new BN(web3.utils.toWei("1", "ether"))
+        ),
+        validUntil: 0,
+        connector: testSwappperBridgeConnector.address,
+        groupData: group_ETH_LRC
+      });
+      calls.push({
+        owner: ownerC,
+        token: "ETH",
+        amount: round(web3.utils.toWei("3.458415454541", "ether")),
+        feeToken: "ETH",
+        maxFee: "0",
+        minGas: 30000,
+        userData: encodeSwapUserSettings(
+          new BN(web3.utils.toWei("3", "ether"))
+        ),
+        validUntil: 0,
+        connector: testSwappperBridgeConnector.address,
+        groupData: group_ETH_LRC
+      });
+      calls.push({
+        owner: ownerD,
+        token: "ETH",
+        amount: round(web3.utils.toWei("1.458415454541", "ether")),
+        feeToken: "ETH",
+        maxFee: "0",
+        minGas: 30000,
+        userData: encodeSwapUserSettings(
+          new BN(web3.utils.toWei("1", "ether"))
+        ),
+        validUntil: 0,
+        connector: testSwappperBridgeConnector.address,
+        groupData: group_ETH_LRC
+      });
+      console.log("Num calls: " + calls.length);
+
+      /*calls.push({
         owner: ownerB,
         token: "LRC",
         amount: round(web3.utils.toWei("1.458415454541", "ether")),
@@ -745,9 +895,18 @@ contract("Bridge", (accounts: string[]) => {
         validUntil: 0xffffffff,
         connector: testSwappperBridgeConnector.address,
         groupData: group_WETH_LRC
-      });
+      });*/
 
-      await bridge.submitCalls(calls);
+      await bridge.setupCalls(calls);
+      await bridge.submitBridgeOperations([], calls);
+
+      // Handle resulting batched deposits
+      /*const depositEvents = await ctx.getEvents(ctx.exchange, "DepositRequested");
+      for (const deposit of depositEvents) {
+        await ctx.requestDeposit(bridge.address, deposit.token, new BN(deposit.amount));
+      }
+      const transferEvents = await ctx.getEvents(bridge.contract, "Transfers");
+      await bridge.submitBridgeOperations(transferEvents, []);*/
 
       assert(false);
     });

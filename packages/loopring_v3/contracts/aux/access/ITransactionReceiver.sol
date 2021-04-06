@@ -6,13 +6,13 @@ pragma experimental ABIEncoderV2;
 import "../../core/iface/ExchangeData.sol";
 import "../../amm/libamm/AmmData.sol";
 
-/// @title IBlockReceiver
+/// @title ITransactionReceiver
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract IBlockReceiver
+abstract contract ITransactionReceiver
 {
-    function beforeBlockSubmission(
-        bytes              calldata txsData,
-        bytes              calldata callbackData
+    function onReceiveTransactions(
+        bytes calldata txsData,
+        bytes calldata callbackData
         )
         external
         virtual;

@@ -8,11 +8,12 @@ import "./BridgeData.sol";
 
 interface IBridgeConnector
 {
-    function processCalls(ConnectorCalls calldata connectorCalls)
+    function processCalls(ConnectorGroup[] calldata groups)
         external
-        payable;
+        payable
+        returns (BridgeTransfer[] memory);
 
-    function getMinGasLimit(ConnectorCalls calldata connectorCalls)
+    function getMinGasLimit(ConnectorGroup[] calldata groups)
         external
         pure
         returns (uint);

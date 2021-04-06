@@ -33,56 +33,58 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         uint minAmountOut;
     }
 
-    struct TokenApprovals
-    {
-        address token;
-        uint    amount;
-    }
-
     IExchangeV3        public immutable exchange;
     IDepositContract   public immutable depositContract;
+
+    IBridge            public immutable bridge;
 
     TestSwapper        public immutable testSwapper;
 
     constructor(
         IExchangeV3 _exchange,
+        IBridge     _bridge,
         TestSwapper _testSwapper
         )
     {
         exchange = _exchange;
         depositContract = _exchange.getDepositContract();
 
+        bridge = _bridge;
+
         testSwapper = _testSwapper;
     }
 
-    function processCalls(ConnectorCalls calldata connectorCalls)
+    function processCalls(ConnectorGroup[] memory groups)
         external
         payable
         override
+        returns (BridgeTransfer[] memory)
     {
         uint numTransfers = 0;
-        for (uint g = 0; g < connectorCalls.groups.length; g++) {
-            numTransfers += connectorCalls.groups[g].calls.length;
+        for (uint g = 0; g < groups.length; g++) {
+            numTransfers += groups[g].calls.length;
         }
         BridgeTransfer[] memory transfers = new BridgeTransfer[](numTransfers);
         uint transferIdx = 0;
 
         // Total ETH to re-deposit
         uint ethValueIn = 0;
+        BridgeCall memory bridgeCall;
+        //BridgeTransfer memory transfer;
+        for (uint g = 0; g < groups.length; g++) {
+            GroupSettings memory settings = abi.decode(groups[g].groupData, (GroupSettings));
 
-        for (uint g = 0; g < connectorCalls.groups.length; g++) {
-            GroupSettings memory settings = abi.decode(connectorCalls.groups[g].groupData, (GroupSettings));
-
-            BridgeCall[] calldata calls = connectorCalls.groups[g].calls;
+            BridgeCall[] memory calls = groups[g].calls;
 
             bool[] memory valid = new bool[](calls.length);
             uint numValid = 0;
 
             uint amountInExpected = 0;
             for (uint i = 0; i < calls.length; i++) {
-                valid[i] = calls[i].token == settings.tokenIn;
-                if (valid[i]) {
-                    amountInExpected = amountInExpected.add(calls[i].amount);
+                bridgeCall = calls[i];
+                if (bridgeCall.token == settings.tokenIn) {
+                    valid[i] = true;
+                    amountInExpected = amountInExpected + bridgeCall.amount;
                 }
             }
 
@@ -93,21 +95,23 @@ contract TestSwappperBridgeConnector is IBridgeConnector
                 amountInExpected
             );
 
+            // Check for each call if the minimum slippage was achieved
             uint amountIn = 0;
             uint ammountInInvalid = 0;
             for (uint i = 0; i < calls.length; i++) {
-                if(valid[i] && calls[i].userData.length == 32) {
-                    UserSettings memory userSettings = abi.decode(calls[i].userData, (UserSettings));
-                    uint userAmountOut = uint(calls[i].amount).mul(amountOut) / amountInExpected;
+                bridgeCall = calls[i];
+                if(valid[i] && bridgeCall.userData.length == 32) {
+                    UserSettings memory userSettings = abi.decode(bridgeCall.userData, (UserSettings));
+                    uint userAmountOut = uint(bridgeCall.amount).mul(amountOut) / amountInExpected;
                     if (userAmountOut < userSettings.minAmountOut) {
                         valid[i] = false;
                     }
                 }
                 if (valid[i]) {
-                    amountIn = amountIn.add(calls[i].amount);
+                    amountIn = amountIn.add(bridgeCall.amount);
                     numValid++;
                 } else {
-                    ammountInInvalid = ammountInInvalid.add(calls[i].amount);
+                    ammountInInvalid = ammountInInvalid.add(bridgeCall.amount);
                 }
             }
 
@@ -165,17 +169,19 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             }
         }
 
-        IBridge(msg.sender).batchDeposit{value: ethValueIn}(transfers);
+        //bridge.batchDeposit{value: ethValueIn}(transfers);
+        return transfers;
+        //return new BridgeTransfer[](0);
     }
 
-    function getMinGasLimit(ConnectorCalls calldata connectorCalls)
+    function getMinGasLimit(ConnectorGroup[] calldata groups)
         external
         pure
         override
         returns (uint gasLimit)
     {
-        for (uint g = 0; g < connectorCalls.groups.length; g++) {
-           gasLimit += 100000 + 2500 * connectorCalls.groups[g].calls.length;
+        for (uint g = 0; g < groups.length; g++) {
+           gasLimit += 100000 + 2500 * groups[g].calls.length;
         }
     }
 

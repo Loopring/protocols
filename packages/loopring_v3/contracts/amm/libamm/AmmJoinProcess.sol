@@ -31,23 +31,21 @@ library AmmJoinProcess
     // event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);
 
     function processJoin(
-        AmmData.State       storage S,
-        AmmData.Context     memory  ctx,
-        bytes               memory  txsData,
-        AmmData.PoolJoin    memory  join,
-        bytes               memory  signature
+        AmmData.State    storage S,
+        AmmData.Context  memory  ctx,
+        AmmData.PoolJoin memory  join,
+        bytes            memory  signature
         )
         internal
     {
         require(join.validUntil >= block.timestamp, "EXPIRED");
 
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
-
         if (signature.length == 0) {
             require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
             delete S.approvedTx[txHash];
         } else if (signature.length == 1) {
-            ctx.verifySignatureL2(txsData, join.owner, txHash, signature);
+            ctx.verifySignatureL2(join.owner, txHash, signature);
         } else {
             require(txHash.verifySignature(join.owner, signature), "INVALID_OFFCHAIN_L1_APPROVAL");
         }
@@ -56,71 +54,113 @@ library AmmJoinProcess
         (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
         require(slippageOK, "JOIN_SLIPPAGE_INVALID");
 
-        // Handle liquidity tokens
-        TransferTransaction.Transfer memory transfer;
-        for (uint i = 0; i < ctx.tokens.length; i++) {
-            TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
+        // Process transfers
+        _processJoinTransfers(
+            ctx,
+            join,
+            amounts,
+            signature
+        );
 
-            require(
-                // transfer.fromAccountID == UNKNOWN &&
-                transfer.toAccountID == ctx.accountID &&
-                transfer.from == join.owner &&
-                transfer.to == address(this) &&
-                transfer.tokenID == ctx.tokens[i].tokenID &&
-                transfer.amount.isAlmostEqualAmount(amounts[i]) &&
-                (signature.length == 0 || transfer.storageID == join.joinStorageIDs[i]),
-                "INVALID_JOIN_TRANSFER_TX_DATA"
-            );
-
-            if (transfer.fee > 0) {
-                require(
-                    i == ctx.tokens.length - 1 &&
-                    transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                    transfer.fee <= join.fee,
-                    "INVALID_FEES"
-                );
-            }
-
-            ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(transfer.amount);
-        }
-
-        _mintPoolTokenOnL2(ctx, txsData, mintAmount, join.owner, transfer);
+        _mintPoolTokenOnL2(
+            ctx,
+            mintAmount,
+            join.owner
+        );
 
         // emit JoinProcessed(join.owner, mintAmount, amounts);
     }
 
-    function _mintPoolTokenOnL2(
-        AmmData.Context     memory  ctx,
-        bytes               memory  txsData,
-        uint96                      amount,
-        address                     to,
-         TransferTransaction.Transfer memory transfer
+    function _processJoinTransfers(
+        AmmData.Context  memory ctx,
+        AmmData.PoolJoin memory join,
+        uint96[]         memory amounts,
+        bytes            memory signature
         )
         private
         view
     {
-        TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
+        // Handle liquidity tokens
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            AmmData.Token memory token = ctx.tokens[i];
+
+            // Read the transaction data
+            (uint packedData, address to, address from) = AmmUtil.readTransfer(ctx.txsDataPtr);
+            uint amount = (packedData >> 64) & 0xffffff;
+            uint fee    = (packedData >> 32) & 0xffff;
+
+            // Decode float
+            amount = (amount & 524287) * (10 ** (amount >> 19));
+
+            uint targetAmount = uint(amounts[i]);
+            require(
+                // txType == ExchangeData.TransactionType.TRANSFER &&
+                // transfer.type == 1 &&
+                // transfer.fromAccountID == UNKNOWN &&
+                // transfer.toAccountID == ctx.accountID &&
+                // transfer.tokenID == token.tokenID &&
+                packedData & 0xffff00000000ffffffffffff0000000000000000000000 ==
+                (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(ctx.accountID) << 104) | (uint(token.tokenID) << 88) &&
+                (100000 - 8) * targetAmount <= amount * 100000 && amount * 100000 <= (100000 + 8) * targetAmount &&
+                (signature.length == 0 || /*storageID*/(packedData & 0xffffffff) == join.joinStorageIDs[i]) &&
+                from == join.owner &&
+                to == address(this),
+                "INVALID_JOIN_TRANSFER_TX_DATA"
+            );
+
+            if (fee > 0) {
+                // Decode float
+                fee = (fee & 2047) * (10 ** (fee >> 11));
+                require(
+                    i == ctx.tokens.length - 1 &&
+                    /*feeTokenID*/(packedData >> 48) & 0xffff == token.tokenID &&
+                    fee <= join.fee,
+                    "INVALID_FEES"
+                );
+            }
+
+            ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(uint96(amount));
+            ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
+        }
+    }
+
+    function _mintPoolTokenOnL2(
+        AmmData.Context memory ctx,
+        uint                   mintAmount,
+        address                _to
+        )
+        private
+        view
+    {
+        // Read the transaction data
+        (uint packedData, address to, address from) = AmmUtil.readTransfer(ctx.txsDataPtr);
+        uint amount = (packedData >> 64) & 0xffffff;
+        // Decode float
+        amount = (amount & 524287) * (10 ** (amount >> 19));
 
         require(
-            transfer.fromAccountID == ctx.accountID &&
+            // txType == ExchangeData.TransactionType.TRANSFER &&
+            // transfer.type == 1 &&
+            // transfer.fromAccountID == ctx.accountID &&
             // transfer.toAccountID == UNKNOWN &&
-            transfer.from == address(this) &&
-            transfer.to == to &&
-            transfer.tokenID == ctx.poolTokenID &&
-            transfer.amount.isAlmostEqualAmount(amount) &&
-            transfer.feeTokenID == 0 &&
-            transfer.fee == 0,
-            // transfer.storageID == UNKNOWN &&
+            // transfer.tokenID == ctx.poolTokenID &&
+            packedData & 0xffffffffffff00000000ffff000000ffffffff00000000 ==
+            (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(ctx.accountID) << 136) | (uint(ctx.poolTokenID) << 88) &&
+            // transfer.amount.isAlmostEqualAmount(mintAmount) &&
+            (100000 - 8) * mintAmount <= amount * 100000 && amount * 100000 <= (100000 + 8) * mintAmount &&
+            to == _to &&
+            from == address(this),
             "INVALID_MINT_TX_DATA"
         );
 
         // Update pool balance
-        ctx.totalSupply = ctx.totalSupply.add(transfer.amount);
+        ctx.totalSupply = ctx.totalSupply.add(uint96(amount));
+        ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 
     function _calculateJoinAmounts(
-        AmmData.Context  memory  ctx,
-        AmmData.PoolJoin memory  join
+        AmmData.Context  memory ctx,
+        AmmData.PoolJoin memory join
         )
         private
         pure

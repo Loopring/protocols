@@ -3,11 +3,11 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../aux/access/IBlockReceiver.sol";
+import "../aux/access/ITransactionReceiver.sol";
 import "../core/iface/IAgentRegistry.sol";
 // import "../lib/Drainable.sol";
 import "../lib/ReentrancyGuard.sol";
-import "./libamm/AmmBlockReceiver.sol";
+import "./libamm/AmmTransactionReceiver.sol";
 import "./libamm/AmmData.sol";
 import "./libamm/AmmExitRequest.sol";
 import "./libamm/AmmJoinRequest.sol";
@@ -21,15 +21,15 @@ import "./PoolToken.sol";
 contract LoopringAmmPool is
     PoolToken,
     IAgent,
-    IBlockReceiver,
+    ITransactionReceiver,
     ReentrancyGuard
 {
-    using AmmBlockReceiver for AmmData.State;
-    using AmmJoinRequest   for AmmData.State;
-    using AmmExitRequest   for AmmData.State;
-    using AmmPoolToken     for AmmData.State;
-    using AmmStatus        for AmmData.State;
-    using AmmWithdrawal    for AmmData.State;
+    using AmmTransactionReceiver for AmmData.State;
+    using AmmJoinRequest         for AmmData.State;
+    using AmmExitRequest         for AmmData.State;
+    using AmmPoolToken           for AmmData.State;
+    using AmmStatus              for AmmData.State;
+    using AmmWithdrawal          for AmmData.State;
 
     event PoolJoinRequested(AmmData.PoolJoin join);
     event PoolExitRequested(AmmData.PoolExit exit, bool force);
@@ -118,7 +118,7 @@ contract LoopringAmmPool is
         state.exitPool(burnAmount, exitMinAmounts, true);
     }
 
-    function beforeBlockSubmission(
+    function onReceiveTransactions(
         bytes              calldata txsData,
         bytes              calldata callbackData
         )
@@ -129,7 +129,7 @@ contract LoopringAmmPool is
         // nonReentrant     // Not needed, does not do any external calls
                             // and can only be called by the exchange owner.
     {
-        state.beforeBlockSubmission(txsData, callbackData);
+        state.onReceiveTransactions(txsData, callbackData);
     }
 
     function withdrawWhenOffline()

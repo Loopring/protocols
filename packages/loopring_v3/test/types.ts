@@ -222,7 +222,7 @@ export interface TxBlock {
   signature?: Signature;
 }
 
-export interface BlockCallback {
+export interface TransactionReceiverCallback {
   target: string;
   txIdx: number;
   numTxs: number;
@@ -263,7 +263,7 @@ export interface Block {
   internalBlock: TxBlock;
   blockInfoData?: any;
   shutdown?: boolean;
-  callbacks?: BlockCallback[];
+  callbacks?: TransactionReceiverCallback[];
 }
 
 export interface Account {
