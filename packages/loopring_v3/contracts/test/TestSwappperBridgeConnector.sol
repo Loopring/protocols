@@ -148,7 +148,6 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             }
 
             // Batch deposit
-            // TODO: more batching
             // TODO: maybe use internal list to track allowances (maybe not needed with eip-2929)
             // TODO: pre-approve tokens where possible
             if (numValid != 0) {
@@ -169,9 +168,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             }
         }
 
-        //bridge.batchDeposit{value: ethValueIn}(transfers);
         return transfers;
-        //return new BridgeTransfer[](0);
     }
 
     function getMinGasLimit(ConnectorGroup[] calldata groups)

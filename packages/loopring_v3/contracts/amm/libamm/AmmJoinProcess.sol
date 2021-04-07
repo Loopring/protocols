@@ -85,7 +85,7 @@ library AmmJoinProcess
             AmmData.Token memory token = ctx.tokens[i];
 
             // Read the transaction data
-            (uint packedData, address to, address from) = AmmUtil.readTransfer(ctx.txsDataPtr);
+            (uint packedData, address to, address from) = AmmUtil.readTransfer(ctx);
             uint amount = (packedData >> 64) & 0xffffff;
             uint fee    = (packedData >> 32) & 0xffff;
 
@@ -120,7 +120,6 @@ library AmmJoinProcess
             }
 
             ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(uint96(amount));
-            ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
         }
     }
 
@@ -133,7 +132,7 @@ library AmmJoinProcess
         view
     {
         // Read the transaction data
-        (uint packedData, address to, address from) = AmmUtil.readTransfer(ctx.txsDataPtr);
+        (uint packedData, address to, address from) = AmmUtil.readTransfer(ctx);
         uint amount = (packedData >> 64) & 0xffffff;
         // Decode float
         amount = (amount & 524287) * (10 ** (amount >> 19));
@@ -155,7 +154,6 @@ library AmmJoinProcess
 
         // Update pool balance
         ctx.totalSupply = ctx.totalSupply.add(uint96(amount));
-        ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 
     function _calculateJoinAmounts(

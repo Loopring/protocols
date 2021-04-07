@@ -31,8 +31,8 @@ struct BridgeCall
     uint96  amount;
     bytes   userData;
     uint    minGas;
-    //uint    maxFee;
-    //uint    validUntil;
+    uint  maxFee;
+    uint  validUntil;
 }
 
 struct ConnectorGroup
@@ -45,9 +45,7 @@ struct ConnectorCalls
 {
     address             connector;
     uint                gasLimit;
-    uint                totalMinGas;
     ConnectorGroup[]    groups;
-    TokenData[]         tokens;
 }
 
 struct TransferBatch

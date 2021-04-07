@@ -58,7 +58,7 @@ contract Bridge is ReentrancyGuard, Claimable
     }
 
     bytes32 constant public BRIDGE_CALL_TYPEHASH = keccak256(
-        "BridgeCall(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
+        "BridgeCall(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
     );
 
     uint               public constant  MAX_NUM_TRANSACTIONS_IN_BLOCK = 386;
@@ -124,30 +124,36 @@ contract Bridge is ReentrancyGuard, Claimable
         public
         payable
     {
-       _batchDeposit(msg.sender, deposits);
+       BridgeTransfer[][] memory _deposits = new BridgeTransfer[][](1);
+       _deposits[0] = deposits;
+       _batchDeposit(msg.sender,_deposits);
     }
 
     function _batchDeposit(
-        address                 from,
-        BridgeTransfer[] memory deposits
+        address                   from,
+        BridgeTransfer[][] memory deposits
         )
         internal
     {
-        if (deposits.length == 0) {
+        uint totalNumDeposits = 0;
+        for (uint i = 0; i < deposits.length; i++) {
+            totalNumDeposits += deposits[i].length;
+        }
+        if (totalNumDeposits == 0) {
             return;
         }
 
         // Needs to be possible to do all transfers in a single block
-        require(deposits.length <= MAX_NUM_TRANSACTIONS_IN_BLOCK, "MAX_DEPOSITS_EXCEEDED");
+        require(totalNumDeposits <= MAX_NUM_TRANSACTIONS_IN_BLOCK, "MAX_DEPOSITS_EXCEEDED");
 
         // Transfers to be done
-        bytes memory transfers = new bytes(deposits.length * 34);
+        bytes memory transfers = new bytes(totalNumDeposits * 34);
         assembly {
             transfers := add(transfers, 32)
         }
 
         // Worst case scenario all tokens are different
-        TokenData[] memory tokens = new TokenData[](deposits.length);
+        TokenData[] memory tokens = new TokenData[](totalNumDeposits);
         uint numDistinctTokens = 0;
 
         // Run over all deposits summing up total amounts per token
@@ -155,34 +161,37 @@ contract Bridge is ReentrancyGuard, Claimable
         uint tokenIdx = 0;
         uint16 tokenID;
         BridgeTransfer memory deposit;
-        for (uint i = 0; i < deposits.length; i++) {
-            deposit = deposits[i];
-            if(token != deposit.token) {
-                token = deposit.token;
-                tokenIdx = 0;
-                while(tokenIdx < numDistinctTokens && tokens[tokenIdx].token != token) {
-                    tokenIdx++;
+        for (uint n = 0; n < deposits.length; n++) {
+            BridgeTransfer[] memory _deposits = deposits[n];
+            for (uint i = 0; i < _deposits.length; i++) {
+                deposit = _deposits[i];
+                if(token != deposit.token) {
+                    token = deposit.token;
+                    tokenIdx = 0;
+                    while(tokenIdx < numDistinctTokens && tokens[tokenIdx].token != token) {
+                        tokenIdx++;
+                    }
+                    if (tokenIdx == numDistinctTokens) {
+                        tokens[tokenIdx].token = token;
+                        tokens[tokenIdx].tokenID = _getTokenID(token);
+                        numDistinctTokens++;
+                    }
+                    tokenID = tokens[tokenIdx].tokenID;
                 }
-                if (tokenIdx == numDistinctTokens) {
-                    tokens[tokenIdx].token = token;
-                    tokens[tokenIdx].tokenID = _getTokenID(token);
-                    numDistinctTokens++;
-                }
-                tokenID = tokens[tokenIdx].tokenID;
-            }
-            tokens[tokenIdx].amount = tokens[tokenIdx].amount.add(deposit.amount);
+                tokens[tokenIdx].amount = tokens[tokenIdx].amount.add(deposit.amount);
 
-            // Pack the transfer data together
-            assembly {
-                mstore(add(transfers, 2), tokenID)
-                mstore(    transfers    , or(shl(96, mload(deposit)), mload(add(deposit, 64))))
-                transfers := add(transfers, 34)
+                // Pack the transfer data together
+                assembly {
+                    mstore(add(transfers, 2), tokenID)
+                    mstore(    transfers    , or(shl(96, mload(deposit)), mload(add(deposit, 64))))
+                    transfers := add(transfers, 34)
+                }
             }
         }
 
         // Get the original transfers ptr back
         assembly {
-            transfers := sub(transfers, add(32, mul(34, mload(deposits))))
+            transfers := sub(transfers, add(32, mul(34, totalNumDeposits)))
         }
 
         // Do a normal deposit per token
@@ -372,7 +381,7 @@ contract Bridge is ReentrancyGuard, Claimable
         for (uint i = 0; i < amounts.length; i++) {
             uint targetAmount = amounts[i];
 
-            (uint packedData, address to, ) = readTransfer(ctx.txsDataPtr);
+            (uint packedData, address to, ) = readTransfer(ctx);
             uint tokenID      = (packedData >> 88) & 0xffff;
             uint amount       = (packedData >> 64) & 0xffffff;
             uint fee          = (packedData >> 32) & 0xffff;
@@ -400,8 +409,6 @@ contract Bridge is ReentrancyGuard, Claimable
                 mstore(    transfers    , or(shl(96, to), targetAmount))
                 transfers := add(transfers, 34)
             }
-
-            ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
         }
 
         // Get the original transfers ptr back
@@ -424,38 +431,23 @@ contract Bridge is ReentrancyGuard, Claimable
         internal
     {
         TokenData[] memory tokens = _tokens;
-
         uint[] memory totalAmounts = new uint[](tokens.length);
-        /*for (uint i = 0; i < operations.tokens.length; i++) {
-            withdrawalAmounts[i] = operations.tokens[i].amount;
-        }*/
+
+        BridgeTransfer[][] memory deposits = new BridgeTransfer[][](connectorCalls.length);
 
         // Calls
         for (uint c = 0; c < connectorCalls.length; c++) {
             ConnectorCalls calldata connectorCall = connectorCalls[c];
 
-            //uint[] memory connectorAmounts = new uint[](tokens.length);
-
-            // Verify token data
-            /*require(connectorCall.tokens.length == tokens.length, "INVALID_TOKEN_DATA");
-            for (uint i = 0; i < tokens.length; i++) {
-                require(tokens[i].token == connectorCall.tokens[i].token, "INVALID_CONNECTOR_TOKEN_DATA");
-                //tokens[i].amount = tokens[i].amount.sub(connectorCall.tokens[i].amount);
-            }*/
-
-            //ConnectorGroupNew[] memory groupsData = new ConnectorGroupNew[](connectorCall.groups.length);
-
             // Verify the transactions
             ctx.connector = connectorCall.connector;
             for (uint g = 0; g < connectorCall.groups.length; g++) {
-                _doConnectorGroup(
+                _processConnectorGroup(
                     ctx,
                     connectorCall.groups[g],
                     tokens,
                     totalAmounts
                 );
-                //ConnectorGroup memory group = connectorCall.groups[g];
-                //groupsData[g].calls = new BridgeCallNew[](group.calls.length);
             }
             // Make sure the gas passed to the connector is at least the sum of all call gas min amounts.
             // So calls basically "buy" a part of the total gas needed to do the batched call,
@@ -464,14 +456,16 @@ contract Bridge is ReentrancyGuard, Claimable
             require(connectorCall.gasLimit >= ctx.totalMinGas, "INVALID_TOTAL_MIN_GAS");
 
             // Call the connector
-            _connectorCall(connectorCall, c);
+            deposits[c] = _connectorCall(connectorCall, c);
         }
 
         // Verify the withdrawals
         for (uint i = 0; i < tokens.length; i++) {
+            TokenData memory token = tokens[i];
             // Verify token data
             require(
-                _getTokenID(tokens[i].token) == tokens[i].tokenID,
+                _getTokenID(token.token) == token.tokenID &&
+                token.amount == totalAmounts[i],
                 "INVALID_TOKEN_DATA"
             );
 
@@ -495,33 +489,36 @@ contract Bridge is ReentrancyGuard, Claimable
                 // txType == ExchangeData.TransactionType.WITHDRAWAL &&
                 // withdrawal.type == 1 &&
                 header & 0xffff == (uint(ExchangeData.TransactionType.WITHDRAWAL) << 8) | 1 &&
-                // withdrawal.tokenID == tokens[i].tokenID &&
-                // withdrawal.amount == totalAmounts[i] &&
+                // withdrawal.tokenID == token.tokenID &&
+                // withdrawal.amount == token.amount &&
                 // withdrawal.fee == 0,
-                packedData & 0xffffffffffffffffffffffffffff0000ffff == (uint(tokens[i].tokenID) << 128) | (uint(totalAmounts[i]) << 32) &&
+                packedData & 0xffffffffffffffffffffffffffff0000ffff == (uint(token.tokenID) << 128) | (token.amount << 32) &&
                 onchainDataHash == dataHash,
                 "INVALID_BRIDGE_WITHDRAWAL_TX_DATA"
             );
 
             ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
         }
+
+        // Do all resulting transfers back from the bridge to the users
+        _batchDeposit(address(this), deposits);
     }
 
-    function _doConnectorGroup(
+    function _processConnectorGroup(
         Context          memory   ctx,
         ConnectorGroup   calldata group,
         TokenData[]      memory   tokens,
         uint[]           memory   totalAmounts
         )
         internal
-        pure
+        view
     {
         CallTransfer memory transfer;
         for (uint i = 0; i < group.calls.length; i++) {
             BridgeCall calldata bridgeCall = group.calls[i];
 
             // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
-            (uint packedData, , ) = readTransfer(ctx.txsDataPtr);
+            (uint packedData, , ) = readTransfer(ctx);
             transfer.fromAccountID = (packedData >> 136) & 0xffffffff;
             transfer.tokenID       = (packedData >>  88) & 0xffff;
             transfer.amount        = (packedData >>  64) & 0xffffff;
@@ -532,23 +529,25 @@ contract Bridge is ReentrancyGuard, Claimable
             transfer.amount = (transfer.amount & 524287) * (10 ** (transfer.amount >> 19));
             transfer.fee = (transfer.fee & 2047) * (10 ** (transfer.fee >> 11));
 
-            ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
-
             // Verify that the transaction was approved with an L2 signature
             bytes32 txHash = _hashTx(
                 ctx.domainSeparator,
                 transfer,
-                /*transfer.tokenID,
-                transfer.amount,
-                transfer.feeTokenID,
-                transfer.storageID,*/
+                bridgeCall.maxFee,
+                bridgeCall.validUntil,
                 bridgeCall.minGas,
                 ctx.connector,
                 group.groupData,
                 bridgeCall.userData
             );
-
             verifySignatureL2(ctx, bridgeCall.owner, transfer.fromAccountID, txHash);
+
+            uint t = 0;
+            while (t < tokens.length && transfer.tokenID != tokens[t].tokenID) {
+                t++;
+            }
+            require(t < tokens.length, "INVALID_INPUT_TOKENS");
+            totalAmounts[t] += transfer.amount;
 
             // Verify the transaction data
             require(
@@ -557,17 +556,15 @@ contract Bridge is ReentrancyGuard, Claimable
                 // transfer.fromAccountID == UNKNOWN &&
                 // transfer.toAccountID == ctx.accountID &&
                 packedData & 0xffff00000000ffffffff00000000000000000000000000 ==
-                (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(ctx.accountID) << 104),
+                (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(ctx.accountID) << 104) &&
+                transfer.fee <= bridgeCall.maxFee &&
+                bridgeCall.validUntil == 0 || block.timestamp < bridgeCall.validUntil &&
+                bridgeCall.token == tokens[t].token &&
+                bridgeCall.amount == transfer.amount,
                 "INVALID_BRIDGE_CALL_TRANSFER"
             );
 
             ctx.totalMinGas += bridgeCall.minGas;
-            uint t = 0;
-            while (t < tokens.length && transfer.tokenID != tokens[t].tokenID) {
-                t++;
-            }
-            require(t < tokens.length, "INVALID_INPUT_TOKENS");
-            totalAmounts[t] += transfer.amount;
         }
     }
 
@@ -604,6 +601,7 @@ contract Bridge is ReentrancyGuard, Claimable
         uint n
         )
         internal
+        returns (BridgeTransfer[] memory)
     {
         require(connectorCalls.connector != address(this), "INVALID_CONNECTOR");
 
@@ -618,36 +616,21 @@ contract Bridge is ReentrancyGuard, Claimable
         }
         }
 
-        bool trusted = trustedConnectors[connectorCalls.connector];
+        require(trustedConnectors[connectorCalls.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
 
         {
         bool success = false;
         bytes memory returnData;
-        if (trusted) {
-            // Execute the logic using a delegate so no extra transfers are needed
-            bytes memory txData = _getConnectorGroupsCallData(IBridgeConnector.processCalls.selector, connectorCalls.groups, n);
-            (success, returnData) = connectorCalls.connector.fastDelegatecall(connectorCalls.gasLimit, txData);
 
-            /*bytes memory txData = abi.encodeWithSelector(
-                IBridgeConnector.processCalls.selector,
-                connectorCalls.groups
-            );
-            //(success, returnData) = connectorCalls.connector.delegatecall(txData);
-            (success, returnData) = connectorCalls.connector.fastDelegatecall(connectorCalls.gasLimit, txData);*/
-
-            //emit LogCallData(txData);
-        } else {
-            bytes memory txData = _getConnectorGroupsCallData(Bridge._executeConnectorCall.selector, connectorCalls.groups, n);
-            (success, returnData) = address(this).fastCall(gasleft(), 0, txData);
-        }
+        // Execute the logic using a delegate so no extra transfers are needed
+        bytes memory txData = _getConnectorGroupsCallData(IBridgeConnector.processCalls.selector, connectorCalls.groups, n);
+        (success, returnData) = connectorCalls.connector.fastDelegatecall(connectorCalls.gasLimit, txData);
 
         if (success) {
             emit BridgeCallSuccess(connectorCalls.connector);
-            if (trusted) {
-                // TODO: batch all transfers returned by trusted connectors together
-                BridgeTransfer[] memory transfers = abi.decode(returnData, (BridgeTransfer[]));
-                _batchDeposit(address(this), transfers);
-            }
+            // TODO: batch all transfers returned by trusted connectors together
+            BridgeTransfer[] memory transfers = abi.decode(returnData, (BridgeTransfer[]));
+            return transfers;
         } else {
             // If the call failed return funds to all users
             for (uint g = 0; g < connectorCalls.groups.length; g++) {
@@ -660,55 +643,12 @@ contract Bridge is ReentrancyGuard, Claimable
                         amount: group.calls[i].amount
                     });
                 }
-                _batchDeposit(address(this), transfers);
+                return transfers;
             }
 
             emit BridgeCallFailed(connectorCalls.connector, string(returnData));
         }
         }
-
-
-         // Check if the minimum amount of gas required is achieved
-        /*try IBridgeConnector(connectorCalls.connector).getMinGasLimit{gas: GAS_LIMIT_CHECK_GAS_LIMIT}(connectorCalls) returns (uint minGasLimit) {
-            require(connectorCalls.gasLimit >= minGasLimit, "GAS_LIMIT_TOO_LOW");
-        } catch {
-            // If the call failed for some reason just continue.
-        }
-
-        // Do the call
-        bool success;
-        try Bridge(this)._executeConnectorCall(connectorCalls) {
-            success = true;
-            emit BridgeCallSuccess(connectorCalls.connector);
-        } catch Error(string memory reason) {
-            success = false;
-            emit BridgeCallFailed(connectorCalls.connector, reason);
-        } catch {
-            success = false;
-            emit BridgeCallFailed(connectorCalls.connector, "unknown");
-        }*/
-    }
-
-    function _executeConnectorCall(ConnectorCalls calldata connectorCalls)
-        external
-    {
-        require(msg.sender == address(this), "UNAUTHORIZED");
-
-        // Transfer funds to the external contract with a real call, so the connector doesn't have to be trusted at all.
-        uint ethValue = 0;
-        for (uint i = 0; i < connectorCalls.tokens.length; i++) {
-            TokenData memory tokenData = connectorCalls.tokens[i];
-            if (tokenData.amount > 0) {
-                if (tokenData.token != address(0)) {
-                    tokenData.token.safeTransferAndVerify(connectorCalls.connector, tokenData.amount);
-                } else {
-                    ethValue = ethValue.add(tokenData.amount);
-                }
-            }
-        }
-
-        // Do the call
-        IBridgeConnector(connectorCalls.connector).processCalls{value: ethValue, gas: connectorCalls.gasLimit}(connectorCalls.groups);
     }
 
     // Returns the tokenID for the given token address.
@@ -764,16 +704,14 @@ contract Bridge is ReentrancyGuard, Claimable
     }
 
     function _hashTx(
-        bytes32         _DOMAIN_SEPARATOR,
+        bytes32             _DOMAIN_SEPARATOR,
         CallTransfer memory transfer,
-        /*uint16          tokenID,
-        uint            amount,
-        uint16          feeTokenID,
-        uint32          storageID,*/
-        uint            minGas,
-        address         connector,
-        bytes    memory groupData,
-        bytes    memory userData
+        uint                maxFee,
+        uint                validUntil,
+        uint                minGas,
+        address             connector,
+        bytes        memory groupData,
+        bytes        memory userData
         )
         internal
         pure
@@ -807,12 +745,14 @@ contract Bridge is ReentrancyGuard, Claimable
             mstore(add(data,  32), tokenID)
             mstore(add(data,  64), amount)
             mstore(add(data,  96), feeTokenID)
-            mstore(add(data, 128), storageID)
-            mstore(add(data, 160), minGas)
-            mstore(add(data, 192), connector)
-            mstore(add(data, 224), keccak256(add(groupData, 32), mload(groupData)))
-            mstore(add(data, 256), keccak256(add(userData , 32), mload(userData)))
-            let p := keccak256(data, 288)
+            mstore(add(data, 128), maxFee)
+            mstore(add(data, 160), validUntil)
+            mstore(add(data, 192), storageID)
+            mstore(add(data, 224), minGas)
+            mstore(add(data, 256), connector)
+            mstore(add(data, 288), keccak256(add(groupData, 32), mload(groupData)))
+            mstore(add(data, 320), keccak256(add(userData , 32), mload(userData)))
+            let p := keccak256(data, 352)
             mstore(data, "\x19\x01")
             mstore(add(data,  2), _DOMAIN_SEPARATOR)
             mstore(add(data, 34), p)
@@ -840,9 +780,6 @@ contract Bridge is ReentrancyGuard, Claimable
             let offsetToConnectorCall := add(add(offsetToConnectorCalls, 32), calldataload(add(add(offsetToConnectorCalls, 32), mul(n, 32))))
             let offsetToNextConnectorCall := add(add(offsetToConnectorCalls, 32), calldataload(add(add(offsetToConnectorCalls, 32), mul(add(n, 1), 32))))
 
-            //let offsetToConnectorGroups := add(add(offsetToConnectorCall, 32), calldataload(add(add(offsetToConnectorCall, 32), mul(n, 32))))
-
-
             offsetToConnectorGroups := sub(groups.offset, 32)
 
             let numConnectorCalls := calldataload(offsetToConnectorCalls)
@@ -862,17 +799,19 @@ contract Bridge is ReentrancyGuard, Claimable
         return txData;
     }
 
-    function readTransfer(uint txsDataPtr)
+    function readTransfer(Context memory ctx)
         internal
         pure
         returns (uint packedData, address to, address from)
     {
+        uint txsDataPtr = ctx.txsDataPtr;
         // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
         assembly {
             packedData := calldataload(txsDataPtr)
             to := and(calldataload(add(txsDataPtr, 20)), 0xffffffffffffffffffffffffffffffffffffffff)
             from := and(calldataload(add(txsDataPtr, 40)), 0xffffffffffffffffffffffffffffffffffffffff)
         }
+        ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 
     function verifySignatureL2(

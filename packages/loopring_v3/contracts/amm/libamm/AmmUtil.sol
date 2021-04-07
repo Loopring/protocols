@@ -55,17 +55,19 @@ library AmmUtil
         ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 
-    function readTransfer(uint txsDataPtr)
+    function readTransfer(AmmData.Context memory ctx)
         internal
         pure
         returns (uint packedData, address to, address from)
     {
+        uint txsDataPtr = ctx.txsDataPtr;
         // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
         assembly {
             packedData := calldataload(txsDataPtr)
             to := and(calldataload(add(txsDataPtr, 20)), 0xffffffffffffffffffffffffffffffffffffffff)
             from := and(calldataload(add(txsDataPtr, 40)), 0xffffffffffffffffffffffffffffffffffffffff)
         }
+        ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 
     function isAlmostEqualAmount(

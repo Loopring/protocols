@@ -59,8 +59,8 @@ export interface ConnectorGroup {
 export interface ConnectorCalls {
   connector: string;
   gasLimit: number;
-  totalMinGas: number;
   groups: ConnectorGroup[];
+  totalMinGas: number;
   tokens: TokenData[];
 }
 
@@ -99,6 +99,8 @@ export namespace CollectTransferUtils {
           { name: "tokenID", type: "uint16" },
           { name: "amount", type: "uint96" },
           { name: "feeTokenID", type: "uint16" },
+          { name: "maxFee", type: "uint96" },
+          { name: "validUntil", type: "uint32" },
           { name: "storageID", type: "uint32" },
           { name: "minGas", type: "uint32" },
           { name: "connector", type: "address" },
@@ -117,6 +119,8 @@ export namespace CollectTransferUtils {
         tokenID: callWrapper.transfer.tokenID,
         amount: callWrapper.transfer.amount,
         feeTokenID: callWrapper.transfer.feeTokenID,
+        maxFee: callWrapper.call.maxFee,
+        validUntil: callWrapper.call.validUntil,
         storageID: callWrapper.transfer.storageID,
         minGas: callWrapper.call.minGas,
         connector: callWrapper.connector,
@@ -901,14 +905,21 @@ contract("Bridge", (accounts: string[]) => {
       await bridge.submitBridgeOperations([], calls);
 
       // Handle resulting batched deposits
-      /*const depositEvents = await ctx.getEvents(ctx.exchange, "DepositRequested");
+      const depositEvents = await ctx.getEvents(
+        ctx.exchange,
+        "DepositRequested"
+      );
       for (const deposit of depositEvents) {
-        await ctx.requestDeposit(bridge.address, deposit.token, new BN(deposit.amount));
+        await ctx.requestDeposit(
+          bridge.address,
+          deposit.token,
+          new BN(deposit.amount)
+        );
       }
       const transferEvents = await ctx.getEvents(bridge.contract, "Transfers");
-      await bridge.submitBridgeOperations(transferEvents, []);*/
+      await bridge.submitBridgeOperations(transferEvents, []);
 
-      assert(false);
+      // assert(false);
     });
   });
 });
