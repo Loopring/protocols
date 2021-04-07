@@ -77,8 +77,10 @@ contract WalletFactory
         view
         returns (address)
     {
+        uint _chainid;
+        assembly { _chainid := chainid() }
         return Create2.computeAddress(
-            keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
+            keccak256(abi.encodePacked(WALLET_CREATION, _chainid, owner, salt)),
             _getWalletCode()
         );
     }
