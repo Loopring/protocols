@@ -33,24 +33,10 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         uint minAmountOut;
     }
 
-    IExchangeV3        public immutable exchange;
-    IDepositContract   public immutable depositContract;
+    TestSwapper public immutable testSwapper;
 
-    IBridge            public immutable bridge;
-
-    TestSwapper        public immutable testSwapper;
-
-    constructor(
-        IExchangeV3 _exchange,
-        IBridge     _bridge,
-        TestSwapper _testSwapper
-        )
+    constructor(TestSwapper _testSwapper)
     {
-        exchange = _exchange;
-        depositContract = _exchange.getDepositContract();
-
-        bridge = _bridge;
-
         testSwapper = _testSwapper;
     }
 
@@ -67,10 +53,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         BridgeTransfer[] memory transfers = new BridgeTransfer[](numTransfers);
         uint transferIdx = 0;
 
-        // Total ETH to re-deposit
-        uint ethValueIn = 0;
         BridgeCall memory bridgeCall;
-        //BridgeTransfer memory transfer;
         for (uint g = 0; g < groups.length; g++) {
             GroupSettings memory settings = abi.decode(groups[g].groupData, (GroupSettings));
 
@@ -116,7 +99,6 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             }
 
             // Do the actual swap
-            {
             uint ethValueOut = (settings.tokenIn == address(0)) ? amountIn : 0;
             if (settings.tokenIn != address(0)) {
                 ERC20(settings.tokenIn).approve(address(testSwapper), amountIn);
@@ -126,7 +108,6 @@ contract TestSwappperBridgeConnector is IBridgeConnector
                 settings.tokenOut,
                 amountIn
             );
-            }
 
             // Create transfers back to the users
             for (uint i = 0; i < calls.length; i++) {
@@ -146,27 +127,8 @@ contract TestSwappperBridgeConnector is IBridgeConnector
                     });
                 }
             }
-
-            // Batch deposit
-            // TODO: maybe use internal list to track allowances (maybe not needed with eip-2929)
-            // TODO: pre-approve tokens where possible
-            if (numValid != 0) {
-                if (settings.tokenOut == address(0)) {
-                    ethValueIn = ethValueIn.add(amountOut);
-                } else {
-                    uint allowance = ERC20(settings.tokenOut).allowance(address(this), address(depositContract));
-                    ERC20(settings.tokenOut).approve(address(depositContract), allowance.add(amountOut));
-                }
-            }
-            if (numValid != calls.length) {
-                if (settings.tokenIn == address(0)) {
-                    ethValueIn = ethValueIn.add(ammountInInvalid);
-                } else {
-                    uint allowance = ERC20(settings.tokenIn).allowance(address(this), address(depositContract));
-                    ERC20(settings.tokenIn).approve(address(depositContract), allowance.add(ammountInInvalid));
-                }
-            }
         }
+        assert(transfers.length == transferIdx);
 
         return transfers;
     }

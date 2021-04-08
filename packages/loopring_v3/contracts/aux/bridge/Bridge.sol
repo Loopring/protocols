@@ -589,11 +589,16 @@ contract Bridge is ReentrancyGuard, Claimable
         )
         internal
     {
-        if(amount > 0) {
-            // Do the token transfer directly to the exchange
-            uint ethValue = (token == address(0)) ? amount : 0;
-            exchange.deposit{value: ethValue}(from, address(this), token, amount, new bytes(0));
+        if (amount == 0) {
+            return;
         }
+
+        if (from == address(this) && token != address(0)) {
+            ERC20(token).approve(address(depositContract), amount);
+        }
+        // Do the token transfer directly to the exchange
+        uint ethValue = (token == address(0)) ? amount : 0;
+        exchange.deposit{value: ethValue}(from, address(this), token, amount, new bytes(0));
     }
 
     function _connectorCall(
@@ -601,7 +606,7 @@ contract Bridge is ReentrancyGuard, Claimable
         uint n
         )
         internal
-        returns (BridgeTransfer[] memory)
+        returns (BridgeTransfer[] memory transfers)
     {
         require(connectorCalls.connector != address(this), "INVALID_CONNECTOR");
 
@@ -628,14 +633,12 @@ contract Bridge is ReentrancyGuard, Claimable
 
         if (success) {
             emit BridgeCallSuccess(connectorCalls.connector);
-            // TODO: batch all transfers returned by trusted connectors together
-            BridgeTransfer[] memory transfers = abi.decode(returnData, (BridgeTransfer[]));
-            return transfers;
+            transfers = abi.decode(returnData, (BridgeTransfer[]));
         } else {
             // If the call failed return funds to all users
             for (uint g = 0; g < connectorCalls.groups.length; g++) {
                 ConnectorGroup memory group = connectorCalls.groups[g];
-                BridgeTransfer[] memory transfers = new BridgeTransfer[](group.calls.length);
+                transfers = new BridgeTransfer[](group.calls.length);
                 for (uint i = 0; i < group.calls.length; i++) {
                     transfers[i] = BridgeTransfer({
                         owner: group.calls[i].owner,
@@ -643,7 +646,6 @@ contract Bridge is ReentrancyGuard, Claimable
                         amount: group.calls[i].amount
                     });
                 }
-                return transfers;
             }
 
             emit BridgeCallFailed(connectorCalls.connector, string(returnData));

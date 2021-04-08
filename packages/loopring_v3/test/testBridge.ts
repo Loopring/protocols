@@ -19,6 +19,9 @@ const TestSwapper = artifacts.require("TestSwapper");
 const TestSwappperBridgeConnector = artifacts.require(
   "TestSwappperBridgeConnector"
 );
+const TestMigrationBridgeConnector = artifacts.require(
+  "TestMigrationBridgeConnector"
+);
 
 export interface BridgeTransfer {
   owner: string;
@@ -549,7 +552,8 @@ contract("Bridge", (accounts: string[]) => {
   let registryOwner: string;
 
   let swapper: any;
-  let testSwappperBridgeConnector: any;
+  let swappperBridgeConnector: any;
+  let migrationBridgeConnector: any;
 
   let rate: BN = new BN(web3.utils.toWei("1", "ether"));
 
@@ -577,16 +581,19 @@ contract("Bridge", (accounts: string[]) => {
       );
     }
 
-    testSwappperBridgeConnector = await TestSwappperBridgeConnector.new(
-      ctx.exchange.address,
-      bridge.address,
+    swappperBridgeConnector = await TestSwappperBridgeConnector.new(
       swapper.address
+    );
+
+    migrationBridgeConnector = await TestMigrationBridgeConnector.new(
+      ctx.exchange.address,
+      bridge.address
     );
 
     return bridge;
   };
 
-  const encodeGroupSettings = (tokenIn: string, tokenOut: string) => {
+  const encodeSwapGroupSettings = (tokenIn: string, tokenOut: string) => {
     return web3.eth.abi.encodeParameter(
       {
         "struct GroupSettings": {
@@ -613,6 +620,32 @@ contract("Bridge", (accounts: string[]) => {
       }
     );*/
     return "0x";
+  };
+
+  const encodeMigrateGroupSettings = (token: string) => {
+    return web3.eth.abi.encodeParameter(
+      {
+        "struct GroupSettings": {
+          token: "address"
+        }
+      },
+      {
+        token: ctx.getTokenAddress(token)
+      }
+    );
+  };
+
+  const encodeMigrateUserSettings = (to: string) => {
+    return web3.eth.abi.encodeParameter(
+      {
+        "struct UserSettings": {
+          to: "address"
+        }
+      },
+      {
+        to: to
+      }
+    );
   };
 
   const round = (value: string) => {
@@ -721,13 +754,18 @@ contract("Bridge", (accounts: string[]) => {
       const bridge = await setupBridge();
 
       await bridge.contract.setConnectorTrusted(
-        testSwappperBridgeConnector.address,
+        swappperBridgeConnector.address,
         true
       );
 
-      const group_ETH_LRC = encodeGroupSettings("ETH", "LRC");
-      const group_LRC_ETH = encodeGroupSettings("LRC", "ETH");
-      const group_WETH_LRC = encodeGroupSettings("WETH", "LRC");
+      await bridge.contract.setConnectorTrusted(
+        migrationBridgeConnector.address,
+        true
+      );
+
+      const group_ETH_LRC = encodeSwapGroupSettings("ETH", "LRC");
+      const group_LRC_ETH = encodeSwapGroupSettings("LRC", "ETH");
+      const group_WETH_LRC = encodeSwapGroupSettings("WETH", "LRC");
 
       //console.log("connector: " + testSwappperBridgeConnector.address);
       //console.log("group: " + group_ETH_LRC);
@@ -742,7 +780,7 @@ contract("Bridge", (accounts: string[]) => {
         minGas: 30000,
         userData: "0x",
         validUntil: 0,
-        connector: testSwappperBridgeConnector.address,
+        connector: swappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
       calls.push({
@@ -756,7 +794,7 @@ contract("Bridge", (accounts: string[]) => {
           new BN(web3.utils.toWei("2", "ether"))
         ),
         validUntil: 0,
-        connector: testSwappperBridgeConnector.address,
+        connector: swappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
       calls.push({
@@ -770,7 +808,7 @@ contract("Bridge", (accounts: string[]) => {
           new BN(web3.utils.toWei("3", "ether"))
         ),
         validUntil: 0,
-        connector: testSwappperBridgeConnector.address,
+        connector: swappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
       calls.push({
@@ -784,7 +822,7 @@ contract("Bridge", (accounts: string[]) => {
           new BN(web3.utils.toWei("1", "ether"))
         ),
         validUntil: 0,
-        connector: testSwappperBridgeConnector.address,
+        connector: swappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
       calls.push({
@@ -796,7 +834,7 @@ contract("Bridge", (accounts: string[]) => {
         minGas: 30000,
         userData: "0x",
         validUntil: 0,
-        connector: testSwappperBridgeConnector.address,
+        connector: swappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
       calls.push({
@@ -810,7 +848,7 @@ contract("Bridge", (accounts: string[]) => {
           new BN(web3.utils.toWei("2", "ether"))
         ),
         validUntil: 0,
-        connector: testSwappperBridgeConnector.address,
+        connector: swappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
       calls.push({
@@ -824,7 +862,7 @@ contract("Bridge", (accounts: string[]) => {
           new BN(web3.utils.toWei("3", "ether"))
         ),
         validUntil: 0,
-        connector: testSwappperBridgeConnector.address,
+        connector: swappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
       calls.push({
@@ -838,7 +876,7 @@ contract("Bridge", (accounts: string[]) => {
           new BN(web3.utils.toWei("1", "ether"))
         ),
         validUntil: 0,
-        connector: testSwappperBridgeConnector.address,
+        connector: swappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
       calls.push({
@@ -852,7 +890,7 @@ contract("Bridge", (accounts: string[]) => {
           new BN(web3.utils.toWei("3", "ether"))
         ),
         validUntil: 0,
-        connector: testSwappperBridgeConnector.address,
+        connector: swappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
       calls.push({
@@ -866,10 +904,47 @@ contract("Bridge", (accounts: string[]) => {
           new BN(web3.utils.toWei("1", "ether"))
         ),
         validUntil: 0,
-        connector: testSwappperBridgeConnector.address,
+        connector: swappperBridgeConnector.address,
         groupData: group_ETH_LRC
       });
       console.log("Num calls: " + calls.length);
+
+      calls.push({
+        owner: ownerA,
+        token: "ETH",
+        amount: round(web3.utils.toWei("1.0132", "ether")),
+        feeToken: "ETH",
+        maxFee: "0",
+        minGas: 30000,
+        userData: "0x",
+        validUntil: 0,
+        connector: migrationBridgeConnector.address,
+        groupData: encodeMigrateGroupSettings("ETH")
+      });
+      calls.push({
+        owner: ownerB,
+        token: "ETH",
+        amount: round(web3.utils.toWei("1.0132", "ether")),
+        feeToken: "ETH",
+        maxFee: "0",
+        minGas: 30000,
+        userData: encodeMigrateUserSettings(ownerA),
+        validUntil: 0,
+        connector: migrationBridgeConnector.address,
+        groupData: encodeMigrateGroupSettings("ETH")
+      });
+      calls.push({
+        owner: ownerB,
+        token: "LRC",
+        amount: round(web3.utils.toWei("1.0132", "ether")),
+        feeToken: "ETH",
+        maxFee: "0",
+        minGas: 30000,
+        userData: encodeMigrateUserSettings(ownerB),
+        validUntil: 0,
+        connector: migrationBridgeConnector.address,
+        groupData: encodeMigrateGroupSettings("LRC")
+      });
 
       /*calls.push({
         owner: ownerB,
