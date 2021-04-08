@@ -114,6 +114,7 @@ export async function newWalletFactoryContract(deployer?: string) {
       WhitelistLib: WhitelistLib.address
     }
   })).deploy(ethers.constants.AddressZero /*testPriceOracle.address*/);
+  console.log("smartWallet address:", smartWallet.address);
 
   walletFactory = await (await ethers.getContractFactory(
     "WalletFactory"
@@ -136,7 +137,7 @@ export async function newWallet(
 ) {
   const walletFactory = await newWalletFactoryContract();
   const _guardians = guardians ? guardians : [];
-  
+
   const signature = signCreateWallet(
     walletFactory.address,
     owner,
