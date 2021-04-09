@@ -247,12 +247,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
         for (uint i = 0; i < txCallbacks.length; i++) {
             TxCallback calldata txCallback = txCallbacks[i];
+            require(txCallback.receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
 
             uint txIdx = uint(txCallback.txIdx);
             require(txIdx >= cursor, "TX_INDEX_OUT_OF_ORDER");
 
-            require(txCallback.receiverIdx < receivers.length, "INVALID_RECEIVER_INDEX");
-
+            // Execute callback
             _callCallback(_block, txCallback, receivers[txCallback.receiverIdx]);
 
             // Now that the transactions have been verified, mark them as approved
@@ -274,11 +274,13 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         bytes memory txData;
         bytes memory txsData;
 
+        // Construct the calldata passed into the callback call
         bytes calldata callbackData = txCallback.data;
         bytes4 selector = ITransactionReceiver.onReceiveTransactions.selector;
 
         uint txsDataLength = ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs;
         uint callbackDataLength = txCallback.data.length;
+        // Bytes arrays are always padded with zeros so they are aligned to 32 bytes
         uint newCallbackDataOffset = 32 + 32 + 32 + ((txsDataLength + 31) / 32 * 32);
         uint totalLength = 32 + newCallbackDataOffset + 32 + ((callbackDataLength + 31) / 32 * 32);
         assembly {
@@ -287,7 +289,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             mstore(add(txData,  32), selector)
 
             // Offset to txsData
-            mstore(add(txData,  36), 0x0000000000000000000000000000000000000000000000000000000000000040)
+            mstore(add(txData,  36), 0x40)
             // Offset to callbackData
             mstore(add(txData,  68), newCallbackDataOffset)
 
@@ -300,7 +302,11 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
             mstore(0x40, add(add(txData, totalLength), 32))
         }
+
+        // Copy the necessary block transaction data directly to the correct place in the calldata
         _block.readTxs(uint(txCallback.txIdx), txCallback.numTxs, txsData);
+
+        // Do the actual call with the constructed calldata
         receiver.fastCallAndVerify(gasleft(), 0, txData);
     }
 

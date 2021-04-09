@@ -110,6 +110,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         override
         returns (uint gasLimit)
     {
+        gasLimit = 40000;
         for (uint g = 0; g < groups.length; g++) {
            gasLimit += 75000 + 2500 * groups[g].calls.length;
         }
