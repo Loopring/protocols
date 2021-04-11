@@ -82,7 +82,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
                 }
 
                 transfers[transferIdx++] = BridgeTransfer({
-                    owner: bridgeCall.owner,
+                    owner: to,
                     token: bridgeCall.token,
                     amount: bridgeCall.amount
                 });

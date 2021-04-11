@@ -480,7 +480,7 @@ export class ExchangeTestUtil {
 
   public explorer: Explorer;
 
-  public blockSizes = [16, 24, 32];
+  public blockSizes = [16, 24, 32, 48];
 
   public loopringV3: any;
   public blockVerifier: any;

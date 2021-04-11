@@ -31,12 +31,11 @@ contract Bridge is ReentrancyGuard, Claimable
     // - address owner  : 20 bytes
     // - uint96  amount : 12 bytes
     // - uint16  tokenID:  2 bytes
-    event Transfers         (uint batchID, bytes transfers);
+    event Transfers           (uint batchID, bytes transfers, address from);
 
-    event BridgeCallSuccess (address connector);
-    event BridgeCallFailed  (address connector, string reason);
+    event ConnectorCallResult (address connector, bool success, bytes reason);
 
-    event ConnectorTrusted  (address connector, bool trusted);
+    event ConnectorTrusted    (address connector, bool trusted);
 
     struct Context
     {
@@ -62,7 +61,7 @@ contract Bridge is ReentrancyGuard, Claimable
     );
 
     uint               public constant  MAX_NUM_TRANSACTIONS_IN_BLOCK = 386;
-    uint               public constant  MAX_AGE_PENDING_TRANSFERS     = 7 days;
+    uint               public constant  MAX_AGE_PENDING_TRANSFER      = 7 days;
     uint               public constant  MAX_FEE_BIPS                  = 25;     // 0.25%
     uint               public constant  GAS_LIMIT_CHECK_GAS_LIMIT     = 10000;
 
@@ -74,7 +73,7 @@ contract Bridge is ReentrancyGuard, Claimable
     address                                     public exchangeOwner;
 
     mapping (uint => mapping (bytes32 => uint)) public pendingTransfers;
-    mapping (uint    => mapping(uint => bool))  public withdrawn;
+    mapping (uint => mapping(uint => bool))     public withdrawn;
 
     mapping (address => bool)                   public trustedConnectors;
 
@@ -138,7 +137,7 @@ contract Bridge is ReentrancyGuard, Claimable
         require(txsData.length == ctx.txsDataPtr - ctx.txsDataPtrStart, "INVALID_NUM_TXS");
     }
 
-    // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFERS old.
+    // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFER old.
     function withdrawFromPendingBatchDeposit(
         uint                            batchID,
         InternalBridgeTransfer[] memory transfers,
@@ -149,7 +148,7 @@ contract Bridge is ReentrancyGuard, Claimable
     {
         bytes memory transfersData = new bytes(transfers.length * 34);
         assembly {
-            transfers := add(transfers, 32)
+            transfersData := add(transfersData, 32)
         }
 
         for (uint i = 0; i < transfers.length; i++) {
@@ -299,7 +298,7 @@ contract Bridge is ReentrancyGuard, Claimable
         }
 
         // Store the transfers so they can be processed later
-        _storeTransfers(transfers);
+        _storeTransfers(transfers, from);
     }
 
     function _processTransactions(Context memory ctx)
@@ -564,7 +563,10 @@ contract Bridge is ReentrancyGuard, Claimable
         }
     }
 
-    function _storeTransfers(bytes memory transfers)
+    function _storeTransfers(
+        bytes memory transfers,
+        address from
+        )
         internal
     {
         uint batchID = batchIDGenerator++;
@@ -575,7 +577,7 @@ contract Bridge is ReentrancyGuard, Claimable
         pendingTransfers[batchID][hash] = block.timestamp;
 
         // Log transfers to do
-        emit Transfers(batchID, transfers);
+        emit Transfers(batchID, transfers, from);
     }
 
     function _deposit(
@@ -623,23 +625,29 @@ contract Bridge is ReentrancyGuard, Claimable
         (success, returnData) = connectorCalls.connector.fastDelegatecall(connectorCalls.gasLimit, txData);
 
         if (success) {
-            emit BridgeCallSuccess(connectorCalls.connector);
+            emit ConnectorCallResult(connectorCalls.connector, true, "");
             transfers = abi.decode(returnData, (BridgeTransfer[]));
         } else {
             // If the call failed return funds to all users
+            uint totalNumCalls = 0;
+            for (uint g = 0; g < connectorCalls.groups.length; g++) {
+                totalNumCalls += connectorCalls.groups[g].calls.length;
+            }
+            transfers = new BridgeTransfer[](totalNumCalls);
+            uint txIdx = 0;
             for (uint g = 0; g < connectorCalls.groups.length; g++) {
                 ConnectorGroup memory group = connectorCalls.groups[g];
-                transfers = new BridgeTransfer[](group.calls.length);
                 for (uint i = 0; i < group.calls.length; i++) {
                     BridgeCall memory bridgeCall = group.calls[i];
-                    transfers[i] = BridgeTransfer({
+                    transfers[txIdx++] = BridgeTransfer({
                         owner: bridgeCall.owner,
                         token:  bridgeCall.token,
                         amount: bridgeCall.amount
                     });
                 }
             }
-            emit BridgeCallFailed(connectorCalls.connector, string(returnData));
+            assert(txIdx == totalNumCalls);
+            emit ConnectorCallResult(connectorCalls.connector, false, returnData);
         }
     }
 
@@ -692,7 +700,7 @@ contract Bridge is ReentrancyGuard, Claimable
     {
         uint timestamp = pendingTransfers[batchID][hash];
         require(timestamp != 0, "UNKNOWN_TRANSFERS");
-        return block.timestamp > timestamp + MAX_AGE_PENDING_TRANSFERS;
+        return block.timestamp > timestamp + MAX_AGE_PENDING_TRANSFER;
     }
 
     function _hashTx(

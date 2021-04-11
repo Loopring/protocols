@@ -41,11 +41,7 @@ export class Converter {
     this.tokenOut = tokenOut;
     this.ticker = ticker;
 
-    const swapper = await TestSwapper.new(
-      this.ctx.getTokenAddress(tokenIn),
-      this.ctx.getTokenAddress(tokenOut),
-      rate
-    );
+    const swapper = await TestSwapper.new(rate);
 
     this.contract = await TestConverter.new(
       this.ctx.exchange.address,
