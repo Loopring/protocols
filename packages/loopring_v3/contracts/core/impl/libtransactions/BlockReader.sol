@@ -82,4 +82,19 @@ library BlockReader {
             mstore(add(txData, 68            ), mload(add(data, add(txDataOffset, 39))))
         }
     }
+
+    function readTransactionType(
+        bytes memory data,
+        uint txIdx
+        )
+        internal
+        pure
+        returns (ExchangeData.TransactionType txType)
+    {
+        uint txDataOffset = OFFSET_TO_TRANSACTIONS +
+            txIdx * ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1;
+        assembly {
+            txType := and(mload(add(data, add(txDataOffset, 1))), 0xff)
+        }
+    }
 }

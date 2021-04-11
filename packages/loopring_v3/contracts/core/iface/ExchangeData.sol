@@ -232,6 +232,11 @@ library ExchangeData
         // Last time the protocol fee was withdrawn for a specific token
         mapping (address => uint) protocolFeeLastWithdrawnTime;
 
+        // Duplicated loopring address
+        address loopringAddr;
+        // AMM fee bips
+        uint8   ammFeeBips;
+
         // Flash mints
         mapping (address => uint96) amountFlashMinted;
     }

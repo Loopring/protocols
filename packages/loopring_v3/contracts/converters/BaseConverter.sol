@@ -39,7 +39,7 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
     }
 
     constructor(
-        IExchangeV3      _exchange
+        IExchangeV3 _exchange
         )
     {
         exchange = _exchange;
@@ -88,8 +88,10 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
             emit ConversionFailed("unknown");
         }
 
+        // Mint pool tokens representing each user's share in the pool, with 1:1 ratio
         _mint(address(this), amountIn);
 
+        // Repay the flash mint used to give user's their share on L2
         _repay(address(this), amountIn);
     }
 
@@ -165,6 +167,7 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         );
     }
 
+    // Function to approve tokens so this doesn't have to be done every time the conversion is done
     function approveTokens()
         public
         virtual

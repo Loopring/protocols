@@ -52,9 +52,9 @@ library AmmJoinRequest
         )
         internal
         pure
-        returns (bytes32)
+        returns (bytes32 h)
     {
-        return EIP712.hashPacked(
+        /*return EIP712.hashPacked(
             domainSeparator,
             keccak256(
                 abi.encode(
@@ -67,6 +67,28 @@ library AmmJoinRequest
                     join.validUntil
                 )
             )
-        );
+        );*/
+        bytes32 typeHash = POOLJOIN_TYPEHASH;
+        address owner = join.owner;
+        uint96[] memory joinAmounts = join.joinAmounts;
+        uint32[] memory storageIDs = join.joinStorageIDs;
+        uint mintMinAmount = join.mintMinAmount;
+        uint fee = join.fee;
+        uint validUntil = join.validUntil;
+        assembly {
+            let data := mload(0x40)
+            mstore(    data      , typeHash)
+            mstore(add(data,  32), owner)
+            mstore(add(data,  64), keccak256(add(joinAmounts, 32), mul(mload(joinAmounts), 32)))
+            mstore(add(data,  96), keccak256(add(storageIDs, 32), mul(mload(storageIDs), 32)))
+            mstore(add(data, 128), mintMinAmount)
+            mstore(add(data, 160), fee)
+            mstore(add(data, 192), validUntil)
+            let p := keccak256(data, 224)
+            mstore(data, "\x19\x01")
+            mstore(add(data,  2), domainSeparator)
+            mstore(add(data, 34), p)
+            h := keccak256(data, 66)
+        }
     }
 }

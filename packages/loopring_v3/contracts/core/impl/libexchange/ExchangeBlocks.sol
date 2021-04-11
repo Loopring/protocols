@@ -195,16 +195,18 @@ library ExchangeBlocks
         private
     {
         if (header.numConditionalTransactions > 0) {
-            // Cache the domain seperator to save on SLOADs each time it is accessed.
+            // Cache the domain separator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
                 DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR,
                 timestamp: header.timestamp
             });
 
             ExchangeData.AuxiliaryData[] memory block_auxiliaryData;
+            {
             bytes memory blockAuxData = _block.auxiliaryData;
             assembly {
                 block_auxiliaryData := add(blockAuxData, 64)
+            }
             }
 
             require(
@@ -215,20 +217,23 @@ library ExchangeBlocks
             // Run over all conditional transactions
             uint minTxIndex = 0;
             bytes memory txData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE);
+
+            uint txIndex;
+            bool approved;
+            bytes memory auxData;
+            ExchangeData.TransactionType txType;
+            uint offset;
             for (uint i = 0; i < block_auxiliaryData.length; i++) {
                 // Load the data from auxiliaryData, which is still encoded as calldata
-                uint txIndex;
-                bool approved;
-                bytes memory auxData;
                 assembly {
                     // Offset to block_auxiliaryData[i]
-                    let auxOffset := mload(add(block_auxiliaryData, add(32, mul(32, i))))
+                    offset := mload(add(block_auxiliaryData, add(32, mul(32, i))))
                     // Load `txIndex` (pos 0) and `approved` (pos 1) in block_auxiliaryData[i]
-                    txIndex := mload(add(add(32, block_auxiliaryData), auxOffset))
-                    approved := mload(add(add(64, block_auxiliaryData), auxOffset))
+                    txIndex := mload(add(add(32, block_auxiliaryData), offset))
+                    approved := mload(add(add(64, block_auxiliaryData), offset))
                     // Load `data` (pos 2)
-                    let auxDataOffset := mload(add(add(96, block_auxiliaryData), auxOffset))
-                    auxData := add(add(32, block_auxiliaryData), add(auxOffset, auxDataOffset))
+                    offset := add(offset, mload(add(add(96, block_auxiliaryData), offset)))
+                    auxData := add(add(32, block_auxiliaryData), offset)
                 }
 
                 // Each conditional transaction needs to be processed from left to right
@@ -236,14 +241,7 @@ library ExchangeBlocks
 
                 minTxIndex = txIndex + 1;
 
-                // Get the transaction data
-                _block.data.readTransactionData(txIndex, _block.blockSize, txData);
-
-                // Process the transaction
-                ExchangeData.TransactionType txType = ExchangeData.TransactionType(
-                    txData.toUint8(0)
-                );
-                uint txDataOffset = 0;
+                txType = _block.data.readTransactionType(txIndex);
 
                 if (approved &&
                     txType != ExchangeData.TransactionType.WITHDRAWAL &&
@@ -251,12 +249,15 @@ library ExchangeBlocks
                     continue;
                 }
 
+                // Get the transaction data
+                _block.data.readTransactionData(txIndex, _block.blockSize, txData);
+
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
                     DepositTransaction.process(
                         S,
                         ctx,
                         txData,
-                        txDataOffset,
+                        0,
                         auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
@@ -264,7 +265,7 @@ library ExchangeBlocks
                         S,
                         ctx,
                         txData,
-                        txDataOffset,
+                        0,
                         auxData,
                         approved
                     );
@@ -273,7 +274,7 @@ library ExchangeBlocks
                         S,
                         ctx,
                         txData,
-                        txDataOffset,
+                        0,
                         auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
@@ -281,7 +282,7 @@ library ExchangeBlocks
                         S,
                         ctx,
                         txData,
-                        txDataOffset,
+                        0,
                         auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.AMM_UPDATE) {
@@ -289,7 +290,7 @@ library ExchangeBlocks
                         S,
                         ctx,
                         txData,
-                        txDataOffset,
+                        0,
                         auxData
                     );
                 } else {
@@ -300,6 +301,8 @@ library ExchangeBlocks
                     revert("UNSUPPORTED_TX_TYPE");
                 }
             }
+
+            require(minTxIndex <= _block.blockSize, "AUXILIARYDATA_INVALID_ORDER");
         }
     }
 

@@ -42,14 +42,12 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
-    ExchangeData.State public state;
-    address public loopringAddr;
-    uint8 private ammFeeBips = 20;
+    ExchangeData.State private state;
 
     modifier onlyWhenUninitialized()
     {
         require(
-            loopringAddr == address(0) && state.merkleRoot == bytes32(0),
+            state.loopringAddr == address(0) && state.merkleRoot == bytes32(0),
             "INITIALIZED"
         );
         _;
@@ -93,7 +91,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
-        loopringAddr = _loopring;
+        state.loopringAddr = _loopring;
+        state.ammFeeBips = 20;
 
         state.initializeGenesisBlock(
             _loopring,
@@ -729,14 +728,15 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         onlyOwner
     {
         require(_feeBips <= 200, "INVALID_VALUE");
-        ammFeeBips = _feeBips;
+        state.ammFeeBips = _feeBips;
     }
 
     function getAmmFeeBips()
         external
         override
         view
-        returns (uint8) {
-        return ammFeeBips;
+        returns (uint8)
+    {
+        return state.ammFeeBips;
     }
 }

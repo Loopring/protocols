@@ -45,15 +45,13 @@ struct ConnectorCalls
 {
     address             connector;
     uint                gasLimit;
-    uint                totalMinGas;
     ConnectorGroup[]    groups;
-    TokenData[]         tokens;
 }
 
 struct TransferBatch
 {
-    uint                     batchID;
-    InternalBridgeTransfer[] transfers;
+    uint     batchID;
+    uint96[] amounts;
 }
 
 struct BridgeOperations

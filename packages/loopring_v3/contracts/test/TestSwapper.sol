@@ -16,12 +16,15 @@ contract TestSwapper
     using MathUint          for uint;
 
     uint    public immutable rate;
+    bool    public immutable fail;
 
     constructor(
-        uint    _rate
+        uint    _rate,
+        bool    _fail
         )
     {
         rate = _rate;
+        fail = _fail;
     }
 
     function swap(
@@ -33,6 +36,8 @@ contract TestSwapper
         payable
         returns (uint amountOut)
     {
+        require(!fail, "FAIL_ENABLED");
+
         if (tokenIn == address(0)) {
             require(msg.value == amountIn, "INVALID_ETH_DEPOSIT");
         } else {

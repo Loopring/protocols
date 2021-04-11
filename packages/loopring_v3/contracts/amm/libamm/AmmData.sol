@@ -70,7 +70,8 @@ library AmmData
     struct Context
     {
         // functional parameters
-        uint txIdx;
+        uint txsDataPtr;
+        uint txsDataPtrStart;
 
         // AMM pool state variables
         bytes32 domainSeparator;

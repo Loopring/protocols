@@ -110,10 +110,10 @@ library WithdrawTransaction
             require(ctx.timestamp < withdrawal.validUntil, "WITHDRAWAL_EXPIRED");
             require(withdrawal.fee <= withdrawal.maxFee, "WITHDRAWAL_FEE_TOO_HIGH");
 
-            // Check appproval onchain
-            // Calculate the tx hash
-            bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, withdrawal);
             if (!approved) {
+                // Check appproval onchain
+                // Calculate the tx hash
+                bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, withdrawal);
                 // Check onchain authorization
                 S.requireAuthorizedTx(withdrawal.from, auxData.signature, txHash);
             }

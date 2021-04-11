@@ -401,6 +401,27 @@ library BytesUtil {
     }
 
 
+    function toUint16UnsafeUint(bytes memory _bytes, uint _start) internal  pure returns (uint) {
+        uint tempUint;
+
+        assembly {
+            tempUint := and(mload(add(add(_bytes, 0x2), _start)), 0xffff)
+        }
+
+        return tempUint;
+    }
+
+    function toUint24UnsafeUint(bytes memory _bytes, uint _start) internal  pure returns (uint) {
+        uint tempUint;
+
+        assembly {
+            tempUint := and(mload(add(add(_bytes, 0x3), _start)), 0xffffff)
+        }
+
+        return tempUint;
+    }
+
+
     function fastSHA256(
         bytes memory data
         )

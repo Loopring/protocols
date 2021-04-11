@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import { Constants, Signature } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { AuthMethod, BlockCallback } from "./types";
+import { AuthMethod, TransactionReceiverCallback } from "./types";
 import * as sigUtil from "eth-sig-util";
 import { SignatureType, sign, verifySignature } from "../util/Signature";
 import { roundToFloatValue } from "loopringV3.js";
@@ -729,15 +729,15 @@ export class AmmPool {
     ]);
   }
 
-  public static getBlockCallback(transaction: TxType) {
-    const blockCallback: BlockCallback = {
+  public static getTransactionReceiverCallback(transaction: TxType) {
+    const transactionReceiverCallback: TransactionReceiverCallback = {
       target: transaction.poolAddress,
       txIdx: transaction.txIdx,
       numTxs: transaction.numTxs,
       auxiliaryData: AmmPool.getAuxiliaryData(transaction),
       tx: transaction
     };
-    return blockCallback;
+    return transactionReceiverCallback;
   }
 
   public async verifySupply(expectedTotalSupply?: BN) {

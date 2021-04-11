@@ -33,7 +33,7 @@ import {
   AmmUpdate,
   AuthMethod,
   Block,
-  BlockCallback,
+  TransactionReceiverCallback,
   Deposit,
   FlashMint,
   PostBlocksCallback,
@@ -480,7 +480,7 @@ export class ExchangeTestUtil {
 
   public explorer: Explorer;
 
-  public blockSizes = [8, 16];
+  public blockSizes = [16, 24, 32, 48];
 
   public loopringV3: any;
   public blockVerifier: any;
@@ -537,7 +537,7 @@ export class ExchangeTestUtil {
   public deterministic: boolean = false;
 
   private pendingTransactions: TxType[][] = [];
-  private pendingBlockCallbacks: BlockCallback[][] = [];
+  private pendingTransactionReceiverCallbacks: TransactionReceiverCallback[][] = [];
   private pendingFlashMints: FlashMint[][] = [];
   private pendingPostBlocksCallbacks: PostBlocksCallback[][] = [];
 
@@ -583,7 +583,7 @@ export class ExchangeTestUtil {
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       this.pendingTransactions.push([]);
-      this.pendingBlockCallbacks.push([]);
+      this.pendingTransactionReceiverCallbacks.push([]);
       this.pendingFlashMints.push([]);
       this.pendingPostBlocksCallbacks.push([]);
       this.pendingBlocks.push([]);
@@ -658,6 +658,18 @@ export class ExchangeTestUtil {
       .then((events: any) => {
         return events;
       });
+  }
+
+  public async getEvents(contract: any, event: string) {
+    const eventArr: any = await this.getEventsFromContract(
+      contract,
+      event,
+      web3.eth.blockNumber
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return eventObj.args;
+    });
+    return items;
   }
 
   // This works differently from truffleAssert.eventEmitted in that it also is able to
@@ -1740,7 +1752,7 @@ export class ExchangeTestUtil {
       timestamp: 0,
       transactionHash: "0",
       internalBlock: txBlock,
-      callbacks: this.pendingBlockCallbacks[this.exchangeId]
+      callbacks: this.pendingTransactionReceiverCallbacks[this.exchangeId]
     };
     this.pendingBlocks[this.exchangeId].push(block);
     this.blocks[this.exchangeId].push(block);
@@ -1839,7 +1851,7 @@ export class ExchangeTestUtil {
     }
   }
 
-  public getCallbackConfig(blockCallbacks: BlockCallback[][]) {
+  public getCallbackConfig(calls: TransactionReceiverCallback[][]) {
     interface TxCallback {
       txIdx: number;
       numTxs: number;
@@ -1852,18 +1864,18 @@ export class ExchangeTestUtil {
       txCallbacks: TxCallback[];
     }
 
-    interface CallbackConfig {
-      blockCallbacks: OnchainBlockCallback[];
+    interface TransactionReceiverCallbacks {
+      callbacks: OnchainBlockCallback[];
       receivers: string[];
     }
 
-    const callbackConfig: CallbackConfig = {
-      blockCallbacks: [],
+    const transactionReceiverCallbacks: TransactionReceiverCallbacks = {
+      callbacks: [],
       receivers: []
     };
 
     //console.log("Block callbacks: ");
-    for (const [blockIdx, callbacks] of blockCallbacks.entries()) {
+    for (const [blockIdx, callbacks] of calls.entries()) {
       //console.log(blockIdx);
       //console.log(block.callbacks);
       if (callbacks.length > 0) {
@@ -1871,16 +1883,16 @@ export class ExchangeTestUtil {
           blockIdx,
           txCallbacks: []
         };
-        callbackConfig.blockCallbacks.push(onchainBlockCallback);
+        transactionReceiverCallbacks.callbacks.push(onchainBlockCallback);
 
         for (const blockCallback of callbacks) {
           // Find receiver index
-          let receiverIdx = callbackConfig.receivers.findIndex(
+          let receiverIdx = transactionReceiverCallbacks.receivers.findIndex(
             target => target === blockCallback.target
           );
           if (receiverIdx === -1) {
-            receiverIdx = callbackConfig.receivers.length;
-            callbackConfig.receivers.push(blockCallback.target);
+            receiverIdx = transactionReceiverCallbacks.receivers.length;
+            transactionReceiverCallbacks.receivers.push(blockCallback.target);
           }
           // Add the block callback to the list
           onchainBlockCallback.txCallbacks.push({
@@ -1897,7 +1909,7 @@ export class ExchangeTestUtil {
     //for (const bc of callbackConfig.blockCallbacks) {
     //  console.log(bc);
     //}
-    return callbackConfig;
+    return transactionReceiverCallbacks;
   }
 
   public setPreApprovedTransactions(blocks: Block[]) {
@@ -1992,7 +2004,7 @@ export class ExchangeTestUtil {
   public getSubmitBlocksWithCallbacksData(
     isDataCompressed: boolean,
     txData: string,
-    blockCallbacks: BlockCallback[][],
+    transactionReceiverCallbacks: TransactionReceiverCallback[][],
     flashMints: FlashMint[],
     postBlocksCallbacks: PostBlocksCallback[]
   ) {
@@ -2000,7 +2012,7 @@ export class ExchangeTestUtil {
     //console.log(data);
 
     // Block callbacks
-    const callbackConfig = this.getCallbackConfig(blockCallbacks);
+    const callbackConfig = this.getCallbackConfig(transactionReceiverCallbacks);
 
     return {
       isDataCompressed,
@@ -2090,7 +2102,7 @@ export class ExchangeTestUtil {
 
     // Prepare block data
     const onchainBlocks: OnchainBlock[] = [];
-    const blockCallbacks: BlockCallback[][] = [];
+    const transactionReceiverCallbacks: TransactionReceiverCallback[][] = [];
     for (const block of blocks) {
       //console.log(block.blockIdx);
       const onchainBlock = this.getOnchainBlock(
@@ -2104,7 +2116,7 @@ export class ExchangeTestUtil {
         block.blockVersion
       );
       onchainBlocks.push(onchainBlock);
-      blockCallbacks.push(block.callbacks);
+      transactionReceiverCallbacks.push(block.callbacks);
     }
 
     // Callback that allows modifying the blocks
@@ -2128,7 +2140,7 @@ export class ExchangeTestUtil {
     const parameters = this.getSubmitBlocksWithCallbacksData(
       true,
       txData,
-      blockCallbacks,
+      transactionReceiverCallbacks,
       this.pendingFlashMints[this.exchangeId],
       this.pendingPostBlocksCallbacks[this.exchangeId]
     );
@@ -2279,14 +2291,16 @@ export class ExchangeTestUtil {
   }
 
   public addBlockCallback(target: string) {
-    const blockCallback: BlockCallback = {
+    const transactionReceiverCallback: TransactionReceiverCallback = {
       target,
       auxiliaryData: Constants.emptyBytes,
       txIdx: this.pendingTransactions[this.exchangeId].length,
       numTxs: 0
     };
-    this.pendingBlockCallbacks[this.exchangeId].push(blockCallback);
-    return blockCallback;
+    this.pendingTransactionReceiverCallbacks[this.exchangeId].push(
+      transactionReceiverCallback
+    );
+    return transactionReceiverCallback;
   }
 
   public async submitPendingBlocks(testCallback?: any) {
@@ -2405,7 +2419,9 @@ export class ExchangeTestUtil {
       }
 
       const ammTransactions: any[] = [];
-      for (const callback of this.pendingBlockCallbacks[this.exchangeId]) {
+      for (const callback of this.pendingTransactionReceiverCallbacks[
+        this.exchangeId
+      ]) {
         ammTransactions.push(callback.tx);
       }
 
@@ -2496,7 +2512,7 @@ export class ExchangeTestUtil {
     }
 
     this.pendingTransactions[exchangeID] = [];
-    this.pendingBlockCallbacks[exchangeID] = [];
+    this.pendingTransactionReceiverCallbacks[exchangeID] = [];
     return blocks;
   }
 

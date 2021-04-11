@@ -33,11 +33,10 @@ library AmmExitProcess
     event ForcedExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
 
     function processExit(
-        AmmData.State       storage S,
-        AmmData.Context     memory  ctx,
-        bytes               memory  txsData,
-        AmmData.PoolExit    memory  exit,
-        bytes               memory  signature
+        AmmData.State    storage S,
+        AmmData.Context  memory  ctx,
+        AmmData.PoolExit memory  exit,
+        bytes            memory  signature
         )
         internal
     {
@@ -58,14 +57,13 @@ library AmmExitProcess
                 delete S.approvedTx[txHash];
             }
         } else if (signature.length == 1) {
-            ctx.verifySignatureL2(txsData, exit.owner, txHash, signature);
+            ctx.verifySignatureL2(exit.owner, txHash, signature);
         } else {
             require(txHash.verifySignature(exit.owner, signature), "INVALID_OFFCHAIN_APPROVAL");
         }
 
         (bool slippageOK, uint96[] memory amounts) = _calculateExitAmounts(ctx, exit);
 
-        TransferTransaction.Transfer memory transfer;
         if (isForcedExit) {
             if (!slippageOK) {
                 AmmUtil.transferOut(address(this), exit.burnAmount, exit.owner);
@@ -76,75 +74,110 @@ library AmmExitProcess
             ctx.totalSupply = ctx.totalSupply.sub(exit.burnAmount);
         } else {
             require(slippageOK, "EXIT_SLIPPAGE_INVALID");
-            _burnPoolTokenOnL2(ctx, txsData, exit.burnAmount, exit.owner, exit.burnStorageID, signature, transfer);
+            _burnPoolTokenOnL2(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
         }
 
-        // Handle liquidity tokens
-        for (uint i = 0; i < ctx.tokens.length; i++) {
-            TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
-
-            require(
-                transfer.fromAccountID == ctx.accountID &&
-                // transfer.toAccountID == UNKNOWN &&
-                // transfer.storageID == UNKNOWN &&
-                transfer.from == address(this) &&
-                transfer.to == exit.owner &&
-                transfer.tokenID == ctx.tokens[i].tokenID &&
-                transfer.amount.add(transfer.fee).isAlmostEqualAmount(amounts[i]),
-                "INVALID_EXIT_TRANSFER_TX_DATA"
-            );
-
-            if (transfer.fee > 0) {
-                require(
-                    i == ctx.tokens.length - 1 &&
-                    transfer.feeTokenID == ctx.tokens[i].tokenID &&
-                    transfer.fee <= exit.fee,
-                    "INVALID_FEES"
-                );
-            }
-
-            ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].sub(transfer.amount);
-        }
+        _processExitTransfers(
+            ctx,
+            exit,
+            amounts
+        );
 
         if (isForcedExit) {
             emit ForcedExitProcessed(exit.owner, exit.burnAmount, amounts);
         }
     }
 
+    function _processExitTransfers(
+        AmmData.Context  memory ctx,
+        AmmData.PoolExit memory exit,
+        uint96[]         memory amounts
+        )
+        private
+        view
+    {
+        // Handle liquidity tokens
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            AmmData.Token memory token = ctx.tokens[i];
+
+            // Read the transaction data
+            (uint packedData, address to, address from) = AmmUtil.readTransfer(ctx);
+            uint amount = (packedData >> 64) & 0xffffff;
+            uint fee    = (packedData >> 32) & 0xffff;
+            // Decode floats
+            amount = (amount & 524287) * (10 ** (amount >> 19));
+            fee = (fee & 2047) * (10 ** (fee >> 11));
+
+            uint targetAmount = uint(amounts[i]);
+            require(
+                // txType == ExchangeData.TransactionType.TRANSFER &&
+                // transfer.type == 1 &&
+                // transfer.fromAccountID == ctx.accountID &&
+                // transfer.toAccountID == UNKNOWN &&
+                // transfer.tokenID == token.tokenID &&
+                packedData & 0xffffffffffff00000000ffff0000000000000000000000 ==
+                (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(ctx.accountID) << 136) | (uint(token.tokenID) << 88) &&
+                // transfer.amount.add(transfer.fee).isAlmostEqualAmount(amounts[i])
+                (100000 - 8) * targetAmount <= (amount + fee) * 100000 && (amount + fee) * 100000 <= (100000 + 8) * targetAmount &&
+                from == address(this) &&
+                to == exit.owner,
+                "INVALID_EXIT_TRANSFER_TX_DATA"
+            );
+
+            if (fee > 0) {
+                require(
+                    i == ctx.tokens.length - 1 &&
+                    /*feeTokenID*/(packedData >> 48) & 0xffff == token.tokenID &&
+                    fee <= exit.fee,
+                    "INVALID_FEES"
+                );
+            }
+
+            ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].sub(uint96(amount));
+        }
+    }
+
     function _burnPoolTokenOnL2(
-        AmmData.Context              memory  ctx,
-        bytes                        memory  txsData,
-        uint96                       amount,
-        address                      from,
-        uint32                       burnStorageID,
-        bytes                        memory  signature,
-        TransferTransaction.Transfer memory transfer
+        AmmData.Context memory ctx,
+        uint96                 burnAmount,
+        address                _from,
+        uint32                 burnStorageID,
+        bytes           memory signature
         )
         internal
         view
     {
-        TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
+        // Read the transaction data
+        (uint packedData, address to, address from) = AmmUtil.readTransfer(ctx);
+        uint amount = (packedData >> 64) & 0xffffff;
+        // Decode float
+        amount = (amount & 524287) * (10 ** (amount >> 19));
 
         require(
+            // txType == ExchangeData.TransactionType.TRANSFER &&
+            // transfer.type == 1 &&
             // transfer.fromAccountID == UNKNOWN &&
-            transfer.toAccountID == ctx.accountID &&
-            transfer.from == from &&
-            transfer.to == address(this) &&
-            transfer.tokenID == ctx.poolTokenID &&
-            transfer.amount.isAlmostEqualAmount(amount) &&
-            transfer.feeTokenID == 0 &&
-            transfer.fee == 0 &&
-            (signature.length == 0 || transfer.storageID == burnStorageID),
+            // transfer.toAccountID == ctx.accountID &&
+            // transfer.tokenID == ctx.poolTokenID &&
+            // transfer.feeTokenID == 0 &&
+            // transfer.fee == 0 &&
+            packedData & 0xffff00000000ffffffffffff000000ffffffff00000000 ==
+            (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(ctx.accountID) << 104) | (uint(ctx.poolTokenID) << 88) &&
+            // transfer.amount.isAlmostEqualAmount(burnAmount) &&
+            (100000 - 8) * burnAmount <= amount * 100000 && amount * 100000 <= (100000 + 8) * burnAmount &&
+            to == address(this) &&
+            from == _from &&
+            (signature.length == 0 || /*storageID*/(packedData & 0xffffffff) == burnStorageID),
             "INVALID_BURN_TX_DATA"
         );
 
         // Update pool balance
-        ctx.totalSupply = ctx.totalSupply.sub(transfer.amount);
+        ctx.totalSupply = ctx.totalSupply.sub(uint96(amount));
     }
 
     function _calculateExitAmounts(
-        AmmData.Context  memory  ctx,
-        AmmData.PoolExit memory  exit
+        AmmData.Context  memory ctx,
+        AmmData.PoolExit memory exit
         )
         private
         pure
@@ -159,10 +192,11 @@ library AmmExitProcess
         uint ratio = uint(AmmData.POOL_TOKEN_BASE).mul(exit.burnAmount) / ctx.totalSupply;
 
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE).toUint96();
-            if (amounts[i] < exit.exitMinAmounts[i]) {
+            uint96 amount = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE).toUint96();
+            if (amount < exit.exitMinAmounts[i]) {
                 return (false, amounts);
             }
+            amounts[i] = amount;
         }
 
         return (true, amounts);
