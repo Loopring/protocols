@@ -36,7 +36,7 @@ import {
   TransactionReceiverCallback,
   Deposit,
   FlashMint,
-  PostBlocksCallback,
+  Callback,
   Transfer,
   Noop,
   OrderInfo,
@@ -539,7 +539,7 @@ export class ExchangeTestUtil {
   private pendingTransactions: TxType[][] = [];
   private pendingTransactionReceiverCallbacks: TransactionReceiverCallback[][] = [];
   private pendingFlashMints: FlashMint[][] = [];
-  private pendingPostBlocksCallbacks: PostBlocksCallback[][] = [];
+  private pendingCallbacks: Callback[][] = [];
 
   private storageIDGenerator: number = 0;
 
@@ -585,7 +585,7 @@ export class ExchangeTestUtil {
       this.pendingTransactions.push([]);
       this.pendingTransactionReceiverCallbacks.push([]);
       this.pendingFlashMints.push([]);
-      this.pendingPostBlocksCallbacks.push([]);
+      this.pendingCallbacks.push([]);
       this.pendingBlocks.push([]);
       this.blocks.push([]);
 
@@ -1276,13 +1276,14 @@ export class ExchangeTestUtil {
     return flashMint;
   }
 
-  public addPostBlocksCallback(to: string, data: string) {
-    const postBlocksCallback: PostBlocksCallback = {
+  public addCallback(to: string, data: string, before: boolean) {
+    const callback: Callback = {
       to,
-      data
+      data,
+      before
     };
-    this.pendingPostBlocksCallbacks[this.exchangeId].push(postBlocksCallback);
-    return postBlocksCallback;
+    this.pendingCallbacks[this.exchangeId].push(callback);
+    return callback;
   }
 
   public hexToDecString(hex: string) {
@@ -1996,7 +1997,7 @@ export class ExchangeTestUtil {
         parameters.data,
         parameters.callbackConfig,
         parameters.flashMints,
-        parameters.postBlocksCallbacks
+        parameters.callbacks
       )
       .encodeABI();
   }
@@ -2006,7 +2007,7 @@ export class ExchangeTestUtil {
     txData: string,
     transactionReceiverCallbacks: TransactionReceiverCallback[][],
     flashMints: FlashMint[],
-    postBlocksCallbacks: PostBlocksCallback[]
+    callbacks: Callback[]
   ) {
     const data = isDataCompressed ? compressZeros(txData) : txData;
     //console.log(data);
@@ -2019,7 +2020,7 @@ export class ExchangeTestUtil {
       data,
       callbackConfig,
       flashMints,
-      postBlocksCallbacks
+      callbacks
     };
   }
 
@@ -2142,7 +2143,7 @@ export class ExchangeTestUtil {
       txData,
       transactionReceiverCallbacks,
       this.pendingFlashMints[this.exchangeId],
-      this.pendingPostBlocksCallbacks[this.exchangeId]
+      this.pendingCallbacks[this.exchangeId]
     );
 
     // Submit the blocks onchain
@@ -2167,7 +2168,7 @@ export class ExchangeTestUtil {
       parameters.data,
       parameters.callbackConfig,
       parameters.flashMints,
-      parameters.postBlocksCallbacks,
+      parameters.callbacks,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
     );
@@ -2200,7 +2201,7 @@ export class ExchangeTestUtil {
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     this.pendingFlashMints[this.exchangeId] = [];
-    this.pendingPostBlocksCallbacks[this.exchangeId] = [];
+    this.pendingCallbacks[this.exchangeId] = [];
 
     // Check number of blocks submitted
     const numBlocksSubmittedAfter = (

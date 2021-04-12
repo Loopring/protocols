@@ -41,7 +41,7 @@ export class Converter {
     this.tokenOut = tokenOut;
     this.ticker = ticker;
 
-    const swapper = await TestSwapper.new(rate);
+    const swapper = await TestSwapper.new(rate, false);
 
     this.contract = await TestConverter.new(
       this.ctx.exchange.address,
@@ -178,11 +178,12 @@ contract("LoopringConverter", (accounts: string[]) => {
         { to: converter.address }
       );
 
-      await ctx.addPostBlocksCallback(
+      await ctx.addCallback(
         converter.address,
         converter.contract.contract.methods
           .deposit(amountIn, minAmountOut, web3.utils.hexToBytes("0x"))
-          .encodeABI()
+          .encodeABI(),
+        false
       );
 
       await ctx.submitTransactions();
@@ -286,11 +287,12 @@ contract("LoopringConverter", (accounts: string[]) => {
       //console.log("amountIn:  " + amountIn.toString(10));
       //console.log("amountOut: " + amountOut.toString(10));
 
-      await ctx.addPostBlocksCallback(
+      await ctx.addCallback(
         converter.address,
         converter.contract.contract.methods
           .withdraw(broker, amountIn, amountOut)
-          .encodeABI()
+          .encodeABI(),
+        false
       );
 
       await ctx.submitTransactions();

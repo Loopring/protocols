@@ -11,7 +11,7 @@ import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../thirdparty/SafeCast.sol";
 import "../aux/bridge/IBridge.sol";
-import "../aux/bridge/IBridgeConnector.sol";
+
 
 /// Migrates from Loopring to ... Loopring!
 /// @author Brecht Devos - <brecht@loopring.org>

@@ -50,10 +50,11 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         address[]                     receivers;
     }
 
-    struct PostBlocksCallback
+    struct Callback
     {
         address to;
         bytes   data;
+        bool    before;
     }
 
     constructor(
@@ -101,7 +102,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         bytes                        calldata data,
         TransactionReceiverCallbacks calldata config,
         ExchangeData.FlashMint[]     calldata flashMints,
-        PostBlocksCallback[]         calldata postBlocksCallbacks
+        Callback[]                   calldata callbacks
         )
         external
     {
@@ -131,6 +132,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         // Decode the blocks
         ExchangeData.Block[] memory blocks = _decodeBlocks(decompressed);
 
+        // Do pre blocks callbacks
+        _processCallbacks(callbacks, true);
+
         // Do flash mints
         if (flashMints.length > 0) {
             IExchangeV3(target).flashMint(flashMints);
@@ -143,7 +147,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         _verifyTransactions(blocks, config);
 
         // Do post blocks callbacks
-        _afterBlockSubmission(blocks, postBlocksCallbacks);
+        _processCallbacks(callbacks, false);
 
         // Make sure flash mints were repaid
         if (flashMints.length > 0) {
@@ -210,21 +214,26 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         }
     }
 
-    function _afterBlockSubmission(
-        ExchangeData.Block[] memory   /*blocks*/,
-        PostBlocksCallback[] calldata postBlocksCallbacks
+    function _processCallbacks(
+        Callback[] calldata callbacks,
+        bool                before
         )
         private
     {
-        for (uint i = 0; i < postBlocksCallbacks.length; i++) {
+        for (uint i = 0; i < callbacks.length; i++) {
+            Callback calldata callback = callbacks[i];
+            if (callback.before != before) {
+                continue;
+            }
+
             // Disallow calls to self, the exchange and TransactionReceiver functions
             require(
-                postBlocksCallbacks[i].to != target &&
-                postBlocksCallbacks[i].to != address(this),
+                callback.to != target &&
+                callback.to != address(this),
                 "EXCHANGE_CANNOT_BE_POST_CALLBACK_TARGET"
             );
-            require(postBlocksCallbacks[i].data.toBytes4(0) != ITransactionReceiver.onReceiveTransactions.selector, "INVALID_POST_CALLBACK_FUNCTION");
-            (bool success, bytes memory returnData) = postBlocksCallbacks[i].to.call(postBlocksCallbacks[i].data);
+            require(callback.data.toBytes4(0) != ITransactionReceiver.onReceiveTransactions.selector, "INVALID_POST_CALLBACK_FUNCTION");
+            (bool success, bytes memory returnData) = callback.to.call(callback.data);
             if (!success) {
                 assembly { revert(add(returnData, 32), mload(returnData)) }
             }
@@ -297,7 +306,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             txsData := add(txData, 100)
             mstore(txsData, txsDataLength)
 
-            // callbackData
+            // copy callbackData
             calldatacopy(add(txData, add(36, newCallbackDataOffset)), sub(callbackData.offset, 32), add(callbackDataLength, 32))
 
             mstore(0x40, add(add(txData, totalLength), 32))

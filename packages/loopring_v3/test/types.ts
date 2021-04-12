@@ -236,9 +236,10 @@ export interface FlashMint {
   amount: string;
 }
 
-export interface PostBlocksCallback {
+export interface Callback {
   to: string;
   data: string;
+  before: boolean;
 }
 
 export interface Block {

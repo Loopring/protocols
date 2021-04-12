@@ -13,12 +13,12 @@ import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../lib/ReentrancyGuard.sol";
 
-import "./BridgeData.sol";
-import "./IBridgeConnector.sol";
+import "./IBridge.sol";
 
 
-/// @title Bridge
-contract Bridge is ReentrancyGuard, Claimable
+/// @title  Bridge implementation
+/// @author Brecht Devos - <brecht@loopring.org>
+contract Bridge is IBridge, ReentrancyGuard, Claimable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -36,6 +36,40 @@ contract Bridge is ReentrancyGuard, Claimable
     event ConnectorCallResult (address connector, bool success, bytes reason);
 
     event ConnectorTrusted    (address connector, bool trusted);
+
+    struct InternalBridgeTransfer
+    {
+        address owner;
+        uint16  tokenID;
+        uint96  amount;
+    }
+
+    struct TokenData
+    {
+        address token;
+        uint16  tokenID;
+        uint    amount;
+    }
+
+    struct ConnectorCalls
+    {
+        address             connector;
+        uint                gasLimit;
+        ConnectorGroup[]    groups;
+    }
+
+    struct TransferBatch
+    {
+        uint     batchID;
+        uint96[] amounts;
+    }
+
+    struct BridgeOperations
+    {
+        TransferBatch[]  transferBatches;
+        ConnectorCalls[] connectorCalls;
+        TokenData[]      tokens;
+    }
 
     struct Context
     {
@@ -107,6 +141,7 @@ contract Bridge is ReentrancyGuard, Claimable
         )
         public
         payable
+        override
     {
         BridgeTransfer[][] memory _deposits = new BridgeTransfer[][](1);
         _deposits[0] = deposits;
@@ -482,6 +517,7 @@ contract Bridge is ReentrancyGuard, Claimable
                 );
                 verifySignatureL2(ctx, bridgeCall.owner, transfer.fromAccountID, txHash);
 
+                // Find the token in the tokens list
                 uint t = 0;
                 while (t < ctx.tokens.length && transfer.tokenID != ctx.tokens[t].tokenID) {
                     t++;
