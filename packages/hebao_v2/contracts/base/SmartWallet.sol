@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
@@ -52,6 +52,11 @@ contract SmartWallet is ERC1271
     Wallet public wallet;
     //  ----- DATA LAYOUT ENDS -----
 
+    // ---- Events definitions ----
+    event GuardianAdded   (address guardian, uint effectiveTime);
+    event GuardianRemoved (address guardian, uint effectiveTime);
+    // ---- Events definitions end ----
+
     /// @dev We need to make sure the implemenation contract cannot be initialized
     ///      and used to do delegate calls to arbitrary contracts.
     modifier disableInImplementationContract
@@ -79,7 +84,7 @@ contract SmartWallet is ERC1271
         isImplementationContract = true;
 
         DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("LoopringWallet", "0.2.0", address(this))
+            EIP712.Domain("LoopringWallet", "2.0.0", address(this))
         );
 
         priceOracle = _priceOracle;
@@ -166,6 +171,14 @@ contract SmartWallet is ERC1271
         );
     }
 
+    function getMasterCopy()
+        public
+        view
+        returns (address)
+    {
+        return masterCopy;
+    }
+
     //
     // Guardians
     //
@@ -205,6 +218,14 @@ contract SmartWallet is ERC1271
     {
         wallet.removeGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
     }
+
+     function isGuardian(address addr, bool includePendingAddition)
+         public
+         view
+         returns (bool)
+     {
+         return wallet.isGuardian(addr, includePendingAddition);
+     }
 
     //
     // Inheritance
@@ -367,6 +388,16 @@ contract SmartWallet is ERC1271
         wallet.removeFromWhitelist(addr);
     }
 
+    function getWhitelistEffectiveTime(
+        address addr
+        )
+        public
+        view
+        returns (uint)
+    {
+        return wallet.whitelisted[addr];
+    }
+
     //
     // ERC20
     //
@@ -526,4 +557,5 @@ contract SmartWallet is ERC1271
             data
         );
     }
+
 }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
@@ -99,7 +99,7 @@ library ERC20Lib
         external
         returns (bytes memory returnData)
     {
-        if (forceUseQuota || !wallet.isAddressDappOrWhitelisted(to)) {
+        if (forceUseQuota || !wallet.isAddressWhitelisted(to)) {
             wallet.checkAndAddToSpent(priceOracle, address(0), value);
         }
 
@@ -146,7 +146,7 @@ library ERC20Lib
     {
         uint additionalAllowance = _approveInternal(token, to, amount);
 
-        if (forceUseQuota || !wallet.isAddressDappOrWhitelisted(to)) {
+        if (forceUseQuota || !wallet.isAddressWhitelisted(to)) {
             wallet.checkAndAddToSpent(priceOracle, token, additionalAllowance);
         }
     }
@@ -193,7 +193,7 @@ library ERC20Lib
     {
         uint additionalAllowance = _approveInternal(token, to, amount);
 
-        if (forceUseQuota || !wallet.isAddressDappOrWhitelisted(to)) {
+        if (forceUseQuota || !wallet.isAddressWhitelisted(to)) {
             wallet.checkAndAddToSpent(priceOracle, token, additionalAllowance);
             wallet.checkAndAddToSpent(priceOracle, address(0), value);
         }

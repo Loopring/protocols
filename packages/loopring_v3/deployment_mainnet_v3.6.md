@@ -9,7 +9,8 @@
 
 - BlockVerifier: 0x6150343E0F43A17519c0327c41eDd9eBE88D01ef
   - ~~blockVersion: 13~~
-  - blockVersion: 14 (udated at 2021-01-11)
+  - ~~blockVersion: 14 (udated at 2021-01-11)~~
+  - blockVersion: 16 (udated at 2021-03-25)
   - blockSizes: 16, 64, 128, 256, 384
 - AgentRegistry: 0x39B9bf169a7e225ba037C443A40460c77438ea14
 - FastWithdrawalAgent: 0xec3Cc6Cf0252565b56FC7AC396017Df5b9B78a31
@@ -45,13 +46,21 @@
   - ~~LoopringAmmPool: 0xEE017DF188362F8620058e6CeF56D0e65b872164~~
   - ~~LoopringAmmPool: 0xcc2e3d2DC1fd6Ce145e1124868fda5B2a0592cc5~~
 
-### UPDATE-20210115
+### ~~UPDATE-20210115~~
 
-- [LoopringIOExchangeOwner: 0x42bC1aB51b7aF89CfAA88A7291CE55971d8cB83a](https://etherscan.io/address/0x42bC1aB51b7aF89CfAA88A7291CE55971d8cB83a)
-- ExchangeV3: 0x8c63D8E608fF702a92D5908730C91457b0447Ad7
-- LoopringAmmPool: 0xE6AbFcABE24F06197a7A20dc9c81c251f2862430
+- ~~[LoopringIOExchangeOwner: 0x42bC1aB51b7aF89CfAA88A7291CE55971d8cB83a](https://etherscan.io/address/0x42bC1aB51b7aF89CfAA88A7291CE55971d8cB83a)~~
+- ~~ExchangeV3: 0x8c63D8E608fF702a92D5908730C91457b0447Ad7~~
+- ~~LoopringAmmPool: 0xE6AbFcABE24F06197a7A20dc9c81c251f2862430~~
+
+### UPGRADE-2021-03-25
+
+- [LoopringIOExchangeOwner: 0x153CdDD727e407Cb951f728F24bEB9A5FaaA8512](https://etherscan.io/address/0x153CdDD727e407Cb951f728F24bEB9A5FaaA8512)
+- ~~ExchangeV3(implementation): 0xCFba78aecfBcc0B4B748fA58c530D4675BB5D32F~~
+- ExchangeV3(implementation): 0x4fb117dcd6d09abf1a99b502d488a99f5a17e7ec
+- LoopringAmmPool(implementation): 0xCAC49516e6E1c79a62BD67E4D87F7E0d80858258
 
 ### UPDATE-20210310
+
 - ForcedWithdrawalAgent: 0x52ea1971C05B0169c02a0bBeC05Fe8b5E3A24470
 
 ---
@@ -1677,8 +1686,9 @@
     tokenSymbol: 'LP-RSPT-USDC'
   }
   ```
-  
+
   93. RSR-ETH: 0x554be7b23fde679049e52f195448db28b624534e
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1696,6 +1706,7 @@
   ```
 
   94. UBT-ETH: 0xa41e49fdcd0555484f70899d95593d2e1a0fcbbb
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1713,6 +1724,7 @@
   ```
 
   95. BAT-ETH: 0x83df13e357c731ec92d13cbf8f5bf4765a8e1205
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1730,6 +1742,7 @@
   ```
 
   96. 0xBTC-ETH: 0x4facf65a157678e62f84389dd248d99f828403d6
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1747,6 +1760,7 @@
   ```
 
   97. HEX-ETH: 0xc3630669cb660f9405df0d0037f52b78c49772ab
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1764,6 +1778,7 @@
   ```
 
   98. OVR-ETH: 0x7b854d37e502771b1647f5917efcf065ce1c0677
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1779,8 +1794,9 @@
     tokenSymbol: 'LP-OVR-ETH'
   }
   ```
-  
+
   99. BCDT-ETH: 0x66fAD4Ab701eE8C6F9eBef93b634a3E7401aa276
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1798,6 +1814,7 @@
   ```
 
   100. ALCX-ETH: 0x18a1A6F47Fd92185b91edc322d1954349aD0b652
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1815,6 +1832,7 @@
   ```
 
   101. FLI-ETH: 0x4a7e38476b05F40B16E5ae1C761302B1A7d5afc5
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1832,6 +1850,7 @@
   ```
 
   102. JRT-ETH: 0x83c11cbfbED2971032d3a1eD2f34d4Fb43FE181F
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1847,7 +1866,25 @@
     tokenSymbol: 'LP-JRT-ETH'
   }
   ```
-  
+
+  103. ICHI-ETH: 0xc6bc133562b470a61394f9a2ff7fe8082da698a4
+
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-ICHI-ETH',
+    accountID: 103,
+    tokens: [
+      '0x903bEF1736CDdf2A537176cf3C64579C3867A881',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 15,
+    tokenSymbol: 'LP-ICHI-ETH'
+  }
+  ```
+
   ***
 
 - Registered tokens:
@@ -2076,3 +2113,5 @@
   - LP-ALCX-ETH: 0x18a1A6F47Fd92185b91edc322d1954349aD0b652, tokenId: 222
   - LP-FLI-ETH: 0x4a7e38476b05F40B16E5ae1C761302B1A7d5afc5, tokenId: 223
   - LP-JRT-ETH: 0x83c11cbfbED2971032d3a1eD2f34d4Fb43FE181F, tokenId: 224
+  - ICHI: 0x903bEF1736CDdf2A537176cf3C64579C3867A881, tokenId: 225
+  - LP-ICHI-ETH: 0xc6bc133562b470a61394f9a2ff7fe8082da698a4, tokenId: 226

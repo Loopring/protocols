@@ -236,6 +236,8 @@ library ExchangeData
         address loopringAddr;
         // AMM fee bips
         uint8   ammFeeBips;
+        // Enable/Disable `onchainTransferFrom`
+        bool    allowOnchainTransferFrom;
 
         // Flash mints
         mapping (address => uint96) amountFlashMinted;

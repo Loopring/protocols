@@ -8,3 +8,15 @@ _[hebao]_(荷包）means wallet in China -- see https://www.pinterest.com/pin/37
 yarn install
 yarn compile
 ```
+
+# Run test
+
+```
+yarn test
+```
+
+# Deploy contract to arbitrum:
+
+```
+npx hardhat run --network arbitrum scripts/deploy-arbitrum.ts
+```

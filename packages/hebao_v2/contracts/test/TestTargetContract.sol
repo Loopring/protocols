@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
@@ -9,6 +9,8 @@ contract TestTargetContract
 {
     uint public value = 12345;
 
+    event Invoked(address sender);
+
     function functionDefault(
         uint _value
         )
@@ -16,6 +18,7 @@ contract TestTargetContract
         returns (uint)
     {
         value = _value;
+        emit Invoked(msg.sender);
         return _value;
     }
 

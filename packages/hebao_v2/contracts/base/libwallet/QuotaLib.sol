@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
@@ -38,7 +38,7 @@ library QuotaLib
         )
         public
     {
-        setQuota(wallet, newQuota, QUOTA_PENDING_PERIOD);
+        setQuota(wallet, newQuota,  block.timestamp.add(QUOTA_PENDING_PERIOD));
     }
 
     function changeDailyQuotaWA(

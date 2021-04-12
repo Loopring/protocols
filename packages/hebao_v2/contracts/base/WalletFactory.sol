@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
@@ -27,8 +27,7 @@ contract WalletFactory
     string  public constant WALLET_CREATION = "WALLET_CREATION";
 
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)"
-    );
+        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)");
 
     struct WalletConfig
     {

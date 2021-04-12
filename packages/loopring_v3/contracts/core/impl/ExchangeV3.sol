@@ -614,6 +614,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyFromUserOrAgent(from)
     {
+        require(state.allowOnchainTransferFrom, "NOT_ALLOWED");
         state.depositContract.transfer(from, to, token, amount);
     }
 
@@ -738,5 +739,14 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         returns (uint8)
     {
         return state.ammFeeBips;
+    }
+
+    function setAllowOnchainTransferFrom(bool value)
+        external
+        nonReentrant
+        onlyOwner
+    {
+        require(state.allowOnchainTransferFrom != value, "SAME_VALUE");
+        state.allowOnchainTransferFrom = value;
     }
 }
