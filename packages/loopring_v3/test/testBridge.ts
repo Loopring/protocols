@@ -784,6 +784,8 @@ contract("Bridge", (accounts: string[]) => {
     ctx = new ExchangeTestUtil();
     await ctx.initialize(accounts);
 
+    ctx.blockSizes.push(...[24, 32, 40, 48]);
+
     ownerA = ctx.testContext.orderOwners[12];
     ownerB = ctx.testContext.orderOwners[13];
     ownerC = ctx.testContext.orderOwners[14];
