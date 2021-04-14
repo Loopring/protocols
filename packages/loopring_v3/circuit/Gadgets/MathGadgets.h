@@ -21,8 +21,7 @@ namespace Loopring
 
 // All Poseidon permutations used
 using Poseidon_2 = Poseidon_gadget_T<3, 1, 6, 51, 2, 1>;
-template <unsigned n_outputs>
-using Poseidon_4_ = Poseidon_gadget_T<5, 1, 6, 52, n_outputs, 1>;
+template <unsigned n_outputs> using Poseidon_4_ = Poseidon_gadget_T<5, 1, 6, 52, n_outputs, 1>;
 using Poseidon_4 = Poseidon_4_<4>;
 using Poseidon_5 = Poseidon_gadget_T<6, 1, 6, 52, 5, 1>;
 using Poseidon_6 = Poseidon_gadget_T<7, 1, 6, 52, 6, 1>;
@@ -70,6 +69,7 @@ class Constants : public GadgetT
     const VariableT txTypeSpotTrade;
     const VariableT txTypeTransfer;
     const VariableT txTypeWithdrawal;
+    const VariableT feeMultiplier;
 
     const VariableArrayT zeroAccount;
 
@@ -105,6 +105,7 @@ class Constants : public GadgetT
             make_variable(pb, ethsnarks::FieldT(int(TransactionType::Transfer)), FMT(prefix, ".txTypeTransfer"))),
           txTypeWithdrawal(
             make_variable(pb, ethsnarks::FieldT(int(TransactionType::Withdrawal)), FMT(prefix, ".txTypeWithdrawal"))),
+          feeMultiplier(make_variable(pb, ethsnarks::FieldT(FEE_MULTIPLIER), FMT(prefix, ".feeMultiplier"))),
 
           zeroAccount(NUM_BITS_ACCOUNT, _0)
     {
@@ -161,13 +162,14 @@ class Constants : public GadgetT
         pb.add_r1cs_constraint(
           ConstraintT(txTypeWithdrawal, FieldT::one(), ethsnarks::FieldT(int(TransactionType::Withdrawal))),
           ".txTypeWithdrawal");
+        pb.add_r1cs_constraint(
+          ConstraintT(feeMultiplier, FieldT::one(), ethsnarks::FieldT(FEE_MULTIPLIER)), ".feeMultiplier");
     }
 };
 
 class DualVariableGadget : public libsnark::dual_variable_gadget<FieldT>
 {
   public:
-
     DualVariableGadget( //
       ProtoboardT &pb,
       const size_t width,
@@ -205,7 +207,6 @@ class DualVariableGadget : public libsnark::dual_variable_gadget<FieldT>
 class ToBitsGadget : public libsnark::dual_variable_gadget<FieldT>
 {
   public:
-
     ToBitsGadget( //
       ProtoboardT &pb,
       const VariableT &value,
@@ -213,7 +214,6 @@ class ToBitsGadget : public libsnark::dual_variable_gadget<FieldT>
       const std::string &prefix)
         : libsnark::dual_variable_gadget<FieldT>(pb, value, width, prefix)
     {
-
     }
 
     void generate_r1cs_witness()
@@ -232,14 +232,12 @@ typedef ToBitsGadget RangeCheckGadget;
 class FromBitsGadget : public libsnark::dual_variable_gadget<FieldT>
 {
   public:
-
     FromBitsGadget( //
       ProtoboardT &pb,
       const VariableArrayT &bits,
       const std::string &prefix)
         : libsnark::dual_variable_gadget<FieldT>(pb, bits, prefix)
     {
-
     }
 
     void generate_r1cs_witness()
