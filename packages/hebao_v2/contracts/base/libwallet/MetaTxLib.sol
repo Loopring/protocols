@@ -30,6 +30,7 @@ library MetaTxLib
     );
 
     event MetaTxExecuted(
+        uint32  tag,
         address relayer,
         uint    nonce,
         bool    success,
@@ -123,6 +124,7 @@ library MetaTxLib
         }
 
         emit MetaTxExecuted(
+            loopringEventTag(),
             msg.sender,
             metaTx.nonce,
             success,

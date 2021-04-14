@@ -23,6 +23,7 @@ library WhitelistLib
     );
 
     event Whitelisted(
+        uint32  tag,
         address addr,
         bool    whitelisted,
         uint    effectiveTime
@@ -99,7 +100,7 @@ library WhitelistLib
         require(wallet.whitelisted[addr] == 0, "ADDRESS_ALREADY_WHITELISTED");
         uint effective = effectiveTime >= block.timestamp ? effectiveTime : block.timestamp;
         wallet.whitelisted[addr] = effective;
-        emit Whitelisted(addr, true, effective);
+        emit Whitelisted(loopringEventTag(), addr, true, effective);
     }
 
     function _removeFromWhitelist(
@@ -109,6 +110,6 @@ library WhitelistLib
         internal
     {
         delete wallet.whitelisted[addr];
-        emit Whitelisted(addr, false, 0);
+        emit Whitelisted(loopringEventTag(), addr, false, 0);
     }
 }

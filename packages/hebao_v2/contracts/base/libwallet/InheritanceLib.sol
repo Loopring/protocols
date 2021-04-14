@@ -22,11 +22,13 @@ library InheritanceLib
     uint public constant TOUCH_GRACE_PERIOD = 30 days;
 
     event Inherited(
+        uint32          tag,
         address         inheritor,
         address         newOwner
     );
 
     event InheritorChanged(
+        uint32          tag,
         address         inheritor,
         uint32          waitingPeriod
     );
@@ -69,6 +71,6 @@ library InheritanceLib
 
         wallet.owner = newOwner;
 
-        emit Inherited(wallet.inheritor, newOwner);
+        emit Inherited(loopringEventTag(), wallet.inheritor, newOwner);
     }
 }

@@ -3,6 +3,14 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+
+function loopringEventTag()
+    pure
+    returns (uint32 tag)
+{
+    tag = uint32(uint(keccak256("LOOPRING_L2")));
+}
+
 enum SigRequirement
 {
     MAJORITY_OWNER_NOT_ALLOWED,

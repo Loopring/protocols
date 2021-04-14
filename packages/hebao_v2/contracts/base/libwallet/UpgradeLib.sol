@@ -13,7 +13,7 @@ library UpgradeLib
 {
     using ApprovalLib     for Wallet;
 
-    event ChangedMasterCopy (address masterCopy);
+    event ChangedMasterCopy (uint32 tag, address masterCopy);
 
     bytes32 public constant CHANGE_MASTER_COPY_TYPEHASH = keccak256(
         "changeMasterCopy(address wallet,uint256 validUntil,address masterCopy)"
@@ -42,7 +42,7 @@ library UpgradeLib
             )
         );
 
-        emit ChangedMasterCopy(newMasterCopy);
+        emit ChangedMasterCopy(loopringEventTag(), newMasterCopy);
 
         return newMasterCopy;
     }

@@ -16,6 +16,7 @@ library LockLib
     using ApprovalLib   for Wallet;
 
     event WalletLocked (
+        uint32          tag,
         address         by,
         bool            locked
     );
@@ -69,6 +70,6 @@ library LockLib
         internal
     {
         wallet.locked = true;
-        emit WalletLocked(by, locked);
+        emit WalletLocked(loopringEventTag(), by, locked);
     }
 }

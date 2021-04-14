@@ -25,9 +25,25 @@ library ERC20Lib
     using ApprovalLib   for Wallet;
     using SafeERC20     for ERC20;
 
-    event Transfered     (address token, address to,      uint amount, bytes logdata);
-    event Approved       (address token, address spender, uint amount);
-    event ContractCalled (address to,    uint    value,   bytes data);
+    event Transfered (
+        uint32  tag,
+        address token,
+        address to,
+        uint    amount,
+        bytes   logdata
+    );
+    event Approved (
+        uint32  tag,
+        address token,
+        address spender,
+        uint amount
+    );
+    event ContractCalled (
+        uint32  tag,
+        address to,
+        uint    value,
+        bytes   data
+    );
 
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
         "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
@@ -261,7 +277,7 @@ library ERC20Lib
         private
     {
         transfer(token, to, amount);
-        emit Transfered(token, to, amount, logdata);
+        emit Transfered(loopringEventTag(), token, to, amount, logdata);
     }
 
     function _approveInternal(
@@ -288,7 +304,7 @@ library ERC20Lib
         if (amount > allowance) {
             additionalAllowance = amount.sub(allowance);
         }
-        emit Approved(token, spender, amount);
+        emit Approved(loopringEventTag(), token, spender, amount);
     }
 
     function _callContractInternal(
@@ -312,6 +328,6 @@ library ERC20Lib
         (success, returnData) = to.call{value: value}(txData);
         require(success, "CALL_FAILED");
 
-        emit ContractCalled(to, value, txData);
+        emit ContractCalled(loopringEventTag(), to, value, txData);
     }
 }

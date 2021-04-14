@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./SmartWallet.sol";
+import "./libwallet/WalletData.sol";
 import "../thirdparty/proxy/WalletProxy.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/EIP712.sol";
@@ -19,7 +20,7 @@ contract WalletFactory
     using AddressUtil for address;
     using SignatureUtil for bytes32;
 
-    event WalletCreated (address wallet, address owner);
+    event WalletCreated (uint32 tag, address wallet, address owner);
 
     bytes32             public immutable DOMAIN_SEPERATOR;
     address             public immutable walletImplementation;
@@ -101,7 +102,7 @@ contract WalletFactory
             config.feeAmount
         );
 
-        emit WalletCreated(wallet, config.owner);
+        emit WalletCreated(loopringEventTag(), wallet, config.owner);
     }
 
     function _validateRequest(

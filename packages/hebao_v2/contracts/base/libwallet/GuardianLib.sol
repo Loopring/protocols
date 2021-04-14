@@ -29,8 +29,8 @@ library GuardianLib
         "removeGuardian(address wallet,uint256 validUntil,address guardian)"
     );
 
-    event GuardianAdded   (address guardian, uint effectiveTime);
-    event GuardianRemoved (address guardian, uint effectiveTime);
+    event GuardianAdded   (uint32 tag, address guardian, uint effectiveTime);
+    event GuardianRemoved (uint32 tag, address guardian, uint effectiveTime);
 
     function setInitialGuardians(
         Wallet    storage wallet,
@@ -366,7 +366,7 @@ library GuardianLib
             validSince = block.timestamp + pendingPeriod;
         }
         validSince = storeGuardian(wallet, guardian, validSince, alwaysOverride);
-        emit GuardianAdded(guardian, validSince);
+        emit GuardianAdded(loopringEventTag(), guardian, validSince);
     }
 
     function _removeGuardian(
@@ -379,7 +379,7 @@ library GuardianLib
     {
         uint validUntil = block.timestamp + pendingPeriod;
         validUntil = deleteGuardian(wallet, guardian, validUntil, alwaysOverride);
-        emit GuardianRemoved(guardian, validUntil);
+        emit GuardianRemoved(loopringEventTag(), guardian, validUntil);
     }
 
     function _getGuardian(

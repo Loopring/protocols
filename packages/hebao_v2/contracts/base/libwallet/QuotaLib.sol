@@ -27,6 +27,7 @@ library QuotaLib
     );
 
     event QuotaScheduled(
+        uint32  tag,
         address wallet,
         uint    pendingQuota,
         uint64  pendingUntil
@@ -103,6 +104,7 @@ library QuotaLib
         quota.pendingUntil = effectiveTime.toUint64();
 
         emit QuotaScheduled(
+            loopringEventTag(),
             address(this),
             newQuota,
             quota.pendingUntil

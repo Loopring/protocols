@@ -19,7 +19,10 @@ library RecoverLib
     using ApprovalLib   for Wallet;
     using Utils         for address;
 
-    event Recovered(address newOwner);
+    event Recovered(
+        uint32  tag,
+        address newOwner
+    );
 
     bytes32 public constant RECOVER_TYPEHASH = keccak256(
         "recover(address wallet,uint256 validUntil,address newOwner)"
@@ -59,6 +62,6 @@ library RecoverLib
         wallet.setLock(address(this), false);
         wallet.cancelPendingGuardians();
 
-        emit Recovered(newOwner);
+        emit Recovered(loopringEventTag(), newOwner);
     }
 }
