@@ -49,7 +49,7 @@
     "ganache-cli": "6.9.1",
     "mocha": "^8.2.1",
     "node": "13.12.0",
-    "npm": "^6.9.0",
+    "npm": "^7.10.0",
     "npm-watch": "^0.6.0",
     "solidity-coverage": "^0.7.0",
     "solium": "^1.2.4",
