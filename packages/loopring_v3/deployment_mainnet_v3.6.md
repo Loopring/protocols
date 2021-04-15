@@ -1802,6 +1802,23 @@
     tokenSymbol: 'LP-ICHI-ETH'
   }
   ```
+  
+  104. DPR-ETH: 0x3ec139b45558d1db73b889f887624ef117d28e3b
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-DPR-ETH',
+    accountID: 104,
+    tokens: [
+      '0xf3AE5d769e153Ef72b4e3591aC004E89F48107a1',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-DPR-ETH'
+  }
+  ```
   ***
 
 - Registered tokens:
@@ -2032,3 +2049,5 @@
   - LP-JRT-ETH: 0x83c11cbfbED2971032d3a1eD2f34d4Fb43FE181F, tokenId: 224
   - ICHI: 0x903bEF1736CDdf2A537176cf3C64579C3867A881, tokenId: 225
   - LP-ICHI-ETH: 0xc6bc133562b470a61394f9a2ff7fe8082da698a4, tokenId: 226
+  - DPR: 0xf3AE5d769e153Ef72b4e3591aC004E89F48107a1, tokenId: 227
+  - LP-DPR-ETH: 0x3ec139b45558d1db73b889f887624ef117d28e3b, tokenId: 228
