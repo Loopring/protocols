@@ -142,7 +142,7 @@ contract FastWithdrawalAgent is ReentrancyGuard, IAgent
         internal
     {
         if (amount > 0) {
-        if (token == address(0)) {
+            if (token == address(0)) {
                 to.sendETHAndVerify(amount, gasleft()); // ETH
             } else {
                 token.safeTransferFromAndVerify(from, to, amount);  // ERC20 token
