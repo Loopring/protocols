@@ -344,24 +344,24 @@ abstract contract IExchangeV3 is Claimable
         returns (uint96);
 
 
-    /// @dev Fmint deposits tokens on L2.
-    ///      The amount minted has to be repaid using `repayMintDeposit`.
+    /// @dev Flash mints tokens on L2.
+    ///      The amount minted has to be repaid using `repayFlashMint`.
     ///
     ///      This function is only callable by the owner.
     ///
-    /// @param MintDeposits The list of fmint deposits to be done.
-    function MintDeposit(
-        ExchangeData.MintDeposit[] calldata MintDeposits
+    /// @param flashMints The list of flash mints to be done.
+    function flashMint(
+        ExchangeData.FlashMint[] calldata flashMints
         )
         external
         virtual;
 
-    /// @dev Repays funds minted using `MintDeposit`.
+    /// @dev Repays funds minted using `flashMint`.
     /// @param from The address that deposits the funds to the exchange
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
     /// @param extraData Optional extra data used by the deposit contract
-    function repayMintDeposit(
+    function repayFlashMint(
         address from,
         address tokenAddress,
         uint96  amount,
@@ -372,17 +372,17 @@ abstract contract IExchangeV3 is Claimable
         payable;
 
     /// @dev Verifies all minted tokens were paid back.
-    /// @param MintDeposits The list of fmint deposits that were done.
-    function verifyMintDepositsPaidBack(
-        ExchangeData.MintDeposit[] calldata MintDeposits
+    /// @param flashMints The list of flash mints that were done.
+    function verifyFlashMintsPaidBack(
+        ExchangeData.FlashMint[] calldata flashMints
         )
         external
         virtual
         view;
 
-    /// @dev Returns the amount fmint deposited for a specific token.
+    /// @dev Returns the amount flash minted for a specific token.
     /// @param tokenAddress The token
-    function getAmountMintDeposited(
+    function getAmountFlashMinted(
         address tokenAddress
         )
         external
