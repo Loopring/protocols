@@ -14,7 +14,7 @@
   - blockSizes: 16, 64, 128, 256, 384
 - AgentRegistry: 0x39B9bf169a7e225ba037C443A40460c77438ea14
 - FastWithdrawalAgent: 0xec3Cc6Cf0252565b56FC7AC396017Df5b9B78a31
-- LoopringV3: 0xe56D6ccab6551932C0356E4e8d5dAF0630920C71  
+- LoopringV3: 0xe56D6ccab6551932C0356E4e8d5dAF0630920C71
   params:
   - lrcAddr: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD
   - protocolFeeVault: 0x4b89f8996892d137c3dE1312d1dD4E4F4fFcA171
@@ -54,6 +54,7 @@
 
 ### UPGRADE-2021-03-25
 
+
 - [LoopringIOExchangeOwner: 0x153CdDD727e407Cb951f728F24bEB9A5FaaA8512](https://etherscan.io/address/0x153CdDD727e407Cb951f728F24bEB9A5FaaA8512)
 - ~~ExchangeV3(implementation): 0xCFba78aecfBcc0B4B748fA58c530D4675BB5D32F~~
 - ExchangeV3(implementation): 0x4fb117dcd6d09abf1a99b502d488a99f5a17e7ec
@@ -80,7 +81,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-LRC-ETH'
   }
   ```
@@ -98,7 +99,7 @@
       '0xdac17f958d2ee523a2206206994597c13d831ec7'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-ETH-USDT'
   }
   ```
@@ -116,7 +117,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-WBTC-ETH'
   }
   ```
@@ -134,7 +135,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-UNI-ETH'
   }
   ```
@@ -152,7 +153,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-DPI-ETH'
   }
   ```
@@ -170,7 +171,7 @@
         '0x0000000000000000000000000000000000000000'
       ],
       weights: [ 1000000, 1000000 ],
-      feeBips: 15,
+      feeBips: 20,
       tokenSymbol: 'LP-LINK-ETH'
     }
   ```
@@ -188,7 +189,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-KP3R-ETH'
   }
   ```
@@ -206,7 +207,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-YFI-ETH'
   }
   ```
@@ -224,7 +225,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-YFII-ETH'
   }
   ```
@@ -242,7 +243,7 @@
         '0x0000000000000000000000000000000000000000'
       ],
       weights: [ 1000000, 1000000 ],
-      feeBips: 15,
+      feeBips: 20,
       tokenSymbol: 'LP-MCB-ETH'
     }
   ```
@@ -260,7 +261,7 @@
     '0x0000000000000000000000000000000000000000'
   ],
   weights: [ 1000000, 1000000 ],
-  feeBips: 15,
+  feeBips: 20,
   tokenSymbol: 'LP-AC-ETH'
   }
   ```
@@ -278,7 +279,7 @@
     '0x6B175474E89094C44Da98b954EedeAC495271d0F'
   ],
   weights: [ 1000000, 1000000 ],
-  feeBips: 15,
+  feeBips: 20,
   tokenSymbol: 'LP-ETH-DAI'
   }
   ```
@@ -296,7 +297,7 @@
     '0xdac17f958d2ee523a2206206994597c13d831ec7'
   ],
   weights: [ 1000000, 1000000 ],
-  feeBips: 15,
+  feeBips: 20,
   tokenSymbol: 'LP-LRC-USDT'
   }
   ```
@@ -314,7 +315,7 @@
     '0xdac17f958d2ee523a2206206994597c13d831ec7'
   ],
   weights: [ 1000000, 1000000 ],
-  feeBips: 15,
+  feeBips: 20,
   tokenSymbol: 'LP-HBTC-USDT'
   }
   ```
@@ -332,7 +333,7 @@
     '0x0000000000000000000000000000000000000000'
   ],
   weights: [ 1000000, 1000000 ],
-  feeBips: 15,
+  feeBips: 20,
   tokenSymbol: 'LP-1INCH-ETH'
   }
   ```
@@ -350,7 +351,7 @@
     '0xdac17f958d2ee523a2206206994597c13d831ec7'
   ],
   weights: [ 1000000, 1000000 ],
-  feeBips: 15,
+  feeBips: 20,
   tokenSymbol: 'LP-AC-USDT'
   }
   ```
@@ -368,7 +369,7 @@
     '0x0000000000000000000000000000000000000000'
   ],
   weights: [ 1000000, 1000000 ],
-  feeBips: 15,
+  feeBips: 20,
   tokenSymbol: 'LP-VETH-ETH'
   }
   ```
@@ -386,7 +387,7 @@
     '0xdac17f958d2ee523a2206206994597c13d831ec7'
   ],
   weights: [ 1000000, 1000000 ],
-  feeBips: 15,
+  feeBips: 20,
   tokenSymbol: 'LP-WOO-USDT'
   }
   ```
@@ -404,7 +405,7 @@
     '0x0000000000000000000000000000000000000000'
   ],
   weights: [ 1000000, 1000000 ],
-  feeBips: 15,
+  feeBips: 20,
   tokenSymbol: 'LP-HBTC-ETH'
   }
   ```
@@ -422,7 +423,7 @@
       '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-ETH-USDC'
   }
   ```
@@ -440,7 +441,7 @@
     '0x0000000000000000000000000000000000000000'
   ],
   weights: [ 1000000, 1000000 ],
-  feeBips: 15,
+  feeBips: 20,
   tokenSymbol: 'LP-CEL-ETH'
   }
   ```
@@ -458,7 +459,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BEL-ETH'
   }
   ```
@@ -476,7 +477,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-OBTC-ETH'
   }
   ```
@@ -494,7 +495,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-ENJ-ETH'
   }
   ```
@@ -512,7 +513,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-NIOX-ETH'
   }
   ```
@@ -530,7 +531,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-AMP-ETH'
   }
   ```
@@ -548,7 +549,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-INDEX-ETH'
   }
   ```
@@ -566,7 +567,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-GRT-ETH'
   }
   ```
@@ -584,7 +585,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-KEEP-ETH'
   }
   ```
@@ -602,7 +603,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-DXD-ETH'
   }
   ```
@@ -620,7 +621,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-TRB-ETH'
   }
   ```
@@ -638,7 +639,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-RPL-ETH'
   }
   ```
@@ -656,7 +657,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-PBTC-ETH'
   }
   ```
@@ -674,7 +675,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-COMP-ETH'
   }
   ```
@@ -692,7 +693,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-PNT-ETH'
   }
   ```
@@ -710,7 +711,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-PNK-ETH'
   }
   ```
@@ -728,7 +729,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-NEST-ETH'
   }
   ```
@@ -746,7 +747,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BTU-ETH'
   }
   ```
@@ -764,7 +765,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BZRX-ETH'
   }
   ```
@@ -782,7 +783,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-GRID-ETH'
   }
   ```
@@ -800,7 +801,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-RENBTC-ETH'
   }
   ```
@@ -818,7 +819,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-GRG-ETH'
   }
   ```
@@ -836,7 +837,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-CRV-ETH'
   }
   ```
@@ -854,7 +855,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BUSD-ETH'
   }
   ```
@@ -872,7 +873,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BAND-ETH'
   }
   ```
@@ -890,7 +891,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-OGN-ETH'
   }
   ```
@@ -908,7 +909,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-ADX-ETH'
   }
   ```
@@ -926,7 +927,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-PLTC-ETH'
   }
   ```
@@ -944,7 +945,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-QCAD-ETH'
   }
   ```
@@ -962,7 +963,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-FIN-ETH'
   }
   ```
@@ -980,7 +981,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-DOUGH-ETH'
   }
   ```
@@ -998,7 +999,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-DEFIL-ETH'
   }
   ```
@@ -1016,7 +1017,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-DEFIS-ETH'
   }
   ```
@@ -1034,7 +1035,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-AAVE-ETH'
   }
   ```
@@ -1052,7 +1053,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-MKR-ETH'
   }
   ```
@@ -1070,7 +1071,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BAL-ETH'
   }
   ```
@@ -1088,7 +1089,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-REN-ETH'
   }
   ```
@@ -1106,7 +1107,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-UMA-ETH'
   }
   ```
@@ -1124,7 +1125,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-OMG-ETH'
   }
   ```
@@ -1142,7 +1143,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-KNC-ETH'
   }
   ```
@@ -1160,7 +1161,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BNT-ETH'
   }
   ```
@@ -1178,7 +1179,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-SNT-ETH'
   }
   ```
@@ -1196,7 +1197,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-GNO-ETH'
   }
   ```
@@ -1214,7 +1215,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-CVT-ETH'
   }
   ```
@@ -1232,7 +1233,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-ENTRP-ETH'
   }
   ```
@@ -1250,7 +1251,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-FARM-ETH'
   }
   ```
@@ -1268,7 +1269,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-ZRX-ETH'
   }
   ```
@@ -1286,7 +1287,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-NMR-ETH'
   }
   ```
@@ -1304,7 +1305,7 @@
       '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-LRC-WBTC'
   }
   ```
@@ -1322,7 +1323,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-RFOX-ETH'
   }
   ```
@@ -1340,7 +1341,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-NEC-ETH'
   }
   ```
@@ -1358,7 +1359,7 @@
       '0xdac17f958d2ee523a2206206994597c13d831ec7'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-WBTC-USDT'
   }
   ```
@@ -1376,7 +1377,7 @@
       '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-WBTC-USDC'
   }
   ```
@@ -1394,7 +1395,7 @@
       '0x6B175474E89094C44Da98b954EedeAC495271d0F'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-WBTC-DAI'
   }
   ```
@@ -1412,7 +1413,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-RAI-ETH'
   }
   ```
@@ -1430,7 +1431,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-SNX-ETH'
   }
   ```
@@ -1448,7 +1449,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-RGT-ETH'
   }
   ```
@@ -1466,7 +1467,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-VSP-ETH'
   }
   ```
@@ -1484,7 +1485,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-SMARTCREDIT-ETH'
   }
   ```
@@ -1502,7 +1503,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-TEL-ETH'
   }
   ```
@@ -1520,7 +1521,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BCP-ETH'
   }
   ```
@@ -1538,7 +1539,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BADGER-ETH'
   }
   ```
@@ -1556,7 +1557,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-SUSHI-ETH'
   }
   ```
@@ -1574,7 +1575,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-MASK-ETH'
   }
   ```
@@ -1592,7 +1593,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-YPIE-ETH'
   }
   ```
@@ -1610,7 +1611,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-FUSE-ETH'
   }
   ```
@@ -1628,7 +1629,7 @@
       '0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-MASK-LRC'
   }
   ```
@@ -1646,7 +1647,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-SX-ETH'
   }
   ```
@@ -1664,7 +1665,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-REPT-ETH'
   }
   ```
@@ -1682,7 +1683,7 @@
       '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-RSPT-USDC'
   }
   ```
@@ -1700,7 +1701,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-RSR-ETH'
   }
   ```
@@ -1718,7 +1719,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-UBT-ETH'
   }
   ```
@@ -1736,7 +1737,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BAT-ETH'
   }
   ```
@@ -1754,7 +1755,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-0xBTC-ETH'
   }
   ```
@@ -1772,7 +1773,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-HEX-ETH'
   }
   ```
@@ -1790,7 +1791,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-OVR-ETH'
   }
   ```
@@ -1808,7 +1809,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-BCDT-ETH'
   }
   ```
@@ -1826,7 +1827,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-ALCX-ETH'
   }
   ```
@@ -1844,7 +1845,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-FLI-ETH'
   }
   ```
@@ -1862,7 +1863,7 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-JRT-ETH'
   }
   ```
@@ -1880,8 +1881,25 @@
       '0x0000000000000000000000000000000000000000'
     ],
     weights: [ 1000000, 1000000 ],
-    feeBips: 15,
+    feeBips: 20,
     tokenSymbol: 'LP-ICHI-ETH'
+  }
+  ```
+
+  104. DPR-ETH: 0x3ec139b45558d1db73b889f887624ef117d28e3b
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-DPR-ETH',
+    accountID: 104,
+    tokens: [
+      '0xf3AE5d769e153Ef72b4e3591aC004E89F48107a1',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-DPR-ETH'
   }
   ```
 
@@ -2115,3 +2133,5 @@
   - LP-JRT-ETH: 0x83c11cbfbED2971032d3a1eD2f34d4Fb43FE181F, tokenId: 224
   - ICHI: 0x903bEF1736CDdf2A537176cf3C64579C3867A881, tokenId: 225
   - LP-ICHI-ETH: 0xc6bc133562b470a61394f9a2ff7fe8082da698a4, tokenId: 226
+  - DPR: 0xf3AE5d769e153Ef72b4e3591aC004E89F48107a1, tokenId: 227
+  - LP-DPR-ETH: 0x3ec139b45558d1db73b889f887624ef117d28e3b, tokenId: 228
