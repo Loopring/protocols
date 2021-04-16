@@ -68,7 +68,9 @@ export default {
       gasMultiplier: 1,
       timeout: 20000,
       httpHeaders: undefined,
-      accounts: loadTestAccounts().map(item => item.privateKey).slice()
+      accounts: loadTestAccounts()
+        .map(item => item.privateKey)
+        .slice()
     }
   },
 

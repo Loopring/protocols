@@ -104,12 +104,44 @@ library TransactionReader {
         internal
         pure
     {
-        bytes memory txData = txsData;
+        require(txIdx + numTransactions <= _block.blockSize, "INVALID_TX_RANGE");
+
         uint TX_DATA_AVAILABILITY_SIZE = ExchangeData.TX_DATA_AVAILABILITY_SIZE;
+        uint TX_DATA_AVAILABILITY_SIZE_PART_1 = ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_1;
+        uint TX_DATA_AVAILABILITY_SIZE_PART_2 = ExchangeData.TX_DATA_AVAILABILITY_SIZE_PART_2;
+
+        // Part 1
+        uint offset = BlockReader.OFFSET_TO_TRANSACTIONS +
+            txIdx * TX_DATA_AVAILABILITY_SIZE_PART_1;
+        bytes memory data1 = _block.data;
+        assembly {
+            data1 := add(data1, add(offset, 32))
+        }
+
+        // Part 2
+        offset = BlockReader.OFFSET_TO_TRANSACTIONS +
+            _block.blockSize * TX_DATA_AVAILABILITY_SIZE_PART_1 +
+            txIdx * TX_DATA_AVAILABILITY_SIZE_PART_2;
+        bytes memory data2 = _block.data;
+        assembly {
+            data2 := add(data2, add(offset, 32))
+        }
+
+        // Add fixed offset once
+        assembly {
+            txsData := add(txsData, 32)
+        }
+
+        // Read the transactions
         for (uint i = 0; i < numTransactions; i++) {
-            _block.data.readTransactionData(txIdx + i, _block.blockSize, txData);
             assembly {
-                txData := add(txData, TX_DATA_AVAILABILITY_SIZE)
+                mstore(    txsData     , mload(    data1    ))
+                mstore(add(txsData, 29), mload(    data2    ))
+                mstore(add(txsData, 36), mload(add(data2, 7)))
+
+                txsData := add(txsData, TX_DATA_AVAILABILITY_SIZE)
+                data1   := add(data1  , TX_DATA_AVAILABILITY_SIZE_PART_1)
+                data2   := add(data2  , TX_DATA_AVAILABILITY_SIZE_PART_2)
             }
         }
     }

@@ -113,4 +113,27 @@ library AddressUtil
             }
         }
     }
+
+    function fastDelegatecall(
+        address to,
+        uint    gasLimit,
+        bytes   memory data
+        )
+        internal
+        returns (bool success, bytes memory returnData)
+    {
+        if (to != address(0)) {
+            assembly {
+                // Do the call
+                success := delegatecall(gasLimit, to, add(data, 32), mload(data), 0, 0)
+                // Copy the return data
+                let size := returndatasize()
+                returnData := mload(0x40)
+                mstore(returnData, size)
+                returndatacopy(add(returnData, 32), 0, size)
+                // Update free memory pointer
+                mstore(0x40, add(returnData, add(32, size)))
+            }
+        }
+    }
 }

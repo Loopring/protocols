@@ -23,9 +23,9 @@ describe("wallet", () => {
       account2
     );
     LRC = await (await ethers.getContractFactory("LRC")).deploy();
-    TestContract = await (await ethers.getContractFactory(
-      "TestTargetContract"
-    )).deploy();
+    TestContract = await (
+      await ethers.getContractFactory("TestTargetContract")
+    ).deploy();
   });
 
   describe("callContract", () => {

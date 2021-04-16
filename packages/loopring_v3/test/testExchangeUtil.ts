@@ -33,8 +33,10 @@ import {
   AmmUpdate,
   AuthMethod,
   Block,
-  BlockCallback,
+  TransactionReceiverCallback,
   Deposit,
+  FlashMint,
+  Callback,
   Transfer,
   Noop,
   OrderInfo,
@@ -478,7 +480,7 @@ export class ExchangeTestUtil {
 
   public explorer: Explorer;
 
-  public blockSizes = [8];
+  public blockSizes = [8, 16];
 
   public loopringV3: any;
   public blockVerifier: any;
@@ -535,7 +537,9 @@ export class ExchangeTestUtil {
   public deterministic: boolean = false;
 
   private pendingTransactions: TxType[][] = [];
-  private pendingBlockCallbacks: BlockCallback[][] = [];
+  private pendingTransactionReceiverCallbacks: TransactionReceiverCallback[][] = [];
+  private pendingFlashMints: FlashMint[][] = [];
+  private pendingCallbacks: Callback[][] = [];
 
   private storageIDGenerator: number = 0;
 
@@ -573,13 +577,15 @@ export class ExchangeTestUtil {
     //   { from: this.testContext.deployer }
     // );
 
-    await this.loopringV3.updateProtocolFeeSettings(50, 0, {
+    await this.loopringV3.updateProtocolFeeSettings(0, 0, {
       from: this.testContext.deployer
     });
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       this.pendingTransactions.push([]);
-      this.pendingBlockCallbacks.push([]);
+      this.pendingTransactionReceiverCallbacks.push([]);
+      this.pendingFlashMints.push([]);
+      this.pendingCallbacks.push([]);
       this.pendingBlocks.push([]);
       this.blocks.push([]);
 
@@ -652,6 +658,18 @@ export class ExchangeTestUtil {
       .then((events: any) => {
         return events;
       });
+  }
+
+  public async getEvents(contract: any, event: string) {
+    const eventArr: any = await this.getEventsFromContract(
+      contract,
+      event,
+      web3.eth.blockNumber
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return eventObj.args;
+    });
+    return items;
   }
 
   // This works differently from truffleAssert.eventEmitted in that it also is able to
@@ -1010,7 +1028,7 @@ export class ExchangeTestUtil {
     const deposit = await this.deposit(
       order.owner,
       order.owner,
-      order.tokenS,
+      balanceS.gt(new BN(0)) ? order.tokenS : "ETH",
       balanceS
     );
     order.accountID = deposit.accountID;
@@ -1132,9 +1150,6 @@ export class ExchangeTestUtil {
         ? options.amountDepositedCanDiffer
         : this.exchange;
 
-    //console.log("token:" + token);
-    //console.log("amount:" + amount.toString(10));
-
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
@@ -1246,6 +1261,31 @@ export class ExchangeTestUtil {
     return deposit;
   }
 
+  public async flashMint(owner: string, token: string, amount: BN) {
+    this.requestDeposit(owner, token, amount);
+    this.addFlashMint(owner, token, amount);
+  }
+
+  public addFlashMint(owner: string, token: string, amount: BN) {
+    const flashMint: FlashMint = {
+      to: owner,
+      token: this.getTokenAddress(token),
+      amount: amount.toString(10)
+    };
+    this.pendingFlashMints[this.exchangeId].push(flashMint);
+    return flashMint;
+  }
+
+  public addCallback(to: string, data: string, before: boolean) {
+    const callback: Callback = {
+      to,
+      data,
+      before
+    };
+    this.pendingCallbacks[this.exchangeId].push(callback);
+    return callback;
+  }
+
   public hexToDecString(hex: string) {
     return new BN(hex.slice(2), 16).toString(10);
   }
@@ -1306,12 +1346,16 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.FORCE && !skipForcedAuthentication) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
-        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+        const numAvailableSlotsBefore = (
+          await this.exchange.getNumAvailableForcedSlots()
+        ).toNumber();
         await this.exchange.forceWithdraw(signer, token, accountID, {
           from: signer,
           value: withdrawalFee
         });
-        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+        const numAvailableSlotsAfter = (
+          await this.exchange.getNumAvailableForcedSlots()
+        ).toNumber();
         assert.equal(
           numAvailableSlotsAfter,
           numAvailableSlotsBefore - 1,
@@ -1709,7 +1753,7 @@ export class ExchangeTestUtil {
       timestamp: 0,
       transactionHash: "0",
       internalBlock: txBlock,
-      callbacks: this.pendingBlockCallbacks[this.exchangeId]
+      callbacks: this.pendingTransactionReceiverCallbacks[this.exchangeId]
     };
     this.pendingBlocks[this.exchangeId].push(block);
     this.blocks[this.exchangeId].push(block);
@@ -1808,7 +1852,7 @@ export class ExchangeTestUtil {
     }
   }
 
-  public getCallbackConfig(blockCallbacks: BlockCallback[][]) {
+  public getCallbackConfig(calls: TransactionReceiverCallback[][]) {
     interface TxCallback {
       txIdx: number;
       numTxs: number;
@@ -1821,18 +1865,18 @@ export class ExchangeTestUtil {
       txCallbacks: TxCallback[];
     }
 
-    interface CallbackConfig {
-      blockCallbacks: OnchainBlockCallback[];
+    interface TransactionReceiverCallbacks {
+      callbacks: OnchainBlockCallback[];
       receivers: string[];
     }
 
-    const callbackConfig: CallbackConfig = {
-      blockCallbacks: [],
+    const transactionReceiverCallbacks: TransactionReceiverCallbacks = {
+      callbacks: [],
       receivers: []
     };
 
     //console.log("Block callbacks: ");
-    for (const [blockIdx, callbacks] of blockCallbacks.entries()) {
+    for (const [blockIdx, callbacks] of calls.entries()) {
       //console.log(blockIdx);
       //console.log(block.callbacks);
       if (callbacks.length > 0) {
@@ -1840,16 +1884,16 @@ export class ExchangeTestUtil {
           blockIdx,
           txCallbacks: []
         };
-        callbackConfig.blockCallbacks.push(onchainBlockCallback);
+        transactionReceiverCallbacks.callbacks.push(onchainBlockCallback);
 
         for (const blockCallback of callbacks) {
           // Find receiver index
-          let receiverIdx = callbackConfig.receivers.findIndex(
+          let receiverIdx = transactionReceiverCallbacks.receivers.findIndex(
             target => target === blockCallback.target
           );
           if (receiverIdx === -1) {
-            receiverIdx = callbackConfig.receivers.length;
-            callbackConfig.receivers.push(blockCallback.target);
+            receiverIdx = transactionReceiverCallbacks.receivers.length;
+            transactionReceiverCallbacks.receivers.push(blockCallback.target);
           }
           // Add the block callback to the list
           onchainBlockCallback.txCallbacks.push({
@@ -1866,7 +1910,7 @@ export class ExchangeTestUtil {
     //for (const bc of callbackConfig.blockCallbacks) {
     //  console.log(bc);
     //}
-    return callbackConfig;
+    return transactionReceiverCallbacks;
   }
 
   public setPreApprovedTransactions(blocks: Block[]) {
@@ -1876,8 +1920,13 @@ export class ExchangeTestUtil {
           for (const auxiliaryData of block.auxiliaryData) {
             if (auxiliaryData[0] === Number(blockCallback.txIdx) + i) {
               auxiliaryData[1] = true;
-              // No auxiliary data needed for the tx
-              auxiliaryData[2] = "0x";
+              if (
+                block.internalBlock.transactions[auxiliaryData[0]].txType !==
+                "Withdraw"
+              ) {
+                // No auxiliary data needed for the tx
+                auxiliaryData[2] = "0x";
+              }
             }
           }
         }
@@ -1946,7 +1995,9 @@ export class ExchangeTestUtil {
       .submitBlocksWithCallbacks(
         parameters.isDataCompressed,
         parameters.data,
-        parameters.callbackConfig
+        parameters.callbackConfig,
+        parameters.flashMints,
+        parameters.callbacks
       )
       .encodeABI();
   }
@@ -1954,18 +2005,22 @@ export class ExchangeTestUtil {
   public getSubmitBlocksWithCallbacksData(
     isDataCompressed: boolean,
     txData: string,
-    blockCallbacks: BlockCallback[][]
+    transactionReceiverCallbacks: TransactionReceiverCallback[][],
+    flashMints: FlashMint[],
+    callbacks: Callback[]
   ) {
     const data = isDataCompressed ? compressZeros(txData) : txData;
     //console.log(data);
 
     // Block callbacks
-    const callbackConfig = this.getCallbackConfig(blockCallbacks);
+    const callbackConfig = this.getCallbackConfig(transactionReceiverCallbacks);
 
     return {
       isDataCompressed,
       data,
-      callbackConfig
+      callbackConfig,
+      flashMints,
+      callbacks
     };
   }
 
@@ -2048,7 +2103,7 @@ export class ExchangeTestUtil {
 
     // Prepare block data
     const onchainBlocks: OnchainBlock[] = [];
-    const blockCallbacks: BlockCallback[][] = [];
+    const transactionReceiverCallbacks: TransactionReceiverCallback[][] = [];
     for (const block of blocks) {
       //console.log(block.blockIdx);
       const onchainBlock = this.getOnchainBlock(
@@ -2062,7 +2117,7 @@ export class ExchangeTestUtil {
         block.blockVersion
       );
       onchainBlocks.push(onchainBlock);
-      blockCallbacks.push(block.callbacks);
+      transactionReceiverCallbacks.push(block.callbacks);
     }
 
     // Callback that allows modifying the blocks
@@ -2070,51 +2125,29 @@ export class ExchangeTestUtil {
       testCallback(onchainBlocks, blocks);
     }
 
-    const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksSubmittedBefore = (
+      await this.exchange.getBlockHeight()
+    ).toNumber();
 
     // Forced requests
-    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+    const numAvailableSlotsBefore = (
+      await this.exchange.getNumAvailableForcedSlots()
+    ).toNumber();
 
     // SubmitBlocks raw tx data
     const txData = this.getSubmitCallbackData(onchainBlocks);
     //console.log(txData);
 
-    // const gasTokenConfig: GasTokenConfig = {
-    //   gasTokenVault: Constants.zeroAddress,
-    //   maxToBurn: 0,
-    //   expectedGasRefund: 0,
-    //   calldataCost: 0
-    // };
-
     const parameters = this.getSubmitBlocksWithCallbacksData(
       true,
       txData,
-      blockCallbacks
+      transactionReceiverCallbacks,
+      this.pendingFlashMints[this.exchangeId],
+      this.pendingCallbacks[this.exchangeId]
     );
 
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
-
-    let bestGasTokensToBurn = 0;
-    /*let bestGasUsed = 20000000;
-    for (let i = 0; i < 15; i++) {
-      gasTokenConfig.maxToBurn = i;
-      const gasUsed = await operatorContract.submitBlocksWithCallbacks.estimateGas(
-        parameters.isDataCompressed,
-        parameters.data,
-        parameters.callbackConfig,
-        gasTokenConfig,
-        { from: this.exchangeOperator, gasPrice: 0 }
-      );
-      if (gasUsed < bestGasUsed) {
-        bestGasUsed = gasUsed;
-        bestGasTokensToBurn = i;
-      }
-      console.log("" + i + ": " + gasUsed);
-    }
-    console.log("Best gas used: " + bestGasUsed);
-    console.log("Num gas tokens burned: " + bestGasTokensToBurn);*/
-    // gasTokenConfig.maxToBurn = bestGasTokensToBurn;
 
     let numDeposits = 0;
     for (const block of blocks) {
@@ -2134,6 +2167,8 @@ export class ExchangeTestUtil {
       parameters.isDataCompressed,
       parameters.data,
       parameters.callbackConfig,
+      parameters.flashMints,
+      parameters.callbacks,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
     );
@@ -2165,8 +2200,13 @@ export class ExchangeTestUtil {
     );
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
+    this.pendingFlashMints[this.exchangeId] = [];
+    this.pendingCallbacks[this.exchangeId] = [];
+
     // Check number of blocks submitted
-    const numBlocksSubmittedAfter = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksSubmittedAfter = (
+      await this.exchange.getBlockHeight()
+    ).toNumber();
     assert.equal(
       numBlocksSubmittedAfter,
       numBlocksSubmittedBefore + blocks.length,
@@ -2230,7 +2270,9 @@ export class ExchangeTestUtil {
     }
 
     // Forced requests
-    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+    const numAvailableSlotsAfter = (
+      await this.exchange.getNumAvailableForcedSlots()
+    ).toNumber();
     let numForcedRequestsProcessed = 0;
     for (const block of blocks) {
       for (const tx of block.internalBlock.transactions) {
@@ -2250,14 +2292,16 @@ export class ExchangeTestUtil {
   }
 
   public addBlockCallback(target: string) {
-    const blockCallback: BlockCallback = {
+    const transactionReceiverCallback: TransactionReceiverCallback = {
       target,
       auxiliaryData: Constants.emptyBytes,
       txIdx: this.pendingTransactions[this.exchangeId].length,
       numTxs: 0
     };
-    this.pendingBlockCallbacks[this.exchangeId].push(blockCallback);
-    return blockCallback;
+    this.pendingTransactionReceiverCallbacks[this.exchangeId].push(
+      transactionReceiverCallback
+    );
+    return transactionReceiverCallback;
   }
 
   public async submitPendingBlocks(testCallback?: any) {
@@ -2376,7 +2420,9 @@ export class ExchangeTestUtil {
       }
 
       const ammTransactions: any[] = [];
-      for (const callback of this.pendingBlockCallbacks[this.exchangeId]) {
+      for (const callback of this.pendingTransactionReceiverCallbacks[
+        this.exchangeId
+      ]) {
         ammTransactions.push(callback.tx);
       }
 
@@ -2467,7 +2513,7 @@ export class ExchangeTestUtil {
     }
 
     this.pendingTransactions[exchangeID] = [];
-    this.pendingBlockCallbacks[exchangeID] = [];
+    this.pendingTransactionReceiverCallbacks[exchangeID] = [];
     return blocks;
   }
 
@@ -2647,10 +2693,22 @@ export class ExchangeTestUtil {
     return bs.getData();
   }
 
-  public async registerToken(tokenAddress: string) {
-    const tx = await this.exchange.registerToken(tokenAddress, {
+  public async registerToken(tokenAddress: string, symbol?: string) {
+    const onchainExchangeOwner = await this.exchange.owner();
+    let contract = this.exchange;
+    if (this.operator && this.operator.address == onchainExchangeOwner) {
+      contract = await this.contracts.ExchangeV3.at(this.operator.address);
+    }
+
+    // Register it on the exchange contract
+    const tx = await contract.registerToken(tokenAddress, {
       from: this.exchangeOwner
     });
+    if (symbol) {
+      this.testContext.tokenSymbolAddrMap.set(symbol, tokenAddress);
+    }
+
+    await this.addTokenToMaps(tokenAddress);
     // logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
   }
 
@@ -2922,8 +2980,16 @@ export class ExchangeTestUtil {
   }
 
   public async transferBalance(to: string, token: string, amount: BN) {
-    const Token = await this.getTokenContract(token);
-    await Token.transfer(to, amount, { from: this.testContext.deployer });
+    if (token === "ETH" || token === Constants.zeroAddress) {
+      await web3.eth.sendTransaction({
+        from: this.testContext.deployer,
+        to: to,
+        value: amount
+      });
+    } else {
+      const Token = await this.getTokenContract(token);
+      await Token.transfer(to, amount, { from: this.testContext.deployer });
+    }
   }
 
   public evmIncreaseTime(seconds: number) {
@@ -2965,14 +3031,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (await web3.eth.getBlock(
-      await web3.eth.getBlockNumber()
-    )).timestamp;
+    const previousTimestamp = (
+      await web3.eth.getBlock(await web3.eth.getBlockNumber())
+    ).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (await web3.eth.getBlock(
-      await web3.eth.getBlockNumber()
-    )).timestamp;
+    const currentTimestamp = (
+      await web3.eth.getBlock(await web3.eth.getBlockNumber())
+    ).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -3535,19 +3601,27 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
-      [
-        null,
-        this.contracts.WETHToken.deployed(),
-        this.contracts.LRCToken.deployed(),
-        this.contracts.GTOToken.deployed(),
-        this.contracts.RDNToken.deployed(),
-        this.contracts.REPToken.deployed(),
-        this.contracts.INDAToken.deployed(),
-        this.contracts.INDBToken.deployed(),
-        this.contracts.TESTToken.deployed()
-      ]
-    );
+    const [
+      eth,
+      weth,
+      lrc,
+      gto,
+      rdn,
+      rep,
+      inda,
+      indb,
+      test
+    ] = await Promise.all([
+      null,
+      this.contracts.WETHToken.deployed(),
+      this.contracts.LRCToken.deployed(),
+      this.contracts.GTOToken.deployed(),
+      this.contracts.RDNToken.deployed(),
+      this.contracts.REPToken.deployed(),
+      this.contracts.INDAToken.deployed(),
+      this.contracts.INDBToken.deployed(),
+      this.contracts.TESTToken.deployed()
+    ]);
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 

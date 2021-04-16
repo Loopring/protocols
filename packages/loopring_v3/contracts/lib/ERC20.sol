@@ -6,19 +6,17 @@ pragma solidity ^0.7.0;
 /// @title ERC20 Token Interface
 /// @dev see https://github.com/ethereum/EIPs/issues/20
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract ERC20
+interface ERC20
 {
     function totalSupply()
-        public
-        virtual
+        external
         view
         returns (uint);
 
     function balanceOf(
         address who
         )
-        public
-        virtual
+        external
         view
         returns (uint);
 
@@ -26,8 +24,7 @@ abstract contract ERC20
         address owner,
         address spender
         )
-        public
-        virtual
+        external
         view
         returns (uint);
 
@@ -35,8 +32,7 @@ abstract contract ERC20
         address to,
         uint value
         )
-        public
-        virtual
+        external
         returns (bool);
 
     function transferFrom(
@@ -44,15 +40,13 @@ abstract contract ERC20
         address to,
         uint    value
         )
-        public
-        virtual
+        external
         returns (bool);
 
     function approve(
         address spender,
         uint    value
         )
-        public
-        virtual
+        external
         returns (bool);
 }

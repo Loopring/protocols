@@ -222,7 +222,7 @@ export interface TxBlock {
   signature?: Signature;
 }
 
-export interface BlockCallback {
+export interface TransactionReceiverCallback {
   target: string;
   txIdx: number;
   numTxs: number;
@@ -230,11 +230,16 @@ export interface BlockCallback {
   tx?: any;
 }
 
-export interface GasTokenConfig {
-  gasTokenVault: string;
-  maxToBurn: number;
-  expectedGasRefund: number;
-  calldataCost: number;
+export interface FlashMint {
+  to: string;
+  token: string;
+  amount: string;
+}
+
+export interface Callback {
+  to: string;
+  data: string;
+  before: boolean;
 }
 
 export interface Block {
@@ -259,7 +264,7 @@ export interface Block {
   internalBlock: TxBlock;
   blockInfoData?: any;
   shutdown?: boolean;
-  callbacks?: BlockCallback[];
+  callbacks?: TransactionReceiverCallback[];
 }
 
 export interface Account {

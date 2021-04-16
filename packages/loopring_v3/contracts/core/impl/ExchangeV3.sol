@@ -42,15 +42,12 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
-    ExchangeData.State public state;
-    address public loopringAddr;
-    uint8 private ammFeeBips = 20;
-    bool public allowOnchainTransferFrom = false;
+    ExchangeData.State private state;
 
     modifier onlyWhenUninitialized()
     {
         require(
-            loopringAddr == address(0) && state.merkleRoot == bytes32(0),
+            state.loopringAddr == address(0) && state.merkleRoot == bytes32(0),
             "INITIALIZED"
         );
         _;
@@ -94,7 +91,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
-        loopringAddr = _loopring;
+        state.loopringAddr = _loopring;
+        state.ammFeeBips = 20;
 
         state.initializeGenesisBlock(
             _loopring,
@@ -368,7 +366,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        state.deposit(from, to, tokenAddress, amount, extraData);
+        state.deposit(from, to, tokenAddress, amount, extraData, false);
     }
 
     function getPendingDepositAmount(
@@ -382,6 +380,66 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     {
         uint16 tokenID = state.getTokenID(tokenAddress);
         return state.pendingDeposits[owner][tokenID].amount;
+    }
+
+    function flashMint(
+        ExchangeData.FlashMint[] calldata flashMints
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        for (uint i = 0; i < flashMints.length; i++) {
+            state.deposit(
+                flashMints[i].to,
+                flashMints[i].to,
+                flashMints[i].token,
+                flashMints[i].amount,
+                new bytes(0),
+                true
+            );
+        }
+    }
+
+    function repayFlashMint(
+        address from,
+        address tokenAddress,
+        uint96  amount,
+        bytes   calldata extraData
+        )
+        external
+        payable
+        override
+        nonReentrant
+    {
+        state.repayFlashMint(from, tokenAddress, amount, extraData);
+    }
+
+    function getAmountFlashMinted(
+        address tokenAddress
+        )
+        external
+        override
+        view
+        returns (uint96)
+    {
+        return state.amountFlashMinted[tokenAddress];
+    }
+
+    function verifyFlashMintsPaidBack(
+        ExchangeData.FlashMint[] calldata flashMints
+        )
+        external
+        override
+        view
+    {
+        for (uint i = 0; i < flashMints.length; i++) {
+            require(
+                state.amountFlashMinted[flashMints[i].token] == 0,
+                "FLASH_MINT_NOT_REPAID"
+            );
+        }
     }
 
     // -- Withdrawals --
@@ -556,7 +614,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        require(allowOnchainTransferFrom, "NOT_ALLOWED");
+        require(state.allowOnchainTransferFrom, "NOT_ALLOWED");
         state.depositContract.transfer(from, to, token, amount);
     }
 
@@ -671,15 +729,16 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         onlyOwner
     {
         require(_feeBips <= 200, "INVALID_VALUE");
-        ammFeeBips = _feeBips;
+        state.ammFeeBips = _feeBips;
     }
 
     function getAmmFeeBips()
         external
         override
         view
-        returns (uint8) {
-        return ammFeeBips;
+        returns (uint8)
+    {
+        return state.ammFeeBips;
     }
 
     function setAllowOnchainTransferFrom(bool value)
@@ -687,7 +746,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyOwner
     {
-        require(allowOnchainTransferFrom != value, "SAME_VALUE");
-        allowOnchainTransferFrom = value;
+        require(state.allowOnchainTransferFrom != value, "SAME_VALUE");
+        state.allowOnchainTransferFrom = value;
     }
 }
