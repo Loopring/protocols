@@ -440,7 +440,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         for (uint i = 0; i < loanDeposits.length; i++) {
             require(
                 state.depositLoans[loanDeposits[i].token] == 0,
-                "MINT_DEPOSIT_NOT_REPAID"
+                "NON_ZERO_OUTSTANDING_DEPOSIT_LOAN"
             );
         }
     }
