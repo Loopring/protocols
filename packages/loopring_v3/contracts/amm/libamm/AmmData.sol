@@ -12,7 +12,7 @@ import "./IAmmSharedConfig.sol";
 library AmmData
 {
     uint public constant POOL_TOKEN_BASE = 100 * (10 ** 8);
-    uint public constant POOL_TOKEN_MINTED_SUPPLY = uint96(-1);
+    uint public constant POOL_TOKEN_MINTED_SUPPLY = type(uint96).max;
 
     enum PoolTxType
     {
