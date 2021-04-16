@@ -23,7 +23,6 @@ const GTOToken = artifacts.require("./test/tokens/GTO.sol");
 const LoopringAmmPool = artifacts.require("LoopringAmmPool");
 const LoopringAmmPoolCopy = artifacts.require("LoopringAmmPoolCopy");
 const BlockVerifier = artifacts.require("BlockVerifier");
-const ChiToken = artifacts.require("ChiToken");
 
 module.exports = function(deployer, network, accounts) {
   function flattenList(l) {
@@ -44,11 +43,6 @@ module.exports = function(deployer, network, accounts) {
   }
 
   deployer.then(async () => {
-    let chiTokenAddress = "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c";
-    if (network != "live" && network != "live-fork") {
-      chiTokenAddress = (await ChiToken.deployed()).address;
-    }
-
     await deployer.link(ExchangeBalances, ExchangeV3);
     await deployer.link(ExchangeAdmins, ExchangeV3);
     await deployer.link(ExchangeBlocks, ExchangeV3);
@@ -59,14 +53,9 @@ module.exports = function(deployer, network, accounts) {
 
     await deployer.deploy(ExchangeV3, { gas: 6700000 });
     await deployer.deploy(DefaultDepositContract, { gas: 6700000 });
-    await deployer.deploy(
-      LoopringIOExchangeOwner,
-      ExchangeV3.address,
-      "0x" + "00".repeat(20),
-      {
-        gas: 6700000
-      }
-    );
+    await deployer.deploy(LoopringIOExchangeOwner, ExchangeV3.address, {
+      gas: 6700000
+    });
 
     if (process.env.TEST_ENV == "docker") {
       console.log("setup exchange:");

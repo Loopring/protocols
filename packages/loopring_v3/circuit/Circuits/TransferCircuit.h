@@ -44,7 +44,7 @@ class TransferCircuit : public BaseTransactionCircuit
     DualVariableGadget fee;
     DualVariableGadget validUntil;
     DualVariableGadget type;
-    DualVariableGadget from;
+    ToBitsGadget from;
     DualVariableGadget to;
     DualVariableGadget storageID;
     VariableT dualAuthorX;
@@ -74,8 +74,8 @@ class TransferCircuit : public BaseTransactionCircuit
     TernaryGadget resolvedDualAuthorY;
 
     // Signature
-    Poseidon_gadget_T<13, 1, 6, 53, 12, 1> hashPayer;
-    Poseidon_gadget_T<13, 1, 6, 53, 12, 1> hashDual;
+    Poseidon_12 hashPayer;
+    Poseidon_12 hashDual;
 
     // Balances
     DynamicBalanceGadget balanceS_A;
@@ -431,7 +431,7 @@ class TransferCircuit : public BaseTransactionCircuit
         fee.generate_r1cs_constraints(true);
         validUntil.generate_r1cs_constraints(true);
         type.generate_r1cs_constraints(true);
-        from.generate_r1cs_constraints(true);
+        from.generate_r1cs_constraints();
         to.generate_r1cs_constraints(true);
         storageID.generate_r1cs_constraints(true);
         payer_toAccountID.generate_r1cs_constraints(true);

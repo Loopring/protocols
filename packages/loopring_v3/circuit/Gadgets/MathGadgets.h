@@ -19,6 +19,18 @@ using namespace jubjub;
 namespace Loopring
 {
 
+// All Poseidon permutations used
+using Poseidon_2 = Poseidon_gadget_T<3, 1, 6, 51, 2, 1>;
+template <unsigned n_outputs>
+using Poseidon_4_ = Poseidon_gadget_T<5, 1, 6, 52, n_outputs, 1>;
+using Poseidon_4 = Poseidon_4_<4>;
+using Poseidon_5 = Poseidon_gadget_T<6, 1, 6, 52, 5, 1>;
+using Poseidon_6 = Poseidon_gadget_T<7, 1, 6, 52, 6, 1>;
+using Poseidon_8 = Poseidon_gadget_T<9, 1, 6, 53, 8, 1>;
+using Poseidon_9 = Poseidon_gadget_T<10, 1, 6, 53, 9, 1>;
+using Poseidon_11 = Poseidon_gadget_T<12, 1, 6, 53, 11, 1>;
+using Poseidon_12 = Poseidon_gadget_T<13, 1, 6, 53, 12, 1>;
+
 // require(A == B)
 static void requireEqual( //
   ProtoboardT &pb,
@@ -155,8 +167,6 @@ class Constants : public GadgetT
 class DualVariableGadget : public libsnark::dual_variable_gadget<FieldT>
 {
   public:
-    bool fromPacked = false;
-    bool fromBits = false;
 
     DualVariableGadget( //
       ProtoboardT &pb,
@@ -166,42 +176,10 @@ class DualVariableGadget : public libsnark::dual_variable_gadget<FieldT>
     {
     }
 
-    DualVariableGadget( //
-      ProtoboardT &pb,
-      const VariableT &value,
-      const size_t width,
-      const std::string &prefix)
-        : libsnark::dual_variable_gadget<FieldT>(pb, value, width, prefix)
-    {
-        fromPacked = true;
-    }
-
-    DualVariableGadget( //
-      ProtoboardT &pb,
-      const VariableArrayT &bits,
-      const std::string &prefix)
-        : libsnark::dual_variable_gadget<FieldT>(pb, bits, prefix)
-    {
-        fromBits = true;
-    }
-
-    void generate_r1cs_witness()
-    {
-        if (fromPacked)
-        {
-            generate_r1cs_witness_from_packed();
-        }
-        if (fromBits)
-        {
-            generate_r1cs_witness_from_bits();
-        }
-    }
-
     void generate_r1cs_witness( //
       ProtoboardT &pb,
       const FieldT &value)
     {
-        assert(!fromPacked && !fromBits);
         pb.val(packed) = value;
         generate_r1cs_witness_from_packed();
     }
@@ -210,7 +188,6 @@ class DualVariableGadget : public libsnark::dual_variable_gadget<FieldT>
       ProtoboardT &pb,
       const LimbT &value)
     {
-        assert(!fromPacked && !fromBits);
         assert(value.max_bits() == 256);
         for (unsigned int i = 0; i < 256; i++)
         {
@@ -225,21 +202,62 @@ class DualVariableGadget : public libsnark::dual_variable_gadget<FieldT>
     }
 };
 
+class ToBitsGadget : public libsnark::dual_variable_gadget<FieldT>
+{
+  public:
+
+    ToBitsGadget( //
+      ProtoboardT &pb,
+      const VariableT &value,
+      const size_t width,
+      const std::string &prefix)
+        : libsnark::dual_variable_gadget<FieldT>(pb, value, width, prefix)
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+        generate_r1cs_witness_from_packed();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        libsnark::dual_variable_gadget<FieldT>::generate_r1cs_constraints(true);
+    }
+};
+
+typedef ToBitsGadget RangeCheckGadget;
+
+class FromBitsGadget : public libsnark::dual_variable_gadget<FieldT>
+{
+  public:
+
+    FromBitsGadget( //
+      ProtoboardT &pb,
+      const VariableArrayT &bits,
+      const std::string &prefix)
+        : libsnark::dual_variable_gadget<FieldT>(pb, bits, prefix)
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+        generate_r1cs_witness_from_bits();
+    }
+
+    void generate_r1cs_constraints(bool enforce = true)
+    {
+        libsnark::dual_variable_gadget<FieldT>::generate_r1cs_constraints(enforce);
+    }
+};
+
 // Helper function that contains the history of all the values of a variable
 class DynamicVariableGadget : public GadgetT
 {
   public:
     std::vector<VariableT> variables;
-    bool allowGeneratingWitness;
-
-    DynamicVariableGadget( //
-      ProtoboardT &pb,
-      const std::string &prefix)
-        : GadgetT(pb, prefix)
-    {
-        add(make_variable(pb, FMT(prefix, ".initialValue")));
-        allowGeneratingWitness = true;
-    }
 
     DynamicVariableGadget( //
       ProtoboardT &pb,
@@ -248,7 +266,6 @@ class DynamicVariableGadget : public GadgetT
         : GadgetT(pb, prefix)
     {
         add(initialValue);
-        allowGeneratingWitness = false;
     }
 
     const VariableT &front() const
@@ -264,12 +281,6 @@ class DynamicVariableGadget : public GadgetT
     void add(const VariableT &variable)
     {
         variables.push_back(variable);
-    }
-
-    void generate_r1cs_witness(ethsnarks::FieldT value)
-    {
-        assert(allowGeneratingWitness);
-        pb.val(variables.front()) = value;
     }
 };
 
@@ -408,7 +419,7 @@ class AddGadget : public GadgetT
 {
   public:
     UnsafeAddGadget unsafeAdd;
-    libsnark::dual_variable_gadget<FieldT> rangeCheck;
+    RangeCheckGadget rangeCheck;
 
     AddGadget( //
       ProtoboardT &pb,
@@ -427,13 +438,13 @@ class AddGadget : public GadgetT
     void generate_r1cs_witness()
     {
         unsafeAdd.generate_r1cs_witness();
-        rangeCheck.generate_r1cs_witness_from_packed();
+        rangeCheck.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
         unsafeAdd.generate_r1cs_constraints();
-        rangeCheck.generate_r1cs_constraints(true);
+        rangeCheck.generate_r1cs_constraints();
     }
 
     const VariableT &result() const
@@ -447,7 +458,7 @@ class SubGadget : public GadgetT
 {
   public:
     UnsafeSubGadget unsafeSub;
-    libsnark::dual_variable_gadget<FieldT> rangeCheck;
+    RangeCheckGadget rangeCheck;
 
     SubGadget( //
       ProtoboardT &pb,
@@ -466,13 +477,13 @@ class SubGadget : public GadgetT
     void generate_r1cs_witness()
     {
         unsafeSub.generate_r1cs_witness();
-        rangeCheck.generate_r1cs_witness_from_packed();
+        rangeCheck.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
         unsafeSub.generate_r1cs_constraints();
-        rangeCheck.generate_r1cs_constraints(true);
+        rangeCheck.generate_r1cs_constraints();
     }
 
     const VariableT &result() const
@@ -583,7 +594,7 @@ class ArrayTernaryGadget : public GadgetT
         results.reserve(x.size());
         for (unsigned int i = 0; i < x.size(); i++)
         {
-            results.emplace_back(TernaryGadget(pb, b, x[i], y[i], FMT(prefix, ".results")));
+            results.emplace_back(pb, b, x[i], y[i], FMT(prefix, ".results"));
             res.emplace_back(results.back().result());
         }
     }
@@ -1044,10 +1055,10 @@ class LtFieldGadget : public GadgetT
   public:
     field2bits_strict Abits;
     field2bits_strict Bbits;
-    DualVariableGadget Alo;
-    DualVariableGadget Ahi;
-    DualVariableGadget Blo;
-    DualVariableGadget Bhi;
+    FromBitsGadget Alo;
+    FromBitsGadget Ahi;
+    FromBitsGadget Blo;
+    FromBitsGadget Bhi;
     LeqGadget partLo;
     LeqGadget partHi;
     TernaryGadget res;
@@ -1363,7 +1374,7 @@ class MulDivGadget : public GadgetT
 
     RequireNotZeroGadget denominator_notZero;
     UnsafeMulGadget product;
-    libsnark::dual_variable_gadget<FieldT> remainder;
+    DualVariableGadget remainder;
     RequireLtGadget remainder_lt_denominator;
 
     MulDivGadget(
@@ -1412,8 +1423,7 @@ class MulDivGadget : public GadgetT
         {
             pb.val(quotient) = FieldT::zero();
         }
-        pb.val(remainder.packed) = pb.val(product.result()) - (pb.val(denominator) * pb.val(quotient));
-        remainder.generate_r1cs_witness_from_packed();
+        remainder.generate_r1cs_witness(pb, pb.val(product.result()) - (pb.val(denominator) * pb.val(quotient)));
         remainder_lt_denominator.generate_r1cs_witness();
     }
 
@@ -1530,7 +1540,7 @@ class PublicDataGadget : public GadgetT
     VariableArrayT publicDataBits;
 
     std::unique_ptr<sha256_many> hasher;
-    std::unique_ptr<libsnark::dual_variable_gadget<FieldT>> calculatedHash;
+    std::unique_ptr<FromBitsGadget> calculatedHash;
 
     PublicDataGadget( //
       ProtoboardT &pb,
@@ -1601,7 +1611,7 @@ class PublicDataGadget : public GadgetT
         hasher->generate_r1cs_constraints();
 
         // Check that the hash matches the public input
-        calculatedHash.reset(new libsnark::dual_variable_gadget<FieldT>(
+        calculatedHash.reset(new FromBitsGadget(
           pb, reverse(subArray(hasher->result().bits, 0, NUM_BITS_FIELD_CAPACITY)), ".packCalculatedHash"));
         calculatedHash->generate_r1cs_constraints(false);
         requireEqual(pb, calculatedHash->packed, publicInput, ".publicDataCheck");
@@ -1642,8 +1652,8 @@ class FloatGadget : public GadgetT
         for (unsigned int i = 0; i < floatEncoding.numBitsExponent; i++)
         {
             baseMultipliers.emplace_back(make_variable(pb, FMT(prefix, ".baseMultipliers")));
-            multipliers.emplace_back(TernaryGadget(
-              pb, f[floatEncoding.numBitsMantissa + i], baseMultipliers[i], constants._1, FMT(prefix, ".multipliers")));
+            multipliers.emplace_back(
+              pb, f[floatEncoding.numBitsMantissa + i], baseMultipliers[i], constants._1, FMT(prefix, ".multipliers"));
         }
     }
 
@@ -1806,8 +1816,8 @@ class SelectGadget : public GadgetT
         assert(values.size() == selector.size());
         for (unsigned int i = 0; i < values.size(); i++)
         {
-            results.emplace_back(TernaryGadget(
-              pb, selector[i], values[i], (i == 0) ? _constants._0 : results.back().result(), FMT(prefix, ".results")));
+            results.emplace_back(
+              pb, selector[i], values[i], (i == 0) ? _constants._0 : results.back().result(), FMT(prefix, ".results"));
         }
     }
 
@@ -1872,7 +1882,7 @@ class ArraySelectGadget : public GadgetT
     {
         for (unsigned int i = 0; i < results.size(); i++)
         {
-            results[i].generate_r1cs_constraints();
+            results[i].generate_r1cs_constraints(false);
         }
     }
 
@@ -1987,7 +1997,7 @@ class SignedAddGadget : public GadgetT
     EqualGadget isZero;
     TernaryGadget normalizedSign;
 
-    libsnark::dual_variable_gadget<FieldT> rangeCheck;
+    RangeCheckGadget rangeCheck;
 
     SignedAddGadget(
       ProtoboardT &pb,
@@ -2040,7 +2050,7 @@ class SignedAddGadget : public GadgetT
         isZero.generate_r1cs_witness();
         normalizedSign.generate_r1cs_witness();
 
-        rangeCheck.generate_r1cs_witness_from_packed();
+        rangeCheck.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
@@ -2061,7 +2071,7 @@ class SignedAddGadget : public GadgetT
         isZero.generate_r1cs_constraints();
         normalizedSign.generate_r1cs_constraints();
 
-        rangeCheck.generate_r1cs_constraints(true);
+        rangeCheck.generate_r1cs_constraints();
     }
 
     const SignedVariableT result() const
@@ -2212,10 +2222,10 @@ class PowerGadget : public GadgetT
     std::vector<SignedMulDivGadget> cn;
     std::vector<SignedMulDivGadget> tn;
     std::vector<SignedAddGadget> sum;
-    std::vector<DualVariableGadget> cnRangeCheck;
+    std::vector<RangeCheckGadget> cnRangeCheck;
 
     std::unique_ptr<MulDivGadget> res;
-    std::unique_ptr<DualVariableGadget> resRangeCheck;
+    std::unique_ptr<RangeCheckGadget> resRangeCheck;
     std::unique_ptr<RequireEqualGadget> requirePositive;
 
     PowerGadget(
@@ -2302,7 +2312,7 @@ class PowerGadget : public GadgetT
           1,
           NUM_BITS_FIXED_BASE,
           FMT(prefix, ".res")));
-        resRangeCheck.reset(new DualVariableGadget(pb, res->result(), NUM_BITS_AMOUNT, FMT(prefix, ".resRangeCheck")));
+        resRangeCheck.reset(new RangeCheckGadget(pb, res->result(), NUM_BITS_AMOUNT, FMT(prefix, ".resRangeCheck")));
         requirePositive.reset(
           new RequireEqualGadget(pb, sum.back().result().sign, constants._1, FMT(prefix, ".requirePositive")));
     }

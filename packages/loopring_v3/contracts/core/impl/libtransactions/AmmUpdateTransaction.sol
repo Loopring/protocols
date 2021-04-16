@@ -52,7 +52,8 @@ library AmmUpdateTransaction
         internal
     {
         // Read in the AMM update
-        AmmUpdate memory update = readTx(data, offset);
+        AmmUpdate memory update;
+        readTx(data, offset, update);
         AmmUpdateAuxiliaryData memory auxData = abi.decode(auxiliaryData, (AmmUpdateAuxiliaryData));
 
         // Check validUntil
@@ -68,28 +69,32 @@ library AmmUpdateTransaction
 
     function readTx(
         bytes memory data,
-        uint         offset
+        uint         offset,
+        AmmUpdate memory update
         )
         internal
         pure
-        returns (AmmUpdate memory update)
     {
         uint _offset = offset;
+
+        require(data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.AMM_UPDATE), "INVALID_TX_TYPE");
+        _offset += 1;
+
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        update.owner = data.toAddress(_offset);
+        update.owner = data.toAddressUnsafe(_offset);
         _offset += 20;
-        update.accountID = data.toUint32(_offset);
+        update.accountID = data.toUint32Unsafe(_offset);
         _offset += 4;
-        update.tokenID = data.toUint16(_offset);
+        update.tokenID = data.toUint16Unsafe(_offset);
         _offset += 2;
-        update.feeBips = data.toUint8(_offset);
+        update.feeBips = data.toUint8Unsafe(_offset);
         _offset += 1;
-        update.tokenWeight = data.toUint96(_offset);
+        update.tokenWeight = data.toUint96Unsafe(_offset);
         _offset += 12;
-        update.nonce = data.toUint32(_offset);
+        update.nonce = data.toUint32Unsafe(_offset);
         _offset += 4;
-        update.balance = data.toUint96(_offset);
+        update.balance = data.toUint96Unsafe(_offset);
         _offset += 12;
     }
 

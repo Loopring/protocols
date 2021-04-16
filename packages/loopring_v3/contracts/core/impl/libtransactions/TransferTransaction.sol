@@ -16,7 +16,8 @@ import "../libexchange/ExchangeSignatures.sol";
 library TransferTransaction
 {
     using BytesUtil            for bytes;
-    using FloatUtil            for uint;
+    using FloatUtil            for uint24;
+    using FloatUtil            for uint16;
     using MathUint             for uint;
     using ExchangeSignatures   for ExchangeData.State;
 
@@ -57,7 +58,8 @@ library TransferTransaction
         internal
     {
         // Read the transfer
-        Transfer memory transfer = readTx(data, offset);
+        Transfer memory transfer;
+        readTx(data, offset, transfer);
         TransferAuxiliaryData memory auxData = abi.decode(auxiliaryData, (TransferAuxiliaryData));
 
         // Fill in withdrawal data missing from DA
@@ -76,37 +78,41 @@ library TransferTransaction
 
     function readTx(
         bytes memory data,
-        uint         offset
+        uint         offset,
+        Transfer memory transfer
         )
         internal
         pure
-        returns (Transfer memory transfer)
     {
         uint _offset = offset;
+
+        require(data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.TRANSFER), "INVALID_TX_TYPE");
+        _offset += 1;
+
         // Check that this is a conditional transfer
-        require(data.toUint8(_offset) == 1, "INVALID_AUXILIARYDATA_DATA");
+        require(data.toUint8Unsafe(_offset) == 1, "INVALID_AUXILIARYDATA_DATA");
         _offset += 1;
 
         // Extract the transfer data
         // We don't use abi.decode for this because of the large amount of zero-padding
         // bytes the circuit would also have to hash.
-        transfer.fromAccountID = data.toUint32(_offset);
+        transfer.fromAccountID = data.toUint32Unsafe(_offset);
         _offset += 4;
-        transfer.toAccountID = data.toUint32(_offset);
+        transfer.toAccountID = data.toUint32Unsafe(_offset);
         _offset += 4;
-        transfer.tokenID = data.toUint16(_offset);
+        transfer.tokenID = data.toUint16Unsafe(_offset);
         _offset += 2;
-        transfer.amount = uint(data.toUint24(_offset)).decodeFloat(24);
+        transfer.amount = data.toUint24Unsafe(_offset).decodeFloat24();
         _offset += 3;
-        transfer.feeTokenID = data.toUint16(_offset);
+        transfer.feeTokenID = data.toUint16Unsafe(_offset);
         _offset += 2;
-        transfer.fee = uint(data.toUint16(_offset)).decodeFloat(16);
+        transfer.fee = data.toUint16Unsafe(_offset).decodeFloat16();
         _offset += 2;
-        transfer.storageID = data.toUint32(_offset);
+        transfer.storageID = data.toUint32Unsafe(_offset);
         _offset += 4;
-        transfer.to = data.toAddress(_offset);
+        transfer.to = data.toAddressUnsafe(_offset);
         _offset += 20;
-        transfer.from = data.toAddress(_offset);
+        transfer.from = data.toAddressUnsafe(_offset);
         _offset += 20;
     }
 

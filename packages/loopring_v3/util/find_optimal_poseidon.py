@@ -1,7 +1,11 @@
 import sys
+sys.path.insert(0, 'ethsnarks')
 from math import *
 
-def poseidon_params(p, t, nRoundsF, nRoundsP, e, constants_C=None, constants_M=None, security_target=None):
+from ethsnarks.poseidon import poseidon, poseidon_params, poseidon_constants
+from ethsnarks.field import SNARK_SCALAR_FIELD
+
+def _poseidon_params(p, t, nRoundsF, nRoundsP, e, constants_C=None, constants_M=None, security_target=None):
     assert nRoundsF % 2 == 0 and nRoundsF >= 6
     assert nRoundsP > 0
     assert t >= 2
@@ -16,7 +20,7 @@ def poseidon_params(p, t, nRoundsF, nRoundsP, e, constants_C=None, constants_M=N
     # Size of the state (in bits)
     N = n * t
 
-    if p % 2 == 3:
+    if p % 3 == 2:
         assert e == 3
         grobner_attack_ratio_rounds = 0.32
         grobner_attack_ratio_sboxes = 0.18
@@ -25,7 +29,7 @@ def poseidon_params(p, t, nRoundsF, nRoundsP, e, constants_C=None, constants_M=N
         assert e == 5
         grobner_attack_ratio_rounds = 0.21
         grobner_attack_ratio_sboxes = 0.14
-        interpolation_attack_ratio = 0.43
+        interpolation_attack_ratio = 0.4306
     else:
         # XXX: in other cases use, can we use 7?
         raise ValueError('Invalid p for congruency')
@@ -71,7 +75,7 @@ best_nRoundsP = 0
 for nRoundsF in range(1, 16):
   for nRoundsP in range(1, 128):
     try:
-      constraints = poseidon_params(p, t, nRoundsF, nRoundsP, e, None, None, 128)
+      constraints = _poseidon_params(p, t, nRoundsF, nRoundsP, e, None, None, 128)
       #print("constraints: " + str(constraints))
       if constraints < best_constraints:
         best_constraints = constraints
@@ -80,9 +84,15 @@ for nRoundsF in range(1, 16):
     except:
       pass
 
+
 print("t: " + str(t))
 print("best_constraints: " + str(best_constraints))
 print("best_nRoundsF: " + str(best_nRoundsF))
 print("best_nRoundsP: " + str(best_nRoundsP))
 
 print("cost: " + str(best_constraints / (t - 1)))
+
+constants = list(poseidon_constants(SNARK_SCALAR_FIELD, b'poseidon_matrix_0000', t * 2))
+print("values = " + str(constants))
+params = poseidon_params(SNARK_SCALAR_FIELD, t, best_nRoundsF, best_nRoundsP, b'poseidon', 5, security_target=128)
+print("expected_matrix = " + str(params.constants_M))

@@ -11,10 +11,8 @@ import "../../amm/libamm/AmmData.sol";
 abstract contract IBlockReceiver
 {
     function beforeBlockSubmission(
-        ExchangeData.Block memory _block,
-        bytes              memory data,
-        uint                      txIdx,
-        uint                      numTxs
+        bytes              calldata txsData,
+        bytes              calldata callbackData
         )
         external
         virtual;

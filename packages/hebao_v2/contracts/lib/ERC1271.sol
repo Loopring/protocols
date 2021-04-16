@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
@@ -12,5 +12,5 @@ abstract contract ERC1271 {
         public
         view
         virtual
-        returns (bytes4 magicValueB32);
+        returns (bytes4 magicValue);
 }

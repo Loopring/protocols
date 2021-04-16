@@ -44,7 +44,7 @@ class OrderGadget : public GadgetT
     RequireNotZeroGadget amountB_notZero;
 
     // Signature
-    Poseidon_gadget_T<12, 1, 6, 53, 11, 1> hash;
+    Poseidon_11 hash;
 
     OrderGadget( //
       ProtoboardT &pb,
@@ -129,7 +129,7 @@ class OrderGadget : public GadgetT
         hash.generate_r1cs_witness();
     }
 
-    void generate_r1cs_constraints(bool doSignatureCheck = true)
+    void generate_r1cs_constraints()
     {
         // Inputs
         storageID.generate_r1cs_constraints(true);

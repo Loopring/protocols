@@ -1,5 +1,7 @@
-node_modules
+# Packages
+node_modules/
 
-#Hardhat files
-cache
-artifacts
+# Hardhat build outputs
+artifacts/
+cache/
+build/
