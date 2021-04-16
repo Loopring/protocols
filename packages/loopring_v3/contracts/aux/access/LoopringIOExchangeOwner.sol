@@ -50,7 +50,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         address[]                     receivers;
     }
 
-    struct Callback
+    struct SubmitBlocksCallback
     {
         address to;
         bytes   data;
@@ -102,7 +102,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         bytes                        calldata data,
         TransactionReceiverCallbacks calldata config,
         ExchangeData.FlashMint[]     calldata flashMints,
-        Callback[]                   calldata callbacks
+        SubmitBlocksCallback[]                   calldata callbacks
         )
         external
     {
@@ -215,13 +215,13 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     }
 
     function _processCallbacks(
-        Callback[] calldata callbacks,
+        SubmitBlocksCallback[] calldata callbacks,
         bool                before
         )
         private
     {
         for (uint i = 0; i < callbacks.length; i++) {
-            Callback calldata callback = callbacks[i];
+            SubmitBlocksCallback calldata callback = callbacks[i];
             if (callback.before != before) {
                 continue;
             }
@@ -232,7 +232,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
                 callback.to != address(this),
                 "EXCHANGE_CANNOT_BE_POST_CALLBACK_TARGET"
             );
-            require(callback.data.toBytes4(0) != ITransactionReceiver.onReceiveTransactions.selector, "INVALID_POST_CALLBACK_FUNCTION");
+            require(callback.data.toBytes4(0) != ITransactionReceiver.onTransactionReceived.selector, "INVALID_POST_CALLBACK_FUNCTION");
             (bool success, bytes memory returnData) = callback.to.call(callback.data);
             if (!success) {
                 assembly { revert(add(returnData, 32), mload(returnData)) }
@@ -285,7 +285,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
         // Construct the calldata passed into the callback call
         bytes calldata callbackData = txCallback.data;
-        bytes4 selector = ITransactionReceiver.onReceiveTransactions.selector;
+        bytes4 selector = ITransactionReceiver.onTransactionReceived.selector;
 
         uint txsDataLength = ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs;
         uint callbackDataLength = txCallback.data.length;

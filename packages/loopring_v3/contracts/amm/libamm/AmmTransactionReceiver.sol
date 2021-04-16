@@ -21,7 +21,7 @@ library AmmTransactionReceiver
     using AmmUpdateProcess  for AmmData.Context;
     using BlockReader       for bytes;
 
-    function onReceiveTransactions(
+    function onTransactionReceived(
         AmmData.State storage  S,
         bytes         calldata txsData,
         bytes         calldata callbackData
@@ -75,6 +75,8 @@ library AmmTransactionReceiver
         private
     {
         // Manually decode the encoded PoolTx in `callbackData`
+        // The logic is equivalent to:
+        // `AmmData.PoolTx memory poolTx = abi.decode(callbackData, (AmmData.PoolTx))`
         AmmData.PoolTxType txType;
         bytes calldata data;
         bytes calldata signature;

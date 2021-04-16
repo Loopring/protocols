@@ -118,7 +118,7 @@ contract LoopringAmmPool is
         state.exitPool(burnAmount, exitMinAmounts, true);
     }
 
-    function onReceiveTransactions(
+    function onTransactionReceived(
         bytes              calldata txsData,
         bytes              calldata callbackData
         )
@@ -129,7 +129,7 @@ contract LoopringAmmPool is
         // nonReentrant     // Not needed, does not do any external calls
                             // and can only be called by the exchange owner.
     {
-        state.onReceiveTransactions(txsData, callbackData);
+        state.onTransactionReceived(txsData, callbackData);
     }
 
     function withdrawWhenOffline()

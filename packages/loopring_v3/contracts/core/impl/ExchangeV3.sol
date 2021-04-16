@@ -67,7 +67,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         pure
         returns (string memory)
     {
-        return "3.6.0";
+        return "3.7.0";
     }
 
     function domainSeparator()
