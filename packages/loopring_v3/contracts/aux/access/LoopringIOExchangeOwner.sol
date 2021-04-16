@@ -268,7 +268,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             require(txIdx >= cursor, "TX_INDEX_OUT_OF_ORDER");
 
             // Execute callback
-            _callCallback(_block, txCallback, receivers[txCallback.receiverIdx]);
+            _callTxCallback(_block, txCallback, receivers[txCallback.receiverIdx]);
 
             // Now that the transactions have been verified, mark them as approved
             for (uint j = txIdx; j < txIdx + txCallback.numTxs; j++) {
@@ -279,10 +279,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         }
     }
 
-    function _callCallback(
-        ExchangeData.Block memory _block,
-        TxCallback calldata txCallback,
-        address receiver
+    function _callTxCallback(
+        ExchangeData.Block memory   _block,
+        TxCallback         calldata txCallback,
+        address                     receiver
         )
         private
     {
