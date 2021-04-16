@@ -64,7 +64,7 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
         initialized = true;
     }
 
-    function deposit(
+    function convert(
         uint96          amountIn,
         uint96          minAmountOut,
         bytes  calldata customData
@@ -73,10 +73,10 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
         payable
         onlyFromExchangeOwner
     {
-        require(totalSupply == 0);
+        require(totalSupply == 0, "LP_TOKEN_SUPPLY_NON_ZERO");
 
         // Converter specific logic, which can fail
-        try BaseConverter(this).convertExternal(amountIn, minAmountOut, customData)
+        try BaseConverter(this).convertSellCall(amountIn, minAmountOut, customData)
             returns (uint amountOut) {
             failed = false;
             emit ConversionSuccess(amountIn, amountOut);
@@ -134,7 +134,7 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
     }
 
     // Wrapper around `convert` which enforces only self calls.
-    function convertExternal(
+    function convertSellCall(
         uint96 amountIn,
         uint96 minAmountOut,
         bytes  calldata customData
@@ -144,7 +144,7 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
         returns (uint amountOut)
     {
         require(msg.sender == address(this), "UNAUTHORIZED");
-        amountOut = convert(amountIn, minAmountOut, customData);
+        amountOut = performConversion(amountIn, minAmountOut, customData);
     }
 
     receive() external payable {}
@@ -188,7 +188,7 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
     }
 
     // Converer specific logic
-    function convert(
+    function performConversion(
         uint96          amountIn,
         uint96          minAmountOut,
         bytes  calldata customData

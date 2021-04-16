@@ -181,7 +181,7 @@ contract("LoopringConverter", (accounts: string[]) => {
       await ctx.addCallback(
         converter.address,
         converter.contract.contract.methods
-          .deposit(amountIn, minAmountOut, web3.utils.hexToBytes("0x"))
+          .convert(amountIn, minAmountOut, web3.utils.hexToBytes("0x"))
           .encodeABI(),
         false
       );
