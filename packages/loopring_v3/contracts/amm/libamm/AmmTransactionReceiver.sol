@@ -21,7 +21,7 @@ library AmmTransactionReceiver
     using AmmUpdateProcess  for AmmData.Context;
     using BlockReader       for bytes;
 
-    function onTransactionReceived(
+    function onTransactionsReceived(
         AmmData.State storage  S,
         bytes         calldata txsData,
         bytes         calldata callbackData

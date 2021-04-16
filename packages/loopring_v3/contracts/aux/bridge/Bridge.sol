@@ -148,7 +148,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         _batchDeposit(msg.sender,_deposits);
     }
 
-    function onTransactionReceived(
+    function onTransactionsReceived(
         bytes calldata txsData,
         bytes calldata /*callbackData*/
         )

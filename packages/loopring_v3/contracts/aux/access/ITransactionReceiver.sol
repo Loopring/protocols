@@ -10,7 +10,7 @@ import "../../amm/libamm/AmmData.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 abstract contract ITransactionReceiver
 {
-    function onTransactionReceived(
+    function onTransactionsReceived(
         bytes calldata txsData,
         bytes calldata callbackData
         )

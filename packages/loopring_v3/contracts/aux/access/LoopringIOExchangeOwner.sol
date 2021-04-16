@@ -236,7 +236,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
                 "EXCHANGE_CANNOT_BE_POST_CALLBACK_TARGET"
             );
             require(
-                callback.data.toBytes4(0) != ITransactionReceiver.onTransactionReceived.selector,
+                callback.data.toBytes4(0) != ITransactionReceiver.onTransactionsReceived.selector,
                 "INVALID_POST_CALLBACK_FUNCTION"
             );
             (bool success, bytes memory returnData) = callback.to.call(callback.data);
@@ -291,7 +291,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
         // Construct the calldata passed into the callback call
         bytes calldata callbackData = txCallback.data;
-        bytes4 selector = ITransactionReceiver.onTransactionReceived.selector;
+        bytes4 selector = ITransactionReceiver.onTransactionsReceived.selector;
 
         uint txsDataLength = ExchangeData.TX_DATA_AVAILABILITY_SIZE*txCallback.numTxs;
         uint callbackDataLength = txCallback.data.length;
