@@ -8,7 +8,7 @@ import './SignatureUtil.sol';
 import './EIP712.sol';
 
 
-contract LPERC20 is ERC20
+contract LPToken is ERC20
 {
     using MathUint      for uint;
     using SignatureUtil for bytes32;
@@ -36,7 +36,7 @@ contract LPERC20 is ERC20
         internal
     {
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain(
-            "LPERC20",
+            "LPToken",
             "1.0",
             address(this)
         ));

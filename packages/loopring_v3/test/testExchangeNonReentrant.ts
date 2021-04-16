@@ -3,7 +3,7 @@ import fs = require("fs");
 import { Constants, BlockType } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { FlashMint } from "./types";
+import { MintDeposit } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -120,14 +120,14 @@ contract("Exchange", (accounts: string[]) => {
             );
             values.push(proof);
           } else if (
-            input.internalType.startsWith("struct ExchangeData.FlashMint[]")
+            input.internalType.startsWith("struct ExchangeData.MintDeposit[]")
           ) {
-            const flashMint: FlashMint = {
+            const MintDeposit: MintDeposit = {
               to: Constants.zeroAddress,
               token: Constants.zeroAddress,
               amount: "0"
             };
-            values.push([flashMint]);
+            values.push([MintDeposit]);
           } else if (input.type.startsWith("uint256[][]")) {
             values.push([new Array(1).fill("0")]);
           } else if (input.type.startsWith("uint256[]")) {
