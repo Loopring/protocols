@@ -100,19 +100,22 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     function submitBlocksWithCallbacks(
         bool                                  isDataCompressed,
         bytes                        calldata data,
-        TransactionReceiverCallbacks calldata config,
+        TransactionReceiverCallbacks calldata txReceiverCallbacks,
         ExchangeData.FlashMint[]     calldata flashMints,
-        SubmitBlocksCallback[]                   calldata callbacks
+        SubmitBlocksCallback[]       calldata submitBlocksCallbacks
         )
         external
     {
-        if (config.callbacks.length > 0) {
-            require(config.receivers.length > 0, "MISSING_RECEIVERS");
+        if (txReceiverCallbacks.callbacks.length > 0) {
+            require(txReceiverCallbacks.receivers.length > 0, "MISSING_RECEIVERS");
 
             // Make sure the receiver is authorized to approve transactions
             IAgentRegistry agentRegistry = IExchangeV3(target).getAgentRegistry();
-            for (uint i = 0; i < config.receivers.length; i++) {
-                require(agentRegistry.isUniversalAgent(config.receivers[i]), "UNAUTHORIZED_RECEIVER");
+            for (uint i = 0; i < txReceiverCallbacks.receivers.length; i++) {
+                require(
+                    agentRegistry.isUniversalAgent(txReceiverCallbacks.receivers[i]),
+                    "UNAUTHORIZED_RECEIVER"
+                );
             }
         }
 
@@ -133,7 +136,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         ExchangeData.Block[] memory blocks = _decodeBlocks(decompressed);
 
         // Do pre blocks callbacks
-        _processCallbacks(callbacks, true);
+        _processCallbacks(submitBlocksCallbacks, true);
 
         // Do flash mints
         if (flashMints.length > 0) {
@@ -144,10 +147,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         target.fastCallAndVerify(gasleft(), 0, decompressed);
 
         // Do transaction verifying blocks callbacks
-        _verifyTransactions(blocks, config);
+        _verifyTransactions(blocks, txReceiverCallbacks);
 
         // Do post blocks callbacks
-        _processCallbacks(callbacks, false);
+        _processCallbacks(submitBlocksCallbacks, false);
 
         // Make sure flash mints were repaid
         if (flashMints.length > 0) {
@@ -157,7 +160,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
     function _verifyTransactions(
         ExchangeData.Block[]         memory   blocks,
-        TransactionReceiverCallbacks calldata config
+        TransactionReceiverCallbacks calldata txReceiverCallbacks
         )
         private
     {
@@ -169,8 +172,8 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
         // Process transactions
         int lastBlockIdx = -1;
-        for (uint i = 0; i < config.callbacks.length; i++) {
-            TransactionReceiverCallback calldata callback = config.callbacks[i];
+        for (uint i = 0; i < txReceiverCallbacks.callbacks.length; i++) {
+            TransactionReceiverCallback calldata callback = txReceiverCallbacks.callbacks[i];
 
             uint16 blockIdx = callback.blockIdx;
             require(blockIdx > lastBlockIdx, "BLOCK_INDEX_OUT_OF_ORDER");
@@ -182,7 +185,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             _processTxCallbacks(
                 _block,
                 callback.txCallbacks,
-                config.receivers,
+                txReceiverCallbacks.receivers,
                 preApprovedTxs[blockIdx]
             );
         }
@@ -216,7 +219,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
 
     function _processCallbacks(
         SubmitBlocksCallback[] calldata callbacks,
-        bool                before
+        bool                            before
         )
         private
     {
@@ -232,7 +235,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
                 callback.to != address(this),
                 "EXCHANGE_CANNOT_BE_POST_CALLBACK_TARGET"
             );
-            require(callback.data.toBytes4(0) != ITransactionReceiver.onTransactionReceived.selector, "INVALID_POST_CALLBACK_FUNCTION");
+            require(
+                callback.data.toBytes4(0) != ITransactionReceiver.onTransactionReceived.selector,
+                "INVALID_POST_CALLBACK_FUNCTION"
+            );
             (bool success, bytes memory returnData) = callback.to.call(callback.data);
             if (!success) {
                 assembly { revert(add(returnData, 32), mload(returnData)) }
