@@ -345,23 +345,23 @@ abstract contract IExchangeV3 is Claimable
 
 
     /// @dev Flash mints tokens on L2.
-    ///      The amount minted has to be repaid using `repayFlashMint`.
+    ///      The amount minted has to be repaid using `repayMintDeposit`.
     ///
     ///      This function is only callable by the owner.
     ///
-    /// @param flashMints The list of flash mints to be done.
-    function flashMint(
-        ExchangeData.FlashMint[] calldata flashMints
+    /// @param mintDeposits The list of mint deposits to be done.
+    function mintDeposit(
+        ExchangeData.MintDeposit[] calldata mintDeposits
         )
         external
         virtual;
 
-    /// @dev Repays funds minted using `flashMint`.
+    /// @dev Repays funds minted using `mintDeposit`.
     /// @param from The address that deposits the funds to the exchange
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
     /// @param extraData Optional extra data used by the deposit contract
-    function repayFlashMint(
+    function repayMintDeposit(
         address from,
         address tokenAddress,
         uint96  amount,
@@ -372,17 +372,17 @@ abstract contract IExchangeV3 is Claimable
         payable;
 
     /// @dev Verifies all minted tokens were paid back.
-    /// @param flashMints The list of flash mints that were done.
-    function verifyFlashMintsPaidBack(
-        ExchangeData.FlashMint[] calldata flashMints
+    /// @param mintDeposits The list of mint deposits that were done.
+    function verifyMintDepositsPaidBack(
+        ExchangeData.MintDeposit[] calldata mintDeposits
         )
         external
         virtual
         view;
 
-    /// @dev Returns the amount flash minted for a specific token.
+    /// @dev Returns the amount mint deposited for a specific token.
     /// @param tokenAddress The token
-    function getAmountFlashMinted(
+    function getAmountMintDeposited(
         address tokenAddress
         )
         external

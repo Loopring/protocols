@@ -35,7 +35,7 @@ import {
   Block,
   TransactionReceiverCallback,
   Deposit,
-  FlashMint,
+  MintDeposit,
   Callback,
   Transfer,
   Noop,
@@ -538,7 +538,7 @@ export class ExchangeTestUtil {
 
   private pendingTransactions: TxType[][] = [];
   private pendingTransactionReceiverCallbacks: TransactionReceiverCallback[][] = [];
-  private pendingFlashMints: FlashMint[][] = [];
+  private pendingMintDeposits: MintDeposit[][] = [];
   private pendingCallbacks: Callback[][] = [];
 
   private storageIDGenerator: number = 0;
@@ -584,7 +584,7 @@ export class ExchangeTestUtil {
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       this.pendingTransactions.push([]);
       this.pendingTransactionReceiverCallbacks.push([]);
-      this.pendingFlashMints.push([]);
+      this.pendingMintDeposits.push([]);
       this.pendingCallbacks.push([]);
       this.pendingBlocks.push([]);
       this.blocks.push([]);
@@ -1261,19 +1261,19 @@ export class ExchangeTestUtil {
     return deposit;
   }
 
-  public async flashMint(owner: string, token: string, amount: BN) {
+  public async mintDeposit(owner: string, token: string, amount: BN) {
     this.requestDeposit(owner, token, amount);
-    this.addFlashMint(owner, token, amount);
+    this.addMintDeposit(owner, token, amount);
   }
 
-  public addFlashMint(owner: string, token: string, amount: BN) {
-    const flashMint: FlashMint = {
+  public addMintDeposit(owner: string, token: string, amount: BN) {
+    const mintDeposit: MintDeposit = {
       to: owner,
       token: this.getTokenAddress(token),
       amount: amount.toString(10)
     };
-    this.pendingFlashMints[this.exchangeId].push(flashMint);
-    return flashMint;
+    this.pendingMintDeposits[this.exchangeId].push(mintDeposit);
+    return mintDeposit;
   }
 
   public addCallback(to: string, data: string, before: boolean) {
@@ -1996,7 +1996,7 @@ export class ExchangeTestUtil {
         parameters.isDataCompressed,
         parameters.data,
         parameters.callbackConfig,
-        parameters.flashMints,
+        parameters.mintDeposits,
         parameters.callbacks
       )
       .encodeABI();
@@ -2006,7 +2006,7 @@ export class ExchangeTestUtil {
     isDataCompressed: boolean,
     txData: string,
     transactionReceiverCallbacks: TransactionReceiverCallback[][],
-    flashMints: FlashMint[],
+    mintDeposits: MintDeposit[],
     callbacks: Callback[]
   ) {
     const data = isDataCompressed ? compressZeros(txData) : txData;
@@ -2019,7 +2019,7 @@ export class ExchangeTestUtil {
       isDataCompressed,
       data,
       callbackConfig,
-      flashMints,
+      mintDeposits,
       callbacks
     };
   }
@@ -2142,7 +2142,7 @@ export class ExchangeTestUtil {
       true,
       txData,
       transactionReceiverCallbacks,
-      this.pendingFlashMints[this.exchangeId],
+      this.pendingMintDeposits[this.exchangeId],
       this.pendingCallbacks[this.exchangeId]
     );
 
@@ -2167,7 +2167,7 @@ export class ExchangeTestUtil {
       parameters.isDataCompressed,
       parameters.data,
       parameters.callbackConfig,
-      parameters.flashMints,
+      parameters.mintDeposits,
       parameters.callbacks,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
@@ -2200,7 +2200,7 @@ export class ExchangeTestUtil {
     );
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
-    this.pendingFlashMints[this.exchangeId] = [];
+    this.pendingMintDeposits[this.exchangeId] = [];
     this.pendingCallbacks[this.exchangeId] = [];
 
     // Check number of blocks submitted

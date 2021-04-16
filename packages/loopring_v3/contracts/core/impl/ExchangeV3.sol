@@ -385,27 +385,27 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.pendingDeposits[owner][tokenID].amount;
     }
 
-    function flashMint(
-        ExchangeData.FlashMint[] calldata flashMints
+    function mintDeposit(
+        ExchangeData.MintDeposit[] calldata mintDeposits
         )
         external
         override
         nonReentrant
         onlyOwner
     {
-        for (uint i = 0; i < flashMints.length; i++) {
+        for (uint i = 0; i < mintDeposits.length; i++) {
             state.deposit(
-                flashMints[i].to,
-                flashMints[i].to,
-                flashMints[i].token,
-                flashMints[i].amount,
+                mintDeposits[i].to,
+                mintDeposits[i].to,
+                mintDeposits[i].token,
+                mintDeposits[i].amount,
                 new bytes(0),
                 true
             );
         }
     }
 
-    function repayFlashMint(
+    function repayMintDeposit(
         address from,
         address tokenAddress,
         uint96  amount,
@@ -416,10 +416,10 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         override
         nonReentrant
     {
-        state.repayFlashMint(from, tokenAddress, amount, extraData);
+        state.repayMintDeposit(from, tokenAddress, amount, extraData);
     }
 
-    function getAmountFlashMinted(
+    function getAmountMintDeposited(
         address tokenAddress
         )
         external
@@ -427,20 +427,20 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         view
         returns (uint96)
     {
-        return state.amountFlashMinted[tokenAddress];
+        return state.amountMintDeposited[tokenAddress];
     }
 
-    function verifyFlashMintsPaidBack(
-        ExchangeData.FlashMint[] calldata flashMints
+    function verifyMintDepositsPaidBack(
+        ExchangeData.MintDeposit[] calldata mintDeposits
         )
         external
         override
         view
     {
-        for (uint i = 0; i < flashMints.length; i++) {
+        for (uint i = 0; i < mintDeposits.length; i++) {
             require(
-                state.amountFlashMinted[flashMints[i].token] == 0,
-                "FLASH_MINT_NOT_REPAID"
+                state.amountMintDeposited[mintDeposits[i].token] == 0,
+                "MINT_DEPOSIT_NOT_REPAID"
             );
         }
     }

@@ -9,11 +9,11 @@ import "../lib/ERC20.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
-import "../lib/LPERC20.sol";
+import "../lib/LPToken.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract BaseConverter is LPERC20, Claimable, Drainable
+abstract contract BaseConverter is LPToken, Claimable, Drainable
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
@@ -91,7 +91,7 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         // Mint pool tokens representing each user's share in the pool, with 1:1 ratio
         _mint(address(this), amountIn);
 
-        // Repay the flash mint used to give user's their share on L2
+        // Repay the mint deposit used to give user's their share on L2
         _repay(address(this), amountIn);
     }
 
@@ -119,7 +119,7 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         // Burn pool tokens
         _burn(msg.sender, poolAmount);
 
-        // Use to repay flash mint directly if requested
+        // Use to repay mint deposit directly if requested
         if (repayAmount > 0) {
             _repay(token, repayAmount);
         }
@@ -156,7 +156,7 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         private
     {
         uint ethValue = (token == address(0)) ? amount : 0;
-        IExchangeV3(exchange).repayFlashMint{value: ethValue}(
+        IExchangeV3(exchange).repayMintDeposit{value: ethValue}(
             address(this),
             token,
             amount,

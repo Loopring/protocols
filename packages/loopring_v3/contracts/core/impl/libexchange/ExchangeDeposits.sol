@@ -35,7 +35,7 @@ library ExchangeDeposits
         address tokenAddress,
         uint96  amount,                 // can be zero
         bytes   memory extraData,
-        bool    flash
+        bool    isMintDeposit
         )
         internal  // inline call
     {
@@ -48,9 +48,9 @@ library ExchangeDeposits
         uint16 tokenID = S.getTokenID(tokenAddress);
 
         uint96 amountDeposited = amount;
-        if (flash) {
-            require(msg.value == 0, "INVALID_FLASH_DEPOSIT");
-            S.amountFlashMinted[tokenAddress] = S.amountFlashMinted[tokenAddress].add(amount);
+        if (isMintDeposit) {
+            require(msg.value == 0, "INVALID_MINT_DEPOSIT");
+            S.amountMintDeposited[tokenAddress] = S.amountMintDeposited[tokenAddress].add(amount);
         } else {
             // Transfer the tokens to this contract
             amountDeposited = S.depositContract.deposit{value: msg.value}(
@@ -76,7 +76,7 @@ library ExchangeDeposits
         S.pendingDeposits[to][tokenID] = _deposit;
     }
 
-    function repayFlashMint(
+    function repayMintDeposit(
         ExchangeData.State storage S,
         address from,
         address tokenAddress,
@@ -98,6 +98,6 @@ library ExchangeDeposits
         require(amountDeposited > 0, "INVALID_REPAY_AMOUNT");
 
         // Pay back
-        S.amountFlashMinted[tokenAddress] = S.amountFlashMinted[tokenAddress].sub(amountDeposited);
+        S.amountMintDeposited[tokenAddress] = S.amountMintDeposited[tokenAddress].sub(amountDeposited);
     }
 }
