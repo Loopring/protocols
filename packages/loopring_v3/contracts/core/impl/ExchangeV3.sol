@@ -385,27 +385,27 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.pendingDeposits[owner][tokenID].amount;
     }
 
-    function mintDeposit(
-        ExchangeData.MintDeposit[] calldata mintDeposits
+    function loanDeposit(
+        ExchangeData.LoanDeposit[] calldata loanDeposits
         )
         external
         override
         nonReentrant
         onlyOwner
     {
-        for (uint i = 0; i < mintDeposits.length; i++) {
+        for (uint i = 0; i < loanDeposits.length; i++) {
             state.deposit(
-                mintDeposits[i].to,
-                mintDeposits[i].to,
-                mintDeposits[i].token,
-                mintDeposits[i].amount,
+                loanDeposits[i].to,
+                loanDeposits[i].to,
+                loanDeposits[i].token,
+                loanDeposits[i].amount,
                 new bytes(0),
                 true
             );
         }
     }
 
-    function repayMintDeposit(
+    function repayDepositLoan(
         address from,
         address tokenAddress,
         uint96  amount,
@@ -416,10 +416,10 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         override
         nonReentrant
     {
-        state.repayMintDeposit(from, tokenAddress, amount, extraData);
+        state.repayDepositLoan(from, tokenAddress, amount, extraData);
     }
 
-    function getAmountMintDeposited(
+    function getDepositLoanAmount(
         address tokenAddress
         )
         external
@@ -427,19 +427,19 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         view
         returns (uint96)
     {
-        return state.amountMintDeposited[tokenAddress];
+        return state.depositLoans[tokenAddress];
     }
 
-    function verifyMintDepositsPaidBack(
-        ExchangeData.MintDeposit[] calldata mintDeposits
+    function verifyDepositLoansCleared(
+        ExchangeData.LoanDeposit[] calldata loanDeposits
         )
         external
         override
         view
     {
-        for (uint i = 0; i < mintDeposits.length; i++) {
+        for (uint i = 0; i < loanDeposits.length; i++) {
             require(
-                state.amountMintDeposited[mintDeposits[i].token] == 0,
+                state.depositLoans[loanDeposits[i].token] == 0,
                 "MINT_DEPOSIT_NOT_REPAID"
             );
         }

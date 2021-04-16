@@ -158,7 +158,7 @@ library ExchangeData
         uint[24]                 balanceMerkleProof;
     }
 
-    struct MintDeposit
+    struct LoanDeposit
     {
         address to;
         address token;
@@ -239,7 +239,7 @@ library ExchangeData
         // Enable/Disable `onchainTransferFrom`
         bool    allowOnchainTransferFrom;
 
-        // Outstanding mint deposits
-        mapping (address => uint96) amountMintDeposited;
+        // Outstanding deposit loans
+        mapping (address => uint96) depositLoans;
     }
 }

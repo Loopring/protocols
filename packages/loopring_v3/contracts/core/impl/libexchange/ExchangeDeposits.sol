@@ -35,7 +35,7 @@ library ExchangeDeposits
         address tokenAddress,
         uint96  amount,                 // can be zero
         bytes   memory extraData,
-        bool    isMintDeposit
+        bool    isLoan
         )
         internal  // inline call
     {
@@ -47,13 +47,13 @@ library ExchangeDeposits
 
         uint16 tokenID = S.getTokenID(tokenAddress);
 
-        uint96 amountDeposited = amount;
-        if (isMintDeposit) {
+        uint96 loanAmount = amount;
+        if (isLoan) {
             require(msg.value == 0, "INVALID_MINT_DEPOSIT");
-            S.amountMintDeposited[tokenAddress] = S.amountMintDeposited[tokenAddress].add(amount);
+            S.depositLoans[tokenAddress] = S.depositLoans[tokenAddress].add(amount);
         } else {
             // Transfer the tokens to this contract
-            amountDeposited = S.depositContract.deposit{value: msg.value}(
+            loanAmount = S.depositContract.deposit{value: msg.value}(
                 from,
                 tokenAddress,
                 amount,
@@ -65,18 +65,18 @@ library ExchangeDeposits
                 to,
                 tokenAddress,
                 tokenID,
-                amountDeposited
+                loanAmount
             );
         }
 
         // Add the amount to the deposit request and reset the time the operator has to process it
         ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
         _deposit.timestamp = uint64(block.timestamp);
-        _deposit.amount = _deposit.amount.add(amountDeposited);
+        _deposit.amount = _deposit.amount.add(loanAmount);
         S.pendingDeposits[to][tokenID] = _deposit;
     }
 
-    function repayMintDeposit(
+    function repayDepositLoan(
         ExchangeData.State storage S,
         address from,
         address tokenAddress,
@@ -89,15 +89,15 @@ library ExchangeDeposits
         /*uint16 tokenID = */S.getTokenID(tokenAddress);
 
         // Transfer the tokens to this contract
-        uint96 amountDeposited = S.depositContract.deposit{value: msg.value}(
+        uint96 payAmount = S.depositContract.deposit{value: msg.value}(
             from,
             tokenAddress,
             amount,
             extraData
         );
-        require(amountDeposited > 0, "INVALID_REPAY_AMOUNT");
+        require(payAmount > 0, "INVALID_REPAY_AMOUNT");
 
         // Pay back
-        S.amountMintDeposited[tokenAddress] = S.amountMintDeposited[tokenAddress].sub(amountDeposited);
+        S.depositLoans[tokenAddress] = S.depositLoans[tokenAddress].sub(payAmount);
     }
 }

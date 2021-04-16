@@ -91,7 +91,7 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
         // Mint pool tokens representing each user's share in the pool, with 1:1 ratio
         _mint(address(this), amountIn);
 
-        // Repay the mint deposit used to give user's their share on L2
+        // Repay the deposit loan used to give user's their share on L2
         _repay(address(this), amountIn);
     }
 
@@ -119,7 +119,7 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
         // Burn pool tokens
         _burn(msg.sender, poolAmount);
 
-        // Use to repay mint deposit directly if requested
+        // Use to repay deposit loan directly if requested
         if (repayAmount > 0) {
             _repay(token, repayAmount);
         }
@@ -156,7 +156,7 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
         private
     {
         uint ethValue = (token == address(0)) ? amount : 0;
-        IExchangeV3(exchange).repayMintDeposit{value: ethValue}(
+        IExchangeV3(exchange).repayDepositLoan{value: ethValue}(
             address(this),
             token,
             amount,
