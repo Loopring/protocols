@@ -147,10 +147,7 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         amountOut = convert(amountIn, minAmountOut, customData);
     }
 
-    receive()
-        external
-        payable
-    {}
+    receive() external payable {}
 
     function _repay(
         address token,
