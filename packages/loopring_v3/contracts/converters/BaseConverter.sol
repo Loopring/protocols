@@ -19,6 +19,7 @@ abstract contract BaseConverter is LPToken, Drainable
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
+    event Withdrawn         (bool failed, uint poolAmount, uint amount, uint repayAmount);
     event ConversionSuccess (uint amountIn, uint amountOut);
     event ConversionFailed  (string reason);
 
@@ -56,12 +57,14 @@ abstract contract BaseConverter is LPToken, Drainable
         external
     {
         require(!initialized, "ALREADY_INITIALIZED");
+        initialized = true;
+
         initializeToken(_name, _symbol, _decimals);
 
         tokenIn = _tokenIn;
         tokenOut = _tokenOut;
 
-        initialized = true;
+        approveTokens();
     }
 
     function convert(
@@ -92,9 +95,11 @@ abstract contract BaseConverter is LPToken, Drainable
         _mint(address(this), amountIn);
 
         // Repay the deposit loan used to give user's their share on L2
-        _repayDepositLoan(address(this), amountIn);
+        _repay(address(this), amountIn);
     }
 
+    // This function can be call by anyone, but the burn will fail if the msg.sender doesn't
+    // have enough LP tokens.
     function withdraw(
         address to,
         uint96  poolAmount,
@@ -102,6 +107,8 @@ abstract contract BaseConverter is LPToken, Drainable
         )
         public
     {
+        require(poolAmount <= totalSupply, "POOL_TOKEN_AMOUNT_TOO_LARGE");
+
         // Token to withdraw
         address token = failed ? tokenIn : tokenOut;
 
@@ -119,18 +126,22 @@ abstract contract BaseConverter is LPToken, Drainable
         // Burn pool tokens
         _burn(msg.sender, poolAmount);
 
-        // Use to repay deposit loan directly if requested
-        if (repayAmount > 0) {
-            _repayDepositLoan(token, repayAmount);
+        uint _repayAmount = repayAmount > amount ? amount: repayAmount;
+        if (_repayAmount > 0) {
+            _repay(token, uint96(_repayAmount));
+            amount -= _repayAmount;
         }
 
-        // Send remaining amount to `to`
-        uint amountToSend = amount.sub(repayAmount);
-        if (token == address(0)) {
-            to.sendETHAndVerify(amountToSend, gasleft());   // ETH
-        } else {
-            token.safeTransferAndVerify(to, amountToSend);  // ERC20 token
+        if (amount > 0) {
+            // Send remaining amount to `to`
+            if (token == address(0)) {
+                to.sendETHAndVerify(amount, gasleft());   // ETH
+            } else {
+                token.safeTransferAndVerify(to, amount);  // ERC20 token
+            }
         }
+
+        emit Withdrawn(failed, poolAmount, amount, _repayAmount);
     }
 
     // Wrapper around `convert` which enforces only self calls.
@@ -149,7 +160,7 @@ abstract contract BaseConverter is LPToken, Drainable
 
     receive() external payable {}
 
-    function _repayDepositLoan(
+    function _repay(
         address token,
         uint96  amount
         )
