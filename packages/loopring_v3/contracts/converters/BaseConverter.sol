@@ -95,7 +95,7 @@ abstract contract BaseConverter is LPToken, Drainable
         _mint(address(this), amountIn);
 
         // Repay the deposit loan used to give user's their share on L2
-        _repay(address(this), amountIn);
+        _repayDepositLoan(address(this), amountIn);
     }
 
     // This function can be call by anyone, but the burn will fail if the msg.sender doesn't
@@ -126,10 +126,10 @@ abstract contract BaseConverter is LPToken, Drainable
         // Burn pool tokens
         _burn(msg.sender, poolAmount);
 
-        uint _repayAmount = repayAmount > amount ? amount: repayAmount;
-        if (_repayAmount > 0) {
-            _repay(token, uint96(_repayAmount));
-            amount -= _repayAmount;
+        uint repay = repayAmount > amount ? amount: repayAmount;
+        if (repay > 0) {
+            _repayDepositLoan(token, uint96(repay));
+            amount -= repay;
         }
 
         if (amount > 0) {
@@ -141,7 +141,7 @@ abstract contract BaseConverter is LPToken, Drainable
             }
         }
 
-        emit Withdrawn(failed, poolAmount, amount, _repayAmount);
+        emit Withdrawn(failed, poolAmount, amount, repay);
     }
 
     // Wrapper around `convert` which enforces only self calls.
@@ -160,7 +160,7 @@ abstract contract BaseConverter is LPToken, Drainable
 
     receive() external payable {}
 
-    function _repay(
+    function _repayDepositLoan(
         address token,
         uint96  amount
         )
