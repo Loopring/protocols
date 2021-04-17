@@ -12,6 +12,7 @@ import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../lib/ReentrancyGuard.sol";
+import "../../lib/TransferUtil.sol";
 
 import "./IBridge.sol";
 
@@ -26,6 +27,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
     using MathUint96        for uint96;
+    using TransferUtil      for address;
 
     // Transfers packed as:
     // - address owner  : 20 bytes
@@ -155,7 +157,8 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         external
         onlyFromExchangeOwner
     {
-        uint txsDataPtr = 23;
+        // Get the offset to txsData in the calldata
+        uint txsDataPtr = 0;
         assembly {
             txsDataPtr := sub(add(txsData.offset, txsDataPtr), 32)
         }
@@ -188,7 +191,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
         for (uint i = 0; i < transfers.length; i++) {
             InternalBridgeTransfer memory transfer = transfers[i];
-            // Pack the transfer data to compare agains batch deposit hash
+            // Pack the transfer data to compare against batch deposit hash
             address  owner = transfer.owner;
             uint16 tokenID = transfer.tokenID;
             uint    amount = transfer.amount;
@@ -217,10 +220,9 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
             address tokenAddress = exchange.getTokenAddress(transfers[idx].tokenID);
 
-            _transferOut(
-                tokenAddress,
-                transfers[idx].amount,
-                transfers[idx].owner
+            tokenAddress.transferOut(
+                transfers[idx].owner,
+                transfers[idx].amount
             );
         }
     }
@@ -339,6 +341,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     function _processTransactions(Context memory ctx)
         internal
     {
+        // abi.decode(callbackData, (BridgeOperations))
         // Get the calldata structs directly from the encoded calldata bytes data
         TransferBatch[] calldata transferBatches;
         ConnectorCalls[] calldata connectorCalls;
@@ -574,8 +577,11 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
             );
 
             // Verify withdrawal data
-            uint txsDataPtr = ctx.txsDataPtr - 21;
+            // Start by reading the first 2 bytes into header
+            uint txsDataPtr = ctx.txsDataPtr + 2;
+            // header: txType (1) | type (1)
             uint header;
+            // packedData: tokenID (2) | amount (12) | feeTokenID (2) | fee (2)
             uint packedData;
             bytes20 dataHash;
             assembly {
@@ -705,20 +711,6 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         }
     }
 
-    function _transferOut(
-        address token,
-        uint    amount,
-        address to
-        )
-        internal
-    {
-        if (token == address(0)) {
-            to.sendETHAndVerify(amount, gasleft());
-        } else {
-            token.safeTransferAndVerify(to, amount);
-        }
-    }
-
     function _hashTransferBatch(
         bytes memory transfers
         )
@@ -845,7 +837,10 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         pure
         returns (uint packedData, address to, address from)
     {
-        uint txsDataPtr = ctx.txsDataPtr;
+        // TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
+
+        // Start by reading the first 23 bytes into packedData
+        uint txsDataPtr = ctx.txsDataPtr + 23;
         // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
         assembly {
             packedData := calldataload(txsDataPtr)
@@ -864,8 +859,24 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         internal
         pure
     {
+        /*
         // Read the signature verification transaction
-        uint txsDataPtr = ctx.txsDataPtr + 2;
+        SignatureVerificationTransaction.SignatureVerification memory verification;
+        SignatureVerificationTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, verification);
+
+        // Verify that the hash was signed on L2
+        require(
+            verification.owner == owner &&
+            verification.accountID == ctx.accountID &&
+            verification.data == uint(txHash) >> 3,
+            "INVALID_OFFCHAIN_L2_APPROVAL"
+        );
+        */
+
+        // Read the signature verification transaction
+        // Start by reading the first 25 bytes into packedDate
+        uint txsDataPtr = ctx.txsDataPtr + 25;
+        // packedData: txType (1) | owner (20) | accountID (4)
         uint packedData;
         uint data;
         assembly {
