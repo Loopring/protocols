@@ -20,7 +20,7 @@ contract TestConverter is BaseConverter
         swapContract = _swapContract;
     }
 
-    function performConversion(
+    function doConversion(
         uint96          amountIn,
         uint96          minAmountOut,
         bytes  calldata /*customData*/

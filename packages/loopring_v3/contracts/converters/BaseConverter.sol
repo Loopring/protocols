@@ -13,7 +13,7 @@ import "../lib/LPToken.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract BaseConverter is LPToken, Claimable, Drainable
+abstract contract BaseConverter is LPToken, Drainable
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
@@ -73,10 +73,10 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
         payable
         onlyFromExchangeOwner
     {
-        require(totalSupply == 0, "LP_TOKEN_SUPPLY_NON_ZERO");
+        require(totalSupply == 0, "POOL_TOKEN_SUPPLY_NON_ZERO");
 
         // Converter specific logic, which can fail
-        try BaseConverter(this).convertSellCall(amountIn, minAmountOut, customData)
+        try BaseConverter(this).convertSelfCall(amountIn, minAmountOut, customData)
             returns (uint amountOut) {
             failed = false;
             emit ConversionSuccess(amountIn, amountOut);
@@ -92,7 +92,7 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
         _mint(address(this), amountIn);
 
         // Repay the deposit loan used to give user's their share on L2
-        _repay(address(this), amountIn);
+        _repayDepositLoan(address(this), amountIn);
     }
 
     function withdraw(
@@ -121,7 +121,7 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
 
         // Use to repay deposit loan directly if requested
         if (repayAmount > 0) {
-            _repay(token, repayAmount);
+            _repayDepositLoan(token, repayAmount);
         }
 
         // Send remaining amount to `to`
@@ -134,7 +134,7 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
     }
 
     // Wrapper around `convert` which enforces only self calls.
-    function convertSellCall(
+    function convertSelfCall(
         uint96 amountIn,
         uint96 minAmountOut,
         bytes  calldata customData
@@ -144,12 +144,12 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
         returns (uint amountOut)
     {
         require(msg.sender == address(this), "UNAUTHORIZED");
-        amountOut = performConversion(amountIn, minAmountOut, customData);
+        amountOut = doConversion(amountIn, minAmountOut, customData);
     }
 
     receive() external payable {}
 
-    function _repay(
+    function _repayDepositLoan(
         address token,
         uint96  amount
         )
@@ -184,11 +184,11 @@ abstract contract BaseConverter is LPToken, Claimable, Drainable
         view
         returns (bool)
     {
-        return drainer == owner && totalSupply == 0;
+        return drainer == exchange.owner() && totalSupply == 0;
     }
 
     // Converer specific logic
-    function performConversion(
+    function doConversion(
         uint96          amountIn,
         uint96          minAmountOut,
         bytes  calldata customData
