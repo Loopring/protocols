@@ -43,9 +43,9 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     using ExchangeWithdrawals   for ExchangeData.State;
 
     ExchangeData.State private state;
-    address public  __DEPRECATED_BUT_KEPT_FOR_PROXY_UPGRADABILITY__loopringAddr;
-    uint8   private __DEPRECATED_BUT_KEPT_FOR_PROXY_UPGRADABILITY__ammFeeBips;
-    bool    public  __DEPRECATED_BUT_KEPT_FOR_PROXY_UPGRADABILITY__allowOnchainTransferFrom;
+    address public  __DEPRECATED__loopringAddr; // kept for proxy compatibility
+    uint8   private __DEPRECATED__ammFeeBips;   // kept for proxy compatibility
+    bool    public  __DEPRECATED__allowOnchainTransferFrom; // kept for proxy compatibility
 
     modifier onlyWhenUninitialized()
     {
