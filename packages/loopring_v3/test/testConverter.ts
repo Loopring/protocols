@@ -87,7 +87,7 @@ contract("LoopringConverter", (accounts: string[]) => {
   let ownerA: string;
   let ownerB: string;
 
-  const doConversion = async (
+  const convertToken = async (
     _tokenIn: string,
     _tokenOut: string,
     ticker: string,
@@ -349,7 +349,7 @@ contract("LoopringConverter", (accounts: string[]) => {
             " conversion ERC20 -> ERC20 - rate: " +
             rate.toString(10),
           async () => {
-            await doConversion("GTO", "WETH", "vETH", rate, success);
+            await convertToken("GTO", "WETH", "vETH", rate, success);
           }
         );
 
@@ -358,7 +358,7 @@ contract("LoopringConverter", (accounts: string[]) => {
             " conversion ETH   -> ERC20 - rate: " +
             rate.toString(10),
           async () => {
-            await doConversion("ETH", "GTO", "vETH", rate, success);
+            await convertToken("ETH", "GTO", "vETH", rate, success);
           }
         );
 
@@ -367,7 +367,7 @@ contract("LoopringConverter", (accounts: string[]) => {
             " conversion ERC20 -> ETH   - rate: " +
             rate.toString(10),
           async () => {
-            await doConversion("GTO", "ETH", "vETH", rate, success);
+            await convertToken("GTO", "ETH", "vETH", rate, success);
           }
         );
       });
@@ -375,7 +375,7 @@ contract("LoopringConverter", (accounts: string[]) => {
 
     it("Manual withdrawal", async () => {
       const rate = new BN(web3.utils.toWei("1.0", "ether"));
-      const converter = await doConversion(
+      const converter = await convertToken(
         "ETH",
         "WETH",
         "vETH",

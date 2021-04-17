@@ -3,10 +3,9 @@
 pragma solidity ^0.7.0;
 
 import "../core/iface/IExchangeV3.sol";
-import "../lib/Claimable.sol";
+import "../lib/AddressUtil.sol";
 import "../lib/Drainable.sol";
 import "../lib/ERC20.sol";
-import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/LPToken.sol";
@@ -155,7 +154,7 @@ abstract contract BaseConverter is LPToken, Drainable
         returns (uint amountOut)
     {
         require(msg.sender == address(this), "UNAUTHORIZED");
-        amountOut = doConversion(amountIn, minAmountOut, customData);
+        amountOut = convertToken(amountIn, minAmountOut, customData);
     }
 
     receive() external payable {}
@@ -189,17 +188,17 @@ abstract contract BaseConverter is LPToken, Drainable
         ERC20(address(this)).approve(address(depositContract), type(uint256).max);
     }
 
-    function canDrain(address drainer, address /* token */)
+    function canDrain(address drainer, address/* token */)
         public
         override
         view
         returns (bool)
     {
-        return drainer == exchange.owner() && totalSupply == 0;
+        return totalSupply == 0 && drainer == exchange.owner();
     }
 
     // Converer specific logic
-    function doConversion(
+    function convertToken(
         uint96          amountIn,
         uint96          minAmountOut,
         bytes  calldata customData
