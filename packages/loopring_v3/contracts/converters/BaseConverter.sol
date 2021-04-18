@@ -9,11 +9,12 @@ import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/LPToken.sol";
+import "../lib/ReentrancyGuard.sol";
 import "../lib/TransferUtil.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract BaseConverter is LPToken, Drainable
+abstract contract BaseConverter is LPToken, Drainable, ReentrancyGuard
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
@@ -144,6 +145,7 @@ abstract contract BaseConverter is LPToken, Drainable
         )
         external
         virtual
+        nonReentrant // guard against the implementation
         returns (uint amountOut)
     {
         require(msg.sender == address(this), "UNAUTHORIZED");

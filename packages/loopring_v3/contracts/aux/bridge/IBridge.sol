@@ -14,7 +14,7 @@ struct BridgeCall
     uint    validUntil;
 }
 
-struct ConnectorGroup
+struct BridgeCallGroup
 {
     bytes        groupData;
     BridgeCall[] calls;
@@ -42,8 +42,8 @@ interface IBridge
     ///      The sender will send the funds to Loopring exchange, so just like with normal
     ///      deposits the sender first has to approve token transfers on the deposit contract.
     ///
-    /// @param deposits The deposits
-    function batchDeposit(BridgeTransfer[] calldata deposits)
+    /// @param transfers The L2 transfers from Bridge to owners
+    function batchDeposit(BridgeTransfer[] calldata transfers)
         external
         payable;
 }
@@ -76,7 +76,7 @@ interface IBridgeConnector
     ///     between different connector calls).
     ///
     /// @param groups The groups of bridge calls to process
-    function processCalls(ConnectorGroup[] calldata groups)
+    function processCalls(BridgeCallGroup[] calldata groups)
         external
         payable
         returns (BridgeTransfer[] memory);
@@ -89,7 +89,7 @@ interface IBridgeConnector
     ///      `processCalls` calls fail by e.g. not batching enough Bridge calls together (while still collecting the fee).
     ///
     /// @param groups The groups of bridge calls to process
-    function getMinGasLimit(ConnectorGroup[] calldata groups)
+    function getMinGasLimit(BridgeCallGroup[] calldata groups)
         external
         pure
         returns (uint);

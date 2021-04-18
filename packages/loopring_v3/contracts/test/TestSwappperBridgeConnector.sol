@@ -39,7 +39,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         testSwapper = _testSwapper;
     }
 
-    function processCalls(ConnectorGroup[] memory groups)
+    function processCalls(BridgeCallGroup[] memory groups)
         external
         payable
         override
@@ -132,7 +132,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         return transfers;
     }
 
-    function getMinGasLimit(ConnectorGroup[] calldata groups)
+    function getMinGasLimit(BridgeCallGroup[] calldata groups)
         external
         pure
         override

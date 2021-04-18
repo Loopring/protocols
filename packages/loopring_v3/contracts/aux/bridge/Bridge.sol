@@ -14,12 +14,14 @@ import "../../lib/MathUint96.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/TransferUtil.sol";
 
+import "../access/ITransactionReceiver.sol";
+
 import "./IBridge.sol";
 
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBridge, ReentrancyGuard, Claimable
+contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -53,11 +55,11 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         uint    amount;
     }
 
-    struct ConnectorCalls
+    struct ConnectorCall
     {
-        address             connector;
-        uint                gasLimit;
-        ConnectorGroup[]    groups;
+        address           connector;
+        uint              gasLimit;
+        BridgeCallGroup[] groups;
     }
 
     struct TransferBatch
@@ -66,10 +68,10 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         uint96[] amounts;
     }
 
-    struct BridgeOperations
+    struct BridgeOperation
     {
         TransferBatch[]  transferBatches;
-        ConnectorCalls[] connectorCalls;
+        ConnectorCall[]  connectorCalls;
         TokenData[]      tokens;
     }
 
@@ -141,9 +143,10 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     function batchDeposit(
         BridgeTransfer[] memory deposits
         )
-        public
+        external
         payable
         override
+        nonReentrant
     {
         BridgeTransfer[][] memory _deposits = new BridgeTransfer[][](1);
         _deposits[0] = deposits;
@@ -155,6 +158,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         bytes calldata /*callbackData*/
         )
         external
+        override
         onlyFromExchangeOwner
     {
         // Get the offset to txsData in the calldata
@@ -243,21 +247,18 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         }
     }
 
-    function setConnectorTrusted(
+    function trustConnector(
         address connector,
         bool    trusted
         )
         external
-        onlyOwner
+        onlyFromExchangeOwner
     {
         trustedConnectors[connector] = trusted;
         emit ConnectorTrusted(connector, trusted);
     }
 
-    receive()
-        external
-        payable
-    {}
+    receive() external payable {}
 
     // --- Internal functions ---
 
@@ -341,10 +342,10 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     function _processTransactions(Context memory ctx)
         internal
     {
-        // abi.decode(callbackData, (BridgeOperations))
+        // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
         TransferBatch[] calldata transferBatches;
-        ConnectorCalls[] calldata connectorCalls;
+        ConnectorCall[] calldata connectorCalls;
         TokenData[] calldata tokens;
         uint tokensOffset;
         assembly {
@@ -366,7 +367,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         ctx.tokens = tokens;
 
         _processTransferBatches(ctx, transferBatches);
-        _processBridgeCalls(ctx, connectorCalls);
+        _processConnectorCalls(ctx, connectorCalls);
     }
 
     function _processTransferBatches(
@@ -442,48 +443,39 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         delete pendingTransfers[batch.batchID][hash];
     }
 
-    function _processBridgeCalls(
+    function _processConnectorCalls(
         Context          memory   ctx,
-        ConnectorCalls[] calldata connectorCalls
+        ConnectorCall[]  calldata connectorCalls
         )
         internal
     {
         // Total amounts transferred to the bridge
         uint[] memory totalAmounts = new uint[](ctx.tokens.length);
 
-        // All resulting deposits from all bridge calls
-        BridgeTransfer[][] memory deposits = new BridgeTransfer[][](connectorCalls.length);
+        // All resulting deposits from all connector calls
+        BridgeTransfer[][] memory transfers = new BridgeTransfer[][](connectorCalls.length);
 
         // Verify and execute bridge calls
         for (uint c = 0; c < connectorCalls.length; c++) {
-            ConnectorCalls calldata connectorCall = connectorCalls[c];
+            ConnectorCall calldata connectorCall = connectorCalls[c];
 
             // Verify the transactions
-            _processConnectorCall(
-                ctx,
-                connectorCall,
-                totalAmounts
-            );
+            _processConnectorCall(ctx, connectorCall, totalAmounts);
 
             // Call the connector
-            deposits[c] = _connectorCall(
-                ctx,
-                connectorCall,
-                c,
-                connectorCalls
-            );
+            transfers[c] = _connectorCall(ctx, connectorCall, c, connectorCalls);
         }
 
         // Verify withdrawals
         _processWithdrawals(ctx, totalAmounts);
 
         // Do all resulting transfers back from the bridge to the users
-        _batchDeposit(address(this), deposits);
+        _batchDeposit(address(this), transfers);
     }
 
     function _processConnectorCall(
         Context          memory   ctx,
-        ConnectorCalls   calldata connectorCall,
+        ConnectorCall    calldata connectorCall,
         uint[]           memory   totalAmounts
         )
         internal
@@ -492,7 +484,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         CallTransfer memory transfer;
         uint totalMinGas = 0;
         for (uint g = 0; g < connectorCall.groups.length; g++) {
-            ConnectorGroup calldata group = connectorCall.groups[g];
+            BridgeCallGroup calldata group = connectorCall.groups[g];
             for (uint i = 0; i < group.calls.length; i++) {
                 BridgeCall calldata bridgeCall = group.calls[i];
 
@@ -643,42 +635,42 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
     function _connectorCall(
         Context          memory   ctx,
-        ConnectorCalls   calldata connectorCalls,
+        ConnectorCall    calldata call,
         uint                      n,
-        ConnectorCalls[] calldata allConnectorCalls
+        ConnectorCall[]  calldata allCalls
         )
         internal
         returns (BridgeTransfer[] memory transfers)
     {
-        require(connectorCalls.connector != address(this), "INVALID_CONNECTOR");
-        require(trustedConnectors[connectorCalls.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
+        require(call.connector != address(this), "INVALID_CONNECTOR");
+        require(trustedConnectors[call.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
 
         // Check if the minimum amount of gas required is achieved
-        bytes memory txData = _getConnectorCallData(ctx, IBridgeConnector.getMinGasLimit.selector, allConnectorCalls, n);
-        (bool success, bytes memory returnData) = connectorCalls.connector.fastCall(GAS_LIMIT_CHECK_GAS_LIMIT, 0, txData);
+        bytes memory txData = _getConnectorCallData(ctx, IBridgeConnector.getMinGasLimit.selector, allCalls, n);
+        (bool success, bytes memory returnData) = call.connector.fastCall(GAS_LIMIT_CHECK_GAS_LIMIT, 0, txData);
         if (success) {
-            require(connectorCalls.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
+            require(call.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
         } else {
             // If the call failed for some reason just continue.
         }
 
         // Execute the logic using a delegate so no extra transfers are needed
-        txData = _getConnectorCallData(ctx,IBridgeConnector.processCalls.selector, allConnectorCalls, n);
-        (success, returnData) = connectorCalls.connector.fastDelegatecall(connectorCalls.gasLimit, txData);
+        txData = _getConnectorCallData(ctx,IBridgeConnector.processCalls.selector, allCalls, n);
+        (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
-            emit ConnectorCallResult(connectorCalls.connector, true, "");
+            emit ConnectorCallResult(call.connector, true, "");
             transfers = abi.decode(returnData, (BridgeTransfer[]));
         } else {
             // If the call failed return funds to all users
             uint totalNumCalls = 0;
-            for (uint g = 0; g < connectorCalls.groups.length; g++) {
-                totalNumCalls += connectorCalls.groups[g].calls.length;
+            for (uint g = 0; g < call.groups.length; g++) {
+                totalNumCalls += call.groups[g].calls.length;
             }
             transfers = new BridgeTransfer[](totalNumCalls);
             uint txIdx = 0;
-            for (uint g = 0; g < connectorCalls.groups.length; g++) {
-                ConnectorGroup memory group = connectorCalls.groups[g];
+            for (uint g = 0; g < call.groups.length; g++) {
+                BridgeCallGroup memory group = call.groups[g];
                 for (uint i = 0; i < group.calls.length; i++) {
                     BridgeCall memory bridgeCall = group.calls[i];
                     transfers[txIdx++] = BridgeTransfer({
@@ -689,7 +681,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
                 }
             }
             assert(txIdx == totalNumCalls);
-            emit ConnectorCallResult(connectorCalls.connector, false, returnData);
+            emit ConnectorCallResult(call.connector, false, returnData);
         }
     }
 
@@ -791,7 +783,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     function _getConnectorCallData(
         Context memory            ctx,
         bytes4                    selector,
-        ConnectorCalls[] calldata calls,
+        ConnectorCall[]  calldata calls,
         uint                      n
         )
         internal
@@ -800,7 +792,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     {
         // Position in the calldata to start copying
         uint offsetToGroups;
-        ConnectorGroup[] calldata groups = calls[n].groups;
+        BridgeCallGroup[] calldata groups = calls[n].groups;
         assembly {
             offsetToGroups := sub(groups.offset, 32)
         }
@@ -895,7 +887,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 
-    function encode(BridgeOperations calldata operations)
+    function encode(BridgeOperation calldata operation)
         external
         pure
     {}

@@ -55,15 +55,15 @@ export interface BridgeCall {
   expectedDeposit?: BridgeTransfer;
 }
 
-export interface ConnectorGroup {
+export interface BridgeCallGroup {
   groupData: string;
   calls: BridgeCall[];
 }
 
-export interface ConnectorCalls {
+export interface ConnectorCall {
   connector: string;
   gasLimit: number;
-  groups: ConnectorGroup[];
+  groups: BridgeCallGroup[];
   totalMinGas: number;
   tokens: TokenData[];
 }
@@ -73,9 +73,9 @@ export interface TransferBatch {
   amounts: string[];
 }
 
-export interface BridgeOperations {
+export interface BridgeOperation {
   transferBatches: TransferBatch[];
-  connectorCalls: ConnectorCalls[];
+  connectorCalls: ConnectorCall[];
   tokens: TokenData[];
 }
 
@@ -267,7 +267,7 @@ export class Bridge {
     return transfers;
   }
 
-  public async submitBridgeOperations(
+  public async submitBridgeOperation(
     transferEvents: any[],
     calls: BridgeCall[],
     expectedSuccess?: boolean[],
@@ -276,7 +276,7 @@ export class Bridge {
     changeTransfers = changeTransfers ? true : false;
     console.log("Change transfers: " + changeTransfers);
 
-    const bridgeOperations: BridgeOperations = {
+    const bridgeOperation: BridgeOperation = {
       transferBatches: [],
       connectorCalls: [],
       tokens: []
@@ -308,7 +308,7 @@ export class Bridge {
         );
         amounts.push(transfer.amount);
       }
-      bridgeOperations.transferBatches.push({
+      bridgeOperation.transferBatches.push({
         batchID: event.batchID.toNumber(),
         amounts
       });
@@ -326,7 +326,7 @@ export class Bridge {
     }
 
     for (const [token, amount] of tokenMap.entries()) {
-      bridgeOperations.tokens.push({
+      bridgeOperation.tokens.push({
         token: token,
         tokenID: await this.ctx.getTokenID(token),
         amount: amount.toString(10)
@@ -335,36 +335,36 @@ export class Bridge {
 
     // Sort the calls on connector and group
     for (const call of calls) {
-      let connectorCalls: ConnectorCalls;
-      for (let c = 0; c < bridgeOperations.connectorCalls.length; c++) {
-        if (bridgeOperations.connectorCalls[c].connector === call.connector) {
-          connectorCalls = bridgeOperations.connectorCalls[c];
+      let connectorCall: ConnectorCall;
+      for (let c = 0; c < bridgeOperation.connectorCalls.length; c++) {
+        if (bridgeOperation.connectorCalls[c].connector === call.connector) {
+          connectorCall = bridgeOperation.connectorCalls[c];
           break;
         }
       }
-      if (connectorCalls === undefined) {
+      if (connectorCall === undefined) {
         const connectorTokens: TokenData[] = [];
-        for (const tokenData of bridgeOperations.tokens) {
+        for (const tokenData of bridgeOperation.tokens) {
           connectorTokens.push({
             token: tokenData.token,
             tokenID: tokenData.tokenID,
             amount: "0"
           });
         }
-        connectorCalls = {
+        connectorCall = {
           connector: call.connector,
           gasLimit: 2000000,
           totalMinGas: 0,
           groups: [],
           tokens: connectorTokens
         };
-        bridgeOperations.connectorCalls.push(connectorCalls);
+        bridgeOperation.connectorCalls.push(connectorCall);
       }
 
-      let group: ConnectorGroup;
-      for (let g = 0; g < connectorCalls.groups.length; g++) {
-        if (connectorCalls.groups[g].groupData === call.groupData) {
-          group = connectorCalls.groups[g];
+      let group: BridgeCallGroup;
+      for (let g = 0; g < connectorCall.groups.length; g++) {
+        if (connectorCall.groups[g].groupData === call.groupData) {
+          group = connectorCall.groups[g];
           break;
         }
       }
@@ -373,14 +373,14 @@ export class Bridge {
           groupData: call.groupData,
           calls: []
         };
-        connectorCalls.groups.push(group);
+        connectorCall.groups.push(group);
       }
       group.calls.push(call);
 
       let tokenData: TokenData;
-      for (let t = 0; t < connectorCalls.tokens.length; t++) {
-        if (connectorCalls.tokens[t].token === call.token) {
-          tokenData = connectorCalls.tokens[t];
+      for (let t = 0; t < connectorCall.tokens.length; t++) {
+        if (connectorCall.tokens[t].token === call.token) {
+          tokenData = connectorCall.tokens[t];
           break;
         }
       }
@@ -389,15 +389,15 @@ export class Bridge {
         .add(new BN(call.amount))
         .toString(10);
 
-      connectorCalls.totalMinGas += call.minGas;
+      connectorCall.totalMinGas += call.minGas;
     }
 
     //
     // Do L2 transactions
     //
 
-    for (const connectorCalls of bridgeOperations.connectorCalls) {
-      for (const group of connectorCalls.groups) {
+    for (const connectorCall of bridgeOperation.connectorCalls) {
+      for (const group of connectorCall.groups) {
         for (const call of group.calls) {
           const transfer = await this.ctx.transfer(
             call.owner,
@@ -416,7 +416,7 @@ export class Bridge {
           const bridgeCallWrapper: BridgeCallWrapper = {
             transfer,
             call,
-            connector: connectorCalls.connector,
+            connector: connectorCall.connector,
             groupData: group.groupData
           };
           const txHash = CollectTransferUtils.getHash(
@@ -431,7 +431,7 @@ export class Bridge {
       }
     }
 
-    for (const token of bridgeOperations.tokens) {
+    for (const token of bridgeOperation.tokens) {
       await this.ctx.requestWithdrawal(
         this.address,
         token.token,
@@ -444,12 +444,12 @@ export class Bridge {
       );
     }
 
-    //console.log(bridgeOperations);
+    //console.log(bridgeOperation);
 
     // Set the pool transaction data on the callback
-    blockCallback.auxiliaryData = this.encodeBridgeOperations(bridgeOperations);
-    blockCallback.numTxs = calls.length * 2 + bridgeOperations.tokens.length;
-    for (const batch of bridgeOperations.transferBatches) {
+    blockCallback.auxiliaryData = this.encodeBridgeOperation(bridgeOperation);
+    blockCallback.numTxs = calls.length * 2 + bridgeOperation.tokens.length;
+    for (const batch of bridgeOperation.transferBatches) {
       blockCallback.numTxs += batch.amounts.length;
     }
 
@@ -462,18 +462,18 @@ export class Bridge {
     const connectorCallResultEvents = await this.ctx.assertEventsEmitted(
       this.contract,
       "ConnectorCallResult",
-      bridgeOperations.connectorCalls.length
+      bridgeOperation.connectorCalls.length
     );
 
     if (expectedSuccess === undefined) {
-      expectedSuccess = new Array(bridgeOperations.connectorCalls.length).fill(
+      expectedSuccess = new Array(bridgeOperation.connectorCalls.length).fill(
         true
       );
     }
 
     for (let i = 0; i < connectorCallResultEvents.length; i++) {
       assert(
-        bridgeOperations.connectorCalls[i].connector ===
+        bridgeOperation.connectorCalls[i].connector ===
           connectorCallResultEvents[i].connector,
         "unexpected success"
       );
@@ -485,11 +485,11 @@ export class Bridge {
 
     const expectedDepositTransfers: BridgeTransfer[] = [];
     const expectedMigrationTransfers: BridgeTransfer[] = [];
-    for (const calls of bridgeOperations.connectorCalls) {
-      for (const group of calls.groups) {
+    for (const connectorCall of bridgeOperation.connectorCalls) {
+      for (const group of connectorCall.groups) {
         for (const call of group.calls) {
           if (call.expectedDeposit) {
-            if (calls.connector === this.migrationConnector) {
+            if (connectorCall.connector === this.migrationConnector) {
               expectedMigrationTransfers.push(call.expectedDeposit);
             } else {
               expectedDepositTransfers.push(call.expectedDeposit);
@@ -552,11 +552,11 @@ export class Bridge {
     }
   }
 
-  public encodeBridgeOperations(bridgeOperations: BridgeOperations) {
-    //console.log(bridgeOperations);
+  public encodeBridgeOperation(bridgeOperation: BridgeOperation) {
+    //console.log(bridgeOperation);
 
     const data = this.contract.contract.methods
-      .encode(bridgeOperations)
+      .encode(bridgeOperation)
       .encodeABI();
 
     //console.log(data);
@@ -571,10 +571,10 @@ export class Bridge {
          amount: "uint96"
        }
      },
-     bridgeOperations.transfers
+     bridgeOperation.transfers
    );*/
 
-    /*const encodedBridgeOperations = web3.eth.abi.encodeParameter(
+    /*const encodedBridgeOperation = web3.eth.abi.encodeParameter(
       {
         "BridgeConfig": {
           "BridgeTransfer[]": {
@@ -582,9 +582,9 @@ export class Bridge {
             token: "address",
             amount: "uint96"
           },
-          "struct ConnectorCalls[]": {
+          "struct BridgeCalls[]": {
             connector: "address",
-            "struct ConnectorGroup[]": {
+            "struct BridgeCallGroup[]": {
               groupData: "bytes",
               "struct BridgeCall[]": {
                 owner: "address",
@@ -609,10 +609,10 @@ export class Bridge {
         }
       },
       {
-        "BridgeTransfer[]": bridgeOperations.transfers
+        "BridgeTransfer[]": bridgeOperation.transfers
       }
     );
-    return encodedBridgeOperations;*/
+    return encodedBridgeOperation;*/
   }
 }
 
@@ -876,7 +876,7 @@ contract("Bridge", (accounts: string[]) => {
 
       const transferEventsA = await bridge.batchDeposit(depositsA);
       const transferEventsB = await bridge.batchDeposit(depositsB);
-      await bridge.submitBridgeOperations(
+      await bridge.submitBridgeOperation(
         [...transferEventsA, ...transferEventsB],
         []
       );
@@ -900,7 +900,7 @@ contract("Bridge", (accounts: string[]) => {
       const transferEventsC = await bridge.batchDeposit(depositsC);
       // Try to different transfers
       await expectThrow(
-        bridge.submitBridgeOperations(transferEventsC, [], undefined, true),
+        bridge.submitBridgeOperation(transferEventsC, [], undefined, true),
         "UNKNOWN_TRANSFERS"
       );
     });
@@ -908,19 +908,19 @@ contract("Bridge", (accounts: string[]) => {
     it("Bridge calls", async () => {
       const bridge = await setupBridge();
 
-      await bridge.contract.setConnectorTrusted(
+      await bridge.contract.trustConnector(
         swappperBridgeConnectorA.address,
         true
       );
-      await bridge.contract.setConnectorTrusted(
+      await bridge.contract.trustConnector(
         swappperBridgeConnectorB.address,
         true
       );
-      await bridge.contract.setConnectorTrusted(
+      await bridge.contract.trustConnector(
         failingSwappperBridgeConnector.address,
         true
       );
-      await bridge.contract.setConnectorTrusted(
+      await bridge.contract.trustConnector(
         migrationBridgeConnector.address,
         true
       );
@@ -1193,7 +1193,7 @@ contract("Bridge", (accounts: string[]) => {
       });
 
       await bridge.setupCalls(calls);
-      await bridge.submitBridgeOperations([], calls, [true, true, false, true]);
+      await bridge.submitBridgeOperation([], calls, [true, true, false, true]);
 
       // Handle resulting batched deposits
       const depositEvents = await ctx.getEvents(
@@ -1208,7 +1208,7 @@ contract("Bridge", (accounts: string[]) => {
         );
       }
       const transferEvents = await ctx.getEvents(bridge.contract, "Transfers");
-      await bridge.submitBridgeOperations(transferEvents, []);
+      await bridge.submitBridgeOperation(transferEvents, []);
 
       // assert(false);
     });
@@ -1295,9 +1295,7 @@ contract("Bridge", (accounts: string[]) => {
         "TRANSFERS_NOT_TOO_OLD"
       );
 
-      const MAX_AGE_PENDING_TRANSFER = (
-        await bridge.contract.MAX_AGE_PENDING_TRANSFER()
-      ).toNumber();
+      const MAX_AGE_PENDING_TRANSFER = (await bridge.contract.MAX_AGE_PENDING_TRANSFER()).toNumber();
       await ctx.advanceBlockTimestamp(MAX_AGE_PENDING_TRANSFER + 1);
 
       await withdrawFromPendingBatchDepositChecked(bridge, 0, transfers, [

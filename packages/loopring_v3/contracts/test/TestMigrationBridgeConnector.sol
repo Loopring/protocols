@@ -48,7 +48,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         bridge = _bridge;
     }
 
-    function processCalls(ConnectorGroup[] memory groups)
+    function processCalls(BridgeCallGroup[] memory groups)
         external
         payable
         override
@@ -104,7 +104,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         return new BridgeTransfer[](0);
     }
 
-    function getMinGasLimit(ConnectorGroup[] calldata groups)
+    function getMinGasLimit(BridgeCallGroup[] calldata groups)
         external
         pure
         override
