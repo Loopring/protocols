@@ -35,7 +35,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     // - uint16  tokenID:  2 bytes
     event Transfers           (uint batchID, bytes transfers, address from);
 
-    event BridgeCallResult (address connector, bool success, bytes reason);
+    event ConnectorCallResult (address connector, bool success, bytes reason);
 
     event ConnectorTrusted    (address connector, bool trusted);
 
@@ -55,8 +55,8 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
     struct ConnectorCall
     {
-        address              connector;
-        uint                 gasLimit;
+        address           connector;
+        uint              gasLimit;
         BridgeCallGroup[] groups;
     }
 
@@ -366,7 +366,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         ctx.tokens = tokens;
 
         _processTransferBatches(ctx, transferBatches);
-        _processXxxCalls(ctx, connectorCalls);
+        _processConnectorCalls(ctx, connectorCalls);
     }
 
     function _processTransferBatches(
@@ -442,7 +442,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         delete pendingTransfers[batch.batchID][hash];
     }
 
-    function _processXxxCalls(
+    function _processConnectorCalls(
         Context          memory   ctx,
         ConnectorCall[]  calldata connectorCalls
         )
@@ -667,7 +667,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         (success, returnData) = connectorCall.connector.fastDelegatecall(connectorCall.gasLimit, txData);
 
         if (success) {
-            emit BridgeCallResult(connectorCall.connector, true, "");
+            emit ConnectorCallResult(connectorCall.connector, true, "");
             transfers = abi.decode(returnData, (BridgeTransfer[]));
         } else {
             // If the call failed return funds to all users
@@ -689,7 +689,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
                 }
             }
             assert(txIdx == totalNumCalls);
-            emit BridgeCallResult(connectorCall.connector, false, returnData);
+            emit ConnectorCallResult(connectorCall.connector, false, returnData);
         }
     }
 
