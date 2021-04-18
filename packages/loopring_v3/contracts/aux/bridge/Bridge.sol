@@ -108,8 +108,6 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
     IDepositContract   public immutable depositContract;
     bytes32            public immutable DOMAIN_SEPARATOR;
 
-    address                                     public exchangeOwner;
-
     mapping (uint => mapping (bytes32 => uint)) public pendingTransfers;
     mapping (uint => mapping(uint => bool))     public withdrawn;
 
@@ -122,35 +120,34 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
 
     modifier onlyFromExchangeOwner()
     {
-        require(msg.sender == exchangeOwner, "UNAUTHORIZED");
+        require(msg.sender == exchange.owner(), "UNAUTHORIZED");
         _;
     }
 
     constructor(
-        IExchangeV3      _exchange,
-        uint32           _accountID
+        IExchangeV3 _exchange,
+        uint32      _accountID
         )
     {
         exchange = _exchange;
         accountID = _accountID;
 
         depositContract = _exchange.getDepositContract();
-        exchangeOwner = _exchange.owner();
 
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Bridge", "1.0", address(this)));
     }
 
     function batchDeposit(
-        BridgeTransfer[] memory deposits
+        BridgeTransfer[] memory transfers
         )
         external
         payable
         override
         nonReentrant
     {
-        BridgeTransfer[][] memory _deposits = new BridgeTransfer[][](1);
-        _deposits[0] = deposits;
-        _batchDeposit(msg.sender,_deposits);
+        BridgeTransfer[][] memory listOfTransfers = new BridgeTransfer[][](1);
+        listOfTransfers[0] = transfers;
+        _batchDeposit(msg.sender, listOfTransfers);
     }
 
     function onReceiveTransactions(
