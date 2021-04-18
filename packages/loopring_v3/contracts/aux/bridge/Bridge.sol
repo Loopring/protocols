@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+JJJJJJj// SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
@@ -143,7 +143,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard, Claimable
     function batchDeposit(
         BridgeTransfer[] memory deposits
         )
-        public
+        external
         payable
         override
     {
@@ -246,7 +246,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard, Claimable
         }
     }
 
-    function setConnectorTrusted(
+    function trustConnector(
         address connector,
         bool    trusted
         )
@@ -257,10 +257,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard, Claimable
         emit ConnectorTrusted(connector, trusted);
     }
 
-    receive()
-        external
-        payable
-    {}
+    receive() external payable {}
 
     // --- Internal functions ---
 
