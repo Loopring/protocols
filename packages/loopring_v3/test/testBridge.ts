@@ -41,7 +41,7 @@ export interface TokenData {
   amount: string;
 }
 
-export interface BridgeCall {
+export interface ConnectorCall {
   owner: string;
   token: string;
   amount: string;
@@ -55,15 +55,15 @@ export interface BridgeCall {
   expectedDeposit?: BridgeTransfer;
 }
 
-export interface ConnectorGroup {
+export interface ConnectorCallGroup {
   groupData: string;
-  calls: BridgeCall[];
+  calls: ConnectorCall[];
 }
 
 export interface ConnectorCalls {
   connector: string;
   gasLimit: number;
-  groups: ConnectorGroup[];
+  groups: ConnectorCallGroup[];
   totalMinGas: number;
   tokens: TokenData[];
 }
@@ -79,16 +79,16 @@ export interface BridgeOperations {
   tokens: TokenData[];
 }
 
-export interface BridgeCallWrapper {
+export interface ConnectorCallWrapper {
   transfer: Transfer;
   connector: string;
   groupData: string;
-  call: BridgeCall;
+  call: ConnectorCall;
 }
 
 export namespace CollectTransferUtils {
   export function toTypedData(
-    callWrapper: BridgeCallWrapper,
+    callWrapper: ConnectorCallWrapper,
     verifyingContract: string
   ) {
     const typedData = {
@@ -99,7 +99,7 @@ export namespace CollectTransferUtils {
           { name: "chainId", type: "uint256" },
           { name: "verifyingContract", type: "address" }
         ],
-        BridgeCall: [
+        ConnectorCall: [
           { name: "tokenID", type: "uint16" },
           { name: "amount", type: "uint96" },
           { name: "feeTokenID", type: "uint16" },
@@ -112,7 +112,7 @@ export namespace CollectTransferUtils {
           { name: "userData", type: "bytes" }
         ]
       },
-      primaryType: "BridgeCall",
+      primaryType: "ConnectorCall",
       domain: {
         name: "Bridge",
         version: "1.0",
@@ -136,7 +136,7 @@ export namespace CollectTransferUtils {
   }
 
   export function getHash(
-    callWrapper: BridgeCallWrapper,
+    callWrapper: ConnectorCallWrapper,
     verifyingContract: string
   ) {
     const typedData = this.toTypedData(callWrapper, verifyingContract);
@@ -238,7 +238,7 @@ export class Bridge {
     return transferEvents;
   }
 
-  public async setupCalls(calls: BridgeCall[]) {
+  public async setupCalls(calls: ConnectorCall[]) {
     for (const call of calls) {
       await this.ctx.deposit(
         call.owner,
@@ -269,7 +269,7 @@ export class Bridge {
 
   public async submitBridgeOperations(
     transferEvents: any[],
-    calls: BridgeCall[],
+    calls: ConnectorCall[],
     expectedSuccess?: boolean[],
     changeTransfers?: boolean
   ) {
@@ -361,7 +361,7 @@ export class Bridge {
         bridgeOperations.connectorCalls.push(connectorCalls);
       }
 
-      let group: ConnectorGroup;
+      let group: ConnectorCallGroup;
       for (let g = 0; g < connectorCalls.groups.length; g++) {
         if (connectorCalls.groups[g].groupData === call.groupData) {
           group = connectorCalls.groups[g];
@@ -413,14 +413,14 @@ export class Bridge {
             }
           );
 
-          const bridgeCallWrapper: BridgeCallWrapper = {
+          const connectorCallWrapper: ConnectorCallWrapper = {
             transfer,
             call,
             connector: connectorCalls.connector,
             groupData: group.groupData
           };
           const txHash = CollectTransferUtils.getHash(
-            bridgeCallWrapper,
+            connectorCallWrapper,
             this.address
           );
           await this.ctx.requestSignatureVerification(
@@ -584,9 +584,9 @@ export class Bridge {
           },
           "struct ConnectorCalls[]": {
             connector: "address",
-            "struct ConnectorGroup[]": {
+            "struct ConnectorCallGroup[]": {
               groupData: "bytes",
-              "struct BridgeCall[]": {
+              "struct ConnectorCall[]": {
                 owner: "address",
                 token: "address",
                 amount: "uint256",
@@ -929,7 +929,7 @@ contract("Bridge", (accounts: string[]) => {
       const group_LRC_ETH = encodeSwapGroupSettings("LRC", "ETH");
       const group_WETH_LRC = encodeSwapGroupSettings("WETH", "LRC");
 
-      const calls: BridgeCall[] = [];
+      const calls: ConnectorCall[] = [];
       // Successful swap connector call
       // ETH -> LRC
       calls.push({
@@ -1295,9 +1295,7 @@ contract("Bridge", (accounts: string[]) => {
         "TRANSFERS_NOT_TOO_OLD"
       );
 
-      const MAX_AGE_PENDING_TRANSFER = (
-        await bridge.contract.MAX_AGE_PENDING_TRANSFER()
-      ).toNumber();
+      const MAX_AGE_PENDING_TRANSFER = (await bridge.contract.MAX_AGE_PENDING_TRANSFER()).toNumber();
       await ctx.advanceBlockTimestamp(MAX_AGE_PENDING_TRANSFER + 1);
 
       await withdrawFromPendingBatchDepositChecked(bridge, 0, transfers, [

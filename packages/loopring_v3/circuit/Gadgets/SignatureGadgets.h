@@ -372,7 +372,8 @@ class SignatureVerifier : public GadgetT
     {
         for (unsigned int i = 0; i < sig_s.size(); i++)
         {
-            libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, sig_s[i], FMT(annotation_prefix, ".bitness"));
+            libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(
+              pb, sig_s[i], FMT(annotation_prefix, ".bitness"));
         }
         signatureVerifier.generate_r1cs_constraints();
         valid.generate_r1cs_constraints();

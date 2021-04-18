@@ -48,7 +48,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         bridge = _bridge;
     }
 
-    function processCalls(ConnectorGroup[] memory groups)
+    function processCalls(ConnectorCallGroup[] memory groups)
         external
         payable
         override
@@ -63,31 +63,31 @@ contract TestMigrationBridgeConnector is IBridgeConnector
 
         // Total ETH to migrate
         uint totalAmountETH = 0;
-        BridgeCall memory bridgeCall;
+        ConnectorCall memory connectorCall;
         for (uint g = 0; g < groups.length; g++) {
             GroupSettings memory settings = abi.decode(groups[g].groupData, (GroupSettings));
 
-            BridgeCall[] memory calls = groups[g].calls;
+            ConnectorCall[] memory calls = groups[g].calls;
 
             // Check for each call if the minimum slippage was achieved
             uint totalAmount = 0;
             for (uint i = 0; i < calls.length; i++) {
-                bridgeCall = calls[i];
+                connectorCall = calls[i];
                 require(calls[i].token == settings.token, "WRONG_TOKEN_IN_GROUP");
 
-                address to = bridgeCall.owner;
-                if(bridgeCall.userData.length == 32) {
-                    UserSettings memory userSettings = abi.decode(bridgeCall.userData, (UserSettings));
+                address to = connectorCall.owner;
+                if(connectorCall.userData.length == 32) {
+                    UserSettings memory userSettings = abi.decode(connectorCall.userData, (UserSettings));
                     to = userSettings.to;
                 }
 
                 transfers[transferIdx++] = BridgeTransfer({
                     owner: to,
-                    token: bridgeCall.token,
-                    amount: bridgeCall.amount
+                    token: connectorCall.token,
+                    amount: connectorCall.amount
                 });
 
-                totalAmount += bridgeCall.amount;
+                totalAmount += connectorCall.amount;
             }
 
             if (settings.token == address(0)) {
@@ -104,7 +104,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         return new BridgeTransfer[](0);
     }
 
-    function getMinGasLimit(ConnectorGroup[] calldata groups)
+    function getMinGasLimit(ConnectorCallGroup[] calldata groups)
         external
         pure
         override

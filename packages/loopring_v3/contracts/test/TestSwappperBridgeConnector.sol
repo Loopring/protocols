@@ -39,7 +39,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         testSwapper = _testSwapper;
     }
 
-    function processCalls(ConnectorGroup[] memory groups)
+    function processCalls(ConnectorCallGroup[] memory groups)
         external
         payable
         override
@@ -52,21 +52,21 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         BridgeTransfer[] memory transfers = new BridgeTransfer[](numTransfers);
         uint transferIdx = 0;
 
-        BridgeCall memory bridgeCall;
+        ConnectorCall memory connectorCall;
         for (uint g = 0; g < groups.length; g++) {
             GroupSettings memory settings = abi.decode(groups[g].groupData, (GroupSettings));
 
-            BridgeCall[] memory calls = groups[g].calls;
+            ConnectorCall[] memory calls = groups[g].calls;
 
             bool[] memory valid = new bool[](calls.length);
             uint numValid = 0;
 
             uint amountInExpected = 0;
             for (uint i = 0; i < calls.length; i++) {
-                bridgeCall = calls[i];
-                if (bridgeCall.token == settings.tokenIn) {
+                connectorCall = calls[i];
+                if (connectorCall.token == settings.tokenIn) {
                     valid[i] = true;
-                    amountInExpected = amountInExpected + bridgeCall.amount;
+                    amountInExpected = amountInExpected + connectorCall.amount;
                 }
             }
 
@@ -81,19 +81,19 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             uint amountIn = 0;
             uint ammountInInvalid = 0;
             for (uint i = 0; i < calls.length; i++) {
-                bridgeCall = calls[i];
-                if(valid[i] && bridgeCall.userData.length == 32) {
-                    UserSettings memory userSettings = abi.decode(bridgeCall.userData, (UserSettings));
-                    uint userAmountOut = uint(bridgeCall.amount).mul(amountOut) / amountInExpected;
+                connectorCall = calls[i];
+                if(valid[i] && connectorCall.userData.length == 32) {
+                    UserSettings memory userSettings = abi.decode(connectorCall.userData, (UserSettings));
+                    uint userAmountOut = uint(connectorCall.amount).mul(amountOut) / amountInExpected;
                     if (userAmountOut < userSettings.minAmountOut) {
                         valid[i] = false;
                     }
                 }
                 if (valid[i]) {
-                    amountIn = amountIn.add(bridgeCall.amount);
+                    amountIn = amountIn.add(connectorCall.amount);
                     numValid++;
                 } else {
-                    ammountInInvalid = ammountInInvalid.add(bridgeCall.amount);
+                    ammountInInvalid = ammountInInvalid.add(connectorCall.amount);
                 }
             }
 
@@ -132,7 +132,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         return transfers;
     }
 
-    function getMinGasLimit(ConnectorGroup[] calldata groups)
+    function getMinGasLimit(ConnectorCallGroup[] calldata groups)
         external
         pure
         override

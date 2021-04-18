@@ -55,9 +55,9 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
     struct ConnectorCalls
     {
-        address             connector;
-        uint                gasLimit;
-        ConnectorGroup[]    groups;
+        address              connector;
+        uint                 gasLimit;
+        ConnectorCallGroup[] groups;
     }
 
     struct TransferBatch
@@ -93,7 +93,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     }
 
     bytes32 constant public BRIDGE_CALL_TYPEHASH = keccak256(
-        "BridgeCall(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
+        "ConnectorCall(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
     );
 
     uint               public constant  MAX_NUM_TRANSACTIONS_IN_BLOCK = 386;
@@ -366,7 +366,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         ctx.tokens = tokens;
 
         _processTransferBatches(ctx, transferBatches);
-        _processBridgeCalls(ctx, connectorCalls);
+        _processConnectorCalls(ctx, connectorCalls);
     }
 
     function _processTransferBatches(
@@ -442,7 +442,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         delete pendingTransfers[batch.batchID][hash];
     }
 
-    function _processBridgeCalls(
+    function _processConnectorCalls(
         Context          memory   ctx,
         ConnectorCalls[] calldata connectorCalls
         )
@@ -483,7 +483,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
     function _processConnectorCall(
         Context          memory   ctx,
-        ConnectorCalls   calldata connectorCall,
+        ConnectorCalls   calldata connectorCalls,
         uint[]           memory   totalAmounts
         )
         internal
@@ -491,10 +491,10 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     {
         CallTransfer memory transfer;
         uint totalMinGas = 0;
-        for (uint g = 0; g < connectorCall.groups.length; g++) {
-            ConnectorGroup calldata group = connectorCall.groups[g];
+        for (uint g = 0; g < connectorCalls.groups.length; g++) {
+            ConnectorCallGroup calldata group = connectorCalls.groups[g];
             for (uint i = 0; i < group.calls.length; i++) {
-                BridgeCall calldata bridgeCall = group.calls[i];
+                ConnectorCall calldata connectorCall = group.calls[i];
 
                 // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
                 (uint packedData, , ) = readTransfer(ctx);
@@ -511,14 +511,14 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
                 // Verify that the transaction was approved with an L2 signature
                 bytes32 txHash = _hashTx(
                     transfer,
-                    bridgeCall.maxFee,
-                    bridgeCall.validUntil,
-                    bridgeCall.minGas,
-                    connectorCall.connector,
+                    connectorCall.maxFee,
+                    connectorCall.validUntil,
+                    connectorCall.minGas,
+                    connectorCalls.connector,
                     group.groupData,
-                    bridgeCall.userData
+                    connectorCall.userData
                 );
-                verifySignatureL2(ctx, bridgeCall.owner, transfer.fromAccountID, txHash);
+                verifySignatureL2(ctx, connectorCall.owner, transfer.fromAccountID, txHash);
 
                 // Find the token in the tokens list
                 uint t = 0;
@@ -536,14 +536,14 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
                     // transfer.toAccountID == ctx.accountID &&
                     packedData & 0xffff00000000ffffffff00000000000000000000000000 ==
                     (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(accountID) << 104) &&
-                    transfer.fee <= bridgeCall.maxFee &&
-                    bridgeCall.validUntil == 0 || block.timestamp < bridgeCall.validUntil &&
-                    bridgeCall.token == ctx.tokens[t].token &&
-                    bridgeCall.amount == transfer.amount,
+                    transfer.fee <= connectorCall.maxFee &&
+                    connectorCall.validUntil == 0 || block.timestamp < connectorCall.validUntil &&
+                    connectorCall.token == ctx.tokens[t].token &&
+                    connectorCall.amount == transfer.amount,
                     "INVALID_BRIDGE_CALL_TRANSFER"
                 );
 
-                totalMinGas = totalMinGas.add(bridgeCall.minGas);
+                totalMinGas = totalMinGas.add(connectorCall.minGas);
             }
         }
 
@@ -551,7 +551,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         // So calls basically "buy" a part of the total gas needed to do the batched call,
         // while IBridgeConnector.getMinGasLimit() makes sure the total gas limit makes sense for the
         // amount of work submitted.
-        require(connectorCall.gasLimit >= totalMinGas, "INVALID_TOTAL_MIN_GAS");
+        require(connectorCalls.gasLimit >= totalMinGas, "INVALID_TOTAL_MIN_GAS");
     }
 
     function _processWithdrawals(
@@ -678,13 +678,13 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
             transfers = new BridgeTransfer[](totalNumCalls);
             uint txIdx = 0;
             for (uint g = 0; g < connectorCalls.groups.length; g++) {
-                ConnectorGroup memory group = connectorCalls.groups[g];
+                ConnectorCallGroup memory group = connectorCalls.groups[g];
                 for (uint i = 0; i < group.calls.length; i++) {
-                    BridgeCall memory bridgeCall = group.calls[i];
+                    ConnectorCall memory connectorCall = group.calls[i];
                     transfers[txIdx++] = BridgeTransfer({
-                        owner: bridgeCall.owner,
-                        token:  bridgeCall.token,
-                        amount: bridgeCall.amount
+                        owner: connectorCall.owner,
+                        token:  connectorCall.token,
+                        amount: connectorCall.amount
                     });
                 }
             }
@@ -800,7 +800,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     {
         // Position in the calldata to start copying
         uint offsetToGroups;
-        ConnectorGroup[] calldata groups = calls[n].groups;
+        ConnectorCallGroup[] calldata groups = calls[n].groups;
         assembly {
             offsetToGroups := sub(groups.offset, 32)
         }
