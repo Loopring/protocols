@@ -60,7 +60,7 @@ export interface BridgeCallGroup {
   calls: BridgeCall[];
 }
 
-export interface BridgeCalls {
+export interface ConnectorCall {
   connector: string;
   gasLimit: number;
   groups: BridgeCallGroup[];
@@ -73,9 +73,9 @@ export interface TransferBatch {
   amounts: string[];
 }
 
-export interface BridgeOperations {
+export interface BridgeOperation {
   transferBatches: TransferBatch[];
-  bridgeCalls: BridgeCalls[];
+  connectorCalls: ConnectorCall[];
   tokens: TokenData[];
 }
 
@@ -267,7 +267,7 @@ export class Bridge {
     return transfers;
   }
 
-  public async submitBridgeOperations(
+  public async submitBridgeOperation(
     transferEvents: any[],
     calls: BridgeCall[],
     expectedSuccess?: boolean[],
@@ -276,7 +276,7 @@ export class Bridge {
     changeTransfers = changeTransfers ? true : false;
     console.log("Change transfers: " + changeTransfers);
 
-    const bridgeOperations: BridgeOperations = {
+    const bridgeOperations: BridgeOperation = {
       transferBatches: [],
       bridgeCalls: [],
       tokens: []
@@ -447,7 +447,7 @@ export class Bridge {
     //console.log(bridgeOperations);
 
     // Set the pool transaction data on the callback
-    blockCallback.auxiliaryData = this.encodeBridgeOperations(bridgeOperations);
+    blockCallback.auxiliaryData = this.encodeBridgeOperation(bridgeOperations);
     blockCallback.numTxs = calls.length * 2 + bridgeOperations.tokens.length;
     for (const batch of bridgeOperations.transferBatches) {
       blockCallback.numTxs += batch.amounts.length;
@@ -552,7 +552,7 @@ export class Bridge {
     }
   }
 
-  public encodeBridgeOperations(bridgeOperations: BridgeOperations) {
+  public encodeBridgeOperation(bridgeOperations: BridgeOperation) {
     //console.log(bridgeOperations);
 
     const data = this.contract.contract.methods
@@ -574,7 +574,7 @@ export class Bridge {
      bridgeOperations.transfers
    );*/
 
-    /*const encodedBridgeOperations = web3.eth.abi.encodeParameter(
+    /*const encodedBridgeOperation = web3.eth.abi.encodeParameter(
       {
         "BridgeConfig": {
           "BridgeTransfer[]": {
@@ -612,7 +612,7 @@ export class Bridge {
         "BridgeTransfer[]": bridgeOperations.transfers
       }
     );
-    return encodedBridgeOperations;*/
+    return encodedBridgeOperation;*/
   }
 }
 
@@ -876,7 +876,7 @@ contract("Bridge", (accounts: string[]) => {
 
       const transferEventsA = await bridge.batchDeposit(depositsA);
       const transferEventsB = await bridge.batchDeposit(depositsB);
-      await bridge.submitBridgeOperations(
+      await bridge.submitBridgeOperation(
         [...transferEventsA, ...transferEventsB],
         []
       );
@@ -900,7 +900,7 @@ contract("Bridge", (accounts: string[]) => {
       const transferEventsC = await bridge.batchDeposit(depositsC);
       // Try to different transfers
       await expectThrow(
-        bridge.submitBridgeOperations(transferEventsC, [], undefined, true),
+        bridge.submitBridgeOperation(transferEventsC, [], undefined, true),
         "UNKNOWN_TRANSFERS"
       );
     });
@@ -1193,7 +1193,7 @@ contract("Bridge", (accounts: string[]) => {
       });
 
       await bridge.setupCalls(calls);
-      await bridge.submitBridgeOperations([], calls, [true, true, false, true]);
+      await bridge.submitBridgeOperation([], calls, [true, true, false, true]);
 
       // Handle resulting batched deposits
       const depositEvents = await ctx.getEvents(
@@ -1208,7 +1208,7 @@ contract("Bridge", (accounts: string[]) => {
         );
       }
       const transferEvents = await ctx.getEvents(bridge.contract, "Transfers");
-      await bridge.submitBridgeOperations(transferEvents, []);
+      await bridge.submitBridgeOperation(transferEvents, []);
 
       // assert(false);
     });

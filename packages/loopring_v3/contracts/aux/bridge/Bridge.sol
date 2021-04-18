@@ -66,7 +66,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         uint96[] amounts;
     }
 
-    struct BridgeOperations
+    struct BridgeOperation
     {
         TransferBatch[]  transferBatches;
         ConnectorCall[]  connectorCalls;
@@ -341,7 +341,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     function _processTransactions(Context memory ctx)
         internal
     {
-        // abi.decode(callbackData, (BridgeOperations))
+        // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
         TransferBatch[] calldata transferBatches;
         ConnectorCall[] calldata connectorCalls;
@@ -791,7 +791,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     function _getConnectorCallData(
         Context memory            ctx,
         bytes4                    selector,
-        ConnectorCall[]  calldata connectorCalls,
+        ConnectorCall[]  calldata calls,
         uint                      n
         )
         internal
@@ -800,21 +800,21 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     {
         // Position in the calldata to start copying
         uint offsetToGroups;
-        BridgeCallGroup[] calldata groups = connectorCalls[n].groups;
+        BridgeCallGroup[] calldata groups = calls[n].groups;
         assembly {
             offsetToGroups := sub(groups.offset, 32)
         }
 
         // Amount of bytes that need to be copied.
         // Found by either using the offset to the next connector call or (for the last call)
-        // using the offset of the data after all connectorCalls (which is the tokens array).
+        // using the offset of the data after all calls (which is the tokens array).
         uint txDataSize = 0;
-        if (n + 1 < connectorCalls.length) {
+        if (n + 1 < calls.length) {
             uint offsetToCall;
             uint offsetToNextCall;
             assembly {
-                offsetToCall := calldataload(add(connectorCalls.offset, mul(add(n, 0), 32)))
-                offsetToNextCall := calldataload(add(connectorCalls.offset, mul(add(n, 1), 32)))
+                offsetToCall := calldataload(add(calls.offset, mul(add(n, 0), 32)))
+                offsetToNextCall := calldataload(add(calls.offset, mul(add(n, 1), 32)))
             }
             txDataSize = offsetToNextCall.sub(offsetToCall);
         } else {
@@ -895,7 +895,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 
-    function encode(BridgeOperations calldata operations)
+    function encode(BridgeOperation calldata operations)
         external
         pure
     {}
