@@ -444,7 +444,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
     function _processConnectorCalls(
         Context          memory   ctx,
-        ConnectorCall[]  calldata connectorCalls
+        ConnectorCall[]  calldata allCalls
         )
         internal
     {
@@ -452,26 +452,17 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         uint[] memory totalAmounts = new uint[](ctx.tokens.length);
 
         // All resulting deposits from all connector calls
-        BridgeTransfer[][] memory deposits = new BridgeTransfer[][](connectorCalls.length);
+        BridgeTransfer[][] memory deposits = new BridgeTransfer[][](allCalls.length);
 
-        // Verify and execute bridge connectorCalls
-        for (uint c = 0; c < connectorCalls.length; c++) {
-            ConnectorCall calldata connectorCall = connectorCalls[c];
+        // Verify and execute bridge calls
+        for (uint c = 0; c < allCalls.length; c++) {
+            ConnectorCall calldata connectorCall = allCalls[c];
 
             // Verify the transactions
-            _processConnectorCall(
-                ctx,
-                connectorCall,
-                totalAmounts
-            );
+            _processConnectorCall(ctx, connectorCall, totalAmounts);
 
             // Call the connector
-            deposits[c] = _connectorCall(
-                ctx,
-                connectorCall,
-                c,
-                connectorCalls
-            );
+            deposits[c] = _connectorCall(ctx, connectorCall, c, allCalls);
         }
 
         // Verify withdrawals
