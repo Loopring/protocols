@@ -20,9 +20,9 @@ struct ConnectorGroup
     BridgeCall[] calls;
 }
 
-struct L2Transfer
+struct BridgeTransfer
 {
-    address to;  // the owner of the transfer recipient account
+    address owner;
     address token;
     uint96  amount;
 }
@@ -43,7 +43,7 @@ interface IBridge
     ///      deposits the sender first has to approve token transfers on the deposit contract.
     ///
     /// @param deposits The deposits
-    function batchDeposit(L2Transfer[] calldata deposits)
+    function batchDeposit(BridgeTransfer[] calldata deposits)
         external
         payable;
 }
@@ -79,7 +79,7 @@ interface IBridgeConnector
     function processCalls(ConnectorGroup[] calldata groups)
         external
         payable
-        returns (L2Transfer[] memory);
+        returns (BridgeTransfer[] memory);
 
     /// @dev Returns a rough estimate of the gas cost to do `processCalls`. At least this much gas needs to be
     ///      provided by the caller of `processCalls` before the BridgeCalls of users are allowed to be used.

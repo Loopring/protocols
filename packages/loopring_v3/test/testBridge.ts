@@ -23,13 +23,13 @@ const TestMigrationBridgeConnector = artifacts.require(
   "TestMigrationBridgeConnector"
 );
 
-export interface L2Transfer {
+export interface BridgeTransfer {
   owner: string;
   token: string;
   amount: string;
 }
 
-export interface InternalL2Transfer {
+export interface InternalBridgeTransfer {
   owner: string;
   tokenID: number;
   amount: string;
@@ -52,7 +52,7 @@ export interface BridgeCall {
   validUntil: number;
   connector: string;
   groupData: string;
-  expectedDeposit?: L2Transfer;
+  expectedDeposit?: BridgeTransfer;
 }
 
 export interface ConnectorGroup {
@@ -190,7 +190,7 @@ export class Bridge {
     this.migrationConnector = migrationConnector;
   }
 
-  public async batchDeposit(deposits: L2Transfer[]) {
+  public async batchDeposit(deposits: BridgeTransfer[]) {
     const tokens: Map<string, BN> = new Map<string, BN>();
     for (const deposit of deposits) {
       if (!tokens.has(deposit.token)) {
@@ -254,10 +254,10 @@ export class Bridge {
   }
 
   public decodeTransfers(_data: string) {
-    const transfers: InternalL2Transfer[] = [];
+    const transfers: InternalBridgeTransfer[] = [];
     const data = new Bitstream(_data);
     for (let i = 0; i < data.length() / 34; i++) {
-      const transfer: InternalL2Transfer = {
+      const transfer: InternalBridgeTransfer = {
         owner: data.extractAddress(i * 34 + 0),
         tokenID: data.extractUint16(i * 34 + 32),
         amount: data.extractUint96(i * 34 + 20).toString(10)
@@ -483,8 +483,8 @@ export class Bridge {
       );
     }
 
-    const expectedDepositTransfers: L2Transfer[] = [];
-    const expectedMigrationTransfers: L2Transfer[] = [];
+    const expectedDepositTransfers: BridgeTransfer[] = [];
+    const expectedMigrationTransfers: BridgeTransfer[] = [];
     for (const calls of bridgeOperations.connectorCalls) {
       for (const group of calls.groups) {
         for (const call of group.calls) {
@@ -565,7 +565,7 @@ export class Bridge {
 
     /*const encodedDeposits = web3.eth.abi.encodeParameter(
      {
-       "struct L2Transfer[]": {
+       "struct BridgeTransfer[]": {
          owner: "address",
          token: "address",
          amount: "uint96"
@@ -577,7 +577,7 @@ export class Bridge {
     /*const encodedBridgeOperations = web3.eth.abi.encodeParameter(
       {
         "BridgeConfig": {
-          "L2Transfer[]": {
+          "BridgeTransfer[]": {
             owner: "address",
             token: "address",
             amount: "uint96"
@@ -609,7 +609,7 @@ export class Bridge {
         }
       },
       {
-        "L2Transfer[]": bridgeOperations.transfers
+        "BridgeTransfer[]": bridgeOperations.transfers
       }
     );
     return encodedBridgeOperations;*/
@@ -751,7 +751,7 @@ contract("Bridge", (accounts: string[]) => {
   const withdrawFromPendingBatchDepositChecked = async (
     bridge: Bridge,
     depositID: number,
-    transfers: InternalL2Transfer[],
+    transfers: InternalBridgeTransfer[],
     indices: number[]
   ) => {
     // Simulate all transfers
@@ -820,7 +820,7 @@ contract("Bridge", (accounts: string[]) => {
     it("Batch deposit", async () => {
       const bridge = await setupBridge();
 
-      const depositsA: L2Transfer[] = [];
+      const depositsA: BridgeTransfer[] = [];
       depositsA.push({
         owner: ownerA,
         token: ctx.getTokenAddress("ETH"),
@@ -852,7 +852,7 @@ contract("Bridge", (accounts: string[]) => {
         amount: web3.utils.toWei("12545.15484511245", "ether")
       });
 
-      const depositsB: L2Transfer[] = [];
+      const depositsB: BridgeTransfer[] = [];
       depositsB.push({
         owner: ownerB,
         token: ctx.getTokenAddress("WETH"),
@@ -881,7 +881,7 @@ contract("Bridge", (accounts: string[]) => {
         []
       );
 
-      const depositsC: L2Transfer[] = [];
+      const depositsC: BridgeTransfer[] = [];
       depositsC.push({
         owner: ownerB,
         token: ctx.getTokenAddress("WETH"),
@@ -1216,7 +1216,7 @@ contract("Bridge", (accounts: string[]) => {
     it("Manual withdrawal", async () => {
       const bridge = await setupBridge();
 
-      const deposits: L2Transfer[] = [];
+      const deposits: BridgeTransfer[] = [];
       deposits.push({
         owner: ownerA,
         token: ctx.getTokenAddress("ETH"),
@@ -1295,7 +1295,9 @@ contract("Bridge", (accounts: string[]) => {
         "TRANSFERS_NOT_TOO_OLD"
       );
 
-      const MAX_AGE_PENDING_TRANSFER = (await bridge.contract.MAX_AGE_PENDING_TRANSFER()).toNumber();
+      const MAX_AGE_PENDING_TRANSFER = (
+        await bridge.contract.MAX_AGE_PENDING_TRANSFER()
+      ).toNumber();
       await ctx.advanceBlockTimestamp(MAX_AGE_PENDING_TRANSFER + 1);
 
       await withdrawFromPendingBatchDepositChecked(bridge, 0, transfers, [
