@@ -10,12 +10,13 @@ import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../thirdparty/SafeCast.sol";
+import "../aux/bridge/IBatchDepositor.sol";
 import "../aux/bridge/IBridge.sol";
 
 
 /// Migrates from Loopring to ... Loopring!
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TestMigrationBridgeConnector is IBridgeConnector
+contract TestMigrationBridge is IBridge
 {
     using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
@@ -34,31 +35,30 @@ contract TestMigrationBridgeConnector is IBridgeConnector
 
     IExchangeV3        public immutable exchange;
     IDepositContract   public immutable depositContract;
-
-    IBridge            public immutable bridge;
+    IBatchDepositor    public immutable batchDepositor;
 
     constructor(
-        IExchangeV3 _exchange,
-        IBridge     _bridge
+        IExchangeV3     _exchange,
+        IBatchDepositor _batchDepositor
         )
     {
         exchange = _exchange;
         depositContract = _exchange.getDepositContract();
 
-        bridge = _bridge;
+        batchDepositor = _batchDepositor;
     }
 
     function processCalls(BridgeCallGroup[] memory groups)
         external
         payable
         override
-        returns (BridgeTransfer[] memory)
+        returns (L2Transfer[] memory)
     {
         uint numTransfers = 0;
         for (uint g = 0; g < groups.length; g++) {
             numTransfers += groups[g].calls.length;
         }
-        BridgeTransfer[] memory transfers = new BridgeTransfer[](numTransfers);
+        L2Transfer[] memory transfers = new L2Transfer[](numTransfers);
         uint transferIdx = 0;
 
         // Total ETH to migrate
@@ -81,7 +81,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
                     to = userSettings.to;
                 }
 
-                transfers[transferIdx++] = BridgeTransfer({
+                transfers[transferIdx++] = L2Transfer({
                     owner: to,
                     token: bridgeCall.token,
                     amount: bridgeCall.amount
@@ -99,9 +99,9 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         }
 
         // Mass migrate
-        bridge.batchDeposit{value: totalAmountETH}(transfers);
+        batchDepositor.batchDeposit{value: totalAmountETH}(transfers);
 
-        return new BridgeTransfer[](0);
+        return new L2Transfer[](0);
     }
 
     function getMinGasLimit(BridgeCallGroup[] calldata groups)

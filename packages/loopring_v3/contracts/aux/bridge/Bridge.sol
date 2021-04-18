@@ -19,7 +19,7 @@ import "./IBridge.sol";
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBridge, ReentrancyGuard, Claimable
+contract Bridge is IBatchDepositor, ReentrancyGuard, Claimable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -39,7 +39,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
     event ConnectorTrusted    (address connector, bool trusted);
 
-    struct InternalBridgeTransfer
+    struct InternalL2Transfer
     {
         address owner;
         uint16  tokenID;
@@ -139,13 +139,13 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     }
 
     function batchDeposit(
-        BridgeTransfer[] memory deposits
+        L2Transfer[] memory deposits
         )
         public
         payable
         override
     {
-        BridgeTransfer[][] memory _deposits = new BridgeTransfer[][](1);
+        L2Transfer[][] memory _deposits = new L2Transfer[][](1);
         _deposits[0] = deposits;
         _batchDeposit(msg.sender,_deposits);
     }
@@ -178,7 +178,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFER old.
     function withdrawFromPendingBatchDeposit(
         uint                            batchID,
-        InternalBridgeTransfer[] memory transfers,
+        InternalL2Transfer[] memory transfers,
         uint[]                   memory indices
         )
         external
@@ -190,7 +190,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         }
 
         for (uint i = 0; i < transfers.length; i++) {
-            InternalBridgeTransfer memory transfer = transfers[i];
+            InternalL2Transfer memory transfer = transfers[i];
             // Pack the transfer data to compare against batch deposit hash
             address  owner = transfer.owner;
             uint16 tokenID = transfer.tokenID;
@@ -263,7 +263,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
     function _batchDeposit(
         address                   from,
-        BridgeTransfer[][] memory deposits
+        L2Transfer[][] memory deposits
         )
         internal
     {
@@ -292,9 +292,9 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         address token = address(-1);
         uint tokenIdx = 0;
         uint16 tokenID;
-        BridgeTransfer memory deposit;
+        L2Transfer memory deposit;
         for (uint n = 0; n < deposits.length; n++) {
-            BridgeTransfer[] memory _deposits = deposits[n];
+            L2Transfer[] memory _deposits = deposits[n];
             for (uint i = 0; i < _deposits.length; i++) {
                 deposit = _deposits[i];
                 if(token != deposit.token) {
@@ -452,7 +452,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         uint[] memory totalAmounts = new uint[](ctx.tokens.length);
 
         // All resulting deposits from all connector calls
-        BridgeTransfer[][] memory deposits = new BridgeTransfer[][](connectorCalls.length);
+        L2Transfer[][] memory deposits = new L2Transfer[][](connectorCalls.length);
 
         // Verify and execute bridge calls
         for (uint c = 0; c < connectorCalls.length; c++) {
@@ -540,7 +540,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
         // Make sure the gas passed to the connector is at least the sum of all call gas min amounts.
         // So calls basically "buy" a part of the total gas needed to do the batched call,
-        // while IBridgeConnector.getMinGasLimit() makes sure the total gas limit makes sense for the
+        // while IBridge.getMinGasLimit() makes sure the total gas limit makes sense for the
         // amount of work submitted.
         require(connectorCall.gasLimit >= totalMinGas, "INVALID_TOTAL_MIN_GAS");
     }
@@ -639,13 +639,13 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         ConnectorCall[]  calldata allCalls
         )
         internal
-        returns (BridgeTransfer[] memory transfers)
+        returns (L2Transfer[] memory transfers)
     {
         require(call.connector != address(this), "INVALID_CONNECTOR");
         require(trustedConnectors[call.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
 
         // Check if the minimum amount of gas required is achieved
-        bytes memory txData = _getConnectorCallData(ctx, IBridgeConnector.getMinGasLimit.selector, allCalls, n);
+        bytes memory txData = _getConnectorCallData(ctx, IBridge.getMinGasLimit.selector, allCalls, n);
         (bool success, bytes memory returnData) = call.connector.fastCall(GAS_LIMIT_CHECK_GAS_LIMIT, 0, txData);
         if (success) {
             require(call.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
@@ -654,25 +654,25 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         }
 
         // Execute the logic using a delegate so no extra transfers are needed
-        txData = _getConnectorCallData(ctx,IBridgeConnector.processCalls.selector, allCalls, n);
+        txData = _getConnectorCallData(ctx,IBridge.processCalls.selector, allCalls, n);
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
             emit ConnectorCallResult(call.connector, true, "");
-            transfers = abi.decode(returnData, (BridgeTransfer[]));
+            transfers = abi.decode(returnData, (L2Transfer[]));
         } else {
             // If the call failed return funds to all users
             uint totalNumCalls = 0;
             for (uint g = 0; g < call.groups.length; g++) {
                 totalNumCalls += call.groups[g].calls.length;
             }
-            transfers = new BridgeTransfer[](totalNumCalls);
+            transfers = new L2Transfer[](totalNumCalls);
             uint txIdx = 0;
             for (uint g = 0; g < call.groups.length; g++) {
                 BridgeCallGroup memory group = call.groups[g];
                 for (uint i = 0; i < group.calls.length; i++) {
                     BridgeCall memory bridgeCall = group.calls[i];
-                    transfers[txIdx++] = BridgeTransfer({
+                    transfers[txIdx++] = L2Transfer({
                         owner: bridgeCall.owner,
                         token:  bridgeCall.token,
                         amount: bridgeCall.amount

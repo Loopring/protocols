@@ -16,20 +16,16 @@ const AgentRegistry = artifacts.require("AgentRegistry");
 
 const BridgeContract = artifacts.require("Bridge");
 const TestSwapper = artifacts.require("TestSwapper");
-const TestSwappperBridgeConnector = artifacts.require(
-  "TestSwappperBridgeConnector"
-);
-const TestMigrationBridgeConnector = artifacts.require(
-  "TestMigrationBridgeConnector"
-);
+const TestSwappperBridge = artifacts.require("TestSwappperBridge");
+const TestMigrationBridge = artifacts.require("TestMigrationBridge");
 
-export interface BridgeTransfer {
+export interface L2Transfer {
   owner: string;
   token: string;
   amount: string;
 }
 
-export interface InternalBridgeTransfer {
+export interface InternalL2Transfer {
   owner: string;
   tokenID: number;
   amount: string;
@@ -52,7 +48,7 @@ export interface BridgeCall {
   validUntil: number;
   connector: string;
   groupData: string;
-  expectedDeposit?: BridgeTransfer;
+  expectedDeposit?: L2Transfer;
 }
 
 export interface BridgeCallGroup {
@@ -190,7 +186,7 @@ export class Bridge {
     this.migrationConnector = migrationConnector;
   }
 
-  public async batchDeposit(deposits: BridgeTransfer[]) {
+  public async batchDeposit(deposits: L2Transfer[]) {
     const tokens: Map<string, BN> = new Map<string, BN>();
     for (const deposit of deposits) {
       if (!tokens.has(deposit.token)) {
@@ -254,10 +250,10 @@ export class Bridge {
   }
 
   public decodeTransfers(_data: string) {
-    const transfers: InternalBridgeTransfer[] = [];
+    const transfers: InternalL2Transfer[] = [];
     const data = new Bitstream(_data);
     for (let i = 0; i < data.length() / 34; i++) {
-      const transfer: InternalBridgeTransfer = {
+      const transfer: InternalL2Transfer = {
         owner: data.extractAddress(i * 34 + 0),
         tokenID: data.extractUint16(i * 34 + 32),
         amount: data.extractUint96(i * 34 + 20).toString(10)
@@ -483,8 +479,8 @@ export class Bridge {
       );
     }
 
-    const expectedDepositTransfers: BridgeTransfer[] = [];
-    const expectedMigrationTransfers: BridgeTransfer[] = [];
+    const expectedDepositTransfers: L2Transfer[] = [];
+    const expectedMigrationTransfers: L2Transfer[] = [];
     for (const connectorCall of bridgeOperation.connectorCalls) {
       for (const group of connectorCall.groups) {
         for (const call of group.calls) {
@@ -565,7 +561,7 @@ export class Bridge {
 
     /*const encodedDeposits = web3.eth.abi.encodeParameter(
      {
-       "struct BridgeTransfer[]": {
+       "struct L2Transfer[]": {
          owner: "address",
          token: "address",
          amount: "uint96"
@@ -577,7 +573,7 @@ export class Bridge {
     /*const encodedBridgeOperation = web3.eth.abi.encodeParameter(
       {
         "BridgeConfig": {
-          "BridgeTransfer[]": {
+          "L2Transfer[]": {
             owner: "address",
             token: "address",
             amount: "uint96"
@@ -609,7 +605,7 @@ export class Bridge {
         }
       },
       {
-        "BridgeTransfer[]": bridgeOperation.transfers
+        "L2Transfer[]": bridgeOperation.transfers
       }
     );
     return encodedBridgeOperation;*/
@@ -657,20 +653,16 @@ contract("Bridge", (accounts: string[]) => {
       );
     }
 
-    swappperBridgeConnectorA = await TestSwappperBridgeConnector.new(
-      swapper.address
-    );
-    swappperBridgeConnectorB = await TestSwappperBridgeConnector.new(
-      swapper.address
-    );
+    swappperBridgeConnectorA = await TestSwappperBridge.new(swapper.address);
+    swappperBridgeConnectorB = await TestSwappperBridge.new(swapper.address);
 
     failingSwapper = await TestSwapper.new(rate, true);
 
-    failingSwappperBridgeConnector = await TestSwappperBridgeConnector.new(
+    failingSwappperBridgeConnector = await TestSwappperBridge.new(
       failingSwapper.address
     );
 
-    migrationBridgeConnector = await TestMigrationBridgeConnector.new(
+    migrationBridgeConnector = await TestMigrationBridge.new(
       ctx.exchange.address,
       bridge.address
     );
@@ -751,7 +743,7 @@ contract("Bridge", (accounts: string[]) => {
   const withdrawFromPendingBatchDepositChecked = async (
     bridge: Bridge,
     depositID: number,
-    transfers: InternalBridgeTransfer[],
+    transfers: InternalL2Transfer[],
     indices: number[]
   ) => {
     // Simulate all transfers
@@ -820,7 +812,7 @@ contract("Bridge", (accounts: string[]) => {
     it("Batch deposit", async () => {
       const bridge = await setupBridge();
 
-      const depositsA: BridgeTransfer[] = [];
+      const depositsA: L2Transfer[] = [];
       depositsA.push({
         owner: ownerA,
         token: ctx.getTokenAddress("ETH"),
@@ -852,7 +844,7 @@ contract("Bridge", (accounts: string[]) => {
         amount: web3.utils.toWei("12545.15484511245", "ether")
       });
 
-      const depositsB: BridgeTransfer[] = [];
+      const depositsB: L2Transfer[] = [];
       depositsB.push({
         owner: ownerB,
         token: ctx.getTokenAddress("WETH"),
@@ -881,7 +873,7 @@ contract("Bridge", (accounts: string[]) => {
         []
       );
 
-      const depositsC: BridgeTransfer[] = [];
+      const depositsC: L2Transfer[] = [];
       depositsC.push({
         owner: ownerB,
         token: ctx.getTokenAddress("WETH"),
@@ -1216,7 +1208,7 @@ contract("Bridge", (accounts: string[]) => {
     it("Manual withdrawal", async () => {
       const bridge = await setupBridge();
 
-      const deposits: BridgeTransfer[] = [];
+      const deposits: L2Transfer[] = [];
       deposits.push({
         owner: ownerA,
         token: ctx.getTokenAddress("ETH"),

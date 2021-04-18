@@ -3,6 +3,9 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "./IBatchDepositor.sol";
+
+
 struct BridgeCall
 {
     address owner;
@@ -20,37 +23,10 @@ struct BridgeCallGroup
     BridgeCall[] calls;
 }
 
-struct BridgeTransfer
-{
-    address owner;
-    address token;
-    uint96  amount;
-}
-
-/// @title  IBridge interface
-/// @author Brecht Devos - <brecht@loopring.org>
-interface IBridge
-{
-    /// @dev Optimized L1 -> L2 path. Allows doing many deposits in an efficient way.
-    ///
-    ///      Every normal deposit to Loopring exchange does a real L1 token transfer
-    ///      and stores some data on-chain costing ~65k gas.
-    ///      This function batches all deposits togeter and only does a single exchange
-    ///      deposit for each distinct token. All deposits are then handled by L2 transfers
-    ///      instead of L1 transfers, which makes them much cheaper.
-    ///
-    ///      The sender will send the funds to Loopring exchange, so just like with normal
-    ///      deposits the sender first has to approve token transfers on the deposit contract.
-    ///
-    /// @param transfers The L2 transfers from Bridge to owners
-    function batchDeposit(BridgeTransfer[] calldata transfers)
-        external
-        payable;
-}
 
 /// @title  IBridgeConnector interface
 /// @author Brecht Devos - <brecht@loopring.org>
-interface IBridgeConnector
+interface IBridge
 {
     /// @dev Optimized L2 -> L1 (-> L2) path. Allows interacting with L1 dApps in an efficient way.
     ///
@@ -72,14 +48,14 @@ interface IBridgeConnector
     ///     uniswap the allowd slippage, for mass migration the destination address,...).
     ///     In some cases the interaction results in new tokens that the user wants to receive back on L2. To allow this
     ///     the function returns a list of transfers that need to be done from the bridge back to the users (which would
-    ///     be similar to just calling IBridge.batchDeposit(), but by returning the list here more optimizations are possible
+    ///     be similar to just calling IatchDepositor.batchDeposit(), but by returning the list here more optimizations are possible
     ///     between different connector calls).
     ///
     /// @param groups The groups of bridge calls to process
     function processCalls(BridgeCallGroup[] calldata groups)
         external
         payable
-        returns (BridgeTransfer[] memory);
+        returns (L2Transfer[] memory);
 
     /// @dev Returns a rough estimate of the gas cost to do `processCalls`. At least this much gas needs to be
     ///      provided by the caller of `processCalls` before the BridgeCalls of users are allowed to be used.
