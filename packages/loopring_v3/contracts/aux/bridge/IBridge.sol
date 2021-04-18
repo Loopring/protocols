@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-struct ConnectorCall
+struct BridgeCall
 {
     address owner;
     address token;
@@ -14,10 +14,10 @@ struct ConnectorCall
     uint    validUntil;
 }
 
-struct ConnectorCallGroup
+struct BridgeCallGroup
 {
-    bytes           groupData;
-    ConnectorCall[] calls;
+    bytes        groupData;
+    BridgeCall[] calls;
 }
 
 struct BridgeTransfer
@@ -64,7 +64,7 @@ interface IBridgeConnector
     ///       that want to do the same operation.
     ///     - All deposits back to L2 are also reduced to just a single deposit per distinct token for all bridge operations
     ///
-    ///     Most of this is abstracted away in the bridge. A user sings a ConnectorCall and `processCalls`
+    ///     Most of this is abstracted away in the bridge. A user sings a BridgeCall and `processCalls`
     ///     gets a list of bridge calls divided in lists based on `groupData`
     ///     (e.g. for a uniswap connector the group would be the 2 tokens being traded).
     ///     Each bridge call contains how much each user transfered to the bridge to be used for the specific bridge call.
@@ -76,20 +76,20 @@ interface IBridgeConnector
     ///     between different connector calls).
     ///
     /// @param groups The groups of bridge calls to process
-    function processCalls(ConnectorCallGroup[] calldata groups)
+    function processCalls(BridgeCallGroup[] calldata groups)
         external
         payable
         returns (BridgeTransfer[] memory);
 
     /// @dev Returns a rough estimate of the gas cost to do `processCalls`. At least this much gas needs to be
-    ///      provided by the caller of `processCalls` before the ConnectorCalls of users are allowed to be used.
+    ///      provided by the caller of `processCalls` before the BridgeCalls of users are allowed to be used.
     ///
     ///      Aach bridge call only pays for a small part of the necessary total gas consumed by a
     ///      a connector call. As such, the caller of `processCalls` would easily be able to just let all
     ///      `processCalls` calls fail by e.g. not batching enough Bridge calls together (while still collecting the fee).
     ///
     /// @param groups The groups of bridge calls to process
-    function getMinGasLimit(ConnectorCallGroup[] calldata groups)
+    function getMinGasLimit(BridgeCallGroup[] calldata groups)
         external
         pure
         returns (uint);
