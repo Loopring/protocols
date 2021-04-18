@@ -36,7 +36,7 @@ contract LPToken is ERC20
         internal
     {
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain(
-            "LPToken",
+            _name,
             "1.0",
             address(this)
         ));

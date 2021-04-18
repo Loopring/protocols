@@ -10,6 +10,7 @@ import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../lib/SignatureUtil.sol";
+import "../../lib/TransferUtil.sol";
 import "../../thirdparty/SafeCast.sol";
 import "./AmmUtil.sol";
 import "./AmmData.sol";
@@ -29,6 +30,7 @@ library AmmExitProcess
     using SafeCast          for uint;
     using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
+    using TransferUtil      for address;
 
     event ForcedExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
 
@@ -66,7 +68,7 @@ library AmmExitProcess
 
         if (isForcedExit) {
             if (!slippageOK) {
-                AmmUtil.transferOut(address(this), exit.burnAmount, exit.owner);
+                address(this).transferOut(exit.owner, exit.burnAmount);
                 emit ForcedExitProcessed(exit.owner, 0, new uint96[](0));
                 return;
             }

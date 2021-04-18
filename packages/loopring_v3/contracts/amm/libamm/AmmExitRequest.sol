@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
+import "../../lib/TransferUtil.sol";
 import "./AmmData.sol";
 import "./AmmUtil.sol";
 
@@ -11,6 +12,9 @@ import "./AmmUtil.sol";
 /// @title AmmExitRequest
 library AmmExitRequest
 {
+    using TransferUtil for address;
+    using TransferUtil for address payable;
+
     bytes32 constant public POOLEXIT_TYPEHASH = keccak256(
         "PoolExit(address owner,uint96 burnAmount,uint32 burnStorageID,uint96[] exitMinAmounts,uint96 fee,uint32 validUntil)"
     );
@@ -37,20 +41,21 @@ library AmmExitRequest
             validUntil: uint32(block.timestamp + S.sharedConfig.maxForcedExitAge())
         });
 
+        address eth = address(0);
         if (force) {
             require(S.forcedExit[msg.sender].validUntil == 0, "DUPLICATE");
             require(S.forcedExitCount < S.sharedConfig.maxForcedExitCount(), "TOO_MANY_FORCED_EXITS");
 
-            AmmUtil.transferIn(address(this), burnAmount);
+            address(this).transferIn(msg.sender, burnAmount);
 
             uint feeAmount = S.sharedConfig.forcedExitFee();
-            AmmUtil.transferIn(address(0), feeAmount);
-            AmmUtil.transferOut(address(0), feeAmount, S.exchange.owner());
+            eth.transferIn(msg.sender, feeAmount);
+            eth.transferOut(S.exchange.owner(), feeAmount);
 
             S.forcedExit[msg.sender] = exit;
             S.forcedExitCount++;
         } else {
-            AmmUtil.transferIn(address(0), 0);
+            eth.transferIn(msg.sender, 0);
 
             bytes32 txHash = hash(S.domainSeparator, exit);
             S.approvedTx[txHash] = true;

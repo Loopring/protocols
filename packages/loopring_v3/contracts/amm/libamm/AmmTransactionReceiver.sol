@@ -50,7 +50,8 @@ library AmmTransactionReceiver
         returns (AmmData.Context memory)
     {
         uint size = S.tokens.length;
-        uint txsDataPtr = 23;
+        // Get the position of the txsData in the calldata
+        uint txsDataPtr = 0;
         assembly {
             txsDataPtr := sub(add(txsData.offset, txsDataPtr), 32)
         }
@@ -74,6 +75,7 @@ library AmmTransactionReceiver
         )
         private
     {
+        // abi.decode(callbackData, (AmmData.PoolTx));
         // Manually decode the encoded PoolTx in `callbackData`
         // The logic is equivalent to:
         // `AmmData.PoolTx memory poolTx = abi.decode(callbackData, (AmmData.PoolTx))`

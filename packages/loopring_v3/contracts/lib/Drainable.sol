@@ -3,8 +3,7 @@
 pragma solidity ^0.7.0;
 
 import "./AddressUtil.sol";
-import "./ERC20.sol";
-import "./ERC20SafeTransfer.sol";
+import "./TransferUtil.sol";
 
 
 /// @title Drainable
@@ -12,8 +11,7 @@ import "./ERC20SafeTransfer.sol";
 /// @dev Standard functionality to allow draining funds from a contract.
 abstract contract Drainable
 {
-    using AddressUtil       for address;
-    using ERC20SafeTransfer for address;
+    using TransferUtil      for address;
 
     event Drained(
         address to,
@@ -30,13 +28,8 @@ abstract contract Drainable
     {
         require(canDrain(msg.sender, token), "UNAUTHORIZED");
 
-        if (token == address(0)) {
-            amount = address(this).balance;
-            to.sendETHAndVerify(amount, gasleft());   // ETH
-        } else {
-            amount = ERC20(token).balanceOf(address(this));
-            token.safeTransferAndVerify(to, amount);  // ERC20 token
-        }
+        amount = token.balanceOf(msg.sender);
+        token.transferOut(to, amount);
 
         emit Drained(to, token, amount);
     }

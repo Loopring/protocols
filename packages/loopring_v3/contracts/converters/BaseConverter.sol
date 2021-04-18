@@ -9,6 +9,7 @@ import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/LPToken.sol";
+import "../lib/TransferUtil.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -17,8 +18,8 @@ abstract contract BaseConverter is LPToken, Drainable
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
+    using TransferUtil      for address;
 
-    event Withdrawn         (bool failed, uint poolAmount, uint amount, uint repayAmount);
     event ConversionSuccess (uint amountIn, uint amountOut);
     event ConversionFailed  (string reason);
 
@@ -116,12 +117,7 @@ abstract contract BaseConverter is LPToken, Drainable
         address token = failed ? tokenIn : tokenOut;
 
         // Current balance in the contract
-        uint balance = 0;
-        if (token == address(0)) {
-            balance = address(this).balance;
-        } else {
-            balance = ERC20(token).balanceOf(address(this));
-        }
+        uint balance = token.selfBalance();
 
         // Share to withdraw
         uint amount = balance.mul(poolAmount) / totalSupply;
@@ -135,16 +131,9 @@ abstract contract BaseConverter is LPToken, Drainable
             amount -= repay;
         }
 
-        if (amount > 0) {
-            // Send remaining amount to `to`
-            if (token == address(0)) {
-                to.sendETHAndVerify(amount, gasleft());   // ETH
-            } else {
-                token.safeTransferAndVerify(to, amount);  // ERC20 token
-            }
-        }
-
-        emit Withdrawn(failed, poolAmount, amount, repay);
+        // Send remaining amount to `to`
+        uint amountToSend = amount.sub(repayAmount);
+        token.transferOut(to, amountToSend);
     }
 
     // Wrapper around `convert` which enforces only self calls.
