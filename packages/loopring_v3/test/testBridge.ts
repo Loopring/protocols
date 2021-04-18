@@ -278,7 +278,7 @@ export class Bridge {
 
     const bridgeOperation: BridgeOperation = {
       transferBatches: [],
-      bridgeCalls: [],
+      connectorCalls: [],
       tokens: []
     };
 
@@ -335,14 +335,14 @@ export class Bridge {
 
     // Sort the calls on connector and group
     for (const call of calls) {
-      let bridgeCalls: BridgeCalls;
-      for (let c = 0; c < bridgeOperation.bridgeCalls.length; c++) {
-        if (bridgeOperation.bridgeCalls[c].connector === call.connector) {
-          bridgeCalls = bridgeOperation.bridgeCalls[c];
+      let connectorCall: ConnectorCall;
+      for (let c = 0; c < bridgeOperation.connectorCalls.length; c++) {
+        if (bridgeOperation.connectorCalls[c].connector === call.connector) {
+          connectorCall = bridgeOperation.connectorCalls[c];
           break;
         }
       }
-      if (bridgeCalls === undefined) {
+      if (connectorCall === undefined) {
         const connectorTokens: TokenData[] = [];
         for (const tokenData of bridgeOperation.tokens) {
           connectorTokens.push({
@@ -351,20 +351,20 @@ export class Bridge {
             amount: "0"
           });
         }
-        bridgeCalls = {
+        connectorCall = {
           connector: call.connector,
           gasLimit: 2000000,
           totalMinGas: 0,
           groups: [],
           tokens: connectorTokens
         };
-        bridgeOperation.bridgeCalls.push(bridgeCalls);
+        bridgeOperation.connectorCalls.push(connectorCall);
       }
 
       let group: BridgeCallGroup;
-      for (let g = 0; g < bridgeCalls.groups.length; g++) {
-        if (bridgeCalls.groups[g].groupData === call.groupData) {
-          group = bridgeCalls.groups[g];
+      for (let g = 0; g < connectorCall.groups.length; g++) {
+        if (connectorCall.groups[g].groupData === call.groupData) {
+          group = connectorCall.groups[g];
           break;
         }
       }
@@ -373,14 +373,14 @@ export class Bridge {
           groupData: call.groupData,
           calls: []
         };
-        bridgeCalls.groups.push(group);
+        connectorCall.groups.push(group);
       }
       group.calls.push(call);
 
       let tokenData: TokenData;
-      for (let t = 0; t < bridgeCalls.tokens.length; t++) {
-        if (bridgeCalls.tokens[t].token === call.token) {
-          tokenData = bridgeCalls.tokens[t];
+      for (let t = 0; t < connectorCall.tokens.length; t++) {
+        if (connectorCall.tokens[t].token === call.token) {
+          tokenData = connectorCall.tokens[t];
           break;
         }
       }
@@ -389,15 +389,15 @@ export class Bridge {
         .add(new BN(call.amount))
         .toString(10);
 
-      bridgeCalls.totalMinGas += call.minGas;
+      connectorCall.totalMinGas += call.minGas;
     }
 
     //
     // Do L2 transactions
     //
 
-    for (const bridgeCalls of bridgeOperation.bridgeCalls) {
-      for (const group of bridgeCalls.groups) {
+    for (const connectorCall of bridgeOperation.connectorCalls) {
+      for (const group of connectorCall.groups) {
         for (const call of group.calls) {
           const transfer = await this.ctx.transfer(
             call.owner,
@@ -416,7 +416,7 @@ export class Bridge {
           const bridgeCallWrapper: BridgeCallWrapper = {
             transfer,
             call,
-            connector: bridgeCalls.connector,
+            connector: connectorCall.connector,
             groupData: group.groupData
           };
           const txHash = CollectTransferUtils.getHash(
@@ -462,18 +462,18 @@ export class Bridge {
     const bridgeCallResultEvents = await this.ctx.assertEventsEmitted(
       this.contract,
       "ConnectorCallResult",
-      bridgeOperation.bridgeCalls.length
+      bridgeOperation.connectorCalls.length
     );
 
     if (expectedSuccess === undefined) {
-      expectedSuccess = new Array(bridgeOperation.bridgeCalls.length).fill(
+      expectedSuccess = new Array(bridgeOperation.connectorCalls.length).fill(
         true
       );
     }
 
     for (let i = 0; i < bridgeCallResultEvents.length; i++) {
       assert(
-        bridgeOperation.bridgeCalls[i].connector ===
+        bridgeOperation.connectorCalls[i].connector ===
           bridgeCallResultEvents[i].connector,
         "unexpected success"
       );
@@ -485,11 +485,11 @@ export class Bridge {
 
     const expectedDepositTransfers: BridgeTransfer[] = [];
     const expectedMigrationTransfers: BridgeTransfer[] = [];
-    for (const calls of bridgeOperation.bridgeCalls) {
-      for (const group of calls.groups) {
+    for (const connectorCall of bridgeOperation.connectorCalls) {
+      for (const group of connectorCall.groups) {
         for (const call of group.calls) {
           if (call.expectedDeposit) {
-            if (calls.connector === this.migrationConnector) {
+            if (connectorCall.connector === this.migrationConnector) {
               expectedMigrationTransfers.push(call.expectedDeposit);
             } else {
               expectedDepositTransfers.push(call.expectedDeposit);
