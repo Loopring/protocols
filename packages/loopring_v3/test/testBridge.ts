@@ -459,7 +459,7 @@ export class Bridge {
     await this.ctx.submitTransactions();
     await this.ctx.submitPendingBlocks();
 
-    const bonnectorCallResultEvents = await this.ctx.assertEventsEmitted(
+    const connectorCallResultEvents = await this.ctx.assertEventsEmitted(
       this.contract,
       "ConnectorCallResult",
       bridgeOperation.connectorCalls.length
@@ -471,14 +471,14 @@ export class Bridge {
       );
     }
 
-    for (let i = 0; i < bonnectorCallResultEvents.length; i++) {
+    for (let i = 0; i < connectorCallResultEvents.length; i++) {
       assert(
         bridgeOperation.connectorCalls[i].connector ===
-          bonnectorCallResultEvents[i].connector,
+          connectorCallResultEvents[i].connector,
         "unexpected success"
       );
       assert(
-        expectedSuccess[i] === bonnectorCallResultEvents[i].success,
+        expectedSuccess[i] === connectorCallResultEvents[i].success,
         "unexpected success"
       );
     }
