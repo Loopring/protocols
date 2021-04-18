@@ -143,9 +143,9 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
         payable
         override
     {
-        L2Transfer[][] memory _deposits = new L2Transfer[][](1);
-        _deposits[0] = deposits;
-        _batchDeposit(msg.sender,_deposits);
+        L2Transfer[][] memory _transfers = new L2Transfer[][](1);
+        _transfers[0] = deposits;
+        _batchDeposit(msg.sender,_transfers);
     }
 
     function onReceiveTransactions(
@@ -292,9 +292,9 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
         uint16 tokenID;
         L2Transfer memory transfer;
         for (uint n = 0; n < transfers.length; n++) {
-            L2Transfer[] memory _deposits = transfers[n];
-            for (uint i = 0; i < _deposits.length; i++) {
-                transfer = _deposits[i];
+            L2Transfer[] memory _transfers = transfers[n];
+            for (uint i = 0; i < _transfers.length; i++) {
+                transfer = _transfers[i];
                 if(token != transfer.token) {
                     token = transfer.token;
                     tokenIdx = 0;
@@ -329,7 +329,7 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
             if (tokens[i].token == address(0)) {
                 require(tokens[i].amount == msg.value || from == address(this), "INVALID_ETH_DEPOSIT");
             }
-            _deposit(from, tokens[i].token, uint96(tokens[i].amount));
+            _transfer(from, tokens[i].token, uint96(tokens[i].amount));
         }
 
         // Store the transfers so they can be processed later
@@ -611,7 +611,7 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
         emit Transfers(batchID, transfers, from);
     }
 
-    function _deposit(
+    function _transfer(
         address from,
         address token,
         uint96  amount
@@ -652,7 +652,7 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
         }
 
         // Execute the logic using a delegate so no extra transfers are needed
-        txData = _getConnectorCallData(ctx,IBridge.processCalls.selector, allCalls, n);
+        txData = _getConnectorCallData(ctx, IBridge.processCalls.selector, allCalls, n);
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
