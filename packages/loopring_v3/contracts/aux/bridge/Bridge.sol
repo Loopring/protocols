@@ -14,12 +14,14 @@ import "../../lib/MathUint96.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/TransferUtil.sol";
 
+import "../access/ITransactionReceiver.sol";
+
 import "./IBridge.sol";
 
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
+contract Bridge is IBatchDeposit, ITransactionReceiver, ReentrancyGuard, Claimable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -153,6 +155,7 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
         bytes calldata /*callbackData*/
         )
         external
+        override
         onlyFromExchangeOwner
     {
         // Get the offset to txsData in the calldata
