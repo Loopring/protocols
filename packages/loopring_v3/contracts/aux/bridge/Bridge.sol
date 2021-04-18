@@ -34,9 +34,7 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
     // - uint96  amount : 12 bytes
     // - uint16  tokenID:  2 bytes
     event Transfers           (uint batchID, bytes transfers, address from);
-
     event ConnectorCallResult (address connector, bool success, bytes reason);
-
     event ConnectorTrusted    (address connector, bool trusted);
 
     struct InternalL2Transfer
@@ -243,7 +241,7 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
         }
     }
 
-    function setConnectorTrusted(
+    function trustConnector(
         address connector,
         bool    trusted
         )

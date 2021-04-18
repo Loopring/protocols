@@ -900,19 +900,19 @@ contract("Bridge", (accounts: string[]) => {
     it("Bridge calls", async () => {
       const bridge = await setupBridge();
 
-      await bridge.contract.setConnectorTrusted(
+      await bridge.contract.trustConnector(
         swappperBridgeConnectorA.address,
         true
       );
-      await bridge.contract.setConnectorTrusted(
+      await bridge.contract.trustConnector(
         swappperBridgeConnectorB.address,
         true
       );
-      await bridge.contract.setConnectorTrusted(
+      await bridge.contract.trustConnector(
         failingSwappperBridgeConnector.address,
         true
       );
-      await bridge.contract.setConnectorTrusted(
+      await bridge.contract.trustConnector(
         migrationBridgeConnector.address,
         true
       );
