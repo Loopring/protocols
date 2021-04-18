@@ -79,11 +79,7 @@ library AmmExitProcess
             _burnPoolTokenOnL2(ctx, exit.burnAmount, exit.owner, exit.burnStorageID, signature);
         }
 
-        _processExitTransfers(
-            ctx,
-            exit,
-            amounts
-        );
+        _processExitTransfers(ctx, exit, amounts);
 
         if (isForcedExit) {
             emit ForcedExitProcessed(exit.owner, exit.burnAmount, amounts);

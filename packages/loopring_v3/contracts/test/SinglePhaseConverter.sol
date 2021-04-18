@@ -35,7 +35,7 @@ contract SinglePhaseConverter is Claimable, Drainable
             ERC20(repayToken).approve(address(depositContract), repayAmount);
         }
         uint repayValue = (repayToken == address(0)) ? repayAmount : 0;
-        IExchangeV3(exchange).repayFlashMint{value: repayValue}(
+        IExchangeV3(exchange).repayDepositLoan{value: repayValue}(
             address(this),
             repayToken,
             repayAmount,

@@ -87,7 +87,7 @@ contract("LoopringConverter", (accounts: string[]) => {
   let ownerA: string;
   let ownerB: string;
 
-  const doConversion = async (
+  const convertToken = async (
     _tokenIn: string,
     _tokenOut: string,
     ticker: string,
@@ -164,7 +164,7 @@ contract("LoopringConverter", (accounts: string[]) => {
       };
       await ctx.setupRing(ringB);
 
-      await ctx.flashMint(broker, converter.ticker, amountIn);
+      await ctx.loanDeposit(broker, converter.ticker, amountIn);
 
       await ctx.sendRing(ringA);
       await ctx.sendRing(ringB);
@@ -181,7 +181,7 @@ contract("LoopringConverter", (accounts: string[]) => {
       await ctx.addCallback(
         converter.address,
         converter.contract.contract.methods
-          .deposit(amountIn, minAmountOut, web3.utils.hexToBytes("0x"))
+          .convert(amountIn, minAmountOut, web3.utils.hexToBytes("0x"))
           .encodeABI(),
         false
       );
@@ -270,7 +270,7 @@ contract("LoopringConverter", (accounts: string[]) => {
       };
       await ctx.setupRing(ringB, true, true, false, false);
 
-      await ctx.flashMint(broker, tokenOut, amountOut);
+      await ctx.loanDeposit(broker, tokenOut, amountOut);
 
       await ctx.sendRing(ringA);
       await ctx.sendRing(ringB);
@@ -349,7 +349,7 @@ contract("LoopringConverter", (accounts: string[]) => {
             " conversion ERC20 -> ERC20 - rate: " +
             rate.toString(10),
           async () => {
-            await doConversion("GTO", "WETH", "vETH", rate, success);
+            await convertToken("GTO", "WETH", "vETH", rate, success);
           }
         );
 
@@ -358,7 +358,7 @@ contract("LoopringConverter", (accounts: string[]) => {
             " conversion ETH   -> ERC20 - rate: " +
             rate.toString(10),
           async () => {
-            await doConversion("ETH", "GTO", "vETH", rate, success);
+            await convertToken("ETH", "GTO", "vETH", rate, success);
           }
         );
 
@@ -367,7 +367,7 @@ contract("LoopringConverter", (accounts: string[]) => {
             " conversion ERC20 -> ETH   - rate: " +
             rate.toString(10),
           async () => {
-            await doConversion("GTO", "ETH", "vETH", rate, success);
+            await convertToken("GTO", "ETH", "vETH", rate, success);
           }
         );
       });
@@ -375,7 +375,7 @@ contract("LoopringConverter", (accounts: string[]) => {
 
     it("Manual withdrawal", async () => {
       const rate = new BN(web3.utils.toWei("1.0", "ether"));
-      const converter = await doConversion(
+      const converter = await convertToken(
         "ETH",
         "WETH",
         "vETH",

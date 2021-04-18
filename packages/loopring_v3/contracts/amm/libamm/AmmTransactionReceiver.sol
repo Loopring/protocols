@@ -77,6 +77,8 @@ library AmmTransactionReceiver
     {
         // abi.decode(callbackData, (AmmData.PoolTx));
         // Manually decode the encoded PoolTx in `callbackData`
+        // The logic is equivalent to:
+        // `AmmData.PoolTx memory poolTx = abi.decode(callbackData, (AmmData.PoolTx))`
         AmmData.PoolTxType txType;
         bytes calldata data;
         bytes calldata signature;

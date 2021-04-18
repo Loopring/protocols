@@ -203,10 +203,8 @@ library ExchangeBlocks
 
             ExchangeData.AuxiliaryData[] memory block_auxiliaryData;
             {
-            bytes memory blockAuxData = _block.auxiliaryData;
-            assembly {
-                block_auxiliaryData := add(blockAuxData, 64)
-            }
+                bytes memory blockAuxData = _block.auxiliaryData;
+                assembly { block_auxiliaryData := add(blockAuxData, 64) }
             }
 
             require(

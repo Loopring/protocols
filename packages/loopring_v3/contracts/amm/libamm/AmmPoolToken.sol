@@ -65,7 +65,7 @@ library AmmPoolToken
         returns (bool)
     {
         if (msg.sender != address(this) &&
-            S.allowance[from][msg.sender] != uint(-1)) {
+            S.allowance[from][msg.sender] != type(uint256).max) {
             S.allowance[from][msg.sender] = S.allowance[from][msg.sender].sub(value);
         }
          _transfer(S, from, to, value);

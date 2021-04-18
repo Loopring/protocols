@@ -60,7 +60,7 @@ abstract contract PoolToken is ERC2612 {
         returns (uint)
     {
         return spender == address(this) ?
-            uint(-1) :
+            type(uint256).max :
             state.allowance[owner][spender];
     }
 
