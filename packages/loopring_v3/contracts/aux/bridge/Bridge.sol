@@ -886,7 +886,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 
-    function encode(BridgeOperation calldata operations)
+    function encode(BridgeOperation calldata operation)
         external
         pure
     {}
