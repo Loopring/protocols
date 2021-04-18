@@ -10,11 +10,12 @@ import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/LPERC20.sol";
+import "../lib/ReentrancyGuard.sol";
 import "../lib/TransferUtil.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract BaseConverter is LPERC20, Claimable, Drainable
+abstract contract BaseConverter is LPERC20, Claimable, Drainable, ReentrancyGuard
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
@@ -134,6 +135,7 @@ abstract contract BaseConverter is LPERC20, Claimable, Drainable
         )
         external
         virtual
+        nonReentrant // guard against the implementation
         returns (uint amountOut)
     {
         require(msg.sender == address(this), "UNAUTHORIZED");

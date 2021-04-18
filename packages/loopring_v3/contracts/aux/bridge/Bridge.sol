@@ -1,4 +1,4 @@
-JJJJJJj// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
@@ -146,6 +146,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
         external
         payable
         override
+        nonReentrant
     {
         BridgeTransfer[][] memory _deposits = new BridgeTransfer[][](1);
         _deposits[0] = deposits;
@@ -452,7 +453,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
         uint[] memory totalAmounts = new uint[](ctx.tokens.length);
 
         // All resulting deposits from all connector calls
-        BridgeTransfer[][] memory deposits = new BridgeTransfer[][](connectorCalls.length);
+        BridgeTransfer[][] memory transfers = new BridgeTransfer[][](connectorCalls.length);
 
         // Verify and execute bridge calls
         for (uint c = 0; c < connectorCalls.length; c++) {
@@ -462,14 +463,14 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
             _processConnectorCall(ctx, connectorCall, totalAmounts);
 
             // Call the connector
-            deposits[c] = _connectorCall(ctx, connectorCall, c, connectorCalls);
+            transfers[c] = _connectorCall(ctx, connectorCall, c, connectorCalls);
         }
 
         // Verify withdrawals
         _processWithdrawals(ctx, totalAmounts);
 
         // Do all resulting transfers back from the bridge to the users
-        _batchDeposit(address(this), deposits);
+        _batchDeposit(address(this), transfers);
     }
 
     function _processConnectorCall(
