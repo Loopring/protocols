@@ -123,8 +123,8 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
     }
 
     constructor(
-        IExchangeV3      _exchange,
-        uint32           _accountID
+        IExchangeV3 _exchange,
+        uint32     _accountID
         )
     {
         exchange = _exchange;
