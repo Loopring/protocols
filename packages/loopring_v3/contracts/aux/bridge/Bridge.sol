@@ -21,7 +21,7 @@ import "./IBridge.sol";
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard, Claimable
+contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -251,7 +251,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard, Claimable
         bool    trusted
         )
         external
-        onlyOwner
+        onlyFromExchangeOwner
     {
         trustedConnectors[connector] = trusted;
         emit ConnectorTrusted(connector, trusted);
