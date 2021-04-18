@@ -46,6 +46,8 @@ abstract contract BaseConverter is LPToken, Drainable
         depositContract = _exchange.getDepositContract();
     }
 
+    /// @dev Initialize the converter. It is suggested that we
+    /// use the decimals of `_tokenIn` as the value for `_decimals`
     function initialize(
         string memory _name,
         string memory _symbol,
@@ -56,8 +58,10 @@ abstract contract BaseConverter is LPToken, Drainable
         external
     {
         require(!initialized, "ALREADY_INITIALIZED");
-        initialized = true;
+        // The following check is skipped to save gas.
+        // require(ERC20(_tokenIn).decimals() == _decimals, "SAME_DECIMALS_REQUIRED");
 
+        initialized = true;
         initializeToken(_name, _symbol, _decimals);
 
         tokenIn = _tokenIn;
