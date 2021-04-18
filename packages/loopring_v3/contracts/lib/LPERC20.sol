@@ -36,7 +36,7 @@ contract LPERC20 is ERC20
         internal
     {
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain(
-            "LPERC20",
+            _name,
             "1.0",
             address(this)
         ));

@@ -7,10 +7,10 @@ import "../agents/FastWithdrawalAgent.sol";
 import "../../lib/OwnerManagable.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/ERC20.sol";
-import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/SignatureUtil.sol";
+import "../../lib/TransferUtil.sol";
 
 
 /// @title Basic contract storing funds for a liquidity provider.
@@ -19,9 +19,9 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
-    using ERC20SafeTransfer for address;
     using MathUint          for uint;
     using SignatureUtil     for bytes32;
+    using TransferUtil      for address;
 
     struct FastWithdrawalApproval
     {
@@ -91,11 +91,7 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
         nonReentrant
         onlyOwner
     {
-        if (token == address(0)) {
-            to.sendETHAndVerify(amount, gasleft()); // ETH
-        } else {
-            token.safeTransferAndVerify(to, amount);  // ERC20 token
-        }
+        token.transferOut(to, amount);
     }
 
     // Allows the LP to enable the necessary ERC20 approvals

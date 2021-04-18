@@ -35,8 +35,23 @@ library AmmUtil
         // Check the signature type
         require(signature.toUint8Unsafe(0) == L2_SIGNATURE_TYPE, "INVALID_SIGNATURE_TYPE");
 
+        /*
         // Read the signature verification transaction
-        uint txsDataPtr = ctx.txsDataPtr - 2;
+        SignatureVerificationTransaction.SignatureVerification memory verification;
+        SignatureVerificationTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, verification);
+
+        // Verify that the hash was signed on L2
+        require(
+            verification.owner == owner &&
+            verification.data == uint(txHash) >> 3,
+            "INVALID_OFFCHAIN_L2_APPROVAL"
+        );
+        */
+
+        // Read the signature verification transaction
+        // Start by reading the first 21 bytes into packedData
+        uint txsDataPtr = ctx.txsDataPtr + 21;
+        // packedData: txType (1) | owner (20)
         uint packedData;
         uint data;
         assembly {
@@ -60,7 +75,10 @@ library AmmUtil
         pure
         returns (uint packedData, address to, address from)
     {
-        uint txsDataPtr = ctx.txsDataPtr;
+        // TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
+
+        // Start by reading the first 23 bytes into packedData
+        uint txsDataPtr = ctx.txsDataPtr + 23;
         // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
         assembly {
             packedData := calldataload(txsDataPtr)
@@ -100,33 +118,6 @@ library AmmUtil
             // Max rounding error for a float16 is 5/1000
             uint ratio = (uint(amount) * 1000) / uint(targetAmount);
             return (1000 - 5) <= ratio && ratio <= (1000 + 5);
-        }
-    }
-
-    function transferIn(
-        address token,
-        uint    amount
-        )
-        internal
-    {
-        if (token == address(0)) {
-            require(msg.value == amount, "INVALID_ETH_VALUE");
-        } else if (amount > 0) {
-            token.safeTransferFromAndVerify(msg.sender, address(this), amount);
-        }
-    }
-
-    function transferOut(
-        address token,
-        uint    amount,
-        address to
-        )
-        internal
-    {
-        if (token == address(0)) {
-            to.sendETHAndVerify(amount, gasleft());
-        } else {
-            token.safeTransferAndVerify(to, amount);
         }
     }
 }
