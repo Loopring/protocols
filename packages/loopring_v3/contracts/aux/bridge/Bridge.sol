@@ -635,7 +635,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     function _connectorCall(
         Context          memory   ctx,
         ConnectorCall    calldata call,
-        uint                      n,allCallsallCalls
+        uint                      n,
         ConnectorCall[]  calldata allCalls
         )
         internal
