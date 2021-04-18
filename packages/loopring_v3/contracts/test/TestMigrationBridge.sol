@@ -38,7 +38,7 @@ contract TestMigrationBridge is IBridge
     IBatchDeposit    public immutable batchDepositor;
 
     constructor(
-        IExchangeV3     _exchange,
+        IExchangeV3   _exchange,
         IBatchDeposit _batchDepositor
         )
     {

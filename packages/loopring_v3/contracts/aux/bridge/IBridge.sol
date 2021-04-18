@@ -24,7 +24,7 @@ struct BridgeCallGroup
 }
 
 
-/// @title  IBridgeConnector interface
+/// @title  IBridge interface
 /// @author Brecht Devos - <brecht@loopring.org>
 interface IBridge
 {
