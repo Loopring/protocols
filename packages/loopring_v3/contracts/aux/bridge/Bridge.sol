@@ -451,7 +451,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         // Total amounts transferred to the bridge
         uint[] memory totalAmounts = new uint[](ctx.tokens.length);
 
-        // All resulting deposits from all bridge connectorCalls
+        // All resulting deposits from all connector calls
         BridgeTransfer[][] memory deposits = new BridgeTransfer[][](connectorCalls.length);
 
         // Verify and execute bridge connectorCalls
@@ -548,7 +548,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         }
 
         // Make sure the gas passed to the connector is at least the sum of all call gas min amounts.
-        // So connectorCalls basically "buy" a part of the total gas needed to do the batched call,
+        // So calls basically "buy" a part of the total gas needed to do the batched call,
         // while IBridgeConnector.getMinGasLimit() makes sure the total gas limit makes sense for the
         // amount of work submitted.
         require(connectorCall.gasLimit >= totalMinGas, "INVALID_TOTAL_MIN_GAS");
@@ -643,42 +643,42 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
 
     function _connectorCall(
         Context          memory   ctx,
-        ConnectorCall    calldata connectorCall,
+        ConnectorCall    calldata call,
         uint                      n,
-        ConnectorCall[]  calldata connectorCalls
+        ConnectorCall[]  calldata allCalls
         )
         internal
         returns (BridgeTransfer[] memory transfers)
     {
-        require(connectorCall.connector != address(this), "INVALID_CONNECTOR");
-        require(trustedConnectors[connectorCall.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
+        require(call.connector != address(this), "INVALID_CONNECTOR");
+        require(trustedConnectors[call.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
 
         // Check if the minimum amount of gas required is achieved
-        bytes memory txData = _getBridgeCallData(ctx, IBridgeConnector.getMinGasLimit.selector, connectorCalls, n);
-        (bool success, bytes memory returnData) = connectorCall.connector.fastCall(GAS_LIMIT_CHECK_GAS_LIMIT, 0, txData);
+        bytes memory txData = _getConnectorCallData(ctx, IBridgeConnector.getMinGasLimit.selector, allCalls, n);
+        (bool success, bytes memory returnData) = call.connector.fastCall(GAS_LIMIT_CHECK_GAS_LIMIT, 0, txData);
         if (success) {
-            require(connectorCall.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
+            require(call.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
         } else {
             // If the call failed for some reason just continue.
         }
 
         // Execute the logic using a delegate so no extra transfers are needed
-        txData = _getBridgeCallData(ctx,IBridgeConnector.processCalls.selector, connectorCalls, n);
-        (success, returnData) = connectorCall.connector.fastDelegatecall(connectorCall.gasLimit, txData);
+        txData = _getConnectorCallData(ctx,IBridgeConnector.processCalls.selector, allCalls, n);
+        (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
-            emit ConnectorCallResult(connectorCall.connector, true, "");
+            emit ConnectorCallResult(call.connector, true, "");
             transfers = abi.decode(returnData, (BridgeTransfer[]));
         } else {
             // If the call failed return funds to all users
             uint totalNumCalls = 0;
-            for (uint g = 0; g < connectorCall.groups.length; g++) {
-                totalNumCalls += connectorCall.groups[g].calls.length;
+            for (uint g = 0; g < call.groups.length; g++) {
+                totalNumCalls += call.groups[g].calls.length;
             }
             transfers = new BridgeTransfer[](totalNumCalls);
             uint txIdx = 0;
-            for (uint g = 0; g < connectorCall.groups.length; g++) {
-                BridgeCallGroup memory group = connectorCall.groups[g];
+            for (uint g = 0; g < call.groups.length; g++) {
+                BridgeCallGroup memory group = call.groups[g];
                 for (uint i = 0; i < group.calls.length; i++) {
                     BridgeCall memory bridgeCall = group.calls[i];
                     transfers[txIdx++] = BridgeTransfer({
@@ -689,7 +689,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
                 }
             }
             assert(txIdx == totalNumCalls);
-            emit ConnectorCallResult(connectorCall.connector, false, returnData);
+            emit ConnectorCallResult(call.connector, false, returnData);
         }
     }
 
@@ -788,7 +788,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         }
     }
 
-    function _getBridgeCallData(
+    function _getConnectorCallData(
         Context memory            ctx,
         bytes4                    selector,
         ConnectorCall[]  calldata connectorCalls,
