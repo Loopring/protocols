@@ -260,43 +260,43 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
     // --- Internal functions ---
 
     function _batchDeposit(
-        address                   from,
-        L2Transfer[][] memory deposits
+        address               from,
+        L2Transfer[][] memory transfers
         )
         internal
     {
-        uint totalNumDeposits = 0;
-        for (uint i = 0; i < deposits.length; i++) {
-            totalNumDeposits += deposits[i].length;
+        uint totalNumTransfers = 0;
+        for (uint i = 0; i < transfers.length; i++) {
+            totalNumTransfers += transfers[i].length;
         }
-        if (totalNumDeposits == 0) {
+        if (totalNumTransfers == 0) {
             return;
         }
 
         // Needs to be possible to do all transfers in a single block
-        require(totalNumDeposits <= MAX_NUM_TRANSACTIONS_IN_BLOCK, "MAX_DEPOSITS_EXCEEDED");
+        require(totalNumTransfers <= MAX_NUM_TRANSACTIONS_IN_BLOCK, "MAX_DEPOSITS_EXCEEDED");
 
         // Transfers to be done
-        bytes memory transfers = new bytes(totalNumDeposits * 34);
+        bytes memory allTransfers = new bytes(totalNumTransfers * 34);
         assembly {
-            transfers := add(transfers, 32)
+            allTransfers := add(allTransfers, 32)
         }
 
         // Worst case scenario all tokens are different
-        TokenData[] memory tokens = new TokenData[](totalNumDeposits);
+        TokenData[] memory tokens = new TokenData[](totalNumTransfers);
         uint numDistinctTokens = 0;
 
-        // Run over all deposits summing up total amounts per token
+        // Run over all transfers summing up total amounts per token
         address token = address(-1);
         uint tokenIdx = 0;
         uint16 tokenID;
-        L2Transfer memory deposit;
-        for (uint n = 0; n < deposits.length; n++) {
-            L2Transfer[] memory _deposits = deposits[n];
+        L2Transfer memory transfer;
+        for (uint n = 0; n < transfers.length; n++) {
+            L2Transfer[] memory _deposits = transfers[n];
             for (uint i = 0; i < _deposits.length; i++) {
-                deposit = _deposits[i];
-                if(token != deposit.token) {
-                    token = deposit.token;
+                transfer = _deposits[i];
+                if(token != transfer.token) {
+                    token = transfer.token;
                     tokenIdx = 0;
                     while(tokenIdx < numDistinctTokens && tokens[tokenIdx].token != token) {
                         tokenIdx++;
@@ -308,20 +308,20 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
                     }
                     tokenID = tokens[tokenIdx].tokenID;
                 }
-                tokens[tokenIdx].amount = tokens[tokenIdx].amount.add(deposit.amount);
+                tokens[tokenIdx].amount = tokens[tokenIdx].amount.add(transfer.amount);
 
                 // Pack the transfer data together
                 assembly {
-                    mstore(add(transfers, 2), tokenID)
-                    mstore(    transfers    , or(shl(96, mload(deposit)), mload(add(deposit, 64))))
-                    transfers := add(transfers, 34)
+                    mstore(add(allTransfers, 2), tokenID)
+                    mstore(    allTransfers    , or(shl(96, mload(transfer)), mload(add(transfer, 64))))
+                    allTransfers := add(allTransfers, 34)
                 }
             }
         }
 
         // Get the original transfers ptr back
         assembly {
-            transfers := sub(transfers, add(32, mul(34, totalNumDeposits)))
+            allTransfers := sub(allTransfers, add(32, mul(34, totalNumTransfers)))
         }
 
         // Do a normal deposit per token
@@ -333,7 +333,7 @@ contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
         }
 
         // Store the transfers so they can be processed later
-        _storeTransfers(transfers, from);
+        _storeTransfers(allTransfers, from);
     }
 
     function _processTransactions(Context memory ctx)
