@@ -3,7 +3,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./IBatchDepositor.sol";
+import "./IBatchDeposit.sol";
 
 
 struct BridgeCall
@@ -48,7 +48,7 @@ interface IBridge
     ///     uniswap the allowd slippage, for mass migration the destination address,...).
     ///     In some cases the interaction results in new tokens that the user wants to receive back on L2. To allow this
     ///     the function returns a list of transfers that need to be done from the bridge back to the users (which would
-    ///     be similar to just calling IatchDepositor.batchDeposit(), but by returning the list here more optimizations are possible
+    ///     be similar to just calling IBatchDeposit.batchDeposit(), but by returning the list here more optimizations are possible
     ///     between different connector calls).
     ///
     /// @param groups The groups of bridge calls to process

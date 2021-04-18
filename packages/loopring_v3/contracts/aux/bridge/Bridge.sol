@@ -19,7 +19,7 @@ import "./IBridge.sol";
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBatchDepositor, ReentrancyGuard, Claimable
+contract Bridge is IBatchDeposit, ReentrancyGuard, Claimable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -177,9 +177,9 @@ contract Bridge is IBatchDepositor, ReentrancyGuard, Claimable
 
     // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFER old.
     function withdrawFromPendingBatchDeposit(
-        uint                            batchID,
+        uint                        batchID,
         InternalL2Transfer[] memory transfers,
-        uint[]                   memory indices
+        uint[]               memory indices
         )
         external
         nonReentrant

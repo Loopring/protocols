@@ -10,7 +10,7 @@ import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../thirdparty/SafeCast.sol";
-import "../aux/bridge/IBatchDepositor.sol";
+import "../aux/bridge/IBatchDeposit.sol";
 import "../aux/bridge/IBridge.sol";
 
 
@@ -35,11 +35,11 @@ contract TestMigrationBridge is IBridge
 
     IExchangeV3        public immutable exchange;
     IDepositContract   public immutable depositContract;
-    IBatchDepositor    public immutable batchDepositor;
+    IBatchDeposit    public immutable batchDepositor;
 
     constructor(
         IExchangeV3     _exchange,
-        IBatchDepositor _batchDepositor
+        IBatchDeposit _batchDepositor
         )
     {
         exchange = _exchange;

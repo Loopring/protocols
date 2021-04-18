@@ -13,7 +13,7 @@ struct L2Transfer
 
 /// @title  IBatchDeposit interface
 /// @author Brecht Devos - <brecht@loopring.org>
-interface IBatchDepositor
+interface IBatchDeposit
 {
     /// @dev Optimized L1 -> L2 path. Allows doing many deposits in an efficient way.
     ///
