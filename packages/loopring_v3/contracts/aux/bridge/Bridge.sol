@@ -14,12 +14,14 @@ import "../../lib/MathUint96.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/TransferUtil.sol";
 
+import "../access/ITransactionReceiver.sol";
+
 import "./IBridge.sol";
 
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBridge, ReentrancyGuard, Claimable
+contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -141,9 +143,10 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
     function batchDeposit(
         BridgeTransfer[] memory deposits
         )
-        public
+        external
         payable
         override
+        nonReentrant
     {
         BridgeTransfer[][] memory _deposits = new BridgeTransfer[][](1);
         _deposits[0] = deposits;
@@ -155,6 +158,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         bytes calldata /*callbackData*/
         )
         external
+        override
         onlyFromExchangeOwner
     {
         // Get the offset to txsData in the calldata
@@ -243,21 +247,18 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         }
     }
 
-    function setConnectorTrusted(
+    function trustConnector(
         address connector,
         bool    trusted
         )
         external
-        onlyOwner
+        onlyFromExchangeOwner
     {
         trustedConnectors[connector] = trusted;
         emit ConnectorTrusted(connector, trusted);
     }
 
-    receive()
-        external
-        payable
-    {}
+    receive() external payable {}
 
     // --- Internal functions ---
 
@@ -452,7 +453,7 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
         uint[] memory totalAmounts = new uint[](ctx.tokens.length);
 
         // All resulting deposits from all connector calls
-        BridgeTransfer[][] memory deposits = new BridgeTransfer[][](connectorCalls.length);
+        BridgeTransfer[][] memory transfers = new BridgeTransfer[][](connectorCalls.length);
 
         // Verify and execute bridge calls
         for (uint c = 0; c < connectorCalls.length; c++) {
@@ -462,14 +463,14 @@ contract Bridge is IBridge, ReentrancyGuard, Claimable
             _processConnectorCall(ctx, connectorCall, totalAmounts);
 
             // Call the connector
-            deposits[c] = _connectorCall(ctx, connectorCall, c, connectorCalls);
+            transfers[c] = _connectorCall(ctx, connectorCall, c, connectorCalls);
         }
 
         // Verify withdrawals
         _processWithdrawals(ctx, totalAmounts);
 
         // Do all resulting transfers back from the bridge to the users
-        _batchDeposit(address(this), deposits);
+        _batchDeposit(address(this), transfers);
     }
 
     function _processConnectorCall(
