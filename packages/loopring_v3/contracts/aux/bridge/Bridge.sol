@@ -14,14 +14,12 @@ import "../../lib/MathUint96.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/TransferUtil.sol";
 
-import "../access/ITransactionReceiver.sol";
-
 import "./IBridge.sol";
 
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
+contract Bridge is IBridge, ReentrancyGuard
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;

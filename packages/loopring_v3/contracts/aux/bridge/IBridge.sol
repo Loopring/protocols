@@ -3,6 +3,9 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../access/ITransactionReceiver.sol";
+
+
 struct BridgeCall
 {
     address owner;
@@ -29,7 +32,7 @@ struct BridgeDeposit
 
 /// @title  IBridge interface
 /// @author Brecht Devos - <brecht@loopring.org>
-interface IBridge
+abstract contract IBridge is ITransactionReceiver
 {
     /// @dev Optimized L1 -> L2 path. Allows doing many deposits in an efficient way.
     ///
@@ -45,6 +48,7 @@ interface IBridge
     /// @param transfers The L2 transfers from Bridge to owners
     function batchDeposit(BridgeDeposit[] calldata transfers)
         external
+        virtual
         payable;
 }
 
