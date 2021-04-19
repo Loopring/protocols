@@ -23,13 +23,13 @@ const TestMigrationBridgeConnector = artifacts.require(
   "TestMigrationBridgeConnector"
 );
 
-export interface BridgeTransfer {
+export interface BridgeDeposit {
   owner: string;
   token: string;
   amount: string;
 }
 
-export interface InternalBridgeTransfer {
+export interface InternalBridgeDeposit {
   owner: string;
   tokenID: number;
   amount: string;
@@ -52,7 +52,7 @@ export interface BridgeCall {
   validUntil: number;
   connector: string;
   groupData: string;
-  expectedDeposit?: BridgeTransfer;
+  expectedDeposit?: BridgeDeposit;
 }
 
 export interface BridgeCallGroup {
@@ -190,7 +190,7 @@ export class Bridge {
     this.migrationConnector = migrationConnector;
   }
 
-  public async batchDeposit(deposits: BridgeTransfer[]) {
+  public async batchDeposit(deposits: BridgeDeposit[]) {
     const tokens: Map<string, BN> = new Map<string, BN>();
     for (const deposit of deposits) {
       if (!tokens.has(deposit.token)) {
@@ -254,10 +254,10 @@ export class Bridge {
   }
 
   public decodeTransfers(_data: string) {
-    const transfers: InternalBridgeTransfer[] = [];
+    const transfers: InternalBridgeDeposit[] = [];
     const data = new Bitstream(_data);
     for (let i = 0; i < data.length() / 34; i++) {
-      const transfer: InternalBridgeTransfer = {
+      const transfer: InternalBridgeDeposit = {
         owner: data.extractAddress(i * 34 + 0),
         tokenID: data.extractUint16(i * 34 + 32),
         amount: data.extractUint96(i * 34 + 20).toString(10)
@@ -483,8 +483,8 @@ export class Bridge {
       );
     }
 
-    const expectedDepositTransfers: BridgeTransfer[] = [];
-    const expectedMigrationTransfers: BridgeTransfer[] = [];
+    const expectedDepositTransfers: BridgeDeposit[] = [];
+    const expectedMigrationTransfers: BridgeDeposit[] = [];
     for (const connectorCall of bridgeOperation.connectorCalls) {
       for (const group of connectorCall.groups) {
         for (const call of group.calls) {
@@ -565,7 +565,7 @@ export class Bridge {
 
     /*const encodedDeposits = web3.eth.abi.encodeParameter(
      {
-       "struct BridgeTransfer[]": {
+       "struct BridgeDeposit[]": {
          owner: "address",
          token: "address",
          amount: "uint96"
@@ -577,7 +577,7 @@ export class Bridge {
     /*const encodedBridgeOperation = web3.eth.abi.encodeParameter(
       {
         "BridgeConfig": {
-          "BridgeTransfer[]": {
+          "BridgeDeposit[]": {
             owner: "address",
             token: "address",
             amount: "uint96"
@@ -609,7 +609,7 @@ export class Bridge {
         }
       },
       {
-        "BridgeTransfer[]": bridgeOperation.transfers
+        "BridgeDeposit[]": bridgeOperation.transfers
       }
     );
     return encodedBridgeOperation;*/
@@ -751,7 +751,7 @@ contract("Bridge", (accounts: string[]) => {
   const withdrawFromPendingBatchDepositChecked = async (
     bridge: Bridge,
     depositID: number,
-    transfers: InternalBridgeTransfer[],
+    transfers: InternalBridgeDeposit[],
     indices: number[]
   ) => {
     // Simulate all transfers
@@ -820,7 +820,7 @@ contract("Bridge", (accounts: string[]) => {
     it("Batch deposit", async () => {
       const bridge = await setupBridge();
 
-      const depositsA: BridgeTransfer[] = [];
+      const depositsA: BridgeDeposit[] = [];
       depositsA.push({
         owner: ownerA,
         token: ctx.getTokenAddress("ETH"),
@@ -852,7 +852,7 @@ contract("Bridge", (accounts: string[]) => {
         amount: web3.utils.toWei("12545.15484511245", "ether")
       });
 
-      const depositsB: BridgeTransfer[] = [];
+      const depositsB: BridgeDeposit[] = [];
       depositsB.push({
         owner: ownerB,
         token: ctx.getTokenAddress("WETH"),
@@ -881,7 +881,7 @@ contract("Bridge", (accounts: string[]) => {
         []
       );
 
-      const depositsC: BridgeTransfer[] = [];
+      const depositsC: BridgeDeposit[] = [];
       depositsC.push({
         owner: ownerB,
         token: ctx.getTokenAddress("WETH"),
@@ -1216,7 +1216,7 @@ contract("Bridge", (accounts: string[]) => {
     it("Manual withdrawal", async () => {
       const bridge = await setupBridge();
 
-      const deposits: BridgeTransfer[] = [];
+      const deposits: BridgeDeposit[] = [];
       deposits.push({
         owner: ownerA,
         token: ctx.getTokenAddress("ETH"),

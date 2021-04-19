@@ -41,7 +41,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
 
     event ConnectorTrusted    (address connector, bool trusted);
 
-    struct InternalBridgeTransfer
+    struct InternalBridgeDeposit
     {
         address owner;
         uint16  tokenID;
@@ -138,14 +138,14 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
     }
 
     function batchDeposit(
-        BridgeTransfer[] memory transfers
+        BridgeDeposit[] memory transfers
         )
         external
         payable
         override
         nonReentrant
     {
-        BridgeTransfer[][] memory listOfTransfers = new BridgeTransfer[][](1);
+        BridgeDeposit[][] memory listOfTransfers = new BridgeDeposit[][](1);
         listOfTransfers[0] = transfers;
         _batchDeposit(msg.sender, listOfTransfers);
     }
@@ -179,7 +179,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
     // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFER old.
     function withdrawFromPendingBatchDeposit(
         uint                            batchID,
-        InternalBridgeTransfer[] memory transfers,
+        InternalBridgeDeposit[] memory transfers,
         uint[]                   memory indices
         )
         external
@@ -191,7 +191,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
         }
 
         for (uint i = 0; i < transfers.length; i++) {
-            InternalBridgeTransfer memory transfer = transfers[i];
+            InternalBridgeDeposit memory transfer = transfers[i];
             // Pack the transfer data to compare against batch deposit hash
             address  owner = transfer.owner;
             uint16 tokenID = transfer.tokenID;
@@ -261,7 +261,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
 
     function _batchDeposit(
         address                   from,
-        BridgeTransfer[][] memory deposits
+        BridgeDeposit[][] memory deposits
         )
         internal
     {
@@ -290,9 +290,9 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
         address token = address(-1);
         uint tokenIdx = 0;
         uint16 tokenID;
-        BridgeTransfer memory deposit;
+        BridgeDeposit memory deposit;
         for (uint n = 0; n < deposits.length; n++) {
-            BridgeTransfer[] memory _deposits = deposits[n];
+            BridgeDeposit[] memory _deposits = deposits[n];
             for (uint i = 0; i < _deposits.length; i++) {
                 deposit = _deposits[i];
                 if(token != deposit.token) {
@@ -450,7 +450,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
         uint[] memory totalAmounts = new uint[](ctx.tokens.length);
 
         // All resulting deposits from all connector calls
-        BridgeTransfer[][] memory transfers = new BridgeTransfer[][](connectorCalls.length);
+        BridgeDeposit[][] memory transfers = new BridgeDeposit[][](connectorCalls.length);
 
         // Verify and execute bridge calls
         for (uint c = 0; c < connectorCalls.length; c++) {
@@ -637,7 +637,7 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
         ConnectorCall[]  calldata allCalls
         )
         internal
-        returns (BridgeTransfer[] memory transfers)
+        returns (BridgeDeposit[] memory transfers)
     {
         require(call.connector != address(this), "INVALID_CONNECTOR");
         require(trustedConnectors[call.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
@@ -657,20 +657,20 @@ contract Bridge is IBridge, ITransactionReceiver, ReentrancyGuard
 
         if (success) {
             emit ConnectorCallResult(call.connector, true, "");
-            transfers = abi.decode(returnData, (BridgeTransfer[]));
+            transfers = abi.decode(returnData, (BridgeDeposit[]));
         } else {
             // If the call failed return funds to all users
             uint totalNumCalls = 0;
             for (uint g = 0; g < call.groups.length; g++) {
                 totalNumCalls += call.groups[g].calls.length;
             }
-            transfers = new BridgeTransfer[](totalNumCalls);
+            transfers = new BridgeDeposit[](totalNumCalls);
             uint txIdx = 0;
             for (uint g = 0; g < call.groups.length; g++) {
                 BridgeCallGroup memory group = call.groups[g];
                 for (uint i = 0; i < group.calls.length; i++) {
                     BridgeCall memory bridgeCall = group.calls[i];
-                    transfers[txIdx++] = BridgeTransfer({
+                    transfers[txIdx++] = BridgeDeposit({
                         owner: bridgeCall.owner,
                         token:  bridgeCall.token,
                         amount: bridgeCall.amount

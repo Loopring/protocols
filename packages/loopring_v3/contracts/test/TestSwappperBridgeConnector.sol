@@ -43,13 +43,13 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         external
         payable
         override
-        returns (BridgeTransfer[] memory)
+        returns (BridgeDeposit[] memory)
     {
         uint numTransfers = 0;
         for (uint g = 0; g < groups.length; g++) {
             numTransfers += groups[g].calls.length;
         }
-        BridgeTransfer[] memory transfers = new BridgeTransfer[](numTransfers);
+        BridgeDeposit[] memory transfers = new BridgeDeposit[](numTransfers);
         uint transferIdx = 0;
 
         BridgeCall memory bridgeCall;
@@ -112,14 +112,14 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             for (uint i = 0; i < calls.length; i++) {
                 if (valid[i]) {
                     // Give equal share to all valid calls
-                    transfers[transferIdx++] = BridgeTransfer({
+                    transfers[transferIdx++] = BridgeDeposit({
                         owner: calls[i].owner,
                         token: settings.tokenOut,
                         amount: (uint(calls[i].amount).mul(amountOut) / amountIn).toUint96()
                     });
                 } else {
                     // Just transfer the tokens back
-                    transfers[transferIdx++] = BridgeTransfer({
+                    transfers[transferIdx++] = BridgeDeposit({
                         owner: calls[i].owner,
                         token: calls[i].token,
                         amount: calls[i].amount
