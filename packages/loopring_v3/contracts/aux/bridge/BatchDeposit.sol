@@ -17,7 +17,7 @@ import "../../lib/TransferUtil.sol";
 import "./IBridge.sol";
 
 
-/// @title  Bridge implementation
+/// @title  BatchDeposit implementation
 /// @author Brecht Devos - <brecht@loopring.org>
 contract BatchDeposit is IBatchDeposit, ReentrancyGuard
 {
