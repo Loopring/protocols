@@ -427,7 +427,6 @@ contract Bridge is IBridge, BatchDeposit
         }
     }
 
-
     function _hashTx(
         CallTransfer memory transfer,
         uint                maxFee,

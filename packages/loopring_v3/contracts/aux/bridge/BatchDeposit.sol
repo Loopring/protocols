@@ -246,7 +246,6 @@ contract BatchDeposit is IBatchDeposit, ReentrancyGuard
         _storeTransfers(transfers, from);
     }
 
-
     function _storeTransfers(
         bytes   memory transfers,
         address        from
@@ -282,8 +281,6 @@ contract BatchDeposit is IBatchDeposit, ReentrancyGuard
         uint ethValue = (token == address(0)) ? amount : 0;
         exchange.deposit{value: ethValue}(from, address(this), token, amount, new bytes(0));
     }
-
-
 
     // Returns the tokenID for the given token address.
     // Instead of querying the exchange each time, the tokenID
@@ -322,5 +319,4 @@ contract BatchDeposit is IBatchDeposit, ReentrancyGuard
         require(timestamp != 0, "UNKNOWN_TRANSFERS");
         return block.timestamp > timestamp + MAX_AGE_PENDING_TRANSFER;
     }
-
 }
