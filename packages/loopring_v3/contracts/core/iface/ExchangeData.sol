@@ -158,7 +158,7 @@ library ExchangeData
         uint[24]                 balanceMerkleProof;
     }
 
-    struct LoanDeposit
+    struct FlashDeposit
     {
         address to;
         address token;

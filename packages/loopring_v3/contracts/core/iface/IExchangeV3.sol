@@ -351,7 +351,7 @@ abstract contract IExchangeV3 is Claimable
     ///
     /// @param flashDeposits The list of flash deposits to be done.
     function flashDeposit(
-        ExchangeData.LoanDeposit[] calldata flashDeposits
+        ExchangeData.FlashDeposit[] calldata flashDeposits
         )
         external
         virtual;
@@ -374,7 +374,7 @@ abstract contract IExchangeV3 is Claimable
     /// @dev Verifies all minted tokens were paid back.
     /// @param flashDeposits The list of flash deposits that were done.
     function verifyFlashDepositsRepaid(
-        ExchangeData.LoanDeposit[] calldata flashDeposits
+        ExchangeData.FlashDeposit[] calldata flashDeposits
         )
         external
         virtual

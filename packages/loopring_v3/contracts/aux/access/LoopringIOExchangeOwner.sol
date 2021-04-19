@@ -101,7 +101,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         bool                                  isDataCompressed,
         bytes                        calldata data,
         TransactionReceiverCallbacks calldata txReceiverCallbacks,
-        ExchangeData.LoanDeposit[]   calldata flashDeposits,
+        ExchangeData.FlashDeposit[]  calldata flashDeposits,
         SubmitBlocksCallback[]       calldata submitBlocksCallbacks
         )
         external

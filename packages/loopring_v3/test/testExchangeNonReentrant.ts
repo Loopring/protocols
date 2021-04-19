@@ -3,7 +3,7 @@ import fs = require("fs");
 import { Constants, BlockType } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { LoanDeposit } from "./types";
+import { FlashDeposit } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -120,9 +120,9 @@ contract("Exchange", (accounts: string[]) => {
             );
             values.push(proof);
           } else if (
-            input.internalType.startsWith("struct ExchangeData.LoanDeposit[]")
+            input.internalType.startsWith("struct ExchangeData.FlashDeposit[]")
           ) {
-            const flashDeposit: LoanDeposit = {
+            const flashDeposit: FlashDeposit = {
               to: Constants.zeroAddress,
               token: Constants.zeroAddress,
               amount: "0"

@@ -35,7 +35,7 @@ import {
   Block,
   TransactionReceiverCallback,
   Deposit,
-  LoanDeposit,
+  FlashDeposit,
   Callback,
   Transfer,
   Noop,
@@ -538,7 +538,7 @@ export class ExchangeTestUtil {
 
   private pendingTransactions: TxType[][] = [];
   private pendingTransactionReceiverCallbacks: TransactionReceiverCallback[][] = [];
-  private pendingLoanDeposits: LoanDeposit[][] = [];
+  private pendingFlashDeposits: FlashDeposit[][] = [];
   private pendingCallbacks: Callback[][] = [];
 
   private storageIDGenerator: number = 0;
@@ -584,7 +584,7 @@ export class ExchangeTestUtil {
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       this.pendingTransactions.push([]);
       this.pendingTransactionReceiverCallbacks.push([]);
-      this.pendingLoanDeposits.push([]);
+      this.pendingFlashDeposits.push([]);
       this.pendingCallbacks.push([]);
       this.pendingBlocks.push([]);
       this.blocks.push([]);
@@ -1263,16 +1263,16 @@ export class ExchangeTestUtil {
 
   public async flashDeposit(owner: string, token: string, amount: BN) {
     this.requestDeposit(owner, token, amount);
-    this.addLoanDeposit(owner, token, amount);
+    this.addFlashDeposit(owner, token, amount);
   }
 
-  public addLoanDeposit(owner: string, token: string, amount: BN) {
-    const flashDeposit: LoanDeposit = {
+  public addFlashDeposit(owner: string, token: string, amount: BN) {
+    const flashDeposit: FlashDeposit = {
       to: owner,
       token: this.getTokenAddress(token),
       amount: amount.toString(10)
     };
-    this.pendingLoanDeposits[this.exchangeId].push(flashDeposit);
+    this.pendingFlashDeposits[this.exchangeId].push(flashDeposit);
     return flashDeposit;
   }
 
@@ -2006,7 +2006,7 @@ export class ExchangeTestUtil {
     isDataCompressed: boolean,
     txData: string,
     transactionReceiverCallbacks: TransactionReceiverCallback[][],
-    flashDeposits: LoanDeposit[],
+    flashDeposits: FlashDeposit[],
     callbacks: Callback[]
   ) {
     const data = isDataCompressed ? compressZeros(txData) : txData;
@@ -2142,7 +2142,7 @@ export class ExchangeTestUtil {
       true,
       txData,
       transactionReceiverCallbacks,
-      this.pendingLoanDeposits[this.exchangeId],
+      this.pendingFlashDeposits[this.exchangeId],
       this.pendingCallbacks[this.exchangeId]
     );
 
@@ -2200,7 +2200,7 @@ export class ExchangeTestUtil {
     );
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
-    this.pendingLoanDeposits[this.exchangeId] = [];
+    this.pendingFlashDeposits[this.exchangeId] = [];
     this.pendingCallbacks[this.exchangeId] = [];
 
     // Check number of blocks submitted

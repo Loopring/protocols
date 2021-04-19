@@ -377,7 +377,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     }
 
     function flashDeposit(
-        ExchangeData.LoanDeposit[] calldata flashDeposits
+        ExchangeData.FlashDeposit[] calldata flashDeposits
         )
         external
         override
@@ -422,7 +422,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     }
 
     function verifyFlashDepositsRepaid(
-        ExchangeData.LoanDeposit[] calldata flashDeposits
+        ExchangeData.FlashDeposit[] calldata flashDeposits
         )
         external
         override
