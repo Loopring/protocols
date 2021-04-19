@@ -19,7 +19,7 @@ import "./IBridge.sol";
 
 /// @title  BatchDeposit implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BatchDeposit is IBatchDeposit, ReentrancyGuard
+abstract contract BatchDeposit is IBatchDeposit, ReentrancyGuard
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
