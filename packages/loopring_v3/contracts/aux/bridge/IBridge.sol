@@ -5,24 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "../access/ITransactionReceiver.sol";
 
-struct BridgeCall
-{
-    address owner;
-    address token;
-    uint96  amount;
-    bytes   userData;
-    uint    minGas;
-    uint    maxFee;
-    uint    validUntil;
-}
-
-struct BridgeCallGroup
-{
-    bytes        groupData;
-    BridgeCall[] calls;
-}
-
-
 struct BridgeDeposit
 {
     address owner;
@@ -54,6 +36,23 @@ interface IBatchDeposit
 /// @title  IBridge interface
 /// @author Brecht Devos - <brecht@loopring.org>
 abstract contract IBridge is IBatchDeposit,  ITransactionReceiver { }
+
+struct BridgeCall
+{
+    address owner;
+    address token;
+    uint96  amount;
+    bytes   userData;
+    uint    minGas;
+    uint    maxFee;
+    uint    validUntil;
+}
+
+struct BridgeCallGroup
+{
+    bytes        groupData;
+    BridgeCall[] calls;
+}
 
 /// @title  IBridgeConnector interface
 /// @author Brecht Devos - <brecht@loopring.org>
