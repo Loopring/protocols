@@ -66,12 +66,14 @@ contract Bridge is IBridge, ReentrancyGuard
         uint96[] amounts;
     }
 
+    /*
     struct BridgeOperation
     {
         TransferBatch[]  transferBatches;
         ConnectorCall[]  connectorCalls;
         TokenData[]      tokens;
     }
+    */
 
     struct Context
     {
@@ -882,8 +884,10 @@ contract Bridge is IBridge, ReentrancyGuard
         ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 
+    /*
     function encode(BridgeOperation calldata operation)
         external
         pure
     {}
+    */
 }
