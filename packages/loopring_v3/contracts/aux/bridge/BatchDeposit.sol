@@ -66,7 +66,6 @@ contract BatchDeposit is IBatchDeposit, ReentrancyGuard
     mapping (uint => mapping(uint => bool))     public withdrawn;
     // token -> tokenID
     mapping (address => uint16)                 public cachedTokenIDs;
-
     uint                                        public batchIDGenerator;
 
     modifier onlyFromExchangeOwner()
@@ -82,7 +81,6 @@ contract BatchDeposit is IBatchDeposit, ReentrancyGuard
     {
         exchange = _exchange;
         accountID = _accountID;
-
         depositContract = _exchange.getDepositContract();
     }
 
@@ -101,9 +99,9 @@ contract BatchDeposit is IBatchDeposit, ReentrancyGuard
 
     // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFER old.
     function withdrawFromPendingBatchDeposit(
-        uint                            batchID,
+        uint                           batchID,
         InternalBridgeDeposit[] memory transfers,
-        uint[]                   memory indices
+        uint[]                  memory indices
         )
         external
         nonReentrant
@@ -170,7 +168,7 @@ contract BatchDeposit is IBatchDeposit, ReentrancyGuard
     // --- Internal functions ---
 
     function _batchDeposit(
-        address                   from,
+        address                  from,
         BridgeDeposit[][] memory deposits
         )
         internal
@@ -300,9 +298,7 @@ contract BatchDeposit is IBatchDeposit, ReentrancyGuard
         }
     }
 
-    function _hashTransferBatch(
-        bytes memory transfers
-        )
+    function _hashTransferBatch(bytes memory transfers)
         internal
         pure
         returns (bytes32)

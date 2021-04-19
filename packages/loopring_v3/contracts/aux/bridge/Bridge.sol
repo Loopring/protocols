@@ -13,8 +13,8 @@ import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../lib/TransferUtil.sol";
 
-import "./IBridge.sol";
 import "./BatchDeposit.sol";
+import "./IBridge.sol";
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -66,7 +66,7 @@ contract Bridge is IBridge, BatchDeposit
 
     bytes32            public immutable DOMAIN_SEPARATOR;
 
-    mapping (address => bool)                   public trustedConnectors;
+    mapping (address => bool) public trustedConnectors;
 
     constructor(
         IExchangeV3 _exchange,

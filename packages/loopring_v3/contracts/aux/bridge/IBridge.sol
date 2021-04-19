@@ -5,8 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "../access/ITransactionReceiver.sol";
 
-import "./BatchDeposit.sol";
-
 struct BridgeCall
 {
     address owner;
@@ -53,12 +51,9 @@ interface IBatchDeposit
         payable;
 }
 
-
 /// @title  IBridge interface
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract IBridge is IBatchDeposit,  ITransactionReceiver
-{
-}
+abstract contract IBridge is IBatchDeposit,  ITransactionReceiver {}
 
 /// @title  IBridgeConnector interface
 /// @author Brecht Devos - <brecht@loopring.org>
