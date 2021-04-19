@@ -1261,19 +1261,19 @@ export class ExchangeTestUtil {
     return deposit;
   }
 
-  public async loanDeposit(owner: string, token: string, amount: BN) {
+  public async flashDeposit(owner: string, token: string, amount: BN) {
     this.requestDeposit(owner, token, amount);
     this.addLoanDeposit(owner, token, amount);
   }
 
   public addLoanDeposit(owner: string, token: string, amount: BN) {
-    const loanDeposit: LoanDeposit = {
+    const flashDeposit: LoanDeposit = {
       to: owner,
       token: this.getTokenAddress(token),
       amount: amount.toString(10)
     };
-    this.pendingLoanDeposits[this.exchangeId].push(loanDeposit);
-    return loanDeposit;
+    this.pendingLoanDeposits[this.exchangeId].push(flashDeposit);
+    return flashDeposit;
   }
 
   public addCallback(to: string, data: string, before: boolean) {
@@ -1996,7 +1996,7 @@ export class ExchangeTestUtil {
         parameters.isDataCompressed,
         parameters.data,
         parameters.callbackConfig,
-        parameters.loanDeposits,
+        parameters.flashDeposits,
         parameters.callbacks
       )
       .encodeABI();
@@ -2006,7 +2006,7 @@ export class ExchangeTestUtil {
     isDataCompressed: boolean,
     txData: string,
     transactionReceiverCallbacks: TransactionReceiverCallback[][],
-    loanDeposits: LoanDeposit[],
+    flashDeposits: LoanDeposit[],
     callbacks: Callback[]
   ) {
     const data = isDataCompressed ? compressZeros(txData) : txData;
@@ -2019,7 +2019,7 @@ export class ExchangeTestUtil {
       isDataCompressed,
       data,
       callbackConfig,
-      loanDeposits,
+      flashDeposits,
       callbacks
     };
   }
@@ -2167,7 +2167,7 @@ export class ExchangeTestUtil {
       parameters.isDataCompressed,
       parameters.data,
       parameters.callbackConfig,
-      parameters.loanDeposits,
+      parameters.flashDeposits,
       parameters.callbacks,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }

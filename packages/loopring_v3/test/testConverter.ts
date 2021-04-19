@@ -164,7 +164,7 @@ contract("LoopringConverter", (accounts: string[]) => {
       };
       await ctx.setupRing(ringB);
 
-      await ctx.loanDeposit(broker, converter.ticker, amountIn);
+      await ctx.flashDeposit(broker, converter.ticker, amountIn);
 
       await ctx.sendRing(ringA);
       await ctx.sendRing(ringB);
@@ -270,7 +270,7 @@ contract("LoopringConverter", (accounts: string[]) => {
       };
       await ctx.setupRing(ringB, true, true, false, false);
 
-      await ctx.loanDeposit(broker, tokenOut, amountOut);
+      await ctx.flashDeposit(broker, tokenOut, amountOut);
 
       await ctx.sendRing(ringA);
       await ctx.sendRing(ringB);

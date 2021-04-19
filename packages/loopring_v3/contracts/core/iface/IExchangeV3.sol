@@ -344,24 +344,24 @@ abstract contract IExchangeV3 is Claimable
         returns (uint96);
 
 
-    /// @dev Take loans then deposit all tokens
-    ///      The amount minted has to be repaid using `repayDepositLoan`.
+    /// @dev Flash mint then deposit all tokens on L2
+    ///      The amount minted has to be repaid using `repayFlashDeposit`.
     ///
     ///      This function is only callable by the owner.
     ///
-    /// @param loanDeposits The list of loan deposits to be done.
-    function loanDeposit(
-        ExchangeData.LoanDeposit[] calldata loanDeposits
+    /// @param flashDeposits The list of flash deposits to be done.
+    function flashDeposit(
+        ExchangeData.LoanDeposit[] calldata flashDeposits
         )
         external
         virtual;
 
-    /// @dev Repays deposit loan
+    /// @dev Repays flash deposit
     /// @param from The address that deposits the funds to the exchange
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
     /// @param extraData Optional extra data used by the deposit contract
-    function repayDepositLoan(
+    function repayFlashDeposit(
         address from,
         address tokenAddress,
         uint96  amount,
@@ -372,9 +372,9 @@ abstract contract IExchangeV3 is Claimable
         payable;
 
     /// @dev Verifies all minted tokens were paid back.
-    /// @param loanDeposits The list of loan deposits that were done.
-    function verifyDepositLoansCleared(
-        ExchangeData.LoanDeposit[] calldata loanDeposits
+    /// @param flashDeposits The list of flash deposits that were done.
+    function verifyFlashDepositsRepaid(
+        ExchangeData.LoanDeposit[] calldata flashDeposits
         )
         external
         virtual
@@ -382,7 +382,7 @@ abstract contract IExchangeV3 is Claimable
 
     /// @dev Returns the amount mint deposited for a specific token.
     /// @param tokenAddress The token
-    function getDepositLoanAmount(
+    function getFlashDepositAmount(
         address tokenAddress
         )
         external

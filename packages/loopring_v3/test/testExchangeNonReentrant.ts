@@ -122,12 +122,12 @@ contract("Exchange", (accounts: string[]) => {
           } else if (
             input.internalType.startsWith("struct ExchangeData.LoanDeposit[]")
           ) {
-            const loanDeposit: LoanDeposit = {
+            const flashDeposit: LoanDeposit = {
               to: Constants.zeroAddress,
               token: Constants.zeroAddress,
               amount: "0"
             };
-            values.push([loanDeposit]);
+            values.push([flashDeposit]);
           } else if (input.type.startsWith("uint256[][]")) {
             values.push([new Array(1).fill("0")]);
           } else if (input.type.startsWith("uint256[]")) {

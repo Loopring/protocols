@@ -101,7 +101,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         bool                                  isDataCompressed,
         bytes                        calldata data,
         TransactionReceiverCallbacks calldata txReceiverCallbacks,
-        ExchangeData.LoanDeposit[]   calldata loanDeposits,
+        ExchangeData.LoanDeposit[]   calldata flashDeposits,
         SubmitBlocksCallback[]       calldata submitBlocksCallbacks
         )
         external
@@ -138,9 +138,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         // Do pre blocks callbacks
         _processCallbacks(submitBlocksCallbacks, true);
 
-        // Do loan deposits
-        if (loanDeposits.length > 0) {
-            IExchangeV3(target).loanDeposit(loanDeposits);
+        // Do flash deposits
+        if (flashDeposits.length > 0) {
+            IExchangeV3(target).flashDeposit(flashDeposits);
         }
 
         // Submit blocks
@@ -152,9 +152,9 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         // Do post blocks callbacks
         _processCallbacks(submitBlocksCallbacks, false);
 
-        // Make sure deposit loans were repaid
-        if (loanDeposits.length > 0) {
-            IExchangeV3(target).verifyDepositLoansCleared(loanDeposits);
+        // Make sure flash deposits were repaid
+        if (flashDeposits.length > 0) {
+            IExchangeV3(target).verifyFlashDepositsRepaid(flashDeposits);
         }
     }
 

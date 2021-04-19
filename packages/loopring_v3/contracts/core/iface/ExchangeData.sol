@@ -239,7 +239,7 @@ library ExchangeData
         // Enable/Disable `onchainTransferFrom`
         bool    allowOnchainTransferFrom;
 
-        // Outstanding deposit loans
-        mapping (address => uint96) depositLoans;
+        // Outstanding flash deposits
+        mapping (address => uint96) flashDepositAmounts;
     }
 }

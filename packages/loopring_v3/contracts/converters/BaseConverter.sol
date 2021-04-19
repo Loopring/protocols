@@ -99,8 +99,8 @@ abstract contract BaseConverter is LPToken, Drainable, ReentrancyGuard
         // Mint pool tokens representing each user's share in the pool, with 1:1 ratio
         _mint(address(this), amountIn);
 
-        // Repay the deposit loan used to give user's their share on L2
-        _repayDepositLoan(address(this), amountIn);
+        // Repay the flash deposit used to give user's their share on L2
+        _repayFlashDeposit(address(this), amountIn);
     }
 
     // This function can be call by anyone, but the burn will fail if the msg.sender doesn't
@@ -128,7 +128,7 @@ abstract contract BaseConverter is LPToken, Drainable, ReentrancyGuard
 
         uint repay = repayAmount > amount ? amount: repayAmount;
         if (repay > 0) {
-            _repayDepositLoan(token, uint96(repay));
+            _repayFlashDeposit(token, uint96(repay));
             amount -= repay;
         }
 
@@ -154,14 +154,14 @@ abstract contract BaseConverter is LPToken, Drainable, ReentrancyGuard
 
     receive() external payable {}
 
-    function _repayDepositLoan(
+    function _repayFlashDeposit(
         address token,
         uint96  amount
         )
         private
     {
         uint ethValue = (token == address(0)) ? amount : 0;
-        IExchangeV3(exchange).repayDepositLoan{value: ethValue}(
+        IExchangeV3(exchange).repayFlashDeposit{value: ethValue}(
             address(this),
             token,
             amount,

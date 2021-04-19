@@ -50,7 +50,7 @@ library ExchangeDeposits
         uint96 _amount = amount;
         if (useLoan) {
             require(msg.value == 0, "ETH_AMOUNT_NOT_ZERO");
-            S.depositLoans[tokenAddress] = S.depositLoans[tokenAddress].add(amount);
+            S.flashDepositAmounts[tokenAddress] = S.flashDepositAmounts[tokenAddress].add(amount);
         } else {
             // Transfer the tokens to this contract
             _amount = S.depositContract.deposit{value: msg.value}(
@@ -76,7 +76,7 @@ library ExchangeDeposits
         S.pendingDeposits[to][tokenID] = _deposit;
     }
 
-    function repayDepositLoan(
+    function repayFlashDeposit(
         ExchangeData.State storage S,
         address from,
         address tokenAddress,
@@ -98,6 +98,6 @@ library ExchangeDeposits
         require(repaid > 0, "INVALID_REPAY_AMOUNT");
 
         // Pay back
-        S.depositLoans[tokenAddress] = S.depositLoans[tokenAddress].sub(repaid);
+        S.flashDepositAmounts[tokenAddress] = S.flashDepositAmounts[tokenAddress].sub(repaid);
     }
 }

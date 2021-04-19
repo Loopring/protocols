@@ -376,27 +376,27 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.pendingDeposits[owner][tokenID].amount;
     }
 
-    function loanDeposit(
-        ExchangeData.LoanDeposit[] calldata loanDeposits
+    function flashDeposit(
+        ExchangeData.LoanDeposit[] calldata flashDeposits
         )
         external
         override
         nonReentrant
         onlyOwner
     {
-        for (uint i = 0; i < loanDeposits.length; i++) {
+        for (uint i = 0; i < flashDeposits.length; i++) {
             state.deposit(
-                loanDeposits[i].to,
-                loanDeposits[i].to,
-                loanDeposits[i].token,
-                loanDeposits[i].amount,
+                flashDeposits[i].to,
+                flashDeposits[i].to,
+                flashDeposits[i].token,
+                flashDeposits[i].amount,
                 new bytes(0),
                 true
             );
         }
     }
 
-    function repayDepositLoan(
+    function repayFlashDeposit(
         address from,
         address tokenAddress,
         uint96  amount,
@@ -407,10 +407,10 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         override
         nonReentrant
     {
-        state.repayDepositLoan(from, tokenAddress, amount, extraData);
+        state.repayFlashDeposit(from, tokenAddress, amount, extraData);
     }
 
-    function getDepositLoanAmount(
+    function getFlashDepositAmount(
         address tokenAddress
         )
         external
@@ -418,19 +418,19 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         view
         returns (uint96)
     {
-        return state.depositLoans[tokenAddress];
+        return state.flashDepositAmounts[tokenAddress];
     }
 
-    function verifyDepositLoansCleared(
-        ExchangeData.LoanDeposit[] calldata loanDeposits
+    function verifyFlashDepositsRepaid(
+        ExchangeData.LoanDeposit[] calldata flashDeposits
         )
         external
         override
         view
     {
-        for (uint i = 0; i < loanDeposits.length; i++) {
+        for (uint i = 0; i < flashDeposits.length; i++) {
             require(
-                state.depositLoans[loanDeposits[i].token] == 0,
+                state.flashDepositAmounts[flashDeposits[i].token] == 0,
                 "NON_ZERO_OUTSTANDING_DEPOSIT_LOAN"
             );
         }
