@@ -33,7 +33,7 @@ contract BatchDeposit is IBatchDeposit, ReentrancyGuard
     // - address owner  : 20 bytes
     // - uint96  amount : 12 bytes
     // - uint16  tokenID:  2 bytes
-    event Transfers           (uint batchID, bytes transfers, address from);
+    event Transfers (uint batchID, bytes transfers, address from);
 
     struct InternalBridgeDeposit
     {
