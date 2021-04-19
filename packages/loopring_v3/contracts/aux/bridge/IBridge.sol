@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../access/ITransactionReceiver.sol";
 
+import "./BatchDeposit.sol";
 
 struct BridgeCall
 {
@@ -23,6 +24,7 @@ struct BridgeCallGroup
     BridgeCall[] calls;
 }
 
+
 struct BridgeDeposit
 {
     address owner;
@@ -30,9 +32,9 @@ struct BridgeDeposit
     uint96  amount;
 }
 
-/// @title  IBridge interface
+/// @title  IBatchDeposit interface
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract IBridge is ITransactionReceiver
+interface IBatchDeposit
 {
     /// @dev Optimized L1 -> L2 path. Allows doing many deposits in an efficient way.
     ///
@@ -48,8 +50,14 @@ abstract contract IBridge is ITransactionReceiver
     /// @param transfers The L2 transfers from Bridge to owners
     function batchDeposit(BridgeDeposit[] calldata transfers)
         external
-        virtual
         payable;
+}
+
+
+/// @title  IBridge interface
+/// @author Brecht Devos - <brecht@loopring.org>
+abstract contract IBridge is IBatchDeposit,  ITransactionReceiver
+{
 }
 
 /// @title  IBridgeConnector interface
