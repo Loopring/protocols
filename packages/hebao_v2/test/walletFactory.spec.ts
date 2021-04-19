@@ -13,7 +13,7 @@ describe("walletFactory", () => {
   let account3: Signer;
 
   describe("any EOA", () => {
-    it.only("should be able to create new wallet", async () => {
+    it("should be able to create new wallet", async () => {
       const walletFactory = await newWalletFactoryContract();
       [account1, account2, account3] = await ethers.getSigners();
 

@@ -11,7 +11,7 @@ import "../../thirdparty/SafeCast.sol";
 
 /// @title GuardianModule
 /// @author Brecht Devos - <brecht@loopring.org>
-/// @author Daniel Wang - <daniel@loopring.org>
+/// @Author Daniel Wang - <daniel@loopring.org>
 library GuardianLib
 {
     using AddressUtil   for address;
