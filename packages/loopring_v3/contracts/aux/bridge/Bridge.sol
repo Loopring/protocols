@@ -168,22 +168,22 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         ctx.tokensOffset = tokensOffset;
         ctx.tokens = tokens;
 
-        _processTransferBatches(ctx, batches);
+        _processInboundTransferBatcheses(ctx, batches);
         _processConnectorCalls(ctx, calls);
     }
 
-    function _processTransferBatches(
-        Context        memory   ctx,
+    function _processInboundTransferBatcheses(
+        Context         memory   ctx,
         TransferBatch[] calldata batches
         )
         internal
     {
         for (uint i = 0; i < batches.length; i++) {
-            _processTransferBatch(ctx, batches[i]);
+            _processInboundTransferBatches(ctx, batches[i]);
         }
     }
 
-    function _processTransferBatch(
+    function _processInboundTransferBatches(
         Context       memory   ctx,
         TransferBatch calldata batch
         )
@@ -255,6 +255,9 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         // Total amounts transferred to the bridge
         uint[] memory totalAmounts = new uint[](ctx.tokens.length);
 
+        // Verify withdrawals
+        _processWithdrawals(ctx, totalAmounts);
+
         // All resulting deposits from all connector calls
         IBatchDepositor.Deposit[][] memory depositsList = new IBatchDepositor.Deposit[][](calls.length);
 
@@ -269,10 +272,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             depositsList[i] = _callConnector(ctx, call, i, calls);
         }
 
-        // Verify withdrawals
-        _processWithdrawals(ctx, totalAmounts);
-
-        // Do all resulting transfers back from the bridge to the users
+        // Do all outbound transfers back from the bridge to the users
         _batchDeposit(address(this), depositsList);
     }
 
