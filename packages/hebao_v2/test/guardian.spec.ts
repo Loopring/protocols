@@ -90,7 +90,7 @@ describe("wallet", () => {
       expect(addEvent2.effectiveTime.toNumber()).to.equal(blockTime2);
     });
 
-    it.only("the third guardian addition will be effective in 3 days", async () => {
+    it("the third guardian addition will be effective in 3 days", async () => {
       const owner = await account1.getAddress();
       const guardian1 = "0x" + "11".repeat(20);
       const guardian2 = "0x" + "22".repeat(20);
@@ -117,6 +117,31 @@ describe("wallet", () => {
       // third guardian will be effective in 3 days.
       expect(addEvent1.effectiveTime.toNumber()).to.equal(
         blockTime1 + 3600 * 24 * 3
+      );
+    });
+
+    it.only("guardian deletion will be effective in 3 days", async () => {
+      const owner = await account1.getAddress();
+      const wallet = await newWallet(owner, ethers.constants.AddressZero, 3);
+
+      const guardian1 = "0x" + "12".repeat(20);
+      await wallet.addGuardian(guardian1);
+      const tx1 = await wallet.removeGuardian(guardian1);
+      const receipt1 = await tx1.wait();
+
+      const eventData = receipt1.events[0].data;
+      const eventTopics = receipt1.events[0].topics;
+      const removeEvent = guardianInterfact.decodeEventLog(
+        "GuardianRemoved(address,uint256)",
+        eventData,
+        eventTopics
+      );
+      // console.log("addEvent:", addEvent.guardian);
+      expect(removeEvent.guardian).to.equal(guardian1);
+      const blockTime = await getBlockTimestamp(tx1.blockNumber);
+      // first guardian should be effective immediately:
+      expect(removeEvent.effectiveTime.toNumber()).to.equal(
+        blockTime + 3 * 24 * 3600
       );
     });
   });
