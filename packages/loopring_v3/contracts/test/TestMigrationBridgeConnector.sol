@@ -52,13 +52,13 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         external
         payable
         override
-        returns (BridgeDeposit[] memory)
+        returns (IBatchDepositor.Deposit[] memory)
     {
         uint numTransfers = 0;
         for (uint g = 0; g < groups.length; g++) {
             numTransfers += groups[g].calls.length;
         }
-        BridgeDeposit[] memory transfers = new BridgeDeposit[](numTransfers);
+        IBatchDepositor.Deposit[] memory transfers = new IBatchDepositor.Deposit[](numTransfers);
         uint transferIdx = 0;
 
         // Total ETH to migrate
@@ -81,7 +81,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
                     to = userSettings.to;
                 }
 
-                transfers[transferIdx++] = BridgeDeposit({
+                transfers[transferIdx++] = IBatchDepositor.Deposit({
                     owner: to,
                     token: bridgeCall.token,
                     amount: bridgeCall.amount
@@ -101,7 +101,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         // Mass migrate
         bridge.batchDeposit{value: totalAmountETH}(transfers);
 
-        return new BridgeDeposit[](0);
+        return new IBatchDepositor.Deposit[](0);
     }
 
     function getMinGasLimit(BridgeCallGroup[] calldata groups)

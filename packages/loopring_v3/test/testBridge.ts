@@ -217,7 +217,7 @@ export class Bridge {
     });
     console.log(
       "\x1b[46m%s\x1b[0m",
-      "[BatchDeposit] Gas used: " + tx.receipt.gasUsed
+      "[BatchxDepositor] Gas used: " + tx.receipt.gasUsed
     );
     const transferEvents = await this.ctx.getEvents(this.contract, "Transfers");
 
@@ -748,7 +748,7 @@ contract("Bridge", (accounts: string[]) => {
       .toString(10);
   };
 
-  const withdrawFromPendingBatchDepositChecked = async (
+  const withdrawFromPendingBatchxDepositorChecked = async (
     bridge: Bridge,
     depositID: number,
     transfers: InternalBridgeDeposit[],
@@ -770,7 +770,7 @@ contract("Bridge", (accounts: string[]) => {
     }
 
     // Do the withdrawal
-    await bridge.contract.withdrawFromPendingBatchDeposit(
+    await bridge.contract.withdrawFromPendingBatchxDepositor(
       depositID,
       transfers,
       indices
@@ -1291,22 +1291,22 @@ contract("Bridge", (accounts: string[]) => {
       const transfers = bridge.decodeTransfers(transferEvents[0].transfers);
 
       await expectThrow(
-        bridge.contract.withdrawFromPendingBatchDeposit(0, transfers, [1]),
+        bridge.contract.withdrawFromPendingBatchxDepositor(0, transfers, [1]),
         "TRANSFERS_NOT_TOO_OLD"
       );
 
       const MAX_AGE_PENDING_TRANSFER = (await bridge.contract.MAX_AGE_PENDING_TRANSFER()).toNumber();
       await ctx.advanceBlockTimestamp(MAX_AGE_PENDING_TRANSFER + 1);
 
-      await withdrawFromPendingBatchDepositChecked(bridge, 0, transfers, [
+      await withdrawFromPendingBatchxDepositorChecked(bridge, 0, transfers, [
         1,
         3
       ]);
 
-      await withdrawFromPendingBatchDepositChecked(bridge, 0, transfers, [0]);
+      await withdrawFromPendingBatchxDepositorChecked(bridge, 0, transfers, [0]);
 
       await expectThrow(
-        bridge.contract.withdrawFromPendingBatchDeposit(0, transfers, [1, 2]),
+        bridge.contract.withdrawFromPendingBatchxDepositor(0, transfers, [1, 2]),
         "ALREADY_WITHDRAWN"
       );
     });

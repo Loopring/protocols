@@ -5,6 +5,11 @@ pragma experimental ABIEncoderV2;
 
 import "../access/ITransactionReceiver.sol";
 
+import "./IBatchDepositor.sol";
+
+/// @title  IBridge interface
+/// @author Brecht Devos - <brecht@loopring.org>
+abstract contract IBridge is IBatchDepositor,  ITransactionReceiver { }
 
 struct BridgeCall
 {
@@ -21,35 +26,6 @@ struct BridgeCallGroup
 {
     bytes        groupData;
     BridgeCall[] calls;
-}
-
-struct BridgeDeposit
-{
-    address owner;
-    address token;
-    uint96  amount;
-}
-
-/// @title  IBridge interface
-/// @author Brecht Devos - <brecht@loopring.org>
-abstract contract IBridge is ITransactionReceiver
-{
-    /// @dev Optimized L1 -> L2 path. Allows doing many deposits in an efficient way.
-    ///
-    ///      Every normal deposit to Loopring exchange does a real L1 token transfer
-    ///      and stores some data on-chain costing ~65k gas.
-    ///      This function batches all deposits togeter and only does a single exchange
-    ///      deposit for each distinct token. All deposits are then handled by L2 transfers
-    ///      instead of L1 transfers, which makes them much cheaper.
-    ///
-    ///      The sender will send the funds to Loopring exchange, so just like with normal
-    ///      deposits the sender first has to approve token transfers on the deposit contract.
-    ///
-    /// @param transfers The L2 transfers from Bridge to owners
-    function batchDeposit(BridgeDeposit[] calldata transfers)
-        external
-        virtual
-        payable;
 }
 
 /// @title  IBridgeConnector interface
@@ -83,7 +59,7 @@ interface IBridgeConnector
     function processCalls(BridgeCallGroup[] calldata groups)
         external
         payable
-        returns (BridgeDeposit[] memory);
+        returns (IBatchDepositor.Deposit[] memory);
 
     /// @dev Returns a rough estimate of the gas cost to do `processCalls`. At least this much gas needs to be
     ///      provided by the caller of `processCalls` before the BridgeCalls of users are allowed to be used.
