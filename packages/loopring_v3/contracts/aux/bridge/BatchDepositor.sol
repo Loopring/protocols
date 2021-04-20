@@ -31,8 +31,8 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     // - address owner  : 20 bytes
     // - uint96  amount : 12 bytes
     // - uint16  tokenID:  2 bytes
-    event TransferBatchStored (uint batchID, bytes transfersData, address from);
-    event Withdrawn      (uint batchID);
+    event BatchDepositRequest (uint batchID, bytes transfersData, address from);
+    event Withdrawn           (uint batchID);
 
     struct BatchDeposit
     {
@@ -248,7 +248,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         require(pendingTransferBatches[hash] == 0, "DUPLICATE_BATCH");
         pendingTransferBatches[hash] = block.timestamp;
 
-        emit TransferBatchStored(batchID, transfersData, from);
+        emit BatchDepositRequest(batchID, transfersData, from);
     }
 
     function _deposit(
