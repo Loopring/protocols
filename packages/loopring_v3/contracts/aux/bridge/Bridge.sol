@@ -214,8 +214,8 @@ contract Bridge is IBridge, BatchDepositor
             transfers := sub(transfers, add(32, mul(34, mload(amounts))))
         }
         // Check if these transfers can be processed
-        bytes32 hash = _hashTransferBatch(transfers);
-        require(!_arePendingTransfersTooOld(batch.batchID, hash), "TRANSFERS_TOO_OLD");
+        bytes32 hash = _hashTransfers(transfers);
+        require(!_arePendingDepositsTooOld(batch.batchID, hash), "TRANSFERS_TOO_OLD");
 
         // Mark transfers as completed
         delete pendingTransfers[batch.batchID][hash];

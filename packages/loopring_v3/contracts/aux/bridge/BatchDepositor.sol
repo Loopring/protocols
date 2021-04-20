@@ -33,7 +33,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     // - address owner  : 20 bytes
     // - uint96  amount : 12 bytes
     // - uint16  tokenID:  2 bytes
-    event Transfers (uint batchID, bytes transfers, address from);
+    event BatchDeposited (uint batchID, bytes transfersData, address from);
 
     struct InternalDeposit
     {
@@ -99,24 +99,24 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
 
     // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFER old.
     function withdrawFromPendingBatchDepositor(
-        uint                           batchID,
-        InternalDeposit[] memory transfers,
-        uint[]                  memory indices
+        uint                     batchID,
+        InternalDeposit[] memory deposits,
+        uint[]            memory indices
         )
         external
         nonReentrant
     {
-        bytes memory transfersData = new bytes(transfers.length * 34);
+        bytes memory transfersData = new bytes(deposits.length * 34);
         assembly {
             transfersData := add(transfersData, 32)
         }
 
-        for (uint i = 0; i < transfers.length; i++) {
-            InternalDeposit memory transfer = transfers[i];
+        for (uint i = 0; i < deposits.length; i++) {
+            InternalDeposit memory deposit = deposits[i];
             // Pack the transfer data to compare against batch deposit hash
-            address  owner = transfer.owner;
-            uint16 tokenID = transfer.tokenID;
-            uint    amount = transfer.amount;
+            address  owner = deposit.owner;
+            uint16 tokenID = deposit.tokenID;
+            uint    amount = deposit.amount;
             assembly {
                 mstore(add(transfersData, 2), tokenID)
                 mstore(    transfersData    , or(shl(96, owner), amount))
@@ -124,15 +124,15 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
             }
         }
 
-        // Get the original transfers ptr back
-        uint numTransfers = transfers.length;
+        // Get the original deposits ptr back
+        uint numTransfers = deposits.length;
         assembly {
             transfersData := sub(transfersData, add(32, mul(34, numTransfers)))
         }
 
-        // Check if withdrawing from these transfers is possible
-        bytes32 hash = _hashTransferBatch(transfersData);
-        require(_arePendingTransfersTooOld(batchID, hash), "TRANSFERS_NOT_TOO_OLD");
+        // Check if withdrawing from these deposits is possible
+        bytes32 hash = _hashTransfers(transfersData);
+        require(_arePendingDepositsTooOld(batchID, hash), "DEPOSITS_NOT_TOO_OLD");
 
         for (uint i = 0; i < indices.length; i++) {
             uint idx = indices[i];
@@ -140,11 +140,11 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
             require(!withdrawn[batchID][idx], "ALREADY_WITHDRAWN");
             withdrawn[batchID][idx] = true;
 
-            address tokenAddress = exchange.getTokenAddress(transfers[idx].tokenID);
+            address tokenAddress = exchange.getTokenAddress(deposits[idx].tokenID);
 
             tokenAddress.transferOut(
-                transfers[idx].owner,
-                transfers[idx].amount
+                deposits[idx].owner,
+                deposits[idx].amount
             );
         }
     }
@@ -185,9 +185,9 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         require(totalNumDeposits <= MAX_NUM_TRANSACTIONS_IN_BLOCK, "MAX_DEPOSITS_EXCEEDED");
 
         // Transfers to be done
-        bytes memory transfers = new bytes(totalNumDeposits * 34);
+        bytes memory transfersData = new bytes(totalNumDeposits * 34);
         assembly {
-            transfers := add(transfers, 32)
+            transfersData := add(transfersData, 32)
         }
 
         // Worst case scenario all tokens are different
@@ -220,16 +220,16 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
 
                 // Pack the transfer data together
                 assembly {
-                    mstore(add(transfers, 2), tokenID)
-                    mstore(    transfers    , or(shl(96, mload(deposit)), mload(add(deposit, 64))))
-                    transfers := add(transfers, 34)
+                    mstore(add(transfersData, 2), tokenID)
+                    mstore(    transfersData    , or(shl(96, mload(deposit)), mload(add(deposit, 64))))
+                    transfersData := add(transfersData, 34)
                 }
             }
         }
 
         // Get the original transfers ptr back
         assembly {
-            transfers := sub(transfers, add(32, mul(34, totalNumDeposits)))
+            transfersData := sub(transfersData, add(32, mul(34, totalNumDeposits)))
         }
 
         // Do a normal deposit per token
@@ -240,12 +240,12 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
             _deposit(from, tokens[i].token, uint96(tokens[i].amount));
         }
 
-        // Store the transfers so they can be processed later
-        _storeTransfers(transfers, from);
+        // Store the transfersData so they can be processed later
+        _storeTransfers(transfersData, from);
     }
 
     function _storeTransfers(
-        bytes   memory transfers,
+        bytes   memory transfersData,
         address        from
         )
         internal
@@ -253,12 +253,11 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         uint batchID = batchIDGenerator++;
 
         // Store transfers to distribute at a later time
-        bytes32 hash = _hashTransferBatch(transfers);
+        bytes32 hash = _hashTransfers(transfersData);
         require(pendingTransfers[batchID][hash] == 0, "DUPLICATE_BATCH");
         pendingTransfers[batchID][hash] = block.timestamp;
 
-        // Log transfers to do
-        emit Transfers(batchID, transfers, from);
+        emit BatchDeposited(batchID, transfersData, from);
     }
 
     function _deposit(
@@ -298,7 +297,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
     }
 
-    function _hashTransferBatch(bytes memory transfers)
+    function _hashTransfers(bytes memory transfers)
         internal
         pure
         returns (bytes32)
@@ -306,7 +305,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         return keccak256(transfers);
     }
 
-    function _arePendingTransfersTooOld(uint batchID, bytes32 hash)
+    function _arePendingDepositsTooOld(uint batchID, bytes32 hash)
         internal
         view
         returns (bool)
