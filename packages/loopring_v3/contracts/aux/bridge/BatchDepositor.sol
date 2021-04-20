@@ -76,6 +76,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         )
         external
         payable
+        virtual
         override
         nonReentrant
     {
