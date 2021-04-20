@@ -25,6 +25,7 @@ library ApprovalLib {
         bytes    memory encodedRequest
         )
         internal
+        returns (bytes32)
     {
         require(address(this) == approval.wallet, "INVALID_WALLET");
         require(block.timestamp <= approval.validUntil, "EXPIRED_SIGNED_REQUEST");
@@ -48,5 +49,7 @@ library ApprovalLib {
             ),
             "PERMISSION_DENIED"
         );
+
+        return _hash;
     }
 }

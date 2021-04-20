@@ -26,12 +26,12 @@ library MetaTxLib
     using ERC20Lib      for Wallet;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
-        "MetaTx(address relayer,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,bytes data)"
+        "MetaTx(address relayer,address to,uint256 timestamp,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,bytes data)"
     );
 
     event MetaTxExecuted(
         address relayer,
-        uint    nonce,
+        bytes32 metaTxHash,
         bool    success,
         uint    gasUsed
     );
@@ -39,7 +39,7 @@ library MetaTxLib
     struct MetaTx
     {
         address to;
-        uint    nonce;
+        uint    timestamp;
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
@@ -56,12 +56,13 @@ library MetaTxLib
         )
         public
         view
+        returns (bytes32)
     {
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
             msg.sender,
             metaTx.to,
-            metaTx.nonce,
+            metaTx.timestamp,
             metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
@@ -71,6 +72,8 @@ library MetaTxLib
         );
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
         require(metaTxHash.verifySignature(wallet.owner, metaTx.signature), "INVALID_SIGNATURE");
+
+        return metaTxHash;
     }
 
     function executeMetaTx(
@@ -89,22 +92,18 @@ library MetaTxLib
         uint gasLeft = gasleft();
         require(gasLeft >= (metaTx.gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
 
-        // Update the nonce before the call to protect against reentrancy
-        if (metaTx.nonce != 0) {
-            require(isNonceValid(wallet, msg.sender, metaTx.nonce), "INVALID_NONCE");
-            wallet.nonce[msg.sender] = metaTx.nonce;
-        }
-
         (success, ) = metaTx.to.call{gas : metaTx.gasLimit}(metaTx.data);
 
         // These checks are done afterwards to use the latest state post meta-tx call
         require(!wallet.locked, "WALLET_LOCKED");
 
-        validateMetaTx(
+        bytes32 metaTxHash = validateMetaTx(
             wallet,
             DOMAIN_SEPARATOR,
             metaTx
         );
+        require(!wallet.metaTxHashes[metaTxHash], "METATX_HASH_EXIST");
+        wallet.metaTxHashes[metaTxHash] = true;
 
         uint gasUsed = gasLeft - gasleft() + metaTx.gasOverhead;
 
@@ -124,7 +123,7 @@ library MetaTxLib
 
         emit MetaTxExecuted(
             msg.sender,
-            metaTx.nonce,
+            metaTxHash,
             success,
             gasUsed
         );
@@ -146,15 +145,4 @@ library MetaTxLib
         }
     }
 
-    function isNonceValid(
-        Wallet  storage wallet,
-        address relayer,
-        uint    nonce
-        )
-        public
-        view
-        returns (bool)
-    {
-        return nonce > wallet.nonce[relayer] && (nonce >> 128) <= block.number;
-    }
 }
