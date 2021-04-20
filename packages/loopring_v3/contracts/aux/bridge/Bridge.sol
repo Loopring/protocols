@@ -248,7 +248,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             _processConnectorCall(ctx, call, totalAmounts);
 
             // Call the connector
-            depositsList[i] = _call(ctx, call, i, calls);
+            depositsList[i] = _callConnector(ctx, call, i, calls);
         }
 
         // Verify withdrawals
@@ -382,7 +382,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         }
     }
 
-    function _call(
+    function _callConnector(
         Context          memory   ctx,
         ConnectorCall    calldata call,
         uint                      n,
