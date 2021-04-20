@@ -125,7 +125,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
 
         // Check if withdrawing from these deposits is possible
         bytes32 hash = _hashTransfers(transfersData);
-        require(_arePendingDepositsTooOld(batchID, hash), "DEPOSITS_NOT_TOO_OLD");
+        require(_arePendingDepositsTooOld(batchID, hash), "BATCH_DEPOSITS_STILL_YOUNG");
 
         for (uint i = 0; i < indices.length; i++) {
             uint idx = indices[i];

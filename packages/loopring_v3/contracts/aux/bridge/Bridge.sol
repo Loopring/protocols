@@ -62,12 +62,12 @@ contract Bridge is IBridge, BatchDepositor
         uint packedData;
     }
 
-    bytes32 constant public BRIDGE_CALL_TYPEHASH = keccak256(
+    bytes32 constant public CONNECTOR_TRANSACTION_TYPEHASH = keccak256(
         "ConnectorTransaction(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
     );
 
-    uint               public constant  MAX_FEE_BIPS                  = 25;     // 0.25%
-    uint               public constant  GAS_LIMIT_CHECK_GAS_LIMIT     = 10000;
+    uint               public constant  MAX_FEE_BIPS              = 25;     // 0.25%
+    uint               public constant  GAS_LIMIT_CHECK_GAS_LIMIT = 10000;
 
     bytes32            public immutable DOMAIN_SEPARATOR;
 
@@ -129,7 +129,7 @@ contract Bridge is IBridge, BatchDepositor
         // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
         DepositBatch[]  calldata depositBatches;
-        ConnectorCall[] calldata connectorCalls;
+        ConnectorCall[] calldata calls;
         TokenData[]     calldata tokens;
         uint tokensOffset;
 
@@ -139,9 +139,9 @@ contract Bridge is IBridge, BatchDepositor
             depositBatches.offset := add(add(offsetToCallbackData, 32), calldataload(offsetToCallbackData))
             depositBatches.length := calldataload(sub(depositBatches.offset, 32))
 
-            // connectorCalls
-            connectorCalls.offset := add(add(offsetToCallbackData, 32), calldataload(add(offsetToCallbackData, 32)))
-            connectorCalls.length := calldataload(sub(connectorCalls.offset, 32))
+            // calls
+            calls.offset := add(add(offsetToCallbackData, 32), calldataload(add(offsetToCallbackData, 32)))
+            calls.length := calldataload(sub(calls.offset, 32))
 
             // tokens
             tokens.offset := add(add(offsetToCallbackData, 32), calldataload(add(offsetToCallbackData, 64)))
@@ -153,7 +153,7 @@ contract Bridge is IBridge, BatchDepositor
         ctx.tokens = tokens;
 
         _processDepositBatches(ctx, depositBatches);
-        _processConnectorCalls(ctx, connectorCalls);
+        _processConnectorCalls(ctx, calls);
     }
 
     function _processDepositBatches(
@@ -220,7 +220,7 @@ contract Bridge is IBridge, BatchDepositor
         }
         // Check if these transfers can be processed
         bytes32 hash = _hashTransfers(transfersData);
-        require(!_arePendingDepositsTooOld(batch.batchID, hash), "TRANSFERS_TOO_OLD");
+        require(!_arePendingDepositsTooOld(batch.batchID, hash), "BATCH_DEPOSITS_TOO_OLD");
 
         // Mark transfers as completed
         delete pendingDeposits[batch.batchID][hash];
@@ -228,7 +228,7 @@ contract Bridge is IBridge, BatchDepositor
 
     function _processConnectorCalls(
         Context          memory   ctx,
-        ConnectorCall[]  calldata connectorCalls
+        ConnectorCall[]  calldata calls
         )
         internal
     {
@@ -236,29 +236,29 @@ contract Bridge is IBridge, BatchDepositor
         uint[] memory totalAmounts = new uint[](ctx.tokens.length);
 
         // All resulting deposits from all connector calls
-        IBatchDepositor.Deposit[][] memory transfers = new IBatchDepositor.Deposit[][](connectorCalls.length);
+        IBatchDepositor.Deposit[][] memory depositsList = new IBatchDepositor.Deposit[][](calls.length);
 
         // Verify and execute bridge calls
-        for (uint i = 0; i < connectorCalls.length; i++) {
-            ConnectorCall calldata connectorCall = connectorCalls[i];
+        for (uint i = 0; i < calls.length; i++) {
+            ConnectorCall calldata call = calls[i];
 
             // Verify the transactions
-            _processConnectorCall(ctx, connectorCall, totalAmounts);
+            _processConnectorCall(ctx, call, totalAmounts);
 
             // Call the connector
-            transfers[i] = _connectorCall(ctx, connectorCall, i, connectorCalls);
+            depositsList[i] = _call(ctx, call, i, calls);
         }
 
         // Verify withdrawals
         _processWithdrawals(ctx, totalAmounts);
 
         // Do all resulting transfers back from the bridge to the users
-        _batchDeposit(address(this), transfers);
+        _batchDeposit(address(this), depositsList);
     }
 
     function _processConnectorCall(
         Context          memory   ctx,
-        ConnectorCall    calldata connectorCall,
+        ConnectorCall    calldata call,
         uint[]           memory   totalAmounts
         )
         internal
@@ -266,8 +266,8 @@ contract Bridge is IBridge, BatchDepositor
     {
         CallTransfer memory transfer;
         uint totalMinGas = 0;
-        for (uint i = 0; i < connectorCall.groups.length; i++) {
-            ConnectorTransactionGroup calldata group = connectorCall.groups[i];
+        for (uint i = 0; i < call.groups.length; i++) {
+            ConnectorTransactionGroup calldata group = call.groups[i];
             for (uint j = 0; j < group.transactions.length; j++) {
                 ConnectorTransaction calldata bridgeTx = group.transactions[j];
 
@@ -289,7 +289,7 @@ contract Bridge is IBridge, BatchDepositor
                     bridgeTx.maxFee,
                     bridgeTx.validUntil,
                     bridgeTx.minGas,
-                    connectorCall.connector,
+                    call.connector,
                     group.groupData,
                     bridgeTx.userData
                 );
@@ -326,7 +326,7 @@ contract Bridge is IBridge, BatchDepositor
         // So calls basically "buy" a part of the total gas needed to do the batched call,
         // while IBridgeConnector.getMinGasLimit() makes sure the total gas limit makes sense for the
         // amount of work submitted.
-        require(connectorCall.gasLimit >= totalMinGas, "INVALID_TOTAL_MIN_GAS");
+        require(call.gasLimit >= totalMinGas, "INVALID_TOTAL_MIN_GAS");
     }
 
     function _processWithdrawals(
@@ -380,20 +380,20 @@ contract Bridge is IBridge, BatchDepositor
         }
     }
 
-    function _connectorCall(
+    function _call(
         Context          memory   ctx,
         ConnectorCall    calldata call,
         uint                      n,
-        ConnectorCall[]  calldata allCalls
+        ConnectorCall[]  calldata calls
         )
         internal
-        returns (IBatchDepositor.Deposit[] memory transfers)
+        returns (IBatchDepositor.Deposit[] memory deposits)
     {
         require(call.connector != address(this), "INVALID_CONNECTOR");
         require(trustedConnectors[call.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
 
         // Check if the minimum amount of gas required is achieved
-        bytes memory txData = _getConnectorCallData(ctx, IBridgeConnector.getMinGasLimit.selector, allCalls, n);
+        bytes memory txData = _getConnectorCallData(ctx, IBridgeConnector.getMinGasLimit.selector, calls, n);
         (bool success, bytes memory returnData) = call.connector.fastCall(GAS_LIMIT_CHECK_GAS_LIMIT, 0, txData);
         if (success) {
             require(call.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
@@ -401,26 +401,26 @@ contract Bridge is IBridge, BatchDepositor
             // If the call failed for some reason just continue.
         }
 
-        // Execute the logic using a delegate so no extra transfers are needed
-        txData = _getConnectorCallData(ctx,IBridgeConnector.processProcessorTransactions.selector, allCalls, n);
+        // Execute the logic using a delegate so no extra deposits are needed
+        txData = _getConnectorCallData(ctx,IBridgeConnector.processProcessorTransactions.selector, calls, n);
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
             emit ConnectorCalled(call.connector, true, "");
-            transfers = abi.decode(returnData, (IBatchDepositor.Deposit[]));
+            deposits = abi.decode(returnData, (IBatchDepositor.Deposit[]));
         } else {
             // If the call failed return funds to all users
             uint totalNumCalls = 0;
             for (uint i = 0; i < call.groups.length; i++) {
                 totalNumCalls += call.groups[i].transactions.length;
             }
-            transfers = new IBatchDepositor.Deposit[](totalNumCalls);
+            deposits = new IBatchDepositor.Deposit[](totalNumCalls);
             uint txIdx = 0;
             for (uint i = 0; i < call.groups.length; i++) {
                 ConnectorTransactionGroup memory group = call.groups[i];
                 for (uint j = 0; j < group.transactions.length; j++) {
                     ConnectorTransaction memory bridgeTx = group.transactions[j];
-                    transfers[txIdx++] = IBatchDepositor.Deposit({
+                    deposits[txIdx++] = IBatchDepositor.Deposit({
                         owner:  bridgeTx.owner,
                         token:  bridgeTx.token,
                         amount: bridgeTx.amount
@@ -455,7 +455,7 @@ contract Bridge is IBridge, BatchDepositor
             _DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
-                    BRIDGE_CALL_TYPEHASH,
+                    CONNECTOR_TRANSACTION_TYPEHASH,
                     tokenID,
                     amount,
                     feeTokenID,
@@ -467,7 +467,7 @@ contract Bridge is IBridge, BatchDepositor
                 )
             )
         );*/
-        bytes32 typeHash = BRIDGE_CALL_TYPEHASH;
+        bytes32 typeHash = CONNECTOR_TRANSACTION_TYPEHASH;
         assembly {
             let data := mload(0x40)
             mstore(    data      , typeHash)
@@ -554,7 +554,7 @@ contract Bridge is IBridge, BatchDepositor
     function verifySignatureL2(
         Context memory ctx,
         address        owner,
-        uint           _accountID,
+        uint           accountID,
         bytes32        txHash
         )
         internal
@@ -588,7 +588,7 @@ contract Bridge is IBridge, BatchDepositor
         // Verify that the hash was signed on L2
         require(
             packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffff ==
-            (uint(ExchangeData.TransactionType.SIGNATURE_VERIFICATION) << 192) | ((uint(owner) & 0x00ffffffffffffffffffffffffffffffffffffffff) << 32) | _accountID &&
+            (uint(ExchangeData.TransactionType.SIGNATURE_VERIFICATION) << 192) | ((uint(owner) & 0x00ffffffffffffffffffffffffffffffffffffffff) << 32) | accountID &&
             data == uint(txHash) >> 3,
             "INVALID_OFFCHAIN_L2_APPROVAL"
         );
