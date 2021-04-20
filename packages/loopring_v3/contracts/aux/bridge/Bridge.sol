@@ -13,12 +13,12 @@ import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../lib/TransferUtil.sol";
 
-import "./BatchDeposit.sol";
+import "./BatchDepositor.sol";
 import "./IBridge.sol";
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBridge, BatchDeposit
+contract Bridge is IBridge, BatchDepositor
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -72,7 +72,7 @@ contract Bridge is IBridge, BatchDeposit
         IExchangeV3 _exchange,
         uint32      _accountID
         )
-        BatchDeposit(_exchange, _accountID)
+        BatchDepositor(_exchange, _accountID)
     {
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Bridge", "1.0", address(this)));
     }
@@ -231,7 +231,7 @@ contract Bridge is IBridge, BatchDeposit
         uint[] memory totalAmounts = new uint[](ctx.tokens.length);
 
         // All resulting deposits from all connector calls
-        BridgeDeposit[][] memory transfers = new BridgeDeposit[][](connectorCalls.length);
+        IBatchDepositor.Deposit[][] memory transfers = new IBatchDepositor.Deposit[][](connectorCalls.length);
 
         // Verify and execute bridge calls
         for (uint c = 0; c < connectorCalls.length; c++) {
@@ -382,7 +382,7 @@ contract Bridge is IBridge, BatchDeposit
         ConnectorCall[]  calldata allCalls
         )
         internal
-        returns (BridgeDeposit[] memory transfers)
+        returns (IBatchDepositor.Deposit[] memory transfers)
     {
         require(call.connector != address(this), "INVALID_CONNECTOR");
         require(trustedConnectors[call.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
@@ -402,20 +402,20 @@ contract Bridge is IBridge, BatchDeposit
 
         if (success) {
             emit ConnectorCallResult(call.connector, true, "");
-            transfers = abi.decode(returnData, (BridgeDeposit[]));
+            transfers = abi.decode(returnData, (IBatchDepositor.Deposit[]));
         } else {
             // If the call failed return funds to all users
             uint totalNumCalls = 0;
             for (uint g = 0; g < call.groups.length; g++) {
                 totalNumCalls += call.groups[g].calls.length;
             }
-            transfers = new BridgeDeposit[](totalNumCalls);
+            transfers = new IBatchDepositor.Deposit[](totalNumCalls);
             uint txIdx = 0;
             for (uint g = 0; g < call.groups.length; g++) {
                 BridgeCallGroup memory group = call.groups[g];
                 for (uint i = 0; i < group.calls.length; i++) {
                     BridgeCall memory bridgeCall = group.calls[i];
-                    transfers[txIdx++] = BridgeDeposit({
+                    transfers[txIdx++] = IBatchDepositor.Deposit({
                         owner: bridgeCall.owner,
                         token:  bridgeCall.token,
                         amount: bridgeCall.amount

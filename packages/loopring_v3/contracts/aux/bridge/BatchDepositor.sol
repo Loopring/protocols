@@ -17,9 +17,9 @@ import "../../lib/TransferUtil.sol";
 import "./IBridge.sol";
 
 
-/// @title  BatchDeposit implementation
+/// @title  BatchDepositor implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract BatchDeposit is IBatchDeposit, ReentrancyGuard
+abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -35,7 +35,7 @@ abstract contract BatchDeposit is IBatchDeposit, ReentrancyGuard
     // - uint16  tokenID:  2 bytes
     event Transfers (uint batchID, bytes transfers, address from);
 
-    struct InternalBridgeDeposit
+    struct InternaDeposit
     {
         address owner;
         uint16  tokenID;
@@ -85,22 +85,22 @@ abstract contract BatchDeposit is IBatchDeposit, ReentrancyGuard
     }
 
     function batchDeposit(
-        BridgeDeposit[] memory transfers
+        IBatchDepositor.Deposit[] memory transfers
         )
         external
         payable
         override
         nonReentrant
     {
-        BridgeDeposit[][] memory listOfTransfers = new BridgeDeposit[][](1);
+        IBatchDepositor.Deposit[][] memory listOfTransfers = new IBatchDepositor.Deposit[][](1);
         listOfTransfers[0] = transfers;
         _batchDeposit(msg.sender, listOfTransfers);
     }
 
     // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFER old.
-    function withdrawFromPendingBatchDeposit(
+    function withdrawFromPendingBatchDepositor(
         uint                           batchID,
-        InternalBridgeDeposit[] memory transfers,
+        InternaDeposit[] memory transfers,
         uint[]                  memory indices
         )
         external
@@ -112,7 +112,7 @@ abstract contract BatchDeposit is IBatchDeposit, ReentrancyGuard
         }
 
         for (uint i = 0; i < transfers.length; i++) {
-            InternalBridgeDeposit memory transfer = transfers[i];
+            InternaDeposit memory transfer = transfers[i];
             // Pack the transfer data to compare against batch deposit hash
             address  owner = transfer.owner;
             uint16 tokenID = transfer.tokenID;
@@ -169,7 +169,7 @@ abstract contract BatchDeposit is IBatchDeposit, ReentrancyGuard
 
     function _batchDeposit(
         address                  from,
-        BridgeDeposit[][] memory deposits
+        IBatchDepositor.Deposit[][] memory deposits
         )
         internal
     {
@@ -198,9 +198,9 @@ abstract contract BatchDeposit is IBatchDeposit, ReentrancyGuard
         address token = address(-1);
         uint tokenIdx = 0;
         uint16 tokenID;
-        BridgeDeposit memory deposit;
+        IBatchDepositor.Deposit memory deposit;
         for (uint n = 0; n < deposits.length; n++) {
-            BridgeDeposit[] memory _deposits = deposits[n];
+            IBatchDepositor.Deposit[] memory _deposits = deposits[n];
             for (uint i = 0; i < _deposits.length; i++) {
                 deposit = _deposits[i];
                 if(token != deposit.token) {
