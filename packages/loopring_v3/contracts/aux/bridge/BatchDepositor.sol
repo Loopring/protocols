@@ -14,7 +14,7 @@ import "../../lib/MathUint96.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/TransferUtil.sol";
 
-import "./IBridge.sol";
+import "./IBatchDepositor.sol";
 
 
 /// @title  BatchDepositor implementation
@@ -35,7 +35,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     // - uint16  tokenID:  2 bytes
     event Transfers (uint batchID, bytes transfers, address from);
 
-    struct InternaDeposit
+    struct InternalDeposit
     {
         address owner;
         uint16  tokenID;
@@ -100,7 +100,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFER old.
     function withdrawFromPendingBatchDepositor(
         uint                           batchID,
-        InternaDeposit[] memory transfers,
+        InternalDeposit[] memory transfers,
         uint[]                  memory indices
         )
         external
@@ -112,7 +112,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
 
         for (uint i = 0; i < transfers.length; i++) {
-            InternaDeposit memory transfer = transfers[i];
+            InternalDeposit memory transfer = transfers[i];
             // Pack the transfer data to compare against batch deposit hash
             address  owner = transfer.owner;
             uint16 tokenID = transfer.tokenID;

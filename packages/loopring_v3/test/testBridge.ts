@@ -29,7 +29,7 @@ export interface BridgeDeposit {
   amount: string;
 }
 
-export interface InternalBridgeDeposit {
+export interface InternalDeposit {
   owner: string;
   tokenID: number;
   amount: string;
@@ -254,10 +254,10 @@ export class Bridge {
   }
 
   public decodeTransfers(_data: string) {
-    const transfers: InternalBridgeDeposit[] = [];
+    const transfers: InternalDeposit[] = [];
     const data = new Bitstream(_data);
     for (let i = 0; i < data.length() / 34; i++) {
-      const transfer: InternalBridgeDeposit = {
+      const transfer: InternalDeposit = {
         owner: data.extractAddress(i * 34 + 0),
         tokenID: data.extractUint16(i * 34 + 32),
         amount: data.extractUint96(i * 34 + 20).toString(10)
@@ -751,7 +751,7 @@ contract("Bridge", (accounts: string[]) => {
   const withdrawFromPendingBatchxDepositorChecked = async (
     bridge: Bridge,
     depositID: number,
-    transfers: InternalBridgeDeposit[],
+    transfers: InternalDeposit[],
     indices: number[]
   ) => {
     // Simulate all transfers

@@ -27,7 +27,7 @@ interface IBatchDepositor
     ///      The sender will send the funds to Loopring exchange, so just like with normal
     ///      deposits the sender first has to approve token transfers on the deposit contract.
     ///
-    /// @param transfers The L2 transfers from Bridge to owners
+    /// @param deposits The L2 deposits from Bridge to owners
     function batchDeposit(Deposit[] calldata deposits)
         external
         payable;
