@@ -35,7 +35,7 @@ library ExchangeDeposits
         address tokenAddress,
         uint96  amount,                 // can be zero
         bytes   memory extraData,
-        bool    useLoan
+        bool    isFlashDeposit
         )
         internal  // inline call
     {
@@ -48,7 +48,7 @@ library ExchangeDeposits
         uint16 tokenID = S.getTokenID(tokenAddress);
 
         uint96 _amount = amount;
-        if (useLoan) {
+        if (isFlashDeposit) {
             require(msg.value == 0, "ETH_AMOUNT_NOT_ZERO");
             S.flashDepositAmounts[tokenAddress] = S.flashDepositAmounts[tokenAddress].add(amount);
         } else {
