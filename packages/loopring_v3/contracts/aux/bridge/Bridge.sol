@@ -28,8 +28,8 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     using MathUint96        for uint96;
     using TransferUtil      for address;
 
-    event ConnectorTransacted  (address connector, bool success, bytes reason);
-    event ConnectorTrusted (address connector, bool trusted);
+    event ConnectorTransacted (address connector, bool success, bytes reason);
+    event ConnectorTrusted    (address connector, bool trusted);
 
     struct DepositBatch
     {
