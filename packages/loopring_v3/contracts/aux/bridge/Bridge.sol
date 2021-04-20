@@ -28,7 +28,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     using MathUint96        for uint96;
     using TransferUtil      for address;
 
-    event ConnectorTransacted (address connector, bool success, bytes reason);
+    event ConnectorTransacted (address connector, bool check, bool success, bytes reason);
     event ConnectorTrusted    (address connector, bool trusted);
 
     struct DepositBatch
@@ -431,13 +431,13 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             calls,
             n
         );
-        (bool success, bytes memory returnData) = call.connector.fastCall(
+        (bool check, bytes memory returnData) = call.connector.fastCall(
             GAS_LIMIT_CHECK_GAS_LIMIT,
             0,
             txData
         );
 
-        if (success) {
+        if (check) {
             require(call.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
         } else {
             // If the call failed for some reason just continue.
@@ -449,10 +449,10 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             calls,
             n
         );
+        bool success;
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
-            emit ConnectorTransacted(call.connector, true, "");
             deposits = abi.decode(returnData, (IBatchDepositor.Deposit[]));
         } else {
             // If the call failed return funds to all users
@@ -474,8 +474,9 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                 }
             }
             assert(txIdx == totalNumCalls);
-            emit ConnectorTransacted(call.connector, false, returnData);
         }
+
+        emit ConnectorTransacted(call.connector, check, success, returnData);
     }
 
     function _hashConnectorTx(
