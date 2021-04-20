@@ -31,7 +31,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     // - address owner  : 20 bytes
     // - uint96  amount : 12 bytes
     // - uint16  tokenID:  2 bytes
-    event BatchDeposited (uint batchID, bytes transfersData, address from);
+    event TransferBatchStored (uint batchID, bytes transfersData, address from);
     event Withdrawn      (uint batchID);
 
     struct BatchDeposit
@@ -55,7 +55,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     uint32             public immutable accountID;
     IDepositContract   public immutable depositContract;
 
-    mapping (bytes32 => uint)                   public pendingDeposits;
+    mapping (bytes32 => uint)                   public pendingTransferBatches;
     mapping (uint => mapping(uint => bool))     public withdrawn;
     // token -> tokenID
     mapping (address => uint16)                 public cachedTokenIDs;
@@ -119,8 +119,8 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
 
         // Check if withdrawing from these deposits is possible
-        bytes32 hash = _hashTransfers(batchID, transfersData);
-        require(_arePendingDepositsTooOld(hash), "BATCH_DEPOSITS_STILL_YOUNG");
+        bytes32 hash = _hashTransferBatch(batchID, transfersData);
+        require(_isTransferBatchTooOld(hash), "BATCH_DEPOSITS_STILL_YOUNG");
 
         for (uint i = 0; i < indices.length; i++) {
             uint idx = indices[i];
@@ -232,10 +232,10 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
 
         // Store the transfersData so they can be processed later
-        _storeBatchDeposit(transfersData, from);
+        _storeTransferBatch(transfersData, from);
     }
 
-    function _storeBatchDeposit(
+    function _storeTransferBatch(
         bytes   memory transfersData,
         address        from
         )
@@ -244,11 +244,11 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         uint batchID = batchIDGenerator++;
 
         // Store transfers to distribute at a later time
-        bytes32 hash = _hashTransfers(batchID, transfersData);
-        require(pendingDeposits[hash] == 0, "DUPLICATE_BATCH");
-        pendingDeposits[hash] = block.timestamp;
+        bytes32 hash = _hashTransferBatch(batchID, transfersData);
+        require(pendingTransferBatches[hash] == 0, "DUPLICATE_BATCH");
+        pendingTransferBatches[hash] = block.timestamp;
 
-        emit BatchDeposited(batchID, transfersData, from);
+        emit TransferBatchStored(batchID, transfersData, from);
     }
 
     function _deposit(
@@ -288,7 +288,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
     }
 
-    function _hashTransfers(uint batchID, bytes memory transfersData)
+    function _hashTransferBatch(uint batchID, bytes memory transfersData)
         internal
         pure
         returns (bytes32)
@@ -296,12 +296,12 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         return keccak256(abi.encodePacked(batchID, transfersData));
     }
 
-    function _arePendingDepositsTooOld(bytes32 hash)
+    function _isTransferBatchTooOld(bytes32 hash)
         internal
         view
         returns (bool)
     {
-        uint timestamp = pendingDeposits[hash];
+        uint timestamp = pendingTransferBatches[hash];
         require(timestamp != 0, "UNKNOWN_PENDING_DEPOSITS");
         return block.timestamp > timestamp + MAX_AGE_PENDING_DEPOSITS;
     }

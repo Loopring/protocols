@@ -31,7 +31,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     event ConnectorCalled  (address connector, bool success, bytes reason);
     event ConnectorTrusted (address connector, bool trusted);
 
-    struct DepositBatch
+    struct TransferBatch
     {
         uint     batchID;
         uint96[] amounts;
@@ -66,7 +66,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     // This struct can be used for packing data into bytes
     struct BridgeOperation
     {
-        DepositBatch[]  batches;
+        TransferBatch[] batches;
         ConnectorCall[] calls;
         TokenData[]     tokens;
     }
@@ -144,7 +144,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     {
         // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
-        DepositBatch[]  calldata batches;
+        TransferBatch[]  calldata batches;
         ConnectorCall[] calldata calls;
         TokenData[]     calldata tokens;
         uint tokensOffset;
@@ -168,24 +168,24 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         ctx.tokensOffset = tokensOffset;
         ctx.tokens = tokens;
 
-        _processDepositBatches(ctx, batches);
+        _processTransferBatches(ctx, batches);
         _processConnectorCalls(ctx, calls);
     }
 
-    function _processDepositBatches(
+    function _processTransferBatches(
         Context        memory   ctx,
-        DepositBatch[] calldata batches
+        TransferBatch[] calldata batches
         )
         internal
     {
         for (uint i = 0; i < batches.length; i++) {
-            _processDepositBatch(ctx, batches[i]);
+            _processTransferBatch(ctx, batches[i]);
         }
     }
 
-    function _processDepositBatch(
-        Context      memory   ctx,
-        DepositBatch calldata batch
+    function _processTransferBatch(
+        Context       memory   ctx,
+        TransferBatch calldata batch
         )
         internal
     {
@@ -239,11 +239,11 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             transfersData := sub(transfersData, add(32, mul(34, mload(amounts))))
         }
         // Check if these transfers can be processed
-        bytes32 hash = _hashTransfers(batch.batchID, transfersData);
-        require(!_arePendingDepositsTooOld(hash), "BATCH_DEPOSITS_TOO_OLD");
+        bytes32 hash = _hashTransferBatch(batch.batchID, transfersData);
+        require(!_isTransferBatchTooOld(hash), "TRANSFER_BATCH_TOO_OLD");
 
         // Mark transfers as completed
-        delete pendingDeposits[hash];
+        delete pendingTransferBatches[hash];
     }
 
     function _processConnectorCalls(
