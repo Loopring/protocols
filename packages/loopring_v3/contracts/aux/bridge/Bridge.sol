@@ -281,14 +281,14 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             ConnectorCall calldata call = calls[i];
 
             // Verify the transactions
-            _verifyInboundTransfers(ctx, call, totalAmounts);
+            _verifyConnectorInboundTransfers(ctx, call, totalAmounts);
 
             // Call the connector
             depositsList[i] = _transactConnector(ctx, call, i, calls);
         }
     }
 
-    function _verifyInboundTransfers(
+    function _verifyConnectorInboundTransfers(
         Context          memory   ctx,
         ConnectorCall    calldata call,
         uint[]           memory   totalAmounts
