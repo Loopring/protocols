@@ -168,8 +168,22 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         ctx.tokensOffset = tokensOffset;
         ctx.tokens = tokens;
 
+        // Process potential L1->L2 batch deposits if there are any.
+        // Batch deposits are not always necessary, if users have
+        // tokens on L2 already, this step is totally optional.
         _processDepositBatches(ctx, batches);
-        _processConnectorCalls(ctx, calls);
+
+        // Process L2 transfers from users to the Bridge, then withdrawl tokens
+        // to L1 to interact with connectors,
+        uint[]                      memory totalAmounts;
+        IBatchDepositor.Deposit[][] memory depositsList;
+        (totalAmounts, depositsList) = _processConnectorCalls(ctx, calls);
+
+        // Verify withdrawals
+        _processWithdrawals(ctx, totalAmounts);
+
+        // Do all resulting transfers back from the bridge to the users
+        _batchDeposit(address(this), depositsList);
     }
 
     function _processDepositBatches(
@@ -251,12 +265,16 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         ConnectorCall[]  calldata calls
         )
         internal
+        returns(
+            uint[]                      memory totalAmounts,
+            IBatchDepositor.Deposit[][] memory depositsList
+        )
     {
         // Total amounts transferred to the bridge
-        uint[] memory totalAmounts = new uint[](ctx.tokens.length);
+        totalAmounts = new uint[](ctx.tokens.length);
 
         // All resulting deposits from all connector calls
-        IBatchDepositor.Deposit[][] memory depositsList = new IBatchDepositor.Deposit[][](calls.length);
+        depositsList = new IBatchDepositor.Deposit[][](calls.length);
 
         // Verify and execute bridge calls
         for (uint i = 0; i < calls.length; i++) {
@@ -268,12 +286,6 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             // Call the connector
             depositsList[i] = _transactConnector(ctx, call, i, calls);
         }
-
-        // Verify withdrawals
-        _processWithdrawals(ctx, totalAmounts);
-
-        // Do all resulting transfers back from the bridge to the users
-        _batchDeposit(address(this), depositsList);
     }
 
     function _processConnectorCall(
@@ -424,6 +436,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             0,
             txData
         );
+
         if (success) {
             require(call.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
         } else {
