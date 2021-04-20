@@ -286,7 +286,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                 transfer.fee = (transfer.fee & 2047) * (10 ** (transfer.fee >> 11));
 
                 // Verify that the transaction was approved with an L2 signature
-                bytes32 txHash = _hashTx(
+                bytes32 txHash = _hashConnectorTx(
                     transfer,
                     bridgeTx.maxFee,
                     bridgeTx.validUntil,
@@ -395,7 +395,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         require(trustedConnectors[call.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
 
         // Check if the minimum amount of gas required is achieved
-        bytes memory txData = _getConnectorCallData(
+        bytes memory txData = _getDataForConnectorTxs(
             ctx,
             IBridgeConnector.getMinGasLimit.selector,
             calls,
@@ -413,7 +413,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         }
 
         // Execute the logic using a delegate so no extra deposits are needed
-        txData = _getConnectorCallData(
+        txData = _getDataForConnectorTxs(
             ctx,IBridgeConnector.processProcessorTransactions.selector,
             calls,
             n
@@ -447,7 +447,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         }
     }
 
-    function _hashTx(
+    function _hashConnectorTx(
         CallTransfer memory transfer,
         uint                maxFee,
         uint                validUntil,
@@ -504,7 +504,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         }
     }
 
-    function _getConnectorCallData(
+    function _getDataForConnectorTxs(
         Context memory            ctx,
         bytes4                    selector,
         ConnectorCall[]  calldata calls,
