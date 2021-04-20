@@ -240,14 +240,14 @@ contract Bridge is IBridge, BatchDepositor
         IBatchDepositor.Deposit[][] memory transfers = new IBatchDepositor.Deposit[][](connectorCalls.length);
 
         // Verify and execute bridge calls
-        for (uint c = 0; c < connectorCalls.length; c++) {
-            ConnectorCall calldata connectorCall = connectorCalls[c];
+        for (uint i = 0; i < connectorCalls.length; i++) {
+            ConnectorCall calldata connectorCall = connectorCalls[i];
 
             // Verify the transactions
             _processConnectorCall(ctx, connectorCall, totalAmounts);
 
             // Call the connector
-            transfers[c] = _connectorCall(ctx, connectorCall, c, connectorCalls);
+            transfers[i] = _connectorCall(ctx, connectorCall, i, connectorCalls);
         }
 
         // Verify withdrawals
@@ -267,10 +267,10 @@ contract Bridge is IBridge, BatchDepositor
     {
         CallTransfer memory transfer;
         uint totalMinGas = 0;
-        for (uint g = 0; g < connectorCall.groups.length; g++) {
-            ConnectorTransactionGroup calldata group = connectorCall.groups[g];
-            for (uint i = 0; i < group.transactions.length; i++) {
-                ConnectorTransaction calldata bridgeTx = group.transactions[i];
+        for (uint i = 0; i < connectorCall.groups.length; i++) {
+            ConnectorTransactionGroup calldata group = connectorCall.groups[i];
+            for (uint j = 0; j < group.transactions.length; j++) {
+                ConnectorTransaction calldata bridgeTx = group.transactions[j];
 
                 // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
                 (uint packedData, , ) = readTransfer(ctx);
@@ -297,12 +297,12 @@ contract Bridge is IBridge, BatchDepositor
                 verifySignatureL2(ctx, bridgeTx.owner, transfer.fromAccountID, txHash);
 
                 // Find the token in the tokens list
-                uint t = 0;
-                while (t < ctx.tokens.length && transfer.tokenID != ctx.tokens[t].tokenID) {
-                    t++;
+                uint k = 0;
+                while (k < ctx.tokens.length && transfer.tokenID != ctx.tokens[k].tokenID) {
+                    k++;
                 }
-                require(t < ctx.tokens.length, "INVALID_INPUT_TOKENS");
-                totalAmounts[t] += transfer.amount;
+                require(k < ctx.tokens.length, "INVALID_INPUT_TOKENS");
+                totalAmounts[k] += transfer.amount;
 
                 // Verify the transaction data
                 require(
@@ -314,7 +314,7 @@ contract Bridge is IBridge, BatchDepositor
                     (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(accountID) << 104) &&
                     transfer.fee <= bridgeTx.maxFee &&
                     bridgeTx.validUntil == 0 || block.timestamp < bridgeTx.validUntil &&
-                    bridgeTx.token == ctx.tokens[t].token &&
+                    bridgeTx.token == ctx.tokens[k].token &&
                     bridgeTx.amount == transfer.amount,
                     "INVALID_BRIDGE_CALL_TRANSFER"
                 );
