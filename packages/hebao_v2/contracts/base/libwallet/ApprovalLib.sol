@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
@@ -25,7 +25,6 @@ library ApprovalLib {
         bytes    memory encodedRequest
         )
         internal
-        returns (bytes32)
     {
         require(address(this) == approval.wallet, "INVALID_WALLET");
         require(block.timestamp <= approval.validUntil, "EXPIRED_SIGNED_REQUEST");
@@ -49,7 +48,5 @@ library ApprovalLib {
             ),
             "PERMISSION_DENIED"
         );
-
-        return _hash;
     }
 }
