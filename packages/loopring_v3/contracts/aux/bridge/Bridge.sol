@@ -180,7 +180,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         (totalAmounts, depositsList) = _processConnectorCalls(ctx, calls);
 
         // Verify withdrawals
-        _processWithdrawals(ctx, totalAmounts);
+        _verifyWithdrawals(ctx, totalAmounts);
 
         // Do all resulting transfers back from the bridge to the users
         _batchDeposit(address(this), depositsList);
@@ -281,14 +281,14 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             ConnectorCall calldata call = calls[i];
 
             // Verify the transactions
-            _processConnectorCall(ctx, call, totalAmounts);
+            _verifyInboundTransfers(ctx, call, totalAmounts);
 
             // Call the connector
             depositsList[i] = _transactConnector(ctx, call, i, calls);
         }
     }
 
-    function _processConnectorCall(
+    function _verifyInboundTransfers(
         Context          memory   ctx,
         ConnectorCall    calldata call,
         uint[]           memory   totalAmounts
@@ -361,7 +361,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         require(call.gasLimit >= totalMinGas, "INVALID_TOTAL_MIN_GAS");
     }
 
-    function _processWithdrawals(
+    function _verifyWithdrawals(
         Context memory ctx,
         uint[]  memory totalAmounts
         )
