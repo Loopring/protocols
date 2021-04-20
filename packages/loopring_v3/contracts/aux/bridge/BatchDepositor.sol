@@ -235,10 +235,10 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
 
         // Store the transfersData so they can be processed later
-        _storeTransfers(transfersData, from);
+        _storeBatchDeposits(transfersData, from);
     }
 
-    function _storeTransfers(
+    function _storeBatchDeposits(
         bytes   memory transfersData,
         address        from
         )
