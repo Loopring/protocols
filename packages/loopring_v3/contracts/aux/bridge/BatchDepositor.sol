@@ -49,7 +49,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     }
 
     uint               public constant  MAX_NUM_TRANSACTIONS_IN_BLOCK = 386;
-    uint               public constant  MAX_AGE_PENDING_TRANSFER      = 7 days;
+    uint               public constant  MAX_AGE_PENDING_DEPOSITS      = 7 days;
 
     IExchangeV3        public immutable exchange;
     uint32             public immutable accountID;
@@ -90,7 +90,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         _batchDeposit(msg.sender, depositsList);
     }
 
-    // Allows withdrawing from pending deposits that are at least MAX_AGE_PENDING_TRANSFER old.
+    // Allows withdrawing from pending deposits that are at least MAX_AGE_PENDING_DEPOSITS old.
     function withdrawFromPendingBatchDeposits(
         uint                  batchID,
         BatchDeposit[] memory deposits,
@@ -308,6 +308,6 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     {
         uint timestamp = pendingDeposits[batchID][hash];
         require(timestamp != 0, "UNKNOWN_TRANSFERS");
-        return block.timestamp > timestamp + MAX_AGE_PENDING_TRANSFER;
+        return block.timestamp > timestamp + MAX_AGE_PENDING_DEPOSITS;
     }
 }

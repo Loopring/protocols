@@ -1295,8 +1295,8 @@ contract("Bridge", (accounts: string[]) => {
         "TRANSFERS_NOT_TOO_OLD"
       );
 
-      const MAX_AGE_PENDING_TRANSFER = (await bridge.contract.MAX_AGE_PENDING_TRANSFER()).toNumber();
-      await ctx.advanceBlockTimestamp(MAX_AGE_PENDING_TRANSFER + 1);
+      const MAX_AGE_PENDING_DEPOSITS = (await bridge.contract.MAX_AGE_PENDING_DEPOSITS()).toNumber();
+      await ctx.advanceBlockTimestamp(MAX_AGE_PENDING_DEPOSITS + 1);
 
       await withdrawFromPendingBatchxDepositorChecked(bridge, 0, transfers, [
         1,
