@@ -461,7 +461,7 @@ export class Bridge {
 
     const connectorCallResultEvents = await this.ctx.assertEventsEmitted(
       this.contract,
-      "ConnectorCalled",
+      "ConnectorTransacted",
       bridgeOperation.connectorCalls.length
     );
 
@@ -1303,10 +1303,15 @@ contract("Bridge", (accounts: string[]) => {
         3
       ]);
 
-      await withdrawFromPendingBatchxDepositorChecked(bridge, 0, transfers, [0]);
+      await withdrawFromPendingBatchxDepositorChecked(bridge, 0, transfers, [
+        0
+      ]);
 
       await expectThrow(
-        bridge.contract.withdrawFromPendingBatchxDepositor(0, transfers, [1, 2]),
+        bridge.contract.withdrawFromPendingBatchxDepositor(0, transfers, [
+          1,
+          2
+        ]),
         "ALREADY_WITHDRAWN"
       );
     });

@@ -28,7 +28,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     using MathUint96        for uint96;
     using TransferUtil      for address;
 
-    event ConnectorCalled  (address connector, bool success, bytes reason);
+    event ConnectorTransacted  (address connector, bool success, bytes reason);
     event ConnectorTrusted (address connector, bool trusted);
 
     struct DepositBatch
@@ -63,14 +63,22 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         uint packedData;
     }
 
+    // This struct can be used for packing data into bytes
+    struct BridgeOperation
+    {
+        DepositBatch[]  batches;
+        ConnectorCall[] calls;
+        TokenData[]     tokens;
+    }
+
     bytes32 constant public CONNECTOR_TX_TYPEHASH = keccak256(
         "ConnectorTx(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
     );
 
-    uint               public constant  MAX_FEE_BIPS              = 25;     // 0.25%
-    uint               public constant  GAS_LIMIT_CHECK_GAS_LIMIT = 10000;
+    uint    public constant  MAX_FEE_BIPS              = 25;     // 0.25%
+    uint    public constant  GAS_LIMIT_CHECK_GAS_LIMIT = 10000;
 
-    bytes32            public immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR;
 
     mapping (address => bool) public trustedConnectors;
 
@@ -201,16 +209,20 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             fee = (fee & 2047) * (10 ** (fee >> 11));
 
             // Verify the transaction data
+            uint value = (uint(ExchangeData.TransactionType.TRANSFER) << 176) |
+                (1 << 168) |
+                (uint(accountID) << 136);
+
             require(
                 // txType == ExchangeData.TransactionType.TRANSFER &&
                 // transfer.type == 1 &&
                 // transfer.fromAccountID == ctx.accountID &&
                 // transfer.toAccountID == UNKNOWN  &&
-                packedData & 0xffffffffffff0000000000000000000000000000000000 ==
-                (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(accountID) << 136) &&
-                /*feeTokenID*/(packedData >> 48) & 0xffff == tokenID &&
+                packedData & 0xffffffffffff0000000000000000000000000000000000 == value &&
+                (packedData >> 48) & 0xffff == tokenID && // feeTokenID
                 fee <= (amount * MAX_FEE_BIPS / 10000) &&
-                (100000 - 8) * targetAmount <= 100000 * amount && amount <= targetAmount,
+                (100000 - 8) * targetAmount <= 100000 * amount &&
+                amount <= targetAmount,
                 "INVALID_BRIDGE_TRANSFER_TX_DATA"
             );
 
@@ -254,7 +266,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             _processConnectorCall(ctx, call, totalAmounts);
 
             // Call the connector
-            depositsList[i] = _callConnector(ctx, call, i, calls);
+            depositsList[i] = _transactConnector(ctx, call, i, calls);
         }
 
         // Verify withdrawals
@@ -277,7 +289,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         for (uint i = 0; i < call.txGroups.length; i++) {
             ConnectorTxGroup calldata txGroup = call.txGroups[i];
             for (uint j = 0; j < txGroup.transactions.length; j++) {
-                ConnectorTx calldata bridgeTx = txGroup.transactions[j];
+                ConnectorTx calldata connectorTx = txGroup.transactions[j];
 
                 // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
                 (uint packedData, , ) = readTransfer(ctx);
@@ -294,14 +306,14 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                 // Verify that the transaction was approved with an L2 signature
                 bytes32 txHash = _hashConnectorTx(
                     transfer,
-                    bridgeTx.maxFee,
-                    bridgeTx.validUntil,
-                    bridgeTx.minGas,
+                    connectorTx.maxFee,
+                    connectorTx.validUntil,
+                    connectorTx.minGas,
                     call.connector,
                     txGroup.groupData,
-                    bridgeTx.userData
+                    connectorTx.userData
                 );
-                verifySignatureL2(ctx, bridgeTx.owner, transfer.fromAccountID, txHash);
+                verifySignatureL2(ctx, connectorTx.owner, transfer.fromAccountID, txHash);
 
                 // Find the token in the tokens list
                 uint k = 0;
@@ -319,14 +331,14 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                     // transfer.toAccountID == ctx.accountID &&
                     packedData & 0xffff00000000ffffffff00000000000000000000000000 ==
                     (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(accountID) << 104) &&
-                    transfer.fee <= bridgeTx.maxFee &&
-                    bridgeTx.validUntil == 0 || block.timestamp < bridgeTx.validUntil &&
-                    bridgeTx.token == ctx.tokens[k].token &&
-                    bridgeTx.amount == transfer.amount,
+                    transfer.fee <= connectorTx.maxFee &&
+                    connectorTx.validUntil == 0 || block.timestamp < connectorTx.validUntil &&
+                    connectorTx.token == ctx.tokens[k].token &&
+                    connectorTx.amount == transfer.amount,
                     "INVALID_BRIDGE_CALL_TRANSFER"
                 );
 
-                totalMinGas = totalMinGas.add(bridgeTx.minGas);
+                totalMinGas = totalMinGas.add(connectorTx.minGas);
             }
         }
 
@@ -388,7 +400,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         }
     }
 
-    function _callConnector(
+    function _transactConnector(
         Context          memory   ctx,
         ConnectorCall    calldata call,
         uint                      n,
@@ -427,7 +439,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
-            emit ConnectorCalled(call.connector, true, "");
+            emit ConnectorTransacted(call.connector, true, "");
             deposits = abi.decode(returnData, (IBatchDepositor.Deposit[]));
         } else {
             // If the call failed return funds to all users
@@ -440,16 +452,16 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             for (uint i = 0; i < call.txGroups.length; i++) {
                 ConnectorTxGroup memory txGroup = call.txGroups[i];
                 for (uint j = 0; j < txGroup.transactions.length; j++) {
-                    ConnectorTx memory bridgeTx = txGroup.transactions[j];
+                    ConnectorTx memory connectorTx = txGroup.transactions[j];
                     deposits[txIdx++] = IBatchDepositor.Deposit({
-                        owner:  bridgeTx.owner,
-                        token:  bridgeTx.token,
-                        amount: bridgeTx.amount
+                        owner:  connectorTx.owner,
+                        token:  connectorTx.token,
+                        amount: connectorTx.amount
                     });
                 }
             }
             assert(txIdx == totalNumCalls);
-            emit ConnectorCalled(call.connector, false, returnData);
+            emit ConnectorTransacted(call.connector, false, returnData);
         }
     }
 
