@@ -28,8 +28,8 @@ contract Bridge is IBridge, BatchDepositor
     using MathUint96        for uint96;
     using TransferUtil      for address;
 
-    event ConnectorCallResult (address connector, bool success, bytes reason);
-    event ConnectorTrusted    (address connector, bool trusted);
+    event ConnectorCalled  (address connector, bool success, bytes reason);
+    event ConnectorTrusted (address connector, bool trusted);
 
     struct DepositBatch
     {
@@ -407,20 +407,20 @@ contract Bridge is IBridge, BatchDepositor
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
-            emit ConnectorCallResult(call.connector, true, "");
+            emit ConnectorCalled(call.connector, true, "");
             transfers = abi.decode(returnData, (IBatchDepositor.Deposit[]));
         } else {
             // If the call failed return funds to all users
             uint totalNumCalls = 0;
-            for (uint g = 0; g < call.groups.length; g++) {
-                totalNumCalls += call.groups[g].transactions.length;
+            for (uint i = 0; i < call.groups.length; i++) {
+                totalNumCalls += call.groups[i].transactions.length;
             }
             transfers = new IBatchDepositor.Deposit[](totalNumCalls);
             uint txIdx = 0;
-            for (uint g = 0; g < call.groups.length; g++) {
-                ConnectorTransactionGroup memory group = call.groups[g];
-                for (uint i = 0; i < group.transactions.length; i++) {
-                    ConnectorTransaction memory bridgeTx = group.transactions[i];
+            for (uint i = 0; i < call.groups.length; i++) {
+                ConnectorTransactionGroup memory group = call.groups[i];
+                for (uint j = 0; j < group.transactions.length; j++) {
+                    ConnectorTransaction memory bridgeTx = group.transactions[j];
                     transfers[txIdx++] = IBatchDepositor.Deposit({
                         owner:  bridgeTx.owner,
                         token:  bridgeTx.token,
@@ -429,7 +429,7 @@ contract Bridge is IBridge, BatchDepositor
                 }
             }
             assert(txIdx == totalNumCalls);
-            emit ConnectorCallResult(call.connector, false, returnData);
+            emit ConnectorCalled(call.connector, false, returnData);
         }
     }
 
