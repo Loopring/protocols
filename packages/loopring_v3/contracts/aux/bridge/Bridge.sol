@@ -31,10 +31,16 @@ contract Bridge is IBridge, BatchDepositor
     event ConnectorCallResult (address connector, bool success, bytes reason);
     event ConnectorTrusted    (address connector, bool trusted);
 
+    struct DepositBatch
+    {
+        uint     batchID;
+        uint96[] amounts;
+    }
+
     struct ConnectorCall
     {
-        address           connector;
-        uint              gasLimit;
+        address                     connector;
+        uint                        gasLimit;
         ConnectorTransactionGroup[] groups;
     }
 
@@ -123,16 +129,16 @@ contract Bridge is IBridge, BatchDepositor
     {
         // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
-        TransferBatch[] calldata transferBatches;
+        DepositBatch[]  calldata depositBatches;
         ConnectorCall[] calldata connectorCalls;
-        TokenData[] calldata tokens;
+        TokenData[]     calldata tokens;
         uint tokensOffset;
 
         assembly {
             let offsetToCallbackData := add(68, calldataload(36))
-            // transferBatches
-            transferBatches.offset := add(add(offsetToCallbackData, 32), calldataload(offsetToCallbackData))
-            transferBatches.length := calldataload(sub(transferBatches.offset, 32))
+            // depositBatches
+            depositBatches.offset := add(add(offsetToCallbackData, 32), calldataload(offsetToCallbackData))
+            depositBatches.length := calldataload(sub(depositBatches.offset, 32))
 
             // connectorCalls
             connectorCalls.offset := add(add(offsetToCallbackData, 32), calldataload(add(offsetToCallbackData, 32)))
@@ -147,33 +153,33 @@ contract Bridge is IBridge, BatchDepositor
         ctx.tokensOffset = tokensOffset;
         ctx.tokens = tokens;
 
-        _processTransferBatches(ctx, transferBatches);
+        _processDepositBatches(ctx, depositBatches);
         _processConnectorCalls(ctx, connectorCalls);
     }
 
-    function _processTransferBatches(
-        Context         memory   ctx,
-        TransferBatch[] calldata batches
+    function _processDepositBatches(
+        Context        memory   ctx,
+        DepositBatch[] calldata batches
         )
         internal
     {
-        for (uint o = 0; o < batches.length; o++) {
-            _processTransferBatch(ctx, batches[o]);
+        for (uint i = 0; i < batches.length; i++) {
+            _processDepositBatch(ctx, batches[i]);
         }
     }
 
-    function _processTransferBatch(
+    function _processDepositBatch(
         Context       memory   ctx,
-        TransferBatch calldata batch
+        DepositBatch calldata batch
         )
         internal
     {
         uint96[] memory amounts = batch.amounts;
 
         // Verify transfers
-        bytes memory transfers = new bytes(amounts.length * 34);
+        bytes memory transfersData = new bytes(amounts.length * 34);
         assembly {
-            transfers := add(transfers, 32)
+            transfersData := add(transfersData, 32)
         }
 
         for (uint i = 0; i < amounts.length; i++) {
@@ -203,18 +209,18 @@ contract Bridge is IBridge, BatchDepositor
 
             // Pack the transfer data to compare against batch deposit hash
             assembly {
-                mstore(add(transfers, 2), tokenID)
-                mstore(    transfers    , or(shl(96, to), targetAmount))
-                transfers := add(transfers, 34)
+                mstore(add(transfersData, 2), tokenID)
+                mstore(    transfersData    , or(shl(96, to), targetAmount))
+                transfersData := add(transfersData, 34)
             }
         }
 
         // Get the original transfers ptr back
         assembly {
-            transfers := sub(transfers, add(32, mul(34, mload(amounts))))
+            transfersData := sub(transfersData, add(32, mul(34, mload(amounts))))
         }
         // Check if these transfers can be processed
-        bytes32 hash = _hashTransfers(transfers);
+        bytes32 hash = _hashTransfers(transfersData);
         require(!_arePendingDepositsTooOld(batch.batchID, hash), "TRANSFERS_TOO_OLD");
 
         // Mark transfers as completed

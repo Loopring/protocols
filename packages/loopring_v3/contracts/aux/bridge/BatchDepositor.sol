@@ -49,12 +49,6 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         uint    amount;
     }
 
-    struct TransferBatch
-    {
-        uint     batchID;
-        uint96[] amounts;
-    }
-
     uint               public constant  MAX_NUM_TRANSACTIONS_IN_BLOCK = 386;
     uint               public constant  MAX_AGE_PENDING_TRANSFER      = 7 days;
 
