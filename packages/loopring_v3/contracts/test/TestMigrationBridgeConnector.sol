@@ -48,7 +48,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         bridge = _bridge;
     }
 
-    function processProcessorTransactions(ConnectorTransactionGroup[] memory groups)
+    function processProcessorTransactions(ConnectorTxGroup[] memory groups)
         external
         payable
         override
@@ -63,11 +63,11 @@ contract TestMigrationBridgeConnector is IBridgeConnector
 
         // Total ETH to migrate
         uint totalAmountETH = 0;
-        ConnectorTransaction memory bridgeCall;
+        ConnectorTx memory bridgeCall;
         for (uint g = 0; g < groups.length; g++) {
             GroupSettings memory settings = abi.decode(groups[g].groupData, (GroupSettings));
 
-            ConnectorTransaction[] memory txs = groups[g].transactions;
+            ConnectorTx[] memory txs = groups[g].transactions;
 
             // Check for each call if the minimum slippage was achieved
             uint totalAmount = 0;
@@ -104,7 +104,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         return new IBatchDepositor.Deposit[](0);
     }
 
-    function getMinGasLimit(ConnectorTransactionGroup[] calldata groups)
+    function getMinGasLimit(ConnectorTxGroup[] calldata groups)
         external
         pure
         override

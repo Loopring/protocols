@@ -40,7 +40,7 @@ contract Bridge is IBridge, BatchDepositor
     {
         address                     connector;
         uint                        gasLimit;
-        ConnectorTransactionGroup[] groups;
+        ConnectorTxGroup[] groups;
     }
 
     struct Context
@@ -63,7 +63,7 @@ contract Bridge is IBridge, BatchDepositor
     }
 
     bytes32 constant public CONNECTOR_TRANSACTION_TYPEHASH = keccak256(
-        "ConnectorTransaction(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
+        "ConnectorTx(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
     );
 
     uint               public constant  MAX_FEE_BIPS              = 25;     // 0.25%
@@ -267,9 +267,9 @@ contract Bridge is IBridge, BatchDepositor
         CallTransfer memory transfer;
         uint totalMinGas = 0;
         for (uint i = 0; i < call.groups.length; i++) {
-            ConnectorTransactionGroup calldata group = call.groups[i];
+            ConnectorTxGroup calldata group = call.groups[i];
             for (uint j = 0; j < group.transactions.length; j++) {
-                ConnectorTransaction calldata bridgeTx = group.transactions[j];
+                ConnectorTx calldata bridgeTx = group.transactions[j];
 
                 // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
                 (uint packedData, , ) = readTransfer(ctx);
@@ -417,9 +417,9 @@ contract Bridge is IBridge, BatchDepositor
             deposits = new IBatchDepositor.Deposit[](totalNumCalls);
             uint txIdx = 0;
             for (uint i = 0; i < call.groups.length; i++) {
-                ConnectorTransactionGroup memory group = call.groups[i];
+                ConnectorTxGroup memory group = call.groups[i];
                 for (uint j = 0; j < group.transactions.length; j++) {
-                    ConnectorTransaction memory bridgeTx = group.transactions[j];
+                    ConnectorTx memory bridgeTx = group.transactions[j];
                     deposits[txIdx++] = IBatchDepositor.Deposit({
                         owner:  bridgeTx.owner,
                         token:  bridgeTx.token,
@@ -501,7 +501,7 @@ contract Bridge is IBridge, BatchDepositor
     {
         // Position in the calldata to start copying
         uint offsetToGroups;
-        ConnectorTransactionGroup[] calldata groups = calls[n].groups;
+        ConnectorTxGroup[] calldata groups = calls[n].groups;
         assembly {
             offsetToGroups := sub(groups.offset, 32)
         }

@@ -39,7 +39,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         testSwapper = _testSwapper;
     }
 
-    function processProcessorTransactions(ConnectorTransactionGroup[] memory groups)
+    function processProcessorTransactions(ConnectorTxGroup[] memory groups)
         external
         payable
         override
@@ -52,11 +52,11 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         IBatchDepositor.Deposit[] memory transfers = new IBatchDepositor.Deposit[](numTransfers);
         uint transferIdx = 0;
 
-        ConnectorTransaction memory bridgeTx;
+        ConnectorTx memory bridgeTx;
         for (uint g = 0; g < groups.length; g++) {
             GroupSettings memory settings = abi.decode(groups[g].groupData, (GroupSettings));
 
-            ConnectorTransaction[] memory txs = groups[g].transactions;
+            ConnectorTx[] memory txs = groups[g].transactions;
 
             bool[] memory valid = new bool[](txs.length);
             uint numValid = 0;
@@ -132,7 +132,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         return transfers;
     }
 
-    function getMinGasLimit(ConnectorTransactionGroup[] calldata groups)
+    function getMinGasLimit(ConnectorTxGroup[] calldata groups)
         external
         pure
         override
