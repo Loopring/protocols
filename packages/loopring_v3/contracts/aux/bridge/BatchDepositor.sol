@@ -32,6 +32,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     // - uint96  amount : 12 bytes
     // - uint16  tokenID:  2 bytes
     event BatchDeposited (uint batchID, bytes transfersData, address from);
+    event Withdrawn      (uint batchID);
 
     struct BatchDeposit
     {
@@ -89,8 +90,8 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         _batchDeposit(msg.sender, depositsList);
     }
 
-    // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFER old.
-    function withdrawFromPendingBatchDeposit(
+    // Allows withdrawing from pending deposits that are at least MAX_AGE_PENDING_TRANSFER old.
+    function withdrawFromPendingBatchDeposits(
         uint                  batchID,
         BatchDeposit[] memory deposits,
         uint[]         memory indices
@@ -139,6 +140,8 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
                 deposits[idx].amount
             );
         }
+
+        emit Withdrawn(batchID);
     }
 
     // Can be used to withdraw funds that were already deposited to the bridge,
