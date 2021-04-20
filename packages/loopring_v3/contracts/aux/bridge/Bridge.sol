@@ -74,6 +74,12 @@ contract Bridge is IBridge, BatchDepositor, Claimable
 
     mapping (address => bool) public trustedConnectors;
 
+    modifier onlyFromExchangeOwner()
+    {
+        require(msg.sender == exchange.owner(), "UNAUTHORIZED");
+        _;
+    }
+
     constructor(
         IExchangeV3 _exchange,
         uint32      _accountID
