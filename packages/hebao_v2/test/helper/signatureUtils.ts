@@ -79,22 +79,36 @@ export function signChangeMasterCopy(
   signer: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
-  const TYPE_STR = "changeMasterCopy(address wallet,uint256 validUntil,address masterCopy)";
+  const TYPE_STR =
+    "changeMasterCopy(address wallet,uint256 validUntil,address masterCopy)";
   const CREATE_WALLET_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
   const encodedRequest = ethAbi.encodeParameters(
-    [
-      "bytes32",
-      "address",
-      "uint256",
-      "address"
-    ],
-    [
-      CREATE_WALLET_TYPEHASH,
-      walletAddress,
-      validUntil,
-      newMasterCopy
-    ]
+    ["bytes32", "address", "uint256", "address"],
+    [CREATE_WALLET_TYPEHASH, walletAddress, validUntil, newMasterCopy]
+  );
+
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+
+  const txSignature = sign(signer, hash);
+  return { txSignature, hash };
+}
+
+export function signAddGuardianWA(
+  masterCopy: string,
+  walletAddress: string,
+  guardian: string,
+  validUntil: BN,
+  signer: string
+) {
+  const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
+  const TYPE_STR =
+    "addGuardian(address wallet,uint256 validUntil,address guardian)";
+  const CREATE_WALLET_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
+
+  const encodedRequest = ethAbi.encodeParameters(
+    ["bytes32", "address", "uint256", "address"],
+    [CREATE_WALLET_TYPEHASH, walletAddress, validUntil, guardian]
   );
 
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);

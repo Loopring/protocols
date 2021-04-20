@@ -1,11 +1,12 @@
 import { expect } from "./setup";
-import { signCreateWallet } from "./helper/signatureUtils";
+import { signAddGuardianWA } from "./helper/signatureUtils";
 import { sign } from "./helper/Signature";
 import {
   newWallet,
   getFirstEvent,
   advanceTime,
-  getBlockTimestamp
+  getBlockTimestamp,
+  sortSignersAndSignatures
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
@@ -120,7 +121,7 @@ describe("wallet", () => {
       );
     });
 
-    it.only("guardian deletion will be effective in 3 days", async () => {
+    it("guardian deletion will be effective in 3 days", async () => {
       const owner = await account1.getAddress();
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 3);
 
@@ -136,13 +137,72 @@ describe("wallet", () => {
         eventData,
         eventTopics
       );
-      // console.log("addEvent:", addEvent.guardian);
+
       expect(removeEvent.guardian).to.equal(guardian1);
       const blockTime = await getBlockTimestamp(tx1.blockNumber);
-      // first guardian should be effective immediately:
       expect(removeEvent.effectiveTime.toNumber()).to.equal(
         blockTime + 3 * 24 * 3600
       );
+    });
+
+    it.only("add guardian with approval", async () => {
+      const owner = await account1.getAddress();
+      const guardian1 = await account2.getAddress();
+      const guardian2 = await account3.getAddress();
+      const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
+        guardian1,
+        guardian2
+      ]);
+      const masterCopy = await wallet.getMasterCopy();
+
+      const guardian3 = "0x" + "12".repeat(20);
+      const validUntil = 1999999999;
+
+      const sig1 = signAddGuardianWA(
+        masterCopy,
+        wallet.address,
+        guardian3,
+        new BN(validUntil),
+        owner
+      );
+
+      const sig2 = signAddGuardianWA(
+        masterCopy,
+        wallet.address,
+        guardian3,
+        new BN(validUntil),
+        guardian1
+      );
+
+      const sortedSigs = sortSignersAndSignatures(
+        [owner, guardian1],
+        [
+          Buffer.from(sig1.txSignature.slice(2), "hex"),
+          Buffer.from(sig2.txSignature.slice(2), "hex")
+        ]
+      );
+
+      const approval = {
+        signers: sortedSigs.sortedSigners,
+        signatures: sortedSigs.sortedSignatures,
+        validUntil,
+        wallet: wallet.address
+      };
+
+      const tx1 = await wallet.addGuardianWA(approval, guardian3);
+      const receipt1 = await tx1.wait();
+
+      const eventData = receipt1.events[0].data;
+      const eventTopics = receipt1.events[0].topics;
+      const addEvent = guardianInterfact.decodeEventLog(
+        "GuardianAdded(address,uint256)",
+        eventData,
+        eventTopics
+      );
+
+      expect(addEvent.guardian).to.equal(guardian3);
+      const blockTime = await getBlockTimestamp(tx1.blockNumber);
+      expect(addEvent.effectiveTime.toNumber()).to.equal(blockTime);
     });
   });
 });
