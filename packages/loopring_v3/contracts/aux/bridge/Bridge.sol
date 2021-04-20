@@ -41,7 +41,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     {
         address            connector;
         uint               gasLimit;
-        ConnectorTxGroup[] groups;
+        ConnectorTxGroup[] txGroups;
     }
 
     struct Context
@@ -274,10 +274,10 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     {
         CallTransfer memory transfer;
         uint totalMinGas = 0;
-        for (uint i = 0; i < call.groups.length; i++) {
-            ConnectorTxGroup calldata group = call.groups[i];
-            for (uint j = 0; j < group.transactions.length; j++) {
-                ConnectorTx calldata bridgeTx = group.transactions[j];
+        for (uint i = 0; i < call.txGroups.length; i++) {
+            ConnectorTxGroup calldata txGroup = call.txGroups[i];
+            for (uint j = 0; j < txGroup.transactions.length; j++) {
+                ConnectorTx calldata bridgeTx = txGroup.transactions[j];
 
                 // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
                 (uint packedData, , ) = readTransfer(ctx);
@@ -298,7 +298,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                     bridgeTx.validUntil,
                     bridgeTx.minGas,
                     call.connector,
-                    group.groupData,
+                    txGroup.groupData,
                     bridgeTx.userData
                 );
                 verifySignatureL2(ctx, bridgeTx.owner, transfer.fromAccountID, txHash);
@@ -432,15 +432,15 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         } else {
             // If the call failed return funds to all users
             uint totalNumCalls = 0;
-            for (uint i = 0; i < call.groups.length; i++) {
-                totalNumCalls += call.groups[i].transactions.length;
+            for (uint i = 0; i < call.txGroups.length; i++) {
+                totalNumCalls += call.txGroups[i].transactions.length;
             }
             deposits = new IBatchDepositor.Deposit[](totalNumCalls);
             uint txIdx = 0;
-            for (uint i = 0; i < call.groups.length; i++) {
-                ConnectorTxGroup memory group = call.groups[i];
-                for (uint j = 0; j < group.transactions.length; j++) {
-                    ConnectorTx memory bridgeTx = group.transactions[j];
+            for (uint i = 0; i < call.txGroups.length; i++) {
+                ConnectorTxGroup memory txGroup = call.txGroups[i];
+                for (uint j = 0; j < txGroup.transactions.length; j++) {
+                    ConnectorTx memory bridgeTx = txGroup.transactions[j];
                     deposits[txIdx++] = IBatchDepositor.Deposit({
                         owner:  bridgeTx.owner,
                         token:  bridgeTx.token,
@@ -522,9 +522,9 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     {
         // Position in the calldata to start copying
         uint offsetToGroups;
-        ConnectorTxGroup[] calldata groups = calls[n].groups;
+        ConnectorTxGroup[] calldata txGroups = calls[n].txGroups;
         assembly {
-            offsetToGroups := sub(groups.offset, 32)
+            offsetToGroups := sub(txGroups.offset, 32)
         }
 
         // Amount of bytes that need to be copied.
