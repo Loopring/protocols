@@ -63,14 +63,22 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         uint packedData;
     }
 
+    // This struct can be used for packing data into bytes
+    struct BridgeOperation
+    {
+        DepositBatch[]  batches;
+        ConnectorCall[] calls;
+        TokenData[]     tokens;
+    }
+
     bytes32 constant public CONNECTOR_TX_TYPEHASH = keccak256(
         "ConnectorTx(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
     );
 
-    uint               public constant  MAX_FEE_BIPS              = 25;     // 0.25%
-    uint               public constant  GAS_LIMIT_CHECK_GAS_LIMIT = 10000;
+    uint    public constant  MAX_FEE_BIPS              = 25;     // 0.25%
+    uint    public constant  GAS_LIMIT_CHECK_GAS_LIMIT = 10000;
 
-    bytes32            public immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR;
 
     mapping (address => bool) public trustedConnectors;
 
@@ -134,12 +142,6 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     function _processTransactions(Context memory ctx)
         internal
     {
-        // struct BridgeOperation
-        // {
-        //     TransferBatch[]  batches;
-        //     ConnectorCalls[] calls;
-        //     TokenData[]      tokens;
-        // }
         // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
         DepositBatch[]  calldata batches;
@@ -207,16 +209,20 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             fee = (fee & 2047) * (10 ** (fee >> 11));
 
             // Verify the transaction data
+            uint value = (uint(ExchangeData.TransactionType.TRANSFER) << 176) |
+                (1 << 168) |
+                (uint(accountID) << 136);
+
             require(
                 // txType == ExchangeData.TransactionType.TRANSFER &&
                 // transfer.type == 1 &&
                 // transfer.fromAccountID == ctx.accountID &&
                 // transfer.toAccountID == UNKNOWN  &&
-                packedData & 0xffffffffffff0000000000000000000000000000000000 ==
-                (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(accountID) << 136) &&
-                /*feeTokenID*/(packedData >> 48) & 0xffff == tokenID &&
+                packedData & 0xffffffffffff0000000000000000000000000000000000 == value &&
+                (packedData >> 48) & 0xffff == tokenID && // check feeTokenID
                 fee <= (amount * MAX_FEE_BIPS / 10000) &&
-                (100000 - 8) * targetAmount <= 100000 * amount && amount <= targetAmount,
+                (100000 - 8) * targetAmount <= 100000 * amount &&
+                amount <= targetAmount,
                 "INVALID_BRIDGE_TRANSFER_TX_DATA"
             );
 
@@ -233,11 +239,11 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             transfersData := sub(transfersData, add(32, mul(34, mload(amounts))))
         }
         // Check if these transfers can be processed
-        bytes32 hash = _hashTransfers(transfersData);
-        require(!_arePendingDepositsTooOld(batch.batchID, hash), "BATCH_DEPOSITS_TOO_OLD");
+        bytes32 hash = _hashTransfers(batch.batchID, transfersData);
+        require(!_arePendingDepositsTooOld(hash), "BATCH_DEPOSITS_TOO_OLD");
 
         // Mark transfers as completed
-        delete pendingDeposits[batch.batchID][hash];
+        delete pendingDeposits[hash];
     }
 
     function _processConnectorCalls(

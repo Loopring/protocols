@@ -55,7 +55,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     uint32             public immutable accountID;
     IDepositContract   public immutable depositContract;
 
-    mapping (uint => mapping (bytes32 => uint)) public pendingDeposits;
+    mapping (bytes32 => uint)                   public pendingDeposits;
     mapping (uint => mapping(uint => bool))     public withdrawn;
     // token -> tokenID
     mapping (address => uint16)                 public cachedTokenIDs;
@@ -118,8 +118,8 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
 
         // Check if withdrawing from these deposits is possible
-        bytes32 hash = _hashTransfers(transfersData);
-        require(_arePendingDepositsTooOld(batchID, hash), "BATCH_DEPOSITS_STILL_YOUNG");
+        bytes32 hash = _hashTransfers(batchID, transfersData);
+        require(_arePendingDepositsTooOld(hash), "BATCH_DEPOSITS_STILL_YOUNG");
 
         for (uint i = 0; i < indices.length; i++) {
             uint idx = indices[i];
@@ -243,9 +243,9 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         uint batchID = batchIDGenerator++;
 
         // Store transfers to distribute at a later time
-        bytes32 hash = _hashTransfers(transfersData);
-        require(pendingDeposits[batchID][hash] == 0, "DUPLICATE_BATCH");
-        pendingDeposits[batchID][hash] = block.timestamp;
+        bytes32 hash = _hashTransfers(batchID, transfersData);
+        require(pendingDeposits[hash] == 0, "DUPLICATE_BATCH");
+        pendingDeposits[hash] = block.timestamp;
 
         emit BatchDeposited(batchID, transfersData, from);
     }
@@ -287,21 +287,21 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
     }
 
-    function _hashTransfers(bytes memory transfersData)
+    function _hashTransfers(uint batchID, bytes memory transfersData)
         internal
         pure
         returns (bytes32)
     {
-        return keccak256(transfersData);
+        return keccak256(abi.encodePacked(batchID, transfersData));
     }
 
-    function _arePendingDepositsTooOld(uint batchID, bytes32 hash)
+    function _arePendingDepositsTooOld(bytes32 hash)
         internal
         view
         returns (bool)
     {
-        uint timestamp = pendingDeposits[batchID][hash];
-        require(timestamp != 0, "UNKNOWN_TRANSFERS");
+        uint timestamp = pendingDeposits[hash];
+        require(timestamp != 0, "UNKNOWN_PENDING_DEPOSITS");
         return block.timestamp > timestamp + MAX_AGE_PENDING_DEPOSITS;
     }
 }
