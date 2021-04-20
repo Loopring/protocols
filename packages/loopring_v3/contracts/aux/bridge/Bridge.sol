@@ -144,7 +144,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     {
         // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
-        TransferBatch[]  calldata batches;
+        TransferBatch[] calldata batches;
         ConnectorCall[] calldata calls;
         TokenData[]     calldata tokens;
         uint tokensOffset;
