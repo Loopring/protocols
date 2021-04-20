@@ -168,22 +168,22 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         ctx.tokensOffset = tokensOffset;
         ctx.tokens = tokens;
 
-        _processInboundTransferBatcheses(ctx, batches);
+        _processInboundTransferBatches(ctx, batches);
         _processConnectorCalls(ctx, calls);
     }
 
-    function _processInboundTransferBatcheses(
+    function _processInboundTransferBatches(
         Context         memory   ctx,
         TransferBatch[] calldata batches
         )
         internal
     {
         for (uint i = 0; i < batches.length; i++) {
-            _processInboundTransferBatches(ctx, batches[i]);
+            _processInboundTransferBatch(ctx, batches[i]);
         }
     }
 
-    function _processInboundTransferBatches(
+    function _processInboundTransferBatch(
         Context       memory   ctx,
         TransferBatch calldata batch
         )
