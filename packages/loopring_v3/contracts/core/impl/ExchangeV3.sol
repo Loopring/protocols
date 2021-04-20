@@ -431,7 +431,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         for (uint i = 0; i < flashDeposits.length; i++) {
             require(
                 state.flashDepositAmounts[flashDeposits[i].token] == 0,
-                "NON_ZERO_OUTSTANDING_DEPOSIT_LOAN"
+                "FLASH_DEPOSIT_NOT_REPAID"
             );
         }
     }
