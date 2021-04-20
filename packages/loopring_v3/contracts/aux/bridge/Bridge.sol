@@ -239,7 +239,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             transfersData := sub(transfersData, add(32, mul(34, mload(amounts))))
         }
         // Check if these transfers can be processed
-        bytes32 hash = _hashTransfers(batch.batchID, transfersData);
+        bytes32 hash = _hashDeposits(batch.batchID, transfersData);
         require(!_arePendingDepositsTooOld(hash), "BATCH_DEPOSITS_TOO_OLD");
 
         // Mark transfers as completed
