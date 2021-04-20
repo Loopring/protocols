@@ -28,7 +28,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     using MathUint96        for uint96;
     using TransferUtil      for address;
 
-    event ConnectorCalled  (address connector, bool success, bytes reason);
+    event ConnectorTransacted  (address connector, bool success, bytes reason);
     event ConnectorTrusted (address connector, bool trusted);
 
     struct TransferBatch
@@ -439,7 +439,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
-            emit ConnectorCalled(call.connector, true, "");
+            emit ConnectorTransacted(call.connector, true, "");
             deposits = abi.decode(returnData, (IBatchDepositor.Deposit[]));
         } else {
             // If the call failed return funds to all users
@@ -461,7 +461,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                 }
             }
             assert(txIdx == totalNumCalls);
-            emit ConnectorCalled(call.connector, false, returnData);
+            emit ConnectorTransacted(call.connector, false, returnData);
         }
     }
 
