@@ -7,6 +7,7 @@ import "../../core/iface/IExchangeV3.sol";
 import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../core/impl/libtransactions/WithdrawTransaction.sol";
 import "../../lib/AddressUtil.sol";
+import "../../lib/Claimable.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
@@ -17,7 +18,7 @@ import "./IBridge.sol";
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBridge, BatchDepositor
+contract Bridge is IBridge, BatchDepositor, Claimable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -38,8 +39,8 @@ contract Bridge is IBridge, BatchDepositor
 
     struct ConnectorCall
     {
-        address                     connector;
-        uint                        gasLimit;
+        address            connector;
+        uint               gasLimit;
         ConnectorTxGroup[] groups;
     }
 
@@ -62,7 +63,7 @@ contract Bridge is IBridge, BatchDepositor
         uint packedData;
     }
 
-    bytes32 constant public CONNECTOR_TRANSACTION_TYPEHASH = keccak256(
+    bytes32 constant public CONNECTOR_TX_TYPEHASH = keccak256(
         "ConnectorTx(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
     );
 
@@ -77,6 +78,7 @@ contract Bridge is IBridge, BatchDepositor
         IExchangeV3 _exchange,
         uint32      _accountID
         )
+        Claimable()
         BatchDepositor(_exchange, _accountID)
     {
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Bridge", "1.0", address(this)));
@@ -113,7 +115,7 @@ contract Bridge is IBridge, BatchDepositor
         bool    trusted
         )
         external
-        onlyFromExchangeOwner
+        onlyOwner
     {
         trustedConnectors[connector] = trusted;
         emit ConnectorTrusted(connector, trusted);
@@ -455,7 +457,7 @@ contract Bridge is IBridge, BatchDepositor
             _DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
-                    CONNECTOR_TRANSACTION_TYPEHASH,
+                    CONNECTOR_TX_TYPEHASH,
                     tokenID,
                     amount,
                     feeTokenID,
@@ -467,7 +469,7 @@ contract Bridge is IBridge, BatchDepositor
                 )
             )
         );*/
-        bytes32 typeHash = CONNECTOR_TRANSACTION_TYPEHASH;
+        bytes32 typeHash = CONNECTOR_TX_TYPEHASH;
         assembly {
             let data := mload(0x40)
             mstore(    data      , typeHash)
