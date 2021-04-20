@@ -269,7 +269,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             _processConnectorCall(ctx, call, totalAmounts);
 
             // Call the connector
-            depositsList[i] = _callConnector(ctx, call, i, calls);
+            depositsList[i] = _transactConnector(ctx, call, i, calls);
         }
 
         // Do all outbound transfers back from the bridge to the users
@@ -289,7 +289,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         for (uint i = 0; i < call.txGroups.length; i++) {
             ConnectorTxGroup calldata txGroup = call.txGroups[i];
             for (uint j = 0; j < txGroup.transactions.length; j++) {
-                ConnectorTx calldata bridgeTx = txGroup.transactions[j];
+                ConnectorTx calldata connectorTx = txGroup.transactions[j];
 
                 // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
                 (uint packedData, , ) = readTransfer(ctx);
@@ -306,14 +306,14 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                 // Verify that the transaction was approved with an L2 signature
                 bytes32 txHash = _hashConnectorTx(
                     transfer,
-                    bridgeTx.maxFee,
-                    bridgeTx.validUntil,
-                    bridgeTx.minGas,
+                    connectorTx.maxFee,
+                    connectorTx.validUntil,
+                    connectorTx.minGas,
                     call.connector,
                     txGroup.groupData,
-                    bridgeTx.userData
+                    connectorTx.userData
                 );
-                verifySignatureL2(ctx, bridgeTx.owner, transfer.fromAccountID, txHash);
+                verifySignatureL2(ctx, connectorTx.owner, transfer.fromAccountID, txHash);
 
                 // Find the token in the tokens list
                 uint k = 0;
@@ -331,14 +331,14 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                     // transfer.toAccountID == ctx.accountID &&
                     packedData & 0xffff00000000ffffffff00000000000000000000000000 ==
                     (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(accountID) << 104) &&
-                    transfer.fee <= bridgeTx.maxFee &&
-                    bridgeTx.validUntil == 0 || block.timestamp < bridgeTx.validUntil &&
-                    bridgeTx.token == ctx.tokens[k].token &&
-                    bridgeTx.amount == transfer.amount,
+                    transfer.fee <= connectorTx.maxFee &&
+                    connectorTx.validUntil == 0 || block.timestamp < connectorTx.validUntil &&
+                    connectorTx.token == ctx.tokens[k].token &&
+                    connectorTx.amount == transfer.amount,
                     "INVALID_BRIDGE_CALL_TRANSFER"
                 );
 
-                totalMinGas = totalMinGas.add(bridgeTx.minGas);
+                totalMinGas = totalMinGas.add(connectorTx.minGas);
             }
         }
 
@@ -400,7 +400,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         }
     }
 
-    function _callConnector(
+    function _transactConnector(
         Context          memory   ctx,
         ConnectorCall    calldata call,
         uint                      n,
@@ -452,11 +452,11 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             for (uint i = 0; i < call.txGroups.length; i++) {
                 ConnectorTxGroup memory txGroup = call.txGroups[i];
                 for (uint j = 0; j < txGroup.transactions.length; j++) {
-                    ConnectorTx memory bridgeTx = txGroup.transactions[j];
+                    ConnectorTx memory connectorTx = txGroup.transactions[j];
                     deposits[txIdx++] = IBatchDepositor.Deposit({
-                        owner:  bridgeTx.owner,
-                        token:  bridgeTx.token,
-                        amount: bridgeTx.amount
+                        owner:  connectorTx.owner,
+                        token:  connectorTx.token,
+                        amount: connectorTx.amount
                     });
                 }
             }
