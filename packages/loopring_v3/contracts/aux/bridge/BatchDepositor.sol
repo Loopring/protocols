@@ -194,10 +194,11 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         uint tokenIdx = 0;
         uint16 tokenID;
         IBatchDepositor.Deposit memory deposit;
-        for (uint n = 0; n < depositsList.length; n++) {
-            IBatchDepositor.Deposit[] memory _deposits = depositsList[n];
-            for (uint i = 0; i < _deposits.length; i++) {
-                deposit = _deposits[i];
+
+        for (uint i = 0; i < depositsList.length; i++) {
+            IBatchDepositor.Deposit[] memory _deposits = depositsList[i];
+            for (uint j = 0; j < _deposits.length; j++) {
+                deposit = _deposits[j];
                 if(token != deposit.token) {
                     token = deposit.token;
                     tokenIdx = 0;
