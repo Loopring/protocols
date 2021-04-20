@@ -346,11 +346,11 @@ class SpotTradeCircuit : public BaseTransactionCircuit
           fillS_B.bits(),
 
           orderA.fillAmountBorS.bits,
-          VariableArrayT(1, state.constants._0),
-          orderA.feeBips.bits,
+          orderA.feeBipsMultiplierFlag.bits,
+          orderA.feeBipsData.bits,
           orderB.fillAmountBorS.bits,
-          VariableArrayT(1, state.constants._0),
-          orderB.feeBips.bits,
+          orderB.feeBipsMultiplierFlag.bits,
+          orderB.feeBipsData.bits,
         });
     }
 };

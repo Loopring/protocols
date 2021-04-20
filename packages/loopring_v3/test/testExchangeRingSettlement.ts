@@ -69,6 +69,58 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
+    it("High fee trade", async () => {
+      const ringA: SpotTrade = {
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          maxFeeBips: 100
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          maxFeeBips: 30
+        },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      const ringB: SpotTrade = {
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          maxFeeBips: 63 * 50
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          maxFeeBips: 63
+        },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+
+      await exchangeTestUtil.setupRing(ringA);
+      await exchangeTestUtil.setupRing(ringB);
+      await exchangeTestUtil.sendRing(ringA);
+      await exchangeTestUtil.sendRing(ringB);
+
+      await exchangeTestUtil.submitTransactions();
+
+      await verify();
+    });
+
     it("Matchable (orderA < orderB)", async () => {
       const ring: SpotTrade = {
         orderA: {
