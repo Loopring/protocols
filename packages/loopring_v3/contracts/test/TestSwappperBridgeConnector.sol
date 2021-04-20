@@ -45,11 +45,11 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         override
         returns (IBatchDepositor.Deposit[] memory)
     {
-        uint numTransfers = 0;
+        uint numDeposits = 0;
         for (uint g = 0; g < groups.length; g++) {
-            numTransfers += groups[g].transactions.length;
+            numDeposits += groups[g].transactions.length;
         }
-        IBatchDepositor.Deposit[] memory transfers = new IBatchDepositor.Deposit[](numTransfers);
+        IBatchDepositor.Deposit[] memory transfers = new IBatchDepositor.Deposit[](numDeposits);
         uint transferIdx = 0;
 
         ConnectorTx memory bridgeTx;

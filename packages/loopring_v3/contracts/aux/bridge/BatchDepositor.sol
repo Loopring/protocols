@@ -112,9 +112,9 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
 
         // Get the original deposits ptr back
-        uint numTransfers = deposits.length;
+        uint numDeposits = deposits.length;
         assembly {
-            transfersData := sub(transfersData, add(32, mul(34, numTransfers)))
+            transfersData := sub(transfersData, add(32, mul(34, numDeposits)))
         }
 
         // Check if withdrawing from these deposits is possible
