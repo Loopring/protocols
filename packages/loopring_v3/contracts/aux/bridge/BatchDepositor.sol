@@ -13,9 +13,7 @@ import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/TransferUtil.sol";
-
 import "./IBatchDepositor.sol";
-
 
 /// @title  BatchDepositor implementation
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -79,20 +77,20 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     }
 
     function batchDeposit(
-        IBatchDepositor.Deposit[] memory transfers
+        IBatchDepositor.Deposit[] memory deposits
         )
         external
         payable
         override
         nonReentrant
     {
-        IBatchDepositor.Deposit[][] memory listOfTransfers = new IBatchDepositor.Deposit[][](1);
-        listOfTransfers[0] = transfers;
-        _batchDeposit(msg.sender, listOfTransfers);
+        IBatchDepositor.Deposit[][] memory depositsList = new IBatchDepositor.Deposit[][](1);
+        depositsList[0] = deposits;
+        _batchDeposit(msg.sender, depositsList);
     }
 
     // Allows withdrawing from pending transfers that are at least MAX_AGE_PENDING_TRANSFER old.
-    function withdrawFromPendingBatchDepositor(
+    function withdrawFromPendingBatchDeposit(
         uint                     batchID,
         InternalDeposit[] memory deposits,
         uint[]            memory indices
@@ -163,13 +161,13 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
 
     function _batchDeposit(
         address                            from,
-        IBatchDepositor.Deposit[][] memory deposits
+        IBatchDepositor.Deposit[][] memory depositsList
         )
         internal
     {
         uint totalNumDeposits = 0;
-        for (uint i = 0; i < deposits.length; i++) {
-            totalNumDeposits += deposits[i].length;
+        for (uint i = 0; i < depositsList.length; i++) {
+            totalNumDeposits += depositsList[i].length;
         }
         if (totalNumDeposits == 0) {
             return;
@@ -193,8 +191,8 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         uint tokenIdx = 0;
         uint16 tokenID;
         IBatchDepositor.Deposit memory deposit;
-        for (uint n = 0; n < deposits.length; n++) {
-            IBatchDepositor.Deposit[] memory _deposits = deposits[n];
+        for (uint n = 0; n < depositsList.length; n++) {
+            IBatchDepositor.Deposit[] memory _deposits = depositsList[n];
             for (uint i = 0; i < _deposits.length; i++) {
                 deposit = _deposits[i];
                 if(token != deposit.token) {
@@ -235,10 +233,10 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
 
         // Store the transfersData so they can be processed later
-        _storeBatchDeposits(transfersData, from);
+        _storeBatchDeposit(transfersData, from);
     }
 
-    function _storeBatchDeposits(
+    function _storeBatchDeposit(
         bytes   memory transfersData,
         address        from
         )

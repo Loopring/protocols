@@ -12,7 +12,6 @@ import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
 import "../../lib/TransferUtil.sol";
-
 import "./BatchDepositor.sol";
 import "./IBridge.sol";
 

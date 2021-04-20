@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "../access/ITransactionReceiver.sol";
 
-
 /// @title  IBatchDepositor interface
 /// @author Brecht Devos - <brecht@loopring.org>
 interface IBatchDepositor

@@ -4,7 +4,6 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../access/ITransactionReceiver.sol";
-
 import "./IBatchDepositor.sol";
 
 /// @title  IBridge interface
