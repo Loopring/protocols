@@ -134,6 +134,12 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     function _processTransactions(Context memory ctx)
         internal
     {
+        // struct BridgeOperation
+        // {
+        //     TransferBatch[]  batches;
+        //     ConnectorCalls[] calls;
+        //     TokenData[]      tokens;
+        // }
         // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
         DepositBatch[]  calldata batches;
