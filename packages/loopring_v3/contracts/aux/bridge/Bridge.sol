@@ -130,16 +130,16 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     {
         // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
-        DepositBatch[]  calldata depositBatches;
+        DepositBatch[]  calldata batches;
         ConnectorCall[] calldata calls;
         TokenData[]     calldata tokens;
         uint tokensOffset;
 
         assembly {
             let offsetToCallbackData := add(68, calldataload(36))
-            // depositBatches
-            depositBatches.offset := add(add(offsetToCallbackData, 32), calldataload(offsetToCallbackData))
-            depositBatches.length := calldataload(sub(depositBatches.offset, 32))
+            // batches
+            batches.offset := add(add(offsetToCallbackData, 32), calldataload(offsetToCallbackData))
+            batches.length := calldataload(sub(batches.offset, 32))
 
             // calls
             calls.offset := add(add(offsetToCallbackData, 32), calldataload(add(offsetToCallbackData, 32)))
@@ -154,7 +154,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         ctx.tokensOffset = tokensOffset;
         ctx.tokens = tokens;
 
-        _processDepositBatches(ctx, depositBatches);
+        _processDepositBatches(ctx, batches);
         _processConnectorCalls(ctx, calls);
     }
 
@@ -170,7 +170,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     }
 
     function _processDepositBatch(
-        Context       memory   ctx,
+        Context      memory   ctx,
         DepositBatch calldata batch
         )
         internal
@@ -395,8 +395,17 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         require(trustedConnectors[call.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
 
         // Check if the minimum amount of gas required is achieved
-        bytes memory txData = _getConnectorCallData(ctx, IBridgeConnector.getMinGasLimit.selector, calls, n);
-        (bool success, bytes memory returnData) = call.connector.fastCall(GAS_LIMIT_CHECK_GAS_LIMIT, 0, txData);
+        bytes memory txData = _getConnectorCallData(
+            ctx,
+            IBridgeConnector.getMinGasLimit.selector,
+            calls,
+            n
+        );
+        (bool success, bytes memory returnData) = call.connector.fastCall(
+            GAS_LIMIT_CHECK_GAS_LIMIT,
+            0,
+            txData
+        );
         if (success) {
             require(call.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
         } else {
@@ -404,7 +413,11 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         }
 
         // Execute the logic using a delegate so no extra deposits are needed
-        txData = _getConnectorCallData(ctx,IBridgeConnector.processProcessorTransactions.selector, calls, n);
+        txData = _getConnectorCallData(
+            ctx,IBridgeConnector.processProcessorTransactions.selector,
+            calls,
+            n
+        );
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
