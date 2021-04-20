@@ -1,5 +1,8 @@
 import { expect } from "./setup";
-import { signCreateWallet, signChangeMasterCopy } from "./helper/signatureUtils";
+import {
+  signCreateWallet,
+  signChangeMasterCopy
+} from "./helper/signatureUtils";
 import { sign } from "./helper/Signature";
 import {
   newWallet,
@@ -31,11 +34,14 @@ describe("wallet", () => {
     guardian1 = await account2.getAddress();
     guardian2 = await account3.getAddress();
 
-    wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [guardian1, guardian2]);
+    wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
+      guardian1,
+      guardian2
+    ]);
     newSmartWalletImpl = await newWalletImpl();
   });
 
-  describe("", () => {
+  describe("upgrade", () => {
     it("wallet owner should be able to upgrade impl with enough approvals", async () => {
       const validUntil = 9999999999;
       const currentImpl = await wallet.getMasterCopy();
@@ -74,8 +80,6 @@ describe("wallet", () => {
 
       // const masterCopyOfWallet = await wallet.getMasterCopy();
       // console.log("masterCopyofwallet:", masterCopyOfWallet);
-
     });
-
   });
 });
