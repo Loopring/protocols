@@ -35,7 +35,7 @@ contract Bridge is IBridge, BatchDepositor
     {
         address           connector;
         uint              gasLimit;
-        BridgeCallGroup[] groups;
+        ConnectorTransactionGroup[] groups;
     }
 
     struct Context
@@ -58,7 +58,7 @@ contract Bridge is IBridge, BatchDepositor
     }
 
     bytes32 constant public BRIDGE_CALL_TYPEHASH = keccak256(
-        "BridgeCall(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
+        "ConnectorTransaction(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
     );
 
     uint               public constant  MAX_FEE_BIPS                  = 25;     // 0.25%
@@ -218,7 +218,7 @@ contract Bridge is IBridge, BatchDepositor
         require(!_arePendingDepositsTooOld(batch.batchID, hash), "TRANSFERS_TOO_OLD");
 
         // Mark transfers as completed
-        delete pendingTransfers[batch.batchID][hash];
+        delete pendingDeposits[batch.batchID][hash];
     }
 
     function _processConnectorCalls(
@@ -262,9 +262,9 @@ contract Bridge is IBridge, BatchDepositor
         CallTransfer memory transfer;
         uint totalMinGas = 0;
         for (uint g = 0; g < connectorCall.groups.length; g++) {
-            BridgeCallGroup calldata group = connectorCall.groups[g];
-            for (uint i = 0; i < group.calls.length; i++) {
-                BridgeCall calldata bridgeCall = group.calls[i];
+            ConnectorTransactionGroup calldata group = connectorCall.groups[g];
+            for (uint i = 0; i < group.transactions.length; i++) {
+                ConnectorTransaction calldata bridgeTx = group.transactions[i];
 
                 // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
                 (uint packedData, , ) = readTransfer(ctx);
@@ -281,14 +281,14 @@ contract Bridge is IBridge, BatchDepositor
                 // Verify that the transaction was approved with an L2 signature
                 bytes32 txHash = _hashTx(
                     transfer,
-                    bridgeCall.maxFee,
-                    bridgeCall.validUntil,
-                    bridgeCall.minGas,
+                    bridgeTx.maxFee,
+                    bridgeTx.validUntil,
+                    bridgeTx.minGas,
                     connectorCall.connector,
                     group.groupData,
-                    bridgeCall.userData
+                    bridgeTx.userData
                 );
-                verifySignatureL2(ctx, bridgeCall.owner, transfer.fromAccountID, txHash);
+                verifySignatureL2(ctx, bridgeTx.owner, transfer.fromAccountID, txHash);
 
                 // Find the token in the tokens list
                 uint t = 0;
@@ -306,14 +306,14 @@ contract Bridge is IBridge, BatchDepositor
                     // transfer.toAccountID == ctx.accountID &&
                     packedData & 0xffff00000000ffffffff00000000000000000000000000 ==
                     (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(accountID) << 104) &&
-                    transfer.fee <= bridgeCall.maxFee &&
-                    bridgeCall.validUntil == 0 || block.timestamp < bridgeCall.validUntil &&
-                    bridgeCall.token == ctx.tokens[t].token &&
-                    bridgeCall.amount == transfer.amount,
+                    transfer.fee <= bridgeTx.maxFee &&
+                    bridgeTx.validUntil == 0 || block.timestamp < bridgeTx.validUntil &&
+                    bridgeTx.token == ctx.tokens[t].token &&
+                    bridgeTx.amount == transfer.amount,
                     "INVALID_BRIDGE_CALL_TRANSFER"
                 );
 
-                totalMinGas = totalMinGas.add(bridgeCall.minGas);
+                totalMinGas = totalMinGas.add(bridgeTx.minGas);
             }
         }
 
@@ -397,7 +397,7 @@ contract Bridge is IBridge, BatchDepositor
         }
 
         // Execute the logic using a delegate so no extra transfers are needed
-        txData = _getConnectorCallData(ctx,IBridgeConnector.processCalls.selector, allCalls, n);
+        txData = _getConnectorCallData(ctx,IBridgeConnector.processProcessorTransactions.selector, allCalls, n);
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
@@ -407,18 +407,18 @@ contract Bridge is IBridge, BatchDepositor
             // If the call failed return funds to all users
             uint totalNumCalls = 0;
             for (uint g = 0; g < call.groups.length; g++) {
-                totalNumCalls += call.groups[g].calls.length;
+                totalNumCalls += call.groups[g].transactions.length;
             }
             transfers = new IBatchDepositor.Deposit[](totalNumCalls);
             uint txIdx = 0;
             for (uint g = 0; g < call.groups.length; g++) {
-                BridgeCallGroup memory group = call.groups[g];
-                for (uint i = 0; i < group.calls.length; i++) {
-                    BridgeCall memory bridgeCall = group.calls[i];
+                ConnectorTransactionGroup memory group = call.groups[g];
+                for (uint i = 0; i < group.transactions.length; i++) {
+                    ConnectorTransaction memory bridgeTx = group.transactions[i];
                     transfers[txIdx++] = IBatchDepositor.Deposit({
-                        owner: bridgeCall.owner,
-                        token:  bridgeCall.token,
-                        amount: bridgeCall.amount
+                        owner:  bridgeTx.owner,
+                        token:  bridgeTx.token,
+                        amount: bridgeTx.amount
                     });
                 }
             }
@@ -496,7 +496,7 @@ contract Bridge is IBridge, BatchDepositor
     {
         // Position in the calldata to start copying
         uint offsetToGroups;
-        BridgeCallGroup[] calldata groups = calls[n].groups;
+        ConnectorTransactionGroup[] calldata groups = calls[n].groups;
         assembly {
             offsetToGroups := sub(groups.offset, 32)
         }

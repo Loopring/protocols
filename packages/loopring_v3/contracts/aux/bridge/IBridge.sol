@@ -11,7 +11,7 @@ import "./IBatchDepositor.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 abstract contract IBridge is IBatchDepositor,  ITransactionReceiver { }
 
-struct BridgeCall
+struct ConnectorTransaction
 {
     address owner;
     address token;
@@ -22,10 +22,10 @@ struct BridgeCall
     uint    validUntil;
 }
 
-struct BridgeCallGroup
+struct ConnectorTransactionGroup
 {
-    bytes        groupData;
-    BridgeCall[] calls;
+    bytes                  groupData;
+    ConnectorTransaction[] transactions;
 }
 
 /// @title  IBridgeConnector interface
@@ -44,7 +44,7 @@ interface IBridgeConnector
     ///       that want to do the same operation.
     ///     - All deposits back to L2 are also reduced to just a single deposit per distinct token for all bridge operations
     ///
-    ///     Most of this is abstracted away in the bridge. A user sings a BridgeCall and `processCalls`
+    ///     Most of this is abstracted away in the bridge. A user sings a ConnectorTransaction and `processProcessorTransactions`
     ///     gets a list of bridge calls divided in lists based on `groupData`
     ///     (e.g. for a uniswap connector the group would be the 2 tokens being traded).
     ///     Each bridge call contains how much each user transfered to the bridge to be used for the specific bridge call.
@@ -56,20 +56,20 @@ interface IBridgeConnector
     ///     between different connector calls).
     ///
     /// @param groups The groups of bridge calls to process
-    function processCalls(BridgeCallGroup[] calldata groups)
+    function processProcessorTransactions(ConnectorTransactionGroup[] calldata groups)
         external
         payable
         returns (IBatchDepositor.Deposit[] memory);
 
-    /// @dev Returns a rough estimate of the gas cost to do `processCalls`. At least this much gas needs to be
-    ///      provided by the caller of `processCalls` before the BridgeCalls of users are allowed to be used.
+    /// @dev Returns a rough estimate of the gas cost to do `processProcessorTransactions`. At least this much gas needs to be
+    ///      provided by the caller of `processProcessorTransactions` before the ConnectorTransactions of users are allowed to be used.
     ///
     ///      Aach bridge call only pays for a small part of the necessary total gas consumed by a
-    ///      a connector call. As such, the caller of `processCalls` would easily be able to just let all
-    ///      `processCalls` calls fail by e.g. not batching enough Bridge calls together (while still collecting the fee).
+    ///      a connector call. As such, the caller of `processProcessorTransactions` would easily be able to just let all
+    ///      `processProcessorTransactions` calls fail by e.g. not batching enough Bridge calls together (while still collecting the fee).
     ///
     /// @param groups The groups of bridge calls to process
-    function getMinGasLimit(BridgeCallGroup[] calldata groups)
+    function getMinGasLimit(ConnectorTransactionGroup[] calldata groups)
         external
         pure
         returns (uint);

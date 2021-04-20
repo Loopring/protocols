@@ -41,7 +41,7 @@ export interface TokenData {
   amount: string;
 }
 
-export interface BridgeCall {
+export interface ConnectorTransaction {
   owner: string;
   token: string;
   amount: string;
@@ -55,15 +55,15 @@ export interface BridgeCall {
   expectedDeposit?: BridgeDeposit;
 }
 
-export interface BridgeCallGroup {
+export interface ConnectorTransactionGroup {
   groupData: string;
-  calls: BridgeCall[];
+  calls: ConnectorTransaction[];
 }
 
 export interface ConnectorCall {
   connector: string;
   gasLimit: number;
-  groups: BridgeCallGroup[];
+  groups: ConnectorTransactionGroup[];
   totalMinGas: number;
   tokens: TokenData[];
 }
@@ -79,16 +79,16 @@ export interface BridgeOperation {
   tokens: TokenData[];
 }
 
-export interface BridgeCallWrapper {
+export interface ConnectorTransactionWrapper {
   transfer: Transfer;
   connector: string;
   groupData: string;
-  call: BridgeCall;
+  call: ConnectorTransaction;
 }
 
 export namespace CollectTransferUtils {
   export function toTypedData(
-    callWrapper: BridgeCallWrapper,
+    callWrapper: ConnectorTransactionWrapper,
     verifyingContract: string
   ) {
     const typedData = {
@@ -99,7 +99,7 @@ export namespace CollectTransferUtils {
           { name: "chainId", type: "uint256" },
           { name: "verifyingContract", type: "address" }
         ],
-        BridgeCall: [
+        ConnectorTransaction: [
           { name: "tokenID", type: "uint16" },
           { name: "amount", type: "uint96" },
           { name: "feeTokenID", type: "uint16" },
@@ -112,7 +112,7 @@ export namespace CollectTransferUtils {
           { name: "userData", type: "bytes" }
         ]
       },
-      primaryType: "BridgeCall",
+      primaryType: "ConnectorTransaction",
       domain: {
         name: "Bridge",
         version: "1.0",
@@ -136,7 +136,7 @@ export namespace CollectTransferUtils {
   }
 
   export function getHash(
-    callWrapper: BridgeCallWrapper,
+    callWrapper: ConnectorTransactionWrapper,
     verifyingContract: string
   ) {
     const typedData = this.toTypedData(callWrapper, verifyingContract);
@@ -238,7 +238,7 @@ export class Bridge {
     return transferEvents;
   }
 
-  public async setupCalls(calls: BridgeCall[]) {
+  public async setupCalls(calls: ConnectorTransaction[]) {
     for (const call of calls) {
       await this.ctx.deposit(
         call.owner,
@@ -269,7 +269,7 @@ export class Bridge {
 
   public async submitBridgeOperation(
     transferEvents: any[],
-    calls: BridgeCall[],
+    calls: ConnectorTransaction[],
     expectedSuccess?: boolean[],
     changeTransfers?: boolean
   ) {
@@ -361,7 +361,7 @@ export class Bridge {
         bridgeOperation.connectorCalls.push(connectorCall);
       }
 
-      let group: BridgeCallGroup;
+      let group: ConnectorTransactionGroup;
       for (let g = 0; g < connectorCall.groups.length; g++) {
         if (connectorCall.groups[g].groupData === call.groupData) {
           group = connectorCall.groups[g];
@@ -413,7 +413,7 @@ export class Bridge {
             }
           );
 
-          const bridgeCallWrapper: BridgeCallWrapper = {
+          const bridgeCallWrapper: ConnectorTransactionWrapper = {
             transfer,
             call,
             connector: connectorCall.connector,
@@ -582,11 +582,11 @@ export class Bridge {
             token: "address",
             amount: "uint96"
           },
-          "struct BridgeCalls[]": {
+          "struct ConnectorTransactions[]": {
             connector: "address",
-            "struct BridgeCallGroup[]": {
+            "struct ConnectorTransactionGroup[]": {
               groupData: "bytes",
-              "struct BridgeCall[]": {
+              "struct ConnectorTransaction[]": {
                 owner: "address",
                 token: "address",
                 amount: "uint256",
@@ -929,7 +929,7 @@ contract("Bridge", (accounts: string[]) => {
       const group_LRC_ETH = encodeSwapGroupSettings("LRC", "ETH");
       const group_WETH_LRC = encodeSwapGroupSettings("WETH", "LRC");
 
-      const calls: BridgeCall[] = [];
+      const calls: ConnectorTransaction[] = [];
       // Successful swap connector call
       // ETH -> LRC
       calls.push({

@@ -62,7 +62,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     uint32             public immutable accountID;
     IDepositContract   public immutable depositContract;
 
-    mapping (uint => mapping (bytes32 => uint)) public pendingTransfers;
+    mapping (uint => mapping (bytes32 => uint)) public pendingDeposits;
     mapping (uint => mapping(uint => bool))     public withdrawn;
     // token -> tokenID
     mapping (address => uint16)                 public cachedTokenIDs;
@@ -168,7 +168,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     // --- Internal functions ---
 
     function _batchDeposit(
-        address                  from,
+        address                            from,
         IBatchDepositor.Deposit[][] memory deposits
         )
         internal
@@ -254,8 +254,8 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
 
         // Store transfers to distribute at a later time
         bytes32 hash = _hashTransfers(transfersData);
-        require(pendingTransfers[batchID][hash] == 0, "DUPLICATE_BATCH");
-        pendingTransfers[batchID][hash] = block.timestamp;
+        require(pendingDeposits[batchID][hash] == 0, "DUPLICATE_BATCH");
+        pendingDeposits[batchID][hash] = block.timestamp;
 
         emit BatchDeposited(batchID, transfersData, from);
     }
@@ -297,12 +297,12 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
     }
 
-    function _hashTransfers(bytes memory transfers)
+    function _hashTransfers(bytes memory transfersData)
         internal
         pure
         returns (bytes32)
     {
-        return keccak256(transfers);
+        return keccak256(transfersData);
     }
 
     function _arePendingDepositsTooOld(uint batchID, bytes32 hash)
@@ -310,7 +310,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         view
         returns (bool)
     {
-        uint timestamp = pendingTransfers[batchID][hash];
+        uint timestamp = pendingDeposits[batchID][hash];
         require(timestamp != 0, "UNKNOWN_TRANSFERS");
         return block.timestamp > timestamp + MAX_AGE_PENDING_TRANSFER;
     }
