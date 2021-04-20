@@ -7,6 +7,7 @@ import "../../core/iface/IExchangeV3.sol";
 import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../core/impl/libtransactions/WithdrawTransaction.sol";
 import "../../lib/AddressUtil.sol";
+import "../../lib/Claimable.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
@@ -17,7 +18,7 @@ import "./IBridge.sol";
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBridge, BatchDepositor
+contract Bridge is IBridge, BatchDepositor, Claimable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -38,9 +39,9 @@ contract Bridge is IBridge, BatchDepositor
 
     struct ConnectorCall
     {
-        address                     connector;
-        uint                        gasLimit;
-        ConnectorTxGroup[] groups;
+        address            connector;
+        uint               gasLimit;
+        ConnectorTxGroup[] txGroups;
     }
 
     struct Context
@@ -62,7 +63,7 @@ contract Bridge is IBridge, BatchDepositor
         uint packedData;
     }
 
-    bytes32 constant public CONNECTOR_TRANSACTION_TYPEHASH = keccak256(
+    bytes32 constant public CONNECTOR_TX_TYPEHASH = keccak256(
         "ConnectorTx(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
     );
 
@@ -73,10 +74,17 @@ contract Bridge is IBridge, BatchDepositor
 
     mapping (address => bool) public trustedConnectors;
 
+    modifier onlyFromExchangeOwner()
+    {
+        require(msg.sender == exchange.owner(), "UNAUTHORIZED");
+        _;
+    }
+
     constructor(
         IExchangeV3 _exchange,
         uint32      _accountID
         )
+        Claimable()
         BatchDepositor(_exchange, _accountID)
     {
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Bridge", "1.0", address(this)));
@@ -113,7 +121,7 @@ contract Bridge is IBridge, BatchDepositor
         bool    trusted
         )
         external
-        onlyFromExchangeOwner
+        onlyOwner
     {
         trustedConnectors[connector] = trusted;
         emit ConnectorTrusted(connector, trusted);
@@ -128,16 +136,16 @@ contract Bridge is IBridge, BatchDepositor
     {
         // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
-        DepositBatch[]  calldata depositBatches;
+        DepositBatch[]  calldata batches;
         ConnectorCall[] calldata calls;
         TokenData[]     calldata tokens;
         uint tokensOffset;
 
         assembly {
             let offsetToCallbackData := add(68, calldataload(36))
-            // depositBatches
-            depositBatches.offset := add(add(offsetToCallbackData, 32), calldataload(offsetToCallbackData))
-            depositBatches.length := calldataload(sub(depositBatches.offset, 32))
+            // batches
+            batches.offset := add(add(offsetToCallbackData, 32), calldataload(offsetToCallbackData))
+            batches.length := calldataload(sub(batches.offset, 32))
 
             // calls
             calls.offset := add(add(offsetToCallbackData, 32), calldataload(add(offsetToCallbackData, 32)))
@@ -152,7 +160,7 @@ contract Bridge is IBridge, BatchDepositor
         ctx.tokensOffset = tokensOffset;
         ctx.tokens = tokens;
 
-        _processDepositBatches(ctx, depositBatches);
+        _processDepositBatches(ctx, batches);
         _processConnectorCalls(ctx, calls);
     }
 
@@ -168,7 +176,7 @@ contract Bridge is IBridge, BatchDepositor
     }
 
     function _processDepositBatch(
-        Context       memory   ctx,
+        Context      memory   ctx,
         DepositBatch calldata batch
         )
         internal
@@ -246,7 +254,7 @@ contract Bridge is IBridge, BatchDepositor
             _processConnectorCall(ctx, call, totalAmounts);
 
             // Call the connector
-            depositsList[i] = _call(ctx, call, i, calls);
+            depositsList[i] = _callConnector(ctx, call, i, calls);
         }
 
         // Verify withdrawals
@@ -266,10 +274,10 @@ contract Bridge is IBridge, BatchDepositor
     {
         CallTransfer memory transfer;
         uint totalMinGas = 0;
-        for (uint i = 0; i < call.groups.length; i++) {
-            ConnectorTxGroup calldata group = call.groups[i];
-            for (uint j = 0; j < group.transactions.length; j++) {
-                ConnectorTx calldata bridgeTx = group.transactions[j];
+        for (uint i = 0; i < call.txGroups.length; i++) {
+            ConnectorTxGroup calldata txGroup = call.txGroups[i];
+            for (uint j = 0; j < txGroup.transactions.length; j++) {
+                ConnectorTx calldata bridgeTx = txGroup.transactions[j];
 
                 // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
                 (uint packedData, , ) = readTransfer(ctx);
@@ -284,13 +292,13 @@ contract Bridge is IBridge, BatchDepositor
                 transfer.fee = (transfer.fee & 2047) * (10 ** (transfer.fee >> 11));
 
                 // Verify that the transaction was approved with an L2 signature
-                bytes32 txHash = _hashTx(
+                bytes32 txHash = _hashConnectorTx(
                     transfer,
                     bridgeTx.maxFee,
                     bridgeTx.validUntil,
                     bridgeTx.minGas,
                     call.connector,
-                    group.groupData,
+                    txGroup.groupData,
                     bridgeTx.userData
                 );
                 verifySignatureL2(ctx, bridgeTx.owner, transfer.fromAccountID, txHash);
@@ -380,7 +388,7 @@ contract Bridge is IBridge, BatchDepositor
         }
     }
 
-    function _call(
+    function _callConnector(
         Context          memory   ctx,
         ConnectorCall    calldata call,
         uint                      n,
@@ -393,8 +401,17 @@ contract Bridge is IBridge, BatchDepositor
         require(trustedConnectors[call.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
 
         // Check if the minimum amount of gas required is achieved
-        bytes memory txData = _getConnectorCallData(ctx, IBridgeConnector.getMinGasLimit.selector, calls, n);
-        (bool success, bytes memory returnData) = call.connector.fastCall(GAS_LIMIT_CHECK_GAS_LIMIT, 0, txData);
+        bytes memory txData = _getDataForConnectorTxs(
+            ctx,
+            IBridgeConnector.getMinGasLimit.selector,
+            calls,
+            n
+        );
+        (bool success, bytes memory returnData) = call.connector.fastCall(
+            GAS_LIMIT_CHECK_GAS_LIMIT,
+            0,
+            txData
+        );
         if (success) {
             require(call.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
         } else {
@@ -402,7 +419,11 @@ contract Bridge is IBridge, BatchDepositor
         }
 
         // Execute the logic using a delegate so no extra deposits are needed
-        txData = _getConnectorCallData(ctx,IBridgeConnector.processProcessorTransactions.selector, calls, n);
+        txData = _getDataForConnectorTxs(
+            ctx,IBridgeConnector.processProcessorTransactions.selector,
+            calls,
+            n
+        );
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
@@ -411,15 +432,15 @@ contract Bridge is IBridge, BatchDepositor
         } else {
             // If the call failed return funds to all users
             uint totalNumCalls = 0;
-            for (uint i = 0; i < call.groups.length; i++) {
-                totalNumCalls += call.groups[i].transactions.length;
+            for (uint i = 0; i < call.txGroups.length; i++) {
+                totalNumCalls += call.txGroups[i].transactions.length;
             }
             deposits = new IBatchDepositor.Deposit[](totalNumCalls);
             uint txIdx = 0;
-            for (uint i = 0; i < call.groups.length; i++) {
-                ConnectorTxGroup memory group = call.groups[i];
-                for (uint j = 0; j < group.transactions.length; j++) {
-                    ConnectorTx memory bridgeTx = group.transactions[j];
+            for (uint i = 0; i < call.txGroups.length; i++) {
+                ConnectorTxGroup memory txGroup = call.txGroups[i];
+                for (uint j = 0; j < txGroup.transactions.length; j++) {
+                    ConnectorTx memory bridgeTx = txGroup.transactions[j];
                     deposits[txIdx++] = IBatchDepositor.Deposit({
                         owner:  bridgeTx.owner,
                         token:  bridgeTx.token,
@@ -432,7 +453,7 @@ contract Bridge is IBridge, BatchDepositor
         }
     }
 
-    function _hashTx(
+    function _hashConnectorTx(
         CallTransfer memory transfer,
         uint                maxFee,
         uint                validUntil,
@@ -455,7 +476,7 @@ contract Bridge is IBridge, BatchDepositor
             _DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
-                    CONNECTOR_TRANSACTION_TYPEHASH,
+                    CONNECTOR_TX_TYPEHASH,
                     tokenID,
                     amount,
                     feeTokenID,
@@ -467,7 +488,7 @@ contract Bridge is IBridge, BatchDepositor
                 )
             )
         );*/
-        bytes32 typeHash = CONNECTOR_TRANSACTION_TYPEHASH;
+        bytes32 typeHash = CONNECTOR_TX_TYPEHASH;
         assembly {
             let data := mload(0x40)
             mstore(    data      , typeHash)
@@ -489,7 +510,7 @@ contract Bridge is IBridge, BatchDepositor
         }
     }
 
-    function _getConnectorCallData(
+    function _getDataForConnectorTxs(
         Context memory            ctx,
         bytes4                    selector,
         ConnectorCall[]  calldata calls,
@@ -501,9 +522,9 @@ contract Bridge is IBridge, BatchDepositor
     {
         // Position in the calldata to start copying
         uint offsetToGroups;
-        ConnectorTxGroup[] calldata groups = calls[n].groups;
+        ConnectorTxGroup[] calldata txGroups = calls[n].txGroups;
         assembly {
-            offsetToGroups := sub(groups.offset, 32)
+            offsetToGroups := sub(txGroups.offset, 32)
         }
 
         // Amount of bytes that need to be copied.

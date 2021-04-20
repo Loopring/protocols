@@ -23,7 +23,7 @@ struct ConnectorTx
 
 struct ConnectorTxGroup
 {
-    bytes                  groupData;
+    bytes         groupData;
     ConnectorTx[] transactions;
 }
 
