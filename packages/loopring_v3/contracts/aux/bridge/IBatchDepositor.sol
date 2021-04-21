@@ -12,8 +12,8 @@ interface IBatchDepositor
     struct Deposit
     {
         address owner;
-        address token;
         uint96  amount;
+        address token;
         uint16  tokenID;
     }
     /// @dev Optimized L1 -> L2 path. Allows doing many deposits in an efficient way.

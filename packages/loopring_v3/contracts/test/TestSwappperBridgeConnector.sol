@@ -114,16 +114,16 @@ contract TestSwappperBridgeConnector is IBridgeConnector
                     // Give equal share to all valid calls
                     transfers[transferIdx++] = IBatchDepositor.Deposit({
                         owner:  txs[i].owner,
-                        token:  settings.tokenOut,
                         amount: (uint(txs[i].amount).mul(amountOut) / amountIn).toUint96(),
+                        token:  settings.tokenOut,
                         tokenID: 0 // not used
                     });
                 } else {
                     // Just transfer the tokens back
                     transfers[transferIdx++] = IBatchDepositor.Deposit({
                         owner:  txs[i].owner,
-                        token:  txs[i].token,
                         amount: txs[i].amount,
+                        token:  txs[i].token,
                         tokenID: 0 // not used
                     });
                 }
