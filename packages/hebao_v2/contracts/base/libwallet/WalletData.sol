@@ -48,8 +48,8 @@ struct Wallet
 {
     address owner;
 
-    // metaTxhash => consumed
-    mapping(bytes32 => bool) metaTxHashes;
+    // relayer => nonce
+    mapping(address => uint) nonce;
     // hash => consumed
     mapping(bytes32 => bool) hashes;
 
