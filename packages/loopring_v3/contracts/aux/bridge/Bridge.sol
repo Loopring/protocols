@@ -470,7 +470,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                         owner:  connectorTx.owner,
                         token:  connectorTx.token,
                         amount: connectorTx.amount,
-                        tokenID: 0
+                        tokenID: 0 // not used.
                     });
                 }
             }

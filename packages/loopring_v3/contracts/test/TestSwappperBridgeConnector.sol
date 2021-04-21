@@ -116,7 +116,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
                         owner:  txs[i].owner,
                         token:  settings.tokenOut,
                         amount: (uint(txs[i].amount).mul(amountOut) / amountIn).toUint96(),
-                        tokenID: 0 // ignored
+                        tokenID: 0 // not used
                     });
                 } else {
                     // Just transfer the tokens back
@@ -124,7 +124,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
                         owner:  txs[i].owner,
                         token:  txs[i].token,
                         amount: txs[i].amount,
-                        tokenID: 0 // ignored
+                        tokenID: 0 // not used
                     });
                 }
             }

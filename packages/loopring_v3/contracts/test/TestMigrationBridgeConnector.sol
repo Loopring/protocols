@@ -85,7 +85,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
                     owner: to,
                     token: bridgeCall.token,
                     amount: bridgeCall.amount,
-                    tokenID: 0 // ignored
+                    tokenID: 0 // not used
                 });
 
                 totalAmount += bridgeCall.amount;
