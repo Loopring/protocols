@@ -84,7 +84,8 @@ contract TestMigrationBridgeConnector is IBridgeConnector
                 transfers[transferIdx++] = IBatchDepositor.Deposit({
                     owner: to,
                     token: bridgeCall.token,
-                    amount: bridgeCall.amount
+                    amount: bridgeCall.amount,
+                    tokenID: 0 // ignored
                 });
 
                 totalAmount += bridgeCall.amount;

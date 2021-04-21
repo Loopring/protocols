@@ -469,7 +469,8 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                     deposits[txIdx++] = IBatchDepositor.Deposit({
                         owner:  connectorTx.owner,
                         token:  connectorTx.token,
-                        amount: connectorTx.amount
+                        amount: connectorTx.amount,
+                        tokenID: 0
                     });
                 }
             }
