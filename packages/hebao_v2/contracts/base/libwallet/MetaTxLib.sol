@@ -26,7 +26,7 @@ library MetaTxLib
     using ERC20Lib      for Wallet;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
-        "MetaTx(address relayer,address to,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,bytes data)"
+        "MetaTx(address relayer,address to,uint256 timestamp,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,bytes data)"
     );
 
     event MetaTxExecuted(
@@ -39,7 +39,7 @@ library MetaTxLib
     struct MetaTx
     {
         address to;
-        uint    validUntil;
+        uint    timestamp;
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
@@ -62,7 +62,7 @@ library MetaTxLib
             META_TX_TYPEHASH,
             msg.sender,
             metaTx.to,
-            metaTx.validUntil,
+            metaTx.timestamp,
             metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
@@ -86,8 +86,8 @@ library MetaTxLib
         returns (bool success)
     {
         require(msg.sender != address(this), "RECURSIVE_METATXS_DISALLOWED");
+
         require(metaTx.to == address(this));
-        require(metaTx.validUntil >= block.timestamp, "METATX_EXPIRED");
 
         uint gasLeft = gasleft();
         require(gasLeft >= (metaTx.gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
