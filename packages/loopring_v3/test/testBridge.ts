@@ -1404,7 +1404,7 @@ contract("Bridge", (accounts: string[]) => {
       }
 
       await bridge.setupCalls(calls);
-      await bridge.submitBridgeOperation([], calls, [true, true, false, true]);
+      await bridge.submitBridgeOperation([], calls, [true]);
     });
   });
 });
