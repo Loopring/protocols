@@ -452,6 +452,9 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             checkResult = CheckGasLimitResult.QUERY_FAILED;
         }
 
+        // Regardless the gas check results, we always attemp to call the connector
+        // without being willing to fail due to gas check failure.
+        //
         // Execute the logic using a delegate so no extra deposits are needed
         txData = _getDataForConnectorTxs(
             ctx,IBridgeConnector.processProcessorTransactions.selector,
