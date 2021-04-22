@@ -28,13 +28,13 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     using MathUint96        for uint96;
     using TransferUtil      for address;
 
-    enum CheckGasLimitResult {
+    enum CheckGasResult {
         SUCCESS,
         QUERY_FAILED,
         CHECK_FAILED
     }
 
-    event ConnectorTransacted (address connector, CheckGasLimitResult check, bool success, bytes reason);
+    event ConnectorTransacted (address connector, CheckGasResult check, bool success, bytes reason);
     event ConnectorTrusted    (address connector, bool trusted);
 
     struct DepositBatch
@@ -443,16 +443,16 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             txData
         );
 
-        CheckGasLimitResult checkResult;
+        CheckGasResult checkResult;
         if (success) {
             checkResult = call.gasLimit >= abi.decode(returnData, (uint)) ?
-                CheckGasLimitResult.SUCCESS :
-                CheckGasLimitResult.CHECK_FAILED;
+                CheckGasResult.SUCCESS :
+                CheckGasResult.CHECK_FAILED;
         } else {
-            checkResult = CheckGasLimitResult.QUERY_FAILED;
+            checkResult = CheckGasResult.QUERY_FAILED;
         }
 
-        // Regardless the gas check results, we always attemp to call the connector
+        // Regardless the gas check result, we always attemp to call the connector
         // without being willing to fail due to gas check failure.
         //
         // Execute the logic using a delegate so no extra deposits are needed
