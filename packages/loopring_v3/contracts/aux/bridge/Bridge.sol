@@ -444,12 +444,12 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         );
 
         CheckGasResult checkResult;
-        if (success) {
-            checkResult = call.gasLimit >= abi.decode(returnData, (uint)) ?
-                CheckGasResult.SUCCESS :
-                CheckGasResult.CHECK_FAILED;
-        } else {
+        if (!success) {
             checkResult = CheckGasResult.QUERY_FAILED;
+        } else if (call.gasLimit < abi.decode(returnData, (uint))) {
+            checkResult = CheckGasResult.CHECK_FAILED;
+        } else {
+            checkResult = CheckGasResult.SUCCESS;
         }
 
         // Regardless the gas check result, we always attemp to call the connector
@@ -487,7 +487,12 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             assert(txIdx == totalNumCalls);
         }
 
-        emit ConnectorTransacted(call.connector, checkResult, success, returnData);
+        emit ConnectorTransacted(
+            call.connector,
+            checkResult,
+            success,
+            returnData
+        );
     }
 
     function _hashConnectorTx(
