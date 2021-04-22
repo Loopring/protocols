@@ -28,7 +28,13 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     using MathUint96        for uint96;
     using TransferUtil      for address;
 
-    event ConnectorTransacted (address connector, bool check, bool success, bytes reason);
+    enum CheckGasResult {
+        SUCCESS,
+        QUERY_FAILED,
+        CHECK_FAILED
+    }
+
+    event ConnectorTransacted (address connector, CheckGasResult check, bool success, bytes reason);
     event ConnectorTrusted    (address connector, bool trusted);
 
     struct DepositBatch
@@ -431,25 +437,30 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             calls,
             n
         );
-        (bool check, bytes memory returnData) = call.connector.fastCall(
+        (bool success, bytes memory returnData) = call.connector.fastCall(
             GAS_LIMIT_CHECK_GAS_LIMIT,
             0,
             txData
         );
 
-        if (check) {
-            require(call.gasLimit >= abi.decode(returnData, (uint)), "GAS_LIMIT_TOO_LOW");
+        CheckGasResult checkResult;
+        if (!success) {
+            checkResult = CheckGasResult.QUERY_FAILED;
+        } else if (call.gasLimit < abi.decode(returnData, (uint))) {
+            checkResult = CheckGasResult.CHECK_FAILED;
         } else {
-            // If the call failed for some reason just continue.
+            checkResult = CheckGasResult.SUCCESS;
         }
 
+        // Regardless the gas check result, we always attemp to call the connector
+        // without being willing to fail due to gas check failure.
+        //
         // Execute the logic using a delegate so no extra deposits are needed
         txData = _getDataForConnectorTxs(
             ctx,IBridgeConnector.processProcessorTransactions.selector,
             calls,
             n
         );
-        bool success;
         (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
 
         if (success) {
@@ -476,7 +487,12 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             assert(txIdx == totalNumCalls);
         }
 
-        emit ConnectorTransacted(call.connector, check, success, returnData);
+        emit ConnectorTransacted(
+            call.connector,
+            checkResult,
+            success,
+            returnData
+        );
     }
 
     function _hashConnectorTx(
