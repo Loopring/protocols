@@ -12,6 +12,7 @@ import "../../thirdparty/BytesUtil.sol";
 import "./WalletData.sol";
 import "./ERC20Lib.sol";
 import "./QuotaLib.sol";
+import "../SmartWallet.sol";
 
 
 /// @title MetaTxLib
@@ -26,7 +27,7 @@ library MetaTxLib
     using ERC20Lib      for Wallet;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
-        "MetaTx(address relayer,address to,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,bytes data)"
+        "MetaTx(address relayer,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,bytes data)"
     );
 
     event MetaTxExecuted(
@@ -39,7 +40,7 @@ library MetaTxLib
     struct MetaTx
     {
         address to;
-        uint    validUntil;
+        uint    nonce;
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
@@ -62,7 +63,7 @@ library MetaTxLib
             META_TX_TYPEHASH,
             msg.sender,
             metaTx.to,
-            metaTx.validUntil,
+            metaTx.nonce,
             metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
@@ -72,7 +73,6 @@ library MetaTxLib
         );
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
         require(metaTxHash.verifySignature(wallet.owner, metaTx.signature), "INVALID_SIGNATURE");
-
         return metaTxHash;
     }
 
@@ -86,11 +86,19 @@ library MetaTxLib
         returns (bool success)
     {
         require(msg.sender != address(this), "RECURSIVE_METATXS_DISALLOWED");
+
         require(metaTx.to == address(this));
-        require(metaTx.validUntil >= block.timestamp, "METATX_EXPIRED");
 
         uint gasLeft = gasleft();
         require(gasLeft >= (metaTx.gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
+
+        // Update the nonce before the call to protect against reentrancy
+        require(isNonceValid(wallet, msg.sender, metaTx.nonce, metaTx.data.toBytes4(0)), "INVALID_NONCE");
+        if (metaTx.nonce != 0) {
+            wallet.nonce[msg.sender] = metaTx.nonce;
+        } else {
+            require(metaTx.requiresSuccess, "META_TX_WITHOUT_NONCE_REQUIRES_SUCCESS");
+        }
 
         (success, ) = metaTx.to.call{gas : metaTx.gasLimit}(metaTx.data);
 
@@ -102,8 +110,6 @@ library MetaTxLib
             DOMAIN_SEPARATOR,
             metaTx
         );
-        require(!wallet.metaTxHashes[metaTxHash], "METATX_HASH_EXIST");
-        wallet.metaTxHashes[metaTxHash] = true;
 
         uint gasUsed = gasLeft - gasleft() + metaTx.gasOverhead;
 
@@ -145,4 +151,30 @@ library MetaTxLib
         }
     }
 
+    function isNonceValid(
+        Wallet  storage wallet,
+        address relayer,
+        uint    nonce,
+        bytes4  methodId
+        )
+        public
+        view
+        returns (bool)
+    {
+        if ( methodId == SmartWallet.changeMasterCopy.selector ||
+             methodId == SmartWallet.addGuardianWA.selector ||
+             methodId == SmartWallet.removeGuardianWA.selector ||
+             methodId == SmartWallet.unlock.selector ||
+             methodId == SmartWallet.changeDailyQuotaWA.selector ||
+             methodId == SmartWallet.recover.selector ||
+             methodId == SmartWallet.addToWhitelistWA.selector ||
+             methodId == SmartWallet.transferTokenWA.selector ||
+             methodId == SmartWallet.callContractWA.selector ||
+             methodId == SmartWallet.approveTokenWA.selector ||
+             methodId == SmartWallet.approveThenCallContractWA.selector ) {
+            return nonce == 0;
+        } else {
+            return nonce > wallet.nonce[relayer] && (nonce >> 128) <= block.number;
+        }
+    }
 }
