@@ -34,6 +34,13 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     event BatchDeposited (uint batchID, bytes transfersData, address from);
     event Withdrawn      (uint batchID);
 
+    struct BatchDeposit
+    {
+        address owner;
+        uint16  tokenID;
+        uint96  amount;
+    }
+
     struct TokenData
     {
         address token;
@@ -79,9 +86,9 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
 
     // Allows withdrawing from pending deposits that are at least MAX_AGE_PENDING_DEPOSITS old.
     function withdrawFromPendingBatchDeposits(
-        uint                             batchID,
-        IBatchDepositor.Deposit[] memory deposits,
-        uint[]                    memory indices
+        uint                  batchID,
+        BatchDeposit[] memory deposits,
+        uint[]         memory indices
         )
         external
         nonReentrant
@@ -92,9 +99,8 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
 
         for (uint i = 0; i < deposits.length; i++) {
-            IBatchDepositor.Deposit memory deposit = deposits[i];
+            BatchDeposit memory deposit = deposits[i];
             // Pack the transfer data to compare against batch deposit hash
-            assert(deposit.token == address(0));
             address  owner = deposit.owner;
             uint16 tokenID = deposit.tokenID;
             uint    amount = deposit.amount;
@@ -187,7 +193,6 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
             IBatchDepositor.Deposit[] memory _deposits = depositsList[i];
             for (uint j = 0; j < _deposits.length; j++) {
                 deposit = _deposits[j];
-                assert(deposit.tokenID == 0);
                 if(token != deposit.token) {
                     token = deposit.token;
                     tokenIdx = 0;

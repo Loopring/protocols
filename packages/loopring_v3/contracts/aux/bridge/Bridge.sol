@@ -468,9 +468,8 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                     ConnectorTx memory connectorTx = txGroup.transactions[j];
                     deposits[txIdx++] = IBatchDepositor.Deposit({
                         owner:  connectorTx.owner,
-                        amount: connectorTx.amount,
                         token:  connectorTx.token,
-                        tokenID: 0 // not used.
+                        amount: connectorTx.amount
                     });
                 }
             }
