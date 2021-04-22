@@ -96,6 +96,8 @@ library MetaTxLib
         require(isNonceValid(wallet, msg.sender, metaTx.nonce, metaTx.data.toBytes4(0)), "INVALID_NONCE");
         if (metaTx.nonce != 0) {
             wallet.nonce[msg.sender] = metaTx.nonce;
+        } else {
+            require(metaTx.requiresSuccess, "META_TX_WITHOUT_NONCE_REQUIRES_SUCCESS");
         }
 
         (success, ) = metaTx.to.call{gas : metaTx.gasLimit}(metaTx.data);
