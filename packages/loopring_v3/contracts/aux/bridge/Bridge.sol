@@ -174,12 +174,24 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         ctx.tokensOffset = tokensOffset;
         ctx.tokens = tokens;
 
-        // Process potential L1->L2 batch deposits if there are any.
-        // Batch deposits are not always necessary, if users have
-        // tokens on L2 already, this step is totally optional.
+        // Now process both:
+        // - previously done batch deposits
+        // - connector calls
+        // Note that both are unrelated to each other. It's possible to only process
+        // batch deposits and no connector calls, or no batch deposits and only connector calls.
+        // The connector calls can generate a new batch deposit request which will need
+        // to be handled in a future block.
+        // A CEX/L2 -> L2 mass migration would only use the batch deposit functionality.
+
+        /* Batch deposits */
+
+        // Process previously requested L1->L2 batch deposits
+        // (originating from external batchDeposit() calls or from previous connector calls).
         _processDepositBatches(ctx, batches);
 
-        // Process L2 transfers from users to the Bridge, then withdrawl tokens
+        /* Connector calls */
+
+        // Process L2 transfers from users to the Bridge, then withdraw tokens
         // to L1 to interact with connectors,
         uint[]                      memory totalAmounts;
         IBatchDepositor.Deposit[][] memory depositsList;
@@ -188,7 +200,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         // Verify withdrawals
         _verifyWithdrawals(ctx, totalAmounts);
 
-        // Do all resulting transfers back from the bridge to the users
+        // Do a new batch deposit that resulted from the connectors that were just called.
         _batchDeposit(address(this), depositsList);
     }
 
@@ -254,7 +266,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             }
         }
 
-        // Get the original transfers ptr back
+        // Get the original transfersData ptr back
         assembly {
             transfersData := sub(transfersData, add(32, mul(34, mload(amounts))))
         }
@@ -360,8 +372,8 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             }
         }
 
-        // Make sure the gas passed to the connector is at least the sum of all call gas min amounts.
-        // So calls basically "buy" a part of the total gas needed to do the batched call,
+        // Make sure the gas passed to the connector is at least the sum of all transaction gas min amounts.
+        // So connector txs basically "buy" a part of the total gas needed to do the batched call,
         // while IBridgeConnector.getMinGasLimit() makes sure the total gas limit makes sense for the
         // amount of work submitted.
         require(call.gasLimit >= totalMinGas, "INVALID_TOTAL_MIN_GAS");
@@ -455,7 +467,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         // Regardless the gas check result, we always attemp to call the connector
         // without being willing to fail due to gas check failure.
         //
-        // Execute the logic using a delegate so no extra deposits are needed
+        // Execute the logic using a delegatecall so no extra L1 transfers are needed
         txData = _getDataForConnectorTxs(
             ctx,IBridgeConnector.processProcessorTransactions.selector,
             calls,

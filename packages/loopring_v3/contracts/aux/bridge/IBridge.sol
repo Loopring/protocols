@@ -43,12 +43,12 @@ interface IBridgeConnector
     ///       that want to do the same operation.
     ///     - All deposits back to L2 are also reduced to just a single deposit per distinct token for all bridge operations
     ///
-    ///     Most of this is abstracted away in the bridge. A user sings a ConnectorTx and `processProcessorTransactions`
+    ///     Most of this is abstracted away in the bridge. A user signs a ConnectorTx and `processProcessorTransactions`
     ///     gets a list of bridge calls divided in lists based on `groupData`
     ///     (e.g. for a uniswap connector the group would be the 2 tokens being traded).
-    ///     Each bridge call contains how much each user transfered to the bridge to be used for the specific bridge call.
+    ///     Each bridge call contains how much each user transferred to the bridge to be used for the specific bridge call.
     ///     The bridge call also contain a user specific `userData` which can contain per user parameters (e.g. for
-    ///     uniswap the allowd slippage, for mass migration the destination address,...).
+    ///     uniswap the allowed slippage, for mass migration the destination address,...).
     ///     In some cases the interaction results in new tokens that the user wants to receive back on L2. To allow this
     ///     the function returns a list of transfers that need to be done from the bridge back to the users (which would
     ///     be similar to just calling IBridge.batchDeposit(), but by returning the list here more optimizations are possible
@@ -63,7 +63,7 @@ interface IBridgeConnector
     /// @dev Returns a rough estimate of the gas cost to do `processProcessorTransactions`. At least this much gas needs to be
     ///      provided by the caller of `processProcessorTransactions` before the ConnectorTxs of users are allowed to be used.
     ///
-    ///      Aach bridge call only pays for a small part of the necessary total gas consumed by a
+    ///      Each ConnectorTx only pays for a small part of the necessary total gas consumed by a
     ///      a connector call. As such, the caller of `processProcessorTransactions` would easily be able to just let all
     ///      `processProcessorTransactions` calls fail by e.g. not batching enough Bridge calls together (while still collecting the fee).
     ///

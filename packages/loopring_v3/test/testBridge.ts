@@ -11,6 +11,7 @@ import { AuthMethod, Transfer } from "./types";
 import { SignatureType, sign, verifySignature } from "../util/Signature";
 import * as sigUtil from "eth-sig-util";
 import { Bitstream } from "loopringV3.js";
+import { logDebug } from "./logs";
 
 const AgentRegistry = artifacts.require("AgentRegistry");
 
@@ -211,7 +212,7 @@ export class Bridge {
       from: this.relayer,
       value: ethValue
     });
-    console.log(
+    logDebug(
       "\x1b[46m%s\x1b[0m",
       "[BatchxDepositor] Gas used: " + tx.receipt.gasUsed
     );
@@ -1269,8 +1270,6 @@ contract("Bridge", (accounts: string[]) => {
         "BatchDeposited"
       );
       await bridge.submitBridgeOperation(transferEvents, []);
-
-      // assert(false);
     });
 
     it("Manual withdrawal", async () => {
@@ -1371,6 +1370,41 @@ contract("Bridge", (accounts: string[]) => {
         bridge.contract.withdrawFromPendingBatchDeposits(0, transfers, [1, 2]),
         "ALREADY_WITHDRAWN"
       );
+    });
+
+    it("Benchmark", async () => {
+      const bridge = await setupBridge();
+
+      await bridge.contract.trustConnector(
+        swappperBridgeConnectorA.address,
+        true
+      );
+
+      const group_ETH_LRC = encodeSwapGroupSettings("ETH", "LRC");
+
+      const calls: ConnectorTx[] = [];
+      for (let i = 0; i < 5; i++) {
+        calls.push({
+          owner: ownerA,
+          token: "ETH",
+          amount: round(web3.utils.toWei("1.0132", "ether")),
+          feeToken: "ETH",
+          maxFee: "0",
+          minGas: 30000,
+          userData: "0x",
+          validUntil: 0,
+          connector: swappperBridgeConnectorA.address,
+          groupData: group_ETH_LRC,
+          expectedDeposit: {
+            owner: ownerA,
+            token: "LRC",
+            amount: convert(round(web3.utils.toWei("1.0132", "ether")))
+          }
+        });
+      }
+
+      await bridge.setupCalls(calls);
+      await bridge.submitBridgeOperation([], calls, [true, true, false, true]);
     });
   });
 });
