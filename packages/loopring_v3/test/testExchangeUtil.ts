@@ -49,6 +49,8 @@ import {
 
 const LoopringIOExchangeOwner = artifacts.require("LoopringIOExchangeOwner");
 
+const version = "3.7.0";
+
 type TxType =
   | Noop
   | SpotTrade
@@ -194,7 +196,7 @@ export namespace AccountUpdateUtils {
       primaryType: "AccountUpdate",
       domain: {
         name: "Loopring Protocol",
-        version: "3.6.0",
+        version,
         chainId: new BN(/*await web3.eth.net.getId()*/ 1),
         verifyingContract
       },
@@ -275,7 +277,7 @@ export namespace WithdrawalUtils {
       primaryType: "Withdrawal",
       domain: {
         name: "Loopring Protocol",
-        version: "3.6.0",
+        version,
         chainId: new BN(/*await web3.eth.net.getId()*/ 1),
         verifyingContract
       },
@@ -356,7 +358,7 @@ export namespace TransferUtils {
       primaryType: "Transfer",
       domain: {
         name: "Loopring Protocol",
-        version: "3.6.0",
+        version,
         chainId: new BN(/*await web3.eth.net.getId()*/ 1),
         verifyingContract
       },
@@ -435,7 +437,7 @@ export namespace AmmUpdateUtils {
       primaryType: "AmmUpdate",
       domain: {
         name: "Loopring Protocol",
-        version: "3.6.0",
+        version,
         chainId: new BN(/*await web3.eth.net.getId()*/ 1),
         verifyingContract
       },
@@ -1995,9 +1997,9 @@ export class ExchangeTestUtil {
       .submitBlocksWithCallbacks(
         parameters.isDataCompressed,
         parameters.data,
-        parameters.callbackConfig,
+        parameters.txReceiverCallbacks,
         parameters.flashDeposits,
-        parameters.callbacks
+        parameters.submitBlocksCallbacks
       )
       .encodeABI();
   }
@@ -2007,20 +2009,22 @@ export class ExchangeTestUtil {
     txData: string,
     transactionReceiverCallbacks: TransactionReceiverCallback[][],
     flashDeposits: FlashDeposit[],
-    callbacks: Callback[]
+    submitBlocksCallbacks: Callback[]
   ) {
     const data = isDataCompressed ? compressZeros(txData) : txData;
     //console.log(data);
 
     // Block callbacks
-    const callbackConfig = this.getCallbackConfig(transactionReceiverCallbacks);
+    const txReceiverCallbacks = this.getCallbackConfig(
+      transactionReceiverCallbacks
+    );
 
     return {
       isDataCompressed,
       data,
-      callbackConfig,
+      txReceiverCallbacks,
       flashDeposits,
-      callbacks
+      submitBlocksCallbacks
     };
   }
 
@@ -2166,9 +2170,9 @@ export class ExchangeTestUtil {
     tx = await operatorContract.submitBlocksWithCallbacks(
       parameters.isDataCompressed,
       parameters.data,
-      parameters.callbackConfig,
+      parameters.txReceiverCallbacks,
       parameters.flashDeposits,
-      parameters.callbacks,
+      parameters.submitBlocksCallbacks,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
     );

@@ -4,6 +4,7 @@ pragma solidity ^0.7.0;
 
 import "../core/iface/IExchangeV3.sol";
 import "../lib/AddressUtil.sol";
+import "../lib/Claimable.sol";
 import "../lib/Drainable.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -14,7 +15,7 @@ import "../lib/TransferUtil.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract BaseConverter is LPToken, Drainable, ReentrancyGuard
+abstract contract BaseConverter is LPToken, Claimable, Drainable, ReentrancyGuard
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
@@ -133,8 +134,7 @@ abstract contract BaseConverter is LPToken, Drainable, ReentrancyGuard
         }
 
         // Send remaining amount to `to`
-        uint amountToSend = amount.sub(repayAmount);
-        token.transferOut(to, amountToSend);
+        token.transferOut(to, amount);
     }
 
     // Wrapper around `convert` which enforces only self calls.
@@ -189,7 +189,7 @@ abstract contract BaseConverter is LPToken, Drainable, ReentrancyGuard
         view
         returns (bool)
     {
-        return totalSupply == 0 && drainer == exchange.owner();
+        return totalSupply == 0 && drainer == owner;
     }
 
     // Converer specific logic
