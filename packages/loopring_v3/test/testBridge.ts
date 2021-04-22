@@ -454,7 +454,7 @@ export class Bridge {
 
     const connectorCallResultEvents = await this.ctx.assertEventsEmitted(
       this.contract,
-      "ConnectorCalled",
+      "ConnectorTransacted",
       bridgeOperation.connectorCalls.length
     );
 
