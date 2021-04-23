@@ -76,7 +76,8 @@ contract("Exchange", (accounts: string[]) => {
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
-          maxFeeBips: 100
+          maxFeeBips: 103,
+          feeBips: 100
         },
         orderB: {
           tokenS: "GTO",

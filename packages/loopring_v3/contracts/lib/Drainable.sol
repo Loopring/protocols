@@ -28,7 +28,7 @@ abstract contract Drainable
     {
         require(canDrain(msg.sender, token), "UNAUTHORIZED");
 
-        amount = token.balanceOf(msg.sender);
+        amount = token.selfBalance();
         token.transferOut(to, amount);
 
         emit Drained(to, token, amount);
