@@ -65,11 +65,17 @@ export class SpotTradeProcessor {
 
     // Further extraction of packed data
     const limitMaskA = orderDataA & 0b10000000;
-    const feeBipsA = orderDataA & 0b00111111;
+    const feeBipsMultiplierFlagA = orderDataA & 0b01000000;
+    const feeBipsA =
+      (orderDataA & 0b00111111) *
+      (feeBipsMultiplierFlagA ? Constants.FEE_MULTIPLIER : 1);
     const fillAmountBorSA = limitMaskA > 0;
 
     const limitMaskB = orderDataB & 0b10000000;
-    const feeBipsB = orderDataB & 0b00111111;
+    const feeBipsMultiplierFlagB = orderDataB & 0b01000000;
+    const feeBipsB =
+      (orderDataB & 0b00111111) *
+      (feeBipsMultiplierFlagB ? Constants.FEE_MULTIPLIER : 1);
     const fillAmountBorSB = limitMaskB > 0;
 
     // Decode the float values

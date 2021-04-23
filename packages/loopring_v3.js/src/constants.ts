@@ -17,6 +17,8 @@ export class Constants {
 
   static readonly MAX_AMOUNT = new BN(2).pow(new BN(96)).sub(new BN(1));
 
+  static readonly FEE_MULTIPLIER = 50;
+
   static readonly Float24Encoding: FloatEncoding = {
     numBitsExponent: 5,
     numBitsMantissa: 19,

@@ -20,7 +20,8 @@ static const unsigned int NUM_BITS_TOKEN = TREE_DEPTH_TOKENS * 2;
 static const unsigned int NUM_BITS_STORAGEID = 32;
 static const unsigned int NUM_BITS_TIMESTAMP = 32;
 static const unsigned int NUM_BITS_NONCE = 32;
-static const unsigned int NUM_BITS_BIPS = 6;
+static const unsigned int NUM_BITS_BIPS = 12; // ceil(log2(2**NUM_BITS_BIPS_DA * FEE_MULTIPLIER))
+static const unsigned int NUM_BITS_BIPS_DA = 6;
 static const unsigned int NUM_BITS_PROTOCOL_FEE_BIPS = 8;
 static const unsigned int NUM_BITS_TYPE = 8;
 static const unsigned int NUM_STORAGE_SLOTS = 16384; // 2**NUM_BITS_STORAGE_ADDRESS
@@ -35,6 +36,7 @@ static const char *EMPTY_TRADE_HISTORY = "65927491675782344981534105642433692294
 static const char *MAX_AMOUNT = "79228162514264337593543950335"; // 2^96 - 1
 static const char *FIXED_BASE = "1000000000000000000";           // 10^18
 static const unsigned int NUM_BITS_FIXED_BASE = 60;              // ceil(log2(10^18))
+static const unsigned int FEE_MULTIPLIER = 50;
 
 struct FloatEncoding
 {

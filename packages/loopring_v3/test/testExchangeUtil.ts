@@ -953,9 +953,6 @@ export class ExchangeTestUtil {
     order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
     order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
 
-    assert(order.maxFeeBips < 64, "maxFeeBips >= 64");
-    assert(order.feeBips < 64, "feeBips >= 64");
-
     if (bDeposit) {
       // setup initial balances:
       await this.setOrderBalances(order);
@@ -2583,10 +2580,18 @@ export class ExchangeTestUtil {
         da.addNumber(spotTrade.fFillS_B ? spotTrade.fFillS_B : 0, 3);
 
         let limitMask = orderA.fillAmountBorS ? 0b10000000 : 0;
-        da.addNumber(limitMask + orderA.feeBips, 1);
+        let feeData =
+          orderA.feeBips >= 64
+            ? 64 + orderA.feeBips / Constants.FEE_MULTIPLIER
+            : orderA.feeBips;
+        da.addNumber(limitMask + feeData, 1);
 
         limitMask = orderB.fillAmountBorS ? 0b10000000 : 0;
-        da.addNumber(limitMask + orderB.feeBips, 1);
+        feeData =
+          orderB.feeBips >= 64
+            ? 64 + orderB.feeBips / Constants.FEE_MULTIPLIER
+            : orderB.feeBips;
+        da.addNumber(limitMask + feeData, 1);
       } else if (tx.transfer || tx.txType === "Transfer") {
         const transfer = tx.transfer ? tx.transfer : tx;
         da.addNumber(TransactionType.TRANSFER, 1);

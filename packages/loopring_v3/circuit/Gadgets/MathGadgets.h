@@ -69,6 +69,7 @@ class Constants : public GadgetT
     const VariableT txTypeSpotTrade;
     const VariableT txTypeTransfer;
     const VariableT txTypeWithdrawal;
+    const VariableT feeMultiplier;
 
     const VariableArrayT zeroAccount;
 
@@ -104,6 +105,7 @@ class Constants : public GadgetT
             make_variable(pb, ethsnarks::FieldT(int(TransactionType::Transfer)), FMT(prefix, ".txTypeTransfer"))),
           txTypeWithdrawal(
             make_variable(pb, ethsnarks::FieldT(int(TransactionType::Withdrawal)), FMT(prefix, ".txTypeWithdrawal"))),
+          feeMultiplier(make_variable(pb, ethsnarks::FieldT(FEE_MULTIPLIER), FMT(prefix, ".feeMultiplier"))),
 
           zeroAccount(NUM_BITS_ACCOUNT, _0)
     {
@@ -160,6 +162,8 @@ class Constants : public GadgetT
         pb.add_r1cs_constraint(
           ConstraintT(txTypeWithdrawal, FieldT::one(), ethsnarks::FieldT(int(TransactionType::Withdrawal))),
           ".txTypeWithdrawal");
+        pb.add_r1cs_constraint(
+          ConstraintT(feeMultiplier, FieldT::one(), ethsnarks::FieldT(FEE_MULTIPLIER)), ".feeMultiplier");
     }
 };
 
