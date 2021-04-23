@@ -629,7 +629,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     function verifySignatureL2(
         Context memory ctx,
         address        owner,
-        uint           accountID,
+        uint           _accountID,
         bytes32        txHash
         )
         internal
@@ -661,9 +661,12 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         }
 
         // Verify that the hash was signed on L2
+        uint value = (uint(ExchangeData.TransactionType.SIGNATURE_VERIFICATION) << 192) |
+            ((uint(owner) & 0x00ffffffffffffffffffffffffffffffffffffffff) << 32) |
+            _accountID;
+
         require(
-            packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffff ==
-            (uint(ExchangeData.TransactionType.SIGNATURE_VERIFICATION) << 192) | ((uint(owner) & 0x00ffffffffffffffffffffffffffffffffffffffff) << 32) | accountID &&
+            packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffff == value &&
             data == uint(txHash) >> 3,
             "INVALID_OFFCHAIN_L2_APPROVAL"
         );
