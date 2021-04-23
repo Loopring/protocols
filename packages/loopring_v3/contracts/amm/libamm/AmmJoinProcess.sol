@@ -55,18 +55,8 @@ library AmmJoinProcess
         require(slippageOK, "JOIN_SLIPPAGE_INVALID");
 
         // Process transfers
-        _processJoinTransfers(
-            ctx,
-            join,
-            amounts,
-            signature
-        );
-
-        _mintPoolTokenOnL2(
-            ctx,
-            mintAmount,
-            join.owner
-        );
+        _processJoinTransfers(ctx, join, amounts, signature);
+        _mintPoolTokenOnL2(ctx, mintAmount, join.owner);
 
         // emit JoinProcessed(join.owner, mintAmount, amounts);
     }

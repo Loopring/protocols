@@ -66,7 +66,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         pure
         returns (string memory)
     {
-        return "3.6.0";
+        return "3.7.0";
     }
 
     function domainSeparator()
@@ -376,27 +376,27 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.pendingDeposits[owner][tokenID].amount;
     }
 
-    function flashMint(
-        ExchangeData.FlashMint[] calldata flashMints
+    function flashDeposit(
+        ExchangeData.FlashDeposit[] calldata flashDeposits
         )
         external
         override
         nonReentrant
         onlyOwner
     {
-        for (uint i = 0; i < flashMints.length; i++) {
+        for (uint i = 0; i < flashDeposits.length; i++) {
             state.deposit(
-                flashMints[i].to,
-                flashMints[i].to,
-                flashMints[i].token,
-                flashMints[i].amount,
+                flashDeposits[i].to,
+                flashDeposits[i].to,
+                flashDeposits[i].token,
+                flashDeposits[i].amount,
                 new bytes(0),
                 true
             );
         }
     }
 
-    function repayFlashMint(
+    function repayFlashDeposit(
         address from,
         address tokenAddress,
         uint96  amount,
@@ -407,10 +407,10 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         override
         nonReentrant
     {
-        state.repayFlashMint(from, tokenAddress, amount, extraData);
+        state.repayFlashDeposit(from, tokenAddress, amount, extraData);
     }
 
-    function getAmountFlashMinted(
+    function getFlashDepositAmount(
         address tokenAddress
         )
         external
@@ -418,20 +418,20 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         view
         returns (uint96)
     {
-        return state.amountFlashMinted[tokenAddress];
+        return state.flashDepositAmounts[tokenAddress];
     }
 
-    function verifyFlashMintsPaidBack(
-        ExchangeData.FlashMint[] calldata flashMints
+    function verifyFlashDepositsRepaid(
+        ExchangeData.FlashDeposit[] calldata flashDeposits
         )
         external
         override
         view
     {
-        for (uint i = 0; i < flashMints.length; i++) {
+        for (uint i = 0; i < flashDeposits.length; i++) {
             require(
-                state.amountFlashMinted[flashMints[i].token] == 0,
-                "FLASH_MINT_NOT_REPAID"
+                state.flashDepositAmounts[flashDeposits[i].token] == 0,
+                "FLASH_DEPOSIT_NOT_REPAID"
             );
         }
     }

@@ -8,7 +8,7 @@ import './SignatureUtil.sol';
 import './EIP712.sol';
 
 
-contract LPERC20 is ERC20
+contract LPToken is ERC20
 {
     using MathUint      for uint;
     using SignatureUtil for bytes32;
@@ -80,7 +80,7 @@ contract LPERC20 is ERC20
         returns (bool)
     {
         if (msg.sender != address(this) &&
-            allowance[from][msg.sender] != uint(-1)) {
+            allowance[from][msg.sender] != type(uint256).max) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }
          _transfer(from, to, value);

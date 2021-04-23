@@ -48,32 +48,32 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         bridge = _bridge;
     }
 
-    function processCalls(ConnectorGroup[] memory groups)
+    function processTransactions(ConnectorTxGroup[] memory groups)
         external
         payable
         override
-        returns (BridgeTransfer[] memory)
+        returns (IBatchDepositor.Deposit[] memory)
     {
-        uint numTransfers = 0;
+        uint numDeposits = 0;
         for (uint g = 0; g < groups.length; g++) {
-            numTransfers += groups[g].calls.length;
+            numDeposits += groups[g].transactions.length;
         }
-        BridgeTransfer[] memory transfers = new BridgeTransfer[](numTransfers);
+        IBatchDepositor.Deposit[] memory transfers = new IBatchDepositor.Deposit[](numDeposits);
         uint transferIdx = 0;
 
         // Total ETH to migrate
         uint totalAmountETH = 0;
-        BridgeCall memory bridgeCall;
+        ConnectorTx memory bridgeCall;
         for (uint g = 0; g < groups.length; g++) {
             GroupSettings memory settings = abi.decode(groups[g].groupData, (GroupSettings));
 
-            BridgeCall[] memory calls = groups[g].calls;
+            ConnectorTx[] memory txs = groups[g].transactions;
 
             // Check for each call if the minimum slippage was achieved
             uint totalAmount = 0;
-            for (uint i = 0; i < calls.length; i++) {
-                bridgeCall = calls[i];
-                require(calls[i].token == settings.token, "WRONG_TOKEN_IN_GROUP");
+            for (uint i = 0; i < txs.length; i++) {
+                bridgeCall = txs[i];
+                require(txs[i].token == settings.token, "WRONG_TOKEN_IN_GROUP");
 
                 address to = bridgeCall.owner;
                 if(bridgeCall.userData.length == 32) {
@@ -81,7 +81,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
                     to = userSettings.to;
                 }
 
-                transfers[transferIdx++] = BridgeTransfer({
+                transfers[transferIdx++] = IBatchDepositor.Deposit({
                     owner: to,
                     token: bridgeCall.token,
                     amount: bridgeCall.amount
@@ -101,10 +101,10 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         // Mass migrate
         bridge.batchDeposit{value: totalAmountETH}(transfers);
 
-        return new BridgeTransfer[](0);
+        return new IBatchDepositor.Deposit[](0);
     }
 
-    function getMinGasLimit(ConnectorGroup[] calldata groups)
+    function getMinGasLimit(ConnectorTxGroup[] calldata groups)
         external
         pure
         override
@@ -112,12 +112,9 @@ contract TestMigrationBridgeConnector is IBridgeConnector
     {
         gasLimit = 40000;
         for (uint g = 0; g < groups.length; g++) {
-           gasLimit += 75000 + 2500 * groups[g].calls.length;
+           gasLimit += 75000 + 2500 * groups[g].transactions.length;
         }
     }
 
-    receive()
-        external
-        payable
-    {}
+    receive() external payable {}
 }

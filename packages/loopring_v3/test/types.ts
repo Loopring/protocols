@@ -230,7 +230,7 @@ export interface TransactionReceiverCallback {
   tx?: any;
 }
 
-export interface FlashMint {
+export interface FlashDeposit {
   to: string;
   token: string;
   amount: string;

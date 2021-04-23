@@ -35,7 +35,7 @@ import {
   Block,
   TransactionReceiverCallback,
   Deposit,
-  FlashMint,
+  FlashDeposit,
   Callback,
   Transfer,
   Noop,
@@ -48,6 +48,8 @@ import {
 } from "./types";
 
 const LoopringIOExchangeOwner = artifacts.require("LoopringIOExchangeOwner");
+
+const version = "3.7.0";
 
 type TxType =
   | Noop
@@ -194,7 +196,7 @@ export namespace AccountUpdateUtils {
       primaryType: "AccountUpdate",
       domain: {
         name: "Loopring Protocol",
-        version: "3.6.0",
+        version,
         chainId: new BN(/*await web3.eth.net.getId()*/ 1),
         verifyingContract
       },
@@ -275,7 +277,7 @@ export namespace WithdrawalUtils {
       primaryType: "Withdrawal",
       domain: {
         name: "Loopring Protocol",
-        version: "3.6.0",
+        version,
         chainId: new BN(/*await web3.eth.net.getId()*/ 1),
         verifyingContract
       },
@@ -356,7 +358,7 @@ export namespace TransferUtils {
       primaryType: "Transfer",
       domain: {
         name: "Loopring Protocol",
-        version: "3.6.0",
+        version,
         chainId: new BN(/*await web3.eth.net.getId()*/ 1),
         verifyingContract
       },
@@ -435,7 +437,7 @@ export namespace AmmUpdateUtils {
       primaryType: "AmmUpdate",
       domain: {
         name: "Loopring Protocol",
-        version: "3.6.0",
+        version,
         chainId: new BN(/*await web3.eth.net.getId()*/ 1),
         verifyingContract
       },
@@ -538,7 +540,7 @@ export class ExchangeTestUtil {
 
   private pendingTransactions: TxType[][] = [];
   private pendingTransactionReceiverCallbacks: TransactionReceiverCallback[][] = [];
-  private pendingFlashMints: FlashMint[][] = [];
+  private pendingFlashDeposits: FlashDeposit[][] = [];
   private pendingCallbacks: Callback[][] = [];
 
   private storageIDGenerator: number = 0;
@@ -584,7 +586,7 @@ export class ExchangeTestUtil {
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       this.pendingTransactions.push([]);
       this.pendingTransactionReceiverCallbacks.push([]);
-      this.pendingFlashMints.push([]);
+      this.pendingFlashDeposits.push([]);
       this.pendingCallbacks.push([]);
       this.pendingBlocks.push([]);
       this.blocks.push([]);
@@ -1261,19 +1263,19 @@ export class ExchangeTestUtil {
     return deposit;
   }
 
-  public async flashMint(owner: string, token: string, amount: BN) {
+  public async flashDeposit(owner: string, token: string, amount: BN) {
     this.requestDeposit(owner, token, amount);
-    this.addFlashMint(owner, token, amount);
+    this.addFlashDeposit(owner, token, amount);
   }
 
-  public addFlashMint(owner: string, token: string, amount: BN) {
-    const flashMint: FlashMint = {
+  public addFlashDeposit(owner: string, token: string, amount: BN) {
+    const flashDeposit: FlashDeposit = {
       to: owner,
       token: this.getTokenAddress(token),
       amount: amount.toString(10)
     };
-    this.pendingFlashMints[this.exchangeId].push(flashMint);
-    return flashMint;
+    this.pendingFlashDeposits[this.exchangeId].push(flashDeposit);
+    return flashDeposit;
   }
 
   public addCallback(to: string, data: string, before: boolean) {
@@ -1995,9 +1997,9 @@ export class ExchangeTestUtil {
       .submitBlocksWithCallbacks(
         parameters.isDataCompressed,
         parameters.data,
-        parameters.callbackConfig,
-        parameters.flashMints,
-        parameters.callbacks
+        parameters.txReceiverCallbacks,
+        parameters.flashDeposits,
+        parameters.submitBlocksCallbacks
       )
       .encodeABI();
   }
@@ -2006,21 +2008,23 @@ export class ExchangeTestUtil {
     isDataCompressed: boolean,
     txData: string,
     transactionReceiverCallbacks: TransactionReceiverCallback[][],
-    flashMints: FlashMint[],
-    callbacks: Callback[]
+    flashDeposits: FlashDeposit[],
+    submitBlocksCallbacks: Callback[]
   ) {
     const data = isDataCompressed ? compressZeros(txData) : txData;
     //console.log(data);
 
     // Block callbacks
-    const callbackConfig = this.getCallbackConfig(transactionReceiverCallbacks);
+    const txReceiverCallbacks = this.getCallbackConfig(
+      transactionReceiverCallbacks
+    );
 
     return {
       isDataCompressed,
       data,
-      callbackConfig,
-      flashMints,
-      callbacks
+      txReceiverCallbacks,
+      flashDeposits,
+      submitBlocksCallbacks
     };
   }
 
@@ -2142,7 +2146,7 @@ export class ExchangeTestUtil {
       true,
       txData,
       transactionReceiverCallbacks,
-      this.pendingFlashMints[this.exchangeId],
+      this.pendingFlashDeposits[this.exchangeId],
       this.pendingCallbacks[this.exchangeId]
     );
 
@@ -2166,9 +2170,9 @@ export class ExchangeTestUtil {
     tx = await operatorContract.submitBlocksWithCallbacks(
       parameters.isDataCompressed,
       parameters.data,
-      parameters.callbackConfig,
-      parameters.flashMints,
-      parameters.callbacks,
+      parameters.txReceiverCallbacks,
+      parameters.flashDeposits,
+      parameters.submitBlocksCallbacks,
       //txData,
       { from: this.exchangeOperator, gasPrice: 0 }
     );
@@ -2200,7 +2204,7 @@ export class ExchangeTestUtil {
     );
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
-    this.pendingFlashMints[this.exchangeId] = [];
+    this.pendingFlashDeposits[this.exchangeId] = [];
     this.pendingCallbacks[this.exchangeId] = [];
 
     // Check number of blocks submitted

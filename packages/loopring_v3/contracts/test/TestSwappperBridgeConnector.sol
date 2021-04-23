@@ -39,34 +39,34 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         testSwapper = _testSwapper;
     }
 
-    function processCalls(ConnectorGroup[] memory groups)
+    function processTransactions(ConnectorTxGroup[] memory groups)
         external
         payable
         override
-        returns (BridgeTransfer[] memory)
+        returns (IBatchDepositor.Deposit[] memory)
     {
-        uint numTransfers = 0;
+        uint numDeposits = 0;
         for (uint g = 0; g < groups.length; g++) {
-            numTransfers += groups[g].calls.length;
+            numDeposits += groups[g].transactions.length;
         }
-        BridgeTransfer[] memory transfers = new BridgeTransfer[](numTransfers);
+        IBatchDepositor.Deposit[] memory transfers = new IBatchDepositor.Deposit[](numDeposits);
         uint transferIdx = 0;
 
-        BridgeCall memory bridgeCall;
+        ConnectorTx memory bridgeTx;
         for (uint g = 0; g < groups.length; g++) {
             GroupSettings memory settings = abi.decode(groups[g].groupData, (GroupSettings));
 
-            BridgeCall[] memory calls = groups[g].calls;
+            ConnectorTx[] memory txs = groups[g].transactions;
 
-            bool[] memory valid = new bool[](calls.length);
+            bool[] memory valid = new bool[](txs.length);
             uint numValid = 0;
 
             uint amountInExpected = 0;
-            for (uint i = 0; i < calls.length; i++) {
-                bridgeCall = calls[i];
-                if (bridgeCall.token == settings.tokenIn) {
+            for (uint i = 0; i < txs.length; i++) {
+                bridgeTx = txs[i];
+                if (bridgeTx.token == settings.tokenIn) {
                     valid[i] = true;
-                    amountInExpected = amountInExpected + bridgeCall.amount;
+                    amountInExpected = amountInExpected + bridgeTx.amount;
                 }
             }
 
@@ -80,20 +80,20 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             // Check for each call if the minimum slippage was achieved
             uint amountIn = 0;
             uint ammountInInvalid = 0;
-            for (uint i = 0; i < calls.length; i++) {
-                bridgeCall = calls[i];
-                if(valid[i] && bridgeCall.userData.length == 32) {
-                    UserSettings memory userSettings = abi.decode(bridgeCall.userData, (UserSettings));
-                    uint userAmountOut = uint(bridgeCall.amount).mul(amountOut) / amountInExpected;
+            for (uint i = 0; i < txs.length; i++) {
+                bridgeTx = txs[i];
+                if(valid[i] && bridgeTx.userData.length == 32) {
+                    UserSettings memory userSettings = abi.decode(bridgeTx.userData, (UserSettings));
+                    uint userAmountOut = uint(bridgeTx.amount).mul(amountOut) / amountInExpected;
                     if (userAmountOut < userSettings.minAmountOut) {
                         valid[i] = false;
                     }
                 }
                 if (valid[i]) {
-                    amountIn = amountIn.add(bridgeCall.amount);
+                    amountIn = amountIn.add(bridgeTx.amount);
                     numValid++;
                 } else {
-                    ammountInInvalid = ammountInInvalid.add(bridgeCall.amount);
+                    ammountInInvalid = ammountInInvalid.add(bridgeTx.amount);
                 }
             }
 
@@ -109,20 +109,20 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             );
 
             // Create transfers back to the users
-            for (uint i = 0; i < calls.length; i++) {
+            for (uint i = 0; i < txs.length; i++) {
                 if (valid[i]) {
                     // Give equal share to all valid calls
-                    transfers[transferIdx++] = BridgeTransfer({
-                        owner: calls[i].owner,
-                        token: settings.tokenOut,
-                        amount: (uint(calls[i].amount).mul(amountOut) / amountIn).toUint96()
+                    transfers[transferIdx++] = IBatchDepositor.Deposit({
+                        owner:  txs[i].owner,
+                        token:  settings.tokenOut,
+                        amount: (uint(txs[i].amount).mul(amountOut) / amountIn).toUint96()
                     });
                 } else {
                     // Just transfer the tokens back
-                    transfers[transferIdx++] = BridgeTransfer({
-                        owner: calls[i].owner,
-                        token: calls[i].token,
-                        amount: calls[i].amount
+                    transfers[transferIdx++] = IBatchDepositor.Deposit({
+                        owner:  txs[i].owner,
+                        token:  txs[i].token,
+                        amount: txs[i].amount
                     });
                 }
             }
@@ -132,7 +132,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         return transfers;
     }
 
-    function getMinGasLimit(ConnectorGroup[] calldata groups)
+    function getMinGasLimit(ConnectorTxGroup[] calldata groups)
         external
         pure
         override
@@ -140,7 +140,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
     {
         gasLimit = 40000;
         for (uint g = 0; g < groups.length; g++) {
-           gasLimit += 100000 + 2500 * groups[g].calls.length;
+           gasLimit += 100000 + 2500 * groups[g].transactions.length;
         }
     }
 
