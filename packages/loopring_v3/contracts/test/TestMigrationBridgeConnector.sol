@@ -48,7 +48,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         bridge = _bridge;
     }
 
-    function processProcessorTransactions(ConnectorTxGroup[] memory groups)
+    function processTransactions(ConnectorTxGroup[] memory groups)
         external
         payable
         override

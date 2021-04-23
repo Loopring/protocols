@@ -43,7 +43,7 @@ interface IBridgeConnector
     ///       that want to do the same operation.
     ///     - All deposits back to L2 are also reduced to just a single deposit per distinct token for all bridge operations
     ///
-    ///     Most of this is abstracted away in the bridge. A user signs a ConnectorTx and `processProcessorTransactions`
+    ///     Most of this is abstracted away in the bridge. A user signs a ConnectorTx and `processTransactions`
     ///     gets a list of bridge calls divided in lists based on `groupData`
     ///     (e.g. for a uniswap connector the group would be the 2 tokens being traded).
     ///     Each bridge call contains how much each user transferred to the bridge to be used for the specific bridge call.
@@ -55,17 +55,17 @@ interface IBridgeConnector
     ///     between different connector calls).
     ///
     /// @param groups The groups of bridge calls to process
-    function processProcessorTransactions(ConnectorTxGroup[] calldata groups)
+    function processTransactions(ConnectorTxGroup[] calldata groups)
         external
         payable
         returns (IBatchDepositor.Deposit[] memory);
 
-    /// @dev Returns a rough estimate of the gas cost to do `processProcessorTransactions`. At least this much gas needs to be
-    ///      provided by the caller of `processProcessorTransactions` before the ConnectorTxs of users are allowed to be used.
+    /// @dev Returns a rough estimate of the gas cost to do `processTransactions`. At least this much gas needs to be
+    ///      provided by the caller of `processTransactions` before the ConnectorTxs of users are allowed to be used.
     ///
     ///      Each ConnectorTx only pays for a small part of the necessary total gas consumed by a
-    ///      a connector call. As such, the caller of `processProcessorTransactions` would easily be able to just let all
-    ///      `processProcessorTransactions` calls fail by e.g. not batching enough Bridge calls together (while still collecting the fee).
+    ///      a connector call. As such, the caller of `processTransactions` would easily be able to just let all
+    ///      `processTransactions` calls fail by e.g. not batching enough Bridge calls together (while still collecting the fee).
     ///
     /// @param groups The groups of bridge calls to process
     function getMinGasLimit(ConnectorTxGroup[] calldata groups)

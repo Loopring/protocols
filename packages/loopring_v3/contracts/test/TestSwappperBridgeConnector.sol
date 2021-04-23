@@ -39,7 +39,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         testSwapper = _testSwapper;
     }
 
-    function processProcessorTransactions(ConnectorTxGroup[] memory groups)
+    function processTransactions(ConnectorTxGroup[] memory groups)
         external
         payable
         override

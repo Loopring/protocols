@@ -469,7 +469,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         //
         // Execute the logic using a delegatecall so no extra L1 transfers are needed
         txData = _getDataForConnectorTxs(
-            ctx,IBridgeConnector.processProcessorTransactions.selector,
+            ctx,IBridgeConnector.processTransactions.selector,
             calls,
             n
         );
