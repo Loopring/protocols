@@ -79,22 +79,13 @@ export function signChangeMasterCopy(
   signer: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
-  const TYPE_STR = "changeMasterCopy(address wallet,uint256 validUntil,address masterCopy)";
+  const TYPE_STR =
+    "changeMasterCopy(address wallet,uint256 validUntil,address masterCopy)";
   const CREATE_WALLET_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
   const encodedRequest = ethAbi.encodeParameters(
-    [
-      "bytes32",
-      "address",
-      "uint256",
-      "address"
-    ],
-    [
-      CREATE_WALLET_TYPEHASH,
-      walletAddress,
-      validUntil,
-      newMasterCopy
-    ]
+    ["bytes32", "address", "uint256", "address"],
+    [CREATE_WALLET_TYPEHASH, walletAddress, validUntil, newMasterCopy]
   );
 
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);

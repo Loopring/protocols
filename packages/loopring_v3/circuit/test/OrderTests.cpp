@@ -132,7 +132,7 @@ TEST_CASE("Order", "[OrderGadget]")
             orderChecked(exchange, _order, false);
 
             _order.maxFeeBips = feeBipsLimit - 1;
-            _order.feeBips = feeBipsLimit - 1;
+            _order.feeBips = feeBipsLimit - FEE_MULTIPLIER;
             orderChecked(exchange, _order, true);
 
             _order.maxFeeBips = feeBipsLimit;

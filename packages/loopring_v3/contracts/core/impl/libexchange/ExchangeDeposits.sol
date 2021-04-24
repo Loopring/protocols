@@ -34,7 +34,8 @@ library ExchangeDeposits
         address to,
         address tokenAddress,
         uint96  amount,                 // can be zero
-        bytes   memory extraData
+        bytes   memory extraData,
+        bool    isFlashDeposit
         )
         internal  // inline call
     {
@@ -46,26 +47,57 @@ library ExchangeDeposits
 
         uint16 tokenID = S.getTokenID(tokenAddress);
 
+        uint96 _amount = amount;
+        if (isFlashDeposit) {
+            require(msg.value == 0, "ETH_AMOUNT_NOT_ZERO");
+            S.flashDepositAmounts[tokenAddress] = S.flashDepositAmounts[tokenAddress].add(amount);
+        } else {
+            // Transfer the tokens to this contract
+            _amount = S.depositContract.deposit{value: msg.value}(
+                from,
+                tokenAddress,
+                amount,
+                extraData
+            );
+
+            emit DepositRequested(
+                from,
+                to,
+                tokenAddress,
+                tokenID,
+                _amount
+            );
+        }
+
+        // Add the amount to the deposit request and reset the time the operator has to process it
+        ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
+        _deposit.timestamp = uint64(block.timestamp);
+        _deposit.amount = _deposit.amount.add(_amount);
+        S.pendingDeposits[to][tokenID] = _deposit;
+    }
+
+    function repayFlashDeposit(
+        ExchangeData.State storage S,
+        address from,
+        address tokenAddress,
+        uint96  amount,
+        bytes   memory extraData
+        )
+        public
+    {
+        // Make sure the token is registered
+        /*uint16 tokenID = */S.getTokenID(tokenAddress);
+
         // Transfer the tokens to this contract
-        uint96 amountDeposited = S.depositContract.deposit{value: msg.value}(
+        uint96 repaid = S.depositContract.deposit{value: msg.value}(
             from,
             tokenAddress,
             amount,
             extraData
         );
+        require(repaid > 0, "INVALID_REPAY_AMOUNT");
 
-        // Add the amount to the deposit request and reset the time the operator has to process it
-        ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
-        _deposit.timestamp = uint64(block.timestamp);
-        _deposit.amount = _deposit.amount.add(amountDeposited);
-        S.pendingDeposits[to][tokenID] = _deposit;
-
-        emit DepositRequested(
-            from,
-            to,
-            tokenAddress,
-            tokenID,
-            amountDeposited
-        );
+        // Pay back
+        S.flashDepositAmounts[tokenAddress] = S.flashDepositAmounts[tokenAddress].sub(repaid);
     }
 }

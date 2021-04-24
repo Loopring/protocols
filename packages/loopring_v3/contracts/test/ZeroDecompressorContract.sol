@@ -19,6 +19,7 @@ contract ZeroDecompressorContract {
         bytes calldata data
         )
         external
+        pure
         returns (bytes memory)
     {
         return ZeroDecompressor.decompress(data, 0);

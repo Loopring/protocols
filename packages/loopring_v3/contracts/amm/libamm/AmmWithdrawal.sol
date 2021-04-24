@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/TransferUtil.sol";
 import "./AmmData.sol";
 import "./AmmPoolToken.sol";
 import "./AmmStatus.sol";
@@ -17,6 +18,7 @@ library AmmWithdrawal
     using AmmPoolToken      for AmmData.State;
     using AmmStatus         for AmmData.State;
     using MathUint          for uint;
+    using TransferUtil      for address;
 
     function withdrawWhenOffline(
         AmmData.State storage S
@@ -44,12 +46,9 @@ library AmmWithdrawal
         uint totalSupply = S.totalSupply();
         for (uint i = 0; i < S.tokens.length; i++) {
             address token = S.tokens[i].addr;
-            uint balance = token == address(0) ?
-                address(this).balance :
-                ERC20(token).balanceOf(address(this));
-
+            uint balance = token.selfBalance();
             uint amount = balance.mul(poolAmount) / totalSupply;
-            AmmUtil.transferOut(token, amount, msg.sender);
+            token.transferOut(msg.sender, amount);
         }
 
         S._totalSupply = S._totalSupply.sub(poolAmount);

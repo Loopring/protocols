@@ -73,7 +73,8 @@ library WithdrawTransaction
         ExchangeData.BlockContext memory  ctx,
         bytes                     memory  data,
         uint                              offset,
-        bytes                     memory  auxiliaryData
+        bytes                     memory  auxiliaryData,
+        bool                              approved
         )
         internal
     {
@@ -109,11 +110,13 @@ library WithdrawTransaction
             require(ctx.timestamp < withdrawal.validUntil, "WITHDRAWAL_EXPIRED");
             require(withdrawal.fee <= withdrawal.maxFee, "WITHDRAWAL_FEE_TOO_HIGH");
 
-            // Check appproval onchain
-            // Calculate the tx hash
-            bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, withdrawal);
-            // Check onchain authorization
-            S.requireAuthorizedTx(withdrawal.from, auxData.signature, txHash);
+            if (!approved) {
+                // Check appproval onchain
+                // Calculate the tx hash
+                bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, withdrawal);
+                // Check onchain authorization
+                S.requireAuthorizedTx(withdrawal.from, auxData.signature, txHash);
+            }
         } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
             // Forced withdrawals cannot make use of certain features because the
             // necessary data is not authorized by the account owner.

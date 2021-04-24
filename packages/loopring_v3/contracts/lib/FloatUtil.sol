@@ -74,4 +74,36 @@ library FloatUtil
         require(value < 2**96, "SafeCast: value doesn\'t fit in 96 bits");
         return uint96(value);
     }
+
+    // Decodes a decimal float value that is encoded like `exponent | mantissa`.
+    // Both exponent and mantissa are in base 10.
+    // Decoding to an integer is as simple as `mantissa * (10 ** exponent)`
+    // Will throw when the decoded value overflows an uint96
+    /// @param f The float value with 5 bits exponent, 11 bits mantissa
+    /// @return value The decoded integer value.
+    function decodeFloat16Unsafe(
+        uint f
+        )
+        internal
+        pure
+        returns (uint)
+    {
+        return (f & 2047) * (10 ** (f >> 11));
+    }
+
+    // Decodes a decimal float value that is encoded like `exponent | mantissa`.
+    // Both exponent and mantissa are in base 10.
+    // Decoding to an integer is as simple as `mantissa * (10 ** exponent)`
+    // Will throw when the decoded value overflows an uint96
+    /// @param f The float value with 5 bits exponent, 19 bits mantissa
+    /// @return value The decoded integer value.
+    function decodeFloat24Unsafe(
+        uint f
+        )
+        internal
+        pure
+        returns (uint)
+    {
+        return (f & 524287) * (10 ** (f >> 19));
+    }
 }

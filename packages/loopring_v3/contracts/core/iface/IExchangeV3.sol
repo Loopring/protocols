@@ -343,6 +343,53 @@ abstract contract IExchangeV3 is Claimable
         view
         returns (uint96);
 
+
+    /// @dev Flash mint then deposit all tokens on L2
+    ///      The amount minted has to be repaid using `repayFlashDeposit`.
+    ///
+    ///      This function is only callable by the owner.
+    ///
+    /// @param flashDeposits The list of flash deposits to be done.
+    function flashDeposit(
+        ExchangeData.FlashDeposit[] calldata flashDeposits
+        )
+        external
+        virtual;
+
+    /// @dev Repays flash deposit
+    /// @param from The address that deposits the funds to the exchange
+    /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    /// @param amount The amount of tokens to deposit
+    /// @param extraData Optional extra data used by the deposit contract
+    function repayFlashDeposit(
+        address from,
+        address tokenAddress,
+        uint96  amount,
+        bytes   calldata extraData
+        )
+        external
+        virtual
+        payable;
+
+    /// @dev Verifies all minted tokens were paid back.
+    /// @param flashDeposits The list of flash deposits that were done.
+    function verifyFlashDepositsRepaid(
+        ExchangeData.FlashDeposit[] calldata flashDeposits
+        )
+        external
+        virtual
+        view;
+
+    /// @dev Returns the amount mint deposited for a specific token.
+    /// @param tokenAddress The token
+    function getFlashDepositAmount(
+        address tokenAddress
+        )
+        external
+        virtual
+        view
+        returns (uint96);
+
     // -- Withdrawals --
     /// @dev Submits an onchain request to force withdraw Ether or ERC20 tokens.
     ///      This request always withdraws the full balance.
