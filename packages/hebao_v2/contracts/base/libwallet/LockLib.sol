@@ -38,7 +38,7 @@ library LockLib
         setLock(wallet, msg.sender, true);
     }
 
-    function unlock(
+    function unlockWA(
         Wallet   storage  wallet,
         bytes32           domainSeperator,
         Approval calldata approval

@@ -19,6 +19,7 @@ import "./libwallet/WhitelistLib.sol";
 import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
+import "./libwallet/Utils.sol";
 
 
 /// @title SmartWallet
@@ -36,6 +37,7 @@ contract SmartWallet is ERC1271
     using QuotaLib          for Wallet;
     using RecoverLib        for Wallet;
     using UpgradeLib        for Wallet;
+    using Utils             for address;
 
     bytes32     public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
@@ -93,8 +95,6 @@ contract SmartWallet is ERC1271
     function initialize(
         address owner,
         address guardian,
-        uint    quota,
-        address inheritor,
         address feeRecipient,
         address feeToken,
         uint    feeAmount
@@ -103,18 +103,12 @@ contract SmartWallet is ERC1271
         disableInImplementationContract
     {
         require(wallet.owner == address(0), "INITIALIZED_ALREADY");
-        require(owner != address(0), "INVALID_OWNER");
-        require(guardian != address(0) && guardian != owner, "INVALID_GUARDIAN");
+
+        require(owner.isValidWalletOwner(), "INVALID_OWNER");
+        require(guardian.isValidWalletGuardian(), "INVALID_GUARDIAN");
 
         wallet.owner = owner;
         wallet.guardian = guardian;
-
-        if (quota != 0) {
-            wallet.setQuota(quota, 0);
-        }
-        if (inheritor != address(0)) {
-            wallet.setInheritor(inheritor, 365 days);
-        }
 
         // Pay for the wallet creation using wallet funds
         if (feeRecipient != address(0)) {
@@ -183,7 +177,7 @@ contract SmartWallet is ERC1271
         )
         external
     {
-        wallet.setGuardian(DOMAIN_SEPARATOR, approval, newGuardian);
+        wallet.setGuardianWA(DOMAIN_SEPARATOR, approval, newGuardian);
     }
 
     //
@@ -223,7 +217,7 @@ contract SmartWallet is ERC1271
         )
         external
     {
-        wallet.unlock(DOMAIN_SEPARATOR, approval);
+        wallet.unlockWA(DOMAIN_SEPARATOR, approval);
     }
 
     //
@@ -305,7 +299,7 @@ contract SmartWallet is ERC1271
         )
         external
     {
-        wallet.recover(
+        wallet.recoverWA(
             DOMAIN_SEPARATOR,
             approval,
             newOwner
@@ -516,5 +510,4 @@ contract SmartWallet is ERC1271
             data
         );
     }
-
 }

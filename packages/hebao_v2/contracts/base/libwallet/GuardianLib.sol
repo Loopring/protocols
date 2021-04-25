@@ -26,7 +26,7 @@ library GuardianLib
     /// @dev Recover a wallet by setting a new owner.
     /// @param approval The approval.
     /// @param newGuardian The new guardian address to set.
-    function setGuardian(
+    function setGuardianWA(
         Wallet   storage  wallet,
         bytes32           domainSeperator,
         Approval calldata approval,

@@ -26,7 +26,7 @@ library RecoverLib
     /// @dev Recover a wallet by setting a new owner.
     /// @param approval The approval.
     /// @param newOwner The new owner address to set.
-    function recover(
+    function recoverWA(
         Wallet   storage  wallet,
         bytes32           domainSeperator,
         Approval calldata approval,
@@ -47,10 +47,6 @@ library RecoverLib
                 newOwner
             )
         );
-
-        if (newOwner == wallet.guardian) {//wallet.isGuardian(newOwner, true)) {
-            wallet.guardian = address(0);//.deleteGuardian(newOwner, block.timestamp, true);
-        }
 
         wallet.owner = newOwner;
         wallet.setLock(address(this), false);

@@ -33,8 +33,6 @@ contract WalletFactory
     {
         address owner;
         address guardian;
-        uint    quota;
-        address inheritor;
         address feeRecipient;
         address feeToken;
         uint    feeAmount;
@@ -94,8 +92,6 @@ contract WalletFactory
         SmartWallet(payable(wallet)).initialize(
             config.owner,
             config.guardian,
-            config.quota,
-            config.inheritor,
             config.feeRecipient,
             config.feeToken,
             config.feeAmount
@@ -117,8 +113,6 @@ contract WalletFactory
             CREATE_WALLET_TYPEHASH,
             config.owner,
             config.guardian,
-            config.quota,
-            config.inheritor,
             config.feeRecipient,
             config.feeToken,
             config.feeAmount,
