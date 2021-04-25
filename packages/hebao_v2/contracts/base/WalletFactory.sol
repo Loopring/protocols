@@ -27,18 +27,18 @@ contract WalletFactory
     string  public constant WALLET_CREATION = "WALLET_CREATION";
 
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)");
+        "createWallet(address owner,address guardian,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)");
 
     struct WalletConfig
     {
-        address   owner;
-        address[] guardians;
-        uint      quota;
-        address   inheritor;
-        address   feeRecipient;
-        address   feeToken;
-        uint      feeAmount;
-        bytes     signature;
+        address owner;
+        address guardian;
+        uint    quota;
+        address inheritor;
+        address feeRecipient;
+        address feeToken;
+        uint    feeAmount;
+        bytes   signature;
     }
 
     constructor(
@@ -93,7 +93,7 @@ contract WalletFactory
     {
         SmartWallet(payable(wallet)).initialize(
             config.owner,
-            config.guardians,
+            config.guardian,
             config.quota,
             config.inheritor,
             config.feeRecipient,
@@ -116,7 +116,7 @@ contract WalletFactory
         bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             config.owner,
-            keccak256(abi.encodePacked(config.guardians)),
+            config.guardian,
             config.quota,
             config.inheritor,
             config.feeRecipient,

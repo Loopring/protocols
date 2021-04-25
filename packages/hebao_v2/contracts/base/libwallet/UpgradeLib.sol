@@ -32,7 +32,7 @@ library UpgradeLib
 
         wallet.verifyApproval(
             domainSeperator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
+            // SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
                 CHANGE_MASTER_COPY_TYPEHASH,

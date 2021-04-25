@@ -5,14 +5,12 @@ pragma experimental ABIEncoderV2;
 
 import "./ApprovalLib.sol";
 import "./WalletData.sol";
-import "./GuardianLib.sol";
 
 
 /// @title LockLib
 /// @author Brecht Devos - <brecht@loopring.org>
 library LockLib
 {
-    using GuardianLib   for Wallet;
     using ApprovalLib   for Wallet;
 
     event WalletLocked (
@@ -33,7 +31,7 @@ library LockLib
         require(
             msg.sender == address(this) ||
             msg.sender == wallet.owner ||
-            wallet.isGuardian(msg.sender, false),
+            msg.sender == wallet.guardian,
             "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
         );
 
@@ -49,7 +47,7 @@ library LockLib
     {
         wallet.verifyApproval(
             domainSeperator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
+            // SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
                 UNLOCK_TYPEHASH,

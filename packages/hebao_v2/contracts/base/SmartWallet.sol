@@ -12,7 +12,6 @@ import "./libwallet/ERC20Lib.sol";
 import "./libwallet/ERC1271Lib.sol";
 import "./libwallet/WalletData.sol";
 import "./libwallet/LockLib.sol";
-import "./libwallet/GuardianLib.sol";
 import "./libwallet/InheritanceLib.sol";
 import "./libwallet/MetaTxLib.sol";
 import "./libwallet/WhitelistLib.sol";
@@ -29,7 +28,6 @@ contract SmartWallet is ERC1271
     using ERC20Lib          for Wallet;
     using ERC1271Lib        for Wallet;
     using LockLib           for Wallet;
-    using GuardianLib       for Wallet;
     using InheritanceLib    for Wallet;
     using MetaTxLib         for Wallet;
     using WhitelistLib      for Wallet;
@@ -46,15 +44,13 @@ contract SmartWallet is ERC1271
     //  ----- DATA LAYOUT BEGINS -----
     // Always needs to be first
     address internal masterCopy;
-
-    bool internal isImplementationContract;
+    bool    internal isImplementationContract;
 
     Wallet public wallet;
     //  ----- DATA LAYOUT ENDS -----
 
     // ---- Events definitions ----
-    event GuardianAdded   (address guardian, uint effectiveTime);
-    event GuardianRemoved (address guardian, uint effectiveTime);
+    event GuardianUpdated(address guardian);
     // ---- Events definitions end ----
 
     /// @dev We need to make sure the implemenation contract cannot be initialized
@@ -77,6 +73,12 @@ contract SmartWallet is ERC1271
         _;
     }
 
+    modifier onlyFromGuardian()
+    {
+        require(msg.sender == wallet.guardian, "UNAUTHORIZED");
+        _;
+    }
+
     constructor(
         PriceOracle _priceOracle
         )
@@ -95,26 +97,26 @@ contract SmartWallet is ERC1271
     ///      Note that calling this method more than once will throw.
     ///
     /// @param owner The owner of this wallet, must not be address(0).
-    /// @param guardians The guardians of this wallet.
+    /// @param guardian The guardian of this wallet.
     function initialize(
-        address             owner,
-        address[] calldata  guardians,
-        uint                quota,
-        address             inheritor,
-        address             feeRecipient,
-        address             feeToken,
-        uint                feeAmount
+        address owner,
+        address guardian,
+        uint    quota,
+        address inheritor,
+        address feeRecipient,
+        address feeToken,
+        uint    feeAmount
         )
         external
         disableInImplementationContract
     {
         require(wallet.owner == address(0), "INITIALIZED_ALREADY");
         require(owner != address(0), "INVALID_OWNER");
+        require(guardian != address(0) && guardian != owner, "INVALID_GUARDIAN");
 
         wallet.owner = owner;
-        if (guardians.length != 0) {
-            wallet.setInitialGuardians(guardians);
-        }
+        wallet.guardian = guardian;
+
         if (quota != 0) {
             wallet.setQuota(quota, 0);
         }
@@ -180,52 +182,24 @@ contract SmartWallet is ERC1271
     }
 
     //
-    // Guardians
+    // Guardian
     //
 
-    function addGuardian(
+    function setGuardian(
         address guardian
         )
         external
-        onlyFromWalletOrOwnerWhenUnlocked
+        onlyFromGuardian
     {
-        wallet.addGuardian(guardian);
+        require(
+            guardian != address(0) &&
+            guardian != wallet.owner &&
+            guardian != wallet.guardian,
+            "INVALID_GUARDIAN"
+        );
+        wallet.guardian = guardian;
+        emit GuardianUpdated(guardian);
     }
-
-    function addGuardianWA(
-        Approval calldata approval,
-        address           guardian
-        )
-        external
-    {
-        wallet.addGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
-    }
-
-    function removeGuardian(
-        address guardian
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.removeGuardian(guardian);
-    }
-
-     function removeGuardianWA(
-        Approval calldata approval,
-        address           guardian
-        )
-        external
-    {
-        wallet.removeGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
-    }
-
-     function isGuardian(address addr, bool includePendingAddition)
-         public
-         view
-         returns (bool)
-     {
-         return wallet.isGuardian(addr, includePendingAddition);
-     }
 
     //
     // Inheritance

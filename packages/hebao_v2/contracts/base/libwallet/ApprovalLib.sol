@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
-import "./GuardianLib.sol";
 import "./WalletData.sol";
 
 
@@ -20,7 +19,6 @@ library ApprovalLib {
     function verifyApproval(
         Wallet  storage wallet,
         bytes32         domainSeperator,
-        SigRequirement  sigRequirement,
         Approval memory approval,
         bytes    memory encodedRequest
         )
@@ -31,22 +29,13 @@ library ApprovalLib {
 
         bytes32 _hash = EIP712.hashPacked(domainSeperator, encodedRequest);
 
-        // Save hash to prevent replay attacks
-        require(!wallet.hashes[_hash], "HASH_EXIST");
-        wallet.hashes[_hash] = true;
-
         require(
-            _hash.verifySignatures(approval.signers, approval.signatures),
+            _hash.verifySignature(wallet.guardian, approval.signature),
             "INVALID_SIGNATURES"
         );
 
-        require(
-            GuardianLib.requireMajority(
-                wallet,
-                approval.signers,
-                sigRequirement
-            ),
-            "PERMISSION_DENIED"
-        );
+       // Save hash to prevent replay attacks
+        require(!wallet.hashes[_hash], "HASH_EXIST");
+        wallet.hashes[_hash] = true;
     }
 }

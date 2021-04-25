@@ -14,10 +14,9 @@ enum SigRequirement
 
 struct Approval
 {
-    address[] signers;
-    bytes[]   signatures;
-    uint      validUntil;
-    address   wallet;
+    bytes   signature;
+    uint    validUntil;
+    address wallet;
 }
 
 // Optimized to fit into 64 bytes (2 slots)
@@ -47,6 +46,7 @@ struct Guardian
 struct Wallet
 {
     address owner;
+    address guardian;
 
     // relayer => nonce
     mapping(address => uint) nonce;
@@ -54,9 +54,6 @@ struct Wallet
     mapping(bytes32 => bool) hashes;
 
     bool    locked;
-
-    Guardian[] guardians;
-    mapping (address => uint)  guardianIdx;
 
     address    inheritor;
     uint32     inheritWaitingPeriod;

@@ -72,7 +72,6 @@ library ERC20Lib
     {
         wallet.verifyApproval(
             domainSeperator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
                 TRANSFER_TOKEN_TYPEHASH,
@@ -119,7 +118,6 @@ library ERC20Lib
     {
         wallet.verifyApproval(
             domainSeperator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
                 CALL_CONTRACT_TYPEHASH,
@@ -163,7 +161,7 @@ library ERC20Lib
     {
         wallet.verifyApproval(
             domainSeperator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
+            // SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
                 APPROVE_TOKEN_TYPEHASH,
@@ -227,7 +225,7 @@ library ERC20Lib
 
         wallet.verifyApproval(
             domainSeperator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
+            // SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             encoded
         );

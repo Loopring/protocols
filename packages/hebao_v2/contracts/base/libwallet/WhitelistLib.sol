@@ -50,7 +50,7 @@ library WhitelistLib
     {
         wallet.verifyApproval(
             domainSeperator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
+            // SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
                 ADD_TO_WHITELIST_TYPEHASH,

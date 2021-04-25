@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "./ApprovalLib.sol";
 import "./WalletData.sol";
-import "./GuardianLib.sol";
 import "./LockLib.sol";
 import "./Utils.sol";
 
@@ -14,7 +13,6 @@ import "./Utils.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library RecoverLib
 {
-    using GuardianLib   for Wallet;
     using LockLib       for Wallet;
     using ApprovalLib   for Wallet;
     using Utils         for address;
@@ -41,7 +39,7 @@ library RecoverLib
 
         wallet.verifyApproval(
             domainSeperator,
-            SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
+            // SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
             approval,
             abi.encode(
                 RECOVER_TYPEHASH,
@@ -51,13 +49,12 @@ library RecoverLib
             )
         );
 
-        if (wallet.isGuardian(newOwner, true)) {
-            wallet.deleteGuardian(newOwner, block.timestamp, true);
+        if (newOwner == wallet.guardian) {//wallet.isGuardian(newOwner, true)) {
+            wallet.guardian = address(0);//.deleteGuardian(newOwner, block.timestamp, true);
         }
 
         wallet.owner = newOwner;
         wallet.setLock(address(this), false);
-        wallet.cancelPendingGuardians();
 
         emit Recovered(newOwner);
     }

@@ -4,7 +4,6 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
-import "./GuardianLib.sol";
 import "./LockLib.sol";
 import "./Utils.sol";
 
@@ -13,7 +12,6 @@ import "./Utils.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library InheritanceLib
 {
-    using GuardianLib     for Wallet;
     using InheritanceLib  for Wallet;
     using LockLib         for Wallet;
     using Utils           for address;
@@ -63,7 +61,7 @@ library InheritanceLib
         require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
         require(uint(wallet.lastActive) + uint(wallet.inheritWaitingPeriod) <= block.timestamp, "TOO_EARLY");
 
-        wallet.removeAllGuardians();
+        wallet.guardian = address(0);
         wallet.setInheritor(address(0), 0);
         wallet.setLock(address(this), false);
 
