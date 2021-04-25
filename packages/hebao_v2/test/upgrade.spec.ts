@@ -41,7 +41,7 @@ describe("wallet", () => {
     newSmartWalletImpl = await newWalletImpl();
   });
 
-  describe("", () => {
+  describe("upgrade", () => {
     it("wallet owner should be able to upgrade impl with enough approvals", async () => {
       const validUntil = 9999999999;
       const currentImpl = await wallet.getMasterCopy();

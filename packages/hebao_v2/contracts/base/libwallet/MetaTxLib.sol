@@ -12,6 +12,7 @@ import "../../thirdparty/BytesUtil.sol";
 import "./WalletData.sol";
 import "./ERC20Lib.sol";
 import "./QuotaLib.sol";
+import "../SmartWallet.sol";
 
 
 /// @title MetaTxLib
@@ -31,7 +32,7 @@ library MetaTxLib
 
     event MetaTxExecuted(
         address relayer,
-        uint    nonce,
+        bytes32 metaTxHash,
         bool    success,
         uint    gasUsed
     );
@@ -56,6 +57,7 @@ library MetaTxLib
         )
         public
         view
+        returns (bytes32)
     {
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
@@ -71,6 +73,7 @@ library MetaTxLib
         );
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
         require(metaTxHash.verifySignature(wallet.owner, metaTx.signature), "INVALID_SIGNATURE");
+        return metaTxHash;
     }
 
     function executeMetaTx(
@@ -90,9 +93,11 @@ library MetaTxLib
         require(gasLeft >= (metaTx.gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
 
         // Update the nonce before the call to protect against reentrancy
+        require(isNonceValid(wallet, msg.sender, metaTx.nonce, metaTx.data.toBytes4(0)), "INVALID_NONCE");
         if (metaTx.nonce != 0) {
-            require(isNonceValid(wallet, msg.sender, metaTx.nonce), "INVALID_NONCE");
             wallet.nonce[msg.sender] = metaTx.nonce;
+        } else {
+            require(metaTx.requiresSuccess, "META_TX_WITHOUT_NONCE_REQUIRES_SUCCESS");
         }
 
         (success, ) = metaTx.to.call{gas : metaTx.gasLimit}(metaTx.data);
@@ -100,7 +105,7 @@ library MetaTxLib
         // These checks are done afterwards to use the latest state post meta-tx call
         require(!wallet.locked, "WALLET_LOCKED");
 
-        validateMetaTx(
+        bytes32 metaTxHash = validateMetaTx(
             wallet,
             DOMAIN_SEPARATOR,
             metaTx
@@ -124,7 +129,7 @@ library MetaTxLib
 
         emit MetaTxExecuted(
             msg.sender,
-            metaTx.nonce,
+            metaTxHash,
             success,
             gasUsed
         );
@@ -149,12 +154,27 @@ library MetaTxLib
     function isNonceValid(
         Wallet  storage wallet,
         address relayer,
-        uint    nonce
+        uint    nonce,
+        bytes4  methodId
         )
         public
         view
         returns (bool)
     {
-        return nonce > wallet.nonce[relayer] && (nonce >> 128) <= block.number;
+        if ( methodId == SmartWallet.changeMasterCopy.selector ||
+             methodId == SmartWallet.addGuardianWA.selector ||
+             methodId == SmartWallet.removeGuardianWA.selector ||
+             methodId == SmartWallet.unlock.selector ||
+             methodId == SmartWallet.changeDailyQuotaWA.selector ||
+             methodId == SmartWallet.recover.selector ||
+             methodId == SmartWallet.addToWhitelistWA.selector ||
+             methodId == SmartWallet.transferTokenWA.selector ||
+             methodId == SmartWallet.callContractWA.selector ||
+             methodId == SmartWallet.approveTokenWA.selector ||
+             methodId == SmartWallet.approveThenCallContractWA.selector ) {
+            return nonce == 0;
+        } else {
+            return nonce > wallet.nonce[relayer] && (nonce >> 128) <= block.number;
+        }
     }
 }
