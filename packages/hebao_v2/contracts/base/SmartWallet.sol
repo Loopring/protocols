@@ -3,23 +3,23 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../lib/EIP712.sol";
-import "../lib/ERC20.sol";
 import "../lib/ERC1271.sol";
+import "../lib/ERC20.sol";
+import "../lib/EIP712.sol";
 import "../lib/ReentrancyGuard.sol";
 
-import "./libwallet/ERC20Lib.sol";
 import "./libwallet/ERC1271Lib.sol";
+import "./libwallet/ERC20Lib.sol";
 import "./libwallet/GuardianLib.sol";
-import "./libwallet/WalletData.sol";
 import "./libwallet/LockLib.sol";
 import "./libwallet/InheritanceLib.sol";
 import "./libwallet/MetaTxLib.sol";
-import "./libwallet/WhitelistLib.sol";
 import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
 import "./libwallet/Utils.sol";
+import "./libwallet/WalletData.sol";
+import "./libwallet/WhitelistLib.sol";
 
 
 /// @title SmartWallet
@@ -30,14 +30,14 @@ contract SmartWallet is ERC1271
     using ERC20Lib          for Wallet;
     using ERC1271Lib        for Wallet;
     using GuardianLib       for Wallet;
-    using LockLib           for Wallet;
     using InheritanceLib    for Wallet;
+    using LockLib           for Wallet;
     using MetaTxLib         for Wallet;
-    using WhitelistLib      for Wallet;
     using QuotaLib          for Wallet;
     using RecoverLib        for Wallet;
     using UpgradeLib        for Wallet;
     using Utils             for address;
+    using WhitelistLib      for Wallet;
 
     bytes32     public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
