@@ -49,6 +49,9 @@ library RecoverLib
         );
 
         wallet.owner = newOwner;
+        if (wallet.guardian == newOwner) {
+            wallet.guardian = address(0);
+        }
         wallet.setLock(address(this), false);
 
         emit Recovered(newOwner);

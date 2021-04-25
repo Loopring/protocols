@@ -102,8 +102,8 @@ contract SmartWallet is ERC1271
         external
         disableInImplementationContract
     {
+        require(guardian != owner, "GUARDIAN_SAME_AS_OWNER");
         require(wallet.owner == address(0), "INITIALIZED_ALREADY");
-
         require(owner.isValidWalletOwner(), "INVALID_OWNER");
         require(guardian.isValidWalletGuardian(), "INVALID_GUARDIAN");
 

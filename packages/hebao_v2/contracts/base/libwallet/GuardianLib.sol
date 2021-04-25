@@ -34,8 +34,8 @@ library GuardianLib
         )
         external
     {
-        require(wallet.guardian != newGuardian, "IS_SAME_GUARDIAN");
-        require(wallet.owner != newGuardian, "IS_SAME_AS_OWNER");
+        require(newGuardian != wallet.guardian, "IS_SAME_GUARDIAN");
+        require(newGuardian != wallet.owner, "IS_SAME_AS_OWNER");
         require(newGuardian.isValidWalletGuardian(), "INVALID_NEW_WALLET_GUARDIAN");
 
         wallet.verifyApproval(

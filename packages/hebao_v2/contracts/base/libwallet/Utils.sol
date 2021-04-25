@@ -25,6 +25,6 @@ library Utils
         internal
         returns (bool)
     {
-        return addr != address(0) && !addr.isContract();
+        return addr == address(0) || !addr.isContract();
     }
 }
