@@ -158,6 +158,13 @@ library ExchangeData
         uint[24]                 balanceMerkleProof;
     }
 
+    struct FlashDeposit
+    {
+        address to;
+        address token;
+        uint96  amount;
+    }
+
     struct BlockContext
     {
         bytes32 DOMAIN_SEPARATOR;
@@ -224,5 +231,15 @@ library ExchangeData
 
         // Last time the protocol fee was withdrawn for a specific token
         mapping (address => uint) protocolFeeLastWithdrawnTime;
+
+        // Duplicated loopring address
+        address loopringAddr;
+        // AMM fee bips
+        uint8   ammFeeBips;
+        // Enable/Disable `onchainTransferFrom`
+        bool    allowOnchainTransferFrom;
+
+        // Outstanding flash deposits
+        mapping (address => uint96) flashDepositAmounts;
     }
 }

@@ -1,9 +1,6 @@
 const hre = require("hardhat");
 const ethers = hre.ethers;
-import {
-  newWalletImpl,
-  newWalletFactoryContract
-} from "../test/commons";
+import { newWalletImpl, newWalletFactoryContract } from "../test/commons";
 import { signCreateWallet } from "../test/helper/signatureUtils";
 import BN = require("bn.js");
 
@@ -37,9 +34,9 @@ async function newWallet() {
     signature: Buffer.from(signature.txSignature.slice(2), "hex")
   };
 
-  const walletFactory = await (await ethers.getContractFactory(
-    "WalletFactory"
-  )).attach(walletFactoryAddress);
+  const walletFactory = await (
+    await ethers.getContractFactory("WalletFactory")
+  ).attach(walletFactoryAddress);
 
   const walletAddrComputed = await walletFactory.computeWalletAddress(
     ownerAddr,
@@ -47,7 +44,9 @@ async function newWallet() {
   );
   console.log("walletAddrcomputed:", walletAddrComputed);
 
-  const tx = await walletFactory.createWallet(walletConfig, salt, { gasLimit:10000000 });
+  const tx = await walletFactory.createWallet(walletConfig, salt, {
+    gasLimit: 10000000
+  });
   console.log("tx:", tx);
   const receipt = await tx.wait();
   console.log("receipt:", receipt);

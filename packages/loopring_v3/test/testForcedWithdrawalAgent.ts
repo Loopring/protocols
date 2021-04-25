@@ -1,4 +1,5 @@
 import { ExchangeTestUtil } from "./testExchangeUtil";
+import BN = require("bn.js");
 
 contract("ForcedWithdrawalAgent", (accounts: string[]) => {
   let ctx: ExchangeTestUtil;
@@ -8,6 +9,8 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
   const AgentRegistry = artifacts.require("AgentRegistry");
 
   const fakeToken = "0x" + "10".repeat(20);
+
+  let withdrawalFee: BN;
 
   before(async () => {
     ctx = new ExchangeTestUtil();
@@ -27,6 +30,9 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
 
     // register fake Token:
     await ctx.exchange.registerToken(fakeToken);
+
+    // Get the forced withdrawal fee
+    withdrawalFee = await ctx.loopringV3.forcedWithdrawalFee();
   });
 
   it("owner should be able to do forced withdrawals for any user", async () => {
@@ -40,7 +46,7 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
       fakeToken,
       accountId,
       {
-        value: web3.utils.toWei("0.1", "ether"),
+        value: withdrawalFee,
         from: accounts[0]
       }
     );
@@ -84,7 +90,7 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
       fakeToken,
       accountId,
       {
-        value: web3.utils.toWei("0.1", "ether"),
+        value: withdrawalFee,
         from: manager
       }
     );
@@ -126,7 +132,7 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
         fakeToken,
         accountId,
         {
-          value: web3.utils.toWei("0.1", "ether"),
+          value: withdrawalFee,
           from: accounts[2]
         }
       );

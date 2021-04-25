@@ -202,12 +202,12 @@ contract("Exchange", (accounts: string[]) => {
         "UNAUTHORIZED"
       );
 
-      await expectThrow(
-        exchange.onchainTransferFrom(ownerA, ownerB, token, new BN(0), {
-          from: agent
-        }),
-        "UNAUTHORIZED"
-      );
+      // await expectThrow(
+      //   exchange.onchainTransferFrom(ownerA, ownerB, token, new BN(0), {
+      //     from: agent
+      //   }),
+      //   "UNAUTHORIZED"
+      // );
 
       // Authorize the agent
       await registerUserAgentChecked(agent, true, ownerA);
@@ -234,12 +234,12 @@ contract("Exchange", (accounts: string[]) => {
         }
       );
 
-      await exchange.onchainTransferFrom(ownerA, ownerB, token, new BN(0), {
-        from: agent
-      });
+      // await exchange.onchainTransferFrom(ownerA, ownerB, token, new BN(0), {
+      //   from: agent
+      // });
     });
 
-    it("agent should be able to transfer onchain funds", async () => {
+    it.skip("agent should be able to transfer onchain funds", async () => {
       await createExchange();
 
       const amount = new BN(web3.utils.toWei("412.8", "ether"));

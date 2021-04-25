@@ -14,7 +14,8 @@
 | verifier2.loopring.eth     | 0x6150343E0F43A17519c0327c41eDd9eBE88D01ef | loopring36 BlockVerifier       |
 | fastwithdraw2.loopring.eth | 0xec3Cc6Cf0252565b56FC7AC396017Df5b9B78a31 | loopring36 FastWithdrawalAgent |
 | guardian1.loopring.eth     | 0x6325d247696D39ee59Ffd931a87e022A68bbBE4f | hebao OfficialGuardian         |
-| earn.loopring.eth          | 0x1188d5175D97B4e5daF4900a3C6E31838c66C755 | loopring public wallet         |
+| earn.loopring.eth          | 0x1188d5175D97B4e5daF4900a3C6E31838c66C755 | loopring public address        |
+| mining.loopring.eth        | 0xF8e0A54aDCBCF9a3793b525a0e188CF9BCbd2E68 | loopring public address        |
 
 ## Hebao V1.0.2 (2020-06-13)
 

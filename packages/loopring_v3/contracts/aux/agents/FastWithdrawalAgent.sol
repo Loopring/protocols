@@ -7,10 +7,10 @@ import "../../core/iface/IAgentRegistry.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../../lib/Claimable.sol";
 import "../../lib/EIP712.sol";
-import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
 import "../../lib/SignatureUtil.sol";
+import "../../lib/TransferUtil.sol";
 
 /// @title Fast withdrawal agent implementation. With the help of liquidity providers (LPs),
 ///        exchange operators can convert any normal withdrawals into fast withdrawals.
@@ -45,8 +45,8 @@ contract FastWithdrawalAgent is ReentrancyGuard, IAgent
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
-    using ERC20SafeTransfer for address;
     using MathUint          for uint;
+    using TransferUtil      for address;
 
     event Processed(
         address exchange,
@@ -111,10 +111,9 @@ contract FastWithdrawalAgent is ReentrancyGuard, IAgent
         ) {
             // Transfer the tokens immediately to the requested address
             // using funds from the liquidity provider (`msg.sender`).
-            transfer(
+            withdrawal.token.transferFromOut(
                 liquidityProvider,
                 withdrawal.to,
-                withdrawal.token,
                 withdrawal.amount
             );
             success = true;
@@ -131,22 +130,5 @@ contract FastWithdrawalAgent is ReentrancyGuard, IAgent
             liquidityProvider,
             success
         );
-    }
-
-    function transfer(
-        address from,
-        address to,
-        address token,
-        uint    amount
-        )
-        internal
-    {
-        if (amount > 0) {
-            if (token == address(0)) {
-                to.sendETHAndVerify(amount, gasleft()); // ETH
-            } else {
-                token.safeTransferFromAndVerify(from, to, amount);  // ERC20 token
-            }
-        }
     }
 }

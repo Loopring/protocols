@@ -101,9 +101,9 @@ TEST_CASE("Order", "[OrderGadget]")
         SECTION("feeBips > maxFeeBips")
         {
             Order _order = order;
-            for (unsigned int maxFeeBips = 0; maxFeeBips < pow(2, NUM_BITS_BIPS); maxFeeBips += 3)
+            for (unsigned int maxFeeBips = 0; maxFeeBips < pow(2, NUM_BITS_BIPS_DA); maxFeeBips += 3)
             {
-                for (unsigned int feeBips = 0; feeBips < pow(2, NUM_BITS_BIPS); feeBips += 3)
+                for (unsigned int feeBips = 0; feeBips < pow(2, NUM_BITS_BIPS_DA); feeBips += 3)
                 {
                     _order.maxFeeBips = maxFeeBips;
                     _order.feeBips = feeBips;
@@ -111,6 +111,37 @@ TEST_CASE("Order", "[OrderGadget]")
                     orderChecked(exchange, _order, expectedSatisfied);
                 }
             }
+            unsigned int feeBipsLimit = pow(2, NUM_BITS_BIPS_DA) * FEE_MULTIPLIER;
+            for (unsigned int maxFeeBips = 0; maxFeeBips < feeBipsLimit; maxFeeBips += 150)
+            {
+                for (unsigned int feeBips = 0; feeBips < feeBipsLimit; feeBips += 150)
+                {
+                    _order.maxFeeBips = maxFeeBips;
+                    _order.feeBips = feeBips;
+                    bool expectedSatisfied = (feeBips <= maxFeeBips);
+                    orderChecked(exchange, _order, expectedSatisfied);
+                }
+            }
+
+            _order.maxFeeBips = 1002;
+            _order.feeBips = 1000;
+            orderChecked(exchange, _order, true);
+
+            _order.maxFeeBips = 200;
+            _order.feeBips = 103;
+            orderChecked(exchange, _order, false);
+
+            _order.maxFeeBips = feeBipsLimit - 1;
+            _order.feeBips = feeBipsLimit - FEE_MULTIPLIER;
+            orderChecked(exchange, _order, true);
+
+            _order.maxFeeBips = feeBipsLimit;
+            _order.feeBips = feeBipsLimit;
+            orderChecked(exchange, _order, false);
+
+            _order.maxFeeBips = feeBipsLimit - FEE_MULTIPLIER;
+            _order.feeBips = feeBipsLimit - FEE_MULTIPLIER;
+            orderChecked(exchange, _order, true);
         }
         SECTION("tokenS == tokenB")
         {

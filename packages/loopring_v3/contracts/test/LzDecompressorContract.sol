@@ -19,6 +19,7 @@ contract LzDecompressorContract {
         bytes calldata data
         )
         external
+        pure
         returns (bytes memory)
     {
         return LzDecompressor.decompress(data);

@@ -3,11 +3,11 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/AddressUtil.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
+import "../../lib/TransferUtil.sol";
 import "../../thirdparty/proxies/OwnedUpgradabilityProxy.sol";
 import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
@@ -30,9 +30,8 @@ import "./libtransactions/TransferTransaction.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3, ReentrancyGuard
 {
-    using AddressUtil           for address;
-    using ERC20SafeTransfer     for address;
     using MathUint              for uint;
+    using TransferUtil          for address;
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeBalances      for ExchangeData.State;
     using ExchangeBlocks        for ExchangeData.State;
@@ -42,15 +41,12 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
-    ExchangeData.State public state;
-    address public loopringAddr;
-    uint8 private ammFeeBips = 20;
-    bool public allowOnchainTransferFrom = false;
+    ExchangeData.State private state;
 
     modifier onlyWhenUninitialized()
     {
         require(
-            loopringAddr == address(0) && state.merkleRoot == bytes32(0),
+            state.loopringAddr == address(0) && state.merkleRoot == bytes32(0),
             "INITIALIZED"
         );
         _;
@@ -70,7 +66,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         pure
         returns (string memory)
     {
-        return "3.6.0";
+        return "3.7.0";
     }
 
     function domainSeparator()
@@ -94,7 +90,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
-        loopringAddr = _loopring;
+        state.loopringAddr = _loopring;
+        state.ammFeeBips = 20;
 
         state.initializeGenesisBlock(
             _loopring,
@@ -165,13 +162,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     {
         require(recipient != address(0), "INVALID_ADDRESS");
 
-        if (token == address(0)) {
-            uint amount = address(this).balance;
-            recipient.sendETHAndVerify(amount, gasleft());
-        } else {
-            uint amount = ERC20(token).balanceOf(address(this));
-            token.safeTransferAndVerify(recipient, amount);
-        }
+        uint amount = token.selfBalance();
+        token.transferOut(recipient, amount);
     }
 
     function isUserOrAgent(address owner)
@@ -368,7 +360,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        state.deposit(from, to, tokenAddress, amount, extraData);
+        state.deposit(from, to, tokenAddress, amount, extraData, false);
     }
 
     function getPendingDepositAmount(
@@ -382,6 +374,66 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     {
         uint16 tokenID = state.getTokenID(tokenAddress);
         return state.pendingDeposits[owner][tokenID].amount;
+    }
+
+    function flashDeposit(
+        ExchangeData.FlashDeposit[] calldata flashDeposits
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        for (uint i = 0; i < flashDeposits.length; i++) {
+            state.deposit(
+                flashDeposits[i].to,
+                flashDeposits[i].to,
+                flashDeposits[i].token,
+                flashDeposits[i].amount,
+                new bytes(0),
+                true
+            );
+        }
+    }
+
+    function repayFlashDeposit(
+        address from,
+        address tokenAddress,
+        uint96  amount,
+        bytes   calldata extraData
+        )
+        external
+        payable
+        override
+        nonReentrant
+    {
+        state.repayFlashDeposit(from, tokenAddress, amount, extraData);
+    }
+
+    function getFlashDepositAmount(
+        address tokenAddress
+        )
+        external
+        override
+        view
+        returns (uint96)
+    {
+        return state.flashDepositAmounts[tokenAddress];
+    }
+
+    function verifyFlashDepositsRepaid(
+        ExchangeData.FlashDeposit[] calldata flashDeposits
+        )
+        external
+        override
+        view
+    {
+        for (uint i = 0; i < flashDeposits.length; i++) {
+            require(
+                state.flashDepositAmounts[flashDeposits[i].token] == 0,
+                "FLASH_DEPOSIT_NOT_REPAID"
+            );
+        }
     }
 
     // -- Withdrawals --
@@ -556,7 +608,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        require(allowOnchainTransferFrom, "NOT_ALLOWED");
+        require(state.allowOnchainTransferFrom, "NOT_ALLOWED");
         state.depositContract.transfer(from, to, token, amount);
     }
 
@@ -671,15 +723,16 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         onlyOwner
     {
         require(_feeBips <= 200, "INVALID_VALUE");
-        ammFeeBips = _feeBips;
+        state.ammFeeBips = _feeBips;
     }
 
     function getAmmFeeBips()
         external
         override
         view
-        returns (uint8) {
-        return ammFeeBips;
+        returns (uint8)
+    {
+        return state.ammFeeBips;
     }
 
     function setAllowOnchainTransferFrom(bool value)
@@ -687,7 +740,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyOwner
     {
-        require(allowOnchainTransferFrom != value, "SAME_VALUE");
-        allowOnchainTransferFrom = value;
+        require(state.allowOnchainTransferFrom != value, "SAME_VALUE");
+        state.allowOnchainTransferFrom = value;
     }
 }
