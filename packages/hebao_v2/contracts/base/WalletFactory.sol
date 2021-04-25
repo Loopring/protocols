@@ -40,11 +40,11 @@ contract WalletFactory
     }
 
     constructor(
-        address        _walletImplementation
+        address _walletImplementation
         )
     {
         DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("WalletFactory", "2.0.0", address(this))
+            EIP712.Domain("WalletFactory", "2.5.0", address(this))
         );
 
         walletImplementation = _walletImplementation;
