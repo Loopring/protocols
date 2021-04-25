@@ -11,7 +11,7 @@ import "./WalletData.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library ERC1271Lib
 {
-    using SignatureUtil     for bytes32;
+    using SignatureUtil for bytes32;
 
     // Note that we allow chained wallet ownership:
     // Wallet1 owned by Wallet2, Wallet2 owned by Wallet3, ..., WaleltN owned by an EOA.

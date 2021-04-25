@@ -3,15 +3,6 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-enum SigRequirement
-{
-    MAJORITY_OWNER_NOT_ALLOWED,
-    MAJORITY_OWNER_ALLOWED,
-    MAJORITY_OWNER_REQUIRED,
-    OWNER_OR_ANY_GUARDIAN,
-    ANY_GUARDIAN
-}
-
 struct Approval
 {
     bytes   signature;

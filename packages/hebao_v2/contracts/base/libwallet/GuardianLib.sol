@@ -9,52 +9,49 @@ import "./LockLib.sol";
 import "./Utils.sol";
 
 
-/// @title RecoverLib
-/// @author Brecht Devos - <brecht@loopring.org>
-library RecoverLib
+/// @title GuardianLib
+/// @author Daniel Wang - <daniel@loopring.org>
+library GuardianLib
 {
     using LockLib       for Wallet;
     using ApprovalLib   for Wallet;
     using Utils         for address;
 
-    event Recovered(address newOwner);
+    event GuardianChanged(address newGuardian);
 
-    bytes32 public constant RECOVER_TYPEHASH = keccak256(
-        "recover(address wallet,uint256 validUntil,address newOwner)"
+    bytes32 public constant GUARDIAN_TYPEHASH = keccak256(
+        "recover(address wallet,uint256 validUntil,address newGuardian)"
     );
 
     /// @dev Recover a wallet by setting a new owner.
     /// @param approval The approval.
-    /// @param newOwner The new owner address to set.
-    function recover(
+    /// @param newGuardian The new guardian address to set.
+    function setGuardian(
         Wallet   storage  wallet,
         bytes32           domainSeperator,
         Approval calldata approval,
-        address           newOwner
+        address           newGuardian
         )
         external
     {
-        require(wallet.owner != newOwner, "IS_SAME_OWNER");
-        require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
+        require(wallet.guardian != newGuardian, "IS_SAME_GUARDIAN");
+        require(wallet.owner != newGuardian, "IS_SAME_AS_OWNER");
+        require(newGuardian.isValidWalletGuardian(), "INVALID_NEW_WALLET_GUARDIAN");
 
         wallet.verifyApproval(
             domainSeperator,
             approval,
             abi.encode(
-                RECOVER_TYPEHASH,
+                GUARDIAN_TYPEHASH,
                 approval.wallet,
                 approval.validUntil,
-                newOwner
+                newGuardian
             )
         );
 
-        if (newOwner == wallet.guardian) {//wallet.isGuardian(newOwner, true)) {
-            wallet.guardian = address(0);//.deleteGuardian(newOwner, block.timestamp, true);
-        }
-
-        wallet.owner = newOwner;
+        wallet.guardian = newGuardian;
         wallet.setLock(address(this), false);
 
-        emit Recovered(newOwner);
+        emit GuardianChanged(newGuardian);
     }
 }

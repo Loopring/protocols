@@ -47,7 +47,6 @@ library LockLib
     {
         wallet.verifyApproval(
             domainSeperator,
-            // SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
                 UNLOCK_TYPEHASH,

@@ -31,7 +31,7 @@ library ApprovalLib {
 
         require(
             _hash.verifySignature(wallet.guardian, approval.signature),
-            "INVALID_SIGNATURES"
+            "INVALID_SIGNATURE"
         );
 
        // Save hash to prevent replay attacks

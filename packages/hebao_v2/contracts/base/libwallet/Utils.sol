@@ -19,4 +19,12 @@ library Utils
     {
         return addr != address(0) && !addr.isContract();
     }
+
+	function isValidWalletGuardian(address addr)
+        view
+        internal
+        returns (bool)
+    {
+        return addr != address(0) && !addr.isContract();
+    }
 }

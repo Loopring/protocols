@@ -10,6 +10,7 @@ import "../lib/ReentrancyGuard.sol";
 
 import "./libwallet/ERC20Lib.sol";
 import "./libwallet/ERC1271Lib.sol";
+import "./libwallet/GuardianLib.sol";
 import "./libwallet/WalletData.sol";
 import "./libwallet/LockLib.sol";
 import "./libwallet/InheritanceLib.sol";
@@ -27,6 +28,7 @@ contract SmartWallet is ERC1271
 {
     using ERC20Lib          for Wallet;
     using ERC1271Lib        for Wallet;
+    using GuardianLib       for Wallet;
     using LockLib           for Wallet;
     using InheritanceLib    for Wallet;
     using MetaTxLib         for Wallet;
@@ -49,10 +51,6 @@ contract SmartWallet is ERC1271
     Wallet public wallet;
     //  ----- DATA LAYOUT ENDS -----
 
-    // ---- Events definitions ----
-    event GuardianUpdated(address guardian);
-    // ---- Events definitions end ----
-
     /// @dev We need to make sure the implemenation contract cannot be initialized
     ///      and used to do delegate calls to arbitrary contracts.
     modifier disableInImplementationContract
@@ -70,12 +68,6 @@ contract SmartWallet is ERC1271
              "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
         wallet.touchLastActiveWhenRequired();
-        _;
-    }
-
-    modifier onlyFromGuardian()
-    {
-        require(msg.sender == wallet.guardian, "UNAUTHORIZED");
         _;
     }
 
@@ -186,19 +178,12 @@ contract SmartWallet is ERC1271
     //
 
     function setGuardian(
-        address guardian
+        Approval calldata approval,
+        address           newGuardian
         )
         external
-        onlyFromGuardian
     {
-        require(
-            guardian != address(0) &&
-            guardian != wallet.owner &&
-            guardian != wallet.guardian,
-            "INVALID_GUARDIAN"
-        );
-        wallet.guardian = guardian;
-        emit GuardianUpdated(guardian);
+        wallet.setGuardian(DOMAIN_SEPARATOR, approval, newGuardian);
     }
 
     //

@@ -51,7 +51,6 @@ library QuotaLib
     {
         wallet.verifyApproval(
             domainSeperator,
-            // SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
                 CHANGE_DAILY_QUOTE_TYPEHASH,

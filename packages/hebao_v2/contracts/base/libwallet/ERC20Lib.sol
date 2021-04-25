@@ -161,7 +161,6 @@ library ERC20Lib
     {
         wallet.verifyApproval(
             domainSeperator,
-            // SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
                 APPROVE_TOKEN_TYPEHASH,
@@ -223,12 +222,7 @@ library ERC20Lib
             keccak256(data)
         );
 
-        wallet.verifyApproval(
-            domainSeperator,
-            // SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            encoded
-        );
+        wallet.verifyApproval(domainSeperator, approval, encoded);
 
         _approveInternal(token, to, amount);
         return _callContractInternal(to, value, data, PriceOracle(0));
