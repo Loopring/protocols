@@ -388,11 +388,11 @@ library GuardianLib
         )
         private
         view
-        returns (Guardian memory)
+        returns (Guardian memory guardian)
     {
         uint pos = wallet.guardianIdx[addr];
         if (pos > 0) {
-            return wallet.guardians[pos - 1];
+            guardian = wallet.guardians[pos - 1];
         }
     }
 
