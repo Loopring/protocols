@@ -49,7 +49,7 @@ struct Wallet
     address owner;
 
     // relayer => nonce
-    mapping(address => uint) nonce;
+    uint nonce;
     // hash => consumed
     mapping(bytes32 => bool) hashes;
 

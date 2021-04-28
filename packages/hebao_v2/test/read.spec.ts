@@ -34,11 +34,13 @@ describe("wallet", () => {
   describe.only("read methods", () => {
     it("quota", async () => {
       const walletData = await wallet.wallet();
-      console.log("quota:", walletData["quota"]);
+      console.log("walletData:", walletData);
+      const quotaInfo = walletData["quota"];
+      console.log("quota:", quotaInfo);
     });
 
     it("guardians", async () => {
-      const guardians = await wallet.guardians(true);
+      const guardians = await wallet.getGuardians(true);
       console.log("guardians:", guardians);
     });
 
@@ -48,7 +50,8 @@ describe("wallet", () => {
     });
 
     it("getNonce", async () => {
-      const nonce = await wallet.getNonce("0x" + "11".repeat(20));
+      const walletData = await wallet.wallet();
+      const nonce = walletData["nonce"];
       console.log("nonce:", nonce);
     });
   });

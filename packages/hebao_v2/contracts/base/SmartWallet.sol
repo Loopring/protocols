@@ -223,7 +223,7 @@ contract SmartWallet is ERC1271
          return wallet.isGuardian(addr, includePendingAddition);
      }
 
-     function guardians(bool includePendingAddition)
+     function getGuardians(bool includePendingAddition)
          public
          view
          returns (Guardian[] memory )
@@ -340,12 +340,12 @@ contract SmartWallet is ERC1271
         wallet.batchCall(to, data);
     }
 
-    function getNonce(address relayer)
+    function getNonce()
         public
         view
         returns (uint)
     {
-        return wallet.nonce[relayer];
+        return wallet.nonce;
     }
 
     //

@@ -93,9 +93,9 @@ library MetaTxLib
         require(gasLeft >= (metaTx.gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
 
         // Update the nonce before the call to protect against reentrancy
-        require(isNonceValid(wallet, msg.sender, metaTx.nonce, metaTx.data.toBytes4(0)), "INVALID_NONCE");
+        require(isNonceValid(wallet, metaTx.nonce, metaTx.data.toBytes4(0)), "INVALID_NONCE");
         if (metaTx.nonce != 0) {
-            wallet.nonce[msg.sender] = metaTx.nonce;
+            wallet.nonce = metaTx.nonce;
         } else {
             require(metaTx.requiresSuccess, "META_TX_WITHOUT_NONCE_REQUIRES_SUCCESS");
         }
@@ -153,7 +153,6 @@ library MetaTxLib
 
     function isNonceValid(
         Wallet  storage wallet,
-        address relayer,
         uint    nonce,
         bytes4  methodId
         )
@@ -174,7 +173,7 @@ library MetaTxLib
              methodId == SmartWallet.approveThenCallContractWA.selector ) {
             return nonce == 0;
         } else {
-            return nonce > wallet.nonce[relayer] && (nonce >> 128) <= block.number;
+            return nonce > wallet.nonce && (nonce >> 128) <= block.number;
         }
     }
 }
