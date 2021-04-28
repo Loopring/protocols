@@ -340,14 +340,6 @@ contract SmartWallet is ERC1271
         wallet.batchCall(to, data);
     }
 
-    function getNonce()
-        public
-        view
-        returns (uint)
-    {
-        return wallet.nonce;
-    }
-
     //
     // Recover
     //
