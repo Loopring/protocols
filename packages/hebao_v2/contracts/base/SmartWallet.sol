@@ -40,6 +40,7 @@ contract SmartWallet is ERC1271
     bytes32     public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
 
+
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
     //
@@ -222,6 +223,14 @@ contract SmartWallet is ERC1271
          return wallet.isGuardian(addr, includePendingAddition);
      }
 
+     function guardians(bool includePendingAddition)
+         public
+         view
+         returns (Guardian[] memory )
+     {
+         return GuardianLib.guardians(wallet, includePendingAddition);
+     }
+
     //
     // Inheritance
     //
@@ -331,6 +340,14 @@ contract SmartWallet is ERC1271
         wallet.batchCall(to, data);
     }
 
+    function getNonce(address relayer)
+        public
+        view
+        returns (uint)
+    {
+        return wallet.nonce[relayer];
+    }
+
     //
     // Recover
     //
@@ -391,6 +408,15 @@ contract SmartWallet is ERC1271
         returns (uint)
     {
         return wallet.whitelisted[addr];
+    }
+
+    function isWhitelisted(
+        address addr
+        )
+        public
+        view
+        returns (bool) {
+        return wallet.isAddressWhitelisted(addr);
     }
 
     //
