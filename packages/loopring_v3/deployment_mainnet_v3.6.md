@@ -1903,6 +1903,22 @@
   }
   ```
 
+  105. FLX-ETH: 0x1cb97a1fdcbc60f112b5a58896906bdb870bc438
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-FLX-ETH',
+    accountID: 105,
+    tokens: [
+      '0x6243d8CEA23066d098a15582d81a598b4e8391F4',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-FLX-ETH'
+  }
+  ```
   ***
 
 - Registered tokens:
@@ -2135,3 +2151,5 @@
   - LP-ICHI-ETH: 0xc6bc133562b470a61394f9a2ff7fe8082da698a4, tokenId: 226
   - DPR: 0xf3AE5d769e153Ef72b4e3591aC004E89F48107a1, tokenId: 227
   - LP-DPR-ETH: 0x3ec139b45558d1db73b889f887624ef117d28e3b, tokenId: 228
+  - FLX: 0x6243d8CEA23066d098a15582d81a598b4e8391F4, tokenId: 229
+  - LP-FLX-ETH: 0x1cb97a1fdcbc60f112b5a58896906bdb870bc438, tokenId: 230
