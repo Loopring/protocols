@@ -120,7 +120,7 @@
     "ffjavascript": "^0.2.33",
     "find-config": "^1.0.0",
     "js-sha3": "^0.8.0",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "loopringV3.js": "file:../loopring_v3.js/",
     "node-bin-setup": "^1.0.6",
     "sha2": "^1.0.2",
