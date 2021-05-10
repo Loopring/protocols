@@ -103,7 +103,7 @@
     "bn.js": "^5.0.0",
     "braces": "^3.0.2",
     "chalk": "^3.0.0",
-    "dotenv": "^8.0.0",
+    "dotenv": "^9.0.2",
     "es6-iterator": "^2.0.3",
     "es6-map": "^0.1.5",
     "es6-promisify": "^6.0.2",
