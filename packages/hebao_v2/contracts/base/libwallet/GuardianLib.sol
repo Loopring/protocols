@@ -143,7 +143,7 @@ library GuardianLib
                 RESET_GUARDIANS_TYPEHASH,
                 approval.wallet,
                 approval.validUntil,
-                newGuardians
+                keccak256(abi.encodePacked(newGuardians))
             )
         );
 
