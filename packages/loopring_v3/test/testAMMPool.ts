@@ -29,6 +29,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       new BN(web3.utils.toWei("1", "ether")),
       new BN(web3.utils.toWei("1", "ether"))
     ];
+    const amplificationFactor = new BN(web3.utils.toWei("10", "ether"));
 
     for (const owner of [ownerA, ownerB]) {
       for (const token of tokens) {
@@ -42,7 +43,13 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     }
 
     const pool = new AmmPool(ctx);
-    await pool.setupPool(sharedConfig, tokens, weights, feeBipsAMM);
+    await pool.setupPool(
+      sharedConfig,
+      tokens,
+      weights,
+      feeBipsAMM,
+      amplificationFactor
+    );
 
     await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
       from: registryOwner
@@ -513,6 +520,69 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         { authMethod: AuthMethod.ECDSA }
       );
       await ctx.submitTransactions(16);
+      await ctx.submitPendingBlocks();
+      await pool.verifySupply();
+    });
+
+    it("Set virtual balances", async () => {
+      const pool = await setupDefaultPool();
+
+      await pool.prePoolTransactions();
+      await pool.join(
+        ownerA,
+        pool.POOL_TOKEN_BASE,
+        [
+          new BN(web3.utils.toWei("10000", "ether")),
+          new BN(web3.utils.toWei("20000", "ether"))
+        ],
+        { authMethod: AuthMethod.ECDSA }
+      );
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(11)),
+        [
+          new BN(web3.utils.toWei("1000", "ether")),
+          new BN(web3.utils.toWei("2000", "ether"))
+        ],
+        {
+          authMethod: AuthMethod.EDDSA,
+          fee: new BN(web3.utils.toWei("100", "ether"))
+        }
+      );
+      await ctx.submitTransactions(16);
+
+      await pool.prePoolTransactions();
+      await pool.setVirtualBalances();
+
+      await ctx.submitTransactions(16);
+      await ctx.submitPendingBlocks();
+      await pool.verifySupply();
+    });
+
+    it.only("Manage pool assets", async () => {
+      const pool = await setupDefaultPool();
+
+      const amounts = [
+        new BN(web3.utils.toWei("10000", "ether")),
+        new BN(web3.utils.toWei("20000", "ether"))
+      ];
+
+      await pool.prePoolTransactions();
+      await pool.join(ownerA, pool.POOL_TOKEN_BASE, amounts, {
+        authMethod: AuthMethod.ECDSA
+      });
+      await ctx.submitTransactions(16);
+
+      await pool.prePoolTransactions();
+      await pool.withdraw(amounts);
+      await ctx.submitTransactions(16);
+
+      await ctx.submitPendingBlocks();
+
+      await pool.prePoolTransactions();
+      await pool.deposit(amounts);
+      await ctx.submitTransactions(16);
+
       await ctx.submitPendingBlocks();
       await pool.verifySupply();
     });

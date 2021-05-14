@@ -10,7 +10,10 @@ import { logDebug } from "./logs";
 export enum PoolTransactionType {
   NOOP,
   JOIN,
-  EXIT
+  EXIT,
+  SET_VIRTUAL_BALANCES,
+  DEPOSIT,
+  WITHDRAW
 }
 
 export interface PoolJoin {
@@ -42,6 +45,44 @@ export interface PoolExit {
 
   signature?: string;
   authMethod: AuthMethod;
+  actualAmounts?: BN[];
+  txIdx?: number;
+  numTxs?: number;
+}
+
+export interface PoolVirtualBalances {
+  txType?: "SetVirtualBalances";
+  poolAddress: string;
+
+  owner?: string;
+  signature?: string;
+  authMethod?: AuthMethod;
+  actualAmounts?: BN[];
+  txIdx?: number;
+  numTxs?: number;
+}
+
+export interface PoolDeposit {
+  txType?: "Deposit";
+  poolAddress: string;
+  amounts: BN[];
+
+  owner?: string;
+  signature?: string;
+  authMethod?: AuthMethod;
+  actualAmounts?: BN[];
+  txIdx?: number;
+  numTxs?: number;
+}
+
+export interface PoolWithdrawal {
+  txType?: "Withdrawal";
+  poolAddress: string;
+  amounts: BN[];
+
+  owner?: string;
+  signature?: string;
+  authMethod?: AuthMethod;
   actualAmounts?: BN[];
   txIdx?: number;
   numTxs?: number;
@@ -83,7 +124,12 @@ export interface Permit {
   deadline: BN;
 }
 
-type TxType = PoolJoin | PoolExit;
+type TxType =
+  | PoolJoin
+  | PoolExit
+  | PoolVirtualBalances
+  | PoolDeposit
+  | PoolWithdrawal;
 
 export namespace PoolJoinUtils {
   export function toTypedData(join: PoolJoin, verifyingContract: string) {
@@ -224,9 +270,11 @@ export class AmmPool {
   public feeBips: number;
   public tokens: string[];
   public weights: BN[];
+  public amplificationFactor: BN;
 
   public POOL_TOKEN_BASE: BN = new BN("10000000000");
   public POOL_TOKEN_MINTED_SUPPLY: BN = new BN("79228162514264337593543950335"); // uint96(-1)
+  public AMPLIFICATION_FACTOR_BASE = new BN("1000000000000000000");
 
   public L2_SIGNATURE: string = "0x10";
 
@@ -242,12 +290,14 @@ export class AmmPool {
     sharedConfig: any,
     tokens: string[],
     weights: BN[],
-    feeBips: number
+    feeBips: number,
+    amplificationFactor: BN
   ) {
     this.sharedConfig = sharedConfig;
     this.feeBips = feeBips;
     this.tokens = tokens;
     this.weights = weights;
+    this.amplificationFactor = amplificationFactor;
 
     this.totalSupply = new BN(0);
 
@@ -296,7 +346,8 @@ export class AmmPool {
       tokens: tokenAddresses,
       weights: strWeights,
       feeBips,
-      tokenSymbol: "LP-LRC"
+      tokenSymbol: "LP-LRC",
+      amplificationFactor: amplificationFactor.toString(10)
     };
     await this.contract.setupPool(poolConfig);
 
@@ -447,6 +498,67 @@ export class AmmPool {
     return exit;
   }
 
+  public async setVirtualBalances() {
+    const vb: PoolVirtualBalances = {
+      txType: "SetVirtualBalances",
+      poolAddress: this.contract.address,
+      signature: "0x00",
+      owner: Constants.zeroAddress
+    };
+
+    await this.process(vb, undefined);
+
+    return vb;
+  }
+
+  public async deposit(amounts: BN[]) {
+    /*const deposit: PoolDeposit = {
+      txType: "Deposit",
+      poolAddress: this.contract.address,
+      amounts: amounts,
+      signature: "0x00",
+      owner: Constants.zeroAddress
+    };
+
+    await this.process(deposit, undefined);
+
+    return deposit;*/
+
+    for (let i = 0; i < this.tokens.length; i++) {
+      if (!amounts[i].isZero()) {
+        await this.ctx.addCallback(
+          this.contract.address,
+          this.contract.contract.methods
+            .depositToExchange(
+              this.ctx.getTokenAddress(this.tokens[i]),
+              amounts[i]
+            )
+            .encodeABI(),
+          true
+        );
+        await this.ctx.requestDeposit(
+          this.contract.address,
+          this.tokens[i],
+          amounts[i]
+        );
+      }
+    }
+  }
+
+  public async withdraw(amounts: BN[]) {
+    const withdrawal: PoolWithdrawal = {
+      txType: "Withdrawal",
+      poolAddress: this.contract.address,
+      amounts: amounts,
+      signature: "0x00",
+      owner: Constants.zeroAddress
+    };
+
+    await this.process(withdrawal, undefined);
+
+    return withdrawal;
+  }
+
   public async prePoolTransactions() {
     // Test framework not smart enough to immediately have the new balances after submitting a tx.
     // Have to create a block to get the current offchain balance.
@@ -458,6 +570,10 @@ export class AmmPool {
       this.tokenBalancesL2.push(
         await this.ctx.getOffchainBalance(owner, this.tokens[i])
       );
+      this.weights[i] = await this.ctx.getOffchainVirtualBalance(
+        owner,
+        this.tokens[i]
+      );
     }
   }
 
@@ -468,15 +584,22 @@ export class AmmPool {
 
     let numTxs = 0;
 
-    for (let i = 0; i < this.tokens.length; i++) {
-      await this.ctx.requestAmmUpdate(
-        owner,
-        this.tokens[i],
-        this.feeBips,
-        this.weights[i],
-        { authMethod: AuthMethod.NONE }
-      );
-      numTxs++;
+    const doAmmUpdates =
+      transaction.txType === "Join" ||
+      transaction.txType === "Exit" ||
+      transaction.txType === "SetVirtualBalances";
+
+    if (doAmmUpdates) {
+      for (let i = 0; i < this.tokens.length; i++) {
+        await this.ctx.requestAmmUpdate(
+          owner,
+          this.tokens[i],
+          this.feeBips,
+          this.weights[i],
+          { authMethod: AuthMethod.NONE }
+        );
+        numTxs++;
+      }
     }
 
     if (transaction.signature === this.L2_SIGNATURE) {
@@ -499,6 +622,13 @@ export class AmmPool {
       if (poolTotal.eq(new BN(0))) {
         mintAmount = this.POOL_TOKEN_BASE;
         amounts.push(...join.joinAmounts);
+
+        // Set virtual balances
+        for (let i = 0; i < this.tokens.length; i++) {
+          this.weights[i] = join.joinAmounts[i]
+            .mul(this.amplificationFactor)
+            .div(this.AMPLIFICATION_FACTOR_BASE);
+        }
       } else {
         // Calculate the amount of liquidity tokens that should be minted
         let initialValueSet = false;
@@ -522,10 +652,16 @@ export class AmmPool {
 
         // Calculate the amounts to deposit
         let ratio = mintAmount.mul(this.POOL_TOKEN_BASE).div(poolTotal);
+        const newTotalSupply = poolTotal.add(mintAmount);
         for (let i = 0; i < this.tokens.length; i++) {
           amounts.push(
             this.tokenBalancesL2[i].mul(ratio).div(this.POOL_TOKEN_BASE)
           );
+
+          // Update virtual balances
+          this.weights[i] = this.weights[i]
+            .mul(newTotalSupply)
+            .div(this.totalSupply);
         }
       }
 
@@ -596,6 +732,13 @@ export class AmmPool {
       }
 
       if (valid) {
+        // Update virtual balances
+        const newTotalSupply = poolTotal.sub(exit.burnAmount);
+        for (let i = 0; i < this.tokens.length; i++) {
+          this.weights[i] = this.weights[i]
+            .mul(newTotalSupply)
+            .div(this.totalSupply);
+        }
         if (exit.authMethod !== AuthMethod.FORCE) {
           const storageID =
             exit.authMethod === AuthMethod.ECDSA ||
@@ -655,7 +798,60 @@ export class AmmPool {
           Constants.Float24Encoding
         )
       );
+    } else if (transaction.txType === "SetVirtualBalances") {
+      // Set virtual balances
+      for (let i = 0; i < this.tokens.length; i++) {
+        this.weights[i] = this.tokenBalancesL2[i]
+          .mul(this.amplificationFactor)
+          .div(this.AMPLIFICATION_FACTOR_BASE);
+      }
+    } else if (transaction.txType === "Deposit") {
+      const deposit = transaction;
+      // Set virtual balances
+      for (let i = 0; i < this.tokens.length; i++) {
+        if (!deposit.amounts[i].isZero()) {
+          await this.ctx.requestDeposit(
+            owner,
+            this.tokens[i],
+            deposit.amounts[i]
+          );
+          numTxs++;
+        }
+      }
+    } else if (transaction.txType === "Withdrawal") {
+      const withdrawal = transaction;
+      // Set virtual balances
+      for (let i = 0; i < this.tokens.length; i++) {
+        if (!withdrawal.amounts[i].isZero()) {
+          await this.ctx.requestWithdrawal(
+            owner,
+            this.tokens[i],
+            withdrawal.amounts[i],
+            Constants.zeroAddress,
+            new BN(0),
+            {
+              authMethod: AuthMethod.NONE
+            }
+          );
+          numTxs++;
+        }
+      }
     }
+
+    if (doAmmUpdates) {
+      for (let i = 0; i < this.tokens.length; i++) {
+        await this.ctx.requestAmmUpdate(
+          owner,
+          this.tokens[i],
+          this.feeBips,
+          this.weights[i],
+          { authMethod: AuthMethod.NONE }
+        );
+        numTxs++;
+      }
+    }
+
+    console.log("numTxs: " + numTxs);
 
     // Set the pool transaction data on the callback
     blockCallback.auxiliaryData = AmmPool.getAuxiliaryData(transaction);
@@ -701,6 +897,22 @@ export class AmmPool {
     );
   }
 
+  public static getPoolDepositAuxData(deposit: PoolDeposit) {
+    const amounts: string[] = [];
+    for (const amount of deposit.amounts) {
+      amounts.push(amount.toString(10));
+    }
+    return web3.eth.abi.encodeParameter("tuple(uint96[])", [amounts]);
+  }
+
+  public static getPoolWithdrawalAuxData(withdrawal: PoolWithdrawal) {
+    const amounts: string[] = [];
+    for (const amount of withdrawal.amounts) {
+      amounts.push(amount.toString(10));
+    }
+    return web3.eth.abi.encodeParameter("tuple(uint96[])", [amounts]);
+  }
+
   public static getAuxiliaryData(transaction: TxType) {
     let poolTx: PoolTransaction;
     // Hack: fix json deserializing when the owner address is serialized as a decimal string
@@ -713,12 +925,32 @@ export class AmmPool {
         data: this.getPoolJoinAuxData(transaction),
         signature: transaction.signature
       };
-    } else {
+    } else if (transaction.txType === "Exit") {
       poolTx = {
         txType: PoolTransactionType.EXIT,
         data: this.getPoolExitAuxData(transaction),
         signature: transaction.signature
       };
+    } else if (transaction.txType === "SetVirtualBalances") {
+      poolTx = {
+        txType: PoolTransactionType.SET_VIRTUAL_BALANCES,
+        data: "0x",
+        signature: transaction.signature
+      };
+    } else if (transaction.txType === "Deposit") {
+      poolTx = {
+        txType: PoolTransactionType.DEPOSIT,
+        data: this.getPoolDepositAuxData(transaction),
+        signature: transaction.signature
+      };
+    } else if (transaction.txType === "Withdrawal") {
+      poolTx = {
+        txType: PoolTransactionType.WITHDRAW,
+        data: this.getPoolWithdrawalAuxData(transaction),
+        signature: transaction.signature
+      };
+    } else {
+      assert(false);
     }
     //logDebug(poolTx);
 

@@ -120,4 +120,15 @@ library AmmUtil
             return (1000 - 5) <= ratio && ratio <= (1000 + 5);
         }
     }
+
+    function getAmplificationFactor(AmmData.State storage S)
+        internal
+        view
+        returns (uint amplificationFactor)
+    {
+        amplificationFactor = S.amplificationFactor;
+        if (amplificationFactor == 0) {
+            amplificationFactor = AmmData.AMPLIFICATION_FACTOR_BASE;
+        }
+    }
 }

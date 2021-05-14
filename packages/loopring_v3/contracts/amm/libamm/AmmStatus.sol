@@ -47,6 +47,7 @@ library AmmStatus
         require(config.tokens.length >= 2, "INVALID_DATA");
         require(config.exchange != address(0), "INVALID_EXCHANGE");
         require(config.accountID != 0, "INVALID_ACCOUNT_ID");
+        require(config.amplificationFactor != 0, "INVALID_AMPLIFICATION_FACTOR");
         require(S.tokens.length == 0, "ALREADY_INITIALIZED");
 
         S.sharedConfig = IAmmSharedConfig(config.sharedConfig);
@@ -83,6 +84,8 @@ library AmmStatus
             uint96(AmmData.POOL_TOKEN_MINTED_SUPPLY),
             new bytes(0)
         );
+
+        S.amplificationFactor = config.amplificationFactor;
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.

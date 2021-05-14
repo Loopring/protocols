@@ -15,7 +15,8 @@ library AmmUpdateProcess
     using TransactionReader for ExchangeData.Block;
 
     function approveAmmUpdates(
-        AmmData.Context    memory   ctx
+        AmmData.Context    memory   ctx,
+        bool                        start
         )
         internal
         view
@@ -54,13 +55,19 @@ library AmmUpdateProcess
                 // update.tokenID == token.tokenID &&
                 // update.feeBips == ctx.feeBips &&
                 packedDataA & 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff ==
-                (uint(ExchangeData.TransactionType.AMM_UPDATE) << 216) | (uint(address(this)) << 56) | (ctx.accountID << 24) | (token.tokenID << 8) | ctx.feeBips &&
-                // update.tokenWeight == token.weight
-                (packedDataB >> 128) & 0xffffffffffffffffffffffff == token.weight,
+                (uint(ExchangeData.TransactionType.AMM_UPDATE) << 216) | (uint(address(this)) << 56) | (ctx.accountID << 24) | (token.tokenID << 8) | ctx.feeBips,
                 "INVALID_AMM_UPDATE_TX_DATA"
             );
 
-            ctx.tokenBalancesL2[i] = /*tokenWeight*/uint96(packedDataB & 0xffffffffffffffffffffffff);
+            if (start) {
+                ctx.tokenBalancesL2[i] = /*balance*/uint96(packedDataB & 0xffffffffffffffffffffffff);
+                ctx.vTokenBalancesL2[i] = /*vbalance*/uint96((packedDataB >> 128) & 0xffffffffffffffffffffffff);
+            } else {
+                require(
+                    ctx.vTokenBalancesL2[i] == /*vbalance*/uint96((packedDataB >> 128) & 0xffffffffffffffffffffffff),
+                    "INVALID_VIRTUAL_BALANCE_UPDATE"
+                );
+            }
 
             txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
         }

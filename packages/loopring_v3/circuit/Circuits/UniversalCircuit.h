@@ -287,7 +287,7 @@ class TransactionGadget : public GadgetT
             tx.getArrayOutput(TXV_BALANCE_B_S_ADDRESS),
             {state.accountA.balanceB.balance, state.accountA.balanceB.weightAMM, state.accountA.balanceB.storageRoot},
             {tx.getOutput(TXV_BALANCE_A_B_BALANCE),
-             state.accountA.balanceB.weightAMM,
+             tx.getOutput(TXV_BALANCE_A_B_WEIGHTAMM),
              state.accountA.balanceB.storageRoot},
             FMT(prefix, ".updateBalanceB_A")),
           updateAccount_A(
@@ -321,7 +321,7 @@ class TransactionGadget : public GadgetT
             state.accountB.account.balancesRoot,
             tx.getArrayOutput(TXV_BALANCE_B_S_ADDRESS),
             {state.accountB.balanceS.balance, state.accountB.balanceS.weightAMM, state.accountB.balanceS.storageRoot},
-            {tx.getOutput(TXV_BALANCE_B_S_BALANCE), state.accountB.balanceS.weightAMM, updateStorage_B.result()},
+            {tx.getOutput(TXV_BALANCE_B_S_BALANCE), tx.getOutput(TXV_BALANCE_B_S_WEIGHTAMM), updateStorage_B.result()},
             FMT(prefix, ".updateBalanceS_B")),
           updateBalanceB_B(
             pb,
@@ -329,7 +329,7 @@ class TransactionGadget : public GadgetT
             tx.getArrayOutput(TXV_BALANCE_A_S_ADDRESS),
             {state.accountB.balanceB.balance, state.accountB.balanceB.weightAMM, state.accountB.balanceB.storageRoot},
             {tx.getOutput(TXV_BALANCE_B_B_BALANCE),
-             state.accountB.balanceB.weightAMM,
+             tx.getOutput(TXV_BALANCE_B_B_WEIGHTAMM),
              state.accountB.balanceB.storageRoot},
             FMT(prefix, ".updateBalanceB_B")),
           updateAccount_B(

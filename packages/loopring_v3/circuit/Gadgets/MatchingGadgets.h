@@ -483,18 +483,15 @@ class OrderMatchingGadget : public GadgetT
 
 // const calcSpotPrice = (
 //         balanceIn: number,
-//         weightIn: number,
-//         balanceOut: number,
-//         weightOut: number) => {
-//     const numer = balanceIn * weightOut;
-//     const denom = balanceOut * weightIn;
+//         balanceOut: number) => {
+//     const numer = balanceIn;
+//     const denom = balanceOut;
 //     const ratio = (numer * BASE_FIXED) / denom;
 //     const invFeeBips = BASE_BIPS - feeBips;
 //     return Math.floor((ratio * BASE_BIPS) / invFeeBips);
 // }
 
 // Result is guaranteed to fit inside NUM_BITS_AMOUNT*2 bits.
-// Max ratio between weights guaranteed to be supported is 2**(96*2-14)/(10**18)
 // but this depends on the balances inside the pool as well. Normally it should be even much higher.
 class SpotPriceAMMGadget : public GadgetT
 {
@@ -510,15 +507,13 @@ class SpotPriceAMMGadget : public GadgetT
       ProtoboardT &pb,
       const Constants &constants,
       const VariableT &balanceIn,
-      const VariableT &weightIn,
       const VariableT &balanceOut,
-      const VariableT &weightOut,
       const VariableT &feeBips,
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          numer(pb, balanceIn, weightOut, FMT(prefix, ".numer")),
-          denom(pb, balanceOut, weightIn, FMT(prefix, ".denom")),
+          numer(pb, balanceIn, constants._1, FMT(prefix, ".numer")),
+          denom(pb, balanceOut, constants._1, FMT(prefix, ".denom")),
           ratio(
             pb,
             constants,
@@ -576,28 +571,19 @@ class SpotPriceAMMGadget : public GadgetT
 
 // const calcOutGivenIn = (
 //       balanceIn: number,
-//       weightIn: number,
 //       balanceOut: number,
-//       weightOut: number,
 //       amountIn: number) => {
-//   const weightRatio = (weightIn * BASE_FIXED) / weightOut;
 //   const fee = amountIn * feeBips / BASE_BIPS;
 //   const y = (balanceIn * BASE_FIXED) / (balanceIn + (amountIn - fee));
-//   const p = pow_approx(y, weightRatio);
-//   return Math.floor(balanceOut * (BASE_FIXED - p) / BASE_FIXED);
+//   return Math.floor(balanceOut * (BASE_FIXED - y) / BASE_FIXED);
 // }
 class CalcOutGivenInAMMGadget : public GadgetT
 {
   public:
-    static const unsigned int numIterations = 4;
-
-    MulDivGadget weightRatio;
-    RangeCheckGadget weightRatioRangeCheck;
     MulDivGadget fee;
     UnsafeSubGadget amountInWithoutFee;
     AddGadget y_denom;
     MulDivGadget y;
-    PowerGadget p;
     SubGadget invP;
     MulDivGadget res;
 
@@ -605,29 +591,12 @@ class CalcOutGivenInAMMGadget : public GadgetT
       ProtoboardT &pb,
       const Constants &constants,
       const VariableT &balanceIn,
-      const VariableT &weightIn,
       const VariableT &balanceOut,
-      const VariableT &weightOut,
       const VariableT &feeBips,
       const VariableT &amountIn,
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
-          weightRatio(
-            pb,
-            constants,
-            weightIn,
-            constants.fixedBase,
-            weightOut,
-            NUM_BITS_AMOUNT,
-            NUM_BITS_FIXED_BASE,
-            NUM_BITS_AMOUNT,
-            FMT(prefix, ".weightRatio")),
-          weightRatioRangeCheck( //
-            pb,
-            weightRatio.result(),
-            NUM_BITS_AMOUNT,
-            FMT(prefix, ".weightRatioRangeCheck")),
           fee(
             pb,
             constants,
@@ -659,17 +628,10 @@ class CalcOutGivenInAMMGadget : public GadgetT
             NUM_BITS_FIXED_BASE,
             NUM_BITS_AMOUNT,
             FMT(prefix, ".y")),
-          p( //
-            pb,
-            constants,
-            y.result(),
-            weightRatio.result(),
-            numIterations,
-            FMT(prefix, ".p")),
           invP( //
             pb,
             constants.fixedBase,
-            p.result(),
+            y.result(),
             NUM_BITS_FIXED_BASE,
             FMT(prefix, ".invP")),
           res(
@@ -687,26 +649,20 @@ class CalcOutGivenInAMMGadget : public GadgetT
 
     void generate_r1cs_witness()
     {
-        weightRatio.generate_r1cs_witness();
-        weightRatioRangeCheck.generate_r1cs_witness();
         fee.generate_r1cs_witness();
         amountInWithoutFee.generate_r1cs_witness();
         y_denom.generate_r1cs_witness();
         y.generate_r1cs_witness();
-        p.generate_r1cs_witness();
         invP.generate_r1cs_witness();
         res.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
-        weightRatio.generate_r1cs_constraints();
-        weightRatioRangeCheck.generate_r1cs_constraints();
         fee.generate_r1cs_constraints();
         amountInWithoutFee.generate_r1cs_constraints();
         y_denom.generate_r1cs_constraints();
         y.generate_r1cs_constraints();
-        p.generate_r1cs_constraints();
         invP.generate_r1cs_constraints();
         res.generate_r1cs_constraints();
     }
@@ -726,8 +682,6 @@ struct OrderMatchingData
     const VariableT &balanceBeforeB;
     const VariableT &balanceAfterS;
     const VariableT &balanceAfterB;
-    const VariableT &weightS;
-    const VariableT &weightB;
     const VariableT &ammFeeBips;
 };
 
@@ -735,19 +689,25 @@ struct OrderMatchingData
 class RequireAMMFillsGadget : public GadgetT
 {
   public:
+    // If any of the balances are non-zero, amm needs to be enabled
+    IsNonZero inBalanceNonZero;
+    IsNonZero outBalanceNonZero;
+    AndGadget ammConditionS;
+    AndGadget ammConditionB;
+    IfThenRequireGadget requireAmmSetS;
+    IfThenRequireGadget requireAmmSetB;
+
     // Use dummy data if this isn't an AMM order
     TernaryGadget inBalanceBefore;
     TernaryGadget inBalanceAfter;
-    TernaryGadget inWeight;
     TernaryGadget outBalanceBefore;
     TernaryGadget outBalanceAfter;
-    TernaryGadget outWeight;
     TernaryGadget ammFill;
 
     // Verify general assumptions AMM orders
     IfThenRequireEqualGadget requireOrderFeeBipsZero;
-    RequireNotZeroGadget requireInWeightNotZero;
-    RequireNotZeroGadget requireOutWeightNotZero;
+    RequireNotZeroGadget requireInBalanceNotZero;
+    RequireNotZeroGadget requireOutBalanceNotZero;
 
     // Calculate AMM minimum rate
     CalcOutGivenInAMMGadget ammMaximumFillS;
@@ -763,10 +723,19 @@ class RequireAMMFillsGadget : public GadgetT
     RequireAMMFillsGadget(
       ProtoboardT &pb,
       const Constants &constants,
+      const VariableT &isSpotTradeTx,
       const OrderMatchingData &data,
       const VariableT &fillB,
       const std::string &prefix)
         : GadgetT(pb, prefix),
+
+          // If any of the balances are non-zero, amm needs to be enabled
+          inBalanceNonZero(pb, data.balanceBeforeB, FMT(prefix, ".inBalanceNonZero")),
+          outBalanceNonZero(pb, data.balanceBeforeS, FMT(prefix, ".outBalanceNonZero")),
+          ammConditionS(pb, {isSpotTradeTx, inBalanceNonZero.result()}, FMT(prefix, ".ammConditionS")),
+          ammConditionB(pb, {isSpotTradeTx, inBalanceNonZero.result()}, FMT(prefix, ".ammConditionB")),
+          requireAmmSetS(pb, ammConditionS.result(), data.amm, FMT(prefix, ".requireAmmSetS")),
+          requireAmmSetB(pb, ammConditionB.result(), data.amm, FMT(prefix, ".requireAmmSetB")),
 
           // Use dummy data if this isn't an AMM order
           inBalanceBefore( //
@@ -781,12 +750,6 @@ class RequireAMMFillsGadget : public GadgetT
             data.balanceAfterB,
             constants.fixedBase,
             FMT(prefix, ".inBalanceAfter")),
-          inWeight( //
-            pb,
-            data.amm,
-            data.weightB,
-            constants.fixedBase,
-            FMT(prefix, ".inWeight")),
           outBalanceBefore( //
             pb,
             data.amm,
@@ -799,12 +762,6 @@ class RequireAMMFillsGadget : public GadgetT
             data.balanceAfterS,
             constants.fixedBase,
             FMT(prefix, ".outBalanceAfter")),
-          outWeight( //
-            pb,
-            data.amm,
-            data.weightS,
-            constants.fixedBase,
-            FMT(prefix, ".outWeight")),
           ammFill( //
             pb,
             data.amm,
@@ -819,23 +776,21 @@ class RequireAMMFillsGadget : public GadgetT
             data.orderFeeBips,
             constants._0,
             FMT(prefix, ".requireOrderFeeBipsZero")),
-          requireInWeightNotZero( //
+          requireInBalanceNotZero( //
             pb,
-            inWeight.result(),
-            FMT(prefix, ".requireInWeightNotZero")),
-          requireOutWeightNotZero( //
+            inBalanceBefore.result(),
+            FMT(prefix, ".requireInBalanceNotZero")),
+          requireOutBalanceNotZero( //
             pb,
-            outWeight.result(),
-            FMT(prefix, ".requireOutWeightNotZero")),
+            outBalanceBefore.result(),
+            FMT(prefix, ".requireOutBalanceNotZero")),
 
           // Calculate AMM minimum rate
           ammMaximumFillS(
             pb,
             constants,
             inBalanceBefore.result(),
-            inWeight.result(),
             outBalanceBefore.result(),
-            outWeight.result(),
             data.ammFeeBips,
             ammFill.result(),
             FMT(prefix, ".ammMaximumFillS")),
@@ -856,18 +811,14 @@ class RequireAMMFillsGadget : public GadgetT
             pb,
             constants,
             inBalanceBefore.result(),
-            inWeight.result(),
             outBalanceBefore.result(),
-            outWeight.result(),
             data.ammFeeBips,
             FMT(prefix, ".priceBefore")),
           priceAfter(
             pb,
             constants,
             inBalanceAfter.result(),
-            inWeight.result(),
             outBalanceAfter.result(),
-            outWeight.result(),
             data.ammFeeBips,
             FMT(prefix, ".priceBefore")),
           priceBefore_leq_priceAfter(
@@ -886,19 +837,25 @@ class RequireAMMFillsGadget : public GadgetT
 
     void generate_r1cs_witness()
     {
+        // If any of the balances are non-zero, amm needs to be enabled
+        inBalanceNonZero.generate_r1cs_witness();
+        outBalanceNonZero.generate_r1cs_witness();
+        ammConditionS.generate_r1cs_witness();
+        ammConditionB.generate_r1cs_witness();
+        requireAmmSetS.generate_r1cs_witness();
+        requireAmmSetB.generate_r1cs_witness();
+
         // Use dummy data if this isn't an AMM order
         inBalanceBefore.generate_r1cs_witness();
         inBalanceAfter.generate_r1cs_witness();
-        inWeight.generate_r1cs_witness();
         outBalanceBefore.generate_r1cs_witness();
         outBalanceAfter.generate_r1cs_witness();
-        outWeight.generate_r1cs_witness();
         ammFill.generate_r1cs_witness();
 
         // Verify general assumptions AMM orders
         requireOrderFeeBipsZero.generate_r1cs_witness();
-        requireInWeightNotZero.generate_r1cs_witness();
-        requireOutWeightNotZero.generate_r1cs_witness();
+        requireInBalanceNotZero.generate_r1cs_witness();
+        requireOutBalanceNotZero.generate_r1cs_witness();
 
         // Calculate AMM minimum rate
         ammMaximumFillS.generate_r1cs_witness();
@@ -914,19 +871,25 @@ class RequireAMMFillsGadget : public GadgetT
 
     void generate_r1cs_constraints()
     {
+        // If any of the balances are non-zero, amm needs to be enabled
+        inBalanceNonZero.generate_r1cs_constraints();
+        outBalanceNonZero.generate_r1cs_constraints();
+        ammConditionS.generate_r1cs_constraints();
+        ammConditionB.generate_r1cs_constraints();
+        requireAmmSetS.generate_r1cs_constraints();
+        requireAmmSetB.generate_r1cs_constraints();
+
         // Use dummy data if this isn't an AMM order
         inBalanceBefore.generate_r1cs_constraints();
         inBalanceAfter.generate_r1cs_constraints();
-        inWeight.generate_r1cs_constraints();
         outBalanceBefore.generate_r1cs_constraints();
         outBalanceAfter.generate_r1cs_constraints();
-        outWeight.generate_r1cs_constraints();
         ammFill.generate_r1cs_constraints();
 
         // Verify general assumptions AMM orders
         requireOrderFeeBipsZero.generate_r1cs_constraints();
-        requireInWeightNotZero.generate_r1cs_constraints();
-        requireOutWeightNotZero.generate_r1cs_constraints();
+        requireInBalanceNotZero.generate_r1cs_constraints();
+        requireOutBalanceNotZero.generate_r1cs_constraints();
 
         // Calculate AMM minimum rate
         ammMaximumFillS.generate_r1cs_constraints();
@@ -951,14 +914,15 @@ class ValidateAMMGadget : public GadgetT
     ValidateAMMGadget(
       ProtoboardT &pb,
       const Constants &constants,
+      const VariableT &isSpotTradeTx,
       const OrderMatchingData &dataA,
       const OrderMatchingData &dataB,
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
           // Check if the fills are valid for the orders
-          requireFillsA(pb, constants, dataA, dataB.fillS, FMT(prefix, ".requireFillsA")),
-          requireFillsB(pb, constants, dataB, dataA.fillS, FMT(prefix, ".requireFillsB"))
+          requireFillsA(pb, constants, isSpotTradeTx, dataA, dataB.fillS, FMT(prefix, ".requireFillsA")),
+          requireFillsB(pb, constants, isSpotTradeTx, dataB, dataA.fillS, FMT(prefix, ".requireFillsB"))
     {
     }
 

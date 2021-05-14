@@ -3069,6 +3069,21 @@ export class ExchangeTestUtil {
     }
   }
 
+  public async getOffchainVirtualBalance(owner: string, token: string) {
+    const accountID = this.getAccountID(owner);
+    const tokenID = this.getTokenIdFromNameOrAddress(token);
+    const latestBlockIdx = this.blocks[this.exchangeId].length - 1;
+    const state = await Simulator.loadExchangeState(
+      this.exchangeId,
+      latestBlockIdx
+    );
+    try {
+      return state.accounts[accountID].balances[tokenID].weightAMM;
+    } catch {
+      return new BN(0);
+    }
+  }
+
   public async getTokenContract(token: string) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);

@@ -5,8 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import "../aux/access/ITransactionReceiver.sol";
 import "../core/iface/IAgentRegistry.sol";
-// import "../lib/Drainable.sol";
 import "../lib/ReentrancyGuard.sol";
+import "../lib/TransferUtil.sol";
 import "./libamm/AmmTransactionReceiver.sol";
 import "./libamm/AmmData.sol";
 import "./libamm/AmmExitRequest.sol";
@@ -30,6 +30,7 @@ contract LoopringAmmPool is
     using AmmPoolToken           for AmmData.State;
     using AmmStatus              for AmmData.State;
     using AmmWithdrawal          for AmmData.State;
+    using TransferUtil           for address;
 
     event PoolJoinRequested(AmmData.PoolJoin join);
     event PoolExitRequested(AmmData.PoolExit exit, bool force);
@@ -39,6 +40,12 @@ contract LoopringAmmPool is
     modifier onlyFromExchangeOwner()
     {
         require(msg.sender == state.exchangeOwner, "UNAUTHORIZED");
+        _;
+    }
+
+    modifier onlyFromInvestor()
+    {
+        require(msg.sender == state.investor, "UNAUTHORIZED");
         _;
     }
 
@@ -140,10 +147,70 @@ contract LoopringAmmPool is
         state.withdrawWhenOffline();
     }
 
-    function updateExchangeOwnerAndFeeBips()
+    function depositToExchange(
+        address token,
+        uint96  amount
+        )
         external
         nonReentrant
+        onlyWhenOnline
+        onlyFromExchangeOwner
     {
-        state.updateExchangeOwnerAndFeeBips();
+        state.deposit(token, amount);
+    }
+
+    function withdrawFromExchange(
+        address token,
+        uint96  amount,
+        uint32  storageID
+    )
+        external
+        nonReentrant
+        onlyWhenOnline
+        onlyFromExchangeOwner
+    {
+        // We can never allow withdrawing the pool token.
+        // All other tokens are fine.
+        require(token != address(this), "CANNOT_WITHDRAW_POOL_TOKEN");
+        uint16 tokenID = state.exchange.getTokenID(token);
+
+        WithdrawTransaction.Withdrawal memory withdrawal = WithdrawTransaction.Withdrawal({
+            from: address(this),
+            fromAccountID: state.accountID,
+            tokenID: tokenID,
+            amount: amount,
+            feeTokenID: 0,
+            maxFee: 0,
+            to: address(this),
+            extraData: new bytes(0),
+            minGas: 0,
+            validUntil: 0xffffffff,
+            storageID: storageID,
+            // Unused
+            withdrawalType: 1,
+            onchainDataHash: 0,
+            fee: 0
+        });
+        bytes32 txHash = WithdrawTransaction.hashTx(
+            state.exchangeDomainSeparator,
+            withdrawal
+        );
+        state.exchange.approveTransaction(
+            address(this),
+            txHash
+        );
+    }
+
+    function transferOut(
+        address to,
+        address token,
+        uint96  amount
+        )
+        external
+        nonReentrant
+        onlyWhenOnline
+        onlyFromInvestor
+    {
+        token.transferOut(to, amount);
     }
 }

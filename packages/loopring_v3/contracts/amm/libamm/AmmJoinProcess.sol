@@ -20,6 +20,7 @@ import "./AmmUtil.sol";
 library AmmJoinProcess
 {
     using AmmPoolToken      for AmmData.State;
+    using AmmUtil           for AmmData.State;
     using AmmUtil           for AmmData.Context;
     using AmmUtil           for uint96;
     using MathUint          for uint;
@@ -51,7 +52,7 @@ library AmmJoinProcess
         }
 
         // Check if the requirements are fulfilled
-        (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
+        (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
         require(slippageOK, "JOIN_SLIPPAGE_INVALID");
 
         // Process transfers
@@ -147,11 +148,12 @@ library AmmJoinProcess
     }
 
     function _calculateJoinAmounts(
+        AmmData.State    storage S,
         AmmData.Context  memory ctx,
         AmmData.PoolJoin memory join
         )
         private
-        pure
+        view
         returns(
             bool            slippageOK,
             uint96          mintAmount,
@@ -162,6 +164,11 @@ library AmmJoinProcess
         amounts = new uint96[](ctx.tokens.length);
 
         if (ctx.totalSupply == 0) {
+            // Set virtual balances
+            uint amplificationFactor = S.getAmplificationFactor();
+            for (uint i = 0; i < ctx.tokens.length; i++) {
+                ctx.vTokenBalancesL2[i] = (uint(join.joinAmounts[i]).mul(amplificationFactor) / AmmData.AMPLIFICATION_FACTOR_BASE).toUint96();
+            }
             return(true, AmmData.POOL_TOKEN_BASE.toUint96(), join.joinAmounts);
         }
 
@@ -188,8 +195,12 @@ library AmmJoinProcess
         // Calculate the amounts to deposit
         uint ratio = uint(AmmData.POOL_TOKEN_BASE).mul(mintAmount) / ctx.totalSupply;
 
+        uint newTotalSupply = ctx.totalSupply.add(mintAmount);
         for (uint i = 0; i < ctx.tokens.length; i++) {
             amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE).toUint96();
+
+            // Update virtual balances
+            ctx.vTokenBalancesL2[i] = (uint(ctx.vTokenBalancesL2[i]).mul(newTotalSupply) / ctx.totalSupply).toUint96();
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

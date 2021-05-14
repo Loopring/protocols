@@ -907,6 +907,15 @@ export class Simulator {
         .balance.iadd(s.fillBA)
         .isub(s.feeA);
 
+      // virtual balances
+      if (
+        accountA.getBalance(tokenA).weightAMM.gt(new BN(0)) ||
+        accountA.getBalance(tokenB).weightAMM.gt(new BN(0))
+      ) {
+        accountA.getBalance(tokenA).weightAMM.isub(s.fillSA);
+        accountA.getBalance(tokenB).weightAMM.iadd(s.fillBA);
+      }
+
       const tradeHistoryA = accountA.getBalance(tokenA).getStorage(storageIdA);
       tradeHistoryA.data =
         storageIdA > tradeHistoryA.storageID ? new BN(0) : tradeHistoryA.data;
@@ -921,6 +930,15 @@ export class Simulator {
         .getBalance(tokenA)
         .balance.iadd(s.fillBB)
         .isub(s.feeB);
+
+      // virtual balances
+      if (
+        accountB.getBalance(tokenA).weightAMM.gt(new BN(0)) ||
+        accountB.getBalance(tokenB).weightAMM.gt(new BN(0))
+      ) {
+        accountB.getBalance(tokenB).weightAMM.isub(s.fillBA);
+        accountB.getBalance(tokenA).weightAMM.iadd(s.fillSA);
+      }
 
       const tradeHistoryB = accountB.getBalance(tokenB).getStorage(storageIdB);
       tradeHistoryB.data =

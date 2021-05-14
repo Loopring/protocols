@@ -14,11 +14,16 @@ library AmmData
     uint public constant POOL_TOKEN_BASE = 100 * (10 ** 8);
     uint public constant POOL_TOKEN_MINTED_SUPPLY = type(uint96).max;
 
+    uint public constant AMPLIFICATION_FACTOR_BASE = (10 ** 18);
+
     enum PoolTxType
     {
         NOOP,
         JOIN,
-        EXIT
+        EXIT,
+        SET_VIRTUAL_BALANCES,
+        DEPOSIT,
+        WITHDRAW
     }
 
     struct PoolConfig
@@ -31,6 +36,7 @@ library AmmData
         uint96[]  weights;
         uint8     feeBips;
         string    tokenSymbol;
+        uint      amplificationFactor;
     }
 
     struct PoolJoin
@@ -51,6 +57,16 @@ library AmmData
         uint96[]  exitMinAmounts; // the amount to receive BEFORE paying the fee.
         uint96    fee;
         uint32    validUntil;
+    }
+
+    struct PoolDeposit
+    {
+        uint96[]  amounts;
+    }
+
+    struct PoolWithdrawal
+    {
+        uint96[]  amounts;
     }
 
     struct PoolTx
@@ -83,6 +99,7 @@ library AmmData
 
         Token[]  tokens;
         uint96[] tokenBalancesL2;
+        uint96[] vTokenBalancesL2;
     }
 
     struct State {
@@ -116,5 +133,8 @@ library AmmData
         // A map from a user to the forced exit.
         mapping (address => PoolExit) forcedExit;
         mapping (bytes32 => bool) approvedTx;
+
+        uint        amplificationFactor;
+        address     investor;
     }
 }

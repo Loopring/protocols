@@ -197,6 +197,12 @@ library AmmExitProcess
             amounts[i] = amount;
         }
 
+        // Update virtual balances
+        uint newTotalSupply = ctx.totalSupply.sub(exit.burnAmount);
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            ctx.vTokenBalancesL2[i] = (uint(ctx.vTokenBalancesL2[i]).mul(newTotalSupply) / ctx.totalSupply).toUint96();
+        }
+
         return (true, amounts);
     }
 }
