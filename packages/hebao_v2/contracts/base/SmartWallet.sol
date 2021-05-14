@@ -215,6 +215,24 @@ contract SmartWallet is ERC1271
         wallet.removeGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
     }
 
+     function resetGuardians(
+         address[] calldata newGuardians
+         )
+         external
+         onlyFromWalletOrOwnerWhenUnlocked
+     {
+         wallet.resetGuardians(newGuardians);
+     }
+
+     function resetGuardiansWA(
+         Approval  calldata approval,
+         address[] calldata newGuardians
+         )
+         external
+     {
+         wallet.resetGuardiansWA(DOMAIN_SEPARATOR, approval, newGuardians);
+     }
+
      function isGuardian(address addr, bool includePendingAddition)
          public
          view
