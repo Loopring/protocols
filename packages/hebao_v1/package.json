@@ -82,7 +82,7 @@
     "webpack": "^5.1.2"
   },
   "dependencies": {
-    "@ensdomains/ens": "^0.4.0",
+    "@ensdomains/ens": "^0.6.2",
     "@types/bitwise-xor": "0.0.31",
     "any-promise": "1.3.0",
     "bignumber.js": "^4.1.0",
