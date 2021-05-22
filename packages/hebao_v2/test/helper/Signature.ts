@@ -67,7 +67,7 @@ function signEthereum(message: Buffer, privateKey: string) {
   const data = new Bitstream();
   data.addHex(ethUtil.bufferToHex(signature.r));
   data.addHex(ethUtil.bufferToHex(signature.s));
-  data.addHex(ethUtil.bufferToHex(signature.v));
+  data.addNumber(signature.v, 1);
   return data.getData();
 }
 
@@ -77,7 +77,7 @@ function signEIP712(message: Buffer, privateKey: string) {
   const data = new Bitstream();
   data.addHex(ethUtil.bufferToHex(signature.r));
   data.addHex(ethUtil.bufferToHex(signature.s));
-  data.addHex(ethUtil.bufferToHex(signature.v));
+  data.addNumber(signature.v, 1);
   return data.getData();
 }
 
