@@ -269,7 +269,7 @@ export class AmmPool {
 
   public feeBips: number;
   public tokens: string[];
-  public weights: BN[];
+  public vTokenBalancesL2: BN[];
   public amplificationFactor: BN;
 
   public POOL_TOKEN_BASE: BN = new BN("10000000000");
@@ -289,20 +289,29 @@ export class AmmPool {
   public async setupPool(
     sharedConfig: any,
     tokens: string[],
-    weights: BN[],
+    vTokenBalancesL2: BN[],
     feeBips: number,
-    amplificationFactor: BN
+    amplificationFactor: BN,
+    controller?: any
   ) {
     this.sharedConfig = sharedConfig;
     this.feeBips = feeBips;
     this.tokens = tokens;
-    this.weights = weights;
+    this.vTokenBalancesL2 = vTokenBalancesL2;
     this.amplificationFactor = amplificationFactor;
 
     this.totalSupply = new BN(0);
 
+    const controllerAddress = controller
+      ? controller.address
+      : Constants.zeroAddress;
+
     const AmmPool = artifacts.require("LoopringAmmPool");
-    this.contract = await AmmPool.new();
+    this.contract = await AmmPool.new(
+      controllerAddress,
+      "0x" + "00".repeat(20),
+      false
+    );
 
     // Create the AMM account
     const owner = this.contract.address;
@@ -324,8 +333,8 @@ export class AmmPool {
 
     // Collect token addresses
     const strWeights: string[] = [];
-    for (const weight of weights) {
-      strWeights.push(weight.toString(10));
+    for (const vTokenBalanceL2 of vTokenBalancesL2) {
+      strWeights.push(vTokenBalanceL2.toString(10));
     }
 
     // Register the pool token
@@ -346,8 +355,7 @@ export class AmmPool {
       tokens: tokenAddresses,
       weights: strWeights,
       feeBips,
-      tokenSymbol: "LP-LRC",
-      amplificationFactor: amplificationFactor.toString(10)
+      tokenSymbol: "LP-LRC"
     };
     await this.contract.setupPool(poolConfig);
 
@@ -524,18 +532,19 @@ export class AmmPool {
 
     return deposit;*/
 
+    const _amounts: string[] = [];
+    for (let i = 0; i < amounts.length; i++) {
+      _amounts[i] = amounts[i].toString(10);
+    }
+
+    await this.ctx.addCallback(
+      this.contract.address,
+      this.contract.contract.methods.depositAssetsToL2(_amounts).encodeABI(),
+      true
+    );
+
     for (let i = 0; i < this.tokens.length; i++) {
       if (!amounts[i].isZero()) {
-        await this.ctx.addCallback(
-          this.contract.address,
-          this.contract.contract.methods
-            .depositToExchange(
-              this.ctx.getTokenAddress(this.tokens[i]),
-              amounts[i]
-            )
-            .encodeABI(),
-          true
-        );
         await this.ctx.requestDeposit(
           this.contract.address,
           this.tokens[i],
@@ -559,6 +568,36 @@ export class AmmPool {
     return withdrawal;
   }
 
+  public async getBalancesL2() {
+    // Test framework not smart enough to immediately have the new balances after submitting a tx.
+    // Have to create a block to get the current offchain balance.
+    await this.ctx.submitTransactions();
+
+    const owner = this.contract.address;
+    const tokenBalancesL2: BN[] = [];
+    for (let i = 0; i < this.tokens.length; i++) {
+      tokenBalancesL2.push(
+        await this.ctx.getOffchainBalance(owner, this.tokens[i])
+      );
+    }
+    return tokenBalancesL2;
+  }
+
+  public async getVirtualBalancesL2() {
+    // Test framework not smart enough to immediately have the new balances after submitting a tx.
+    // Have to create a block to get the current offchain balance.
+    await this.ctx.submitTransactions();
+
+    const owner = this.contract.address;
+    const vTokenBalancesL2: BN[] = [];
+    for (let i = 0; i < this.tokens.length; i++) {
+      vTokenBalancesL2.push(
+        await this.ctx.getOffchainVirtualBalance(owner, this.tokens[i])
+      );
+    }
+    return vTokenBalancesL2;
+  }
+
   public async prePoolTransactions() {
     // Test framework not smart enough to immediately have the new balances after submitting a tx.
     // Have to create a block to get the current offchain balance.
@@ -570,7 +609,7 @@ export class AmmPool {
       this.tokenBalancesL2.push(
         await this.ctx.getOffchainBalance(owner, this.tokens[i])
       );
-      this.weights[i] = await this.ctx.getOffchainVirtualBalance(
+      this.vTokenBalancesL2[i] = await this.ctx.getOffchainVirtualBalance(
         owner,
         this.tokens[i]
       );
@@ -595,7 +634,7 @@ export class AmmPool {
           owner,
           this.tokens[i],
           this.feeBips,
-          this.weights[i],
+          this.vTokenBalancesL2[i],
           { authMethod: AuthMethod.NONE }
         );
         numTxs++;
@@ -625,7 +664,7 @@ export class AmmPool {
 
         // Set virtual balances
         for (let i = 0; i < this.tokens.length; i++) {
-          this.weights[i] = join.joinAmounts[i]
+          this.vTokenBalancesL2[i] = join.joinAmounts[i]
             .mul(this.amplificationFactor)
             .div(this.AMPLIFICATION_FACTOR_BASE);
         }
@@ -659,7 +698,7 @@ export class AmmPool {
           );
 
           // Update virtual balances
-          this.weights[i] = this.weights[i]
+          this.vTokenBalancesL2[i] = this.vTokenBalancesL2[i]
             .mul(newTotalSupply)
             .div(this.totalSupply);
         }
@@ -688,8 +727,6 @@ export class AmmPool {
         this.tokenBalancesL2[i].iadd(amount);
         logDebug("pool join: " + amount.toString(10));
       }
-      join.actualMintAmount = mintAmount;
-      join.actualAmounts = amounts;
 
       // Mint
       await this.ctx.transfer(
@@ -707,6 +744,9 @@ export class AmmPool {
       numTxs++;
       mintAmount = roundToFloatValue(mintAmount, Constants.Float24Encoding);
       poolTotal.iadd(mintAmount);
+
+      join.actualMintAmount = mintAmount;
+      join.actualAmounts = amounts;
     } else if (transaction.txType === "Exit") {
       const exit = transaction;
 
@@ -733,9 +773,10 @@ export class AmmPool {
 
       if (valid) {
         // Update virtual balances
+        assert(exit.burnAmount.lte(poolTotal), "burnAmount too big");
         const newTotalSupply = poolTotal.sub(exit.burnAmount);
         for (let i = 0; i < this.tokens.length; i++) {
-          this.weights[i] = this.weights[i]
+          this.vTokenBalancesL2[i] = this.vTokenBalancesL2[i]
             .mul(newTotalSupply)
             .div(this.totalSupply);
         }
@@ -801,7 +842,7 @@ export class AmmPool {
     } else if (transaction.txType === "SetVirtualBalances") {
       // Set virtual balances
       for (let i = 0; i < this.tokens.length; i++) {
-        this.weights[i] = this.tokenBalancesL2[i]
+        this.vTokenBalancesL2[i] = this.tokenBalancesL2[i]
           .mul(this.amplificationFactor)
           .div(this.AMPLIFICATION_FACTOR_BASE);
       }
@@ -844,14 +885,12 @@ export class AmmPool {
           owner,
           this.tokens[i],
           this.feeBips,
-          this.weights[i],
+          this.vTokenBalancesL2[i],
           { authMethod: AuthMethod.NONE }
         );
         numTxs++;
       }
     }
-
-    console.log("numTxs: " + numTxs);
 
     // Set the pool transaction data on the callback
     blockCallback.auxiliaryData = AmmPool.getAuxiliaryData(transaction);

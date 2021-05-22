@@ -37,15 +37,25 @@ contract LoopringAmmPool is
     event ForcedExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
     event Shutdown(uint timestamp);
 
+    IAmmController public immutable controller;
+    address        public immutable assetManager;
+    bool           public immutable joinsDisabled;
+
     modifier onlyFromExchangeOwner()
     {
         require(msg.sender == state.exchangeOwner, "UNAUTHORIZED");
         _;
     }
 
-    modifier onlyFromInvestor()
+    modifier onlyFromAssetManager()
     {
-        require(msg.sender == state.investor, "UNAUTHORIZED");
+        require(msg.sender == assetManager, "UNAUTHORIZED");
+        _;
+    }
+
+    modifier onlyFromController()
+    {
+        require(msg.sender == address(controller), "UNAUTHORIZED");
         _;
     }
 
@@ -59,6 +69,17 @@ contract LoopringAmmPool is
     {
         require(!state.isOnline(), "NOT_OFFLINE");
         _;
+    }
+
+    constructor(
+        IAmmController _controller,
+        address        _assetManager,
+        bool           _joinsDisabled
+    )
+    {
+        controller = _controller;
+        assetManager = _assetManager;
+        joinsDisabled = _joinsDisabled;
     }
 
     function isOnline()
@@ -85,7 +106,17 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        state.shutdown(exitOwner);
+        state.shutdownByLP(exitOwner);
+    }
+
+    function shutdownByController()
+        external
+        payable
+        onlyWhenOnline
+        nonReentrant
+        onlyFromController
+    {
+        state.shutdownByController();
     }
 
     function joinPool(
@@ -136,7 +167,12 @@ contract LoopringAmmPool is
         // nonReentrant     // Not needed, does not do any external calls
                             // and can only be called by the exchange owner.
     {
-        state.onReceiveTransactions(txsData, callbackData);
+        AmmData.Settings memory settings = AmmData.Settings({
+            controller: controller,
+            assetManager: assetManager,
+            joinsDisabled: joinsDisabled
+        });
+        state.onReceiveTransactions(txsData, callbackData, settings);
     }
 
     function withdrawWhenOffline()
@@ -147,69 +183,28 @@ contract LoopringAmmPool is
         state.withdrawWhenOffline();
     }
 
-    function depositToExchange(
-        address token,
-        uint96  amount
+    function depositAssetsToL2(
+        uint96[] memory amounts
         )
         external
         nonReentrant
         onlyWhenOnline
         onlyFromExchangeOwner
     {
-        state.deposit(token, amount);
-    }
-
-    function withdrawFromExchange(
-        address token,
-        uint96  amount,
-        uint32  storageID
-    )
-        external
-        nonReentrant
-        onlyWhenOnline
-        onlyFromExchangeOwner
-    {
-        // We can never allow withdrawing the pool token.
-        // All other tokens are fine.
-        require(token != address(this), "CANNOT_WITHDRAW_POOL_TOKEN");
-        uint16 tokenID = state.exchange.getTokenID(token);
-
-        WithdrawTransaction.Withdrawal memory withdrawal = WithdrawTransaction.Withdrawal({
-            from: address(this),
-            fromAccountID: state.accountID,
-            tokenID: tokenID,
-            amount: amount,
-            feeTokenID: 0,
-            maxFee: 0,
-            to: address(this),
-            extraData: new bytes(0),
-            minGas: 0,
-            validUntil: 0xffffffff,
-            storageID: storageID,
-            // Unused
-            withdrawalType: 1,
-            onchainDataHash: 0,
-            fee: 0
-        });
-        bytes32 txHash = WithdrawTransaction.hashTx(
-            state.exchangeDomainSeparator,
-            withdrawal
-        );
-        state.exchange.approveTransaction(
-            address(this),
-            txHash
-        );
+        for(uint i = 0; i < state.tokens.length; i++) {
+            require(amounts[i] != 0, "INVALID_DEPOSIT_AMOUNT");
+            state.deposit(state.tokens[i].addr, amounts[i]);
+        }
     }
 
     function transferOut(
         address to,
         address token,
-        uint96  amount
+        uint    amount
         )
         external
         nonReentrant
-        onlyWhenOnline
-        onlyFromInvestor
+        onlyFromAssetManager
     {
         token.transferOut(to, amount);
     }

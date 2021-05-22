@@ -39,6 +39,7 @@ library AmmJoinProcess
         )
         internal
     {
+        require(!ctx.settings.joinsDisabled, "JOINS_DISABLED");
         require(join.validUntil >= block.timestamp, "EXPIRED");
 
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
@@ -52,7 +53,7 @@ library AmmJoinProcess
         }
 
         // Check if the requirements are fulfilled
-        (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(S, ctx, join);
+        (bool slippageOK, uint96 mintAmount, uint96[] memory amounts) = _calculateJoinAmounts(ctx, join);
         require(slippageOK, "JOIN_SLIPPAGE_INVALID");
 
         // Process transfers
@@ -148,7 +149,6 @@ library AmmJoinProcess
     }
 
     function _calculateJoinAmounts(
-        AmmData.State    storage S,
         AmmData.Context  memory ctx,
         AmmData.PoolJoin memory join
         )
@@ -165,9 +165,13 @@ library AmmJoinProcess
 
         if (ctx.totalSupply == 0) {
             // Set virtual balances
-            uint amplificationFactor = S.getAmplificationFactor();
-            for (uint i = 0; i < ctx.tokens.length; i++) {
-                ctx.vTokenBalancesL2[i] = (uint(join.joinAmounts[i]).mul(amplificationFactor) / AmmData.AMPLIFICATION_FACTOR_BASE).toUint96();
+            IAmmController controller = ctx.settings.controller;
+            if (controller != IAmmController(0)) {
+                ctx.vTokenBalancesL2 = controller.getInitialVirtualBalances(join.joinAmounts);
+            } else {
+                for (uint i = 0; i < ctx.tokens.length; i++) {
+                    ctx.vTokenBalancesL2[i] = join.joinAmounts[i];
+                }
             }
             return(true, AmmData.POOL_TOKEN_BASE.toUint96(), join.joinAmounts);
         }

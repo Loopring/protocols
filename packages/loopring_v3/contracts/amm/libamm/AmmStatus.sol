@@ -47,7 +47,6 @@ library AmmStatus
         require(config.tokens.length >= 2, "INVALID_DATA");
         require(config.exchange != address(0), "INVALID_EXCHANGE");
         require(config.accountID != 0, "INVALID_ACCOUNT_ID");
-        require(config.amplificationFactor != 0, "INVALID_AMPLIFICATION_FACTOR");
         require(S.tokens.length == 0, "ALREADY_INITIALIZED");
 
         S.sharedConfig = IAmmSharedConfig(config.sharedConfig);
@@ -64,8 +63,6 @@ library AmmStatus
         S.symbol = config.tokenSymbol;
 
         for (uint i = 0; i < config.tokens.length; i++) {
-            require(config.weights[i] > 0, "INVALID_TOKEN_WEIGHT");
-
             address token = config.tokens[i];
             S.tokens.push(AmmData.Token({
                 addr: token,
@@ -84,22 +81,46 @@ library AmmStatus
             uint96(AmmData.POOL_TOKEN_MINTED_SUPPLY),
             new bytes(0)
         );
-
-        S.amplificationFactor = config.amplificationFactor;
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
-    function shutdown(
+    function shutdownByLP(
         AmmData.State storage S,
         address               exitOwner
         )
         public
     {
-        // If the exchange is in withdrawal mode allow the pool to be shutdown immediately
         if (!S.exchange.isInWithdrawalMode()) {
             uint64 validUntil = S.forcedExit[exitOwner].validUntil;
             require(validUntil > 0 && validUntil < block.timestamp, "INVALID_CHALLENGE");
+        }
 
+        _shutdown(S);
+    }
+
+    function shutdownByController(
+        AmmData.State storage S
+        )
+        public
+    {
+        _shutdown(S);
+    }
+
+    // Anyone is able to update the cached exchange owner to the current owner.
+    function updateExchangeOwnerAndFeeBips(AmmData.State storage S)
+        public
+    {
+        S.exchangeOwner = S.exchange.owner();
+        S.feeBips = S.exchange.getAmmFeeBips();
+    }
+
+    function _shutdown(
+        AmmData.State storage S
+        )
+        internal
+    {
+        // If the exchange is in withdrawal mode allow the pool to be shutdown immediately
+        if (!S.exchange.isInWithdrawalMode()) {
             uint size = S.tokens.length;
 
             for (uint i = 0; i < size; i++) {
@@ -112,13 +133,5 @@ library AmmStatus
         }
         S.shutdownTimestamp = uint64(block.timestamp);
         emit Shutdown(block.timestamp);
-    }
-
-    // Anyone is able to update the cached exchange owner to the current owner.
-    function updateExchangeOwnerAndFeeBips(AmmData.State storage S)
-        public
-    {
-        S.exchangeOwner = S.exchange.owner();
-        S.feeBips = S.exchange.getAmmFeeBips();
     }
 }

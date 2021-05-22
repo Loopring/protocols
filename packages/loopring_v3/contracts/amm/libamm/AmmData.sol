@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../../core/iface/ExchangeData.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "./IAmmSharedConfig.sol";
+import "../IAmmController.sol";
 
 
 /// @title AmmData
@@ -36,7 +37,6 @@ library AmmData
         uint96[]  weights;
         uint8     feeBips;
         string    tokenSymbol;
-        uint      amplificationFactor;
     }
 
     struct PoolJoin
@@ -83,6 +83,12 @@ library AmmData
         uint16  tokenID;
     }
 
+    struct Settings {
+        IAmmController controller;
+        address        assetManager;
+        bool           joinsDisabled;
+    }
+
     struct Context
     {
         // functional parameters
@@ -100,6 +106,8 @@ library AmmData
         Token[]  tokens;
         uint96[] tokenBalancesL2;
         uint96[] vTokenBalancesL2;
+
+        Settings settings;
     }
 
     struct State {
@@ -133,8 +141,5 @@ library AmmData
         // A map from a user to the forced exit.
         mapping (address => PoolExit) forcedExit;
         mapping (bytes32 => bool) approvedTx;
-
-        uint        amplificationFactor;
-        address     investor;
     }
 }

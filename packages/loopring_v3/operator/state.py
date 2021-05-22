@@ -668,7 +668,8 @@ class State(object):
                 newState.TXV_STORAGE_A_DATA = 1
                 newState.TXV_STORAGE_A_STORAGEID = txInput.storageID
             if not isProtocolfeeWithdrawal and int(txInput.type) == 2:
-                newState.TXV_BALANCE_A_S_WEIGHT = 0
+                balanceLeafA_S = accountA.getBalanceLeaf(newState.TXV_BALANCE_A_S_ADDRESS)
+                newState.TXV_BALANCE_A_S_WEIGHT = -int(balanceLeafA_S.weightAMM)
 
             newState.balanceDeltaA_O = feeValue
 

@@ -136,7 +136,7 @@ contract("Exchange", (accounts: string[]) => {
           owner: exchangeTestUtil.testContext.orderOwners[0],
           tokenS: "WETH",
           tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("9.1", "ether")),
+          amountS: new BN(web3.utils.toWei("8.1", "ether")),
           amountB: new BN(web3.utils.toWei("10", "ether")),
           balanceS: new BN(web3.utils.toWei("100", "ether")),
           balanceB: new BN(web3.utils.toWei("100", "ether")),
@@ -147,7 +147,7 @@ contract("Exchange", (accounts: string[]) => {
           tokenS: "GTO",
           tokenB: "WETH",
           amountS: new BN(web3.utils.toWei("10", "ether")),
-          amountB: new BN(web3.utils.toWei("9.1", "ether"))
+          amountB: new BN(web3.utils.toWei("8.1", "ether"))
         },
         expected: {
           orderA: { filledFraction: 1.0, spread: new BN(0) },
@@ -164,8 +164,8 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       const feeBipsAMM = 30;
-      const tokenWeightS = new BN(web3.utils.toWei("1000", "ether"));
-      const tokenWeightB = new BN(web3.utils.toWei("1000", "ether"));
+      const tokenWeightS = ring.orderA.balanceS;
+      const tokenWeightB = ring.orderA.balanceB;
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderA.owner,
         ring.orderA.tokenS,
@@ -218,8 +218,8 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       const feeBipsAMM = 30;
-      const tokenWeightS = new BN(web3.utils.toWei("100000", "ether"));
-      const tokenWeightB = new BN(web3.utils.toWei("200000", "ether"));
+      const tokenWeightS = ring.orderA.balanceS;
+      const tokenWeightB = ring.orderA.balanceB;
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderA.owner,
         ring.orderA.tokenS,
@@ -241,7 +241,7 @@ contract("Exchange", (accounts: string[]) => {
     it("Successful swap (AMM taker)", async () => {
       const ring: SpotTrade = {
         orderB: {
-          owner: exchangeTestUtil.testContext.orderOwners[0],
+          owner: exchangeTestUtil.testContext.orderOwners[4],
           tokenS: "WETH",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("98", "ether")),
@@ -272,8 +272,8 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       const feeBipsAMM = 30;
-      const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
-      const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
+      const tokenWeightS = ring.orderB.balanceS;
+      const tokenWeightB = ring.orderB.balanceB;
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderB.owner,
         ring.orderB.tokenS,
@@ -337,31 +337,29 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       const feeBipsAMM = 30;
-      const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
-      const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderA.owner,
         ring.orderA.tokenS,
         feeBipsAMM,
-        tokenWeightS
+        ring.orderA.balanceS
       );
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderA.owner,
         ring.orderA.tokenB,
         feeBipsAMM,
-        tokenWeightB
+        ring.orderA.balanceB
       );
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderB.owner,
         ring.orderB.tokenS,
         feeBipsAMM,
-        tokenWeightS
+        ring.orderB.balanceS
       );
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderB.owner,
         ring.orderB.tokenB,
         feeBipsAMM,
-        tokenWeightB
+        ring.orderB.balanceB
       );
 
       await exchangeTestUtil.sendRing(ring);
@@ -403,8 +401,8 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       const feeBipsAMM = 30;
-      const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
-      const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
+      const tokenWeightS = ring.orderA.balanceS;
+      const tokenWeightB = ring.orderA.balanceB;
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderA.owner,
         ring.orderA.tokenS,
@@ -457,8 +455,8 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       const feeBipsAMM = 30;
-      const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
-      const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
+      const tokenWeightS = ring.orderA.balanceS;
+      const tokenWeightB = ring.orderA.balanceB;
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderA.owner,
         ring.orderA.tokenS,
@@ -512,8 +510,8 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       const feeBipsAMM = 30;
-      const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
-      const tokenWeightB = new BN(web3.utils.toWei("1", "ether"));
+      const tokenWeightS = ring.orderA.balanceS;
+      const tokenWeightB = ring.orderA.balanceB;
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderA.owner,
         ring.orderA.tokenS,
@@ -566,7 +564,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Only set the weight of a single token
       const feeBipsAMM = 0;
-      const tokenWeightS = new BN(web3.utils.toWei("1", "ether"));
+      const tokenWeightS = ring.orderA.balanceS;
       await exchangeTestUtil.requestAmmUpdate(
         ring.orderA.owner,
         ring.orderA.tokenS,

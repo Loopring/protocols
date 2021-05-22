@@ -27,13 +27,14 @@ library AmmTransactionReceiver
     using SafeCast          for uint;
 
     function onReceiveTransactions(
-        AmmData.State storage  S,
-        bytes         calldata txsData,
-        bytes         calldata callbackData
+        AmmData.State    storage  S,
+        bytes            calldata txsData,
+        bytes            calldata callbackData,
+        AmmData.Settings memory   settings
         )
         internal
     {
-        AmmData.Context memory ctx = _getContext(S, txsData);
+        AmmData.Context memory ctx = _getContext(S, txsData, settings);
 
         _processPoolTx(S, ctx, callbackData);
 
@@ -45,8 +46,9 @@ library AmmTransactionReceiver
     }
 
     function _getContext(
-        AmmData.State storage  S,
-        bytes         calldata txsData
+        AmmData.State    storage   S,
+        bytes            calldata  txsData,
+        AmmData.Settings memory    settings
         )
         private
         view
@@ -68,7 +70,8 @@ library AmmTransactionReceiver
             totalSupply: S._totalSupply,
             tokens: S.tokens,
             tokenBalancesL2: new uint96[](size),
-            vTokenBalancesL2: new uint96[](size)
+            vTokenBalancesL2: new uint96[](size),
+            settings: settings
         });
     }
 
@@ -115,10 +118,12 @@ library AmmTransactionReceiver
             ctx.approveAmmUpdates(false);
         } else if (txType == AmmData.PoolTxType.SET_VIRTUAL_BALANCES) {
             ctx.approveAmmUpdates(true);
-            uint amplificationFactor = S.getAmplificationFactor();
-            if (amplificationFactor == AmmData.AMPLIFICATION_FACTOR_BASE) {
+            IAmmController controller = ctx.settings.controller;
+            if (controller != IAmmController(0)) {
+                ctx.vTokenBalancesL2 = controller.getVirtualBalances(ctx.tokenBalancesL2, ctx.vTokenBalancesL2);
+            } else {
                 for (uint i = 0; i < ctx.tokens.length; i++) {
-                    ctx.vTokenBalancesL2[i] = (uint(ctx.tokenBalancesL2[i]).mul(amplificationFactor) / AmmData.AMPLIFICATION_FACTOR_BASE).toUint96();
+                    ctx.vTokenBalancesL2[i] = ctx.tokenBalancesL2[i];
                 }
             }
             ctx.approveAmmUpdates(false);

@@ -19,13 +19,23 @@ module.exports = function(deployer, network, accounts) {
       await deployer.link(AmmExitRequest, LoopringAmmPool);
       await deployer.link(AmmStatus, LoopringAmmPool);
       await deployer.link(AmmWithdrawal, LoopringAmmPool);
-      await deployer.deploy(LoopringAmmPool);
+      await deployer.deploy(
+        LoopringAmmPool,
+        "0x" + "00".repeat(20),
+        "0x" + "00".repeat(20),
+        false
+      );
 
       await deployer.link(AmmJoinRequest, LoopringAmmPoolCopy);
       await deployer.link(AmmExitRequest, LoopringAmmPoolCopy);
       await deployer.link(AmmStatus, LoopringAmmPoolCopy);
       await deployer.link(AmmWithdrawal, LoopringAmmPoolCopy);
-      await deployer.deploy(LoopringAmmPoolCopy);
+      await deployer.deploy(
+        LoopringAmmPoolCopy,
+        "0x" + "00".repeat(20),
+        "0x" + "00".repeat(20),
+        false
+      );
       await deployer.deploy(LoopringAmmSharedConfig);
 
       const loopringAmmSharedConfig = await LoopringAmmSharedConfig.deployed();
