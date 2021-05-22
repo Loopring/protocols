@@ -32,7 +32,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
         uint amplificationFactor = getAmplificationFactor(msg.sender);
         uint96[] memory vTokenBalancesL2 = new uint96[](joinAmounts.length);
         for (uint i = 0; i < joinAmounts.length; i++) {
-            vTokenBalancesL2[i] = (uint(joinAmounts[i]).mul(amplificationFactor) / AmmData.AMPLIFICATION_FACTOR_BASE).toUint96();
+            vTokenBalancesL2[i] = (uint(joinAmounts[i]).mul(amplificationFactor) / AMPLIFICATION_FACTOR_BASE).toUint96();
         }
         return vTokenBalancesL2;
     }

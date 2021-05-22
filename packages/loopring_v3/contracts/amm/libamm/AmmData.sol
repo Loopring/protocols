@@ -15,8 +15,6 @@ library AmmData
     uint public constant POOL_TOKEN_BASE = 100 * (10 ** 8);
     uint public constant POOL_TOKEN_MINTED_SUPPLY = type(uint96).max;
 
-    uint public constant AMPLIFICATION_FACTOR_BASE = (10 ** 18);
-
     enum PoolTxType
     {
         NOOP,

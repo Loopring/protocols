@@ -909,7 +909,7 @@ export class Simulator {
 
       // virtual balances
       if (
-        accountA.getBalance(tokenA).weightAMM.gt(new BN(0)) ||
+        accountA.getBalance(tokenA).weightAMM.gt(new BN(0)) &&
         accountA.getBalance(tokenB).weightAMM.gt(new BN(0))
       ) {
         accountA.getBalance(tokenA).weightAMM.isub(s.fillSA);
@@ -933,7 +933,7 @@ export class Simulator {
 
       // virtual balances
       if (
-        accountB.getBalance(tokenA).weightAMM.gt(new BN(0)) ||
+        accountB.getBalance(tokenA).weightAMM.gt(new BN(0)) &&
         accountB.getBalance(tokenB).weightAMM.gt(new BN(0))
       ) {
         accountB.getBalance(tokenB).weightAMM.isub(s.fillBA);
