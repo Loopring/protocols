@@ -38,6 +38,8 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     amplificationFactor = new BN(web3.utils.toWei("1", "ether")),
     controller?: any
   ) => {
+    controller = controller ? controller : ammController;
+
     const feeBipsAMM = 30;
     const tokens = ["WETH", "GTO"];
     const weights = [
@@ -614,8 +616,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
     it("Amplified pool", async () => {
       const pool = await setupDefaultPool(
-        new BN(web3.utils.toWei("2", "ether")),
-        ammController
+        new BN(web3.utils.toWei("2", "ether"))
       );
 
       // Join

@@ -38,15 +38,23 @@ contract AmplifiedAmmController is IAmmController, Claimable
     }
 
     function getVirtualBalances(
-        uint96[] memory /*tokenBalancesL2*/,
+        uint96[] memory tokenBalancesL2,
         uint96[] memory /*vTokenBalancesL2*/
         )
         external
-        pure
+        view
         override
         returns (uint96[] memory)
     {
-        revert("INVALID_OPERATION");
+        // Only allow updating the virtual balances if the AF = 1
+        require(getAmplificationFactor(msg.sender) == AMPLIFICATION_FACTOR_BASE, "INVALID_OPERATION");
+
+        // Just set the virtual balances to the actual balances
+        uint96[] memory vTokenBalancesL2 = new uint96[](tokenBalancesL2.length);
+        for (uint i = 0; i < tokenBalancesL2.length; i++) {
+            vTokenBalancesL2[i] = tokenBalancesL2[i];
+        }
+        return vTokenBalancesL2;
     }
 
     function setAmplificationFactor(

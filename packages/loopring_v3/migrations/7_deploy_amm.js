@@ -7,10 +7,13 @@ const AmmJoinRequest = artifacts.require("AmmJoinRequest");
 const AmmExitRequest = artifacts.require("AmmExitRequest");
 const AmmStatus = artifacts.require("AmmStatus");
 const AmmWithdrawal = artifacts.require("AmmWithdrawal");
+const AmplifiedAmmController = artifacts.require("AmplifiedAmmController");
 
 module.exports = function(deployer, network, accounts) {
   if (network != "live" && network != "live-fork") {
     deployer.then(async () => {
+      await deployer.deploy(AmplifiedAmmController);
+
       await deployer.deploy(AmmJoinRequest);
       await deployer.deploy(AmmExitRequest);
       await deployer.deploy(AmmStatus);
@@ -21,7 +24,7 @@ module.exports = function(deployer, network, accounts) {
       await deployer.link(AmmWithdrawal, LoopringAmmPool);
       await deployer.deploy(
         LoopringAmmPool,
-        "0x" + "00".repeat(20),
+        AmplifiedAmmController.address,
         "0x" + "00".repeat(20),
         false
       );
@@ -32,7 +35,7 @@ module.exports = function(deployer, network, accounts) {
       await deployer.link(AmmWithdrawal, LoopringAmmPoolCopy);
       await deployer.deploy(
         LoopringAmmPoolCopy,
-        "0x" + "00".repeat(20),
+        AmplifiedAmmController.address,
         "0x" + "00".repeat(20),
         false
       );

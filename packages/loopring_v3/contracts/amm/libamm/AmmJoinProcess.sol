@@ -165,14 +165,7 @@ library AmmJoinProcess
 
         if (ctx.totalSupply == 0) {
             // Set virtual balances
-            IAmmController controller = ctx.settings.controller;
-            if (controller != IAmmController(0)) {
-                ctx.vTokenBalancesL2 = controller.getInitialVirtualBalances(join.joinAmounts);
-            } else {
-                for (uint i = 0; i < ctx.tokens.length; i++) {
-                    ctx.vTokenBalancesL2[i] = join.joinAmounts[i];
-                }
-            }
+            ctx.vTokenBalancesL2 = ctx.settings.controller.getInitialVirtualBalances(join.joinAmounts);
             return(true, AmmData.POOL_TOKEN_BASE.toUint96(), join.joinAmounts);
         }
 

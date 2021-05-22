@@ -118,14 +118,7 @@ library AmmTransactionReceiver
             ctx.approveAmmUpdates(false);
         } else if (txType == AmmData.PoolTxType.SET_VIRTUAL_BALANCES) {
             ctx.approveAmmUpdates(true);
-            IAmmController controller = ctx.settings.controller;
-            if (controller != IAmmController(0)) {
-                ctx.vTokenBalancesL2 = controller.getVirtualBalances(ctx.tokenBalancesL2, ctx.vTokenBalancesL2);
-            } else {
-                for (uint i = 0; i < ctx.tokens.length; i++) {
-                    ctx.vTokenBalancesL2[i] = ctx.tokenBalancesL2[i];
-                }
-            }
+            ctx.vTokenBalancesL2 = ctx.settings.controller.getVirtualBalances(ctx.tokenBalancesL2, ctx.vTokenBalancesL2);
             ctx.approveAmmUpdates(false);
         } else if (txType == AmmData.PoolTxType.DEPOSIT) {
             AmmData.PoolDeposit memory poolDeposit = abi.decode(data, (AmmData.PoolDeposit));
