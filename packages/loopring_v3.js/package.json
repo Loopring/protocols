@@ -21,7 +21,7 @@
     "@types/node": "14.14.12",
     "@types/request-promise-native": "^1.0.15",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
-    "@typescript-eslint/parser": "^2.3.2",
+    "@typescript-eslint/parser": "^4.24.0",
     "ajv": "^6.10.0",
     "chai": "^4.2.0",
     "copyfiles": "^2.1.0",
@@ -31,7 +31,7 @@
     "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "^6.0.0",
     "eslint-plugin-prettier": "^3.1.0",
-    "ethlint": "^1.2.4",
+    "ethlint": "^0.0.0",
     "husky": "^4.0.4",
     "mocha": "^8.2.1",
     "node": "^13.10.1",
@@ -73,7 +73,7 @@
     "serialize-javascript": "^3.0.0",
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
-    "snarkjs": "0.1.31",
+    "snarkjs": "^0.3.60",
     "typedarray-to-buffer": "^3.1.5",
     "web3": "^1.2.0"
   }
