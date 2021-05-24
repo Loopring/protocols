@@ -31,7 +31,7 @@ describe("wallet", () => {
     // const quotaInfo = (await wallet.wallet())["quota"];
   });
 
-  describe.only("read methods", () => {
+  describe("read methods", () => {
     it("quota", async () => {
       const walletData = await wallet.wallet();
       console.log("walletData:", walletData);
