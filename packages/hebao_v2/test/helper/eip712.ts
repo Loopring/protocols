@@ -3,7 +3,7 @@ const ethAbi = require("web3-eth-abi");
 import { Constants } from "./Constants";
 
 const EIP191_HEADER = "\x19\x01";
-const EIP712_DOMAIN_TYPEHASH = ethUtil.keccak(
+const EIP712_DOMAIN_TYPEHASH = ethUtil.keccakFromString(
   "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
 );
 
@@ -12,14 +12,14 @@ export function hash(name: string, version: string, moduleAddress: string) {
     ["bytes32", "bytes32", "bytes32", "uint256", "address"],
     [
       EIP712_DOMAIN_TYPEHASH,
-      ethUtil.keccak(name),
-      ethUtil.keccak(version),
+      ethUtil.keccakFromString(name),
+      ethUtil.keccakFromString(version),
       Constants.chainId,
       moduleAddress
     ]
   );
 
-  return ethUtil.keccak(encoded);
+  return ethUtil.keccakFromHexString(encoded);
 }
 
 export function hashPacked(domainSeprator: Buffer, encodedData: string) {
@@ -27,7 +27,7 @@ export function hashPacked(domainSeprator: Buffer, encodedData: string) {
     Buffer.concat([
       Buffer.from(EIP191_HEADER, "utf8"),
       domainSeprator,
-      ethUtil.keccak(encodedData)
+      ethUtil.keccakFromHexString(encodedData)
     ])
   );
 }
