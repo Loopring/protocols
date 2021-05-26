@@ -4,7 +4,6 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
-import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
@@ -150,40 +149,6 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         returns (IDepositContract)
     {
         return state.depositContract;
-    }
-
-    function withdrawExchangeFees(
-        address token,
-        address recipient
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        require(recipient != address(0), "INVALID_ADDRESS");
-
-        uint amount = token.selfBalance();
-        token.transferOut(recipient, amount);
-    }
-
-    function withdrawUnregisteredToken(
-        address token,
-        address to,
-        uint    amount
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        require(target != address(0), "INVALID_ADDRESS");
-        try state.getTokenID(token) {
-            revert("TOKEN_REGISTERED");
-        } catch {
-            uint _amount = amount == 0 ? ERC20(token).balanceOf(state.depositContract) : amount;
-            state.depositContract.transfer(address(0), to, token, _amount);
-        }
     }
 
     function isUserOrAgent(address owner)
@@ -682,6 +647,40 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     }
 
     // -- Admins --
+    function withdrawExchangeFees(
+        address token,
+        address recipient
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(recipient != address(0), "INVALID_ADDRESS");
+
+        uint amount = token.selfBalance();
+        token.transferOut(recipient, amount);
+    }
+
+    function withdrawUnregisteredToken(
+        address token,
+        address to,
+        uint    amount
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        try this.getTokenID(token) {
+            revert("TOKEN_REGISTERED");
+        } catch {
+            require(to != address(0), "INVALID_ADDRESS");
+            require(amount > 0, "INVALID_AMOUNT");
+            state.depositContract.transfer(address(0), to, token, amount);
+        }
+    }
+
     function setMaxAgeDepositUntilWithdrawable(
         uint32 newValue
         )
