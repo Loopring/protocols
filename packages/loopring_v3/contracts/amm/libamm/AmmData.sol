@@ -5,8 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import "../../core/iface/ExchangeData.sol";
 import "../../core/iface/IExchangeV3.sol";
-import "./IAmmSharedConfig.sol";
 import "../IAmmController.sol";
+import "./IAmmSharedConfig.sol";
 
 
 /// @title AmmData
