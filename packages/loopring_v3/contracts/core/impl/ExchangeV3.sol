@@ -677,7 +677,13 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         } catch {
             require(to != address(0), "INVALID_ADDRESS");
             require(amount > 0, "INVALID_AMOUNT");
-            state.depositContract.transfer(address(0), to, token, amount);
+            state.depositContract.withdraw(
+                address(state.depositContract),
+                to,
+                token,
+                amount,
+                new bytes(0)
+            );
         }
     }
 

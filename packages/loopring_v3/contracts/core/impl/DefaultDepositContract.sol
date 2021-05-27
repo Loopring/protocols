@@ -152,8 +152,6 @@ contract DefaultDepositContract is IDepositContract, Claimable
         }
     }
 
-    // Question for Brecht: if 'from’ ！= our deposit contract, will this method fail?' I wonder why
-    // we add this parameter in the first place.
     function transfer(
         address from,
         address to,
