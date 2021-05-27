@@ -656,7 +656,7 @@ abstract contract IExchangeV3 is Claimable
     // @dev Exchange owner withdraws unregistered tokens from the deposit contract.
     // @param token Fee token address
     // @param to The target address
-    // @amount The amount to withdraw. Use 0 to withdraw all balance.
+    // @amount The amount to withdraw.
     function withdrawUnregisteredToken(
         address token,
         address to,
