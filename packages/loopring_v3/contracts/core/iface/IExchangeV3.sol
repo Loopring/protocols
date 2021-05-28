@@ -136,16 +136,6 @@ abstract contract IExchangeV3 is Claimable
         view
         returns (IDepositContract);
 
-    // @dev Exchange owner withdraws fees from the exchange.
-    // @param token Fee token address
-    // @param feeRecipient Fee recipient address
-    function withdrawExchangeFees(
-        address token,
-        address feeRecipient
-        )
-        external
-        virtual;
-
     // -- Constants --
     /// @dev Returns a list of constants used by the exchange.
     /// @return constants The list of constants.
@@ -652,6 +642,29 @@ abstract contract IExchangeV3 is Claimable
         returns (bool);
 
     // -- Admins --
+
+    // @dev Exchange owner withdraws fees from the exchange.
+    // @param token Fee token address
+    // @param feeRecipient Fee recipient address
+    function withdrawExchangeFees(
+        address token,
+        address feeRecipient
+        )
+        external
+        virtual;
+
+    // @dev Exchange owner withdraws unregistered tokens from the deposit contract.
+    // @param token Fee token address
+    // @param to The target address
+    // @amount The amount to withdraw.
+    function withdrawUnregisteredToken(
+        address token,
+        address to,
+        uint    amount
+        )
+        external
+        virtual;
+
     /// @dev Sets the max time deposits have to wait before becoming withdrawable.
     /// @param newValue The new value.
     /// @return  The old value.

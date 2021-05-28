@@ -151,21 +151,6 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.depositContract;
     }
 
-    function withdrawExchangeFees(
-        address token,
-        address recipient
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        require(recipient != address(0), "INVALID_ADDRESS");
-
-        uint amount = token.selfBalance();
-        token.transferOut(recipient, amount);
-    }
-
     function isUserOrAgent(address owner)
         public
         view
@@ -662,6 +647,46 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     }
 
     // -- Admins --
+    function withdrawExchangeFees(
+        address token,
+        address recipient
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(recipient != address(0), "INVALID_ADDRESS");
+
+        uint amount = token.selfBalance();
+        token.transferOut(recipient, amount);
+    }
+
+    function withdrawUnregisteredToken(
+        address token,
+        address to,
+        uint    amount
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        try this.getTokenID(token) {
+            revert("TOKEN_REGISTERED");
+        } catch {
+            require(to != address(0), "INVALID_ADDRESS");
+            require(amount > 0, "INVALID_AMOUNT");
+            state.depositContract.withdraw(
+                address(state.depositContract),
+                to,
+                token,
+                amount,
+                new bytes(0)
+            );
+        }
+    }
+
     function setMaxAgeDepositUntilWithdrawable(
         uint32 newValue
         )
