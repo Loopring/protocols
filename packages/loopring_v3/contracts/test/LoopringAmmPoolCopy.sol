@@ -8,9 +8,9 @@ import "../amm/LoopringAmmPool.sol";
 /// @title LoopringAmmPool
 contract LoopringAmmPoolCopy is LoopringAmmPool {
     constructor(
-        IAmmController _defaultController,
-        address        _defaultAssetManager,
+        IAmmController _controller,
+        IAssetManager  _assetManager,
         bool           _joinsDisabled
-    ) LoopringAmmPool(_defaultController, _defaultAssetManager, _joinsDisabled)
+    ) LoopringAmmPool(_controller, _assetManager, _joinsDisabled)
     {}
 }

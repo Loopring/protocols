@@ -1867,11 +1867,13 @@ export class ExchangeTestUtil {
     interface TransactionReceiverCallbacks {
       callbacks: OnchainBlockCallback[];
       receivers: string[];
+      before: boolean;
     }
 
     const transactionReceiverCallbacks: TransactionReceiverCallbacks = {
       callbacks: [],
-      receivers: []
+      receivers: [],
+      before: true
     };
 
     //console.log("Block callbacks: ");

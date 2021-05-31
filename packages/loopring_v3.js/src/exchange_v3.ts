@@ -626,7 +626,7 @@ export class ExchangeV3 {
 
     // Get the block data from the transaction data
     //const submitBlocksFunctionSignature = "0x8dadd3af"; // submitBlocks
-    const submitBlocksFunctionSignature = "0xc39ce618"; // submitBlocksWithCallbacks
+    const submitBlocksFunctionSignature = "0xfbb404ab"; // submitBlocksWithCallbacks
 
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash

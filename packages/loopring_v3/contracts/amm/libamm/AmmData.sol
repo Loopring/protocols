@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../../core/iface/ExchangeData.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../IAmmController.sol";
+import "../IAssetManager.sol";
 import "./IAmmSharedConfig.sol";
 
 
@@ -83,7 +84,7 @@ library AmmData
 
     struct Settings {
         IAmmController controller;
-        address        assetManager;
+        IAssetManager  assetManager;
         bool           joinsDisabled;
     }
 
@@ -139,5 +140,7 @@ library AmmData
         // A map from a user to the forced exit.
         mapping (address => PoolExit) forcedExit;
         mapping (bytes32 => bool) approvedTx;
+
+        mapping (address => uint96) balancesL1;
     }
 }

@@ -12,7 +12,8 @@ contract("LoopringAmmPool", (accounts: string[]) => {
   let sharedConfig: any;
   let agentRegistry: any;
   let registryOwner: string;
-  let ammController: string;
+  let ammController: any;
+  let assetManager: any;
 
   let ownerA: string;
   let ownerB: string;
@@ -36,9 +37,11 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
   const setupDefaultPool = async (
     amplificationFactor = new BN(web3.utils.toWei("1", "ether")),
-    controller?: any
+    controller?: any,
+    assetManager?: any
   ) => {
     controller = controller ? controller : ammController;
+    const assetManagerAddress = assetManager ? assetManager.address : Constants.zeroAddress;
 
     const feeBipsAMM = 30;
     const tokens = ["WETH", "GTO"];
@@ -64,7 +67,8 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       weights,
       feeBipsAMM,
       amplificationFactor,
-      controller
+      controller.address,
+      assetManagerAddress
     );
 
     if (controller) {
@@ -109,6 +113,9 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
     const amplifiedAmmController = artifacts.require("AmplifiedAmmController");
     ammController = await amplifiedAmmController.new();
+
+    const TestAssetManager = artifacts.require("TestAssetManager");
+    assetManager = await TestAssetManager.new();
   });
 
   after(async () => {
@@ -587,7 +594,11 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     });
 
     it("Manage pool assets", async () => {
-      const pool = await setupDefaultPool();
+      const pool = await setupDefaultPool(
+        new BN(web3.utils.toWei("1", "ether")),
+        undefined,
+        assetManager
+      );
 
       const amounts = [
         new BN(web3.utils.toWei("10000", "ether")),

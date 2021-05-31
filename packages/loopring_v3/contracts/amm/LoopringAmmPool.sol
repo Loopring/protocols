@@ -7,12 +7,13 @@ import "../aux/access/ITransactionReceiver.sol";
 import "../core/iface/IAgentRegistry.sol";
 import "../lib/ReentrancyGuard.sol";
 import "../lib/TransferUtil.sol";
-import "./libamm/AmmTransactionReceiver.sol";
+import "./libamm/AmmAssetManagement.sol";
 import "./libamm/AmmData.sol";
 import "./libamm/AmmExitRequest.sol";
 import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmPoolToken.sol";
 import "./libamm/AmmStatus.sol";
+import "./libamm/AmmTransactionReceiver.sol";
 import "./libamm/AmmWithdrawal.sol";
 import "./PoolToken.sol";
 
@@ -24,11 +25,12 @@ contract LoopringAmmPool is
     ITransactionReceiver,
     ReentrancyGuard
 {
-    using AmmTransactionReceiver for AmmData.State;
+    using AmmAssetManagement     for AmmData.State;
     using AmmJoinRequest         for AmmData.State;
     using AmmExitRequest         for AmmData.State;
     using AmmPoolToken           for AmmData.State;
     using AmmStatus              for AmmData.State;
+    using AmmTransactionReceiver for AmmData.State;
     using AmmWithdrawal          for AmmData.State;
     using TransferUtil           for address;
 
@@ -38,7 +40,7 @@ contract LoopringAmmPool is
     event Shutdown(uint timestamp);
 
     IAmmController public immutable controller;
-    address        public immutable assetManager;
+    IAssetManager  public immutable assetManager;
     bool           public immutable joinsDisabled;
 
     modifier onlyFromExchangeOwner()
@@ -49,7 +51,7 @@ contract LoopringAmmPool is
 
     modifier onlyFromAssetManager()
     {
-        require(msg.sender == assetManager, "UNAUTHORIZED");
+        require(msg.sender == address(assetManager), "UNAUTHORIZED");
         _;
     }
 
@@ -73,7 +75,7 @@ contract LoopringAmmPool is
 
     constructor(
         IAmmController _controller,
-        address        _assetManager,
+        IAssetManager  _assetManager,
         bool           _joinsDisabled
     )
     {
@@ -183,20 +185,6 @@ contract LoopringAmmPool is
         state.withdrawWhenOffline();
     }
 
-    function depositAssetsToL2(
-        uint96[] memory amounts
-        )
-        external
-        nonReentrant
-        onlyWhenOnline
-        onlyFromExchangeOwner
-    {
-        for(uint i = 0; i < state.tokens.length; i++) {
-            require(amounts[i] != 0, "INVALID_DEPOSIT_AMOUNT");
-            state.deposit(state.tokens[i].addr, amounts[i]);
-        }
-    }
-
     function transferOut(
         address to,
         address token,
@@ -206,6 +194,27 @@ contract LoopringAmmPool is
         nonReentrant
         onlyFromAssetManager
     {
-        token.transferOut(to, amount);
+        state.transferOut(to, token, amount);
+    }
+
+    function setBalanceL1(
+        address token,
+        uint96  balance
+        )
+        external
+        nonReentrant
+        onlyFromAssetManager
+    {
+        state.balancesL1[token] = balance;
+    }
+
+    function getBalanceL1(
+        address token
+        )
+        external
+        view
+        returns (uint96)
+    {
+        return state.balancesL1[token];
     }
 }

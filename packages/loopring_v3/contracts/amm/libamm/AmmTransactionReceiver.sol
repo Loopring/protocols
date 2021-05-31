@@ -6,25 +6,29 @@ pragma experimental ABIEncoderV2;
 import "../../core/impl/libtransactions/BlockReader.sol";
 import "../../lib/MathUint.sol";
 import "../../thirdparty/SafeCast.sol";
+import "./AmmDepositProcess.sol";
 import "./AmmData.sol";
 import "./AmmExitProcess.sol";
 import "./AmmJoinProcess.sol";
 import "./AmmPoolToken.sol";
 import "./AmmUpdateProcess.sol";
+import "./AmmWithdrawProcess.sol";
 
 
 /// @title AmmTransactionReceiver
 library AmmTransactionReceiver
 {
-    using AmmExitProcess    for AmmData.State;
-    using AmmJoinProcess    for AmmData.State;
-    using AmmPoolToken      for AmmData.State;
-    using AmmUtil           for AmmData.State;
-    using AmmUpdateProcess  for AmmData.Context;
-    using BlockReader       for bytes;
-    using MathUint          for uint;
-    using MathUint96        for uint96;
-    using SafeCast          for uint;
+    using AmmDepositProcess  for AmmData.State;
+    using AmmExitProcess     for AmmData.State;
+    using AmmJoinProcess     for AmmData.State;
+    using AmmPoolToken       for AmmData.State;
+    using AmmUtil            for AmmData.State;
+    using AmmUpdateProcess   for AmmData.State;
+    using AmmWithdrawProcess for AmmData.State;
+    using BlockReader        for bytes;
+    using MathUint           for uint;
+    using MathUint96         for uint96;
+    using SafeCast           for uint;
 
     function onReceiveTransactions(
         AmmData.State    storage  S,
@@ -101,110 +105,37 @@ library AmmTransactionReceiver
             signature.offset := add(signature.offset, 0x20)
         }
         if (txType == AmmData.PoolTxType.JOIN) {
-            ctx.approveAmmUpdates(true);
+            S.approveAmmUpdates(ctx, true);
             S.processJoin(
                 ctx,
                 abi.decode(data, (AmmData.PoolJoin)),
                 signature
             );
-            ctx.approveAmmUpdates(false);
+            S.approveAmmUpdates(ctx, false);
         } else if (txType == AmmData.PoolTxType.EXIT) {
-            ctx.approveAmmUpdates(true);
+            S.approveAmmUpdates(ctx, true);
             S.processExit(
                 ctx,
                 abi.decode(data, (AmmData.PoolExit)),
                 signature
             );
-            ctx.approveAmmUpdates(false);
+            S.approveAmmUpdates(ctx, false);
         } else if (txType == AmmData.PoolTxType.SET_VIRTUAL_BALANCES) {
-            ctx.approveAmmUpdates(true);
+            S.approveAmmUpdates(ctx, true);
             ctx.vTokenBalancesL2 = ctx.settings.controller.getVirtualBalances(ctx.tokenBalancesL2, ctx.vTokenBalancesL2);
-            ctx.approveAmmUpdates(false);
+            S.approveAmmUpdates(ctx, false);
         } else if (txType == AmmData.PoolTxType.DEPOSIT) {
-            AmmData.PoolDeposit memory poolDeposit = abi.decode(data, (AmmData.PoolDeposit));
-            require(poolDeposit.amounts.length == ctx.tokens.length, "INVALID_DEPOSIT_AMOUNTS");
-            for (uint i = 0; i < ctx.tokens.length; i++) {
-                deposit(S, ctx.tokens[i].addr, poolDeposit.amounts[i]);
-            }
-        } else if (txType == AmmData.PoolTxType.WITHDRAW) {
-            AmmData.PoolWithdrawal memory poolWithdrawal = abi.decode(data, (AmmData.PoolWithdrawal));
-            require(poolWithdrawal.amounts.length == ctx.tokens.length, "INVALID_WITHDRAWAL_AMOUNTS");
-            for (uint i = 0; i < ctx.tokens.length; i++) {
-                withdraw(ctx, ctx.tokens[i].tokenID, poolWithdrawal.amounts[i]);
-            }
+            S.processDeposit(
+                ctx,
+                abi.decode(data, (AmmData.PoolDeposit))
+            );
+         } else if (txType == AmmData.PoolTxType.WITHDRAW) {
+             S.processWithdrawal(
+                ctx,
+                abi.decode(data, (AmmData.PoolWithdrawal))
+            );
         } else {
             revert("INVALID_POOL_TX_TYPE");
         }
-    }
-
-    function deposit(
-        AmmData.State storage S,
-        address               token,
-        uint96                amount
-        )
-        internal
-    {
-        if (amount == 0) {
-            return;
-        }
-        uint ethValue = 0;
-        if (token == address(0)) {
-            ethValue = amount;
-        } else {
-            ERC20(token).approve(address(S.exchange.getDepositContract()), amount);
-        }
-        S.exchange.deposit{value: ethValue}(
-            address(this),
-            address(this),
-            token,
-            amount,
-            new bytes(0)
-        );
-    }
-
-    function withdraw(
-        AmmData.Context memory ctx,
-        uint                   tokenID,
-        uint96                 amount
-        )
-        internal
-        view
-    {
-        if (amount == 0) {
-            return;
-        }
-
-        bytes20 onchainDataHash = WithdrawTransaction.hashOnchainData(
-            0,                  // Withdrawal needs to succeed no matter the gas coast
-            address(this),      // Withdraw to this contract first
-            new bytes(0)
-        );
-
-        // Verify withdrawal data
-        // Start by reading the first 2 bytes into header
-        uint txsDataPtr = ctx.txsDataPtr + 2;
-        // header: txType (1) | type (1)
-        uint header;
-        // packedData: tokenID (2) | amount (12) | feeTokenID (2) | fee (2)
-        uint packedData;
-        bytes20 dataHash;
-        assembly {
-            header     := calldataload(    txsDataPtr     )
-            packedData := calldataload(add(txsDataPtr, 42))
-            dataHash   := and(calldataload(add(txsDataPtr, 78)), 0xffffffffffffffffffffffffffffffffffffffff000000000000000000000000)
-        }
-        require(
-            // txType == ExchangeData.TransactionType.WITHDRAWAL &&
-            // withdrawal.type == 1 &&
-            header & 0xffff == (uint(ExchangeData.TransactionType.WITHDRAWAL) << 8) | 1 &&
-            // withdrawal.tokenID == token.tokenID &&
-            // withdrawal.amount == token.amount &&
-            // withdrawal.fee == 0,
-            packedData & 0xffffffffffffffffffffffffffff0000ffff == (uint(tokenID) << 128) | (uint(amount) << 32) &&
-            onchainDataHash == dataHash,
-            "INVALID_WITHDRAWAL_TX_DATA"
-        );
-
-        ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 }

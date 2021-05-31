@@ -292,7 +292,8 @@ export class AmmPool {
     vTokenBalancesL2: BN[],
     feeBips: number,
     amplificationFactor: BN,
-    controller?: any
+    controllerAddress?: string,
+    assetManagerAddress?: string
   ) {
     this.sharedConfig = sharedConfig;
     this.feeBips = feeBips;
@@ -302,14 +303,16 @@ export class AmmPool {
 
     this.totalSupply = new BN(0);
 
-    const controllerAddress = controller
-      ? controller.address
+    controllerAddress = controllerAddress
+      ? controllerAddress
       : Constants.zeroAddress;
+
+    console.log("controllerAddress: " + controllerAddress);
 
     const AmmPool = artifacts.require("LoopringAmmPool");
     this.contract = await AmmPool.new(
       controllerAddress,
-      "0x" + "00".repeat(20),
+      assetManagerAddress,
       false
     );
 
@@ -520,7 +523,7 @@ export class AmmPool {
   }
 
   public async deposit(amounts: BN[]) {
-    /*const deposit: PoolDeposit = {
+    const deposit: PoolDeposit = {
       txType: "Deposit",
       poolAddress: this.contract.address,
       amounts: amounts,
@@ -530,28 +533,7 @@ export class AmmPool {
 
     await this.process(deposit, undefined);
 
-    return deposit;*/
-
-    const _amounts: string[] = [];
-    for (let i = 0; i < amounts.length; i++) {
-      _amounts[i] = amounts[i].toString(10);
-    }
-
-    await this.ctx.addCallback(
-      this.contract.address,
-      this.contract.contract.methods.depositAssetsToL2(_amounts).encodeABI(),
-      true
-    );
-
-    for (let i = 0; i < this.tokens.length; i++) {
-      if (!amounts[i].isZero()) {
-        await this.ctx.requestDeposit(
-          this.contract.address,
-          this.tokens[i],
-          amounts[i]
-        );
-      }
-    }
+    return deposit;
   }
 
   public async withdraw(amounts: BN[]) {
