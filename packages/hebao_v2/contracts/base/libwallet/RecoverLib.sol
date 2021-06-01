@@ -25,6 +25,10 @@ library RecoverLib
         "recover(address wallet,uint256 validUntil,address newOwner)"
     );
 
+    bytes32 public constant RECOVER2_TYPEHASH = keccak256(
+        "recover2(address wallet,uint256 validUntil,address newOwner, address[] newGuardians)"
+    );
+
     /// @dev Recover a wallet by setting a new owner.
     /// @param approval The approval.
     /// @param newOwner The new owner address to set.
@@ -61,4 +65,45 @@ library RecoverLib
 
         emit Recovered(newOwner);
     }
+
+    /// @dev Recover a wallet by setting a new owner and reset guardians.
+    /// @param approval The approval.
+    /// @param newOwner The new owner address to set.
+    /// @param newGuardians The new guardians addresses to set.
+    function recover2(
+        Wallet   storage   wallet,
+        bytes32            domainSeperator,
+        Approval calldata  approval,
+        address            newOwner,
+        address[] calldata newGuardians
+        )
+        external
+    {
+        require(wallet.owner != newOwner, "IS_SAME_OWNER");
+        require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
+
+        wallet.verifyApproval(
+            domainSeperator,
+            SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
+            approval,
+            abi.encode(
+                RECOVER2_TYPEHASH,
+                approval.wallet,
+                approval.validUntil,
+                newOwner,
+                keccak256(abi.encodePacked(newGuardians))
+            )
+        );
+
+        wallet.owner = newOwner;
+        wallet.setLock(address(this), false);
+        wallet.removeAllGuardians();
+        for (uint i = 0; i < newGuardians.length; i++) {
+            require(newGuardians[i] != newOwner, "INVALID_NEW_WALLET_GUARDIAN");
+        }
+        wallet.setInitialGuardians(newGuardians);
+
+        emit Recovered(newOwner);
+    }
+
 }
