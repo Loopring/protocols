@@ -211,7 +211,7 @@ contract LoopringAmmPool is
     function getBalanceL1(
         address token
         )
-        external
+        public
         view
         returns (uint96)
     {

@@ -28,8 +28,10 @@ library AmmWithdrawProcess
         require(ctx.settings.assetManager != IAssetManager(0), "CANNOT_WITHDRAW_FROM_POOL");
         require(poolWithdrawal.amounts.length == ctx.tokens.length, "INVALID_WITHDRAWAL_AMOUNTS");
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            verifyWithdrawalTx(ctx, ctx.tokens[i].tokenID, poolWithdrawal.amounts[i]);
-            S.balancesL1[ctx.tokens[i].addr] = S.balancesL1[ctx.tokens[i].addr].add(poolWithdrawal.amounts[i]);
+            address token = ctx.tokens[i].addr;
+            uint96 amount = poolWithdrawal.amounts[i];
+            verifyWithdrawalTx(ctx, ctx.tokens[i].tokenID, amount);
+            S.balancesL1[token] = S.balancesL1[token].add(amount);
         }
     }
 

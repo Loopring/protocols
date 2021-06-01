@@ -20,7 +20,7 @@ contract TestAssetManager is IAssetManager, Claimable
         address          pool,
         address[] memory tokens
         )
-        external
+        public
         view
         returns (uint[] memory)
     {

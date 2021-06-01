@@ -48,7 +48,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     {
         TransactionReceiverCallback[] callbacks;
         address[]                     receivers;
-        bool                          before;
+        bool                          beforeBlockSubmission;
     }
 
     struct SubmitBlocksCallback
@@ -144,7 +144,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             IExchangeV3(target).flashDeposit(flashDeposits);
         }
 
-        if (txReceiverCallbacks.before) {
+        if (txReceiverCallbacks.beforeBlockSubmission) {
             // Do transaction verifying blocks callbacks
             _verifyTransactions(blocks, txReceiverCallbacks);
         }
@@ -152,7 +152,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
         // Submit blocks
         target.fastCallAndVerify(gasleft(), 0, decompressed);
 
-        if (!txReceiverCallbacks.before) {
+        if (!txReceiverCallbacks.beforeBlockSubmission) {
             // Do transaction verifying blocks callbacks
             _verifyTransactions(blocks, txReceiverCallbacks);
         }
