@@ -41,7 +41,7 @@
     "bignumber.js": "^4.1.0",
     "bitwise-xor": "0.0.0",
     "bn.js": "^5.0.0",
-    "es6-promisify": "^6.0.1",
+    "es6-promisify": "^7.0.0",
     "ethereum-tx-decoder": "^3.0.0",
     "ethereumjs-abi": "^0.6.5",
     "ethereumjs-util": "^6.1.0",
