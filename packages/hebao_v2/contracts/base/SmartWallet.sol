@@ -363,26 +363,13 @@ contract SmartWallet is ERC1271
     //
 
     function recover(
-        Approval calldata approval,
-        address           newOwner
-        )
-        external
-    {
-        wallet.recover(
-            DOMAIN_SEPARATOR,
-            approval,
-            newOwner
-        );
-    }
-
-    function recover2(
         Approval calldata  approval,
         address            newOwner,
         address[] calldata newGuardians
         )
         external
     {
-        wallet.recover2(
+        wallet.recover(
             DOMAIN_SEPARATOR,
             approval,
             newOwner,
