@@ -142,5 +142,6 @@ library AmmData
         mapping (bytes32 => bool) approvedTx;
 
         mapping (address => uint96) balancesL1;
+        bool exitMode;
     }
 }

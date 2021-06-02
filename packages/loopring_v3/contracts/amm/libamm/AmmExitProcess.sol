@@ -49,14 +49,18 @@ library AmmExitProcess
         bool isForcedExit = false;
 
         if (signature.length == 0) {
-            bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
-            if (txHash == forcedExitHash) {
-                delete S.forcedExit[exit.owner];
-                S.forcedExitCount--;
-                isForcedExit = true;
+            if (S.exitMode) {
+                require(exit.fee == 0, "INVALID_FEE");
             } else {
-                require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
-                delete S.approvedTx[txHash];
+                bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
+                if (txHash == forcedExitHash) {
+                    delete S.forcedExit[exit.owner];
+                    S.forcedExitCount--;
+                    isForcedExit = true;
+                } else {
+                    require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
+                    delete S.approvedTx[txHash];
+                }
             }
         } else if (signature.length == 1) {
             ctx.verifySignatureL2(exit.owner, txHash, signature);

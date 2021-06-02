@@ -101,6 +101,13 @@ contract LoopringAmmPool is
         state.setupPool(config);
     }
 
+    function enableExitMode()
+        external
+        onlyFromController
+    {
+        state.exitMode = true;
+    }
+
     // Anyone is able to shut down the pool when requests aren't being processed any more.
     function shutdown(address exitOwner)
         external
@@ -113,7 +120,6 @@ contract LoopringAmmPool is
 
     function shutdownByController()
         external
-        payable
         onlyWhenOnline
         nonReentrant
         onlyFromController

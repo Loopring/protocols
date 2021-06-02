@@ -77,4 +77,11 @@ contract AmplifiedAmmController is IAmmController, Claimable
             amplificationFactor = AMPLIFICATION_FACTOR_BASE;
         }
     }
+
+    function enableExitMode(LoopringAmmPool pool)
+        external
+        onlyOwner
+    {
+        pool.enableExitMode();
+    }
 }
