@@ -98,6 +98,7 @@ contract LoopringAmmPool is
         external
         nonReentrant
     {
+        require(state.accountID == 0 || msg.sender == address(controller), "UNAUTHORIZED");
         state.setupPool(config);
     }
 

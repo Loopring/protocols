@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
+pragma experimental ABIEncoderV2;
 
 import "./IAmmController.sol";
 import "../amm/LoopringAmmPool.sol";
@@ -76,6 +77,16 @@ contract AmplifiedAmmController is IAmmController, Claimable
         if (amplificationFactor == 0) {
             amplificationFactor = AMPLIFICATION_FACTOR_BASE;
         }
+    }
+
+    function setupPool(
+        LoopringAmmPool pool,
+        AmmData.PoolConfig calldata config
+        )
+        external
+        onlyOwner
+    {
+        pool.setupPool(config);
     }
 
     function enableExitMode(LoopringAmmPool pool)
