@@ -1,6 +1,6 @@
 import ethUtil = require("ethereumjs-util");
 const ethAbi = require("web3-eth-abi");
-import { sign, SignatureType } from "./Signature";
+import { sign, sign2, SignatureType } from "./Signature";
 import { Constants } from "./Constants";
 import * as eip712 from "./eip712";
 import BN = require("bn.js");
@@ -114,6 +114,34 @@ export function signAddGuardianWA(
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
 
   const txSignature = sign(signer, hash);
+  return { txSignature, hash };
+}
+
+export function signRecover(
+  masterCopy: string,
+  walletAddress: string,
+  validUntil: BN,
+  newOwner: string,
+  guardians: string[],
+  signer: string,
+  privateKey?: string
+) {
+  const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
+  const TYPE_STR =
+    "recover(address wallet,uint256 validUntil,address newOwner, address[] newGuardians)";
+  const RECOVER_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
+
+  const guardiansBs = encodeAddressesPacked(guardians);
+  const guardiansHash = ethUtil.keccak(guardiansBs);
+
+  const encodedRequest = ethAbi.encodeParameters(
+    ["bytes32", "address", "uint256", "address", "bytes32"],
+    [RECOVER_TYPEHASH, walletAddress, validUntil, newOwner, guardiansHash]
+  );
+
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
+
+  const txSignature = sign2(signer, privateKey, hash);
   return { txSignature, hash };
 }
 
