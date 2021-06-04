@@ -123,7 +123,6 @@ library AmmTransactionReceiver
         } else if (txType == AmmData.PoolTxType.SET_VIRTUAL_BALANCES) {
             S.approveAmmUpdates(ctx, true);
             processSetVirtualBalances(
-                S,
                 ctx,
                 abi.decode(data, (AmmData.PoolVirtualBalances))
             );
@@ -144,7 +143,6 @@ library AmmTransactionReceiver
     }
 
     function processSetVirtualBalances(
-        AmmData.State               storage /*S*/,
         AmmData.Context             memory  ctx,
         AmmData.PoolVirtualBalances memory  poolVirtualBalances
         )
