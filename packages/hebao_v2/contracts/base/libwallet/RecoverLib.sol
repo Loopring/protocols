@@ -22,7 +22,7 @@ library RecoverLib
     event Recovered(address newOwner);
 
     bytes32 public constant RECOVER_TYPEHASH = keccak256(
-        "recover(address wallet,uint256 validUntil,address newOwner, address[] newGuardians)"
+        "recover(address wallet,uint256 validUntil,address newOwner,address[] newGuardians)"
     );
 
     /// @dev Recover a wallet by setting a new owner and reset guardians.

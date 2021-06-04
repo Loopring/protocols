@@ -128,7 +128,7 @@ export function signRecover(
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
-    "recover(address wallet,uint256 validUntil,address newOwner, address[] newGuardians)";
+    "recover(address wallet,uint256 validUntil,address newOwner,address[] newGuardians)";
   const RECOVER_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
   const guardiansBs = encodeAddressesPacked(guardians);
