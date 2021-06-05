@@ -27,6 +27,9 @@ contract AmplifiedAmmController is IAmmController, Claimable
     mapping(address => uint) public curveChangeAuthorization;
 
 
+    mapping(address => uint) public curveChangeAuthorization;
+
+
     function getInitialVirtualBalances(
         uint96[] memory joinAmounts
         )
@@ -70,8 +73,6 @@ contract AmplifiedAmmController is IAmmController, Claimable
                 return false;
             }
         }
-
-        return true;
     }
 
     function authorizeCurveChange(address pool)
@@ -129,7 +130,8 @@ contract AmplifiedAmmController is IAmmController, Claimable
         returns (bool authorized)
     {
         uint timestamp = curveChangeAuthorization[pool];
-        authorized = (timestamp <= block.timestamp) && (block.timestamp <= timestamp + MIN_CURVE_CHANGE_DELAY);
+        authorized = (timestamp <= block.timestamp) && 
+            (block.timestamp <= timestamp + MIN_CURVE_CHANGE_DELAY);
 
         // Remove authorization
         if (timestamp > 0) {
