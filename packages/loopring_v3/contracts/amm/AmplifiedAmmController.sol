@@ -133,7 +133,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
             (block.timestamp <= timestamp + CURVE_CHANGE_AUTH_WINDOW);
 
         // Remove authorization
-        if (timestamp > 0) {
+        if (authorized) {
             delete curveChangeAuthorization[pool];
         }
     }
