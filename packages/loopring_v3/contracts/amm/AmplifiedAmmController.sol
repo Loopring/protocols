@@ -24,7 +24,6 @@ contract AmplifiedAmmController is IAmmController, Claimable
     uint public constant CURVE_CHANGE_AUTH_WINDOW = 7 days;
 
     mapping(address => uint) public amplificationFactors;
-
     mapping(address => uint) public curveChangeAuthorization;
 
 
@@ -104,7 +103,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
     }
 
     function setupPool(
-        LoopringAmmPool pool,
+        LoopringAmmPool             pool,
         AmmData.PoolConfig calldata config
         )
         external
@@ -115,7 +114,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
 
     function enterExitMode(
         LoopringAmmPool pool,
-        bool enabled
+        bool            enabled
         )
         external
         onlyOwner
@@ -127,14 +126,14 @@ contract AmplifiedAmmController is IAmmController, Claimable
 
     function consumeCurveChangeAuthorized(address pool)
         internal
-        returns (bool)
+        returns (bool authorized)
     {
         uint timestamp = curveChangeAuthorization[pool];
-        bool authorized = (timestamp <= block.timestamp) && (block.timestamp <= timestamp + MIN_CURVE_CHANGE_DELAY);
+        authorized = (timestamp <= block.timestamp) && (block.timestamp <= timestamp + MIN_CURVE_CHANGE_DELAY);
 
         // Remove authorization
-        delete curveChangeAuthorization[pool];
-
-        return authorized;
+        if (timestamp > 0) {
+            delete curveChangeAuthorization[pool];
+        }
     }
 }
