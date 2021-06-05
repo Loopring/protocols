@@ -61,17 +61,17 @@ contract AmplifiedAmmController is IAmmController, Claimable
             return true;
         }
 
-        // Special case: Always allow updating the virtual balances if the AF = 1
-        if (getAmplificationFactor(pool) == AMPLIFICATION_FACTOR_BASE) {
-            for (uint i = 0; i < balances.length; i++) {
-                if(vBalancesNew[i] != balances[i]) {
-                    return false;
-                }
-            }
-            return true;
+        if (getAmplificationFactor(pool) != AMPLIFICATION_FACTOR_BASE) {
+            return false;
         }
 
-        return false;
+        // Special case: Always allow updating the virtual balances if the AF = 1
+        for (uint i = 0; i < balances.length; i++) {
+            if (vBalancesNew[i] != balances[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     function authorizeCurveChange(address pool)
@@ -103,7 +103,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
     }
 
     function setupPool(
-        LoopringAmmPool pool,
+        LoopringAmmPool             pool,
         AmmData.PoolConfig calldata config
         )
         external
@@ -114,7 +114,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
 
     function enterExitMode(
         LoopringAmmPool pool,
-        bool enabled
+        bool            enabled
         )
         external
         onlyOwner
@@ -126,14 +126,13 @@ contract AmplifiedAmmController is IAmmController, Claimable
 
     function consumeCurveChangeAuthorized(address pool)
         internal
-        returns (bool)
+        returns (bool authorized)
     {
         uint timestamp = curveChangeAuthorization[pool];
-        bool authorized = (timestamp <= block.timestamp) && (block.timestamp <= timestamp + MIN_CURVE_CHANGE_DELAY);
+        authorized = (timestamp <= block.timestamp) &&
+            (block.timestamp <= timestamp + MIN_CURVE_CHANGE_DELAY);
 
         // Remove authorization
         delete curveChangeAuthorization[pool];
-
-        return authorized;
     }
 }

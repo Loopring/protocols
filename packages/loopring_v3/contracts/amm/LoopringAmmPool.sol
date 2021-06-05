@@ -107,6 +107,7 @@ contract LoopringAmmPool is
         external
         onlyFromController
     {
+        require(state.exitMode != enabled, "INVALID_STATE");
         state.exitMode = enabled;
     }
 
