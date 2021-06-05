@@ -61,17 +61,16 @@ contract AmplifiedAmmController is IAmmController, Claimable
             return true;
         }
 
-        // Special case: Always allow updating the virtual balances if the AF = 1
-        if (getAmplificationFactor(pool) == AMPLIFICATION_FACTOR_BASE) {
-            for (uint i = 0; i < balances.length; i++) {
-                if(vBalancesNew[i] != balances[i]) {
-                    return false;
-                }
-            }
-            return true;
+        if (getAmplificationFactor(pool) != AMPLIFICATION_FACTOR_BASE) {
+            return false;
         }
-
-        return false;
+    // Special case: Always allow updating the virtual balances if the AF = 1
+        for (uint i = 0; i < balances.length; i++) {
+            if(vBalancesNew[i] != balances[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     function authorizeCurveChange(address pool)
