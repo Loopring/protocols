@@ -102,13 +102,13 @@ library AmmData
         uint8   feeBips;
         uint    totalSupply;
 
-        Token[]  tokens;
-        uint96[] tokenBalancesL2;
-        uint96[] vTokenBalancesL2;
-
         IAmmController controller;
         IAssetManager  assetManager;
         bool           joinsDisabled;
+
+        Token[]  tokens;
+        uint96[] tokenBalancesL2;
+        uint96[] vTokenBalancesL2;
     }
 
     struct State {

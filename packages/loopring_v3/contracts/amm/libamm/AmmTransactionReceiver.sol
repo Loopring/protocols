@@ -70,12 +70,12 @@ library AmmTransactionReceiver
             poolTokenID: S.poolTokenID,
             feeBips: S.feeBips,
             totalSupply: S._totalSupply,
-            tokens: S.tokens,
-            tokenBalancesL2: new uint96[](size),
-            vTokenBalancesL2: new uint96[](size),
             controller: S.controller,
             assetManager: S.assetManager,
-            joinsDisabled: S.joinsDisabled
+            joinsDisabled: S.joinsDisabled,
+            tokens: S.tokens,
+            tokenBalancesL2: new uint96[](size),
+            vTokenBalancesL2: new uint96[](size)
         });
     }
 
