@@ -24,7 +24,6 @@ contract AmplifiedAmmController is IAmmController, Claimable
     uint public constant CURVE_CHANGE_AUTH_WINDOW = 7 days;
 
     mapping (address => uint) public amplificationFactors;
-
     mapping (address => uint) public curveChangeAuthorization;
 
 
