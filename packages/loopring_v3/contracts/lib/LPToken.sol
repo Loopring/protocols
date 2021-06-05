@@ -19,9 +19,9 @@ contract LPToken is ERC20
     uint8   public decimals;
 
     uint                                         public override totalSupply;
-    mapping(address => uint)                     public override balanceOf;
-    mapping(address => mapping(address => uint)) public override allowance;
-    mapping(address => uint)                     public nonces;
+    mapping (address => uint)                     public override balanceOf;
+    mapping (address => mapping (address => uint)) public override allowance;
+    mapping (address => uint)                     public nonces;
 
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from,  address indexed to,      uint value);

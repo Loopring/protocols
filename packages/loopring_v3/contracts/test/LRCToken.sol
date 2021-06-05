@@ -60,7 +60,7 @@ library SafeMath {
  */
 contract BasicToken is ERC20Basic {
     using SafeMath for uint;
-    mapping(address => uint) balances;
+    mapping (address => uint) balances;
     uint totalSupply_;
     /**
      * @dev total number of tokens in existence
