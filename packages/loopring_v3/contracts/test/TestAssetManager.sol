@@ -8,13 +8,14 @@ import "../lib/TransferUtil.sol";
 import "../amm/LoopringAmmPool.sol";
 import "../amm/IAssetManager.sol";
 
+
 /// @author Brecht Devos - <brecht@loopring.org>
 contract TestAssetManager is IAssetManager, Claimable
 {
     using MathUint         for uint;
     using TransferUtil     for address;
 
-    mapping(address => mapping(address => uint)) public poolBalances;
+    mapping (address => mapping (address => uint)) public poolBalances;
 
     function getBalances(
         address          pool,

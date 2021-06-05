@@ -335,7 +335,6 @@ class DynamicBalanceGadget : public DynamicVariableGadget
     }
 };
 
-
 } // namespace Loopring
 
 #endif

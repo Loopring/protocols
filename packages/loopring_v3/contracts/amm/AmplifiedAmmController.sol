@@ -20,13 +20,11 @@ contract AmplifiedAmmController is IAmmController, Claimable
 
     uint public constant AMPLIFICATION_FACTOR_BASE = (10 ** 18);
 
-    uint public constant MIN_CURVE_CHANGE_DELAY   = 7 days;
+    uint public constant CURVE_CHANGE_MIN_DELAY   = 7 days;
     uint public constant CURVE_CHANGE_AUTH_WINDOW = 7 days;
 
-    mapping(address => uint) public amplificationFactors;
-
-    mapping(address => uint) public curveChangeAuthorization;
-
+    mapping (address => uint) public amplificationFactors;
+    mapping (address => uint) public curveChangeAuthorization;
 
     function getInitialVirtualBalances(
         uint96[] memory joinAmounts
@@ -61,24 +59,25 @@ contract AmplifiedAmmController is IAmmController, Claimable
             return true;
         }
 
-        // Special case: Always allow updating the virtual balances if the AF = 1
-        if (getAmplificationFactor(pool) == AMPLIFICATION_FACTOR_BASE) {
-            for (uint i = 0; i < balances.length; i++) {
-                if(vBalancesNew[i] != balances[i]) {
-                    return false;
-                }
-            }
-            return true;
+        if (getAmplificationFactor(pool) != AMPLIFICATION_FACTOR_BASE) {
+            return false;
         }
 
-        return false;
+        // Special case: Always allow updating the virtual balances if the AF = 1
+        for (uint i = 0; i < balances.length; i++) {
+            if (vBalancesNew[i] != balances[i]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     function authorizeCurveChange(address pool)
         external
         onlyOwner
     {
-        curveChangeAuthorization[pool] = block.timestamp + MIN_CURVE_CHANGE_DELAY;
+        curveChangeAuthorization[pool] = block.timestamp + CURVE_CHANGE_MIN_DELAY;
     }
 
     function setAmplificationFactor(
@@ -103,7 +102,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
     }
 
     function setupPool(
-        LoopringAmmPool pool,
+        LoopringAmmPool             pool,
         AmmData.PoolConfig calldata config
         )
         external
@@ -114,7 +113,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
 
     function enterExitMode(
         LoopringAmmPool pool,
-        bool enabled
+        bool            enabled
         )
         external
         onlyOwner
@@ -126,14 +125,15 @@ contract AmplifiedAmmController is IAmmController, Claimable
 
     function consumeCurveChangeAuthorized(address pool)
         internal
-        returns (bool)
+        returns (bool authorized)
     {
         uint timestamp = curveChangeAuthorization[pool];
-        bool authorized = (timestamp <= block.timestamp) && (block.timestamp <= timestamp + MIN_CURVE_CHANGE_DELAY);
+        authorized = (timestamp <= block.timestamp) && 
+            (block.timestamp <= timestamp + CURVE_CHANGE_AUTH_WINDOW);
 
         // Remove authorization
-        delete curveChangeAuthorization[pool];
-
-        return authorized;
+        if (timestamp > 0) {
+            delete curveChangeAuthorization[pool];
+        }
     }
 }

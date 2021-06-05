@@ -56,7 +56,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     IDepositContract   public immutable depositContract;
 
     mapping (uint => mapping (bytes32 => uint)) public pendingDeposits;
-    mapping (uint => mapping(uint => bool))     public withdrawn;
+    mapping (uint => mapping (uint => bool))    public withdrawn;
     // token -> tokenID
     mapping (address => uint16)                 public cachedTokenIDs;
     uint                                        public batchIDGenerator;
@@ -193,10 +193,10 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
             IBatchDepositor.Deposit[] memory _deposits = depositsList[i];
             for (uint j = 0; j < _deposits.length; j++) {
                 deposit = _deposits[j];
-                if(token != deposit.token) {
+                if (token != deposit.token) {
                     token = deposit.token;
                     tokenIdx = 0;
-                    while(tokenIdx < numDistinctTokens && tokens[tokenIdx].token != token) {
+                    while (tokenIdx < numDistinctTokens && tokens[tokenIdx].token != token) {
                         tokenIdx++;
                     }
                     if (tokenIdx == numDistinctTokens) {
@@ -223,7 +223,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
         }
 
         // Do a normal deposit per token
-        for(uint i = 0; i < numDistinctTokens; i++) {
+        for (uint i = 0; i < numDistinctTokens; i++) {
             if (tokens[i].token == address(0)) {
                 require(tokens[i].amount == msg.value || from == address(this), "INVALID_ETH_DEPOSIT");
             }

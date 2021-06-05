@@ -82,7 +82,7 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             uint ammountInInvalid = 0;
             for (uint i = 0; i < txs.length; i++) {
                 bridgeTx = txs[i];
-                if(valid[i] && bridgeTx.userData.length == 32) {
+                if (valid[i] && bridgeTx.userData.length == 32) {
                     UserSettings memory userSettings = abi.decode(bridgeTx.userData, (UserSettings));
                     uint userAmountOut = uint(bridgeTx.amount).mul(amountOut) / amountInExpected;
                     if (userAmountOut < userSettings.minAmountOut) {
