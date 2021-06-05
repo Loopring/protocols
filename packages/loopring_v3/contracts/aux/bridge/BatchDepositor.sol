@@ -56,7 +56,7 @@ abstract contract BatchDepositor is IBatchDepositor, ReentrancyGuard
     IDepositContract   public immutable depositContract;
 
     mapping (uint => mapping (bytes32 => uint)) public pendingDeposits;
-    mapping (uint => mapping (uint => bool))     public withdrawn;
+    mapping (uint => mapping (uint => bool))    public withdrawn;
     // token -> tokenID
     mapping (address => uint16)                 public cachedTokenIDs;
     uint                                        public batchIDGenerator;

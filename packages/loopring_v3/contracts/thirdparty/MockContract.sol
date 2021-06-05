@@ -86,17 +86,17 @@ contract MockContract is MockInterface {
 	bytes4 public constant SENTINEL_ANY_MOCKS = hex"01";
 
 	// A linked list allows easy iteration and inclusion checks
-	mapping (bytes32 => bytes) calldataMocks;
-	mapping (bytes => MockType) calldataMockTypes;
-	mapping (bytes => bytes) calldataExpectations;
-	mapping (bytes => string) calldataRevertMessage;
-	mapping (bytes32 => uint) calldataInvocations;
+	mapping (bytes32 => bytes)   calldataMocks;
+	mapping (bytes => MockType)  calldataMockTypes;
+	mapping (bytes => bytes)     calldataExpectations;
+	mapping (bytes => string)    calldataRevertMessage;
+	mapping (bytes32 => uint)    calldataInvocations;
 
-	mapping (bytes4 => bytes4) methodIdMocks;
+	mapping (bytes4 => bytes4)   methodIdMocks;
 	mapping (bytes4 => MockType) methodIdMockTypes;
-	mapping (bytes4 => bytes) methodIdExpectations;
-	mapping (bytes4 => string) methodIdRevertMessages;
-	mapping (bytes32 => uint) methodIdInvocations;
+	mapping (bytes4 => bytes)    methodIdExpectations;
+	mapping (bytes4 => string)   methodIdRevertMessages;
+	mapping (bytes32 => uint)    methodIdInvocations;
 
 	MockType fallbackMockType;
 	bytes fallbackExpectation;
