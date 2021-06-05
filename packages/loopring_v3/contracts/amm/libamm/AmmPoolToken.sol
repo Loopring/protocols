@@ -80,7 +80,7 @@ library AmmPoolToken
         uint256               deadline,
         bytes        calldata signature
         )
-        internal
+        public
     {
         require(deadline >= block.timestamp, 'EXPIRED');
 

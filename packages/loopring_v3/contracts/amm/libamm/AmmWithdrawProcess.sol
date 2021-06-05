@@ -28,10 +28,12 @@ library AmmWithdrawProcess
         require(ctx.settings.assetManager != IAssetManager(0), "CANNOT_WITHDRAW_FROM_POOL");
         require(poolWithdrawal.amounts.length == ctx.tokens.length, "INVALID_WITHDRAWAL_AMOUNTS");
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            address token = ctx.tokens[i].addr;
             uint96 amount = poolWithdrawal.amounts[i];
-            verifyWithdrawalTx(ctx, ctx.tokens[i].tokenID, amount);
-            S.balancesL1[token] = S.balancesL1[token].add(amount);
+            if (amount > 0) {
+                address token = ctx.tokens[i].addr;
+                verifyWithdrawalTx(ctx, ctx.tokens[i].tokenID, amount);
+                S.balancesL1[token] = S.balancesL1[token].add(amount);
+            }
         }
     }
 
@@ -76,7 +78,7 @@ library AmmWithdrawProcess
             // withdrawal.fee == 0,
             packedData & 0xffffffffffffffffffffffffffff0000ffff == (uint(tokenID) << 128) | (uint(amount) << 32) &&
             onchainDataHash == dataHash,
-            "INVALID_WITHDRAWAL_TX_DATA"
+            "INVALID_AMM_WITHDRAWAL_TX_DATA"
         );
 
         ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;

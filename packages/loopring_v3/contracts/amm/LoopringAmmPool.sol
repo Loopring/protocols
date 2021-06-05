@@ -79,6 +79,7 @@ contract LoopringAmmPool is
         bool           _joinsDisabled
     )
     {
+        require(_controller != IAmmController(0), "ZERO_ADDRESS");
         controller = _controller;
         assetManager = _assetManager;
         joinsDisabled = _joinsDisabled;
@@ -98,7 +99,15 @@ contract LoopringAmmPool is
         external
         nonReentrant
     {
+        require(state.accountID == 0 || msg.sender == address(controller), "UNAUTHORIZED");
         state.setupPool(config);
+    }
+
+    function enterExitMode(bool enabled)
+        external
+        onlyFromController
+    {
+        state.exitMode = enabled;
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
@@ -113,7 +122,6 @@ contract LoopringAmmPool is
 
     function shutdownByController()
         external
-        payable
         onlyWhenOnline
         nonReentrant
         onlyFromController

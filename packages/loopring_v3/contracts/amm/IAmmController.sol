@@ -18,14 +18,17 @@ interface IAmmController
 
     /// @dev Called by the pool contract when a SET_VIRTUAL_BALANCES operation is done
     ///      on the pool.
-    /// @param tokenBalancesL2 The balances in the pool
-    /// @param vTokenBalancesL2 The current virtual balances in the pool
-    /// @return The new virtual balances in the pool
-    function getVirtualBalances(
-        uint96[] memory tokenBalancesL2,
-        uint96[] memory vTokenBalancesL2
+    /// @param balances The balances in the pool
+    /// @param vBalancesOld The current virtual balances in the pool
+    /// @param vBalancesNew The new virtual balances in the pool
+    /// @param data Custom data
+    /// @return True if vBalancesNew can be used, else false
+    function authorizeVirtualBalances(
+        uint96[] memory balances,
+        uint96[] memory vBalancesOld,
+        uint96[] memory vBalancesNew,
+        bytes    memory data
         )
         external
-        view
-        returns (uint96[] memory);
+        returns (bool);
 }
