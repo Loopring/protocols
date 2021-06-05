@@ -178,12 +178,7 @@ contract LoopringAmmPool is
         // nonReentrant     // Not needed, does not do any external calls
                             // and can only be called by the exchange owner.
     {
-        AmmData.Settings memory settings = AmmData.Settings({
-            controller: controller,
-            assetManager: assetManager,
-            joinsDisabled: joinsDisabled
-        });
-        state.onReceiveTransactions(txsData, callbackData, settings);
+        state.onReceiveTransactions(txsData, callbackData);
     }
 
     function withdrawWhenOffline()

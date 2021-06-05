@@ -88,13 +88,6 @@ library AmmData
         uint16  tokenID;
     }
 
-    struct Settings
-    {
-        IAmmController controller;
-        IAssetManager  assetManager;
-        bool           joinsDisabled;
-    }
-
     struct Context
     {
         // functional parameters
@@ -113,7 +106,9 @@ library AmmData
         uint96[] tokenBalancesL2;
         uint96[] vTokenBalancesL2;
 
-        Settings settings;
+        IAmmController controller;
+        IAssetManager  assetManager;
+        bool           joinsDisabled;
     }
 
     struct State {
@@ -150,6 +145,9 @@ library AmmData
 
         mapping (address => uint96) balancesL1;
 
-        bool        exitMode;
+        IAmmController controller;
+        IAssetManager  assetManager;
+        bool           joinsDisabled;
+        bool           exitMode;
     }
 }

@@ -38,6 +38,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
         uint96[] memory vTokenBalancesL2 = new uint96[](joinAmounts.length);
         for (uint i = 0; i < joinAmounts.length; i++) {
             vTokenBalancesL2[i] = (uint(joinAmounts[i]).mul(amplificationFactor) / AMPLIFICATION_FACTOR_BASE).toUint96();
+            require(vTokenBalancesL2[i] > 0, "ZERO_VIRTUAL_BALANCE");
         }
         return vTokenBalancesL2;
     }

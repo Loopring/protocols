@@ -66,9 +66,11 @@ library AmmUpdateProcess
                 // Bring actual balances and virtual balances from L2 to L1
                 ctx.tokenBalancesL2[i] = /*balance*/uint96(packedDataB & 0xffffffffffffffffffffffff);
                 ctx.vTokenBalancesL2[i] = /*vbalance*/uint96((packedDataB >> 128) & 0xffffffffffffffffffffffff);
+                require(ctx.vTokenBalancesL2[i] > 0, "ZERO_VIRTUAL_BALANCE");
             } else {
                 // Verify new virtual balances are the same value as on L2.
                 require(
+                    ctx.vTokenBalancesL2[i] > 0 &&
                     ctx.vTokenBalancesL2[i] == /*vbalance*/uint96((packedDataB >> 128) & 0xffffffffffffffffffffffff),
                     "INVALID_VIRTUAL_BALANCE_UPDATE"
                 );
@@ -77,7 +79,7 @@ library AmmUpdateProcess
             txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
         }
 
-        if (start && ctx.settings.assetManager != IAssetManager(0)) {
+        if (start && ctx.assetManager != IAssetManager(0)) {
             // Add the L1 balances on top of the balances on L2
             for (uint i = 0; i < ctx.tokens.length; i++) {
                 ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(S.balancesL1[ctx.tokens[i].addr]);

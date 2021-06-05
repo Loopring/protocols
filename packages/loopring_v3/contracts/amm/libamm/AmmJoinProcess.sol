@@ -39,7 +39,7 @@ library AmmJoinProcess
         )
         internal
     {
-        require(!ctx.settings.joinsDisabled, "JOINS_DISABLED");
+        require(!ctx.joinsDisabled, "JOINS_DISABLED");
         require(join.validUntil >= block.timestamp, "EXPIRED");
 
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
@@ -165,7 +165,7 @@ library AmmJoinProcess
 
         if (ctx.totalSupply == 0) {
             // Set virtual balances
-            ctx.vTokenBalancesL2 = ctx.settings.controller.getInitialVirtualBalances(join.joinAmounts);
+            ctx.vTokenBalancesL2 = ctx.controller.getInitialVirtualBalances(join.joinAmounts);
             return(true, AmmData.POOL_TOKEN_BASE.toUint96(), join.joinAmounts);
         }
 
@@ -198,6 +198,7 @@ library AmmJoinProcess
 
             // Update virtual balances
             ctx.vTokenBalancesL2[i] = (uint(ctx.vTokenBalancesL2[i]).mul(newTotalSupply) / ctx.totalSupply).toUint96();
+            require(ctx.vTokenBalancesL2[i] > 0, "ZERO_VIRTUAL_BALANCE");
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

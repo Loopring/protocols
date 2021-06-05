@@ -33,12 +33,11 @@ library AmmTransactionReceiver
     function onReceiveTransactions(
         AmmData.State    storage  S,
         bytes            calldata txsData,
-        bytes            calldata callbackData,
-        AmmData.Settings memory   settings
+        bytes            calldata callbackData
         )
         internal
     {
-        AmmData.Context memory ctx = _getContext(S, txsData, settings);
+        AmmData.Context memory ctx = _getContext(S, txsData);
 
         _processPoolTx(S, ctx, callbackData);
 
@@ -51,8 +50,7 @@ library AmmTransactionReceiver
 
     function _getContext(
         AmmData.State    storage   S,
-        bytes            calldata  txsData,
-        AmmData.Settings memory    settings
+        bytes            calldata  txsData
         )
         private
         view
@@ -75,7 +73,9 @@ library AmmTransactionReceiver
             tokens: S.tokens,
             tokenBalancesL2: new uint96[](size),
             vTokenBalancesL2: new uint96[](size),
-            settings: settings
+            controller: S.controller,
+            assetManager: S.assetManager,
+            joinsDisabled: S.joinsDisabled
         });
     }
 
@@ -150,7 +150,7 @@ library AmmTransactionReceiver
     {
         require(poolVirtualBalances.vBalancesNew.length == ctx.tokens.length, "INVALID_DATA");
         require(
-            ctx.settings.controller.authorizeVirtualBalances(
+            ctx.controller.authorizeVirtualBalances(
                 ctx.tokenBalancesL2,
                 ctx.vTokenBalancesL2,
                 poolVirtualBalances.vBalancesNew,

@@ -205,6 +205,7 @@ library AmmExitProcess
         uint newTotalSupply = ctx.totalSupply.sub(exit.burnAmount);
         for (uint i = 0; i < ctx.tokens.length; i++) {
             ctx.vTokenBalancesL2[i] = (uint(ctx.vTokenBalancesL2[i]).mul(newTotalSupply) / ctx.totalSupply).toUint96();
+            require(ctx.vTokenBalancesL2[i] > 0, "ZERO_VIRTUAL_BALANCE");
         }
 
         return (true, amounts);

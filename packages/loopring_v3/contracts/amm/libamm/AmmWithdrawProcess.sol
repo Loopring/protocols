@@ -25,7 +25,7 @@ library AmmWithdrawProcess
         )
         internal
     {
-        require(ctx.settings.assetManager != IAssetManager(0), "CANNOT_WITHDRAW_FROM_POOL");
+        require(ctx.assetManager != IAssetManager(0), "CANNOT_WITHDRAW_FROM_POOL");
         require(poolWithdrawal.amounts.length == ctx.tokens.length, "INVALID_WITHDRAWAL_AMOUNTS");
         for (uint i = 0; i < ctx.tokens.length; i++) {
             uint96 amount = poolWithdrawal.amounts[i];
@@ -45,10 +45,6 @@ library AmmWithdrawProcess
         internal
         view
     {
-        if (amount == 0) {
-            return;
-        }
-
         bytes20 onchainDataHash = WithdrawTransaction.hashOnchainData(
             0,                  // Withdrawal needs to succeed no matter the gas coast
             address(this),      // Withdraw to this contract first
