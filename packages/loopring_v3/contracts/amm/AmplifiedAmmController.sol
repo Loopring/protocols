@@ -20,7 +20,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
 
     uint public constant AMPLIFICATION_FACTOR_BASE = (10 ** 18);
 
-    uint public constant MIN_CURVE_CHANGE_DELAY   = 7 days;
+    uint public constant CURVE_CHANGE_MIN_DELAY   = 7 days;
     uint public constant CURVE_CHANGE_AUTH_WINDOW = 7 days;
 
     mapping (address => uint) public amplificationFactors;
@@ -77,7 +77,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
         external
         onlyOwner
     {
-        curveChangeAuthorization[pool] = block.timestamp + MIN_CURVE_CHANGE_DELAY;
+        curveChangeAuthorization[pool] = block.timestamp + CURVE_CHANGE_MIN_DELAY;
     }
 
     function setAmplificationFactor(
@@ -129,7 +129,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
     {
         uint timestamp = curveChangeAuthorization[pool];
         authorized = (timestamp <= block.timestamp) && 
-            (block.timestamp <= timestamp + MIN_CURVE_CHANGE_DELAY);
+            (block.timestamp <= timestamp + CURVE_CHANGE_AUTH_WINDOW);
 
         // Remove authorization
         if (timestamp > 0) {
