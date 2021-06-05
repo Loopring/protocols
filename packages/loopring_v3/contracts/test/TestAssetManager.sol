@@ -8,6 +8,7 @@ import "../lib/TransferUtil.sol";
 import "../amm/LoopringAmmPool.sol";
 import "../amm/IAssetManager.sol";
 
+
 /// @author Brecht Devos - <brecht@loopring.org>
 contract TestAssetManager is IAssetManager, Claimable
 {
