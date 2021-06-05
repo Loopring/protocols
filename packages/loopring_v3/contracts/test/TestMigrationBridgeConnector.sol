@@ -76,7 +76,7 @@ contract TestMigrationBridgeConnector is IBridgeConnector
                 require(txs[i].token == settings.token, "WRONG_TOKEN_IN_GROUP");
 
                 address to = bridgeCall.owner;
-                if(bridgeCall.userData.length == 32) {
+                if (bridgeCall.userData.length == 32) {
                     UserSettings memory userSettings = abi.decode(bridgeCall.userData, (UserSettings));
                     to = userSettings.to;
                 }

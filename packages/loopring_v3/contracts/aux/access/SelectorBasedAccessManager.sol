@@ -20,7 +20,7 @@ contract SelectorBasedAccessManager is Claimable
     );
 
     address public immutable target;
-    mapping(address => mapping(bytes4 => bool)) public permissions;
+    mapping (address => mapping (bytes4 => bool)) public permissions;
 
     modifier withAccess(bytes4 selector)
     {

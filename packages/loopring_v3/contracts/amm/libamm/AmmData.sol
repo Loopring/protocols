@@ -122,9 +122,9 @@ library AmmData
         string symbol;
         uint   _totalSupply;
 
-        mapping(address => uint) balanceOf;
-        mapping(address => mapping(address => uint)) allowance;
-        mapping(address => uint) nonces;
+        mapping (address => uint) balanceOf;
+        mapping (address => mapping (address => uint)) allowance;
+        mapping (address => uint) nonces;
 
         // AMM pool state variables
         IAmmSharedConfig sharedConfig;

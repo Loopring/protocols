@@ -188,7 +188,7 @@ library ExchangeData
         bytes32 merkleRoot;
 
         // List of all blocks
-        mapping(uint => BlockInfo) blocks;
+        mapping (uint => BlockInfo) blocks;
         uint  numBlocks;
 
         // List of all tokens

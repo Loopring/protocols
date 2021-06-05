@@ -23,8 +23,8 @@ contract AmplifiedAmmController is IAmmController, Claimable
     uint public constant MIN_CURVE_CHANGE_DELAY   = 7 days;
     uint public constant CURVE_CHANGE_AUTH_WINDOW = 7 days;
 
-    mapping(address => uint) public amplificationFactors;
-    mapping(address => uint) public curveChangeAuthorization;
+    mapping (address => uint) public amplificationFactors;
+    mapping (address => uint) public curveChangeAuthorization;
 
     function getInitialVirtualBalances(
         uint96[] memory joinAmounts
