@@ -37,7 +37,6 @@ library AmmStatus
         require(config.tokens.length == config.weights.length, "INVALID_DATA");
         require(config.tokens.length >= 2, "INVALID_DATA");
         require(config.exchange != address(0), "INVALID_EXCHANGE");
-        require(config.accountID != 0, "INVALID_ACCOUNT_ID");
         require(S._totalSupply == 0, "POOL_IN_USE");
 
         IExchangeV3 exchange = IExchangeV3(config.exchange);
@@ -64,6 +63,7 @@ library AmmStatus
         }
 
         if (S.accountID == 0) { // new pool
+            require(config.accountID != 0, "INVALID_ACCOUNT_ID");
             S.accountID = config.accountID;
             S.poolTokenID = exchange.getTokenID(address(this));
 
@@ -78,7 +78,7 @@ library AmmStatus
                 new bytes(0)
             );
         } else {// reused pool
-            require(S.accountID == config.accountID, "INCONSISTENT_ACCOUNT_ID");
+            require(config.accountID == 0, "INCONSISTENT_ACCOUNT_ID");
         }
     }
 
