@@ -39,10 +39,6 @@ contract LoopringAmmPool is
     event ForcedExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
     event Shutdown(uint timestamp);
 
-    IAmmController public immutable controller;
-    IAssetManager  public immutable assetManager;
-    bool           public immutable joinsDisabled;
-
     modifier onlyFromExchangeOwner()
     {
         require(msg.sender == state.exchangeOwner, "UNAUTHORIZED");
@@ -51,13 +47,13 @@ contract LoopringAmmPool is
 
     modifier onlyFromAssetManager()
     {
-        require(msg.sender == address(assetManager), "UNAUTHORIZED");
+        require(msg.sender == address(state.assetManager), "UNAUTHORIZED");
         _;
     }
 
     modifier onlyFromController()
     {
-        require(msg.sender == address(controller), "UNAUTHORIZED");
+        require(msg.sender == address(state.controller), "UNAUTHORIZED");
         _;
     }
 
@@ -80,9 +76,9 @@ contract LoopringAmmPool is
     )
     {
         require(_controller != IAmmController(0), "ZERO_ADDRESS");
-        controller = _controller;
-        assetManager = _assetManager;
-        joinsDisabled = _joinsDisabled;
+        state.controller = _controller;
+        state.assetManager = _assetManager;
+        state.joinsDisabled = _joinsDisabled;
     }
 
     function isOnline()
@@ -99,7 +95,7 @@ contract LoopringAmmPool is
         external
         nonReentrant
     {
-        require(state.accountID == 0 || msg.sender == address(controller), "UNAUTHORIZED");
+        require(state.accountID == 0 || msg.sender == address(state.controller), "UNAUTHORIZED");
         state.setupPool(config);
     }
 
