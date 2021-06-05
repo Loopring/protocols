@@ -58,6 +58,12 @@ library AmmData
         uint32    validUntil;
     }
 
+    struct PoolVirtualBalances
+    {
+        uint96[]  vBalancesNew;
+        bytes     data;
+    }
+
     struct PoolDeposit
     {
         uint96[]  amounts;
@@ -82,7 +88,8 @@ library AmmData
         uint16  tokenID;
     }
 
-    struct Settings {
+    struct Settings
+    {
         IAmmController controller;
         IAssetManager  assetManager;
         bool           joinsDisabled;

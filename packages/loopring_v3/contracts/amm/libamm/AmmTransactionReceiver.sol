@@ -122,7 +122,10 @@ library AmmTransactionReceiver
             S.approveAmmUpdates(ctx, false);
         } else if (txType == AmmData.PoolTxType.SET_VIRTUAL_BALANCES) {
             S.approveAmmUpdates(ctx, true);
-            ctx.vTokenBalancesL2 = ctx.settings.controller.getVirtualBalances(ctx.tokenBalancesL2, ctx.vTokenBalancesL2);
+            processSetVirtualBalances(
+                ctx,
+                abi.decode(data, (AmmData.PoolVirtualBalances))
+            );
             S.approveAmmUpdates(ctx, false);
         } else if (txType == AmmData.PoolTxType.DEPOSIT) {
             S.processDeposit(
@@ -137,5 +140,24 @@ library AmmTransactionReceiver
         } else {
             revert("INVALID_POOL_TX_TYPE");
         }
+    }
+
+    function processSetVirtualBalances(
+        AmmData.Context             memory  ctx,
+        AmmData.PoolVirtualBalances memory  poolVirtualBalances
+        )
+        internal
+    {
+        require(poolVirtualBalances.vBalancesNew.length == ctx.tokens.length, "INVALID_DATA");
+        require(
+            ctx.settings.controller.authorizeVirtualBalances(
+                ctx.tokenBalancesL2,
+                ctx.vTokenBalancesL2,
+                poolVirtualBalances.vBalancesNew,
+                poolVirtualBalances.data
+            ),
+            "NEW_VIRTUAL_BALANCES_NOT_AUTHORIZED"
+        );
+        ctx.vTokenBalancesL2 = poolVirtualBalances.vBalancesNew;
     }
 }

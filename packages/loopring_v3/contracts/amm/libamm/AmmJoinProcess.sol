@@ -8,11 +8,11 @@ import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
-import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/SafeCast.sol";
 import "./AmmData.sol";
 import "./AmmJoinRequest.sol";
 import "./AmmPoolToken.sol";
+import "./AmmSignature.sol";
 import "./AmmUtil.sol";
 
 
@@ -20,13 +20,13 @@ import "./AmmUtil.sol";
 library AmmJoinProcess
 {
     using AmmPoolToken      for AmmData.State;
+    using AmmSignature      for bytes32;
     using AmmUtil           for AmmData.State;
     using AmmUtil           for AmmData.Context;
     using AmmUtil           for uint96;
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;
-    using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
 
     // event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);

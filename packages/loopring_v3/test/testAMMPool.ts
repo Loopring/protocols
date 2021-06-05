@@ -41,7 +41,9 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     assetManager?: any
   ) => {
     controller = controller ? controller : ammController;
-    const assetManagerAddress = assetManager ? assetManager.address : Constants.zeroAddress;
+    const assetManagerAddress = assetManager
+      ? assetManager.address
+      : Constants.zeroAddress;
 
     const feeBipsAMM = 30;
     const tokens = ["WETH", "GTO"];
@@ -586,7 +588,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await ctx.submitTransactions(16);
 
       await pool.prePoolTransactions();
-      await pool.setVirtualBalances();
+
+      // Set virtual balances to the actual balances
+      const balances = await pool.getBalancesL2();
+      await pool.setVirtualBalances(balances);
 
       await ctx.submitTransactions(16);
       await ctx.submitPendingBlocks();
@@ -1076,9 +1081,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               "INVALID_CHALLENGE"
             );
 
-            const maxForcedExitAge = (
-              await sharedConfig.maxForcedExitAge()
-            ).toNumber();
+            const maxForcedExitAge = (await sharedConfig.maxForcedExitAge()).toNumber();
             // Wait
             await ctx.advanceBlockTimestamp(maxForcedExitAge - 100);
 

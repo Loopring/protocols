@@ -5,23 +5,13 @@ pragma experimental ABIEncoderV2;
 
 import "../../core/iface/IExchangeV3.sol";
 import "../../lib/EIP712.sol";
-import "../../lib/ERC20.sol";
-import "../../lib/MathUint.sol";
-import "../../lib/MathUint96.sol";
-import "../../lib/SignatureUtil.sol";
 import "./AmmData.sol";
-import "./AmmPoolToken.sol";
 import "./IAmmSharedConfig.sol";
 
 
 /// @title AmmStatus
 library AmmStatus
 {
-    using AmmPoolToken      for AmmData.State;
-    using MathUint          for uint;
-    using MathUint96        for uint96;
-    using SignatureUtil     for bytes32;
-
     event Shutdown(uint timestamp);
 
     function isOnline(AmmData.State storage S)

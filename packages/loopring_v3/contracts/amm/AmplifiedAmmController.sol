@@ -20,7 +20,13 @@ contract AmplifiedAmmController is IAmmController, Claimable
 
     uint public constant AMPLIFICATION_FACTOR_BASE = (10 ** 18);
 
+    uint public constant MIN_CURVE_CHANGE_DELAY   = 7 days;
+    uint public constant CURVE_CHANGE_AUTH_WINDOW = 7 days;
+
     mapping(address => uint) public amplificationFactors;
+
+    mapping(address => uint) public curveChangeAuthorization;
+
 
     function getInitialVirtualBalances(
         uint96[] memory joinAmounts
@@ -38,42 +44,59 @@ contract AmplifiedAmmController is IAmmController, Claimable
         return vTokenBalancesL2;
     }
 
-    function getVirtualBalances(
-        uint96[] memory tokenBalancesL2,
-        uint96[] memory /*vTokenBalancesL2*/
+   function authorizeVirtualBalances(
+        uint96[] memory balances,
+        uint96[] memory /*vBalancesOld*/,
+        uint96[] memory vBalancesNew,
+        bytes    memory /*data*/
         )
         external
-        view
         override
-        returns (uint96[] memory)
+        returns (bool)
     {
-        // Only allow updating the virtual balances if the AF = 1
-        require(getAmplificationFactor(msg.sender) == AMPLIFICATION_FACTOR_BASE, "INVALID_OPERATION");
+        address pool = msg.sender;
 
-        // Just set the virtual balances to the actual balances
-        uint96[] memory vTokenBalancesL2 = new uint96[](tokenBalancesL2.length);
-        for (uint i = 0; i < tokenBalancesL2.length; i++) {
-            vTokenBalancesL2[i] = tokenBalancesL2[i];
+        // Check if a curve change was explicitly authorized
+        if (consumeCurveChangeAuthorized(pool)) {
+            return true;
         }
-        return vTokenBalancesL2;
+
+        // Special case: Always allow updating the virtual balances if the AF = 1
+        if (getAmplificationFactor(pool) == AMPLIFICATION_FACTOR_BASE) {
+            for (uint i = 0; i < balances.length; i++) {
+                if(vBalancesNew[i] != balances[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    function authorizeCurveChange(address pool)
+        external
+        onlyOwner
+    {
+        curveChangeAuthorization[pool] = block.timestamp + MIN_CURVE_CHANGE_DELAY;
     }
 
     function setAmplificationFactor(
-        address amm,
+        address pool,
         uint    amplificationFactor
         )
         external
         onlyOwner
     {
-        amplificationFactors[amm] = amplificationFactor;
+        amplificationFactors[pool] = amplificationFactor;
     }
 
-    function getAmplificationFactor(address amm)
+    function getAmplificationFactor(address pool)
         public
         view
         returns (uint amplificationFactor)
     {
-        amplificationFactor = amplificationFactors[amm];
+        amplificationFactor = amplificationFactors[pool];
         if (amplificationFactor == 0) {
             amplificationFactor = AMPLIFICATION_FACTOR_BASE;
         }
@@ -89,10 +112,28 @@ contract AmplifiedAmmController is IAmmController, Claimable
         pool.setupPool(config);
     }
 
-    function enableExitMode(LoopringAmmPool pool)
+    function enterExitMode(
+        LoopringAmmPool pool,
+        bool enabled
+        )
         external
         onlyOwner
     {
-        pool.enableExitMode();
+        pool.enterExitMode(enabled);
+    }
+
+    // == Internal Functions ==
+
+    function consumeCurveChangeAuthorized(address pool)
+        internal
+        returns (bool)
+    {
+        uint timestamp = curveChangeAuthorization[pool];
+        bool authorized = (timestamp <= block.timestamp) && (block.timestamp <= timestamp + MIN_CURVE_CHANGE_DELAY);
+
+        // Remove authorization
+        delete curveChangeAuthorization[pool];
+
+        return authorized;
     }
 }

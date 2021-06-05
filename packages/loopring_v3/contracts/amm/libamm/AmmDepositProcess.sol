@@ -30,11 +30,13 @@ library AmmDepositProcess
     {
         require(poolDeposit.amounts.length == ctx.tokens.length, "INVALID_DEPOSIT_DATA");
         for (uint i = 0; i < ctx.tokens.length; i++) {
-            address token = ctx.tokens[i].addr;
             uint96 amount = poolDeposit.amounts[i];
-            verifyDepositTx(ctx, ctx.tokens[i].tokenID, amount);
-            S.deposit(token, amount);
-            S.balancesL1[token] = S.balancesL1[token].sub(amount);
+            if (amount > 0) {
+                address token = ctx.tokens[i].addr;
+                verifyDepositTx(ctx, ctx.tokens[i].tokenID, amount);
+                S.deposit(token, amount);
+                S.balancesL1[token] = S.balancesL1[token].sub(amount);
+            }
         }
     }
 
@@ -68,7 +70,7 @@ library AmmDepositProcess
             // tokenID == tokenID &&
             packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffffffff == (uint(ExchangeData.TransactionType.DEPOSIT) << 208) | (uint(address(this)) << 48) | (uint(ctx.accountID) << 16) | uint(tokenID) &&
             amount == txAmount,
-            "INVALID_DEPOSIT_TX_DATA"
+            "INVALID_AMM_DEPOSIT_TX_DATA"
         );
 
         ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;

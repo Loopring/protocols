@@ -9,26 +9,26 @@ import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
-import "../../lib/SignatureUtil.sol";
 import "../../lib/TransferUtil.sol";
 import "../../thirdparty/SafeCast.sol";
-import "./AmmUtil.sol";
 import "./AmmData.sol";
 import "./AmmExitRequest.sol";
 import "./AmmPoolToken.sol";
+import "./AmmSignature.sol";
+import "./AmmUtil.sol";
 
 
 /// @title AmmExitProcess
 library AmmExitProcess
 {
     using AmmPoolToken      for AmmData.State;
+    using AmmSignature      for bytes32;
     using AmmUtil           for AmmData.Context;
     using AmmUtil           for uint96;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;
-    using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
     using TransferUtil      for address;
 
