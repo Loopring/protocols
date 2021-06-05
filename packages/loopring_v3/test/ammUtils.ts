@@ -53,6 +53,8 @@ export interface PoolExit {
 export interface PoolVirtualBalances {
   txType?: "SetVirtualBalances";
   poolAddress: string;
+  vBalances: BN[];
+  data: string;
 
   owner?: string;
   signature?: string;
@@ -292,7 +294,8 @@ export class AmmPool {
     vTokenBalancesL2: BN[],
     feeBips: number,
     amplificationFactor: BN,
-    controller?: any
+    controllerAddress?: string,
+    assetManagerAddress?: string
   ) {
     this.sharedConfig = sharedConfig;
     this.feeBips = feeBips;
@@ -302,14 +305,16 @@ export class AmmPool {
 
     this.totalSupply = new BN(0);
 
-    const controllerAddress = controller
-      ? controller.address
+    controllerAddress = controllerAddress
+      ? controllerAddress
       : Constants.zeroAddress;
+
+    console.log("controllerAddress: " + controllerAddress);
 
     const AmmPool = artifacts.require("LoopringAmmPool");
     this.contract = await AmmPool.new(
       controllerAddress,
-      "0x" + "00".repeat(20),
+      assetManagerAddress,
       false
     );
 
@@ -506,12 +511,14 @@ export class AmmPool {
     return exit;
   }
 
-  public async setVirtualBalances() {
+  public async setVirtualBalances(vBalances: BN[], data: string = "0x") {
     const vb: PoolVirtualBalances = {
       txType: "SetVirtualBalances",
       poolAddress: this.contract.address,
       signature: "0x00",
-      owner: Constants.zeroAddress
+      owner: Constants.zeroAddress,
+      vBalances,
+      data
     };
 
     await this.process(vb, undefined);
@@ -520,7 +527,7 @@ export class AmmPool {
   }
 
   public async deposit(amounts: BN[]) {
-    /*const deposit: PoolDeposit = {
+    const deposit: PoolDeposit = {
       txType: "Deposit",
       poolAddress: this.contract.address,
       amounts: amounts,
@@ -530,28 +537,7 @@ export class AmmPool {
 
     await this.process(deposit, undefined);
 
-    return deposit;*/
-
-    const _amounts: string[] = [];
-    for (let i = 0; i < amounts.length; i++) {
-      _amounts[i] = amounts[i].toString(10);
-    }
-
-    await this.ctx.addCallback(
-      this.contract.address,
-      this.contract.contract.methods.depositAssetsToL2(_amounts).encodeABI(),
-      true
-    );
-
-    for (let i = 0; i < this.tokens.length; i++) {
-      if (!amounts[i].isZero()) {
-        await this.ctx.requestDeposit(
-          this.contract.address,
-          this.tokens[i],
-          amounts[i]
-        );
-      }
-    }
+    return deposit;
   }
 
   public async withdraw(amounts: BN[]) {
@@ -840,11 +826,10 @@ export class AmmPool {
         )
       );
     } else if (transaction.txType === "SetVirtualBalances") {
-      // Set virtual balances
-      for (let i = 0; i < this.tokens.length; i++) {
-        this.vTokenBalancesL2[i] = this.tokenBalancesL2[i]
-          .mul(this.amplificationFactor)
-          .div(this.AMPLIFICATION_FACTOR_BASE);
+      const poolVirtualBalances = transaction;
+      this.vTokenBalancesL2 = poolVirtualBalances.vBalances;
+      for (const vBalance of poolVirtualBalances.vBalances) {
+        logDebug("setVirtualBalance: " + vBalance.toString(10));
       }
     } else if (transaction.txType === "Deposit") {
       const deposit = transaction;
@@ -936,6 +921,19 @@ export class AmmPool {
     );
   }
 
+  public static getPoolSetVirtualBalancesAuxData(
+    poolVirtualBalances: PoolVirtualBalances
+  ) {
+    const vBalances: string[] = [];
+    for (const vBalance of poolVirtualBalances.vBalances) {
+      vBalances.push(vBalance.toString(10));
+    }
+    return web3.eth.abi.encodeParameter("tuple(uint96[],bytes)", [
+      vBalances,
+      poolVirtualBalances.data
+    ]);
+  }
+
   public static getPoolDepositAuxData(deposit: PoolDeposit) {
     const amounts: string[] = [];
     for (const amount of deposit.amounts) {
@@ -973,7 +971,7 @@ export class AmmPool {
     } else if (transaction.txType === "SetVirtualBalances") {
       poolTx = {
         txType: PoolTransactionType.SET_VIRTUAL_BALANCES,
-        data: "0x",
+        data: this.getPoolSetVirtualBalancesAuxData(transaction),
         signature: transaction.signature
       };
     } else if (transaction.txType === "Deposit") {

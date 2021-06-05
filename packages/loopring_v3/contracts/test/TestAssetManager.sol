@@ -6,14 +6,31 @@ import "../lib/Claimable.sol";
 import "../lib/MathUint.sol";
 import "../lib/TransferUtil.sol";
 import "../amm/LoopringAmmPool.sol";
+import "../amm/IAssetManager.sol";
+
 
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TestAssetManager is Claimable
+contract TestAssetManager is IAssetManager, Claimable
 {
     using MathUint         for uint;
     using TransferUtil     for address;
 
-    mapping(address => mapping(address => uint)) public poolBalances;
+    mapping (address => mapping (address => uint)) public poolBalances;
+
+    function getBalances(
+        address          pool,
+        address[] memory tokens
+        )
+        public
+        view
+        returns (uint[] memory)
+    {
+        uint[] memory balances = new uint[](tokens.length);
+        for (uint i = 0; i < tokens.length; i++) {
+            balances[i] = poolBalances[address(pool)][tokens[i]];
+        }
+        return balances;
+    }
 
     function withdraw(
         LoopringAmmPool pool,
@@ -55,7 +72,7 @@ contract TestAssetManager is Claimable
         require(!pool.isOnline(), "POOL_NOT_OFFLINE");
 
         uint amount = poolBalances[address(pool)][token];
-        poolBalances[address(pool)][token] = 0;
+        delete poolBalances[address(pool)][token];
 
         token.transferOut(address(pool), amount);
     }

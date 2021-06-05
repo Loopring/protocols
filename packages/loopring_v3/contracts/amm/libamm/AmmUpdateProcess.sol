@@ -7,16 +7,19 @@ import "../../aux/transactions/TransactionReader.sol";
 import "../../core/impl/libtransactions/AmmUpdateTransaction.sol";
 import "./AmmData.sol";
 import "./AmmUtil.sol";
+import "../../lib/MathUint96.sol";
 
 
 /// @title AmmUpdateProcess
 library AmmUpdateProcess
 {
+    using MathUint96        for uint96;
     using TransactionReader for ExchangeData.Block;
 
     function approveAmmUpdates(
-        AmmData.Context    memory   ctx,
-        bool                        start
+        AmmData.State      storage S,
+        AmmData.Context    memory  ctx,
+        bool                       start
         )
         internal
         view
@@ -60,9 +63,11 @@ library AmmUpdateProcess
             );
 
             if (start) {
+                // Bring actual balances and virtual balances from L2 to L1
                 ctx.tokenBalancesL2[i] = /*balance*/uint96(packedDataB & 0xffffffffffffffffffffffff);
                 ctx.vTokenBalancesL2[i] = /*vbalance*/uint96((packedDataB >> 128) & 0xffffffffffffffffffffffff);
             } else {
+                // Verify new virtual balances are the same value as on L2.
                 require(
                     ctx.vTokenBalancesL2[i] == /*vbalance*/uint96((packedDataB >> 128) & 0xffffffffffffffffffffffff),
                     "INVALID_VIRTUAL_BALANCE_UPDATE"
@@ -70,6 +75,13 @@ library AmmUpdateProcess
             }
 
             txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
+        }
+
+        if (start && ctx.settings.assetManager != IAssetManager(0)) {
+            // Add the L1 balances on top of the balances on L2
+            for (uint i = 0; i < ctx.tokens.length; i++) {
+                ctx.tokenBalancesL2[i] = ctx.tokenBalancesL2[i].add(S.balancesL1[ctx.tokens[i].addr]);
+            }
         }
 
         ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE * ctx.tokens.length;

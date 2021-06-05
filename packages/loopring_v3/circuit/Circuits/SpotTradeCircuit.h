@@ -201,10 +201,30 @@ class SpotTradeCircuit : public BaseTransactionCircuit
           vfills_B_A(pb, orderA.amm.packed, fillS_B.value(), state.constants._0, FMT(prefix, ".vfills_B_A")),
           vfills_S_B(pb, orderB.amm.packed, fillS_B.value(), state.constants._0, FMT(prefix, ".vfills_S_B")),
           vfills_B_B(pb, orderB.amm.packed, fillS_A.value(), state.constants._0, FMT(prefix, ".vfills_B_B")),
-          update_vbalanceS_A(pb, state.accountA.balanceS.weightAMM, vfills_S_A.result(), NUM_BITS_AMOUNT, FMT(prefix, ".update_vbalanceS_A")),
-          update_vbalanceB_A(pb, state.accountA.balanceB.weightAMM, vfills_B_A.result(), NUM_BITS_AMOUNT, FMT(prefix, ".update_vbalanceB_A")),
-          update_vbalanceS_B(pb, state.accountB.balanceS.weightAMM, vfills_S_B.result(), NUM_BITS_AMOUNT, FMT(prefix, ".update_vbalanceS_B")),
-          update_vbalanceB_B(pb, state.accountB.balanceB.weightAMM, vfills_B_B.result(), NUM_BITS_AMOUNT, FMT(prefix, ".update_vbalanceB_B")),
+          update_vbalanceS_A(
+            pb,
+            state.accountA.balanceS.weightAMM,
+            vfills_S_A.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".update_vbalanceS_A")),
+          update_vbalanceB_A(
+            pb,
+            state.accountA.balanceB.weightAMM,
+            vfills_B_A.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".update_vbalanceB_A")),
+          update_vbalanceS_B(
+            pb,
+            state.accountB.balanceS.weightAMM,
+            vfills_S_B.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".update_vbalanceS_B")),
+          update_vbalanceB_B(
+            pb,
+            state.accountB.balanceB.weightAMM,
+            vfills_B_B.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".update_vbalanceB_B")),
 
           validateAMM(
             pb,

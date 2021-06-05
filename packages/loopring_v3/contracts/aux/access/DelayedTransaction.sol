@@ -110,11 +110,11 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
     {
         // First cache all transactions ids of the transactions we will remove
         uint[] memory transactionIds = new uint[](pendingTransactions.length);
-        for(uint i = 0; i < pendingTransactions.length; i++) {
+        for (uint i = 0; i < pendingTransactions.length; i++) {
             transactionIds[i] = pendingTransactions[i].id;
         }
         // Now remove all delayed transactions
-        for(uint i = 0; i < transactionIds.length; i++) {
+        for (uint i = 0; i < transactionIds.length; i++) {
             cancelTransactionInternal(transactionIds[i]);
         }
     }

@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../../core/iface/ExchangeData.sol";
 import "../../core/iface/IExchangeV3.sol";
 import "../IAmmController.sol";
+import "../IAssetManager.sol";
 import "./IAmmSharedConfig.sol";
 
 
@@ -57,6 +58,12 @@ library AmmData
         uint32    validUntil;
     }
 
+    struct PoolVirtualBalances
+    {
+        uint96[]  vBalancesNew;
+        bytes     data;
+    }
+
     struct PoolDeposit
     {
         uint96[]  amounts;
@@ -81,9 +88,10 @@ library AmmData
         uint16  tokenID;
     }
 
-    struct Settings {
+    struct Settings
+    {
         IAmmController controller;
-        address        assetManager;
+        IAssetManager  assetManager;
         bool           joinsDisabled;
     }
 
@@ -114,9 +122,9 @@ library AmmData
         string symbol;
         uint   _totalSupply;
 
-        mapping(address => uint) balanceOf;
-        mapping(address => mapping(address => uint)) allowance;
-        mapping(address => uint) nonces;
+        mapping (address => uint)                      balanceOf;
+        mapping (address => mapping (address => uint)) allowance;
+        mapping (address => uint)                      nonces;
 
         // AMM pool state variables
         IAmmSharedConfig sharedConfig;
@@ -139,5 +147,9 @@ library AmmData
         // A map from a user to the forced exit.
         mapping (address => PoolExit) forcedExit;
         mapping (bytes32 => bool) approvedTx;
+
+        mapping (address => uint96) balancesL1;
+
+        bool        exitMode;
     }
 }
