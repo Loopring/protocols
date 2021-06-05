@@ -26,10 +26,6 @@ contract AmplifiedAmmController is IAmmController, Claimable
     mapping(address => uint) public amplificationFactors;
     mapping(address => uint) public curveChangeAuthorization;
 
-
-    mapping(address => uint) public curveChangeAuthorization;
-
-
     function getInitialVirtualBalances(
         uint96[] memory joinAmounts
         )
@@ -73,6 +69,8 @@ contract AmplifiedAmmController is IAmmController, Claimable
                 return false;
             }
         }
+
+        return true;
     }
 
     function authorizeCurveChange(address pool)
