@@ -166,5 +166,65 @@ describe("wallet", () => {
       );
       expect(addEvent2.guardian).to.equal(newGuardians[1]);
     });
+
+    it.only("recover with duplicated guardians", async () => {
+      const owner = await account1.getAddress();
+      const newOwner = await account2.getAddress();
+      const validUntil = 9999999999;
+      const guardian1 = ethers.Wallet.createRandom();
+      const guardian2 = ethers.Wallet.createRandom();
+
+      const wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
+        guardian1.address,
+        guardian2.address
+      ]);
+      const masterCopy = await wallet.getMasterCopy();
+
+      // console.log("guardian1.privateKey:", guardian1.privateKey);
+      const newGuardians = ["0x" + "11".repeat(20), "0x" + "11".repeat(20), "0x" + "11".repeat(20)];
+      const sig1 = signRecover(
+        masterCopy,
+        wallet.address,
+        new BN(validUntil),
+        newOwner,
+        newGuardians,
+        guardian1.address,
+        guardian1.privateKey.slice(2)
+      );
+      const sig1Bs = Buffer.from(sig1.txSignature.slice(2), "hex");
+
+      const sig2 = signRecover(
+        masterCopy,
+        wallet.address,
+        new BN(validUntil),
+        newOwner,
+        newGuardians,
+        guardian2.address,
+        guardian2.privateKey.slice(2)
+      );
+      const sig2Bs = Buffer.from(sig2.txSignature.slice(2), "hex");
+
+      const sortedSigs = sortSignersAndSignatures(
+        [guardian1.address, guardian2.address],
+        [sig1Bs, sig2Bs]
+      );
+
+      const approval = {
+        signers: sortedSigs.sortedSigners,
+        signatures: sortedSigs.sortedSignatures,
+        validUntil,
+        wallet: wallet.address
+      };
+
+      const tx = await wallet.recover(approval, newOwner, newGuardians);
+      const receipt = await tx.wait();
+      // console.log("receipt:", receipt);
+
+      const guardiansInContract = await wallet.getGuardians(true);
+      // console.log("guardiansInContract:", guardiansInContract);
+      expect(guardiansInContract.length).to.equal(1);
+
+    });
+
   });
 });
