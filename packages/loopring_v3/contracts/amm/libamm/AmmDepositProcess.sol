@@ -48,10 +48,6 @@ library AmmDepositProcess
         internal
         view
     {
-        if (amount == 0) {
-            return;
-        }
-
         // Verify deposit data
         // Start by reading the first 27 bytes into packedData
         uint txsDataPtr = ctx.txsDataPtr + 27;
@@ -68,8 +64,10 @@ library AmmDepositProcess
             // owner == address(this) &&
             // accountID == ctx.accountID &&
             // tokenID == tokenID &&
-            packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffffffff == (uint(ExchangeData.TransactionType.DEPOSIT) << 208) | (uint(address(this)) << 48) | (uint(ctx.accountID) << 16) | uint(tokenID) &&
-            amount == txAmount,
+            packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffffffff == (uint(ExchangeData.TransactionType.DEPOSIT) << 208) |
+            (uint(address(this)) << 48) |
+            (uint(ctx.accountID) << 16) |
+            uint(tokenID) && amount == txAmount,
             "INVALID_AMM_DEPOSIT_TX_DATA"
         );
 

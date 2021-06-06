@@ -198,6 +198,7 @@ library AmmJoinProcess
 
             // Update virtual balances
             ctx.vTokenBalancesL2[i] = (uint(ctx.vTokenBalancesL2[i]).mul(newTotalSupply) / ctx.totalSupply).toUint96();
+            require(ctx.vTokenBalancesL2[i] > 0, "ZERO_VIRTUAL_BALANCE");
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

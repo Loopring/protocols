@@ -45,10 +45,6 @@ library AmmWithdrawProcess
         internal
         view
     {
-        if (amount == 0) {
-            return;
-        }
-
         bytes20 onchainDataHash = WithdrawTransaction.hashOnchainData(
             0,                  // Withdrawal needs to succeed no matter the gas coast
             address(this),      // Withdraw to this contract first
