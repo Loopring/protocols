@@ -35,13 +35,12 @@ library GuardianLib
     event GuardianAdded   (address guardian, uint effectiveTime);
     event GuardianRemoved (address guardian, uint effectiveTime);
 
-    function setInitialGuardians(
+    function addGuardiansImmediately(
         Wallet    storage wallet,
         address[] memory  _guardians
         )
         external
     {
-        require(_guardians.length < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
         address guardian = address(0);
         for (uint i = 0; i < _guardians.length; i++) {
             require(_guardians[i] > guardian, "INVALID_ORDERING");
@@ -317,7 +316,7 @@ library GuardianLib
 
         uint pos = wallet.guardianIdx[addr];
 
-        if(pos == 0) {
+        if (pos == 0) {
             // Add the new guardian
             Guardian memory _g = Guardian(
                 addr,
