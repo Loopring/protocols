@@ -64,10 +64,8 @@ library AmmDepositProcess
             // owner == address(this) &&
             // accountID == ctx.accountID &&
             // tokenID == tokenID &&
-            packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffffffff == (uint(ExchangeData.TransactionType.DEPOSIT) << 208) |
-            (uint(address(this)) << 48) |
-            (uint(ctx.accountID) << 16) |
-            uint(tokenID) && amount == txAmount,
+            packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffffffff == (uint(ExchangeData.TransactionType.DEPOSIT) << 208) | (uint(address(this)) << 48) | (uint(ctx.accountID) << 16) | uint(tokenID) &&
+            amount == txAmount,
             "INVALID_AMM_DEPOSIT_TX_DATA"
         );
 

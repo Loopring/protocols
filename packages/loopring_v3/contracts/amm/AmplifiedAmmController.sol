@@ -129,7 +129,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
         returns (bool authorized)
     {
         uint timestamp = curveChangeAuthorization[pool];
-        authorized = (timestamp <= block.timestamp) && 
+        authorized = (timestamp <= block.timestamp) &&
             (block.timestamp <= timestamp + CURVE_CHANGE_AUTH_WINDOW);
 
         // Remove authorization
