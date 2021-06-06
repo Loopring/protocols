@@ -41,7 +41,7 @@ describe("wallet", () => {
   });
 
   describe("MetaTx", () => {
-    it.only("recover", async () => {
+    it("recover", async () => {
       const owner = await account1.getAddress();
       const newOwner = await account2.getAddress();
       const validUntil = 9999999999;
