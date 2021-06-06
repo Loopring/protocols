@@ -42,8 +42,11 @@ library GuardianLib
         external
     {
         require(_guardians.length < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
-         for (uint i = 0; i < _guardians.length; i++) {
-            _addGuardian(wallet, _guardians[i], 0, true);
+        address guardian = address(0);
+        for (uint i = 0; i < _guardians.length; i++) {
+            require(_guardians[i] > guardian, "INVALID_ORDERING");
+            guardian = _guardians[i];
+            _addGuardian(wallet, guardian, 0, true);
         }
     }
 

@@ -56,6 +56,7 @@ library RecoverLib
 
         wallet.owner = newOwner;
         wallet.setLock(address(this), false);
+
         if (newGuardians.length > 0) {
             wallet.removeAllGuardians();
             for (uint i = 0; i < newGuardians.length; i++) {
