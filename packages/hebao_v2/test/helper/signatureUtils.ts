@@ -12,6 +12,19 @@ export interface SignedRequest {
   wallet: string;
 }
 
+export interface MetaTx {
+  sender: string;
+  to: string;
+  nonce: BN;
+  gasToken: string;
+  gasPrice: BN;
+  gasLimit: BN;
+  gasOverhead: BN;
+  requiresSuccess: boolean;
+  data: Buffer;
+  signature: Buffer;
+}
+
 function encodeAddressesPacked(addrs: string[]) {
   const addrsBs = Buffer.concat(
     addrs.map(a => Buffer.from("00".repeat(12) + a.slice(2), "hex"))
@@ -142,6 +155,49 @@ export function signRecover(
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
 
   const txSignature = sign2(signer, privateKey, hash);
+  return { txSignature, hash };
+}
+
+export function signMetaTx(
+  masterCopy: string,
+  metaTx: MetaTx,
+  signer: string
+) {
+  const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
+  const TYPE_STR =
+    "MetaTx(address relayer,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,bytes data)";
+  const METATX_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
+
+  const encodedMetaTx = ethAbi.encodeParameters(
+    [
+      "bytes32",
+      "address",
+      "address",
+      "uint256",
+      "address",
+      "uint256",
+      "uint256",
+      "uint256",
+      "bool",
+      "bytes32"
+    ],
+    [
+      METATX_TYPEHASH,
+      metaTx.sender,
+      metaTx.to,
+      metaTx.nonce,
+      metaTx.gasToken,
+      metaTx.gasPrice,
+      metaTx.gasLimit,
+      metaTx.gasOverhead,
+      metaTx.requiresSuccess,
+      ethUtil.keccak(metaTx.data)
+    ]
+  );
+
+  const hash = eip712.hashPacked(domainSeprator, encodedMetaTx);
+
+  const txSignature = sign(signer, hash);
   return { txSignature, hash };
 }
 

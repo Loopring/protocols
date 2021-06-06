@@ -25,7 +25,7 @@ library RecoverLib
         "recover(address wallet,uint256 validUntil,address newOwner,address[] newGuardians)"
     );
 
-    /// @dev Recover a wallet by setting a new owner and reset guardians.
+    /// @dev Recover a wallet by setting a new owner and guardians.
     /// @param approval The approval.
     /// @param newOwner The new owner address to set.
     /// @param newGuardians The new guardians addresses to set.

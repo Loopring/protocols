@@ -100,7 +100,7 @@ describe("wallet", () => {
       expect(newOwnerInContract).to.equal(newOwner);
     });
 
-    it.only("should be able to reset guardians when recovering a wallet", async () => {
+    it("should be able to reset guardians when recovering a wallet", async () => {
       const owner = await account1.getAddress();
       const newOwner = await account2.getAddress();
       const validUntil = 9999999999;
