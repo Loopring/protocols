@@ -108,12 +108,12 @@ contract SmartWallet is ERC1271
         require(owner != address(0), "INVALID_OWNER");
 
         wallet.owner = owner;
-        if (guardians.length != 0) {
-            wallet.setInitialGuardians(guardians);
-        }
+        wallet.addGuardiansImmediately(guardians);
+
         if (quota != 0) {
             wallet.setQuota(quota, 0);
         }
+
         if (inheritor != address(0)) {
             wallet.setInheritor(inheritor, 365 days);
         }

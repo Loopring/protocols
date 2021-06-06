@@ -56,12 +56,13 @@ library RecoverLib
 
         wallet.owner = newOwner;
         wallet.setLock(address(this), false);
+
         if (newGuardians.length > 0) {
-            wallet.removeAllGuardians();
             for (uint i = 0; i < newGuardians.length; i++) {
                 require(newGuardians[i] != newOwner, "INVALID_NEW_WALLET_GUARDIAN");
             }
-            wallet.setInitialGuardians(newGuardians);
+            wallet.removeAllGuardians();
+            wallet.addGuardiansImmediately(newGuardians);
         } else {
             if (wallet.isGuardian(newOwner, true)) {
                 wallet.deleteGuardian(newOwner, block.timestamp, true);
