@@ -167,7 +167,7 @@ describe("wallet", () => {
       expect(addEvent2.guardian).to.equal(newGuardians[1]);
     });
 
-    it.only("recover with duplicated guardians", async () => {
+    it("recover with duplicated guardians", async () => {
       const owner = await account1.getAddress();
       const newOwner = await account2.getAddress();
       const validUntil = 9999999999;
@@ -216,14 +216,13 @@ describe("wallet", () => {
         wallet: wallet.address
       };
 
-      const tx = await wallet.recover(approval, newOwner, newGuardians);
-      const receipt = await tx.wait();
-      // console.log("receipt:", receipt);
+      try {
+        const tx = await wallet.recover(approval, newOwner, newGuardians);
+      } catch (err) {
+        // console.log(err.message);
+        expect(err.message.includes("INVALID_ORDERING"));
 
-      const guardiansInContract = await wallet.getGuardians(true);
-      // console.log("guardiansInContract:", guardiansInContract);
-      expect(guardiansInContract.length).to.equal(1);
-
+      }
     });
 
   });

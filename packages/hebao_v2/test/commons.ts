@@ -136,7 +136,7 @@ export async function newWallet(
   guardians?: string[]
 ) {
   const walletFactory = await newWalletFactoryContract();
-  const _guardians = guardians ? guardians : [];
+  const _guardians = guardians ? sortAddrs(guardians) : [];
 
   const signature = signCreateWallet(
     walletFactory.address,
@@ -263,4 +263,12 @@ export function sortSignersAndSignatures(
   });
   const sortedSignatures = sortedSigners.map(s => sigMap.get(s));
   return { sortedSigners, sortedSignatures };
+}
+
+function sortAddrs(addrs: string[]) {
+  return addrs.sort((a, b) => {
+    const numA = parseInt(a.slice(2, 10), 16);
+    const numB = parseInt(b.slice(2, 10), 16);
+    return numA - numB;
+  });
 }
