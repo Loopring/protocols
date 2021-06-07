@@ -3,12 +3,12 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./IAmmController.sol";
 import "../amm/LoopringAmmPool.sol";
 import "../lib/Claimable.sol";
 import "../lib/MathUint.sol";
 import "../lib/MathUint96.sol";
 import "../thirdparty/SafeCast.sol";
+import "./IAmmController.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
