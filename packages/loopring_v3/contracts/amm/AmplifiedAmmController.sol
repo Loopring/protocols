@@ -23,13 +23,13 @@ contract AmplifiedAmmController is IAmmController, Claimable
     uint public constant CURVE_CHANGE_MIN_DELAY   = 7 days;
     uint public constant CURVE_CHANGE_AUTH_WINDOW = 7 days;
 
-    mapping (address => uint) public amplificationFactors;
+    mapping (address => uint) amplificationFactors;
     mapping (address => uint) public curveChangeAuthorization;
 
     function getInitialVirtualBalances(
         uint96[] memory joinAmounts
         )
-        external
+        public
         view
         override
         returns (uint96[] memory)
@@ -60,11 +60,11 @@ contract AmplifiedAmmController is IAmmController, Claimable
             return true;
         }
 
-        if (getAmplificationFactor(pool) != AMPLIFICATION_FACTOR_BASE) {
+        // Allow setting virtual balance to 1x if AF is not configged for the pool.
+        if (amplificationFactors[pool] != 0) {
             return false;
         }
 
-        // Special case: Always allow updating the virtual balances if the AF = 1
         for (uint i = 0; i < balances.length; i++) {
             if (vBalancesNew[i] != balances[i]) {
                 return false;

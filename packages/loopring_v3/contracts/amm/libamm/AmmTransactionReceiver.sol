@@ -12,23 +12,25 @@ import "./AmmExitProcess.sol";
 import "./AmmJoinProcess.sol";
 import "./AmmPoolToken.sol";
 import "./AmmUpdateProcess.sol";
+import "./AmmVirtualBalanceProcess.sol";
 import "./AmmWithdrawProcess.sol";
 
 
 /// @title AmmTransactionReceiver
 library AmmTransactionReceiver
 {
-    using AmmDepositProcess  for AmmData.State;
-    using AmmExitProcess     for AmmData.State;
-    using AmmJoinProcess     for AmmData.State;
-    using AmmPoolToken       for AmmData.State;
-    using AmmUtil            for AmmData.State;
-    using AmmUpdateProcess   for AmmData.State;
-    using AmmWithdrawProcess for AmmData.State;
-    using BlockReader        for bytes;
-    using MathUint           for uint;
-    using MathUint96         for uint96;
-    using SafeCast           for uint;
+    using AmmDepositProcess         for AmmData.State;
+    using AmmExitProcess            for AmmData.State;
+    using AmmJoinProcess            for AmmData.State;
+    using AmmPoolToken              for AmmData.State;
+    using AmmUtil                   for AmmData.State;
+    using AmmUpdateProcess          for AmmData.State;
+    using AmmVirtualBalanceProcess  for AmmData.State;
+    using AmmWithdrawProcess        for AmmData.State;
+    using BlockReader               for bytes;
+    using MathUint                  for uint;
+    using MathUint96                for uint96;
+    using SafeCast                  for uint;
 
     function onReceiveTransactions(
         AmmData.State    storage  S,
@@ -122,7 +124,7 @@ library AmmTransactionReceiver
             S.approveAmmUpdates(ctx, false);
         } else if (txType == AmmData.PoolTxType.SET_VIRTUAL_BALANCES) {
             S.approveAmmUpdates(ctx, true);
-            processSetVirtualBalances(
+            S.processSetVirtualBalances(
                 ctx,
                 abi.decode(data, (AmmData.PoolVirtualBalances))
             );
@@ -140,24 +142,5 @@ library AmmTransactionReceiver
         } else {
             revert("INVALID_POOL_TX_TYPE");
         }
-    }
-
-    function processSetVirtualBalances(
-        AmmData.Context             memory  ctx,
-        AmmData.PoolVirtualBalances memory  poolVirtualBalances
-        )
-        internal
-    {
-        require(poolVirtualBalances.vBalancesNew.length == ctx.tokens.length, "INVALID_DATA");
-        require(
-            ctx.settings.controller.authorizeVirtualBalances(
-                ctx.tokenBalancesL2,
-                ctx.vTokenBalancesL2,
-                poolVirtualBalances.vBalancesNew,
-                poolVirtualBalances.data
-            ),
-            "NEW_VIRTUAL_BALANCES_NOT_AUTHORIZED"
-        );
-        ctx.vTokenBalancesL2 = poolVirtualBalances.vBalancesNew;
     }
 }

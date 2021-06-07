@@ -5,9 +5,9 @@ pragma experimental ABIEncoderV2;
 
 import "../../aux/transactions/TransactionReader.sol";
 import "../../core/impl/libtransactions/AmmUpdateTransaction.sol";
+import "../../lib/MathUint96.sol";
 import "./AmmData.sol";
 import "./AmmUtil.sol";
-import "../../lib/MathUint96.sol";
 
 
 /// @title AmmUpdateProcess
