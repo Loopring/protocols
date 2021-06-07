@@ -48,10 +48,6 @@ library AmmDepositProcess
         internal
         view
     {
-        if (amount == 0) {
-            return;
-        }
-
         // Verify deposit data
         // Start by reading the first 27 bytes into packedData
         uint txsDataPtr = ctx.txsDataPtr + 27;
