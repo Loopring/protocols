@@ -60,7 +60,7 @@ export default {
       accounts: loadTestAccounts().map(item => item.privateKey)
     },
 
-    arbitrum: {
+    arbitrum_test5: {
       chainId: 144545313136048,
       url: "https://kovan5.arbitrum.io/rpc",
       gas: "auto",
@@ -71,6 +71,17 @@ export default {
       accounts: loadTestAccounts()
         .map(item => item.privateKey)
         .slice()
+    },
+
+    arbitrum_one: {
+      chainId: 42161,
+      url: "https://arb1.arbitrum.io/rpc",
+      gas: "auto",
+      gasPrice: "auto",
+      gasMultiplier: 1,
+      timeout: 20000,
+      httpHeaders: undefined,
+      accounts: ["priv-key-str"]
     }
   },
 
