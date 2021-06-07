@@ -1919,6 +1919,57 @@
     tokenSymbol: 'LP-FLX-ETH'
   }
   ```
+  
+  107. RICE-USDT: 0xd0406913f2f58d1696eb9c3677e6713dd528f8cd
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-RICE-USDT',
+    accountID: 107,
+    tokens: [
+      '0xbD9908b0Cdd50386F92efCC8e1d71766C2782Df0',
+      '0xdac17f958d2ee523a2206206994597c13d831ec7'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-RICE-USDT'
+  }
+  ```
+
+  108. LRC-USDC: 0x194db39e4c99f6c8dd81b4647465f7599f3c215a
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-LRC-USDC',
+    accountID: 108,
+    tokens: [
+      '0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD',
+      '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-LRC-USDC'
+  }
+  ```
+  
+  109. RENDOGE-ETH: 0xc50138e6b5c85622e4b8ab9003eb0bd35dcf6f78
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-RENDOGE-ETH',
+    accountID: 109,
+    tokens: [
+      '0x3832d2F059E55934220881F831bE501D180671A7',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-RENDOGE-ETH'
+  }
+  ```
   ***
 
 - Registered tokens:
@@ -2153,3 +2204,9 @@
   - LP-DPR-ETH: 0x3ec139b45558d1db73b889f887624ef117d28e3b, tokenId: 228
   - FLX: 0x6243d8CEA23066d098a15582d81a598b4e8391F4, tokenId: 229
   - LP-FLX-ETH: 0x1cb97a1fdcbc60f112b5a58896906bdb870bc438, tokenId: 230
+  - ~~renDOGE: 0x3832d2F059E55934220881F831bE501D180671A7, tokenId: 231~~
+  - RICE: 0xbD9908b0Cdd50386F92efCC8e1d71766C2782Df0, tokenId: 232
+  - LP-renDOGE-ETH: 0xa186e201225e468218d53f3f9b42012022d425f3, tokenId: 233
+  - LP-RICE-USDT: 0xd0406913f2f58d1696eb9c3677e6713dd528f8cd, tokenId: 234
+  - LP-LRC-USDC: 0x194db39e4c99f6c8dd81b4647465f7599f3c215a, tokenId: 235
+  - - LP-RENDOGE-ETH: 0xc50138e6b5c85622e4b8ab9003eb0bd35dcf6f78, tokenId: 236
