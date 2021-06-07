@@ -5,8 +5,13 @@ import { signCreateWallet } from "../test/helper/signatureUtils";
 import BN = require("bn.js");
 
 async function newWallet() {
-  const smartWalletAddress = "0x19F3338C71a16696D27B68DEF0d2fB27Aa4b8807";
-  const walletFactoryAddress = "0x44B74caF7CB28cC243EaA9D1d1b3eCb2Ddc2C9f1";
+  // walletFactory and smartWallet contract on test v4:
+  // const smartWalletAddress = "0x19F3338C71a16696D27B68DEF0d2fB27Aa4b8807";
+  // const walletFactoryAddress = "0x44B74caF7CB28cC243EaA9D1d1b3eCb2Ddc2C9f1";
+
+  // walletFactory and smartWallet contract on test v5:
+  const smartWalletAddress = "0xE708Cb725D6F2aDeEab2258262Aa9129D2A28312";
+  const walletFactoryAddress = "0x5Dd70df24364DC05D46C8F40611BFDd107927263";
 
   const ownerAccount = (await ethers.getSigners())[0];
   const ownerAddr = await ownerAccount.getAddress();
@@ -34,9 +39,9 @@ async function newWallet() {
     signature: Buffer.from(signature.txSignature.slice(2), "hex")
   };
 
-  const walletFactory = await (
-    await ethers.getContractFactory("WalletFactory")
-  ).attach(walletFactoryAddress);
+  const walletFactory = await (await ethers.getContractFactory(
+    "WalletFactory"
+  )).attach(walletFactoryAddress);
 
   const walletAddrComputed = await walletFactory.computeWalletAddress(
     ownerAddr,

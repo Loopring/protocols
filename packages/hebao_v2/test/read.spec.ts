@@ -34,25 +34,25 @@ describe("wallet", () => {
   describe("read methods", () => {
     it("quota", async () => {
       const walletData = await wallet.wallet();
-      console.log("walletData:", walletData);
+      // console.log("walletData:", walletData);
       const quotaInfo = walletData["quota"];
-      console.log("quota:", quotaInfo);
+      // console.log("quota:", quotaInfo);
     });
 
     it("guardians", async () => {
       const guardians = await wallet.getGuardians(true);
-      console.log("guardians:", guardians);
+      // console.log("guardians:", guardians);
     });
 
     it("isWhitelisted", async () => {
       const isWhitelisted = await wallet.isWhitelisted("0x" + "22".repeat(20));
-      console.log("isWhitelisted:", isWhitelisted);
+      // console.log("isWhitelisted:", isWhitelisted);
     });
 
     it("getNonce", async () => {
       const walletData = await wallet.wallet();
       const nonce = walletData["nonce"];
-      console.log("nonce:", nonce);
+      // console.log("nonce:", nonce);
     });
   });
 });

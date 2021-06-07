@@ -29,15 +29,23 @@ export function sign(
   message: Buffer,
   type: SignatureType = SignatureType.EIP_712
 ) {
+  const privateKey = getPrivateKey(signer);
+  return sign2(signer, privateKey, message, type);
+}
+
+export function sign2(
+  signer: string,
+  privateKey: string,
+  message: Buffer,
+  type: SignatureType = SignatureType.EIP_712
+) {
   let signature: string;
   switch (+type) {
     case SignatureType.ETH_SIGN: {
-      const privateKey = getPrivateKey(signer);
       signature = appendType(signEthereum(message, privateKey), type);
       break;
     }
     case SignatureType.EIP_712: {
-      const privateKey = getPrivateKey(signer);
       // console.log(`singer: ${signer}, privateKey: ${privateKey}`);
       signature = appendType(signEIP712(message, privateKey), type);
       break;

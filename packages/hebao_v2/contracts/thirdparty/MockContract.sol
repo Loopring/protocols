@@ -87,17 +87,17 @@ contract MockContract is MockInterface {
     bytes4 public constant SENTINEL_ANY_MOCKS = hex"01";
 
     // A linked list allows easy iteration and inclusion checks
-    mapping(bytes32 => bytes) calldataMocks;
-    mapping(bytes => MockType) calldataMockTypes;
-    mapping(bytes => bytes) calldataExpectations;
-    mapping(bytes => string) calldataRevertMessage;
-    mapping(bytes32 => uint) calldataInvocations;
+    mapping (bytes32 => bytes) calldataMocks;
+    mapping (bytes => MockType) calldataMockTypes;
+    mapping (bytes => bytes) calldataExpectations;
+    mapping (bytes => string) calldataRevertMessage;
+    mapping (bytes32 => uint) calldataInvocations;
 
-    mapping(bytes4 => bytes4) methodIdMocks;
-    mapping(bytes4 => MockType) methodIdMockTypes;
-    mapping(bytes4 => bytes) methodIdExpectations;
-    mapping(bytes4 => string) methodIdRevertMessages;
-    mapping(bytes32 => uint) methodIdInvocations;
+    mapping (bytes4 => bytes4) methodIdMocks;
+    mapping (bytes4 => MockType) methodIdMockTypes;
+    mapping (bytes4 => bytes) methodIdExpectations;
+    mapping (bytes4 => string) methodIdRevertMessages;
+    mapping (bytes32 => uint) methodIdInvocations;
 
     MockType fallbackMockType;
     bytes fallbackExpectation;
@@ -262,7 +262,7 @@ contract MockContract is MockInterface {
         bytes memory nextMock = calldataMocks[MOCKS_LIST_START];
         bytes32 mockHash = keccak256(nextMock);
         // We cannot compary bytes
-        while(mockHash != MOCKS_LIST_END_HASH) {
+        while (mockHash != MOCKS_LIST_END_HASH) {
             // Reset all mock maps
             calldataMockTypes[nextMock] = MockType.Return;
             calldataExpectations[nextMock] = hex"";
@@ -279,7 +279,7 @@ contract MockContract is MockInterface {
 
         // Reset all any calldataMocks
         bytes4 nextAnyMock = methodIdMocks[SENTINEL_ANY_MOCKS];
-        while(nextAnyMock != SENTINEL_ANY_MOCKS) {
+        while (nextAnyMock != SENTINEL_ANY_MOCKS) {
             bytes4 currentAnyMock = nextAnyMock;
             methodIdMockTypes[currentAnyMock] = MockType.Return;
             methodIdExpectations[currentAnyMock] = hex"";
@@ -298,7 +298,7 @@ contract MockContract is MockInterface {
     }
 
     function useAllGas() private {
-        while(true) {
+        while (true) {
             bool s;
             assembly {
                 //expensive call to EC multiply contract

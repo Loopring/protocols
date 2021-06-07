@@ -22,17 +22,19 @@ library RecoverLib
     event Recovered(address newOwner);
 
     bytes32 public constant RECOVER_TYPEHASH = keccak256(
-        "recover(address wallet,uint256 validUntil,address newOwner)"
+        "recover(address wallet,uint256 validUntil,address newOwner,address[] newGuardians)"
     );
 
-    /// @dev Recover a wallet by setting a new owner.
+    /// @dev Recover a wallet by setting a new owner and guardians.
     /// @param approval The approval.
     /// @param newOwner The new owner address to set.
+    /// @param newGuardians The new guardians addresses to set.
     function recover(
-        Wallet   storage  wallet,
-        bytes32           domainSeperator,
-        Approval calldata approval,
-        address           newOwner
+        Wallet   storage   wallet,
+        bytes32            domainSeperator,
+        Approval calldata  approval,
+        address            newOwner,
+        address[] calldata newGuardians
         )
         external
     {
@@ -47,18 +49,28 @@ library RecoverLib
                 RECOVER_TYPEHASH,
                 approval.wallet,
                 approval.validUntil,
-                newOwner
+                newOwner,
+                keccak256(abi.encodePacked(newGuardians))
             )
         );
 
-        if (wallet.isGuardian(newOwner, true)) {
-            wallet.deleteGuardian(newOwner, block.timestamp, true);
-        }
-
         wallet.owner = newOwner;
         wallet.setLock(address(this), false);
-        wallet.cancelPendingGuardians();
+
+        if (newGuardians.length > 0) {
+            for (uint i = 0; i < newGuardians.length; i++) {
+                require(newGuardians[i] != newOwner, "INVALID_NEW_WALLET_GUARDIAN");
+            }
+            wallet.removeAllGuardians();
+            wallet.addGuardiansImmediately(newGuardians);
+        } else {
+            if (wallet.isGuardian(newOwner, true)) {
+                wallet.deleteGuardian(newOwner, block.timestamp, true);
+            }
+            wallet.cancelPendingGuardians();
+        }
 
         emit Recovered(newOwner);
     }
+
 }
