@@ -5,32 +5,42 @@ pragma experimental ABIEncoderV2;
 
 import "../../core/impl/libtransactions/BlockReader.sol";
 import "../../lib/MathUint.sol";
+import "../../thirdparty/SafeCast.sol";
+import "./AmmDepositProcess.sol";
 import "./AmmData.sol";
 import "./AmmExitProcess.sol";
 import "./AmmJoinProcess.sol";
 import "./AmmPoolToken.sol";
 import "./AmmUpdateProcess.sol";
+import "./AmmVirtualBalanceProcess.sol";
+import "./AmmWithdrawProcess.sol";
 
 
 /// @title AmmTransactionReceiver
 library AmmTransactionReceiver
 {
-    using AmmExitProcess    for AmmData.State;
-    using AmmJoinProcess    for AmmData.State;
-    using AmmPoolToken      for AmmData.State;
-    using AmmUpdateProcess  for AmmData.Context;
-    using BlockReader       for bytes;
+    using AmmDepositProcess         for AmmData.State;
+    using AmmExitProcess            for AmmData.State;
+    using AmmJoinProcess            for AmmData.State;
+    using AmmPoolToken              for AmmData.State;
+    using AmmUtil                   for AmmData.State;
+    using AmmUpdateProcess          for AmmData.State;
+    using AmmVirtualBalanceProcess  for AmmData.State;
+    using AmmWithdrawProcess        for AmmData.State;
+    using BlockReader               for bytes;
+    using MathUint                  for uint;
+    using MathUint96                for uint96;
+    using SafeCast                  for uint;
 
     function onReceiveTransactions(
-        AmmData.State storage  S,
-        bytes         calldata txsData,
-        bytes         calldata callbackData
+        AmmData.State    storage  S,
+        bytes            calldata txsData,
+        bytes            calldata callbackData,
+        AmmData.Settings memory   settings
         )
         internal
     {
-        AmmData.Context memory ctx = _getContext(S, txsData);
-
-        ctx.approveAmmUpdates();
+        AmmData.Context memory ctx = _getContext(S, txsData, settings);
 
         _processPoolTx(S, ctx, callbackData);
 
@@ -42,8 +52,9 @@ library AmmTransactionReceiver
     }
 
     function _getContext(
-        AmmData.State storage  S,
-        bytes         calldata txsData
+        AmmData.State    storage   S,
+        bytes            calldata  txsData,
+        AmmData.Settings memory    settings
         )
         private
         view
@@ -64,7 +75,9 @@ library AmmTransactionReceiver
             feeBips: S.feeBips,
             totalSupply: S._totalSupply,
             tokens: S.tokens,
-            tokenBalancesL2: new uint96[](size)
+            tokenBalancesL2: new uint96[](size),
+            vTokenBalancesL2: new uint96[](size),
+            settings: settings
         });
     }
 
@@ -94,17 +107,21 @@ library AmmTransactionReceiver
             signature.offset := add(signature.offset, 0x20)
         }
         if (txType == AmmData.PoolTxType.JOIN) {
-            S.processJoin(
-                ctx,
-                abi.decode(data, (AmmData.PoolJoin)),
-                signature
-            );
+            S.approveAmmUpdates(ctx, true);
+            S.processJoin(ctx, abi.decode(data, (AmmData.PoolJoin)), signature);
+            S.approveAmmUpdates(ctx, false);
         } else if (txType == AmmData.PoolTxType.EXIT) {
-            S.processExit(
-                ctx,
-                abi.decode(data, (AmmData.PoolExit)),
-                signature
-            );
+            S.approveAmmUpdates(ctx, true);
+            S.processExit(ctx, abi.decode(data, (AmmData.PoolExit)), signature);
+            S.approveAmmUpdates(ctx, false);
+        } else if (txType == AmmData.PoolTxType.SET_VIRTUAL_BALANCES) {
+            S.approveAmmUpdates(ctx, true);
+            S.processSetVirtualBalances(ctx, abi.decode(data, (AmmData.PoolVirtualBalances)));
+            S.approveAmmUpdates(ctx, false);
+        } else if (txType == AmmData.PoolTxType.DEPOSIT) {
+            S.processDeposit(ctx, abi.decode(data, (AmmData.PoolDeposit)));
+         } else if (txType == AmmData.PoolTxType.WITHDRAW) {
+            S.processWithdrawal(ctx, abi.decode(data, (AmmData.PoolWithdrawal)));
         } else {
             revert("INVALID_POOL_TX_TYPE");
         }

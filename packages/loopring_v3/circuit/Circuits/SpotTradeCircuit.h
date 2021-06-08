@@ -32,6 +32,11 @@ class SpotTradeCircuit : public BaseTransactionCircuit
     DynamicBalanceGadget balanceA_O;
     DynamicBalanceGadget balanceB_O;
 
+    DynamicBalanceGadget vbalanceS_A;
+    DynamicBalanceGadget vbalanceB_A;
+    DynamicBalanceGadget vbalanceS_B;
+    DynamicBalanceGadget vbalanceB_B;
+
     // Order fills
     FloatGadget fillS_A;
     FloatGadget fillS_B;
@@ -59,6 +64,16 @@ class SpotTradeCircuit : public BaseTransactionCircuit
     TransferGadget protocolFeeA_from_balanceAO_to_balanceAP;
     TransferGadget protocolFeeB_from_balanceBO_to_balanceBP;
 
+    /* Virtual Token Transfers */
+    TernaryGadget vfills_S_A;
+    TernaryGadget vfills_B_A;
+    TernaryGadget vfills_S_B;
+    TernaryGadget vfills_B_B;
+    SubGadget update_vbalanceS_A;
+    AddGadget update_vbalanceB_A;
+    SubGadget update_vbalanceS_B;
+    AddGadget update_vbalanceB_B;
+
     // AMM validation
     ValidateAMMGadget validateAMM;
 
@@ -81,6 +96,12 @@ class SpotTradeCircuit : public BaseTransactionCircuit
           balanceB_P(pb, state.pool.balanceB, FMT(prefix, ".balanceB_P")),
           balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
           balanceB_O(pb, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
+
+          // Virtual balances
+          vbalanceS_A(pb, state.accountA.balanceS.weightAMM, FMT(prefix, ".vbalanceS_A")),
+          vbalanceB_A(pb, state.accountA.balanceB.weightAMM, FMT(prefix, ".vbalanceB_A")),
+          vbalanceS_B(pb, state.accountB.balanceS.weightAMM, FMT(prefix, ".vbalanceS_B")),
+          vbalanceB_B(pb, state.accountB.balanceB.weightAMM, FMT(prefix, ".vbalanceB_B")),
 
           // Order fills
           fillS_A(pb, state.constants, Float24Encoding, FMT(prefix, ".fillS_A")),
@@ -175,28 +196,55 @@ class SpotTradeCircuit : public BaseTransactionCircuit
             feeCalculatorB.getProtocolFee(),
             FMT(prefix, ".protocolFeeB_from_balanceBO_to_balanceBP")),
 
+          /* Virtual balance updates (for AMMs only) */
+          vfills_S_A(pb, orderA.amm.packed, fillS_A.value(), state.constants._0, FMT(prefix, ".vfills_S_A")),
+          vfills_B_A(pb, orderA.amm.packed, fillS_B.value(), state.constants._0, FMT(prefix, ".vfills_B_A")),
+          vfills_S_B(pb, orderB.amm.packed, fillS_B.value(), state.constants._0, FMT(prefix, ".vfills_S_B")),
+          vfills_B_B(pb, orderB.amm.packed, fillS_A.value(), state.constants._0, FMT(prefix, ".vfills_B_B")),
+          update_vbalanceS_A(
+            pb,
+            state.accountA.balanceS.weightAMM,
+            vfills_S_A.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".update_vbalanceS_A")),
+          update_vbalanceB_A(
+            pb,
+            state.accountA.balanceB.weightAMM,
+            vfills_B_A.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".update_vbalanceB_A")),
+          update_vbalanceS_B(
+            pb,
+            state.accountB.balanceS.weightAMM,
+            vfills_S_B.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".update_vbalanceS_B")),
+          update_vbalanceB_B(
+            pb,
+            state.accountB.balanceB.weightAMM,
+            vfills_B_B.result(),
+            NUM_BITS_AMOUNT,
+            FMT(prefix, ".update_vbalanceB_B")),
+
           validateAMM(
             pb,
             state.constants,
+            isSpotTradeTx.result(),
             {orderA.amm.packed,
              orderA.feeBips.packed,
              fillS_A.value(),
-             state.accountA.balanceS.balance,
-             state.accountA.balanceB.balance,
-             balanceS_A.balance(),
-             balanceB_A.balance(),
              state.accountA.balanceS.weightAMM,
              state.accountA.balanceB.weightAMM,
+             update_vbalanceS_A.result(),
+             update_vbalanceB_A.result(),
              state.accountA.account.feeBipsAMM},
             {orderB.amm.packed,
              orderB.feeBips.packed,
              fillS_B.value(),
-             state.accountB.balanceS.balance,
-             state.accountB.balanceB.balance,
-             balanceS_B.balance(),
-             balanceB_B.balance(),
              state.accountB.balanceS.weightAMM,
              state.accountB.balanceB.weightAMM,
+             update_vbalanceS_B.result(),
+             update_vbalanceB_B.result(),
              state.accountB.account.feeBipsAMM},
             FMT(prefix, ".validateAMM"))
     {
@@ -210,6 +258,8 @@ class SpotTradeCircuit : public BaseTransactionCircuit
         setOutput(TXV_STORAGE_A_STORAGEID, orderA.storageID.packed);
         setOutput(TXV_BALANCE_A_S_BALANCE, balanceS_A.balance());
         setOutput(TXV_BALANCE_A_B_BALANCE, balanceB_A.balance());
+        setOutput(TXV_BALANCE_A_S_WEIGHTAMM, update_vbalanceS_A.result());
+        setOutput(TXV_BALANCE_A_B_WEIGHTAMM, update_vbalanceB_A.result());
         setArrayOutput(TXV_ACCOUNT_A_ADDRESS, orderA.accountID.bits);
 
         // Update account B
@@ -218,6 +268,8 @@ class SpotTradeCircuit : public BaseTransactionCircuit
         setOutput(TXV_STORAGE_B_STORAGEID, orderB.storageID.packed);
         setOutput(TXV_BALANCE_B_S_BALANCE, balanceS_B.balance());
         setOutput(TXV_BALANCE_B_B_BALANCE, balanceB_B.balance());
+        setOutput(TXV_BALANCE_B_S_WEIGHTAMM, update_vbalanceS_B.result());
+        setOutput(TXV_BALANCE_B_B_WEIGHTAMM, update_vbalanceB_B.result());
         setArrayOutput(TXV_ACCOUNT_B_ADDRESS, orderB.accountID.bits);
 
         // Update balances of the protocol fee pool
@@ -252,6 +304,12 @@ class SpotTradeCircuit : public BaseTransactionCircuit
         balanceA_O.generate_r1cs_witness();
         balanceB_O.generate_r1cs_witness();
 
+        // Virtual balances
+        vbalanceS_A.generate_r1cs_witness();
+        vbalanceB_A.generate_r1cs_witness();
+        vbalanceS_B.generate_r1cs_witness();
+        vbalanceB_B.generate_r1cs_witness();
+
         // Order fills
         fillS_A.generate_r1cs_witness(spotTrade.fillS_A);
         fillS_B.generate_r1cs_witness(spotTrade.fillS_B);
@@ -279,6 +337,16 @@ class SpotTradeCircuit : public BaseTransactionCircuit
         protocolFeeA_from_balanceAO_to_balanceAP.generate_r1cs_witness();
         protocolFeeB_from_balanceBO_to_balanceBP.generate_r1cs_witness();
 
+        /* Virtual Token Transfers */
+        vfills_S_A.generate_r1cs_witness();
+        vfills_B_A.generate_r1cs_witness();
+        vfills_S_B.generate_r1cs_witness();
+        vfills_B_B.generate_r1cs_witness();
+        update_vbalanceS_A.generate_r1cs_witness();
+        update_vbalanceB_A.generate_r1cs_witness();
+        update_vbalanceS_B.generate_r1cs_witness();
+        update_vbalanceB_B.generate_r1cs_witness();
+
         // AMM validation
         validateAMM.generate_r1cs_witness();
     }
@@ -298,6 +366,12 @@ class SpotTradeCircuit : public BaseTransactionCircuit
         balanceB_P.generate_r1cs_constraints();
         balanceA_O.generate_r1cs_constraints();
         balanceB_O.generate_r1cs_constraints();
+
+        // Virtual balances
+        vbalanceS_A.generate_r1cs_constraints();
+        vbalanceB_A.generate_r1cs_constraints();
+        vbalanceS_B.generate_r1cs_constraints();
+        vbalanceB_B.generate_r1cs_constraints();
 
         // Order fills
         fillS_A.generate_r1cs_constraints();
@@ -325,6 +399,16 @@ class SpotTradeCircuit : public BaseTransactionCircuit
         // Protocol fees
         protocolFeeA_from_balanceAO_to_balanceAP.generate_r1cs_constraints();
         protocolFeeB_from_balanceBO_to_balanceBP.generate_r1cs_constraints();
+
+        /* Virtual Token Transfers */
+        vfills_S_A.generate_r1cs_constraints();
+        vfills_B_A.generate_r1cs_constraints();
+        vfills_S_B.generate_r1cs_constraints();
+        vfills_B_B.generate_r1cs_constraints();
+        update_vbalanceS_A.generate_r1cs_constraints();
+        update_vbalanceB_A.generate_r1cs_constraints();
+        update_vbalanceS_B.generate_r1cs_constraints();
+        update_vbalanceB_B.generate_r1cs_constraints();
 
         // AMM validation
         validateAMM.generate_r1cs_constraints();

@@ -5,6 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import "../../core/iface/ExchangeData.sol";
 import "../../core/iface/IExchangeV3.sol";
+import "../IAmmController.sol";
+import "../IAssetManager.sol";
 import "./IAmmSharedConfig.sol";
 
 
@@ -18,7 +20,10 @@ library AmmData
     {
         NOOP,
         JOIN,
-        EXIT
+        EXIT,
+        SET_VIRTUAL_BALANCES,
+        DEPOSIT,
+        WITHDRAW
     }
 
     struct PoolConfig
@@ -53,6 +58,22 @@ library AmmData
         uint32    validUntil;
     }
 
+    struct PoolVirtualBalances
+    {
+        uint96[]  vBalancesNew;
+        bytes     data;
+    }
+
+    struct PoolDeposit
+    {
+        uint96[]  amounts;
+    }
+
+    struct PoolWithdrawal
+    {
+        uint96[]  amounts;
+    }
+
     struct PoolTx
     {
         PoolTxType txType;
@@ -65,6 +86,13 @@ library AmmData
         address addr;
         uint96  weight;
         uint16  tokenID;
+    }
+
+    struct Settings
+    {
+        IAmmController controller;
+        IAssetManager  assetManager;
+        bool           joinsDisabled;
     }
 
     struct Context
@@ -83,6 +111,9 @@ library AmmData
 
         Token[]  tokens;
         uint96[] tokenBalancesL2;
+        uint96[] vTokenBalancesL2;
+
+        Settings settings;
     }
 
     struct State {
@@ -91,9 +122,9 @@ library AmmData
         string symbol;
         uint   _totalSupply;
 
-        mapping(address => uint) balanceOf;
-        mapping(address => mapping(address => uint)) allowance;
-        mapping(address => uint) nonces;
+        mapping (address => uint)                      balanceOf;
+        mapping (address => mapping (address => uint)) allowance;
+        mapping (address => uint)                      nonces;
 
         // AMM pool state variables
         IAmmSharedConfig sharedConfig;
@@ -116,5 +147,9 @@ library AmmData
         // A map from a user to the forced exit.
         mapping (address => PoolExit) forcedExit;
         mapping (bytes32 => bool) approvedTx;
+
+        mapping (address => uint96) balancesL1;
+
+        bool        exitMode;
     }
 }

@@ -1867,11 +1867,13 @@ export class ExchangeTestUtil {
     interface TransactionReceiverCallbacks {
       callbacks: OnchainBlockCallback[];
       receivers: string[];
+      beforeBlockSubmission: boolean;
     }
 
     const transactionReceiverCallbacks: TransactionReceiverCallbacks = {
       callbacks: [],
-      receivers: []
+      receivers: [],
+      beforeBlockSubmission: true
     };
 
     //console.log("Block callbacks: ");
@@ -3064,6 +3066,21 @@ export class ExchangeTestUtil {
     );
     try {
       return state.accounts[accountID].balances[tokenID].balance;
+    } catch {
+      return new BN(0);
+    }
+  }
+
+  public async getOffchainVirtualBalance(owner: string, token: string) {
+    const accountID = this.getAccountID(owner);
+    const tokenID = this.getTokenIdFromNameOrAddress(token);
+    const latestBlockIdx = this.blocks[this.exchangeId].length - 1;
+    const state = await Simulator.loadExchangeState(
+      this.exchangeId,
+      latestBlockIdx
+    );
+    try {
+      return state.accounts[accountID].balances[tokenID].weightAMM;
     } catch {
       return new BN(0);
     }

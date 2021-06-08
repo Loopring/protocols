@@ -9,26 +9,26 @@ import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
-import "../../lib/SignatureUtil.sol";
 import "../../lib/TransferUtil.sol";
 import "../../thirdparty/SafeCast.sol";
-import "./AmmUtil.sol";
 import "./AmmData.sol";
 import "./AmmExitRequest.sol";
 import "./AmmPoolToken.sol";
+import "./AmmSignature.sol";
+import "./AmmUtil.sol";
 
 
 /// @title AmmExitProcess
 library AmmExitProcess
 {
     using AmmPoolToken      for AmmData.State;
+    using AmmSignature      for bytes32;
     using AmmUtil           for AmmData.Context;
     using AmmUtil           for uint96;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;
-    using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
     using TransferUtil      for address;
 
@@ -49,14 +49,18 @@ library AmmExitProcess
         bool isForcedExit = false;
 
         if (signature.length == 0) {
-            bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
-            if (txHash == forcedExitHash) {
-                delete S.forcedExit[exit.owner];
-                S.forcedExitCount--;
-                isForcedExit = true;
+            if (S.exitMode) {
+                require(exit.fee == 0, "INVALID_FEE");
             } else {
-                require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
-                delete S.approvedTx[txHash];
+                bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
+                if (txHash == forcedExitHash) {
+                    delete S.forcedExit[exit.owner];
+                    S.forcedExitCount--;
+                    isForcedExit = true;
+                } else {
+                    require(S.approvedTx[txHash], "INVALID_ONCHAIN_APPROVAL");
+                    delete S.approvedTx[txHash];
+                }
             }
         } else if (signature.length == 1) {
             ctx.verifySignatureL2(exit.owner, txHash, signature);
@@ -195,6 +199,12 @@ library AmmExitProcess
                 return (false, amounts);
             }
             amounts[i] = amount;
+        }
+
+        // Update virtual balances
+        uint newTotalSupply = ctx.totalSupply.sub(exit.burnAmount);
+        for (uint i = 0; i < ctx.tokens.length; i++) {
+            ctx.vTokenBalancesL2[i] = (uint(ctx.vTokenBalancesL2[i]).mul(newTotalSupply) / ctx.totalSupply).toUint96();
         }
 
         return (true, amounts);

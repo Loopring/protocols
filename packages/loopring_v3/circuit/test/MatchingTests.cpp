@@ -1162,20 +1162,13 @@ struct CalcOutResult
 
 static CalcOutResult calcOutGivenIn(
   const BigInt &balanceIn,
-  const BigInt &weightIn,
   const BigInt &balanceOut,
-  const BigInt &weightOut,
   unsigned int feeBips,
   const BigInt &amountIn)
 {
     BigInt BASE(FIXED_BASE);
     BigInt BASE_BIPS(10000);
 
-    BigInt weightRatio = (weightIn * BASE) / weightOut;
-    if (weightRatio > getMaxFieldElementAsBigInt(NUM_BITS_AMOUNT))
-    {
-        return {false, 0};
-    }
     BigInt fee = amountIn * feeBips / BASE_BIPS;
     BigInt denom = balanceIn + (amountIn - fee);
     if (denom == 0)
@@ -1183,13 +1176,7 @@ static CalcOutResult calcOutGivenIn(
         return {false, 0};
     }
     BigInt y = (balanceIn * BASE) / denom;
-    PowResult pow = pow_approx(toFieldElement(y), toFieldElement(weightRatio), CalcOutGivenInAMMGadget::numIterations);
-    if (!pow.valid)
-    {
-        return {false, 0};
-    }
-    BigInt p = toBigInt(pow.value);
-    BigInt res = (balanceOut * (BASE - p)) / BASE;
+    BigInt res = (balanceOut * (BASE - y)) / BASE;
     return {true, res};
 }
 
@@ -1200,11 +1187,11 @@ struct CalcSpotResult
 };
 
 static CalcSpotResult
-calcSpotPrice(BigInt balanceIn, BigInt weightIn, BigInt balanceOut, BigInt weightOut, unsigned int feeBips)
+calcSpotPrice(BigInt balanceIn, BigInt balanceOut, unsigned int feeBips)
 {
     BigInt BASE(FIXED_BASE);
-    BigInt numer = balanceIn * weightOut;
-    BigInt denom = balanceOut * weightIn;
+    BigInt numer = balanceIn;
+    BigInt denom = balanceOut;
     if (denom == 0)
     {
         return {false, 0};
@@ -1222,9 +1209,7 @@ static bool simulateRequireAMMFills(
   bool amm,
   unsigned int orderFeeBips,
   const BigInt &balanceIn,
-  const BigInt &weightIn,
   const BigInt &balanceOut,
-  const BigInt &weightOut,
   unsigned int feeBips,
   const BigInt &amountIn,
   const BigInt &amountOut)
@@ -1238,20 +1223,20 @@ static bool simulateRequireAMMFills(
     {
         return false;
     }
-    if (weightIn == 0 || weightOut == 0)
+    if (balanceIn == 0 || balanceOut == 0)
     {
         return false;
     }
 
-    CalcOutResult expected = calcOutGivenIn(balanceIn, weightIn, balanceOut, weightOut, feeBips, amountIn);
+    CalcOutResult expected = calcOutGivenIn(balanceIn, balanceOut, feeBips, amountIn);
     if (!expected.valid || amountOut > expected.value)
     {
         return false;
     }
 
-    CalcSpotResult spotPriceBefore = calcSpotPrice(balanceIn, weightIn, balanceOut, weightOut, feeBips);
+    CalcSpotResult spotPriceBefore = calcSpotPrice(balanceIn, balanceOut, feeBips);
     CalcSpotResult spotPriceAfter =
-      calcSpotPrice(balanceIn + amountIn, weightIn, balanceOut - amountOut, weightOut, feeBips);
+      calcSpotPrice(balanceIn + amountIn, balanceOut - amountOut, feeBips);
     if (!spotPriceBefore.valid || !spotPriceAfter.valid || spotPriceAfter.value < spotPriceBefore.value)
     {
         return false;
@@ -1273,9 +1258,7 @@ TEST_CASE("RequireAMMFills", "[RequireAMMFillsGadget]")
                                     bool _amm,
                                     unsigned int _orderFeeBips,
                                     const BigInt &_balanceIn,
-                                    const BigInt &_weightIn,
                                     const BigInt &_balanceOut,
-                                    const BigInt &_weightOut,
                                     unsigned int _feeBips,
                                     const BigInt &__amountIn,
                                     const BigInt &__amountOut,
@@ -1295,9 +1278,7 @@ TEST_CASE("RequireAMMFills", "[RequireAMMFillsGadget]")
         VariableT amm = make_variable(pb, _amm ? 1 : 0, "amm");
         VariableT orderFeeBips = make_variable(pb, _orderFeeBips, "amm");
         VariableT balanceInBefore = make_variable(pb, toFieldElement(_balanceIn), "balanceInBefore");
-        VariableT weightIn = make_variable(pb, toFieldElement(_weightIn), "weightIn");
         VariableT balanceOutBefore = make_variable(pb, toFieldElement(_balanceOut), "balanceOut");
-        VariableT weightOut = make_variable(pb, toFieldElement(_weightOut), "weightOut");
         VariableT feeBips = make_variable(pb, FieldT(_feeBips), "feeBips");
         VariableT amountIn = make_variable(pb, toFieldElement(_amountIn), "amountIn");
         VariableT amountOut = make_variable(pb, toFieldElement(_amountOut), "amountOut");
@@ -1309,6 +1290,7 @@ TEST_CASE("RequireAMMFills", "[RequireAMMFillsGadget]")
         RequireAMMFillsGadget requireAMMFills(
           pb,
           constants,
+          amm,
           {amm,
            orderFeeBips,
            amountOut,
@@ -1316,8 +1298,6 @@ TEST_CASE("RequireAMMFills", "[RequireAMMFillsGadget]")
            balanceInBefore,
            balanceOutAfter,
            balanceInAfter,
-           weightOut,
-           weightIn,
            feeBips},
           amountIn,
           "calcOutGivenInAMM");
@@ -1325,7 +1305,7 @@ TEST_CASE("RequireAMMFills", "[RequireAMMFillsGadget]")
         requireAMMFills.generate_r1cs_witness();
 
         bool expected = simulateRequireAMMFills(
-          _amm, _orderFeeBips, _balanceIn, _weightIn, _balanceOut, _weightOut, _feeBips, _amountIn, _amountOut);
+          _amm, _orderFeeBips, _balanceIn, _balanceOut, _feeBips, _amountIn, _amountOut);
         if (expectedSatisfied != ExpectedSatisfied::Automatic)
         {
             bool manualExpected = (expectedSatisfied == ExpectedSatisfied::Satisfied);
@@ -1339,109 +1319,64 @@ TEST_CASE("RequireAMMFills", "[RequireAMMFillsGadget]")
 
     SECTION("Simple swap")
     {
-        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 1, 1, ExpectedSatisfied::NotSatisfied);
-        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 2, 1, ExpectedSatisfied::Satisfied);
-    }
-
-    SECTION("AMM zero weights")
-    {
-        requireAMMFillsChecked(true, 0, 1000, 0, 1000, 0, 10, 2, 1, ExpectedSatisfied::NotSatisfied);
-        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 0, 10, 2, 1, ExpectedSatisfied::NotSatisfied);
-        requireAMMFillsChecked(true, 0, 1000, 0, 1000, 1, 10, 2, 1, ExpectedSatisfied::NotSatisfied);
-        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 2, 1, ExpectedSatisfied::Satisfied);
-    }
-
-    SECTION("not AMM zero weights")
-    {
-        requireAMMFillsChecked(false, 0, 1000, 0, 1000, 0, 10, 2, 1, ExpectedSatisfied::Satisfied);
-        requireAMMFillsChecked(false, 0, 1000, 1, 1000, 0, 10, 2, 1, ExpectedSatisfied::Satisfied);
-        requireAMMFillsChecked(false, 0, 1000, 0, 1000, 1, 10, 2, 1, ExpectedSatisfied::Satisfied);
-        requireAMMFillsChecked(false, 0, 1000, 1, 1000, 1, 10, 2, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(true, 0, 1000, 1000, 10, 1, 1, ExpectedSatisfied::NotSatisfied);
+        requireAMMFillsChecked(true, 0, 1000, 1000, 10, 2, 1, ExpectedSatisfied::Satisfied);
     }
 
     SECTION("not AMM 'invalid' fills")
     {
-        requireAMMFillsChecked(false, 0, 1000, 0, 1000, 0, 10, 1, 1, ExpectedSatisfied::Satisfied);
-        requireAMMFillsChecked(false, 1, 1000, 1, 1000, 0, 10, 1, 1, ExpectedSatisfied::Satisfied);
-        requireAMMFillsChecked(false, 1, 1000, 1, 1000, 0, 10, 2, 1, ExpectedSatisfied::Satisfied);
-        requireAMMFillsChecked(false, 1, 1000, 1, 1000, 0, 10, 1, 2, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(false, 0, 1000, 1000, 10, 1, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(false, 1, 1000, 1000, 10, 1, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(false, 1, 1000, 1000, 10, 2, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(false, 1, 1000, 1000, 10, 1, 2, ExpectedSatisfied::Satisfied);
     }
 
     SECTION("AMM non-zero orderFeeBips")
     {
-        requireAMMFillsChecked(true, 1, 1000, 1, 1000, 1, 10, 2, 1, ExpectedSatisfied::NotSatisfied);
-        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 2, 1, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(true, 1, 1000, 1000, 10, 2, 1, ExpectedSatisfied::NotSatisfied);
+        requireAMMFillsChecked(true, 0, 1000, 1000, 10, 2, 1, ExpectedSatisfied::Satisfied);
     }
 
     SECTION("Swap 0 -> 0")
     {
-        requireAMMFillsChecked(true, 0, 1, 1, 1, 1, 10, 0, 0, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(true, 0, 1, 1, 10, 0, 0, ExpectedSatisfied::Satisfied);
     }
 
     SECTION("Swap 1 -> 0")
     {
-        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 1, 0, ExpectedSatisfied::Satisfied);
+        requireAMMFillsChecked(true, 0, 1000, 1000, 10, 1, 0, ExpectedSatisfied::Satisfied);
     }
 
     SECTION("Swap 0 -> 1")
     {
-        requireAMMFillsChecked(true, 0, 1000, 1, 1000, 1, 10, 0, 1, ExpectedSatisfied::NotSatisfied);
-    }
-
-    SECTION("Max weights")
-    {
-        requireAMMFillsChecked(true, 0, 1000, max, 1000, max, 10, 2, 1);
-        requireAMMFillsChecked(true, 0, 1000, 1, 1000, max, 10, 2, 1);
-        requireAMMFillsChecked(true, 0, 1000, max, 1000, 1, 10, 2, 1);
+        requireAMMFillsChecked(true, 0, 1000, 1000, 10, 0, 1, ExpectedSatisfied::NotSatisfied);
     }
 
     SECTION("Balances zero")
     {
-        requireAMMFillsChecked(true, 0, 0, 1, 0, 1, 10, 0, 0);
-        requireAMMFillsChecked(true, 0, 1000, 1, 0, 1, 10, 0, 0);
-        requireAMMFillsChecked(true, 0, 0, 1, 1000, 1, 10, 0, 0);
-    }
-
-    SECTION("Large ratio differences")
-    {
-        requireAMMFillsChecked(true, 0, max, BASE, 1, BASE, 10, 0, 0, ExpectedSatisfied::Satisfied);
-        requireAMMFillsChecked(true, 0, 1, BASE, max, BASE, 10, 0, 0, ExpectedSatisfied::Satisfied);
-    }
-
-    SECTION("Ratio overflow")
-    {
-        requireAMMFillsChecked(true, 0, max, max, 1, 1, 10, 0, 0, ExpectedSatisfied::NotSatisfied);
+        requireAMMFillsChecked(true, 0, 0, 0, 10, 0, 0);
+        requireAMMFillsChecked(true, 0, 1000, 0, 10, 0, 0);
+        requireAMMFillsChecked(true, 0, 0, 1000, 10, 0, 0);
     }
 
     SECTION("Maxed out")
     {
-        requireAMMFillsChecked(true, 0, max, max, max, max, 10, 0, 0);
-    }
-
-    SECTION("Large approximation errors")
-    {
-        requireAMMFillsChecked(true, 0, 1000, 4, 1000, 1, 10, 1000, 100);
-    }
-
-    SECTION("Large approximation errors")
-    {
-        requireAMMFillsChecked(true, 0, 1000, 4, 1000, 1, 10, 1000, 100);
+        requireAMMFillsChecked(true, 0, max, max, 10, 0, 0);
     }
 
     SECTION("Fill limit check")
     {
         BigInt balanceIn = BASE * 1000;
         BigInt amountIn = BASE * 1;
-        BigInt weight = BASE * 1;
         unsigned int feeBips = 30;
-        CalcOutResult result = calcOutGivenIn(balanceIn, weight, balanceIn, weight, feeBips, amountIn);
+        CalcOutResult result = calcOutGivenIn(balanceIn, balanceIn, feeBips, amountIn);
         for (unsigned int p = 1; p < 200; p++)
         {
             BigInt amountOut = (amountIn * p) / 100;
             ExpectedSatisfied expected =
               (amountOut <= result.value) ? ExpectedSatisfied::Satisfied : ExpectedSatisfied::NotSatisfied;
             requireAMMFillsChecked(
-              true, 0, balanceIn, weight, balanceIn, weight, feeBips, amountIn, amountOut, expected);
+              true, 0, balanceIn, balanceIn, feeBips, amountIn, amountOut, expected);
         }
     }
 
@@ -1452,14 +1387,12 @@ TEST_CASE("RequireAMMFills", "[RequireAMMFillsGadget]")
             bool amm = (rand() % 100) != 0;
             bool orderFeeBips = ((rand() % 100) == 0) ? (rand() % 64) : 0;
             BigInt balanceIn = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
-            BigInt weightIn = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
             BigInt balanceOut = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
-            BigInt weightOut = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
             unsigned int feeBips = rand() % 256;
             BigInt amountIn = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
             BigInt amountOut = getRandomFieldElementAsBigInt(NUM_BITS_AMOUNT);
             requireAMMFillsChecked(
-              amm, orderFeeBips, balanceIn, weightIn, balanceOut, weightOut, feeBips, amountIn, amountOut);
+              amm, orderFeeBips, balanceIn, balanceOut, feeBips, amountIn, amountOut);
         }
     }
 }

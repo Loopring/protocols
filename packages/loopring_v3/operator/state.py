@@ -181,7 +181,7 @@ class Account(object):
     def getBalance(self, address):
         return self.getBalanceLeaf(address).balance
 
-    def updateBalance(self, tokenID, deltaBalance):
+    def updateBalance(self, tokenID, deltaBalance, weight_delta = None):
         # Make sure the leaf exists in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -190,6 +190,8 @@ class Account(object):
         rootBefore = self._balancesTree._root
 
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(deltaBalance))
+        if weight_delta is not None:
+            self._balancesLeafs[str(tokenID)].weightAMM = str(int(self._balancesLeafs[str(tokenID)].weightAMM) + int(weight_delta))
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         proof = self._balancesTree.createProof(tokenID)
@@ -200,7 +202,7 @@ class Account(object):
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter)
 
-    def updateBalanceAndStorage(self, tokenID, storageID, filled, delta_balance, weight = None):
+    def updateBalanceAndStorage(self, tokenID, storageID, filled, delta_balance, weight_delta = None):
         # Make sure the leaf exist in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -211,8 +213,8 @@ class Account(object):
         # Update filled amounts
         storageUpdate = self._balancesLeafs[str(tokenID)].updateStorage(storageID, filled)
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(delta_balance))
-        if weight is not None:
-            self._balancesLeafs[str(tokenID)].weightAMM = str(weight)
+        if weight_delta is not None:
+            self._balancesLeafs[str(tokenID)].weightAMM = str(int(self._balancesLeafs[str(tokenID)].weightAMM) + int(weight_delta))
 
         #print("str(delta_balance): " + str(delta_balance))
         #print("endBalance: " + self._balancesLeafs[str(tokenID)].balance)
@@ -449,6 +451,7 @@ class State(object):
         newState.TXV_BALANCE_A_S_BALANCE = None
         newState.TXV_BALANCE_A_S_WEIGHT = None
         newState.TXV_BALANCE_A_B_BALANCE = None
+        newState.TXV_BALANCE_A_B_WEIGHT = None
         newState.TXV_STORAGE_A_ADDRESS = None
         newState.TXV_STORAGE_A_DATA = None
         newState.TXV_STORAGE_A_STORAGEID = None
@@ -460,7 +463,9 @@ class State(object):
         newState.TXV_ACCOUNT_B_NONCE = None
         newState.TXV_BALANCE_B_S_ADDRESS = None
         newState.TXV_BALANCE_B_S_BALANCE = None
+        newState.TXV_BALANCE_B_S_WEIGHT = None
         newState.TXV_BALANCE_B_B_BALANCE = None
+        newState.TXV_BALANCE_B_B_WEIGHT = None
         newState.TXV_STORAGE_B_ADDRESS = None
         newState.TXV_STORAGE_B_DATA = None
         newState.TXV_STORAGE_B_STORAGEID = None
@@ -559,9 +564,11 @@ class State(object):
 
             newState.TXV_BALANCE_A_S_ADDRESS = ring.orderA.tokenS
             newState.TXV_BALANCE_A_S_BALANCE = -fillA.S
+            newState.TXV_BALANCE_A_S_WEIGHT = -fillA.S if ring.orderA.amm else 0
 
             newState.TXV_BALANCE_B_S_ADDRESS = ring.orderA.tokenB
             newState.TXV_BALANCE_A_B_BALANCE = fillA.B - fee_A
+            newState.TXV_BALANCE_A_B_WEIGHT = fillA.B if ring.orderA.amm else 0
 
             newState.TXV_STORAGE_A_ADDRESS = ring.orderA.storageID
             newState.TXV_STORAGE_A_DATA = filled_A + (fillA.B if ring.orderA.fillAmountBorS else fillA.S)
@@ -573,9 +580,11 @@ class State(object):
 
             newState.TXV_BALANCE_B_S_ADDRESS = ring.orderB.tokenS
             newState.TXV_BALANCE_B_S_BALANCE = -fillB.S
+            newState.TXV_BALANCE_B_S_WEIGHT = -fillB.S if ring.orderB.amm else 0
 
             newState.TXV_BALANCE_A_S_ADDRESS = ring.orderB.tokenB
             newState.TXV_BALANCE_B_B_BALANCE = fillB.B - fee_B
+            newState.TXV_BALANCE_B_B_WEIGHT = fillB.B if ring.orderB.amm else 0
 
             newState.TXV_STORAGE_B_ADDRESS = ring.orderB.storageID
             newState.TXV_STORAGE_B_DATA = filled_B + (fillB.B if ring.orderB.fillAmountBorS else fillB.S)
@@ -659,7 +668,8 @@ class State(object):
                 newState.TXV_STORAGE_A_DATA = 1
                 newState.TXV_STORAGE_A_STORAGEID = txInput.storageID
             if not isProtocolfeeWithdrawal and int(txInput.type) == 2:
-                newState.TXV_BALANCE_A_S_WEIGHT = 0
+                balanceLeafA_S = accountA.getBalanceLeaf(newState.TXV_BALANCE_A_S_ADDRESS)
+                newState.TXV_BALANCE_A_S_WEIGHT = -int(balanceLeafA_S.weightAMM)
 
             newState.balanceDeltaA_O = feeValue
 
@@ -711,7 +721,10 @@ class State(object):
 
             newState.TXV_ACCOUNT_A_NONCE = 1
             newState.TXV_ACCOUNT_A_FEEBIPSAMM = txInput.feeBips
-            newState.TXV_BALANCE_A_S_WEIGHT = txInput.tokenWeight
+
+            accountA = self.getAccount(newState.TXV_ACCOUNT_A_ADDRESS)
+            balanceLeafA_S = accountA.getBalanceLeaf(newState.TXV_BALANCE_A_S_ADDRESS)
+            newState.TXV_BALANCE_A_S_WEIGHT = int(txInput.tokenWeight) - int(balanceLeafA_S.weightAMM)
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 
@@ -736,9 +749,10 @@ class State(object):
 
         balanceLeafA_S = accountA.getBalanceLeaf(newState.TXV_BALANCE_A_S_ADDRESS)
         newState.TXV_BALANCE_A_S_BALANCE = setValue(newState.TXV_BALANCE_A_S_BALANCE, 0)
-        newState.TXV_BALANCE_A_S_WEIGHT = setValue(newState.TXV_BALANCE_A_S_WEIGHT, balanceLeafA_S.weightAMM)
+        newState.TXV_BALANCE_A_S_WEIGHT = setValue(newState.TXV_BALANCE_A_S_WEIGHT, 0)
 
         newState.TXV_BALANCE_A_B_BALANCE = setValue(newState.TXV_BALANCE_A_B_BALANCE, 0)
+        newState.TXV_BALANCE_A_B_WEIGHT = setValue(newState.TXV_BALANCE_A_B_WEIGHT, 0)
 
         newState.TXV_STORAGE_A_ADDRESS = setValue(newState.TXV_STORAGE_A_ADDRESS, 0)
         storageA = balanceLeafA_S.getStorage(newState.TXV_STORAGE_A_ADDRESS)
@@ -773,7 +787,8 @@ class State(object):
         )
         balanceUpdateB_A = accountA.updateBalance(
             newState.TXV_BALANCE_B_S_ADDRESS,
-            newState.TXV_BALANCE_A_B_BALANCE
+            newState.TXV_BALANCE_A_B_BALANCE,
+            newState.TXV_BALANCE_A_B_WEIGHT
         )
 
         accountA.owner = newState.TXV_ACCOUNT_A_OWNER
@@ -798,8 +813,10 @@ class State(object):
 
         balanceLeafB_S = accountB.getBalanceLeaf(newState.TXV_BALANCE_B_S_ADDRESS)
         newState.TXV_BALANCE_B_S_BALANCE = setValue(newState.TXV_BALANCE_B_S_BALANCE, 0)
+        newState.TXV_BALANCE_B_S_WEIGHT = setValue(newState.TXV_BALANCE_B_S_WEIGHT, 0)
 
         newState.TXV_BALANCE_B_B_BALANCE = setValue(newState.TXV_BALANCE_B_B_BALANCE, 0)
+        newState.TXV_BALANCE_B_B_WEIGHT = setValue(newState.TXV_BALANCE_B_B_WEIGHT, 0)
 
         newState.TXV_STORAGE_B_ADDRESS = setValue(newState.TXV_STORAGE_B_ADDRESS, 0)
         storageB = balanceLeafB_S.getStorage(newState.TXV_STORAGE_B_ADDRESS)
@@ -817,11 +834,13 @@ class State(object):
             newState.TXV_BALANCE_B_S_ADDRESS,
             newState.TXV_STORAGE_B_STORAGEID,
             newState.TXV_STORAGE_B_DATA,
-            newState.TXV_BALANCE_B_S_BALANCE
+            newState.TXV_BALANCE_B_S_BALANCE,
+            newState.TXV_BALANCE_B_S_WEIGHT
         )
         balanceUpdateB_B = accountB.updateBalance(
             newState.TXV_BALANCE_A_S_ADDRESS,
-            newState.TXV_BALANCE_B_B_BALANCE
+            newState.TXV_BALANCE_B_B_BALANCE,
+            newState.TXV_BALANCE_B_B_WEIGHT
         )
 
         accountB.owner = newState.TXV_ACCOUNT_B_OWNER

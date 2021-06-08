@@ -8,11 +8,11 @@ import "../../core/impl/libtransactions/TransferTransaction.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/MathUint96.sol";
-import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/SafeCast.sol";
 import "./AmmData.sol";
 import "./AmmJoinRequest.sol";
 import "./AmmPoolToken.sol";
+import "./AmmSignature.sol";
 import "./AmmUtil.sol";
 
 
@@ -20,12 +20,13 @@ import "./AmmUtil.sol";
 library AmmJoinProcess
 {
     using AmmPoolToken      for AmmData.State;
+    using AmmSignature      for bytes32;
+    using AmmUtil           for AmmData.State;
     using AmmUtil           for AmmData.Context;
     using AmmUtil           for uint96;
     using MathUint          for uint;
     using MathUint96        for uint96;
     using SafeCast          for uint;
-    using SignatureUtil     for bytes32;
     using TransactionReader for ExchangeData.Block;
 
     // event JoinProcessed(address owner, uint96 mintAmount, uint96[] amounts);
@@ -38,6 +39,7 @@ library AmmJoinProcess
         )
         internal
     {
+        require(!ctx.settings.joinsDisabled, "JOINS_DISABLED");
         require(join.validUntil >= block.timestamp, "EXPIRED");
 
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
@@ -151,7 +153,7 @@ library AmmJoinProcess
         AmmData.PoolJoin memory join
         )
         private
-        pure
+        view
         returns(
             bool            slippageOK,
             uint96          mintAmount,
@@ -162,6 +164,8 @@ library AmmJoinProcess
         amounts = new uint96[](ctx.tokens.length);
 
         if (ctx.totalSupply == 0) {
+            // Set virtual balances
+            ctx.vTokenBalancesL2 = ctx.settings.controller.getInitialVirtualBalances(join.joinAmounts);
             return(true, AmmData.POOL_TOKEN_BASE.toUint96(), join.joinAmounts);
         }
 
@@ -169,14 +173,14 @@ library AmmJoinProcess
         bool initialized = false;
         for (uint i = 0; i < ctx.tokens.length; i++) {
             if (ctx.tokenBalancesL2[i] > 0) {
-                uint amountOut = uint(join.joinAmounts[i])
+                uint maxMintAmount = uint(join.joinAmounts[i])
                     .mul(ctx.totalSupply) / uint(ctx.tokenBalancesL2[i]);
 
                 if (!initialized) {
                     initialized = true;
-                    mintAmount = amountOut.toUint96();
-                } else if (amountOut < mintAmount) {
-                    mintAmount = amountOut.toUint96();
+                    mintAmount = maxMintAmount.toUint96();
+                } else if (mintAmount > maxMintAmount) {
+                    mintAmount = maxMintAmount.toUint96();
                 }
             }
         }
@@ -188,8 +192,13 @@ library AmmJoinProcess
         // Calculate the amounts to deposit
         uint ratio = uint(AmmData.POOL_TOKEN_BASE).mul(mintAmount) / ctx.totalSupply;
 
+        uint newTotalSupply = ctx.totalSupply.add(mintAmount);
         for (uint i = 0; i < ctx.tokens.length; i++) {
             amounts[i] = (ratio.mul(ctx.tokenBalancesL2[i]) / AmmData.POOL_TOKEN_BASE).toUint96();
+
+            // Update virtual balances
+            ctx.vTokenBalancesL2[i] = (uint(ctx.vTokenBalancesL2[i]).mul(newTotalSupply) / ctx.totalSupply).toUint96();
+            require(ctx.vTokenBalancesL2[i] > 0, "ZERO_VIRTUAL_BALANCE");
         }
 
         slippageOK = (mintAmount >= join.mintMinAmount);

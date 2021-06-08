@@ -301,7 +301,7 @@ class UpdateBalanceGadget : public GadgetT
     }
 };
 
-// Calculcates the state of a user's open position
+// Calculcates the state of a user's balance
 class DynamicBalanceGadget : public DynamicVariableGadget
 {
   public:

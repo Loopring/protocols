@@ -48,6 +48,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     {
         TransactionReceiverCallback[] callbacks;
         address[]                     receivers;
+        bool                          beforeBlockSubmission;
     }
 
     struct SubmitBlocksCallback
@@ -143,11 +144,18 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             IExchangeV3(target).flashDeposit(flashDeposits);
         }
 
+        if (txReceiverCallbacks.beforeBlockSubmission) {
+            // Do transaction verifying blocks callbacks
+            _verifyTransactions(blocks, txReceiverCallbacks);
+        }
+
         // Submit blocks
         target.fastCallAndVerify(gasleft(), 0, decompressed);
 
-        // Do transaction verifying blocks callbacks
-        _verifyTransactions(blocks, txReceiverCallbacks);
+        if (!txReceiverCallbacks.beforeBlockSubmission) {
+            // Do transaction verifying blocks callbacks
+            _verifyTransactions(blocks, txReceiverCallbacks);
+        }
 
         // Do post blocks callbacks
         _processCallbacks(submitBlocksCallbacks, false);
@@ -202,7 +210,7 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
             uint txIdx;
             bool approved;
             uint auxOffset;
-            for(uint j = 0; j < auxiliaryData.length; j++) {
+            for (uint j = 0; j < auxiliaryData.length; j++) {
                 // Load the data from auxiliaryData, which is still encoded as calldata
                 assembly {
                     // Offset to auxiliaryData[j]

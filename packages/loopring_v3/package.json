@@ -1,6 +1,6 @@
 {
   "name": "loopring_v3",
-  "version": "3.0.0",
+  "version": "3.8.0",
   "description": "Loopring DEX protocol version 3.x",
   "main": "index.js",
   "directories": {

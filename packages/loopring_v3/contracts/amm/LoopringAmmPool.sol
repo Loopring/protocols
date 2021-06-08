@@ -5,14 +5,15 @@ pragma experimental ABIEncoderV2;
 
 import "../aux/access/ITransactionReceiver.sol";
 import "../core/iface/IAgentRegistry.sol";
-// import "../lib/Drainable.sol";
 import "../lib/ReentrancyGuard.sol";
-import "./libamm/AmmTransactionReceiver.sol";
+import "../lib/TransferUtil.sol";
+import "./libamm/AmmAssetManagement.sol";
 import "./libamm/AmmData.sol";
 import "./libamm/AmmExitRequest.sol";
 import "./libamm/AmmJoinRequest.sol";
 import "./libamm/AmmPoolToken.sol";
 import "./libamm/AmmStatus.sol";
+import "./libamm/AmmTransactionReceiver.sol";
 import "./libamm/AmmWithdrawal.sol";
 import "./PoolToken.sol";
 
@@ -24,21 +25,39 @@ contract LoopringAmmPool is
     ITransactionReceiver,
     ReentrancyGuard
 {
-    using AmmTransactionReceiver for AmmData.State;
+    using AmmAssetManagement     for AmmData.State;
     using AmmJoinRequest         for AmmData.State;
     using AmmExitRequest         for AmmData.State;
     using AmmPoolToken           for AmmData.State;
     using AmmStatus              for AmmData.State;
+    using AmmTransactionReceiver for AmmData.State;
     using AmmWithdrawal          for AmmData.State;
+    using TransferUtil           for address;
 
     event PoolJoinRequested(AmmData.PoolJoin join);
     event PoolExitRequested(AmmData.PoolExit exit, bool force);
     event ForcedExitProcessed(address owner, uint96 burnAmount, uint96[] amounts);
     event Shutdown(uint timestamp);
 
+    IAmmController public immutable controller;
+    IAssetManager  public immutable assetManager;
+    bool           public immutable joinsDisabled;
+
     modifier onlyFromExchangeOwner()
     {
         require(msg.sender == state.exchangeOwner, "UNAUTHORIZED");
+        _;
+    }
+
+    modifier onlyFromAssetManager()
+    {
+        require(msg.sender == address(assetManager), "UNAUTHORIZED");
+        _;
+    }
+
+    modifier onlyFromController()
+    {
+        require(msg.sender == address(controller), "UNAUTHORIZED");
         _;
     }
 
@@ -52,6 +71,18 @@ contract LoopringAmmPool is
     {
         require(!state.isOnline(), "NOT_OFFLINE");
         _;
+    }
+
+    constructor(
+        IAmmController _controller,
+        IAssetManager  _assetManager,
+        bool           _joinsDisabled
+    )
+    {
+        require(_controller != IAmmController(0), "ZERO_ADDRESS");
+        controller = _controller;
+        assetManager = _assetManager;
+        joinsDisabled = _joinsDisabled;
     }
 
     function isOnline()
@@ -68,7 +99,16 @@ contract LoopringAmmPool is
         external
         nonReentrant
     {
+        require(state.accountID == 0 || msg.sender == address(controller), "UNAUTHORIZED");
         state.setupPool(config);
+    }
+
+    function enterExitMode(bool enabled)
+        external
+        onlyFromController
+    {
+        require(state.exitMode != enabled, "INVALID_STATE");
+        state.exitMode = enabled;
     }
 
     // Anyone is able to shut down the pool when requests aren't being processed any more.
@@ -78,7 +118,16 @@ contract LoopringAmmPool is
         onlyWhenOnline
         nonReentrant
     {
-        state.shutdown(exitOwner);
+        state.shutdownByLP(exitOwner);
+    }
+
+    function shutdownByController()
+        external
+        onlyWhenOnline
+        nonReentrant
+        onlyFromController
+    {
+        state.shutdownByController();
     }
 
     function joinPool(
@@ -129,7 +178,12 @@ contract LoopringAmmPool is
         // nonReentrant     // Not needed, does not do any external calls
                             // and can only be called by the exchange owner.
     {
-        state.onReceiveTransactions(txsData, callbackData);
+        AmmData.Settings memory settings = AmmData.Settings({
+            controller: controller,
+            assetManager: assetManager,
+            joinsDisabled: joinsDisabled
+        });
+        state.onReceiveTransactions(txsData, callbackData, settings);
     }
 
     function withdrawWhenOffline()
@@ -140,10 +194,36 @@ contract LoopringAmmPool is
         state.withdrawWhenOffline();
     }
 
-    function updateExchangeOwnerAndFeeBips()
+    function transferOut(
+        address to,
+        address token,
+        uint    amount
+        )
         external
         nonReentrant
+        onlyFromAssetManager
     {
-        state.updateExchangeOwnerAndFeeBips();
+        state.transferOut(to, token, amount);
+    }
+
+    function setBalanceL1(
+        address token,
+        uint96  balance
+        )
+        external
+        nonReentrant
+        onlyFromAssetManager
+    {
+        state.balancesL1[token] = balance;
+    }
+
+    function getBalanceL1(
+        address token
+        )
+        public
+        view
+        returns (uint96)
+    {
+        return state.balancesL1[token];
     }
 }
