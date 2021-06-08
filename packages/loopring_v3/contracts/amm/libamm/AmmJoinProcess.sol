@@ -173,14 +173,14 @@ library AmmJoinProcess
         bool initialized = false;
         for (uint i = 0; i < ctx.tokens.length; i++) {
             if (ctx.tokenBalancesL2[i] > 0) {
-                uint amountOut = uint(join.joinAmounts[i])
+                uint _mintAmount = uint(join.joinAmounts[i])
                     .mul(ctx.totalSupply) / uint(ctx.tokenBalancesL2[i]);
 
                 if (!initialized) {
                     initialized = true;
-                    mintAmount = amountOut.toUint96();
-                } else if (amountOut < mintAmount) {
-                    mintAmount = amountOut.toUint96();
+                    mintAmount = _mintAmount.toUint96();
+                } else if (_mintAmount < mintAmount) {
+                    mintAmount = _mintAmount.toUint96();
                 }
             }
         }
