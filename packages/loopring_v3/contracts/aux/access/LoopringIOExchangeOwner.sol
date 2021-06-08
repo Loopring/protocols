@@ -12,8 +12,8 @@ import "../../lib/Drainable.sol";
 import "../../lib/ERC1271.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
-import "./SelectorBasedAccessManager.sol";
 import "./ITransactionReceiver.sol";
+import "./SelectorBasedAccessManager.sol";
 
 
 contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainable

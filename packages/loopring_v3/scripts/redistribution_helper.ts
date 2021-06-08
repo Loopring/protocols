@@ -19,7 +19,7 @@ const defaultTxOpts = {
 const exchangeAddress = "0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4";
 async function getFailedDistributions(blocksAhead: number) {
   const failedEvents = await myEth.getEvents(
-    "ABI/version36/ExchangeV3.abi",
+    "ABI/version3x/ExchangeV3.abi",
     exchangeAddress,
     "WithdrawalFailed",
     blocksAhead
@@ -37,7 +37,7 @@ async function getFailedDistributions(blocksAhead: number) {
 
     const token = e.returnValues.token;
     const withdrawableAmount = await myEth.call(
-      "ABI/version36/ExchangeV3.abi",
+      "ABI/version3x/ExchangeV3.abi",
       exchangeAddress,
       "getAmountWithdrawable",
       to,

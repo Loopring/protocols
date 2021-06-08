@@ -40,6 +40,7 @@ contract SmartWallet is ERC1271
     bytes32     public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
 
+
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
     //
@@ -107,12 +108,12 @@ contract SmartWallet is ERC1271
         require(owner != address(0), "INVALID_OWNER");
 
         wallet.owner = owner;
-        if (guardians.length != 0) {
-            wallet.setInitialGuardians(guardians);
-        }
+        wallet.addGuardiansImmediately(guardians);
+
         if (quota != 0) {
             wallet.setQuota(quota, 0);
         }
+
         if (inheritor != address(0)) {
             wallet.setInheritor(inheritor, 365 days);
         }
@@ -214,12 +215,38 @@ contract SmartWallet is ERC1271
         wallet.removeGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
     }
 
+     function resetGuardians(
+         address[] calldata newGuardians
+         )
+         external
+         onlyFromWalletOrOwnerWhenUnlocked
+     {
+         wallet.resetGuardians(newGuardians);
+     }
+
+     function resetGuardiansWA(
+         Approval  calldata approval,
+         address[] calldata newGuardians
+         )
+         external
+     {
+         wallet.resetGuardiansWA(DOMAIN_SEPARATOR, approval, newGuardians);
+     }
+
      function isGuardian(address addr, bool includePendingAddition)
          public
          view
          returns (bool)
      {
          return wallet.isGuardian(addr, includePendingAddition);
+     }
+
+     function getGuardians(bool includePendingAddition)
+         public
+         view
+         returns (Guardian[] memory )
+     {
+         return GuardianLib.guardians(wallet, includePendingAddition);
      }
 
     //
@@ -336,15 +363,17 @@ contract SmartWallet is ERC1271
     //
 
     function recover(
-        Approval calldata approval,
-        address           newOwner
+        Approval calldata  approval,
+        address            newOwner,
+        address[] calldata newGuardians
         )
         external
     {
         wallet.recover(
             DOMAIN_SEPARATOR,
             approval,
-            newOwner
+            newOwner,
+            newGuardians
         );
     }
 
@@ -391,6 +420,15 @@ contract SmartWallet is ERC1271
         returns (uint)
     {
         return wallet.whitelisted[addr];
+    }
+
+    function isWhitelisted(
+        address addr
+        )
+        public
+        view
+        returns (bool) {
+        return wallet.isAddressWhitelisted(addr);
     }
 
     //

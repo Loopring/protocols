@@ -79,15 +79,15 @@ export class ExchangeV3 {
 
     this.syncedToEthereumBlockIdx = 0;
 
-    const ABIPath = "ABI/version36/";
+    const ABIPath = "ABI/version3x/";
     this.exchangeV3Abi = fs.readFileSync(ABIPath + "IExchangeV3.abi", "ascii");
 
     this.exchange = new web3.eth.Contract(JSON.parse(this.exchangeV3Abi));
     this.exchange.options.address = this.exchangeAddress;
 
-    const exchangeCreationTimestamp = (
-      await this.exchange.methods.getBlockInfo(0).call()
-    ).timestamp;
+    const exchangeCreationTimestamp = (await this.exchange.methods
+      .getBlockInfo(0)
+      .call()).timestamp;
     const genesisMerkleRoot = new BN(
       (await this.exchange.methods.getMerkleRoot().call()).slice(2),
       16

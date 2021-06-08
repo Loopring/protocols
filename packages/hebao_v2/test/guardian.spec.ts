@@ -145,13 +145,13 @@ describe("wallet", () => {
       );
     });
 
-    it.only("add guardian with approval", async () => {
+    it("add guardian with approval", async () => {
       const owner = await account1.getAddress();
       const guardian1 = await account2.getAddress();
       const guardian2 = await account3.getAddress();
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
         guardian1,
-        guardian2
+        guardian2,
       ]);
       const masterCopy = await wallet.getMasterCopy();
 

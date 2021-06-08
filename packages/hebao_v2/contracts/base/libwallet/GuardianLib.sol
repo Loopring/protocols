@@ -28,19 +28,24 @@ library GuardianLib
     bytes32 public constant REMOVE_GUARDIAN_TYPEHASH = keccak256(
         "removeGuardian(address wallet,uint256 validUntil,address guardian)"
     );
+    bytes32 public constant RESET_GUARDIANS_TYPEHASH = keccak256(
+        "resetGuardians(address wallet,uint256 validUntil,address[] guardians)"
+    );
 
     event GuardianAdded   (address guardian, uint effectiveTime);
     event GuardianRemoved (address guardian, uint effectiveTime);
 
-    function setInitialGuardians(
+    function addGuardiansImmediately(
         Wallet    storage wallet,
         address[] memory  _guardians
         )
         external
     {
-        require(_guardians.length < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
-         for (uint i = 0; i < _guardians.length; i++) {
-            _addGuardian(wallet, _guardians[i], 0, true);
+        address guardian = address(0);
+        for (uint i = 0; i < _guardians.length; i++) {
+            require(_guardians[i] > guardian, "INVALID_ORDERING");
+            guardian = _guardians[i];
+            _addGuardian(wallet, guardian, 0, true);
         }
     }
 
@@ -106,6 +111,48 @@ library GuardianLib
         );
 
         _removeGuardian(wallet, guardian, 0, true);
+    }
+
+    function resetGuardians(
+        Wallet    storage  wallet,
+        address[] calldata newGuardians
+        )
+        external
+    {
+        Guardian[] memory allGuardians = guardians(wallet, true);
+        for (uint i = 0; i < allGuardians.length; i++) {
+            _removeGuardian(wallet, allGuardians[i].addr, GUARDIAN_PENDING_PERIOD, false);
+        }
+
+        for (uint j = 0; j < newGuardians.length; j++) {
+            _addGuardian(wallet, newGuardians[j], GUARDIAN_PENDING_PERIOD, false);
+        }
+    }
+
+    function resetGuardiansWA(
+        Wallet    storage  wallet,
+        bytes32            domainSeperator,
+        Approval  calldata approval,
+        address[] calldata newGuardians
+        )
+        external
+    {
+        wallet.verifyApproval(
+            domainSeperator,
+            SigRequirement.MAJORITY_OWNER_REQUIRED,
+            approval,
+            abi.encode(
+                RESET_GUARDIANS_TYPEHASH,
+                approval.wallet,
+                approval.validUntil,
+                keccak256(abi.encodePacked(newGuardians))
+            )
+        );
+
+        removeAllGuardians(wallet);
+        for (uint i = 0; i < newGuardians.length; i++) {
+            _addGuardian(wallet, newGuardians[i], 0, true);
+        }
     }
 
     function requireMajority(
@@ -269,7 +316,7 @@ library GuardianLib
 
         uint pos = wallet.guardianIdx[addr];
 
-        if(pos == 0) {
+        if (pos == 0) {
             // Add the new guardian
             Guardian memory _g = Guardian(
                 addr,

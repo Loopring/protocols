@@ -49,9 +49,9 @@ struct Wallet
     address owner;
 
     // relayer => nonce
-    mapping(address => uint) nonce;
+    uint nonce;
     // hash => consumed
-    mapping(bytes32 => bool) hashes;
+    mapping (bytes32 => bool) hashes;
 
     bool    locked;
 
@@ -65,5 +65,5 @@ struct Wallet
     Quota quota;
 
     // whitelisted address => effective timestamp
-    mapping(address => uint) whitelisted;
+    mapping (address => uint) whitelisted;
 }
