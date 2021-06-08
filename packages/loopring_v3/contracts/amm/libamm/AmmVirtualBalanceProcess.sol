@@ -16,7 +16,10 @@ library AmmVirtualBalanceProcess
         )
         internal
     {
-        require(poolVirtualBalances.vBalancesNew.length == ctx.tokens.length, "INVALID_DATA");
+        require(
+            poolVirtualBalances.vBalancesNew.length == ctx.tokens.length,
+            "INVALID_DATA"
+        );
         require(
             ctx.settings.controller.authorizeVirtualBalances(
                 ctx.tokenBalancesL2,
