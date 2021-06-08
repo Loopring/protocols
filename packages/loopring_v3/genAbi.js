@@ -1,6 +1,6 @@
 const fs = require("fs");
 const contractBuildPath = "./build/contracts";
-const abiDir = "./ABI/version3x";
+const abiDir = "./ABI/version36";
 
 fs.readdir(contractBuildPath, function(err, files) {
   if (err) {

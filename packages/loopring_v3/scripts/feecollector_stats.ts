@@ -89,7 +89,7 @@ async function getFeeCollectorStatsOfDate(date: string, blockNumber: number) {
 
 async function getTokenBalanceAtBlock(token: string, blockNumber: number) {
   const tokenContract = new web3.eth.Contract(
-    JSON.parse(fs.readFileSync("ABI/version3x/ERC20.abi", "ascii")),
+    JSON.parse(fs.readFileSync("ABI/version36/ERC20.abi", "ascii")),
     token
   );
 

@@ -31,7 +31,7 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     // Load IExchange ABI
-    const ABIPath = "ABI/version3x/";
+    const ABIPath = "ABI/version36/";
     const exchangeABI = JSON.parse(
       fs.readFileSync(ABIPath + "IExchangeV3.abi", "ascii")
     );

@@ -14,7 +14,7 @@ const exchangeAddress = "0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4";
 
 async function listPendingDeposits(blocksAhead: number) {
   const depositEvents = await myEth.getEvents(
-    "ABI/version3x/ExchangeV3.abi",
+    "ABI/version36/ExchangeV3.abi",
     exchangeAddress,
     "DepositRequested",
     blocksAhead
@@ -35,7 +35,7 @@ async function listPendingDeposits(blocksAhead: number) {
 
     const token = e.returnValues.token;
     const pendingAmount = await myEth.call(
-      "ABI/version3x/ExchangeV3.abi",
+      "ABI/version36/ExchangeV3.abi",
       exchangeAddress,
       "getPendingDepositAmount",
       to,

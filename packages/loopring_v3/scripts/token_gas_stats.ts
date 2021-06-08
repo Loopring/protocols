@@ -17,7 +17,7 @@ async function getAllTokensInLoopring() {
     [...Array(tokenCount).keys()].map(async function(i) {
       if (i == 0) return;
       const tokenAddress = await myEth.call(
-        "ABI/version3x/IExchangeV3.abi",
+        "ABI/version36/IExchangeV3.abi",
         exchangeAddress,
         "getTokenAddress",
         i
@@ -87,7 +87,7 @@ async function fetchTokenGasStats(token: string) {
   console.log("fetch stats for token:", token);
 
   const symbol = await myEth.call(
-    "ABI/version3x/ERC20Token.abi",
+    "ABI/version36/ERC20Token.abi",
     token,
     "symbol"
   );
@@ -95,7 +95,7 @@ async function fetchTokenGasStats(token: string) {
   if (symbol.startsWith("LP-")) return;
 
   const transferEvents = await myEth.getEvents(
-    "ABI/version3x/ERC20Token.abi",
+    "ABI/version36/ERC20Token.abi",
     token,
     "Transfer",
     100000
