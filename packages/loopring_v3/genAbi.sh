@@ -3,11 +3,11 @@
 rm -rf ABI/*
 
 node_modules/solc/solcjs \
-    -o ABI/version36/ --overwrite \
+    -o ABI/version38/ --overwrite \
     --abi contracts/core/iface/*.sol \
     --allow-paths contracts/thirdparty/proxies/*.sol contracts/thirdparty/*.sol contracts/lib/*.sol
 
-ABI_PATH="ABI/version36"
+ABI_PATH="ABI/version38"
 
 for file in $ABI_PATH/*
 do
