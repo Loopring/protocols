@@ -23,7 +23,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
     uint public constant CURVE_CHANGE_MIN_DELAY   = 7 days;
     uint public constant CURVE_CHANGE_AUTH_WINDOW = 7 days;
 
-    mapping (address => uint) public amplificationFactors;
+    mapping (address => uint)        amplificationFactors;
     mapping (address => uint) public curveChangeAuthorization;
 
     function getInitialVirtualBalances(
@@ -60,7 +60,7 @@ contract AmplifiedAmmController is IAmmController, Claimable
             return true;
         }
 
-        if (getAmplificationFactor(pool) != AMPLIFICATION_FACTOR_BASE) {
+        if (amplificationFactors[pool] != 0) {
             return false;
         }
 
