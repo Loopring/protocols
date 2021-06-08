@@ -1,7 +1,7 @@
 {
   "name": "loopring_v3",
   "version": "3.0.0",
-  "description": "Loopring DEX protocol version 3.0",
+  "description": "Loopring DEX protocol version 3.x",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -33,7 +33,7 @@
     "compile": "truffle compile",
     "make": "LIBRARY_PATH=$LIBRARY_PATH:/usr/local/lib/ make",
     "build": "./install && LIBRARY_PATH=$LIBRARY_PATH:/usr/local/lib/ make && npm run compile",
-    "genabi": "rm -rf ./ABI && mkdir -p ABI/version36 && node ./genAbi.js",
+    "genabi": "rm -rf ./ABI && mkdir -p ABI/version3x && node ./genAbi.js",
     "ganache": "./ganache.sh",
     "migrate": "npm run transpile && truffle migrate --network live | tee -a mainnet.deployed",
     "migrate-ropsten": "npm run transpile && truffle migrate --network ropsten   | tee -a ropsten.deployed",
