@@ -12,23 +12,25 @@ import "./AmmExitProcess.sol";
 import "./AmmJoinProcess.sol";
 import "./AmmPoolToken.sol";
 import "./AmmUpdateProcess.sol";
+import "./AmmVirtualBalanceProcess.sol";
 import "./AmmWithdrawProcess.sol";
 
 
 /// @title AmmTransactionReceiver
 library AmmTransactionReceiver
 {
-    using AmmDepositProcess  for AmmData.State;
-    using AmmExitProcess     for AmmData.State;
-    using AmmJoinProcess     for AmmData.State;
-    using AmmPoolToken       for AmmData.State;
-    using AmmUtil            for AmmData.State;
-    using AmmUpdateProcess   for AmmData.State;
-    using AmmWithdrawProcess for AmmData.State;
-    using BlockReader        for bytes;
-    using MathUint           for uint;
-    using MathUint96         for uint96;
-    using SafeCast           for uint;
+    using AmmDepositProcess         for AmmData.State;
+    using AmmExitProcess            for AmmData.State;
+    using AmmJoinProcess            for AmmData.State;
+    using AmmPoolToken              for AmmData.State;
+    using AmmUtil                   for AmmData.State;
+    using AmmUpdateProcess          for AmmData.State;
+    using AmmVirtualBalanceProcess  for AmmData.State;
+    using AmmWithdrawProcess        for AmmData.State;
+    using BlockReader               for bytes;
+    using MathUint                  for uint;
+    using MathUint96                for uint96;
+    using SafeCast                  for uint;
 
     function onReceiveTransactions(
         AmmData.State    storage  S,
@@ -106,58 +108,22 @@ library AmmTransactionReceiver
         }
         if (txType == AmmData.PoolTxType.JOIN) {
             S.approveAmmUpdates(ctx, true);
-            S.processJoin(
-                ctx,
-                abi.decode(data, (AmmData.PoolJoin)),
-                signature
-            );
+            S.processJoin(ctx, abi.decode(data, (AmmData.PoolJoin)), signature);
             S.approveAmmUpdates(ctx, false);
         } else if (txType == AmmData.PoolTxType.EXIT) {
             S.approveAmmUpdates(ctx, true);
-            S.processExit(
-                ctx,
-                abi.decode(data, (AmmData.PoolExit)),
-                signature
-            );
+            S.processExit(ctx, abi.decode(data, (AmmData.PoolExit)), signature);
             S.approveAmmUpdates(ctx, false);
         } else if (txType == AmmData.PoolTxType.SET_VIRTUAL_BALANCES) {
             S.approveAmmUpdates(ctx, true);
-            processSetVirtualBalances(
-                ctx,
-                abi.decode(data, (AmmData.PoolVirtualBalances))
-            );
+            S.processSetVirtualBalances(ctx, abi.decode(data, (AmmData.PoolVirtualBalances)));
             S.approveAmmUpdates(ctx, false);
         } else if (txType == AmmData.PoolTxType.DEPOSIT) {
-            S.processDeposit(
-                ctx,
-                abi.decode(data, (AmmData.PoolDeposit))
-            );
+            S.processDeposit(ctx, abi.decode(data, (AmmData.PoolDeposit)));
          } else if (txType == AmmData.PoolTxType.WITHDRAW) {
-             S.processWithdrawal(
-                ctx,
-                abi.decode(data, (AmmData.PoolWithdrawal))
-            );
+            S.processWithdrawal(ctx, abi.decode(data, (AmmData.PoolWithdrawal)));
         } else {
             revert("INVALID_POOL_TX_TYPE");
         }
-    }
-
-    function processSetVirtualBalances(
-        AmmData.Context             memory  ctx,
-        AmmData.PoolVirtualBalances memory  poolVirtualBalances
-        )
-        internal
-    {
-        require(poolVirtualBalances.vBalancesNew.length == ctx.tokens.length, "INVALID_DATA");
-        require(
-            ctx.settings.controller.authorizeVirtualBalances(
-                ctx.tokenBalancesL2,
-                ctx.vTokenBalancesL2,
-                poolVirtualBalances.vBalancesNew,
-                poolVirtualBalances.data
-            ),
-            "NEW_VIRTUAL_BALANCES_NOT_AUTHORIZED"
-        );
-        ctx.vTokenBalancesL2 = poolVirtualBalances.vBalancesNew;
     }
 }
