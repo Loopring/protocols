@@ -76,7 +76,7 @@
     "node": "^13.10.1",
     "npm": "^7.15.0",
     "npm-watch": "^0.6.0",
-    "prettier": "^1.18.2",
+    "prettier": "^2.3.1",
     "pretty-quick": "^2.0.0",
     "solc": "0.7.3",
     "solidity-coverage": "^0.7.5",
