@@ -214,7 +214,6 @@ contract LoopringAmmPool is
         nonReentrant
         onlyFromAssetManager
     {
-        require(!state.exitMode, "DISALLOWED_IN_EXIT_MODE");
         state.balancesL1[token] = balance;
     }
 
