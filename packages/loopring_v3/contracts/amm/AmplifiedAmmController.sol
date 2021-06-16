@@ -61,11 +61,6 @@ contract AmplifiedAmmController is IAmmController, Claimable
 
         // Check if a curve change was explicitly authorized
         if (consumeCurveChangeAuthorized(pool)) {
-            for (uint i = 0; i < balances.length; i++) {
-                if (vBalancesNew[i] < balances[i]) {
-                    return false;
-                }
-            }
             return true;
         }
 
