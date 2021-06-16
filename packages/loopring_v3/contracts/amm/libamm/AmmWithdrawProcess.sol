@@ -27,6 +27,8 @@ library AmmWithdrawProcess
     {
         require(ctx.settings.assetManager != IAssetManager(0), "CANNOT_WITHDRAW_FROM_POOL");
         require(poolWithdrawal.amounts.length == ctx.tokens.length, "INVALID_WITHDRAWAL_AMOUNTS");
+        // require(!S.exitMode, "WITHDRAWAL_DISALLOWED_IN_EXIT_MODE")
+
         for (uint i = 0; i < ctx.tokens.length; i++) {
             uint96 amount = poolWithdrawal.amounts[i];
             if (amount > 0) {

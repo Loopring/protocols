@@ -41,6 +41,7 @@ library AmmJoinProcess
     {
         require(!ctx.settings.joinsDisabled, "JOINS_DISABLED");
         require(join.validUntil >= block.timestamp, "EXPIRED");
+        // require(!S.exitMode, "JOIN_DISALLOWED_IN_EXIT_MODE")
 
         bytes32 txHash = AmmJoinRequest.hash(ctx.domainSeparator, join);
         if (signature.length == 0) {
