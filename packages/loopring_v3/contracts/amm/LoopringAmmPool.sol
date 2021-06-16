@@ -212,7 +212,6 @@ contract LoopringAmmPool is
         )
         external
         nonReentrant
-        onlyWhenOnline
         onlyFromAssetManager
     {
         require(!state.exitMode, "DISALLOWED_IN_EXIT_MODE");
