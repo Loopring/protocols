@@ -34,7 +34,6 @@ library AmmWithdrawProcess
             if (amount > 0) {
                 address token = ctx.tokens[i].addr;
                 verifyWithdrawalTx(ctx, ctx.tokens[i].tokenID, amount);
-                // token.transferOut(..., ...) where is the trasfer out?
                 S.balancesL1[token] = S.balancesL1[token].add(amount);
             }
         }
