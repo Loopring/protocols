@@ -51,9 +51,6 @@ library AmmExitProcess
         if (signature.length == 0) {
             if (S.exitMode) {
                 require(exit.fee == 0, "INVALID_FEE");
-                // for (uint i = 0; i < S.tokens.length; i++) {
-                //     require(S.balancesL1[S.tokens[i]] == 0, "L1_BALANCE_NOT_ZERO");
-                // }
             } else {
                 bytes32 forcedExitHash = AmmExitRequest.hash(ctx.domainSeparator, S.forcedExit[exit.owner]);
                 if (txHash == forcedExitHash) {
