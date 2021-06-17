@@ -71,7 +71,7 @@
     "mocha": "^8.2.1",
     "npm-watch": "^0.6.0",
     "prettier": "^2.3.1",
-    "pretty-quick": "^2.0.0",
+    "pretty-quick": "^3.1.1",
     "solidity-coverage": "^0.7.1",
     "solium": "^1.2.5",
     "truffle": "^5.1.25",

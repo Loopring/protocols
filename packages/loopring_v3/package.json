@@ -77,7 +77,7 @@
     "npm": "^7.15.0",
     "npm-watch": "^0.6.0",
     "prettier": "^2.3.1",
-    "pretty-quick": "^2.0.0",
+    "pretty-quick": "^3.1.1",
     "solc": "0.7.3",
     "solidity-coverage": "^0.7.5",
     "solium": "^1.2.5",
