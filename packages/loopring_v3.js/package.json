@@ -37,7 +37,7 @@
     "node": "^13.10.1",
     "node-gyp": "^8.1.0",
     "npm": "^7.15.0",
-    "npm-watch": "^0.6.0",
+    "npm-watch": "^0.10.0",
     "prettier": "^2.3.1",
     "pretty-quick": "^3.1.1",
     "typescript": "4.0.5",
