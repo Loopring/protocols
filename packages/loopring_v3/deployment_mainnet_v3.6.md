@@ -1970,6 +1970,73 @@
     tokenSymbol: 'LP-RENDOGE-ETH'
   }
   ```
+  
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-BTC2XFLI-ETH',
+    accountID: 110,
+    tokens: [
+      '0x0b498ff89709d3838a063f1dfa463091f9801c2b',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-BTC2XFLI-ETH'
+  }
+  ```
+
+  111. IDLE-ETH: 0x5359f0fd5ef2a6f0205436cc19eec1d6fc521b5c
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-IDLE-ETH',
+    accountID: 111,
+    tokens: [
+      '0x875773784Af8135eA0ef43b5a374AaD105c5D39e',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-IDLE-ETH'
+  }
+  ```
+
+  112. DEP-ETH: 0xbDC384dB410E56F4877A086F5b68DeBD673a7c48
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-DEP-ETH',
+    accountID: 112,
+    tokens: [
+      '0x1a3496c18d558bd9c6c8f609e1b129f67ab08163',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-DEP-ETH'
+  }
+  ```
+
+  113. BKT-USDT: 0xBeC0c576EF02cB6341725607AB5D941e32B44437
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-BKT-USDT',
+    accountID: 113,
+    tokens: [
+      '0x9d62526f5ce701950c30f2caca70edf70f9fbf0f',
+      '0xdac17f958d2ee523a2206206994597c13d831ec7'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-BKT-USDT'
+  }
+  ```
   ***
 
 - Registered tokens:
@@ -2210,3 +2277,11 @@
   - LP-RICE-USDT: 0xd0406913f2f58d1696eb9c3677e6713dd528f8cd, tokenId: 234
   - LP-LRC-USDC: 0x194db39e4c99f6c8dd81b4647465f7599f3c215a, tokenId: 235
   - LP-RENDOGE-ETH: 0xc50138e6b5c85622e4b8ab9003eb0bd35dcf6f78, tokenId: 236
+  - BTC2XFLI: 0x0b498ff89709d3838a063f1dfa463091f9801c2b, tokenId: 237
+  - IDLE: 0x875773784Af8135eA0ef43b5a374AaD105c5D39e, tokenId: 238
+  - DEP: 0x1a3496c18d558bd9c6c8f609e1b129f67ab08163, tokenId: 239
+  - BKT: 0x9d62526f5ce701950c30f2caca70edf70f9fbf0f, tokenId: 240
+  - LP-BTC2XFLI-ETH: 0xb8108988406db7c4035bcfef2bd924a9810ae7e6, tokenId: 241
+  - LP-IDLE-ETH: 0x5359f0fd5ef2a6f0205436cc19eec1d6fc521b5c, tokenId: 242
+  - LP-DEP-ETH: 0xbDC384dB410E56F4877A086F5b68DeBD673a7c48, tokenId: 243
+  - LP-BKT-USDT: 0xBeC0c576EF02cB6341725607AB5D941e32B44437, tokenId: 244
