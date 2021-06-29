@@ -39,7 +39,7 @@ contract SmartWallet is ERC1271
 
     bytes32     public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
-    address     public immutable ownerSetter;
+    address     public immutable initializer;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -73,11 +73,11 @@ contract SmartWallet is ERC1271
         _;
     }
 
-    modifier canSetOwner()
+    modifier canInitializeOwner()
     {
         require(
-            msg.sender == ownerSetter &&
-            wallet.owner == ownerSetter,
+            msg.sender == initializer &&
+            wallet.owner == initializer,
             "NOT_ALLOWED_TO_SET_OWNER"
         );
         _;
@@ -85,7 +85,7 @@ contract SmartWallet is ERC1271
 
     constructor(
         PriceOracle _priceOracle,
-        address     _ownerSetter
+        address     _initializer
         )
     {
         isImplementationContract = true;
@@ -95,7 +95,7 @@ contract SmartWallet is ERC1271
         );
 
         priceOracle = _priceOracle;
-        ownerSetter = _ownerSetter;
+        initializer = _initializer;
     }
 
     /// @dev Set up this wallet.
@@ -145,11 +145,11 @@ contract SmartWallet is ERC1271
     //
     // Owner
     //
-    function setOwner(
+    function initializeOwner(
         address _owner
         )
         external
-        canSetOwner
+        canInitializeOwner
     {
         wallet.owner = _owner;
     }
