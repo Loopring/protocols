@@ -39,7 +39,7 @@ contract SmartWallet is ERC1271
 
     bytes32     public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
-
+    address     public immutable ownerSetter;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -73,8 +73,19 @@ contract SmartWallet is ERC1271
         _;
     }
 
+    modifier canSetOwner()
+    {
+        require(
+            msg.sender == ownerSetter &&
+            wallet.owner == ownerSetter,
+            "NOT_ALLOWED_TO_SET_OWNER"
+        );
+        _;
+    }
+
     constructor(
-        PriceOracle _priceOracle
+        PriceOracle _priceOracle,
+        address     _ownerSetter
         )
     {
         isImplementationContract = true;
@@ -84,6 +95,7 @@ contract SmartWallet is ERC1271
         );
 
         priceOracle = _priceOracle;
+        ownerSetter = _ownerSetter;
     }
 
     /// @dev Set up this wallet.
@@ -128,6 +140,18 @@ contract SmartWallet is ERC1271
         external
         payable
     {
+    }
+
+    //
+    // Owner
+    //
+    function setOwner(
+        address _owner
+        )
+        external
+        canSetOwner
+    {
+        wallet.owner = _owner;
     }
 
     //
