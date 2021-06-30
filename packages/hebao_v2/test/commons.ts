@@ -53,7 +53,7 @@ export async function newWalletImpl() {
       UpgradeLib: UpgradeLib.address,
       WhitelistLib: WhitelistLib.address
     }
-  })).deploy(ethers.constants.AddressZero);
+  })).deploy(ethers.constants.AddressZero, ethers.constants.AddressZero);
 
   return smartWallet;
 }
@@ -100,6 +100,7 @@ export async function newWalletFactoryContract(deployer?: string) {
     "WhitelistLib"
   )).deploy();
 
+  const ownerSetter = deployer ? deployer : ethers.constants.AddressZero;
   smartWallet = await (await ethers.getContractFactory("SmartWallet", {
     libraries: {
       ERC1271Lib: ERC1271Lib.address,
@@ -113,7 +114,10 @@ export async function newWalletFactoryContract(deployer?: string) {
       UpgradeLib: UpgradeLib.address,
       WhitelistLib: WhitelistLib.address
     }
-  })).deploy(ethers.constants.AddressZero /*testPriceOracle.address*/);
+  })).deploy(
+    ethers.constants.AddressZero /*testPriceOracle.address*/,
+    ownerSetter
+  );
   // console.log("smartWallet address:", smartWallet.address);
 
   walletFactory = await (await ethers.getContractFactory(
@@ -123,7 +127,9 @@ export async function newWalletFactoryContract(deployer?: string) {
   await walletFactory.deployed();
 
   if (deployer) {
-    return await walletFactory.connect(deployer);
+    const _signer = await addrToSigner(deployer);
+    // console.log("_signer:", _signer);
+    return await walletFactory.connect(_signer);
   } else {
     return walletFactory;
   }
@@ -190,6 +196,25 @@ export async function newWallet(
   return smartWallet;
 }
 
+export async function attachWallet(wallet: string) {
+  const smartWallet = await (await ethers.getContractFactory("SmartWallet", {
+    libraries: {
+      ERC1271Lib: ethers.constants.AddressZero,
+      ERC20Lib: ethers.constants.AddressZero,
+      GuardianLib: ethers.constants.AddressZero,
+      InheritanceLib: ethers.constants.AddressZero,
+      LockLib: ethers.constants.AddressZero,
+      MetaTxLib: ethers.constants.AddressZero,
+      QuotaLib: ethers.constants.AddressZero,
+      RecoverLib: ethers.constants.AddressZero,
+      UpgradeLib: ethers.constants.AddressZero,
+      WhitelistLib: ethers.constants.AddressZero
+    }
+  })).attach(wallet);
+
+  return smartWallet;
+}
+
 export async function getAllEvent(contract: any, fromBlock: number) {
   const events = await contract.queryFilter(
     { address: contract.address },
@@ -245,6 +270,18 @@ export async function getContractABI(contractName: string) {
       resolve(undefined);
     });
   });
+}
+
+export async function addrToSigner(addr: string) {
+  const signers = await ethers.getSigners();
+  for (const signer of signers) {
+    const signerAddr = await signer.getAddress();
+    if (addr.toLowerCase() === signerAddr.toLowerCase()) {
+      return signer;
+    }
+  }
+
+  throw new Error("signer not found:" + addr);
 }
 
 export function sortSignersAndSignatures(

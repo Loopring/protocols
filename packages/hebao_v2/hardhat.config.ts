@@ -32,8 +32,6 @@ function loadTestAccounts() {
   return accounts;
 }
 
-// loadTestAccounts();
-
 export default {
   defaultNetwork: "hardhat",
   networks: {
@@ -81,7 +79,7 @@ export default {
       gasMultiplier: 1,
       timeout: 20000,
       httpHeaders: undefined,
-      accounts: ["priv-key-str"]
+      accounts: []
     }
   },
 

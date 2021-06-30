@@ -181,7 +181,11 @@ describe("wallet", () => {
       const masterCopy = await wallet.getMasterCopy();
 
       // console.log("guardian1.privateKey:", guardian1.privateKey);
-      const newGuardians = ["0x" + "11".repeat(20), "0x" + "11".repeat(20), "0x" + "11".repeat(20)];
+      const newGuardians = [
+        "0x" + "11".repeat(20),
+        "0x" + "11".repeat(20),
+        "0x" + "11".repeat(20)
+      ];
       const sig1 = signRecover(
         masterCopy,
         wallet.address,
@@ -221,9 +225,7 @@ describe("wallet", () => {
       } catch (err) {
         // console.log(err.message);
         expect(err.message.includes("INVALID_ORDERING"));
-
       }
     });
-
   });
 });
