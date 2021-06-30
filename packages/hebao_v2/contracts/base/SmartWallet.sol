@@ -85,7 +85,7 @@ contract SmartWallet is ERC1271
 
     constructor(
         PriceOracle _priceOracle,
-        address     _initializer
+        address     _blankOwner
         )
     {
         isImplementationContract = true;
@@ -95,7 +95,7 @@ contract SmartWallet is ERC1271
         );
 
         priceOracle = _priceOracle;
-        initializer = _initializer;
+        blankOwner = _blankOwner;
     }
 
     /// @dev Set up this wallet.

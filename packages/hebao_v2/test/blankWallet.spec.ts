@@ -23,10 +23,11 @@ describe("walletFactory", () => {
       const walletFactory = await newWalletFactoryContract(ownerSetter);
 
       const salt = new Date().getTime();
+      const guardians = ["0x" + "11".repeat(20)];
       const signature = signCreateWallet(
         walletFactory.address,
         ownerSetter,
-        [],
+        guardians,
         new BN(0),
         ethers.constants.AddressZero,
         ethers.constants.AddressZero,
@@ -38,7 +39,7 @@ describe("walletFactory", () => {
 
       const walletConfig: any = {
         owner: ownerSetter,
-        guardians: [],
+        guardians,
         quota: 0,
         inheritor: ethers.constants.AddressZero,
         feeRecipient: ethers.constants.AddressZero,
@@ -64,7 +65,7 @@ describe("walletFactory", () => {
       // other accounts can not set owner:
       wallet = await wallet.connect(account2);
       try {
-        await wallet.initializeOwner(newOwner);
+        await wallet.transferOwnership(newOwner);
       } catch (err) {
         // console.log("err:", err.message);
         expect(err.message.includes("NOT_ALLOWED_TO_SET_OWNER"));
@@ -72,7 +73,7 @@ describe("walletFactory", () => {
 
       // ownerSetter should be able to set owner if owner if 0x0:
       wallet = await wallet.connect(account3);
-      const setOwnerTx = await wallet.initializeOwner(newOwner);
+      const setOwnerTx = await wallet.transferOwnership(newOwner);
       const ownerAfter = (await wallet.wallet()).owner;
       expect(ownerAfter.toLowerCase()).to.equal(newOwner.toLowerCase());
       await setOwnerTx.wait();
@@ -80,7 +81,7 @@ describe("walletFactory", () => {
       // ownerSetter should not be able to set owner again if owne is not 0x0:
       const newOwner2 = "0x" + "34".repeat(20);
       try {
-        await wallet.initializeOwner(newOwner2);
+        await wallet.transferOwnership(newOwner2);
       } catch (err) {
         expect(err.message.includes("NOT_ALLOWED_TO_SET_OWNER"));
       }
