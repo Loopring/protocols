@@ -39,7 +39,7 @@ contract SmartWallet is ERC1271
 
     bytes32     public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
-    address     public immutable initialOwner;
+    address     public immutable blankOwner;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -76,8 +76,8 @@ contract SmartWallet is ERC1271
     modifier canTransferOwnership()
     {
         require(
-            msg.sender == initialOwner &&
-            wallet.owner == initialOwner,
+            msg.sender == blankOwner &&
+            wallet.owner == blankOwner,
             "NOT_ALLOWED_TO_SET_OWNER"
         );
         _;
