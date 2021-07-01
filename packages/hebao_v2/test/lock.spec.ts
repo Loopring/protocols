@@ -65,7 +65,7 @@ describe("wallet", () => {
       expect(walletDataAfter.locked).to.equal(true);
     });
 
-    it.only("unlock wallet with majority's approval(owner required)", async () => {
+    it("unlock wallet with majority's approval(owner required)", async () => {
       [account1, account2, account3] = await ethers.getSigners();
       const owner = await account1.getAddress();
       const guardians: string[] = [

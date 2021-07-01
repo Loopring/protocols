@@ -217,6 +217,28 @@ export function signUnlock(
   return { txSignature, hash };
 }
 
+export function signChangeDailyQuotaWA(
+  masterCopy: string,
+  wallet: string,
+  validUntil: BN,
+  newQuota: BN,
+  signer: string
+) {
+  const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
+  const TYPE_STR =
+    "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)";
+  const CHANGE_QUOTA_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
+
+  const approvalEncoded = ethAbi.encodeParameters(
+    ["bytes32", "address", "uint256", "uint256"],
+    [CHANGE_QUOTA_TYPEHASH, wallet, validUntil, newQuota]
+  );
+  const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
+
+  const txSignature = sign(signer, hash);
+  return { txSignature, hash };
+}
+
 // export function signAddToWhitelistWA(
 //   request: SignedRequest,
 //   addr: string,
