@@ -17,7 +17,7 @@ describe("walletFactory", () => {
   let account3: Signer;
 
   describe("owner setter", () => {
-    it.only("should be able to set owner", async () => {
+    it("should be able to set owner", async () => {
       [account1, account2, account3] = await ethers.getSigners();
       const ownerSetter = await account3.getAddress();
       const walletFactory = await newWalletFactoryContract(ownerSetter);

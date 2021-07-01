@@ -118,7 +118,6 @@ export async function newWalletFactoryContract(deployer?: string) {
     ethers.constants.AddressZero /*testPriceOracle.address*/,
     ownerSetter
   );
-  // console.log("smartWallet address:", smartWallet.address);
 
   walletFactory = await (await ethers.getContractFactory(
     "WalletFactory"
@@ -177,20 +176,7 @@ export async function newWallet(
   // const allEvents = await getAllEvent(walletFactory, tx.blockNumber);
   // console.log(allEvents);
 
-  const smartWallet = await (await ethers.getContractFactory("SmartWallet", {
-    libraries: {
-      ERC1271Lib: ethers.constants.AddressZero,
-      ERC20Lib: ethers.constants.AddressZero,
-      GuardianLib: ethers.constants.AddressZero,
-      InheritanceLib: ethers.constants.AddressZero,
-      LockLib: ethers.constants.AddressZero,
-      MetaTxLib: ethers.constants.AddressZero,
-      QuotaLib: ethers.constants.AddressZero,
-      RecoverLib: ethers.constants.AddressZero,
-      UpgradeLib: ethers.constants.AddressZero,
-      WhitelistLib: ethers.constants.AddressZero
-    }
-  })).attach(walletAddrComputed);
+  const smartWallet = await attachWallet(walletAddrComputed);
 
   // console.log("SmartWallet:", smartWallet);
   return smartWallet;

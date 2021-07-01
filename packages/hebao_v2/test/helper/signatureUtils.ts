@@ -158,11 +158,7 @@ export function signRecover(
   return { txSignature, hash };
 }
 
-export function signMetaTx(
-  masterCopy: string,
-  metaTx: MetaTx,
-  signer: string
-) {
+export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
     "MetaTx(address relayer,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,bytes data)";
@@ -196,6 +192,26 @@ export function signMetaTx(
   );
 
   const hash = eip712.hashPacked(domainSeprator, encodedMetaTx);
+
+  const txSignature = sign(signer, hash);
+  return { txSignature, hash };
+}
+
+export function signUnlock(
+  masterCopy: string,
+  wallet: string,
+  validUntil: BN,
+  signer: string
+) {
+  const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
+  const TYPE_STR = "unlock(address wallet,uint256 validUntil)";
+  const UNLOCK_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
+
+  const approvalEncoded = ethAbi.encodeParameters(
+    ["bytes32", "address", "uint256"],
+    [UNLOCK_TYPEHASH, wallet, validUntil]
+  );
+  const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
   const txSignature = sign(signer, hash);
   return { txSignature, hash };
