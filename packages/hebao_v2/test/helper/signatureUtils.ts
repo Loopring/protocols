@@ -239,101 +239,27 @@ export function signChangeDailyQuotaWA(
   return { txSignature, hash };
 }
 
-// export function signAddToWhitelistWA(
-//   request: SignedRequest,
-//   addr: string,
-//   moduleAddr: string
-// ) {
-//   const domainSeprator = eip712.hash("WhitelistModule", "1.2.0", moduleAddr);
-//   const ADD_TO_WHITELIST_TYPEHASH = ethUtil.keccak(
-//     Buffer.from(
-//       "addToWhitelist(address wallet,uint256 validUntil,address addr)"
-//     )
-//   );
-//   const encodedRequest = ethAbi.encodeParameters(
-//     ["bytes32", "address", "uint256", "address"],
-//     [ADD_TO_WHITELIST_TYPEHASH, request.wallet, request.validUntil, addr]
-//   );
-//   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-//   // console.log(`hash: ${hash}`);
-//   // console.log(`request.signers: ${request.signers}`);
+export function signAddToWhitelistWA(
+  masterCopy: string,
+  wallet: string,
+  validUntil: BN,
+  addr: string,
+  signer: string
+) {
+  const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
+  const TYPE_STR =
+    "addToWhitelist(address wallet,uint256 validUntil,address addr)";
+  const TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
-//   for (const signer of request.signers) {
-//     if (signer) {
-//       const sig = sign(signer, hash);
-//       request.signatures.push(sig);
-//     }
-//   }
-// }
+  const approvalEncoded = ethAbi.encodeParameters(
+    ["bytes32", "address", "uint256", "address"],
+    [TYPEHASH, wallet, validUntil, addr]
+  );
+  const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
-// export function signUnlock(request: SignedRequest, moduleAddr: string) {
-//   const domainSeprator = eip712.hash("GuardianModule", "1.2.0", moduleAddr);
-//   const UNLOCK_TYPEHASH = ethUtil.keccak(
-//     Buffer.from("unlock(address wallet,uint256 validUntil)")
-//   );
-//   const encodedRequest = ethAbi.encodeParameters(
-//     ["bytes32", "address", "uint256"],
-//     [UNLOCK_TYPEHASH, request.wallet, request.validUntil]
-//   );
-//   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-//   // console.log("hash:", hash);
-//   // console.log(`request.signers: ${request.signers}`);
-
-//   for (const signer of request.signers) {
-//     if (signer) {
-//       const sig = sign(signer, hash);
-//       request.signatures.push(sig);
-//     }
-//   }
-// }
-
-// export function signRecover(
-//   request: SignedRequest,
-//   newOwner: string,
-//   moduleAddr: string
-// ) {
-//   const domainSeprator = eip712.hash("GuardianModule", "1.2.0", moduleAddr);
-//   const RECOVER_TYPEHASH = ethUtil.keccak(
-//     Buffer.from("recover(address wallet,uint256 validUntil,address newOwner)")
-//   );
-//   const encodedRequest = ethAbi.encodeParameters(
-//     ["bytes32", "address", "uint256", "address"],
-//     [RECOVER_TYPEHASH, request.wallet, request.validUntil, newOwner]
-//   );
-//   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-
-//   for (const signer of request.signers) {
-//     const sig = sign(signer, hash);
-//     request.signatures.push(sig);
-//   }
-// }
-
-// export function signChangeDailyQuotaWA(
-//   request: SignedRequest,
-//   newQuota: BN,
-//   moduleAddr: string
-// ) {
-//   const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
-//   const CHANGE_DAILY_QUOTE_TYPEHASH = ethUtil.keccak(
-//     Buffer.from(
-//       "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
-//     )
-//   );
-//   const encodedRequest = ethAbi.encodeParameters(
-//     ["bytes32", "address", "uint256", "uint256"],
-//     [
-//       CHANGE_DAILY_QUOTE_TYPEHASH,
-//       request.wallet,
-//       request.validUntil,
-//       newQuota.toString(10)
-//     ]
-//   );
-//   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-//   for (const signer of request.signers) {
-//     const sig = sign(signer, hash);
-//     request.signatures.push(sig);
-//   }
-// }
+  const txSignature = sign(signer, hash);
+  return { txSignature, hash };
+}
 
 // export function signTransferTokenApproved(
 //   request: SignedRequest,
@@ -481,45 +407,3 @@ export function signChangeDailyQuotaWA(
 //     request.signatures.push(sig);
 //   }
 // }
-
-// // export function getMetaTxHash(metaTx: MetaTx, moduleAddr: string) {
-// //   const domainSeprator = eip712.hash("ForwarderModule", "1.2.0", moduleAddr);
-
-// //   const META_TX_TYPEHASH = ethUtil.keccak(
-// //     Buffer.from(
-// //       "MetaTx(address from,address to,uint256 nonce,bytes32 txAwareHash,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
-// //     )
-// //   );
-
-// //   const data =
-// //     metaTx.txAwareHash === Constants.emptyBytes32
-// //       ? metaTx.data
-// //       : metaTx.data.slice(0, 10);
-
-// //   const encodedRequest = ethAbi.encodeParameters(
-// //     [
-// //       "bytes32",
-// //       "address",
-// //       "address",
-// //       "uint256",
-// //       "bytes32",
-// //       "address",
-// //       "uint256",
-// //       "uint256",
-// //       "bytes32"
-// //     ],
-// //     [
-// //       META_TX_TYPEHASH,
-// //       metaTx.from,
-// //       metaTx.to,
-// //       new BN(metaTx.nonce).toString(10),
-// //       metaTx.txAwareHash,
-// //       metaTx.gasToken,
-// //       new BN(metaTx.gasPrice).toString(10),
-// //       new BN(metaTx.gasLimit).toString(10),
-// //       ethUtil.keccak(data)
-// //     ]
-// //   );
-// //   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-// //   return hash;
-// // }

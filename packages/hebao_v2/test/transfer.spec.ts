@@ -32,8 +32,6 @@ describe("wallet", () => {
 
   describe("transfer token", () => {
     it("wallet owner should be able to transfer eth or ERC20 token of the wallet", async () => {
-      // console.log("wallet address:", wallet.address);
-
       // send eth to wallet:
       const tx = await account2.sendTransaction({
         from: owner,

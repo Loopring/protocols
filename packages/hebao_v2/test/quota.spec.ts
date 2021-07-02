@@ -42,7 +42,7 @@ describe("wallet", () => {
       );
     });
 
-    it.only("majority(owner required) should be able to change dialy quota immediately", async () => {
+    it("majority(owner required) should be able to change dialy quota immediately", async () => {
       [account1, account2, account3] = await ethers.getSigners();
       const owner = await account1.getAddress();
       const guardians: string[] = [
@@ -63,7 +63,6 @@ describe("wallet", () => {
       expect(walletDataAfter.locked).to.equal(true);
 
       const masterCopy = await wallet.getMasterCopy();
-
       const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
       const newQuota = "1" + "0".repeat(20);
       const sig1 = signChangeDailyQuotaWA(
@@ -96,6 +95,7 @@ describe("wallet", () => {
         wallet: wallet.address
       };
 
+      // Tx with approval will ignore wallet lock.
       const tx = await wallet.changeDailyQuotaWA(approval, newQuota);
       const quotaInfo = (await wallet.wallet())["quota"];
       expect(quotaInfo.currentQuota.toString()).to.equal(newQuota);
