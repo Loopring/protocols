@@ -144,6 +144,28 @@ describe("wallet", () => {
       );
     });
 
+    it("guardian can not be owner", async () => {
+      const owner = await account1.getAddress();
+      const guardian1 = await account2.getAddress();
+      try {
+        const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
+          owner,
+          guardian1
+        ]);
+      } catch (err) {
+        expect(err.message.includes("GUARDIAN_CAN_NOT_BE_OWNER"));
+      }
+
+      const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
+        guardian1
+      ]);
+      try {
+        await wallet.addGuardian(owner);
+      } catch (err) {
+        expect(err.message.includes("GUARDIAN_CAN_NOT_BE_OWNER"));
+      }
+    });
+
     it("add guardian with approval", async () => {
       const owner = await account1.getAddress();
       const guardian1 = await account2.getAddress();

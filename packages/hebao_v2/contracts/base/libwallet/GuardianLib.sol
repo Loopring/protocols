@@ -409,6 +409,7 @@ library GuardianLib
     {
         uint _numGuardians = numGuardians(wallet, true);
         require(_numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
+        require(guardian != wallet.owner, "GUARDIAN_CAN_NOT_BE_OWNER");
 
         uint validSince = block.timestamp;
         if (_numGuardians >= 2) {
