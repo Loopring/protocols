@@ -228,8 +228,8 @@ export async function getFirstEvent(
 }
 
 export async function advanceTime(time: number) {
-  const res = await ethers.provider.send("evm_increaseTime", time);
-  return res;
+  await ethers.provider.send("evm_increaseTime", [time]);
+  await ethers.provider.send("evm_mine");
 }
 
 export async function getBlockTimestamp(blockNumber: number) {

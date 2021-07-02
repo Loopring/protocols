@@ -4,7 +4,6 @@ import { sign } from "./helper/Signature";
 import {
   newWallet,
   getFirstEvent,
-  advanceTime,
   getBlockTimestamp,
   sortSignersAndSignatures
 } from "./commons";
@@ -151,7 +150,7 @@ describe("wallet", () => {
       const guardian2 = await account3.getAddress();
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
         guardian1,
-        guardian2,
+        guardian2
       ]);
       const masterCopy = await wallet.getMasterCopy();
 

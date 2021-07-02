@@ -261,149 +261,127 @@ export function signAddToWhitelistWA(
   return { txSignature, hash };
 }
 
-// export function signTransferTokenApproved(
-//   request: SignedRequest,
-//   token: string,
-//   to: string,
-//   amount: BN,
-//   logdata: string,
-//   moduleAddr: string
-// ) {
-//   const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
-//   const TRANSFER_TOKEN_TYPEHASH = ethUtil.keccak(
-//     Buffer.from(
-//       "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
-//     )
-//   );
-//   const encodedRequest = ethAbi.encodeParameters(
-//     [
-//       "bytes32",
-//       "address",
-//       "uint256",
-//       "address",
-//       "address",
-//       "uint256",
-//       "bytes32"
-//     ],
-//     [
-//       TRANSFER_TOKEN_TYPEHASH,
-//       request.wallet,
-//       request.validUntil,
-//       token,
-//       to,
-//       amount.toString(10),
-//       ethUtil.keccak(Buffer.from(logdata.slice(2), "hex"))
-//     ]
-//   );
-//   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-//   for (const signer of request.signers) {
-//     const sig = sign(signer, hash);
-//     request.signatures.push(sig);
-//   }
-// }
+export function signTransferTokenWA(
+  masterCopy: string,
+  wallet: string,
+  validUntil: BN,
+  token: string,
+  to: string,
+  amount: BN,
+  logdata: Buffer,
+  signer: string
+) {
+  const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
+  const TYPE_STR =
+    "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)";
+  const TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
-// export function signApproveTokenApproved(
-//   request: SignedRequest,
-//   token: string,
-//   to: string,
-//   amount: BN,
-//   moduleAddr: string
-// ) {
-//   const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
-//   const APPROVE_TOKEN_TYPEHASH = ethUtil.keccak(
-//     Buffer.from(
-//       "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
-//     )
-//   );
-//   const encodedRequest = ethAbi.encodeParameters(
-//     ["bytes32", "address", "uint256", "address", "address", "uint256"],
-//     [
-//       APPROVE_TOKEN_TYPEHASH,
-//       request.wallet,
-//       request.validUntil,
-//       token,
-//       to,
-//       amount.toString(10)
-//     ]
-//   );
-//   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-//   for (const signer of request.signers) {
-//     const sig = sign(signer, hash);
-//     request.signatures.push(sig);
-//   }
-// }
+  const approvalEncoded = ethAbi.encodeParameters(
+    [
+      "bytes32",
+      "address",
+      "uint256",
+      "address",
+      "address",
+      "uint256",
+      "bytes32"
+    ],
+    [TYPEHASH, wallet, validUntil, token, to, amount, ethUtil.keccak(logdata)]
+  );
+  const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
-// export function signCallContractApproved(
-//   request: SignedRequest,
-//   to: string,
-//   value: BN,
-//   data: string,
-//   moduleAddr: string
-// ) {
-//   const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
-//   const CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
-//     Buffer.from(
-//       "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
-//     )
-//   );
-//   const encodedRequest = ethAbi.encodeParameters(
-//     ["bytes32", "address", "uint256", "address", "uint256", "bytes32"],
-//     [
-//       CALL_CONTRACT_TYPEHASH,
-//       request.wallet,
-//       request.validUntil,
-//       to,
-//       value.toString(10),
-//       ethUtil.keccak(Buffer.from(data.slice(2), "hex"))
-//     ]
-//   );
-//   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-//   for (const signer of request.signers) {
-//     const sig = sign(signer, hash);
-//     request.signatures.push(sig);
-//   }
-// }
+  const txSignature = sign(signer, hash);
+  return { txSignature, hash };
+}
 
-// export function signApproveThenCallContractApproved(
-//   request: SignedRequest,
-//   token: string,
-//   to: string,
-//   amount: BN,
-//   value: BN,
-//   data: string,
-//   moduleAddr: string
-// ) {
-//   const domainSeprator = eip712.hash("TransferModule", "1.2.0", moduleAddr);
-//   const APPROVE_THEN_CALL_CONTRACT_TYPEHASH = ethUtil.keccak(
-//     Buffer.from(
-//       "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
-//     )
-//   );
-//   const encodedRequest = ethAbi.encodeParameters(
-//     [
-//       "bytes32",
-//       "address",
-//       "uint256",
-//       "address",
-//       "address",
-//       "uint256",
-//       "uint256",
-//       "bytes32"
-//     ],
-//     [
-//       APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
-//       request.wallet,
-//       request.validUntil,
-//       token,
-//       to,
-//       amount.toString(10),
-//       value.toString(10),
-//       ethUtil.keccak(Buffer.from(data.slice(2), "hex"))
-//     ]
-//   );
-//   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-//   for (const signer of request.signers) {
-//     const sig = sign(signer, hash);
-//     request.signatures.push(sig);
-//   }
-// }
+export function signCallContractWA(
+  masterCopy: string,
+  wallet: string,
+  validUntil: BN,
+  to: string,
+  value: BN,
+  data: Buffer,
+  signer: string
+) {
+  const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
+  const TYPE_STR =
+    "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)";
+  const TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
+
+  const approvalEncoded = ethAbi.encodeParameters(
+    ["bytes32", "address", "uint256", "address", "uint256", "bytes32"],
+    [TYPEHASH, wallet, validUntil, to, value, ethUtil.keccak(data)]
+  );
+  const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
+
+  const txSignature = sign(signer, hash);
+  return { txSignature, hash };
+}
+
+export function signApproveTokenWA(
+  masterCopy: string,
+  wallet: string,
+  validUntil: BN,
+  token: string,
+  to: string,
+  amount: BN,
+  signer: string
+) {
+  const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
+  const TYPE_STR =
+    "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)";
+  const TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
+
+  const approvalEncoded = ethAbi.encodeParameters(
+    ["bytes32", "address", "uint256", "address", "address", "uint256"],
+    [TYPEHASH, wallet, validUntil, token, to, amount]
+  );
+  const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
+
+  const txSignature = sign(signer, hash);
+  return { txSignature, hash };
+}
+
+export function signApproveThenCallContractWA(
+  masterCopy: string,
+  wallet: string,
+  validUntil: BN,
+  token: string,
+  to: string,
+  amount: BN,
+  value: BN,
+  data: Buffer,
+  signer: string
+) {
+  const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
+  const TYPE_STR =
+    "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)";
+  const TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
+
+  const approvalEncoded = ethAbi.encodeParameters(
+    [
+      "bytes32",
+      "address",
+      "uint256",
+      "address",
+      "address",
+      "uint256",
+      "uint256",
+      "bytes32"
+    ],
+    [
+      TYPEHASH,
+      wallet,
+      validUntil,
+      token,
+      to,
+      amount,
+      value,
+      ethUtil.keccak(data)
+    ]
+  );
+  const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
+
+  const txSignature = sign(signer, hash);
+  return { txSignature, hash };
+}

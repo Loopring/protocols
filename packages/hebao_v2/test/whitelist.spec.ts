@@ -25,7 +25,7 @@ describe("wallet", () => {
     wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
   });
 
-  describe.only("whitelist", () => {
+  describe("whitelist", () => {
     it("owner should be able to add address to its whitelist", async () => {
       const tx = await wallet.addToWhitelist(whiteListedAddr);
       const effectiveTime = await wallet.getWhitelistEffectiveTime(

@@ -7,7 +7,6 @@ import { sign } from "./helper/Signature";
 import {
   newWallet,
   getFirstEvent,
-  advanceTime,
   getBlockTimestamp,
   sortSignersAndSignatures
 } from "./commons";

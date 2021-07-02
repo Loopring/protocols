@@ -42,8 +42,10 @@ library GuardianLib
         external
     {
         address guardian = address(0);
+        address owner = wallet.owner;
         for (uint i = 0; i < _guardians.length; i++) {
             require(_guardians[i] > guardian, "INVALID_ORDERING");
+            require(_guardians[i] != owner, "GUARDIAN_CAN_NOT_BE_OWNER");
             guardian = _guardians[i];
             _addGuardian(wallet, guardian, 0, true);
         }

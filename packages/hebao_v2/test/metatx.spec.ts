@@ -3,7 +3,6 @@ import { MetaTx, signRecover, signMetaTx } from "./helper/signatureUtils";
 import {
   newWallet,
   getFirstEvent,
-  advanceTime,
   getBlockTimestamp,
   sortSignersAndSignatures
 } from "./commons";
@@ -90,10 +89,11 @@ describe("wallet", () => {
         wallet: wallet.address
       };
 
-      const data = wallet.interface.encodeFunctionData(
-        "recover",
-        [approval, newOwner, newGuardians]
-      );
+      const data = wallet.interface.encodeFunctionData("recover", [
+        approval,
+        newOwner,
+        newGuardians
+      ]);
 
       const metaTx: MetaTx = {
         sender: await account3.getAddress(),
@@ -129,7 +129,6 @@ describe("wallet", () => {
       );
 
       // console.log("metaTxEvent:", metaTxEvent);
-
     });
   });
 });
