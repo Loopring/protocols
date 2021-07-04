@@ -8,6 +8,7 @@ import {
   newWallet,
   getFirstEvent,
   getBlockTimestamp,
+  advanceTime,
   sortSignersAndSignatures
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
@@ -38,6 +39,47 @@ describe("wallet", () => {
       expect(quotaInfo.pendingQuota.toString()).to.equal(quotaAmount);
       expect(quotaInfo.pendingUntil.toString()).to.equal(
         blockTime + 3600 * 24 + ""
+      );
+    });
+
+    it.only("changeDialyQuota extra test", async () => {
+      [account1, account2, account3] = await ethers.getSigners();
+
+      const owner = await account1.getAddress();
+      const wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
+
+      const quotaAmount = ethers.utils.parseEther("10");
+      const tx = await wallet.changeDailyQuota(quotaAmount);
+      const quotaInfo = (await wallet.wallet())["quota"];
+
+      // console.log("quotaInfo:", quotaInfo);
+      const blockTime = await getBlockTimestamp(tx.blockNumber);
+      expect(quotaInfo.currentQuota.toString()).to.equal("0");
+      expect(quotaInfo.pendingQuota).to.equal(quotaAmount);
+      expect(quotaInfo.pendingUntil.toString()).to.equal(
+        blockTime + 3600 * 24 + ""
+      );
+
+      await advanceTime(3600 * 24);
+      const quotaAmount2 = ethers.utils.parseEther("20");
+      const tx2 = await wallet.changeDailyQuota(quotaAmount2);
+      const blockTime2 = await getBlockTimestamp(tx2.blockNumber);
+      const quotaInfo2 = (await wallet.wallet())["quota"];
+      expect(quotaInfo2.currentQuota).to.equal(quotaAmount);
+      expect(quotaInfo2.pendingQuota).to.equal(quotaAmount2);
+      expect(quotaInfo2.pendingUntil.toString()).to.equal(
+        blockTime2 + 3600 * 24 + ""
+      );
+
+      await advanceTime(3600 * 24);
+      const quotaAmount3 = ethers.utils.parseEther("50");
+      const tx3 = await wallet.changeDailyQuota(quotaAmount3);
+      const blockTime3 = await getBlockTimestamp(tx3.blockNumber);
+      const quotaInfo3 = (await wallet.wallet())["quota"];
+      expect(quotaInfo3.currentQuota).to.equal(quotaAmount2);
+      expect(quotaInfo3.pendingQuota).to.equal(quotaAmount3);
+      expect(quotaInfo3.pendingUntil.toString()).to.equal(
+        blockTime3 + 3600 * 24 + ""
       );
     });
 

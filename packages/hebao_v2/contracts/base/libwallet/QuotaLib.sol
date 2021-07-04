@@ -101,6 +101,7 @@ library QuotaLib
         }
 
         Quota storage quota = wallet.quota;
+        quota.currentQuota = currentQuota(wallet).toUint128();
         quota.pendingQuota = newQuota.toUint128();
         quota.pendingUntil = effectiveTime.toUint64();
         quota.currentQuota = currentQuota(wallet).toUint128();
