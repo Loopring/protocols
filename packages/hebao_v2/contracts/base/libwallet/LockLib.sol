@@ -68,7 +68,7 @@ library LockLib
         )
         internal
     {
-        wallet.locked = true;
+        wallet.locked = locked;
         emit WalletLocked(by, locked);
     }
 }

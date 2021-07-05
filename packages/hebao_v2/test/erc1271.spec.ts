@@ -29,5 +29,24 @@ describe("wallet lock", () => {
       const erc1271_magic_value = "0x1626ba7e";
       expect(retValue).to.equal(erc1271_magic_value);
     });
+
+    it("should not be able to verify erc1271 signature when wallet is locked", async () => {
+      [account1] = await ethers.getSigners();
+
+      const owner = await account1.getAddress();
+      const wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
+
+      const hash = "12".repeat(32);
+      const fakeHashBuf = Buffer.from(hash, "hex");
+      const signature = sign(owner, fakeHashBuf);
+
+      const retValue = await wallet.isValidSignature("0x" + hash, signature);
+      const erc1271_magic_value = "0x1626ba7e";
+      expect(retValue).to.equal(erc1271_magic_value);
+
+      await wallet.lock();
+      const retValue2 = await wallet.isValidSignature("0x" + hash, signature);
+      expect(retValue2).to.equal("0x00000000");
+    });
   });
 });

@@ -118,7 +118,6 @@ export async function newWalletFactoryContract(deployer?: string) {
     ethers.constants.AddressZero /*testPriceOracle.address*/,
     ownerSetter
   );
-  // console.log("smartWallet address:", smartWallet.address);
 
   walletFactory = await (await ethers.getContractFactory(
     "WalletFactory"
@@ -177,20 +176,7 @@ export async function newWallet(
   // const allEvents = await getAllEvent(walletFactory, tx.blockNumber);
   // console.log(allEvents);
 
-  const smartWallet = await (await ethers.getContractFactory("SmartWallet", {
-    libraries: {
-      ERC1271Lib: ethers.constants.AddressZero,
-      ERC20Lib: ethers.constants.AddressZero,
-      GuardianLib: ethers.constants.AddressZero,
-      InheritanceLib: ethers.constants.AddressZero,
-      LockLib: ethers.constants.AddressZero,
-      MetaTxLib: ethers.constants.AddressZero,
-      QuotaLib: ethers.constants.AddressZero,
-      RecoverLib: ethers.constants.AddressZero,
-      UpgradeLib: ethers.constants.AddressZero,
-      WhitelistLib: ethers.constants.AddressZero
-    }
-  })).attach(walletAddrComputed);
+  const smartWallet = await attachWallet(walletAddrComputed);
 
   // console.log("SmartWallet:", smartWallet);
   return smartWallet;
@@ -242,8 +228,8 @@ export async function getFirstEvent(
 }
 
 export async function advanceTime(time: number) {
-  const res = await ethers.provider.send("evm_increaseTime", time);
-  return res;
+  await ethers.provider.send("evm_increaseTime", [time]);
+  await ethers.provider.send("evm_mine");
 }
 
 export async function getBlockTimestamp(blockNumber: number) {
@@ -300,6 +286,15 @@ export function sortSignersAndSignatures(
   });
   const sortedSignatures = sortedSigners.map(s => sigMap.get(s));
   return { sortedSigners, sortedSignatures };
+}
+
+export async function getCurrentQuota(quotaInfo: any, blockNumber: number) {
+  const blockTime = await getBlockTimestamp(blockNumber);
+  const pendingUntil = quotaInfo.pendingUntil.toNumber();
+
+  return pendingUntil <= blockTime
+    ? quotaInfo.pendingQuota
+    : quotaInfo.currentQuota;
 }
 
 function sortAddrs(addrs: string[]) {

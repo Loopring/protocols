@@ -29,6 +29,7 @@ contract TestTargetContract
         payable
     {
         value = _value;
+        emit Invoked(msg.sender);
     }
 
     function functionRevert(

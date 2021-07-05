@@ -1,12 +1,7 @@
 import { expect } from "./setup";
 import { signCreateWallet } from "./helper/signatureUtils";
 import { sign } from "./helper/Signature";
-import {
-  newWallet,
-  getFirstEvent,
-  advanceTime,
-  getBlockTimestamp
-} from "./commons";
+import { newWallet, getFirstEvent, getBlockTimestamp } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 

@@ -76,7 +76,10 @@ library QuotaLib
         if (available != MAX_QUOTA) {
             uint value = (token == address(0)) ?
                 amount :
-                priceOracle.tokenValue(token, amount);
+                ((address(priceOracle) == address(0)) ?
+                 0 :
+                 priceOracle.tokenValue(token, amount));
+
             if (value > 0) {
                 require(available >= value, "QUOTA_EXCEEDED");
                 _addToSpent(wallet, q, value);
