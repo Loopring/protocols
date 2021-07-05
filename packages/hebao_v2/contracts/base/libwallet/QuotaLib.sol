@@ -104,7 +104,6 @@ library QuotaLib
         quota.currentQuota = currentQuota(wallet).toUint128();
         quota.pendingQuota = newQuota.toUint128();
         quota.pendingUntil = effectiveTime.toUint64();
-        quota.currentQuota = currentQuota(wallet).toUint128();
 
         emit QuotaScheduled(
             address(this),

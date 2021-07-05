@@ -288,6 +288,15 @@ export function sortSignersAndSignatures(
   return { sortedSigners, sortedSignatures };
 }
 
+export async function getCurrentQuota(quotaInfo: any, blockNumber: number) {
+  const blockTime = await getBlockTimestamp(blockNumber);
+  const pendingUntil = quotaInfo.pendingUntil.toNumber();
+
+  return pendingUntil <= blockTime
+    ? quotaInfo.pendingQuota
+    : quotaInfo.currentQuota;
+}
+
 function sortAddrs(addrs: string[]) {
   return addrs.sort((a, b) => {
     const numA = parseInt(a.slice(2, 10), 16);

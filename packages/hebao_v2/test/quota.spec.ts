@@ -9,6 +9,7 @@ import {
   getFirstEvent,
   getBlockTimestamp,
   advanceTime,
+  getCurrentQuota,
   sortSignersAndSignatures
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
@@ -42,7 +43,7 @@ describe("wallet", () => {
       );
     });
 
-    it.only("changeDialyQuota extra test", async () => {
+    it("changeDialyQuota extra test", async () => {
       [account1, account2, account3] = await ethers.getSigners();
 
       const owner = await account1.getAddress();
@@ -54,7 +55,6 @@ describe("wallet", () => {
 
       // console.log("quotaInfo:", quotaInfo);
       const blockTime = await getBlockTimestamp(tx.blockNumber);
-      expect(quotaInfo.currentQuota.toString()).to.equal("0");
       expect(quotaInfo.pendingQuota).to.equal(quotaAmount);
       expect(quotaInfo.pendingUntil.toString()).to.equal(
         blockTime + 3600 * 24 + ""
@@ -65,7 +65,8 @@ describe("wallet", () => {
       const tx2 = await wallet.changeDailyQuota(quotaAmount2);
       const blockTime2 = await getBlockTimestamp(tx2.blockNumber);
       const quotaInfo2 = (await wallet.wallet())["quota"];
-      expect(quotaInfo2.currentQuota).to.equal(quotaAmount);
+      const currentQuota2 = await getCurrentQuota(quotaInfo2, tx2.blockNumber);
+      expect(currentQuota2).to.equal(quotaAmount);
       expect(quotaInfo2.pendingQuota).to.equal(quotaAmount2);
       expect(quotaInfo2.pendingUntil.toString()).to.equal(
         blockTime2 + 3600 * 24 + ""
@@ -76,7 +77,8 @@ describe("wallet", () => {
       const tx3 = await wallet.changeDailyQuota(quotaAmount3);
       const blockTime3 = await getBlockTimestamp(tx3.blockNumber);
       const quotaInfo3 = (await wallet.wallet())["quota"];
-      expect(quotaInfo3.currentQuota).to.equal(quotaAmount2);
+      const currentQuota3 = await getCurrentQuota(quotaInfo3, tx3.blockNumber);
+      expect(currentQuota3).to.equal(quotaAmount2);
       expect(quotaInfo3.pendingQuota).to.equal(quotaAmount3);
       expect(quotaInfo3.pendingUntil.toString()).to.equal(
         blockTime3 + 3600 * 24 + ""
@@ -139,7 +141,8 @@ describe("wallet", () => {
       // Tx with approval will ignore wallet lock.
       const tx = await wallet.changeDailyQuotaWA(approval, newQuota);
       const quotaInfo = (await wallet.wallet())["quota"];
-      expect(quotaInfo.currentQuota.toString()).to.equal(newQuota);
+      const currentQuota = await getCurrentQuota(quotaInfo, tx.blockNumber);
+      expect(currentQuota).to.equal(newQuota);
       expect(quotaInfo.pendingUntil.toString()).to.equal("0");
     });
   });
