@@ -72,7 +72,7 @@
     "openzeppelin-solidity": "^2.2.0",
     "protocol2-js": "file:../loopring_v2.3.js",
     "sha3": "^2.0.0",
-    "truffle": "5.1.57",
+    "truffle": "5.4.0",
     "truffle-hdwallet-provider": "^1.0.0-web3one.5",
     "truffle-privatekey-provider": "^1.1.0",
     "web3": "^1.0.0-beta.46"
