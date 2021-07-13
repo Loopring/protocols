@@ -52,7 +52,7 @@
   "devDependencies": {
     "@types/bluebird": "3.5.33",
     "@types/lodash": "^4.14.139",
-    "@types/node": "15.6.1",
+    "@types/node": "16.3.1",
     "@types/request-promise-native": "^1.0.17",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
     "@typescript-eslint/parser": "^4.27.0",
