@@ -13,9 +13,12 @@ async function newWallet() {
   // const smartWalletAddress = "0xE708Cb725D6F2aDeEab2258262Aa9129D2A28312";
   // const walletFactoryAddress = "0x5Dd70df24364DC05D46C8F40611BFDd107927263";
 
+  // Arbitrum test:
+  const walletFactoryAddress = "0xbB7147F582A1e23bec6570FfDCdD413A5788493a";
+
   // walletFactory and smartWallet contract on Arbitrum One:
-  const smartWalletAddress = "0xc53Ec1cc77Be1793AfE12A7FA6fE0575960F0c36";
-  const walletFactoryAddress = "0xE23c3fD23fd58C0FEE42455A17d15A24637750f6";
+  // const smartWalletAddress = "0xc53Ec1cc77Be1793AfE12A7FA6fE0575960F0c36";
+  // const walletFactoryAddress = "0xE23c3fD23fd58C0FEE42455A17d15A24637750f6";
 
   const ownerAccount = (await ethers.getSigners())[0];
   const ownerAddr = await ownerAccount.getAddress();

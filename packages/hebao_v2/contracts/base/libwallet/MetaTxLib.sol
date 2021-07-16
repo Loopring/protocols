@@ -100,7 +100,7 @@ library MetaTxLib
             require(metaTx.requiresSuccess, "META_TX_WITHOUT_NONCE_REQUIRES_SUCCESS");
         }
 
-        (success, ) = metaTx.to.call{gas : metaTx.gasLimit}(metaTx.data);
+        (success, ) = metaTx.to.call{gas: metaTx.gasLimit}(metaTx.data);
 
         // These checks are done afterwards to use the latest state post meta-tx call
         require(!wallet.locked, "WALLET_LOCKED");
