@@ -39,7 +39,7 @@ describe("wallet", () => {
     metaTxInterface = MetaTxLib.interface;
   });
 
-  describe("MetaTx", () => {
+  describe.only("MetaTx", () => {
     it("recover", async () => {
       const owner = await account1.getAddress();
       const newOwner = await account2.getAddress();
@@ -95,8 +95,8 @@ describe("wallet", () => {
         newGuardians
       ]);
 
+      // const metaTxSigner = await account3.getAddress();
       const metaTx: MetaTx = {
-        sender: await account3.getAddress(),
         to: wallet.address,
         nonce: new BN(0),
         gasToken: ethers.constants.AddressZero,
@@ -107,9 +107,12 @@ describe("wallet", () => {
         data: Buffer.from(data.slice(2), "hex"),
         signature: Buffer.from("")
       };
-      const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
 
-      wallet = wallet.connect(account3);
+      // can not sign with old owner, because wallet owner if changed when
+      // checking metaTx signature, and old owner is leaked or lost when doing recovery.
+      const metaTxSig = signMetaTx(masterCopy, metaTx, newOwner);
+      console.log("metaTxHash:", metaTxSig.hash);
+
       const tx = await wallet.executeMetaTx(
         metaTx.to,
         metaTx.nonce.toString(10),
@@ -132,7 +135,7 @@ describe("wallet", () => {
       // console.log("metaTxEvent:", metaTxEvent);
     });
 
-    it.only("transfer", async () => {
+    it("transfer", async () => {
       const owner = await account1.getAddress();
       let wallet = await newWallet(owner, ethers.constants.AddressZero, 0, []);
       const masterCopy = await wallet.getMasterCopy();
@@ -155,7 +158,6 @@ describe("wallet", () => {
 
       wallet = wallet.connect(account3);
       const metaTx: MetaTx = {
-        sender: await account3.getAddress(),
         to: wallet.address,
         nonce: new BN(new Date().getTime()),
         gasToken: ethers.constants.AddressZero,
@@ -170,6 +172,20 @@ describe("wallet", () => {
 
       const toBalanceBefore = await ethers.provider.getBalance(transferTo);
       expect(toBalanceBefore).to.equal(0);
+
+      // const metaTxData = wallet.interface.encodeFunctionData("executeMetaTx", [
+      //   metaTx.to,
+      //   metaTx.nonce.toString(10),
+      //   metaTx.gasToken,
+      //   metaTx.gasPrice.toString(10),
+      //   metaTx.gasLimit.toString(10),
+      //   metaTx.gasOverhead.toString(10),
+      //   metaTx.requiresSuccess,
+      //   metaTx.data,
+      //   Buffer.from(metaTxSig.txSignature.slice(2), "hex")
+      // ]);
+      // console.log("metaTxData:", metaTxData);
+
       const tx = await wallet.executeMetaTx(
         metaTx.to,
         metaTx.nonce.toString(10),

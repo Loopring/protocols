@@ -13,7 +13,6 @@ export interface SignedRequest {
 }
 
 export interface MetaTx {
-  sender: string;
   to: string;
   nonce: BN;
   gasToken: string;
@@ -168,7 +167,6 @@ export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
     [
       "bytes32",
       "address",
-      "address",
       "uint256",
       "address",
       "uint256",
@@ -179,7 +177,6 @@ export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
     ],
     [
       METATX_TYPEHASH,
-      metaTx.sender,
       metaTx.to,
       metaTx.nonce,
       metaTx.gasToken,
@@ -193,8 +190,12 @@ export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
 
   const hash = eip712.hashPacked(domainSeprator, encodedMetaTx);
 
-  const txSignature = sign(signer, hash);
-  return { txSignature, hash };
+  if (signer) {
+    const txSignature = sign(signer, hash);
+    return { txSignature, hash };
+  } else {
+    return { txSignature: "", hash };
+  }
 }
 
 export function signUnlock(

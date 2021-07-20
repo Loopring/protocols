@@ -61,7 +61,6 @@ library MetaTxLib
     {
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
-            msg.sender,
             metaTx.to,
             metaTx.nonce,
             metaTx.gasToken,
