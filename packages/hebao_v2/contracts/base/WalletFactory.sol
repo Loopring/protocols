@@ -3,8 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./SmartWallet.sol";
-import "../thirdparty/proxy/WalletProxy.sol";
+import "../iface/ILoopringWalletV2.sol";
+import "../thirdparty/proxies/WalletProxy.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/EIP712.sol";
 import "../lib/SignatureUtil.sol";
@@ -93,7 +93,7 @@ contract WalletFactory
         )
         internal
     {
-        SmartWallet(payable(wallet)).initialize(
+        ILoopringWalletV2(wallet).initialize(
             config.owner,
             config.guardians,
             config.quota,
@@ -115,19 +115,21 @@ contract WalletFactory
     {
         require(config.owner != address(0), "INVALID_OWNER");
 
-        bytes memory encodedRequest = abi.encode(
-            CREATE_WALLET_TYPEHASH,
-            config.owner,
-            keccak256(abi.encodePacked(config.guardians)),
-            config.quota,
-            config.inheritor,
-            config.feeRecipient,
-            config.feeToken,
-            config.feeAmount,
-            salt
+        bytes32 encodedRequestHash = keccak256(
+            abi.encode(
+                CREATE_WALLET_TYPEHASH,
+                config.owner,
+                keccak256(abi.encodePacked(config.guardians)),
+                config.quota,
+                config.inheritor,
+                config.feeRecipient,
+                config.feeToken,
+                config.feeAmount,
+                salt
+            )
         );
 
-        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encodedRequest);
+        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encodedRequestHash);
         require(signHash.verifySignature(config.owner, config.signature), "INVALID_SIGNATURE");
     }
 

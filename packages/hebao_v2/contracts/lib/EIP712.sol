@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
+
 
 library EIP712
 {
@@ -37,15 +38,19 @@ library EIP712
     }
 
     function hashPacked(
-        bytes32 domainSeparator,
-        bytes   memory encodedData
+        bytes32 domainHash,
+        bytes32 dataHash
         )
         internal
         pure
         returns (bytes32)
     {
         return keccak256(
-            abi.encodePacked(EIP191_HEADER, domainSeparator, keccak256(encodedData))
+            abi.encodePacked(
+                EIP191_HEADER,
+                domainHash,
+                dataHash
+            )
         );
     }
 }
