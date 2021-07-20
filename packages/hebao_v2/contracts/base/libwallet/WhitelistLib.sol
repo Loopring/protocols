@@ -42,14 +42,14 @@ library WhitelistLib
 
     function addToWhitelistWA(
         Wallet   storage  wallet,
-        bytes32           domainSeperator,
+        bytes32           domainSeparator,
         Approval calldata approval,
         address           addr
         )
         external
     {
         wallet.verifyApproval(
-            domainSeperator,
+            domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(

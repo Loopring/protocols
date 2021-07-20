@@ -7,6 +7,7 @@ import "./SmartWallet.sol";
 import "../thirdparty/proxy/WalletProxy.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/EIP712.sol";
+import "../lib/SignatureUtil.sol";
 import "../thirdparty/Create2.sol";
 
 
@@ -16,12 +17,12 @@ import "../thirdparty/Create2.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract WalletFactory
 {
-    using AddressUtil for address;
+    using AddressUtil   for address;
     using SignatureUtil for bytes32;
 
     event WalletCreated (address wallet, address owner);
 
-    bytes32             public immutable DOMAIN_SEPERATOR;
+    bytes32             public immutable DOMAIN_SEPARATOR;
     address             public immutable walletImplementation;
 
     string  public constant WALLET_CREATION = "WALLET_CREATION";
@@ -45,7 +46,7 @@ contract WalletFactory
         address        _walletImplementation
         )
     {
-        DOMAIN_SEPERATOR = EIP712.hash(
+        DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("WalletFactory", "2.0.0", address(this))
         );
 
@@ -61,7 +62,7 @@ contract WalletFactory
         uint                  salt
         )
         external
-        payable
+        virtual
         returns (address wallet)
     {
         _validateRequest(config, salt);
@@ -77,9 +78,10 @@ contract WalletFactory
         view
         returns (address)
     {
-        return Create2.computeAddress(
-            keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
-            _getWalletCode()
+        return _computeWalletAddress(
+            owner,
+            salt,
+            address(this)
         );
     }
 
@@ -105,8 +107,8 @@ contract WalletFactory
     }
 
     function _validateRequest(
-        WalletConfig memory config,
-        uint                salt
+        WalletConfig calldata config,
+        uint                  salt
         )
         private
         view
@@ -125,7 +127,7 @@ contract WalletFactory
             salt
         );
 
-        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
+        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encodedRequest);
         require(signHash.verifySignature(config.owner, config.signature), "INVALID_SIGNATURE");
     }
 
@@ -151,6 +153,22 @@ contract WalletFactory
         return abi.encodePacked(
             type(WalletProxy).creationCode,
             abi.encode(walletImplementation)
+        );
+    }
+
+    function _computeWalletAddress(
+        address owner,
+        uint    salt,
+        address deployer
+        )
+        internal
+        view
+        returns (address)
+    {
+        return Create2.computeAddress(
+            keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
+            _getWalletCode(),
+            deployer
         );
     }
 }

@@ -37,7 +37,7 @@ library EIP712
     }
 
     function hashPacked(
-        bytes32 domainSeperator,
+        bytes32 domainSeparator,
         bytes   memory encodedData
         )
         internal
@@ -45,7 +45,7 @@ library EIP712
         returns (bytes32)
     {
         return keccak256(
-            abi.encodePacked(EIP191_HEADER, domainSeperator, keccak256(encodedData))
+            abi.encodePacked(EIP191_HEADER, domainSeparator, keccak256(encodedData))
         );
     }
 }

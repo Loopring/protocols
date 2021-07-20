@@ -120,6 +120,7 @@ contract SmartWallet is ERC1271
         require(owner != address(0), "INVALID_OWNER");
 
         wallet.owner = owner;
+        wallet.creationTimestamp = uint64(block.timestamp);
         wallet.addGuardiansImmediately(guardians);
 
         if (quota != 0) {
@@ -140,6 +141,22 @@ contract SmartWallet is ERC1271
         external
         payable
     {
+    }
+
+    function getOwner()
+        public
+        view
+        returns (address)
+    {
+        return wallet.owner;
+    }
+
+    function getCreationTimestamp()
+        public
+        view
+        returns (uint64)
+    {
+        return wallet.creationTimestamp;
     }
 
     //
