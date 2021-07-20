@@ -47,6 +47,7 @@ struct Guardian
 struct Wallet
 {
     address owner;
+    uint64  creationTimestamp;
 
     // relayer => nonce
     uint nonce;

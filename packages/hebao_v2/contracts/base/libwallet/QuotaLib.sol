@@ -43,14 +43,14 @@ library QuotaLib
 
     function changeDailyQuotaWA(
         Wallet   storage   wallet,
-        bytes32            domainSeperator,
+        bytes32            domainSeparator,
         Approval calldata  approval,
         uint               newQuota
         )
         public
     {
         wallet.verifyApproval(
-            domainSeperator,
+            domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(

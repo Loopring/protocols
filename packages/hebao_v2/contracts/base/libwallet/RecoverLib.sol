@@ -31,7 +31,7 @@ library RecoverLib
     /// @param newGuardians The new guardians addresses to set.
     function recover(
         Wallet   storage   wallet,
-        bytes32            domainSeperator,
+        bytes32            domainSeparator,
         Approval calldata  approval,
         address            newOwner,
         address[] calldata newGuardians
@@ -42,7 +42,7 @@ library RecoverLib
         require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
 
         wallet.verifyApproval(
-            domainSeperator,
+            domainSeparator,
             SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
             approval,
             abi.encode(

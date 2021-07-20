@@ -5,7 +5,7 @@ rm -rf ABI/*
 solc \
     -o ABI/ --overwrite \
     --abi contracts/base/*.sol \
-    --allow-paths contracts/base/libwallet/*.sol contracts/thirdparty/proxy/*.sol contracts/thirdparty/*.sol contracts/lib/*.sol contracts/iface/*.sol
+    --allow-paths contracts/base/libwallet/*.sol contracts/thirdparty/proxies/*.sol contracts/thirdparty/*.sol contracts/lib/*.sol contracts/iface/*.sol
 
 ABI_PATH="ABI"
 

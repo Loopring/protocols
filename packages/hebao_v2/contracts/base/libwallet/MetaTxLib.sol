@@ -59,19 +59,21 @@ library MetaTxLib
         view
         returns (bytes32)
     {
-        bytes memory encoded = abi.encode(
-            META_TX_TYPEHASH,
-            msg.sender,
-            metaTx.to,
-            metaTx.nonce,
-            metaTx.gasToken,
-            metaTx.gasPrice,
-            metaTx.gasLimit,
-            metaTx.gasOverhead,
-            metaTx.requiresSuccess,
-            keccak256(metaTx.data)
+        bytes32 encodedHash = keccak256(
+            abi.encode(
+                META_TX_TYPEHASH,
+                msg.sender,
+                metaTx.to,
+                metaTx.nonce,
+                metaTx.gasToken,
+                metaTx.gasPrice,
+                metaTx.gasLimit,
+                metaTx.gasOverhead,
+                metaTx.requiresSuccess,
+                keccak256(metaTx.data)
+            )
         );
-        bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
+        bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encodedHash);
         require(metaTxHash.verifySignature(wallet.owner, metaTx.signature), "METATX_INVALID_SIGNATURE");
         return metaTxHash;
     }

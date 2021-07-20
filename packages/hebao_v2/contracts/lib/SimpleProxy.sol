@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../thirdparty/proxy/Proxy.sol";
+import "../thirdparty/proxies/Proxy.sol";
 
 
 /// @title SimpleProxy
