@@ -48,7 +48,7 @@
     "dirty-chai": "^2.0.1",
     "ganache-cli": "6.9.1",
     "mocha": "^8.2.1",
-    "node": "13.12.0",
+    "node": "16.5.0",
     "npm": "^7.15.0",
     "npm-watch": "^0.10.0",
     "solidity-coverage": "^0.7.0",
