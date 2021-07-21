@@ -27,7 +27,7 @@ library MetaTxLib
     using ERC20Lib      for Wallet;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
-        "MetaTx(address relayer,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,bytes data)"
+        "MetaTx(address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeReceipt,bytes data)"
     );
 
     event MetaTxExecuted(
@@ -45,6 +45,7 @@ library MetaTxLib
         uint    gasPrice;
         uint    gasLimit;
         uint    gasOverhead;
+        address feeReceipt;
         bool    requiresSuccess;
         bytes   data;
         bytes   signature;
@@ -61,13 +62,13 @@ library MetaTxLib
     {
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
-            msg.sender,
             metaTx.to,
             metaTx.nonce,
             metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
             metaTx.gasOverhead,
+            metaTx.feeReceipt,
             metaTx.requiresSuccess,
             keccak256(metaTx.data)
         );
@@ -100,7 +101,7 @@ library MetaTxLib
             require(metaTx.requiresSuccess, "META_TX_WITHOUT_NONCE_REQUIRES_SUCCESS");
         }
 
-        (success, ) = metaTx.to.call{gas : metaTx.gasLimit}(metaTx.data);
+        (success, ) = metaTx.to.call{gas: metaTx.gasLimit}(metaTx.data);
 
         // These checks are done afterwards to use the latest state post meta-tx call
         require(!wallet.locked, "WALLET_LOCKED");
@@ -124,7 +125,7 @@ library MetaTxLib
                 gasCost
             );
 
-            ERC20Lib.transfer(metaTx.gasToken, msg.sender, gasCost);
+            ERC20Lib.transfer(metaTx.gasToken, metaTx.feeReceipt, gasCost);
         }
 
         emit MetaTxExecuted(
