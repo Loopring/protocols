@@ -19,6 +19,7 @@ describe("wallet", () => {
   let recoverInterface: any;
   let guardianInterface: any;
   let metaTxInterface: any;
+  const feeRecipient = "0x" + "30".repeat(20);
 
   before(async () => {
     [account1, account2, account3] = await ethers.getSigners();
@@ -103,6 +104,7 @@ describe("wallet", () => {
         gasPrice: new BN(0),
         gasLimit: new BN(2000000),
         gasOverhead: new BN(0),
+        feeRecipient,
         requiresSuccess: true,
         data: Buffer.from(data.slice(2), "hex"),
         signature: Buffer.from("")
@@ -111,7 +113,7 @@ describe("wallet", () => {
       // can not sign with old owner, because wallet owner if changed when
       // checking metaTx signature, and old owner is leaked or lost when doing recovery.
       const metaTxSig = signMetaTx(masterCopy, metaTx, newOwner);
-      console.log("metaTxHash:", metaTxSig.hash);
+      // console.log("metaTxHash:", metaTxSig.hash);
 
       const tx = await wallet.executeMetaTx(
         metaTx.to,
@@ -120,19 +122,34 @@ describe("wallet", () => {
         metaTx.gasPrice.toString(10),
         metaTx.gasLimit.toString(10),
         metaTx.gasOverhead.toString(10),
+        metaTx.feeRecipient,
         metaTx.requiresSuccess,
         metaTx.data,
         Buffer.from(metaTxSig.txSignature.slice(2), "hex")
       );
       const receipt = await tx.wait();
-      console.log("receipt:", receipt);
-      // const metaTxEvent = metaTxInterface.decodeEventLog(
-      //   "MetaTxExecuted(address,bytes32,bool,uint256)",
-      //   receipt.events[0].data,
-      //   receipt.events[0].topics
-      // );
+      // console.log("receipt:", receipt);
 
+      const eventsLen = receipt.events.length;
+      const metaTxEvent = metaTxInterface.decodeEventLog(
+        "MetaTxExecuted(address,bytes32,bool,uint256)",
+        receipt.events[eventsLen - 1].data,
+        receipt.events[eventsLen - 1].topics
+      );
       // console.log("metaTxEvent:", metaTxEvent);
+
+      expect(metaTxEvent.metaTxHash).to.equal(
+        "0x" + metaTxSig.hash.toString("hex")
+      );
+      expect(metaTxEvent.success).to.equal(true);
+
+      const ownerAfter = (await wallet.wallet()).owner;
+      expect(ownerAfter).to.equal(newOwner);
+
+      const guardiansAfter = await wallet.getGuardians(false);
+      // console.log("guardiansAfter:", guardiansAfter);
+      expect(guardiansAfter[0].addr).to.equal(newGuardians[0]);
+      expect(guardiansAfter[1].addr).to.equal(newGuardians[1]);
     });
 
     it("transfer", async () => {
@@ -164,6 +181,7 @@ describe("wallet", () => {
         gasPrice: new BN(0),
         gasLimit: new BN(1000000),
         gasOverhead: new BN(0),
+        feeRecipient,
         requiresSuccess: true,
         data: Buffer.from(data.slice(2), "hex"),
         signature: Buffer.from("")
@@ -193,6 +211,7 @@ describe("wallet", () => {
         metaTx.gasPrice.toString(10),
         metaTx.gasLimit.toString(10),
         metaTx.gasOverhead.toString(10),
+        metaTx.feeRecipient,
         metaTx.requiresSuccess,
         metaTx.data,
         Buffer.from(metaTxSig.txSignature.slice(2), "hex")
