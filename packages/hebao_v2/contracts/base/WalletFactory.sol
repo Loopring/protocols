@@ -113,19 +113,21 @@ contract WalletFactory
     {
         require(config.owner != address(0), "INVALID_OWNER");
 
-        bytes memory encodedRequest = abi.encode(
-            CREATE_WALLET_TYPEHASH,
-            config.owner,
-            keccak256(abi.encodePacked(config.guardians)),
-            config.quota,
-            config.inheritor,
-            config.feeRecipient,
-            config.feeToken,
-            config.feeAmount,
-            salt
+        bytes memory encodedRequestHash = keccak256(
+            abi.encode(
+                CREATE_WALLET_TYPEHASH,
+                config.owner,
+                keccak256(abi.encodePacked(config.guardians)),
+                config.quota,
+                config.inheritor,
+                config.feeRecipient,
+                config.feeToken,
+                config.feeAmount,
+                salt
+            )
         );
 
-        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
+        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequestHash);
         require(signHash.verifySignature(config.owner, config.signature), "INVALID_SIGNATURE");
     }
 
