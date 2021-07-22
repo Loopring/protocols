@@ -73,7 +73,12 @@ library MetaTxLib
             keccak256(metaTx.data)
         );
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
-        require(metaTxHash.verifySignature(wallet.owner, metaTx.signature), "METATX_INVALID_SIGNATURE");
+
+        // metaTxHash.nonce == 0 means a *-WA function is called.
+        // No need to verify metaTx signature when calling a *-WA function.
+        if (metaTx.nonce != 0) {
+            require(metaTxHash.verifySignature(wallet.owner, metaTx.signature), "METATX_INVALID_SIGNATURE");
+        }
         return metaTxHash;
     }
 
@@ -106,15 +111,11 @@ library MetaTxLib
         // These checks are done afterwards to use the latest state post meta-tx call
         require(!wallet.locked, "WALLET_LOCKED");
 
-        // No need to verify metaTx signature when invoke *-WA functions.
-        bytes32 metaTxHash;
-        if (metaTx.nonce != 0) {
-            metaTxHash = validateMetaTx(
-                wallet,
-                DOMAIN_SEPARATOR,
-                metaTx
-            );
-        }
+        bytes32 metaTxHash = validateMetaTx(
+            wallet,
+            DOMAIN_SEPARATOR,
+            metaTx
+        );
 
         uint gasUsed = gasLeft - gasleft() + metaTx.gasOverhead;
 

@@ -112,7 +112,7 @@ describe("wallet", () => {
 
       // can not sign with old owner, because wallet owner if changed when
       // checking metaTx signature, and old owner is leaked or lost when doing recovery.
-      // const metaTxSig = signMetaTx(masterCopy, metaTx, newOwner);
+      const metaTxSig = signMetaTx(masterCopy, metaTx, newOwner);
       // console.log("metaTxHash:", metaTxSig.hash);
 
       const tx = await wallet.executeMetaTx(
@@ -125,8 +125,7 @@ describe("wallet", () => {
         metaTx.feeRecipient,
         metaTx.requiresSuccess,
         metaTx.data,
-        // Buffer.from(metaTxSig.txSignature.slice(2), "hex")
-        []
+        [] // empty signature
       );
       const receipt = await tx.wait();
       // console.log("receipt:", receipt);
@@ -139,7 +138,9 @@ describe("wallet", () => {
       );
       // console.log("metaTxEvent:", metaTxEvent);
 
-      expect(metaTxEvent.metaTxHash).to.equal("0x" + "00".repeat(32));
+      expect(metaTxEvent.metaTxHash).to.equal(
+        "0x" + metaTxSig.hash.toString("hex")
+      );
       expect(metaTxEvent.success).to.equal(true);
 
       const ownerAfter = (await wallet.wallet()).owner;
