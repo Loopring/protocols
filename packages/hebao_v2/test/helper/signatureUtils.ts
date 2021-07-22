@@ -15,6 +15,7 @@ export interface SignedRequest {
 export interface MetaTx {
   to: string;
   nonce: BN;
+  validUntil: number;
   gasToken: string;
   gasPrice: BN;
   gasLimit: BN;
@@ -161,13 +162,14 @@ export function signRecover(
 export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
-    "MetaTx(address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeReceipt,bytes data)";
+    "MetaTx(address to,uint256 nonce,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data)";
   const METATX_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
   const encodedMetaTx = ethAbi.encodeParameters(
     [
       "bytes32",
       "address",
+      "uint256",
       "uint256",
       "address",
       "uint256",
@@ -181,6 +183,7 @@ export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
       METATX_TYPEHASH,
       metaTx.to,
       metaTx.nonce,
+      metaTx.validUntil,
       metaTx.gasToken,
       metaTx.gasPrice,
       metaTx.gasLimit,

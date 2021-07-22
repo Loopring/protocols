@@ -100,13 +100,14 @@ describe("wallet", () => {
       const metaTx: MetaTx = {
         to: wallet.address,
         nonce: new BN(0),
+        validUntil: 0xffffffff,
         gasToken: ethers.constants.AddressZero,
         gasPrice: new BN(0),
         gasLimit: new BN(2000000),
         gasOverhead: new BN(0),
         feeRecipient,
         requiresSuccess: true,
-        data: Buffer.from(data.slice(2), "hex"),
+        data: Buffer.from(data.slice(2, 10), "hex"),
         signature: Buffer.from("")
       };
 
@@ -118,14 +119,15 @@ describe("wallet", () => {
       const tx = await wallet.executeMetaTx(
         metaTx.to,
         metaTx.nonce.toString(10),
+        metaTx.validUntil,
         metaTx.gasToken,
         metaTx.gasPrice.toString(10),
         metaTx.gasLimit.toString(10),
         metaTx.gasOverhead.toString(10),
         metaTx.feeRecipient,
         metaTx.requiresSuccess,
-        metaTx.data,
-        [] // empty signature
+        data,
+        metaTxSig.txSignature
       );
       const receipt = await tx.wait();
       // console.log("receipt:", receipt);
@@ -177,6 +179,7 @@ describe("wallet", () => {
       const metaTx: MetaTx = {
         to: wallet.address,
         nonce: new BN(new Date().getTime()),
+        validUntil: 0xffffffff,
         gasToken: ethers.constants.AddressZero,
         gasPrice: new BN(0),
         gasLimit: new BN(1000000),
@@ -207,6 +210,7 @@ describe("wallet", () => {
       const tx = await wallet.executeMetaTx(
         metaTx.to,
         metaTx.nonce.toString(10),
+        metaTx.validUntil,
         metaTx.gasToken,
         metaTx.gasPrice.toString(10),
         metaTx.gasLimit.toString(10),
