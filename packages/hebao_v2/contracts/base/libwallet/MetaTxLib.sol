@@ -106,11 +106,15 @@ library MetaTxLib
         // These checks are done afterwards to use the latest state post meta-tx call
         require(!wallet.locked, "WALLET_LOCKED");
 
-        bytes32 metaTxHash = validateMetaTx(
-            wallet,
-            DOMAIN_SEPARATOR,
-            metaTx
-        );
+        // No need to verify metaTx signature when invoke *-WA functions.
+        bytes32 metaTxHash;
+        if (metaTx.nonce != 0) {
+            metaTxHash = validateMetaTx(
+                wallet,
+                DOMAIN_SEPARATOR,
+                metaTx
+            );
+        }
 
         uint gasUsed = gasLeft - gasleft() + metaTx.gasOverhead;
 
