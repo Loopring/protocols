@@ -115,7 +115,7 @@ contract WalletFactory
     {
         require(config.owner != address(0), "INVALID_OWNER");
 
-        bytes32 encodedRequestHash = keccak256(
+        bytes32 dataHash = keccak256(
             abi.encode(
                 CREATE_WALLET_TYPEHASH,
                 config.owner,
@@ -129,7 +129,7 @@ contract WalletFactory
             )
         );
 
-        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encodedRequestHash);
+        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, dataHash);
         require(signHash.verifySignature(config.owner, config.signature), "INVALID_SIGNATURE");
     }
 
