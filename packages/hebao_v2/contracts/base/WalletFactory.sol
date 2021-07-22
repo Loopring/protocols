@@ -21,7 +21,7 @@ contract WalletFactory
 
     event WalletCreated (address wallet, address owner);
 
-    bytes32             public immutable DOMAIN_SEPERATOR;
+    bytes32             public immutable DOMAIN_SEPARATOR;
     address             public immutable walletImplementation;
 
     string  public constant WALLET_CREATION = "WALLET_CREATION";
@@ -45,7 +45,7 @@ contract WalletFactory
         address        _walletImplementation
         )
     {
-        DOMAIN_SEPERATOR = EIP712.hash(
+        DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("WalletFactory", "2.0.0", address(this))
         );
 
@@ -125,7 +125,7 @@ contract WalletFactory
             salt
         );
 
-        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
+        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encodedRequest);
         require(signHash.verifySignature(config.owner, config.signature), "INVALID_SIGNATURE");
     }
 
