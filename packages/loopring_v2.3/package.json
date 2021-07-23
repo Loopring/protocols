@@ -32,7 +32,7 @@
     "@types/lodash": "^4.14.136",
     "@types/node": "15.6.1",
     "@types/request-promise-native": "^1.0.14",
-    "ajv": "^6.0.0",
+    "ajv": "^8.6.2",
     "chai": "^4.0.1",
     "copyfiles": "^2.1.0",
     "dirty-chai": "^2.0.1",

@@ -59,7 +59,7 @@
     "@types/node": "15.6.1",
     "@types/request-promise-native": "^1.0.17",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
-    "ajv": "^6.10.0",
+    "ajv": "^8.6.2",
     "chai": "^4.2.0",
     "clang-format": "^1.4.0",
     "copyfiles": "^2.1.0",

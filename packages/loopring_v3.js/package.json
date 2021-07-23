@@ -22,7 +22,7 @@
     "@types/request-promise-native": "^1.0.15",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
     "@typescript-eslint/parser": "^4.24.0",
-    "ajv": "^6.10.0",
+    "ajv": "^8.6.2",
     "chai": "^4.2.0",
     "copyfiles": "^2.1.0",
     "diff": ">=3.5.0",
