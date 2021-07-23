@@ -83,7 +83,10 @@ library MetaTxLib
             approvedHash
         );
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
-        require(metaTxHash.verifySignature(wallet.owner, metaTx.signature), "METATX_INVALID_SIGNATURE");
+        require(
+            metaTxHash.verifySignature(wallet.owner, metaTx.signature),
+            "METATX_INVALID_SIGNATURE"
+        );
         return metaTxHash;
     }
 
