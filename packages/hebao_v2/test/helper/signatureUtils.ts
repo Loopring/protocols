@@ -24,6 +24,7 @@ export interface MetaTx {
   requiresSuccess: boolean;
   data: Buffer;
   signature: Buffer;
+  approvedHash: Buffer;
 }
 
 function encodeAddressesPacked(addrs: string[]) {
@@ -162,7 +163,7 @@ export function signRecover(
 export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
-    "MetaTx(address to,uint256 nonce,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data)";
+    "MetaTx(address to,uint256 nonce,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data,bytes32 approvedHash)";
   const METATX_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
   const encodedMetaTx = ethAbi.encodeParameters(
@@ -177,6 +178,7 @@ export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
       "uint256",
       "address",
       "bool",
+      "bytes32",
       "bytes32"
     ],
     [
@@ -190,7 +192,8 @@ export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
       metaTx.gasOverhead,
       metaTx.feeRecipient,
       metaTx.requiresSuccess,
-      ethUtil.keccak(metaTx.data)
+      ethUtil.keccak(metaTx.data),
+      metaTx.approvedHash
     ]
   );
 

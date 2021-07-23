@@ -183,12 +183,14 @@ contract SmartWallet is ERC1271
         address           newMasterCopy
         )
         external
+        returns (bytes32 approvedHash)
     {
-        masterCopy = wallet.changeMasterCopy(
+        approvedHash = wallet.changeMasterCopy(
             DOMAIN_SEPARATOR,
             approval,
             newMasterCopy
         );
+        masterCopy = newMasterCopy;
     }
 
     function getMasterCopy()
@@ -217,8 +219,9 @@ contract SmartWallet is ERC1271
         address           guardian
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.addGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
+        approvedHash = wallet.addGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
     }
 
     function removeGuardian(
@@ -235,8 +238,9 @@ contract SmartWallet is ERC1271
         address           guardian
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.removeGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
+        approvedHash = wallet.removeGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
     }
 
      function resetGuardians(
@@ -309,8 +313,9 @@ contract SmartWallet is ERC1271
         Approval calldata approval
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.unlock(DOMAIN_SEPARATOR, approval);
+        approvedHash = wallet.unlock(DOMAIN_SEPARATOR, approval);
     }
 
     //
@@ -331,8 +336,9 @@ contract SmartWallet is ERC1271
         uint              newQuota
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.changeDailyQuotaWA(DOMAIN_SEPARATOR, approval, newQuota);
+        approvedHash = wallet.changeDailyQuotaWA(DOMAIN_SEPARATOR, approval, newQuota);
     }
 
     //
@@ -396,8 +402,9 @@ contract SmartWallet is ERC1271
         address[] calldata newGuardians
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.recover(
+        approvedHash = wallet.recover(
             DOMAIN_SEPARATOR,
             approval,
             newOwner,
@@ -423,8 +430,9 @@ contract SmartWallet is ERC1271
         address           addr
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.addToWhitelistWA(
+        approvedHash = wallet.addToWhitelistWA(
             DOMAIN_SEPARATOR,
             approval,
             addr
@@ -491,8 +499,9 @@ contract SmartWallet is ERC1271
         bytes    calldata logdata
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.transferTokenWA(
+        approvedHash = wallet.transferTokenWA(
             DOMAIN_SEPARATOR,
             approval,
             token,
@@ -528,9 +537,9 @@ contract SmartWallet is ERC1271
         bytes    calldata data
         )
         external
-        returns (bytes memory)
+        returns (bytes32 approvedHash)
     {
-        return wallet.callContractWA(
+        approvedHash = wallet.callContractWA(
             DOMAIN_SEPARATOR,
             approval,
             to,
@@ -564,8 +573,9 @@ contract SmartWallet is ERC1271
         uint              amount
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.approveTokenWA(
+        approvedHash = wallet.approveTokenWA(
             DOMAIN_SEPARATOR,
             approval,
             token,
@@ -606,9 +616,9 @@ contract SmartWallet is ERC1271
         bytes    calldata data
         )
         external
-        returns (bytes memory)
+        returns (bytes32 approvedHash)
     {
-        return wallet.approveThenCallContractWA(
+        approvedHash = wallet.approveThenCallContractWA(
             DOMAIN_SEPARATOR,
             approval,
             token,

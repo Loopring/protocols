@@ -27,7 +27,7 @@ library MetaTxLib
     using ERC20Lib      for Wallet;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
-        "MetaTx(address to,uint256 nonce,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data)"
+        "MetaTx(address to,uint256 nonce,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data,bytes32 approvedHash)"
     );
 
     event MetaTxExecuted(
@@ -55,7 +55,8 @@ library MetaTxLib
     function validateMetaTx(
         Wallet  storage wallet,
         bytes32 DOMAIN_SEPARATOR,
-        MetaTx  memory  metaTx
+        MetaTx  memory  metaTx,
+        bytes   memory  returnData
         )
         public
         view
@@ -64,6 +65,8 @@ library MetaTxLib
         // If this is a dataless meta-tx the user only signs the function selector,
         // not the full function calldata.
         bytes memory data = metaTx.nonce == 0 ? metaTx.data.slice(0, 4) : metaTx.data;
+        // Extracted the approved hash for dataless transactions
+        bytes32 approvedHash = metaTx.nonce == 0 ? abi.decode(returnData, (bytes32)) : bytes32(0);
 
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
@@ -76,7 +79,8 @@ library MetaTxLib
             metaTx.gasOverhead,
             metaTx.feeRecipient,
             metaTx.requiresSuccess,
-            keccak256(data)
+            keccak256(data),
+            approvedHash
         );
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
         require(metaTxHash.verifySignature(wallet.owner, metaTx.signature), "METATX_INVALID_SIGNATURE");
@@ -110,7 +114,8 @@ library MetaTxLib
         require(block.timestamp <= metaTx.validUntil, "METATX_EXPIRED");
 
         // Do the actual call
-        (success, ) = metaTx.to.call{gas: metaTx.gasLimit}(metaTx.data);
+        bytes memory returnData;
+        (success, returnData) = metaTx.to.call{gas: metaTx.gasLimit}(metaTx.data);
 
         // These checks are done afterwards to use the latest state post meta-tx call
         require(!wallet.locked, "WALLET_LOCKED");
@@ -118,7 +123,8 @@ library MetaTxLib
         bytes32 metaTxHash = validateMetaTx(
             wallet,
             DOMAIN_SEPARATOR,
-            metaTx
+            metaTx,
+            returnData
         );
 
         uint gasUsed = gasLeft - gasleft() + metaTx.gasOverhead;

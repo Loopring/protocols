@@ -108,7 +108,8 @@ describe("wallet", () => {
         feeRecipient,
         requiresSuccess: true,
         data: Buffer.from(data.slice(2, 10), "hex"),
-        signature: Buffer.from("")
+        signature: Buffer.from(""),
+        approvedHash: sig1.hash
       };
 
       // can not sign with old owner, because wallet owner if changed when
@@ -187,7 +188,8 @@ describe("wallet", () => {
         feeRecipient,
         requiresSuccess: true,
         data: Buffer.from(data.slice(2), "hex"),
-        signature: Buffer.from("")
+        signature: Buffer.from(""),
+        approvedHash: Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex")
       };
       const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
 
