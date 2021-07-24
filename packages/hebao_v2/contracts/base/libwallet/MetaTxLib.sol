@@ -66,7 +66,8 @@ library MetaTxLib
         // not the full function calldata.
         bytes memory data = metaTx.nonce == 0 ? metaTx.data.slice(0, 4) : metaTx.data;
         // Extracted the approved hash for dataless transactions
-        bytes32 approvedHash = metaTx.nonce == 0 ? abi.decode(returnData, (bytes32)) : bytes32(0);
+        // The approved hash always needs to be the first value returned by the called function
+        bytes32 approvedHash = metaTx.nonce == 0 ? returnData.toBytes32(0) : bytes32(0);
 
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
@@ -99,22 +100,22 @@ library MetaTxLib
         public
         returns (bool success)
     {
+        uint gasLeft = gasleft();
+        require(gasLeft >= (metaTx.gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
+
         require(msg.sender != address(this), "RECURSIVE_METATXS_DISALLOWED");
 
         // Only self calls allowed for now
         require(metaTx.to == address(this));
 
-        uint gasLeft = gasleft();
-        require(gasLeft >= (metaTx.gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
+        // Check if the meta-tx is still valid
+        require(block.timestamp <= metaTx.validUntil, "METATX_EXPIRED");
 
         // Update the nonce before the call to protect against reentrancy
         require(isNonceValid(wallet, metaTx), "INVALID_NONCE");
         if (metaTx.nonce != 0) {
             wallet.nonce = metaTx.nonce;
         }
-
-        // Check if the meta-tx is still valid
-        require(block.timestamp <= metaTx.validUntil, "METATX_EXPIRED");
 
         // Do the actual call
         bytes memory returnData;
@@ -199,6 +200,7 @@ library MetaTxLib
                (methodId == SmartWallet.changeMasterCopy.selector ||
                 methodId == SmartWallet.addGuardianWA.selector ||
                 methodId == SmartWallet.removeGuardianWA.selector ||
+                methodId == SmartWallet.resetGuardiansWA.selector ||
                 methodId == SmartWallet.unlock.selector ||
                 methodId == SmartWallet.changeDailyQuotaWA.selector ||
                 methodId == SmartWallet.recover.selector ||

@@ -116,7 +116,7 @@ library ERC20Lib
         bytes    calldata data
         )
         external
-        returns (bytes32 approvedHash)
+        returns (bytes32 approvedHash, bytes memory returnData)
     {
         approvedHash = wallet.verifyApproval(
             domainSeperator,
@@ -132,7 +132,7 @@ library ERC20Lib
             )
         );
 
-        _callContractInternal(to, value, data, PriceOracle(0));
+        returnData = _callContractInternal(to, value, data, PriceOracle(0));
     }
 
     function approveToken(
@@ -214,28 +214,26 @@ library ERC20Lib
         bytes    calldata data
         )
         external
-        returns (bytes32 approvedHash)
+        returns (bytes32 approvedHash, bytes memory returnData)
     {
-        bytes memory encoded = abi.encode(
-            APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
-            approval.wallet,
-            approval.validUntil,
-            token,
-            to,
-            amount,
-            value,
-            keccak256(data)
-        );
-
         approvedHash = wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
-            encoded
+            abi.encode(
+                APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
+                approval.wallet,
+                approval.validUntil,
+                token,
+                to,
+                amount,
+                value,
+                keccak256(data)
+            )
         );
 
         _approveInternal(token, to, amount);
-        _callContractInternal(to, value, data, PriceOracle(0));
+        returnData = _callContractInternal(to, value, data, PriceOracle(0));
     }
 
     function transfer(

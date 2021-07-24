@@ -257,8 +257,9 @@ contract SmartWallet is ERC1271
          address[] calldata newGuardians
          )
          external
+         returns (bytes32 approvedHash)
      {
-         wallet.resetGuardiansWA(DOMAIN_SEPARATOR, approval, newGuardians);
+         approvedHash = wallet.resetGuardiansWA(DOMAIN_SEPARATOR, approval, newGuardians);
      }
 
      function isGuardian(address addr, bool includePendingAddition)
@@ -537,9 +538,9 @@ contract SmartWallet is ERC1271
         bytes    calldata data
         )
         external
-        returns (bytes32 approvedHash)
+        returns (bytes32 approvedHash, bytes memory returnData)
     {
-        approvedHash = wallet.callContractWA(
+        (approvedHash, returnData) = wallet.callContractWA(
             DOMAIN_SEPARATOR,
             approval,
             to,
@@ -616,9 +617,9 @@ contract SmartWallet is ERC1271
         bytes    calldata data
         )
         external
-        returns (bytes32 approvedHash)
+        returns (bytes32 approvedHash, bytes memory returnData)
     {
-        approvedHash = wallet.approveThenCallContractWA(
+        (approvedHash, returnData) = wallet.approveThenCallContractWA(
             DOMAIN_SEPARATOR,
             approval,
             token,
