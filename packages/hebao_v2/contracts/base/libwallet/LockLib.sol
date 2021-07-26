@@ -46,8 +46,9 @@ library LockLib
         Approval calldata approval
         )
         public
+        returns (bytes32 approvedHash)
     {
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,

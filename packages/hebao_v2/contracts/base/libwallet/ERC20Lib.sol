@@ -69,8 +69,9 @@ library ERC20Lib
         bytes    calldata logdata
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
@@ -115,9 +116,9 @@ library ERC20Lib
         bytes    calldata data
         )
         external
-        returns (bytes memory returnData)
+        returns (bytes32 approvedHash, bytes memory returnData)
     {
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
@@ -131,7 +132,7 @@ library ERC20Lib
             )
         );
 
-        return _callContractInternal(to, value, data, PriceOracle(0));
+        returnData = _callContractInternal(to, value, data, PriceOracle(0));
     }
 
     function approveToken(
@@ -160,8 +161,9 @@ library ERC20Lib
         uint              amount
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
@@ -212,28 +214,26 @@ library ERC20Lib
         bytes    calldata data
         )
         external
-        returns (bytes memory returnData)
+        returns (bytes32 approvedHash, bytes memory returnData)
     {
-        bytes memory encoded = abi.encode(
-            APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
-            approval.wallet,
-            approval.validUntil,
-            token,
-            to,
-            amount,
-            value,
-            keccak256(data)
-        );
-
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
-            encoded
+            abi.encode(
+                APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
+                approval.wallet,
+                approval.validUntil,
+                token,
+                to,
+                amount,
+                value,
+                keccak256(data)
+            )
         );
 
         _approveInternal(token, to, amount);
-        return _callContractInternal(to, value, data, PriceOracle(0));
+        returnData = _callContractInternal(to, value, data, PriceOracle(0));
     }
 
     function transfer(

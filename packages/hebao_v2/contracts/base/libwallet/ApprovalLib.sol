@@ -25,18 +25,19 @@ library ApprovalLib {
         bytes    memory encodedRequest
         )
         internal
+        returns (bytes32 approvedHash)
     {
         require(address(this) == approval.wallet, "INVALID_WALLET");
         require(block.timestamp <= approval.validUntil, "EXPIRED_SIGNED_REQUEST");
 
-        bytes32 _hash = EIP712.hashPacked(domainSeperator, encodedRequest);
+        approvedHash = EIP712.hashPacked(domainSeperator, encodedRequest);
 
         // Save hash to prevent replay attacks
-        require(!wallet.hashes[_hash], "HASH_EXIST");
-        wallet.hashes[_hash] = true;
+        require(!wallet.hashes[approvedHash], "HASH_EXIST");
+        wallet.hashes[approvedHash] = true;
 
         require(
-            _hash.verifySignatures(approval.signers, approval.signatures),
+            approvedHash.verifySignatures(approval.signers, approval.signatures),
             "INVALID_SIGNATURES"
         );
 

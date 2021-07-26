@@ -40,7 +40,7 @@ describe("wallet", () => {
     metaTxInterface = MetaTxLib.interface;
   });
 
-  describe.only("MetaTx", () => {
+  describe("MetaTx", () => {
     it("recover", async () => {
       const owner = await account1.getAddress();
       const newOwner = await account2.getAddress();
@@ -100,14 +100,16 @@ describe("wallet", () => {
       const metaTx: MetaTx = {
         to: wallet.address,
         nonce: new BN(0),
+        validUntil: 0xffffffff,
         gasToken: ethers.constants.AddressZero,
         gasPrice: new BN(0),
         gasLimit: new BN(2000000),
         gasOverhead: new BN(0),
         feeRecipient,
         requiresSuccess: true,
-        data: Buffer.from(data.slice(2), "hex"),
-        signature: Buffer.from("")
+        data: Buffer.from(data.slice(2, 10), "hex"),
+        signature: Buffer.from(""),
+        approvedHash: sig1.hash
       };
 
       // can not sign with old owner, because wallet owner if changed when
@@ -118,14 +120,15 @@ describe("wallet", () => {
       const tx = await wallet.executeMetaTx(
         metaTx.to,
         metaTx.nonce.toString(10),
+        metaTx.validUntil,
         metaTx.gasToken,
         metaTx.gasPrice.toString(10),
         metaTx.gasLimit.toString(10),
         metaTx.gasOverhead.toString(10),
         metaTx.feeRecipient,
         metaTx.requiresSuccess,
-        metaTx.data,
-        Buffer.from(metaTxSig.txSignature.slice(2), "hex")
+        data,
+        metaTxSig.txSignature
       );
       const receipt = await tx.wait();
       // console.log("receipt:", receipt);
@@ -177,6 +180,7 @@ describe("wallet", () => {
       const metaTx: MetaTx = {
         to: wallet.address,
         nonce: new BN(new Date().getTime()),
+        validUntil: 0xffffffff,
         gasToken: ethers.constants.AddressZero,
         gasPrice: new BN(0),
         gasLimit: new BN(1000000),
@@ -184,7 +188,8 @@ describe("wallet", () => {
         feeRecipient,
         requiresSuccess: true,
         data: Buffer.from(data.slice(2), "hex"),
-        signature: Buffer.from("")
+        signature: Buffer.from(""),
+        approvedHash: Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex")
       };
       const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
 
@@ -207,6 +212,7 @@ describe("wallet", () => {
       const tx = await wallet.executeMetaTx(
         metaTx.to,
         metaTx.nonce.toString(10),
+        metaTx.validUntil,
         metaTx.gasToken,
         metaTx.gasPrice.toString(10),
         metaTx.gasLimit.toString(10),

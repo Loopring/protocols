@@ -26,11 +26,11 @@ library UpgradeLib
         address           newMasterCopy
         )
         external
-        returns (address)
+        returns (bytes32 approvedHash)
     {
         require(newMasterCopy != address(0), "INVALID_MASTER_COPY");
 
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
@@ -43,7 +43,5 @@ library UpgradeLib
         );
 
         emit ChangedMasterCopy(newMasterCopy);
-
-        return newMasterCopy;
     }
 }

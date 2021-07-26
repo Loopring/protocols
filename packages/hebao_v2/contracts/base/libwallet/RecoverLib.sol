@@ -37,11 +37,12 @@ library RecoverLib
         address[] calldata newGuardians
         )
         external
+        returns (bytes32 approvedHash)
     {
         require(wallet.owner != newOwner, "IS_SAME_OWNER");
         require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
 
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeperator,
             SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
             approval,
