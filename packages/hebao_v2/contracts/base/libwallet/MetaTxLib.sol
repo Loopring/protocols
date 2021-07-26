@@ -27,7 +27,7 @@ library MetaTxLib
     using ERC20Lib      for Wallet;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
-        "MetaTx(address relayer,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,bytes data)"
+        "MetaTx(address to,uint256 nonce,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data,bytes32 approvedHash)"
     );
 
     event MetaTxExecuted(
@@ -41,10 +41,12 @@ library MetaTxLib
     {
         address to;
         uint    nonce;
+        uint    validUntil;
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
         uint    gasOverhead;
+        address feeRecipient;
         bool    requiresSuccess;
         bytes   data;
         bytes   signature;
@@ -53,28 +55,41 @@ library MetaTxLib
     function validateMetaTx(
         Wallet  storage wallet,
         bytes32 DOMAIN_SEPARATOR,
-        MetaTx  memory  metaTx
+        MetaTx  memory  metaTx,
+        bytes   memory  returnData
         )
         public
         view
         returns (bytes32)
     {
+        // If this is a dataless meta-tx the user only signs the function selector,
+        // not the full function calldata.
+        bytes memory data = metaTx.nonce == 0 ? metaTx.data.slice(0, 4) : metaTx.data;
+        // Extracted the approved hash for dataless transactions
+        // The approved hash always needs to be the first value returned by the called function
+        bytes32 approvedHash = metaTx.nonce == 0 ? returnData.toBytes32(0) : bytes32(0);
+
         bytes32 encodedHash = keccak256(
             abi.encode(
                 META_TX_TYPEHASH,
-                msg.sender,
                 metaTx.to,
                 metaTx.nonce,
+                metaTx.validUntil,
                 metaTx.gasToken,
                 metaTx.gasPrice,
                 metaTx.gasLimit,
                 metaTx.gasOverhead,
+                metaTx.feeRecipient,
                 metaTx.requiresSuccess,
-                keccak256(metaTx.data)
+                keccak256(data),
+                approvedHash
             )
         );
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encodedHash);
-        require(metaTxHash.verifySignature(wallet.owner, metaTx.signature), "METATX_INVALID_SIGNATURE");
+        require(
+            metaTxHash.verifySignature(wallet.owner, metaTx.signature),
+            "METATX_INVALID_SIGNATURE"
+        );
         return metaTxHash;
     }
 
@@ -87,22 +102,26 @@ library MetaTxLib
         public
         returns (bool success)
     {
-        require(msg.sender != address(this), "RECURSIVE_METATXS_DISALLOWED");
-
-        require(metaTx.to == address(this));
-
         uint gasLeft = gasleft();
         require(gasLeft >= (metaTx.gasLimit.mul(64) / 63), "OPERATOR_INSUFFICIENT_GAS");
 
+        require(msg.sender != address(this), "RECURSIVE_METATXS_DISALLOWED");
+
+        // Only self calls allowed for now
+        require(metaTx.to == address(this));
+
+        // Check if the meta-tx is still valid
+        require(block.timestamp <= metaTx.validUntil, "METATX_EXPIRED");
+
         // Update the nonce before the call to protect against reentrancy
-        require(isNonceValid(wallet, metaTx.nonce, metaTx.data.toBytes4(0)), "INVALID_NONCE");
+        require(isNonceValid(wallet, metaTx), "INVALID_NONCE");
         if (metaTx.nonce != 0) {
             wallet.nonce = metaTx.nonce;
-        } else {
-            require(metaTx.requiresSuccess, "META_TX_WITHOUT_NONCE_REQUIRES_SUCCESS");
         }
 
-        (success, ) = metaTx.to.call{gas : metaTx.gasLimit}(metaTx.data);
+        // Do the actual call
+        bytes memory returnData;
+        (success, returnData) = metaTx.to.call{gas: metaTx.gasLimit}(metaTx.data);
 
         // These checks are done afterwards to use the latest state post meta-tx call
         require(!wallet.locked, "WALLET_LOCKED");
@@ -110,7 +129,8 @@ library MetaTxLib
         bytes32 metaTxHash = validateMetaTx(
             wallet,
             DOMAIN_SEPARATOR,
-            metaTx
+            metaTx,
+            returnData
         );
 
         uint gasUsed = gasLeft - gasleft() + metaTx.gasOverhead;
@@ -126,7 +146,7 @@ library MetaTxLib
                 gasCost
             );
 
-            ERC20Lib.transfer(metaTx.gasToken, msg.sender, gasCost);
+            ERC20Lib.transfer(metaTx.gasToken, metaTx.feeRecipient, gasCost);
         }
 
         emit MetaTxExecuted(
@@ -155,27 +175,41 @@ library MetaTxLib
 
     function isNonceValid(
         Wallet  storage wallet,
-        uint    nonce,
-        bytes4  methodId
+        MetaTx  memory  metaTx
         )
         public
         view
         returns (bool)
     {
-        if ( methodId == SmartWallet.changeMasterCopy.selector ||
-             methodId == SmartWallet.addGuardianWA.selector ||
-             methodId == SmartWallet.removeGuardianWA.selector ||
-             methodId == SmartWallet.unlock.selector ||
-             methodId == SmartWallet.changeDailyQuotaWA.selector ||
-             methodId == SmartWallet.recover.selector ||
-             methodId == SmartWallet.addToWhitelistWA.selector ||
-             methodId == SmartWallet.transferTokenWA.selector ||
-             methodId == SmartWallet.callContractWA.selector ||
-             methodId == SmartWallet.approveTokenWA.selector ||
-             methodId == SmartWallet.approveThenCallContractWA.selector ) {
-            return nonce == 0;
-        } else {
-            return nonce > wallet.nonce && (nonce >> 128) <= block.number;
-        }
+        return (metaTx.nonce > wallet.nonce && (metaTx.nonce >> 128) <= block.number) ||
+               isDataless(metaTx);
+    }
+
+    function isDataless(
+        MetaTx memory metaTx
+        )
+        public
+        pure
+        returns (bool)
+    {
+        // We don't require any data in the meta tx when
+        // - the meta-tx has no nonce
+        // - the meta-tx needs to be successful
+        // - a function is called that requires a majority of guardians and fails when replayed
+        bytes4 methodId = metaTx.data.toBytes4(0);
+        return metaTx.nonce == 0 &&
+               metaTx.requiresSuccess &&
+               (methodId == SmartWallet.changeMasterCopy.selector ||
+                methodId == SmartWallet.addGuardianWA.selector ||
+                methodId == SmartWallet.removeGuardianWA.selector ||
+                methodId == SmartWallet.resetGuardiansWA.selector ||
+                methodId == SmartWallet.unlock.selector ||
+                methodId == SmartWallet.changeDailyQuotaWA.selector ||
+                methodId == SmartWallet.recover.selector ||
+                methodId == SmartWallet.addToWhitelistWA.selector ||
+                methodId == SmartWallet.transferTokenWA.selector ||
+                methodId == SmartWallet.callContractWA.selector ||
+                methodId == SmartWallet.approveTokenWA.selector ||
+                methodId == SmartWallet.approveThenCallContractWA.selector);
     }
 }

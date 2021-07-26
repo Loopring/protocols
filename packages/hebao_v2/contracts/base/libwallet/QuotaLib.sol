@@ -48,8 +48,9 @@ library QuotaLib
         uint               newQuota
         )
         public
+        returns (bytes32 approvedHash)
     {
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,

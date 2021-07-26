@@ -58,9 +58,9 @@ export default {
       accounts: loadTestAccounts().map(item => item.privateKey)
     },
 
-    arbitrum_test5: {
-      chainId: 144545313136048,
-      url: "https://kovan5.arbitrum.io/rpc",
+    arbitrum_test: {
+      chainId: 421611,
+      url: "https://rinkeby.arbitrum.io/rpc",
       gas: "auto",
       gasPrice: "auto",
       gasMultiplier: 1,

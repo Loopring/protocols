@@ -65,8 +65,9 @@ library GuardianLib
         address  guardian
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
@@ -97,8 +98,9 @@ library GuardianLib
         address  guardian
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
@@ -136,8 +138,9 @@ library GuardianLib
         address[] calldata newGuardians
         )
         external
+        returns (bytes32 approvedHash)
     {
-        wallet.verifyApproval(
+        approvedHash = wallet.verifyApproval(
             domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
