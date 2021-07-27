@@ -4,18 +4,18 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../iface/ILoopringWalletV2.sol";
-import "../thirdparty/proxies/WalletProxy.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/EIP712.sol";
 import "../lib/SignatureUtil.sol";
 import "../thirdparty/Create2.sol";
+import "./WalletDeployer.sol";
 
 
 /// @title WalletFactory
 /// @dev A factory contract to create a new wallet by deploying a proxy
 ///      in front of a real wallet.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract WalletFactory
+contract WalletFactory is WalletDeployer
 {
     using AddressUtil   for address;
     using SignatureUtil for bytes32;
@@ -23,9 +23,6 @@ contract WalletFactory
     event WalletCreated (address wallet, address owner);
 
     bytes32             public immutable DOMAIN_SEPARATOR;
-    address             public immutable walletImplementation;
-
-    string  public constant WALLET_CREATION = "WALLET_CREATION";
 
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
         "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)");
@@ -45,12 +42,11 @@ contract WalletFactory
     constructor(
         address        _walletImplementation
         )
+        WalletDeployer(_walletImplementation)
     {
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("WalletFactory", "2.0.0", address(this))
         );
-
-        walletImplementation = _walletImplementation;
     }
 
     /// @dev Create a new wallet by deploying a proxy.
@@ -62,7 +58,6 @@ contract WalletFactory
         uint                  salt
         )
         external
-        virtual
         returns (address wallet)
     {
         _validateRequest(config, salt);
@@ -70,6 +65,10 @@ contract WalletFactory
         _initializeWallet(wallet, config);
     }
 
+    /// @dev Computes the wallet address
+    /// @param salt The initial wallet owner.
+    /// @param salt A salt.
+    /// @return wallet The wallet address
     function computeWalletAddress(
         address owner,
         uint    salt
@@ -131,46 +130,5 @@ contract WalletFactory
 
         bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, dataHash);
         require(signHash.verifySignature(config.owner, config.signature), "INVALID_SIGNATURE");
-    }
-
-    function _deploy(
-        address owner,
-        uint    salt
-        )
-        internal
-        returns (address payable wallet)
-    {
-        // Deploy the wallet proxy
-        wallet = Create2.deploy(
-            keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
-            _getWalletCode()
-        );
-    }
-
-    function _getWalletCode()
-        internal
-        view
-        returns (bytes memory)
-    {
-        return abi.encodePacked(
-            type(WalletProxy).creationCode,
-            abi.encode(walletImplementation)
-        );
-    }
-
-    function _computeWalletAddress(
-        address owner,
-        uint    salt,
-        address deployer
-        )
-        internal
-        view
-        returns (address)
-    {
-        return Create2.computeAddress(
-            keccak256(abi.encodePacked(WALLET_CREATION, owner, salt)),
-            _getWalletCode(),
-            deployer
-        );
     }
 }
