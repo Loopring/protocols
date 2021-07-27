@@ -1,6 +1,6 @@
 import ethUtil = require("ethereumjs-util");
 const ethAbi = require("web3-eth-abi");
-import { Constants } from "./Constants";
+const hre = require("hardhat");
 
 const EIP191_HEADER = "\x19\x01";
 const EIP712_DOMAIN_TYPEHASH = ethUtil.keccak(
@@ -14,7 +14,7 @@ export function hash(name: string, version: string, moduleAddress: string) {
       EIP712_DOMAIN_TYPEHASH,
       ethUtil.keccak(name),
       ethUtil.keccak(version),
-      Constants.chainId,
+      hre.network.config.chainId, // chainId
       moduleAddress
     ]
   );

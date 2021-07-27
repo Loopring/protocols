@@ -27,7 +27,7 @@ library MetaTxLib
     using ERC20Lib      for Wallet;
 
     bytes32 public constant META_TX_TYPEHASH = keccak256(
-        "MetaTx(address to,uint256 nonce,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data,bytes32 approvedHash)"
+        "MetaTx(address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data,bytes32 approvedHash)"
     );
 
     event MetaTxExecuted(
@@ -42,7 +42,6 @@ library MetaTxLib
     {
         address to;
         uint    nonce;
-        uint    validUntil;
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
@@ -79,7 +78,6 @@ library MetaTxLib
                 META_TX_TYPEHASH,
                 metaTx.to,
                 metaTx.nonce,
-                metaTx.validUntil,
                 metaTx.gasToken,
                 metaTx.gasPrice,
                 metaTx.gasLimit,
@@ -114,9 +112,6 @@ library MetaTxLib
 
         // Only self calls allowed for now
         require(metaTx.to == address(this));
-
-        // Check if the meta-tx is still valid
-        require(block.timestamp <= metaTx.validUntil, "METATX_EXPIRED");
 
         // Update the nonce before the call to protect against reentrancy
         require(isNonceValid(wallet, metaTx), "INVALID_NONCE");

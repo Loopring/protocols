@@ -1,7 +1,6 @@
 import ethUtil = require("ethereumjs-util");
 const ethAbi = require("web3-eth-abi");
 import { sign, sign2, SignatureType } from "./Signature";
-import { Constants } from "./Constants";
 import * as eip712 from "./eip712";
 import BN = require("bn.js");
 
@@ -15,7 +14,6 @@ export interface SignedRequest {
 export interface MetaTx {
   to: string;
   nonce: BN;
-  validUntil: number;
   gasToken: string;
   gasPrice: BN;
   gasLimit: BN;
@@ -163,14 +161,13 @@ export function signRecover(
 export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
-    "MetaTx(address to,uint256 nonce,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data,bytes32 approvedHash)";
+    "MetaTx(address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data,bytes32 approvedHash)";
   const METATX_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
   const encodedMetaTx = ethAbi.encodeParameters(
     [
       "bytes32",
       "address",
-      "uint256",
       "uint256",
       "address",
       "uint256",
@@ -185,7 +182,6 @@ export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
       METATX_TYPEHASH,
       metaTx.to,
       metaTx.nonce,
-      metaTx.validUntil,
       metaTx.gasToken,
       metaTx.gasPrice,
       metaTx.gasLimit,
