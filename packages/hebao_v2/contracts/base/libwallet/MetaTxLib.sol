@@ -31,7 +31,8 @@ library MetaTxLib
     );
 
     event MetaTxExecuted(
-        address relayer,
+        uint    nonce,
+        bytes32 approvedHash,
         bytes32 metaTxHash,
         bool    success,
         uint    gasUsed
@@ -155,7 +156,8 @@ library MetaTxLib
         }
 
         emit MetaTxExecuted(
-            msg.sender,
+            metaTx.nonce,
+            metaTx.nonce == 0 ? returnData.toBytes32(0) : bytes32(0),
             metaTxHash,
             success,
             gasUsed

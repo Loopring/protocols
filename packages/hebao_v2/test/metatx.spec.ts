@@ -1,5 +1,10 @@
 import { expect } from "./setup";
-import { MetaTx, signCallContractWA, signRecover, signMetaTx } from "./helper/signatureUtils";
+import {
+  MetaTx,
+  signCallContractWA,
+  signRecover,
+  signMetaTx
+} from "./helper/signatureUtils";
 import {
   newWallet,
   getFirstEvent,
@@ -140,7 +145,7 @@ describe("wallet", () => {
 
       const eventsLen = receipt.events.length;
       const metaTxEvent = metaTxInterface.decodeEventLog(
-        "MetaTxExecuted(address,bytes32,bool,uint256)",
+        "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
         receipt.events[eventsLen - 1].data,
         receipt.events[eventsLen - 1].topics
       );
@@ -194,7 +199,10 @@ describe("wallet", () => {
         requiresSuccess: true,
         data: Buffer.from(data.slice(2), "hex"),
         signature: Buffer.from(""),
-        approvedHash: Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex")
+        approvedHash: Buffer.from(
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "hex"
+        )
       };
       const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
 
@@ -230,7 +238,7 @@ describe("wallet", () => {
       const receipt = await tx.wait();
       // console.log("receipt:", receipt);
       const metaTxEvent = metaTxInterface.decodeEventLog(
-        "MetaTxExecuted(address,bytes32,bool,uint256)",
+        "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
         receipt.events[1].data,
         receipt.events[1].topics
       );
@@ -255,7 +263,6 @@ describe("wallet", () => {
         to: wallet.address,
         value: ethers.utils.parseEther("100")
       });
-
 
       const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
       const callData = TestContract.interface.encodeFunctionData(
@@ -340,7 +347,7 @@ describe("wallet", () => {
 
       const eventsLen = receipt.events.length;
       const metaTxEvent = metaTxInterface.decodeEventLog(
-        "MetaTxExecuted(address,bytes32,bool,uint256)",
+        "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
         receipt.events[eventsLen - 1].data,
         receipt.events[eventsLen - 1].topics
       );
