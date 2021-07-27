@@ -19,7 +19,7 @@ library ApprovalLib {
 
     function verifyApproval(
         Wallet  storage wallet,
-        bytes32         domainSeperator,
+        bytes32         domainSeparator,
         SigRequirement  sigRequirement,
         Approval memory approval,
         bytes    memory encodedRequest
@@ -30,7 +30,7 @@ library ApprovalLib {
         require(address(this) == approval.wallet, "INVALID_WALLET");
         require(block.timestamp <= approval.validUntil, "EXPIRED_SIGNED_REQUEST");
 
-        approvedHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+        approvedHash = EIP712.hashPacked(domainSeparator, keccak256(encodedRequest));
 
         // Save hash to prevent replay attacks
         require(!wallet.hashes[approvedHash], "HASH_EXIST");

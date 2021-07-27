@@ -1,6 +1,6 @@
 import { expect } from "./setup";
 import { signCreateWallet } from "./helper/signatureUtils";
-import { newWalletFactoryContract, getFirstEvent } from "./commons";
+import { attachWallet, newWalletFactoryContract, getBlockTimestamp, getFirstEvent } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
@@ -59,6 +59,17 @@ describe("walletFactory", () => {
       );
       expect(owner).to.equal(walletCreatedEvent.args.owner);
       expect(walletAddrComputed).to.equal(walletCreatedEvent.args.wallet);
+
+      const smartWallet = await attachWallet(walletAddrComputed);
+
+      // Check creation timestamp
+      const blockTime = await getBlockTimestamp(tx.blockNumber);
+      const creationTimestamp = await smartWallet.getCreationTimestamp();
+      expect(creationTimestamp.toNumber()).to.equal(blockTime);
+
+      // Check owner
+      const walletOwner = await smartWallet.getOwner();
+      expect(walletOwner).to.equal(owner);
     });
   });
 });

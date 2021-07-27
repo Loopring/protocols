@@ -69,21 +69,23 @@ library MetaTxLib
         // The approved hash always needs to be the first value returned by the called function
         bytes32 approvedHash = metaTx.nonce == 0 ? returnData.toBytes32(0) : bytes32(0);
 
-        bytes memory encoded = abi.encode(
-            META_TX_TYPEHASH,
-            metaTx.to,
-            metaTx.nonce,
-            metaTx.validUntil,
-            metaTx.gasToken,
-            metaTx.gasPrice,
-            metaTx.gasLimit,
-            metaTx.gasOverhead,
-            metaTx.feeRecipient,
-            metaTx.requiresSuccess,
-            keccak256(data),
-            approvedHash
+        bytes32 encodedHash = keccak256(
+            abi.encode(
+                META_TX_TYPEHASH,
+                metaTx.to,
+                metaTx.nonce,
+                metaTx.validUntil,
+                metaTx.gasToken,
+                metaTx.gasPrice,
+                metaTx.gasLimit,
+                metaTx.gasOverhead,
+                metaTx.feeRecipient,
+                metaTx.requiresSuccess,
+                keccak256(data),
+                approvedHash
+            )
         );
-        bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
+        bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encodedHash);
         require(
             metaTxHash.verifySignature(wallet.owner, metaTx.signature),
             "METATX_INVALID_SIGNATURE"

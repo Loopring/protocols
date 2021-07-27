@@ -61,7 +61,7 @@ library ERC20Lib
 
     function transferTokenWA(
         Wallet   storage  wallet,
-        bytes32           domainSeperator,
+        bytes32           domainSeparator,
         Approval calldata approval,
         address           token,
         address           to,
@@ -72,7 +72,7 @@ library ERC20Lib
         returns (bytes32 approvedHash)
     {
         approvedHash = wallet.verifyApproval(
-            domainSeperator,
+            domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
@@ -109,7 +109,7 @@ library ERC20Lib
 
     function callContractWA(
         Wallet   storage  wallet,
-        bytes32           domainSeperator,
+        bytes32           domainSeparator,
         Approval calldata approval,
         address           to,
         uint              value,
@@ -119,7 +119,7 @@ library ERC20Lib
         returns (bytes32 approvedHash, bytes memory returnData)
     {
         approvedHash = wallet.verifyApproval(
-            domainSeperator,
+            domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
@@ -154,7 +154,7 @@ library ERC20Lib
 
     function approveTokenWA(
         Wallet   storage  wallet,
-        bytes32           domainSeperator,
+        bytes32           domainSeparator,
         Approval calldata approval,
         address           token,
         address           to,
@@ -164,7 +164,7 @@ library ERC20Lib
         returns (bytes32 approvedHash)
     {
         approvedHash = wallet.verifyApproval(
-            domainSeperator,
+            domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(
@@ -205,7 +205,7 @@ library ERC20Lib
 
     function approveThenCallContractWA(
         Wallet   storage  wallet,
-        bytes32           domainSeperator,
+        bytes32           domainSeparator,
         Approval calldata approval,
         address           token,
         address           to,
@@ -217,7 +217,7 @@ library ERC20Lib
         returns (bytes32 approvedHash, bytes memory returnData)
     {
         approvedHash = wallet.verifyApproval(
-            domainSeperator,
+            domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(

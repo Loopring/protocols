@@ -21,7 +21,7 @@ library UpgradeLib
 
     function changeMasterCopy(
         Wallet   storage  wallet,
-        bytes32           domainSeperator,
+        bytes32           domainSeparator,
         Approval calldata approval,
         address           newMasterCopy
         )
@@ -31,7 +31,7 @@ library UpgradeLib
         require(newMasterCopy != address(0), "INVALID_MASTER_COPY");
 
         approvedHash = wallet.verifyApproval(
-            domainSeperator,
+            domainSeparator,
             SigRequirement.MAJORITY_OWNER_REQUIRED,
             approval,
             abi.encode(

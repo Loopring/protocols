@@ -3,6 +3,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "../iface/ILoopringWalletV2.sol";
+
 import "../lib/EIP712.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC1271.sol";
@@ -24,7 +26,7 @@ import "./libwallet/UpgradeLib.sol";
 /// @title SmartWallet
 /// @dev Main smart wallet contract
 /// @author Brecht Devos - <brecht@loopring.org>
-contract SmartWallet is ERC1271
+contract SmartWallet is ILoopringWalletV2, ERC1271
 {
     using ERC20Lib          for Wallet;
     using ERC1271Lib        for Wallet;
@@ -114,12 +116,14 @@ contract SmartWallet is ERC1271
         uint                feeAmount
         )
         external
+        override
         disableInImplementationContract
     {
         require(wallet.owner == address(0), "INITIALIZED_ALREADY");
         require(owner != address(0), "INVALID_OWNER");
 
         wallet.owner = owner;
+        wallet.creationTimestamp = uint64(block.timestamp);
         wallet.addGuardiansImmediately(guardians);
 
         if (quota != 0) {
@@ -140,6 +144,24 @@ contract SmartWallet is ERC1271
         external
         payable
     {
+    }
+
+    function getOwner()
+        public
+        view
+        override
+        returns (address)
+    {
+        return wallet.owner;
+    }
+
+    function getCreationTimestamp()
+        public
+        view
+        override
+        returns (uint64)
+    {
+        return wallet.creationTimestamp;
     }
 
     //
