@@ -371,7 +371,6 @@ contract SmartWallet is ILoopringWalletV2, ERC1271
     function executeMetaTx(
         address to,
         uint    nonce,
-        uint    validUntil,
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
@@ -387,7 +386,6 @@ contract SmartWallet is ILoopringWalletV2, ERC1271
         MetaTxLib.MetaTx memory metaTx = MetaTxLib.MetaTx(
             to,
             nonce,
-            validUntil,
             gasToken,
             gasPrice,
             gasLimit,
