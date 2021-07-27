@@ -56,6 +56,7 @@ library MetaTxLib
         Wallet  storage wallet,
         bytes32 DOMAIN_SEPARATOR,
         MetaTx  memory  metaTx,
+        bool            success,
         bytes   memory  returnData
         )
         public
@@ -67,6 +68,9 @@ library MetaTxLib
         bytes memory data = metaTx.nonce == 0 ? metaTx.data.slice(0, 4) : metaTx.data;
         // Extracted the approved hash for dataless transactions
         // The approved hash always needs to be the first value returned by the called function
+        // If the call failed we cannot deduce the approved hash so throw a nice
+        // error message here instead of failing in the signature check.
+        require(success || metaTx.nonce != 0, "APPROVED_HASH_UNKNOWN");
         bytes32 approvedHash = metaTx.nonce == 0 ? returnData.toBytes32(0) : bytes32(0);
 
         bytes32 encodedHash = keccak256(
@@ -130,6 +134,7 @@ library MetaTxLib
             wallet,
             DOMAIN_SEPARATOR,
             metaTx,
+            success,
             returnData
         );
 

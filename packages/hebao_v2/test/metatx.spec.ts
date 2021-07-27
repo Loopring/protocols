@@ -1,5 +1,5 @@
 import { expect } from "./setup";
-import { MetaTx, signRecover, signMetaTx } from "./helper/signatureUtils";
+import { MetaTx, signCallContractWA, signRecover, signMetaTx } from "./helper/signatureUtils";
 import {
   newWallet,
   getFirstEvent,
@@ -20,6 +20,7 @@ describe("wallet", () => {
   let guardianInterface: any;
   let metaTxInterface: any;
   const feeRecipient = "0x" + "30".repeat(20);
+  let TestContract: Contract;
 
   before(async () => {
     [account1, account2, account3] = await ethers.getSigners();
@@ -38,6 +39,10 @@ describe("wallet", () => {
     recoverInterface = RecoverLib.interface;
     guardianInterface = GuardianLib.interface;
     metaTxInterface = MetaTxLib.interface;
+
+    TestContract = await (await ethers.getContractFactory(
+      "TestTargetContract"
+    )).deploy();
   });
 
   describe("MetaTx", () => {
@@ -233,6 +238,126 @@ describe("wallet", () => {
       expect(metaTxEvent.success).to.equal(true);
       const toBalanceAfter = await ethers.provider.getBalance(transferTo);
       expect(toBalanceAfter).to.equal(ethers.utils.parseEther("10"));
+    });
+
+    it("call contract WA", async () => {
+      const owner = await account1.getAddress();
+      const guardian1 = await account2.getAddress();
+      const guardian2 = await account3.getAddress();
+      let wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
+        guardian1,
+        guardian2
+      ]);
+      const masterCopy = await wallet.getMasterCopy();
+
+      await account2.sendTransaction({
+        from: await account2.getAddress(),
+        to: wallet.address,
+        value: ethers.utils.parseEther("100")
+      });
+
+
+      const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
+      const callData = TestContract.interface.encodeFunctionData(
+        "functionDefault",
+        [10]
+      );
+
+      const sig1 = signCallContractWA(
+        masterCopy,
+        wallet.address,
+        new BN(validUntil),
+        TestContract.address,
+        new BN(0),
+        Buffer.from(callData.slice(2), "hex"),
+        owner
+      );
+
+      const sig2 = signCallContractWA(
+        masterCopy,
+        wallet.address,
+        new BN(validUntil),
+        TestContract.address,
+        new BN(0),
+        Buffer.from(callData.slice(2), "hex"),
+        guardian1
+      );
+
+      const sortedSigs = sortSignersAndSignatures(
+        [owner, guardian1],
+        [
+          Buffer.from(sig1.txSignature.slice(2), "hex"),
+          Buffer.from(sig2.txSignature.slice(2), "hex")
+        ]
+      );
+
+      const approval = {
+        signers: sortedSigs.sortedSigners,
+        signatures: sortedSigs.sortedSignatures,
+        validUntil,
+        wallet: wallet.address
+      };
+
+      // callContractWA
+      const data = wallet.interface.encodeFunctionData("callContractWA", [
+        approval,
+        TestContract.address,
+        0,
+        callData
+      ]);
+
+      wallet = wallet.connect(account3);
+      const metaTx: MetaTx = {
+        to: wallet.address,
+        nonce: new BN(0),
+        validUntil: 0xffffffff,
+        gasToken: ethers.constants.AddressZero,
+        gasPrice: new BN(0),
+        gasLimit: new BN(2000000),
+        gasOverhead: new BN(0),
+        feeRecipient,
+        requiresSuccess: true,
+        data: Buffer.from(data.slice(2, 10), "hex"),
+        signature: Buffer.from(""),
+        approvedHash: sig1.hash
+      };
+      const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
+
+      const tx = await wallet.executeMetaTx(
+        metaTx.to,
+        metaTx.nonce.toString(10),
+        metaTx.validUntil,
+        metaTx.gasToken,
+        metaTx.gasPrice.toString(10),
+        metaTx.gasLimit.toString(10),
+        metaTx.gasOverhead.toString(10),
+        metaTx.feeRecipient,
+        metaTx.requiresSuccess,
+        data,
+        metaTxSig.txSignature
+      );
+      const receipt = await tx.wait();
+
+      const eventsLen = receipt.events.length;
+      const metaTxEvent = metaTxInterface.decodeEventLog(
+        "MetaTxExecuted(address,bytes32,bool,uint256)",
+        receipt.events[eventsLen - 1].data,
+        receipt.events[eventsLen - 1].topics
+      );
+      // console.log("metaTxEvent:", metaTxEvent);
+
+      expect(metaTxEvent.metaTxHash).to.equal(
+        "0x" + metaTxSig.hash.toString("hex")
+      );
+      expect(metaTxEvent.success).to.equal(true);
+
+      // Check if the funtion has been called
+      const event = await getFirstEvent(
+        TestContract,
+        tx.blockNumber,
+        "Invoked"
+      );
+      expect(event.args.sender).to.equal(wallet.address);
     });
   });
 });
