@@ -4,10 +4,8 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../iface/ILoopringWalletV2.sol";
-import "../lib/AddressUtil.sol";
 import "../lib/EIP712.sol";
 import "../lib/SignatureUtil.sol";
-import "../thirdparty/Create2.sol";
 import "./WalletDeployer.sol";
 
 
@@ -17,7 +15,6 @@ import "./WalletDeployer.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract WalletFactory is WalletDeployer
 {
-    using AddressUtil   for address;
     using SignatureUtil for bytes32;
 
     event WalletCreated (address wallet, address owner);
