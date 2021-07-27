@@ -38,7 +38,7 @@
     "@types/bn.js": "4.11.6",
     "ethereumjs-abi": "0.6.8",
     "ethereumjs-tx": "2.1.1",
-    "ethereumjs-util": "6.1.0",
+    "ethereumjs-util": "7.1.0",
     "ethereumjs-wallet": "0.6.3",
     "google-protobuf": "^3.9.0-rc.1",
     "hdkey": "1.1.1",

@@ -114,7 +114,7 @@
     "eth-json-rpc-filters": "^4.2.1",
     "eth-sig-util": "^2.5.3",
     "ethereumjs-abi": "^0.6.8",
-    "ethereumjs-util": "^6.2.0",
+    "ethereumjs-util": "^7.1.0",
     "event-emitter": "^0.3.5",
     "events": "^3.0.0",
     "ffjavascript": "^0.2.33",
