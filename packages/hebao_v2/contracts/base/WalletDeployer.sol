@@ -23,6 +23,34 @@ contract WalletDeployer
         walletImplementation = _walletImplementation;
     }
 
+    function getWalletCode()
+        public
+        view
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            type(WalletProxy).creationCode,
+            abi.encode(walletImplementation)
+        );
+    }
+
+    function computeWalletSalt(
+        address owner,
+        uint    salt
+        )
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(
+                WALLET_CREATION,
+                owner,
+                salt
+            )
+        );
+    }
+
     function _deploy(
         address owner,
         uint    salt
@@ -31,8 +59,8 @@ contract WalletDeployer
         returns (address payable wallet)
     {
         wallet = Create2.deploy(
-            _computeWalletSalt(owner, salt),
-            _getWalletCode()
+            computeWalletSalt(owner, salt),
+            getWalletCode()
         );
     }
 
@@ -46,37 +74,9 @@ contract WalletDeployer
         returns (address)
     {
         return Create2.computeAddress(
-            _computeWalletSalt(owner, salt),
-            _getWalletCode(),
+            computeWalletSalt(owner, salt),
+            getWalletCode(),
             deployer
-        );
-    }
-
-    function _getWalletCode()
-        internal
-        view
-        returns (bytes memory)
-    {
-        return abi.encodePacked(
-            type(WalletProxy).creationCode,
-            abi.encode(walletImplementation)
-        );
-    }
-
-    function _computeWalletSalt(
-        address owner,
-        uint    salt
-        )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encodePacked(
-                WALLET_CREATION,
-                owner,
-                salt
-            )
         );
     }
 }
