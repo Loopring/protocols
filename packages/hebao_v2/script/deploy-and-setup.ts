@@ -1,3 +1,5 @@
+// run on arbitrum: npx hardhat run --network arbitrum scripts/deploy-and-setup.ts
+
 const hre = require("hardhat");
 const ethers = hre.ethers;
 import { newWalletImpl, newWalletFactoryContract } from "../test/commons";
@@ -5,21 +7,6 @@ import { signCreateWallet } from "../test/helper/signatureUtils";
 import BN = require("bn.js");
 
 async function newWallet(walletFactoryAddress: string) {
-  // // walletFactory and smartWallet contract on test v4:
-  // // const smartWalletAddress = "0x19F3338C71a16696D27B68DEF0d2fB27Aa4b8807";
-  // // const walletFactoryAddress = "0x44B74caF7CB28cC243EaA9D1d1b3eCb2Ddc2C9f1";
-
-  // // walletFactory and smartWallet contract on test v5:
-  // // const smartWalletAddress = "0xE708Cb725D6F2aDeEab2258262Aa9129D2A28312";
-  // // const walletFactoryAddress = "0x5Dd70df24364DC05D46C8F40611BFDd107927263";
-
-  // // Arbitrum test:
-  // const walletFactoryAddress = "0xbB7147F582A1e23bec6570FfDCdD413A5788493a";
-
-  // // walletFactory and smartWallet contract on Arbitrum One:
-  // // const smartWalletAddress = "0xc53Ec1cc77Be1793AfE12A7FA6fE0575960F0c36";
-  // // const walletFactoryAddress = "0xE23c3fD23fd58C0FEE42455A17d15A24637750f6";
-
   const ownerAccount = (await ethers.getSigners())[0];
   const ownerAddr = await ownerAccount.getAddress();
   const salt = 1;
@@ -68,14 +55,26 @@ async function newWalletFactory() {
   return walletFactory;
 }
 
+// [20210729] deployed at arbitrum testnet: 0xd5535729714618E57C42a072B8d56E72517f3800 (proxy)
 async function deployOfficialGuardian() {
+  const ownerAccount = (await ethers.getSigners())[0];
+  const ownerAddr = await ownerAccount.getAddress();
+
+  const proxy = await (await ethers.getContractFactory(
+    "OwnedUpgradeabilityProxy"
+  )).deploy();
+  console.log("proxy:", proxy.address);
+
   const officialGuardian = await (await ethers.getContractFactory(
     "OfficialGuardian"
   )).deploy();
   console.log("officialGuardian address:", officialGuardian.address);
 
-  const ownerAccount = (await ethers.getSigners())[0];
-  const ownerAddr = await ownerAccount.getAddress();
+  await proxy.upgradeTo(officialGuardian.address);
+  const proxyAsOfficialGuardian = await (await ethers.getContractFactory(
+    "OfficialGuardian"
+  )).attach(proxy.address);
+  await proxyAsOfficialGuardian.initOwner(ownerAddr);
   await officialGuardian.addManager(ownerAddr);
   console.log("add", ownerAddr, "as a manager");
 }
@@ -89,7 +88,6 @@ async function getWalletImplAddr(walletFactoryAddress: string) {
   console.log("masterCopy:", masterCopy);
 }
 
-// run with: npx hardhat run --network arbitrum scripts/deploy-arbitrum.ts
 async function main() {
   // const walletFactory = await newWalletFactory();
   // const masterCopy = await walletFactory.walletImplementation();
