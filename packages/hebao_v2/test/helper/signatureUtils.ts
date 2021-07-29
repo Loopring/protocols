@@ -40,7 +40,7 @@ export function signCreateWallet(
   inheritor: string,
   feeRecipient: string,
   feeToken: string,
-  feeAmount: BN,
+  maxFeeAmount: BN,
   salt: number
 ) {
   const domainSeprator = eip712.hash("WalletFactory", "2.0.0", moduleAddress);
@@ -72,7 +72,7 @@ export function signCreateWallet(
       inheritor,
       feeRecipient,
       feeToken,
-      feeAmount,
+      maxFeeAmount,
       salt
     ]
   );
