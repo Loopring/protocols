@@ -45,7 +45,7 @@ describe("walletFactory", () => {
         feeRecipient: ethers.constants.AddressZero,
         feeToken: ethers.constants.AddressZero,
         maxFeeAmount: 0,
-        feeAmount: 0,
+        salt,
         signature: Buffer.from(signature.txSignature.slice(2), "hex")
       };
 
@@ -54,7 +54,7 @@ describe("walletFactory", () => {
         salt
       );
 
-      const tx = await walletFactory.createWallet(walletConfig, salt);
+      const tx = await walletFactory.createWallet(walletConfig, 0);
 
       // get WalletCreated event:
       const fromBlock = tx.blockNumber;
@@ -85,6 +85,7 @@ describe("walletFactory", () => {
       const owner = await account2.getAddress();
       const feeRecipient = "0x" + "13".repeat(20);
       const maxFeeAmount = ethers.utils.parseEther("0.01");
+      const feeAmount = maxFeeAmount;
       const salt = new Date().getTime();
       const signature = signCreateWallet(
         walletFactory.address,
@@ -107,7 +108,7 @@ describe("walletFactory", () => {
         feeRecipient,
         feeToken: ethers.constants.AddressZero,
         maxFeeAmount,
-        feeAmount: maxFeeAmount,
+        salt,
         signature: Buffer.from(signature.txSignature.slice(2), "hex")
       };
 
@@ -125,7 +126,7 @@ describe("walletFactory", () => {
         feeRecipient
       );
 
-      const tx = await walletFactory.createWallet(walletConfig, salt);
+      const tx = await walletFactory.createWallet(walletConfig, feeAmount);
 
       // get WalletCreated event:
       const fromBlock = tx.blockNumber;
@@ -156,8 +157,8 @@ describe("walletFactory", () => {
       );
       expect(
         ethers.utils.parseEther("0.1").sub(walletEthBalanceAfter)
-      ).to.equal(walletConfig.feeAmount);
-      expect(feeRecipientEthBalanceBefore.add(walletConfig.feeAmount)).to.equal(
+      ).to.equal(feeAmount);
+      expect(feeRecipientEthBalanceBefore.add(feeAmount)).to.equal(
         feeRecipientEthBalanceAfter
       );
     });
@@ -191,7 +192,7 @@ describe("walletFactory", () => {
         feeRecipient,
         feeToken: ethers.constants.AddressZero,
         maxFeeAmount,
-        feeAmount: maxFeeAmount.add(ethers.utils.parseEther("0.00001")),
+        salt,
         signature: Buffer.from(signature.txSignature.slice(2), "hex")
       };
 
@@ -209,16 +210,15 @@ describe("walletFactory", () => {
         feeRecipient
       );
 
+      let feeAmount = maxFeeAmount.add(ethers.utils.parseEther("0.00001"));
       try {
-        const tx = await walletFactory.createWallet(walletConfig, salt);
+        const tx = await walletFactory.createWallet(walletConfig, feeAmount);
       } catch (err) {
         expect(err.message.includes("INVALID_FEE_AMOUNT"));
       }
 
-      walletConfig.feeAmount = maxFeeAmount.sub(
-        ethers.utils.parseEther("0.00001")
-      );
-      const tx = await walletFactory.createWallet(walletConfig, salt);
+      feeAmount = maxFeeAmount.sub(ethers.utils.parseEther("0.00001"));
+      const tx = await walletFactory.createWallet(walletConfig, feeAmount);
 
       // get WalletCreated event:
       const fromBlock = tx.blockNumber;
@@ -249,8 +249,8 @@ describe("walletFactory", () => {
       );
       expect(
         ethers.utils.parseEther("0.1").sub(walletEthBalanceAfter)
-      ).to.equal(walletConfig.feeAmount);
-      expect(feeRecipientEthBalanceBefore.add(walletConfig.feeAmount)).to.equal(
+      ).to.equal(feeAmount);
+      expect(feeRecipientEthBalanceBefore.add(feeAmount)).to.equal(
         feeRecipientEthBalanceAfter
       );
     });
