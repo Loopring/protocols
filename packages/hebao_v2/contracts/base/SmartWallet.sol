@@ -135,7 +135,7 @@ contract SmartWallet is ILoopringWalletV2, ERC1271
         }
 
         // Pay for the wallet creation using wallet funds
-        if (feeRecipient != address(0)) {
+        if (feeRecipient != address(0) && feeAmount > 0) {
             ERC20Lib.transfer(feeToken, feeRecipient, feeAmount);
         }
     }

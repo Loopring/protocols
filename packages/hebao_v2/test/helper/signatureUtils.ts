@@ -46,7 +46,7 @@ export function signCreateWallet(
   const domainSeprator = eip712.hash("WalletFactory", "2.0.0", moduleAddress);
 
   const TYPE_STR =
-    "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)";
+    "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 maxFeeAmount,uint256 salt)";
   const CREATE_WALLET_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
 
   const guardiansBs = encodeAddressesPacked(guardians);

@@ -33,7 +33,7 @@ contract WalletFactory is WalletDeployer
         address   feeRecipient;
         address   feeToken;
         uint      maxFeeAmount;
-        uint      feeAmount;
+        uint      salt;
         bytes     signature;
     }
 
@@ -49,18 +49,18 @@ contract WalletFactory is WalletDeployer
 
     /// @dev Create a new wallet by deploying a proxy.
     /// @param config The wallet's config.
-    /// @param salt A salt.
+    /// @param feeAmount The fee amount actually paid.
     /// @return wallet The new wallet address
     function createWallet(
         WalletConfig calldata config,
-        uint                  salt
+        uint                  feeAmount
         )
         external
         returns (address wallet)
     {
-        _validateRequest(config, salt);
-        wallet = _deploy(config.owner, salt);
-        _initializeWallet(wallet, config);
+        _validateRequest(config, feeAmount);
+        wallet = _deploy(config.owner, config.salt);
+        _initializeWallet(wallet, config, feeAmount);
     }
 
     /// @dev Computes the wallet address
@@ -86,7 +86,8 @@ contract WalletFactory is WalletDeployer
 
     function _initializeWallet(
         address               wallet,
-        WalletConfig calldata config
+        WalletConfig calldata config,
+        uint                  feeAmount
         )
         internal
     {
@@ -97,7 +98,7 @@ contract WalletFactory is WalletDeployer
             config.inheritor,
             config.feeRecipient,
             config.feeToken,
-            config.feeAmount
+            feeAmount
         );
 
         emit WalletCreated(wallet, config.owner);
@@ -105,13 +106,13 @@ contract WalletFactory is WalletDeployer
 
     function _validateRequest(
         WalletConfig calldata config,
-        uint                  salt
+        uint feeAmount
         )
         private
         view
     {
         require(config.owner != address(0), "INVALID_OWNER");
-        require(config.feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
+        require(feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
 
         bytes32 dataHash = keccak256(
             abi.encode(
@@ -123,7 +124,7 @@ contract WalletFactory is WalletDeployer
                 config.feeRecipient,
                 config.feeToken,
                 config.maxFeeAmount,
-                salt
+                config.salt
             )
         );
 

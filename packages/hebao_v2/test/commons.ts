@@ -164,7 +164,7 @@ export async function newWallet(
     feeRecipient,
     feeToken: ethers.constants.AddressZero,
     maxFeeAmount: 0,
-    feeAmount: 0,
+    salt,
     signature: Buffer.from(signature.txSignature.slice(2), "hex")
   };
 
@@ -173,7 +173,7 @@ export async function newWallet(
     salt
   );
 
-  const tx = await walletFactory.createWallet(walletConfig, salt);
+  const tx = await walletFactory.createWallet(walletConfig, 0);
   // const allEvents = await getAllEvent(walletFactory, tx.blockNumber);
   // console.log(allEvents);
 

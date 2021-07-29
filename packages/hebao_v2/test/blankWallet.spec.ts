@@ -45,7 +45,7 @@ describe("wallet", () => {
         feeRecipient: ethers.constants.AddressZero,
         feeToken: ethers.constants.AddressZero,
         maxFeeAmount: 0,
-        feeAmount: 0,
+        salt,
         signature: Buffer.from(signature.txSignature.slice(2), "hex")
       };
 
@@ -54,7 +54,7 @@ describe("wallet", () => {
         salt
       );
 
-      const tx = await walletFactory.createWallet(walletConfig, salt);
+      const tx = await walletFactory.createWallet(walletConfig, 0);
 
       let wallet = await attachWallet(walletAddrComputed);
 
