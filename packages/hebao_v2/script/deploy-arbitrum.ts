@@ -68,6 +68,18 @@ async function newWalletFactory() {
   return walletFactory;
 }
 
+async function deployOfficialGuardian() {
+  const officialGuardian = await (await ethers.getContractFactory(
+    "OfficialGuardian"
+  )).deploy();
+  console.log("officialGuardian address:", officialGuardian.address);
+
+  const ownerAccount = (await ethers.getSigners())[0];
+  const ownerAddr = await ownerAccount.getAddress();
+  await officialGuardian.addManager(ownerAddr);
+  console.log("add", ownerAddr, "as a manager");
+}
+
 async function getWalletImplAddr(walletFactoryAddress: string) {
   const walletFactory = await (await ethers.getContractFactory(
     "WalletFactory"
@@ -78,24 +90,17 @@ async function getWalletImplAddr(walletFactoryAddress: string) {
 }
 
 // run with: npx hardhat run --network arbitrum scripts/deploy-arbitrum.ts
-
-// deploy result:
-// arbitrum-testnet 20210720:
-//   walletFactoryAddress = "0x034Cd568d025C28edB51BF3ec24CeAe55be345a0";
-//   masterCopy = "0x44B74caF7CB28cC243EaA9D1d1b3eCb2Ddc2C9f1";
-
-// arbitrum-testnet 20210727:
-//   walletFactoryAddress = "0xD63AE2942cC8FE82bA89Ef3d31A55A5e8638c6Ff";
-//   masterCopy = "0x3b7214DFf4adB2F91d58C7dA00E54058B90EFDEe";
-
 async function main() {
   // const walletFactory = await newWalletFactory();
   // const masterCopy = await walletFactory.walletImplementation();
   // console.log("walletFactory:", walletFactory.address);
   // console.log("masterCopy:", masterCopy);
 
-  await newWallet("0xD63AE2942cC8FE82bA89Ef3d31A55A5e8638c6Ff");
-  // await getWalletImplAddr(walletFactory.address);
+  // await newWallet(walletFactory.address);
+
+  // // await getWalletImplAddr(walletFactory.address);
+
+  await deployOfficialGuardian();
 }
 
 main()
