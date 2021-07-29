@@ -32,6 +32,7 @@ contract WalletFactory is WalletDeployer
         address   inheritor;
         address   feeRecipient;
         address   feeToken;
+        uint      maxFeeAmount;
         uint      feeAmount;
         bytes     signature;
     }
@@ -110,6 +111,7 @@ contract WalletFactory is WalletDeployer
         view
     {
         require(config.owner != address(0), "INVALID_OWNER");
+        require(config.feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
 
         bytes32 dataHash = keccak256(
             abi.encode(
@@ -120,7 +122,7 @@ contract WalletFactory is WalletDeployer
                 config.inheritor,
                 config.feeRecipient,
                 config.feeToken,
-                config.feeAmount,
+                config.maxFeeAmount,
                 salt
             )
         );

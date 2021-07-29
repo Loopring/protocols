@@ -163,6 +163,7 @@ export async function newWallet(
     inheritor: ethers.constants.AddressZero,
     feeRecipient,
     feeToken: ethers.constants.AddressZero,
+    maxFeeAmount: 0,
     feeAmount: 0,
     signature: Buffer.from(signature.txSignature.slice(2), "hex")
   };
