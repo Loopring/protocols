@@ -22,7 +22,7 @@ contract WalletFactory is WalletDeployer
     bytes32             public immutable DOMAIN_SEPARATOR;
 
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)");
+        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 maxFeeAmount,uint256 salt)");
 
     struct WalletConfig
     {
