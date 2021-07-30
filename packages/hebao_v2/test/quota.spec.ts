@@ -34,13 +34,10 @@ describe("wallet", () => {
       const tx = await wallet.changeDailyQuota(quotaAmount);
       const quotaInfo = (await wallet.wallet())["quota"];
 
-      // console.log("quotaInfo:", quotaInfo);
+      // 0 (MAX_AMOUNT) => quotaAmount, become effective immediately.
       const blockTime = await getBlockTimestamp(tx.blockNumber);
-      // console.log("blockTime:", blockTime);
       expect(quotaInfo.pendingQuota.toString()).to.equal(quotaAmount);
-      expect(quotaInfo.pendingUntil.toString()).to.equal(
-        blockTime + 3600 * 24 + ""
-      );
+      expect(quotaInfo.pendingUntil).to.equal(0);
     });
 
     it("changeDialyQuota extra test", async () => {
@@ -48,17 +45,15 @@ describe("wallet", () => {
 
       const owner = await account1.getAddress();
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
-
       const quotaAmount = ethers.utils.parseEther("10");
       const tx = await wallet.changeDailyQuota(quotaAmount);
       const quotaInfo = (await wallet.wallet())["quota"];
-
-      // console.log("quotaInfo:", quotaInfo);
+      // 0 (MAX_AMOUNT) => quotaAmount, become effective immediately.
+      const currentQuota = await getCurrentQuota(quotaInfo, tx.blockNumber);
       const blockTime = await getBlockTimestamp(tx.blockNumber);
+      expect(currentQuota).to.equal(quotaAmount);
       expect(quotaInfo.pendingQuota).to.equal(quotaAmount);
-      expect(quotaInfo.pendingUntil.toString()).to.equal(
-        blockTime + 3600 * 24 + ""
-      );
+      expect(quotaInfo.pendingUntil).to.equal(0);
 
       await advanceTime(3600 * 24);
       const quotaAmount2 = ethers.utils.parseEther("20");
@@ -83,6 +78,18 @@ describe("wallet", () => {
       expect(quotaInfo3.pendingUntil.toString()).to.equal(
         blockTime3 + 3600 * 24 + ""
       );
+
+      await advanceTime(3600 * 24);
+
+      // newQuota < currentQuota, newQuota will become effective immediately.
+      const quotaAmount4 = ethers.utils.parseEther("49");
+      const tx4 = await wallet.changeDailyQuota(quotaAmount4);
+      const blockTime4 = await getBlockTimestamp(tx4.blockNumber);
+      const quotaInfo4 = (await wallet.wallet())["quota"];
+      const currentQuota4 = await getCurrentQuota(quotaInfo4, tx4.blockNumber);
+      expect(currentQuota4).to.equal(quotaAmount4);
+      expect(quotaInfo4.pendingQuota).to.equal(quotaAmount4);
+      expect(quotaInfo4.pendingUntil).to.equal(0);
     });
 
     it("majority(owner required) should be able to change dialy quota immediately", async () => {

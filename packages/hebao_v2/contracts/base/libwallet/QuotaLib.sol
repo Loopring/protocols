@@ -38,7 +38,16 @@ library QuotaLib
         )
         public
     {
-        setQuota(wallet, newQuota,  block.timestamp.add(QUOTA_PENDING_PERIOD));
+        Quota memory q = wallet.quota;
+        uint currentQuota = _currentQuota(q);
+        if (currentQuota == 0) {
+            currentQuota = MAX_QUOTA;
+        }
+        uint _newQuota = newQuota == 0 ? MAX_QUOTA : newQuota;
+        uint effectiveTime = _newQuota <= currentQuota ?
+            0 : block.timestamp.add(QUOTA_PENDING_PERIOD);
+
+        setQuota(wallet, newQuota, effectiveTime);
     }
 
     function changeDailyQuotaWA(
@@ -102,7 +111,7 @@ library QuotaLib
         }
 
         Quota storage quota = wallet.quota;
-        quota.currentQuota = currentQuota(wallet).toUint128();
+        quota.currentQuota = _currentQuota(wallet.quota).toUint128();
         quota.pendingQuota = newQuota.toUint128();
         quota.pendingUntil = effectiveTime.toUint64();
 
@@ -111,15 +120,6 @@ library QuotaLib
             newQuota,
             quota.pendingUntil
         );
-    }
-
-    // Returns 0 to indiciate unlimited quota
-    function currentQuota(Wallet storage wallet)
-        internal
-        view
-        returns (uint)
-    {
-        return _currentQuota(wallet.quota);
     }
 
     // Returns 0 to indiciate unlimited quota
