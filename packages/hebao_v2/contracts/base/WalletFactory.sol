@@ -58,7 +58,9 @@ contract WalletFactory is WalletDeployer
         external
         returns (address wallet)
     {
-        _validateRequest(config, feeAmount);
+        require(feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
+
+        _validateConfig(config);
         wallet = _deploy(config.owner, config.salt);
         _initializeWallet(wallet, config, feeAmount);
     }
@@ -104,15 +106,13 @@ contract WalletFactory is WalletDeployer
         emit WalletCreated(wallet, config.owner);
     }
 
-    function _validateRequest(
-        WalletConfig calldata config,
-        uint feeAmount
+    function _validateConfig(
+        WalletConfig calldata config
         )
         private
         view
     {
         require(config.owner != address(0), "INVALID_OWNER");
-        require(feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
 
         bytes32 dataHash = keccak256(
             abi.encode(
