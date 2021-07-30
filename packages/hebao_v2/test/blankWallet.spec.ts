@@ -11,13 +11,13 @@ const { ethers } = require("hardhat");
 import { Contract, Signer } from "ethers";
 import BN = require("bn.js");
 
-describe("walletFactory", () => {
+describe("wallet", () => {
   let account1: Signer;
   let account2: Signer;
   let account3: Signer;
 
   describe("owner setter", () => {
-    it("should be able to set owner", async () => {
+    it("should be able to set owner for a blank wallet", async () => {
       [account1, account2, account3] = await ethers.getSigners();
       const ownerSetter = await account3.getAddress();
       const walletFactory = await newWalletFactoryContract(ownerSetter);
@@ -44,7 +44,8 @@ describe("walletFactory", () => {
         inheritor: ethers.constants.AddressZero,
         feeRecipient: ethers.constants.AddressZero,
         feeToken: ethers.constants.AddressZero,
-        feeAmount: 0,
+        maxFeeAmount: 0,
+        salt,
         signature: Buffer.from(signature.txSignature.slice(2), "hex")
       };
 
@@ -53,7 +54,7 @@ describe("walletFactory", () => {
         salt
       );
 
-      const tx = await walletFactory.createWallet(walletConfig, salt);
+      const tx = await walletFactory.createWallet(walletConfig, 0);
 
       let wallet = await attachWallet(walletAddrComputed);
 
@@ -71,14 +72,14 @@ describe("walletFactory", () => {
         expect(err.message.includes("NOT_ALLOWED_TO_SET_OWNER"));
       }
 
-      // ownerSetter should be able to set owner if owner if 0x0:
+      // ownerSetter should be able to set owner if owner is blankOwner
       wallet = await wallet.connect(account3);
       const setOwnerTx = await wallet.transferOwnership(newOwner);
       const ownerAfter = (await wallet.wallet()).owner;
       expect(ownerAfter.toLowerCase()).to.equal(newOwner.toLowerCase());
       await setOwnerTx.wait();
 
-      // ownerSetter should not be able to set owner again if owne is not 0x0:
+      // ownerSetter should not be able to set owner again
       const newOwner2 = "0x" + "34".repeat(20);
       try {
         await wallet.transferOwnership(newOwner2);

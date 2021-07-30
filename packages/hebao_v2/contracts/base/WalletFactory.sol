@@ -22,7 +22,7 @@ contract WalletFactory is WalletDeployer
     bytes32             public immutable DOMAIN_SEPARATOR;
 
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)");
+        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 maxFeeAmount,uint256 salt)");
 
     struct WalletConfig
     {
@@ -32,7 +32,8 @@ contract WalletFactory is WalletDeployer
         address   inheritor;
         address   feeRecipient;
         address   feeToken;
-        uint      feeAmount;
+        uint      maxFeeAmount;
+        uint      salt;
         bytes     signature;
     }
 
@@ -48,18 +49,20 @@ contract WalletFactory is WalletDeployer
 
     /// @dev Create a new wallet by deploying a proxy.
     /// @param config The wallet's config.
-    /// @param salt A salt.
+    /// @param feeAmount The fee amount actually paid.
     /// @return wallet The new wallet address
     function createWallet(
         WalletConfig calldata config,
-        uint                  salt
+        uint                  feeAmount
         )
         external
         returns (address wallet)
     {
-        _validateRequest(config, salt);
-        wallet = _deploy(config.owner, salt);
-        _initializeWallet(wallet, config);
+        require(feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
+
+        _validateConfig(config);
+        wallet = _deploy(config.owner, config.salt);
+        _initializeWallet(wallet, config, feeAmount);
     }
 
     /// @dev Computes the wallet address
@@ -85,7 +88,8 @@ contract WalletFactory is WalletDeployer
 
     function _initializeWallet(
         address               wallet,
-        WalletConfig calldata config
+        WalletConfig calldata config,
+        uint                  feeAmount
         )
         internal
     {
@@ -96,15 +100,14 @@ contract WalletFactory is WalletDeployer
             config.inheritor,
             config.feeRecipient,
             config.feeToken,
-            config.feeAmount
+            feeAmount
         );
 
         emit WalletCreated(wallet, config.owner);
     }
 
-    function _validateRequest(
-        WalletConfig calldata config,
-        uint                  salt
+    function _validateConfig(
+        WalletConfig calldata config
         )
         private
         view
@@ -120,8 +123,8 @@ contract WalletFactory is WalletDeployer
                 config.inheritor,
                 config.feeRecipient,
                 config.feeToken,
-                config.feeAmount,
-                salt
+                config.maxFeeAmount,
+                config.salt
             )
         );
 
