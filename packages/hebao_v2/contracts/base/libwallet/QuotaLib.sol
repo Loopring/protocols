@@ -38,7 +38,7 @@ library QuotaLib
         )
         public
     {
-        setQuota(wallet, newQuota,  block.timestamp.add(QUOTA_PENDING_PERIOD));
+        setQuota(wallet, newQuota, block.timestamp.add(QUOTA_PENDING_PERIOD));
     }
 
     function changeDailyQuotaWA(
@@ -101,8 +101,14 @@ library QuotaLib
             newQuota = 0;
         }
 
+        uint __currentQuota = currentQuota(wallet);
+        // Always allow the quota to be changed immediately when the quota doesn't increase
+        if ((__currentQuota >= newQuota && newQuota != 0) || __currentQuota == 0) {
+            effectiveTime = 0;
+        }
+
         Quota storage quota = wallet.quota;
-        quota.currentQuota = currentQuota(wallet).toUint128();
+        quota.currentQuota = __currentQuota.toUint128();
         quota.pendingQuota = newQuota.toUint128();
         quota.pendingUntil = effectiveTime.toUint64();
 
