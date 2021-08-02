@@ -40,7 +40,7 @@
     "@types/bignumber.js": "^5.0.0",
     "@types/bluebird": "3.5.33",
     "@types/lodash": "^4.14.136",
-    "@types/node": "15.6.1",
+    "@types/node": "16.4.10",
     "@types/request-promise-native": "^1.0.15",
     "ajv": "^6.10.0",
     "chai": "^4.2.0",
