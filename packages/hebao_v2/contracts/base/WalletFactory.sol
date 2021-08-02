@@ -6,14 +6,14 @@ pragma experimental ABIEncoderV2;
 import "../iface/ILoopringWalletV2.sol";
 import "../lib/EIP712.sol";
 import "../lib/SignatureUtil.sol";
-import "./WalletDeployer.sol";
+import "./WalletDeploymentLib.sol";
 
 
 /// @title WalletFactory
 /// @dev A factory contract to create a new wallet by deploying a proxy
 ///      in front of a real wallet.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract WalletFactory is WalletDeployer
+contract WalletFactory is WalletDeploymentLib
 {
     using SignatureUtil for bytes32;
 
@@ -40,7 +40,7 @@ contract WalletFactory is WalletDeployer
     constructor(
         address        _walletImplementation
         )
-        WalletDeployer(_walletImplementation)
+        WalletDeploymentLib(_walletImplementation)
     {
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("WalletFactory", "2.0.0", address(this))
