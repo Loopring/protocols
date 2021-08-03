@@ -7,10 +7,10 @@ import "../thirdparty/Create2.sol";
 import "../thirdparty/proxies/WalletProxy.sol";
 
 
-/// @title WalletDeployer
+/// @title WalletDeploymentLib
 /// @dev Functionality to compute wallet addresses and to deploy wallets
 /// @author Brecht Devos - <brecht@loopring.org>
-contract WalletDeployer
+contract WalletDeploymentLib
 {
     address public immutable walletImplementation;
 
