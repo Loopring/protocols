@@ -8,10 +8,10 @@ import "../iface/ILoopringWalletV2.sol";
 import "../lib/EIP712.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC1271.sol";
-import "../thirdparty/erc165/IERC165.sol";
-import "../thirdparty/erc721/ERC721Holder.sol";
-import "../thirdparty/erc1155/ERC1155Holder.sol";
 import "../lib/ReentrancyGuard.sol";
+import "../thirdparty/erc165/IERC165.sol";
+import "../thirdparty/erc1155/ERC1155Holder.sol";
+import "../thirdparty/erc721/ERC721Holder.sol";
 
 import "./libwallet/ERC20Lib.sol";
 import "./libwallet/ERC1271Lib.sol";
@@ -29,7 +29,7 @@ import "./libwallet/UpgradeLib.sol";
 /// @title SmartWallet
 /// @dev Main smart wallet contract
 /// @author Brecht Devos - <brecht@loopring.org>
-contract SmartWallet is ILoopringWalletV2, ERC1271, ERC721Holder, ERC1155Holder, IERC165
+contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC1155Holder
 {
     using ERC20Lib          for Wallet;
     using ERC1271Lib        for Wallet;
@@ -662,9 +662,9 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, ERC721Holder, ERC1155Holder,
         override
         returns (bool)
     {
-        return  interfaceId == type(IERC165).interfaceId ||
+        return  interfaceId == type(ERC1271).interfaceId ||
+                interfaceId == type(IERC165).interfaceId ||
                 interfaceId == type(IERC721Receiver).interfaceId ||
-                interfaceId == type(IERC1155Receiver).interfaceId ||
-                interfaceId == type(ERC1271).interfaceId;
+                interfaceId == type(IERC1155Receiver).interfaceId;
     }
 }
