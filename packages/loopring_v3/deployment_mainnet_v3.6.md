@@ -2037,6 +2037,23 @@
     tokenSymbol: 'LP-BKT-USDT'
   }
   ```
+  
+  114. SENT-USDC: 0x8195be4E48d3a2F80692fe1dBA9b23b8050fB1f9
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-SENT-USDC',
+    accountID: 114,
+    tokens: [
+      '0x97abee33cd075c58bfdd174e0885e08e8f03556f',
+      '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-SENT-USDC'
+  }
+  ```
   ***
 
 - Registered tokens:
@@ -2285,3 +2302,5 @@
   - LP-IDLE-ETH: 0x5359f0fd5ef2a6f0205436cc19eec1d6fc521b5c, tokenId: 242
   - LP-DEP-ETH: 0xbDC384dB410E56F4877A086F5b68DeBD673a7c48, tokenId: 243
   - LP-BKT-USDT: 0xBeC0c576EF02cB6341725607AB5D941e32B44437, tokenId: 244
+  - SENT: 0x97abee33cd075c58bfdd174e0885e08e8f03556f, tokenId: 245
+  - LP-SENT-USDC: 0x8195be4E48d3a2F80692fe1dBA9b23b8050fB1f9, tokenId: 246
