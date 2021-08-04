@@ -55,6 +55,16 @@ async function newWalletFactory() {
   return walletFactory;
 }
 
+async function addManager(contractAddr: string, manager: string) {
+  const managableContract = await (await ethers.getContractFactory(
+    "OwnerManagable"
+  )).attach(contractAddr);
+  await managableContract.addManager(manager);
+
+  const isManager = await managableContract.isManager(manager);
+  console.log("isManager:", isManager);
+}
+
 // [20210729] deployed at arbitrum testnet: 0xd5535729714618E57C42a072B8d56E72517f3800 (proxy)
 async function deployOfficialGuardian() {
   const ownerAccount = (await ethers.getSigners())[0];
@@ -75,7 +85,7 @@ async function deployOfficialGuardian() {
     "OfficialGuardian"
   )).attach(proxy.address);
   await proxyAsOfficialGuardian.initOwner(ownerAddr);
-  await officialGuardian.addManager(ownerAddr);
+  await proxyAsOfficialGuardian.addManager(ownerAddr);
   console.log("add", ownerAddr, "as a manager");
 }
 
@@ -89,6 +99,9 @@ async function getWalletImplAddr(walletFactoryAddress: string) {
 }
 
 async function main() {
+  const ownerAccount = (await ethers.getSigners())[0];
+  const ownerAddr = await ownerAccount.getAddress();
+
   // const walletFactory = await newWalletFactory();
   // const masterCopy = await walletFactory.walletImplementation();
   // console.log("walletFactory:", walletFactory.address);
@@ -98,7 +111,10 @@ async function main() {
 
   // // await getWalletImplAddr(walletFactory.address);
 
-  await deployOfficialGuardian();
+  // await deployOfficialGuardian();
+
+  const officialGuardianAddr = "0xd5535729714618E57C42a072B8d56E72517f3800";
+  await addManager(officialGuardianAddr, ownerAddr);
 }
 
 main()
