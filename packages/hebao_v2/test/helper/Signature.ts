@@ -100,7 +100,11 @@ export function verifySignatures(
   }
 }
 
-function verifySignature(signer: string, message: Buffer, signature: string) {
+export function verifySignature(
+  signer: string,
+  message: Buffer,
+  signature: string
+) {
   const data = new Bitstream(signature);
   const type = data.extractUint8(data.length() - 1);
   if (type === SignatureType.ETH_SIGN) {
@@ -116,6 +120,21 @@ function verifySignature(signer: string, message: Buffer, signature: string) {
   }
 }
 
+export function recoverECDSA(message: Buffer, signature: string) {
+  const data = new Bitstream(signature);
+  const r = data.extractBytes32(0);
+  const s = data.extractBytes32(32);
+  const v = data.extractUint8(64);
+  try {
+    const pub = ethUtil.ecrecover(message, v, r, s);
+    const recoveredAddress = "0x" + ethUtil.pubToAddress(pub).toString("hex");
+    return recoveredAddress;
+  } catch (err) {
+    console.error(err);
+    return "0x" + "00".repeat(20);
+  }
+}
+
 function verifyECDSA(message: Buffer, data: Bitstream, signer: string) {
   const r = data.extractBytes32(0);
   const s = data.extractBytes32(32);
@@ -123,6 +142,7 @@ function verifyECDSA(message: Buffer, data: Bitstream, signer: string) {
   try {
     const pub = ethUtil.ecrecover(message, v, r, s);
     const recoveredAddress = "0x" + ethUtil.pubToAddress(pub).toString("hex");
+    console.log("recovered address:", recoveredAddress);
     return signer.toLowerCase() === recoveredAddress.toLowerCase();
   } catch {
     return false;
