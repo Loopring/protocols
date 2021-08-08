@@ -8,7 +8,6 @@ import {
   newWallet,
   getContractABI,
   getFirstEvent,
-  getAllEvent,
   newWalletImpl,
   sortSignersAndSignatures
 } from "./commons";

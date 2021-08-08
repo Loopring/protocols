@@ -51,7 +51,7 @@ describe("wallet", () => {
   });
 
   describe("MetaTx", () => {
-    it("recover", async () => {
+    it.only("recover", async () => {
       const owner = await account1.getAddress();
       const newOwner = await account2.getAddress();
       const validUntil = new Date().getTime() + 3600 * 24 * 1000;
@@ -147,7 +147,7 @@ describe("wallet", () => {
         receipt.events[eventsLen - 1].data,
         receipt.events[eventsLen - 1].topics
       );
-      // console.log("metaTxEvent:", metaTxEvent);
+      console.log("metaTxEvent gasUsed:", metaTxEvent.gasUsed.toString());
 
       expect(metaTxEvent.metaTxHash).to.equal(
         "0x" + metaTxSig.hash.toString("hex")

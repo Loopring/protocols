@@ -174,13 +174,10 @@ export async function newWallet(
   );
 
   const tx = await walletFactory.createWallet(walletConfig, 0);
-  // const allEvents = await getAllEvent(walletFactory, tx.blockNumber);
+  // const allEvents = await getAllEvents(walletFactory, tx.blockNumber);
   // console.log(allEvents);
 
-  const smartWallet = await attachWallet(walletAddrComputed);
-
-  // console.log("SmartWallet:", smartWallet);
-  return smartWallet;
+  return await attachWallet(walletAddrComputed);
 }
 
 export async function attachWallet(wallet: string) {
@@ -202,7 +199,7 @@ export async function attachWallet(wallet: string) {
   return smartWallet;
 }
 
-export async function getAllEvent(contract: any, fromBlock: number) {
+export async function getAllEvents(contract: any, fromBlock: number) {
   const events = await contract.queryFilter(
     { address: contract.address },
     fromBlock

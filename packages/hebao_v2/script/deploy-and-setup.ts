@@ -6,10 +6,10 @@ import { newWalletImpl, newWalletFactoryContract } from "../test/commons";
 import { signCreateWallet } from "../test/helper/signatureUtils";
 import BN = require("bn.js");
 
-async function newWallet(walletFactoryAddress: string) {
+export async function newWallet(walletFactoryAddress: string) {
   const ownerAccount = (await ethers.getSigners())[0];
   const ownerAddr = await ownerAccount.getAddress();
-  const salt = 1;
+  const salt = new Date().getTime();
   const signature = signCreateWallet(
     walletFactoryAddress,
     ownerAddr,
@@ -28,7 +28,8 @@ async function newWallet(walletFactoryAddress: string) {
     inheritor: ethers.constants.AddressZero,
     feeRecipient: ethers.constants.AddressZero,
     feeToken: ethers.constants.AddressZero,
-    feeAmount: 0,
+    maxFeeAmount: 0,
+    salt,
     signature: Buffer.from(signature.txSignature.slice(2), "hex")
   };
 
@@ -42,12 +43,14 @@ async function newWallet(walletFactoryAddress: string) {
   );
   console.log("walletAddrcomputed:", walletAddrComputed);
 
-  const tx = await walletFactory.createWallet(walletConfig, salt, {
+  const tx = await walletFactory.createWallet(walletConfig, 0, {
     gasLimit: 10000000
   });
   console.log("tx:", tx);
   const receipt = await tx.wait();
   console.log("receipt:", receipt);
+
+  return walletAddrComputed;
 }
 
 async function newWalletFactory() {
@@ -99,22 +102,36 @@ async function getWalletImplAddr(walletFactoryAddress: string) {
 }
 
 async function main() {
-  const ownerAccount = (await ethers.getSigners())[0];
-  const ownerAddr = await ownerAccount.getAddress();
+  // const ownerAccount = (await ethers.getSigners())[0];
+  // const ownerAddr = await ownerAccount.getAddress();
 
   // const walletFactory = await newWalletFactory();
   // const masterCopy = await walletFactory.walletImplementation();
   // console.log("walletFactory:", walletFactory.address);
   // console.log("masterCopy:", masterCopy);
 
-  // await newWallet(walletFactory.address);
+  // walletFactory: 0xf9185d2cA14Bb01CB78Ca6686FdFCde2c17E1aBb
+  // masterCopy: 0xc4c1b3691e4139fA20b309ec28a601E0a7156C82
+
+  // await newWallet("0xf9185d2cA14Bb01CB78Ca6686FdFCde2c17E1aBb");
 
   // // await getWalletImplAddr(walletFactory.address);
 
   // await deployOfficialGuardian();
 
   const officialGuardianAddr = "0xd5535729714618E57C42a072B8d56E72517f3800";
-  await addManager(officialGuardianAddr, ownerAddr);
+  await addManager(
+    officialGuardianAddr,
+    "0x32C03aD6a42b8572bB2c317076ee48f904A580c4"
+  );
+  await addManager(
+    officialGuardianAddr,
+    "0xB259D7F2042b168c60FD5593d1a84327581dd89E"
+  );
+  await addManager(
+    officialGuardianAddr,
+    "0xA5b2DA9ddfCc4E554bB255D9989fdD7be3858Bc9"
+  );
 }
 
 main()

@@ -61,7 +61,7 @@ export default {
     arbitrum_test: {
       chainId: 421611,
       url: "https://rinkeby.arbitrum.io/rpc",
-      gas: "auto",
+      gas: 50000000,
       gasPrice: "auto",
       gasMultiplier: 1,
       timeout: 20000,

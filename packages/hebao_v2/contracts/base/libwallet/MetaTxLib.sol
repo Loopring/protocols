@@ -38,6 +38,8 @@ library MetaTxLib
         uint    gasUsed
     );
 
+    event LogGas(uint gasleft1, uint gasleft2);
+
     struct MetaTx
     {
         address to;
@@ -134,7 +136,8 @@ library MetaTxLib
             returnData
         );
 
-        uint gasUsed = gasLeft - gasleft() + metaTx.gasOverhead;
+        emit LogGas(gasLeft, gasleft());
+        uint gasUsed = gasLeft - gasleft();
 
         // Reimburse
         if (metaTx.gasPrice > 0 && (!metaTx.requiresSuccess || success)) {
