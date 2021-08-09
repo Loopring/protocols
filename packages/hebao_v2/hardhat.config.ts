@@ -4,6 +4,7 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "hardhat-gas-reporter";
+import "@nomiclabs/hardhat-etherscan";
 
 // import "@eth-optimism/plugins/hardhat/compiler";
 // import "@eth-optimism/plugins/hardhat/ethers";
@@ -45,6 +46,17 @@ export default {
       url: "http://localhost:8545",
       gas: "auto",
       gasPrice: "auto",
+      gasMultiplier: 1,
+      timeout: 20000,
+      httpHeaders: undefined,
+      accounts: loadTestAccounts().map(item => item.privateKey)
+    },
+
+    goerli: {
+      chainId: 5,
+      url: "https://goerli.infura.io/v3/b7c22d73c16e4c0ea3f88dadbdffbe03",
+      gas: 7000000,
+      gasPrice: 11e9,
       gasMultiplier: 1,
       timeout: 20000,
       httpHeaders: undefined,
@@ -96,5 +108,10 @@ export default {
   gasReporter: {
     currency: "USD",
     gasPrice: 100
+  },
+
+  etherscan: {
+    // Your API key for Etherscan
+    apiKey: "1F73WEV5ZM2HKPIVCG65U5QQ427NPUG9FI"
   }
 };

@@ -9,7 +9,7 @@ import BN = require("bn.js");
 async function newWallet(walletFactoryAddress: string) {
   const ownerAccount = (await ethers.getSigners())[0];
   const ownerAddr = await ownerAccount.getAddress();
-  const salt = 1;
+  const salt = new Date().getTime();
   const signature = signCreateWallet(
     walletFactoryAddress,
     ownerAddr,
@@ -28,7 +28,8 @@ async function newWallet(walletFactoryAddress: string) {
     inheritor: ethers.constants.AddressZero,
     feeRecipient: ethers.constants.AddressZero,
     feeToken: ethers.constants.AddressZero,
-    feeAmount: 0,
+    maxFeeAmount: 0,
+    salt,
     signature: Buffer.from(signature.txSignature.slice(2), "hex")
   };
 
@@ -42,12 +43,14 @@ async function newWallet(walletFactoryAddress: string) {
   );
   console.log("walletAddrcomputed:", walletAddrComputed);
 
-  const tx = await walletFactory.createWallet(walletConfig, salt, {
+  const tx = await walletFactory.createWallet(walletConfig, 0, {
     gasLimit: 10000000
   });
   console.log("tx:", tx);
   const receipt = await tx.wait();
   console.log("receipt:", receipt);
+
+  return walletAddrComputed;
 }
 
 async function newWalletFactory() {
@@ -73,12 +76,12 @@ async function deployOfficialGuardian() {
   const proxy = await (await ethers.getContractFactory(
     "OwnedUpgradeabilityProxy"
   )).deploy();
-  console.log("proxy:", proxy.address);
+  console.log("officialGuardian proxy address:", proxy.address);
 
   const officialGuardian = await (await ethers.getContractFactory(
     "OfficialGuardian"
   )).deploy();
-  console.log("officialGuardian address:", officialGuardian.address);
+  // console.log("officialGuardian address:", officialGuardian.address);
 
   await proxy.upgradeTo(officialGuardian.address);
   const proxyAsOfficialGuardian = await (await ethers.getContractFactory(
@@ -87,6 +90,8 @@ async function deployOfficialGuardian() {
   await proxyAsOfficialGuardian.initOwner(ownerAddr);
   await proxyAsOfficialGuardian.addManager(ownerAddr);
   console.log("add", ownerAddr, "as a manager");
+
+  return proxy.address;
 }
 
 async function getWalletImplAddr(walletFactoryAddress: string) {
@@ -102,19 +107,16 @@ async function main() {
   const ownerAccount = (await ethers.getSigners())[0];
   const ownerAddr = await ownerAccount.getAddress();
 
-  // const walletFactory = await newWalletFactory();
-  // const masterCopy = await walletFactory.walletImplementation();
-  // console.log("walletFactory:", walletFactory.address);
-  // console.log("masterCopy:", masterCopy);
+  const walletFactory = await newWalletFactory();
+  const masterCopy = await walletFactory.walletImplementation();
+  console.log("walletFactory:", walletFactory.address);
+  console.log("masterCopy:", masterCopy);
 
-  // await newWallet(walletFactory.address);
+  await newWallet(walletFactory.address);
 
-  // // await getWalletImplAddr(walletFactory.address);
-
-  // await deployOfficialGuardian();
-
-  const officialGuardianAddr = "0xd5535729714618E57C42a072B8d56E72517f3800";
-  await addManager(officialGuardianAddr, ownerAddr);
+  // await getWalletImplAddr(walletFactory.address);
+  const officialGuardianAddr = await deployOfficialGuardian();
+  // await addManager(officialGuardianAddr, ownerAddr);
 }
 
 main()
