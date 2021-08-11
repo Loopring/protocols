@@ -76,7 +76,7 @@ export default {
       gas: "auto",
       gasPrice: "auto",
       gasMultiplier: 1,
-      timeout: 20000,
+      timeout: 60000,
       httpHeaders: undefined,
       accounts: loadTestAccounts()
         .map(item => item.privateKey)
