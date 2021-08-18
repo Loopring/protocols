@@ -159,18 +159,14 @@ library MetaTxLib
         );
     }
 
-    function batchCall(
+    function selfBatchCall(
         Wallet    storage  /*wallet*/,
-        address[] calldata to,
         bytes[]   calldata data
         )
         public
     {
-        require(to.length == data.length, "INVALID_DATA");
-
-        for (uint i = 0; i < to.length; i++) {
-            require(to[i] == address(this));
-            (bool success, ) = to[i].call(data[i]);
+        for (uint i = 0; i < data.length; i++) {
+            (bool success, ) = address(this).call(data[i]);
             require(success, "BATCHED_CALL_FAILED");
         }
     }
