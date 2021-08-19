@@ -39,6 +39,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
     OwnerValidGadget ownerValid;
     RequireLtGadget requireValidUntil;
     RequireLeqGadget requireValidFee;
+    RequireNotNftGadget requireFeeTokenNotNFT;
 
     // Type
     IsNonZero isConditional;
@@ -49,7 +50,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
 
     // Balances
     DynamicBalanceGadget balanceS_A;
-    DynamicBalanceGadget balanceB_O;
+    DynamicBalanceGadget balanceA_O;
     // Fee as float
     FloatGadget fFee;
     RequireAccuracyGadget requireAccuracyFee;
@@ -94,7 +95,13 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
             FMT(this->annotation_prefix, ".hash")),
 
           // Validate
-          ownerValid(pb, state.constants, state.accountA.account.owner, owner.packed, FMT(prefix, ".ownerValid")),
+          ownerValid(
+            pb,
+            state.constants,
+            state.accountA.account.owner,
+            owner.packed,
+            state.constants._1,
+            FMT(prefix, ".ownerValid")),
           requireValidUntil(
             pb,
             state.timestamp,
@@ -102,6 +109,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
             NUM_BITS_TIMESTAMP,
             FMT(prefix, ".requireValidUntil")),
           requireValidFee(pb, fee.packed, maxFee.packed, NUM_BITS_AMOUNT, FMT(prefix, ".requireValidFee")),
+          requireFeeTokenNotNFT(pb, state.constants, feeTokenID.packed, FMT(prefix, ".requireFeeTokenNotNFT")),
 
           // Type
           isConditional(pb, type.packed, ".isConditional"),
@@ -118,7 +126,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
 
           // Balances
           balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),
-          balanceB_O(pb, state.oper.balanceB, FMT(prefix, ".balanceB_O")),
+          balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
           // Fee as float
           fFee(pb, state.constants, Float16Encoding, FMT(prefix, ".fFee")),
           requireAccuracyFee(
@@ -129,7 +137,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
             NUM_BITS_AMOUNT,
             FMT(prefix, ".requireAccuracyFee")),
           // Fee payment from to the operator
-          feePayment(pb, balanceS_A, balanceB_O, fFee.value(), FMT(prefix, ".feePayment")),
+          feePayment(pb, balanceS_A, balanceA_O, fFee.value(), FMT(prefix, ".feePayment")),
 
           // Increase the nonce
           nonce_after(
@@ -154,9 +162,10 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
 
         // Update the account balance for the fee payment
         setArrayOutput(TXV_BALANCE_A_S_ADDRESS, feeTokenID.bits);
+        setArrayOutput(TXV_BALANCE_A_B_ADDRESS, feeTokenID.bits);
         setOutput(TXV_BALANCE_A_S_BALANCE, balanceS_A.balance());
         // Update the operator balance for the fee payment
-        setOutput(TXV_BALANCE_O_B_BALANCE, balanceB_O.balance());
+        setOutput(TXV_BALANCE_O_A_BALANCE, balanceA_O.balance());
 
         // We need a single signature of the account that's being updated if not
         // conditional
@@ -189,6 +198,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
         ownerValid.generate_r1cs_witness();
         requireValidUntil.generate_r1cs_witness();
         requireValidFee.generate_r1cs_witness();
+        requireFeeTokenNotNFT.generate_r1cs_witness();
 
         // Type
         isConditional.generate_r1cs_witness();
@@ -199,7 +209,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
 
         // Balances
         balanceS_A.generate_r1cs_witness();
-        balanceB_O.generate_r1cs_witness();
+        balanceA_O.generate_r1cs_witness();
         // Fee as float
         fFee.generate_r1cs_witness(toFloat(update.fee, Float16Encoding));
         requireAccuracyFee.generate_r1cs_witness();
@@ -231,6 +241,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
         ownerValid.generate_r1cs_constraints();
         requireValidUntil.generate_r1cs_constraints();
         requireValidFee.generate_r1cs_constraints();
+        requireFeeTokenNotNFT.generate_r1cs_constraints();
 
         // Type
         isConditional.generate_r1cs_constraints();
@@ -241,7 +252,7 @@ class AccountUpdateCircuit : public BaseTransactionCircuit
 
         // Balances
         balanceS_A.generate_r1cs_constraints();
-        balanceB_O.generate_r1cs_constraints();
+        balanceA_O.generate_r1cs_constraints();
         // Fee as float
         fFee.generate_r1cs_constraints();
         requireAccuracyFee.generate_r1cs_constraints();

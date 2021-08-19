@@ -31,12 +31,10 @@ class OrderGadget : public GadgetT
     DualVariableGadget maxFeeBips;
     DualVariableGadget fillAmountBorS;
     VariableT taker;
+    VariableT nftDataB;
 
     DualVariableGadget feeBips;
     DualVariableGadget amm;
-
-    DualVariableGadget feeBipsMultiplierFlag;
-    DualVariableGadget feeBipsData;
 
     NotGadget notAmm;
 
@@ -45,10 +43,20 @@ class OrderGadget : public GadgetT
     RequireNotEqualGadget tokenS_neq_tokenB;
     RequireNotZeroGadget amountS_notZero;
     RequireNotZeroGadget amountB_notZero;
-    // Fee checks
-    TernaryGadget feeMultiplier;
-    UnsafeMulGadget decodedFeeBips;
-    RequireEqualGadget feeBipsEqualsDecodedFeeBips;
+
+    // NFT
+    IsNftGadget isNftTokenS;
+    IsNftGadget isNftTokenB;
+    AndGadget isNftTokenSandB;
+    TernaryGadget hashDataTokenB;
+    IfThenRequireEqualGadget requireNoFeeOnNft;
+    AndGadget noNfts;
+    IfThenRequireGadget noNftsInAmm;
+
+    // Fees
+    RequireLeqGadget maxFeeBipsLeq10000;
+    TernaryGadget feeBipsS;
+    TernaryGadget feeBipsB;
 
     // Signature
     Poseidon_11 hash;
@@ -71,12 +79,10 @@ class OrderGadget : public GadgetT
           maxFeeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".maxFeeBips")),
           fillAmountBorS(pb, 1, FMT(prefix, ".fillAmountBorS")),
           taker(make_variable(pb, FMT(prefix, ".taker"))),
+          nftDataB(make_variable(pb, FMT(prefix, ".nftDataB"))),
 
           feeBips(pb, NUM_BITS_BIPS, FMT(prefix, ".feeBips")),
           amm(pb, 1, FMT(prefix, ".amm")),
-
-          feeBipsMultiplierFlag(pb, 1, FMT(prefix, ".feeBipsMultiplierFlag")),
-          feeBipsData(pb, NUM_BITS_BIPS_DA, FMT(prefix, ".feeBipsData")),
 
           notAmm(pb, amm.packed, FMT(prefix, ".notAmm")),
 
@@ -90,19 +96,32 @@ class OrderGadget : public GadgetT
           tokenS_neq_tokenB(pb, tokenS.packed, tokenB.packed, FMT(prefix, ".tokenS != tokenB")),
           amountS_notZero(pb, amountS.packed, FMT(prefix, ".amountS != 0")),
           amountB_notZero(pb, amountB.packed, FMT(prefix, ".amountB != 0")),
-          // Fee checks
-          feeMultiplier(
+
+          // NFT
+          isNftTokenS(pb, constants, tokenS.packed, FMT(prefix, ".isNftTokenS")),
+          isNftTokenB(pb, constants, tokenB.packed, FMT(prefix, ".isNftTokenB")),
+          isNftTokenSandB(pb, {isNftTokenS.isNFT(), isNftTokenB.isNFT()}, FMT(prefix, ".isNftTokenSandB")),
+          hashDataTokenB(pb, isNftTokenB.isNotNFT(), tokenB.packed, nftDataB, FMT(prefix, ".hashDataTokenB")),
+          // Disallow paying fees in NFTs (if tokenB is an NFT then feeBips needs to be 0)
+          requireNoFeeOnNft(
             pb,
-            feeBipsMultiplierFlag.packed,
-            constants.feeMultiplier,
-            constants._1,
-            FMT(prefix, ".feeMultiplier")),
-          decodedFeeBips(pb, feeBipsData.packed, feeMultiplier.result(), FMT(prefix, ".decodedFeeBips")),
-          feeBipsEqualsDecodedFeeBips(
-            pb,
+            isNftTokenSandB.result(),
             feeBips.packed,
-            decodedFeeBips.result(),
-            FMT(prefix, ".feeBipsEqualsDecodedFeeBips")),
+            constants._0,
+            FMT(prefix, ".requireNoFeeOnNft")),
+          // Don't allow an AMM to contain NFTs (impossible because the weights/NFT data uses the same storage slot)
+          noNfts(pb, {isNftTokenS.isNotNFT(), isNftTokenB.isNotNFT()}, FMT(prefix, ".noNfts")),
+          noNftsInAmm(pb, amm.packed, noNfts.result(), FMT(prefix, ".noNftsInAmm")),
+
+          // Fees
+          maxFeeBipsLeq10000(
+            pb,
+            maxFeeBips.packed,
+            constants._10000,
+            NUM_BITS_BIPS,
+            FMT(prefix, ".maxFeeBipsLeq10000")),
+          feeBipsS(pb, isNftTokenB.isNFT(), feeBips.packed, constants._0, FMT(prefix, ".feeBipsS")),
+          feeBipsB(pb, isNftTokenB.isNFT(), constants._0, feeBips.packed, FMT(prefix, ".feeBipsB")),
 
           // Signature
           hash(
@@ -112,7 +131,7 @@ class OrderGadget : public GadgetT
                storageID.packed,
                accountID.packed,
                tokenS.packed,
-               tokenB.packed,
+               hashDataTokenB.result(),
                amountS.packed,
                amountB.packed,
                validUntil.packed,
@@ -136,22 +155,10 @@ class OrderGadget : public GadgetT
         maxFeeBips.generate_r1cs_witness(pb, order.maxFeeBips);
         fillAmountBorS.generate_r1cs_witness(pb, order.fillAmountBorS);
         pb.val(taker) = order.taker;
+        pb.val(nftDataB) = order.nftDataB;
 
         feeBips.generate_r1cs_witness(pb, order.feeBips);
         amm.generate_r1cs_witness(pb, order.amm);
-
-        // Use the fee multiplier if necessary
-        if (toBigInt(order.feeBips) >= 64 /*2**NUM_BITS_BIPS_DA*/)
-        {
-            feeBipsMultiplierFlag.generate_r1cs_witness(pb, ethsnarks::FieldT(1));
-            feeBipsData.generate_r1cs_witness(
-              pb, ethsnarks::FieldT((toBigInt(order.feeBips) / FEE_MULTIPLIER).to_int()));
-        }
-        else
-        {
-            feeBipsMultiplierFlag.generate_r1cs_witness(pb, ethsnarks::FieldT(0));
-            feeBipsData.generate_r1cs_witness(pb, order.feeBips);
-        }
 
         notAmm.generate_r1cs_witness();
 
@@ -160,10 +167,20 @@ class OrderGadget : public GadgetT
         tokenS_neq_tokenB.generate_r1cs_witness();
         amountS_notZero.generate_r1cs_witness();
         amountB_notZero.generate_r1cs_witness();
-        // Fee checks
-        feeMultiplier.generate_r1cs_witness();
-        decodedFeeBips.generate_r1cs_witness();
-        feeBipsEqualsDecodedFeeBips.generate_r1cs_witness();
+
+        // NFT
+        isNftTokenS.generate_r1cs_witness();
+        isNftTokenB.generate_r1cs_witness();
+        isNftTokenSandB.generate_r1cs_witness();
+        hashDataTokenB.generate_r1cs_witness();
+        requireNoFeeOnNft.generate_r1cs_witness();
+        noNfts.generate_r1cs_witness();
+        noNftsInAmm.generate_r1cs_witness();
+
+        // Fees
+        maxFeeBipsLeq10000.generate_r1cs_witness();
+        feeBipsS.generate_r1cs_witness();
+        feeBipsB.generate_r1cs_witness();
 
         // Signature
         hash.generate_r1cs_witness();
@@ -185,9 +202,6 @@ class OrderGadget : public GadgetT
         feeBips.generate_r1cs_constraints(true);
         amm.generate_r1cs_constraints(true);
 
-        feeBipsMultiplierFlag.generate_r1cs_constraints(true);
-        feeBipsData.generate_r1cs_constraints(true);
-
         notAmm.generate_r1cs_constraints();
 
         // Checks
@@ -195,10 +209,20 @@ class OrderGadget : public GadgetT
         tokenS_neq_tokenB.generate_r1cs_constraints();
         amountS_notZero.generate_r1cs_constraints();
         amountB_notZero.generate_r1cs_constraints();
-        // Fee checks
-        feeMultiplier.generate_r1cs_constraints();
-        decodedFeeBips.generate_r1cs_constraints();
-        feeBipsEqualsDecodedFeeBips.generate_r1cs_constraints();
+
+        // NFT
+        isNftTokenS.generate_r1cs_constraints();
+        isNftTokenB.generate_r1cs_constraints();
+        isNftTokenSandB.generate_r1cs_constraints();
+        hashDataTokenB.generate_r1cs_constraints();
+        requireNoFeeOnNft.generate_r1cs_constraints();
+        noNfts.generate_r1cs_constraints();
+        noNftsInAmm.generate_r1cs_constraints();
+
+        // Fees
+        maxFeeBipsLeq10000.generate_r1cs_constraints();
+        feeBipsS.generate_r1cs_constraints();
+        feeBipsB.generate_r1cs_constraints();
 
         // Signature
         hash.generate_r1cs_constraints();

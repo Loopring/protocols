@@ -41,6 +41,9 @@ contract("Exchange", (accounts: string[]) => {
       agentRegistry.address,
       "unexpected agent registry"
     );
+
+    // Allow all agent functions
+    await exchange.setAllowOnchainTransferFrom(true, { from: exchangeOwner });
   };
 
   const registerUserAgentChecked = async (

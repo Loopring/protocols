@@ -21,7 +21,8 @@ import {
   toFloat,
   TransactionType,
   Poseidon,
-  WithdrawFromMerkleTreeData
+  WithdrawFromMerkleTreeData,
+  NftType
 } from "loopringV3.js";
 import { Context } from "./context";
 import { doDebugLogging, logDebug, logInfo } from "./logs";
@@ -42,7 +43,9 @@ import {
   AccountUpdate,
   SpotTrade,
   WithdrawalRequest,
-  SignatureVerification
+  SignatureVerification,
+  NftMint,
+  NftData
 } from "./types";
 
 const LoopringIOExchangeOwner = artifacts.require("LoopringIOExchangeOwner");
@@ -55,7 +58,9 @@ type TxType =
   | Deposit
   | AccountUpdate
   | AmmUpdate
-  | SignatureVerification;
+  | SignatureVerification
+  | NftMint
+  | NftData;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -81,7 +86,9 @@ function replacer(name: any, val: any) {
     name === "to" ||
     name === "exchange" ||
     name === "taker" ||
-    name === "onchainDataHash"
+    name === "onchainDataHash" ||
+    name === "tokenAddress" ||
+    name === "minter"
   ) {
     return new BN(val.slice(2), 16).toString(10);
   } else if (name === "joinAmounts" || name === "exitMinAmounts") {
@@ -119,6 +126,8 @@ export interface TransferOptions {
   storageID?: number;
   maxFee?: BN;
   putAddressesInDA?: boolean;
+  tokenID?: number;
+  toTokenID?: number;
 }
 
 export interface WithdrawOptions {
@@ -133,12 +142,16 @@ export interface WithdrawOptions {
   maxFee?: BN;
   storeRecipient?: boolean;
   skipForcedAuthentication?: boolean;
+  tokenID?: number;
+  nftMint?: NftMint;
+  forceUseNftData?: boolean;
 }
 
 export interface AccountUpdateOptions {
   authMethod?: AuthMethod;
   validUntil?: number;
   maxFee?: BN;
+  signer?: string;
 }
 
 export interface AmmUpdateOptions {
@@ -148,6 +161,17 @@ export interface AmmUpdateOptions {
 
 export interface SignatureVerificationOptions {
   dataToSign?: string;
+}
+
+export interface NftMintOptions {
+  authMethod?: AuthMethod;
+  signer?: string;
+  validUntil?: number;
+  storageID?: number;
+  maxFee?: BN;
+  toTokenID?: number;
+  nftType?: number;
+  creatorFeeBips?: number;
 }
 
 export interface OnchainBlock {
@@ -472,6 +496,103 @@ export namespace SignatureVerificationUtils {
   }
 }
 
+export namespace NftMintUtils {
+  export function toTypedData(nftMint: NftMint, verifyingContract: string) {
+    const typedData = {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" }
+        ],
+        NftMint: [
+          { name: "minter", type: "address" },
+          { name: "to", type: "address" },
+          { name: "nftType", type: "uint8" },
+          { name: "token", type: "address" },
+          { name: "nftID", type: "uint256" },
+          { name: "creatorFeeBips", type: "uint8" },
+          { name: "amount", type: "uint96" },
+          { name: "feeTokenID", type: "uint16" },
+          { name: "maxFee", type: "uint96" },
+          { name: "validUntil", type: "uint32" },
+          { name: "storageID", type: "uint32" }
+        ]
+      },
+      primaryType: "NftMint",
+      domain: {
+        name: "Loopring Protocol",
+        version: "3.6.0",
+        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
+        verifyingContract
+      },
+      message: {
+        minter: nftMint.minter,
+        to: nftMint.to,
+        nftType: nftMint.nftType,
+        token: nftMint.tokenAddress,
+        nftID: nftMint.nftID,
+        creatorFeeBips: nftMint.creatorFeeBips,
+        amount: nftMint.amount,
+        feeTokenID: nftMint.feeTokenID,
+        maxFee: nftMint.maxFee,
+        validUntil: nftMint.validUntil,
+        storageID: nftMint.storageID
+      }
+    };
+    return typedData;
+  }
+
+  export function getHash(mint: NftMint, verifyingContract: string) {
+    const typedData = this.toTypedData(mint, verifyingContract);
+    return sigUtil.TypedDataUtils.sign(typedData);
+  }
+
+  export function sign(keyPair: any, mint: NftMint) {
+    // Calculate hash
+    const hasher = Poseidon.createHash(10, 6, 53);
+    const inputs = [
+      mint.exchange,
+      mint.minterAccountID,
+      mint.toAccountID,
+      mint.nftData,
+      mint.amount,
+      mint.feeTokenID,
+      mint.maxFee,
+      mint.validUntil,
+      mint.storageID
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    const signature = EdDSA.sign(keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, signature, [
+      keyPair.publicKeyX,
+      keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+
+    return signature;
+  }
+
+  export function getNftData(mint: NftMint) {
+    // Calculate hash
+    const hasher = Poseidon.createHash(7, 6, 52);
+    const inputs = [
+      mint.minter,
+      mint.nftType,
+      mint.tokenAddress,
+      mint.nftIDLo,
+      mint.nftIDHi,
+      mint.creatorFeeBips
+    ];
+    return hasher(inputs).toString(10);
+  }
+}
+
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
@@ -538,6 +659,7 @@ export class ExchangeTestUtil {
   private pendingBlockCallbacks: BlockCallback[][] = [];
 
   private storageIDGenerator: number = 0;
+  private tokenIDGenerator: number = Constants.NFT_TOKEN_ID_START;
 
   private MAX_NUM_EXCHANGES: number = 512;
 
@@ -573,7 +695,7 @@ export class ExchangeTestUtil {
     //   { from: this.testContext.deployer }
     // );
 
-    await this.loopringV3.updateProtocolFeeSettings(50, 0, {
+    await this.loopringV3.updateProtocolFeeSettings(50, 25, {
       from: this.testContext.deployer
     });
 
@@ -726,6 +848,9 @@ export class ExchangeTestUtil {
     const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
     const putAddressesInDA =
       options.putAddressesInDA !== undefined ? options.putAddressesInDA : false;
+    let tokenID = options.tokenID !== undefined ? options.tokenID : undefined;
+    let toTokenID =
+      options.tokenID !== undefined ? options.toTokenID : undefined;
 
     // From
     if (amountToDeposit.gt(new BN(0))) {
@@ -756,14 +881,24 @@ export class ExchangeTestUtil {
     }
 
     // Tokens
-    if (!token.startsWith("0x")) {
-      token = this.testContext.tokenSymbolAddrMap.get(token);
+    if (tokenID === undefined) {
+      if (!token.startsWith("0x")) {
+        token = this.testContext.tokenSymbolAddrMap.get(token);
+      }
+      tokenID = this.tokenAddressToIDMap.get(token);
     }
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
-    const tokenID = this.tokenAddressToIDMap.get(token);
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
+
+    if (toTokenID === undefined) {
+      if (tokenID < Constants.NFT_TOKEN_ID_START) {
+        toTokenID = tokenID;
+      } else {
+        toTokenID = this.tokenIDGenerator++;
+      }
+    }
 
     // Dual author key
     const dualAuthorkeyPair = this.getKeyPairEDDSA();
@@ -792,6 +927,7 @@ export class ExchangeTestUtil {
       originalMaxFee: maxFee,
       from,
       to,
+      toTokenID,
       type: authMethod === AuthMethod.EDDSA ? 0 : 1,
       validUntil,
       putAddressesInDA,
@@ -863,6 +999,171 @@ export class ExchangeTestUtil {
     return transfer;
   }
 
+  public async mintNFT(
+    minter: string,
+    to: string,
+    tokenAddress: string,
+    nftID: string,
+    amount: BN,
+    feeToken: string,
+    fee: BN,
+    options: NftMintOptions = {}
+  ) {
+    assert(nftID.startsWith("0x") && nftID.length == 66, "invalid nftID");
+    fee = roundToFloatValue(fee, Constants.Float16Encoding);
+
+    // Fill in defaults
+    const authMethod =
+      options.authMethod !== undefined ? options.authMethod : AuthMethod.EDDSA;
+    /*const transferToNew =
+      options.transferToNew !== undefined ? options.transferToNew : false;*/
+    const signer = options.signer !== undefined ? options.signer : minter;
+    const validUntil =
+      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+    const storageID =
+      options.storageID !== undefined
+        ? options.storageID
+        : this.storageIDGenerator++;
+    const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
+    const toTokenID =
+      options.toTokenID !== undefined
+        ? options.toTokenID
+        : this.tokenIDGenerator++;
+    const nftType =
+      options.nftType !== undefined ? options.nftType : NftType.ERC1155;
+    const creatorFeeBips =
+      options.creatorFeeBips !== undefined ? options.creatorFeeBips : 0;
+
+    // Minter
+    let minterAccountID = this.getAccountID(minter);
+    let tokenAccountID = this.getAccountID(tokenAddress);
+    if (tokenAccountID === undefined) {
+      // Create an account for the token address used in the mint
+      await this.transfer(
+        this.exchangeOperator,
+        tokenAddress,
+        "ETH",
+        new BN(0),
+        "ETH",
+        new BN(0),
+        { transferToNew: true }
+      );
+      tokenAccountID = this.getAccountID(tokenAddress);
+    }
+
+    // To
+    let toAccountID = this.getAccountID(to);
+    if (toAccountID === undefined) {
+      const account: Account = {
+        accountID: this.accounts[this.exchangeId].length,
+        owner: to,
+        publicKeyX: "0",
+        publicKeyY: "0",
+        secretKey: "0",
+        nonce: 0
+      };
+      this.accounts[this.exchangeId].push(account);
+      toAccountID = account.accountID;
+    }
+
+    // Tokens
+    if (!feeToken.startsWith("0x")) {
+      feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
+    }
+    const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
+
+    // Setup the transfer tx
+    const account = this.findAccount(minter);
+    const nftMint: NftMint = {
+      txType: "NftMint",
+      exchange: this.exchange.address,
+      minterAccountID,
+      tokenAccountID,
+      amount,
+      feeTokenID,
+      fee,
+      maxFee,
+      originalMaxFee: maxFee,
+      toAccountID,
+      toTokenID,
+      to,
+      minter,
+      nftType,
+      tokenAddress,
+      nftID: this.hexToDecString(nftID),
+      nftIDHi: new BN(nftID.substr(2, 32), 16).toString(10),
+      nftIDLo: new BN(nftID.substr(2 + 32, 32), 16).toString(10),
+      creatorFeeBips,
+      type:
+        authMethod === AuthMethod.EDDSA
+          ? 0
+          : authMethod === AuthMethod.DEPOSIT
+          ? 2
+          : 1,
+      validUntil,
+      storageID: authMethod === AuthMethod.DEPOSIT ? 0 : storageID
+    };
+
+    nftMint.nftData = NftMintUtils.getNftData(nftMint);
+
+    // Authorize the tx
+    if (authMethod === AuthMethod.EDDSA) {
+      nftMint.signature = NftMintUtils.sign(account, nftMint);
+    } else if (authMethod === AuthMethod.ECDSA) {
+      const hash = NftMintUtils.getHash(nftMint, this.exchange.address);
+      nftMint.onchainSignature = await sign(
+        signer,
+        hash,
+        SignatureType.EIP_712
+      );
+      await verifySignature(signer, hash, nftMint.onchainSignature);
+    }
+
+    if (authMethod !== AuthMethod.EDDSA) {
+      // Set the max fee to the fee so that it can always pass through the circuit
+      nftMint.maxFee = nftMint.fee;
+    }
+
+    this.pendingTransactions[this.exchangeId].push(nftMint);
+
+    if (nftMint.type > 0) {
+      this.requestNftData(0, nftMint);
+      this.requestNftData(1, nftMint);
+    }
+
+    return nftMint;
+  }
+
+  public requestNftData(
+    type: number,
+    nftMint: NftMint,
+    accountID?: number,
+    tokenID?: number
+  ) {
+    const nftData: NftData = {
+      txType: "NftData",
+      exchange: this.exchange.address,
+
+      type,
+
+      accountID: accountID !== undefined ? accountID : nftMint.toAccountID,
+      tokenID: tokenID !== undefined ? tokenID : nftMint.toTokenID,
+
+      minterAccountID: nftMint.minterAccountID,
+      minter: nftMint.minter,
+
+      nftType: nftMint.nftType,
+      tokenAddress: nftMint.tokenAddress,
+
+      nftID: nftMint.nftID,
+      nftIDHi: nftMint.nftIDHi,
+      nftIDLo: nftMint.nftIDLo,
+
+      creatorFeeBips: nftMint.creatorFeeBips
+    };
+    this.pendingTransactions[this.exchangeId].push(nftData);
+  }
+
   public async setupRing(
     ring: SpotTrade,
     bSetupOrderA: boolean = true,
@@ -930,8 +1231,22 @@ export class ExchangeTestUtil {
 
     order.storageID = order.storageID !== undefined ? order.storageID : index;
 
-    order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
-    order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
+    order.tokenIdS =
+      order.tokenIdS !== undefined
+        ? order.tokenIdS
+        : this.tokenAddressToIDMap.get(order.tokenS);
+    order.tokenIdB =
+      order.tokenIdB !== undefined
+        ? order.tokenIdB
+        : this.tokenAddressToIDMap.get(order.tokenB);
+
+    if (order.tokenIdB === undefined) {
+      order.tokenIdB = this.tokenIDGenerator++;
+    }
+
+    if (order.nftDataB === undefined) {
+      order.nftDataB = "0";
+    }
 
     if (bDeposit) {
       // setup initial balances:
@@ -957,7 +1272,9 @@ export class ExchangeTestUtil {
       order.storageID,
       order.accountID,
       order.tokenIdS,
-      order.tokenIdB,
+      order.tokenIdB < Constants.NFT_TOKEN_ID_START
+        ? order.tokenIdB
+        : order.nftDataB,
       order.amountS,
       order.amountB,
       order.validUntil,
@@ -1144,17 +1461,7 @@ export class ExchangeTestUtil {
     let accountID = await this.getAccountID(to);
     let accountNewCreated = false;
     if (accountID === undefined) {
-      const account: Account = {
-        accountID: this.accounts[this.exchangeId].length,
-        owner: to,
-        publicKeyX: "0",
-        publicKeyY: "0",
-        secretKey: "0",
-        nonce: 0
-      };
-      this.accounts[this.exchangeId].push(account);
-      accountID = account.accountID;
-
+      accountID = this.createNewAccount(to);
       accountNewCreated = true;
     }
 
@@ -1243,6 +1550,91 @@ export class ExchangeTestUtil {
     return deposit;
   }
 
+  public async depositNFT(
+    from: string,
+    to: string,
+    token: string,
+    nftID: string,
+    amount: BN
+  ) {
+    const snapshot = new BalanceSnapshot(this);
+    await snapshot.transfer(
+      from,
+      this.exchange.address,
+      token,
+      amount,
+      "owner",
+      "exchange",
+      nftID
+    );
+
+    const nftIDBN = new BN(nftID.slice(2), 16);
+    await this.exchange.depositNFT(
+      from,
+      to,
+      NftType.ERC1155,
+      token,
+      nftIDBN,
+      amount,
+      "0x",
+      { from }
+    );
+
+    await snapshot.verifyBalances();
+
+    const tokenAccountID = await this.getAccountID(token);
+    if (tokenAccountID === undefined) {
+      // Create the ERC1155 contract account
+      await this.transfer(
+        this.exchangeOperator,
+        token,
+        "ETH",
+        new BN(0),
+        "ETH",
+        new BN(0),
+        { transferToNew: true }
+      );
+    }
+
+    const toAccountID = await this.getAccountID(to);
+    if (toAccountID === undefined) {
+      this.createNewAccount(to);
+    }
+
+    const nftMint = await this.mintNFT(
+      token,
+      to,
+      token,
+      nftID,
+      amount,
+      "ETH",
+      new BN(0),
+      { authMethod: AuthMethod.DEPOSIT }
+    );
+
+    if (toAccountID === undefined) {
+      let keyPair = this.getKeyPairEDDSA();
+      await this.requestAccountUpdate(to, "ETH", new BN(0), keyPair, {
+        authMethod: AuthMethod.ECDSA
+      });
+    }
+
+    return nftMint;
+  }
+
+  public createNewAccount(owner: string) {
+    const account: Account = {
+      accountID: this.accounts[this.exchangeId].length,
+      owner,
+      publicKeyX: "0",
+      publicKeyY: "0",
+      secretKey: "0",
+      nonce: 0
+    };
+    this.accounts[this.exchangeId].push(account);
+    return account.accountID;
+  }
+
   public hexToDecString(hex: string) {
     return new BN(hex.slice(2), 16).toString(10);
   }
@@ -1278,6 +1670,9 @@ export class ExchangeTestUtil {
       options.skipForcedAuthentication !== undefined
         ? options.skipForcedAuthentication
         : false;
+    let tokenID = options.tokenID !== undefined ? options.tokenID : undefined;
+    let forceUseNftData =
+      options.forceUseNftData !== undefined ? options.forceUseNftData : false;
 
     let type = 1;
     if (authMethod === AuthMethod.EDDSA) {
@@ -1291,10 +1686,12 @@ export class ExchangeTestUtil {
       }
     }
 
-    if (!token.startsWith("0x")) {
-      token = this.testContext.tokenSymbolAddrMap.get(token);
+    if (tokenID === undefined) {
+      if (!token.startsWith("0x")) {
+        token = this.testContext.tokenSymbolAddrMap.get(token);
+      }
+      tokenID = this.tokenAddressToIDMap.get(token);
     }
-    const tokenID = this.tokenAddressToIDMap.get(token);
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
@@ -1303,16 +1700,12 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.FORCE && !skipForcedAuthentication) {
       const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
-        const numAvailableSlotsBefore = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
-        await this.exchange.forceWithdraw(signer, token, accountID, {
+        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+        await this.exchange.forceWithdrawByTokenID(signer, tokenID, accountID, {
           from: signer,
           value: withdrawalFee
         });
-        const numAvailableSlotsAfter = (
-          await this.exchange.getNumAvailableForcedSlots()
-        ).toNumber();
+        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
         assert.equal(
           numAvailableSlotsAfter,
           numAvailableSlotsBefore - 1,
@@ -1391,6 +1784,24 @@ export class ExchangeTestUtil {
       withdrawalRequest.maxFee = withdrawalRequest.fee;
     }
 
+    if (
+      withdrawalRequest.tokenID >= Constants.NFT_TOKEN_ID_START &&
+      (withdrawalRequest.amount.gt(new BN(0)) || forceUseNftData)
+    ) {
+      this.requestNftData(
+        0,
+        options.nftMint,
+        withdrawalRequest.accountID,
+        withdrawalRequest.tokenID
+      );
+      this.requestNftData(
+        1,
+        options.nftMint,
+        withdrawalRequest.accountID,
+        withdrawalRequest.tokenID
+      );
+    }
+
     this.pendingTransactions[this.exchangeId].push(withdrawalRequest);
     return withdrawalRequest;
   }
@@ -1410,6 +1821,7 @@ export class ExchangeTestUtil {
     const validUntil =
       options.validUntil !== undefined ? options.validUntil : 0xffffffff;
     const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
+    const signer = options.signer !== undefined ? options.signer : owner;
 
     // Type
     let type = 0;
@@ -1467,11 +1879,11 @@ export class ExchangeTestUtil {
         this.exchange.address
       );
       accountUpdate.onchainSignature = await sign(
-        owner,
+        signer,
         hash,
         SignatureType.EIP_712
       );
-      await verifySignature(owner, hash, accountUpdate.onchainSignature);
+      await verifySignature(signer, hash, accountUpdate.onchainSignature);
     } else if (authMethod === AuthMethod.APPROVE) {
       const hash = AccountUpdateUtils.getHash(
         accountUpdate,
@@ -2071,14 +2483,10 @@ export class ExchangeTestUtil {
       testCallback(onchainBlocks, blocks);
     }
 
-    const numBlocksSubmittedBefore = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
 
     // Forced requests
-    const numAvailableSlotsBefore = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
 
     // SubmitBlocks raw tx data
     const txData = this.getSubmitCallbackData(onchainBlocks);
@@ -2171,9 +2579,7 @@ export class ExchangeTestUtil {
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     // Check number of blocks submitted
-    const numBlocksSubmittedAfter = (
-      await this.exchange.getBlockHeight()
-    ).toNumber();
+    const numBlocksSubmittedAfter = (await this.exchange.getBlockHeight()).toNumber();
     assert.equal(
       numBlocksSubmittedAfter,
       numBlocksSubmittedBefore + blocks.length,
@@ -2237,9 +2643,7 @@ export class ExchangeTestUtil {
     }
 
     // Forced requests
-    const numAvailableSlotsAfter = (
-      await this.exchange.getNumAvailableForcedSlots()
-    ).toNumber();
+    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
     let numForcedRequestsProcessed = 0;
     for (const block of blocks) {
       for (const tx of block.internalBlock.transactions) {
@@ -2333,6 +2737,14 @@ export class ExchangeTestUtil {
         withdrawal.validUntil
       ]
     );
+  }
+
+  public getNftMintAuxData(mint: NftMint) {
+    return web3.eth.abi.encodeParameter("tuple(bytes,uint96,uint32)", [
+      mint.onchainSignature ? mint.onchainSignature : "0x",
+      mint.originalMaxFee ? mint.originalMaxFee : mint.maxFee,
+      mint.validUntil
+    ]);
   }
 
   public async submitTransactions(forcedBlockSize?: number) {
@@ -2503,6 +2915,13 @@ export class ExchangeTestUtil {
       } else if (transaction.txType === "AmmUpdate") {
         const encodedAmmUpdateData = this.getAmmUpdateAuxData(transaction);
         auxiliaryData.push([i, false, encodedAmmUpdateData]);
+      } else if (transaction.txType === "NftMint") {
+        if (transaction.type > 0) {
+          const encodedNftMintData = transaction.onchainSignature
+            ? this.getNftMintAuxData(transaction)
+            : "0x";
+          auxiliaryData.push([i, false, encodedNftMintData]);
+        }
       }
     }
     logDebug("numConditionalTransactions: " + auxiliaryData.length);
@@ -2531,29 +2950,34 @@ export class ExchangeTestUtil {
         const orderA = spotTrade.orderA;
         const orderB = spotTrade.orderB;
 
+        const tokenAS = orderA.tokenIdS ? orderA.tokenIdS : orderA.tokenS;
+        const tokenAB = orderA.tokenIdB ? orderA.tokenIdB : orderA.tokenB;
+        const tokenBS = orderB.tokenIdS ? orderB.tokenIdS : orderB.tokenS;
+        const tokenBB = orderB.tokenIdB ? orderB.tokenIdB : orderB.tokenB;
+
         da.addNumber(TransactionType.SPOT_TRADE, 1);
         da.addNumber(orderA.storageID, 4);
         da.addNumber(orderB.storageID, 4);
         da.addNumber(orderA.accountID, 4);
         da.addNumber(orderB.accountID, 4);
-        da.addNumber(orderA.tokenIdS ? orderA.tokenIdS : orderA.tokenS, 2);
-        da.addNumber(orderB.tokenIdS ? orderB.tokenIdS : orderB.tokenS, 2);
+        da.addNumber(tokenAS, 2);
+        da.addNumber(tokenBS, 2);
         da.addNumber(spotTrade.fFillS_A ? spotTrade.fFillS_A : 0, 3);
         da.addNumber(spotTrade.fFillS_B ? spotTrade.fFillS_B : 0, 3);
 
         let limitMask = orderA.fillAmountBorS ? 0b10000000 : 0;
-        let feeData =
-          orderA.feeBips >= 64
-            ? 64 + orderA.feeBips / Constants.FEE_MULTIPLIER
-            : orderA.feeBips;
-        da.addNumber(limitMask + feeData, 1);
+        let feeBipsLo = orderA.feeBips & 0b111111;
+        da.addNumber(limitMask + feeBipsLo, 1);
 
         limitMask = orderB.fillAmountBorS ? 0b10000000 : 0;
-        feeData =
-          orderB.feeBips >= 64
-            ? 64 + orderB.feeBips / Constants.FEE_MULTIPLIER
-            : orderB.feeBips;
-        da.addNumber(limitMask + feeData, 1);
+        feeBipsLo = orderB.feeBips & 0b111111;
+        da.addNumber(limitMask + feeBipsLo, 1);
+
+        da.addNumber(tokenAB === tokenBS ? 0 : tokenAB, 2);
+        da.addNumber(tokenBB === tokenAS ? 0 : tokenBB, 2);
+
+        da.addNumber(orderA.feeBips >> 6, 1);
+        da.addNumber(orderB.feeBips >> 6, 1);
       } else if (tx.transfer || tx.txType === "Transfer") {
         const transfer = tx.transfer ? tx.transfer : tx;
         da.addNumber(TransactionType.TRANSFER, 1);
@@ -2578,6 +3002,10 @@ export class ExchangeTestUtil {
         da.addBN(new BN(needsToAddress ? transfer.to : "0"), 20);
         const needsFromAddress = transfer.type > 0 || transfer.putAddressesInDA;
         da.addBN(new BN(needsFromAddress ? transfer.from : "0"), 20);
+        da.addNumber(
+          transfer.tokenID === transfer.toTokenID ? 0 : transfer.toTokenID,
+          2
+        );
       } else if (tx.withdraw || tx.txType === "Withdraw") {
         const withdraw = tx.withdraw ? tx.withdraw : tx;
         da.addNumber(TransactionType.WITHDRAWAL, 1);
@@ -2634,6 +3062,44 @@ export class ExchangeTestUtil {
         da.addBN(new BN(verification.owner), 20);
         da.addNumber(verification.accountID, 4);
         da.addBN(new BN(verification.data, 10), 32);
+      } else if (tx.nftMint || tx.txType === "NftMint") {
+        const nftMint = tx.nftMint ? tx.nftMint : tx;
+        da.addNumber(TransactionType.NFT_MINT, 1);
+        da.addNumber(nftMint.type, 1);
+        da.addNumber(nftMint.minterAccountID, 4);
+        da.addNumber(nftMint.toTokenID, 2);
+        da.addNumber(nftMint.feeTokenID, 2);
+        da.addNumber(
+          toFloat(new BN(nftMint.fee), Constants.Float16Encoding),
+          2
+        );
+        da.addBN(new BN(nftMint.amount), 12);
+        da.addNumber(nftMint.storageID, 4);
+        if (nftMint.type === 0) {
+          da.addBN(nftMint.nftType, 1);
+          da.addBN(new BN(nftMint.tokenAccountID), 4);
+          da.addBN(new BN(nftMint.nftID), 32);
+          da.addBN(nftMint.creatorFeeBips, 1);
+        } else {
+          da.addNumber(nftMint.toAccountID, 4);
+          da.addBN(new BN(nftMint.to), 20);
+        }
+      } else if (tx.nftData || tx.txType === "NftData") {
+        const nftData = tx.nftData ? tx.nftData : tx;
+        da.addNumber(TransactionType.NFT_DATA, 1);
+        da.addNumber(nftData.type, 1);
+        da.addNumber(nftData.accountID, 4);
+        da.addNumber(nftData.tokenID, 2);
+        da.addBN(new BN(nftData.nftID), 32);
+        da.addNumber(nftData.creatorFeeBips, 1);
+        da.addNumber(nftData.nftType, 1);
+        if (nftData.type === 0) {
+          da.addBN(new BN(nftData.minter), 20);
+        } else if (nftData.type === 1) {
+          da.addBN(new BN(nftData.tokenAddress), 20);
+        } else {
+          assert(false, "unexpected NFT data type");
+        }
       }
       // console.log("type: " + da.extractUint8(0));
       // console.log("da.length(): " + da.length());
@@ -2890,10 +3356,8 @@ export class ExchangeTestUtil {
 
   public async createMerkleTreeInclusionProof(
     accountID: number,
-    token: string
+    tokenID: number
   ) {
-    const tokenID = this.getTokenIdFromNameOrAddress(token);
-
     await this.syncExplorer();
     const explorerExchange = this.explorer.getExchangeByAddress(
       this.exchange.address
@@ -2912,8 +3376,8 @@ export class ExchangeTestUtil {
     );
   }
 
-  public async withdrawFromMerkleTree(accountID: number, token: string) {
-    const proof = await this.createMerkleTreeInclusionProof(accountID, token);
+  public async withdrawFromMerkleTree(accountID: number, tokenID: number) {
+    const proof = await this.createMerkleTreeInclusionProof(accountID, tokenID);
     await this.withdrawFromMerkleTreeWithProof(proof);
   }
 
@@ -2982,14 +3446,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const previousTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const currentTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -3018,15 +3482,22 @@ export class ExchangeTestUtil {
     return await this.contracts.DummyToken.at(token);
   }
 
-  public async getOnchainBalance(owner: string, token: string) {
+  public async getOnchainBalance(owner: string, token: string, nftID?: string) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
     if (token === Constants.zeroAddress) {
       return new BN(await web3.eth.getBalance(owner));
     } else {
-      const Token = await this.contracts.DummyToken.at(token);
-      return await Token.balanceOf(owner);
+      const tokenID = this.getTokenIdFromNameOrAddress(token);
+      if (tokenID !== undefined) {
+        const Token = await this.contracts.DummyToken.at(token);
+        return await Token.balanceOf(owner);
+      } else {
+        assert(nftID !== undefined, "nftID required for NFTs");
+        const Token = await this.contracts.ERC1155.at(token);
+        return await Token.balanceOf(owner, nftID);
+      }
     }
   }
 
@@ -3552,27 +4023,19 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [
-      eth,
-      weth,
-      lrc,
-      gto,
-      rdn,
-      rep,
-      inda,
-      indb,
-      test
-    ] = await Promise.all([
-      null,
-      this.contracts.WETHToken.deployed(),
-      this.contracts.LRCToken.deployed(),
-      this.contracts.GTOToken.deployed(),
-      this.contracts.RDNToken.deployed(),
-      this.contracts.REPToken.deployed(),
-      this.contracts.INDAToken.deployed(),
-      this.contracts.INDBToken.deployed(),
-      this.contracts.TESTToken.deployed()
-    ]);
+    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
+      [
+        null,
+        this.contracts.WETHToken.deployed(),
+        this.contracts.LRCToken.deployed(),
+        this.contracts.GTOToken.deployed(),
+        this.contracts.RDNToken.deployed(),
+        this.contracts.REPToken.deployed(),
+        this.contracts.INDAToken.deployed(),
+        this.contracts.INDBToken.deployed(),
+        this.contracts.TESTToken.deployed()
+      ]
+    );
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 
@@ -3647,22 +4110,28 @@ export class ExchangeTestUtil {
 
 export class BalanceSnapshot {
   private exchangeTestUtil: ExchangeTestUtil;
-  private balances: Map<string, BN>[] = [];
+  private balances: Map<string, Map<string, Map<string, BN>>>;
   private addressBook: Map<string, string>;
 
   constructor(util: ExchangeTestUtil) {
     this.exchangeTestUtil = util;
-    for (let i = 0; i < this.exchangeTestUtil.MAX_NUM_TOKENS; i++) {
-      this.balances[i] = new Map<string, BN>();
-    }
+    this.balances = new Map<string, Map<string, Map<string, BN>>>();
     this.addressBook = new Map<string, string>();
   }
 
-  public async watchBalance(owner: string, token: string, name?: string) {
-    const tokenID = await this.exchangeTestUtil.getTokenID(token);
-    const balance = await this.exchangeTestUtil.getOnchainBalance(owner, token);
-    if (!this.balances[tokenID].has(owner)) {
-      this.balances[tokenID].set(owner, balance);
+  public async watchBalance(
+    owner: string,
+    token: string,
+    name?: string,
+    nftID: string = "0"
+  ) {
+    const balance = await this.exchangeTestUtil.getOnchainBalance(
+      owner,
+      token,
+      nftID
+    );
+    if (!this.getBalances(token, nftID).has(owner)) {
+      this.getBalances(token, nftID).set(owner, balance);
     }
     if (name !== undefined) {
       this.addressBook.set(owner, name);
@@ -3675,48 +4144,64 @@ export class BalanceSnapshot {
     token: string,
     amount: BN,
     fromName?: string,
-    toName?: string
+    toName?: string,
+    nftID: string = "0"
   ) {
-    const tokenID = await this.exchangeTestUtil.getTokenID(token);
-    if (!this.balances[tokenID].has(from)) {
-      await this.watchBalance(from, token, fromName);
+    if (!token.startsWith("0x")) {
+      token = this.exchangeTestUtil.getTokenAddress(token);
     }
-    if (!this.balances[tokenID].has(to)) {
-      await this.watchBalance(to, token, toName);
+    if (!this.getBalances(token, nftID).has(from)) {
+      await this.watchBalance(from, token, fromName, nftID);
+    }
+    if (!this.getBalances(token, nftID).has(to)) {
+      await this.watchBalance(to, token, toName, nftID);
     }
     //const symbol = this.exchangeTestUtil.testContext.tokenAddrSymbolMap.get(this.exchangeTestUtil.getTokenAddress(token));
-    const balanceFrom = this.balances[tokenID].get(from);
-    const balanceTo = this.balances[tokenID].get(to);
+    const balanceFrom = this.getBalances(token, nftID).get(from);
+    const balanceTo = this.getBalances(token, nftID).get(to);
     //console.log(
     //  amount.toString(10) + symbol + " from " +
     //  this.addressBook.get(from) + " (" + balanceFrom.toString(10) + ") to " +
     //  this.addressBook.get(to) + " (" + balanceTo.toString(10) + ").");
-    this.balances[tokenID].set(from, balanceFrom.sub(amount));
-    this.balances[tokenID].set(to, balanceTo.add(amount));
+    this.getBalances(token, nftID).set(from, balanceFrom.sub(amount));
+    this.getBalances(token, nftID).set(to, balanceTo.add(amount));
   }
 
   public async verifyBalances(allowedDelta: BN = new BN(0)) {
-    for (let i = 0; i < this.exchangeTestUtil.MAX_NUM_TOKENS; i++) {
-      for (const [owner, balance] of this.balances[i].entries()) {
-        const token = this.exchangeTestUtil.getTokenAddressFromID(i);
-        const symbol = this.exchangeTestUtil.testContext.tokenAddrSymbolMap.get(
-          this.exchangeTestUtil.getTokenAddress(token)
-        );
-        const currentBalance = await this.exchangeTestUtil.getOnchainBalance(
-          owner,
-          token
-        );
-        const ownerName = this.addressBook.get(owner);
-        let descr = symbol + " balance of " + ownerName + " does not match: ";
-        descr += currentBalance.toString(10) + " != " + balance.toString(10);
-        assert(
-          balance
-            .sub(currentBalance)
-            .abs()
-            .lte(allowedDelta),
-          descr
-        );
+    for (const [token, nftIDs] of this.balances.entries()) {
+      for (const [nftID, balances] of nftIDs.entries()) {
+        for (const [owner, balance] of balances.entries()) {
+          const symbol = this.exchangeTestUtil.testContext.tokenAddrSymbolMap.get(
+            this.exchangeTestUtil.getTokenAddress(token)
+          );
+          const currentBalance = await this.exchangeTestUtil.getOnchainBalance(
+            owner,
+            token,
+            nftID
+          );
+          const ownerName = this.addressBook.get(owner);
+          let descr = symbol + " balance of " + ownerName + " does not match: ";
+          descr += currentBalance.toString(10) + " != " + balance.toString(10);
+          assert(
+            balance
+              .sub(currentBalance)
+              .abs()
+              .lte(allowedDelta),
+            descr
+          );
+        }
       }
     }
+  }
+
+  public getBalances(token: string, nftID: string) {
+    if (!this.balances.has(token)) {
+      this.balances.set(token, new Map<string, Map<string, BN>>());
+    }
+    const tokenBalances = this.balances.get(token);
+    if (!tokenBalances.has(nftID)) {
+      tokenBalances.set(nftID, new Map<string, BN>());
+    }
+    return tokenBalances.get(nftID);
   }
 }

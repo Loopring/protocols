@@ -30,6 +30,7 @@ static auto dummySpotTrade = R"({
         "tokenB": 1,
         "validUntil": 4294967295,
         "taker": "0",
+        "nftDataB": "0",
         "amm": false
     },
     "orderB": {
@@ -44,6 +45,7 @@ static auto dummySpotTrade = R"({
         "tokenB": 0,
         "validUntil": 4294967295,
         "taker": "0",
+        "nftDataB": "0",
         "amm": false
     }
 })"_json;
@@ -67,7 +69,8 @@ static auto dummyTransfer = R"({
     "payerTo": "2",
     "payeeToAccountID": 2,
     "storageID": "0",
-    "putAddressesInDA": false
+    "putAddressesInDA": false,
+    "toTokenID": 0
 })"_json;
 
 static auto dummyWithdraw = R"({
@@ -115,6 +118,38 @@ static auto dummySignatureVerification = R"({
     "data": "0"
 })"_json;
 
+static auto dummyNftMint = R"({
+    "minterAccountID": 0,
+    "tokenAccountID": 0,
+    "amount": "0",
+    "feeTokenID": 0,
+    "fee": "0",
+    "validUntil": 4294967295,
+    "maxFee": "0",
+    "type": 0,
+    "nftIDHi": "0",
+    "nftIDLo": "0",
+    "toAccountID": 0,
+    "toTokenID": 0,
+    "to": "0",
+    "nftType": 0,
+    "tokenAddress": "0",
+    "creatorFeeBips": 0,
+    "storageID": 0
+})"_json;
+
+static auto dummyNftData = R"({
+    "type": 0,
+    "accountID": 0,
+    "tokenID": 0,
+    "minter": "0",
+    "nftIDHi": "0",
+    "nftIDLo": "0",
+    "nftType": 0,
+    "tokenAddress": "0",
+    "creatorFeeBips": 0
+})"_json;
+
 // Baby Jubjub base point.
 // https://github.com/ethereum/EIPs/blob/41569d75e42da2046cb18fdca79609e18968af47/eip-draft_babyjubjub.md#base-point
 static auto dummySignature = R"({
@@ -133,6 +168,8 @@ enum class TransactionType
     AccountUpdate,
     AmmUpdate,
     SignatureVerification,
+    NftMint,
+    NftData,
 
     COUNT
 };
@@ -297,6 +334,7 @@ class Order
     ethsnarks::FieldT maxFeeBips;
     ethsnarks::FieldT fillAmountBorS;
     ethsnarks::FieldT taker;
+    ethsnarks::FieldT nftDataB;
 
     ethsnarks::FieldT feeBips;
 
@@ -315,6 +353,7 @@ static void from_json(const json &j, Order &order)
     order.maxFeeBips = ethsnarks::FieldT(j.at("maxFeeBips"));
     order.fillAmountBorS = ethsnarks::FieldT(j.at("fillAmountBorS").get<bool>() ? 1 : 0);
     order.taker = ethsnarks::FieldT(j.at("taker").get<std::string>().c_str());
+    order.nftDataB = ethsnarks::FieldT(j.at("nftDataB").get<std::string>().c_str());
 
     order.feeBips = ethsnarks::FieldT(j.at("feeBips"));
 
@@ -461,6 +500,7 @@ class Transfer
     ethsnarks::FieldT maxFee;
     ethsnarks::FieldT putAddressesInDA;
     ethsnarks::FieldT type;
+    ethsnarks::FieldT toTokenID;
 };
 
 static void from_json(const json &j, Transfer &transfer)
@@ -482,6 +522,77 @@ static void from_json(const json &j, Transfer &transfer)
     transfer.maxFee = ethsnarks::FieldT(j["maxFee"].get<std::string>().c_str());
     transfer.putAddressesInDA = ethsnarks::FieldT(j.at("putAddressesInDA").get<bool>() ? 1 : 0);
     transfer.type = ethsnarks::FieldT(j.at("type"));
+    transfer.toTokenID = ethsnarks::FieldT(j.at("toTokenID"));
+}
+
+class NftMint
+{
+  public:
+    ethsnarks::FieldT minterAccountID;
+    ethsnarks::FieldT tokenAccountID;
+    ethsnarks::FieldT amount;
+    ethsnarks::FieldT feeTokenID;
+    ethsnarks::FieldT fee;
+    ethsnarks::FieldT validUntil;
+    ethsnarks::FieldT maxFee;
+    ethsnarks::FieldT type;
+    ethsnarks::FieldT nftType;
+    ethsnarks::FieldT tokenAddress;
+    ethsnarks::FieldT nftIDHi;
+    ethsnarks::FieldT nftIDLo;
+    ethsnarks::FieldT creatorFeeBips;
+    ethsnarks::FieldT toAccountID;
+    ethsnarks::FieldT toTokenID;
+    ethsnarks::FieldT to;
+    ethsnarks::FieldT storageID;
+};
+
+static void from_json(const json &j, NftMint &nftMint)
+{
+    nftMint.minterAccountID = ethsnarks::FieldT(j.at("minterAccountID"));
+    nftMint.tokenAccountID = ethsnarks::FieldT(j.at("tokenAccountID"));
+    nftMint.amount = ethsnarks::FieldT(j["amount"].get<std::string>().c_str());
+    nftMint.feeTokenID = ethsnarks::FieldT(j.at("feeTokenID"));
+    nftMint.fee = ethsnarks::FieldT(j["fee"].get<std::string>().c_str());
+    nftMint.validUntil = ethsnarks::FieldT(j.at("validUntil"));
+    nftMint.maxFee = ethsnarks::FieldT(j["maxFee"].get<std::string>().c_str());
+    nftMint.type = ethsnarks::FieldT(j.at("type"));
+    nftMint.nftType = ethsnarks::FieldT(j.at("nftType"));
+    nftMint.tokenAddress = ethsnarks::FieldT(j["tokenAddress"].get<std::string>().c_str());
+    nftMint.nftIDHi = ethsnarks::FieldT(j["nftIDHi"].get<std::string>().c_str());
+    nftMint.nftIDLo = ethsnarks::FieldT(j["nftIDLo"].get<std::string>().c_str());
+    nftMint.creatorFeeBips = ethsnarks::FieldT(j.at("creatorFeeBips"));
+    nftMint.toAccountID = ethsnarks::FieldT(j.at("toAccountID"));
+    nftMint.toTokenID = ethsnarks::FieldT(j.at("toTokenID"));
+    nftMint.to = ethsnarks::FieldT(j.at("to").get<std::string>().c_str());
+    nftMint.storageID = ethsnarks::FieldT(j.at("storageID"));
+}
+
+class NftData
+{
+  public:
+    ethsnarks::FieldT type;
+    ethsnarks::FieldT accountID;
+    ethsnarks::FieldT tokenID;
+    ethsnarks::FieldT minter;
+    ethsnarks::FieldT nftType;
+    ethsnarks::FieldT tokenAddress;
+    ethsnarks::FieldT nftIDHi;
+    ethsnarks::FieldT nftIDLo;
+    ethsnarks::FieldT creatorFeeBips;
+};
+
+static void from_json(const json &j, NftData &nftMint)
+{
+    nftMint.type = ethsnarks::FieldT(j.at("type"));
+    nftMint.accountID = ethsnarks::FieldT(j.at("accountID"));
+    nftMint.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    nftMint.minter = ethsnarks::FieldT(j["minter"].get<std::string>().c_str());
+    nftMint.nftType = ethsnarks::FieldT(j.at("nftType"));
+    nftMint.tokenAddress = ethsnarks::FieldT(j["tokenAddress"].get<std::string>().c_str());
+    nftMint.nftIDHi = ethsnarks::FieldT(j["nftIDHi"].get<std::string>().c_str());
+    nftMint.nftIDLo = ethsnarks::FieldT(j["nftIDLo"].get<std::string>().c_str());
+    nftMint.creatorFeeBips = ethsnarks::FieldT(j.at("creatorFeeBips"));
 }
 
 class Witness
@@ -562,6 +673,8 @@ class UniversalTransaction
     AccountUpdateTx accountUpdate;
     AmmUpdate ammUpdate;
     SignatureVerification signatureVerification;
+    NftMint nftMint;
+    NftData nftData;
 };
 
 static void from_json(const json &j, UniversalTransaction &transaction)
@@ -576,6 +689,8 @@ static void from_json(const json &j, UniversalTransaction &transaction)
     transaction.accountUpdate = dummyAccountUpdate.get<Loopring::AccountUpdateTx>();
     transaction.ammUpdate = dummyAmmUpdate.get<Loopring::AmmUpdate>();
     transaction.signatureVerification = dummySignatureVerification.get<Loopring::SignatureVerification>();
+    transaction.nftMint = dummyNftMint.get<Loopring::NftMint>();
+    transaction.nftData = dummyNftData.get<Loopring::NftData>();
 
     // Patch some of the dummy tx's so they are valid against the current state
     // Deposit
@@ -626,6 +741,16 @@ static void from_json(const json &j, UniversalTransaction &transaction)
     {
         transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::SignatureVerification));
         transaction.signatureVerification = j.at("signatureVerification").get<Loopring::SignatureVerification>();
+    }
+    else if (j.contains("nftMint"))
+    {
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::NftMint));
+        transaction.nftMint = j.at("nftMint").get<Loopring::NftMint>();
+    }
+    else if (j.contains("nftData"))
+    {
+        transaction.type = ethsnarks::FieldT(int(Loopring::TransactionType::NftData));
+        transaction.nftData = j.at("nftData").get<Loopring::NftData>();
     }
 }
 

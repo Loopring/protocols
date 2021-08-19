@@ -17,10 +17,39 @@ contract("Poseidon", (accounts: string[]) => {
     poseidonContract = await contracts.PoseidonContract.new();
   });
 
+  it("Poseidon t4/f6/p52", async () => {
+    const hasher = Poseidon.createHash(4, 6, 52);
+    // Test some random hashes
+    const numIterations = 32;
+    for (let i = 0; i < numIterations; i++) {
+      const t = [getRand(), getRand(), getRand()];
+      const hash = await poseidonContract.hash_t4f6p52(
+        t[0],
+        t[1],
+        t[2],
+        new BN(0)
+      );
+      const expectedHash = hasher(t);
+      assert.equal(hash, expectedHash, "posseidon hash incorrect");
+    }
+
+    // Should not be possible to use an input that is larger than the field
+    for (let i = 0; i < 4; i++) {
+      const inputs: BN[] = [];
+      for (let j = 0; j < 4; j++) {
+        inputs.push(i === j ? Constants.scalarField : new BN(0));
+      }
+      await expectThrow(
+        poseidonContract.hash_t4f6p52(...inputs),
+        "INVALID_INPUT"
+      );
+    }
+  });
+
   it("Poseidon t5/f6/p52", async () => {
     const hasher = Poseidon.createHash(5, 6, 52);
     // Test some random hashes
-    const numIterations = 128;
+    const numIterations = 32;
     for (let i = 0; i < numIterations; i++) {
       const t = [getRand(), getRand(), getRand(), getRand()];
       const hash = await poseidonContract.hash_t5f6p52(
@@ -50,9 +79,16 @@ contract("Poseidon", (accounts: string[]) => {
   it("Poseidon t7/f6/p52", async () => {
     const hasher = Poseidon.createHash(7, 6, 52);
     // Test some random hashes
-    const numIterations = 128;
+    const numIterations = 32;
     for (let i = 0; i < numIterations; i++) {
-      const t = [getRand(), getRand(), getRand(), getRand(), getRand(), getRand()];
+      const t = [
+        getRand(),
+        getRand(),
+        getRand(),
+        getRand(),
+        getRand(),
+        getRand()
+      ];
       const hash = await poseidonContract.hash_t7f6p52(
         t[0],
         t[1],

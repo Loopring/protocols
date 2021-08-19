@@ -21,12 +21,14 @@ namespace Loopring
 
 // All Poseidon permutations used
 using Poseidon_2 = Poseidon_gadget_T<3, 1, 6, 51, 2, 1>;
+using Poseidon_3 = Poseidon_gadget_T<4, 1, 6, 52, 3, 1>;
 template <unsigned n_outputs> using Poseidon_4_ = Poseidon_gadget_T<5, 1, 6, 52, n_outputs, 1>;
 using Poseidon_4 = Poseidon_4_<4>;
 using Poseidon_5 = Poseidon_gadget_T<6, 1, 6, 52, 5, 1>;
 using Poseidon_6 = Poseidon_gadget_T<7, 1, 6, 52, 6, 1>;
 using Poseidon_8 = Poseidon_gadget_T<9, 1, 6, 53, 8, 1>;
 using Poseidon_9 = Poseidon_gadget_T<10, 1, 6, 53, 9, 1>;
+using Poseidon_10 = Poseidon_gadget_T<11, 1, 6, 53, 10, 1>;
 using Poseidon_11 = Poseidon_gadget_T<12, 1, 6, 53, 11, 1>;
 using Poseidon_12 = Poseidon_gadget_T<13, 1, 6, 53, 12, 1>;
 
@@ -61,15 +63,18 @@ class Constants : public GadgetT
     const VariableT _1000;
     const VariableT _1001;
     const VariableT _10000;
+    const VariableT _65536;
     const VariableT _100000;
     const VariableT fixedBase;
     const VariableT emptyStorage;
     const VariableT maxAmount;
     const VariableT numStorageSlots;
+    const VariableT nftTokenIdStart;
     const VariableT txTypeSpotTrade;
     const VariableT txTypeTransfer;
     const VariableT txTypeWithdrawal;
-    const VariableT feeMultiplier;
+    const VariableT txTypeNftMint;
+    const VariableT txTypeNftData;
 
     const VariableArrayT zeroAccount;
 
@@ -94,18 +99,23 @@ class Constants : public GadgetT
           _1000(make_variable(pb, ethsnarks::FieldT(1000), FMT(prefix, "._1000"))),
           _1001(make_variable(pb, ethsnarks::FieldT(1001), FMT(prefix, "._1001"))),
           _10000(make_variable(pb, ethsnarks::FieldT(10000), FMT(prefix, "._10000"))),
+          _65536(make_variable(pb, ethsnarks::FieldT(65536), FMT(prefix, "._65536"))),
           _100000(make_variable(pb, ethsnarks::FieldT(100000), FMT(prefix, "._100000"))),
           fixedBase(make_variable(pb, ethsnarks::FieldT(FIXED_BASE), FMT(prefix, ".fixedBase"))),
           emptyStorage(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyStorage"))),
           maxAmount(make_variable(pb, ethsnarks::FieldT(MAX_AMOUNT), FMT(prefix, ".maxAmount"))),
           numStorageSlots(make_variable(pb, ethsnarks::FieldT(NUM_STORAGE_SLOTS), FMT(prefix, ".numStorageSlots"))),
+          nftTokenIdStart(make_variable(pb, ethsnarks::FieldT(NFT_TOKEN_ID_START), FMT(prefix, ".nftTokenIdStart"))),
           txTypeSpotTrade(
             make_variable(pb, ethsnarks::FieldT(int(TransactionType::SpotTrade)), FMT(prefix, ".txTypeSpotTrade"))),
           txTypeTransfer(
             make_variable(pb, ethsnarks::FieldT(int(TransactionType::Transfer)), FMT(prefix, ".txTypeTransfer"))),
           txTypeWithdrawal(
             make_variable(pb, ethsnarks::FieldT(int(TransactionType::Withdrawal)), FMT(prefix, ".txTypeWithdrawal"))),
-          feeMultiplier(make_variable(pb, ethsnarks::FieldT(FEE_MULTIPLIER), FMT(prefix, ".feeMultiplier"))),
+          txTypeNftMint(
+            make_variable(pb, ethsnarks::FieldT(int(TransactionType::NftMint)), FMT(prefix, ".txTypeNftMint"))),
+          txTypeNftData(
+            make_variable(pb, ethsnarks::FieldT(int(TransactionType::NftData)), FMT(prefix, ".txTypeNftData"))),
 
           zeroAccount(NUM_BITS_ACCOUNT, _0)
     {
@@ -146,6 +156,7 @@ class Constants : public GadgetT
         pb.add_r1cs_constraint(ConstraintT(_1000, FieldT::one(), ethsnarks::FieldT(1000)), "._1000");
         pb.add_r1cs_constraint(ConstraintT(_1001, FieldT::one(), ethsnarks::FieldT(1001)), "._1001");
         pb.add_r1cs_constraint(ConstraintT(_10000, FieldT::one(), ethsnarks::FieldT(10000)), "._10000");
+        pb.add_r1cs_constraint(ConstraintT(_65536, FieldT::one(), ethsnarks::FieldT(65536)), "._65536");
         pb.add_r1cs_constraint(ConstraintT(_100000, FieldT::one(), ethsnarks::FieldT(100000)), "._100000");
         pb.add_r1cs_constraint(ConstraintT(fixedBase, FieldT::one(), ethsnarks::FieldT(FIXED_BASE)), ".fixedBase");
         pb.add_r1cs_constraint(
@@ -153,6 +164,8 @@ class Constants : public GadgetT
         pb.add_r1cs_constraint(ConstraintT(maxAmount, FieldT::one(), ethsnarks::FieldT(MAX_AMOUNT)), ".maxAmount");
         pb.add_r1cs_constraint(
           ConstraintT(numStorageSlots, FieldT::one(), ethsnarks::FieldT(NUM_STORAGE_SLOTS)), ".numStorageSlots");
+        pb.add_r1cs_constraint(
+          ConstraintT(nftTokenIdStart, FieldT::one(), ethsnarks::FieldT(NFT_TOKEN_ID_START)), ".nftTokenIdStart");
         pb.add_r1cs_constraint(
           ConstraintT(txTypeSpotTrade, FieldT::one(), ethsnarks::FieldT(int(TransactionType::SpotTrade))),
           ".txTypeSpotTrade");
@@ -163,7 +176,11 @@ class Constants : public GadgetT
           ConstraintT(txTypeWithdrawal, FieldT::one(), ethsnarks::FieldT(int(TransactionType::Withdrawal))),
           ".txTypeWithdrawal");
         pb.add_r1cs_constraint(
-          ConstraintT(feeMultiplier, FieldT::one(), ethsnarks::FieldT(FEE_MULTIPLIER)), ".feeMultiplier");
+          ConstraintT(txTypeNftMint, FieldT::one(), ethsnarks::FieldT(int(TransactionType::NftMint))),
+          ".txTypeNftMint");
+        pb.add_r1cs_constraint(
+          ConstraintT(txTypeNftData, FieldT::one(), ethsnarks::FieldT(int(TransactionType::NftData))),
+          ".txTypeNftData");
     }
 };
 
@@ -856,6 +873,43 @@ class EqualGadget : public GadgetT
         difference.generate_r1cs_constraints();
         isNonZeroDifference.generate_r1cs_constraints();
         isZeroDifference.generate_r1cs_constraints();
+    }
+};
+
+// (A != B)
+class NotEqualGadget : public GadgetT
+{
+  public:
+    EqualGadget equal;
+    NotGadget notEqual;
+
+    NotEqualGadget( //
+      ProtoboardT &pb,
+      const VariableT &A,
+      const VariableT &B,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
+
+          equal(pb, A, B, FMT(prefix, ".equal")),
+          notEqual(pb, equal.result(), FMT(prefix, ".notEqual"))
+    {
+    }
+
+    const VariableT &result() const
+    {
+        return notEqual.result();
+    }
+
+    void generate_r1cs_witness()
+    {
+        equal.generate_r1cs_witness();
+        notEqual.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        equal.generate_r1cs_constraints();
+        notEqual.generate_r1cs_constraints();
     }
 };
 
@@ -1897,13 +1951,14 @@ class OwnerValidGadget : public GadgetT
     EqualGadget newOwner_equal_oldOwner;
     EqualGadget no_oldOwner;
     OrGadget equal_owner_or_no_owner;
-    RequireEqualGadget equal_owner_or_no_owner_eq_true;
+    IfThenRequireEqualGadget equal_owner_or_no_owner_eq_true;
 
     OwnerValidGadget(
       ProtoboardT &pb,
       const Constants &constants,
       const VariableT &oldOwner,
       const VariableT &newOwner,
+      const VariableT &verify,
       const std::string &prefix)
         : GadgetT(pb, prefix),
 
@@ -1915,6 +1970,7 @@ class OwnerValidGadget : public GadgetT
             FMT(prefix, ".equal_owner_or_no_owner")),
           equal_owner_or_no_owner_eq_true(
             pb,
+            verify,
             equal_owner_or_no_owner.result(),
             constants._1,
             FMT(prefix, ".equal_owner_or_no_owner_eq_true"))
@@ -1940,6 +1996,297 @@ class OwnerValidGadget : public GadgetT
     const VariableT &isNewAccount() const
     {
         return no_oldOwner.result();
+    }
+};
+
+// Checks that the new ower equals the current onwer or the current ower is 0.
+class IsNftGadget : public GadgetT
+{
+  public:
+    LeqGadget tokenId_leq_nftStart;
+
+    IsNftGadget(ProtoboardT &pb, const Constants &constants, const VariableT &tokenID, const std::string &prefix)
+        : GadgetT(pb, prefix),
+
+          tokenId_leq_nftStart(pb, tokenID, constants.nftTokenIdStart, NUM_BITS_TOKEN, FMT(prefix, ".isNFT"))
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+        tokenId_leq_nftStart.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        tokenId_leq_nftStart.generate_r1cs_constraints();
+    }
+
+    const VariableT &isNFT()
+    {
+        return tokenId_leq_nftStart.gte();
+    }
+
+    const VariableT &isNotNFT()
+    {
+        return tokenId_leq_nftStart.lt();
+    }
+};
+
+// Checks that the new ower equals the current onwer or the current ower is 0.
+class RequireNotNftGadget : public GadgetT
+{
+  public:
+    IsNftGadget isNFT;
+    RequireEqualGadget requireValid;
+
+    RequireNotNftGadget(
+      ProtoboardT &pb,
+      const Constants &constants,
+      const VariableT &tokenID,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
+
+          isNFT(pb, constants, tokenID, FMT(prefix, ".isNFT")),
+          requireValid(pb, isNFT.isNotNFT(), constants._1, FMT(prefix, ".isNFT"))
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+        isNFT.generate_r1cs_witness();
+        requireValid.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        isNFT.generate_r1cs_constraints();
+        requireValid.generate_r1cs_constraints();
+    }
+};
+
+// - assert (tokenID < NFT_TOKEN_ID_START && tokenID == destTokenID) ||
+// (tokenID >= NFT_TOKEN_ID_START && destTokenID >= NFT_TOKEN_ID_START && (fromNftData == toNftData || toNftData == 0)))
+// - fromNewNftData := (fromTokenID >= NFT_TOKEN_ID_START && fromBalanceAfter == 0) ? 0 : fromNftData
+// - toNewNftData := (toTokenID >= NFT_TOKEN_ID_START) ? 0 : toNftData
+// - toTokenValueDA := (fromTokenID == toTokenID) ? 0 : toTokenID
+class TokenTransferDataGadget : public GadgetT
+{
+  public:
+    IsNftGadget isNftFromTokenID;
+    IsNftGadget isNftToTokenID;
+    EqualGadget tokensEqual;
+
+    OwnerValidGadget nftDataValid;
+
+    AndGadget nonNftRequirement;
+    AndGadget nftRequirement;
+
+    OrGadget valid;
+    IfThenRequireGadget requireValid;
+
+    EqualGadget isFromBalanceAfterZero;
+    AndGadget isFromBalanceAfterZeroAndNFT;
+    TernaryGadget fromNewNftData;
+
+    TernaryGadget toNewNftData;
+
+    TernaryGadget toTokenValueDA;
+    ToBitsGadget toTokenBitsDA;
+
+    TokenTransferDataGadget(
+      ProtoboardT &pb,
+      const Constants &constants,
+      const VariableT &fromTokenID,
+      const VariableT &fromNftData,
+      const VariableT &toTokenID,
+      const VariableT &toNftData,
+      const VariableT &fromBalanceAfter,
+      const VariableT &verify,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
+
+          isNftFromTokenID(pb, constants, fromTokenID, FMT(prefix, ".isNftFromTokenID")),
+          isNftToTokenID(pb, constants, toTokenID, FMT(prefix, ".isNftToTokenID")),
+          tokensEqual(pb, fromTokenID, toTokenID, FMT(prefix, ".isNftToTokenID")),
+
+          nftDataValid(pb, constants, toNftData, fromNftData, isNftFromTokenID.isNFT(), FMT(prefix, ".nftDataValid")),
+
+          nonNftRequirement(pb, {isNftFromTokenID.isNotNFT(), tokensEqual.result()}, FMT(prefix, ".nonNftRequirement")),
+          nftRequirement(pb, {isNftFromTokenID.isNFT(), isNftToTokenID.isNFT()}, FMT(prefix, ".nftRequirement")),
+
+          valid(pb, {nonNftRequirement.result(), nftRequirement.result()}, FMT(prefix, ".valid")),
+          requireValid(pb, verify, valid.result(), FMT(prefix, ".requireValid")),
+
+          isFromBalanceAfterZero(pb, fromBalanceAfter, constants._0, FMT(prefix, ".isFromBalanceAfterZero")),
+          isFromBalanceAfterZeroAndNFT(
+            pb,
+            {isNftFromTokenID.isNFT(), isFromBalanceAfterZero.result()},
+            FMT(prefix, ".isFromBalanceAfterZeroAndNFT")),
+          fromNewNftData(
+            pb,
+            isFromBalanceAfterZeroAndNFT.result(),
+            constants._0,
+            fromNftData,
+            FMT(prefix, ".fromNewNftData")),
+
+          toNewNftData(pb, isNftToTokenID.isNFT(), fromNftData, toNftData, FMT(prefix, ".toNewNftData")),
+
+          toTokenValueDA(pb, tokensEqual.result(), constants._0, toTokenID, FMT(prefix, ".toTokenValueDA")),
+          toTokenBitsDA(pb, toTokenValueDA.result(), NUM_BITS_TOKEN, FMT(prefix, ".toTokenBitsDA"))
+    {
+    }
+
+    virtual void generate_r1cs_witness()
+    {
+        isNftFromTokenID.generate_r1cs_witness();
+        isNftToTokenID.generate_r1cs_witness();
+        tokensEqual.generate_r1cs_witness();
+
+        nftDataValid.generate_r1cs_witness();
+
+        nonNftRequirement.generate_r1cs_witness();
+        nftRequirement.generate_r1cs_witness();
+
+        valid.generate_r1cs_witness();
+        requireValid.generate_r1cs_witness();
+
+        isFromBalanceAfterZero.generate_r1cs_witness();
+        isFromBalanceAfterZeroAndNFT.generate_r1cs_witness();
+        fromNewNftData.generate_r1cs_witness();
+
+        toNewNftData.generate_r1cs_witness();
+
+        toTokenValueDA.generate_r1cs_witness();
+        toTokenBitsDA.generate_r1cs_witness();
+    }
+
+    virtual void generate_r1cs_constraints()
+    {
+        isNftFromTokenID.generate_r1cs_constraints();
+        isNftToTokenID.generate_r1cs_constraints();
+        tokensEqual.generate_r1cs_constraints();
+
+        nftDataValid.generate_r1cs_constraints();
+
+        nonNftRequirement.generate_r1cs_constraints();
+        nftRequirement.generate_r1cs_constraints();
+
+        valid.generate_r1cs_constraints();
+        requireValid.generate_r1cs_constraints();
+
+        isFromBalanceAfterZero.generate_r1cs_constraints();
+        isFromBalanceAfterZeroAndNFT.generate_r1cs_constraints();
+        fromNewNftData.generate_r1cs_constraints();
+
+        toNewNftData.generate_r1cs_constraints();
+
+        toTokenValueDA.generate_r1cs_constraints();
+        toTokenBitsDA.generate_r1cs_constraints();
+    }
+
+    const VariableT &fromNftData()
+    {
+        return fromNewNftData.result();
+    }
+
+    const VariableT &toNftData()
+    {
+        return toNewNftData.result();
+    }
+
+    const VariableArrayT &toTokenDA() const
+    {
+        return toTokenBitsDA.bits;
+    }
+};
+
+class TokenTradeDataGadget : public TokenTransferDataGadget
+{
+  public:
+    AndGadget checkExpectedNftData;
+    IfThenRequireEqualGadget requireValid;
+
+    TokenTradeDataGadget(
+      ProtoboardT &pb,
+      const Constants &constants,
+      const VariableT &fromTokenID,
+      const VariableT &fromNftData,
+      const VariableT &toTokenID,
+      const VariableT &toNftData,
+      const VariableT &fromBalanceAfter,
+      const VariableT &verify,
+      const VariableT &expectedNftData,
+      const std::string &prefix)
+        : TokenTransferDataGadget(
+            pb,
+            constants,
+            fromTokenID,
+            fromNftData,
+            toTokenID,
+            toNftData,
+            fromBalanceAfter,
+            verify,
+            prefix),
+
+          checkExpectedNftData(pb, {verify, isNftToTokenID.isNFT()}, FMT(prefix, ".checkExpectedNftData")),
+          requireValid(pb, checkExpectedNftData.result(), expectedNftData, fromNftData, FMT(prefix, ".requireValid"))
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+        TokenTransferDataGadget::generate_r1cs_witness();
+
+        checkExpectedNftData.generate_r1cs_witness();
+        requireValid.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        TokenTransferDataGadget::generate_r1cs_constraints();
+
+        checkExpectedNftData.generate_r1cs_constraints();
+        requireValid.generate_r1cs_constraints();
+    }
+};
+
+class NftDataGadget : public GadgetT
+{
+  public:
+    Poseidon_6 hash;
+
+    NftDataGadget(
+      ProtoboardT &pb,
+      const VariableT &minter,
+      const VariableT &nftType,
+      const VariableT &tokenAddress,
+      const VariableT &nftIDLo,
+      const VariableT &nftIDHi,
+      const VariableT &creatorFeeBips,
+      const std::string &prefix)
+        : GadgetT(pb, prefix),
+
+          hash(
+            pb,
+            var_array({minter, nftType, tokenAddress, nftIDLo, nftIDHi, creatorFeeBips}),
+            FMT(this->annotation_prefix, ".hash"))
+    {
+    }
+
+    void generate_r1cs_witness()
+    {
+        hash.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        hash.generate_r1cs_constraints();
+    }
+
+    const VariableT &result() const
+    {
+        return hash.result();
     }
 };
 

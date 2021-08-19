@@ -14,6 +14,7 @@ import "../libtransactions/AmmUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
 import "../libtransactions/TransferTransaction.sol";
 import "../libtransactions/WithdrawTransaction.sol";
+import "../libtransactions/NftMintTransaction.sol";
 import "./ExchangeMode.sol";
 import "./ExchangeWithdrawals.sol";
 
@@ -195,10 +196,12 @@ library ExchangeBlocks
         private
     {
         if (header.numConditionalTransactions > 0) {
-            // Cache the domain seperator to save on SLOADs each time it is accessed.
+            // Cache the domain separator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
                 DOMAIN_SEPARATOR: S.DOMAIN_SEPARATOR,
-                timestamp: header.timestamp
+                timestamp: header.timestamp,
+                block: _block,
+                txIndex: 0
             });
 
             ExchangeData.AuxiliaryData[] memory block_auxiliaryData;
@@ -230,6 +233,7 @@ library ExchangeBlocks
                     let auxDataOffset := mload(add(add(96, block_auxiliaryData), auxOffset))
                     auxData := add(add(32, block_auxiliaryData), add(auxOffset, auxDataOffset))
                 }
+                ctx.txIndex = txIndex;
 
                 // Each conditional transaction needs to be processed from left to right
                 require(txIndex >= minTxIndex, "AUXILIARYDATA_INVALID_ORDER");
@@ -283,6 +287,14 @@ library ExchangeBlocks
                     );
                 } else if (txType == ExchangeData.TransactionType.AMM_UPDATE) {
                     AmmUpdateTransaction.process(
+                        S,
+                        ctx,
+                        txData,
+                        txDataOffset,
+                        auxData
+                    );
+                } else if (txType == ExchangeData.TransactionType.NFT_MINT) {
+                    NftMintTransaction.process(
                         S,
                         ctx,
                         txData,

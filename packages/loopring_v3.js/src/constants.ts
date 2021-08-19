@@ -15,9 +15,9 @@ export class Constants {
 
   static readonly MAX_NUM_TOKENS = 2 ** 16;
 
-  static readonly MAX_AMOUNT = new BN(2).pow(new BN(96)).sub(new BN(1));
+  static readonly NFT_TOKEN_ID_START = 2 ** 15;
 
-  static readonly FEE_MULTIPLIER = 50;
+  static readonly MAX_AMOUNT = new BN(2).pow(new BN(96)).sub(new BN(1));
 
   static readonly Float24Encoding: FloatEncoding = {
     numBitsExponent: 5,
@@ -43,4 +43,8 @@ export class Constants {
     weightAMM: new BN(0),
     storage: {}
   };
+
+  public static isNFT(tokenID: number) {
+    return tokenID >= this.NFT_TOKEN_ID_START;
+  }
 }

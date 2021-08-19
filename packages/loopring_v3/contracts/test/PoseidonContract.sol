@@ -7,6 +7,20 @@ import "../core/iface/ExchangeData.sol";
 
 
 contract PoseidonContract {
+    function hash_t4f6p52(
+        uint t0,
+        uint t1,
+        uint t2,
+        uint t3
+        )
+        external
+        pure
+        returns (uint)
+    {
+        Poseidon.HashInputs4 memory inputs = Poseidon.HashInputs4(t0, t1, t2, t3);
+        return Poseidon.hash_t4f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD);
+    }
+
     function hash_t5f6p52(
         uint t0,
         uint t1,

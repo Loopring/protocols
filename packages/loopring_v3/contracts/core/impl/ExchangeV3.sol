@@ -8,6 +8,8 @@ import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
+import "../../thirdparty/erc1155/ERC1155Holder.sol";
+import "../../thirdparty/erc721/ERC721Holder.sol";
 import "../../thirdparty/proxies/OwnedUpgradabilityProxy.sol";
 import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
@@ -28,7 +30,7 @@ import "./libtransactions/TransferTransaction.sol";
 ///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeV3 is IExchangeV3, ReentrancyGuard
+contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
 {
     using AddressUtil           for address;
     using ERC20SafeTransfer     for address;
@@ -42,15 +44,12 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
-    ExchangeData.State public state;
-    address public loopringAddr;
-    uint8 private ammFeeBips = 20;
-    bool public allowOnchainTransferFrom = false;
+    ExchangeData.State private state;
 
     modifier onlyWhenUninitialized()
     {
         require(
-            loopringAddr == address(0) && state.merkleRoot == bytes32(0),
+            state.loopringAddr == address(0) && state.merkleRoot == bytes32(0),
             "INITIALIZED"
         );
         _;
@@ -94,7 +93,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
-        loopringAddr = _loopring;
+        state.loopringAddr = _loopring;
 
         state.initializeGenesisBlock(
             _loopring,
@@ -371,11 +370,28 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         state.deposit(from, to, tokenAddress, amount, extraData);
     }
 
+    function depositNFT(
+        address              from,
+        address              to,
+        ExchangeData.NftType nftType,
+        address              tokenAddress,
+        uint256              nftID,
+        uint96               amount,
+        bytes    calldata    extraData
+        )
+        external
+        override
+        nonReentrant
+        onlyFromUserOrAgent(from)
+    {
+        state.depositNFT(from, to, nftType, tokenAddress, nftID, amount, extraData);
+    }
+
     function getPendingDepositAmount(
         address owner,
         address tokenAddress
         )
-        external
+        public
         override
         view
         returns (uint96)
@@ -384,7 +400,35 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.pendingDeposits[owner][tokenID].amount;
     }
 
+    function getPendingNFTDepositAmount(
+        address               owner,
+        address               token,
+        ExchangeData.NftType  nftType,
+        uint256               nftID
+        )
+        public
+        override
+        view
+        returns (uint96)
+    {
+        return state.pendingNFTDeposits[owner][nftType][token][nftID].amount;
+    }
+
     // -- Withdrawals --
+
+    function forceWithdrawByTokenID(
+        address owner,
+        uint16  tokenID,
+        uint32  accountID
+        )
+        external
+        override
+        nonReentrant
+        payable
+        onlyFromUserOrAgent(owner)
+    {
+        state.forceWithdraw(owner, tokenID, accountID);
+    }
 
     function forceWithdraw(
         address owner,
@@ -397,7 +441,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         payable
         onlyFromUserOrAgent(owner)
     {
-        state.forceWithdraw(owner, token, accountID);
+        uint16 tokenID = state.getTokenID(token);
+        state.forceWithdraw(owner, tokenID, accountID);
     }
 
     function isForcedWithdrawalPending(
@@ -421,7 +466,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         payable
     {
-        state.forceWithdraw(address(0), token, ExchangeData.ACCOUNTID_PROTOCOLFEE);
+        uint16 tokenID = state.getTokenID(token);
+        state.forceWithdraw(address(0), tokenID, ExchangeData.ACCOUNTID_PROTOCOLFEE);
     }
 
     // We still alow anyone to withdraw these funds for the account owner
@@ -462,6 +508,24 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         );
     }
 
+    function withdrawFromNFTDepositRequest(
+        address               owner,
+        address               token,
+        ExchangeData.NftType  nftType,
+        uint256               nftID
+        )
+        external
+        override
+        nonReentrant
+    {
+        state.withdrawFromNFTDepositRequest(
+            owner,
+            token,
+            nftType,
+            nftID
+        );
+    }
+
     function withdrawFromApprovedWithdrawals(
         address[] calldata owners,
         address[] calldata tokens
@@ -473,6 +537,26 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         state.withdrawFromApprovedWithdrawals(
             owners,
             tokens
+        );
+    }
+
+    function withdrawFromApprovedWithdrawalsNFT(
+        address[]              memory  owners,
+        address[]              memory  minters,
+        ExchangeData.NftType[] memory  nftTypes,
+        address[]              memory  tokens,
+        uint256[]              memory  nftIDs
+        )
+        external
+        override
+        nonReentrant
+    {
+        state.withdrawFromApprovedWithdrawalsNFT(
+            owners,
+            minters,
+            nftTypes,
+            tokens,
+            nftIDs
         );
     }
 
@@ -489,15 +573,29 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.amountWithdrawable[owner][tokenID];
     }
 
+    function getAmountWithdrawableNFT(
+        address              owner,
+        address              token,
+        ExchangeData.NftType nftType,
+        uint256              nftID,
+        address              minter
+        )
+        external
+        override
+        view
+        returns (uint)
+    {
+        return state.amountWithdrawableNFT[owner][minter][nftType][token][nftID];
+    }
+
     function notifyForcedRequestTooOld(
-        uint32  accountID,
-        address token
+        uint32 accountID,
+        uint16 tokenID
         )
         external
         override
         nonReentrant
     {
-        uint16 tokenID = state.getTokenID(token);
         ExchangeData.ForcedWithdrawal storage withdrawal = state.pendingForcedWithdrawals[accountID][tokenID];
         require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
 
@@ -556,7 +654,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        require(allowOnchainTransferFrom, "NOT_ALLOWED");
+        require(state.allowOnchainTransferFrom, "NOT_ALLOWED");
         state.depositContract.transfer(from, to, token, amount);
     }
 
@@ -671,7 +769,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         onlyOwner
     {
         require(_feeBips <= 200, "INVALID_VALUE");
-        ammFeeBips = _feeBips;
+        state.ammFeeBips = _feeBips;
     }
 
     function getAmmFeeBips()
@@ -679,7 +777,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         override
         view
         returns (uint8) {
-        return ammFeeBips;
+        return state.ammFeeBips;
     }
 
     function setAllowOnchainTransferFrom(bool value)
@@ -687,7 +785,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyOwner
     {
-        require(allowOnchainTransferFrom != value, "SAME_VALUE");
-        allowOnchainTransferFrom = value;
+        require(state.allowOnchainTransferFrom != value, "SAME_VALUE");
+        state.allowOnchainTransferFrom = value;
     }
 }

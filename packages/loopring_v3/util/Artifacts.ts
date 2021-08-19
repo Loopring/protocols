@@ -12,6 +12,7 @@ export class Artifacts {
   public INDAToken: any;
   public INDBToken: any;
   public TESTToken: any;
+  public ERC1155: any;
   public TestAccountContract: any;
   public TransferContract: any;
   public PoseidonContract: any;
@@ -40,6 +41,7 @@ export class Artifacts {
     this.INDAToken = artifacts.require("test/tokens/INDA");
     this.INDBToken = artifacts.require("test/tokens/INDB");
     this.TESTToken = artifacts.require("test/tokens/TEST");
+    this.ERC1155 = artifacts.require("ERC1155");
     this.TestAccountContract = artifacts.require("TestAccountContract");
     this.TransferContract = artifacts.require("TransferContract");
     this.PoseidonContract = artifacts.require("PoseidonContract");

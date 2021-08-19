@@ -2105,3 +2105,127 @@ TEST_CASE("Power", "[PowerGadget]")
         }
     }
 }
+
+TEST_CASE("TokenTradeData", "[TokenTradeDataGadget]")
+{
+    unsigned int numIterations = 4;
+    unsigned int n = 8;
+    unsigned int maxLength = 1024;
+
+    auto tokenTradeDataChecked = [](
+        unsigned int _fromTokenID,
+        unsigned int _fromNftData,
+        unsigned int _toTokenID,
+        unsigned int _toNftData,
+        unsigned int _fromBalanceAfter,
+        unsigned int _verify,
+        unsigned int _expectedNftData,
+        bool expectedSatisfied,
+        unsigned int expectedFromNftData = 0,
+        unsigned int expectedToNftData = 0
+        ) {
+        protoboard<FieldT> pb;
+        Constants constants(pb, "constants");
+
+        VariableT fromTokenID = make_variable(pb, FieldT(_fromTokenID), ".fromTokenID");
+        VariableT fromNftData = make_variable(pb, FieldT(_fromNftData), ".fromNftData");
+        VariableT toTokenID = make_variable(pb, FieldT(_toTokenID), ".toTokenID");
+        VariableT toNftData = make_variable(pb, FieldT(_toNftData), ".toNftData");
+        VariableT fromBalanceAfter = make_variable(pb, FieldT(_fromBalanceAfter), ".fromBalanceAfter");
+        VariableT verify = make_variable(pb, FieldT(_verify), ".verify");
+        VariableT expectedNftData = make_variable(pb, FieldT(_expectedNftData), ".expectedNftData");
+
+        TokenTradeDataGadget tokenTradeDataGadget(
+            pb,
+            constants,
+            fromTokenID,
+            fromNftData,
+            toTokenID,
+            toNftData,
+            fromBalanceAfter,
+            verify,
+            expectedNftData,
+            "tokenTradeDataGadget");
+        tokenTradeDataGadget.generate_r1cs_constraints();
+        tokenTradeDataGadget.generate_r1cs_witness();
+
+        REQUIRE(pb.is_satisfied() == expectedSatisfied);
+
+        if (expectedSatisfied)
+        {
+            REQUIRE((pb.val(tokenTradeDataGadget.fromNftData()) == FieldT(expectedFromNftData)));
+            REQUIRE((pb.val(tokenTradeDataGadget.toNftData()) == FieldT(expectedToNftData)));
+        }
+    };
+
+    SECTION("ERC20 transfer")
+    {
+        tokenTradeDataChecked(0, 0, 0, 0, 10, 1, 0, true, 0, 0);
+        tokenTradeDataChecked(12, 0, 12, 0, 10, 1, 0, true, 0, 0);
+
+        tokenTradeDataChecked(0, 0, 1, 0,  0, 1, 0, false);
+        tokenTradeDataChecked(3, 0, 0, 0,  0, 1, 0, false);
+        tokenTradeDataChecked(4, 10, 5, 10,  10, 1, 0, false);
+    }
+
+    SECTION("Cross token transfers")
+    {
+        // ERC20 transfer between different slots
+        tokenTradeDataChecked(0, 0, 1, 0, 0, 1, 0, false);
+        tokenTradeDataChecked(1, 0, 123, 0, 0, 1, 0, false);
+
+        // ERC20 <-> NFT transfers
+        tokenTradeDataChecked(0, 123, NFT_TOKEN_ID_START, 123, 10, 1, 0, false);
+        tokenTradeDataChecked(NFT_TOKEN_ID_START, 123, 7, 123, 10, 1, 0, false);
+    }
+
+    SECTION("ERC20 transfer with AMM weights")
+    {
+        tokenTradeDataChecked(0, 10000, 0, 0, 10, 1, 0, true, 10000, 0);
+        tokenTradeDataChecked(12, 100, 12, 1000, 10, 1, 0, true, 100, 1000);
+        tokenTradeDataChecked(1, 0, 1, 1000, 10, 1, 0, true, 0, 1000);
+    }
+
+    SECTION("NFT transfer to free slot")
+    {
+        // Partial transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START, 123, NFT_TOKEN_ID_START + 100, 0, 1, 1, 123, true, 123, 123);
+        // Full transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START, 123, NFT_TOKEN_ID_START + 100, 0, 0, 1, 123, true, 0, 123);
+
+        // Wrong NFT
+        // Partial transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START, 123, NFT_TOKEN_ID_START + 100, 0, 1, 1, 1234, false);
+        // Full transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START, 123, NFT_TOKEN_ID_START + 100, 0, 0, 1, 1234, false);
+    }
+
+    SECTION("NFT transfer to used slot")
+    {
+        // Partial transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START, 123, NFT_TOKEN_ID_START + 100, 123, 7, 1, 123, true, 123, 123);
+        // Full transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START, 123, NFT_TOKEN_ID_START + 100, 123, 0, 1, 123, true, 0, 123);
+
+        // Wrong NFT
+        // Partial transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START, 123, NFT_TOKEN_ID_START + 100, 123, 7, 1, 789, false);
+        // Full transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START, 123, NFT_TOKEN_ID_START + 100, 123, 0, 1, 789, false);
+    }
+
+    SECTION("NFT transfer to wrong slot")
+    {
+        // Same tokenID
+        // Partial transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START+12, 123, NFT_TOKEN_ID_START+12, 124, 7, 1, 123, false);
+        // Full transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START+12, 123, NFT_TOKEN_ID_START+12, 124, 0, 1, 123, false);
+
+        // Different tokenID
+        // Partial transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START+12, 123, NFT_TOKEN_ID_START+1233, 124, 7, 1, 123, false);
+        // Full transfer
+        tokenTradeDataChecked(NFT_TOKEN_ID_START+12, 123, NFT_TOKEN_ID_START+1233, 124, 0, 1, 123, false);
+    }
+}

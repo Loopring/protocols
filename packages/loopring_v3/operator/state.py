@@ -24,6 +24,8 @@ BINARY_TREE_DEPTH_TOKENS = 16
 
 MAX_AMOUNT = 2 ** 96 - 1
 
+NFT_TOKEN_ID_START = 2 ** 15
+
 class GeneralObject(object):
     pass
 
@@ -181,7 +183,7 @@ class Account(object):
     def getBalance(self, address):
         return self.getBalanceLeaf(address).balance
 
-    def updateBalance(self, tokenID, deltaBalance):
+    def updateBalance(self, tokenID, deltaBalance, weight = None):
         # Make sure the leaf exists in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -190,6 +192,8 @@ class Account(object):
         rootBefore = self._balancesTree._root
 
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(deltaBalance))
+        if weight is not None:
+            self._balancesLeafs[str(tokenID)].weightAMM = str(weight)
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         proof = self._balancesTree.createProof(tokenID)
@@ -213,6 +217,8 @@ class Account(object):
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(delta_balance))
         if weight is not None:
             self._balancesLeafs[str(tokenID)].weightAMM = str(weight)
+        if tokenID >= NFT_TOKEN_ID_START and self._balancesLeafs[str(tokenID)].balance == "0":
+            self._balancesLeafs[str(tokenID)].weightAMM = str(0)
 
         #print("str(delta_balance): " + str(delta_balance))
         #print("endBalance: " + self._balancesLeafs[str(tokenID)].balance)
@@ -435,9 +441,6 @@ class State(object):
         newState = GeneralObject()
         newState.signatureA = None
         newState.signatureB = None
-        # Tokens
-        newState.TXV_BALANCE_A_S_ADDRESS = None
-        newState.TXV_BALANCE_A_S_ADDRESS = None
         # A
         newState.TXV_ACCOUNT_A_ADDRESS = None
         newState.TXV_ACCOUNT_A_OWNER = None
@@ -448,7 +451,9 @@ class State(object):
         newState.TXV_BALANCE_A_S_ADDRESS = None
         newState.TXV_BALANCE_A_S_BALANCE = None
         newState.TXV_BALANCE_A_S_WEIGHT = None
+        newState.TXV_BALANCE_A_B_ADDRESS = None
         newState.TXV_BALANCE_A_B_BALANCE = None
+        newState.TXV_BALANCE_A_B_WEIGHT = None
         newState.TXV_STORAGE_A_ADDRESS = None
         newState.TXV_STORAGE_A_DATA = None
         newState.TXV_STORAGE_A_STORAGEID = None
@@ -460,7 +465,10 @@ class State(object):
         newState.TXV_ACCOUNT_B_NONCE = None
         newState.TXV_BALANCE_B_S_ADDRESS = None
         newState.TXV_BALANCE_B_S_BALANCE = None
+        newState.TXV_BALANCE_B_S_WEIGHT = None
+        newState.TXV_BALANCE_B_B_ADDRESS = None
         newState.TXV_BALANCE_B_B_BALANCE = None
+        newState.TXV_BALANCE_B_B_WEIGHT = None
         newState.TXV_STORAGE_B_ADDRESS = None
         newState.TXV_STORAGE_B_DATA = None
         newState.TXV_STORAGE_B_STORAGEID = None
@@ -523,32 +531,42 @@ class State(object):
             fillA.B = fillB.S
             fillB.B = fillA.S
 
+            allNFT = ring.orderA.tokenS >= NFT_TOKEN_ID_START and ring.orderB.tokenS >= NFT_TOKEN_ID_START
+            protocolTakerFeeBips = 0 if allNFT else context.protocolTakerFeeBips
+            protocolMakerFeeBips = 0 if allNFT else context.protocolMakerFeeBips
+            feeBips_SA = 0 if ring.orderA.tokenB < NFT_TOKEN_ID_START else ring.orderA.feeBips
+            feeBips_BA = ring.orderA.feeBips if ring.orderA.tokenB < NFT_TOKEN_ID_START else 0
+            feeBips_SB = 0 if ring.orderB.tokenB < NFT_TOKEN_ID_START else ring.orderB.feeBips
+            feeBips_BB = ring.orderB.feeBips if ring.orderB.tokenB < NFT_TOKEN_ID_START else 0
+
+            protocolFeeBips_SA = 0 if ring.orderA.tokenB < NFT_TOKEN_ID_START else protocolTakerFeeBips
+            protocolFeeBips_BA = protocolTakerFeeBips if ring.orderA.tokenB < NFT_TOKEN_ID_START else 0
+            protocolFeeBips_SB = 0 if ring.orderB.tokenB < NFT_TOKEN_ID_START else protocolMakerFeeBips
+            protocolFeeBips_BB = protocolMakerFeeBips if ring.orderB.tokenB < NFT_TOKEN_ID_START else 0
+
+            (fee_SA, protocolFee_SA) = self.calculateFees(fillA.S, feeBips_SA, protocolFeeBips_SA)
+            (fee_BA, protocolFee_BA) = self.calculateFees(fillA.B, feeBips_BA, protocolFeeBips_BA)
+            (fee_SB, protocolFee_SB) = self.calculateFees(fillB.S, feeBips_SB, protocolFeeBips_SB)
+            (fee_BB, protocolFee_BB) = self.calculateFees(fillB.B, feeBips_BB, protocolFeeBips_BB)
+
             '''
             print("fillA.S: " + str(fillA.S))
             print("fillA.B: " + str(fillA.B))
             print("fillB.S: " + str(fillB.S))
             print("fillB.B: " + str(fillB.B))
             print("spread: " + str(spread))
-            '''
+            print("ring.orderA.feeBips: " + str(ring.orderA.feeBips))
+            print("ring.orderB.feeBips: " + str(ring.orderB.feeBips))
 
-            (fee_A, protocolFee_A) = self.calculateFees(
-                fillA.B,
-                ring.orderA.feeBips,
-                context.protocolTakerFeeBips
-            )
+            print("fee_SA: " + str(fee_SA))
+            print("fee_BA: " + str(fee_BA))
+            print("protocolFee_SA: " + str(protocolFee_SA))
+            print("protocolFee_BA: " + str(protocolFee_BA))
 
-            (fee_B, protocolFee_B) = self.calculateFees(
-                fillB.B,
-                ring.orderB.feeBips,
-                context.protocolMakerFeeBips
-            )
-
-            '''
-            print("fee_A: " + str(fee_A))
-            print("protocolFee_A: " + str(protocolFee_A))
-
-            print("fee_B: " + str(fee_B))
-            print("protocolFee_B: " + str(protocolFee_B))
+            print("fee_SB: " + str(fee_SB))
+            print("fee_BB: " + str(fee_BB))
+            print("protocolFee_SB: " + str(protocolFee_SB))
+            print("protocolFee_BB: " + str(protocolFee_BB))
             '''
 
             newState.signatureA = ring.orderA.signature
@@ -558,10 +576,10 @@ class State(object):
             accountA = self.getAccount(ring.orderA.accountID)
 
             newState.TXV_BALANCE_A_S_ADDRESS = ring.orderA.tokenS
-            newState.TXV_BALANCE_A_S_BALANCE = -fillA.S
+            newState.TXV_BALANCE_A_S_BALANCE = -fillA.S - fee_SA
 
-            newState.TXV_BALANCE_B_S_ADDRESS = ring.orderA.tokenB
-            newState.TXV_BALANCE_A_B_BALANCE = fillA.B - fee_A
+            newState.TXV_BALANCE_A_B_ADDRESS = ring.orderA.tokenB
+            newState.TXV_BALANCE_A_B_BALANCE = fillA.B - fee_BA
 
             newState.TXV_STORAGE_A_ADDRESS = ring.orderA.storageID
             newState.TXV_STORAGE_A_DATA = filled_A + (fillA.B if ring.orderA.fillAmountBorS else fillA.S)
@@ -572,24 +590,30 @@ class State(object):
             accountB = self.getAccount(ring.orderB.accountID)
 
             newState.TXV_BALANCE_B_S_ADDRESS = ring.orderB.tokenS
-            newState.TXV_BALANCE_B_S_BALANCE = -fillB.S
+            newState.TXV_BALANCE_B_S_BALANCE = -fillB.S - fee_SB
 
-            newState.TXV_BALANCE_A_S_ADDRESS = ring.orderB.tokenB
-            newState.TXV_BALANCE_B_B_BALANCE = fillB.B - fee_B
+            newState.TXV_BALANCE_B_B_ADDRESS = ring.orderB.tokenB
+            newState.TXV_BALANCE_B_B_BALANCE = fillB.B - fee_BB
 
             newState.TXV_STORAGE_B_ADDRESS = ring.orderB.storageID
             newState.TXV_STORAGE_B_DATA = filled_B + (fillB.B if ring.orderB.fillAmountBorS else fillB.S)
             newState.TXV_STORAGE_B_STORAGEID = ring.orderB.storageID
 
-            newState.balanceDeltaA_O = fee_A - protocolFee_A
-            newState.balanceDeltaB_O = fee_B - protocolFee_B
+            if newState.TXV_BALANCE_A_S_ADDRESS >= NFT_TOKEN_ID_START:
+                balanceLeaf_A_S = accountA.getBalanceLeaf(newState.TXV_BALANCE_A_S_ADDRESS)
+                newState.TXV_BALANCE_B_B_WEIGHT = balanceLeaf_A_S.weightAMM
 
-            newState.balanceDeltaA_P = protocolFee_A
-            newState.balanceDeltaB_P = protocolFee_B
+            if newState.TXV_BALANCE_B_S_ADDRESS >= NFT_TOKEN_ID_START:
+                balanceLeaf_B_S = accountB.getBalanceLeaf(newState.TXV_BALANCE_B_S_ADDRESS)
+                newState.TXV_BALANCE_A_B_WEIGHT = balanceLeaf_B_S.weightAMM
+
+            newState.balanceDeltaA_O = fee_BA + fee_SB - protocolFee_BA - protocolFee_SB
+            newState.balanceDeltaB_O = fee_BB + fee_SA - protocolFee_BB - protocolFee_SA
+
+            newState.balanceDeltaA_P = protocolFee_BA + protocolFee_SB
+            newState.balanceDeltaB_P = protocolFee_BB + protocolFee_SA
 
         elif txInput.txType == "Transfer":
-
-            storageData = self.getData(txInput.fromAccountID, txInput.tokenID, txInput.storageID)
 
             transferAmount = roundToFloatValue(int(txInput.amount), Float24Encoding)
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
@@ -603,15 +627,19 @@ class State(object):
             newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
             newState.TXV_BALANCE_A_S_BALANCE = -transferAmount
 
-            newState.TXV_BALANCE_B_S_ADDRESS = txInput.feeTokenID
+            newState.TXV_BALANCE_A_B_ADDRESS = txInput.feeTokenID
             newState.TXV_BALANCE_A_B_BALANCE = -feeValue
 
             newState.TXV_ACCOUNT_B_ADDRESS = txInput.toAccountID
             accountB = self.getAccount(newState.TXV_ACCOUNT_B_ADDRESS)
             newState.TXV_ACCOUNT_B_OWNER = txInput.to
 
-            newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
+            newState.TXV_BALANCE_B_B_ADDRESS = txInput.toTokenID
             newState.TXV_BALANCE_B_B_BALANCE = transferAmount
+
+            if newState.TXV_BALANCE_A_S_ADDRESS >= NFT_TOKEN_ID_START:
+                balanceLeaf_A_S = accountA.getBalanceLeaf(newState.TXV_BALANCE_A_S_ADDRESS)
+                newState.TXV_BALANCE_B_B_WEIGHT = balanceLeaf_A_S.weightAMM
 
             newState.TXV_STORAGE_A_ADDRESS = txInput.storageID
             newState.TXV_STORAGE_A_DATA = 1
@@ -651,8 +679,10 @@ class State(object):
             newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
             newState.TXV_BALANCE_A_S_BALANCE = 0 if isProtocolfeeWithdrawal else -int(txInput.amount)
 
-            newState.TXV_BALANCE_B_S_ADDRESS = txInput.feeTokenID
+            newState.TXV_BALANCE_A_B_ADDRESS = txInput.feeTokenID
             newState.TXV_BALANCE_A_B_BALANCE = -feeValue
+
+            newState.TXV_BALANCE_B_B_ADDRESS = txInput.tokenID
 
             newState.TXV_STORAGE_A_ADDRESS = txInput.storageID
             if int(txInput.type) == 0 or int(txInput.type) == 1:
@@ -692,7 +722,9 @@ class State(object):
             newState.TXV_BALANCE_A_S_ADDRESS = txInput.feeTokenID
             newState.TXV_BALANCE_A_S_BALANCE = -feeValue
 
-            newState.balanceDeltaB_O = feeValue
+            newState.TXV_BALANCE_A_B_ADDRESS = txInput.feeTokenID
+
+            newState.balanceDeltaA_O = feeValue
 
             newState.signatureA = txInput.signature
 
@@ -720,10 +752,57 @@ class State(object):
             newState.TXV_ACCOUNT_A_ADDRESS = txInput.accountID
             newState.signatureA = txInput.signature
 
+        elif txInput.txType == "NftMint":
+
+            # require feeTokenID < 2**15
+
+            mintAmount = int(txInput.amount)
+            feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
+
+            newState.signatureA = txInput.signature
+
+            newState.TXV_ACCOUNT_A_ADDRESS = txInput.minterAccountID
+            newState.TXV_BALANCE_A_S_ADDRESS = txInput.feeTokenID
+            newState.TXV_BALANCE_A_S_BALANCE = -feeValue
+
+            newState.TXV_BALANCE_B_B_ADDRESS = txInput.feeTokenID
+
+            newState.TXV_BALANCE_A_B_ADDRESS = txInput.toTokenID
+            newState.TXV_BALANCE_B_S_ADDRESS = txInput.toTokenID
+
+            if txInput.type == 0:
+                newState.TXV_ACCOUNT_B_ADDRESS = txInput.tokenAccountID
+
+                newState.TXV_BALANCE_A_B_BALANCE = mintAmount
+                newState.TXV_BALANCE_A_B_WEIGHT = txInput.nftData
+            else:
+                newState.TXV_ACCOUNT_B_ADDRESS = txInput.toAccountID
+                newState.TXV_ACCOUNT_B_OWNER = txInput.to
+
+                newState.TXV_BALANCE_B_S_BALANCE = mintAmount
+                newState.TXV_BALANCE_B_S_WEIGHT = txInput.nftData
+
+            if txInput.type != 2:
+                newState.TXV_STORAGE_A_ADDRESS = txInput.storageID
+                newState.TXV_STORAGE_A_DATA = 1
+                newState.TXV_STORAGE_A_STORAGEID = txInput.storageID
+
+            if txInput.type != 0:
+                context.numConditionalTransactions = context.numConditionalTransactions + 1
+
+            newState.balanceDeltaB_O = feeValue
+
+        if txInput.txType == "NftData":
+
+            newState.TXV_ACCOUNT_A_ADDRESS = txInput.accountID
+            newState.TXV_BALANCE_A_S_ADDRESS = txInput.tokenID
+
 
         # Tokens default values
         newState.TXV_BALANCE_A_S_ADDRESS = setValue(newState.TXV_BALANCE_A_S_ADDRESS, 0)
+        newState.TXV_BALANCE_A_B_ADDRESS = setValue(newState.TXV_BALANCE_A_B_ADDRESS, 0)
         newState.TXV_BALANCE_B_S_ADDRESS = setValue(newState.TXV_BALANCE_B_S_ADDRESS, 0)
+        newState.TXV_BALANCE_B_B_ADDRESS = setValue(newState.TXV_BALANCE_B_B_ADDRESS, 0)
 
         # A default values
         newState.TXV_ACCOUNT_A_ADDRESS = setValue(newState.TXV_ACCOUNT_A_ADDRESS, 1)
@@ -736,9 +815,11 @@ class State(object):
 
         balanceLeafA_S = accountA.getBalanceLeaf(newState.TXV_BALANCE_A_S_ADDRESS)
         newState.TXV_BALANCE_A_S_BALANCE = setValue(newState.TXV_BALANCE_A_S_BALANCE, 0)
-        newState.TXV_BALANCE_A_S_WEIGHT = setValue(newState.TXV_BALANCE_A_S_WEIGHT, balanceLeafA_S.weightAMM)
+        newState.TXV_BALANCE_A_S_WEIGHT = setValue(newState.TXV_BALANCE_A_S_WEIGHT, None)
 
+        balanceLeafA_B = accountA.getBalanceLeaf(newState.TXV_BALANCE_A_B_ADDRESS)
         newState.TXV_BALANCE_A_B_BALANCE = setValue(newState.TXV_BALANCE_A_B_BALANCE, 0)
+        newState.TXV_BALANCE_A_B_WEIGHT = setValue(newState.TXV_BALANCE_A_B_WEIGHT, None)
 
         newState.TXV_STORAGE_A_ADDRESS = setValue(newState.TXV_STORAGE_A_ADDRESS, 0)
         storageA = balanceLeafA_S.getStorage(newState.TXV_STORAGE_A_ADDRESS)
@@ -772,8 +853,9 @@ class State(object):
             newState.TXV_BALANCE_A_S_WEIGHT
         )
         balanceUpdateB_A = accountA.updateBalance(
-            newState.TXV_BALANCE_B_S_ADDRESS,
-            newState.TXV_BALANCE_A_B_BALANCE
+            newState.TXV_BALANCE_A_B_ADDRESS,
+            newState.TXV_BALANCE_A_B_BALANCE,
+            newState.TXV_BALANCE_A_B_WEIGHT
         )
 
         accountA.owner = newState.TXV_ACCOUNT_A_OWNER
@@ -798,8 +880,11 @@ class State(object):
 
         balanceLeafB_S = accountB.getBalanceLeaf(newState.TXV_BALANCE_B_S_ADDRESS)
         newState.TXV_BALANCE_B_S_BALANCE = setValue(newState.TXV_BALANCE_B_S_BALANCE, 0)
+        newState.TXV_BALANCE_B_S_WEIGHT = setValue(newState.TXV_BALANCE_B_S_WEIGHT, balanceLeafB_S.weightAMM)
 
+        balanceLeafB_B = accountB.getBalanceLeaf(newState.TXV_BALANCE_B_B_ADDRESS)
         newState.TXV_BALANCE_B_B_BALANCE = setValue(newState.TXV_BALANCE_B_B_BALANCE, 0)
+        newState.TXV_BALANCE_B_B_WEIGHT = setValue(newState.TXV_BALANCE_B_B_WEIGHT, balanceLeafB_B.weightAMM)
 
         newState.TXV_STORAGE_B_ADDRESS = setValue(newState.TXV_STORAGE_B_ADDRESS, 0)
         storageB = balanceLeafB_S.getStorage(newState.TXV_STORAGE_B_ADDRESS)
@@ -817,11 +902,13 @@ class State(object):
             newState.TXV_BALANCE_B_S_ADDRESS,
             newState.TXV_STORAGE_B_STORAGEID,
             newState.TXV_STORAGE_B_DATA,
-            newState.TXV_BALANCE_B_S_BALANCE
+            newState.TXV_BALANCE_B_S_BALANCE,
+            newState.TXV_BALANCE_B_S_WEIGHT
         )
         balanceUpdateB_B = accountB.updateBalance(
-            newState.TXV_BALANCE_A_S_ADDRESS,
-            newState.TXV_BALANCE_B_B_BALANCE
+            newState.TXV_BALANCE_B_B_ADDRESS,
+            newState.TXV_BALANCE_B_B_BALANCE,
+            newState.TXV_BALANCE_B_B_WEIGHT
         )
 
         accountB.owner = newState.TXV_ACCOUNT_B_OWNER
@@ -843,11 +930,11 @@ class State(object):
         proof = self._accountsTree.createProof(context.operatorAccountID)
 
         balanceUpdateB_O = accountO.updateBalance(
-            newState.TXV_BALANCE_A_S_ADDRESS,
+            newState.TXV_BALANCE_B_B_ADDRESS,
             newState.balanceDeltaB_O
         )
         balanceUpdateA_O = accountO.updateBalance(
-            newState.TXV_BALANCE_B_S_ADDRESS,
+            newState.TXV_BALANCE_A_B_ADDRESS,
             newState.balanceDeltaA_O
         )
 
@@ -858,8 +945,8 @@ class State(object):
         ###
 
         # Protocol fee payment
-        balanceUpdateB_P = self.getAccount(0).updateBalance(newState.TXV_BALANCE_A_S_ADDRESS, newState.balanceDeltaB_P)
-        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.TXV_BALANCE_B_S_ADDRESS, newState.balanceDeltaA_P)
+        balanceUpdateB_P = self.getAccount(0).updateBalance(newState.TXV_BALANCE_B_B_ADDRESS, newState.balanceDeltaB_P)
+        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.TXV_BALANCE_A_B_ADDRESS, newState.balanceDeltaA_P)
         ###
 
         witness = Witness(newState.signatureA, newState.signatureB,

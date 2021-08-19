@@ -800,9 +800,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               "INVALID_CHALLENGE"
             );
 
-            const maxForcedExitAge = (
-              await sharedConfig.maxForcedExitAge()
-            ).toNumber();
+            const maxForcedExitAge = (await sharedConfig.maxForcedExitAge()).toNumber();
             // Wait
             await ctx.advanceBlockTimestamp(maxForcedExitAge - 100);
 
@@ -904,7 +902,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
             // Withdraw from the Merkle tree
             for (const token of pool.tokens) {
-              await ctx.withdrawFromMerkleTree(pool.accountID, token);
+              await ctx.withdrawFromMerkleTree(
+                pool.accountID,
+                ctx.getTokenIdFromNameOrAddress(token)
+              );
             }
           }
 
@@ -959,7 +960,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           } else {
             await ctx.withdrawFromMerkleTree(
               ctx.getAccountID(ownerB),
-              pool.contract.address
+              ctx.getTokenIdFromNameOrAddress(pool.contract.address)
             );
           }
           await pool.verifySupply();

@@ -8,6 +8,7 @@ import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 import "./ExchangeBalances.sol";
 import "./ExchangeMode.sol";
+import "./ExchangeNFT.sol";
 import "./ExchangeTokens.sol";
 
 
@@ -31,10 +32,12 @@ library ExchangeWithdrawals
     using ExchangeBalances  for ExchangeData.State;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
+    using ExchangeTokens    for uint16;
 
     event ForcedWithdrawalRequested(
         address owner,
-        address token,
+        uint16  tokenID,    // ERC20 token ID ( if < NFT_TOKEN_ID_START) or
+                            // NFT balance slot (if >= NFT_TOKEN_ID_START)
         uint32  accountID
     );
 
@@ -54,11 +57,32 @@ library ExchangeWithdrawals
         uint    amount
     );
 
+    event NftWithdrawalCompleted(
+        uint8   category,
+        address from,
+        address to,
+        uint16  tokenID,
+        address token,
+        uint256 nftID,
+        uint    amount
+    );
+
+    event NftWithdrawalFailed(
+        uint8   category,
+        address from,
+        address to,
+        uint16  tokenID,
+        address token,
+        uint256 nftID,
+        uint    amount
+    );
+
     function forceWithdraw(
         ExchangeData.State storage S,
-        address owner,
-        address token,
-        uint32  accountID
+        address                    owner,
+        uint16                     tokenID, // ERC20 token ID ( if < NFT_TOKEN_ID_START) or
+                                            // NFT balance slot (if >= NFT_TOKEN_ID_START)
+        uint32                     accountID
         )
         public
     {
@@ -66,8 +90,12 @@ library ExchangeWithdrawals
         // Limit the amount of pending forced withdrawals so that the owner cannot be overwhelmed.
         require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
         require(accountID < ExchangeData.MAX_NUM_ACCOUNTS, "INVALID_ACCOUNTID");
-
-        uint16 tokenID = S.getTokenID(token);
+        // Only allow withdrawing from registered ERC20 tokens or NFT tokenIDs
+        require(
+            tokenID < S.tokens.length ||                 // ERC20
+            tokenID.isNFT(),  // NFT
+            "INVALID_TOKENID"
+        );
 
         // A user needs to pay a fixed ETH withdrawal fee, set by the protocol.
         uint withdrawalFeeETH = S.loopring.forcedWithdrawalFee();
@@ -98,14 +126,14 @@ library ExchangeWithdrawals
 
         emit ForcedWithdrawalRequested(
             owner,
-            token,
+            tokenID,
             accountID
         );
     }
 
     // We alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTree(
-        ExchangeData.State       storage S,
+        ExchangeData.State       storage  S,
         ExchangeData.MerkleProof calldata merkleProof
         )
         public
@@ -129,24 +157,43 @@ library ExchangeWithdrawals
         // Make sure the balance can only be withdrawn once
         S.withdrawnInWithdrawMode[accountID][tokenID] = true;
 
-        // Transfer the tokens to the account owner
-        transferTokens(
-            S,
-            uint8(WithdrawalCategory.FROM_MERKLE_TREE),
-            owner,
-            owner,
-            tokenID,
-            balance,
-            new bytes(0),
-            gasleft(),
-            false
-        );
+        if (!tokenID.isNFT()) {
+            require(
+                merkleProof.nft.nftID == 0 && merkleProof.nft.minter == address(0),
+                "NOT_AN_NFT"
+            );
+            // Transfer the tokens to the account owner
+            transferTokens(
+                S,
+                uint8(WithdrawalCategory.FROM_MERKLE_TREE),
+                owner,
+                owner,
+                tokenID,
+                balance,
+                new bytes(0),
+                gasleft(),
+                false
+            );
+        } else {
+            transferNFTs(
+                S,
+                uint8(WithdrawalCategory.DISTRIBUTION),
+                owner,
+                owner,
+                tokenID,
+                balance,
+                merkleProof.nft,
+                new bytes(0),
+                gasleft(),
+                false
+            );
+        }
     }
 
     function withdrawFromDepositRequest(
         ExchangeData.State storage S,
-        address owner,
-        address token
+        address                    owner,
+        address                    token
         )
         public
     {
@@ -180,10 +227,57 @@ library ExchangeWithdrawals
         );
     }
 
+    function withdrawFromNFTDepositRequest(
+        ExchangeData.State storage S,
+        address                    owner,
+        address                    token,
+        ExchangeData.NftType       nftType,
+        uint256                    nftID
+        )
+        public
+    {
+        ExchangeData.Deposit storage deposit = S.pendingNFTDeposits[owner][nftType][token][nftID];
+        require(deposit.timestamp != 0, "DEPOSIT_NOT_WITHDRAWABLE_YET");
+
+        // Check if the deposit has indeed exceeded the time limit of if the exchange is in withdrawal mode
+        require(
+            block.timestamp >= deposit.timestamp + S.maxAgeDepositUntilWithdrawable ||
+            S.isInWithdrawalMode(),
+            "DEPOSIT_NOT_WITHDRAWABLE_YET"
+        );
+
+        uint amount = deposit.amount;
+
+        // Reset the deposit request
+        delete S.pendingNFTDeposits[owner][nftType][token][nftID];
+
+        ExchangeData.Nft memory nft = ExchangeData.Nft({
+            minter: token,
+            nftType: nftType,
+            token: token,
+            nftID: nftID,
+            creatorFeeBips: 0
+        });
+
+        // Transfer the NFTs
+        transferNFTs(
+            S,
+            uint8(WithdrawalCategory.FROM_DEPOSIT_REQUEST),
+            owner,
+            owner,
+            0,
+            amount,
+            nft,
+            new bytes(0),
+            gasleft(),
+            false
+        );
+    }
+
     function withdrawFromApprovedWithdrawals(
         ExchangeData.State storage S,
-        address[] memory owners,
-        address[] memory tokens
+        address[]          memory  owners,
+        address[]          memory  tokens
         )
         public
     {
@@ -211,34 +305,105 @@ library ExchangeWithdrawals
         }
     }
 
-    function distributeWithdrawal(
-        ExchangeData.State storage S,
-        address from,
-        address to,
-        uint16  tokenID,
-        uint    amount,
-        bytes   memory extraData,
-        uint    gasLimit
+    function withdrawFromApprovedWithdrawalsNFT(
+        ExchangeData.State     storage S,
+        address[]              memory  owners,
+        address[]              memory  minters,
+        ExchangeData.NftType[] memory  nftTypes,
+        address[]              memory  tokens,
+        uint256[]              memory  nftIDs
         )
         public
     {
-        // Try to transfer the tokens
-        bool success = transferTokens(
-            S,
-            uint8(WithdrawalCategory.DISTRIBUTION),
-            from,
-            to,
-            tokenID,
-            amount,
-            extraData,
-            gasLimit,
-            true
-        );
-        // If the transfer was successful there's nothing left to do.
-        // However, if the transfer failed the tokens are still in the contract and can be
-        // withdrawn later to `to` by anyone by using `withdrawFromApprovedWithdrawal.
-        if (!success) {
-            S.amountWithdrawable[to][tokenID] = S.amountWithdrawable[to][tokenID].add(amount);
+        require(owners.length == minters.length, "INVALID_INPUT_DATA_MINTERS");
+        require(owners.length == nftTypes.length, "INVALID_INPUT_DATA_NFTTYPES");
+        require(owners.length == tokens.length, "INVALID_INPUT_DATA_TOKENS");
+        require(owners.length == nftIDs.length, "INVALID_INPUT_DATA_CONTENT_URIS");
+        for (uint i = 0; i < owners.length; i++) {
+            address owner = owners[i];
+            address minter = minters[i];
+            ExchangeData.NftType nftType = nftTypes[i];
+            address token = tokens[i];
+            uint256 nftID = nftIDs[i];
+            uint amount = S.amountWithdrawableNFT[owner][minter][nftType][token][nftID];
+
+            // Make sure this amount can't be withdrawn again
+            delete S.amountWithdrawableNFT[owner][minter][nftType][token][nftID];
+
+            ExchangeData.Nft memory nft = ExchangeData.Nft({
+                minter: minter,
+                nftType: nftType,
+                token: token,
+                nftID: nftID,
+                creatorFeeBips: 0
+            });
+
+            // Transfer the NFTs to the owner
+            transferNFTs(
+                S,
+                uint8(WithdrawalCategory.DISTRIBUTION),
+                owner,
+                owner,
+                0,
+                amount,
+                nft,
+                new bytes(0),
+                gasleft(),
+                false
+            );
+        }
+    }
+
+    function distributeWithdrawal(
+        ExchangeData.State storage S,
+        address                    from,
+        address                    to,
+        uint16                     tokenID,
+        uint                       amount,
+        bytes              memory  extraData,
+        uint                       gasLimit,
+        ExchangeData.Nft   memory  nft
+        )
+        public
+    {
+        if (!tokenID.isNFT()) {
+            // Try to transfer the tokens
+            if (!transferTokens(
+                S,
+                uint8(WithdrawalCategory.DISTRIBUTION),
+                from,
+                to,
+                tokenID,
+                amount,
+                extraData,
+                gasLimit,
+                true
+            )) {
+                // If the transfer was successful there's nothing left to do.
+                // However, if the transfer failed the tokens are still in the contract and can be
+                // withdrawn later to `to` by anyone by using `withdrawFromApprovedWithdrawal.
+                S.amountWithdrawable[to][tokenID] = S.amountWithdrawable[to][tokenID].add(amount);
+            }
+        } else {
+            // Try to transfer the tokens
+            if (!transferNFTs(
+                S,
+                uint8(WithdrawalCategory.DISTRIBUTION),
+                from,
+                to,
+                tokenID,
+                amount,
+                nft,
+                extraData,
+                gasLimit,
+                true
+            )) {
+                // If the transfer was successful there's nothing left to do.
+                // However, if the transfer failed the tokens are still in the contract and can be
+                // withdrawn later to `to` by anyone by using `withdrawFromApprovedNftWithdrawal.
+                S.amountWithdrawableNFT[to][nft.minter][nft.nftType][nft.token][nft.nftID] =
+                    S.amountWithdrawableNFT[to][nft.minter][nft.nftType][nft.token][nft.nftID].add(amount);
+            }
         }
     }
 
@@ -251,14 +416,14 @@ library ExchangeWithdrawals
     // as much gas as needed, otherwise it throws. The function always returns true.
     function transferTokens(
         ExchangeData.State storage S,
-        uint8   category,
-        address from,
-        address to,
-        uint16  tokenID,
-        uint    amount,
-        bytes   memory extraData,
-        uint    gasLimit,
-        bool    allowFailure
+        uint8                      category,
+        address                    from,
+        address                    to,
+        uint16                     tokenID,
+        uint                       amount,
+        bytes              memory  extraData,
+        uint                       gasLimit,
+        bool                       allowFailure
         )
         private
         returns (bool success)
@@ -292,6 +457,62 @@ library ExchangeWithdrawals
             }
         } else {
             emit WithdrawalFailed(category, from, to, token, amount);
+        }
+    }
+
+    // If allowFailure is true the transfer can fail because of a transfer error or
+    // because the transfer uses more than `gasLimit` gas. The function
+    // will return true when successful, false otherwise.
+    // If allowFailure is false the transfer is guaranteed to succeed using
+    // as much gas as needed, otherwise it throws. The function always returns true.
+    function transferNFTs(
+        ExchangeData.State storage S,
+        uint8                      category,
+        address                    from,
+        address                    to,
+        uint16                     tokenID,
+        uint                       amount,
+        ExchangeData.Nft   memory  nft,
+        bytes              memory  extraData,
+        uint                       gasLimit,
+        bool                       allowFailure
+        )
+        private
+        returns (bool success)
+    {
+        if (nft.token == nft.minter) {
+            // This is an existing thirdparty NFT contract
+            success = ExchangeNFT.withdraw(
+                S,
+                from,
+                to,
+                nft.nftType,
+                nft.token,
+                nft.nftID,
+                amount,
+                extraData,
+                gasLimit
+            );
+        } else {
+            // This is an inhouse NFT contract with L2 minting support
+            success = ExchangeNFT.mintFromL2(
+                S,
+                to,
+                nft.token,
+                nft.nftID,
+                amount,
+                nft.minter,
+                extraData,
+                gasLimit
+            );
+        }
+
+        require(allowFailure || success, "NFT_TRANSFER_FAILURE");
+
+        if (success) {
+            emit NftWithdrawalCompleted(category, from, to, tokenID, nft.token, nft.nftID, amount);
+        } else {
+            emit NftWithdrawalFailed(category, from, to, tokenID, nft.token, nft.nftID, amount);
         }
     }
 }

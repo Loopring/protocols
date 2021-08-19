@@ -16,6 +16,7 @@ interface Transfer {
   from?: string;
   to?: string;
   data?: string;
+  toTokenID?: number;
 }
 
 /**
@@ -36,7 +37,15 @@ export class TransferProcessor {
     }
 
     from.getBalance(transfer.tokenID).balance.isub(transfer.amount);
-    to.getBalance(transfer.tokenID).balance.iadd(transfer.amount);
+    if (Constants.isNFT(transfer.tokenID)) {
+      const nftData = from.getBalance(transfer.tokenID).weightAMM;
+      if (from.getBalance(transfer.tokenID).balance.eq(new BN(0))) {
+        from.getBalance(transfer.tokenID).weightAMM = new BN(0);
+      }
+      to.getBalance(transfer.toTokenID).weightAMM = nftData;
+    }
+
+    to.getBalance(transfer.toTokenID).balance.iadd(transfer.amount);
 
     from.getBalance(transfer.feeTokenID).balance.isub(transfer.fee);
 
@@ -85,6 +94,11 @@ export class TransferProcessor {
     offset += 20;
     transfer.from = data.extractAddress(offset);
     offset += 20;
+    transfer.toTokenID = data.extractUint16(offset);
+    offset += 2;
+
+    transfer.toTokenID =
+      transfer.toTokenID !== 0 ? transfer.toTokenID : transfer.tokenID;
 
     return transfer;
   }

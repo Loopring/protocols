@@ -54,6 +54,8 @@ def orderFromJSON(jOrder, state):
     if "signature" in jOrder:
         order.signature = jOrder["signature"]
 
+    order.nftDataB = str(jOrder["nftDataB"])
+
     return order
 
 def transferFromJSON(jTransfer):
@@ -76,6 +78,7 @@ def transferFromJSON(jTransfer):
     transfer.payeeToAccountID = int(jTransfer["payeeToAccountID"])
     transfer.maxFee = str(jTransfer["maxFee"])
     transfer.putAddressesInDA = bool(jTransfer["putAddressesInDA"])
+    transfer.toTokenID = int(jTransfer["toTokenID"])
     transfer.signature = None
     transfer.dualSignature = None
     transfer.onchainSignature = None
@@ -147,6 +150,46 @@ def signatureVerificationFromJSON(jVerification):
     verification.signature = jVerification["signature"]
     return verification
 
+def nftMintFromJSON(jNftMint):
+    nftMint = GeneralObject()
+    nftMint.minterAccountID = int(jNftMint["minterAccountID"])
+    nftMint.tokenAccountID = int(jNftMint["tokenAccountID"])
+    nftMint.storageID = int(jNftMint["storageID"])
+    nftMint.amount = str(jNftMint["amount"])
+    nftMint.feeTokenID = int(jNftMint["feeTokenID"])
+    nftMint.fee = str(jNftMint["fee"])
+    nftMint.nftID = str(jNftMint["nftID"])
+    nftMint.nftIDHi = str(jNftMint["nftIDHi"])
+    nftMint.nftIDLo = str(jNftMint["nftIDLo"])
+    nftMint.type = int(jNftMint["type"])
+    nftMint.validUntil = int(jNftMint["validUntil"])
+    nftMint.maxFee = str(jNftMint["maxFee"])
+    nftMint.toAccountID = int(jNftMint["toAccountID"])
+    nftMint.toTokenID = int(jNftMint["toTokenID"])
+    nftMint.to = str(jNftMint["to"])
+    nftMint.nftType = int(jNftMint["nftType"])
+    nftMint.tokenAddress = str(jNftMint["tokenAddress"])
+    nftMint.creatorFeeBips = int(jNftMint["creatorFeeBips"])
+    nftMint.signature = None
+    if "signature" in jNftMint:
+        nftMint.signature = jNftMint["signature"]
+    nftMint.nftData = str(jNftMint["nftData"])
+    return nftMint
+
+def nftDataFromJSON(jNftData):
+    nftData = GeneralObject()
+    nftData.type = int(jNftData["type"])
+    nftData.accountID = int(jNftData["accountID"])
+    nftData.tokenID = int(jNftData["tokenID"])
+    nftData.minter = str(jNftData["minter"])
+    nftData.nftID = str(jNftData["nftID"])
+    nftData.nftIDHi = str(jNftData["nftIDHi"])
+    nftData.nftIDLo = str(jNftData["nftIDLo"])
+    nftData.nftType = int(jNftData["nftType"])
+    nftData.tokenAddress = str(jNftData["tokenAddress"])
+    nftData.creatorFeeBips = int(jNftData["creatorFeeBips"])
+    return nftData
+
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
@@ -187,6 +230,10 @@ def createBlock(state, data):
             transaction = ammUpdateFromJSON(transactionInfo)
         if txType == "SignatureVerification":
             transaction = signatureVerificationFromJSON(transactionInfo)
+        if txType == "NftMint":
+            transaction = nftMintFromJSON(transactionInfo)
+        if txType == "NftData":
+            transaction = nftDataFromJSON(transactionInfo)
 
         transaction.txType = txType
         tx = state.executeTransaction(context, transaction)
@@ -208,6 +255,10 @@ def createBlock(state, data):
             txWitness.ammUpdate = tx.input
         if txType == "SignatureVerification":
             txWitness.signatureVerification = tx.input
+        if txType == "NftMint":
+            txWitness.nftMint = tx.input
+        if txType == "NftData":
+            txWitness.nftData = tx.input
         txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
         block.transactions.append(txWitness)
 

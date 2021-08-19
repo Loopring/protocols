@@ -101,20 +101,9 @@ TEST_CASE("Order", "[OrderGadget]")
         SECTION("feeBips > maxFeeBips")
         {
             Order _order = order;
-            for (unsigned int maxFeeBips = 0; maxFeeBips < pow(2, NUM_BITS_BIPS_DA); maxFeeBips += 3)
+            for (unsigned int maxFeeBips = 0; maxFeeBips <= 10000; maxFeeBips += 197)
             {
-                for (unsigned int feeBips = 0; feeBips < pow(2, NUM_BITS_BIPS_DA); feeBips += 3)
-                {
-                    _order.maxFeeBips = maxFeeBips;
-                    _order.feeBips = feeBips;
-                    bool expectedSatisfied = (feeBips <= maxFeeBips);
-                    orderChecked(exchange, _order, expectedSatisfied);
-                }
-            }
-            unsigned int feeBipsLimit = pow(2, NUM_BITS_BIPS_DA) * FEE_MULTIPLIER;
-            for (unsigned int maxFeeBips = 0; maxFeeBips < feeBipsLimit; maxFeeBips += 150)
-            {
-                for (unsigned int feeBips = 0; feeBips < feeBipsLimit; feeBips += 150)
+                for (unsigned int feeBips = 0; feeBips <= 10000; feeBips += 197)
                 {
                     _order.maxFeeBips = maxFeeBips;
                     _order.feeBips = feeBips;
@@ -129,24 +118,24 @@ TEST_CASE("Order", "[OrderGadget]")
 
             _order.maxFeeBips = 200;
             _order.feeBips = 103;
-            orderChecked(exchange, _order, false);
-
-            _order.maxFeeBips = feeBipsLimit - 1;
-            _order.feeBips = feeBipsLimit - 1;
             orderChecked(exchange, _order, true);
 
-            _order.maxFeeBips = feeBipsLimit;
-            _order.feeBips = feeBipsLimit;
+            _order.maxFeeBips = 103;
+            _order.feeBips = 107;
             orderChecked(exchange, _order, false);
 
-            _order.maxFeeBips = feeBipsLimit - FEE_MULTIPLIER;
-            _order.feeBips = feeBipsLimit - FEE_MULTIPLIER;
+            _order.maxFeeBips = 10000;
+            _order.feeBips = 10000;
             orderChecked(exchange, _order, true);
+
+            _order.maxFeeBips = 10000 + 1;
+            _order.feeBips = 10000 + 1;
+            orderChecked(exchange, _order, false);
         }
         SECTION("tokenS == tokenB")
         {
             Order _order = order;
-            for (unsigned int tokenID = 0; tokenID < pow(2, NUM_BITS_TOKEN); tokenID += 3)
+            for (unsigned int tokenID = 0; tokenID < pow(2, NUM_BITS_TOKEN); tokenID += 23)
             {
                 _order.tokenS = tokenID;
                 _order.tokenB = tokenID;
@@ -163,6 +152,28 @@ TEST_CASE("Order", "[OrderGadget]")
         {
             Order _order = order;
             _order.amountB = 0;
+            orderChecked(exchange, _order, false);
+        }
+        SECTION("feeBips > 0 && tokenIdB >= NFT_TOKEN_ID_START && tokenIdS >= NFT_TOKEN_ID_START")
+        {
+            Order _order = order;
+            _order.tokenS = NFT_TOKEN_ID_START;
+            _order.tokenB = NFT_TOKEN_ID_START;
+            _order.feeBips = 1;
+            orderChecked(exchange, _order, false);
+        }
+        SECTION("amm == 1 && tokenIdS >= NFT_TOKEN_ID_START")
+        {
+            Order _order = order;
+            _order.tokenS = NFT_TOKEN_ID_START;
+            _order.amm = 1;
+            orderChecked(exchange, _order, false);
+        }
+        SECTION("amm == 1 && tokenIdB >= NFT_TOKEN_ID_START")
+        {
+            Order _order = order;
+            _order.tokenB = NFT_TOKEN_ID_START;
+            _order.amm = 1;
             orderChecked(exchange, _order, false);
         }
     }

@@ -4,8 +4,8 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../lib/Claimable.sol";
-import "../lib/Create2.sol";
 import "../lib/ReentrancyGuard.sol";
+import "../thirdparty/Create2.sol";
 import "../thirdparty/proxies/OwnedUpgradabilityProxy.sol";
 import "./LoopringAmmPool.sol";
 import "./libamm/AmmData.sol";

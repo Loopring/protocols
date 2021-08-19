@@ -179,7 +179,9 @@ enum TxVariable
     TXV_BALANCE_A_S_BALANCE,
     TXV_BALANCE_A_S_WEIGHTAMM,
 
+    TXV_BALANCE_A_B_ADDRESS,
     TXV_BALANCE_A_B_BALANCE,
+    TXV_BALANCE_A_B_WEIGHTAMM,
 
     TXV_ACCOUNT_A_ADDRESS,
     TXV_ACCOUNT_A_OWNER,
@@ -194,8 +196,11 @@ enum TxVariable
 
     TXV_BALANCE_B_S_ADDRESS,
     TXV_BALANCE_B_S_BALANCE,
+    TXV_BALANCE_B_S_WEIGHTAMM,
 
+    TXV_BALANCE_B_B_ADDRESS,
     TXV_BALANCE_B_B_BALANCE,
+    TXV_BALANCE_B_B_WEIGHTAMM,
 
     TXV_ACCOUNT_B_ADDRESS,
     TXV_ACCOUNT_B_OWNER,
@@ -244,7 +249,9 @@ class BaseTransactionCircuit : public GadgetT
         uOutputs[TXV_BALANCE_A_S_BALANCE] = state.accountA.balanceS.balance;
         uOutputs[TXV_BALANCE_A_S_WEIGHTAMM] = state.accountA.balanceS.weightAMM;
 
+        aOutputs[TXV_BALANCE_A_B_ADDRESS] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
         uOutputs[TXV_BALANCE_A_B_BALANCE] = state.accountA.balanceB.balance;
+        uOutputs[TXV_BALANCE_A_B_WEIGHTAMM] = state.accountA.balanceB.weightAMM;
 
         aOutputs[TXV_ACCOUNT_A_ADDRESS] =
           flatten({VariableArrayT(1, state.constants._1), VariableArrayT(NUM_BITS_ACCOUNT - 1, state.constants._0)});
@@ -260,8 +267,11 @@ class BaseTransactionCircuit : public GadgetT
 
         aOutputs[TXV_BALANCE_B_S_ADDRESS] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
         uOutputs[TXV_BALANCE_B_S_BALANCE] = state.accountB.balanceS.balance;
+        uOutputs[TXV_BALANCE_B_S_WEIGHTAMM] = state.accountB.balanceS.weightAMM;
 
+        aOutputs[TXV_BALANCE_B_B_ADDRESS] = VariableArrayT(NUM_BITS_TOKEN, state.constants._0);
         uOutputs[TXV_BALANCE_B_B_BALANCE] = state.accountB.balanceB.balance;
+        uOutputs[TXV_BALANCE_B_B_WEIGHTAMM] = state.accountB.balanceB.weightAMM;
 
         aOutputs[TXV_ACCOUNT_B_ADDRESS] =
           flatten({VariableArrayT(1, state.constants._1), VariableArrayT(NUM_BITS_ACCOUNT - 1, state.constants._0)});

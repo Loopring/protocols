@@ -31,11 +31,16 @@ export class WithdrawalProcessor {
     const withdrawal = this.extractData(txData);
 
     const account = state.getAccount(withdrawal.fromAccountID);
-    if (withdrawal.type === 2) {
-      account.getBalance(withdrawal.tokenID).weightAMM = new BN(0);
-    }
     account.getBalance(withdrawal.tokenID).balance.isub(withdrawal.amount);
     account.getBalance(withdrawal.feeTokenID).balance.isub(withdrawal.fee);
+
+    if (
+      withdrawal.type === 2 ||
+      (Constants.isNFT(withdrawal.tokenID) &&
+        account.getBalance(withdrawal.tokenID).balance.eq(new BN(0)))
+    ) {
+      account.getBalance(withdrawal.tokenID).weightAMM = new BN(0);
+    }
 
     const operator = state.getAccount(block.operatorAccountID);
     operator.getBalance(withdrawal.feeTokenID).balance.iadd(withdrawal.fee);

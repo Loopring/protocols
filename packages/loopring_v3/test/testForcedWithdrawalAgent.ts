@@ -55,14 +55,16 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
       }
     );
 
+    const tokenID = (await ctx.exchange.getTokenID(fakeToken)).toNumber();
+
     const forcedWithdrawalEvent = events[0];
     assert(
       owner === forcedWithdrawalEvent.returnValues.owner,
       "owner not equal"
     );
     assert(
-      fakeToken === forcedWithdrawalEvent.returnValues.token,
-      "token address not equal"
+      tokenID === Number(forcedWithdrawalEvent.returnValues.tokenID),
+      "tokenID not equal"
     );
     assert(
       accountId == forcedWithdrawalEvent.returnValues.accountID,
@@ -99,14 +101,16 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
       }
     );
 
+    const tokenID = (await ctx.exchange.getTokenID(fakeToken)).toNumber();
+
     const forcedWithdrawalEvent = events[0];
     assert(
       owner === forcedWithdrawalEvent.returnValues.owner,
       "owner not equal"
     );
     assert(
-      fakeToken === forcedWithdrawalEvent.returnValues.token,
-      "token address not equal"
+      tokenID === Number(forcedWithdrawalEvent.returnValues.tokenID),
+      "tokenID not equal"
     );
     assert(
       accountId == forcedWithdrawalEvent.returnValues.accountID,
