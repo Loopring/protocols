@@ -84,9 +84,9 @@ contract DefaultDepositContract is IDepositContract, Claimable
     }
 
     function deposit(
-        address from,
-        address token,
-        uint96  amount,
+        address          from,
+        address          token,
+        uint96           amount,
         bytes   calldata /*extraData*/
         )
         external
@@ -125,10 +125,10 @@ contract DefaultDepositContract is IDepositContract, Claimable
     }
 
     function withdraw(
-        address /*from*/,
-        address to,
-        address token,
-        uint    amount,
+        address          /*from*/,
+        address          to,
+        address          token,
+        uint             amount,
         bytes   calldata /*extraData*/
         )
         external

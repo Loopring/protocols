@@ -33,4 +33,18 @@ library ExchangeSignatures
             delete S.approvedTx[signer][txHash];
         }
     }
+
+    function approveTransactions(
+        ExchangeData.State storage S,
+        address[] calldata owners,
+        bytes32[] calldata transactionHashes
+        )
+        external
+    {
+        require(owners.length == transactionHashes.length, "INVALID_DATA");
+        require(S.agentRegistry.isAgent(owners, msg.sender), "UNAUTHORIZED");
+        for (uint i = 0; i < owners.length; i++) {
+            S.approvedTx[owners[i]][transactionHashes[i]] = true;
+        }
+    }
 }

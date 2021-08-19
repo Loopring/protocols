@@ -13,13 +13,17 @@ import {
 interface SettlementValues {
   fillSA: BN;
   fillBA: BN;
-  feeA: BN;
-  protocolFeeA: BN;
+  feeSA: BN;
+  feeBA: BN;
+  protocolFeeSA: BN;
+  protocolFeeBA: BN;
 
   fillSB: BN;
   fillBB: BN;
-  feeB: BN;
-  protocolFeeB: BN;
+  feeSB: BN;
+  feeBB: BN;
+  protocolFeeSB: BN;
+  protocolFeeBB: BN;
 }
 
 /**
@@ -46,9 +50,9 @@ export class SpotTradeProcessor {
     offset += 4;
 
     // Tokens
-    const tokenA = data.extractUint16(offset);
+    const tokenAS = data.extractUint16(offset);
     offset += 2;
-    const tokenB = data.extractUint16(offset);
+    const tokenBS = data.extractUint16(offset);
     offset += 2;
 
     // Fills
@@ -63,26 +67,38 @@ export class SpotTradeProcessor {
     const orderDataB = data.extractUint8(offset);
     offset += 1;
 
+    // Target tokenIDs
+    let tokenAB = data.extractUint16(offset);
+    offset += 2;
+    let tokenBB = data.extractUint16(offset);
+    offset += 2;
+
+    // Extra fee data
+    let feeBipsHiA = data.extractUint8(offset);
+    offset += 1;
+    let feeBipsHiB = data.extractUint8(offset);
+    offset += 1;
+
     // Further extraction of packed data
     const limitMaskA = orderDataA & 0b10000000;
-    const feeBipsMultiplierFlagA = orderDataA & 0b01000000;
-    const feeBipsA =
-      (orderDataA & 0b00111111) *
-      (feeBipsMultiplierFlagA ? Constants.FEE_MULTIPLIER : 1);
+    const feeBipsA = (feeBipsHiA << 6) | (orderDataA & 0b00111111);
     const fillAmountBorSA = limitMaskA > 0;
 
     const limitMaskB = orderDataB & 0b10000000;
-    const feeBipsMultiplierFlagB = orderDataB & 0b01000000;
-    const feeBipsB =
-      (orderDataB & 0b00111111) *
-      (feeBipsMultiplierFlagB ? Constants.FEE_MULTIPLIER : 1);
+    const feeBipsB = (feeBipsHiB << 6) | (orderDataB & 0b00111111);
     const fillAmountBorSB = limitMaskB > 0;
 
     // Decode the float values
     const fillSA = fromFloat(fFillSA, Constants.Float24Encoding);
     const fillSB = fromFloat(fFillSB, Constants.Float24Encoding);
 
+    // Decode target tokenIDs
+    tokenAB = tokenAB !== 0 ? tokenAB : tokenBS;
+    tokenBB = tokenBB !== 0 ? tokenBB : tokenAS;
+
     const s = this.calculateSettlementValues(
+      tokenAS,
+      tokenBS,
       block.protocolFeeTakerBips,
       block.protocolFeeMakerBips,
       fillSA,
@@ -94,69 +110,107 @@ export class SpotTradeProcessor {
     // Update accountA
     {
       const accountA = state.getAccount(accountIdA);
-      accountA.getBalance(tokenA).balance.isub(s.fillSA);
       accountA
-        .getBalance(tokenB)
+        .getBalance(tokenAS)
+        .balance.isub(s.fillSA)
+        .isub(s.feeSA);
+      accountA
+        .getBalance(tokenAB)
         .balance.iadd(s.fillBA)
-        .isub(s.feeA);
+        .isub(s.feeBA);
 
       // virtual balances
       if (
-        accountA.getBalance(tokenA).weightAMM.gt(new BN(0)) &&
-        accountA.getBalance(tokenB).weightAMM.gt(new BN(0))
+        tokenAS < Constants.NFT_TOKEN_ID_START &&
+        tokenAB < Constants.NFT_TOKEN_ID_START &&
+        accountA.getBalance(tokenAS).weightAMM.gt(new BN(0)) &&
+        accountA.getBalance(tokenAB).weightAMM.gt(new BN(0))
       ) {
-        accountA.getBalance(tokenA).weightAMM.isub(s.fillSA);
-        accountA.getBalance(tokenB).weightAMM.iadd(s.fillBA);
+        accountA.getBalance(tokenAS).weightAMM.isub(s.fillSA);
+        accountA.getBalance(tokenAB).weightAMM.iadd(s.fillBA);
       }
 
-      const tradeHistoryA = accountA.getBalance(tokenA).getStorage(storageIdA);
+      const tradeHistoryA = accountA.getBalance(tokenAS).getStorage(storageIdA);
       if (tradeHistoryA.storageID !== storageIdA) {
         tradeHistoryA.data = new BN(0);
       }
       tradeHistoryA.storageID = storageIdA;
       tradeHistoryA.data.iadd(fillAmountBorSA ? s.fillBA : s.fillSA);
+
+      if (Constants.isNFT(tokenAS)) {
+        const accountB = state.getAccount(accountIdB);
+        const nftData = accountA.getBalance(tokenAS).weightAMM;
+        if (accountA.getBalance(tokenAS).balance.eq(new BN(0))) {
+          accountA.getBalance(tokenAS).weightAMM = new BN(0);
+        }
+        accountB.getBalance(tokenBB).weightAMM = nftData;
+      }
     }
     // Update accountB
     {
       const accountB = state.getAccount(accountIdB);
-      accountB.getBalance(tokenB).balance.isub(s.fillSB);
       accountB
-        .getBalance(tokenA)
+        .getBalance(tokenBS)
+        .balance.isub(s.fillSB)
+        .isub(s.feeSB);
+      accountB
+        .getBalance(tokenBB)
         .balance.iadd(s.fillBB)
-        .isub(s.feeB);
+        .isub(s.feeBB);
 
       // virtual balances
       if (
-        accountB.getBalance(tokenA).weightAMM.gt(new BN(0)) &&
-        accountB.getBalance(tokenB).weightAMM.gt(new BN(0))
+        tokenBS < Constants.NFT_TOKEN_ID_START &&
+        tokenBB < Constants.NFT_TOKEN_ID_START &&
+        accountB.getBalance(tokenBS).weightAMM.gt(new BN(0)) &&
+        accountB.getBalance(tokenBB).weightAMM.gt(new BN(0))
       ) {
-        accountB.getBalance(tokenB).weightAMM.isub(s.fillBA);
-        accountB.getBalance(tokenA).weightAMM.iadd(s.fillSA);
+        accountB.getBalance(tokenBS).weightAMM.isub(s.fillBA);
+        accountB.getBalance(tokenBB).weightAMM.iadd(s.fillSA);
       }
 
-      const tradeHistoryB = accountB.getBalance(tokenB).getStorage(storageIdB);
+      const tradeHistoryB = accountB.getBalance(tokenBS).getStorage(storageIdB);
       if (tradeHistoryB.storageID !== storageIdB) {
         tradeHistoryB.data = new BN(0);
       }
       tradeHistoryB.storageID = storageIdB;
       tradeHistoryB.data.iadd(fillAmountBorSB ? s.fillBB : s.fillSB);
+
+      if (Constants.isNFT(tokenBS)) {
+        const accountA = state.getAccount(accountIdA);
+        const nftData = accountB.getBalance(tokenBS).weightAMM;
+        if (accountB.getBalance(tokenBS).balance.eq(new BN(0))) {
+          accountB.getBalance(tokenBS).weightAMM = new BN(0);
+        }
+        accountA.getBalance(tokenAB).weightAMM = nftData;
+      }
     }
 
     // Update protocol fee
     const protocol = state.getAccount(0);
-    protocol.getBalance(tokenA).balance.iadd(s.protocolFeeB);
-    protocol.getBalance(tokenB).balance.iadd(s.protocolFeeA);
+    protocol
+      .getBalance(tokenAS)
+      .balance.iadd(s.protocolFeeSA)
+      .iadd(s.protocolFeeBB);
+    protocol
+      .getBalance(tokenBS)
+      .balance.iadd(s.protocolFeeBA)
+      .iadd(s.protocolFeeSB);
 
     // Update operator
     const operator = state.getAccount(block.operatorAccountID);
     operator
-      .getBalance(tokenA)
-      .balance.iadd(s.feeB)
-      .isub(s.protocolFeeB);
+      .getBalance(tokenAS)
+      .balance.iadd(s.feeSA)
+      .iadd(s.feeBB)
+      .isub(s.protocolFeeSA)
+      .isub(s.protocolFeeBB);
     operator
-      .getBalance(tokenB)
-      .balance.iadd(s.feeA)
-      .isub(s.protocolFeeA);
+      .getBalance(tokenBS)
+      .balance.iadd(s.feeBA)
+      .iadd(s.feeSB)
+      .isub(s.protocolFeeBA)
+      .isub(s.protocolFeeSB);
 
     // Create struct
     const trade: SpotTrade = {
@@ -167,24 +221,28 @@ export class SpotTradeProcessor {
       accountIdA,
       orderIdA: storageIdA,
       fillAmountBorSA,
-      tokenA,
+      tokenAS,
+      tokenAB,
       fillSA: s.fillSA,
-      feeA: s.feeA,
-      protocolFeeA: s.protocolFeeA,
+      feeA: s.feeBA,
+      protocolFeeA: s.protocolFeeBA,
 
       accountIdB,
       orderIdB: storageIdB,
       fillAmountBorSB,
-      tokenB,
+      tokenBS,
+      tokenBB,
       fillSB: s.fillSB,
-      feeB: s.feeB,
-      protocolFeeB: s.protocolFeeB
+      feeB: s.feeBB,
+      protocolFeeB: s.protocolFeeBB
     };
 
     return trade;
   }
 
   private static calculateSettlementValues(
+    tokenAS: number,
+    tokenBS: number,
     protocolFeeTakerBips: number,
     protocolFeeMakerBips: number,
     fillSA: BN,
@@ -194,28 +252,63 @@ export class SpotTradeProcessor {
   ) {
     const fillBA = fillSB;
     const fillBB = fillSA;
-    const [feeA, protocolFeeA] = this.calculateFees(
-      fillBA,
-      protocolFeeTakerBips,
-      feeBipsA
-    );
 
-    const [feeB, protocolFeeB] = this.calculateFees(
+    const feeBipsSA = !Constants.isNFT(tokenBS) ? 0 : feeBipsA;
+    const feeBipsBA = !Constants.isNFT(tokenBS) ? feeBipsA : 0;
+    const feeBipsSB = !Constants.isNFT(tokenAS) ? 0 : feeBipsB;
+    const feeBipsBB = !Constants.isNFT(tokenAS) ? feeBipsB : 0;
+
+    const allNFT = Constants.isNFT(tokenAS) && Constants.isNFT(tokenBS);
+    const _protocolTakerFeeBips = allNFT ? 0 : protocolFeeTakerBips;
+    const _protocolMakerFeeBips = allNFT ? 0 : protocolFeeMakerBips;
+    const protocolFeeBipsSA = !Constants.isNFT(tokenBS)
+      ? 0
+      : _protocolTakerFeeBips;
+    const protocolFeeBipsBA = !Constants.isNFT(tokenBS)
+      ? _protocolTakerFeeBips
+      : 0;
+    const protocolFeeBipsSB = !Constants.isNFT(tokenAS)
+      ? 0
+      : _protocolMakerFeeBips;
+    const protocolFeeBipsBB = !Constants.isNFT(tokenAS)
+      ? _protocolMakerFeeBips
+      : 0;
+
+    const [feeSA, protocolFeeSA] = this.calculateFees(
+      fillSA,
+      protocolFeeBipsSA,
+      feeBipsSA
+    );
+    const [feeBA, protocolFeeBA] = this.calculateFees(
+      fillBA,
+      protocolFeeBipsBA,
+      feeBipsBA
+    );
+    const [feeSB, protocolFeeSB] = this.calculateFees(
+      fillSB,
+      protocolFeeBipsSB,
+      feeBipsSB
+    );
+    const [feeBB, protocolFeeBB] = this.calculateFees(
       fillBB,
-      protocolFeeMakerBips,
-      feeBipsB
+      protocolFeeBipsBB,
+      feeBipsBB
     );
 
     const settlementValues: SettlementValues = {
       fillSA,
       fillBA,
-      feeA,
-      protocolFeeA,
+      feeSA,
+      feeBA,
+      protocolFeeSA,
+      protocolFeeBA,
 
       fillSB,
       fillBB,
-      feeB,
-      protocolFeeB
+      feeSB,
+      feeBB,
+      protocolFeeSB,
+      protocolFeeBB
     };
     return settlementValues;
   }

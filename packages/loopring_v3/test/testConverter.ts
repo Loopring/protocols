@@ -307,6 +307,7 @@ contract("LoopringConverter", (accounts: string[]) => {
   before(async () => {
     ctx = new ExchangeTestUtil();
     await ctx.initialize(accounts);
+    await ctx.setProtocolFees(0, 0);
 
     broker = ctx.testContext.orderOwners[11];
     ownerA = ctx.testContext.orderOwners[12];

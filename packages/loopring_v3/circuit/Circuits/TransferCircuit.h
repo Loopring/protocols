@@ -54,9 +54,11 @@ class TransferCircuit : public BaseTransactionCircuit
     DualVariableGadget payee_toAccountID;
     DualVariableGadget maxFee;
     DualVariableGadget putAddressesInDA;
+    DualVariableGadget toTokenID;
 
     // Check if the inputs are valid
     EqualGadget isTransferTx;
+    IsNftGadget isNft;
     IsNonZero isNonZero_payer_to;
     IfThenRequireEqualGadget ifrequire_payer_to_eq_to;
     IfThenRequireEqualGadget ifrequire_payer_toAccountID_eq_payee_toAccountID;
@@ -65,6 +67,7 @@ class TransferCircuit : public BaseTransactionCircuit
     IfThenRequireNotEqualGadget ifrequire_NotZero_to;
     RequireLtGadget requireValidUntil;
     RequireLeqGadget requireValidFee;
+    IfThenRequireNotEqualGadget requireValidAmount;
 
     // Fill in standard dual author key if none is given
     IsNonZero isNonZero_dualAuthorX;
@@ -85,6 +88,7 @@ class TransferCircuit : public BaseTransactionCircuit
 
     // Validation
     OwnerValidGadget toAccountValid;
+    RequireNotNftGadget requireFeeTokenNotNFT;
 
     // Type
     IsNonZero isConditional;
@@ -106,6 +110,9 @@ class TransferCircuit : public BaseTransactionCircuit
     TransferGadget feePayment;
     // Transfer from From to To
     TransferGadget transferPayment;
+
+    // Token data
+    TokenTransferDataGadget tokenTransferDataGadget;
 
     // Nonce
     NonceGadget nonce;
@@ -137,6 +144,7 @@ class TransferCircuit : public BaseTransactionCircuit
           payee_toAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".payee_toAccountID")),
           maxFee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".maxFee")),
           putAddressesInDA(pb, 1, FMT(prefix, ".putAddressesInDA")),
+          toTokenID(pb, NUM_BITS_TOKEN, FMT(prefix, ".toTokenID")),
 
           // Check if the inputs are valid
           isTransferTx( //
@@ -144,6 +152,7 @@ class TransferCircuit : public BaseTransactionCircuit
             state.type,
             state.constants.txTypeTransfer,
             FMT(prefix, ".isTransferTx")),
+          isNft(pb, state.constants, tokenID.packed, FMT(prefix, ".isNft")),
           isNonZero_payer_to( //
             pb,
             payer_to.packed,
@@ -180,6 +189,7 @@ class TransferCircuit : public BaseTransactionCircuit
             NUM_BITS_TIMESTAMP,
             FMT(prefix, ".requireValidUntil")),
           requireValidFee(pb, fee.packed, maxFee.packed, NUM_BITS_AMOUNT, FMT(prefix, ".requireValidFee")),
+          requireValidAmount(pb, isNft.isNFT(), amount.packed, state.constants._0, FMT(prefix, ".requireValidAmount")),
 
           // Fill in standard dual author key if none is given
           isNonZero_dualAuthorX(pb, dualAuthorX, FMT(prefix, ".isNonZero_dualAuthorX")),
@@ -242,7 +252,14 @@ class TransferCircuit : public BaseTransactionCircuit
           balanceA_O(pb, state.oper.balanceA, FMT(prefix, ".balanceA_O")),
 
           // Validation
-          toAccountValid(pb, state.constants, state.accountB.account.owner, to.packed, FMT(prefix, ".ownerValid")),
+          toAccountValid(
+            pb,
+            state.constants,
+            state.accountB.account.owner,
+            to.packed,
+            state.constants._1,
+            FMT(prefix, ".ownerValid")),
+          requireFeeTokenNotNFT(pb, state.constants, feeTokenID.packed, FMT(prefix, ".requireFeeTokenNotNFT")),
 
           // Type
           isConditional(pb, type.packed, ".isConditional"),
@@ -293,6 +310,18 @@ class TransferCircuit : public BaseTransactionCircuit
           // Transfer from From to To
           transferPayment(pb, balanceS_A, balanceB_B, fAmount.value(), FMT(prefix, ".transferPayment")),
 
+          // Token data
+          tokenTransferDataGadget(
+            pb,
+            state.constants,
+            tokenID.packed,
+            state.accountA.balanceS.weightAMM,
+            toTokenID.packed,
+            state.accountB.balanceB.weightAMM,
+            balanceS_A.balance(),
+            isTransferTx.result(),
+            FMT(prefix, ".tokenTransferDataGadget")),
+
           // Nonce
           nonce(pb, state.constants, state.accountA.storage, storageID, isTransferTx.result(), FMT(prefix, ".nonce")),
           // Increase the number of conditional transactions (if conditional)
@@ -305,12 +334,15 @@ class TransferCircuit : public BaseTransactionCircuit
         // Update the From account
         setArrayOutput(TXV_ACCOUNT_A_ADDRESS, fromAccountID.bits);
 
-        // Set the 2 tokens used
+        // Set the 2 tokens used in accountA
         setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
-        setArrayOutput(TXV_BALANCE_B_S_ADDRESS, feeTokenID.bits);
+        setArrayOutput(TXV_BALANCE_A_B_ADDRESS, feeTokenID.bits);
+        // Set the destination token used in accountB
+        setArrayOutput(TXV_BALANCE_B_B_ADDRESS, toTokenID.bits);
 
         // Update the From balances (transfer + fee payment)
         setOutput(TXV_BALANCE_A_S_BALANCE, balanceS_A.balance());
+        setOutput(TXV_BALANCE_A_S_WEIGHTAMM, tokenTransferDataGadget.fromNftData());
         setOutput(TXV_BALANCE_A_B_BALANCE, balanceB_A.balance());
 
         // Update the To account
@@ -319,6 +351,7 @@ class TransferCircuit : public BaseTransactionCircuit
 
         // Update the To balance (transfer)
         setOutput(TXV_BALANCE_B_B_BALANCE, balanceB_B.balance());
+        setOutput(TXV_BALANCE_B_B_WEIGHTAMM, tokenTransferDataGadget.toNftData());
 
         // Update the operator balance for the fee payment
         setOutput(TXV_BALANCE_O_A_BALANCE, balanceA_O.balance());
@@ -361,9 +394,11 @@ class TransferCircuit : public BaseTransactionCircuit
         payee_toAccountID.generate_r1cs_witness(pb, transfer.payeeToAccountID);
         maxFee.generate_r1cs_witness(pb, transfer.maxFee);
         putAddressesInDA.generate_r1cs_witness(pb, transfer.putAddressesInDA);
+        toTokenID.generate_r1cs_witness(pb, transfer.toTokenID);
 
         // Check if the inputs are valid
         isTransferTx.generate_r1cs_witness();
+        isNft.generate_r1cs_witness();
         isNonZero_payer_to.generate_r1cs_witness();
         ifrequire_payer_to_eq_to.generate_r1cs_witness();
         ifrequire_payer_toAccountID_eq_payee_toAccountID.generate_r1cs_witness();
@@ -372,6 +407,7 @@ class TransferCircuit : public BaseTransactionCircuit
         ifrequire_NotZero_to.generate_r1cs_witness();
         requireValidUntil.generate_r1cs_witness();
         requireValidFee.generate_r1cs_witness();
+        requireValidAmount.generate_r1cs_witness();
 
         // Fill in standard dual author key if none is given
         isNonZero_dualAuthorX.generate_r1cs_witness();
@@ -392,6 +428,7 @@ class TransferCircuit : public BaseTransactionCircuit
 
         // Validation
         toAccountValid.generate_r1cs_witness();
+        requireFeeTokenNotNFT.generate_r1cs_witness();
 
         // Type
         isConditional.generate_r1cs_witness();
@@ -413,6 +450,9 @@ class TransferCircuit : public BaseTransactionCircuit
         feePayment.generate_r1cs_witness();
         // Transfer from From to To
         transferPayment.generate_r1cs_witness();
+
+        // Token data
+        tokenTransferDataGadget.generate_r1cs_witness();
 
         // Nonce
         nonce.generate_r1cs_witness();
@@ -439,9 +479,11 @@ class TransferCircuit : public BaseTransactionCircuit
         payee_toAccountID.generate_r1cs_constraints(true);
         maxFee.generate_r1cs_constraints(true);
         putAddressesInDA.generate_r1cs_constraints(true);
+        toTokenID.generate_r1cs_constraints(true);
 
         // Check if the inputs are valid
         isTransferTx.generate_r1cs_constraints();
+        isNft.generate_r1cs_constraints();
         isNonZero_payer_to.generate_r1cs_constraints();
         ifrequire_payer_to_eq_to.generate_r1cs_constraints();
         ifrequire_payer_toAccountID_eq_payee_toAccountID.generate_r1cs_constraints();
@@ -450,6 +492,7 @@ class TransferCircuit : public BaseTransactionCircuit
         ifrequire_NotZero_to.generate_r1cs_constraints();
         requireValidUntil.generate_r1cs_constraints();
         requireValidFee.generate_r1cs_constraints();
+        requireValidAmount.generate_r1cs_constraints();
 
         // Fill in standard dual author key if none is given
         isNonZero_dualAuthorX.generate_r1cs_constraints();
@@ -470,6 +513,7 @@ class TransferCircuit : public BaseTransactionCircuit
 
         // Validation
         toAccountValid.generate_r1cs_constraints();
+        requireFeeTokenNotNFT.generate_r1cs_constraints();
 
         // Type
         isConditional.generate_r1cs_constraints();
@@ -492,6 +536,9 @@ class TransferCircuit : public BaseTransactionCircuit
         // Transfer from From to To
         transferPayment.generate_r1cs_constraints();
 
+        // Token data
+        tokenTransferDataGadget.generate_r1cs_constraints();
+
         // Nonce
         nonce.generate_r1cs_constraints();
         // Increase the number of conditional transactions (if conditional)
@@ -510,7 +557,8 @@ class TransferCircuit : public BaseTransactionCircuit
            fFee.bits(),
            storageID.bits,
            da_To.result(),
-           da_From.result()});
+           da_From.result(),
+           tokenTransferDataGadget.toTokenDA()});
     }
 };
 

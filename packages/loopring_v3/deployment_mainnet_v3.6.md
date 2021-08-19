@@ -54,7 +54,6 @@
 
 ### UPGRADE-2021-03-25
 
-
 - [LoopringIOExchangeOwner: 0x153CdDD727e407Cb951f728F24bEB9A5FaaA8512](https://etherscan.io/address/0x153CdDD727e407Cb951f728F24bEB9A5FaaA8512)
 - ~~ExchangeV3(implementation): 0xCFba78aecfBcc0B4B748fA58c530D4675BB5D32F~~
 - ExchangeV3(implementation): 0x4fb117dcd6d09abf1a99b502d488a99f5a17e7ec
@@ -1887,6 +1886,7 @@
   ```
 
   104. DPR-ETH: 0x3ec139b45558d1db73b889f887624ef117d28e3b
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1904,6 +1904,7 @@
   ```
 
   105. FLX-ETH: 0x1cb97a1fdcbc60f112b5a58896906bdb870bc438
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1919,8 +1920,9 @@
     tokenSymbol: 'LP-FLX-ETH'
   }
   ```
-  
+
   107. RICE-USDT: 0xd0406913f2f58d1696eb9c3677e6713dd528f8cd
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1938,6 +1940,7 @@
   ```
 
   108. LRC-USDC: 0x194db39e4c99f6c8dd81b4647465f7599f3c215a
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1953,8 +1956,9 @@
     tokenSymbol: 'LP-LRC-USDC'
   }
   ```
-  
+
   109. RENDOGE-ETH: 0xc50138e6b5c85622e4b8ab9003eb0bd35dcf6f78
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1970,7 +1974,7 @@
     tokenSymbol: 'LP-RENDOGE-ETH'
   }
   ```
-  
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -1988,6 +1992,7 @@
   ```
 
   111. IDLE-ETH: 0x5359f0fd5ef2a6f0205436cc19eec1d6fc521b5c
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -2005,6 +2010,7 @@
   ```
 
   112. DEP-ETH: 0xbDC384dB410E56F4877A086F5b68DeBD673a7c48
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -2022,6 +2028,7 @@
   ```
 
   113. BKT-USDT: 0xBeC0c576EF02cB6341725607AB5D941e32B44437
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -2037,8 +2044,9 @@
     tokenSymbol: 'LP-BKT-USDT'
   }
   ```
-  
+
   114. SENT-USDC: 0x8195be4E48d3a2F80692fe1dBA9b23b8050fB1f9
+
   ```
   {
     sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
@@ -2054,6 +2062,7 @@
     tokenSymbol: 'LP-SENT-USDC'
   }
   ```
+
   ***
 
 - Registered tokens:

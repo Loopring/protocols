@@ -60,7 +60,8 @@ contract AmplifiedAmmController is IAmmController, Claimable
             return true;
         }
 
-        if (amplificationFactors[pool] != 0) {
+        uint amplificationFactor = getAmplificationFactor(pool);
+        if (amplificationFactor != AMPLIFICATION_FACTOR_BASE) {
             return false;
         }
 

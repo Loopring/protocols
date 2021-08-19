@@ -3,6 +3,7 @@
 // libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
 
 const fs = require("fs");
+const ExchangeMode = artifacts.require("ExchangeMode");
 const ExchangeAdmins = artifacts.require("ExchangeAdmins");
 const ExchangeBalances = artifacts.require("ExchangeBalances");
 const ExchangeBlocks = artifacts.require("ExchangeBlocks");
@@ -10,6 +11,7 @@ const ExchangeDeposits = artifacts.require("ExchangeDeposits");
 const ExchangeGenesis = artifacts.require("ExchangeGenesis");
 const ExchangeTokens = artifacts.require("ExchangeTokens");
 const ExchangeWithdrawals = artifacts.require("ExchangeWithdrawals");
+const ExchangeSignatures = artifacts.require("ExchangeSignatures");
 const Cloneable = artifacts.require("./thirdparty/Cloneable.sol");
 const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 const LoopringV3 = artifacts.require("LoopringV3");
@@ -43,6 +45,7 @@ module.exports = function(deployer, network, accounts) {
   }
 
   deployer.then(async () => {
+    await deployer.link(ExchangeMode, ExchangeV3);
     await deployer.link(ExchangeBalances, ExchangeV3);
     await deployer.link(ExchangeAdmins, ExchangeV3);
     await deployer.link(ExchangeBlocks, ExchangeV3);
@@ -50,6 +53,7 @@ module.exports = function(deployer, network, accounts) {
     await deployer.link(ExchangeGenesis, ExchangeV3);
     await deployer.link(ExchangeDeposits, ExchangeV3);
     await deployer.link(ExchangeWithdrawals, ExchangeV3);
+    await deployer.link(ExchangeSignatures, ExchangeV3);
 
     await deployer.deploy(ExchangeV3, { gas: 6700000 });
     await deployer.deploy(DefaultDepositContract, { gas: 6700000 });

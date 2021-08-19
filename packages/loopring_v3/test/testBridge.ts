@@ -281,7 +281,7 @@ export class Bridge {
       tokens: []
     };
 
-    const blockCallback = this.ctx.addBlockCallback(this.address);
+    const blockCallback = this.ctx.addBlockCallback(this.address, false);
 
     for (const event of transferEvents) {
       const amounts: string[] = [];
@@ -1354,9 +1354,7 @@ contract("Bridge", (accounts: string[]) => {
         "BATCH_DEPOSITS_STILL_YOUNG"
       );
 
-      const MAX_AGE_PENDING_DEPOSITS = (
-        await bridge.contract.MAX_AGE_PENDING_DEPOSITS()
-      ).toNumber();
+      const MAX_AGE_PENDING_DEPOSITS = (await bridge.contract.MAX_AGE_PENDING_DEPOSITS()).toNumber();
       await ctx.advanceBlockTimestamp(MAX_AGE_PENDING_DEPOSITS + 1);
 
       await withdrawFromPendingBatchDepositsChecked(bridge, 0, transfers, [

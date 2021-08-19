@@ -54,9 +54,18 @@ abstract contract IExchangeV3 is Claimable
         uint96  amount
     );
 
+    event NFTDepositRequested(
+        address from,
+        address to,
+        uint8   nftType,
+        address token,
+        uint256 nftID,
+        uint96  amount
+    );
+
     event ForcedWithdrawalRequested(
         address owner,
-        address token,
+        uint16  tokenID,
         uint32  accountID
     );
 
@@ -73,6 +82,26 @@ abstract contract IExchangeV3 is Claimable
         address from,
         address to,
         address token,
+        uint    amount
+    );
+
+    event NftWithdrawalCompleted(
+        uint8   category,
+        address from,
+        address to,
+        uint16  tokenID,
+        address token,
+        uint256 nftID,
+        uint    amount
+    );
+
+    event NftWithdrawalFailed(
+        uint8   category,
+        address from,
+        address to,
+        uint16  tokenID,
+        address token,
+        uint256 nftID,
         uint    amount
     );
 
@@ -300,25 +329,48 @@ abstract contract IExchangeV3 is Claimable
     ///
     ///      This function is only callable by an agent of 'from'.
     ///
-    ///      A fee to the owner is paid in ETH to process the deposit.
-    ///      The operator is not forced to do the deposit and the user can send
-    ///      any fee amount.
+    ///      The operator is not forced to do the deposit.
     ///
     /// @param from The address that deposits the funds to the exchange
     /// @param to The account owner's address receiving the funds
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
-    /// @param auxiliaryData Optional extra data used by the deposit contract
+    /// @param extraData Optional extra data used by the deposit contract
     function deposit(
         address from,
         address to,
         address tokenAddress,
         uint96  amount,
-        bytes   calldata auxiliaryData
+        bytes   calldata extraData
         )
         external
         virtual
         payable;
+
+    /// @dev Deposits an NFT to the specified account.
+    ///
+    ///      This function is only callable by an agent of 'from'.
+    ///
+    ///      The operator is not forced to do the deposit.
+    ///
+    /// @param from The address that deposits the funds to the exchange
+    /// @param to The account owner's address receiving the funds
+    /// @param nftType The type of NFT contract address (ERC721/ERC1155/...)
+    /// @param tokenAddress The address of the token
+    /// @param nftID The token type 'id`.
+    /// @param amount The amount of tokens to deposit.
+    /// @param extraData Optional extra data used by the deposit contract.
+    function depositNFT(
+        address              from,
+        address              to,
+        ExchangeData.NftType nftType,
+        address              tokenAddress,
+        uint256              nftID,
+        uint96               amount,
+        bytes    calldata    extraData
+        )
+        external
+        virtual;
 
     /// @dev Gets the amount of tokens that may be added to the owner's account.
     /// @param owner The destination address for the amount deposited.
@@ -328,7 +380,24 @@ abstract contract IExchangeV3 is Claimable
         address owner,
         address tokenAddress
         )
-        external
+        public
+        virtual
+        view
+        returns (uint96);
+
+    /// @dev Gets the amount of tokens that may be added to the owner's account.
+    /// @param owner The destination address for the amount deposited.
+    /// @param tokenAddress The address of the token
+    /// @param nftType The type of NFT contract address (ERC721/ERC1155/...)
+    /// @param nftID The token type 'id`.
+    /// @return The amount of tokens pending.
+    function getPendingNFTDepositAmount(
+        address               owner,
+        address               tokenAddress,
+        ExchangeData.NftType  nftType,
+        uint256               nftID
+        )
+        public
         virtual
         view
         returns (uint96);
@@ -381,6 +450,31 @@ abstract contract IExchangeV3 is Claimable
         returns (uint96);
 
     // -- Withdrawals --
+
+    /// @dev Submits an onchain request to force withdraw Ether, ERC20 and NFT tokens.
+    ///      This request always withdraws the full balance.
+    ///
+    ///      This function is only callable by an agent of the account.
+    ///
+    ///      The total fee in ETH that the user needs to pay is 'withdrawalFee'.
+    ///      If the user sends too much ETH the surplus is sent back immediately.
+    ///
+    ///      Note that after such an operation, it will take the owner some
+    ///      time (no more than MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE) to process the request
+    ///      and create the deposit to the offchain account.
+    ///
+    /// @param owner The expected owner of the account
+    /// @param tokenID The tokenID to withdraw from
+    /// @param accountID The address the account in the Merkle tree.
+    function forceWithdrawByTokenID(
+        address owner,
+        uint16  tokenID,
+        uint32  accountID
+        )
+        external
+        virtual
+        payable;
+
     /// @dev Submits an onchain request to force withdraw Ether or ERC20 tokens.
     ///      This request always withdraws the full balance.
     ///
@@ -491,6 +585,25 @@ abstract contract IExchangeV3 is Claimable
         external
         virtual;
 
+    /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
+    ///      it was never processed by the owner within the maximum time allowed.
+    ///
+    ///      Can be called by anyone. The deposited tokens will be sent back to
+    ///      the owner of the account they were deposited in.
+    ///
+    /// @param owner The address of the account the withdrawal was done for.
+    /// @param token The token address
+    /// @param nftType The type of NFT contract address (ERC721/ERC1155/...)
+    /// @param nftID The token type 'id`.
+    function withdrawFromNFTDepositRequest(
+        address              owner,
+        address              token,
+        ExchangeData.NftType nftType,
+        uint256              nftID
+        )
+        external
+        virtual;
+
     /// @dev Allows withdrawing funds after a withdrawal request (either onchain
     ///      or offchain) was submitted in a block by the operator.
     ///
@@ -513,6 +626,34 @@ abstract contract IExchangeV3 is Claimable
         external
         virtual;
 
+    /// @dev Allows withdrawing funds after an NFT withdrawal request (either onchain
+    ///      or offchain) was submitted in a block by the operator.
+    ///
+    ///      Can be called by anyone. The withdrawn tokens will be sent to
+    ///      the owner of the account they were withdrawn out.
+    ///
+    ///      Normally it is should not be needed for users to call this manually.
+    ///      Funds from withdrawal requests will be sent to the account owner
+    ///      immediately by the owner when the block is submitted.
+    ///      The user will however need to call this manually if the transfer failed.
+    ///
+    ///      All input arrays must have the same size.
+    ///
+    /// @param  owners The addresses of the accounts the withdrawal was done for.
+    /// @param  minters The addresses of the minters.
+    /// @param  nftTypes The NFT token addresses types
+    /// @param  tokens The token addresses
+    /// @param  nftIDs The token ids
+    function withdrawFromApprovedWithdrawalsNFT(
+        address[]              memory  owners,
+        address[]              memory  minters,
+        ExchangeData.NftType[] memory  nftTypes,
+        address[]              memory  tokens,
+        uint256[]              memory  nftIDs
+        )
+        external
+        virtual;
+
     /// @dev Gets the amount that can be withdrawn immediately with `withdrawFromApprovedWithdrawals`.
     /// @param  owner The address of the account the withdrawal was done for.
     /// @param  token The token address
@@ -526,16 +667,35 @@ abstract contract IExchangeV3 is Claimable
         view
         returns (uint);
 
+    /// @dev Gets the amount that can be withdrawn immediately with `withdrawFromApprovedWithdrawalsNFT`.
+    /// @param  owner The address of the account the withdrawal was done for.
+    /// @param  token The token address
+    /// @param  nftType The NFT token address types
+    /// @param  nftID The token id
+    /// @param  minter The NFT minter
+    /// @return The amount withdrawable
+    function getAmountWithdrawableNFT(
+        address              owner,
+        address              token,
+        ExchangeData.NftType nftType,
+        uint256              nftID,
+        address              minter
+        )
+        external
+        virtual
+        view
+        returns (uint);
+
     /// @dev Notifies the exchange that the owner did not process a forced request.
     ///      If this is indeed the case, the exchange will enter withdrawal mode.
     ///
     ///      Can be called by anyone.
     ///
     /// @param  accountID The accountID the forced request was made for
-    /// @param  token The token address of the the forced request
+    /// @param  tokenID The tokenID of the the forced request
     function notifyForcedRequestTooOld(
-        uint32  accountID,
-        address token
+        uint32 accountID,
+        uint16 tokenID
         )
         external
         virtual;

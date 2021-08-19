@@ -781,20 +781,6 @@ TEST_CASE("OrderMatching", "[OrderMatchingGadget]")
           expectFillS_B);
     }
 
-    SECTION("orderA.tokenS != orderB.tokenB")
-    {
-        OrderState orderStateA_mod = orderStateA;
-        orderStateA_mod.order.tokenS += 1;
-        orderMatchingChecked(exchange, timestamp, orderStateA_mod, orderStateB, ExpectedSatisfied::NotSatisfied);
-    }
-
-    SECTION("orderA.tokenB != orderB.tokenS")
-    {
-        OrderState orderStateB_mod = orderStateB;
-        orderStateB_mod.order.tokenS += 1;
-        orderMatchingChecked(exchange, timestamp, orderStateA, orderStateB_mod, ExpectedSatisfied::NotSatisfied);
-    }
-
     SECTION("timestamp too late")
     {
         FieldT timestamp_mod = B_order.validUntil + 1;

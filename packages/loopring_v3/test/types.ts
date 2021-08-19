@@ -6,7 +6,8 @@ export enum AuthMethod {
   EDDSA,
   ECDSA,
   APPROVE,
-  FORCE
+  FORCE,
+  DEPOSIT
 }
 
 export interface OrderInfo {
@@ -15,6 +16,8 @@ export interface OrderInfo {
   tokenB?: string;
   amountS: BN;
   amountB: BN;
+
+  nftDataB?: string;
 
   exchange?: string;
   accountID?: number;
@@ -115,6 +118,8 @@ export class Transfer {
   tokenID: number;
   amount: BN;
 
+  toTokenID: number;
+
   feeTokenID: number;
   fee: BN;
   maxFee: BN;
@@ -207,6 +212,67 @@ export interface SignatureVerification {
   signature?: Signature;
 }
 
+export class NftMint {
+  txType?: "NftMint";
+  exchange: string;
+
+  type: number;
+
+  minterAccountID: number;
+  tokenAccountID: number;
+
+  amount: BN;
+  nftID: string;
+  nftIDHi?: string;
+  nftIDLo?: string;
+
+  feeTokenID?: number;
+  fee?: BN;
+  maxFee?: BN;
+  originalMaxFee?: BN;
+
+  storageID?: number;
+  validUntil?: number;
+
+  toAccountID: number;
+  toTokenID: number;
+
+  minter: string;
+  to?: string;
+
+  nftType: number;
+  tokenAddress: string;
+
+  nftData?: string;
+
+  creatorFeeBips: number;
+
+  signature?: Signature;
+  onchainSignature?: any;
+}
+
+export class NftData {
+  txType?: "NftData";
+  exchange: string;
+
+  type: number;
+
+  accountID: number;
+  tokenID: number;
+
+  minterAccountID: number;
+  minter: string;
+
+  nftType: number;
+  tokenAddress: string;
+
+  nftID: string;
+  nftIDHi?: string;
+  nftIDLo?: string;
+
+  creatorFeeBips: number;
+}
+
 // Blocks
 
 export interface TxBlock {
@@ -227,6 +293,7 @@ export interface TransactionReceiverCallback {
   txIdx: number;
   numTxs: number;
   auxiliaryData: any;
+  beforeBlockSubmission: boolean;
   tx?: any;
 }
 

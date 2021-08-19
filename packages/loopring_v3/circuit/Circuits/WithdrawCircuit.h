@@ -52,6 +52,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
     // Validate
     RequireLtGadget requireValidUntil;
     RequireLeqGadget requireValidFee;
+    RequireNotNftGadget requireFeeTokenNotNFT;
 
     // Type
     IsNonZero isConditional;
@@ -94,9 +95,15 @@ class WithdrawCircuit : public BaseTransactionCircuit
     TernaryGadget storageDataValue;
     TernaryGadget storageIdValue;
 
-    // Disable AMM for the token when doing a forced withdrawal
+    // Non-NFT: Disable AMM for the token when doing a forced withdrawal
     NotGadget isNotProtocolFeeWithdrawal;
     AndGadget doUpdateTokenWeight;
+    TernaryGadget newTokenWeightNonNFT;
+    // NFT: set NFT data to zero if balance after withdrawal is 0
+    IsNonZero isBalanceA_afterNonZero;
+    TernaryGadget newTokenWeightNFT;
+    // Combine results
+    IsNftGadget isNFT;
     TernaryGadget newTokenWeight;
 
     // Increase the number of conditional transactions
@@ -162,6 +169,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
             NUM_BITS_TIMESTAMP,
             FMT(prefix, ".requireValidUntil")),
           requireValidFee(pb, fee.packed, maxFee.packed, NUM_BITS_AMOUNT, FMT(prefix, ".requireValidFee")),
+          requireFeeTokenNotNFT(pb, state.constants, feeTokenID.packed, FMT(prefix, ".requireFeeTokenNotNFT")),
 
           // Type
           isConditional(pb, type.packed, FMT(prefix, ".isConditional")),
@@ -247,7 +255,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
             storageID.packed,
             FMT(prefix, ".storageIdValue")),
 
-          // Disable AMM for the token when doing a forced withdrawal
+          // Non-NFT: Disable AMM for the token when doing a forced withdrawal
           // (but not if it's a protocol fee withdrawal)
           isNotProtocolFeeWithdrawal( //
             pb,
@@ -257,12 +265,28 @@ class WithdrawCircuit : public BaseTransactionCircuit
             pb,
             {isNotProtocolFeeWithdrawal.result(), validFullWithdrawalType.result()},
             FMT(prefix, ".doUpdateTokenWeight")),
-          newTokenWeight(
+          newTokenWeightNonNFT(
             pb,
             doUpdateTokenWeight.result(),
             state.constants._0,
             state.accountA.balanceS.weightAMM,
-            FMT(prefix, ".newTokenWeightAMM")),
+            FMT(prefix, ".newTokenWeightNonNFT")),
+          // NFT: set NFT data to zero if balance after withdrawal is 0
+          isBalanceA_afterNonZero(pb, balanceA_after.result(), FMT(prefix, ".isBalanceA_afterNonZero")),
+          newTokenWeightNFT(
+            pb,
+            isBalanceA_afterNonZero.result(),
+            state.accountA.balanceS.weightAMM,
+            state.constants._0,
+            FMT(prefix, ".newTokenWeightNonNFT")),
+          // Combine results
+          isNFT(pb, state.constants, tokenID.packed, FMT(prefix, ".isNFT")),
+          newTokenWeight(
+            pb,
+            isNFT.isNFT(),
+            newTokenWeightNFT.result(),
+            newTokenWeightNonNFT.result(),
+            FMT(prefix, ".newTokenWeight")),
 
           // Increase the number of conditional transactions
           numConditionalTransactionsAfter(
@@ -278,11 +302,12 @@ class WithdrawCircuit : public BaseTransactionCircuit
         setArrayOutput(TXV_BALANCE_A_S_ADDRESS, tokenID.bits);
         setOutput(TXV_BALANCE_A_S_BALANCE, balanceA_after.result());
         setOutput(TXV_BALANCE_A_S_WEIGHTAMM, newTokenWeight.result());
-        setArrayOutput(TXV_BALANCE_B_S_ADDRESS, feeTokenID.bits);
+        setArrayOutput(TXV_BALANCE_A_B_ADDRESS, feeTokenID.bits);
         setOutput(TXV_BALANCE_A_B_BALANCE, balanceB_A.balance());
 
         // Update the protocol fee pool balance when withdrawing from the protocol
         // pool
+        setArrayOutput(TXV_BALANCE_B_B_ADDRESS, tokenID.bits);
         setOutput(TXV_BALANCE_P_B_BALANCE, balanceP_after.result());
 
         // Update the operator balance for the fee payment
@@ -328,6 +353,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
         // Validate
         requireValidUntil.generate_r1cs_witness();
         requireValidFee.generate_r1cs_witness();
+        requireFeeTokenNotNFT.generate_r1cs_witness();
 
         // Type
         isConditional.generate_r1cs_witness();
@@ -370,9 +396,15 @@ class WithdrawCircuit : public BaseTransactionCircuit
         storageDataValue.generate_r1cs_witness();
         storageIdValue.generate_r1cs_witness();
 
-        // Disable AMM for the token when doing a forced withdrawal
+        // Non-NFT: Disable AMM for the token when doing a forced withdrawal
         isNotProtocolFeeWithdrawal.generate_r1cs_witness();
         doUpdateTokenWeight.generate_r1cs_witness();
+        newTokenWeightNonNFT.generate_r1cs_witness();
+        // NFT: set NFT data to zero if balance after withdrawal is 0
+        isBalanceA_afterNonZero.generate_r1cs_witness();
+        newTokenWeightNFT.generate_r1cs_witness();
+        // Combine results
+        isNFT.generate_r1cs_witness();
         newTokenWeight.generate_r1cs_witness();
 
         // Increase the number of conditional transactions
@@ -405,6 +437,7 @@ class WithdrawCircuit : public BaseTransactionCircuit
         // Validate
         requireValidUntil.generate_r1cs_constraints();
         requireValidFee.generate_r1cs_constraints();
+        requireFeeTokenNotNFT.generate_r1cs_constraints();
 
         // Type
         isConditional.generate_r1cs_constraints();
@@ -447,9 +480,15 @@ class WithdrawCircuit : public BaseTransactionCircuit
         storageDataValue.generate_r1cs_constraints();
         storageIdValue.generate_r1cs_constraints();
 
-        // Disable AMM for the token when doing a forced withdrawal
+        // Non-NFT: Disable AMM for the token when doing a forced withdrawal
         isNotProtocolFeeWithdrawal.generate_r1cs_constraints();
         doUpdateTokenWeight.generate_r1cs_constraints();
+        newTokenWeightNonNFT.generate_r1cs_constraints();
+        // NFT: set NFT data to zero if balance after withdrawal is 0
+        isBalanceA_afterNonZero.generate_r1cs_constraints();
+        newTokenWeightNFT.generate_r1cs_constraints();
+        // Combine results
+        isNFT.generate_r1cs_constraints();
         newTokenWeight.generate_r1cs_constraints();
 
         // Increase the number of conditional transactions

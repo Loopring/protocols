@@ -10,7 +10,6 @@ import { SparseMerkleTree } from "./sparse_merkle_tree";
 import {
   BlockContext,
   TransactionType,
-  ForgeMode,
   Block,
   Deposit,
   OnchainWithdrawal,
@@ -22,7 +21,8 @@ import {
   OnchainBalanceLeaf,
   WithdrawFromMerkleTreeData,
   ExchangeState,
-  ProtocolFees
+  ProtocolFees,
+  Nft
 } from "./types";
 import { DepositProcessor } from "./request_processors/deposit_processor";
 import { AccountUpdateProcessor } from "./request_processors/account_update_processor";
@@ -31,6 +31,8 @@ import { TransferProcessor } from "./request_processors/transfer_processor";
 import { WithdrawalProcessor } from "./request_processors/withdrawal_processor";
 import { AmmUpdateProcessor } from "./request_processors/amm_update_processor";
 import { SignatureVerificationProcessor } from "./request_processors/signature_verification_processor";
+import { NftMintProcessor } from "./request_processors/nft_mint_processor";
+import { NftDataProcessor } from "./request_processors/nft_data_processor";
 import * as log from "./logs";
 
 /**
@@ -290,7 +292,7 @@ export class ExchangeV3 {
    */
   public getWithdrawFromMerkleTreeData(accountID: number, tokenID: number) {
     assert(accountID < this.state.accounts.length, "invalid account ID");
-    assert(tokenID < this.tokens.length, "invalid token ID");
+    assert(tokenID < Constants.MAX_NUM_TOKENS, "invalid token ID");
 
     const account = this.state.accounts[accountID];
     const accountMerkleProof = this.merkleTree.createProof(accountID);
@@ -319,9 +321,22 @@ export class ExchangeV3 {
           ? account.getBalance(tokenID).storageTree.getRoot()
           : storageTree.getRoot()
     };
+
+    let nft: Nft = {
+      minter: Constants.zeroAddress,
+      nftType: 0,
+      token: Constants.zeroAddress,
+      nftID: "0",
+      creatorFeeBips: 0
+    };
+    if (Constants.isNFT(tokenID)) {
+      nft = this.state.nfts[account.getBalance(tokenID).weightAMM.toString(10)];
+    }
+
     const withdrawFromMerkleTreeData: WithdrawFromMerkleTreeData = {
       accountLeaf,
       balanceLeaf,
+      nft,
       accountMerkleProof,
       balanceMerkleProof
     };
@@ -864,15 +879,7 @@ export class ExchangeV3 {
     };
 
     for (let i = 0; i < block.blockSize; i++) {
-      const size1 = 29;
-      const size2 = 39;
-      const txData1 = data.extractData(offset + i * size1, size1);
-      const txData2 = data.extractData(
-        offset + block.blockSize * size1 + i * size2,
-        size2
-      );
-      const txData = new Bitstream(txData1 + txData2);
-
+      const txData = this.getTxData(data, offset, i, block.blockSize);
       const txType = txData.extractUint8(0);
 
       let request: any;
@@ -896,6 +903,20 @@ export class ExchangeV3 {
           ctx,
           txData
         );
+      } else if (txType === TransactionType.NFT_MINT) {
+        if (i + 1 < block.blockSize) {
+          txData.addHex(
+            this.getTxData(data, offset, i + 1, block.blockSize).getData()
+          );
+          if (i + 2 < block.blockSize) {
+            txData.addHex(
+              this.getTxData(data, offset, i + 2, block.blockSize).getData()
+            );
+          }
+        }
+        request = NftMintProcessor.process(this.state, ctx, txData);
+      } else if (txType === TransactionType.NFT_DATA) {
+        request = NftDataProcessor.process(this.state, ctx, txData);
       } else {
         assert(false, "unknown transaction type: " + txType);
       }
@@ -909,5 +930,21 @@ export class ExchangeV3 {
     block.numRequestsProcessed = requests.length;
     block.totalNumRequestsProcessed += requests.length;
     this.state.processedRequests.push(...requests);
+  }
+
+  private getTxData(
+    data: Bitstream,
+    offset: number,
+    txIdx: number,
+    blockSize: number
+  ) {
+    const size1 = 29;
+    const size2 = 39;
+    const txData1 = data.extractData(offset + txIdx * size1, size1);
+    const txData2 = data.extractData(
+      offset + blockSize * size1 + txIdx * size2,
+      size2
+    );
+    return new Bitstream(txData1 + txData2);
   }
 }
