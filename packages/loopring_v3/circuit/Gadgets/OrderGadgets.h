@@ -102,7 +102,7 @@ class OrderGadget : public GadgetT
           isNftTokenB(pb, constants, tokenB.packed, FMT(prefix, ".isNftTokenB")),
           isNftTokenSandB(pb, {isNftTokenS.isNFT(), isNftTokenB.isNFT()}, FMT(prefix, ".isNftTokenSandB")),
           hashDataTokenB(pb, isNftTokenB.isNotNFT(), tokenB.packed, nftDataB, FMT(prefix, ".hashDataTokenB")),
-          // Disallow paying fees in NFTs (if tokenB is an NFT then feeBips needs to be 0)
+          // Disallow paying fees in NFTs (if tokenB and tokenS are NFTs then feeBips needs to be 0)
           requireNoFeeOnNft(
             pb,
             isNftTokenSandB.result(),

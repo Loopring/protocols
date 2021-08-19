@@ -164,6 +164,10 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
     {
         require(recipient != address(0), "INVALID_ADDRESS");
 
+        // Does not call a standard NFT transfer function so we can allow any contract address.
+        // Disallow calls to the deposit contract as a precaution.
+        require(token != address(state.depositContract), "INVALID_TOKEN");
+
         if (token == address(0)) {
             uint amount = address(this).balance;
             recipient.sendETHAndVerify(amount, gasleft());

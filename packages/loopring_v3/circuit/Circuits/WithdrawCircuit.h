@@ -485,11 +485,11 @@ class WithdrawCircuit : public BaseTransactionCircuit
         doUpdateTokenWeight.generate_r1cs_constraints();
         newTokenWeightNonNFT.generate_r1cs_constraints();
         // NFT: set NFT data to zero if balance after withdrawal is 0
-        isBalanceA_afterNonZero.generate_r1cs_witness();
-        newTokenWeightNFT.generate_r1cs_witness();
+        isBalanceA_afterNonZero.generate_r1cs_constraints();
+        newTokenWeightNFT.generate_r1cs_constraints();
         // Combine results
-        isNFT.generate_r1cs_witness();
-        newTokenWeight.generate_r1cs_witness();
+        isNFT.generate_r1cs_constraints();
+        newTokenWeight.generate_r1cs_constraints();
 
         // Increase the number of conditional transactions
         numConditionalTransactionsAfter.generate_r1cs_constraints();

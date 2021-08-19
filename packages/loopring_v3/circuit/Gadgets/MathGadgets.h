@@ -63,7 +63,6 @@ class Constants : public GadgetT
     const VariableT _1000;
     const VariableT _1001;
     const VariableT _10000;
-    const VariableT _65536;
     const VariableT _100000;
     const VariableT fixedBase;
     const VariableT emptyStorage;
@@ -99,7 +98,6 @@ class Constants : public GadgetT
           _1000(make_variable(pb, ethsnarks::FieldT(1000), FMT(prefix, "._1000"))),
           _1001(make_variable(pb, ethsnarks::FieldT(1001), FMT(prefix, "._1001"))),
           _10000(make_variable(pb, ethsnarks::FieldT(10000), FMT(prefix, "._10000"))),
-          _65536(make_variable(pb, ethsnarks::FieldT(65536), FMT(prefix, "._65536"))),
           _100000(make_variable(pb, ethsnarks::FieldT(100000), FMT(prefix, "._100000"))),
           fixedBase(make_variable(pb, ethsnarks::FieldT(FIXED_BASE), FMT(prefix, ".fixedBase"))),
           emptyStorage(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyStorage"))),
@@ -156,7 +154,6 @@ class Constants : public GadgetT
         pb.add_r1cs_constraint(ConstraintT(_1000, FieldT::one(), ethsnarks::FieldT(1000)), "._1000");
         pb.add_r1cs_constraint(ConstraintT(_1001, FieldT::one(), ethsnarks::FieldT(1001)), "._1001");
         pb.add_r1cs_constraint(ConstraintT(_10000, FieldT::one(), ethsnarks::FieldT(10000)), "._10000");
-        pb.add_r1cs_constraint(ConstraintT(_65536, FieldT::one(), ethsnarks::FieldT(65536)), "._65536");
         pb.add_r1cs_constraint(ConstraintT(_100000, FieldT::one(), ethsnarks::FieldT(100000)), "._100000");
         pb.add_r1cs_constraint(ConstraintT(fixedBase, FieldT::one(), ethsnarks::FieldT(FIXED_BASE)), ".fixedBase");
         pb.add_r1cs_constraint(

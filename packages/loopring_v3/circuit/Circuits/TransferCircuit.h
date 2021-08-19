@@ -59,7 +59,6 @@ class TransferCircuit : public BaseTransactionCircuit
     // Check if the inputs are valid
     EqualGadget isTransferTx;
     IsNftGadget isNft;
-    AndGadget isNftTransfer;
     IsNonZero isNonZero_payer_to;
     IfThenRequireEqualGadget ifrequire_payer_to_eq_to;
     IfThenRequireEqualGadget ifrequire_payer_toAccountID_eq_payee_toAccountID;
@@ -154,7 +153,6 @@ class TransferCircuit : public BaseTransactionCircuit
             state.constants.txTypeTransfer,
             FMT(prefix, ".isTransferTx")),
           isNft(pb, state.constants, tokenID.packed, FMT(prefix, ".isNft")),
-          isNftTransfer(pb, {isTransferTx.result(), isNft.isNFT()}, FMT(prefix, ".isNftTransfer")),
           isNonZero_payer_to( //
             pb,
             payer_to.packed,
@@ -401,7 +399,6 @@ class TransferCircuit : public BaseTransactionCircuit
         // Check if the inputs are valid
         isTransferTx.generate_r1cs_witness();
         isNft.generate_r1cs_witness();
-        isNftTransfer.generate_r1cs_witness();
         isNonZero_payer_to.generate_r1cs_witness();
         ifrequire_payer_to_eq_to.generate_r1cs_witness();
         ifrequire_payer_toAccountID_eq_payee_toAccountID.generate_r1cs_witness();
@@ -487,7 +484,6 @@ class TransferCircuit : public BaseTransactionCircuit
         // Check if the inputs are valid
         isTransferTx.generate_r1cs_constraints();
         isNft.generate_r1cs_constraints();
-        isNftTransfer.generate_r1cs_constraints();
         isNonZero_payer_to.generate_r1cs_constraints();
         ifrequire_payer_to_eq_to.generate_r1cs_constraints();
         ifrequire_payer_toAccountID_eq_payee_toAccountID.generate_r1cs_constraints();

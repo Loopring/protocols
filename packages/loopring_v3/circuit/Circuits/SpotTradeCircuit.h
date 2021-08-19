@@ -43,6 +43,8 @@ class SpotTradeCircuit : public BaseTransactionCircuit
 
     // Match orders
     OrderMatchingGadget orderMatching;
+    IfThenRequireNotEqualGadget nonZeroFillNft_A;
+    IfThenRequireNotEqualGadget nonZeroFillNft_B;
 
     // Calculate fees
     TernaryGadget protocolTakerFeeBips;
@@ -133,6 +135,19 @@ class SpotTradeCircuit : public BaseTransactionCircuit
             fillS_A.value(),
             fillS_B.value(),
             FMT(prefix, ".orderMatching")),
+          // Disallow NFT transfers with amount 0
+          nonZeroFillNft_A(
+            pb,
+            orderA.isNftTokenB.isNFT(),
+            fillS_B.value(),
+            state.constants._0,
+            FMT(prefix, ".nonZeroFillNft_A")),
+          nonZeroFillNft_B(
+            pb,
+            orderB.isNftTokenB.isNFT(),
+            fillS_A.value(),
+            state.constants._0,
+            FMT(prefix, ".nonZeroFillNft_B")),
 
           // Calculate fees
           protocolTakerFeeBips(
@@ -382,6 +397,8 @@ class SpotTradeCircuit : public BaseTransactionCircuit
 
         // Match orders
         orderMatching.generate_r1cs_witness();
+        nonZeroFillNft_A.generate_r1cs_witness();
+        nonZeroFillNft_B.generate_r1cs_witness();
 
         // Calculate fees
         protocolTakerFeeBips.generate_r1cs_witness();
@@ -445,6 +462,8 @@ class SpotTradeCircuit : public BaseTransactionCircuit
 
         // Match orders
         orderMatching.generate_r1cs_constraints();
+        nonZeroFillNft_A.generate_r1cs_constraints();
+        nonZeroFillNft_B.generate_r1cs_constraints();
 
         // Calculate fees
         protocolTakerFeeBips.generate_r1cs_constraints();
