@@ -1,15 +1,16 @@
 // run on arbitrum: npx hardhat run --network arbitrum scripts/deploy-and-setup.ts
 
+import BN = require("bn.js");
 const hre = require("hardhat");
 const ethers = hre.ethers;
 import { newWalletImpl, newWalletFactoryContract } from "../test/commons";
 import { signCreateWallet } from "../test/helper/signatureUtils";
-import BN = require("bn.js");
+import { deployWalletImpl, deployWalletFactory } from "./create2-deploy";
 
-async function newWallet(walletFactoryAddress: string) {
+async function newWallet(walletFactoryAddress: string, _salt?: number) {
   const ownerAccount = (await ethers.getSigners())[0];
   const ownerAddr = await ownerAccount.getAddress();
-  const salt = new Date().getTime();
+  const salt = _salt ? _salt : new Date().getTime();
   const signature = signCreateWallet(
     walletFactoryAddress,
     ownerAddr,
@@ -43,10 +44,9 @@ async function newWallet(walletFactoryAddress: string) {
   );
   console.log("walletAddrcomputed:", walletAddrComputed);
 
-  const tx = await walletFactory.createWallet(walletConfig, 0, {
-    gasLimit: 10000000
-  });
-  console.log("tx:", tx);
+  const gasLimit = hre.network.config.chainId == 5 ? 6000000 : undefined;
+  const tx = await walletFactory.createWallet(walletConfig, 0, { gasLimit });
+  // console.log("tx:", tx);
   const receipt = await tx.wait();
   console.log("receipt:", receipt);
 
@@ -103,7 +103,7 @@ async function getWalletImplAddr(walletFactoryAddress: string) {
   console.log("masterCopy:", masterCopy);
 }
 
-async function main() {
+async function walletCreationTest() {
   const ownerAccount = (await ethers.getSigners())[0];
   const ownerAddr = await ownerAccount.getAddress();
 
@@ -116,7 +116,21 @@ async function main() {
 
   // await getWalletImplAddr(walletFactory.address);
   const officialGuardianAddr = await deployOfficialGuardian();
-  // await addManager(officialGuardianAddr, ownerAddr);
+  await addManager(officialGuardianAddr, ownerAddr);
+}
+
+async function create2Test() {
+  // const smartWalletAddr = await deployWalletImpl();
+  // const walletFactoryAddr = await deployWalletFactory(smartWalletAddr);
+  const walletFactoryAddr = "0x5621a77f8EbC9265A60b0E83B49db998aC046B9C";
+  const newWalletAddr = await newWallet(walletFactoryAddr, 1629366091004);
+
+  console.log("newWalletAddr:", newWalletAddr);
+}
+
+async function main() {
+  // await walletCreationTest();
+  await create2Test();
 }
 
 main()
