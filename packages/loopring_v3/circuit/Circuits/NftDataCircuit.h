@@ -166,7 +166,7 @@ class NftDataCircuit : public BaseTransactionCircuit
         requireNftToken.generate_r1cs_constraints();
         isNftPresent.generate_r1cs_constraints();
         validNftDataNeeded.generate_r1cs_constraints();
-        validNftDataNotNeeded.generate_r1cs_witness();
+        validNftDataNotNeeded.generate_r1cs_constraints();
         validateNftData.generate_r1cs_constraints();
         minterZeroAddress.generate_r1cs_constraints();
 

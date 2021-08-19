@@ -48,7 +48,13 @@ class DepositCircuit : public BaseTransactionCircuit
           amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
 
           // Validate
-          ownerValid(pb, state.constants, state.accountA.account.owner, owner.packed, FMT(prefix, ".ownerValid")),
+          ownerValid(
+            pb,
+            state.constants,
+            state.accountA.account.owner,
+            owner.packed,
+            state.constants._1,
+            FMT(prefix, ".ownerValid")),
 
           // Calculate the new balance
           balanceS_A(pb, state.accountA.balanceS, FMT(prefix, ".balanceS_A")),

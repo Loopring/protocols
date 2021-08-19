@@ -44,7 +44,7 @@ library ExchangeTokens
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.tokenToTokenId[tokenAddress] == 0, "TOKEN_ALREADY_EXIST");
-        require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
+        require(S.tokens.length < ExchangeData.NFT_TOKEN_ID_START, "TOKEN_REGISTRY_FULL");
 
         // Check if the deposit contract supports the new token
         if (S.depositContract != IDepositContract(0)) {
@@ -76,5 +76,13 @@ library ExchangeTokens
         tokenID = S.tokenToTokenId[tokenAddress];
         require(tokenID != 0, "TOKEN_NOT_FOUND");
         tokenID = tokenID - 1;
+    }
+
+    function isNFT(uint16 tokenID)
+        internal  // inline call
+        pure
+        returns (bool)
+    {
+        return tokenID >= ExchangeData.NFT_TOKEN_ID_START;
     }
 }
