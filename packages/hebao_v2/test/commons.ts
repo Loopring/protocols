@@ -3,6 +3,7 @@ const fs = require("fs");
 const { ethers } = require("hardhat");
 import { Contract } from "ethers";
 import BN = require("bn.js");
+import ethUtil = require("ethereumjs-util");
 
 import { signCreateWallet } from "./helper/signatureUtils";
 
