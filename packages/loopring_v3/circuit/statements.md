@@ -2,6 +2,30 @@
 
 For a full overview of the Loopring protocol, see https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md.
 
+## Naming conventions
+
+Abbreviations are often used to name variables:
+
+- Accounts:
+  - A: Account A (the first account of two that can be modified in an L2 transaction)
+  - B: Account B (the second account of two that can be modified in an L2 transaction)
+  - O: The Operator
+  - P: The Protocol fee account
+- Tokens:
+  - S: The first token of two that can be modified for an account in an L2 transaction. Often used for the token to Sell or spend in some other way (for fees)
+  - B: The second token of two that can be modified for an account in an L2 transaction. Often used for the token to Buy or receice by an account (but can also be used for another token to spend on the same account)
+
+(S and B) as token to Sell and token to Buy works perfectly for the trading circuit, for the other circuits just seeing them as 1st and 2nd token works best.
+
+Examples:
+
+- S_A: Account A, 1st token
+- B_A: Account A, 2nd token
+- S_B: Account B, 1st token
+- B_B: Account B, 1st token
+- A_O: Operator account, token received is the token bought (2nd token) of account A
+- B_O: Operator account, token received is the token bought (2nd token) of account B
+
 ## Constants
 
 - TREE_DEPTH_STORAGE = 7

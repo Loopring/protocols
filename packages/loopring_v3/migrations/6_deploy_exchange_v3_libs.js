@@ -8,10 +8,13 @@ const ExchangeBlocks = artifacts.require("ExchangeBlocks");
 const ExchangeDeposits = artifacts.require("ExchangeDeposits");
 const ExchangeGenesis = artifacts.require("ExchangeGenesis");
 const ExchangeTokens = artifacts.require("ExchangeTokens");
+const ExchangeMode = artifacts.require("ExchangeMode");
 const ExchangeWithdrawals = artifacts.require("ExchangeWithdrawals");
+const ExchangeSignatures = artifacts.require("ExchangeSignatures");
 
 module.exports = function(deployer, network, accounts) {
   deployer.then(async () => {
+    await deployer.deploy(ExchangeMode);
     await deployer.deploy(ExchangeBalances);
     await deployer.link(ExchangeBalances, [ExchangeWithdrawals]);
     await deployer.deploy(ExchangeAdmins);
@@ -26,5 +29,6 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(ExchangeBlocks);
     await deployer.deploy(ExchangeGenesis);
     await deployer.deploy(ExchangeDeposits);
+    await deployer.deploy(ExchangeSignatures);
   });
 };

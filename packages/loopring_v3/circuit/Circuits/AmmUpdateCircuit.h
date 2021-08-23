@@ -29,6 +29,9 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
     ToBitsGadget nonce;
     ToBitsGadget balance;
 
+    // Validate
+    RequireNotNftGadget requireTokenNotNFT;
+
     // Increase the nonce
     AddGadget nonce_after;
     // Increase the number of conditional transactions
@@ -48,6 +51,9 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
           tokenWeight(pb, NUM_BITS_AMOUNT, FMT(prefix, ".tokenWeight")),
           nonce(pb, state.accountA.account.nonce, NUM_BITS_NONCE, FMT(prefix, ".nonce")),
           balance(pb, state.accountA.balanceS.balance, NUM_BITS_AMOUNT, FMT(prefix, ".balance")),
+
+          // Validate
+          requireTokenNotNFT(pb, state.constants, tokenID.packed, FMT(prefix, ".requireTokenNotNFT")),
 
           // Increase the nonce
           nonce_after(
@@ -89,6 +95,9 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
         nonce.generate_r1cs_witness();
         balance.generate_r1cs_witness();
 
+        // Validate
+        requireTokenNotNFT.generate_r1cs_witness();
+
         // Increase the nonce
         nonce_after.generate_r1cs_witness();
         // Increase the number of conditional transactions
@@ -105,6 +114,9 @@ class AmmUpdateCircuit : public BaseTransactionCircuit
         tokenWeight.generate_r1cs_constraints(true);
         nonce.generate_r1cs_constraints();
         balance.generate_r1cs_constraints();
+
+        // Validate
+        requireTokenNotNFT.generate_r1cs_constraints();
 
         // Increase the nonce
         nonce_after.generate_r1cs_constraints();

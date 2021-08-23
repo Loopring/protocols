@@ -44,7 +44,7 @@ library DepositTransaction
         // Process the deposit
         ExchangeData.Deposit memory pendingDeposit = S.pendingDeposits[deposit.to][deposit.tokenID];
         // Make sure the deposit was actually done
-        require(pendingDeposit.timestamp > 0, "DEPOSIT_DOESNT_EXIST");
+        require(pendingDeposit.timestamp > 0, "DEPOSIT_NOT_EXIST");
 
         // Processing partial amounts of the deposited amount is allowed.
         // This is done to ensure the user can do multiple deposits after each other

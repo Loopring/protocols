@@ -406,14 +406,13 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
         );
     }
 
-    function batchCall(
-        address[] calldata to,
-        bytes[]   calldata data
+    function selfBatchCall(
+        bytes[] calldata data
         )
         external
         onlyFromWalletOrOwnerWhenUnlocked
     {
-        wallet.batchCall(to, data);
+        wallet.selfBatchCall(data);
     }
 
     //

@@ -7,7 +7,8 @@ import "../../lib/EIP712.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
-import "../../lib/TransferUtil.sol";
+import "../../thirdparty/erc1155/ERC1155Holder.sol";
+import "../../thirdparty/erc721/ERC721Holder.sol";
 import "../../thirdparty/proxies/OwnedUpgradabilityProxy.sol";
 import "../iface/IAgentRegistry.sol";
 import "../iface/IExchangeV3.sol";
@@ -18,9 +19,9 @@ import "./libexchange/ExchangeBlocks.sol";
 import "./libexchange/ExchangeDeposits.sol";
 import "./libexchange/ExchangeGenesis.sol";
 import "./libexchange/ExchangeMode.sol";
+import "./libexchange/ExchangeSignatures.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
-import "./libtransactions/TransferTransaction.sol";
 
 
 /// @title An Implementation of IExchangeV3.
@@ -28,16 +29,16 @@ import "./libtransactions/TransferTransaction.sol";
 ///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeV3 is IExchangeV3, ReentrancyGuard
+contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
 {
     using MathUint              for uint;
-    using TransferUtil          for address;
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeBalances      for ExchangeData.State;
     using ExchangeBlocks        for ExchangeData.State;
     using ExchangeDeposits      for ExchangeData.State;
     using ExchangeGenesis       for ExchangeData.State;
     using ExchangeMode          for ExchangeData.State;
+    using ExchangeSignatures    for ExchangeData.State;
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
@@ -66,7 +67,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         pure
         returns (string memory)
     {
-        return "3.7.0";
+        return "3.9.0";
     }
 
     function domainSeparator()
@@ -259,7 +260,6 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.withdrawExchangeStake(recipient);
     }
 
-
     function getProtocolFeeLastWithdrawnTime(
         address tokenAddress
         )
@@ -348,17 +348,48 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         state.deposit(from, to, tokenAddress, amount, extraData, false);
     }
 
+    function depositNFT(
+        address              from,
+        address              to,
+        ExchangeData.NftType nftType,
+        address              tokenAddress,
+        uint256              nftID,
+        uint96               amount,
+        bytes    calldata    extraData
+        )
+        external
+        override
+        nonReentrant
+        onlyFromUserOrAgent(from)
+    {
+        state.depositNFT(from, to, nftType, tokenAddress, nftID, amount, extraData);
+    }
+
     function getPendingDepositAmount(
         address owner,
         address tokenAddress
         )
-        external
+        public
         override
         view
         returns (uint96)
     {
         uint16 tokenID = state.getTokenID(tokenAddress);
         return state.pendingDeposits[owner][tokenID].amount;
+    }
+
+    function getPendingNFTDepositAmount(
+        address               owner,
+        address               token,
+        ExchangeData.NftType  nftType,
+        uint256               nftID
+        )
+        public
+        override
+        view
+        returns (uint96)
+    {
+        return state.pendingNFTDeposits[owner][nftType][token][nftID].amount;
     }
 
     function flashDeposit(
@@ -369,16 +400,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyOwner
     {
-        for (uint i = 0; i < flashDeposits.length; i++) {
-            state.deposit(
-                flashDeposits[i].to,
-                flashDeposits[i].to,
-                flashDeposits[i].token,
-                flashDeposits[i].amount,
-                new bytes(0),
-                true
-            );
-        }
+        state.flashDeposit(flashDeposits);
     }
 
     function repayFlashDeposit(
@@ -423,6 +445,20 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
 
     // -- Withdrawals --
 
+    function forceWithdrawByTokenID(
+        address owner,
+        uint16  tokenID,
+        uint32  accountID
+        )
+        external
+        override
+        nonReentrant
+        payable
+        onlyFromUserOrAgent(owner)
+    {
+        state.forceWithdraw(owner, tokenID, accountID);
+    }
+
     function forceWithdraw(
         address owner,
         address token,
@@ -434,7 +470,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         payable
         onlyFromUserOrAgent(owner)
     {
-        state.forceWithdraw(owner, token, accountID);
+        uint16 tokenID = state.getTokenID(token);
+        state.forceWithdraw(owner, tokenID, accountID);
     }
 
     function isForcedWithdrawalPending(
@@ -458,7 +495,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         payable
     {
-        state.forceWithdraw(address(0), token, ExchangeData.ACCOUNTID_PROTOCOLFEE);
+        uint16 tokenID = state.getTokenID(token);
+        state.forceWithdraw(address(0), tokenID, ExchangeData.ACCOUNTID_PROTOCOLFEE);
     }
 
     // We still alow anyone to withdraw these funds for the account owner
@@ -499,6 +537,24 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         );
     }
 
+    function withdrawFromNFTDepositRequest(
+        address               owner,
+        address               token,
+        ExchangeData.NftType  nftType,
+        uint256               nftID
+        )
+        external
+        override
+        nonReentrant
+    {
+        state.withdrawFromNFTDepositRequest(
+            owner,
+            token,
+            nftType,
+            nftID
+        );
+    }
+
     function withdrawFromApprovedWithdrawals(
         address[] calldata owners,
         address[] calldata tokens
@@ -510,6 +566,26 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         state.withdrawFromApprovedWithdrawals(
             owners,
             tokens
+        );
+    }
+
+    function withdrawFromApprovedWithdrawalsNFT(
+        address[]              memory  owners,
+        address[]              memory  minters,
+        ExchangeData.NftType[] memory  nftTypes,
+        address[]              memory  tokens,
+        uint256[]              memory  nftIDs
+        )
+        external
+        override
+        nonReentrant
+    {
+        state.withdrawFromApprovedWithdrawalsNFT(
+            owners,
+            minters,
+            nftTypes,
+            tokens,
+            nftIDs
         );
     }
 
@@ -526,25 +602,30 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         return state.amountWithdrawable[owner][tokenID];
     }
 
+    function getAmountWithdrawableNFT(
+        address              owner,
+        address              token,
+        ExchangeData.NftType nftType,
+        uint256              nftID,
+        address              minter
+        )
+        external
+        override
+        view
+        returns (uint)
+    {
+        return state.amountWithdrawableNFT[owner][minter][nftType][token][nftID];
+    }
+
     function notifyForcedRequestTooOld(
-        uint32  accountID,
-        address token
+        uint32 accountID,
+        uint16 tokenID
         )
         external
         override
         nonReentrant
     {
-        uint16 tokenID = state.getTokenID(token);
-        ExchangeData.ForcedWithdrawal storage withdrawal = state.pendingForcedWithdrawals[accountID][tokenID];
-        require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
-
-        // Check if the withdrawal has indeed exceeded the time limit
-        require(block.timestamp >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE, "WITHDRAWAL_NOT_TOO_OLD");
-
-        // Enter withdrawal mode
-        state.withdrawalModeStartTime = block.timestamp;
-
-        emit WithdrawalModeActivated(state.withdrawalModeStartTime);
+        state.notifyForcedRequestTooOld(accountID, tokenID);
     }
 
     function setWithdrawalRecipient(
@@ -560,10 +641,14 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyFromUserOrAgent(from)
     {
-        require(newRecipient != address(0), "INVALID_DATA");
-        uint16 tokenID = state.getTokenID(token);
-        require(state.withdrawalRecipient[from][to][tokenID][amount][storageID] == address(0), "CANNOT_OVERRIDE_RECIPIENT_ADDRESS");
-        state.withdrawalRecipient[from][to][tokenID][amount][storageID] = newRecipient;
+        state.setWithdrawalRecipient(
+            from,
+            to,
+            token,
+            amount,
+            storageID,
+            newRecipient
+        );
     }
 
     function getWithdrawalRecipient(
@@ -618,11 +703,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         override
         nonReentrant
     {
-        require(owners.length == transactionHashes.length, "INVALID_DATA");
-        require(state.agentRegistry.isAgent(owners, msg.sender), "UNAUTHORIZED");
-        for (uint i = 0; i < owners.length; i++) {
-            state.approvedTx[owners[i]][transactionHashes[i]] = true;
-        }
+        state.approveTransactions(owners, transactionHashes);
     }
 
     function isTransactionApproved(
@@ -656,10 +737,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyOwner
     {
-        require(recipient != address(0), "INVALID_ADDRESS");
-
-        uint amount = token.selfBalance();
-        token.transferOut(recipient, amount);
+        state.withdrawExchangeFees(token, recipient);
     }
 
     function withdrawUnregisteredToken(
@@ -672,19 +750,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         nonReentrant
         onlyOwner
     {
-        try this.getTokenID(token) {
-            revert("TOKEN_REGISTERED");
-        } catch {
-            require(to != address(0), "INVALID_ADDRESS");
-            require(amount > 0, "INVALID_AMOUNT");
-            state.depositContract.withdraw(
-                address(state.depositContract),
-                to,
-                token,
-                amount,
-                new bytes(0)
-            );
-        }
+        state.withdrawUnregisteredToken(token, to, amount);
     }
 
     function setMaxAgeDepositUntilWithdrawable(
@@ -715,11 +781,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard
         onlyOwner
         returns (bool success)
     {
-        require(!state.isInWithdrawalMode(), "INVALID_MODE");
-        require(!state.isShutdown(), "ALREADY_SHUTDOWN");
-        state.shutdownModeStartTime = block.timestamp;
-        emit Shutdown(state.shutdownModeStartTime);
-        return true;
+        return state.shutdown();
     }
 
     function getProtocolFeeValues()

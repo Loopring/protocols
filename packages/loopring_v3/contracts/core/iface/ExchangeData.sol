@@ -26,7 +26,15 @@ library ExchangeData
         SPOT_TRADE,
         ACCOUNT_UPDATE,
         AMM_UPDATE,
-        SIGNATURE_VERIFICATION
+        SIGNATURE_VERIFICATION,
+        NFT_MINT, // L2 NFT mint or L1-to-L2 NFT deposit
+        NFT_DATA
+    }
+
+    enum NftType
+    {
+        ERC1155,
+        ERC721
     }
 
     // -- Structs --
@@ -132,6 +140,8 @@ library ExchangeData
     uint public constant TX_DATA_AVAILABILITY_SIZE_PART_1 = 29;
     uint public constant TX_DATA_AVAILABILITY_SIZE_PART_2 = 39;
 
+    uint public constant NFT_TOKEN_ID_START = 2 ** 15;
+
     struct AccountLeaf
     {
         uint32   accountID;
@@ -146,14 +156,25 @@ library ExchangeData
     {
         uint16   tokenID;
         uint96   balance;
-        uint96   weightAMM;
+        uint     weightAMM;
         uint     storageRoot;
+    }
+
+    struct Nft
+    {
+        address minter;             // Minter address for a L2 mint or
+                                    // the NFT's contract address in the case of a L1-to-L2 NFT deposit.
+        NftType nftType;
+        address token;
+        uint256 nftID;
+        uint8   creatorFeeBips;
     }
 
     struct MerkleProof
     {
         ExchangeData.AccountLeaf accountLeaf;
         ExchangeData.BalanceLeaf balanceLeaf;
+        ExchangeData.Nft         nft;
         uint[48]                 accountMerkleProof;
         uint[24]                 balanceMerkleProof;
     }
@@ -169,6 +190,8 @@ library ExchangeData
     {
         bytes32 DOMAIN_SEPARATOR;
         uint32  timestamp;
+        Block   block;
+        uint    txIndex;
     }
 
     // Represents the entire exchange state except the owner of the exchange.
@@ -205,6 +228,8 @@ library ExchangeData
         mapping (address => mapping (uint16 => uint)) amountWithdrawable;
 
         // A map from an account to a token to the forced withdrawal (always full balance)
+        // The `uint16' represents ERC20 token ID (if < NFT_TOKEN_ID_START) or
+        // NFT balance slot (if >= NFT_TOKEN_ID_START)
         mapping (uint32 => mapping (uint16 => ForcedWithdrawal)) pendingForcedWithdrawals;
 
         // A map from an address to a token to a deposit
@@ -238,6 +263,13 @@ library ExchangeData
         uint8   ammFeeBips;
         // Enable/Disable `onchainTransferFrom`
         bool    allowOnchainTransferFrom;
+
+        // owner => NFT type => token address => nftID => Deposit
+        mapping (address => mapping (NftType => mapping (address => mapping(uint256 => Deposit)))) pendingNFTDeposits;
+
+        // owner => minter => NFT type => token address => nftID => amount withdrawable
+        // This is only used when the automatic distribution of the withdrawal failed.
+        mapping (address => mapping (address => mapping (NftType => mapping (address => mapping(uint256 => uint))))) amountWithdrawableNFT;
 
         // Outstanding flash deposits
         mapping (address => uint96) flashDepositAmounts;

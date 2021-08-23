@@ -7,6 +7,7 @@ import "../../../lib/AddressUtil.sol";
 import "../../../lib/MathUint96.sol";
 import "../../iface/ExchangeData.sol";
 import "./ExchangeMode.sol";
+import "./ExchangeNFT.sol";
 import "./ExchangeTokens.sol";
 
 
@@ -17,8 +18,10 @@ library ExchangeDeposits
 {
     using AddressUtil       for address payable;
     using MathUint96        for uint96;
+    using ExchangeDeposits  for ExchangeData.State;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
+
 
     event DepositRequested(
         address from,
@@ -28,14 +31,23 @@ library ExchangeDeposits
         uint96  amount
     );
 
-    function deposit(
-        ExchangeData.State storage S,
+    event NFTDepositRequested(
         address from,
         address to,
-        address tokenAddress,
-        uint96  amount,                 // can be zero
-        bytes   memory extraData,
-        bool    isFlashDeposit
+        uint8   nftType,
+        address token,
+        uint256 nftID,
+        uint96  amount
+    );
+
+    function deposit(
+        ExchangeData.State storage S,
+        address                    from,
+        address                    to,
+        address                    tokenAddress,
+        uint96                     amount,                 // can be zero
+        bytes              memory  extraData,
+        bool                       isFlashDeposit
         )
         internal  // inline call
     {
@@ -44,6 +56,8 @@ library ExchangeDeposits
         // Deposits are still possible when the exchange is being shutdown, or even in withdrawal mode.
         // This is fine because the user can easily withdraw the deposited amounts again.
         // We don't want to make all deposits more expensive just to stop that from happening.
+
+        // Allow depositing with amount == 0 to allow updating the deposit timestamp
 
         uint16 tokenID = S.getTokenID(tokenAddress);
 
@@ -76,6 +90,25 @@ library ExchangeDeposits
         S.pendingDeposits[to][tokenID] = _deposit;
     }
 
+    function flashDeposit(
+        ExchangeData.State          storage  S,
+        ExchangeData.FlashDeposit[] calldata flashDeposits
+        )
+        external
+    {
+        for (uint i = 0; i < flashDeposits.length; i++) {
+            deposit(
+                S,
+                flashDeposits[i].to,
+                flashDeposits[i].to,
+                flashDeposits[i].token,
+                flashDeposits[i].amount,
+                new bytes(0),
+                true
+            );
+        }
+    }
+
     function repayFlashDeposit(
         ExchangeData.State storage S,
         address from,
@@ -99,5 +132,52 @@ library ExchangeDeposits
 
         // Pay back
         S.flashDepositAmounts[tokenAddress] = S.flashDepositAmounts[tokenAddress].sub(repaid);
+    }
+
+     function depositNFT(
+        ExchangeData.State storage S,
+        address                    from,
+        address                    to,
+        ExchangeData.NftType       nftType,
+        address                    tokenAddress,
+        uint256                    nftID,
+        uint96                     amount,                 // can be zero
+        bytes              memory  extraData
+        )
+        public
+    {
+        require(to != address(0), "ZERO_ADDRESS");
+
+        // Deposits are still possible when the exchange is being shutdown, or even in withdrawal mode.
+        // This is fine because the user can easily withdraw the deposited amounts again.
+        // We don't want to make all deposits more expensive just to stop that from happening.
+
+        // Allow depositing with amount == 0 to allow updating the deposit timestamp
+
+        // Transfer the tokens to this contract
+        ExchangeNFT.deposit(
+            S,
+            from,
+            nftType,
+            tokenAddress,
+            nftID,
+            amount,
+            extraData
+        );
+
+        // Add the amount to the deposit request and reset the time the operator has to process it
+        ExchangeData.Deposit memory _deposit = S.pendingNFTDeposits[to][nftType][tokenAddress][nftID];
+        _deposit.timestamp = uint64(block.timestamp);
+        _deposit.amount = _deposit.amount.add(amount);
+        S.pendingNFTDeposits[to][nftType][tokenAddress][nftID] = _deposit;
+
+        emit NFTDepositRequested(
+            from,
+            to,
+            uint8(nftType),
+            tokenAddress,
+            nftID,
+            amount
+        );
     }
 }

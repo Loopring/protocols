@@ -11,7 +11,9 @@ import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 import "../libexchange/ExchangeMode.sol";
 import "../libexchange/ExchangeSignatures.sol";
+import "../libexchange/ExchangeTokens.sol";
 import "../libexchange/ExchangeWithdrawals.sol";
+import "./NftDataTransaction.sol";
 
 
 /// @title WithdrawTransaction
@@ -30,6 +32,7 @@ library WithdrawTransaction
     using MathUint             for uint;
     using ExchangeMode         for ExchangeData.State;
     using ExchangeSignatures   for ExchangeData.State;
+    using ExchangeTokens       for uint16;
     using ExchangeWithdrawals  for ExchangeData.State;
 
     bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
@@ -80,6 +83,19 @@ library WithdrawTransaction
     {
         Withdrawal memory withdrawal;
         readTx(data, offset, withdrawal);
+
+        // Read the NFT data if we're withdrawing an NFT
+        NftDataTransaction.NftData memory nftData;
+        if (withdrawal.tokenID.isNFT() && withdrawal.amount > 0) {
+            NftDataTransaction.readDualNftData(
+                ctx,
+                withdrawal.fromAccountID,
+                withdrawal.tokenID,
+                ctx.txIndex.sub(2),
+                nftData
+            );
+        }
+
         WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
 
         // Validate the withdrawal data not directly part of the DA
@@ -185,7 +201,8 @@ library WithdrawTransaction
             withdrawal.tokenID,
             withdrawal.amount,
             withdrawal.extraData,
-            auxData.gasLimit
+            auxData.gasLimit,
+            nftData.nft
         );
     }
 

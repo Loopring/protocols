@@ -14,7 +14,16 @@ import "../../iface/ExchangeData.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeMode
 {
-    using MathUint  for uint;
+    using MathUint      for uint;
+    using ExchangeMode  for ExchangeData.State;
+
+    event WithdrawalModeActivated(
+        uint timestamp
+    );
+
+    event Shutdown(
+        uint timestamp
+    );
 
     function isInWithdrawalMode(
         ExchangeData.State storage S
@@ -44,5 +53,37 @@ library ExchangeMode
         returns (uint)
     {
         return ExchangeData.MAX_OPEN_FORCED_REQUESTS - S.numPendingForcedTransactions;
+    }
+
+    function shutdown(
+        ExchangeData.State storage S
+        )
+        external
+        returns (bool success)
+    {
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        require(!S.isShutdown(), "ALREADY_SHUTDOWN");
+        S.shutdownModeStartTime = block.timestamp;
+        emit Shutdown(S.shutdownModeStartTime);
+        return true;
+    }
+
+    function notifyForcedRequestTooOld(
+        ExchangeData.State storage S,
+        uint32 accountID,
+        uint16 tokenID
+        )
+        external
+    {
+        ExchangeData.ForcedWithdrawal storage withdrawal = S.pendingForcedWithdrawals[accountID][tokenID];
+        require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
+
+        // Check if the withdrawal has indeed exceeded the time limit
+        require(block.timestamp >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE, "WITHDRAWAL_NOT_TOO_OLD");
+
+        // Enter withdrawal mode
+        S.withdrawalModeStartTime = block.timestamp;
+
+        emit WithdrawalModeActivated(S.withdrawalModeStartTime);
     }
 }

@@ -309,7 +309,7 @@ export class AmmPool {
       ? controllerAddress
       : Constants.zeroAddress;
 
-    console.log("controllerAddress: " + controllerAddress);
+    //console.log("controllerAddress: " + controllerAddress);
 
     const AmmPool = artifacts.require("LoopringAmmPool");
     this.contract = await AmmPool.new(
@@ -605,7 +605,7 @@ export class AmmPool {
   private async process(transaction: TxType, txHash: Buffer) {
     const owner = this.contract.address;
 
-    const blockCallback = this.ctx.addBlockCallback(owner);
+    const blockCallback = this.ctx.addBlockCallback(owner, true);
 
     let numTxs = 0;
 
@@ -1004,7 +1004,8 @@ export class AmmPool {
       txIdx: transaction.txIdx,
       numTxs: transaction.numTxs,
       auxiliaryData: AmmPool.getAuxiliaryData(transaction),
-      tx: transaction
+      tx: transaction,
+      beforeBlockSubmission: true
     };
     return transactionReceiverCallback;
   }

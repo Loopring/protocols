@@ -23,7 +23,7 @@ contract("Poseidon", (accounts: string[]) => {
     it("Poseidon t5/f6/p52", async () => {
       const hasher = Poseidon.createHash(5, 6, 52);
       // Test some random hashes
-      const numIterations = 128;
+      const numIterations = 32;
       for (let i = 0; i < numIterations; i++) {
         const t = [getRand(), getRand(), getRand(), getRand()];
         const hash = await poseidonContract.hash_t5f6p52(
@@ -53,7 +53,7 @@ contract("Poseidon", (accounts: string[]) => {
     it("Poseidon t7/f6/p52", async () => {
       const hasher = Poseidon.createHash(7, 6, 52);
       // Test some random hashes
-      const numIterations = 128;
+      const numIterations = 32;
       for (let i = 0; i < numIterations; i++) {
         const t = [
           getRand(),

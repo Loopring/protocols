@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../../../lib/MathUint.sol";
 import "../../../lib/Poseidon.sol";
 import "../../iface/ExchangeData.sol";
+import "../libexchange/ExchangeTokens.sol";
 
 
 /// @title ExchangeBalances.
@@ -13,7 +14,8 @@ import "../../iface/ExchangeData.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeBalances
 {
-    using MathUint  for uint;
+    using ExchangeTokens  for uint16;
+    using MathUint        for uint;
 
     function verifyAccountBalance(
         uint                              merkleRoot,
@@ -54,6 +56,30 @@ library ExchangeBalances
             calculatedRoot,
             merkleProof.accountMerkleProof
         );
+
+        if (merkleProof.balanceLeaf.tokenID.isNFT()) {
+            // Verify the NFT data
+            uint minter = uint(merkleProof.nft.minter);
+            uint nftType = uint(merkleProof.nft.nftType);
+            uint token = uint(merkleProof.nft.token);
+            uint nftIDLo = merkleProof.nft.nftID & 0xffffffffffffffffffffffffffffffff;
+            uint nftIDHi = merkleProof.nft.nftID >> 128;
+            uint creatorFeeBips = merkleProof.nft.creatorFeeBips;
+            Poseidon.HashInputs7 memory inputs = Poseidon.HashInputs7(
+                minter,
+                nftType,
+                token,
+                nftIDLo,
+                nftIDHi,
+                creatorFeeBips,
+                0
+            );
+            uint nftData = Poseidon.hash_t7f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD);
+            if (nftData != merkleProof.balanceLeaf.weightAMM) {
+                return false;
+            }
+        }
+
         // Check against the expected Merkle root
         return (calculatedRoot == merkleRoot);
     }

@@ -11,10 +11,11 @@
   - [Operators](#operators)
   - [Exchanges](#exchanges)
     - [Deposit Contract](#deposit-contract)
-    - [Exchange Creation](#exchange-creation)
     - [Exchange Staking](#exchange-staking)
     - [Exchange Shutdown](#exchange-shutdown)
     - [Token Registration](#token-registration)
+  - [NFT](#nft)
+    - [NFT contract with L2 minting support](#nft-contract-with-L2-minting-support)
   - [zkRollup Transactions](#zkRollup-Transactions)
     - [Spot trade](#spot-trade)
       - [Fee Model](#fee-model)
@@ -27,6 +28,8 @@
     - [Account Update](#account-update)
     - [AMM Update](#AMM-update)
     - [Signature Verification](#signature-verification)
+    - [NFT mint](#nft-mint)
+    - [NFT data](#nft-data)
     - [No-op](#no-op)
     - [Block](#block)
   - [Account Creation](#account-creation)
@@ -114,6 +117,7 @@ All zkRollup transactions increase the **nonce** of the account which authorized
 - Forced withdrawals
 - Spot trades
 - Transfers
+- NFT mints
 
 The first two are authorized on-chain, and thus the replay protection is handled on that level. Spot trades and transfers can be processed more flexibly and protected against replay using the Merkle tree's storage sub-tree.
 
@@ -134,12 +138,6 @@ Productive use of the funds would be to store the funds in a DeFi dApp that allo
 Another interesting possibility of the deposit contract is to support more token standards. All interactions with token contracts are done in the deposit contract, so that is the only place that knows how to interact with a specific token. No changes are necessary for the exchange contract implementation.
 
 It is also possible to use the token addresses as seen by the exchange as a key value. Because the deposit contract handles all interaction with the token contract, the token address value seen by the exchange may differ from the actual token address. The deposit contract can simply map to the actual token address just before interacting with the token contract. This allows, for example, the same token to be registered multiple times, but the deposit contract can store the funds in different ways. Alternatively, it can even be used to support trading multiple tranches of a single security token.
-
-## Exchange Creation
-
-Anyone can create a new exchange by calling `forgeExchange` on the ProtocolRegistry contract. A small amount of LRC may need to be burned to create a new exchange.
-
-An Exchange has an owner. The owner is the only one who can submit blocks (more commonly called the operator in this role), but the owner call functions related to the more business side of things like registering tokens.
 
 ## Exchange Staking
 
@@ -163,9 +161,54 @@ The exchange owner can choose to shut down the exchange at any time by calling `
 
 ## Token Registration
 
-Before a token can be used in the exchange, it needs to be registered, so a small token ID of 2 bytes can be used instead. Only the exchange owner can register tokens by calling `registerToken`. We ensure a token can only be registered once. ETH and LRC are registered when the exchange is created.
+Before an ERC20 token can be used in the exchange, it needs to be registered, so a small token ID of 2 bytes can be used instead. Only the exchange owner can register ERC20 tokens by calling `registerToken`. We ensure a token can only be registered once. ETH and LRC are registered when the exchange is created.
 
 We limit the token ID to just 16 bits (i.e., a maximum of ETH + 65535 tokens) to increase the circuits' performance.
+
+NFT token contracts don't require registration.
+
+## NFT
+
+NFTs can be minted, transferred, and traded directly on L2. NFTs on L1 can also be deposited to L2. ERC1155 and ERC721 NFT token standards are supported.
+
+The NFT data stored in the Merkle tree is `NftData := hash(minter, NftType, tokenAddress, nftID, creatorFeeBips)`:
+
+- The minter: The Ethereum address of the minter
+- The tokenAddress: The contract address of the NFT contract on L1
+- The nftType: The token standard followed by the NFT contract on L1
+- The NFT id: The NFT identifier
+- Creator fee bips: Currently unused in the protocol, can be used to signal how much royalties the creator should get
+
+For storing this NFT data we use the `weightAMM` field per balance in our Merkle tree. One thing we have to do is reserve a tokenID range that will be used exclusively to store NFTs for account. We support 2^16 (65536) tokens, so we have plenty of range to work with. We call the starting tokenID reserved for NFTs `NFT_TOKEN_ID_START`. This means every account can store `NFT_TOKEN_ID_START` ERC20 tokens at fixed tokenIDs, and `65536 - NFT_TOKEN_ID_START` unique NFTs at differing tokenIDs/account with the NFT value stored in the `weightAMM` field. Currently `NFT_TOKEN_ID_START == 2**15`, allowing each account to store up to 2^15 (32768) different NFTs at the same time. The balance can still be used to store multiple identical NFTs. There is also no limitation on how many identical NFTs, unless the L1 method of minting is used and this is controlled by L1 logic.
+
+When transferring an NFT (with a trade being basically 2 atomic transfers) from one account to another, the token slot used for storing the NFT may change. A token slot can only be used by an NFT if either the slot is currently unused (the balance is zero) or the same NFT is already stored there (in which case only the balance will increase).
+
+Transaction fees can never be paid in NFTs.
+
+### NFT contract with L2 minting support
+
+NFTs minted on L2 can be withdrawn to L1 if the NFT token contract implements the following function:
+
+```
+/// @dev This function is called when an NFT minted on L2 is withdrawn from Loopring.
+///      That means the NFTs were burned on L2 and now need to be minted on L1.
+///
+///      This function can only be called by the Loopring exchange.
+///
+/// @param to The owner of the NFT
+/// @param tokenId The token type 'id`
+/// @param amount The amount of NFTs to mint
+/// @param minter The minter on L2, which can be used to decide if the NFT is authentic
+/// @param data Opaque data that can be used by the contract
+function mintFromL2(
+    address          to,
+    uint256          tokenId,
+    uint             amount,
+    address          minter,
+    bytes   calldata data
+    )
+    external;
+```
 
 # zkRollup Transactions
 
@@ -177,6 +220,8 @@ A single circuit was created that can handle all the different zkRollup transact
 - Withdraw
 - Update account
 - Update AMM
+- NFT mint
+- NFT data
 - No-op
 
 We support a couple of different block sizes for the circuit to reduce the proving time without padding too many no-op works (or long delays until the block can be completely filled). We also support block versions so that we can upgrade the circuits.
@@ -193,7 +238,7 @@ Order {
   storageID (32bit)
   accountID (32bit)
   tokenS (16bit)
-  tokenB (16bit)
+  tokenB (16bit) or NftData (254bit) for NFTs
   amountS (96bit)
   amountB (96bit)
   validUntil (32bit)
@@ -218,7 +263,7 @@ SpotTrade {
 }
 ```
 
-An operator can decide how a trade is settled, as long as all requirements specified in the orders are fulfilled. An operator can lower the fee of an order. This can be decided freely by the operator.
+An operator can decide how a trade is settled, as long as all requirements specified in the orders are fulfilled. An operator can lower the fee of an order. This can be decided freely by the operator. The fee needs to be set to `0` if both tokens are NFTs.
 
 The `taker` parameter can be used to limit who can fill the order. If this parameter is left to `0`, the order can be filled by anyone.
 
@@ -230,9 +275,11 @@ The `fillAmountBorS` parameter can be used to decide which amount is the limitin
 - For both Orders:
     - Account ID: 4 bytes
     - Storage ID: 4 bytes
-    - TokenS: 2 bytes
+    - Token ID S: 2 bytes
     - FillS: 3 bytes （24 bits, 19 bits for the mantissa part and 5 for the exponent part)
-    - Order data (fillAmountBorS,feeBips): 1 byte
+    - Order data (fillAmountBorS,feeBips part A): 1 byte
+    - Token ID B: 2 bytes (if different from token ID S of opposite order, else 0)
+    - FeeBips part B: 1 byte
 ```
 
 - => **28 bytes/ring**
@@ -252,9 +299,11 @@ The first order in the ring is always the taker order, and the second order is a
 
 ##### Fee payments
 
-They are paid in the tokenB of the order. These are not taxed or do not have any other disadvantages. The order owner pays the fee to the operator respecting `feeBips`. These values are calculated on the full amount bought, and the protocol fee does not change this in any way.
+Fees are paid in tokenB if tokenB is not an NFT. If tokenB is an NFT the fee is paid in tokenS if tokenS is not an NFT. If both tokens are NFTs no fee can be paid directly as part of the trade.
 
-The maximum value of `feeBips` is `0.63%` in steps of `0.01%` (`1 bips`).
+Fee payments are not taxed or have any other disadvantages. The order owner pays the fee to the operator respecting `feeBips`. These values are calculated on the full amount bought, and the protocol fee does not change this in any way.
+
+The maximum value of `feeBips` is `100%` in steps of `0.01%` (`1 bips`).
 
 ##### Buy/Sell orders
 
@@ -270,35 +319,28 @@ Nevertheless, if the operator pays the protocol fee, why have different protocol
 
 ### AMM
 
-It is possible to enable Automated Market-Maker (AMM) functionality on an account. This is done by setting the AMM token weights of at least two tokens to non-zero (using [AMM Update](#AMM-Update) transactions). Once that is the case, the operator can create any orders between those tokens, without any signature or other explicit approval of the account owner, as long as the price for the order is equal or better (from the AMM's point of view) than the price required by the AMM price curve. From the protocol's point of view, AMM swaps are the same as trades between different orders, but instead of approved with a signature from the account owner, it is approved by the curve set by the account owner. The fee paid by the AMM account for the trade to the operator is enforced to be 0.
+It is possible to enable Automated Market-Maker (AMM) functionality on an account. This is done by setting the AMM virtual balances of at least two tokens to non-zero (using [AMM Update](#AMM-Update) transactions). Once that is the done, the operator can create any orders between those tokens, without any signature or other explicit approval of the account owner, as long as the price for the order is equal or better (from the AMM's point of view) than the price required by the AMM price curve. From the protocol's point of view, AMM swaps are the same as trades between different orders, but instead of approved with a signature from the account owner, it is approved by the curve set by the account owner. The fee paid by the AMM account for the trade to the operator is enforced to be 0. The virtual balances will be updated with the same fill amounts as the actual balances.
 
-The curve enforced in the protocol is the balancer/bancorV2 curve `x^a*y^b = k` and is defined as follows in the protocol:
+The curve enforced in the protocol is the uniswap curve `x*y = k` and is defined as follows in the protocol:
 
 ```
 const calcOutGivenIn = (
   balanceIn: number,
-  weightIn: number,
   balanceOut: number,
-  weightOut: number,
   amountIn: number,
   feeBips: number
   ) => {
-    const weightRatio = weightIn / weightOut;
     const fee = amountIn * feeBips / 10000;
     const y = balanceIn / (balanceIn + (amountIn - fee));
-    const p = pow(y, weightRatio);
-    return balanceOut * p;
+    return balanceOut * y;
 }
 ```
 
 Thus, the formula depends on the following parameters:
 
-- The current balances of the two tokens being traded in the AMM account
-- The weights set for the two tokens being traded in the AMM account
+- The current virtual balances of the two tokens being traded in the AMM account
 - The required fee for the AMM account
 - The amount being traded
-
-The power operation cannot be efficiently implemented inside circuits (or solidity), and so we use an [approximation](https://docs.balancer.finance/protocol/index/approxing) similarly to the one used by Balancer. As an additional safety check against potential rounding errors, extra checks are added so that the price after a trade can never be decreased.
 
 ### Canceling Orders
 
@@ -394,6 +436,7 @@ Not all features available for transfers using EdDSA signatures are available us
 - StorageID: 4 bytes
 - To: 20 bytes （only set when transferring to a new account)
 - From: 20 bytes （only set for conditional transfers)
+- To Token ID: 2 bytes (if different than Token ID, else 0)
 ```
 
 - => **22 bytes/transfer** (in the most common case)
@@ -401,11 +444,11 @@ Not all features available for transfers using EdDSA signatures are available us
 
 ## Deposit
 
-A user can deposit funds by calling `deposit`. If ERC-20 tokens are deposited, the user first needs to approve the Exchange contract so the contract can transfer them to the contract using `transferFrom`. **ETH is supported**, no need to wrap it in WETH when using off-chain balances.
+A user can deposit ERC20 tokens by calling `deposit`. If ERC-20 tokens are deposited, the user first needs to approve the Deposit contract so the contract can transfer them to the contract using `transferFrom`. **ETH is supported**, no need to wrap it in WETH when using off-chain balances.
 
 A user can deposit to any Ethereum address, even if that address does not have an account yet.
 
-A fee can be paid to the operator on-chain in ETH. No fixed fee is enforced because the operator is not required to process the deposit. If the operator does not process the deposit after `MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE` seconds, the user can withdraw the deposited amount + ETH fee directly from the exchange contract using `withdrawFromDepositRequest`.
+If the operator does not process the deposit after `MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE` seconds, the user can withdraw the deposited amount directly from the exchange contract using `withdrawFromDepositRequest`.
 
 ### Gas cost
 
@@ -460,7 +503,7 @@ bytes20 onchainDataHash = bytes20(keccak256(
 ));
 ```
 
-The withdrawal is made to the specified `to` address. The amount of gas provided for this withdrawal needs to be at least `minGas`. If the withdrawal fails, anyone can still withdraw the funds to `to` using `withdrawFromApprovedWithdrawal`.
+The withdrawal is made to the specified `to` address. The amount of gas provided for this withdrawal needs to be at least `minGas`. If the withdrawal fails, anyone can still withdraw the funds to `to` using `withdrawFromApprovedWithdrawals`.
 
 The user can send extra data to the deposit contract stored into `extraData`. How this data is interpreted is left to the deposit contract, but the deposit contract can be sure the user has approved this data and can use it as it sees fit. Possible use cases for this are sending wrapped BTC on Ethereum to the account owner's BTC address. Another example is a meta transaction system where the user can do arbitrary contract calls (potentially directly after the withdrawal) very efficiently Most meta transaction overhead on-chain is very limited as replay protection, fee payment, and signature checks are done on layer 2 when possible.
 
@@ -473,6 +516,8 @@ bytes32 constant public WITHDRAWAL_TYPEHASH = keccak256(
   "Withdrawal(address owner,uint32 accountID,uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,address to,bytes extraData,uint minGas,uint32 validUntil,uint32 nonce)"
 );
 ```
+
+NFT withdrawals need additional data about the NFT that is being withdrawn. To make that data available we require additional NFT data transactions to be included in a block before the withdrawal transaction so that this data is easily available when we process the withdrawal on-chain.
 
 ### Forced Withdrawals
 
@@ -496,7 +541,7 @@ This problem can be solved by making use of `validUntil` in the withdrawal reque
 - Amount: 12 bytes
 - Fee token ID: 2 bytes
 - Fee amount: 2 bytes （16 bits, 11 bits for the mantissa part and 5 for the exponent part)
-- Nonce: 4 bytes
+- Storage ID: 4 bytes
 - OnchainDataHash: 20 bytes
 ```
 
@@ -557,7 +602,7 @@ bytes32 constant public AMMUPDATE_TYPEHASH = keccak256(
   );
 ```
 
-This transaction is used to update the fee bips expected for each trade by the account. Like other AMM designs, this is simply done by increasing the price of the token being sold, not by an additional token transfer, and is part of the AMM formula implemented in the protocol. It is also used to set the AMM weight of the specified token. The weights of the token directly impact the curve followed by the AMM.
+This transaction is used to update the fee bips expected for each trade by the account. Like other AMM designs, this is simply done by increasing the price of the token being sold, not by an additional token transfer, and is part of the AMM formula implemented in the protocol. It is also used to set the AMM weight (the virtual balance) of the specified token. The weights of the tokens directly impact the curve followed by the AMM.
 
 The transaction also makes the balance of the specified token in the account available in the data-availability data. This is to facilitate efficient communication between layer 1 and layer 2. This is especially useful for the necessary logic needed on layer 1 to e.g., manage pool contracts for the AMM.
 
@@ -590,6 +635,93 @@ This transaction allows checking if an account owner signed some data (up to 253
 
 - => **56 bytes/Signature verification**
 - => Calldata cost: 56 \* 16 = **896 gas/Signature verification**
+
+## NFT mint
+
+This transaction is used to mint NFTs directly on L2. It is also used to process NFT deposits.
+
+```
+NftMint {
+  exchange (160bit)
+  minterAccountID (32bit)
+  toAccountID (32bit)
+  nftData (254bit)
+  amount (96bit)
+  feeTokenID (16bit)
+  maxFee (96bit)
+  validUntil (32bit)
+  storageID (32bit)
+}
+```
+
+This data is hashed using Poseidon/t10f6p53 in the sequence given above. The hash is signed by the account owner using the private key associated with the public key stored in `minterAccountID[accountID]`.
+
+An NFT mint can be approved using an on-chain signature or by approving the hash of the transaction using `approveTransaction`.
+
+```
+bytes32 constant public NFTMINT_TYPEHASH = keccak256(
+  "NftMint(address minter,address to,uint8 nftType,address token,uint256 nftID,uint8 creatorFeeBips,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID)"
+);
+```
+
+An NFT mint can also be approved by doing an NFT deposit, in which case the NFT that was deposited can be minted from an account owned by the NFT token contract. A user can deposit an NFT tokens by calling `depositNFT`. The user first needs to approve the Exchange contract so the contract can transfer them to the contract using `safeTransferFrom`. A user can deposit to any Ethereum address, even if that address does not have an account yet. If the operator does not process the deposit after `MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE` seconds, the user can withdraw the deposited amount directly from the exchange contract using `withdrawFromNFTDepositRequest`.
+
+All NFT data can be set directly by the minter except for the `minter` address, which will always be set to the owner of the account that does the mint transaction.
+
+The `minter` address always needs to be different from the `tokenAddress` in the NFT, except for deposits. If `minter == tokenAddress` it is known that the NFT was deposited, and so when the NFT is withdrawn it will be transferred back out (having been transferred in with an NFT deposit). Else we know that the NFT was minted on L2 and the NFT needs to be burned on L2 and minted on L1, which is done by calling `mintFromL2` on the NFT token contract.
+
+Because of limitations in public data size per transaction, there is a limitation that the minter can only mint to his own account when using an EdDSA signature (`minterAccountID == toAccounID`).
+
+With conditional mints we require additional NFT data transactions to get all the L2 NFT data on-chain.
+
+### Data-availability
+
+```
+- Type: 1 byte (type > 0 for conditional mints, type == 2 for an NFT deposit)
+- Minter account ID: 4 bytes
+- To token ID: 2 bytes
+- Fee token ID: 2 bytes
+- Fee amount: 2 bytes
+- Mint amount: 12 bytes
+- Storage ID: 4 bytes
+
+When `type == 0`:
+- NFT type: 1 byte
+- Token Account ID: 4 bytes
+- NFT ID: 32 bytes
+- Creator fee bips: 1 byte
+Else:
+- To account ID: 4 bytes
+- To address: 20 bytes
+```
+
+- => **65 bytes/NFT mint**
+- => Calldata cost: 65 \* 16 = **1040 gas/NFT mint**
+
+## NFT data
+
+This transaction can be used to pull NFT data available on L2 to L1. This is a simple read operation and so does not require any signatures or approvals.
+
+NFT data from the specified account and tokenID slot is put in the DA. If no NFT is stored in the tokenID the relayer can put any data in the DA as long as the minter value is set to `0` (which cannot be a valid value for an actual NFT).
+
+### Data-availability
+
+```
+- Type: 1 byte
+- Account ID: 4 bytes
+- Token ID: 2 bytes
+- NFT ID: 32 bytes
+- Creator fee bips: 1 byte
+- NFT type: 1 byte
+
+When `type == 0`:
+- Minter address: 20 bytes
+Else:
+- Token address: 20 bytes
+```
+
+- => **61 bytes/NFT data**
+- => Calldata cost: 61 \* 16 = **976 gas/NFT data**
 
 ## No-op
 
@@ -688,8 +820,8 @@ Once in withdrawal mode, almost all functionality of the exchange is stopped. Th
 Users can only withdraw their funds using the state of the last block that was submitted:
 
 - Balances still stored in the Merkle tree can be withdrawn with a Merkle proof by calling `withdrawFromMerkleTree`
-- Deposits not yet included in a submitted block can be withdrawn (even when not in withdrawal mode after some time) using `withdrawFromDepositRequest`
-- Approved withdrawals can manually be withdrawn (even when not in withdrawal mode) using `withdrawFromApprovedWithdrawal`
+- Deposits not yet included in a submitted block can be withdrawn (even when not in withdrawal mode after some time) using `withdrawFromDepositRequest`/`withdrawFromNFTDepositRequest`
+- Approved withdrawals can manually be withdrawn (even when not in withdrawal mode) using `withdrawFromApprovedWithdrawals`/`withdrawFromApprovedWithdrawalsNFT`
 
 # Conditional Transactions
 

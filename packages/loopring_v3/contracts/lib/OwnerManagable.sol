@@ -13,7 +13,13 @@ contract OwnerManagable is Claimable, AddressSet
     event ManagerAdded  (address indexed manager);
     event ManagerRemoved(address indexed manager);
 
-    modifier onlyManager
+    modifier onlyManager(address addr)
+    {
+        require(isManager(addr), "NOT_MANAGER");
+        _;
+    }
+
+    modifier onlyFromManager
     {
         require(isManager(msg.sender), "NOT_MANAGER");
         _;
@@ -62,6 +68,7 @@ contract OwnerManagable is Claimable, AddressSet
     /// @param manager The new address to add.
     function addManager(address manager)
         public
+        virtual
         onlyOwner
     {
         addManagerInternal(manager);
@@ -71,6 +78,7 @@ contract OwnerManagable is Claimable, AddressSet
     /// @param manager The manager to remove.
     function removeManager(address manager)
         public
+        virtual
         onlyOwner
     {
         removeAddressFromSet(MANAGER, manager);

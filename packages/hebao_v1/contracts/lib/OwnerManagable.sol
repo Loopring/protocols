@@ -62,6 +62,7 @@ contract OwnerManagable is Claimable, AddressSet
     /// @param manager The new address to add.
     function addManager(address manager)
         public
+        virtual
         onlyOwner
     {
         addManagerInternal(manager);
@@ -71,6 +72,7 @@ contract OwnerManagable is Claimable, AddressSet
     /// @param manager The manager to remove.
     function removeManager(address manager)
         public
+        virtual
         onlyOwner
     {
         removeAddressFromSet(MANAGER, manager);

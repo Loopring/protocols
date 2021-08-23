@@ -20,17 +20,17 @@ export enum TransactionType {
   SPOT_TRADE,
   ACCOUNT_UPDATE,
   AMM_UPDATE,
-  SIGNATURE_VERIFICATION
+  SIGNATURE_VERIFICATION,
+  NFT_MINT,
+  NFT_DATA
 }
 
 /**
- * The method in which an exchange is created.
+ * The token type.
  */
-export enum ForgeMode {
-  AUTO_UPGRADABLE = 0,
-  MANUAL_UPGRADABLE,
-  PROXIED,
-  NATIVE
+export enum NftType {
+  ERC1155 = 0,
+  ERC721
 }
 
 /**
@@ -165,7 +165,9 @@ export interface SpotTrade {
   /** Whether the taker order is a buy or sell order. */
   fillAmountBorSA: boolean;
   /** The token the taker order sells. */
-  tokenA: number;
+  tokenAS: number;
+  /** The token the taker order buys. */
+  tokenAB: number;
   /** The amount of tokens (in tokenS) the taker sells. */
   fillSA: BN;
   /** The fee (in tokenB) paid by the taker. */
@@ -180,7 +182,9 @@ export interface SpotTrade {
   /** Whether the maker order is a buy or sell order. */
   fillAmountBorSB: boolean;
   /** The token the maker order sells. */
-  tokenB: number;
+  tokenBS: number;
+  /** The token the maker order buys. */
+  tokenBB: number;
   /** The amount of tokens (in tokenS) the maker sells. */
   fillSB: BN;
   /** The fee (in tokenB) paid by the maker. */
@@ -327,6 +331,22 @@ export interface ProtocolFees {
 }
 
 /**
+ * The protocol fees that need to be paid for trades.
+ */
+export interface Nft {
+  /** The minter of the NFT. */
+  minter: string;
+  /** The nft type of the NFT token contract. */
+  nftType: number;
+  /** The NFT token contract address. */
+  token: string;
+  /** The NFT token id. */
+  nftID: string;
+  /** The creator fee bips. */
+  creatorFeeBips: number;
+}
+
+/**
  * The data needed to withdraw from the Merkle tree on-chain (@see getWithdrawFromMerkleTreeData)
  */
 export interface OnchainAccountLeaf {
@@ -358,6 +378,8 @@ export interface WithdrawFromMerkleTreeData {
   accountLeaf: OnchainAccountLeaf;
   /** The balance leaf. */
   balanceLeaf: OnchainBalanceLeaf;
+  /** The NFT */
+  nft: Nft;
   /** The Merkle proof for the account leaf. */
   accountMerkleProof: string[];
   /** The Merkle proof for the balance leaf. */
@@ -482,10 +504,12 @@ export class AccountLeaf implements Account {
 export class ExchangeState {
   exchange: string;
   accounts: AccountLeaf[];
+  nfts: { [key: string]: Nft };
 
   constructor(exchange: string, accounts: AccountLeaf[] = []) {
     this.exchange = exchange;
     this.accounts = accounts;
+    this.nfts = {};
 
     this.accountIdToOwner = {};
     this.ownerToAccountId = {};

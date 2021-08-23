@@ -379,10 +379,6 @@ class OrderMatchingGadget : public GadgetT
     RequireOrderFillsGadget requireOrderFillsA;
     RequireOrderFillsGadget requireOrderFillsB;
 
-    // Check if tokenS/tokenB match
-    RequireEqualGadget orderA_tokenS_eq_orderB_tokenB;
-    RequireEqualGadget orderA_tokenB_eq_orderB_tokenS;
-
     // Check if the takers match
     RequireValidTakerGadget validateTakerA;
     RequireValidTakerGadget validateTakerB;
@@ -410,18 +406,6 @@ class OrderMatchingGadget : public GadgetT
           requireOrderFillsA(pb, constants, orderA, filledA, fillS_A, fillS_B, FMT(prefix, ".requireOrderFillsA")),
           requireOrderFillsB(pb, constants, orderB, filledB, fillS_B, fillS_A, FMT(prefix, ".requireOrderFillsB")),
 
-          // Check if tokenS/tokenB match
-          orderA_tokenS_eq_orderB_tokenB(
-            pb,
-            orderA.tokenS.packed,
-            orderB.tokenB.packed,
-            FMT(prefix, ".orderA_tokenS_eq_orderB_tokenB")),
-          orderA_tokenB_eq_orderB_tokenS(
-            pb,
-            orderA.tokenB.packed,
-            orderB.tokenS.packed,
-            FMT(prefix, ".orderA_tokenB_eq_orderB_tokenS")),
-
           // Check if the takers match
           validateTakerA(pb, constants, ownerB, orderA.taker, FMT(prefix, ".validateTakerA")),
           validateTakerB(pb, constants, ownerA, orderB.taker, FMT(prefix, ".validateTakerB")),
@@ -438,10 +422,6 @@ class OrderMatchingGadget : public GadgetT
         requireOrderFillsA.generate_r1cs_witness();
         requireOrderFillsB.generate_r1cs_witness();
 
-        // Check if tokenS/tokenB match
-        orderA_tokenS_eq_orderB_tokenB.generate_r1cs_witness();
-        orderA_tokenB_eq_orderB_tokenS.generate_r1cs_witness();
-
         // Check if the takers match
         validateTakerA.generate_r1cs_witness();
         validateTakerB.generate_r1cs_witness();
@@ -456,10 +436,6 @@ class OrderMatchingGadget : public GadgetT
         // Check if the fills are valid for the orders
         requireOrderFillsA.generate_r1cs_constraints();
         requireOrderFillsB.generate_r1cs_constraints();
-
-        // Check if tokenS/tokenB match
-        orderA_tokenS_eq_orderB_tokenB.generate_r1cs_constraints();
-        orderA_tokenB_eq_orderB_tokenS.generate_r1cs_constraints();
 
         // Check if the takers match
         validateTakerA.generate_r1cs_constraints();

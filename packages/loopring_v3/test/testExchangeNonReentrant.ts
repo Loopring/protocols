@@ -89,6 +89,8 @@ contract("Exchange", (accounts: string[]) => {
             values.push(Constants.zeroAddress);
           } else if (input.type.startsWith("address[]")) {
             values.push([Constants.zeroAddress]);
+          } else if (input.type.startsWith("uint8[]")) {
+            values.push([Constants.zeroAddress]);
           } else if (input.type.startsWith("bool[]")) {
             values.push([false]);
           } else if (input.type === "bytes") {
@@ -116,7 +118,7 @@ contract("Exchange", (accounts: string[]) => {
           ) {
             const proof = await exchangeTestUtil.createMerkleTreeInclusionProof(
               0,
-              "ETH"
+              0
             );
             values.push(proof);
           } else if (
