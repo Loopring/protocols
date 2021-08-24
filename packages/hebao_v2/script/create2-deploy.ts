@@ -2,8 +2,6 @@
 
 const hre = require("hardhat");
 const ethers = hre.ethers;
-import { newWalletImpl, newWalletFactoryContract } from "../test/commons";
-import { signCreateWallet } from "../test/helper/signatureUtils";
 import BN = require("bn.js");
 
 async function newSingleFactory() {

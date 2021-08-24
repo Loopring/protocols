@@ -5,6 +5,7 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "hardhat-gas-reporter";
 import "@nomiclabs/hardhat-etherscan";
+import "@eth-optimism/hardhat-ovm";
 
 // import "@eth-optimism/plugins/hardhat/compiler";
 // import "@eth-optimism/plugins/hardhat/ethers";
@@ -83,6 +84,16 @@ export default {
         .slice()
     },
 
+    optimism_kovan: {
+      chainId: 69,
+      url: "https://kovan.optimism.io",
+      // gas: "auto",
+      gasPrice: 15000000,
+      ovm: true,
+      timeout: 60000,
+      accounts: loadTestAccounts().map(item => item.privateKey)
+    },
+
     arbitrum_one: {
       chainId: 42161,
       url: "https://arb1.arbitrum.io/rpc",
@@ -101,6 +112,11 @@ export default {
       optimizer: {
         enabled: true,
         runs: 100000
+      },
+      outputSelection: {
+        "*": {
+          "*": ["evm.bytecode", "evm.deployedBytecode", "abi"]
+        }
       }
     }
   },

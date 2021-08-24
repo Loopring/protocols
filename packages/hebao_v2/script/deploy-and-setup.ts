@@ -3,9 +3,47 @@
 import BN = require("bn.js");
 const hre = require("hardhat");
 const ethers = hre.ethers;
+const fs = require("fs");
 import { newWalletImpl, newWalletFactoryContract } from "../test/commons";
 import { signCreateWallet } from "../test/helper/signatureUtils";
 import { deployWalletImpl, deployWalletFactory } from "./create2-deploy";
+import { DeployTask } from "./types";
+
+async function deployContract(deployTask: DeployTask) {
+  const libraries = {};
+  deployTask.libs &&
+    deployTask.libs.forEach((value, key) => (libraries[key] = value));
+  let args: any[] = [];
+  deployTask.args && (args = deployTask.args.slice());
+
+  const contract = await (await ethers.getContractFactory(
+    deployTask.contractName,
+    { libraries }
+  )).deploy(...args, { gasLimit: 50000000 });
+  deployTask.address = contract.address;
+  return deployTask;
+}
+
+export async function deployAll() {
+  const deployResFile = "script/data/deployment-" + hre.network.name + ".json";
+
+  const deployTasks: DeployTask[] = [
+    {
+      contractName: "ERC1271Lib"
+    }
+    // {
+    //   contractName: "ERC20Lib"
+    // },
+  ];
+  console.log(deployTasks);
+
+  for (const task of deployTasks) {
+    // console.log(task);
+    await deployContract(task);
+  }
+
+  fs.writeFileSync(deployResFile, JSON.stringify(deployTasks, undefined, 2));
+}
 
 async function newWallet(walletFactoryAddress: string, _salt?: number) {
   const ownerAccount = (await ethers.getSigners())[0];
@@ -81,7 +119,10 @@ async function deployOfficialGuardian() {
   const officialGuardian = await (await ethers.getContractFactory(
     "OfficialGuardian"
   )).deploy();
-  // console.log("officialGuardian address:", officialGuardian.address);
+  console.log(
+    "officialGuardian implementation address:",
+    officialGuardian.address
+  );
 
   await proxy.upgradeTo(officialGuardian.address);
   const proxyAsOfficialGuardian = await (await ethers.getContractFactory(
@@ -103,7 +144,7 @@ async function getWalletImplAddr(walletFactoryAddress: string) {
   console.log("masterCopy:", masterCopy);
 }
 
-async function walletCreationTest() {
+export async function walletCreationTest() {
   const ownerAccount = (await ethers.getSigners())[0];
   const ownerAddr = await ownerAccount.getAddress();
 
@@ -112,14 +153,14 @@ async function walletCreationTest() {
   console.log("walletFactory:", walletFactory.address);
   console.log("masterCopy:", masterCopy);
 
-  await newWallet(walletFactory.address);
+  // await newWallet(walletFactory.address);
 
-  // await getWalletImplAddr(walletFactory.address);
-  const officialGuardianAddr = await deployOfficialGuardian();
-  await addManager(officialGuardianAddr, ownerAddr);
+  // // await getWalletImplAddr(walletFactory.address);
+  // const officialGuardianAddr = await deployOfficialGuardian();
+  // await addManager(officialGuardianAddr, ownerAddr);
 }
 
-async function create2Test() {
+export async function create2Test() {
   // const smartWalletAddr = await deployWalletImpl();
   // const walletFactoryAddr = await deployWalletFactory(smartWalletAddr);
   const walletFactoryAddr = "0x5621a77f8EbC9265A60b0E83B49db998aC046B9C";
@@ -130,7 +171,9 @@ async function create2Test() {
 
 async function main() {
   // await walletCreationTest();
-  await create2Test();
+  // await create2Test();
+
+  await deployAll();
 }
 
 main()

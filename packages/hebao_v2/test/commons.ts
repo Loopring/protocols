@@ -129,10 +129,10 @@ export async function newWalletFactoryContract(deployer?: string) {
   if (deployer) {
     const _signer = await addrToSigner(deployer);
     // console.log("_signer:", _signer);
-    return await walletFactory.connect(_signer);
-  } else {
-    return walletFactory;
+    await walletFactory.connect(_signer);
   }
+
+  return walletFactory;
 }
 
 export async function newWallet(

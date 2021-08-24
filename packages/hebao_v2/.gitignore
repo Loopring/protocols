@@ -6,3 +6,6 @@ artifacts/
 cache/
 build/
 ABI/
+artifacts-ovm/
+cache-ovm/
+flattened/
