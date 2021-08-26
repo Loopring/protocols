@@ -35,8 +35,11 @@ contract WalletDeploymentLib
     }
 
     function computeWalletSalt(
-        address owner,
-        uint    salt
+        address          owner,
+        address[] memory guardians,
+        uint             quota,
+        address          inheritor,
+        uint             salt
         )
         public
         pure
@@ -46,35 +49,56 @@ contract WalletDeploymentLib
             abi.encodePacked(
                 WALLET_CREATION,
                 owner,
+                keccak256(abi.encodePacked(guardians)),
+                quota,
+                inheritor,
                 salt
             )
         );
     }
 
     function _deploy(
-        address owner,
-        uint    salt
+        address          owner,
+        address[] memory guardians,
+        uint             quota,
+        address          inheritor,
+        uint             salt
         )
         internal
         returns (address payable wallet)
     {
         wallet = Create2.deploy(
-            computeWalletSalt(owner, salt),
+            computeWalletSalt(
+                owner,
+                guardians,
+                quota,
+                inheritor,
+                salt
+            ),
             getWalletCode()
         );
     }
 
     function _computeWalletAddress(
-        address owner,
-        uint    salt,
-        address deployer
+        address          owner,
+        address[] memory guardians,
+        uint             quota,
+        address          inheritor,
+        uint             salt,
+        address          deployer
         )
         internal
         view
         returns (address)
     {
         return Create2.computeAddress(
-            computeWalletSalt(owner, salt),
+            computeWalletSalt(
+                owner,
+                guardians,
+                quota,
+                inheritor,
+                salt
+            ),
             getWalletCode(),
             deployer
         );

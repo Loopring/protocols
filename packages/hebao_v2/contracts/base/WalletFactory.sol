@@ -61,7 +61,13 @@ contract WalletFactory is WalletDeploymentLib
         require(feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
 
         _validateConfig(config);
-        wallet = _deploy(config.owner, config.salt);
+        wallet = _deploy(
+            config.owner,
+            config.guardians,
+            config.quota,
+            config.inheritor,
+            config.salt
+        );
         _initializeWallet(wallet, config, feeAmount);
     }
 
@@ -70,8 +76,11 @@ contract WalletFactory is WalletDeploymentLib
     /// @param salt A salt.
     /// @return wallet The wallet address
     function computeWalletAddress(
-        address owner,
-        uint    salt
+        address          owner,
+        address[] memory guardians,
+        uint             quota,
+        address          inheritor,
+        uint             salt
         )
         public
         view
@@ -79,6 +88,9 @@ contract WalletFactory is WalletDeploymentLib
     {
         return _computeWalletAddress(
             owner,
+            guardians,
+            quota,
+            inheritor,
             salt,
             address(this)
         );

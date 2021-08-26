@@ -139,6 +139,14 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
 
         // Pay for the wallet creation using wallet funds
         if (feeRecipient != address(0) && feeAmount > 0) {
+            if (quota != 0) {
+                wallet.checkAndAddToSpent(
+                    priceOracle,
+                    feeToken,
+                    feeAmount
+                );
+            }
+
             ERC20Lib.transfer(feeToken, feeRecipient, feeAmount);
         }
     }
