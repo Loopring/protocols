@@ -99,6 +99,12 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     {
         if (config.blockCallbacks.length > 0) {
             require(config.receivers.length > 0, "MISSING_RECEIVERS");
+
+             // Make sure the receiver is authorized to approve transactions
+            IAgentRegistry agentRegistry = IExchangeV3(target).getAgentRegistry();
+            for (uint i = 0; i < config.receivers.length; i++) {
+                require(agentRegistry.isUniversalAgent(config.receivers[i]), "UNAUTHORIZED_RECEIVER");
+            }
         }
 
         require(
