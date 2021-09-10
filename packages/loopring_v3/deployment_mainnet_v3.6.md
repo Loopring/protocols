@@ -32,10 +32,10 @@
 
 - ForcedWithdrawalAgent: [0x52ea1971C05B0169c02a0bBeC05Fe8b5E3A24470](https://etherscan.io/address/0x52ea1971C05B0169c02a0bBeC05Fe8b5E3A24470)
 
-### UPGRADE-20210901
+### UPGRADE-20210901（release_loopring_3.6.2）
 
 - ExchangeV3(implementation): 0x3c294fcf74129d649325f8995afc2f9cfafab9da
-
+- Test ERC1155 token: [0xf7316e969e845837d82829cf9aac334a0547d381](https://etherscan.io/address/0xf7316e969e845837d82829cf9aac334a0547d381)
 ---
 
 - AmmPools:
