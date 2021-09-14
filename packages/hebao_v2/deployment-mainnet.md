@@ -7,6 +7,7 @@
 - blankOwner: 0xb7390a217cee03545b5e2b33c6f6ce6012d9b9bd
 - smartWallet(masterCopy): 0x5fC8A17DdED0a4dA0f9a1E44E6C26F80Aa514145
 - walletFactory: 0x57E037F4d2c8BEa011Ad8a9A5AF4AaEEd508650f
+- officialGuardian: 0xa4803058963e1314a938dbB4D9027D156e034f6f
 
 ## Arbitrum
 
