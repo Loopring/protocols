@@ -1,5 +1,13 @@
 # Deployment on mainnet
 
+## Ethereum mainnet
+
+- deployer: 0x4374D3d032B3c96785094ec9f384f07077792768
+- priceOracle: 0xb124190942976431d8181fbe183e44584253da68
+- blankOwner: 0xb7390a217cee03545b5e2b33c6f6ce6012d9b9bd
+- smartWallet(masterCopy): 0x5fC8A17DdED0a4dA0f9a1E44E6C26F80Aa514145
+- walletFactory: 0x57E037F4d2c8BEa011Ad8a9A5AF4AaEEd508650f
+
 ## Arbitrum
 
 - deployer: 0xABafD84CDD175d02E894C3b1c6Ad6C25f34E5A9B
