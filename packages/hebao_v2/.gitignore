@@ -6,3 +6,4 @@ artifacts/
 cache/
 build/
 ABI/
+libraries.js
