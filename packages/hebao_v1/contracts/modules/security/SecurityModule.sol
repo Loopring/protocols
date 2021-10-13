@@ -14,7 +14,7 @@ import "./SignedRequest.sol";
 abstract contract SecurityModule is MetaTxModule
 {
 
-    // The minimal number of guardians for recovery and locking.
+    // A touch will be skipped if the last touch was within 30 days to save gas.
     uint public constant TOUCH_GRACE_PERIOD = 30 days;
 
     event WalletLocked(
