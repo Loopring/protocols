@@ -36,6 +36,10 @@
 
 - ExchangeV3(implementation): 0x3c294fcf74129d649325f8995afc2f9cfafab9da
 - Test ERC1155 token: [0xf7316e969e845837d82829cf9aac334a0547d381](https://etherscan.io/address/0xf7316e969e845837d82829cf9aac334a0547d381)
+
+### UPDATE-2021-10-13
+- DestroyableWalletAgent: [0xF75B89d214512C42C474bb0Ee5D865e953C28109](https://etherscan.io/address/0xF75B89d214512C42C474bb0Ee5D865e953C28109)
+
 ---
 
 - AmmPools:
