@@ -38,7 +38,7 @@
 - Test ERC1155 token: [0xf7316e969e845837d82829cf9aac334a0547d381](https://etherscan.io/address/0xf7316e969e845837d82829cf9aac334a0547d381)
 
 ### UPDATE-2021-10-13
-- DestroyableWalletAgent: [0xF75B89d214512C42C474bb0Ee5D865e953C28109](https://etherscan.io/address/0xF75B89d214512C42C474bb0Ee5D865e953C28109)
+- DestroyableWalletAgent: [0x4Cd8d47048B03294820A32Ebf58cBC6A76F7F529](https://etherscan.io/address/0x4Cd8d47048B03294820A32Ebf58cBC6A76F7F529)
 
 ---
 
