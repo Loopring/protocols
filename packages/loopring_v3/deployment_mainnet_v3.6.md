@@ -42,7 +42,7 @@
 
 ---
 
-- AmmPools:
+### AmmPools:
 
   1. LRC-ETH pool: 0x18920d6E6Fb7EbE057a4DD9260D6D95845c95036
 
@@ -2042,7 +2042,7 @@
 
   ***
 
-- Registered tokens:
+### Registered tokens:
   - ETH: 0x0000000000000000000000000000000000000000, tokenId: 0
   - LRC: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD, tokenId: 1
   - WETH: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, tokenId: 2
