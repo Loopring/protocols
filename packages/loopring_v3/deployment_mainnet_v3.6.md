@@ -2039,6 +2039,23 @@
     tokenSymbol: 'LP-SENT-USDC'
   }
   ```
+  
+  115. ENS-ETH: 0x2fAc662748F876CA1d3A1b59eF5Be45C128EcfE5
+  ```
+  {
+    sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+    exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+    poolName: 'AMM-ENS-ETH',
+    accountID: 115,
+    tokens: [
+      '0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72',
+      '0x0000000000000000000000000000000000000000'
+    ],
+    weights: [ 1000000, 1000000 ],
+    feeBips: 20,
+    tokenSymbol: 'LP-ENS-ETH'
+  }
+  ```
 
   ***
 
@@ -2291,3 +2308,6 @@
   - SENT: 0x97abee33cd075c58bfdd174e0885e08e8f03556f, tokenId: 245
   - LP-SENT-USDC: 0x8195be4E48d3a2F80692fe1dBA9b23b8050fB1f9, tokenId: 246
   - FST: 0x6d1c15725e3979f654bd929e1ccad48708bd4284, tokenId: 247
+  - EFX: 0x9b917D94Fb0138eDF520332f3d45494f1a74Bec8, tokenId: 248
+  - ENS: 0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72, tokenId: 249
+  - LP-ENS-ETH: 0x2fAc662748F876CA1d3A1b59eF5Be45C128EcfE5, tokenId: 250
