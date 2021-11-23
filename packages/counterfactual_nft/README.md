@@ -25,6 +25,6 @@ Should be simple to understand for users:
 
 The NFT is now fully functional on L2 and the only cost was the NFT mint price on L2.
 
-If `baseURI != 0` it's a bit more complicated because that data is not publicly known by default before the NFT contract is created. So to be able to know how to show the NFT on L2 this data need to be made public somehow (well, at least for them to work on a general block explorer, could be part of the offchain data field in a block, but this of course also costs some gas). But the option is there if minters don't want to use the IPFS hash as the NFT ID and still have the full flexibility to store whatever data they want in the NFT ID like they can in normal NFT contracts.
+If `baseURI != 0` it's a bit more complicated because that data is not publicly known by default before the NFT contract is created. So to be able to know how to show the NFT on L2 this data needs to be made public somehow (well, at least for them to work on a general block explorer, could be part of the offchain data field in a block, but this of course also costs some gas). But the option is there if minters don't want to use the IPFS hash as the NFT ID and still have the full flexibility to store whatever data they want in the NFT ID like they can in normal NFT contracts.
 
 This is really just mainly for people that want to mint a couple of NFTs for as cheap as possible. Creators doing serious collections with thousands of NFTs will probably want to use their own contract anyway.
