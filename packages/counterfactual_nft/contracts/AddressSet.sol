@@ -25,7 +25,7 @@ contract AddressSet
         require(set.positions[addr] == 0, "ALREADY_IN_SET");
 
         if (maintainList) {
-            require(set.addresses.length == set.count, "PREVIOUSLY_NOT_MAINTAILED");
+            require(set.addresses.length == set.count, "PREVIOUSLY_NOT_MAINTAINED");
             set.addresses.push(addr);
         } else {
             require(set.addresses.length == 0, "MUST_MAINTAIN");
