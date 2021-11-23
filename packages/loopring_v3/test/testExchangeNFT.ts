@@ -558,6 +558,78 @@ contract("Exchange", (accounts: string[]) => {
       await checkBalanceNFT(nft, ownerB, nftID, withdrawal.amount);
     });
 
+    it("No gas withdrawal", async () => {
+      const feeToken = "WETH";
+      const balance = new BN(web3.utils.toWei("100.0", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+      const nftID =
+        "0x0123456789012345678901234567890123456789012345678901234567891234";
+      const nftIDBN = new BN(nftID.slice(2), 16);
+
+      // Fund some accounts
+      await ctx.deposit(ownerA, ownerA, feeToken, balance);
+
+      // Setup minter
+      await NFTA.addManager(ownerA);
+
+      const tokenAddress = NFTA.address;
+
+      // Mint an NFT to this contract
+      const nftMint = await ctx.mintNFT(
+        ownerA,
+        ownerA,
+        tokenAddress,
+        nftID,
+        new BN(10),
+        feeToken,
+        fee
+      );
+
+      // Try to withdraw the NFT
+      const withdrawal = await ctx.requestWithdrawal(
+        ownerA,
+        "NFT",
+        new BN(2),
+        feeToken,
+        fee,
+        {
+          authMethod: AuthMethod.EDDSA,
+          tokenID: nftMint.toTokenID,
+          nftMint: nftMint,
+          to: ownerB,
+          gas: 0,
+        }
+      );
+
+      await ctx.submitTransactions(16);
+      await verify();
+
+      // Check that the withdrawal did indeed fail
+      const event = await ctx.assertEventEmitted(
+        ctx.exchange,
+        "NftWithdrawalFailed"
+      );
+      assert.equal(event.from, ownerA, "from should match");
+      assert.equal(event.to, ownerB, "to should match");
+      assert.equal(event.token, tokenAddress, "token should match");
+      assert(event.nftID.eq(nftIDBN), "nftID should match");
+      assert.equal(event.tokenID, withdrawal.tokenID, "tokenID should match");
+      assert(event.amount.eq(withdrawal.amount), "amount should match");
+
+      // Withdraw the NFT
+      await mintNFTChecked(
+        ownerB,
+        tokenAddress,
+        nftMint.toTokenID,
+        nftID,
+        nftMint.nftType,
+        nftMint.minter,
+        withdrawal.amount
+      );
+      // Check that the user received the NFT on L1
+      await checkBalanceNFT(NFTA, ownerB, nftID, withdrawal.amount);
+    });
+
     it("NFT Forced withdrawal (NFT exists, correct owner)", async () => {
       const feeToken = "WETH";
       const balance = new BN(web3.utils.toWei("100.0", "ether"));
