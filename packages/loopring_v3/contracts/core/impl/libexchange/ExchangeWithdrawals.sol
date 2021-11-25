@@ -480,31 +480,35 @@ library ExchangeWithdrawals
         private
         returns (bool success)
     {
-        if (nft.token == nft.minter) {
-            // This is an existing thirdparty NFT contract
-            success = ExchangeNFT.withdraw(
-                S,
-                from,
-                to,
-                nft.nftType,
-                nft.token,
-                nft.nftID,
-                amount,
-                extraData,
-                gasLimit
-            );
+        if (gasLimit > 0) {
+            if (nft.token == nft.minter) {
+                // This is an existing thirdparty NFT contract
+                success = ExchangeNFT.withdraw(
+                    S,
+                    from,
+                    to,
+                    nft.nftType,
+                    nft.token,
+                    nft.nftID,
+                    amount,
+                    extraData,
+                    gasLimit
+                );
+            } else {
+                // This is an NFT contract with L2 minting support
+                success = ExchangeNFT.mintFromL2(
+                    S,
+                    to,
+                    nft.token,
+                    nft.nftID,
+                    amount,
+                    nft.minter,
+                    extraData,
+                    gasLimit
+                );
+            }
         } else {
-            // This is an inhouse NFT contract with L2 minting support
-            success = ExchangeNFT.mintFromL2(
-                S,
-                to,
-                nft.token,
-                nft.nftID,
-                amount,
-                nft.minter,
-                extraData,
-                gasLimit
-            );
+            success = false;
         }
 
         require(allowFailure || success, "NFT_TRANSFER_FAILURE");

@@ -7,6 +7,7 @@ import "../../iface/ExchangeData.sol";
 import "../../iface/IL2MintableNFT.sol";
 import "../../../thirdparty/erc1155/IERC1155.sol";
 import "../../../thirdparty/erc721/IERC721.sol";
+import "../../../lib/AddressUtil.sol";
 
 
 /// @title ExchangeNFT
@@ -14,6 +15,7 @@ import "../../../thirdparty/erc721/IERC721.sol";
 library ExchangeNFT
 {
     using ExchangeNFT for ExchangeData.State;
+    using AddressUtil for address;
 
     function deposit(
         ExchangeData.State storage S,
@@ -148,6 +150,6 @@ library ExchangeNFT
         view
         returns (bool valid)
     {
-        return (token != address(this) && token != address(S.depositContract));
+        return (token != address(this) && token != address(S.depositContract)) && token.isContract();
     }
 }

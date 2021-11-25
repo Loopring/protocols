@@ -9,6 +9,8 @@ contract("Exchange", (accounts: string[]) => {
   const bVerify = true;
 
   const L2MintableERC1155 = artifacts.require("L2MintableERC1155");
+  const NFTFactory = artifacts.require("NFTFactory");
+  const CounterfactualNFT = artifacts.require("CounterfactualNFT");
 
   let NFTA: any;
 
@@ -124,6 +126,96 @@ contract("Exchange", (accounts: string[]) => {
     );
     // Withdraw again, no tokens should be transferred
     await withdrawNFTOnceChecked(
+      owner,
+      token,
+      tokenID,
+      nftID,
+      nftType,
+      minter,
+      new BN(0)
+    );
+  };
+
+  const mintNFTOnceChecked = async (
+    owner: string,
+    token: string,
+    tokenID: number,
+    nftID: string,
+    nftType: NftType,
+    minter: string,
+    expectedAmount: BN
+  ) => {
+    // Check how much will be withdrawn
+    const onchainAmountWithdrawableBefore = await ctx.exchange.getAmountWithdrawableNFT(
+      owner,
+      token,
+      nftType,
+      nftID,
+      minter
+    );
+    assert(
+      onchainAmountWithdrawableBefore.eq(expectedAmount),
+      "unexpected withdrawable amount before"
+    );
+
+    await ctx.exchange.withdrawFromApprovedWithdrawalsNFT(
+      [owner],
+      [minter],
+      [nftType],
+      [token],
+      [nftID],
+      {
+        from: ctx.testContext.orderOwners[10]
+      }
+    );
+
+    // Complete amount needs to be withdrawn
+    const onchainAmountWithdrawableAfter = await ctx.exchange.getAmountWithdrawableNFT(
+      owner,
+      token,
+      nftType,
+      nftID,
+      minter
+    );
+    assert(
+      onchainAmountWithdrawableAfter.eq(new BN(0)),
+      "unexpected withdrawable amount after"
+    );
+
+    // Get the WithdrawalCompleted event
+    const event = await ctx.assertEventEmitted(
+      ctx.exchange,
+      "NftWithdrawalCompleted"
+    );
+    assert.equal(event.from, owner, "from unexpected");
+    assert.equal(event.to, owner, "to unexpected");
+    assert.equal(event.token, token, "token unexpected");
+    assert(event.nftID.eq(new BN(nftID.slice(2), 16)), "nftID should match");
+    assert.equal(event.tokenID.toNumber(), 0, "tokenID should be 0");
+    assert(event.amount.eq(expectedAmount), "amount unexpected");
+  };
+
+  const mintNFTChecked = async (
+    owner: string,
+    token: string,
+    tokenID: number,
+    nftID: string,
+    nftType: NftType,
+    minter: string,
+    expectedAmount: BN
+  ) => {
+    // Mint
+    await mintNFTOnceChecked(
+      owner,
+      token,
+      tokenID,
+      nftID,
+      nftType,
+      minter,
+      expectedAmount
+    );
+    // Mint again, no tokens should be minted
+    await mintNFTOnceChecked(
       owner,
       token,
       tokenID,
@@ -375,6 +467,167 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
       await checkBalanceNFT(NFTA, ownerC, nftID, withdrawal.amount);
       await checkBalanceNFT(NFTA, ctx.exchange.address, nftID, new BN(0));
+    });
+
+    it("Counterfactual L2 minting and withdrawing", async () => {
+      const feeToken = "WETH";
+      const balance = new BN(web3.utils.toWei("100.0", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+      const nftID =
+        "0x0123456789012345678901234567890123456789012345678901234567891234";
+      const nftIDBN = new BN(nftID.slice(2), 16);
+
+      // Fund some accounts
+      await ctx.deposit(ownerA, ownerA, feeToken, balance);
+
+      // Setup counterfactual NFT contract for the owner
+      const nftImplementation = await CounterfactualNFT.new(ctx.exchange.address);
+      const factory = await NFTFactory.new(nftImplementation.address);
+      const tokenAddress = await factory.computeNftContractAddress(ownerA, "");
+
+      // Mint an NFT to this contract
+      const nftMint = await ctx.mintNFT(
+        ownerA,
+        ownerA,
+        tokenAddress,
+        nftID,
+        new BN(10),
+        feeToken,
+        fee
+      );
+
+      // Try to withdraw the NFT
+      const withdrawal = await ctx.requestWithdrawal(
+        ownerA,
+        "NFT",
+        new BN(2),
+        feeToken,
+        fee,
+        {
+          authMethod: AuthMethod.EDDSA,
+          tokenID: nftMint.toTokenID,
+          nftMint: nftMint,
+          to: ownerB,
+        }
+      );
+
+      await ctx.submitTransactions(16);
+      await verify();
+
+      // Check that the withdrawal did indeed fail
+      const event = await ctx.assertEventEmitted(
+        ctx.exchange,
+        "NftWithdrawalFailed"
+      );
+      assert.equal(event.from, ownerA, "from should match");
+      assert.equal(event.to, ownerB, "to should match");
+      assert.equal(event.token, tokenAddress, "token should match");
+      assert(event.nftID.eq(nftIDBN), "nftID should match");
+      assert.equal(event.tokenID, withdrawal.tokenID, "tokenID should match");
+      assert(event.amount.eq(withdrawal.amount), "amount should match");
+
+      // Try to withdraw the NFTs manually before creating the contract
+      await expectThrow(
+        mintNFTOnceChecked(
+          ownerB,
+          tokenAddress,
+          nftMint.toTokenID,
+          nftID,
+          nftMint.nftType,
+          nftMint.minter,
+          withdrawal.amount,
+        ),
+        "NFT_TRANSFER_FAILURE"
+      );
+
+      // Now create the NFT contract so the NFT can be minted
+      await factory.createNftContract(ownerA, "");
+      const nft = await CounterfactualNFT.at(tokenAddress);
+
+      // Withdraw the NFT
+      await mintNFTChecked(
+        ownerB,
+        tokenAddress,
+        nftMint.toTokenID,
+        nftID,
+        nftMint.nftType,
+        nftMint.minter,
+        withdrawal.amount
+      );
+      // Check that the user received the NFT on L1
+      await checkBalanceNFT(nft, ownerB, nftID, withdrawal.amount);
+    });
+
+    it("No gas withdrawal", async () => {
+      const feeToken = "WETH";
+      const balance = new BN(web3.utils.toWei("100.0", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+      const nftID =
+        "0x0123456789012345678901234567890123456789012345678901234567891234";
+      const nftIDBN = new BN(nftID.slice(2), 16);
+
+      // Fund some accounts
+      await ctx.deposit(ownerA, ownerA, feeToken, balance);
+
+      // Setup minter
+      await NFTA.addManager(ownerA);
+
+      const tokenAddress = NFTA.address;
+
+      // Mint an NFT to this contract
+      const nftMint = await ctx.mintNFT(
+        ownerA,
+        ownerA,
+        tokenAddress,
+        nftID,
+        new BN(10),
+        feeToken,
+        fee
+      );
+
+      // Try to withdraw the NFT
+      const withdrawal = await ctx.requestWithdrawal(
+        ownerA,
+        "NFT",
+        new BN(2),
+        feeToken,
+        fee,
+        {
+          authMethod: AuthMethod.EDDSA,
+          tokenID: nftMint.toTokenID,
+          nftMint: nftMint,
+          to: ownerB,
+          gas: 0,
+        }
+      );
+
+      await ctx.submitTransactions(16);
+      await verify();
+
+      // Check that the withdrawal did indeed fail
+      const event = await ctx.assertEventEmitted(
+        ctx.exchange,
+        "NftWithdrawalFailed"
+      );
+      assert.equal(event.from, ownerA, "from should match");
+      assert.equal(event.to, ownerB, "to should match");
+      assert.equal(event.token, tokenAddress, "token should match");
+      assert(event.nftID.eq(nftIDBN), "nftID should match");
+      assert.equal(event.tokenID, withdrawal.tokenID, "tokenID should match");
+      assert(event.amount.eq(withdrawal.amount), "amount should match");
+
+      // Withdraw the NFT
+      await mintNFTChecked(
+        ownerB,
+        tokenAddress,
+        nftMint.toTokenID,
+        nftID,
+        nftMint.nftType,
+        nftMint.minter,
+        withdrawal.amount
+      );
+      // Check that the user received the NFT on L1
+      await checkBalanceNFT(NFTA, ownerB, nftID, withdrawal.amount);
     });
 
     it("NFT Forced withdrawal (NFT exists, correct owner)", async () => {
