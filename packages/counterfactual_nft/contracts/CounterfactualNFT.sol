@@ -164,7 +164,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         override
         onlyFromLayer2
     {
-        require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
+        // require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
 
         _mint(to, id, amount, data);
         emit MintFromL2(to, id, amount, minter);
@@ -188,6 +188,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         }
         // Owner could already be added to the minters, but that's fine
         mintersAndOwner[idx++] = owner();
+        mintersAndOwner[idx++] = layer2Address;
         return mintersAndOwner;
     }
 
@@ -197,6 +198,6 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         returns (bool)
     {
         // Also allow the owner to mint NFTs to save on gas (no additional minter needs to be set)
-        return addr == owner() || isAddressInSet(MINTERS, addr);
+        return addr == owner() || addr == layer2Address || isAddressInSet(MINTERS, addr);
     }
 }
