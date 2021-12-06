@@ -48,9 +48,9 @@ contract UniswapV2PriceOracle is PriceOracle
         }
 
         if (token < wethAddress) {
-            return amount.mul(reserve1 / reserve0);
+            return amount.mul(reserve1.mul(1000) / reserve0) / 1000;
         } else {
-            return amount.mul(reserve0 / reserve1);
+            return amount.mul(reserve0.mul(1000) / reserve1) / 1000;
         }
     }
 }
