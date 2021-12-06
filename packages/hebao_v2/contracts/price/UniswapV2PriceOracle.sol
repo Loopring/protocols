@@ -33,7 +33,7 @@ contract UniswapV2PriceOracle is PriceOracle
         override
         returns (uint)
     {
-        if (amount == 0) return 0;
+        if (amount == 0 || amount == ~uint(0)) return 0;
         if (token == address(0) || token == wethAddress) return amount;
 
         address pair = factory.getPair(token, wethAddress);
