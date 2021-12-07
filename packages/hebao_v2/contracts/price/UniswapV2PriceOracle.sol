@@ -15,7 +15,8 @@ contract UniswapV2PriceOracle is PriceOracle
     using MathUint   for uint;
 
     IUniswapV2Factory public immutable factory;
-    address public immutable wethAddress;
+    address public  immutable wethAddress;
+    uint    private constant  PRICE_SCALE = 1000;
 
     constructor(
         IUniswapV2Factory _factory,
@@ -48,9 +49,9 @@ contract UniswapV2PriceOracle is PriceOracle
         }
 
         if (token < wethAddress) {
-            return amount.mul(reserve1.mul(1000) / reserve0) / 1000;
+            return amount.mul(reserve1.mul(PRICE_SCALE) / reserve0) / PRICE_SCALE;
         } else {
-            return amount.mul(reserve0.mul(1000) / reserve1) / 1000;
+            return amount.mul(reserve0.mul(PRICE_SCALE) / reserve1) / PRICE_SCALE;
         }
     }
 }
