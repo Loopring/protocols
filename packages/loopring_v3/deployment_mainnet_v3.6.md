@@ -34,12 +34,14 @@
 
 ### UPGRADE-20210901（release_loopring_3.6.2）
 
-- ExchangeV3(implementation): 0x3c294fcf74129d649325f8995afc2f9cfafab9da
+- ~~ExchangeV3(implementation): 0x3c294fcf74129d649325f8995afc2f9cfafab9da~~
 - Test ERC1155 token: [0xf7316e969e845837d82829cf9aac334a0547d381](https://etherscan.io/address/0xf7316e969e845837d82829cf9aac334a0547d381)
 
 ### UPDATE-2021-10-13
 - DestroyableWalletAgent: [0x4Cd8d47048B03294820A32Ebf58cBC6A76F7F529](https://etherscan.io/address/0x4Cd8d47048B03294820A32Ebf58cBC6A76F7F529)
 
+### UPDATE-2021-12-13
+- ExchangeV3(implementation): 0x26d8Ba776a067C5928841985bCe342f75BAE7E82
 ---
 
 ### AmmPools:
