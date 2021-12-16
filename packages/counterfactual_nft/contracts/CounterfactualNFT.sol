@@ -61,13 +61,12 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         if (bytes(_uri).length != 0) {
             _setURI(_uri);
         }
-    }
 
-    function setURI(string memory _uri)
-        public
-        onlyOwner
-    {
-        _setURI(_uri);
+        // The owner is not explicitly added to the minters here
+        // to minimize the contract deployment cost.
+        // The owner is however always an authorized minter by
+        // adding the owner's address to the authorized minters
+        // in `minters` and `isMinter`.
     }
 
     function mint(
@@ -139,13 +138,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         string memory baseURI = super.uri(tokenId);
         if (bytes(baseURI).length == 0) {
             // If no base URI is set we interpret the tokenId as an IPFS hash
-            return string(
-                abi.encodePacked(
-                    "ipfs://",
-                    IPFS.encode(tokenId),
-                    "/metadata.json"
-                )
-            );
+            return string(abi.encodePacked("ipfs://", IPFS.encode(tokenId)));
         } else {
             return baseURI;
         }

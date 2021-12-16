@@ -42,7 +42,7 @@ contract("NFT", (accounts) => {
 
     // Check if the IPFS URI is correctly returned for the minted NFT
     const uri = await nft.uri(tokenID);
-    assert(uri === "ipfs://QmaYyJx2RTHY7aGLSNX7xEzSYeh8SHU2eLNcVB1XXgzuv9/metadata.json", "unexpected uri");
+    assert(uri === "ipfs://QmaYyJx2RTHY7aGLSNX7xEzSYeh8SHU2eLNcVB1XXgzuv9", "unexpected uri");
 
     // The owner needs to be a minter
     assert.deepEqual(await nft.minters(), [owner], "unexpected minters");
