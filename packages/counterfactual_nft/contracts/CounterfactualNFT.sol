@@ -61,6 +61,12 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         if (bytes(_uri).length != 0) {
             _setURI(_uri);
         }
+
+        // The owner is not explicitly added to the minters here
+        // to minimize the contract deployment cost.
+        // The owner is however always an authorized minter by
+        // adding the owner's address to the authorized minters
+        // in `minters` and `isMinter`.
     }
 
     function mint(
