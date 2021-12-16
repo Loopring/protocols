@@ -4,7 +4,7 @@
 
 ![Merkle Tree](https://i.imgur.com/RcoayPR.png)
 
-All Merkle trees are currently stored in a sparse Merkle tree format. The Merkle trees are _Quadtrees_, not binary trees. The Accounts Merkle tree (the top part) does **NOT** need to be stored like that. For the circuits it does not matter if the Merkle tree is sparse or not. The only thing important for the circuits is that the depth of the leafs is always the same. Accounts are added to the tree one after the other. The same is not true for the sub-Merkle trees. Here any leaf can be used at any time so the implementation should use a sparse Merkle tree.
+All Merkle trees are currently stored in a sparse Merkle tree format. The Merkle trees are _Quadtrees_, not binary trees. The Accounts Merkle tree (the top part) does **NOT** need to be stored like that. For the circuits, it does not matter if the Merkle tree is sparse or not. The only thing important for the circuits is that the depth of the leafs is always the same. Accounts are added to the tree one after the other. The same is not true for the sub-Merkle trees. Here any leaf can be used at any time so the implementation should use a sparse Merkle tree.
 
 To verify data is stored in the Merkle tree a [Merkle proof](https://medium.com/crypto-0-nite/merkle-proofs-explained-6dd429623dc5) is used. This is key to how the circuits work.
 
@@ -22,7 +22,7 @@ Note that Poseidon works directly on field elements, data is not packed together
 
 - Account leaf: `Poseidon([publicKeyX, publicKeyY, nonce, balancesRoot])`
 - Balance leaf: `Poseidon([balance, tradeHistoryRoot])`
-- TradeHistory leaf: `Poseidon([filled, cancelled, orderID])`
+- TradeHistory leaf: `Poseidon([filled, canceled, orderID])`
 
 ### Non-leaf nodes
 
