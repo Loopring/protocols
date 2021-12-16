@@ -63,13 +63,6 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         }
     }
 
-    function setURI(string memory _uri)
-        public
-        onlyOwner
-    {
-        _setURI(_uri);
-    }
-
     function mint(
         address       account,
         uint256       id,
