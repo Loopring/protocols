@@ -52,7 +52,7 @@ contract FastWithdrawalLiquidityProvider is ReentrancyGuard, OwnerManagable
 
     // Execute the fast withdrawals.
     // Full approvals are posted onchain so they can be used by anyone to speed up the
-    // withdrawal by calling , but the approvals are not validated when done by the
+    // withdrawal by calling, but the approvals are not validated when done by the
     // owner or one of the managers.
     function execute(FastWithdrawalApproval[] calldata approvals)
         external
