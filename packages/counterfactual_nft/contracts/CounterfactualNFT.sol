@@ -135,8 +135,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
             return string(
                 abi.encodePacked(
                     "ipfs://",
-                    IPFS.encode(tokenId),
-                    "/metadata.json"
+                    IPFS.encode(tokenId)
                 )
             );
         } else {
