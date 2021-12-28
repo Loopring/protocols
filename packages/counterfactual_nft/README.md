@@ -20,7 +20,7 @@ Everybody on L2 automatically has his/her own NFT contract for free that can be 
 
 Should be simple to understand for users:
 - The user puts his NFT on IPFS and gets an IPFS hash in return (per NFT!)
-- The UI calculates the counterfactual NFT token contract address and shows it as the default option to mint NFTs to for his account
+- The UI calculates the counterfactual NFT token contract address and shows it as the default option to mint NFTs for his account
 - The NFT is minted with the counterfactual NFT token contract as the token address and the IPFS hash as the NFT ID
 
 The NFT is now fully functional on L2 and the only cost was the NFT mint price on L2.
