@@ -92,9 +92,12 @@ contract DefaultDepositContract is IDepositContract, Claimable
         override
         payable
         onlyExchange
-        ifNotZero(amount)
         returns (uint96 amountReceived)
     {
+        if (amount == 0) {
+            revert("ZERO_AMOUNT");
+        }
+        
         uint ethToReturn = 0;
 
         if (isETHInternal(token)) {
