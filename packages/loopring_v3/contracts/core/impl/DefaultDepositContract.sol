@@ -96,7 +96,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
         returns (uint96 amountReceived)
     {
         if (amount == 0) {
-            if (isETHInternal(token) && msg.value > 0) {
+            if (msg.value > 0) {
                 from.sendETHAndVerify(msg.value, gasleft());
             }
             return 0;
