@@ -85,23 +85,15 @@ contract DefaultDepositContract is IDepositContract, Claimable
     function deposit(
         address          from,
         address          token,
-        uint96           amount,
+        uint96           amount, // 0-value supported
         bytes   calldata /*extraData*/
         )
         external
         override
         payable
         onlyExchange
-        // ifNotZero(amount)
         returns (uint96 amountReceived)
     {
-        if (amount == 0) {
-            if (msg.value > 0) {
-                from.sendETHAndVerify(msg.value, gasleft());
-            }
-            return 0;
-        }
-
         uint ethToReturn = 0;
 
         if (isETHInternal(token)) {

@@ -58,6 +58,10 @@ library ExchangeDeposits
 
         uint16 tokenID = S.getTokenID(tokenAddress);
 
+        if (tokenID == 0 && amount == 0) {
+            require(msg.value == 0), "INVALID_ETH_DEPOSIT");
+        }
+
         // Transfer the tokens to this contract
         uint96 amountDeposited = S.depositContract.deposit{value: msg.value}(
             from,
