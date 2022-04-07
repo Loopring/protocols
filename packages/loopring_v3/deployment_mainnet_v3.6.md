@@ -2127,6 +2127,39 @@
 }
 ```
 
+120. MANA-USDC: 0xD4df78bbD50C564702F0C96C8C7de536154DB07d
+```
+{
+  sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+  exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+  poolName: 'AMM-MANA-USDC',
+  accountID: 120,
+  tokens: [
+    '0x0f5d2fb29fb7d3cfee444a200298f468908cc942',
+    '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+  ],
+  weights: [ 1000000, 1000000 ],
+  feeBips: 20,
+  tokenSymbol: 'LP-MANA-USDC'
+}
+```
+
+121. SAND-USDC: 0x17bAa21Bec595da6A9d88A4b4FfdD1d336186c48
+```
+{
+  sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+  exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+  poolName: 'AMM-SAND-USDC',
+  accountID: 121,
+  tokens: [
+    '0x3845badAde8e6dFF049820680d1F14bD3903a5d0',
+    '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+  ],
+  weights: [ 1000000, 1000000 ],
+  feeBips: 20,
+  tokenSymbol: 'LP-SAND-USDC'
+}
+```
   ***
 
 ### Registered tokens:
@@ -2389,3 +2422,8 @@
   - LP-IMX-USDC: 0x06Ac0eFB3E358528Ecd1E7336342c822678DAE4d, tokenId: 256
   - BIT: 0x1A4b46696b2bB4794Eb3D4c26f1c55F9170fa4C5, tokenId: 257
   - LP-BIT-USDC: 0x97dB7F2758eC94757ba163e3052236b73DBF6c9A, tokenId: 258
+  - MANA: 0x0f5d2fb29fb7d3cfee444a200298f468908cc942, tokenId: 259
+  - SAND: 0x3845badAde8e6dFF049820680d1F14bD3903a5d0, tokenId: 260
+  - LP-MANA-USDC: 0xD4df78bbD50C564702F0C96C8C7de536154DB07d, tokenId: 261
+  - LP-SAND-USDC: 0x17bAa21Bec595da6A9d88A4b4FfdD1d336186c48, tokenId: 262
+  
