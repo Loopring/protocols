@@ -140,7 +140,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
             // If no base URI is set we interpret the tokenId as an IPFS hash
             return string(abi.encodePacked("ipfs://", IPFS.encode(tokenId)));
         } else {
-            return baseURI;
+            return string(abi.encodePacked(baseURI, uint2str(tokenId)));
         }
     }
 
@@ -176,7 +176,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         for (uint i = 0; i < minterAddresses.length; i++) {
             mintersAndOwner[idx++] = minterAddresses[i];
         }
-         for (uint i = 0; i < deprecatedAddresses.length; i++) {
+	for (uint i = 0; i < deprecatedAddresses.length; i++) {
             mintersAndOwner[idx++] = deprecatedAddresses[i];
         }
         // Owner could already be added to the minters, but that's fine
@@ -191,5 +191,24 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     {
         // Also allow the owner to mint NFTs to save on gas (no additional minter needs to be set)
         return addr == owner() || isAddressInSet(MINTERS, addr);
+    }
+
+    function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
+        if (_i == 0) {
+            return "0";
+        }
+        uint j = _i;
+        uint len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint k = len - 1;
+        while (_i != 0) {
+            bstr[k--] = bytes1(uint8(48 + _i % 10));
+            _i /= 10;
+        }
+        return string(bstr);
     }
 }
