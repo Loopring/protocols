@@ -140,7 +140,11 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
             // If no base URI is set we interpret the tokenId as an IPFS hash
             return string(abi.encodePacked("ipfs://", IPFS.encode(tokenId)));
         } else {
-            return string(abi.encodePacked(baseURI, uint2str(tokenId)));
+	    if (bytes4("ipfs") == bytes4(bytes(baseURI))) {
+		return string(abi.encodePacked(baseURI, IPFS.encode(tokenId)));
+	    } else {
+		return string(abi.encodePacked(baseURI, uint2str(tokenId)));
+	    }
         }
     }
 
