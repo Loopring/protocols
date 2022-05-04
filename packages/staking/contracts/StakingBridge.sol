@@ -11,6 +11,7 @@ contract StakingBridge is OwnerManagable, Drainable {
     mapping(address => mapping(bytes4 => bool)) public authorized;
 
     event CallSucceeded(uint callId, address target, bytes4 method);
+    event CallReverted(uint callId, address target, bytes4 method);
 
     modifier withAccess(address target, bytes4 selector) {
         require(authorized[target][selector], "UNAUTHORIZED_CALLE");
@@ -39,14 +40,15 @@ contract StakingBridge is OwnerManagable, Drainable {
         withAccess(target, data.toBytes4(0))
         onlyManager(msg.sender)
     {
-        (bool success, bytes memory returnData) = target
+        (bool success, /*bytes memory returnData*/) = target
             .call{value: msg.value}(data);
 
-        if (!success) {
-            assembly { revert(add(returnData, 32), mload(returnData)) }
-        }
+        if (success) {
+	    emit CallSucceeded(callId, target, data.toBytes4(0));
+        } else {
+	    emit CallReverted(callId, target, data.toBytes4(0));
+	}
 
-        emit CallSucceeded(callId, target, data.toBytes4(0));
     }
 
     function canDrain(address drainer, address /*token*/)
