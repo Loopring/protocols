@@ -40,6 +40,13 @@ export default {
       accounts: loadTestAccounts()
     },
 
+    optimistic: {
+      chainId: 420,
+      url: 'http://127.0.0.1:8545',
+      gas: 6700000,
+      accounts: { mnemonic: 'test test test test test test test test test test test junk' }
+    },
+
     // HttpNetworkConfig
     ganache: {
       chainId: 31337,

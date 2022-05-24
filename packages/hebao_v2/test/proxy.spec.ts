@@ -8,7 +8,7 @@ describe("proxy", () => {
   before(async () => {});
 
   describe("fallback call", () => {
-    it.only("proxy revert when proxy call returns 0", async () => {
+    it("proxy revert when proxy call returns 0", async () => {
       const factory = await (await ethers.getContractFactory(
         "TestUniswapV2Factory"
       )).deploy();
@@ -33,9 +33,9 @@ describe("proxy", () => {
           "0x" + "11".repeat(20),
           1000
         );
-        console.log("tokenValue2:", tokenValue2.toString());
+          // console.log("tokenValue2:", tokenValue2.toString());
       } catch (err) {
-        console.log("err:", err);
+          // console.log("err:", err);
         expect(err.message.includes("revert"));
       }
 
@@ -47,7 +47,7 @@ describe("proxy", () => {
         "0x" + "11".repeat(20),
         1000
       );
-      console.log("tokenValue3:", tokenValue3.toString());
+	// console.log("tokenValue3:", tokenValue3.toString());
     });
   });
 });

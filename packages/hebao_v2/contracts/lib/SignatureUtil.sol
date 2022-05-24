@@ -115,31 +115,29 @@ library SignatureUtil
             return false;
         }
 
-        uint signatureTypeOffset = signature.length.sub(1);
-        SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
+	require(signature.length == 65 || signature.length == 66, "INVALID_SIGNATURE_LENGTH");
 
-        // Strip off the last byte of the signature by updating the length
-        assembly {
-            mstore(signature, signatureTypeOffset)
-        }
+	if (signature.length == 66) {
+	    // Strip off the last byte of the signature by updating the length
+	    assembly {
+		mstore(signature, 65)
+	    }
+	}
 
-        if (signatureType == SignatureType.EIP_712) {
-            success = (signer == recoverECDSASigner(signHash, signature));
-        } else if (signatureType == SignatureType.ETH_SIGN) {
+	success = (signer == recoverECDSASigner(signHash, signature));
+	if (!success) {
             bytes32 hash = keccak256(
                 abi.encodePacked("\x19Ethereum Signed Message:\n32", signHash)
             );
             success = (signer == recoverECDSASigner(hash, signature));
-        } else {
-            success = false;
         }
 
-        // Restore the signature length
-        assembly {
-            mstore(signature, add(signatureTypeOffset, 1))
-        }
-
-        return success;
+	if (signature.length == 66) {
+	    // Restore the signature length
+	    assembly {
+		mstore(signature, add(65, 1))
+	    }
+	}
     }
 
     function verifyERC1271Signature(
