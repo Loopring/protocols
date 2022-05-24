@@ -4,8 +4,11 @@ pragma solidity ^0.8.0;
 import "./lib/OwnerManagable.sol";
 import "./lib/BytesUtil.sol";
 import "./lib/Drainable.sol";
+import "./thirdparty/erc165/IERC165.sol";
+import "./thirdparty/erc1155/ERC1155Holder.sol";
+import "./thirdparty/erc721/ERC721Holder.sol";
 
-contract StakingBridge is OwnerManagable, Drainable {
+contract StakingBridge is OwnerManagable, Drainable, IERC165, ERC721Holder, ERC1155Holder {
     using BytesUtil for bytes;
 
     mapping(address => mapping(bytes4 => bool)) public authorized;
@@ -60,4 +63,17 @@ contract StakingBridge is OwnerManagable, Drainable {
         return drainer == owner;
     }
 
+    // ERC165
+    function supportsInterface(
+        bytes4 interfaceId
+        )
+        external
+        pure
+        override
+        returns (bool)
+    {
+        return  interfaceId == type(IERC165).interfaceId ||
+                interfaceId == type(IERC721Receiver).interfaceId ||
+                interfaceId == type(IERC1155Receiver).interfaceId;
+    }
 }
