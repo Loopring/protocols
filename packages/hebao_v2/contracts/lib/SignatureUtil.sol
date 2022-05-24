@@ -117,11 +117,14 @@ library SignatureUtil
 
 	require(signature.length == 65 || signature.length == 66, "INVALID_SIGNATURE_LENGTH");
 
+	bool trimmed = false;
 	if (signature.length == 66) {
 	    // Strip off the last byte of the signature by updating the length
 	    assembly {
 		mstore(signature, 65)
 	    }
+
+	    trimmed = true;
 	}
 
 	success = (signer == recoverECDSASigner(signHash, signature));
@@ -132,7 +135,7 @@ library SignatureUtil
             success = (signer == recoverECDSASigner(hash, signature));
         }
 
-	if (signature.length == 66) {
+	if (trimmed) {
 	    // Restore the signature length
 	    assembly {
 		mstore(signature, add(65, 1))
