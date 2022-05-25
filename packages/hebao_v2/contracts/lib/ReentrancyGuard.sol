@@ -16,9 +16,9 @@ contract ReentrancyGuard
 
     modifier nonReentrant()
     {
-        require(_guardValue == 0, "REENTRANCY");
-        _guardValue = 1;
+        require(_guardValue == 1, "REENTRANCY");
+        _guardValue = 2;
         _;
-        _guardValue = 0;
+        _guardValue = 1;
     }
 }
