@@ -13,7 +13,7 @@ Abbreviations are often used to name variables:
   - P: The Protocol fee account
 - Tokens:
   - S: The first token of two that can be modified for an account in an L2 transaction. Often used for the token to Sell or spend in some other way (for fees)
-  - B: The second token of two that can be modified for an account in an L2 transaction. Often used for the token to Buy or receice by an account (but can also be used for another token to spend on the same account)
+  - B: The second token of two that can be modified for an account in an L2 transaction. Often used for the token to Buy or receive by an account (but can also be used for another token to spend on the same account)
 
 (S and B) as token to Sell and token to Buy works perfectly for the trading circuit, for the other circuits just seeing them as 1st and 2nd token works best.
 
