@@ -99,7 +99,7 @@ describe("wallet", () => {
       expect(newOwnerInContract).to.equal(newOwner);
     });
 
-    it.only("[hebaov2.1] signatures without signature type should be able to be verified", async () => {
+    it("[hebaov2.1] signatures without signature type should be able to be verified", async () => {
       const owner = await account1.getAddress();
       const newOwner = await account2.getAddress();
       const validUntil = 9999999999;
@@ -136,9 +136,11 @@ describe("wallet", () => {
       );
       const sig2Bs = Buffer.from(sig2.txSignature.slice(2), "hex");
 
+      const sig1BsWithoutType = sig1Bs.slice(0, sig1Bs.length - 1);
+      const sig2BsWithoutType = sig2Bs.slice(0, sig2Bs.length - 1);
       const sortedSigs = sortSignersAndSignatures(
         [guardian1.address, guardian2.address],
-        [sig1Bs.slice(0, sig1Bs.length - 1), sig2Bs.slice(0, sig2Bs.length - 1)]
+        [sig1BsWithoutType, sig2BsWithoutType]
       );
 
       const approval = {
