@@ -12,13 +12,13 @@ pragma solidity ^0.7.0;
 contract ReentrancyGuard
 {
     //The default value must be 1 in order to work behind a proxy.
-    uint private _guardValue = 1;
+    uint private _guardValue = 0;
 
     modifier nonReentrant()
     {
-        require(_guardValue == 1, "REENTRANCY");
-        _guardValue = 2;
-        _;
+        require(_guardValue == 0, "REENTRANCY");
         _guardValue = 1;
+        _;
+        _guardValue = 0;
     }
 }

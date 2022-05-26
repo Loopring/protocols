@@ -7,7 +7,7 @@ import BN = require("bn.js");
 describe("proxy", () => {
     before(async () => {});
 
-    it.only("initial value of proxy", async function() {
+    it("initial value of proxy", async function() {
         const target = await (await ethers.getContractFactory(
             "TestTargetContract"
         )).deploy();
