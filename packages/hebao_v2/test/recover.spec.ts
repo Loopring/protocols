@@ -99,6 +99,72 @@ describe("wallet", () => {
       expect(newOwnerInContract).to.equal(newOwner);
     });
 
+    it.only("[hebaov2.1] signatures without signature type should be able to be verified", async () => {
+      const owner = await account1.getAddress();
+      const newOwner = await account2.getAddress();
+      const validUntil = 9999999999;
+      const guardian1 = ethers.Wallet.createRandom();
+      const guardian2 = ethers.Wallet.createRandom();
+
+      const wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
+        guardian1.address,
+        guardian2.address
+      ]);
+      const masterCopy = await wallet.getMasterCopy();
+
+      // console.log("guardian1.privateKey:", guardian1.privateKey);
+
+      const sig1 = signRecover(
+        masterCopy,
+        wallet.address,
+        new BN(validUntil),
+        newOwner,
+        [],
+        guardian1.address,
+        guardian1.privateKey.slice(2)
+      );
+      const sig1Bs = Buffer.from(sig1.txSignature.slice(2), "hex");
+
+      const sig2 = signRecover(
+        masterCopy,
+        wallet.address,
+        new BN(validUntil),
+        newOwner,
+        [],
+        guardian2.address,
+        guardian2.privateKey.slice(2)
+      );
+      const sig2Bs = Buffer.from(sig2.txSignature.slice(2), "hex");
+
+      const sortedSigs = sortSignersAndSignatures(
+        [guardian1.address, guardian2.address],
+        [sig1Bs.slice(0, sig1Bs.length - 1), sig2Bs.slice(0, sig2Bs.length - 1)]
+      );
+
+      const approval = {
+        signers: sortedSigs.sortedSigners,
+        signatures: sortedSigs.sortedSignatures,
+        validUntil,
+        wallet: wallet.address
+      };
+
+      const tx = await wallet.recover(approval, newOwner, []);
+      // console.log("tx:", tx);
+      const receipt = await tx.wait();
+      const recoverEventData = receipt.events[1].data;
+      const recoverEventTopics = receipt.events[1].topics;
+      const recoverEvent = recoverInterface.decodeEventLog(
+        "Recovered(address)",
+        recoverEventData,
+        recoverEventTopics
+      );
+      // console.log("recoverEvent:", recoverEvent);
+      expect(recoverEvent.newOwner).to.equal(newOwner);
+
+      const newOwnerInContract = (await wallet.wallet()).owner;
+      expect(newOwnerInContract).to.equal(newOwner);
+    });
+
     it("should be able to reset guardians when recovering a wallet", async () => {
       const owner = await account1.getAddress();
       const newOwner = await account2.getAddress();
