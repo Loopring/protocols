@@ -1,3 +1,3 @@
 
 ## Goerli:
-- StakingBridge: 0x5b222001bd32c0Cb3803C7d516512CB25d4beF5D
+- StakingBridge: 0x8dfEFaE16409E5207cF627D1CF8Ea2c229aC0FE3
