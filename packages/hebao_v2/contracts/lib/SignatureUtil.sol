@@ -138,7 +138,7 @@ library SignatureUtil
 	if (trimmed) {
 	    // Restore the signature length
 	    assembly {
-		mstore(signature, add(65, 1))
+		mstore(signature, 66)
 	    }
 	}
     }

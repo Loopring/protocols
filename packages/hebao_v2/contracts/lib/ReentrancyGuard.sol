@@ -11,8 +11,8 @@ pragma solidity ^0.7.0;
 ///      the number of times the value is changed
 contract ReentrancyGuard
 {
-    //The default value must be 0 in order to work behind a proxy.
-    uint private _guardValue;
+    //The default value must be 1 in order to work behind a proxy.
+    uint private _guardValue = 1;
 
     modifier nonReentrant()
     {
