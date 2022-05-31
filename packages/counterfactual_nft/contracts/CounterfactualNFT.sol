@@ -88,17 +88,17 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     /*     _mint(account, id, amount, data); */
     /* } */
 
-    function mintBatch(
-        address          to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes     memory data
-        )
-        external
-        onlyFromMinter
-    {
-        _mintBatch(to, ids, amounts, data);
-    }
+    /* function mintBatch( */
+    /*     address          to, */
+    /*     uint256[] memory ids, */
+    /*     uint256[] memory amounts, */
+    /*     bytes     memory data */
+    /*     ) */
+    /*     external */
+    /*     onlyFromMinter */
+    /* { */
+    /*     _mintBatch(to, ids, amounts, data); */
+    /* } */
 
     function setMinter(
         address minter,
