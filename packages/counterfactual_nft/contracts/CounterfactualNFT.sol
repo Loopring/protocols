@@ -29,6 +29,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     bytes32 internal constant DEPRECATED_MINTERS = keccak256("__DEPRECATED_MINTERS__");
 
     address public immutable layer2Address;
+    mapping (uint256 => address) public creators;
 
     modifier onlyFromLayer2
     {
@@ -39,6 +40,11 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     modifier onlyFromMinter
     {
         require(isMinter(msg.sender), "not authorized");
+        _;
+    }
+
+    modifier creatorOnly(uint256 _id) {
+        require(creators[_id] == msg.sender, "ERC1155Tradable#creatorOnly: ONLY_CREATOR_ALLOWED");
         _;
     }
 
@@ -69,17 +75,18 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         // in `minters` and `isMinter`.
     }
 
-    function mint(
-        address       account,
-        uint256       id,
-        uint256       amount,
-        bytes  memory data
-        )
-        external
-        onlyFromMinter
-    {
-        _mint(account, id, amount, data);
-    }
+    /// update at 2022-05-31: Do not allow minting on Layer 1
+    /* function mint( */
+    /*     address       account, */
+    /*     uint256       id, */
+    /*     uint256       amount, */
+    /*     bytes  memory data */
+    /*     ) */
+    /*     external */
+    /*     onlyFromMinter */
+    /* { */
+    /*     _mint(account, id, amount, data); */
+    /* } */
 
     function mintBatch(
         address          to,
@@ -159,6 +166,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     {
         require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
 
+        creators[id] = minter; // set minter as creator
         _mint(to, id, amount, data);
         emit MintFromL2(to, id, amount, minter);
     }
@@ -176,7 +184,8 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         for (uint i = 0; i < minterAddresses.length; i++) {
             mintersAndOwner[idx++] = minterAddresses[i];
         }
-	for (uint i = 0; i < deprecatedAddresses.length; i++) {
+
+        for (uint i = 0; i < deprecatedAddresses.length; i++) {
             mintersAndOwner[idx++] = deprecatedAddresses[i];
         }
         // Owner could already be added to the minters, but that's fine
@@ -191,6 +200,33 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     {
         // Also allow the owner to mint NFTs to save on gas (no additional minter needs to be set)
         return addr == owner() || isAddressInSet(MINTERS, addr);
+    }
+
+    /**
+     * @dev Change the creator address for given tokens
+     * @param _to   Address of the new creator
+     * @param _ids  Array of Token IDs to change creator
+     */
+    function setCreator(
+        address _to,
+        uint256[] memory _ids)
+        public
+    {
+        require(_to != address(0), "ERC1155Tradable#setCreator: INVALID_ADDRESS.");
+        for (uint256 i = 0; i < _ids.length; i++) {
+            uint256 id = _ids[i];
+            _setCreator(_to, id);
+        }
+    }
+
+    /**
+     * @dev Change the creator address for given token
+     * @param _to   Address of the new creator
+     * @param _id  Token IDs to change creator of
+     */
+    function _setCreator(address _to, uint256 _id) internal creatorOnly(_id)
+    {
+        creators[_id] = _to;
     }
 
     function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
