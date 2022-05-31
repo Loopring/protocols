@@ -219,6 +219,14 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         }
     }
 
+       /**
+     * @dev Get the creator for a token
+     * @param _id   The token id to look up
+     */
+    function creator(uint256 _id) public view returns (address) {
+        return creators[_id];
+    }
+
     /**
      * @dev Change the creator address for given token
      * @param _to   Address of the new creator
