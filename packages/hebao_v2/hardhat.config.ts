@@ -62,7 +62,7 @@ export default {
     goerli: {
       chainId: 5,
       url: "https://goerli.infura.io/v3/b7c22d73c16e4c0ea3f88dadbdffbe03",
-      gas: 7000000,
+      gas: 8000000,
       gasPrice: 11e9,
       gasMultiplier: 1,
       timeout: 20000,
