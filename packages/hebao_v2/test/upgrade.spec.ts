@@ -41,10 +41,11 @@ describe("wallet", () => {
     newSmartWalletImpl = await newWalletImpl();
   });
 
-  describe("upgrade", () => {
+  describe.only("upgrade", () => {
     it("wallet owner should be able to upgrade impl with enough approvals", async () => {
       const validUntil = 9999999999;
       const currentImpl = await wallet.getMasterCopy();
+      console.log("old impl:", currentImpl);
       const sig1 = signChangeMasterCopy(
         wallet.address,
         currentImpl,
@@ -78,8 +79,10 @@ describe("wallet", () => {
         newSmartWalletImpl.address
       );
 
-      // const masterCopyOfWallet = await wallet.getMasterCopy();
-      // console.log("masterCopyofwallet:", masterCopyOfWallet);
+      const masterCopyOfWallet = await wallet.getMasterCopy();
+      console.log("masterCopyofwallet:", masterCopyOfWallet);
+
+      expect(masterCopyOfWallet).to.equal(newSmartWalletImpl.address);
     });
   });
 });
