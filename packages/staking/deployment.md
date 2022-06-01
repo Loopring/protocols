@@ -1,3 +1,6 @@
+## Mainnet:
+- StakingBridge: 0x3D3e1e06017014E8ff41B895307f41397d381Ab3
+
 
 ## Goerli:
 - StakingBridge: 0x8dfEFaE16409E5207cF627D1CF8Ea2c229aC0FE3
