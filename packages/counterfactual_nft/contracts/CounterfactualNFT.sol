@@ -70,30 +70,31 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         // in `minters` and `isMinter`.
     }
 
-    /// update at 2022-05-31: Do not allow minting on Layer 1
-    /* function mint( */
-    /*     address       account, */
-    /*     uint256       id, */
-    /*     uint256       amount, */
-    /*     bytes  memory data */
-    /*     ) */
-    /*     external */
-    /*     onlyFromMinter */
-    /* { */
-    /*     _mint(account, id, amount, data); */
-    /* } */
+    function mint(
+        address       account,
+        uint256       id,
+        uint256       amount,
+        bytes  memory data
+        )
+        external
+        virtual
+        onlyFromMinter
+    {
+        _mint(account, id, amount, data);
+    }
 
-    /* function mintBatch( */
-    /*     address          to, */
-    /*     uint256[] memory ids, */
-    /*     uint256[] memory amounts, */
-    /*     bytes     memory data */
-    /*     ) */
-    /*     external */
-    /*     onlyFromMinter */
-    /* { */
-    /*     _mintBatch(to, ids, amounts, data); */
-    /* } */
+    function mintBatch(
+        address          to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes     memory data
+        )
+        external
+        virtual
+        onlyFromMinter
+    {
+        _mintBatch(to, ids, amounts, data);
+    }
 
     function setMinter(
         address minter,
