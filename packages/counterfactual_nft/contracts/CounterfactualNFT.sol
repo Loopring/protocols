@@ -17,7 +17,7 @@ import "./WithCreator.sol";
 /**
  * @title CounterfactualNFT
  */
-contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradeable, OwnableUpgradeable, IL2MintableNFT, AddressSet, WithCreator
+contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradeable, OwnableUpgradeable, IL2MintableNFT, AddressSet
 {
     event MintFromL2(
         address owner,
@@ -158,11 +158,11 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         )
         external
         override
+        virtual
         onlyFromLayer2
     {
         require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
 
-        _setCreator(minter, id); // minter as creator
         _mint(to, id, amount, data);
         emit MintFromL2(to, id, amount, minter);
     }

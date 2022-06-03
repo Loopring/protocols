@@ -40,4 +40,21 @@ contract CounterfactualNftExt is WithCreator, CounterfactualNFT
         revert("UNSUPPORTED");
     }
 
+    function mintFromL2(
+        address          to,
+        uint256          id,
+        uint             amount,
+        address          minter,
+        bytes   calldata data
+        )
+        external
+        override
+        onlyFromLayer2
+    {
+        require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
+
+        _setCreator(minter, id);
+        _mint(to, id, amount, data);
+        emit MintFromL2(to, id, amount, minter);
+    }
 }
