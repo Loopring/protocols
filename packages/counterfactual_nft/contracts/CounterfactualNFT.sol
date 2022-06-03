@@ -11,7 +11,6 @@ import "./AddressSet.sol";
 import "./external/IL2MintableNFT.sol";
 import "./external/IPFS.sol";
 import "./external/OwnableUpgradeable.sol";
-import "./WithCreator.sol";
 
 
 /**
@@ -29,7 +28,6 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     bytes32 internal constant MINTERS = keccak256("__MINTERS__");
     bytes32 internal constant DEPRECATED_MINTERS = keccak256("__DEPRECATED_MINTERS__");
     address public immutable layer2Address;
-
 
     modifier onlyFromLayer2
     {
@@ -180,7 +178,6 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         for (uint i = 0; i < minterAddresses.length; i++) {
             mintersAndOwner[idx++] = minterAddresses[i];
         }
-
         for (uint i = 0; i < deprecatedAddresses.length; i++) {
             mintersAndOwner[idx++] = deprecatedAddresses[i];
         }
@@ -197,7 +194,6 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         // Also allow the owner to mint NFTs to save on gas (no additional minter needs to be set)
         return addr == owner() || isAddressInSet(MINTERS, addr);
     }
-
 
     function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
         if (_i == 0) {
