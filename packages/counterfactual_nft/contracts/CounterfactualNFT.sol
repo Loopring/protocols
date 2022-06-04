@@ -27,7 +27,6 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
 
     bytes32 internal constant MINTERS = keccak256("__MINTERS__");
     bytes32 internal constant DEPRECATED_MINTERS = keccak256("__DEPRECATED_MINTERS__");
-
     address public immutable layer2Address;
 
     modifier onlyFromLayer2
@@ -76,6 +75,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         bytes  memory data
         )
         external
+        virtual
         onlyFromMinter
     {
         _mint(account, id, amount, data);
@@ -88,6 +88,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         bytes     memory data
         )
         external
+        virtual
         onlyFromMinter
     {
         _mintBatch(to, ids, amounts, data);
@@ -155,6 +156,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         )
         external
         override
+        virtual
         onlyFromLayer2
     {
         require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
@@ -176,7 +178,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         for (uint i = 0; i < minterAddresses.length; i++) {
             mintersAndOwner[idx++] = minterAddresses[i];
         }
-	for (uint i = 0; i < deprecatedAddresses.length; i++) {
+        for (uint i = 0; i < deprecatedAddresses.length; i++) {
             mintersAndOwner[idx++] = deprecatedAddresses[i];
         }
         // Owner could already be added to the minters, but that's fine
