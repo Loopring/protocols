@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import "./ERC20.sol";
 import "./BytesUtil.sol";
-import "hardhat/console.sol";
 
 
 /// @title ApprovalCheck
@@ -19,7 +18,6 @@ abstract contract ApprovalCheck {
     modifier isApprovalAllowed(bytes memory data) {
         if (data.toBytes4(0) == Erc20ApproveSelector) {
             address spender = data.toAddress(4 + 12);
-            console.log(spender);
             require(allowedSpender[spender], "APPROVAL_SPENDER_NOW_ALLOWED");
         }
 
