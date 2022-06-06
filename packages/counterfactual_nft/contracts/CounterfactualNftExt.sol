@@ -11,10 +11,13 @@ import "./CounterfactualNFT.sol";
  */
 contract CounterfactualNftExt is WithCreator, CounterfactualNFT
 {
+    bool public immutable openMinting;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address _layer2Address)
-        CounterfactualNFT(_layer2Address)
-        {}
+    constructor(address _layer2Address, bool _openMinting) CounterfactualNFT(_layer2Address)
+    {
+        openMinting = _openMinting;
+    }
 
     function mint(
         address       /*account*/,
@@ -51,7 +54,9 @@ contract CounterfactualNftExt is WithCreator, CounterfactualNFT
         override
         onlyFromLayer2
     {
-        require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
+        if (!openMinting) {
+            require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
+        }
 
         _setCreator(minter, id);
         _mint(to, id, amount, data);
