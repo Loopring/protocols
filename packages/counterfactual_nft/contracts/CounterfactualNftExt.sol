@@ -3,13 +3,13 @@
 
 pragma solidity ^0.8.2;
 
-import "./WithCreator.sol";
+import "./OpenseaSupport.sol";
 import "./CounterfactualNFT.sol";
 
 /**
  * @title CounterfactualNFT
  */
-contract CounterfactualNftExt is WithCreator, CounterfactualNFT
+contract CounterfactualNftExt is CounterfactualNFT, OpenseaSupport
 {
     bool public immutable openMinting;
 
@@ -61,6 +61,20 @@ contract CounterfactualNftExt is WithCreator, CounterfactualNFT
         _setCreator(minter, id);
         _mint(to, id, amount, data);
         emit MintFromL2(to, id, amount, minter);
+    }
+
+    function setContractURI(string memory contractURI_)
+        external
+        override
+    {
+        if (bytes(contractURI_).length > 0) {
+            if (bytes(contractURI()).length == 0) { // every on can set when empty:
+                _setContractURI(contractURI_);
+            } else {                                // otherwise only owner can set it:
+                require(msg.sender == owner(), "OWNER_REQUIRED");
+                _setContractURI(contractURI_);
+            }
+        }
     }
 
     function minters()
