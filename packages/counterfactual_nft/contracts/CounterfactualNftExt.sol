@@ -62,4 +62,31 @@ contract CounterfactualNftExt is WithCreator, CounterfactualNFT
         _mint(to, id, amount, data);
         emit MintFromL2(to, id, amount, minter);
     }
+
+    function minters()
+        public
+        view
+        override
+        returns (address[] memory)
+    {
+        if (openMinting) {
+            return new address[](0);
+        } else {
+            return super.minters();
+        }
+    }
+
+    function isMinter(address addr)
+        public
+        view
+        override
+        returns (bool)
+    {
+        if (openMinting) {
+            return true;
+        } else {
+            return super.isMinter(addr);
+        }
+    }
+
 }
