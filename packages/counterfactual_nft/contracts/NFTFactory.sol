@@ -46,8 +46,8 @@ contract NFTFactory
         );
 
         // Initialize
-        ICounterfactualNFT(nftContract).initialize(owner, baseURI);
         IOpenseaSupport(nftContract).setContractURI(contractURI);
+        ICounterfactualNFT(nftContract).initialize(owner, baseURI);
 
         emit NFTContractCreated(nftContract, owner, baseURI, contractURI);
     }
