@@ -4,11 +4,12 @@ pragma solidity ^0.8.0;
 import "./lib/OwnerManagable.sol";
 import "./lib/BytesUtil.sol";
 import "./lib/Drainable.sol";
+import "./lib/ApprovalCheck.sol";
 import "./thirdparty/erc165/IERC165.sol";
 import "./thirdparty/erc1155/ERC1155Holder.sol";
 import "./thirdparty/erc721/ERC721Holder.sol";
 
-contract StakingBridge is OwnerManagable, Drainable, IERC165, ERC721Holder, ERC1155Holder {
+contract StakingBridge is OwnerManagable, Drainable, IERC165, ERC721Holder, ERC1155Holder, ApprovalCheck {
     using BytesUtil for bytes;
 
     mapping(address => mapping(bytes4 => bool)) public authorized;
@@ -37,11 +38,19 @@ contract StakingBridge is OwnerManagable, Drainable, IERC165, ERC721Holder, ERC1
         delete authorized[target][selector];
     }
 
+    function setApproveSpender(address target, bool allowed)
+        external
+        onlyOwner
+    {
+        _setApproveSpender(target, allowed);
+    }
+
     function call(uint callId, address target, bytes calldata data)
         payable
         external
-        withAccess(target, data.toBytes4(0))
         onlyManager(msg.sender)
+        withAccess(target, data.toBytes4(0))
+        isApprovalAllowed(data)
     {
         (bool success, /*bytes memory returnData*/) = target
             .call{value: msg.value}(data);
