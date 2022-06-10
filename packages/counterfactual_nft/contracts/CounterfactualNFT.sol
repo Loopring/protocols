@@ -168,6 +168,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     function minters()
         public
         view
+        virtual
         override
         returns (address[] memory)
     {
@@ -189,6 +190,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     function isMinter(address addr)
         public
         view
+        virtual
         returns (bool)
     {
         // Also allow the owner to mint NFTs to save on gas (no additional minter needs to be set)

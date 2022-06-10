@@ -1,6 +1,6 @@
 // File: contracts/ICounterfactualNFT.sol
 
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MIT
 // Copyright 2017 Loopring Technology Limited.
 
 pragma solidity ^0.8.2;
@@ -17,7 +17,6 @@ abstract contract ICounterfactualNFT
 }
 
 // File: @openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol
-
 
 // OpenZeppelin Contracts v4.4.1 (utils/Create2.sol)
 
@@ -86,7 +85,6 @@ library Create2Upgradeable {
 
 // File: contracts/external/CloneFactory.sol
 
-
 // This code is taken from https://eips.ethereum.org/EIPS/eip-1167
 // Modified to a library and generalized to support create/create2.
 pragma solidity ^0.8.2;
@@ -136,7 +134,6 @@ library CloneFactory {
 }
 
 // File: contracts/NFTFactory.sol
-
 
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.2;

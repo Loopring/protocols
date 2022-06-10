@@ -3,18 +3,21 @@
 
 pragma solidity ^0.8.2;
 
-import "./WithCreator.sol";
+import "./OpenseaSupport.sol";
 import "./CounterfactualNFT.sol";
 
 /**
  * @title CounterfactualNFT
  */
-contract CounterfactualNftExt is WithCreator, CounterfactualNFT
+contract CounterfactualNftExt is CounterfactualNFT, OpenseaSupport
 {
+    bool public immutable openMinting;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address _layer2Address)
-        CounterfactualNFT(_layer2Address)
-        {}
+    constructor(address _layer2Address, bool _openMinting) CounterfactualNFT(_layer2Address)
+    {
+        openMinting = _openMinting;
+    }
 
     function mint(
         address       /*account*/,
@@ -51,10 +54,47 @@ contract CounterfactualNftExt is WithCreator, CounterfactualNFT
         override
         onlyFromLayer2
     {
-        require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
+        if (!openMinting) {
+            require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
+        }
 
         _setCreator(minter, id);
         _mint(to, id, amount, data);
         emit MintFromL2(to, id, amount, minter);
     }
+
+    function setContractURI(string memory contractURI_)
+        external
+        override
+        onlyOwner
+    {
+        _setContractURI(contractURI_);
+    }
+
+    function minters()
+        public
+        view
+        override
+        returns (address[] memory)
+    {
+        if (openMinting) {
+            return new address[](0);
+        } else {
+            return super.minters();
+        }
+    }
+
+    function isMinter(address addr)
+        public
+        view
+        override
+        returns (bool)
+    {
+        if (openMinting) {
+            return true;
+        } else {
+            return super.isMinter(addr);
+        }
+    }
+
 }
