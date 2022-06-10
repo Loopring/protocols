@@ -4,7 +4,6 @@ pragma solidity ^0.8.2;
 pragma experimental ABIEncoderV2;
 
 import "./ICounterfactualNFT.sol";
-import "./IOpenseaSupport.sol";
 import "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
 import "./external/CloneFactory.sol";
 
@@ -13,7 +12,7 @@ import "./external/CloneFactory.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract NFTFactory
 {
-    event NFTContractCreated (address nftContract, address owner, string baseURI, string contractURI);
+    event NFTContractCreated (address nftContract, address owner, string baseURI);
 
     string public constant NFT_CONTRACT_CREATION = "NFT_CONTRACT_CREATION";
     address public immutable implementation;
@@ -31,8 +30,7 @@ contract NFTFactory
     /// @return nftContract The new NFT contract address
     function createNftContract(
         address            owner,
-        string    calldata baseURI,
-        string    calldata contractURI
+        string    calldata baseURI
         )
         external
         payable
@@ -46,10 +44,9 @@ contract NFTFactory
         );
 
         // Initialize
-        IOpenseaSupport(nftContract).setContractURI(contractURI);
         ICounterfactualNFT(nftContract).initialize(owner, baseURI);
 
-        emit NFTContractCreated(nftContract, owner, baseURI, contractURI);
+        emit NFTContractCreated(nftContract, owner, baseURI);
     }
 
     function computeNftContractAddress(

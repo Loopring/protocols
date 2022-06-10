@@ -9,6 +9,9 @@ import "./IOpenseaSupport.sol";
 abstract contract OpenseaSupport is IOpenseaSupport {
 
     mapping (uint256 => address) public creators;
+
+    // change this value before the deployment
+    string constant public Default_Contract_URI = "ipfs://xxx";
     string internal _contractURI;
 
     /**
@@ -48,7 +51,11 @@ abstract contract OpenseaSupport is IOpenseaSupport {
     }
 
     function contractURI() public view returns (string memory) {
-        return _contractURI;
+        if (bytes(_contractURI).length == 0) {
+            return Default_Contract_URI;
+        } else {
+            return _contractURI;
+        }
     }
 
     function _setContractURI(string memory contractURI_) internal {

@@ -66,13 +66,9 @@ contract CounterfactualNftExt is CounterfactualNFT, OpenseaSupport
     function setContractURI(string memory contractURI_)
         external
         override
+        onlyOwner
     {
-        if (_owner == address(0)) {             // every on can set when owner not initialized
-            _setContractURI(contractURI_);
-        } else {                                // otherwise only owner can set it
-            require(_owner == msg.sender, "OWNER_REQUIRED");
-            _setContractURI(contractURI_);
-        }
+        _setContractURI(contractURI_);
     }
 
     function minters()
