@@ -2,12 +2,17 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.2;
 
+import "./IOpenseaSupport.sol";
 
 /// @title AddressSet
-/// @author Freeman Zhong
-contract WithCreator {
+/// @author Freeman Zhong (kongliang@loopring.io)
+abstract contract OpenseaSupport is IOpenseaSupport {
 
     mapping (uint256 => address) public creators;
+
+    // change this value before the deployment
+    string constant public Default_Contract_URI = "ipfs://xxx";
+    string internal _contractURI;
 
     /**
      * @dev Change the creator address for given tokens
@@ -43,6 +48,18 @@ contract WithCreator {
     function _setCreator(address _to, uint256 _id) internal
     {
         creators[_id] = _to;
+    }
+
+    function contractURI() public view returns (string memory) {
+        if (bytes(_contractURI).length == 0) {
+            return Default_Contract_URI;
+        } else {
+            return _contractURI;
+        }
+    }
+
+    function _setContractURI(string memory contractURI_) internal {
+        _contractURI = contractURI_;
     }
 
 }
