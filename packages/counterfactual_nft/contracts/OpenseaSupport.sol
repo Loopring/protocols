@@ -28,7 +28,7 @@ abstract contract OpenseaSupport is IOpenseaSupport {
         for (uint256 i = 0; i < _ids.length; i++) {
             uint256 id = _ids[i];
             require(creators[id] == msg.sender, "ERC1155Tradable#creatorOnly: ONLY_CREATOR_ALLOWED");
-            creators[id] = _to;
+            _setCreator(_to, id);
         }
     }
 
