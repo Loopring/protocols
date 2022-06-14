@@ -1,6 +1,5 @@
 // File: contracts/ICounterfactualNFT.sol
 
-// SPDX-License-Identifier: MIT
 // Copyright 2017 Loopring Technology Limited.
 
 pragma solidity ^0.8.2;
@@ -133,7 +132,7 @@ library CloneFactory {
   }
 }
 
-// File: contracts/NFTFactory.sol
+// File: ../contracts/NFTFactory.sol
 
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.2;
