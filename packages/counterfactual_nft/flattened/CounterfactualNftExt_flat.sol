@@ -1,15 +1,34 @@
-// File: contracts/WithCreator.sol
+// File: contracts/IOpenseaSupport.sol
 
-// SPDX-License-Identifier: MIT
 // Copyright 2017 Loopring Technology Limited.
+
 pragma solidity ^0.8.2;
 
 
+/**
+ * @title IOpenseaSupport
+ */
+abstract contract IOpenseaSupport
+{
+    function setContractURI(string memory contractURI_)
+        external
+        virtual;
+}
+
+// File: contracts/OpenseaSupport.sol
+
+// Copyright 2017 Loopring Technology Limited.
+pragma solidity ^0.8.2;
+
 /// @title AddressSet
-/// @author Freeman Zhong
-contract WithCreator {
+/// @author Freeman Zhong (kongliang@loopring.io)
+abstract contract OpenseaSupport is IOpenseaSupport {
 
     mapping (uint256 => address) public creators;
+
+    // change this value before the deployment
+    string constant public Default_Contract_URI = "ipfs://xxx";
+    string internal _contractURI;
 
     /**
      * @dev Change the creator address for given tokens
@@ -25,7 +44,7 @@ contract WithCreator {
         for (uint256 i = 0; i < _ids.length; i++) {
             uint256 id = _ids[i];
             require(creators[id] == msg.sender, "ERC1155Tradable#creatorOnly: ONLY_CREATOR_ALLOWED");
-            creators[id] = _to;
+            _setCreator(_to, id);
         }
     }
 
@@ -45,6 +64,18 @@ contract WithCreator {
     function _setCreator(address _to, uint256 _id) internal
     {
         creators[_id] = _to;
+    }
+
+    function contractURI() public view returns (string memory) {
+        if (bytes(_contractURI).length == 0) {
+            return Default_Contract_URI;
+        } else {
+            return _contractURI;
+        }
+    }
+
+    function _setContractURI(string memory contractURI_) internal {
+        _contractURI = contractURI_;
     }
 
 }
@@ -1677,6 +1708,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     function minters()
         public
         view
+        virtual
         override
         returns (address[] memory)
     {
@@ -1698,6 +1730,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     function isMinter(address addr)
         public
         view
+        virtual
         returns (bool)
     {
         // Also allow the owner to mint NFTs to save on gas (no additional minter needs to be set)
@@ -1724,7 +1757,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     }
 }
 
-// File: contracts/CounterfactualNftExt.sol
+// File: ../contracts/CounterfactualNftExt.sol
 
 // Copyright 2017 Loopring Technology Limited.
 
@@ -1734,7 +1767,7 @@ pragma solidity ^0.8.2;
 /**
  * @title CounterfactualNFT
  */
-contract CounterfactualNftExt is WithCreator, CounterfactualNFT
+contract CounterfactualNftExt is CounterfactualNFT, OpenseaSupport
 {
     bool public immutable openMinting;
 
@@ -1787,4 +1820,39 @@ contract CounterfactualNftExt is WithCreator, CounterfactualNFT
         _mint(to, id, amount, data);
         emit MintFromL2(to, id, amount, minter);
     }
+
+    function setContractURI(string memory contractURI_)
+        external
+        override
+        onlyOwner
+    {
+        _setContractURI(contractURI_);
+    }
+
+    function minters()
+        public
+        view
+        override
+        returns (address[] memory)
+    {
+        if (openMinting) {
+            return new address[](0);
+        } else {
+            return super.minters();
+        }
+    }
+
+    function isMinter(address addr)
+        public
+        view
+        override
+        returns (bool)
+    {
+        if (openMinting) {
+            return true;
+        } else {
+            return super.isMinter(addr);
+        }
+    }
+
 }
