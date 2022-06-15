@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 // File: contracts/ICounterfactualNFT.sol
 
 // Copyright 2017 Loopring Technology Limited.

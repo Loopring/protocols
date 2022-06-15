@@ -14,7 +14,7 @@ contract CounterfactualNftExt is CounterfactualNFT, OpenseaSupport
     bool public immutable openMinting;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address _layer2Address, bool _openMinting) CounterfactualNFT(_layer2Address)
+    constructor(bool _openMinting, address _layer2Address) CounterfactualNFT(_layer2Address)
     {
         openMinting = _openMinting;
     }
