@@ -3,6 +3,7 @@
 pragma solidity ^0.8.2;
 
 import "./IOpenseaSupport.sol";
+import "./external/Strings.sol";
 
 /// @title AddressSet
 /// @author Freeman Zhong (kongliang@loopring.io)
@@ -11,7 +12,7 @@ abstract contract OpenseaSupport is IOpenseaSupport {
     mapping (uint256 => address) public creators;
 
     // change this value before the deployment
-    string constant public Default_Contract_URI = "ipfs://xxx";
+    string constant public Default_Contract_URI = "https://nftinfos.loopring.io/L2/";
     string internal _contractURI;
 
     /**
@@ -52,7 +53,10 @@ abstract contract OpenseaSupport is IOpenseaSupport {
 
     function contractURI() public view returns (string memory) {
         if (bytes(_contractURI).length == 0) {
-            return Default_Contract_URI;
+            return string(
+                abi.encodePacked(Default_Contract_URI,
+                Strings.toHexString(address(this)))
+            );
         } else {
             return _contractURI;
         }
