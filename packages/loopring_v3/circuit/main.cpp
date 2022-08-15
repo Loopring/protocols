@@ -6,7 +6,7 @@
 #include "Circuits/UniversalCircuit.h"
 
 #include "ThirdParty/httplib.h"
-//#include "ThirdParty/json.hpp"
+// #include "ThirdParty/json.hpp"
 #include "ethsnarks.hpp"
 #include "import.hpp"
 #include "stubs.hpp"

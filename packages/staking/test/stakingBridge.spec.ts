@@ -1,212 +1,281 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("StakingBridge", function () {
+describe("StakingBridge", function() {
+  let stakingBridge: any;
+  let thirdpartyContract: any;
+  const callId = 1;
 
-    let stakingBridge: any;
-    let thirdpartyContract: any;
-    const callId = 1;
+  beforeEach(async function() {
+    const StakingBridge = await ethers.getContractFactory("StakingBridge");
+    stakingBridge = await StakingBridge.deploy();
+    await stakingBridge.deployed();
 
-    beforeEach(async function(){
-        const StakingBridge = await ethers.getContractFactory("StakingBridge");
-        stakingBridge = await StakingBridge.deploy();
-        await stakingBridge.deployed();
+    const bridgeOwner = await stakingBridge.owner();
+    const signer0 = (await ethers.getSigners())[0].address;
+    expect(signer0).to.equal(bridgeOwner);
 
-        const bridgeOwner = await stakingBridge.owner();
-        const signer0 = (await ethers.getSigners())[0].address;
-        expect(signer0).to.equal(bridgeOwner);
+    const MockedThirdpartyContract = await ethers.getContractFactory(
+      "MockedThirdpartyContract"
+    );
+    thirdpartyContract = await MockedThirdpartyContract.deploy();
+    await thirdpartyContract.deployed();
+  });
 
-        const MockedThirdpartyContract =  await ethers.getContractFactory("MockedThirdpartyContract");
-        thirdpartyContract = await MockedThirdpartyContract.deploy();
-        await thirdpartyContract.deployed();
+  describe("Owner", function() {
+    it("Should be able to add/remove a manager", async function() {
+      const signer1 = (await ethers.getSigners())[1].address;
+      const isManagerBefore = await stakingBridge.isManager(signer1);
+      expect(isManagerBefore).to.be.false;
+
+      await stakingBridge.addManager(signer1);
+      const isManagerAfter = await stakingBridge.isManager(signer1);
+      expect(isManagerAfter).to.be.true;
+
+      await stakingBridge.removeManager(signer1);
+      const isManagerThen = await stakingBridge.isManager(signer1);
+      expect(isManagerThen).to.be.false;
     });
 
-    describe("Owner", function() {
-        it("Should be able to add/remove a manager", async function () {
-            const signer1 = (await ethers.getSigners())[1].address;
-            const isManagerBefore = await stakingBridge.isManager(signer1);
-            expect(isManagerBefore).to.be.false;
+    it("Should be able to authorize/unauthorize a external call", async function() {
+      const thirdpartyContractAddress = thirdpartyContract.address;
+      const depositSelector = thirdpartyContract.interface.getSighash(
+        "deposit"
+      );
 
-            await stakingBridge.addManager(signer1);
-            const isManagerAfter = await stakingBridge.isManager(signer1);
-            expect(isManagerAfter).to.be.true;
+      const signer1 = (await ethers.getSigners())[1].address;
 
-            await stakingBridge.removeManager(signer1);
-            const isManagerThen = await stakingBridge.isManager(signer1);
-            expect(isManagerThen).to.be.false;
+      await stakingBridge.authorizeCall(
+        thirdpartyContractAddress,
+        depositSelector
+      );
+      const authorized1 = await stakingBridge.authorized(
+        thirdpartyContractAddress,
+        depositSelector
+      );
+      expect(authorized1).to.be.true;
 
-        });
-
-        it("Should be able to authorize/unauthorize a external call", async function () {
-            const thirdpartyContractAddress = thirdpartyContract.address;
-            const depositSelector = thirdpartyContract.interface.getSighash("deposit");
-
-            const signer1 = (await ethers.getSigners())[1].address;
-
-            await stakingBridge.authorizeCall(thirdpartyContractAddress, depositSelector);
-            const authorized1 = await stakingBridge.authorized(thirdpartyContractAddress, depositSelector);
-            expect(authorized1).to.be.true;
-
-            await stakingBridge.unauthorizeCall(thirdpartyContractAddress, depositSelector);
-            const authorized2 = await stakingBridge.authorized(thirdpartyContractAddress, depositSelector);
-            expect(authorized2).to.be.false;
-        });
-
-        it("Should not be able to call authorized contract if owner is not a manager", async function () {
-            const signer1 = (await ethers.getSigners())[1].address;
-
-            const depositSelector = thirdpartyContract.interface.getSighash("deposit");
-            await stakingBridge.authorizeCall(thirdpartyContract.address, depositSelector);
-
-            const callValue1 = 123;
-            const encodedCallData = thirdpartyContract.interface.encodeFunctionData("deposit", [callValue1]);
-            try {
-                await stakingBridge.connect((await ethers.getSigners())[0]).call(callId, thirdpartyContract.address, encodedCallData);
-                expect.fail();
-            } catch (err) {
-                const errMsg = (err as Error).message;
-                // console.log("errMsg:", errMsg);
-                expect(errMsg.includes("reverted with reason string 'NOT_MANAGER'")).to.be.true;
-            }
-
-        });
-
-        it("should be able to withdrawal all ETH/ERC20 tokens from stakingBridge contract", async function() {
-            const signer0 = (await ethers.getSigners())[0];
-
-            // send ETH to stakingBridge:
-            const ethAmount = ethers.utils.parseEther("100");
-            await signer0.sendTransaction({
-                to: stakingBridge.address,
-                value: ethAmount
-            });
-
-            const to = "0x" + "11".repeat(20);
-            const tokenETH = ethers.constants.AddressZero;
-            await stakingBridge.drain(to, tokenETH);
-            const toEthBalance = await ethers.provider.getBalance(to);
-            // console.log("toEthBalance:", toEthBalance.toString());
-            expect(toEthBalance.toString()).to.equal(ethAmount);
-
-            const fooToken = await (await ethers.getContractFactory("FooToken")).deploy();
-            await fooToken.deployed();
-            const tokenAmount = ethers.utils.parseEther("12345");
-            await fooToken.setBalance(stakingBridge.address, tokenAmount);
-            await stakingBridge.drain(to, fooToken.address);
-            const fooTokenBalance = await fooToken.balanceOf(to);
-            expect(fooTokenBalance.toString()).to.equal(tokenAmount);
-        });
-
+      await stakingBridge.unauthorizeCall(
+        thirdpartyContractAddress,
+        depositSelector
+      );
+      const authorized2 = await stakingBridge.authorized(
+        thirdpartyContractAddress,
+        depositSelector
+      );
+      expect(authorized2).to.be.false;
     });
 
-    describe("Manager", function() {
-        it("Shoule be able to call a third-party contract method only if it is authorized", async function() {
-            const thirdpartyContractAddress = thirdpartyContract.address;
-            const depositSelector = thirdpartyContract.interface.getSighash("deposit");
+    it("Should not be able to call authorized contract if owner is not a manager", async function() {
+      const signer1 = (await ethers.getSigners())[1].address;
 
-            const signer1 = (await ethers.getSigners())[1].address;
+      const depositSelector = thirdpartyContract.interface.getSighash(
+        "deposit"
+      );
+      await stakingBridge.authorizeCall(
+        thirdpartyContract.address,
+        depositSelector
+      );
 
-            await stakingBridge.authorizeCall(thirdpartyContractAddress, depositSelector);
-            await stakingBridge.addManager(signer1);
-
-            const callValue1 = 123;
-            const encodedCallData = thirdpartyContract.interface.encodeFunctionData("deposit", [callValue1]);
-            const callTx = await stakingBridge.connect((await ethers.getSigners())[1]).call(callId, thirdpartyContractAddress, encodedCallData);
-            const valueOfContract = await thirdpartyContract.value();
-            expect(callValue1).to.equal(valueOfContract);
-            const receipt = await callTx.wait();
-            const callSucceededEvent = receipt.events[0];
-            expect(callSucceededEvent.args.callId.toNumber()).to.equal(callId);
-            expect(callSucceededEvent.args.target).to.equal(thirdpartyContractAddress);
-            expect(callSucceededEvent.args.method).to.equal(depositSelector);
-
-            await stakingBridge.unauthorizeCall(thirdpartyContractAddress, depositSelector);
-            try {
-                await stakingBridge.connect((await ethers.getSigners())[1]).call(callId, thirdpartyContractAddress, encodedCallData);
-            } catch (err) {
-                const errMsg = (err as Error).message;
-                expect(errMsg.includes("reverted with reason string 'UNAUTHORIZED_CALLE'")).to.be.true;
-            }
-        });
-
+      const callValue1 = 123;
+      const encodedCallData = thirdpartyContract.interface.encodeFunctionData(
+        "deposit",
+        [callValue1]
+      );
+      try {
+        await stakingBridge
+          .connect((await ethers.getSigners())[0])
+          .call(callId, thirdpartyContract.address, encodedCallData, 0);
+        expect.fail();
+      } catch (err) {
+        const errMsg = (err as Error).message;
+        // console.log("errMsg:", errMsg);
+        expect(errMsg.includes("reverted with reason string 'NOT_MANAGER'")).to
+          .be.true;
+      }
     });
 
-    describe.only("approve calls", function(){
-        it("should not be able to call token's approve function if spender is not whitelisted", async function(){
-            const fooToken = await (await ethers.getContractFactory("FooToken")).deploy();
-            await fooToken.deployed();
+    it("should be able to withdrawal all ETH/ERC20 tokens from stakingBridge contract", async function() {
+      const signer0 = (await ethers.getSigners())[0];
 
-            const approveSelector = fooToken.interface.getSighash("approve");
+      // send ETH to stakingBridge:
+      const ethAmount = ethers.utils.parseEther("100");
+      await signer0.sendTransaction({
+        to: stakingBridge.address,
+        value: ethAmount
+      });
 
-            const signer0 = (await ethers.getSigners())[0].address;
+      const to = "0x" + "11".repeat(20);
+      const tokenETH = ethers.constants.AddressZero;
+      await stakingBridge.drain(to, tokenETH);
+      const toEthBalance = await ethers.provider.getBalance(to);
+      // console.log("toEthBalance:", toEthBalance.toString());
+      expect(toEthBalance.toString()).to.equal(ethAmount);
 
-            await stakingBridge.authorizeCall(fooToken.address, approveSelector);
-            await stakingBridge.addManager(signer0);
+      const fooToken = await (
+        await ethers.getContractFactory("FooToken")
+      ).deploy();
+      await fooToken.deployed();
+      const tokenAmount = ethers.utils.parseEther("12345");
+      await fooToken.setBalance(stakingBridge.address, tokenAmount);
+      await stakingBridge.drain(to, fooToken.address);
+      const fooTokenBalance = await fooToken.balanceOf(to);
+      expect(fooTokenBalance.toString()).to.equal(tokenAmount);
+    });
+  });
 
-            const to = "0x" + "12".repeat(20);
-            const amount = ethers.utils.parseEther("1.23");
-            const approveCallData = fooToken.interface.encodeFunctionData("approve", [to, amount]);
+  describe("Manager", function() {
+    it("Shoule be able to call a third-party contract method only if it is authorized", async function() {
+      const thirdpartyContractAddress = thirdpartyContract.address;
+      const depositSelector = thirdpartyContract.interface.getSighash(
+        "deposit"
+      );
 
-            try {
-                await stakingBridge.call(callId, fooToken.address, approveCallData);
-                expect.fail();
-            } catch(err) {
-                const errMsg = (err as Error).message;
-                // console.log('errMsg: ', errMsg);
-                expect(errMsg.includes("reverted with reason string 'APPROVAL_SPENDER_NOW_ALLOWED'")).to.be.true;
-            }
-        });
+      const signer1 = (await ethers.getSigners())[1].address;
 
+      await stakingBridge.authorizeCall(
+        thirdpartyContractAddress,
+        depositSelector
+      );
+      await stakingBridge.addManager(signer1);
 
-        it("should be able to call token's approve function if spender is whitelisted", async function(){
-            const fooToken = await (await ethers.getContractFactory("FooToken")).deploy();
-            await fooToken.deployed();
+      const callValue1 = 123;
+      const encodedCallData = thirdpartyContract.interface.encodeFunctionData(
+        "deposit",
+        [callValue1]
+      );
+      const callTx = await stakingBridge
+        .connect((await ethers.getSigners())[1])
+        .call(callId, thirdpartyContractAddress, encodedCallData, 0);
+      const valueOfContract = await thirdpartyContract.value();
+      expect(callValue1).to.equal(valueOfContract);
+      const receipt = await callTx.wait();
+      const callSucceededEvent = receipt.events[0];
+      expect(callSucceededEvent.args.callId.toNumber()).to.equal(callId);
+      expect(callSucceededEvent.args.target).to.equal(
+        thirdpartyContractAddress
+      );
+      expect(callSucceededEvent.args.method).to.equal(depositSelector);
 
-            const approveSelector = fooToken.interface.getSighash("approve");
+      await stakingBridge.unauthorizeCall(
+        thirdpartyContractAddress,
+        depositSelector
+      );
+      try {
+        await stakingBridge
+          .connect((await ethers.getSigners())[1])
+          .call(callId, thirdpartyContractAddress, encodedCallData, 0);
+      } catch (err) {
+        const errMsg = (err as Error).message;
+        expect(
+          errMsg.includes("reverted with reason string 'UNAUTHORIZED_CALLE'")
+        ).to.be.true;
+      }
+    });
+  });
 
-            const signer0 = (await ethers.getSigners())[0].address;
+  describe("approve calls", function() {
+    it("should not be able to call token's approve function if spender is not whitelisted", async function() {
+      const fooToken = await (
+        await ethers.getContractFactory("FooToken")
+      ).deploy();
+      await fooToken.deployed();
 
-            await stakingBridge.authorizeCall(fooToken.address, approveSelector);
-            await stakingBridge.addManager(signer0);
+      const approveSelector = fooToken.interface.getSighash("approve");
 
-            const to = "0x" + "12".repeat(20);
-            const whitelistTx = await stakingBridge.setApproveSpender(to, true);
+      const signer0 = (await ethers.getSigners())[0].address;
 
-            const amount = ethers.utils.parseEther("123456.78");
-            const approveCallData = fooToken.interface.encodeFunctionData("approve", [to, amount]);
+      await stakingBridge.authorizeCall(fooToken.address, approveSelector);
+      await stakingBridge.addManager(signer0);
 
-            const tx = await stakingBridge.call(callId, fooToken.address, approveCallData);
-            const receipt = await tx.wait();
-            // console.log('receipt: ', receipt);
-            const allowance = await fooToken.allowance(stakingBridge.address, to);
-            // console.log('allowance: ', allowance.toString());
+      const to = "0x" + "12".repeat(20);
+      const amount = ethers.utils.parseEther("1.23");
+      const approveCallData = fooToken.interface.encodeFunctionData("approve", [
+        to,
+        amount
+      ]);
 
-            expect(allowance.toString()).to.equal(amount);
-        });
-    })
-
-
-    describe("Other accounts", function() {
-        it("Shoule not be able to call another contract if authorized", async function() {
-            const thirdpartyContractAddress = thirdpartyContract.address;
-            const depositSelector = thirdpartyContract.interface.getSighash("deposit");
-
-            const signer1 = (await ethers.getSigners())[1].address;
-
-            await stakingBridge.authorizeCall(thirdpartyContractAddress, depositSelector);
-            await stakingBridge.addManager(signer1);
-
-            const callValue1 = 123;
-            const encodedCallData = thirdpartyContract.interface.encodeFunctionData("deposit", [callValue1]);
-            try {
-                // call with signer2
-                await stakingBridge.connect((await ethers.getSigners())[2]).call(callId, thirdpartyContractAddress, encodedCallData);
-            } catch (err) {
-                const errMsg = (err as Error).message;
-                expect(errMsg.includes("reverted with reason string 'NOT_MANAGER'")).to.be.true;
-            }
-        });
-
+      try {
+        await stakingBridge.call(callId, fooToken.address, approveCallData, 0);
+        expect.fail();
+      } catch (err) {
+        const errMsg = (err as Error).message;
+        // console.log('errMsg: ', errMsg);
+        expect(
+          errMsg.includes(
+            "reverted with reason string 'APPROVAL_SPENDER_NOW_ALLOWED'"
+          )
+        ).to.be.true;
+      }
     });
 
+    it("should be able to call token's approve function if spender is whitelisted", async function() {
+      const fooToken = await (
+        await ethers.getContractFactory("FooToken")
+      ).deploy();
+      await fooToken.deployed();
+
+      const approveSelector = fooToken.interface.getSighash("approve");
+
+      const signer0 = (await ethers.getSigners())[0].address;
+
+      await stakingBridge.authorizeCall(fooToken.address, approveSelector);
+      await stakingBridge.addManager(signer0);
+
+      const to = "0x" + "12".repeat(20);
+      const whitelistTx = await stakingBridge.setApproveSpender(to, true);
+
+      const amount = ethers.utils.parseEther("123456.78");
+      const approveCallData = fooToken.interface.encodeFunctionData("approve", [
+        to,
+        amount
+      ]);
+
+      const tx = await stakingBridge.call(
+        callId,
+        fooToken.address,
+        approveCallData,
+        0
+      );
+      const receipt = await tx.wait();
+      // console.log('receipt: ', receipt);
+      const allowance = await fooToken.allowance(stakingBridge.address, to);
+      // console.log('allowance: ', allowance.toString());
+
+      expect(allowance.toString()).to.equal(amount);
+    });
+  });
+
+  describe("Other accounts", function() {
+    it("Shoule not be able to call another contract if authorized", async function() {
+      const thirdpartyContractAddress = thirdpartyContract.address;
+      const depositSelector = thirdpartyContract.interface.getSighash(
+        "deposit"
+      );
+
+      const signer1 = (await ethers.getSigners())[1].address;
+
+      await stakingBridge.authorizeCall(
+        thirdpartyContractAddress,
+        depositSelector
+      );
+      await stakingBridge.addManager(signer1);
+
+      const callValue1 = 123;
+      const encodedCallData = thirdpartyContract.interface.encodeFunctionData(
+        "deposit",
+        [callValue1]
+      );
+      try {
+        // call with signer2
+        await stakingBridge
+          .connect((await ethers.getSigners())[2])
+          .call(callId, thirdpartyContractAddress, encodedCallData, 0);
+      } catch (err) {
+        const errMsg = (err as Error).message;
+        expect(errMsg.includes("reverted with reason string 'NOT_MANAGER'")).to
+          .be.true;
+      }
+    });
+  });
 });
