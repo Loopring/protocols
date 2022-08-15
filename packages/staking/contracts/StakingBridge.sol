@@ -45,7 +45,7 @@ contract StakingBridge is OwnerManagable, Drainable, IERC165, ERC721Holder, ERC1
         _setApproveSpender(target, allowed);
     }
 
-    function call(uint callId, address target, bytes calldata data)
+    function call(uint callId, address target, bytes calldata data, uint ethAmount)
         payable
         external
         onlyManager(msg.sender)
@@ -53,7 +53,7 @@ contract StakingBridge is OwnerManagable, Drainable, IERC165, ERC721Holder, ERC1
         isApprovalAllowed(data)
     {
         (bool success, /*bytes memory returnData*/) = target
-            .call{value: msg.value}(data);
+            .call{value: ethAmount}(data);
 
         if (success) {
 	    emit CallSucceeded(callId, target, data.toBytes4(0));
