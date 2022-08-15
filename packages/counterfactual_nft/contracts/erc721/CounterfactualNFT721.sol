@@ -3,20 +3,20 @@
 
 pragma solidity ^0.8.2;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "./ICounterfactualNFT.sol";
-import "./AddressSet.sol";
-import "./external/IL2MintableNFT.sol";
-import "./external/IPFS.sol";
-import "./external/OwnableUpgradeable.sol";
+import "./ICounterfactualNFT721.sol";
+import "../AddressSet.sol";
+import "../external/IL2MintableNFT.sol";
+import "../external/IPFS.sol";
+import "../external/OwnableUpgradeable.sol";
 
 
 /**
  * @title CounterfactualNFT
  */
-contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradeable, OwnableUpgradeable, IL2MintableNFT, AddressSet
+contract CounterfactualNFT721 is ICounterfactualNFT721, Initializable, ERC721Upgradeable, OwnableUpgradeable, IL2MintableNFT, AddressSet
 {
     event MintFromL2(
         address owner,
@@ -28,6 +28,7 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
     bytes32 internal constant MINTERS = keccak256("__MINTERS__");
     bytes32 internal constant DEPRECATED_MINTERS = keccak256("__DEPRECATED_MINTERS__");
     address public immutable layer2Address;
+    string public baseURI;
 
     modifier onlyFromLayer2
     {
@@ -50,48 +51,25 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         _owner = 0x000000000000000000000000000000000000dEaD;
     }
 
-    function initialize(address owner, string memory _uri)
+    function initialize(
+        address owner,
+        string memory uri,
+        string memory name,
+        string memory symbol
+    )
         public
         override
     {
         require(_owner == address(0), "ALREADY_INITIALIZED");
         _owner = owner;
 
-        if (bytes(_uri).length != 0) {
-            _setURI(_uri);
-        }
+        __ERC721_init(name, symbol);
 
-        // The owner is not explicitly added to the minters here
-        // to minimize the contract deployment cost.
-        // The owner is however always an authorized minter by
-        // adding the owner's address to the authorized minters
-        // in `minters` and `isMinter`.
+        baseURI = uri;
     }
 
-    function mint(
-        address       account,
-        uint256       id,
-        uint256       amount,
-        bytes  memory data
-        )
-        external
-        virtual
-        onlyFromMinter
-    {
-        _mint(account, id, amount, data);
-    }
-
-    function mintBatch(
-        address          to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes     memory data
-        )
-        external
-        virtual
-        onlyFromMinter
-    {
-        _mintBatch(to, ids, amounts, data);
+    function _baseURI() internal view override returns (string memory) {
+        return baseURI;
     }
 
     function setMinter(
@@ -129,15 +107,12 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         super.transferOwnership(newOwner);
     }
 
-    function uri(uint256 tokenId)
+    function tokenURI(uint256 tokenId)
         public
         view
-        virtual
         override
         returns (string memory)
     {
-        string memory baseURI = super.uri(tokenId);
-
         if (bytes(baseURI).length == 0 || bytes4("ipfs") == bytes4(bytes(baseURI))) {
             return string(abi.encodePacked("ipfs://", IPFS.encode(tokenId)));
         } else {
@@ -159,9 +134,10 @@ contract CounterfactualNFT is ICounterfactualNFT, Initializable, ERC1155Upgradea
         virtual
         onlyFromLayer2
     {
+        require(amount == 1, "invalid amount");
         require(isMinter(minter) || isAddressInSet(DEPRECATED_MINTERS, minter), "invalid minter");
 
-        _mint(to, id, amount, data);
+        _safeMint(to, id, data);
         emit MintFromL2(to, id, amount, minter);
     }
 

@@ -25,10 +25,10 @@ abstract contract OpenseaSupport is IOpenseaSupport {
         uint256[] memory _ids)
         public
     {
-        require(_to != address(0), "ERC1155Tradable#setCreator: INVALID_ADDRESS.");
+        require(_to != address(0), "INVALID_ADDRESS");
         for (uint256 i = 0; i < _ids.length; i++) {
             uint256 id = _ids[i];
-            require(creators[id] == msg.sender, "ERC1155Tradable#creatorOnly: ONLY_CREATOR_ALLOWED");
+            require(creators[id] == msg.sender, "ONLY_CREATOR_ALLOWED");
             _setCreator(_to, id);
         }
     }
