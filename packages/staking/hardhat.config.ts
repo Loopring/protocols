@@ -33,6 +33,17 @@ const config: HardhatUserConfig = {
     }
   },
   networks: {
+    mainnet: {
+      chainId: 1,
+      url: process.env.MAINNET_URL || "",
+      gas: 5000000,
+      gasPrice: 10e9,
+      gasMultiplier: 1,
+      timeout: 20000,
+      httpHeaders: undefined,
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
+    },
     goerli: {
       chainId: 5,
       url: process.env.GOERLI_URL || "",
@@ -42,16 +53,16 @@ const config: HardhatUserConfig = {
       timeout: 20000,
       httpHeaders: undefined,
       accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    },
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
+    }
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
+    currency: "USD"
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
-  },
+    apiKey: process.env.ETHERSCAN_API_KEY
+  }
 };
 
 export default config;
