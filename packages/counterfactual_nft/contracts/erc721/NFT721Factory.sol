@@ -3,18 +3,18 @@
 pragma solidity ^0.8.2;
 pragma experimental ABIEncoderV2;
 
-import "./ICounterfactualNFT.sol";
+import "./ICounterfactualNFT721.sol";
 import "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
-import "./external/CloneFactory.sol";
+import "../external/CloneFactory.sol";
 
 
 /// @title NFTFactory
 /// @author Brecht Devos - <brecht@loopring.org>
-contract NFTFactory
+contract NFTF721actory
 {
     event NFTContractCreated (address nftContract, address owner, string baseURI);
 
-    string public constant NFT_CONTRACT_CREATION = "NFT_CONTRACT_CREATION";
+    string public constant NFT_CONTRACT_CREATION = "NFT_CONTRACT_CREATION_721";
     address public immutable implementation;
 
     constructor(
@@ -30,7 +30,9 @@ contract NFTFactory
     /// @return nftContract The new NFT contract address
     function createNftContract(
         address            owner,
-        string    calldata baseURI
+        string    calldata baseURI,
+        string    calldata name,
+        string    calldata symbol
         )
         external
         payable
@@ -44,7 +46,7 @@ contract NFTFactory
         );
 
         // Initialize
-        ICounterfactualNFT(nftContract).initialize(owner, baseURI);
+        ICounterfactualNFT721(nftContract).initialize(owner, baseURI, name, symbol);
 
         emit NFTContractCreated(nftContract, owner, baseURI);
     }

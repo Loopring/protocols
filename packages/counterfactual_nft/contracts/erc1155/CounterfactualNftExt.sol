@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.2;
 
-import "./OpenseaSupport.sol";
+import "../OpenseaSupport.sol";
 import "./CounterfactualNFT.sol";
 
 /**
