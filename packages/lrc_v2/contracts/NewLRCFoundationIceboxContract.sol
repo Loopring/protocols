@@ -206,7 +206,7 @@ contract NewLRCFoundationIceboxContract is Claimable {
         lrcUnlockPerMonth = lrcInitialBalance.div(24); // 24 month
         startTime = _startTime;
 
-        emit Started(startTime);
+        emit Started(_startTime);
     }
 
     function withdraw() public onlyOwner {

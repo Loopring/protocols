@@ -64,6 +64,6 @@ contract ControllerImpl is Claimable, Controller
         require(walletFactory == address(0), "INITIALIZED_ALREADY");
         require(_walletFactory != address(0), "ZERO_ADDRESS");
         walletFactory = _walletFactory;
-        emit AddressChanged("WalletFactory", walletFactory);
+        emit AddressChanged("WalletFactory", _walletFactory);
     }
 }
