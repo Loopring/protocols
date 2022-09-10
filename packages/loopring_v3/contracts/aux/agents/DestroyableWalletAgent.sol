@@ -19,9 +19,11 @@ contract DestroyableWalletAgent is LoopringWalletAgent
     mapping(address => WalletData) public walletData;
 
     constructor(
+        address     _walletImplementation,
+        address     _deployer,
         IExchangeV3 exchange
         )
-        LoopringWalletAgent(address(0), address(this), exchange)
+        LoopringWalletAgent(_walletImplementation, _deployer, exchange)
     {}
 
     function beforeBlockSubmission(
