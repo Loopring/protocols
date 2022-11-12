@@ -303,9 +303,15 @@ library ERC20Lib
         require(to != address(this), "SELF_CALL_DISALLOWED");
 
         if (priceOracle != PriceOracle(0)) {
-            // Disallow general calls to token contracts (for tokens that have price data
-            // so the quota is actually used).
-            require(priceOracle.tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
+            bytes4 methodId = txData.toBytes4(0);
+            // bytes4(keccak256("transfer(address,uint256)")) = 0xa9059cbb
+            // bytes4(keccak256("approve(address,uint256)")) = 0x095ea7b3
+            if (methodId == bytes4(0xa9059cbb) ||
+                    methodId == bytes4(0x095ea7b3)) {
+                // Disallow general calls to token contracts (for tokens that have price data
+                // so the quota is actually used).
+                require(priceOracle.tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
+            }
         }
 
         bool success;
