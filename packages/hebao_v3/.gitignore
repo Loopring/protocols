@@ -1,0 +1,10 @@
+# Packages
+node_modules/
+
+# Hardhat build outputs
+artifacts/
+cache/
+build/
+ABI/
+typechain-types/
+libraries.js

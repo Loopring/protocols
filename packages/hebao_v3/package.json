@@ -1,0 +1,50 @@
+{
+  "name": "hebao-v3",
+  "version": "1.3.0",
+  "description": "Hebao App's Smart Contracts",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "clean": "rimraf ./cache && rimraf ./artifacts",
+    "compile": "yarn clean && hardhat compile",
+    "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
+    "lint:sol": "solhint --config ./.solhint.json --max-warnings 0 \"contracts/**/*.sol\"",
+    "lint:ts": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore --ext .js,.ts .",
+    "prettier": "prettier --write \"**/*.{js,json,md,sol,ts}\"",
+    "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
+    "test": "yarn clean && hardhat test"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.1",
+    "@nomiclabs/hardhat-etherscan": "^2.1.4",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
+    "solidity-coverage": "^0.7.21",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^1.0.1",
+    "@types/chai": "^4.2.14",
+    "@types/mocha": "^8.2.0",
+    "chai": "^4.2.0",
+    "ethers": "^5.0.24",
+    "hardhat": "^2.0.7",
+    "hardhat-gas-reporter": "^1.0.4",
+    "mocha": "^8.2.1",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.1.3",
+    "prettier": "^2.4.1",
+    "@typechain/ethers-v5": "^10.1.0",
+    "@typechain/hardhat": "^6.1.2",
+    "typechain": "^8.1.0",
+    "prettier-plugin-solidity": "^1.0.0-beta.13"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^0.6.1",
+    "@openzeppelin/contracts": "^4.8.1",
+    "glob": "^7.1.6",
+    "web3-eth-abi": "^1.3.4"
+  },
+  "workspaces": [
+    "./*"
+  ]
+}
