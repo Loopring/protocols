@@ -1,8 +1,9 @@
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { localUserOpSender, AASigner, fillAndSign } from "./helper/AASigner";
+import { localUserOpSender, fillAndSign } from "./helper/AASigner";
 import { parseEther, arrayify, hexConcat, hexlify } from "ethers/lib/utils";
+import { deployLibs } from "./commons";
 import {
   calculateWalletAddress,
   activateWalletOp,
@@ -15,60 +16,12 @@ import {
   createRandomWalletConfig,
   getPaymasterAndData,
   getCallData,
+  activateCreate2WalletOp,
 } from "./helper/utils";
 import { TestCounter, TestCounter__factory } from "../typechain-types";
 
 describe("eip4337", () => {
   // const loadFixture = waffle.createFixtureLoader()
-
-  async function deployLibs() {
-    const ERC1271Lib = await (
-      await ethers.getContractFactory("ERC1271Lib")
-    ).deploy();
-    const ERC20Lib = await (
-      await ethers.getContractFactory("ERC20Lib")
-    ).deploy();
-    const GuardianLib = await (
-      await ethers.getContractFactory("GuardianLib")
-    ).deploy();
-    const InheritanceLib = await (
-      await ethers.getContractFactory("InheritanceLib")
-    ).deploy();
-    const LockLib = await (
-      await ethers.getContractFactory("LockLib", {
-        libraries: {
-          GuardianLib: GuardianLib.address,
-        },
-      })
-    ).deploy();
-    const QuotaLib = await (
-      await ethers.getContractFactory("QuotaLib")
-    ).deploy();
-    const RecoverLib = await (
-      await ethers.getContractFactory("RecoverLib", {
-        libraries: {
-          GuardianLib: GuardianLib.address,
-        },
-      })
-    ).deploy();
-    const UpgradeLib = await (
-      await ethers.getContractFactory("UpgradeLib")
-    ).deploy();
-    const WhitelistLib = await (
-      await ethers.getContractFactory("WhitelistLib")
-    ).deploy();
-    return {
-      ERC1271Lib: ERC1271Lib.address,
-      ERC20Lib: ERC20Lib.address,
-      GuardianLib: GuardianLib.address,
-      InheritanceLib: InheritanceLib.address,
-      LockLib: LockLib.address,
-      QuotaLib: QuotaLib.address,
-      RecoverLib: RecoverLib.address,
-      UpgradeLib: UpgradeLib.address,
-      WhitelistLib: WhitelistLib.address,
-    };
-  }
 
   async function fixture() {
     const signers = await ethers.getSigners();
@@ -107,7 +60,9 @@ describe("eip4337", () => {
 
     const usdcToken = await (await ethers.getContractFactory("USDT")).deploy();
 
-    const testCounter = await (await ethers.getContractFactory("TestCounter")).deploy();
+    const testCounter = await (
+      await ethers.getContractFactory("TestCounter")
+    ).deploy();
     return {
       entrypoint,
       paymaster,
@@ -121,8 +76,68 @@ describe("eip4337", () => {
     };
   }
 
+  async function activateCreate2Wallet_withETH() {
+    const { walletFactory, entrypoint, deployer, testCounter } =
+      await loadFixture(fixture);
+
+    const accountOwner = await createAccountOwner();
+    const walletConfig = await createRandomWalletConfig(accountOwner.address);
+
+    const create2Factory = await (
+      await ethers.getContractFactory("Create2Factory")
+    ).deploy();
+
+    const sendUserOp = localUserOpSender(entrypoint.address, deployer);
+    const accountImplementation = await walletFactory.accountImplementation();
+    const activateOp = await activateCreate2WalletOp(
+      accountImplementation,
+      create2Factory,
+      walletConfig
+    );
+
+    const newOp = await fillAndSign(
+      activateOp,
+      accountOwner,
+      walletFactory.address,
+      entrypoint
+    );
+
+    // prefund
+    const myAddress = activateOp.sender;
+    await deployer.sendTransaction({
+      to: myAddress,
+      value: parseEther("0.01"),
+    });
+
+    await entrypoint.depositTo(myAddress, { value: parseEther("0.01") });
+    const preDeposit = await entrypoint.balanceOf(myAddress);
+    const prebalance = await ethers.provider.getBalance(myAddress);
+
+    // create wallet before
+    expect(await ethers.provider.getCode(myAddress)).to.eq("0x");
+    // await entrypoint.callStatic.simulateValidation(newOp).catch(simulationResultCatch);
+    const rcpt = await sendUserOp(newOp);
+    expect((await ethers.provider.getCode(myAddress)).length).to.gt(2);
+
+    const depositPaid = preDeposit.sub(await entrypoint.balanceOf(myAddress));
+    const gasPaid = prebalance.sub(await ethers.provider.getBalance(myAddress));
+    console.log(
+      "paid (from balance)=",
+      gasPaid.toNumber() / 1e9,
+      "paid (from deposit)",
+      depositPaid.div(1e9).toString(),
+      "gasUsed=",
+      rcpt.gasUsed
+    );
+
+    // AA10 sender already constructed
+    await expect(entrypoint.estimateGas.handleOps([newOp], deployer.address)).to
+      .reverted;
+  }
+
   async function activateWallet_withETH() {
-    const { walletFactory, entrypoint, deployer, testCounter } = await loadFixture(fixture);
+    const { walletFactory, entrypoint, deployer, testCounter } =
+      await loadFixture(fixture);
 
     const accountOwner = await createAccountOwner();
     const walletConfig = await createRandomWalletConfig(accountOwner.address);
@@ -130,7 +145,7 @@ describe("eip4337", () => {
     const sendUserOp = localUserOpSender(entrypoint.address, deployer);
     const activateOp = await activateWalletOp(walletFactory, walletConfig);
 
-    const justemit  = await testCounter.populateTransaction.count();
+    const justemit = await testCounter.populateTransaction.count();
 
     activateOp.callData = getCallData(justemit);
 
@@ -235,7 +250,9 @@ describe("eip4337", () => {
     const prebalance = await ethers.provider.getBalance(payer);
     const tokenBalanceBefore = await usdcToken.balanceOf(activateOp.sender);
 
-    await entrypoint.callStatic.simulateValidation(userOp2).catch(simulationResultCatch);
+    await entrypoint.callStatic
+      .simulateValidation(userOp2)
+      .catch(simulationResultCatch);
     const rcpt = await sendUserOp(userOp2);
 
     const depositPaid = preDeposit.sub(await entrypoint.balanceOf(payer));
@@ -263,6 +280,73 @@ describe("eip4337", () => {
     );
   }
 
+  async function executeTxWithEth() {
+    const {
+      account,
+      accountOwner,
+      walletFactory,
+      entrypoint,
+      deployer,
+      testCounter,
+    } = await loadFixture(fixture);
+    const sendUserOp = localUserOpSender(entrypoint.address, deployer);
+
+    const walletAddress = account.address;
+
+    // used to transfer eth for test
+    const ethAmount = ethers.utils.parseEther("0.2");
+
+    // prepare tokens
+    // send tokens to wallet or deposit to entrypoint by wallet's name
+    await entrypoint.depositTo(walletAddress, { value: parseEther("1") });
+    // await deployer.sendTransaction({
+    // to: walletAddress,
+    // value: ethAmount,
+    // });
+
+    // some outside contract
+    const justemit = await testCounter.populateTransaction.count();
+
+    const quotaAmount = ethers.utils.parseEther("10");
+    const changeDailyQuota = await account.populateTransaction.changeDailyQuota(
+      quotaAmount
+    );
+
+    const actions = [justemit, changeDailyQuota];
+
+    for (let i = 0; i < actions.length; ++i) {
+      // use execute api
+      const userOp0 = await createTransaction(
+        actions[i],
+        ethers.provider,
+        account
+      );
+      const userOp = await fillAndSign(
+        userOp0,
+        accountOwner,
+        walletFactory.address,
+        entrypoint
+      );
+
+      await entrypoint.callStatic
+        .simulateValidation(userOp)
+        .catch(simulationResultCatch);
+
+      const preDeposit = await entrypoint.balanceOf(walletAddress);
+      const recipt = await sendUserOp(userOp);
+      // console.log(await evInfo(entrypoint, recipt));
+      const depositPaid = preDeposit.sub(
+        await entrypoint.balanceOf(walletAddress)
+      );
+      expect(depositPaid).to.gt(0);
+      // console.log("wallet paid(ETH): ", depositPaid.div(1e9));
+    }
+
+    // check effect of changeDailyQuota
+    const quotaInfo = (await account.wallet())["quota"];
+    expect(quotaInfo.pendingQuota.toString()).to.equal(quotaAmount);
+  }
+
   async function executeTxWithPaymaster() {
     const {
       account,
@@ -273,7 +357,7 @@ describe("eip4337", () => {
       usdcToken,
       paymaster,
       paymasterOwner,
-        testCounter
+      testCounter,
     } = await loadFixture(fixture);
     const sendUserOp = localUserOpSender(entrypoint.address, deployer);
 
@@ -305,7 +389,7 @@ describe("eip4337", () => {
     };
 
     // some outside contract
-    const justemit  = await testCounter.populateTransaction.count();
+    const justemit = await testCounter.populateTransaction.count();
 
     const actions = [approveToken, transferToken, transferEth, justemit];
 
@@ -348,7 +432,9 @@ describe("eip4337", () => {
         walletFactory.address,
         entrypoint
       );
-      await entrypoint.callStatic.simulateValidation(userOp).catch(simulationResultCatch);
+      await entrypoint.callStatic
+        .simulateValidation(userOp)
+        .catch(simulationResultCatch);
 
       const preDeposit = await entrypoint.balanceOf(paymaster.address);
       const recipt = await sendUserOp(userOp);
@@ -370,9 +456,11 @@ describe("eip4337", () => {
   }
 
   describe("wallet test", async function () {
+    it("activate create2 wallet(ETH)", activateCreate2Wallet_withETH);
     it("activate wallet(ETH)", activateWallet_withETH);
     it("activate wallet(USDC)", activateWallet_WithUSDCPaymaster);
     it("execute tx with usdc paymaster", executeTxWithPaymaster);
+    it.only("execute tx with eth", executeTxWithEth);
     // it("activate wallet(ETH)", activateWallet_withETHUsingWalletFactory);
     // it("update guardian", updateGuardian);
     // it("recovery wallet", recoveryWallet);

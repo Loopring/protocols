@@ -9,6 +9,7 @@ import {
   WalletFactory,
   WalletFactory__factory,
   WalletProxy__factory,
+  Create2Factory,
 } from "../../typechain-types";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { Deferrable, resolveProperties } from "@ethersproject/properties";
@@ -212,6 +213,38 @@ export function calculateWalletAddress(
   return walletAddress;
 }
 
+export async function activateCreate2WalletOp(
+  walletLogicAddress: string,
+  walletFactory: Create2Factory,
+  walletConfig: WalletConfig,
+  callData?: BytesLike
+) {
+  const salt = ethers.utils.randomBytes(32);
+  const walletAddress = calculateWalletAddress(
+    walletLogicAddress,
+    walletConfig,
+    salt,
+    walletFactory.address
+  );
+  let initCode: BytesLike | undefined;
+  const size = await walletFactory?.provider
+    .getCode(walletAddress)
+    .then((x) => x.length);
+  if (size == 2) {
+    const walletInitCodeWithArgs = walletFactory.interface.encodeFunctionData(
+      "deploy",
+      [getWalletCode(walletLogicAddress, walletConfig), salt]
+    );
+    initCode = hexConcat([walletFactory.address, walletInitCodeWithArgs]);
+  }
+  return {
+    sender: walletAddress,
+    initCode,
+    callData: callData ?? "0x",
+    nonce: 0,
+  };
+}
+
 export async function activateWalletOp(
   walletFactory: WalletFactory,
   walletConfig: WalletConfig,
@@ -254,7 +287,7 @@ export async function createRandomWalletConfig(owner?: string, quota?: number) {
   const walletConfig = {
     accountOwner: owner ?? (await ethers.Wallet.createRandom().address),
     guardians: guardians.map((g) => g.address.toLowerCase()).sort(),
-    quota: quota ?? 100,
+    quota: quota ?? 0,
     inheritor: await ethers.Wallet.createRandom().address,
   };
   return walletConfig;

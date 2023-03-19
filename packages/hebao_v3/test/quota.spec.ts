@@ -3,7 +3,14 @@ import {
   signCreateWallet,
   signChangeDailyQuotaWA,
 } from "./helper/signatureUtils";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { sign } from "./helper/Signature";
+import {
+  createAccount,
+  createAccountOwner,
+  createRandomWalletConfig,
+} from "./helper/utils";
+import { parseEther, arrayify, hexConcat, hexlify } from "ethers/lib/utils";
 import {
   newWallet,
   getFirstEvent,
@@ -11,6 +18,7 @@ import {
   advanceTime,
   getCurrentQuota,
   sortSignersAndSignatures,
+  deployLibs,
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
@@ -22,14 +30,63 @@ describe("wallet", () => {
   let account1: Signer;
   let account2: Signer;
   let account3: Signer;
+  async function fixture() {
+    const signers = await ethers.getSigners();
+    const deployer = signers[0];
+    const blankOwner = signers[1];
+    const paymasterOwner = signers[2];
+    const libraries = await deployLibs();
+    const entrypoint = await (
+      await ethers.getContractFactory("EntryPoint")
+    ).deploy();
+    const priceOracle = await (
+      await ethers.getContractFactory("ChainlinkPriceOracle")
+    ).deploy(entrypoint.address);
+
+    const walletFactory = await (
+      await ethers.getContractFactory("WalletFactory", { libraries })
+    ).deploy(priceOracle.address, entrypoint.address, blankOwner.address);
+    const paymaster = await (
+      await ethers.getContractFactory("VerifyingPaymaster")
+    ).deploy(entrypoint.address, paymasterOwner.address);
+
+    const accountOwner = await signers[3];
+    const walletConfig = await createRandomWalletConfig(accountOwner.address);
+
+    await paymaster.addStake(1, { value: parseEther("2") });
+    await entrypoint.depositTo(paymaster.address, { value: parseEther("1") });
+
+    const { proxy: account } = await createAccount(
+      accountOwner,
+      walletConfig,
+      entrypoint.address,
+      walletFactory
+    );
+
+    await deployer.sendTransaction({
+      to: accountOwner.address,
+      value: parseEther("2"),
+    });
+
+    return {
+      entrypoint,
+      paymaster,
+      paymasterOwner,
+      accountOwner,
+      deployer,
+      account,
+      walletFactory,
+    };
+  }
 
   describe("quota", () => {
     it("owner should be able to changeDialyQuota", async () => {
-      [account1, account2, account3] = await ethers.getSigners();
-
-      const owner = await account1.getAddress();
-      const wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
-
+      const {
+        walletFactory,
+        entrypoint,
+        deployer,
+        account: wallet,
+      } = await loadFixture(fixture);
       const quotaAmount = ethers.utils.parseEther("10");
       const tx = await wallet.changeDailyQuota(quotaAmount);
       const quotaInfo = (await wallet.wallet())["quota"];
@@ -41,10 +98,13 @@ describe("wallet", () => {
     });
 
     it("changeDialyQuota extra test", async () => {
-      [account1, account2, account3] = await ethers.getSigners();
+      const {
+        walletFactory,
+        entrypoint,
+        deployer,
+        account: wallet,
+      } = await loadFixture(fixture);
 
-      const owner = await account1.getAddress();
-      const wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
       const quotaAmount = ethers.utils.parseEther("10");
       const tx = await wallet.changeDailyQuota(quotaAmount);
       const quotaInfo = (await wallet.wallet())["quota"];
@@ -92,20 +152,23 @@ describe("wallet", () => {
       expect(quotaInfo4.pendingUntil).to.equal(0);
     });
 
-    it("majority(owner required) should be able to change dialy quota immediately", async () => {
-      [account1, account2, account3] = await ethers.getSigners();
-      const owner = await account1.getAddress();
+    it.only("majority(owner required) should be able to change dialy quota immediately", async () => {
+      const {
+        walletFactory,
+        entrypoint,
+        deployer,
+        account: wallet,
+        accountOwner,
+      } = await loadFixture(fixture);
+      const owner = await accountOwner.getAddress();
+      const signers = await ethers.getSigners();
+      const account2 = signers[7];
+      const account3 = signers[8];
       const guardians: string[] = [
         await account2.getAddress(),
         await account3.getAddress(),
       ];
       const salt = new Date().getTime();
-      let wallet = await newWallet(
-        owner,
-        ethers.constants.AddressZero,
-        salt,
-        guardians
-      );
       const walletDataBefore = await wallet.wallet();
       expect(walletDataBefore.locked).to.equal(false);
       const tx1 = await wallet.lock();

@@ -217,18 +217,17 @@ async function walletCreationTest() {
 }
 
 async function create2Test() {
-  const smartWalletAddr = await deployWalletImpl();
+  // const smartWalletAddr = await deployWalletImpl();
   // // const walletFactoryAddr = await deployWalletFactory(smartWalletAddr);
   // const walletFactoryAddr = "0x5621a77f8EbC9265A60b0E83B49db998aC046B9C";
   // const newWalletAddr = await newWallet(walletFactoryAddr, 1629366091004);
-
   // console.log("newWalletAddr:", newWalletAddr);
 }
 
 async function main() {
   // await deployPriceOracle();
-  await walletCreationTest();
-  // await create2Test();
+  // await walletCreationTest();
+  await create2Test();
 
   //await deployOfficialGuardian();
 }
